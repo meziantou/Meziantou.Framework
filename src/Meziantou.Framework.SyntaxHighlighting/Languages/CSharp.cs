@@ -38,8 +38,8 @@ internal static partial class CSharp
         "add","allows","alias","and","ascending","args","async","await","by","closed",
         "descending","dynamic","equals","extension","field","file","from","get","global","group",
         "init","into","join","let","nameof","not","notnull","on","or","orderby","partial",
-        "record","remove","required","scoped","select","set","unmanaged","value","var","when",
-        "where","with","yield",
+        "record","remove","required","scoped","select","set","union","unmanaged","value","var",
+        "when","where","with","yield",
     ];
 
     private static Keywords BuildKeywords() => Keywords.FromMap(new Dictionary<string, string[]>(StringComparer.Ordinal)
@@ -67,6 +67,16 @@ internal static partial class CSharp
     [GeneratedRegex(@"\bfrom\s+\w+\s+in\b", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: -1)]
     private static partial Regex PrecedingFromPattern();
 
+    // `closed class Shape`, `public closed partial record Shape`: the modifiers that can follow `closed`, then the
+    // class or record keyword.
+    [GeneratedRegex(@"^\s+(?:(?:public|private|protected|internal|file|partial|unsafe|new|static|abstract|sealed)\s+)*(?:class|record)\b", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: -1)]
+    private static partial Regex ClosedModifierPattern();
+
+    // `union Pet(Cat, Dog)`, `union Option<T>(None, Some<T>)`: the name of the union, then its type parameters or
+    // its case types.
+    [GeneratedRegex(@"^\s+@?\w+\s*[<(]", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: -1)]
+    private static partial Regex UnionDeclarationPattern();
+
     private static bool ValidateKeyword(string input, int index, ReadOnlySpan<char> word)
     {
         // Universal: a keyword preceded by `.` is a member name, not a keyword
@@ -74,10 +84,18 @@ internal static partial class CSharp
         if (index > 0 && input[index - 1] == '.')
             return false;
 
+        var after = input.AsSpan(index + word.Length);
+
+        // `closed` and `union` are only keywords in a type declaration. Elsewhere, they are common identifiers
+        // (`var closed = true;`, `var union = a.Union(b);`).
+        if (word is "closed")
+            return ClosedModifierPattern().IsMatch(after);
+
+        if (word is "union")
+            return UnionDeclarationPattern().IsMatch(after);
+
         if (!LinqContextualKeywords.Contains(word.ToString()))
             return true;
-
-        var after = input.AsSpan(index + word.Length);
 
         if (word is "from")
             return FromInPattern().IsMatch(after);

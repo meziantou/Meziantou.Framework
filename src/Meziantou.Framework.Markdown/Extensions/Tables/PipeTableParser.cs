@@ -1451,33 +1451,71 @@ public class PipeTableParser : InlineParser, IPostInlineProcessor
 
         // The state of the processor when the line after the last line break starts. If it ends the table, it is parsed
         // again after the table, so its changes to the processor are undone: the references it expands, and the attributes
-        // it adds to the paragraph (copied to the table).
+        // it adds to the paragraph (copied to the table). The attributes of a block only grow while its inlines are parsed:
+        // an id replaces the previous one, and classes and properties are appended. So their state is the id and the
+        // number of classes and properties, which is saved at each line break without copying them.
         public long ReferenceExpansionAtLineStart { get; set; }
 
         public HtmlAttributes? AttributesAtLineStart { get; set; }
 
+        public string? IdAtLineStart { get; set; }
+
+        // -1 when there is no list
+        public int ClassCountAtLineStart { get; set; }
+
+        public int PropertyCountAtLineStart { get; set; }
+
+        public SourceSpan AttributesSpanAtLineStart { get; set; }
+
+        public int AttributesLineAtLineStart { get; set; }
+
+        public int AttributesColumnAtLineStart { get; set; }
+
         public void SaveLineStartState(InlineProcessor processor)
         {
             ReferenceExpansionAtLineStart = processor.ReferenceExpansionLength;
-            AttributesAtLineStart = null;
-            if (processor.Block!.TryGetAttributes() is { } attributes)
+            var attributes = processor.Block!.TryGetAttributes();
+            AttributesAtLineStart = attributes;
+            if (attributes is not null)
             {
-                AttributesAtLineStart = new HtmlAttributes();
-                attributes.CopyTo(AttributesAtLineStart, shared: false);
+                IdAtLineStart = attributes.Id;
+                ClassCountAtLineStart = attributes.Classes?.Count ?? -1;
+                PropertyCountAtLineStart = attributes.Properties?.Count ?? -1;
+                AttributesSpanAtLineStart = attributes.Span;
+                AttributesLineAtLineStart = attributes.Line;
+                AttributesColumnAtLineStart = attributes.Column;
             }
         }
 
         public void RestoreLineStartState(InlineProcessor processor)
         {
             processor.ReferenceExpansionLength = ReferenceExpansionAtLineStart;
-            if (AttributesAtLineStart is not null)
+            var block = processor.Block!;
+            if (AttributesAtLineStart is not { } attributes)
             {
-                processor.Block!.SetAttributes(AttributesAtLineStart);
+                block.RemoveData(typeof(HtmlAttributes));
+                return;
             }
-            else
+
+            block.SetAttributes(attributes);
+            attributes.Id = IdAtLineStart;
+            attributes.Classes = Truncate(attributes.Classes, ClassCountAtLineStart);
+            attributes.Properties = Truncate(attributes.Properties, PropertyCountAtLineStart);
+            attributes.Span = AttributesSpanAtLineStart;
+            attributes.Line = AttributesLineAtLineStart;
+            attributes.Column = AttributesColumnAtLineStart;
+        }
+
+        // The list with its first items, or null when count is -1 (there was no list)
+        private static List<T>? Truncate<T>(List<T>? list, int count)
+        {
+            if (count < 0)
             {
-                processor.Block!.RemoveData(typeof(HtmlAttributes));
+                return null;
             }
+
+            list!.RemoveRange(count, list.Count - count);
+            return list;
         }
 
         public bool LineHasPipe { get; set; }

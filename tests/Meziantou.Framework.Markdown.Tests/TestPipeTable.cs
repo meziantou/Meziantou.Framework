@@ -3,6 +3,7 @@ using System.Text;
 
 using Meziantou.Framework.Markdown;
 using Meziantou.Framework.Markdown.Extensions.Tables;
+using Meziantou.Framework.Markdown.Renderers.Html;
 using Meziantou.Framework.Markdown.Syntax;
 using Meziantou.Framework.Markdown.Syntax.Inlines;
 
@@ -177,6 +178,18 @@ public sealed class TestPipeTable
         var html = MarkdownConverter.ToHtml(markdown, pipeline);
 
         Assert.Equal("<table>\n<thead>\n<tr>\n<th>a</th>\n<th>b</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>c</td>\n<td>d</td>\n</tr>\n</tbody>\n</table>\n" + expectedAfterTable, html);
+    }
+
+    [Fact]
+    public void AttributesOfTheLineAfterTableAreRemovedFromTheTable()
+    {
+        // The line after the table is parsed with the table before it is known to have no column delimiter: the id, class
+        // and properties it adds to the paragraph are removed, and the ones the paragraph had before are kept
+        var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
+
+        var html = MarkdownConverter.ToHtml("{#t .note title=v}\n|a|b|\n|-|-|\n|c|d|\n`x|y` {#p .d title=w lang=z}", pipeline);
+
+        Assert.Equal("<table id=\"t\" class=\"note\" title=\"v\">\n<thead>\n<tr>\n<th>a</th>\n<th>b</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>c</td>\n<td>d</td>\n</tr>\n</tbody>\n</table>\n<p id=\"p\" class=\"d\" title=\"w\" lang=\"z\"><code>x|y</code></p>\n", html);
     }
 
     [Theory]
@@ -557,6 +570,25 @@ public sealed class TestPipeTable
     public void RowsInAnUnclosedInlineAreSplitIntoCells(string markdown, string expected)
     {
         Assert.Equal(expected, MarkdownConverter.ToHtml(markdown, new MarkdownPipelineBuilder().UseAdvancedExtensions().Build()));
+    }
+
+    // Timed: tests running at the same time would slow it down and make the time budget flaky
+    [Fact(DisableParallelization = true)]
+    public void ManyRowsAfterManyAttributesAreParsedInLinearTime()
+    {
+        // The attributes of the paragraph were copied at each row, to be restored if the next line ended the table
+        const int Count = 200_000;
+        var markdown = "{" + string.Concat(Enumerable.Repeat(".a ", Count)) + "}a|b\n-|-\n" + string.Concat(Enumerable.Repeat("c|d\n", Count));
+        var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
+
+        var stopwatch = Stopwatch.StartNew();
+        var document = MarkdownConverter.Parse(markdown, pipeline);
+        stopwatch.Stop();
+
+        var table = Assert.IsType<Table>(Assert.Single(document));
+        Assert.HasCount(Count + 1, table);
+        Assert.HasCount(Count, table.GetAttributes().Classes!);
+        Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(10), $"Parsing took {stopwatch.Elapsed}");
     }
 
     // Timed: tests running at the same time would slow it down and make the time budget flaky

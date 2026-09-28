@@ -169,6 +169,8 @@ internal static class LanguageRegistry
             ["gradle"] = () => Groovy.Instance,
             ["latex"] = () => Latex.Instance,
             ["tex"] = () => Latex.Instance,
+            ["gherkin"] = () => Gherkin.Instance,
+            ["feature"] = () => Gherkin.Instance,
         }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
     // Grammars compiled with a non-default match timeout, keyed by the default grammar instance.

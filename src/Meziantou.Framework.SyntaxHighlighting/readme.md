@@ -121,6 +121,7 @@ The package currently supports these language identifiers and common aliases:
 - `elixir`, `ex`, `exs`
 - `erlang`, `erl`
 - `fsharp`, `fs`, `f#`
+- `gherkin`, `feature`
 - `go`, `golang`
 - `graphql`, `gql`
 - `groovy`, `gradle`

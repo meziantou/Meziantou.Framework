@@ -145,6 +145,7 @@ The package currently supports these language identifiers and common aliases:
 - `rust`, `rs`
 - `scala`
 - `scss`
+- `shell`, `console`, `shellsession`
 - `sql`
 - `swift`
 - `typescript`, `ts`, `tsx`, `mts`, `cts`

@@ -97,6 +97,7 @@ public class HighlighterTests
     [InlineData("jl")]
     [InlineData("jsp")]
     [InlineData("kts")]
+    [InlineData("console")]
     public void IsSupported_KnownLanguage_ReturnsTrue(string language)
     {
         Assert.True(SyntaxHighlighter.IsSupported(language));

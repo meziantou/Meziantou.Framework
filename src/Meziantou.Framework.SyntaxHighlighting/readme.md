@@ -108,29 +108,54 @@ The package currently supports these language identifiers and common aliases:
 
 - `bash`, `sh`, `zsh`, `ksh`
 - `bnf`
+- `c`, `h`
+- `clojure`, `clj`, `edn`
 - `cpp`, `c++`, `cc`, `h++`, `hpp`, `hh`, `hxx`, `cxx`
 - `csharp`, `cs`, `c#`
 - `css`
+- `dart`
+- `diff`, `patch`
 - `dockerfile`, `docker`
 - `dos`, `bat`, `cmd`
+- `elixir`, `ex`, `exs`
+- `erlang`, `erl`
 - `fsharp`, `fs`, `f#`
 - `go`, `golang`
 - `graphql`, `gql`
+- `groovy`
+- `haskell`, `hs`
+- `hcl`, `terraform`, `tf`, `tfvars`
 - `html`, `htm`, `xhtml`
 - `http`, `https`
 - `ini`, `toml`, `gitconfig`
+- `java`, `jsp`
 - `javascript`, `js`, `jsx`, `mjs`, `cjs`
 - `json`, `jsonc`
+- `julia`, `jl`
+- `kotlin`, `kt`, `kts`
 - `less`
+- `lua`, `pluto`
+- `makefile`, `mk`, `mak`, `make`
 - `markdown`, `md`, `mkdown`, `mkd`
 - `msil`, `il`, `cil`
 - `nginx`, `nginxconf`
+- `objectivec`, `mm`, `objc`, `obj-c`, `obj-c++`, `objective-c++`
+- `perl`, `pl`, `pm`
 - `php`
+- `plaintext`, `text`, `txt`
 - `powershell`, `pwsh`, `ps`, `ps1`
+- `properties`
+- `protobuf`, `proto`
+- `python`, `py`, `gyp`, `ipython`
+- `r`
 - `razor`, `cshtml`, `cshtml-razor`
+- `ruby`, `rb`, `gemspec`, `podspec`, `thor`, `irb`
 - `rust`, `rs`
+- `scala`
 - `scss`
+- `shell`, `console`, `shellsession`
 - `sql`
+- `swift`
 - `typescript`, `ts`, `tsx`, `mts`, `cts`
 - `urlencoded`, `x-www-form-urlencoded`
 - `vbnet`, `vb`

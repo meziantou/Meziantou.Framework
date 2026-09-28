@@ -212,6 +212,8 @@ internal static class LanguageRegistry
             ["wasm"] = () => Wasm.Instance,
             ["wat"] = () => Wasm.Instance,
             ["wast"] = () => Wasm.Instance,
+            ["llvm"] = () => Llvm.Instance,
+            ["ll"] = () => Llvm.Instance,
         }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
     // Grammars compiled with a non-default match timeout, keyed by the default grammar instance.

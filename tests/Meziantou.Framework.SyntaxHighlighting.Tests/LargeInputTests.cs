@@ -72,6 +72,20 @@ public sealed class LargeInputTests
         Assert.EndsWith("<span class=\"hljs-keyword\">\\end</span>", await highlight, StringComparison.Ordinal);
     }
 
+    // highlight.js matches an LLVM label with `^\s*[a-z]+:`, which rescans a run of blank lines from each of its line starts
+    // (far over the budget for this document).
+    [Fact]
+    public async Task Highlight_LlvmLongBlankRun_CompletesInReasonableTime()
+    {
+        var code = "ret void\n" + new string('\n', 400_000) + "  ret void";
+
+        var highlight = Task.Run(() => HighlightWithFallbackDetection(code, "llvm", out _));
+        var finished = await Task.WhenAny(highlight, Task.Delay(Budget)) == highlight;
+
+        Assert.True(finished, $"Highlighting {code.Length} characters of 'llvm' did not finish within {Budget.TotalSeconds:F0}s.");
+        Assert.EndsWith("<span class=\"hljs-keyword\">ret</span> <span class=\"hljs-type\">void</span>", await highlight, StringComparison.Ordinal);
+    }
+
     // A properties key used to be matched from each of its positions, which is quadratic on a long key made of escapes
     // (a minute and a half for 60,000 backslashes).
     [Theory]

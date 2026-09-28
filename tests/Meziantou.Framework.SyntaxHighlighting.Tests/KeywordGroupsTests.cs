@@ -29,6 +29,7 @@ public class KeywordGroupsTests
         "dart:dynamic:keyword+built_in",
         "julia:false:keyword+literal",
         "julia:true:keyword+literal",
+        "llvm:opaque:keyword+type",
         "msil:native:built_in+keyword",
         "objectivec:id:keyword+type",
         "pgsql:WARNING:keyword+built_in",

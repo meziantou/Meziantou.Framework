@@ -146,6 +146,7 @@ The package currently supports these language identifiers and common aliases:
 - `kotlin`, `kt`, `kts`
 - `latex`, `tex`
 - `less`
+- `llvm`, `ll`
 - `lua`, `pluto`
 - `makefile`, `mk`, `mak`, `make`
 - `markdown`, `md`, `mkdown`, `mkd`

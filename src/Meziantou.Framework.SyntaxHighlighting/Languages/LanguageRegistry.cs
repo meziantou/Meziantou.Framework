@@ -253,6 +253,7 @@ internal static class LanguageRegistry
             ["elisp"] = () => Lisp.Instance,
             ["emacs-lisp"] = () => Lisp.Instance,
             ["common-lisp"] = () => Lisp.Instance,
+            ["elm"] = () => Elm.Instance,
         }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
     // Grammars compiled with a non-default match timeout, keyed by the default grammar instance.

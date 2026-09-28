@@ -146,6 +146,7 @@ public class HighlighterTests
     [InlineData("f90")]
     [InlineData("scm")]
     [InlineData("elisp")]
+    [InlineData("elm")]
     public void IsSupported_KnownLanguage_ReturnsTrue(string language)
     {
         Assert.True(SyntaxHighlighter.IsSupported(language));

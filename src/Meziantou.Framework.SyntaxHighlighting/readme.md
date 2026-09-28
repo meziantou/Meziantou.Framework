@@ -123,7 +123,7 @@ The package currently supports these language identifiers and common aliases:
 - `fsharp`, `fs`, `f#`
 - `go`, `golang`
 - `graphql`, `gql`
-- `groovy`
+- `groovy`, `gradle`
 - `haskell`, `hs`
 - `hcl`, `terraform`, `tf`, `tfvars`
 - `html`, `htm`, `xhtml`

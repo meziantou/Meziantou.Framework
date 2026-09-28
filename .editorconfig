@@ -53,3 +53,99 @@ dotnet_diagnostic.MA0186.severity = warning
 
 [samples/**/*.cs]
 dotnet_diagnostic.CA1852.severity = none
+
+[src/Meziantou.AspNetCore.Components/**.{cs,razor}]
+dotnet_diagnostic.MA0004.severity = none
+
+# BL0016: Unguarded JS interop call
+dotnet_diagnostic.BL0016.severity = none
+
+[src/Meziantou.Framework.Html.Tool/**.cs]
+dotnet_diagnostic.MA0004.severity = none
+dotnet_diagnostic.MA0032.severity = none
+
+[src/Meziantou.Framework.Language.Json/**.cs]
+# MA0182: Internal type is apparently never used.
+# The immutable half of the tree is built by the parser and projected into the public nodes; the analyzer does not
+# follow that, and reports every green node type as unused.
+dotnet_diagnostic.MA0182.severity = none
+
+[src/Meziantou.Framework.Language/**.cs]
+# MA0182: Internal type is apparently never used.
+# The green layer is shared infrastructure: most of it has no caller inside this assembly and is consumed by the
+# Meziantou.Framework.Language.* parsers through InternalsVisibleTo, which the analyzer cannot see.
+dotnet_diagnostic.MA0182.severity = none
+
+[src/Meziantou.Framework.Markdown/**.cs]
+# The public API keeps the shape of Markdig (https://github.com/xoofx/markdig), the library this project is derived from.
+# The following rules would require breaking changes to that API, so they are disabled for this project only.
+
+# CA1000: Do not declare static members on generic types
+dotnet_diagnostic.CA1000.severity = none
+# CA1002: Do not expose generic lists (List<T> is part of the syntax tree API)
+dotnet_diagnostic.CA1002.severity = none
+# CA1003: Use generic event handler instances (pipeline events use dedicated delegates)
+dotnet_diagnostic.CA1003.severity = none
+# CA1010: Generic interface should also be implemented
+dotnet_diagnostic.CA1010.severity = none
+# CA1051: Do not declare visible instance fields (StringSlice, StringLine and syntax nodes expose fields for performance)
+dotnet_diagnostic.CA1051.severity = none
+# CA1054, CA1055, CA1056: URI parameters, return values and properties should not be strings (URLs come from Markdown text)
+dotnet_diagnostic.CA1054.severity = none
+dotnet_diagnostic.CA1055.severity = none
+dotnet_diagnostic.CA1056.severity = none
+# CA1819: Properties should not return arrays
+dotnet_diagnostic.CA1819.severity = none
+# MA0046: Use EventHandler<T> to declare events
+dotnet_diagnostic.MA0046.severity = none
+
+# CA2000: ValueStringBuilder returns its pooled buffer in ToString(); a using declaration would make it readonly, and it is
+# passed by reference to helper methods.
+dotnet_code_quality.CA2000.excluded_symbol_names = T:Meziantou.Framework.Markdown.Helpers.ValueStringBuilder
+
+[src/Meziantou.Framework.NuGetPackageValidation.Tool/**.cs]
+dotnet_diagnostic.MA0004.severity = none
+dotnet_diagnostic.MA0032.severity = none
+
+[tests/**.cs]
+dotnet_diagnostic.CA1054.severity = none
+dotnet_diagnostic.CA1062.severity = none
+dotnet_diagnostic.CA1861.severity = none
+
+# Validate platform compatibility
+dotnet_diagnostic.CA1416.severity = none
+
+# Remove underscore from member name
+dotnet_diagnostic.CA1707.severity = none
+dotnet_diagnostic.CA1812.severity = none
+dotnet_diagnostic.CA1851.severity = none
+dotnet_diagnostic.CA2201.severity = none
+dotnet_diagnostic.CA2234.severity = none
+
+dotnet_diagnostic.MA0003.severity = none
+dotnet_diagnostic.MA0004.severity = none
+dotnet_diagnostic.MA0032.severity = none
+dotnet_diagnostic.MA0036.severity = none
+dotnet_diagnostic.MA0038.severity = none
+dotnet_diagnostic.MA0080.severity = none
+
+# xunit rule for CancellationToken (XunitCancellationToken)
+dotnet_diagnostic.xUnit1051.severity = none
+
+# Async suffix
+dotnet_diagnostic.VSTHRD200.severity = none
+
+[tests/Meziantou.Framework.Assertions.Tests/**.cs]
+# This project tests the assertion methods themselves, so it must call assertions whose
+# result is known in advance, such as Assert.True(true) or Assert.Same(value, value).
+dotnet_diagnostic.MFAS0049.severity = none
+dotnet_diagnostic.MFAS0050.severity = none
+
+# The predicate overloads of Assert.Contains and Assert.DoesNotContain are validated here,
+# so the predicate cannot be replaced by the expected value.
+dotnet_diagnostic.MFAS0054.severity = none
+dotnet_diagnostic.MFAS0055.severity = none
+
+[tests/Meziantou.Framework.Markdown.Tests/**.cs]
+# MA0009: Regular expressions should not be vulnerable to Denial of Service attacks. The patterns are constants and only run on test data.
+dotnet_diagnostic.MA0009.severity = none

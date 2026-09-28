@@ -115,6 +115,7 @@ public class YamlFrontMatterParser : BlockParser
                 block.Column = processor.Column;
                 block.Span.Start = 0;
                 block.Span.End = line.Start;
+                block.OpeningFence = processor.Line;
 
                 // Store the number of matched string into the context
                 processor.NewBlocks.Push(block);
@@ -138,6 +139,7 @@ public class YamlFrontMatterParser : BlockParser
         // Determine if we have a closing fence.
         // It can start or end with either <c>---</c> or <c>...</c>
         var line = processor.Line;
+        var fence = line;
         var c = line.CurrentChar;
         if (processor.Column == 0 && (c == '-' || c == '.'))
         {
@@ -149,6 +151,10 @@ public class YamlFrontMatterParser : BlockParser
             if (count == 3 && !processor.IsCodeIndent && c.IsWhiteSpaceOrZero() && line.TrimEnd())
             {
                 block.UpdateSpanEnd(line.Start - 1);
+                if (block is YamlFrontMatterBlock frontMatter)
+                {
+                    frontMatter.ClosingFence = fence;
+                }
 
                 // Don't keep the last line
                 return BlockState.BreakDiscard;

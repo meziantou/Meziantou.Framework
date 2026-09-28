@@ -128,6 +128,7 @@ The package currently supports these language identifiers and common aliases:
 - `ini`, `toml`, `gitconfig`
 - `javascript`, `js`, `jsx`, `mjs`, `cjs`
 - `json`, `jsonc`
+- `julia`, `jl`
 - `less`
 - `markdown`, `md`, `mkdown`, `mkd`
 - `msil`, `il`, `cil`

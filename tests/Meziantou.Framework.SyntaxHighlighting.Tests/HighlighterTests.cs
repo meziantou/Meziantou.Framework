@@ -94,6 +94,7 @@ public class HighlighterTests
     [InlineData("erl")]
     [InlineData("hs")]
     [InlineData("edn")]
+    [InlineData("jl")]
     public void IsSupported_KnownLanguage_ReturnsTrue(string language)
     {
         Assert.True(SyntaxHighlighter.IsSupported(language));

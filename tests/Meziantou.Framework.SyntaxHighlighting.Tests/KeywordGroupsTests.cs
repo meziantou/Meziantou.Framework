@@ -24,6 +24,8 @@ public class KeywordGroupsTests
         "csharp:dynamic:keyword+built_in",
         "dart:Function:keyword+built_in",
         "dart:dynamic:keyword+built_in",
+        "julia:false:keyword+literal",
+        "julia:true:keyword+literal",
         "msil:native:built_in+keyword",
         "objectivec:id:keyword+type",
         "rust:false:keyword+literal",

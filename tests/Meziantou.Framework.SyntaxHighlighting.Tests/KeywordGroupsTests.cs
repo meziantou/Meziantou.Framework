@@ -28,6 +28,7 @@ public class KeywordGroupsTests
         "julia:true:keyword+literal",
         "msil:native:built_in+keyword",
         "objectivec:id:keyword+type",
+        "pgsql:WARNING:keyword+built_in",
         "rust:false:keyword+literal",
         "rust:true:keyword+literal",
         "sql:bigint:keyword+type",

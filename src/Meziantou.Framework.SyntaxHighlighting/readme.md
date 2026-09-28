@@ -147,6 +147,7 @@ The package currently supports these language identifiers and common aliases:
 - `objectivec`, `mm`, `objc`, `obj-c`, `obj-c++`, `objective-c++`
 - `ocaml`, `ml`
 - `perl`, `pl`, `pm`
+- `pgsql`, `postgres`, `postgresql`
 - `php`
 - `plaintext`, `text`, `txt`
 - `powershell`, `pwsh`, `ps`, `ps1`

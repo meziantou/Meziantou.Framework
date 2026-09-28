@@ -35,6 +35,7 @@ public sealed class LargeInputTests
     [InlineData("typescript")]
     [InlineData("ruby")]
     [InlineData("perl")]
+    [InlineData("pgsql")]
     public async Task Highlight_DocumentThatUsedToBeRescannedPerToken_CompletesInReasonableTime(string language)
     {
         var code = language switch
@@ -43,6 +44,7 @@ public sealed class LargeInputTests
             "csharp" => "var s = $\"\"\"\"\n" + string.Concat(Enumerable.Repeat("\"\"\" {x}\n", 64_000)) + "\"\"\"\";\nclass C { }\n",
             "ruby" => "a = <<~EOS\n" + string.Concat(Enumerable.Repeat("  #{name} some words here \\t\n", 16_000)) + "EOS\nclass C\nend\n",
             "perl" => "print <<\"EOS\";\n" + string.Concat(Enumerable.Repeat("  $name some words here @{[ $x ]}\n", 16_000)) + "EOS\nclass Foo;\n",
+            "pgsql" => "CREATE FUNCTION f() RETURNS int AS $a$\n" + string.Concat(Enumerable.Repeat("  my $b = \"$c$ some words $$ here\";\n", 16_000)) + "$a$ LANGUAGE plperl;\nclass C { }\n",
             "typescript" => "x = " + string.Concat(Enumerable.Repeat("<a>", 40_000)) + " " + string.Concat(Enumerable.Repeat("</b", 40_000)) + ";\nclass C { }\n",
             _ => throw new ArgumentOutOfRangeException(nameof(language)),
         };
@@ -90,13 +92,20 @@ public sealed class LargeInputTests
     // The guard against grammars that stop making progress used to count the hits of every run of the document, but
     // compared the count with a position in the current fragment, so a document with many embedded fragments was
     // abandoned (plain text).
-    [Fact]
-    public void Highlight_ManyEmbeddedFragments_IsNotAbandoned()
+    [Theory]
+    [InlineData("html")]
+    [InlineData("pgsql")]
+    public void Highlight_ManyEmbeddedFragments_IsNotAbandoned(string language)
     {
-        var code = string.Concat(Enumerable.Repeat("<script>var a = 1;</script>\n", 20_000));
+        var code = language switch
+        {
+            "html" => string.Concat(Enumerable.Repeat("<script>var a = 1;</script>\n", 20_000)),
+            "pgsql" => string.Concat(Enumerable.Repeat("CREATE FUNCTION f() RETURNS int AS $$ BEGIN RETURN 1; END $$ LANGUAGE plpgsql;\n", 10_000)),
+            _ => throw new ArgumentOutOfRangeException(nameof(language)),
+        };
 
-        HighlightWithFallbackDetection(code, "html", out var isFallback);
+        HighlightWithFallbackDetection(code, language, out var isFallback);
 
-        Assert.False(isFallback, $"Highlighting {code.Length} characters of 'html' was abandoned.");
+        Assert.False(isFallback, $"Highlighting {code.Length} characters of '{language}' was abandoned.");
     }
 }

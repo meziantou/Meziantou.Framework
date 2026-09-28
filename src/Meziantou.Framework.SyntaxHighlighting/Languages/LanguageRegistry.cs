@@ -177,6 +177,9 @@ internal static class LanguageRegistry
             ["pas"] = () => Delphi.Instance,
             ["pascal"] = () => Delphi.Instance,
             ["matlab"] = () => Matlab.Instance,
+            ["pgsql"] = () => Pgsql.Instance,
+            ["postgres"] = () => Pgsql.Instance,
+            ["postgresql"] = () => Pgsql.Instance,
         }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
     // Grammars compiled with a non-default match timeout, keyed by the default grammar instance.

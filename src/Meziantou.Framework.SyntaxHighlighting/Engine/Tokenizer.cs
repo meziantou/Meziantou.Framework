@@ -6,6 +6,8 @@ namespace Meziantou.Framework.SyntaxHighlighting.Engine;
 
 internal static class Tokenizer
 {
+    private const int MaxSubLanguageDepth = 32;
+
     private enum HitKind { Begin, End, Illegal }
 
     [StructLayout(LayoutKind.Auto)]
@@ -107,6 +109,9 @@ internal static class Tokenizer
         private readonly Dictionary<CompiledMode, Stack<ScanEntry[]>> _scanCachePool = new(ReferenceEqualityComparer.Instance);
 
         public HtmlEmitter Emitter { get; } = new(options, inputLength * 2);
+
+        // The number of sub-language runs in progress, one inside the other.
+        public int SubLanguageDepth { get; set; }
 
         // Set when a grammar stopped making progress; every run then stops and the result is plain text.
         public bool Aborted { get; set; }
@@ -629,6 +634,15 @@ internal static class Tokenizer
 
             if (top.SubLanguage is { } subLanguage)
             {
+                // A language can embed itself (e.g. a PL/pgSQL body inside a PL/pgSQL body), so a pathological input
+                // (thousands of unterminated dollar-quoted strings) could nest runs until the stack overflows, each
+                // one holding a copy of the rest of the input. No real code nests that deep.
+                if (session.SubLanguageDepth >= MaxSubLanguageDepth)
+                {
+                    _emitter.AddText(input.AsSpan(start, length));
+                    return;
+                }
+
                 // Embedded languages always ignore illegal lexemes, like highlight.js does.
                 var subRoot = LanguageRegistry.Get(subLanguage, root.MatchTimeout);
                 _continuations ??= new Dictionary<string, Frame[]>(StringComparer.Ordinal);
@@ -636,7 +650,16 @@ internal static class Tokenizer
 
                 _emitter.OpenSubLanguage(subLanguage);
                 var run = new Run(session, input.Substring(start, length), subRoot, ignoreIllegals: true);
-                run.Execute(continuation);
+                session.SubLanguageDepth++;
+                try
+                {
+                    run.Execute(continuation);
+                }
+                finally
+                {
+                    session.SubLanguageDepth--;
+                }
+
                 _emitter.CloseScope();
 
                 _continuations[subLanguage] = run.FinalStack;

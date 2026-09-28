@@ -293,6 +293,27 @@ public sealed class LargeInputTests
         Assert.False(isFallback, $"Highlighting {code.Length} characters of '{language}' was abandoned.");
     }
 
+    // The guard against grammars that stop making progress used to count every hit at the same index, including the ends
+    // of ten thousand nested modes closing together (Apache), and allowed only three hits per character although MATLAB
+    // makes three zero-width hits for each `)`: both documents were abandoned (plain text).
+    [Theory]
+    [InlineData("apache")]
+    [InlineData("matlab")]
+    public void Highlight_ManyHitsThatMakeProgress_IsNotAbandoned(string language)
+    {
+        var (code, end) = language switch
+        {
+            "apache" => ("Foo " + string.Concat(Enumerable.Repeat("%{", 20_000)) + "\nListen 80", "<span class=\"hljs-attribute\">Listen</span> <span class=\"hljs-number\">80</span>"),
+            "matlab" => (new string(')', 100_000) + "\nx = 1", "x = <span class=\"hljs-number\">1</span>"),
+            _ => throw new ArgumentOutOfRangeException(nameof(language)),
+        };
+
+        var html = HighlightWithFallbackDetection(code, language, out var isFallback);
+
+        Assert.False(isFallback, $"Highlighting {code.Length} characters of '{language}' was abandoned.");
+        Assert.EndsWith(end, html, StringComparison.Ordinal);
+    }
+
     // Each fragment of these documents leaves the embedded language one or two modes deeper, and resuming a fragment used
     // to reopen the scope of every one of them: the output grew with the square of the input (hundreds of megabytes, then
     // an OverflowException, for the longest ones).

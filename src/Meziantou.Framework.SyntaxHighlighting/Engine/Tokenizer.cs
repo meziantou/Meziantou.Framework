@@ -16,6 +16,10 @@ internal static class Tokenizer
 
     private enum HitKind { Begin, End, Illegal }
 
+    /// <summary>The index of the last hit, the depth of the stack before it, and how many hits in a row made no progress there.</summary>
+    [StructLayout(LayoutKind.Auto)]
+    private readonly record struct StallState(int Index, int Depth, int Iterations);
+
     [StructLayout(LayoutKind.Auto)]
     private readonly record struct Hit(int Index, int Length, HitKind Kind, CompiledMode Mode, int EndOwnerDepth);
 
@@ -219,12 +223,11 @@ internal static class Tokenizer
 
             var index = 0;
             var lastBeginIndex = -1;
-            var stalledIndex = -1;
-            var stalledIterations = 0;
+            var stall = new StallState(Index: -1, Depth: 0, Iterations: 0);
 
             while (FindNextHit(index, out var hit))
             {
-                if (!CheckForInfiniteLoop(hit.Index, ref stalledIndex, ref stalledIterations))
+                if (!CheckForInfiniteLoop(hit.Index, ref stall))
                     return false;
 
                 AppendBuffer(index, hit.Index - index);
@@ -303,20 +306,27 @@ internal static class Tokenizer
         /// Last-resort guard against grammars that stop making progress (e.g. zero-width begins that
         /// keep entering modes at the same position). highlight.js has the same safety net.
         /// </summary>
-        private bool CheckForInfiniteLoop(int hitIndex, ref int stalledIndex, ref int stalledIterations)
+        /// <remarks>
+        /// The cursor never moves backwards, so a grammar that stops making progress keeps hitting the same index. Hits at
+        /// one index that leave the stack shallower are progress, though: each ends one of the modes entered before, so
+        /// there can only be as many of them as modes were entered (an unclosed Apache <c>%{</c> nested ten thousand
+        /// times ends ten thousand modes at the end of its line). A character can also legitimately make a few
+        /// zero-width hits (MATLAB's <c>)</c> makes three), so the overall budget is several hits per character.
+        /// </remarks>
+        private bool CheckForInfiniteLoop(int hitIndex, ref StallState stall)
         {
             _iterations++;
-            if (hitIndex == stalledIndex)
+            var depth = _stack.Count;
+            if (hitIndex != stall.Index)
             {
-                stalledIterations++;
+                stall = new StallState(hitIndex, depth, Iterations: 0);
             }
             else
             {
-                stalledIndex = hitIndex;
-                stalledIterations = 0;
+                stall = new StallState(hitIndex, depth, depth < stall.Depth ? stall.Iterations : stall.Iterations + 1);
             }
 
-            if (stalledIterations > 10_000 || (_iterations > 100_000 && _iterations > hitIndex * 3))
+            if (stall.Iterations > 10_000 || (_iterations > 100_000 && _iterations > hitIndex * 10))
             {
                 session.Aborted = true;
             }

@@ -151,6 +151,7 @@ public sealed class LargeInputTests
     [Theory]
     [InlineData("scheme", "digits")]
     [InlineData("scheme", "numbers")]
+    [InlineData("lisp", "numbers")]
     public async Task Highlight_LispFamilyLongRun_CompletesInReasonableTime(string language, string content)
     {
         var code = content switch

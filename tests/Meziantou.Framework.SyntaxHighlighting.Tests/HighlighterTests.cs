@@ -145,6 +145,7 @@ public class HighlighterTests
     [InlineData("coffee")]
     [InlineData("f90")]
     [InlineData("scm")]
+    [InlineData("elisp")]
     public void IsSupported_KnownLanguage_ReturnsTrue(string language)
     {
         Assert.True(SyntaxHighlighter.IsSupported(language));

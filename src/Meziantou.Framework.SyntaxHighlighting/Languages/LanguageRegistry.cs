@@ -249,6 +249,10 @@ internal static class LanguageRegistry
             ["f"] = () => Fortran.Instance,
             ["scheme"] = () => Scheme.Instance,
             ["scm"] = () => Scheme.Instance,
+            ["lisp"] = () => Lisp.Instance,
+            ["elisp"] = () => Lisp.Instance,
+            ["emacs-lisp"] = () => Lisp.Instance,
+            ["common-lisp"] = () => Lisp.Instance,
         }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
     // Grammars compiled with a non-default match timeout, keyed by the default grammar instance.

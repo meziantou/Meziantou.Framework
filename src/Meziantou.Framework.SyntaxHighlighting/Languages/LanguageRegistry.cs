@@ -235,6 +235,10 @@ internal static class LanguageRegistry
             ["d"] = () => D.Instance,
             ["tcl"] = () => Tcl.Instance,
             ["tk"] = () => Tcl.Instance,
+            ["coffeescript"] = () => CoffeeScript.Instance,
+            ["coffee"] = () => CoffeeScript.Instance,
+            ["cson"] = () => CoffeeScript.Instance,
+            ["iced"] = () => CoffeeScript.Instance,
         }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
     // Grammars compiled with a non-default match timeout, keyed by the default grammar instance.

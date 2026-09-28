@@ -142,6 +142,7 @@ public class HighlighterTests
     [InlineData("cr")]
     [InlineData("d")]
     [InlineData("tk")]
+    [InlineData("coffee")]
     public void IsSupported_KnownLanguage_ReturnsTrue(string language)
     {
         Assert.True(SyntaxHighlighter.IsSupported(language));

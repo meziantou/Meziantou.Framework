@@ -86,6 +86,20 @@ public sealed class LargeInputTests
         Assert.EndsWith("<span class=\"hljs-keyword\">ret</span> <span class=\"hljs-type\">void</span>", await highlight, StringComparison.Ordinal);
     }
 
+    // After each `(`, the parameter list of an anonymous CoffeeScript function used to be looked for from every `(` of the
+    // rest of the line, each time scanning to the end of the line (24 seconds for this document).
+    [Fact]
+    public async Task Highlight_CoffeeScriptLongParenthesisRun_CompletesInReasonableTime()
+    {
+        var code = "x = " + new string('(', 100_000) + "\nyes";
+
+        var highlight = Task.Run(() => HighlightWithFallbackDetection(code, "coffeescript", out _));
+        var finished = await Task.WhenAny(highlight, Task.Delay(Budget)) == highlight;
+
+        Assert.True(finished, $"Highlighting {code.Length} characters of 'coffeescript' did not finish within {Budget.TotalSeconds:F0}s.");
+        Assert.EndsWith("<span class=\"hljs-literal\">yes</span>", await highlight, StringComparison.Ordinal);
+    }
+
     // A properties key used to be matched from each of its positions, which is quadratic on a long key made of escapes
     // (a minute and a half for 60,000 backslashes).
     [Theory]

@@ -115,6 +115,7 @@ The package currently supports these language identifiers and common aliases:
 - `clojure`, `clj`, `edn`
 - `clojure-repl`
 - `cmake`, `cmake.in`
+- `coffeescript`, `coffee`, `cson`, `iced`
 - `cpp`, `c++`, `cc`, `h++`, `hpp`, `hh`, `hxx`, `cxx`
 - `crystal`, `cr`
 - `csharp`, `cs`, `c#`

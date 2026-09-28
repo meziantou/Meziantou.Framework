@@ -182,6 +182,7 @@ The package currently supports these language identifiers and common aliases:
 - `sql`
 - `svelte`
 - `swift`
+- `tcl`, `tk`
 - `twig`, `craftcms`
 - `typescript`, `ts`, `tsx`, `mts`, `cts`
 - `urlencoded`, `x-www-form-urlencoded`

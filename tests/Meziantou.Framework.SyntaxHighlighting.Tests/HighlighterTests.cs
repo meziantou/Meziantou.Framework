@@ -141,6 +141,7 @@ public class HighlighterTests
     [InlineData("nims")]
     [InlineData("cr")]
     [InlineData("d")]
+    [InlineData("tk")]
     public void IsSupported_KnownLanguage_ReturnsTrue(string language)
     {
         Assert.True(SyntaxHighlighter.IsSupported(language));

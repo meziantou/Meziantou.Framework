@@ -233,6 +233,8 @@ internal static class LanguageRegistry
             ["crystal"] = () => Crystal.Instance,
             ["cr"] = () => Crystal.Instance,
             ["d"] = () => D.Instance,
+            ["tcl"] = () => Tcl.Instance,
+            ["tk"] = () => Tcl.Instance,
         }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
     // Grammars compiled with a non-default match timeout, keyed by the default grammar instance.

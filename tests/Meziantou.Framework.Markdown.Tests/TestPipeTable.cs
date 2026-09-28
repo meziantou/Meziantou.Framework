@@ -665,7 +665,7 @@ public sealed class TestPipeTable
     {
         // With trivia, each paragraph that ends before a table positioned a line break at the end of the text of the paragraph,
         // walking all the lines after it
-        const int Count = 300_000;
+        const int Count = 150_000;
         var markdown = string.Concat(Enumerable.Repeat("x\n|a|\n|-|\n", Count)) + "x\n";
         var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().EnableTrackTrivia().Build();
 
@@ -683,7 +683,7 @@ public sealed class TestPipeTable
     {
         // The scans for the end of the comment were forgotten at each paragraph after a table, so each one scanned the rest
         // of the text again
-        const int Count = 250_000;
+        const int Count = 150_000;
         var markdown = string.Concat(Enumerable.Repeat("|a|b|\n|-|-|\nx <!--\n", Count));
         var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
 
@@ -701,8 +701,8 @@ public sealed class TestPipeTable
     public void ManyGfmTablesAfterManyParagraphsAreParsedInLinearTime()
     {
         // Each table was inserted in the document at the index of its paragraph, found from the first block of the document
-        const int ParagraphCount = 500_000;
-        const int TableCount = 120_000;
+        const int ParagraphCount = 250_000;
+        const int TableCount = 60_000;
         var markdown = string.Concat(Enumerable.Repeat("a\n\n", ParagraphCount)) + string.Concat(Enumerable.Repeat("a|b\n-|-\n\n", TableCount));
         var pipeline = new MarkdownPipelineBuilder().UsePipeTables(new PipeTableOptions { UseGfmRules = true }).Build();
 

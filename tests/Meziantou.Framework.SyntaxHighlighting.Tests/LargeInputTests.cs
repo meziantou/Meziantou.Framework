@@ -354,6 +354,25 @@ public sealed class LargeInputTests
         Assert.EndsWith("<span class=\"hljs-link\">https://example.com</span>[<span class=\"hljs-string\">end</span>]", await highlight, StringComparison.Ordinal);
     }
 
+    // The Haskell operator that ends with dashes (`--+` followed by a symbol) used to be looked for from each dash of a run,
+    // each time scanning to the end of the run (50 seconds for 100,000 dashes).
+    [Theory]
+    [InlineData("-")]
+    [InlineData("-- ")]
+    [InlineData("---a")]
+    public async Task Highlight_HaskellLongDashRun_CompletesInReasonableTime(string part)
+    {
+        var code = "x = 1\n" + string.Concat(Enumerable.Repeat(part, 150_000 / part.Length)) + "\nmain = 1";
+
+        var isFallback = false;
+        var highlight = Task.Run(() => HighlightWithFallbackDetection(code, "haskell", out isFallback));
+        var finished = await Task.WhenAny(highlight, Task.Delay(Budget)) == highlight;
+
+        Assert.True(finished, $"Highlighting {code.Length} characters of 'haskell' did not finish within {Budget.TotalSeconds:F0}s.");
+        Assert.False(isFallback, $"Highlighting {code.Length} characters of 'haskell' was abandoned.");
+        Assert.EndsWith("<span class=\"hljs-title\">main</span> = <span class=\"hljs-number\">1</span>", await highlight, StringComparison.Ordinal);
+    }
+
     // The guard against grammars that stop making progress used to count the hits of every run of the document, but
     // compared the count with a position in the current fragment, so a document with many embedded fragments was
     // abandoned (plain text).

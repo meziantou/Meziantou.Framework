@@ -199,7 +199,9 @@ internal static class Haskell
                 },
 
                 // No markup, prevents infix operators from being recognized as comments.
-                new Mode { Begin = "(?!-)" + Symbol + "--+|--+(?!-)" + Symbol },
+                // `--+(?!-)Symbol` can only succeed after a whole run of dashes, so it is only tried from the first dash of a
+                // run: trying it from every dash made a long run of dashes quadratic.
+                new Mode { Begin = "(?!-)" + Symbol + "--+|" + CommonModes.RunStart("-") + "--+(?!-)" + Symbol },
                 comment,
 
                 // No markup, relevance booster

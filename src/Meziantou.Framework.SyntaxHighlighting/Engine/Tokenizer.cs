@@ -8,6 +8,12 @@ internal static class Tokenizer
 {
     private const int MaxSubLanguageDepth = 8;
 
+    // Resuming a sub-language reopens the scope of every mode its previous fragment ended in. Each fragment can leave
+    // the stack a few modes deeper (an unterminated `"#{` in each ERB tag, a `${`` on each REPL continuation line), so
+    // without a bound the reopened scopes grow with every fragment and the output with the square of the input. No real
+    // code resumes that deep; a deeper state starts again from the root of the sub-language.
+    private const int MaxContinuationDepth = 16;
+
     private enum HitKind { Begin, End, Illegal }
 
     [StructLayout(LayoutKind.Auto)]
@@ -646,7 +652,10 @@ internal static class Tokenizer
                 // Embedded languages always ignore illegal lexemes, like highlight.js does.
                 var subRoot = LanguageRegistry.Get(subLanguage, root.MatchTimeout);
                 _continuations ??= new Dictionary<string, Frame[]>(StringComparer.Ordinal);
-                _continuations.TryGetValue(subLanguage, out var continuation);
+                if (_continuations.TryGetValue(subLanguage, out var continuation) && continuation.Length > MaxContinuationDepth)
+                {
+                    continuation = null;
+                }
 
                 _emitter.OpenSubLanguage(subLanguage);
                 var run = new Run(session, input.Substring(start, length), subRoot, ignoreIllegals: true);

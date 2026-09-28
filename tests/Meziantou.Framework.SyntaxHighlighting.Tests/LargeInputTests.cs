@@ -274,4 +274,32 @@ public sealed class LargeInputTests
 
         Assert.False(isFallback, $"Highlighting {code.Length} characters of '{language}' was abandoned.");
     }
+
+    // Each fragment of these documents leaves the embedded language one or two modes deeper, and resuming a fragment used
+    // to reopen the scope of every one of them: the output grew with the square of the input (hundreds of megabytes, then
+    // an OverflowException, for the longest ones).
+    [Theory]
+    [InlineData("erb")]
+    [InlineData("node-repl")]
+    [InlineData("python-repl")]
+    [InlineData("clojure-repl")]
+    public async Task Highlight_FragmentsThatNestDeeper_OutputIsLinear(string language)
+    {
+        var code = language switch
+        {
+            "erb" => string.Concat(Enumerable.Repeat("<% \"#{ %>", 20_000)),
+            "node-repl" => "> `\n" + string.Concat(Enumerable.Repeat("... ${`\n", 20_000)),
+            "python-repl" => ">>> f\"{\n" + string.Concat(Enumerable.Repeat("... f\"{\n", 20_000)),
+            "clojure-repl" => "user=> (\n" + string.Concat(Enumerable.Repeat("  #_=> (a\n", 20_000)),
+            _ => throw new ArgumentOutOfRangeException(nameof(language)),
+        };
+
+        var isFallback = false;
+        var highlight = Task.Run(() => HighlightWithFallbackDetection(code, language, out isFallback));
+        var finished = await Task.WhenAny(highlight, Task.Delay(Budget)) == highlight;
+
+        Assert.True(finished, $"Highlighting {code.Length} characters of '{language}' did not finish within {Budget.TotalSeconds:F0}s.");
+        Assert.False(isFallback, $"Highlighting {code.Length} characters of '{language}' was abandoned.");
+        Assert.HasCountLessThan(code.Length * 100, await highlight);
+    }
 }

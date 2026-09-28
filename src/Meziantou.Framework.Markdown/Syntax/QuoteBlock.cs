@@ -1,0 +1,36 @@
+// Copyright (c) Alexandre Mutel. All rights reserved.
+// This file is licensed under the BSD-Clause 2 license.
+// See the license.txt file in the project root for more information.
+
+using Meziantou.Framework.Markdown.Helpers;
+using Meziantou.Framework.Markdown.Parsers;
+
+namespace Meziantou.Framework.Markdown.Syntax;
+
+/// <summary>
+/// A block quote (Section 5.1 CommonMark specs)
+/// </summary>
+/// <seealso cref="ContainerBlock" />
+public class QuoteBlock : ContainerBlock
+{
+    private List<QuoteBlockLine> Trivia => GetOrSetDerivedTrivia<List<QuoteBlockLine>>();
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="QuoteBlock"/> class.
+    /// </summary>
+    /// <param name="parser">The parser used to create this block.</param>
+    public QuoteBlock(BlockParser? parser) : base(parser)
+    {
+    }
+
+    /// <summary>
+    /// Gets or sets the trivia per line of this QuoteBlock.
+    /// Trivia: only parsed when <see cref="MarkdownPipeline.TrackTrivia"/> is enabled.
+    /// </summary>
+    public List<QuoteBlockLine> QuoteLines => Trivia;
+
+    /// <summary>
+    /// Gets or sets the quote character (usually `&gt;`)
+    /// </summary>
+    public char QuoteChar { get; set; }
+}

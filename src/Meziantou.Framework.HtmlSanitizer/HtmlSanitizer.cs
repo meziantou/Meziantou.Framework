@@ -41,7 +41,7 @@ public sealed class HtmlSanitizer
     //Attributes that have href and hence need to be sanitized
     private static readonly string[] DefaultUriAttrs = ["background", "cite", "href", "longdesc", "src", "xlink:href"];
     private static readonly string[] DefaultSrcsetAttrs = ["srcset"];
-    private static readonly string[] DefaultHtmlAttrs = ["abbr", "align", "alt", "axis", "bgcolor", "border", "cellpadding", "cellspacing", "class", "clear", "color", "cols", "colspan", "compact", "coords", "dir", "face", "headers", "height", "hreflang", "hspace", "ismap", "lang", "language", "nohref", "nowrap", "rel", "rev", "rows", "rowspan", "rules", "scope", "scrolling", "shape", "size", "span", "start", "summary", "tabindex", "target", "title", "type", "valign", "value", "vspace", "width"];
+    private static readonly string[] DefaultHtmlAttrs = ["class", .. DescriptiveHtmlAttributes.Names];
 
     private static readonly string[] DefaultValidAttrs = [.. DefaultUriAttrs, .. DefaultSrcsetAttrs, .. DefaultHtmlAttrs];
 
@@ -50,6 +50,9 @@ public sealed class HtmlSanitizer
 
     /// <summary>Gets the set of HTML attributes that are allowed in sanitized output. Attributes not in this set will be removed from elements.</summary>
     public ISet<string> ValidAttributes { get; } = ToHashSet(DefaultValidAttrs);
+
+    /// <summary>Gets the set of prefixes of the HTML attributes that are allowed in sanitized output, in addition to the attributes of <see cref="ValidAttributes"/>. By default, it contains <c>aria-</c>.</summary>
+    public ISet<string> ValidAttributePrefixes { get; } = ToHashSet(DescriptiveHtmlAttributes.Prefixes);
 
     /// <summary>Gets the set of HTML elements that will be completely removed from the output, including their content. By default includes script and style elements.</summary>
     public ISet<string> BlockedElements { get; } = ToHashSet(DefaultBlockedElements);
@@ -78,10 +81,16 @@ public sealed class HtmlSanitizer
 
     private bool IsValidAttribute(string attributeName)
     {
-        if (!ValidAttributes.Contains(attributeName))
-            return false;
+        if (ValidAttributes.Contains(attributeName))
+            return true;
 
-        return true;
+        foreach (var prefix in ValidAttributePrefixes)
+        {
+            if (attributeName.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+
+        return false;
     }
 
     /// <summary>Sanitizes an HTML fragment by removing dangerous elements, attributes, and URLs while preserving safe HTML structure.</summary>

@@ -1,0 +1,42 @@
+// Copyright (c) Alexandre Mutel. All rights reserved.
+// This file is licensed under the BSD-Clause 2 license.
+// See the license.txt file in the project root for more information.
+
+using Meziantou.Framework.Markdown.Helpers;
+using Meziantou.Framework.Markdown.Syntax.Inlines;
+
+namespace Meziantou.Framework.Markdown.Renderers.Normalize.Inlines;
+
+/// <summary>
+/// A Normalize renderer for a <see cref="LiteralInline"/>.
+/// </summary>
+/// <seealso cref="NormalizeObjectRenderer{LiteralInline}" />
+public class LiteralInlineRenderer : NormalizeObjectRenderer<LiteralInline>
+{
+    /// <summary>
+    /// Writes the object to the specified renderer.
+    /// </summary>
+    protected override void Write(NormalizeRenderer renderer, LiteralInline obj)
+    {
+        if (obj.IsFirstCharacterEscaped && obj.Content.Length > 0 && obj.Content[obj.Content.Start].IsAsciiPunctuation()
+            && !(renderer.EscapeTablePipes && obj.Content.CurrentChar is '|' or '\\'))
+        {
+            renderer.Write('\\');
+        }
+        if (renderer.EscapeTablePipes && obj.Content.AsSpan().IndexOfAny('\\', '|') >= 0)
+        {
+            renderer.Write(obj.Content.ToString().Replace("\\", "\\\\", StringComparison.Ordinal).Replace("|", "\\|", StringComparison.Ordinal));
+        }
+        else
+        {
+            renderer.Write(ref obj.Content);
+        }
+
+        // A backslash at the end of a line is a hard line break, so escape a literal one
+        if (obj.NextSibling is LineBreakInline { IsHard: false } && obj.Content.Length > 0 && obj.Content[obj.Content.End] == '\\'
+            && !(obj.IsFirstCharacterEscaped && obj.Content.Length == 1))
+        {
+            renderer.Write('\\');
+        }
+    }
+}

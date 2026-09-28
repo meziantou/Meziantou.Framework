@@ -1,0 +1,33 @@
+// Copyright (c) Alexandre Mutel. All rights reserved.
+// This file is licensed under the BSD-Clause 2 license.
+// See the license.txt file in the project root for more information.
+
+using Meziantou.Framework.Markdown.Renderers;
+using Meziantou.Framework.Markdown.Renderers.Html;
+
+namespace Meziantou.Framework.Markdown.Extensions.Abbreviations;
+
+/// <summary>
+/// A HTML renderer for a <see cref="AbbreviationInline"/>.
+/// </summary>
+/// <seealso cref="HtmlObjectRenderer{CustomContainer}" />
+public class HtmlAbbreviationRenderer : HtmlObjectRenderer<AbbreviationInline>
+{
+    /// <summary>
+    /// Writes the object to the specified renderer.
+    /// </summary>
+    protected override void Write(HtmlRenderer renderer, AbbreviationInline obj)
+    {
+        // <abbr title="Hyper Text Markup Language">HTML</abbr>
+        var abbr = obj.Abbreviation;
+        if (renderer.EnableHtmlForInline)
+        {
+            renderer.Write("<abbr").WriteAttributes(obj).Write(" title=\"").WriteEscape(ref abbr.Text).Write("\">");
+        }
+        renderer.WriteEscape(abbr.Label);
+        if (renderer.EnableHtmlForInline)
+        {
+            renderer.Write("</abbr>");
+        }
+    }
+}

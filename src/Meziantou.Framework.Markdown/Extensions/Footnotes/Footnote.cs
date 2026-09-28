@@ -1,0 +1,52 @@
+// Copyright (c) Alexandre Mutel. All rights reserved.
+// This file is licensed under the BSD-Clause 2 license.
+// See the license.txt file in the project root for more information.
+
+using Meziantou.Framework.Markdown.Helpers;
+using Meziantou.Framework.Markdown.Parsers;
+using Meziantou.Framework.Markdown.Syntax;
+
+namespace Meziantou.Framework.Markdown.Extensions.Footnotes;
+
+/// <summary>
+/// A block for a footnote.
+/// </summary>
+/// <seealso cref="ContainerBlock" />
+public class Footnote : ContainerBlock
+{
+    /// <summary>
+    /// Initializes a new instance of the Footnote class.
+    /// </summary>
+    public Footnote(BlockParser parser) : base(parser)
+    {
+        Order = -1;
+    }
+
+    /// <summary>
+    /// Gets or sets the label used by this footnote.
+    /// </summary>
+    public string? Label { get; set; }
+
+    /// <summary>
+    /// Gets or sets the order of this footnote (determined by the order of the <see cref="FootnoteLink"/> in the document)
+    /// </summary>
+    public int Order { get; set; }
+
+    /// <summary>
+    /// Gets the links referencing this footnote.
+    /// </summary>
+    public List<FootnoteLink> Links { get; } = new ();
+
+    /// <summary>
+    /// The label span
+    /// </summary>
+    public SourceSpan LabelSpan;
+
+    internal bool IsLastLineEmpty { get; set; }
+
+    // With trivia, the label as written between the brackets
+    internal StringSlice LabelWithTrivia { get; set; }
+
+    // With trivia, whether the first line has no content after the colon
+    internal bool IsFirstLineEmpty { get; set; }
+}

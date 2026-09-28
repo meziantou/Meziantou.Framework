@@ -1,0 +1,718 @@
+// Copyright (c) Alexandre Mutel. All rights reserved.
+// This file is licensed under the BSD-Clause 2 license.
+// See the license.txt file in the project root for more information.
+
+using Meziantou.Framework.Markdown.Extensions.Abbreviations;
+using Meziantou.Framework.Markdown.Extensions.Alerts;
+using Meziantou.Framework.Markdown.Extensions.AutoIdentifiers;
+using Meziantou.Framework.Markdown.Extensions.AutoLinks;
+using Meziantou.Framework.Markdown.Extensions.Bootstrap;
+using Meziantou.Framework.Markdown.Extensions.Citations;
+using Meziantou.Framework.Markdown.Extensions.CustomContainers;
+using Meziantou.Framework.Markdown.Extensions.DefinitionLists;
+using Meziantou.Framework.Markdown.Extensions.Diagrams;
+using Meziantou.Framework.Markdown.Extensions.Emoji;
+using Meziantou.Framework.Markdown.Extensions.EmphasisExtras;
+using Meziantou.Framework.Markdown.Extensions.Figures;
+using Meziantou.Framework.Markdown.Extensions.Footers;
+using Meziantou.Framework.Markdown.Extensions.Footnotes;
+using Meziantou.Framework.Markdown.Extensions.GenericAttributes;
+using Meziantou.Framework.Markdown.Extensions.Globalization;
+using Meziantou.Framework.Markdown.Extensions.Hardlines;
+using Meziantou.Framework.Markdown.Extensions.JiraLinks;
+using Meziantou.Framework.Markdown.Extensions.ListExtras;
+using Meziantou.Framework.Markdown.Extensions.Mathematics;
+using Meziantou.Framework.Markdown.Extensions.MediaLinks;
+using Meziantou.Framework.Markdown.Extensions.NonAsciiNoEscape;
+using Meziantou.Framework.Markdown.Extensions.PragmaLines;
+using Meziantou.Framework.Markdown.Extensions.ReferralLinks;
+using Meziantou.Framework.Markdown.Extensions.SmartyPants;
+using Meziantou.Framework.Markdown.Extensions.Tables;
+using Meziantou.Framework.Markdown.Extensions.TaskLists;
+using Meziantou.Framework.Markdown.Extensions.TextRenderer;
+using Meziantou.Framework.Markdown.Extensions.Yaml;
+using Meziantou.Framework.Markdown.Helpers;
+using Meziantou.Framework.Markdown.Parsers;
+using Meziantou.Framework.Markdown.Parsers.Inlines;
+using Meziantou.Framework.Markdown.Renderers;
+
+namespace Meziantou.Framework.Markdown;
+
+/// <summary>
+/// Provides extension methods for <see cref="MarkdownPipelineBuilder"/> to enable several Markdown extensions.
+/// </summary>
+public static class MarkdownExtensions
+{
+    /// <summary>
+    /// Adds the specified extension to the extensions collection.
+    /// </summary>
+    /// <typeparam name="TExtension">The type of the extension.</typeparam>
+    /// <returns>The instance of <see cref="MarkdownPipelineBuilder" /></returns>
+    public static MarkdownPipelineBuilder Use<TExtension>(this MarkdownPipelineBuilder pipeline) where TExtension : class, IMarkdownExtension, new()
+    {
+        pipeline.Extensions.AddIfNotAlready<TExtension>();
+        return pipeline;
+    }
+
+    /// <summary>
+    /// Adds the specified extension instance to the extensions collection.
+    /// </summary>
+    /// <param name="pipeline">The pipeline.</param>
+    /// <param name="extension">The instance of the extension to be added.</param>
+    /// <typeparam name="TExtension">The type of the extension.</typeparam>
+    /// <returns>The modified pipeline</returns>
+    public static MarkdownPipelineBuilder Use<TExtension>(this MarkdownPipelineBuilder pipeline, TExtension extension) where TExtension : class, IMarkdownExtension
+    {
+        pipeline.Extensions.AddIfNotAlready(extension);
+        return pipeline;
+    }
+
+    /// <summary>
+    /// Uses all extensions except the BootStrap, Emoji, SmartyPants and soft line as hard line breaks extensions.
+    /// </summary>
+    /// <param name="pipeline">The pipeline.</param>
+    /// <returns>The modified pipeline</returns>
+    public static MarkdownPipelineBuilder UseAdvancedExtensions(this MarkdownPipelineBuilder pipeline)
+    {
+        return pipeline
+            .UseAlertBlocks()
+            .UseAbbreviations()
+            .UseAutoIdentifiers()
+            .UseCitations()
+            .UseCustomContainers()
+            .UseDefinitionLists()
+            .UseEmphasisExtras()
+            .UseFigures()
+            .UseFooters()
+            .UseFootnotes()
+            .UseGridTables()
+            .UseMathematics()
+            .UseMediaLinks()
+            .UsePipeTables()
+            .UseListExtras()
+            .UseTaskLists()
+            .UseDiagrams()
+            .UseAutoLinks()
+            .UseGenericAttributes(); // Must be last as it is one parser that is modifying other parsers
+    }
+
+    /// <summary>
+    /// Uses this extension to enable alert blocks.
+    /// </summary>
+    /// <param name="pipeline">The pipeline.</param>
+    /// <param name="renderKind">Replace the default renderer for the kind with a custom renderer.</param>
+    /// <param name="allowNestedAlerts">Allow alerts to be nested inside other blocks (e.g. inside a blockquote or a list item). Alerts inside another alert are never allowed. Default is <c>false</c>.</param>
+    /// <returns>The modified pipeline</returns>
+    public static MarkdownPipelineBuilder UseAlertBlocks(this MarkdownPipelineBuilder pipeline, Action<HtmlRenderer, StringSlice>? renderKind = null, bool allowNestedAlerts = false)
+    {
+        pipeline.Extensions.ReplaceOrAdd<AlertExtension>(new AlertExtension() { RenderKind = renderKind, AllowNestedAlerts = allowNestedAlerts });
+        return pipeline;
+    }
+
+    /// <summary>
+    /// Uses this extension to enable autolinks from text `http://`, `https://`, `ftp://`, `mailto:`, `www.xxx.yyy`
+    /// </summary>
+    /// <param name="pipeline">The pipeline.</param>
+    /// <param name="options">The options.</param>
+    /// <returns>The modified pipeline</returns>
+    public static MarkdownPipelineBuilder UseAutoLinks(this MarkdownPipelineBuilder pipeline, AutoLinkOptions? options = null)
+    {
+        pipeline.Extensions.ReplaceOrAdd<AutoLinkExtension>(new AutoLinkExtension(options));
+        return pipeline;
+    }
+
+    /// <summary>
+    /// Uses this extension to disable URI escape with % characters for non-US-ASCII characters in order to workaround a bug under IE/Edge with local file links containing non US-ASCII chars. DO NOT USE OTHERWISE.
+    /// </summary>
+    /// <param name="pipeline">The pipeline.</param>
+    /// <returns>The modified pipeline</returns>
+    public static MarkdownPipelineBuilder UseNonAsciiNoEscape(this MarkdownPipelineBuilder pipeline)
+    {
+        pipeline.Extensions.AddIfNotAlready<NonAsciiNoEscapeExtension>();
+        return pipeline;
+    }
+
+    /// <summary>
+    /// Uses YAML frontmatter extension that will parse a YAML frontmatter into the MarkdownDocument. Note that they are not rendered by any default HTML renderer.
+    /// </summary>
+    /// <param name="pipeline">The pipeline.</param>
+    /// <returns>The modified pipeline</returns>
+    public static MarkdownPipelineBuilder UseYamlFrontMatter(this MarkdownPipelineBuilder pipeline)
+    {
+        pipeline.Extensions.AddIfNotAlready<YamlFrontMatterExtension>();
+        return pipeline;
+    }
+
+    /// <summary>
+    /// Uses pragma lines to output span with an id containing the line number (pragma-line#line_number_zero_based`)
+    /// </summary>
+    /// <param name="pipeline">The pipeline.</param>
+    /// <returns>The modified pipeline</returns>
+    public static MarkdownPipelineBuilder UsePragmaLines(this MarkdownPipelineBuilder pipeline)
+    {
+        pipeline.Extensions.AddIfNotAlready<PragmaLineExtension>();
+        return pipeline;
+    }
+
+    /// <summary>
+    /// Uses the diagrams extension
+    /// </summary>
+    /// <param name="pipeline">The pipeline.</param>
+    /// <returns>The modified pipeline</returns>
+    public static MarkdownPipelineBuilder UseDiagrams(this MarkdownPipelineBuilder pipeline)
+    {
+        pipeline.Extensions.AddIfNotAlready<DiagramExtension>();
+        return pipeline;
+    }
+
+    /// <summary>
+    /// Uses precise source code location (useful for syntax highlighting).
+    /// </summary>
+    /// <param name="pipeline">The pipeline.</param>
+    /// <returns>The modified pipeline</returns>
+    public static MarkdownPipelineBuilder UsePreciseSourceLocation(this MarkdownPipelineBuilder pipeline)
+    {
+        pipeline.PreciseSourceLocation = true;
+        return pipeline;
+    }
+
+    /// <summary>
+    /// Uses the task list extension.
+    /// </summary>
+    /// <param name="pipeline">The pipeline.</param>
+    /// <returns>The modified pipeline</returns>
+    public static MarkdownPipelineBuilder UseTaskLists(this MarkdownPipelineBuilder pipeline)
+    {
+        pipeline.Extensions.AddIfNotAlready<TaskListExtension>();
+        return pipeline;
+    }
+
+    /// <summary>
+    /// Uses the custom container extension.
+    /// </summary>
+    /// <param name="pipeline">The pipeline.</param>
+    /// <returns>The modified pipeline</returns>
+    public static MarkdownPipelineBuilder UseCustomContainers(this MarkdownPipelineBuilder pipeline)
+    {
+        pipeline.Extensions.AddIfNotAlready<CustomContainerExtension>();
+        return pipeline;
+    }
+
+    /// <summary>
+    /// Uses the media extension.
+    /// </summary>
+    /// <param name="pipeline">The pipeline.</param>
+    /// <param name="options">The options.</param>
+    /// <returns>
+    /// The modified pipeline
+    /// </returns>
+    public static MarkdownPipelineBuilder UseMediaLinks(this MarkdownPipelineBuilder pipeline, MediaOptions? options = null)
+    {
+        if (!pipeline.Extensions.Contains<MediaLinkExtension>())
+        {
+            pipeline.Extensions.Add(new MediaLinkExtension(options));
+        }
+        return pipeline;
+    }
+
+    /// <summary>
+    /// Uses the auto-identifier extension.
+    /// </summary>
+    /// <param name="pipeline">The pipeline.</param>
+    /// <param name="options">The options.</param>
+    /// <returns>
+    /// The modified pipeline
+    /// </returns>
+    public static MarkdownPipelineBuilder UseAutoIdentifiers(this MarkdownPipelineBuilder pipeline, AutoIdentifierOptions options = AutoIdentifierOptions.Default)
+    {
+        if (!pipeline.Extensions.Contains<AutoIdentifierExtension>())
+        {
+            pipeline.Extensions.Add(new AutoIdentifierExtension(options));
+        }
+        return pipeline;
+    }
+
+    /// <summary>
+    /// Uses the SmartyPants extension.
+    /// </summary>
+    /// <param name="pipeline">The pipeline.</param>
+    /// <param name="options">The options.</param>
+    /// <returns>
+    /// The modified pipeline
+    /// </returns>
+    public static MarkdownPipelineBuilder UseSmartyPants(this MarkdownPipelineBuilder pipeline, SmartyPantOptions? options = null)
+    {
+        if (!pipeline.Extensions.Contains<SmartyPantsExtension>())
+        {
+            pipeline.Extensions.Add(new SmartyPantsExtension(options));
+        }
+        return pipeline;
+    }
+
+    /// <summary>
+    /// Uses the bootstrap extension.
+    /// </summary>
+    /// <param name="pipeline">The pipeline.</param>
+    /// <returns>The modified pipeline</returns>
+    public static MarkdownPipelineBuilder UseBootstrap(this MarkdownPipelineBuilder pipeline)
+    {
+        pipeline.Extensions.AddIfNotAlready<BootstrapExtension>();
+        return pipeline;
+    }
+
+    /// <summary>
+    /// Uses the math extension.
+    /// </summary>
+    /// <param name="pipeline">The pipeline.</param>
+    /// <returns>The modified pipeline</returns>
+    public static MarkdownPipelineBuilder UseMathematics(this MarkdownPipelineBuilder pipeline)
+    {
+        pipeline.Extensions.AddIfNotAlready<MathExtension>();
+        return pipeline;
+    }
+
+    /// <summary>
+    /// Uses the figure extension.
+    /// </summary>
+    /// <param name="pipeline">The pipeline.</param>
+    /// <returns>The modified pipeline</returns>
+    public static MarkdownPipelineBuilder UseFigures(this MarkdownPipelineBuilder pipeline)
+    {
+        pipeline.Extensions.AddIfNotAlready<FigureExtension>();
+        return pipeline;
+    }
+
+    /// <summary>
+    /// Uses the custom abbreviation extension.
+    /// </summary>
+    /// <param name="pipeline">The pipeline.</param>
+    /// <returns>The modified pipeline</returns>
+    public static MarkdownPipelineBuilder UseAbbreviations(this MarkdownPipelineBuilder pipeline)
+    {
+        pipeline.Extensions.AddIfNotAlready<AbbreviationExtension>();
+        return pipeline;
+    }
+
+    /// <summary>
+    /// Uses the definition lists extension.
+    /// </summary>
+    /// <param name="pipeline">The pipeline.</param>
+    /// <returns>The modified pipeline</returns>
+    public static MarkdownPipelineBuilder UseDefinitionLists(this MarkdownPipelineBuilder pipeline)
+    {
+        pipeline.Extensions.AddIfNotAlready<DefinitionListExtension>();
+        return pipeline;
+    }
+
+    /// <summary>
+    /// Uses the pipe table extension.
+    /// </summary>
+    /// <param name="pipeline">The pipeline.</param>
+    /// <param name="options">The options.</param>
+    /// <returns>
+    /// The modified pipeline
+    /// </returns>
+    public static MarkdownPipelineBuilder UsePipeTables(this MarkdownPipelineBuilder pipeline, PipeTableOptions? options = null)
+    {
+        if (!pipeline.Extensions.Contains<PipeTableExtension>())
+        {
+            pipeline.Extensions.Add(new PipeTableExtension(options));
+        }
+        return pipeline;
+    }
+
+    /// <summary>
+    /// Uses the grid table extension.
+    /// </summary>
+    /// <param name="pipeline">The pipeline.</param>
+    /// <returns>The modified pipeline</returns>
+    public static MarkdownPipelineBuilder UseGridTables(this MarkdownPipelineBuilder pipeline)
+    {
+        pipeline.Extensions.AddIfNotAlready<GridTableExtension>();
+        return pipeline;
+    }
+
+
+    /// <summary>
+    /// Uses the cite extension.
+    /// </summary>
+    /// <param name="pipeline">The pipeline.</param>
+    /// <returns>The modified pipeline</returns>
+    public static MarkdownPipelineBuilder UseCitations(this MarkdownPipelineBuilder pipeline)
+    {
+        pipeline.Extensions.AddIfNotAlready<CitationExtension>();
+        return pipeline;
+    }
+
+    /// <summary>
+    /// Uses the footer extension.
+    /// </summary>
+    /// <param name="pipeline">The pipeline.</param>
+    /// <returns>The modified pipeline</returns>
+    public static MarkdownPipelineBuilder UseFooters(this MarkdownPipelineBuilder pipeline)
+    {
+        pipeline.Extensions.AddIfNotAlready<FooterExtension>();
+        return pipeline;
+    }
+
+    /// <summary>
+    /// Uses the footnotes extension.
+    /// </summary>
+    /// <param name="pipeline">The pipeline.</param>
+    /// <returns>The modified pipeline</returns>
+    public static MarkdownPipelineBuilder UseFootnotes(this MarkdownPipelineBuilder pipeline)
+    {
+        pipeline.Extensions.AddIfNotAlready<FootnoteExtension>();
+        return pipeline;
+    }
+
+    /// <summary>
+    /// Uses the softline break as hardline break extension
+    /// </summary>
+    /// <param name="pipeline">The pipeline.</param>
+    /// <returns>The modified pipeline</returns>
+    public static MarkdownPipelineBuilder UseSoftlineBreakAsHardlineBreak(this MarkdownPipelineBuilder pipeline)
+    {
+        pipeline.Extensions.AddIfNotAlready<SoftlineBreakAsHardlineExtension>();
+        return pipeline;
+    }
+
+    /// <summary>
+    /// Uses the strikethrough superscript, subscript, inserted and marked text extensions.
+    /// </summary>
+    /// <param name="pipeline">The pipeline.</param>
+    /// <param name="options">The options to enable.</param>
+    /// <returns>
+    /// The modified pipeline
+    /// </returns>
+    public static MarkdownPipelineBuilder UseEmphasisExtras(this MarkdownPipelineBuilder pipeline, EmphasisExtraOptions options = EmphasisExtraOptions.Default)
+    {
+        if (!pipeline.Extensions.Contains<EmphasisExtraExtension>())
+        {
+            pipeline.Extensions.Add(new EmphasisExtraExtension(options));
+        }
+        return pipeline;
+    }
+
+    /// <summary>
+    /// Uses the list extra extension to add support for `a.`, `A.`, `i.` and `I.` ordered list items.
+    /// </summary>
+    /// <param name="pipeline">The pipeline.</param>
+    /// <returns>
+    /// The modified pipeline
+    /// </returns>
+    public static MarkdownPipelineBuilder UseListExtras(this MarkdownPipelineBuilder pipeline)
+    {
+        pipeline.Extensions.AddIfNotAlready<ListExtraExtension>();
+        return pipeline;
+    }
+
+    /// <summary>
+    /// Uses the generic attributes extension.
+    /// </summary>
+    /// <param name="pipeline">The pipeline.</param>
+    /// <param name="attributeFilter">
+    /// Decides whether an attribute parsed from the Markdown (other than the id and the classes) is written to the HTML.
+    /// When <see langword="null"/>, the filter is left unchanged: by default,
+    /// <see cref="GenericAttributesExtension.IsSafeAttributeName"/> removes the event handlers and the attributes that
+    /// hold a URL.
+    /// </param>
+    /// <returns>The modified pipeline</returns>
+    public static MarkdownPipelineBuilder UseGenericAttributes(this MarkdownPipelineBuilder pipeline, Func<string, bool>? attributeFilter = null)
+    {
+        var extension = pipeline.Extensions.Find<GenericAttributesExtension>();
+        if (extension is null)
+        {
+            extension = new GenericAttributesExtension();
+            pipeline.Extensions.Add(extension);
+        }
+
+        if (attributeFilter is not null)
+        {
+            extension.AttributeFilter = attributeFilter;
+        }
+
+        return pipeline;
+    }
+
+    /// <summary>
+    /// Uses the emojis and smileys extension.
+    /// </summary>
+    /// <param name="pipeline">The pipeline.</param>
+    /// <param name="enableSmileys">Enable smileys in addition to emoji shortcodes, <c>true</c> by default.</param>
+    /// <returns>The modified pipeline</returns>
+    public static MarkdownPipelineBuilder UseEmojiAndSmiley(this MarkdownPipelineBuilder pipeline, bool enableSmileys = true)
+    {
+        if (!pipeline.Extensions.Contains<EmojiExtension>())
+        {
+            var emojiMapping = enableSmileys ? EmojiMapping.DefaultEmojisAndSmileysMapping : EmojiMapping.DefaultEmojisOnlyMapping;
+            pipeline.Extensions.Add(new EmojiExtension(emojiMapping));
+        }
+        return pipeline;
+    }
+
+    /// <summary>
+    /// Uses the emojis and smileys extension.
+    /// </summary>
+    /// <param name="pipeline">The pipeline.</param>
+    /// <param name="customEmojiMapping">Enable customization of the emojis and smileys mapping.</param>
+    /// <returns>The modified pipeline</returns>
+    public static MarkdownPipelineBuilder UseEmojiAndSmiley(this MarkdownPipelineBuilder pipeline, EmojiMapping customEmojiMapping)
+    {
+        if (!pipeline.Extensions.Contains<EmojiExtension>())
+        {
+            pipeline.Extensions.Add(new EmojiExtension(customEmojiMapping));
+        }
+        return pipeline;
+    }
+
+    /// <summary>
+    /// Performs the use referral links operation.
+    /// </summary>
+    public static MarkdownPipelineBuilder UseReferralLinks(this MarkdownPipelineBuilder pipeline, params string[] rels)
+    {
+        if (pipeline.Extensions.TryFind(out ReferralLinksExtension? referralLinksExtension))
+        {
+            foreach (string rel in rels)
+            {
+                if (!referralLinksExtension.Rels.Contains(rel))
+                {
+                    referralLinksExtension.Rels.Add(rel);
+                }
+            }
+        }
+        else
+        {
+            pipeline.Extensions.Add(new ReferralLinksExtension(rels));
+        }
+        return pipeline;
+    }
+
+    /// <summary>
+    /// Automatically link references to JIRA issues
+    /// </summary>
+    /// <param name="pipeline">The pipeline</param>
+    /// <param name="options">Set of required options</param>
+    /// <returns>The modified pipeline</returns>
+    public static MarkdownPipelineBuilder UseJiraLinks(this MarkdownPipelineBuilder pipeline, JiraLinkOptions options)
+    {
+        if (!pipeline.Extensions.Contains<JiraLinkExtension>())
+        {
+            pipeline.Extensions.Add(new JiraLinkExtension(options));
+        }
+        return pipeline;
+    }
+
+    /// <summary>
+    /// Adds support for right-to-left content by adding appropriate html attribtues.
+    /// </summary>
+    /// <param name="pipeline">The pipeline</param>
+    /// <returns>The modified pipeline</returns>
+    public static MarkdownPipelineBuilder UseGlobalization(this MarkdownPipelineBuilder pipeline)
+    {
+        pipeline.Extensions.AddIfNotAlready<GlobalizationExtension>();
+        return pipeline;
+    }
+
+    /// <summary>
+    /// Enables CJK-friendly emphasis. <c>**</c> around punctuation in CJK text will be much more likely to be parsed as emphasis as intended.
+    /// </summary>
+    /// <param name="pipeline">The pipeline</param>
+    /// <returns>The modified pipeline</returns>
+    /// <see href="https://github.com/tats-u/markdown-cjk-friendly/"/>
+    public static MarkdownPipelineBuilder UseCjkFriendlyEmphasis(this MarkdownPipelineBuilder pipeline)
+    {
+        pipeline.InlineParsers.FindExact<EmphasisInlineParser>()?.CjkFriendlyEmphasis = true;
+        return pipeline;
+    }
+
+    /// <summary>
+    /// This will disable the HTML support in the markdown processor (for constraint/safe parsing).
+    /// </summary>
+    /// <param name="pipeline">The pipeline.</param>
+    /// <returns>The modified pipeline</returns>
+    public static MarkdownPipelineBuilder DisableHtml(this MarkdownPipelineBuilder pipeline)
+    {
+        var parser = pipeline.BlockParsers.Find<HtmlBlockParser>();
+        if (parser != null)
+        {
+            pipeline.BlockParsers.Remove(parser);
+        }
+
+        var inlineParser = pipeline.InlineParsers.Find<AutolinkInlineParser>();
+        if (inlineParser != null)
+        {
+            inlineParser.Options.EnableHtmlParsing = false;
+        }
+        return pipeline;
+    }
+
+    /// <summary>
+    /// Configures the pipeline using a string that defines the extensions to activate.
+    /// </summary>
+    /// <param name="pipeline">The pipeline (e.g: advanced for <see cref="UseAdvancedExtensions"/>, pipetables+gridtables for <see cref="UsePipeTables"/> and <see cref="UseGridTables"/></param>
+    /// <param name="extensions">The extensions to activate as a string</param>
+    /// <returns>The modified pipeline</returns>
+    public static MarkdownPipelineBuilder Configure(this MarkdownPipelineBuilder pipeline, string? extensions)
+    {
+        if (extensions is null)
+        {
+            return pipeline;
+        }
+
+        // TODO: the extension string should come from the extension itself instead of this hardcoded switch case.
+
+        foreach (var extension in extensions.Split(new[] { '+' }, StringSplitOptions.RemoveEmptyEntries))
+        {
+            switch (extension.ToLowerInvariant())
+            {
+                case "common":
+                    break;
+                case "advanced":
+                    pipeline.UseAdvancedExtensions();
+                    break;
+                case "alerts":
+                    pipeline.UseAlertBlocks();
+                    break;
+                case "pipetables":
+                    pipeline.UsePipeTables();
+                    break;
+                case "gfm-pipetables":
+                    pipeline.UsePipeTables(new PipeTableOptions { UseGfmRules = true });
+                    break;
+                case "emphasisextras":
+                    pipeline.UseEmphasisExtras();
+                    break;
+                case "listextras":
+                    pipeline.UseListExtras();
+                    break;
+                case "hardlinebreak":
+                    pipeline.UseSoftlineBreakAsHardlineBreak();
+                    break;
+                case "footnotes":
+                    pipeline.UseFootnotes();
+                    break;
+                case "footers":
+                    pipeline.UseFooters();
+                    break;
+                case "citations":
+                    pipeline.UseCitations();
+                    break;
+                case "attributes":
+                    pipeline.UseGenericAttributes();
+                    break;
+                case "gridtables":
+                    pipeline.UseGridTables();
+                    break;
+                case "abbreviations":
+                    pipeline.UseAbbreviations();
+                    break;
+                case "emojis":
+                    pipeline.UseEmojiAndSmiley();
+                    break;
+                case "definitionlists":
+                    pipeline.UseDefinitionLists();
+                    break;
+                case "customcontainers":
+                    pipeline.UseCustomContainers();
+                    break;
+                case "figures":
+                    pipeline.UseFigures();
+                    break;
+                case "mathematics":
+                    pipeline.UseMathematics();
+                    break;
+                case "bootstrap":
+                    pipeline.UseBootstrap();
+                    break;
+                case "medialinks":
+                    pipeline.UseMediaLinks();
+                    break;
+                case "smartypants":
+                    pipeline.UseSmartyPants();
+                    break;
+                case "autoidentifiers":
+                    pipeline.UseAutoIdentifiers();
+                    break;
+                case "tasklists":
+                    pipeline.UseTaskLists();
+                    break;
+                case "diagrams":
+                    pipeline.UseDiagrams();
+                    break;
+                case "nofollowlinks":
+                    pipeline.UseReferralLinks("nofollow");
+                    break;
+                case "noopenerlinks":
+                    pipeline.UseReferralLinks("noopener");
+                    break;
+                case "noreferrerlinks":
+                    pipeline.UseReferralLinks("noreferrer");
+                    break;
+                case "nohtml":
+                    pipeline.DisableHtml();
+                    break;
+                case "yaml":
+                    pipeline.UseYamlFrontMatter();
+                    break;
+                case "nonascii-noescape":
+                    pipeline.UseNonAsciiNoEscape();
+                    break;
+                case "autolinks":
+                    pipeline.UseAutoLinks();
+                    break;
+                case "globalization":
+                    pipeline.UseGlobalization();
+                    break;
+                case "cjk-friendly-emphasis":
+                    pipeline.UseCjkFriendlyEmphasis();
+                    break;
+                default:
+                    throw new ArgumentException($"Invalid extension `{extension}` from `{extensions}`", nameof(extensions));
+            }
+        }
+        return pipeline;
+    }
+
+    /// <summary>
+    /// Configures the string to be used for line-endings, when writing.
+    /// </summary>
+    /// <param name="pipeline">The pipeline.</param>
+    /// <param name="newLine">The string to be used for line-endings.</param>
+    /// <returns>The modified pipeline</returns>
+    public static MarkdownPipelineBuilder ConfigureNewLine(this MarkdownPipelineBuilder pipeline, string newLine)
+    {
+        pipeline.Use(new ConfigureNewLineExtension(newLine));
+        return pipeline;
+    }
+
+    /// <summary>
+    /// Disables parsing of ATX and Setex headings
+    /// </summary>
+    /// <param name="pipeline">The pipeline.</param>
+    /// <returns>The modified pipeline</returns>
+    public static MarkdownPipelineBuilder DisableHeadings(this MarkdownPipelineBuilder pipeline)
+    {
+        pipeline.BlockParsers.TryRemove<HeadingBlockParser>();
+        if (pipeline.BlockParsers.TryFind<ParagraphBlockParser>(out var parser))
+        {
+            parser.ParseSetexHeadings = false;
+        }
+        return pipeline;
+    }
+
+    /// <summary>
+    /// Enables parsing and tracking of trivia characters
+    /// </summary>
+    /// <param name="pipeline">The pipeline.</param>
+    /// <returns>he modified pipeline</returns>
+    public static MarkdownPipelineBuilder EnableTrackTrivia(this MarkdownPipelineBuilder pipeline)
+    {
+        pipeline.TrackTrivia = true;
+        if (pipeline.BlockParsers.TryFind<FencedCodeBlockParser>(out var parser))
+        {
+            parser.InfoParser = FencedCodeBlockParser.RoundtripInfoParser;
+        }
+        return pipeline;
+    }
+}

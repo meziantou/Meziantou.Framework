@@ -132,6 +132,22 @@ sanitizer.ValidAttributes.Remove("target");
 sanitizer.UriAttributes.Add("data-url");
 ```
 
+Attributes can also be allowed by prefix with `ValidAttributePrefixes`. It contains `aria-` by default:
+
+```csharp
+var sanitizer = new HtmlSanitizer();
+
+// Allow every data-* attribute
+sanitizer.ValidAttributePrefixes.Add("data-");
+
+// Remove the ARIA attributes
+sanitizer.ValidAttributePrefixes.Remove("aria-");
+```
+
+An attribute allowed by a prefix is URL-validated only when it is in `UriAttributes`. Frameworks such as htmx or
+Knockout run the value of some `data-*` attributes (`data-hx-on:click`, `data-bind`), so only allow `data-` when
+the page does not use them.
+
 `ValidAttributes` and `UriAttributes` are separate sets, and only `UriAttributes` triggers URL validation.
 Adding an attribute to `ValidAttributes` alone lets any value through unchecked:
 
@@ -192,7 +208,11 @@ By default, the sanitizer blocks (removes entirely):
 By default, the sanitizer allows common HTML attributes like:
 - **URI attributes** (with URL validation): `background`, `cite`, `href`, `longdesc`, `src`, `xlink:href`
 - **Srcset attributes** (with URL validation): `srcset`
-- **General attributes**: `abbr`, `align`, `alt`, `axis`, `bgcolor`, `border`, `cellpadding`, `cellspacing`, `class`, `clear`, `color`, `cols`, `colspan`, `compact`, `coords`, `dir`, `face`, `headers`, `height`, `hreflang`, `hspace`, `ismap`, `lang`, `language`, `nohref`, `nowrap`, `rel`, `rev`, `rows`, `rowspan`, `rules`, `scope`, `scrolling`, `shape`, `size`, `span`, `start`, `summary`, `tabindex`, `target`, `title`, `type`, `valign`, `value`, `vspace`, `width`
+- **General attributes**: `abbr`, `align`, `alt`, `axis`, `bgcolor`, `border`, `cellpadding`, `cellspacing`, `class`, `clear`, `color`, `cols`, `colspan`, `compact`, `coords`, `datetime`, `decoding`, `dir`, `face`, `headers`, `height`, `hidden`, `hreflang`, `hspace`, `ismap`, `lang`, `language`, `loading`, `nohref`, `nowrap`, `open`, `rel`, `rev`, `reversed`, `role`, `rows`, `rowspan`, `rules`, `scope`, `scrolling`, `shape`, `size`, `span`, `start`, `summary`, `tabindex`, `target`, `title`, `translate`, `type`, `valign`, `value`, `vspace`, `width`
+- **Attribute prefixes**: `aria-*`
+
+The general attributes other than `class` are shared with the generic attributes of
+[Meziantou.Framework.Markdown](../Meziantou.Framework.Markdown), which allows them by default.
 
 ## URL Sanitizer
 

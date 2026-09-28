@@ -1,6 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Markdig;
+using Meziantou.Framework.Markdown;
 using Xunit.Sdk;
 
 namespace Meziantou.Framework.HtmlToMarkdownTests;
@@ -37,7 +37,7 @@ public sealed class CommonMarkSpecTests
 
     /// <summary>
     /// Round-trip test: take the HTML from the CommonMark spec, convert to Markdown using our converter,
-    /// then convert back to HTML using Markdig, and verify the HTML is semantically equivalent.
+    /// then convert back to HTML using Meziantou.Framework.Markdown, and verify the HTML is semantically equivalent.
     /// </summary>
     [Theory]
     [MemberData(nameof(GetTestCases))]
@@ -46,9 +46,9 @@ public sealed class CommonMarkSpecTests
         // 1. Convert the spec HTML to Markdown using our converter
         var markdown = HtmlToMarkdown.Convert(testCase.Html);
 
-        // 2. Convert the Markdown back to HTML using Markdig
+        // 2. Convert the Markdown back to HTML using Meziantou.Framework.Markdown
         var pipeline = new MarkdownPipelineBuilder().Build();
-        var roundTrippedHtml = Markdown.ToHtml(markdown, pipeline);
+        var roundTrippedHtml = MarkdownConverter.ToHtml(markdown, pipeline);
 
         // 3. Compare the HTML outputs
         HtmlNormalizer.AssertEquivalent(testCase.Html, roundTrippedHtml);
@@ -130,7 +130,7 @@ public sealed class CommonMarkSpecTests
         [651] = "Raw HTML: not a tag",
         [652] = "Raw HTML: not a tag",
 
-        // Additional cases where Markdig's interpretation differs after HTML -> Markdown conversion.
+        // Additional cases where the interpretation of Meziantou.Framework.Markdown differs after HTML -> Markdown conversion.
         [13] = "Backslash escapes: normalization differs after round-trip",
         [14] = "Backslash escapes: normalization differs after round-trip",
         [21] = "Backslash escapes: normalization differs after round-trip",

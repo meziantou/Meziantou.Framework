@@ -1,0 +1,496 @@
+// Copyright (c) Alexandre Mutel. All rights reserved.
+// This file is licensed under the BSD-Clause 2 license.
+// See the license.txt file in the project root for more information.
+
+using Meziantou.Framework.Markdown.Helpers;
+using Meziantou.Framework.Markdown.Renderers.Html;
+using Meziantou.Framework.Markdown.Syntax;
+using Meziantou.Framework.Markdown.Syntax.Inlines;
+
+namespace Meziantou.Framework.Markdown.Parsers.Inlines;
+
+/// <summary>
+/// An inline parser for <see cref="LinkInline"/>.
+/// </summary>
+/// <seealso cref="InlineParser" />
+public class LinkInlineParser : InlineParser
+{
+    /// <summary>
+    /// Initializes a new instance of the <see cref="LinkInlineParser"/> class.
+    /// </summary>
+    public LinkInlineParser() : this(new LinkOptions())
+    {
+
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="LinkInlineParser"/> class.
+    /// </summary>
+    public LinkInlineParser(LinkOptions options)
+    {
+        Options = options ?? throw new ArgumentNullException(nameof(options));
+        OpeningCharacters = ['[', ']', '!'];
+    }
+
+    /// <summary>
+    /// Gets or sets the options.
+    /// </summary>
+    public readonly LinkOptions Options;
+
+    /// <summary>
+    /// Attempts to match the parser at the current position.
+    /// </summary>
+    public override bool Match(InlineProcessor processor, ref StringSlice slice)
+    {
+        // The following methods are inspired by the "An algorithm for parsing nested emphasis and links"
+        // at the end of the CommonMark specs.
+
+        var c = slice.CurrentChar;
+
+        var startPosition = processor.GetSourcePosition(slice.Start, out int line, out int column);
+
+        bool isImage = false;
+        if (c == '!')
+        {
+            isImage = true;
+            c = slice.NextChar();
+            if (c != '[')
+            {
+                return false;
+            }
+        }
+        string? label;
+        SourceSpan labelWithTriviaSpan = SourceSpan.Empty;
+        switch (c)
+        {
+            case '[':
+                // If this is not an image, we may have a reference link shortcut
+                // so we try to resolve it here
+                var saved = slice;
+
+                SourceSpan labelSpan;
+                // If the label is followed by either a ( or a [, this is not a shortcut
+                if (processor.TrackTrivia)
+                {
+                    if (LinkHelper.TryParseLabelTrivia(ref slice, out label, out labelSpan))
+                    {
+                        labelWithTriviaSpan.Start = labelSpan.Start; // skip opening [
+                        labelWithTriviaSpan.End = labelSpan.End; // skip closing ]
+                        if (!processor.Document.ContainsLinkReferenceDefinition(label))
+                        {
+                            label = null;
+                        }
+                    }
+                }
+                else
+                {
+                    if (LinkHelper.TryParseLabel(ref slice, out label, out labelSpan))
+                    {
+                        if (!processor.Document.ContainsLinkReferenceDefinition(label))
+                        {
+                            label = null;
+                        }
+                    }
+                }
+                slice = saved;
+
+                // Else we insert a LinkDelimiter
+                slice.SkipChar();
+                var linkDelimiter = new LinkDelimiterInline(this)
+                {
+                    Type = DelimiterType.Open,
+                    Label = label,
+                    LabelSpan = processor.GetSourcePositionFromLocalSpan(labelSpan),
+                    IsImage = isImage,
+                    Span = new SourceSpan(startPosition, processor.GetSourcePosition(slice.Start - 1)),
+                    Line = line,
+                    Column = column
+                };
+
+                if (processor.TrackTrivia)
+                {
+                    linkDelimiter.LabelWithTrivia = new StringSlice(slice.Text, labelWithTriviaSpan.Start, labelWithTriviaSpan.End);
+                }
+
+                processor.Inline = linkDelimiter;
+                return true;
+
+            case ']':
+                slice.SkipChar();
+                if (processor.Inline != null)
+                {
+                    if (TryProcessLinkOrImage(processor, ref slice))
+                    {
+                        return true;
+                    }
+                }
+
+                // If we don’t find one, we return a literal slice node ].
+                // (Done after by the LiteralInline parser)
+                return false;
+        }
+
+        // We don't have an emphasis
+        return false;
+    }
+
+    private bool ProcessLinkReference(
+        InlineProcessor state,
+        StringSlice text,
+        string label,
+        SourceSpan labelWithriviaSpan,
+        bool isShortcut,
+        SourceSpan labelSpan,
+        LinkDelimiterInline parent,
+        int endPosition,
+        LocalLabel localLabel)
+    {
+        if (!state.Document.TryGetLinkReferenceDefinition(label, out LinkReferenceDefinition? linkRef))
+        {
+            return false;
+        }
+
+        // An implicit definition must not hijack a bracket nested inside a
+        // still-open link, which would break the outer one.
+        if (!linkRef.AllowResolutionInsideOpenLink && state.HasActiveLinkDelimiter(parent.Parent))
+        {
+            return false;
+        }
+
+        // The link copies the URL and the title of the definition. Past the limit, the reference stays literal text.
+        if (!state.TryAddReferenceExpansion(linkRef.ExpansionLength))
+        {
+            return false;
+        }
+
+        Inline? link = null;
+        // Try to use a callback directly defined on the LinkReferenceDefinition
+        if (linkRef.CreateLinkInline != null)
+        {
+            link = linkRef.CreateLinkInline(state, linkRef, parent.FirstChild);
+            link.Span = new SourceSpan(parent.Span.Start, endPosition);
+            link.Line = parent.Line;
+            link.Column = parent.Column;
+        }
+
+        // Create a default link if the callback was not found
+        if (link is null)
+        {
+            // Inline Link
+            var linkInline = new LinkInline()
+            {
+                Url = HtmlHelper.Unescape(linkRef.Url, removeBackSlash: false),
+                Title = HtmlHelper.Unescape(linkRef.Title, removeBackSlash: false),
+                Label = label,
+                LabelSpan = labelSpan,
+                UrlSpan = linkRef.UrlSpan,
+                IsImage = parent.IsImage,
+                IsShortcut = isShortcut,
+                Reference = linkRef,
+                Span = new SourceSpan(parent.Span.Start, endPosition),
+                Line = parent.Line,
+                Column = parent.Column,
+            };
+
+            if (state.TrackTrivia)
+            {
+                linkInline.LabelWithTrivia = new StringSlice(text.Text, labelWithriviaSpan.Start, labelWithriviaSpan.End);
+                linkInline.LinkRefDefLabel = linkRef.Label;
+                linkInline.LinkRefDefLabelWithTrivia = linkRef.LabelWithTrivia;
+                linkInline.LocalLabel = localLabel;
+            }
+
+            SetTarget(linkInline);
+            link = linkInline;
+        }
+
+        if (link is ContainerInline containerLink)
+        {
+            var child = parent.FirstChild;
+            if (child is null)
+            {
+                child = new LiteralInline()
+                {
+                    Content = StringSlice.Empty,
+                    IsClosed = true,
+                    // Not exact but we leave it like this
+                    Span = parent.Span,
+                    Line = parent.Line,
+                    Column = parent.Column,
+                };
+                containerLink.AppendChild(child);
+            }
+            else
+            {
+                // Insert all child into the link
+                while (child != null)
+                {
+                    var next = child.NextSibling;
+                    child.Remove();
+                    containerLink.AppendChild(child);
+                    child = next;
+                }
+            }
+        }
+
+        link.IsClosed = true;
+
+        // Process emphasis delimiters
+        state.PostProcessInlines(0, link, null, false);
+
+        state.Inline = link;
+
+        return true;
+    }
+
+    // A target only applies to links, images are not opened when clicked
+    private void SetTarget(LinkInline link)
+    {
+        if (Options.OpenInNewWindow && !link.IsImage)
+        {
+            link.GetAttributes().AddPropertyIfNotExist("target", "_blank");
+        }
+    }
+
+    private bool TryProcessLinkOrImage(InlineProcessor inlineState, ref StringSlice text)
+    {
+        LinkDelimiterInline? openParent = inlineState.FindLinkDelimiter(inlineState.Inline!);
+
+        if (openParent is null)
+        {
+            return false;
+        }
+
+        // If we do find one, but it’s not active,
+        // we remove the inactive delimiter from the stack,
+        // and return a literal text node ].
+        if (!openParent.IsActive)
+        {
+            inlineState.Inline = new LiteralInline()
+            {
+                Content = new StringSlice("["),
+                Span = openParent.Span,
+                Line = openParent.Line,
+                Column = openParent.Column,
+            };
+            openParent.ReplaceBy(inlineState.Inline);
+            return false;
+        }
+
+        // If we find one and it’s active,
+        // then we parse ahead to see if we have
+        // an inline link/image, reference link/image,
+        // compact reference link/image,
+        // or shortcut reference link/image
+        var parentDelimiter = openParent.Parent;
+        var savedText = text;
+
+        if (text.CurrentChar == '(')
+        {
+            LinkInline? link = null;
+
+            // Remembers the failed scans of this inline text, so nested openers do not scan the same characters again
+            var scanCache = inlineState.LinkScanCache;
+            scanCache.SetText(text);
+
+            if (inlineState.TrackTrivia)
+            {
+                link = TryParseInlineLinkTrivia(ref text, inlineState, openParent, scanCache);
+            }
+            else
+            {
+                if (LinkHelper.TryParseInlineLink(ref text, out string? url, out string? title, out SourceSpan linkSpan, out SourceSpan titleSpan, scanCache))
+                {
+                    // Inline Link
+                    link = new LinkInline()
+                    {
+                        Url = HtmlHelper.Unescape(url, removeBackSlash: false),
+                        Title = title is null ? null : HtmlHelper.Unescape(title, removeBackSlash: false),
+                        IsImage = openParent.IsImage,
+                        LabelSpan = openParent.LabelSpan,
+                        UrlSpan = inlineState.GetSourcePositionFromLocalSpan(linkSpan),
+                        TitleSpan = inlineState.GetSourcePositionFromLocalSpan(titleSpan),
+                        Span = new SourceSpan(openParent.Span.Start, inlineState.GetSourcePosition(text.Start - 1)),
+                        Line = openParent.Line,
+                        Column = openParent.Column,
+                    };
+                }
+            }
+
+            if (link is not null)
+            {
+                SetTarget(link);
+                openParent.ReplaceBy(link);
+                // Notifies processor as we are creating an inline locally
+                inlineState.Inline = link;
+
+                // Process emphasis delimiters
+                inlineState.PostProcessInlines(0, link, null, false);
+
+                // If we have a link (and not an image),
+                // we also set all [ delimiters before the opening delimiter to inactive.
+                // (This will prevent us from getting links within links.)
+                if (!openParent.IsImage)
+                {
+                    inlineState.DeactivateLinkDelimiters(parentDelimiter);
+                }
+
+                link.IsClosed = true;
+
+                return true;
+            }
+
+            text = savedText;
+        }
+
+        SourceSpan labelSpan;
+        string? label;
+        bool isLabelSpanLocal = true;
+        SourceSpan? labelWithWhitespace = null;
+
+        bool isShortcut = false;
+        LocalLabel localLabel = LocalLabel.Local;
+        // Handle Collapsed links
+        if (text.CurrentChar == '[' && text.PeekChar() == ']')
+        {
+            label = openParent.Label;
+            labelSpan = openParent.LabelSpan;
+            isLabelSpanLocal = false;
+            localLabel = LocalLabel.Empty;
+            text.SkipChar(); // Skip [
+            text.SkipChar(); // Skip ]
+        }
+        else
+        {
+            // A full reference link uses the following link label. When no link label follows, this is a shortcut
+            // reference link. A full reference link whose label is not defined is not a link: it does not fall back
+            // to the shortcut form, and a collapsed one does not use a later label.
+            var labelText = text;
+            if (text.CurrentChar == '[' && LinkHelper.TryParseLabelTrivia(ref labelText, true, out label, out labelSpan))
+            {
+                // The roundtrip renderer writes the label with the whitespace around it, between the brackets
+                labelWithWhitespace = new SourceSpan(text.Start + 1, labelText.Start - 2);
+                text = labelText;
+            }
+            else if (StartsWithLinkLabel(text))
+            {
+                label = null;
+                labelSpan = SourceSpan.Empty;
+            }
+            else
+            {
+                localLabel = LocalLabel.None;
+                label = openParent.Label;
+                labelSpan = SourceSpan.Empty;
+                isShortcut = true;
+            }
+        }
+
+        if (label is not null)
+        {
+            var labelWithTrivia = labelWithWhitespace ?? new SourceSpan(labelSpan.Start, labelSpan.End);
+            if (isLabelSpanLocal)
+            {
+                labelSpan = inlineState.GetSourcePositionFromLocalSpan(labelSpan);
+            }
+
+            if (ProcessLinkReference(inlineState, text, label, labelWithTrivia, isShortcut, labelSpan, openParent, inlineState.GetSourcePosition(text.Start - 1), localLabel))
+            {
+                // Remove the open parent
+                openParent.Remove();
+                if (!openParent.IsImage)
+                {
+                    inlineState.DeactivateLinkDelimiters(parentDelimiter);
+                }
+                return true;
+            }
+        }
+
+        // No link (undefined label, or a reference past the expansion limit): the opening [ is transformed to a literal
+        // followed by all the children of the [, so a later ] cannot use it
+        var literal = new LiteralInline()
+        {
+            Span = openParent.Span,
+            Line = openParent.Line,
+            Column = openParent.Column,
+            Content = new StringSlice(openParent.IsImage ? "![" : "["),
+        };
+
+        inlineState.Inline = openParent.ReplaceBy(literal);
+        return false;
+
+        static LinkInline? TryParseInlineLinkTrivia(ref StringSlice text, InlineProcessor inlineState, LinkDelimiterInline openParent, InlineLinkScanCache scanCache)
+        {
+            if (LinkHelper.TryParseInlineLinkTrivia(
+                ref text,
+                out string? url,
+                out SourceSpan unescapedUrlSpan,
+                out string? title,
+                out SourceSpan unescapedTitleSpan,
+                out char titleEnclosingCharacter,
+                out SourceSpan linkSpan,
+                out SourceSpan titleSpan,
+                out SourceSpan triviaBeforeLink,
+                out SourceSpan triviaAfterLink,
+                out SourceSpan triviaAfterTitle,
+                out bool urlHasPointyBrackets,
+                scanCache))
+            {
+                var wsBeforeLink = new StringSlice(text.Text, triviaBeforeLink.Start, triviaBeforeLink.End);
+                var wsAfterLink = new StringSlice(text.Text, triviaAfterLink.Start, triviaAfterLink.End);
+                var wsAfterTitle = new StringSlice(text.Text, triviaAfterTitle.Start, triviaAfterTitle.End);
+                var unescapedUrl = new StringSlice(text.Text, unescapedUrlSpan.Start, unescapedUrlSpan.End);
+                var unescapedTitle = new StringSlice(text.Text, unescapedTitleSpan.Start, unescapedTitleSpan.End);
+
+                return new LinkInline()
+                {
+                    TriviaBeforeUrl = wsBeforeLink,
+                    Url = HtmlHelper.Unescape(url, removeBackSlash: false),
+                    UnescapedUrl = unescapedUrl,
+                    UrlHasPointyBrackets = urlHasPointyBrackets,
+                    TriviaAfterUrl = wsAfterLink,
+                    Title = HtmlHelper.Unescape(title, removeBackSlash: false),
+                    UnescapedTitle = unescapedTitle,
+                    TitleEnclosingCharacter = titleEnclosingCharacter,
+                    TriviaAfterTitle = wsAfterTitle,
+                    IsImage = openParent.IsImage,
+                    LabelSpan = openParent.LabelSpan,
+                    UrlSpan = inlineState.GetSourcePositionFromLocalSpan(linkSpan),
+                    TitleSpan = inlineState.GetSourcePositionFromLocalSpan(titleSpan),
+                    Span = new SourceSpan(openParent.Span.Start, inlineState.GetSourcePosition(text.Start - 1)),
+                    Line = openParent.Line,
+                    Column = openParent.Column,
+                };
+            }
+
+            return null;
+        }
+    }
+
+    // Whether the text starts with a link label: [, then at most 999 characters without an unescaped bracket, then ].
+    // LinkHelper.TryParseLabel also rejects a backslash before other characters: such a label is still not a shortcut.
+    private static bool StartsWithLinkLabel(StringSlice text)
+    {
+        if (text.CurrentChar != '[')
+        {
+            return false;
+        }
+
+        var span = text.AsSpan()[1..];
+        for (int i = 0; i < span.Length && i <= 999; i++)
+        {
+            switch (span[i])
+            {
+                case '\\':
+                    i++;
+                    break;
+                case '[':
+                    return false;
+                case ']':
+                    return true;
+            }
+        }
+
+        return false;
+    }
+}

@@ -24,7 +24,9 @@ public static class Helper
 
     /// <summary>
     /// One identifier per grammar, named after the grammar's class (<c>Languages.CSharp</c> → <c>csharp</c>), so theories
-    /// that must cover every grammar pick up a new one without being edited.
+    /// that must cover every grammar pick up a new one without being edited. When the class name is not a registered
+    /// identifier (<c>Languages.NodeRepl</c> is registered as <c>node-repl</c>), the first registered identifier of the
+    /// grammar is used instead.
     /// </summary>
     public static TheoryData<string> Grammars()
     {
@@ -43,8 +45,19 @@ public static class Helper
         [
             .. typeof(SyntaxHighlighter).Assembly.GetTypes()
                 .Where(type => type.Namespace == "Meziantou.Framework.SyntaxHighlighting.Languages" && type.GetProperty("Instance", BindingFlags.Public | BindingFlags.Static)?.PropertyType == typeof(CompiledMode))
-                .Select(type => type.Name.ToLowerInvariant())
+                .Select(GetGrammarIdentifier)
                 .Order(StringComparer.Ordinal),
         ];
+    }
+
+    private static string GetGrammarIdentifier(Type grammarType)
+    {
+        var instance = grammarType.GetProperty("Instance", BindingFlags.Public | BindingFlags.Static)!.GetValue(obj: null);
+        var className = grammarType.Name.ToLowerInvariant();
+        if (SyntaxHighlighter.IsSupported(className) && ReferenceEquals(LanguageRegistry.Get(className), instance))
+            return className;
+
+        return SyntaxHighlighter.GetSupportedLanguages().FirstOrDefault(language => ReferenceEquals(LanguageRegistry.Get(language), instance))
+            ?? throw new InvalidOperationException($"The grammar '{grammarType.Name}' is not registered in {nameof(LanguageRegistry)}.");
     }
 }

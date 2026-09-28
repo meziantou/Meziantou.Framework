@@ -199,6 +199,7 @@ internal static class LanguageRegistry
             ["sol"] = () => Solidity.Instance,
             ["bicep"] = () => Bicep.Instance,
             ["bicepparam"] = () => Bicep.Instance,
+            ["node-repl"] = () => NodeRepl.Instance,
         }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
     // Grammars compiled with a non-default match timeout, keyed by the default grammar instance.

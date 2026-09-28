@@ -122,6 +122,7 @@ public class HighlighterTests
     [InlineData("zon")]
     [InlineData("sol")]
     [InlineData("bicepparam")]
+    [InlineData("node-repl")]
     public void IsSupported_KnownLanguage_ReturnsTrue(string language)
     {
         Assert.True(SyntaxHighlighter.IsSupported(language));

@@ -114,6 +114,7 @@ internal static class LanguageRegistry
             ["obj-c"] = () => ObjectiveC.Instance,
             ["obj-c++"] = () => ObjectiveC.Instance,
             ["objective-c++"] = () => ObjectiveC.Instance,
+            ["dart"] = () => Dart.Instance,
         }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
     // Grammars compiled with a non-default match timeout, keyed by the default grammar instance.

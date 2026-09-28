@@ -89,6 +89,7 @@ public class HighlighterTests
     [InlineData("txt")]
     [InlineData("Swift")]
     [InlineData("obj-c++")]
+    [InlineData("Dart")]
     public void IsSupported_KnownLanguage_ReturnsTrue(string language)
     {
         Assert.True(SyntaxHighlighter.IsSupported(language));

@@ -135,6 +135,7 @@ public class HighlighterTests
     [InlineData("frag")]
     [InlineData("sv")]
     [InlineData("vhd")]
+    [InlineData("HAML")]
     public void IsSupported_KnownLanguage_ReturnsTrue(string language)
     {
         Assert.True(SyntaxHighlighter.IsSupported(language));

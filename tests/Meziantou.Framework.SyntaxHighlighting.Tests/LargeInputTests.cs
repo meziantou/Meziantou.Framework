@@ -117,6 +117,20 @@ public sealed class LargeInputTests
         Assert.EndsWith(" b}}</span>", await highlight, StringComparison.Ordinal);
     }
 
+    // The indentation of a Haml comment line used to be captured before checking that a comment follows, which rescanned
+    // the indentation from each of its positions (about 50 seconds for this document).
+    [Fact]
+    public async Task Highlight_HamlLongIndentation_CompletesInReasonableTime()
+    {
+        var code = new string(' ', 200_000) + "-# comment";
+
+        var highlight = Task.Run(() => HighlightWithFallbackDetection(code, "haml", out _));
+        var finished = await Task.WhenAny(highlight, Task.Delay(Budget)) == highlight;
+
+        Assert.True(finished, $"Highlighting {code.Length} characters of 'haml' did not finish within {Budget.TotalSeconds:F0}s.");
+        Assert.EndsWith("-# comment</span>", await highlight, StringComparison.Ordinal);
+    }
+
     // The guard against grammars that stop making progress used to count the hits of every run of the document, but
     // compared the count with a position in the current fragment, so a document with many embedded fragments was
     // abandoned (plain text).

@@ -134,6 +134,7 @@ The package currently supports these language identifiers and common aliases:
 - `go`, `golang`
 - `graphql`, `gql`
 - `groovy`, `gradle`
+- `haml`
 - `handlebars`, `hbs`, `html.hbs`, `html.handlebars`, `htmlbars`, `mustache`
 - `haskell`, `hs`
 - `hcl`, `terraform`, `tf`, `tfvars`

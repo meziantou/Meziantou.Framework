@@ -225,6 +225,7 @@ internal static class LanguageRegistry
             ["svh"] = () => Verilog.Instance,
             ["vhdl"] = () => Vhdl.Instance,
             ["vhd"] = () => Vhdl.Instance,
+            ["haml"] = () => Haml.Instance,
         }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
     // Grammars compiled with a non-default match timeout, keyed by the default grammar instance.

@@ -162,6 +162,8 @@ internal static class LanguageRegistry
             ["r"] = () => R.Instance,
             ["ocaml"] = () => Ocaml.Instance,
             ["ml"] = () => Ocaml.Instance,
+            ["cmake"] = () => CMake.Instance,
+            ["cmake.in"] = () => CMake.Instance,
         }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
     // Grammars compiled with a non-default match timeout, keyed by the default grammar instance.

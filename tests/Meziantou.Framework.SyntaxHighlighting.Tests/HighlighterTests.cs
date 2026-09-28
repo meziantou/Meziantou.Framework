@@ -108,6 +108,7 @@ public class HighlighterTests
     [InlineData("pluto")]
     [InlineData("R")]
     [InlineData("ml")]
+    [InlineData("cmake.in")]
     public void IsSupported_KnownLanguage_ReturnsTrue(string language)
     {
         Assert.True(SyntaxHighlighter.IsSupported(language));

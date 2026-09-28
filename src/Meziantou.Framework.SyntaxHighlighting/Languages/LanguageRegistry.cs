@@ -266,6 +266,8 @@ internal static class LanguageRegistry
             ["gawk"] = () => Awk.Instance,
             ["mawk"] = () => Awk.Instance,
             ["nawk"] = () => Awk.Instance,
+            ["puppet"] = () => Puppet.Instance,
+            ["pp"] = () => Puppet.Instance,
         }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
     // Grammars compiled with a non-default match timeout, keyed by the default grammar instance.

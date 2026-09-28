@@ -177,6 +177,7 @@ The package currently supports these language identifiers and common aliases:
 - `prolog`
 - `properties`
 - `protobuf`, `proto`
+- `puppet`, `pp`
 - `python`, `py`, `gyp`, `ipython`
 - `python-repl`, `pycon`
 - `r`

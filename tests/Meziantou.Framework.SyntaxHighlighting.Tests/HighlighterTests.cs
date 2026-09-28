@@ -113,6 +113,7 @@ public class HighlighterTests
     [InlineData("tex")]
     [InlineData("feature")]
     [InlineData("pascal")]
+    [InlineData("matlab")]
     public void IsSupported_KnownLanguage_ReturnsTrue(string language)
     {
         Assert.True(SyntaxHighlighter.IsSupported(language));

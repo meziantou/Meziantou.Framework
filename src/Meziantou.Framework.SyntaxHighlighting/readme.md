@@ -141,6 +141,7 @@ The package currently supports these language identifiers and common aliases:
 - `lua`, `pluto`
 - `makefile`, `mk`, `mak`, `make`
 - `markdown`, `md`, `mkdown`, `mkd`
+- `matlab`
 - `msil`, `il`, `cil`
 - `nginx`, `nginxconf`
 - `objectivec`, `mm`, `objc`, `obj-c`, `obj-c++`, `objective-c++`

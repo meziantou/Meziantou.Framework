@@ -176,6 +176,7 @@ internal static class LanguageRegistry
             ["dfm"] = () => Delphi.Instance,
             ["pas"] = () => Delphi.Instance,
             ["pascal"] = () => Delphi.Instance,
+            ["matlab"] = () => Matlab.Instance,
         }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
     // Grammars compiled with a non-default match timeout, keyed by the default grammar instance.

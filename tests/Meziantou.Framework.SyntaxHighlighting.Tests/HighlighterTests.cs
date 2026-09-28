@@ -99,6 +99,7 @@ public class HighlighterTests
     [InlineData("kts")]
     [InlineData("console")]
     [InlineData("mk")]
+    [InlineData("proto")]
     public void IsSupported_KnownLanguage_ReturnsTrue(string language)
     {
         Assert.True(SyntaxHighlighter.IsSupported(language));

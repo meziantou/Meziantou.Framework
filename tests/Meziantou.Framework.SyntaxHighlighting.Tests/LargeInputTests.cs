@@ -51,4 +51,21 @@ public sealed class LargeInputTests
         var html = await highlight;
         Assert.Contains("<span class=\"hljs-keyword\">class</span>", html[^100..], ignoreCase: false);
     }
+
+    // A properties key used to be matched from each of its positions, which is quadratic on a long key made of escapes
+    // (a minute and a half for 60,000 backslashes).
+    [Theory]
+    [InlineData("\\")]
+    [InlineData("a\\ ")]
+    [InlineData("a")]
+    public async Task Highlight_PropertiesLongKey_CompletesInReasonableTime(string keyPart)
+    {
+        var code = string.Concat(Enumerable.Repeat(keyPart, 60_000 / keyPart.Length)) + "\nkey = value";
+
+        var highlight = Task.Run(() => HighlightWithFallbackDetection(code, "properties", out _));
+        var finished = await Task.WhenAny(highlight, Task.Delay(Budget)) == highlight;
+
+        Assert.True(finished, $"Highlighting {code.Length} characters of 'properties' did not finish within {Budget.TotalSeconds:F0}s.");
+        Assert.EndsWith("<span class=\"hljs-attr\">key</span> = <span class=\"hljs-string\">value</span>", await highlight, StringComparison.Ordinal);
+    }
 }

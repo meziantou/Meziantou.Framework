@@ -141,6 +141,7 @@ The package currently supports these language identifiers and common aliases:
 - `php`
 - `plaintext`, `text`, `txt`
 - `powershell`, `pwsh`, `ps`, `ps1`
+- `properties`
 - `protobuf`, `proto`
 - `python`, `py`, `gyp`, `ipython`
 - `razor`, `cshtml`, `cshtml-razor`

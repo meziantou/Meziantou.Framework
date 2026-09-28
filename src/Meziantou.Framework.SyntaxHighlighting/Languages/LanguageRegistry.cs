@@ -143,6 +143,7 @@ internal static class LanguageRegistry
             ["make"] = () => Makefile.Instance,
             ["protobuf"] = () => Protobuf.Instance,
             ["proto"] = () => Protobuf.Instance,
+            ["properties"] = () => Properties.Instance,
         }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
     // Grammars compiled with a non-default match timeout, keyed by the default grammar instance.

@@ -232,6 +232,7 @@ internal static class LanguageRegistry
             ["nims"] = () => Nim.Instance,
             ["crystal"] = () => Crystal.Instance,
             ["cr"] = () => Crystal.Instance,
+            ["d"] = () => D.Instance,
         }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
     // Grammars compiled with a non-default match timeout, keyed by the default grammar instance.

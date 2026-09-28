@@ -119,6 +119,7 @@ The package currently supports these language identifiers and common aliases:
 - `crystal`, `cr`
 - `csharp`, `cs`, `c#`
 - `css`
+- `d`
 - `dart`
 - `delphi`, `dpr`, `dfm`, `pas`, `pascal`
 - `diff`, `patch`

@@ -174,3 +174,4 @@ The package currently supports these language identifiers and common aliases:
 - `x86asm`
 - `xml`, `xsd`, `xsl`, `plist`, `rss`, `atom`, `svg`
 - `yaml`, `yml`
+- `zig`, `zon`

@@ -108,6 +108,12 @@ internal static class LanguageRegistry
             ["text"] = () => Plaintext.Instance,
             ["txt"] = () => Plaintext.Instance,
             ["swift"] = () => Swift.Instance,
+            ["objectivec"] = () => ObjectiveC.Instance,
+            ["mm"] = () => ObjectiveC.Instance,
+            ["objc"] = () => ObjectiveC.Instance,
+            ["obj-c"] = () => ObjectiveC.Instance,
+            ["obj-c++"] = () => ObjectiveC.Instance,
+            ["objective-c++"] = () => ObjectiveC.Instance,
         }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
     // Grammars compiled with a non-default match timeout, keyed by the default grammar instance.

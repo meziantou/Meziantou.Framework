@@ -23,6 +23,7 @@ public class KeywordGroupsTests
         "cpp:true:keyword+literal",
         "csharp:dynamic:keyword+built_in",
         "msil:native:built_in+keyword",
+        "objectivec:id:keyword+type",
         "rust:false:keyword+literal",
         "rust:true:keyword+literal",
         "sql:bigint:keyword+type",

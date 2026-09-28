@@ -127,6 +127,7 @@ The package currently supports these language identifiers and common aliases:
 - `markdown`, `md`, `mkdown`, `mkd`
 - `msil`, `il`, `cil`
 - `nginx`, `nginxconf`
+- `objectivec`, `mm`, `objc`, `obj-c`, `obj-c++`, `objective-c++`
 - `php`
 - `plaintext`, `text`, `txt`
 - `powershell`, `pwsh`, `ps`, `ps1`

@@ -100,6 +100,27 @@ public sealed class LargeInputTests
         Assert.EndsWith("<span class=\"hljs-literal\">yes</span>", await highlight, StringComparison.Ordinal);
     }
 
+    // A CoffeeScript regular expression literal used to look for its closing `/` from each `/` of a line up to the end of
+    // the line (more than a minute for 100,000 characters).
+    [Theory]
+    [InlineData("x = a", "/a")]
+    [InlineData("x = /", "a/")]
+    [InlineData("", "a/b")]
+    [InlineData("x = ", "/a 0b1")]
+    [InlineData("x = ", "/a\\")]
+    public async Task Highlight_CoffeeScriptLongLineOfSlashes_CompletesInReasonableTime(string prefix, string part)
+    {
+        var code = prefix + string.Concat(Enumerable.Repeat(part, 100_000 / part.Length)) + "\nyes";
+
+        var isFallback = false;
+        var highlight = Task.Run(() => HighlightWithFallbackDetection(code, "coffeescript", out isFallback));
+        var finished = await Task.WhenAny(highlight, Task.Delay(Budget)) == highlight;
+
+        Assert.True(finished, $"Highlighting {code.Length} characters of 'coffeescript' did not finish within {Budget.TotalSeconds:F0}s.");
+        Assert.False(isFallback, $"Highlighting {code.Length} characters of 'coffeescript' was abandoned.");
+        Assert.EndsWith("<span class=\"hljs-literal\">yes</span>", await highlight, StringComparison.Ordinal);
+    }
+
     // A properties key used to be matched from each of its positions, which is quadratic on a long key made of escapes
     // (a minute and a half for 60,000 backslashes).
     [Theory]

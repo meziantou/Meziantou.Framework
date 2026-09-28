@@ -59,7 +59,13 @@ internal static class CoffeeScript
 
                     // A regexp cannot start with a space, to parse `x / 2 / 3` as two divisions, nor with `*`, which is
                     // illegal in the root mode.
-                    new Mode { Begin = @"\/(?![ *]).*?(?![\\]).\/[gim]{0,3}(?=\W)" },
+                    // Deviation from highlight.js (`\/(?![ *]).*?(?![\\]).\/[gim]{0,3}(?=\W)`), which skips a closing
+                    // `/` followed by a word character and looks for another one further on the line: the regexp ends
+                    // at its first `/` that does not follow a backslash, and is not one if that `/` is not followed by
+                    // its flags. For the same reason, a `/` that follows a backslash does not start one. Otherwise, each
+                    // `/` of a line without a closing one scanned the rest of the line, which is quadratic on a long
+                    // line of divisions.
+                    new Mode { Begin = @"(?<!\\)\/(?![ *])(?>(?:[^/\n]|(?<=\\)\/)+)\/[gim]{0,3}(?=\W)" },
                 ],
             },
             new Mode { Begin = "@" + EcmaScript.IdentRe },

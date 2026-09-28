@@ -133,6 +133,7 @@ internal static class LanguageRegistry
             ["kt"] = () => Kotlin.Instance,
             ["kts"] = () => Kotlin.Instance,
             ["scala"] = () => Scala.Instance,
+            ["groovy"] = () => Groovy.Instance,
         }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
     // Grammars compiled with a non-default match timeout, keyed by the default grammar instance.

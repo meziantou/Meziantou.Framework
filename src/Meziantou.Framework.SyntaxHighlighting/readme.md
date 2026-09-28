@@ -122,6 +122,7 @@ The package currently supports these language identifiers and common aliases:
 - `fsharp`, `fs`, `f#`
 - `go`, `golang`
 - `graphql`, `gql`
+- `groovy`
 - `haskell`, `hs`
 - `html`, `htm`, `xhtml`
 - `http`, `https`

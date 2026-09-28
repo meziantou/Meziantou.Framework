@@ -178,10 +178,12 @@ internal static class AsciiDoc
                 // Images and links.
                 // Deviation from highlight.js, whose target is `\S+?`: when the attribute list of the first `[` had no `]`
                 // before the next `[`, the target went on through that `[` to try the next one, to the end of the line.
-                // The target ends at the first `[`, as in AsciiDoc, which also keeps a long line of targets linear.
+                // The target ends at the first `[`, as in AsciiDoc. Every later macro prefix of a run of target characters
+                // reaches the same `[` (or the same whitespace), so only the first one is tried: trying each of them
+                // scanned the rest of the run, which is quadratic on a long run of prefixes (`http://ahttp://a…`).
                 new Mode
                 {
-                    Begin = @"(link:)?(http|https|ftp|file|irc|image:?):[^\s\[]+\[[^\[]*?\]",
+                    Begin = FirstCandidate(@"(?:link:)?(?:http|https|ftp|file|irc|image:?):", @"[^\s\[]") + @"(link:)?(http|https|ftp|file|irc|image:?):[^\s\[]+\[[^\[]*?\]",
                     ReturnBegin = true,
                     Contains =
                     [

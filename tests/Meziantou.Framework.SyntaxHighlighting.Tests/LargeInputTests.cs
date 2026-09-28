@@ -273,6 +273,27 @@ public sealed class LargeInputTests
         Assert.EndsWith("<span class=\"hljs-strong\">*end*</span>", await highlight, StringComparison.Ordinal);
     }
 
+    // An AsciiDoc link or image macro used to be looked for from each macro prefix of a run of target characters, each
+    // time scanning to the end of the run (0.7 seconds for 100,000 characters, about 20 seconds for this document).
+    [Theory]
+    [InlineData("http://a")]
+    [InlineData("http://a,")]
+    [InlineData("file:/")]
+    [InlineData("image:x")]
+    [InlineData("link:http:")]
+    [InlineData("|http://a")]
+    [InlineData("http://a[b")]
+    public async Task Highlight_AsciiDocLongRunOfMacroPrefixes_CompletesInReasonableTime(string part)
+    {
+        var code = string.Concat(Enumerable.Repeat(part, 600_000 / part.Length)) + "\n\nhttps://example.com[end]";
+
+        var highlight = Task.Run(() => HighlightWithFallbackDetection(code, "asciidoc", out _));
+        var finished = await Task.WhenAny(highlight, Task.Delay(Budget)) == highlight;
+
+        Assert.True(finished, $"Highlighting {code.Length} characters of 'asciidoc' did not finish within {Budget.TotalSeconds:F0}s.");
+        Assert.EndsWith("<span class=\"hljs-link\">https://example.com</span>[<span class=\"hljs-string\">end</span>]", await highlight, StringComparison.Ordinal);
+    }
+
     // The guard against grammars that stop making progress used to count the hits of every run of the document, but
     // compared the count with a position in the current fragment, so a document with many embedded fragments was
     // abandoned (plain text).

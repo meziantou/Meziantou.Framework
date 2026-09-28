@@ -65,8 +65,6 @@ dotnet_diagnostic.MA0186.severity = warning
 dotnet_diagnostic.CA1852.severity = none
 
 [src/Meziantou.AspNetCore.Components/**.{cs,razor}]
-# MA0004: Use Task.ConfigureAwait
-dotnet_diagnostic.MA0004.severity = none
 # BL0016: Unguarded JS interop call
 dotnet_diagnostic.BL0016.severity = none
 

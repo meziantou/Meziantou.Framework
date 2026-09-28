@@ -155,6 +155,7 @@ public class HighlighterTests
     [InlineData("pp")]
     [InlineData("thrift")]
     [InlineData("zone")]
+    [InlineData("adoc")]
     public void IsSupported_KnownLanguage_ReturnsTrue(string language)
     {
         Assert.True(SyntaxHighlighter.IsSupported(language));

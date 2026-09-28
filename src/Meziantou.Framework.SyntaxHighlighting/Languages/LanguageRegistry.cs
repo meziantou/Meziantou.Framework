@@ -272,6 +272,8 @@ internal static class LanguageRegistry
             ["dns"] = () => Dns.Instance,
             ["bind"] = () => Dns.Instance,
             ["zone"] = () => Dns.Instance,
+            ["asciidoc"] = () => AsciiDoc.Instance,
+            ["adoc"] = () => AsciiDoc.Instance,
         }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
     // Grammars compiled with a non-default match timeout, keyed by the default grammar instance.

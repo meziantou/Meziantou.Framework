@@ -199,6 +199,26 @@ public sealed class LargeInputTests
         Assert.EndsWith("<span class=\"hljs-keyword\">BEGIN</span>", await highlight, StringComparison.Ordinal);
     }
 
+    // An AsciiDoc strong, emphasis or smart quote mark used to scan the rest of its line or paragraph for a closing mark
+    // from each unclosed mark (8 to 40 seconds for the single-line documents).
+    [Theory]
+    [InlineData(" *a")]
+    [InlineData(" * ")]
+    [InlineData(" **a")]
+    [InlineData(" __a")]
+    [InlineData(" `a`")]
+    [InlineData("x *a\n")]
+    public async Task Highlight_AsciiDocUnclosedMarks_CompletesInReasonableTime(string part)
+    {
+        var code = string.Concat(Enumerable.Repeat(part, 60_000 / part.Length)) + "\n\n*end*";
+
+        var highlight = Task.Run(() => HighlightWithFallbackDetection(code, "asciidoc", out _));
+        var finished = await Task.WhenAny(highlight, Task.Delay(Budget)) == highlight;
+
+        Assert.True(finished, $"Highlighting {code.Length} characters of 'asciidoc' did not finish within {Budget.TotalSeconds:F0}s.");
+        Assert.EndsWith("<span class=\"hljs-strong\">*end*</span>", await highlight, StringComparison.Ordinal);
+    }
+
     // The guard against grammars that stop making progress used to count the hits of every run of the document, but
     // compared the count with a position in the current fragment, so a document with many embedded fragments was
     // abandoned (plain text).

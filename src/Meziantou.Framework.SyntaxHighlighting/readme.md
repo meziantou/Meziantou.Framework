@@ -109,6 +109,7 @@ The package currently supports these language identifiers and common aliases:
 - `apache`, `apacheconf`, `htaccess`
 - `arduino`, `ino`
 - `armasm`, `arm`
+- `asciidoc`, `adoc`
 - `awk`, `gawk`, `mawk`, `nawk`
 - `bash`, `sh`, `zsh`, `ksh`
 - `bicep`, `bicepparam`

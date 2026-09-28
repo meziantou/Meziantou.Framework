@@ -104,6 +104,9 @@ internal static class LanguageRegistry
             ["h"] = () => C.Instance,
             ["diff"] = () => Diff.Instance,
             ["patch"] = () => Diff.Instance,
+            ["plaintext"] = () => Plaintext.Instance,
+            ["text"] = () => Plaintext.Instance,
+            ["txt"] = () => Plaintext.Instance,
         }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
     // Grammars compiled with a non-default match timeout, keyed by the default grammar instance.

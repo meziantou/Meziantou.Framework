@@ -86,6 +86,7 @@ public class HighlighterTests
     [InlineData("py")]
     [InlineData("h")]
     [InlineData("patch")]
+    [InlineData("txt")]
     public void IsSupported_KnownLanguage_ReturnsTrue(string language)
     {
         Assert.True(SyntaxHighlighter.IsSupported(language));

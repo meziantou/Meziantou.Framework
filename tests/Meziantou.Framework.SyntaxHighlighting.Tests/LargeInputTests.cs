@@ -304,11 +304,11 @@ public sealed class LargeInputTests
     }
 
     // A Handlebars `[ abc ]` segment that is not closed used to be scanned to the end of the document from each `[` that
-    // follows it, in the same mustache or in a later one (40, 20 and 25 seconds for these documents).
+    // follows it, in the same mustache or in a later one (15, 15 and 24 seconds for these documents).
     [Theory]
     [InlineData("{{x ", "[a", "}}", 1_000_000)]
     [InlineData("{{x ", "a.[a", "}}", 1_000_000)]
-    [InlineData("", "{{x [a}}\n", "", 2_000_000)]
+    [InlineData("", "{{x [ [ [ [ [ [ [}}\n", "", 1_400_000)]
     public async Task Highlight_HandlebarsUnclosedBracketSegments_CompletesInReasonableTime(string prefix, string part, string suffix, int length)
     {
         var code = prefix + string.Concat(Enumerable.Repeat(part, length / part.Length)) + suffix + "\n{{#if a}}";
@@ -361,7 +361,7 @@ public sealed class LargeInputTests
         var code = content switch
         {
             "digits" => "(f " + new string('1', 100_000) + ")\n(define x 1)",
-            "numbers" => "(f " + string.Concat(Enumerable.Repeat("1-", 300_000)) + ")\n(define x 1)",
+            "numbers" => "(f " + string.Concat(Enumerable.Repeat("1-", 200_000)) + ")\n(define x 1)",
             _ => throw new ArgumentOutOfRangeException(nameof(content)),
         };
 

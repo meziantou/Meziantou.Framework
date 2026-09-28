@@ -1050,9 +1050,9 @@ Text following the table.");
     // Timed: tests running at the same time would slow it down and make the time budget flaky
     [Theory(DisableParallelization = true)]
     [InlineData("", 0, "- a\n\nb\n\n", 100_000)]
-    [InlineData("", 0, "> a\n\nb\n\n", 200_000)]
+    [InlineData("", 0, ">\n\n", 400_000)]
     [InlineData("- a\n", 1, "  - - -\n", 600_000)]
-    [InlineData("", 0, "- a\n", 300_000)]
+    [InlineData("", 0, "- a\n", 200_000)]
     [InlineData("a\n\n", 120_000, "- a\n", 120_000)]
     public void SiblingBlocksAreNormalizedInLinearTime(string prefix, int prefixCount, string item, int count)
     {

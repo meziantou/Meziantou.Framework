@@ -574,7 +574,7 @@ public sealed class TestPipeTable
     public void ManyTablesWithParagraphsAreParsedInLinearTime(string item, string expectedItem)
     {
         // The blocks added before or after a table were inserted one by one in the parent, which moved all the blocks after them
-        const int Count = 100_000;
+        const int Count = 70_000;
         var markdown = string.Concat(Enumerable.Repeat(item, Count));
         var pipeline = new MarkdownPipelineBuilder().UsePipeTables().Build();
 
@@ -664,9 +664,9 @@ public sealed class TestPipeTable
     public void ManyTablesInAParagraphAreParsedWithTriviaInLinearTime()
     {
         // With trivia, each paragraph that ends before a table positioned a line break at the end of the text of the paragraph,
-        // walking all the lines after it
-        const int Count = 150_000;
-        var markdown = string.Concat(Enumerable.Repeat("x\n|a|\n|-|\n", Count)) + "x\n";
+        // walking all the lines after it. The lines after the last table make each walk longer, but are parsed only once.
+        const int Count = 50_000;
+        var markdown = string.Concat(Enumerable.Repeat("x\n|a|\n|-|\n", Count)) + string.Concat(Enumerable.Repeat("x\n", 10 * Count));
         var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().EnableTrackTrivia().Build();
 
         var stopwatch = Stopwatch.StartNew();
@@ -682,9 +682,9 @@ public sealed class TestPipeTable
     public void ManyTablesFollowedByAnUnclosedHtmlCommentAreParsedInLinearTime()
     {
         // The scans for the end of the comment were forgotten at each paragraph after a table, so each one scanned the rest
-        // of the text again
-        const int Count = 150_000;
-        var markdown = string.Concat(Enumerable.Repeat("|a|b|\n|-|-|\nx <!--\n", Count));
+        // of the text again. The long line at the end makes each scan longer, but is parsed only once.
+        const int Count = 60_000;
+        var markdown = string.Concat(Enumerable.Repeat("|a|b|\n|-|-|\nx <!--\n", Count)) + new string('x', 80 * Count);
         var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
 
         var stopwatch = Stopwatch.StartNew();

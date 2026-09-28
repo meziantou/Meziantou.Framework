@@ -10,8 +10,11 @@ internal static class HtmlComponents
     /// <paramref name="languages"/> (regex alternatives), and whose content is highlighted as
     /// <paramref name="subLanguage"/>, or is plain text when it is <see langword="null"/>.
     /// </summary>
-    /// <remarks>Its open tag is highlighted like the HTML <c>script</c> and <c>style</c> tags.</remarks>
-    public static Mode CreateTagWithLang(Html.HtmlModes html, string tagName, string languages, string? subLanguage)
+    /// <remarks>
+    /// Its open tag is highlighted like the HTML <c>script</c> and <c>style</c> tags. <paramref name="contentModes"/> are
+    /// the modes recognized in its content, between the fragments highlighted as <paramref name="subLanguage"/>.
+    /// </remarks>
+    public static Mode CreateTagWithLang(Html.HtmlModes html, string tagName, string languages, string? subLanguage, IList<Mode>? contentModes = null)
     {
         return new Mode
         {
@@ -28,6 +31,7 @@ internal static class HtmlComponents
                 End = @"<\/" + tagName + ">",
                 ReturnEnd = true,
                 SubLanguage = subLanguage,
+                Contains = contentModes ?? [],
             },
         };
     }

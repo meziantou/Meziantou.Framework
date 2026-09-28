@@ -177,6 +177,7 @@ The package currently supports these language identifiers and common aliases:
 - `shell`, `console`, `shellsession`
 - `solidity`, `sol`
 - `sql`
+- `svelte`
 - `swift`
 - `twig`, `craftcms`
 - `typescript`, `ts`, `tsx`, `mts`, `cts`

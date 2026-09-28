@@ -19,7 +19,6 @@ public class SoftlineBreakAsHardlineExtension : IMarkdownExtension
     public void Setup(MarkdownPipelineBuilder pipeline)
     {
         // Simply modify the LineBreakInlineParser
-        // TODO: We might want more options (like pandoc)
         var parser = pipeline.InlineParsers.Find<LineBreakInlineParser>();
         if (parser != null)
         {

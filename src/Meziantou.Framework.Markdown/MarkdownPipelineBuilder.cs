@@ -117,11 +117,6 @@ public class MarkdownPipelineBuilder
             return _pipeline;
         }
 
-        // TODO: Review the whole initialization process for extensions
-        // - It does not prevent a user to modify the pipeline after it has been used
-        // - a pipeline is not thread safe.
-        // We should find a proper way to make the pipeline safely modifiable/freezable (PipelineBuilder -> Pipeline)
-
         // Allow extensions to modify existing BlockParsers, InlineParsers and Renderer
         foreach (var extension in Extensions)
         {

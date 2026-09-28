@@ -53,5 +53,3 @@ Using a fenced code block with the `nomnoml` language info will output a `<div c
 ]
 </div>
 ````````````````````````````````
-
-TODO: Add other text diagram languages

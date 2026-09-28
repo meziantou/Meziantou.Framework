@@ -54,7 +54,9 @@ public sealed class MarkdownPipeline
 
     internal InlineParserList InlineParsers { get; }
 
-    // TODO: Move the log to a better place
+    /// <summary>
+    /// Gets the writer the inline processor writes its debug log to, or <see langword="null"/> to disable the log.
+    /// </summary>
     internal TextWriter? DebugLog { get; }
 
     internal ProcessDocumentDelegate? _documentProcessed;

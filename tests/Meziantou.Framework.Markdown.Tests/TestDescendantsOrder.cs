@@ -108,7 +108,7 @@ public static class TestDescendantsOrder
 
     private static IEnumerable<MarkdownObject> Descendants_Legacy(MarkdownObject markdownObject)
     {
-        // TODO: implement a recursiveless method
+        // Recursive reference implementation, used to check the order of the items returned by Descendants
 
         var block = markdownObject as ContainerBlock;
         if (block is not null)

@@ -81,5 +81,4 @@ public class TestExtensionsNomnomlDiagrams
 
         TestParser.TestSpec("```nomnoml\n[example|\n  propertyA: Int\n  propertyB: string\n|\n  methodA()\n  methodB()\n|\n  [subA]--[subB]\n  [subA]-:>[sub C]\n]\n```", "<div class=\"nomnoml\">[example|\n  propertyA: Int\n  propertyB: string\n|\n  methodA()\n  methodB()\n|\n  [subA]--[subB]\n  [subA]-:>[sub C]\n]\n</div>", "diagrams|advanced", context: "Example 2\nSection Extensions / nomnoml diagrams\n");
     }
-    // TODO: Add other text diagram languages
 }

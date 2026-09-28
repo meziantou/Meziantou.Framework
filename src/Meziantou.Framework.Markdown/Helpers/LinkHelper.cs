@@ -453,10 +453,10 @@ public static class LinkHelper
     internal static bool TryParseInlineLink(ref StringSlice text, out string? link, out string? title, out SourceSpan linkSpan, out SourceSpan titleSpan, InlineLinkScanCache? scanCache)
     {
         // 1. An inline link consists of a link text followed immediately by a left parenthesis (,
-        // 2. optional whitespace,  TODO: specs: is it whitespace or multiple whitespaces?
+        // 2. optional spaces, tabs and up to one line ending,
         // 3. an optional link destination,
-        // 4. an optional link title separated from the link destination by whitespace,
-        // 5. optional whitespace,  TODO: specs: is it whitespace or multiple whitespaces?
+        // 4. an optional link title separated from the link destination by spaces, tabs and up to one line ending,
+        // 5. optional spaces, tabs and up to one line ending,
         // 6. and a right parenthesis )
         bool isValid = false;
         var c = text.CurrentChar;
@@ -587,10 +587,10 @@ public static class LinkHelper
         InlineLinkScanCache? scanCache)
     {
         // 1. An inline link consists of a link text followed immediately by a left parenthesis (,
-        // 2. optional whitespace,  TODO: specs: is it whitespace or multiple whitespaces?
+        // 2. optional spaces, tabs and up to one line ending,
         // 3. an optional link destination,
-        // 4. an optional link title separated from the link destination by whitespace,
-        // 5. optional whitespace,  TODO: specs: is it whitespace or multiple whitespaces?
+        // 4. an optional link title separated from the link destination by spaces, tabs and up to one line ending,
+        // 5. optional spaces, tabs and up to one line ending,
         // 6. and a right parenthesis )
         bool isValid = false;
         var c = text.CurrentChar;
@@ -1206,7 +1206,7 @@ public static class LinkHelper
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal static bool IsEndOfUri(char c, bool isAutoLink)
     {
-        return c == '\0' || c.IsSpaceOrTab() || c.IsControl() || (isAutoLink && c == '<'); // TODO: specs unclear. space is strict or relaxed? (includes tabs?)
+        return c == '\0' || c.IsSpaceOrTab() || c.IsControl() || (isAutoLink && c == '<'); // A link destination cannot contain spaces or control characters (including tabs and line endings)
     }
 
     /// <summary>

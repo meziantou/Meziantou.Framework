@@ -101,7 +101,7 @@ public class ListBlockParser : BlockParser
             result = thematicParser.TryOpen(processor);
             if (result.IsBreak())
             {
-                // TODO: We remove the thematic break, as it will be created later, but this is inefficient, try to find another way
+                // Remove the thematic break, as it is created again when the parent blocks try to open a new block
                 var thematicBreak = processor.NewBlocks.Pop();
 
                 if (processor.TrackTrivia)
@@ -114,7 +114,7 @@ public class ListBlockParser : BlockParser
         }
 
         // 5.2 List items
-        // TODO: Check with specs, it is not clear that list marker or bullet marker must be followed by at least 1 space
+        // A list marker must be followed by at least one space or tab, or by the end of the line (item starting with a blank line)
 
         // If we have already a ListItemBlock, we are going to try to append to it
         result = BlockState.None;

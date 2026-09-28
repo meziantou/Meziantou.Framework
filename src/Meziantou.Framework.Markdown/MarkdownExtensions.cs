@@ -560,8 +560,6 @@ public static class MarkdownExtensions
             return pipeline;
         }
 
-        // TODO: the extension string should come from the extension itself instead of this hardcoded switch case.
-
         foreach (var extension in extensions.Split(new[] { '+' }, StringSplitOptions.RemoveEmptyEntries))
         {
             switch (extension.ToLowerInvariant())

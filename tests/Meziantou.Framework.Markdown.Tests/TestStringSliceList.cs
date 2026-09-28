@@ -7,8 +7,6 @@ namespace Meziantou.Framework.Markdown.Tests;
 
 public class TestStringSliceList
 {
-    // TODO: Add more tests for StringLineGroup
-
     [Fact]
     public void TestStringLineGroupSimple()
     {
@@ -236,5 +234,98 @@ public class TestStringSliceList
         currentLine = (StringLine)nonBoxedEnumerator.Current;
         TextAssert.AreEqual("A", currentLine.ToString());
         Assert.False(nonBoxedEnumerator.MoveNext());
+    }
+
+    [Fact]
+    public void TestStringLineGroupRemoveAt()
+    {
+        var text = new StringLineGroup(4)
+        {
+            new StringSlice("A", NewLine.LineFeed),
+            new StringSlice("B", NewLine.LineFeed),
+            new StringSlice("C", NewLine.LineFeed),
+            new StringSlice("D")
+        };
+
+        text.RemoveAt(1);
+        Assert.Equal(3, text.Count);
+        TextAssert.AreEqual("A\nC\nD", text.ToString());
+
+        text.RemoveAt(2);
+        Assert.Equal(2, text.Count);
+        TextAssert.AreEqual("A\nC", text.ToString());
+        Assert.Null(text.Lines[2].Slice.Text);
+    }
+
+    [Fact]
+    public void TestStringLineGroupClear()
+    {
+        var text = new StringLineGroup(4)
+        {
+            new StringSlice("A", NewLine.LineFeed),
+            new StringSlice("B")
+        };
+
+        text.Clear();
+        Assert.Equal(0, text.Count);
+        TextAssert.AreEqual("", text.ToString());
+        Assert.All(text.Lines, line => line.Slice.Text is null);
+    }
+
+    [Fact]
+    public void TestStringLineGroupToSliceWithLineOffsets()
+    {
+        var text = new StringLineGroup(4)
+        {
+            new StringSlice("ABC", NewLine.LineFeed),
+            new StringSlice("E", NewLine.CarriageReturnLineFeed),
+            new StringSlice("F")
+        };
+
+        var lineOffsets = new List<StringLineGroup.LineOffset>();
+        var slice = text.ToSlice(lineOffsets);
+
+        TextAssert.AreEqual("ABC\nE\r\nF", slice.ToString());
+        Assert.HasCount(3, lineOffsets);
+        Assert.Equal((0, 3), (lineOffsets[0].Start, lineOffsets[0].End));
+        Assert.Equal((4, 5), (lineOffsets[1].Start, lineOffsets[1].End));
+        Assert.Equal((7, 8), (lineOffsets[2].Start, lineOffsets[2].End));
+    }
+
+    [Fact]
+    public void TestStringLineGroupIteratorRemaining()
+    {
+        var text = new StringLineGroup(4)
+        {
+            new StringSlice("ABC", NewLine.LineFeed),
+            new StringSlice("E", NewLine.LineFeed),
+            new StringSlice("F")
+        };
+
+        var iterator = text.ToCharIterator();
+        iterator.NextChar();
+
+        TextAssert.AreEqual("BC\nE\nF", iterator.Remaining().ToString());
+    }
+
+    [Fact]
+    public void TestStringLineGroupIteratorRemainingRemovesConsumedLines()
+    {
+        var text = new StringLineGroup(4)
+        {
+            new StringSlice("ABC", NewLine.LineFeed),
+            new StringSlice("E", NewLine.LineFeed),
+            new StringSlice("F")
+        };
+
+        var iterator = text.ToCharIterator();
+        while (iterator.CurrentChar != 'E')
+        {
+            iterator.NextChar();
+        }
+
+        var remaining = iterator.Remaining();
+        Assert.Equal(2, remaining.Count);
+        TextAssert.AreEqual("E\nF", remaining.ToString());
     }
 }

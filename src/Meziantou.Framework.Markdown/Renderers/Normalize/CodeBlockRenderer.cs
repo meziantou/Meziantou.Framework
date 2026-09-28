@@ -46,14 +46,7 @@ public class CodeBlockRenderer : NormalizeObjectRenderer<CodeBlock>
                 renderer.Write(' ').Write(fencedCodeBlock.Arguments);
             }
 
-            /* TODO do we need this causes a empty space and would render html attributes to markdown.
-            var attributes = obj.TryGetAttributes();
-            if (attributes != null)
-            {
-                renderer.Write(' ');
-                renderer.Write(attributes);
-            }
-            */
+            // The HTML attributes of the block are not written, as they cannot be rendered as Markdown
             renderer.WriteLine();
 
             // Always close the fence: a block closed by the end of its container, or unclosed, would otherwise swallow what follows

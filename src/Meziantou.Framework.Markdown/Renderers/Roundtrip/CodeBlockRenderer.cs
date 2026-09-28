@@ -45,14 +45,7 @@ public class CodeBlockRenderer : RoundtripObjectRenderer<CodeBlock>
                 renderer.Write(fencedCodeBlock.TriviaAfterArguments);
             }
 
-            /* TODO do we need this causes a empty space and would render html attributes to markdown.
-            var attributes = obj.TryGetAttributes();
-            if (attributes != null)
-            {
-                renderer.Write(" ");
-                renderer.Write(attributes);
-            }
-            */
+            // The HTML attributes of the block are not written, as they cannot be rendered as Markdown
             renderer.WriteLine(fencedCodeBlock.InfoNewLine);
 
             renderer.WriteLeafRawLines(obj);

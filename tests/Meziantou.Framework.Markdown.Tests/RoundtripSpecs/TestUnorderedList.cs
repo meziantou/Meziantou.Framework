@@ -55,7 +55,7 @@ public class TestUnorderedList
     }
 
     [Theory]
-    [InlineData("-     i1\n\np\n")] // TODO: listblock should render newline, apparently last paragraph of last listitem dont have newline
+    [InlineData("-     i1\n\np\n")]
     [InlineData("-     i1\n\n\np\n")]
     [InlineData("- i1\n\np")]
     [InlineData("- i1\n\np\n")]

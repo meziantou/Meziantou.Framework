@@ -226,6 +226,7 @@ internal static class LanguageRegistry
             ["vhdl"] = () => Vhdl.Instance,
             ["vhd"] = () => Vhdl.Instance,
             ["haml"] = () => Haml.Instance,
+            ["vue"] = () => Vue.Instance,
         }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
     // Grammars compiled with a non-default match timeout, keyed by the default grammar instance.

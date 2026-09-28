@@ -108,6 +108,7 @@ The package currently supports these language identifiers and common aliases:
 
 - `bash`, `sh`, `zsh`, `ksh`
 - `bnf`
+- `c`, `h`
 - `cpp`, `c++`, `cc`, `h++`, `hpp`, `hh`, `hxx`, `cxx`
 - `csharp`, `cs`, `c#`
 - `css`

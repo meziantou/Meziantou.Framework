@@ -5,42 +5,9 @@ namespace Meziantou.Framework.SyntaxHighlighting.Languages;
 
 internal static class Cpp
 {
-    private const string DeclTypeAutoRe = @"decltype\(auto\)";
-    private const string NamespaceRe = @"[a-zA-Z_]\w*::";
-    private const string TemplateArgumentRe = @"<[^<>]+>";
-
-    private const string FunctionTypeRe =
-        "(?!struct)(" + DeclTypeAutoRe + "|"
-        + "(?:" + NamespaceRe + ")?"
-        + @"[a-zA-Z_]\w*"
-        + "(?:" + TemplateArgumentRe + ")?"
-        + ")";
-
     private const string DecimalStartRe = @"(?:\G|(?<![0-9](?:(?!\G)')?))";
 
-    private const string FunctionTypeNoCaptureRe =
-        "(?!struct)(?:" + DeclTypeAutoRe + "|"
-        + "(?:" + NamespaceRe + ")?"
-        + @"[a-zA-Z_]\w*"
-        + "(?:" + TemplateArgumentRe + ")?"
-        + ")";
-
-    // The namespace and the identifier are both runs of word characters that are searched for: only try
-    // each of them from the first position of the run where it can start.
-    private static readonly string ScopedIdentifierRe =
-        "(?:" + CommonModes.RunStart(@"\w", "a-zA-Z_") + NamespaceRe + ")?" + CommonModes.IdentRe;
-
-    private static readonly string FunctionTitleRe =
-        "(?:" + CommonModes.RunStart(@"\w", "a-zA-Z_") + NamespaceRe + ")?" + CommonModes.RunStart(@"\w", "a-zA-Z") + CommonModes.IdentRe + @"\s*\(";
-
-    // A declaration is a sequence of types followed by the function name. A type that follows another
-    // type of the sequence can also be matched from the start of the sequence, so it can never be the
-    // leftmost match and is skipped: otherwise, each type of a long sequence would rescan it. The
-    // previous type does not count when the scan starts after it (e.g. after a preprocessor directive).
-    private static readonly string FunctionDeclarationRe =
-        CommonModes.RunStart(@"\w", "a-zA-Z_", "(?!struct)")
-        + @"(?:\G|(?<!" + FunctionTypeNoCaptureRe + @"(?:(?!\G)[\*&\s])+))"
-        + "(" + FunctionTypeRe + @"[\*&\s]+)+" + FunctionTitleRe;
+    private static readonly string FunctionDeclarationRe = CFamily.CreateFunctionDeclarationRe("(?!struct)");
 
     private static readonly string[] ReservedKeywords =
     [
@@ -88,34 +55,7 @@ internal static class Cpp
 
         var primitiveTypes = new Mode { Scope = "type", Begin = @"\b[a-z\d_]*_t\b" };
 
-        const string CharacterEscapes = @"\\(x[0-9A-Fa-f]{2}|u[0-9A-Fa-f]{4,8}|[0-7]{3}|\S)";
-
-        var strings = new Mode
-        {
-            Scope = "string",
-            Variants =
-            [
-                new Mode
-                {
-                    Begin = @"(u8?|U|L)?""",
-                    End = @"""",
-                    Illegal = @"\n",
-                    Contains = [CommonModes.BackslashEscape],
-                },
-                new Mode
-                {
-                    Begin = @"(u8?|U|L)?'(" + CharacterEscapes + "|.)",
-                    End = "'",
-                    Illegal = ".",
-                },
-                new Mode
-                {
-                    Begin = @"(?:u8?|U|L)?R""([^()\\ ]{0,16})\(",
-                    End = @"\)([^()\\ ]{0,16})""",
-                    EndSameAsBegin = true,
-                },
-            ],
-        };
+        var strings = CFamily.CreateStrings();
 
         var numbers = new Mode
         {
@@ -177,14 +117,13 @@ internal static class Cpp
             [
                 new() { Begin = @"\\\n" },
                 strings,
-                // A `<` that follows an unclosed `<` of the same line would end on the same `>`.
-                new() { Scope = "string", Begin = @"(?=<)(?:\G|(?<!<(?:(?!\G)[^>\n])*?))<.*?>" },
+                new() { Scope = "string", Begin = CFamily.HeaderNameRe },
                 cLineComment,
                 CommonModes.CBlockCommentMode,
             ],
         };
 
-        var titleMode = new Mode { Scope = "title", Begin = ScopedIdentifierRe };
+        var titleMode = new Mode { Scope = "title", Begin = CFamily.ScopedIdentifierRe };
 
         var functionDispatch = new Mode
         {
@@ -264,10 +203,10 @@ internal static class Cpp
             Illegal = @"[^\w\s\*&:<>.]",
             Contains =
             [
-                new() { Begin = DeclTypeAutoRe, Keywords = keywords },
+                new() { Begin = CFamily.DeclTypeAutoRe, Keywords = keywords },
                 new()
                 {
-                    Begin = FunctionTitleRe,
+                    Begin = CFamily.FunctionTitleRe,
                     ReturnBegin = true,
                     Contains = [titleMode],
                 },
@@ -329,7 +268,7 @@ internal static class Cpp
         contains.AddRange(expressionContains);
         contains.Add(preprocessor);
         contains.Add(containerTemplates);
-        contains.Add(new Mode { Begin = CommonModes.RunStart(@"\w", "a-zA-Z") + CommonModes.IdentRe + "::", Keywords = keywords });
+        contains.Add(new Mode { Begin = CFamily.ScopeQualifierRe, Keywords = keywords });
         contains.Add(classDeclaration);
 
         return new Mode

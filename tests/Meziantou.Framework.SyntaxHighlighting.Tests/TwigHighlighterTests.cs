@@ -208,8 +208,8 @@ public class TwigHighlighterTests
 """
 <span class="language-html"><span class="hljs-tag">&lt;<span class="hljs-name">script</span>&gt;</span><span class="language-javascript">
   <span class="hljs-keyword">var</span> config = </span></span><span class="hljs-template-variable">{{ config<span class="hljs-punctuation">|</span><span class="hljs-keyword">json_encode</span><span class="hljs-punctuation">|</span><span class="hljs-keyword">raw</span> }}</span><span class="language-html"><span class="language-javascript">;
-  <span class="hljs-keyword">var</span> name = <span class="hljs-string">&quot;</span></span></span><span class="hljs-template-variable">{{ name }}</span><span class="language-html"><span class="language-javascript"><span class="hljs-string">&quot;;
-  </span></span></span><span class="hljs-template-tag">{%</span> <span class="hljs-name">if</span> debug <span class="hljs-template-tag">%}</span><span class="language-html"><span class="language-javascript"><span class="hljs-variable language_">console</span>.<span class="hljs-title function_">log</span>(config);</span></span><span class="hljs-template-tag">{%</span> <span class="hljs-name">endif</span> <span class="hljs-template-tag">%}</span><span class="language-html"><span class="language-javascript">
+  <span class="hljs-keyword">var</span> name = <span class="hljs-string">&quot;</span></span></span><span class="hljs-template-variable">{{ name }}</span><span class="language-html"><span class="language-javascript"><span class="hljs-string">&quot;</span>;
+  </span></span><span class="hljs-template-tag">{%</span> <span class="hljs-name">if</span> debug <span class="hljs-template-tag">%}</span><span class="language-html"><span class="language-javascript"><span class="hljs-variable language_">console</span>.<span class="hljs-title function_">log</span>(config);</span></span><span class="hljs-template-tag">{%</span> <span class="hljs-name">endif</span> <span class="hljs-template-tag">%}</span><span class="language-html"><span class="language-javascript">
 </span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span></span>
 """);
     }

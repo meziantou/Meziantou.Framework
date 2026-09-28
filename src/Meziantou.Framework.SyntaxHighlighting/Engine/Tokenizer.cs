@@ -64,6 +64,14 @@ internal static class Tokenizer
         public readonly bool HasOpenScope => Mode.Scope is not null && !Mode.Skip;
     }
 
+    /// <summary>The state a run ended in: its mode stack, and the state of each sub-language it embeds in turn.</summary>
+    private sealed class Continuation(Frame[] stack, Dictionary<string, Continuation>? nested)
+    {
+        public Frame[] Stack { get; } = stack;
+
+        public Dictionary<string, Continuation>? Nested { get; } = nested;
+    }
+
     public static string Highlight(string text, CompiledMode root, HighlightOptions options) => Highlight(text, root, options, out _);
 
     /// <param name="isFallback"><see langword="true"/> when the result is the input as plain text because highlighting was abandoned.</param>
@@ -156,26 +164,30 @@ internal static class Tokenizer
         private int _bufferStart;
         private int _bufferLength;
 
-        // highlight.js "continuations": the mode stack each sub-language ended in, so that the next
+        // highlight.js "continuations": the state each sub-language ended in, so that the next
         // fragment of the same sub-language (e.g. the markup after a `${}` in a JS html`` template)
         // resumes in that state rather than at the sub-language's root.
-        private Dictionary<string, Frame[]>? _continuations;
+        private Dictionary<string, Continuation>? _continuations;
         private BeginGuards.ClosingTagIndex? _closingTags;
 
         // Counted per run, like highlight.js: the hit indexes of a sub-language run are relative to its fragment, so a
         // count shared with the other runs would make a document with many embedded fragments look like a loop.
         private int _iterations;
 
-        /// <summary>The mode stack the run ended in.</summary>
-        public Frame[] FinalStack { get; private set; } = [];
+        /// <summary>The state the run ended in, to resume the next fragment of the same language from.</summary>
+        public Continuation? FinalState { get; private set; }
 
         /// <returns><see langword="false"/> when an illegal lexeme was found and illegal lexemes are not ignored, or when the session was aborted.</returns>
-        public bool Execute(Frame[]? continuation)
+        public bool Execute(Continuation? continuation)
         {
             _scanCache = session.RentScanCache(root);
+
+            // The sub-languages of a resumed run resume too: after a template tag inside a JavaScript string, the markup
+            // resumes inside its <script>, and the script inside its string.
+            _continuations = continuation?.Nested;
             try
             {
-                return ExecuteCore(continuation);
+                return ExecuteCore(continuation?.Stack);
             }
             finally
             {
@@ -277,7 +289,7 @@ internal static class Tokenizer
                 finalStack[i].EndCache = ScanEntry.Empty;
             }
 
-            FinalStack = finalStack;
+            FinalState = new Continuation(finalStack, _continuations);
             return true;
         }
 
@@ -651,8 +663,8 @@ internal static class Tokenizer
 
                 // Embedded languages always ignore illegal lexemes, like highlight.js does.
                 var subRoot = LanguageRegistry.Get(subLanguage, root.MatchTimeout);
-                _continuations ??= new Dictionary<string, Frame[]>(StringComparer.Ordinal);
-                if (_continuations.TryGetValue(subLanguage, out var continuation) && continuation.Length > MaxContinuationDepth)
+                _continuations ??= new Dictionary<string, Continuation>(StringComparer.Ordinal);
+                if (_continuations.TryGetValue(subLanguage, out var continuation) && continuation.Stack.Length > MaxContinuationDepth)
                 {
                     continuation = null;
                 }
@@ -671,7 +683,14 @@ internal static class Tokenizer
 
                 _emitter.CloseScope();
 
-                _continuations[subLanguage] = run.FinalStack;
+                if (run.FinalState is { } finalState)
+                {
+                    _continuations[subLanguage] = finalState;
+                }
+                else
+                {
+                    _continuations.Remove(subLanguage);
+                }
                 return;
             }
 

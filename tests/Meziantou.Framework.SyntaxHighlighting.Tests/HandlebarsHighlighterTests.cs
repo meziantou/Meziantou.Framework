@@ -186,8 +186,8 @@ public class HandlebarsHighlighterTests
 """,
 """
 <span class="language-html"><span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">type</span>=<span class="hljs-string">&quot;text/javascript&quot;</span>&gt;</span><span class="language-javascript">
-  <span class="hljs-keyword">var</span> name = <span class="hljs-string">&quot;</span></span></span><span class="hljs-template-variable">{{<span class="hljs-name">name</span>}}</span><span class="language-html"><span class="language-javascript"><span class="hljs-string">&quot;;
-  var count = </span></span></span><span class="hljs-template-variable">{{<span class="hljs-name">count</span>}}</span><span class="language-html"><span class="language-javascript">;
+  <span class="hljs-keyword">var</span> name = <span class="hljs-string">&quot;</span></span></span><span class="hljs-template-variable">{{<span class="hljs-name">name</span>}}</span><span class="language-html"><span class="language-javascript"><span class="hljs-string">&quot;</span>;
+  <span class="hljs-keyword">var</span> count = </span></span><span class="hljs-template-variable">{{<span class="hljs-name">count</span>}}</span><span class="language-html"><span class="language-javascript">;
   <span class="hljs-keyword">if</span> (count &gt; <span class="hljs-number">1</span>) { <span class="hljs-variable language_">console</span>.<span class="hljs-title function_">log</span>(name); }
 </span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
 <span class="hljs-tag">&lt;<span class="hljs-name">style</span>&gt;</span><span class="language-css"><span class="hljs-selector-tag">body</span> { <span class="hljs-attribute">color</span>: </span></span><span class="hljs-template-variable">{{<span class="hljs-name">color</span>}}</span><span class="language-html"><span class="language-css">; }</span><span class="hljs-tag">&lt;/<span class="hljs-name">style</span>&gt;</span></span>

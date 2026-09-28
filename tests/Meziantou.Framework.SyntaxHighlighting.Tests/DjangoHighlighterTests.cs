@@ -173,8 +173,8 @@ public class DjangoHighlighterTests
 """,
 """
 <span class="language-html"><span class="hljs-tag">&lt;<span class="hljs-name">script</span>&gt;</span><span class="language-javascript">
-  <span class="hljs-keyword">var</span> user = <span class="hljs-string">&quot;</span></span></span><span class="hljs-template-variable">{{ user.name|<span class="hljs-name">escapejs</span> }}</span><span class="language-html"><span class="language-javascript"><span class="hljs-string">&quot;;
-  var items = </span></span></span><span class="hljs-template-variable">{{ items|<span class="hljs-name">safe</span> }}</span><span class="language-html"><span class="language-javascript">;
+  <span class="hljs-keyword">var</span> user = <span class="hljs-string">&quot;</span></span></span><span class="hljs-template-variable">{{ user.name|<span class="hljs-name">escapejs</span> }}</span><span class="language-html"><span class="language-javascript"><span class="hljs-string">&quot;</span>;
+  <span class="hljs-keyword">var</span> items = </span></span><span class="hljs-template-variable">{{ items|<span class="hljs-name">safe</span> }}</span><span class="language-html"><span class="language-javascript">;
   </span></span><span class="hljs-template-tag">{% <span class="hljs-name"><span class="hljs-name">if</span></span> debug %}</span><span class="language-html"><span class="language-javascript"><span class="hljs-variable language_">console</span>.<span class="hljs-title function_">log</span>(user);</span></span><span class="hljs-template-tag">{% <span class="hljs-name"><span class="hljs-name">endif</span></span> %}</span><span class="language-html"><span class="language-javascript">
 </span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span></span>
 """);

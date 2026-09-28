@@ -8,6 +8,7 @@ namespace Meziantou.Framework.Sanitizers
     {
         public System.Collections.Generic.ISet<string> ValidElements { get => throw null; }
         public System.Collections.Generic.ISet<string> ValidAttributes { get => throw null; }
+        public System.Collections.Generic.ISet<string> ValidAttributePrefixes { get => throw null; }
         public System.Collections.Generic.ISet<string> BlockedElements { get => throw null; }
         public System.Collections.Generic.ISet<string> UriAttributes { get => throw null; }
         public System.Collections.Generic.ISet<string> SrcsetAttributes { get => throw null; }

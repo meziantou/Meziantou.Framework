@@ -111,6 +111,10 @@ public class HtmlSanitizerTests
     [InlineData("<a href='javascript:alert(1)' href='https://ok'>x</a>", "<a href='' href='https://ok'>x</a>")]
     // Valueless attributes are kept as-is
     [InlineData("<a href>x</a>", "<a href>x</a>")]
+    // ARIA attributes are allowed by their prefix
+    [InlineData("<p role='note' aria-label='a' ARIA-HIDDEN='true'>x</p>", "<p role='note' aria-label='a' ARIA-HIDDEN='true'>x</p>")]
+    [InlineData("<p arialabel='a' x-aria-label='b'>x</p>", "<p>x</p>")]
+    [InlineData("<p hidden translate='no'><time datetime='2026-01-01'>x</time></p>", "<p hidden translate='no'><time datetime='2026-01-01'>x</time></p>")]
     public void Sanitize_Attributes(string html, string expectedResult)
     {
         var sanitizer = new HtmlSanitizer();
@@ -409,6 +413,34 @@ public class HtmlSanitizerTests
         sanitizer.ValidAttributes.Remove("target");
 
         Assert.Equal("<a href='https://example.com'>test</a>", sanitizer.SanitizeHtmlFragment("<a href='https://example.com' target='_blank'>test</a>"));
+    }
+
+    [Fact]
+    public void Sanitize_CanAllowAdditionalAttributePrefixes()
+    {
+        var sanitizer = new HtmlSanitizer();
+        sanitizer.ValidAttributePrefixes.Add("data-");
+
+        Assert.Equal("<p data-a='1' data-b='2'>test</p>", sanitizer.SanitizeHtmlFragment("<p data-a='1' data-b='2' style='a'>test</p>"));
+    }
+
+    [Fact]
+    public void Sanitize_CanDisallowAttributePrefixes()
+    {
+        var sanitizer = new HtmlSanitizer();
+        sanitizer.ValidAttributePrefixes.Remove("aria-");
+
+        Assert.Equal("<p role='note'>test</p>", sanitizer.SanitizeHtmlFragment("<p role='note' aria-label='a'>test</p>"));
+    }
+
+    [Fact]
+    public void Sanitize_AttributesAllowedByPrefixAreUrlValidated()
+    {
+        var sanitizer = new HtmlSanitizer();
+        sanitizer.ValidAttributePrefixes.Add("data-");
+        sanitizer.UriAttributes.Add("data-url");
+
+        Assert.Equal("<p data-url='' data-x='javascript:alert(1)'>test</p>", sanitizer.SanitizeHtmlFragment("<p data-url='javascript:alert(1)' data-x='javascript:alert(1)'>test</p>"));
     }
 
     [Fact]

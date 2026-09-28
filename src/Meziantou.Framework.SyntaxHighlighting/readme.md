@@ -124,6 +124,7 @@ The package currently supports these language identifiers and common aliases:
 - `elixir`, `ex`, `exs`
 - `erb`
 - `erlang`, `erl`
+- `erlang-repl`
 - `fsharp`, `fs`, `f#`
 - `gherkin`, `feature`
 - `go`, `golang`

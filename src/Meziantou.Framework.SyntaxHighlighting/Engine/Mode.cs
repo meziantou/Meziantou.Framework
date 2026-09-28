@@ -17,6 +17,10 @@ internal sealed class Mode
     // (e.g. JSX tag false-positive detection). See Engine/BeginGuards.cs.
     public string? BeginGuard { get; init; }
     public string? SubLanguage { get; init; }
+    // When set on a mode with a SubLanguage, the embedded language starts from its root instead of
+    // resuming the state its previous region ended in. highlight.js always resumes it (its
+    // "continuations"), so an unterminated string in one region would leak into the next one.
+    public bool RestartsSubLanguage { get; init; }
     public IList<string>? BeginKeywords { get; init; }
     public string? Illegal { get; init; }
     public Keywords? Keywords { get; init; }
@@ -64,6 +68,7 @@ internal sealed class Mode
         EndScope = source.EndScope;
         BeginGuard = source.BeginGuard;
         SubLanguage = source.SubLanguage;
+        RestartsSubLanguage = source.RestartsSubLanguage;
         BeginKeywords = source.BeginKeywords;
         Illegal = source.Illegal;
         Keywords = source.Keywords;

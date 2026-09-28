@@ -35,6 +35,7 @@ internal sealed class CompiledMode
     public IReadOnlyDictionary<int, string>? BeginGroupScopes;
     public IReadOnlyList<int>? BeginGroupOrder;
     public string? SubLanguage;
+    public bool RestartsSubLanguage;
     public bool EndSameAsBegin;
     public bool Skip;
     public string? BeginGuard;

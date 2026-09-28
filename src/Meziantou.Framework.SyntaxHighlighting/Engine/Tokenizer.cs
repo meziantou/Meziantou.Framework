@@ -606,6 +606,9 @@ internal static class Tokenizer
 
         private void PushMode(CompiledMode mode, string? capture)
         {
+            if (mode.RestartsSubLanguage)
+                _continuations?.Remove(mode.SubLanguage!);
+
             var frame = new Frame { Mode = mode, Capture = capture, EndCache = ScanEntry.Empty };
             if (frame.HasOpenScope)
                 _emitter.OpenScope(mode.Scope!, mode.ClassNameAliases);

@@ -164,6 +164,8 @@ internal static class LanguageRegistry
             ["ml"] = () => Ocaml.Instance,
             ["cmake"] = () => CMake.Instance,
             ["cmake.in"] = () => CMake.Instance,
+            ["python-repl"] = () => Pycon.Instance,
+            ["pycon"] = () => Pycon.Instance,
         }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
     // Grammars compiled with a non-default match timeout, keyed by the default grammar instance.

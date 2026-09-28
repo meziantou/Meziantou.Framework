@@ -61,6 +61,7 @@ internal static class Compiler
             EndsParent = mode.EndsParent,
             ClassNameAliases = context.Aliases,
             SubLanguage = mode.SubLanguage,
+            RestartsSubLanguage = mode.RestartsSubLanguage,
             EndSameAsBegin = mode.EndSameAsBegin,
             BeginGuard = mode.BeginGuard,
             EndScope = mode.EndScope,
@@ -181,6 +182,9 @@ internal static class Compiler
 
         if (mode.EndScope is not null && (mode.ExcludeEnd || mode.ReturnEnd))
             throw new InvalidOperationException("A mode with EndScope cannot use ExcludeEnd or ReturnEnd.");
+
+        if (mode.RestartsSubLanguage && mode.SubLanguage is null)
+            throw new InvalidOperationException("A mode with RestartsSubLanguage must have a SubLanguage.");
     }
 
     private static Regex CreateRegex(string pattern, CompilationContext context) => new(pattern, context.RegexOptions, context.MatchTimeout);
@@ -215,6 +219,7 @@ internal static class Compiler
                     BeginScope = variant.BeginScope ?? mode.BeginScope,
                     BeginGuard = variant.BeginGuard ?? mode.BeginGuard,
                     SubLanguage = variant.SubLanguage ?? mode.SubLanguage,
+                    RestartsSubLanguage = variant.RestartsSubLanguage || mode.RestartsSubLanguage,
                     BeginKeywords = variant.BeginKeywords ?? mode.BeginKeywords,
                     Illegal = variant.Illegal ?? mode.Illegal,
                     Keywords = variant.Keywords ?? mode.Keywords,

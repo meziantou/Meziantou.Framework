@@ -127,6 +127,7 @@ The package currently supports these language identifiers and common aliases:
 - `nginx`, `nginxconf`
 - `php`
 - `powershell`, `pwsh`, `ps`, `ps1`
+- `python`, `py`, `gyp`, `ipython`
 - `razor`, `cshtml`, `cshtml-razor`
 - `rust`, `rs`
 - `scss`

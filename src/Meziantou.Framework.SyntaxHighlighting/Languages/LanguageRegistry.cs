@@ -96,6 +96,10 @@ internal static class LanguageRegistry
             ["golang"] = () => Go.Instance,
             ["rust"] = () => Rust.Instance,
             ["rs"] = () => Rust.Instance,
+            ["python"] = () => Python.Instance,
+            ["py"] = () => Python.Instance,
+            ["gyp"] = () => Python.Instance,
+            ["ipython"] = () => Python.Instance,
         }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
     // Grammars compiled with a non-default match timeout, keyed by the default grammar instance.

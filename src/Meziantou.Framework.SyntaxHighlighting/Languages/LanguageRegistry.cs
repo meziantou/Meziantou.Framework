@@ -190,6 +190,8 @@ internal static class LanguageRegistry
             ["jinja"] = () => Django.Instance,
             ["jinja2"] = () => Django.Instance,
             ["j2"] = () => Django.Instance,
+            ["twig"] = () => Twig.Instance,
+            ["craftcms"] = () => Twig.Instance,
         }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
     // Grammars compiled with a non-default match timeout, keyed by the default grammar instance.

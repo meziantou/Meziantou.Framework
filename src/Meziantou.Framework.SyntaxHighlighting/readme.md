@@ -166,6 +166,7 @@ The package currently supports these language identifiers and common aliases:
 - `shell`, `console`, `shellsession`
 - `sql`
 - `swift`
+- `twig`, `craftcms`
 - `typescript`, `ts`, `tsx`, `mts`, `cts`
 - `urlencoded`, `x-www-form-urlencoded`
 - `vbnet`, `vb`

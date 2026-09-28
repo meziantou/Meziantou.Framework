@@ -117,6 +117,7 @@ public class HighlighterTests
     [InlineData("postgres")]
     [InlineData("hbs")]
     [InlineData("jinja")]
+    [InlineData("craftcms")]
     public void IsSupported_KnownLanguage_ReturnsTrue(string language)
     {
         Assert.True(SyntaxHighlighter.IsSupported(language));

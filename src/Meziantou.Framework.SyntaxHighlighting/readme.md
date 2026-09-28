@@ -163,6 +163,7 @@ The package currently supports these language identifiers and common aliases:
 - `msil`, `il`, `cil`
 - `nginx`, `nginxconf`
 - `nim`, `nims`
+- `nix`, `nixos`
 - `node-repl`
 - `objectivec`, `mm`, `objc`, `obj-c`, `obj-c++`, `objective-c++`
 - `ocaml`, `ml`

@@ -169,6 +169,22 @@ public sealed class LargeInputTests
         Assert.False(isFallback, $"Highlighting {code.Length} characters of '{language}' was abandoned.");
     }
 
+    // A Nix path used to be matched from each `/` of a run of path pieces, which is quadratic on a long run that is not
+    // followed by a whitespace or a `;` (half a minute to more than a minute for these documents).
+    [Theory]
+    [InlineData("a/")]
+    [InlineData("./")]
+    public async Task Highlight_NixLongPathRun_CompletesInReasonableTime(string piece)
+    {
+        var code = string.Concat(Enumerable.Repeat(piece, 40_000)) + ")\nx = ./y;";
+
+        var highlight = Task.Run(() => HighlightWithFallbackDetection(code, "nix", out _));
+        var finished = await Task.WhenAny(highlight, Task.Delay(Budget)) == highlight;
+
+        Assert.True(finished, $"Highlighting {code.Length} characters of 'nix' did not finish within {Budget.TotalSeconds:F0}s.");
+        Assert.EndsWith("<span class=\"hljs-symbol\">./y</span>;", await highlight, StringComparison.Ordinal);
+    }
+
     // The guard against grammars that stop making progress used to count the hits of every run of the document, but
     // compared the count with a position in the current fragment, so a document with many embedded fragments was
     // abandoned (plain text).

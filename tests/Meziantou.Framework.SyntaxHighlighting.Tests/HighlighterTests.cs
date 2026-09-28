@@ -148,6 +148,7 @@ public class HighlighterTests
     [InlineData("elisp")]
     [InlineData("elm")]
     [InlineData("prolog")]
+    [InlineData("nixos")]
     public void IsSupported_KnownLanguage_ReturnsTrue(string language)
     {
         Assert.True(SyntaxHighlighter.IsSupported(language));

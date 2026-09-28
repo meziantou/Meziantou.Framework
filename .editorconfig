@@ -41,15 +41,144 @@ insert_final_newline = true
 # endreference
 
 [*.cs]
+# CA1008: Enums should have zero value
 dotnet_diagnostic.CA1008.severity = none
+# CA1034: Nested types should not be visible
 dotnet_diagnostic.CA1034.severity = none
+# CA1308: Normalize strings to uppercase
 dotnet_diagnostic.CA1308.severity = none
+# CA1508: Avoid dead conditional code
 dotnet_diagnostic.CA1508.severity = none
+# CA2237: Mark ISerializable types with serializable
 dotnet_diagnostic.CA2237.severity = none
+# RS2008: Enable analyzer release tracking
 dotnet_diagnostic.RS2008.severity = none
+# IDE0130: Namespace does not match folder structure
 dotnet_diagnostic.IDE0130.severity = none
+# SYSLIB1054: Use 'LibraryImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
 dotnet_diagnostic.SYSLIB1054.severity = warning
+# MA0186: Equals method should use [NotNullWhen(true)] on the parameter
 dotnet_diagnostic.MA0186.severity = warning
 
 [samples/**/*.cs]
+# CA1852: Seal internal types
 dotnet_diagnostic.CA1852.severity = none
+
+[src/Meziantou.AspNetCore.Components/**.{cs,razor}]
+# MA0004: Use Task.ConfigureAwait
+dotnet_diagnostic.MA0004.severity = none
+# BL0016: Unguarded JS interop call
+dotnet_diagnostic.BL0016.severity = none
+
+[src/Meziantou.Framework.Html.Tool/**.cs]
+# MA0004: Use Task.ConfigureAwait
+dotnet_diagnostic.MA0004.severity = none
+# MA0032: Use an overload with a CancellationToken argument, even when no token is available in scope
+dotnet_diagnostic.MA0032.severity = none
+
+[src/Meziantou.Framework.Language.Json/**.cs]
+# MA0182: Avoid unused internal types
+# The immutable half of the tree is built by the parser and projected into the public nodes; the analyzer does not
+# follow that, and reports every green node type as unused.
+dotnet_diagnostic.MA0182.severity = none
+
+[src/Meziantou.Framework.Language/**.cs]
+# MA0182: Avoid unused internal types
+# The green layer is shared infrastructure: most of it has no caller inside this assembly and is consumed by the
+# Meziantou.Framework.Language.* parsers through InternalsVisibleTo, which the analyzer cannot see.
+dotnet_diagnostic.MA0182.severity = none
+
+[src/Meziantou.Framework.Markdown/**.cs]
+# The public API keeps the shape of Markdig (https://github.com/xoofx/markdig), the library this project is derived from.
+# The following rules would require breaking changes to that API, so they are disabled for this project only.
+
+# CA1000: Do not declare static members on generic types
+dotnet_diagnostic.CA1000.severity = none
+# CA1002: Do not expose generic lists (List<T> is part of the syntax tree API)
+dotnet_diagnostic.CA1002.severity = none
+# CA1003: Use generic event handler instances (pipeline events use dedicated delegates)
+dotnet_diagnostic.CA1003.severity = none
+# CA1010: Generic interface should also be implemented
+dotnet_diagnostic.CA1010.severity = none
+# CA1051: Do not declare visible instance fields (StringSlice, StringLine and syntax nodes expose fields for performance)
+dotnet_diagnostic.CA1051.severity = none
+# CA1054: URI-like parameters should not be strings (URLs come from Markdown text)
+dotnet_diagnostic.CA1054.severity = none
+# CA1055: URI-like return values should not be strings (URLs come from Markdown text)
+dotnet_diagnostic.CA1055.severity = none
+# CA1056: URI-like properties should not be strings (URLs come from Markdown text)
+dotnet_diagnostic.CA1056.severity = none
+# CA1819: Properties should not return arrays
+dotnet_diagnostic.CA1819.severity = none
+# MA0046: Use EventHandler<T> to declare events
+dotnet_diagnostic.MA0046.severity = none
+
+# CA2000: Dispose objects before losing scope
+# ValueStringBuilder returns its pooled buffer in ToString(); a using declaration would make it readonly, and it is
+# passed by reference to helper methods.
+dotnet_code_quality.CA2000.excluded_symbol_names = T:Meziantou.Framework.Markdown.Helpers.ValueStringBuilder
+
+[src/Meziantou.Framework.NuGetPackageValidation.Tool/**.cs]
+# MA0004: Use Task.ConfigureAwait
+dotnet_diagnostic.MA0004.severity = none
+# MA0032: Use an overload with a CancellationToken argument, even when no token is available in scope
+dotnet_diagnostic.MA0032.severity = none
+
+[tests/**.cs]
+# CA1054: URI-like parameters should not be strings
+dotnet_diagnostic.CA1054.severity = none
+# CA1062: Validate arguments of public methods
+dotnet_diagnostic.CA1062.severity = none
+# CA1416: Validate platform compatibility
+dotnet_diagnostic.CA1416.severity = none
+# CA1707: Identifiers should not contain underscores
+dotnet_diagnostic.CA1707.severity = none
+# CA1812: Avoid uninstantiated internal classes
+dotnet_diagnostic.CA1812.severity = none
+# CA1851: Possible multiple enumerations of 'IEnumerable' collection
+dotnet_diagnostic.CA1851.severity = none
+# CA1861: Avoid constant arrays as arguments
+dotnet_diagnostic.CA1861.severity = none
+# CA2201: Do not raise reserved exception types
+dotnet_diagnostic.CA2201.severity = none
+# CA2234: Pass system uri objects instead of strings
+dotnet_diagnostic.CA2234.severity = none
+
+# MA0003: Add parameter name to improve readability
+dotnet_diagnostic.MA0003.severity = none
+# MA0004: Use Task.ConfigureAwait
+dotnet_diagnostic.MA0004.severity = none
+# MA0032: Use an overload with a CancellationToken argument, even when no token is available in scope
+dotnet_diagnostic.MA0032.severity = none
+# MA0036: Make class static
+dotnet_diagnostic.MA0036.severity = none
+# MA0038: Make method static (deprecated, use CA1822 instead)
+dotnet_diagnostic.MA0038.severity = none
+# MA0080: Use a cancellation token using .WithCancellation()
+dotnet_diagnostic.MA0080.severity = none
+
+# xUnit1051: Calls to methods which accept CancellationToken should use TestContext.Current.CancellationToken
+dotnet_diagnostic.xUnit1051.severity = none
+
+# VSTHRD200: Use "Async" suffix for async methods
+dotnet_diagnostic.VSTHRD200.severity = none
+
+[tests/Meziantou.Framework.Assertions.Tests/**.cs]
+# This project tests the assertion methods themselves, so it must call assertions whose
+# result is known in advance, such as Assert.True(true) or Assert.Same(value, value).
+# MFAS0049: Assertion always produces the same result
+dotnet_diagnostic.MFAS0049.severity = none
+# MFAS0050: Use Assert.Fail instead of an assertion that always fails
+dotnet_diagnostic.MFAS0050.severity = none
+
+# The predicate overloads of Assert.Contains and Assert.DoesNotContain are validated here,
+# so the predicate cannot be replaced by the expected value.
+# MFAS0054: Use Assert.Contains with the expected value instead of an equality predicate
+dotnet_diagnostic.MFAS0054.severity = none
+# MFAS0055: Use Assert.DoesNotContain with the expected value instead of an equality predicate
+dotnet_diagnostic.MFAS0055.severity = none
+
+[tests/Meziantou.Framework.Markdown.Tests/**.cs]
+# MA0009: Add regex evaluation timeout
+# The patterns are constants and only run on test data.
+dotnet_diagnostic.MA0009.severity = none

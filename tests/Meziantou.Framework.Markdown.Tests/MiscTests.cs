@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -455,13 +456,14 @@ public class MiscTests
         var markdown = CreateNestedGridTables(1000);
         var pipeline = new MarkdownPipelineBuilder { MaximumNestingDepth = maximumNestingDepth }.Configure(extensions).Build();
 
-        // Each nested grid table is parsed recursively; a stack overflow kills the test process
+        // Each nested grid table is parsed recursively; a stack overflow kills the test process. The 1000 levels need more
+        // than 250 KB of stack, and the parser only gets 96 KB before RuntimeHelpers.TryEnsureSufficientExecutionStack fails.
         Exception? exception = null;
         var thread = new Thread(() =>
         {
             try
             {
-                MarkdownConverter.Parse(markdown, pipeline);
+                RunWithLimitedStack(() => MarkdownConverter.Parse(markdown, pipeline), availableBytes: 96 * 1024);
             }
             catch (Exception ex)
             {
@@ -473,6 +475,35 @@ public class MiscTests
 
         var argumentException = Assert.IsType<ArgumentException>(exception);
         Assert.Contains("depth limit", argumentException.Message);
+    }
+
+    // The size requested for a thread's stack is only a minimum: glibc gives a new thread the cached stack of an exited thread
+    // when it is up to 4 times as large, such as the 1 MB stack of another test. Fill the stack until only availableBytes
+    // are left before RuntimeHelpers.TryEnsureSufficientExecutionStack fails, whatever the size of the stack.
+    private static void RunWithLimitedStack(Action action, int availableBytes)
+    {
+        byte origin = 0;
+        var distanceToLimit = DistanceToStackLimit(ref origin);
+        RunBelow(checked((int)distanceToLimit - availableBytes), action);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static nint DistanceToStackLimit(ref byte origin)
+    {
+        // The stackalloc also prevents the recursive call from being a tail call that would not use any stack
+        Span<byte> frame = stackalloc byte[1024];
+        if (!RuntimeHelpers.TryEnsureSufficientExecutionStack())
+            return Unsafe.ByteOffset(ref frame[0], ref origin);
+
+        return DistanceToStackLimit(ref origin);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void RunBelow(int size, Action action)
+    {
+        Span<byte> filler = stackalloc byte[size];
+        action();
+        filler[0] = 0;
     }
 
     // Each table is nested in the single cell of its parent. The cell has no right border, so the column of the

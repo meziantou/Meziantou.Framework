@@ -115,6 +115,9 @@ internal static class LanguageRegistry
             ["obj-c++"] = () => ObjectiveC.Instance,
             ["objective-c++"] = () => ObjectiveC.Instance,
             ["dart"] = () => Dart.Instance,
+            ["elixir"] = () => Elixir.Instance,
+            ["ex"] = () => Elixir.Instance,
+            ["exs"] = () => Elixir.Instance,
         }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
     // Grammars compiled with a non-default match timeout, keyed by the default grammar instance.

@@ -34,6 +34,14 @@ public sealed partial class EscapingTests
         ">",
         "\"",
         "'",
+
+        // A character outside the BMP where grammars match a single UTF-16 unit (an escape, a character literal, a
+        // variable sigil), so a boundary falls between its two halves.
+        "\\\U0001F600",
+        "$\U0001F600",
+        "?\U0001F600",
+        "#\U0001F600 x",
+        "'\U0001F600'",
     ];
 
     [Theory]
@@ -83,6 +91,11 @@ public sealed partial class EscapingTests
                 index += match.Length;
                 continue;
             }
+
+            // Markup between the two halves of a surrogate pair makes the output invalid UTF-16, which a strict encoder
+            // rejects and a lenient one turns into two replacement characters.
+            if (char.IsLowSurrogate(html[index]) && text.Length > 0 && char.IsHighSurrogate(text[^1]) && !char.IsHighSurrogate(html[index - 1]))
+                Assert.Fail($"A tag splits a surrogate pair in the output for language '{language}' and input '{input}': {html}");
 
             text.Append(html[index]);
             index++;

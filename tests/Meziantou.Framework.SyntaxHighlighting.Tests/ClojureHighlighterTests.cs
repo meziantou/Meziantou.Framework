@@ -607,4 +607,16 @@ bar/baz
   {<span class="hljs-symbol">:status</span> <span class="hljs-number">200</span> <span class="hljs-symbol">:body</span> (<span class="hljs-name"><span class="hljs-built_in">str</span></span> request-method <span class="hljs-string">&quot; &quot;</span> uri)})
 """);
     }
+
+    [Fact]
+    public void CharacterOutsideTheBmp_IsNotSplit()
+    {
+        AssertHighlighter("clojure",
+"""
+(str \😀 \a)
+""",
+"""
+(<span class="hljs-name"><span class="hljs-built_in">str</span></span> <span class="hljs-character">\😀</span> <span class="hljs-character">\a</span>)
+""");
+    }
 }

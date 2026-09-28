@@ -61,7 +61,8 @@ var html = SyntaxHighlighter.Highlight(code, language, new HighlightOptions { Ma
 ```
 
 A timeout makes matching about twice as slow, which is why it is not enabled by default. Choose a value that leaves
-room for large documents on a busy machine.
+room for large documents on a busy machine, and keep it constant: each grammar is compiled again for every timeout, and
+only the grammars of the last few timeouts are cached.
 
 ## Performance
 

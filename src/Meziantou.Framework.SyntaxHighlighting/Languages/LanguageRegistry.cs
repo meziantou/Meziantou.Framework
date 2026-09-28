@@ -137,6 +137,10 @@ internal static class LanguageRegistry
             ["shell"] = () => Shell.Instance,
             ["console"] = () => Shell.Instance,
             ["shellsession"] = () => Shell.Instance,
+            ["makefile"] = () => Makefile.Instance,
+            ["mk"] = () => Makefile.Instance,
+            ["mak"] = () => Makefile.Instance,
+            ["make"] = () => Makefile.Instance,
         }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
     // Grammars compiled with a non-default match timeout, keyed by the default grammar instance.

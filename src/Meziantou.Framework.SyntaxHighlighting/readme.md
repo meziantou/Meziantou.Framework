@@ -133,6 +133,7 @@ The package currently supports these language identifiers and common aliases:
 - `julia`, `jl`
 - `kotlin`, `kt`, `kts`
 - `less`
+- `makefile`, `mk`, `mak`, `make`
 - `markdown`, `md`, `mkdown`, `mkd`
 - `msil`, `il`, `cil`
 - `nginx`, `nginxconf`

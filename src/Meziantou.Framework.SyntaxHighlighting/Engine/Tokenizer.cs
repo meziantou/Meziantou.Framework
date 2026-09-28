@@ -33,6 +33,12 @@ internal static class Tokenizer
         /// start in <c>[f, i]</c> — there is nothing in between, or it would have been found first — and a
         /// pattern that did not match from <c>f</c> cannot match from any later start either. The cursor
         /// can move backwards (ReturnBegin/ReturnEnd), so a start before <c>f</c> needs a real scan.
+        /// <para>
+        /// A pattern that uses <c>\G</c> must keep both properties: <c>\G</c> may only let the first candidate of a run
+        /// be tried from wherever the scan starts (<see cref="Languages.Common.CommonModes.RunStart"/>), when a
+        /// candidate that failed from an earlier start fails from a later one too. A pattern that <c>\G</c> lets match
+        /// at a later start only (<c>(?:\G|(?&lt;!\\))"</c>) would depend on where the previous scan happened to start.
+        /// </para>
         /// </remarks>
         public bool TryGet(int from, out int index, out int length)
         {

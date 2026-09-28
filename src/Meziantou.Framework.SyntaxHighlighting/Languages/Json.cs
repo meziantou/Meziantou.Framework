@@ -11,11 +11,12 @@ internal static class Json
     {
         // A key never starts right after a backslash: outside of a string or a comment, a backslash is
         // illegal. Skipping those quotes keeps the escaped quotes of a long string value from each
-        // rescanning the rest of the line.
+        // rescanning the rest of the line. A key after a stray backslash is therefore a string, even
+        // when the tokenizer resumes right after the backslash (see Tokenizer.ScanEntry about \G).
         var attribute = new Mode
         {
             Scope = "attr",
-            Begin = @"(?:\G|(?<!\\))""(\\.|[^\\""\r\n])*""(?=\s*:)",
+            Begin = @"(?<!\\)""(\\.|[^\\""\r\n])*""(?=\s*:)",
         };
 
         var punctuation = new Mode

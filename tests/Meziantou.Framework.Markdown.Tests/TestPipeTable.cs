@@ -592,6 +592,26 @@ public sealed class TestPipeTable
     }
 
     // Timed: tests running at the same time would slow it down and make the time budget flaky
+    [Theory(DisableParallelization = true)]
+    [InlineData("", "|[a|b](c)\n", 0)]
+    [InlineData("|a|b|\n|-|-|\n", "|[x|y](z)|\n", 1)]
+    public void ManyLinksWithPipesAreParsedInLinearTime(string prefix, string line, int tableCount)
+    {
+        // Each pipe of a link was searched and removed in the list of all the delimiters of the paragraph
+        const int Count = 150_000;
+        var markdown = prefix + string.Concat(Enumerable.Repeat(line, Count));
+        var pipeline = new MarkdownPipelineBuilder().UsePipeTables().Build();
+
+        var stopwatch = Stopwatch.StartNew();
+        var document = MarkdownConverter.Parse(markdown, pipeline);
+        stopwatch.Stop();
+
+        Assert.HasCount(tableCount, document.OfType<Table>());
+        Assert.HasCount(Count, document.Descendants<LinkInline>());
+        Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(10), $"Parsing took {stopwatch.Elapsed}");
+    }
+
+    // Timed: tests running at the same time would slow it down and make the time budget flaky
     [Fact(DisableParallelization = true)]
     public void ManyGfmTablesAfterManyParagraphsAreParsedInLinearTime()
     {

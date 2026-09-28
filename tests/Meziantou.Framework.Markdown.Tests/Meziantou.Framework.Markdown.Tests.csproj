@@ -10,5 +10,6 @@
   <ItemGroup>
     <ProjectReference Include="../../src/Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj" />
     <ProjectReference Include="../../src/Meziantou.Framework.Markdown/Meziantou.Framework.Markdown.csproj" />
+    <Compile Include="../../common/ThreadCpuStopwatch.cs" Link="ThreadCpuStopwatch.cs" />
   </ItemGroup>
 </Project>

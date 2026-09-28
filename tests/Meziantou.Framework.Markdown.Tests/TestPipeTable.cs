@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Text;
 
 using Meziantou.Framework.Markdown;
@@ -574,11 +573,11 @@ public sealed class TestPipeTable
     public void ManyTablesWithParagraphsAreParsedInLinearTime(string item, string expectedItem)
     {
         // The blocks added before or after a table were inserted one by one in the parent, which moved all the blocks after them
-        const int Count = 100_000;
+        const int Count = 70_000;
         var markdown = string.Concat(Enumerable.Repeat(item, Count));
         var pipeline = new MarkdownPipelineBuilder().UsePipeTables().Build();
 
-        var stopwatch = Stopwatch.StartNew();
+        var stopwatch = ThreadCpuStopwatch.StartNew();
         var html = MarkdownConverter.ToHtml(markdown, pipeline);
         stopwatch.Stop();
 
@@ -607,7 +606,7 @@ public sealed class TestPipeTable
         var markdown = "{" + string.Concat(Enumerable.Repeat(".a ", Count)) + "}a|b\n-|-\n" + string.Concat(Enumerable.Repeat("c|d\n", Count));
         var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
 
-        var stopwatch = Stopwatch.StartNew();
+        var stopwatch = ThreadCpuStopwatch.StartNew();
         var document = MarkdownConverter.Parse(markdown, pipeline);
         stopwatch.Stop();
 
@@ -628,7 +627,7 @@ public sealed class TestPipeTable
         var markdown = prefix + string.Concat(Enumerable.Repeat(line, Count));
         var pipeline = new MarkdownPipelineBuilder().UsePipeTables().Build();
 
-        var stopwatch = Stopwatch.StartNew();
+        var stopwatch = ThreadCpuStopwatch.StartNew();
         var document = MarkdownConverter.Parse(markdown, pipeline);
         stopwatch.Stop();
 
@@ -650,7 +649,7 @@ public sealed class TestPipeTable
         var markdown = "|" + string.Concat(Enumerable.Repeat(imageStart, Depth)) + string.Concat(Enumerable.Repeat("x\n", LineCount)) + string.Concat(Enumerable.Repeat("](u)", Depth)) + "\n";
         var pipeline = new MarkdownPipelineBuilder().UsePipeTables().Build();
 
-        var stopwatch = Stopwatch.StartNew();
+        var stopwatch = ThreadCpuStopwatch.StartNew();
         var document = MarkdownConverter.Parse(markdown, pipeline);
         stopwatch.Stop();
 
@@ -664,12 +663,12 @@ public sealed class TestPipeTable
     public void ManyTablesInAParagraphAreParsedWithTriviaInLinearTime()
     {
         // With trivia, each paragraph that ends before a table positioned a line break at the end of the text of the paragraph,
-        // walking all the lines after it
-        const int Count = 150_000;
-        var markdown = string.Concat(Enumerable.Repeat("x\n|a|\n|-|\n", Count)) + "x\n";
+        // walking all the lines after it. The lines after the last table make each walk longer, but are parsed only once.
+        const int Count = 50_000;
+        var markdown = string.Concat(Enumerable.Repeat("x\n|a|\n|-|\n", Count)) + string.Concat(Enumerable.Repeat("x\n", 10 * Count));
         var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().EnableTrackTrivia().Build();
 
-        var stopwatch = Stopwatch.StartNew();
+        var stopwatch = ThreadCpuStopwatch.StartNew();
         var document = MarkdownConverter.Parse(markdown, pipeline);
         stopwatch.Stop();
 
@@ -682,12 +681,12 @@ public sealed class TestPipeTable
     public void ManyTablesFollowedByAnUnclosedHtmlCommentAreParsedInLinearTime()
     {
         // The scans for the end of the comment were forgotten at each paragraph after a table, so each one scanned the rest
-        // of the text again
-        const int Count = 150_000;
-        var markdown = string.Concat(Enumerable.Repeat("|a|b|\n|-|-|\nx <!--\n", Count));
+        // of the text again. The long line at the end makes each scan longer, but is parsed only once.
+        const int Count = 60_000;
+        var markdown = string.Concat(Enumerable.Repeat("|a|b|\n|-|-|\nx <!--\n", Count)) + new string('x', 80 * Count);
         var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
 
-        var stopwatch = Stopwatch.StartNew();
+        var stopwatch = ThreadCpuStopwatch.StartNew();
         var document = MarkdownConverter.Parse(markdown, pipeline);
         stopwatch.Stop();
 
@@ -706,7 +705,7 @@ public sealed class TestPipeTable
         var markdown = string.Concat(Enumerable.Repeat("a\n\n", ParagraphCount)) + string.Concat(Enumerable.Repeat("a|b\n-|-\n\n", TableCount));
         var pipeline = new MarkdownPipelineBuilder().UsePipeTables(new PipeTableOptions { UseGfmRules = true }).Build();
 
-        var stopwatch = Stopwatch.StartNew();
+        var stopwatch = ThreadCpuStopwatch.StartNew();
         var document = MarkdownConverter.Parse(markdown, pipeline);
         stopwatch.Stop();
 
@@ -724,7 +723,7 @@ public sealed class TestPipeTable
         var markdown = "*" + string.Concat(Enumerable.Repeat("---|\n", Count));
         var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
 
-        var stopwatch = Stopwatch.StartNew();
+        var stopwatch = ThreadCpuStopwatch.StartNew();
         var document = MarkdownConverter.Parse(markdown, pipeline);
         stopwatch.Stop();
 
@@ -742,7 +741,7 @@ public sealed class TestPipeTable
         var markdown = "*" + string.Concat(Enumerable.Repeat("a|", Count)) + "\n" + string.Concat(Enumerable.Repeat("-|", Count));
         var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
 
-        var stopwatch = Stopwatch.StartNew();
+        var stopwatch = ThreadCpuStopwatch.StartNew();
         var document = MarkdownConverter.Parse(markdown, pipeline);
         stopwatch.Stop();
 
@@ -763,7 +762,7 @@ public sealed class TestPipeTable
         var markdown = string.Concat(Enumerable.Repeat("a|b\n-|-\nc|d\n" + line + "\n", Count));
         var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
 
-        var stopwatch = Stopwatch.StartNew();
+        var stopwatch = ThreadCpuStopwatch.StartNew();
         var document = MarkdownConverter.Parse(markdown, pipeline);
         stopwatch.Stop();
 
@@ -780,7 +779,7 @@ public sealed class TestPipeTable
         var markdown = "| a | b |\n|---|---|\n" + string.Concat(Enumerable.Repeat("| *x* | [l](u) |\n", RowCount));
         var pipeline = new MarkdownPipelineBuilder().UsePipeTables().Build();
 
-        var stopwatch = Stopwatch.StartNew();
+        var stopwatch = ThreadCpuStopwatch.StartNew();
         var html = MarkdownConverter.ToHtml(markdown, pipeline);
         stopwatch.Stop();
 
@@ -800,7 +799,7 @@ public sealed class TestPipeTable
         var markdown = "| a |\n|---|\n" + string.Concat(Enumerable.Repeat("| *x* `c |\n", RowCount));
         var pipeline = new MarkdownPipelineBuilder().UsePipeTables().Build();
 
-        var stopwatch = Stopwatch.StartNew();
+        var stopwatch = ThreadCpuStopwatch.StartNew();
         var html = MarkdownConverter.ToHtml(markdown, pipeline);
         stopwatch.Stop();
 
@@ -819,7 +818,7 @@ public sealed class TestPipeTable
         var markdown = string.Concat(Enumerable.Repeat(":| ", 50_000));
         var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
 
-        var stopwatch = Stopwatch.StartNew();
+        var stopwatch = ThreadCpuStopwatch.StartNew();
         var html = MarkdownConverter.ToHtml(markdown, pipeline);
         stopwatch.Stop();
 

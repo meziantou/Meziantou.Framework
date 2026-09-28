@@ -47,12 +47,16 @@ adder #(8) u1 (.a(a), .b(b), .sum(sum));
 adder #(.WIDTH(16), .DEPTH(4)) u2 (.a(x), .b(y));
 fifo #(parameter N = 4) f ();
 dff #(4 u3 (.d(d));
+ram #(.DEPTH($clog2((A + 1) * 2))) u4 ();
+mailbox #(packet #(8)) mb;
 """,
 """
 adder <span class="hljs-variable">#(8)</span> u1 (<span class="hljs-variable">.a</span>(a), <span class="hljs-variable">.b</span>(b), <span class="hljs-variable">.sum</span>(sum));
 adder <span class="hljs-variable">#(.WIDTH(16), .DEPTH(4))</span> u2 (<span class="hljs-variable">.a</span>(x), <span class="hljs-variable">.b</span>(y));
 fifo #(<span class="hljs-keyword">parameter</span> N = <span class="hljs-number">4</span>) f ();
 dff #(<span class="hljs-number">4</span> u3 (<span class="hljs-variable">.d</span>(d));
+ram <span class="hljs-variable">#(.DEPTH($clog2((A + 1) * 2)))</span> u4 ();
+mailbox <span class="hljs-variable">#(packet #(8))</span> mb;
 """);
     }
 

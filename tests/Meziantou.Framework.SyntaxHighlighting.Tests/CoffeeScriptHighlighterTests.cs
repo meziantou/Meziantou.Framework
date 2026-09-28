@@ -360,8 +360,10 @@ settings = {default: <span class="hljs-literal">yes</span>, enabled: <span class
         AssertHighlighter("coffeescript",
 """
 re = /^\d+$/g
+path = s.replace /\//g, "."
 x = 10 / 2 / 5
 y = a / b
+z = w/2/h/ 3
 OPERATOR = /// ^ (
   ?: [-=]>             # function
    | [-+*/%<>&|^!?=]=  # compound assign
@@ -370,8 +372,10 @@ empty = //g
 """,
 """
 re = <span class="hljs-regexp">/^\d+$/g</span>
+path = s.replace <span class="hljs-regexp">/\//g</span>, <span class="hljs-string">&quot;.&quot;</span>
 x = <span class="hljs-number">10</span> / <span class="hljs-number">2</span> / <span class="hljs-number">5</span>
 y = a / b
+z = w/<span class="hljs-number">2</span>/h/ <span class="hljs-number">3</span>
 OPERATOR = <span class="hljs-regexp">/// ^ (
   ?: [-=]&gt;             <span class="hljs-comment"># function</span>
    | [-+*/%&lt;&gt;&amp;|^!?=]=  <span class="hljs-comment"># compound assign</span>

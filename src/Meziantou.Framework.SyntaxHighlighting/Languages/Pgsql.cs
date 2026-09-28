@@ -315,7 +315,10 @@ internal static class Pgsql
             // of an array slice), but improbable.
             // Deviation from highlight.js: `$` followed by a letter is not illegal when it starts a dollar-quoted string
             // tag (` $body$`). Upstream, the illegal lexeme hid the opening delimiter of the string.
-            Illegal = @":==|\W\s*\(\*|(^|\s)\$[a-z](?![a-z_0-9]*\$)|\{\{|[a-z]:\s*$|\.\.\.|TO:|DO:",
+            // `\W\s*\(\*` is written so that it only starts from the first whitespace of a run: when it matches from a
+            // whitespace, it also matches from the previous one, and trying it from every whitespace of a long run of
+            // whitespace (that is not followed by `(*`) was quadratic.
+            Illegal = @":==|(?:[^\w\s]|" + CommonModes.RunStart(@"\s") + @"\s)\s*\(\*|(^|\s)\$[a-z](?![a-z_0-9]*\$)|\{\{|[a-z]:\s*$|\.\.\.|TO:|DO:",
             Contains =
             [
                 // Special handling of some words, which are reserved only in some contexts.

@@ -12,7 +12,9 @@ internal static class HtmlComponents
     /// </summary>
     /// <remarks>
     /// Its open tag is highlighted like the HTML <c>script</c> and <c>style</c> tags. <paramref name="contentModes"/> are
-    /// the modes recognized in its content, between the fragments highlighted as <paramref name="subLanguage"/>.
+    /// the modes recognized in its content, between the fragments highlighted as <paramref name="subLanguage"/>. Like the
+    /// content of the HTML <c>script</c> and <c>style</c> elements, its content is highlighted from the root of
+    /// <paramref name="subLanguage"/>, so a string that the previous element leaves open does not leak into it.
     /// </remarks>
     public static Mode CreateTagWithLang(Html.HtmlModes html, string tagName, string languages, string? subLanguage, IList<Mode>? contentModes = null)
     {
@@ -31,6 +33,7 @@ internal static class HtmlComponents
                 End = @"<\/" + tagName + ">",
                 ReturnEnd = true,
                 SubLanguage = subLanguage,
+                RestartsSubLanguage = subLanguage is not null,
                 Contains = contentModes ?? [],
             },
         };

@@ -280,8 +280,13 @@ internal static class LanguageRegistry
             ["kusto"] = () => Kql.Instance,
         }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
-    // Grammars compiled with a non-default match timeout, keyed by the default grammar instance.
-    private static readonly ConcurrentDictionary<(CompiledMode Grammar, TimeSpan MatchTimeout), Lazy<CompiledMode>> GrammarsByTimeout = new();
+    // Regex timeouts are fixed when a regex is created, so a grammar is compiled again for each non-default match timeout.
+    // Only the grammars of the last few timeouts are kept: a caller that derives a timeout per call (a remaining budget)
+    // must not make the cache, about half a megabyte per grammar and timeout, grow forever.
+    private const int MaxCachedMatchTimeouts = 4;
+
+    private static readonly Lock GrammarsByTimeoutLock = new();
+    private static volatile GrammarsForTimeout[] s_grammarsByTimeout = [];
 
     public static CompiledMode Get(string language) => Get(language, Compiler.DefaultMatchTimeout);
 
@@ -299,11 +304,33 @@ internal static class LanguageRegistry
         mode = factory();
         if (matchTimeout != mode.MatchTimeout)
         {
-            // Regex timeouts are fixed when a regex is created, so another timeout needs its own copy of the grammar.
-            mode = GrammarsByTimeout.GetOrAdd((mode, matchTimeout), key => new Lazy<CompiledMode>(() => Compiler.Compile(key.Grammar.Source, key.MatchTimeout))).Value;
+            mode = GetGrammarsForTimeout(matchTimeout).Get(mode);
         }
 
         return true;
+    }
+
+    private static GrammarsForTimeout GetGrammarsForTimeout(TimeSpan matchTimeout)
+    {
+        foreach (var grammars in s_grammarsByTimeout)
+        {
+            if (grammars.MatchTimeout == matchTimeout)
+                return grammars;
+        }
+
+        lock (GrammarsByTimeoutLock)
+        {
+            var current = s_grammarsByTimeout;
+            foreach (var grammars in current)
+            {
+                if (grammars.MatchTimeout == matchTimeout)
+                    return grammars;
+            }
+
+            var added = new GrammarsForTimeout(matchTimeout);
+            s_grammarsByTimeout = [.. current.TakeLast(MaxCachedMatchTimeouts - 1), added];
+            return added;
+        }
     }
 
     public static bool IsSupported(string language) => Languages.ContainsKey(language);
@@ -311,4 +338,14 @@ internal static class LanguageRegistry
     private static readonly IReadOnlyList<string> SortedLanguages = Array.AsReadOnly(Languages.Keys.Order(StringComparer.Ordinal).ToArray());
 
     public static IReadOnlyList<string> GetSupportedLanguages() => SortedLanguages;
+
+    /// <summary>The grammars compiled with one match timeout, keyed by the grammar compiled with the default one.</summary>
+    private sealed class GrammarsForTimeout(TimeSpan matchTimeout)
+    {
+        private readonly ConcurrentDictionary<CompiledMode, Lazy<CompiledMode>> _grammars = new(ReferenceEqualityComparer.Instance);
+
+        public TimeSpan MatchTimeout { get; } = matchTimeout;
+
+        public CompiledMode Get(CompiledMode grammar) => _grammars.GetOrAdd(grammar, grammar => new Lazy<CompiledMode>(() => Compiler.Compile(grammar.Source, MatchTimeout))).Value;
+    }
 }

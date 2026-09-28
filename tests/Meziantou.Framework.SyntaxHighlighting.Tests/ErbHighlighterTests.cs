@@ -93,8 +93,8 @@ public class ErbHighlighterTests
 """,
 """
 <span class="language-html"><span class="hljs-tag">&lt;<span class="hljs-name">script</span>&gt;</span><span class="language-javascript">
-  <span class="hljs-keyword">var</span> user = <span class="hljs-string">&quot;&lt;%=</span></span></span><span class="language-ruby"> j <span class="hljs-variable">@user</span>.name </span><span class="language-html"><span class="language-javascript">%&gt;<span class="hljs-string">&quot;;
-  var count = &lt;%=</span></span></span><span class="language-ruby"> <span class="hljs-variable">@count</span> </span><span class="language-html"><span class="language-javascript">%&gt;;
+  <span class="hljs-keyword">var</span> user = <span class="hljs-string">&quot;&lt;%=</span></span></span><span class="language-ruby"> j <span class="hljs-variable">@user</span>.name </span><span class="language-html"><span class="language-javascript"><span class="hljs-string">%&gt;&quot;</span>;
+  <span class="hljs-keyword">var</span> count = &lt;%=</span></span><span class="language-ruby"> <span class="hljs-variable">@count</span> </span><span class="language-html"><span class="language-javascript">%&gt;;
   &lt;%</span></span><span class="language-ruby"> <span class="hljs-keyword">if</span> debug </span><span class="language-html"><span class="language-javascript">%&gt;<span class="hljs-variable language_">console</span>.<span class="hljs-title function_">log</span>(user);&lt;%</span></span><span class="language-ruby"> <span class="hljs-keyword">end</span> </span><span class="language-html"><span class="language-javascript">%&gt;
 </span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span></span>
 """);

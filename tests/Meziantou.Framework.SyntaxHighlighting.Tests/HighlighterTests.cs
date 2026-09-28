@@ -339,6 +339,22 @@ public class HighlighterTests
         Assert.Equal(timeout, grammar.BeginRegexes().First().MatchTimeout);
     }
 
+    // Only the grammars of the last few timeouts are kept. The test evicts the grammars of the other tests' timeouts, so it
+    // must not run next to them.
+    [Fact(DisableParallelization = true)]
+    public void LanguageRegistry_ManyMatchTimeouts_KeepsOnlyTheLastOnes()
+    {
+        var first = LanguageRegistry.Get("json", TimeSpan.FromMilliseconds(1_000_001));
+        for (var i = 2; i <= 10; i++)
+        {
+            LanguageRegistry.Get("json", TimeSpan.FromMilliseconds(1_000_000 + i));
+        }
+
+        var last = TimeSpan.FromMilliseconds(1_000_010);
+        Assert.Same(LanguageRegistry.Get("json", last), LanguageRegistry.Get("json", last));
+        Assert.NotSame(first, LanguageRegistry.Get("json", TimeSpan.FromMilliseconds(1_000_001)));
+    }
+
     [Theory]
     [InlineData(0)]
     [InlineData(-2)]

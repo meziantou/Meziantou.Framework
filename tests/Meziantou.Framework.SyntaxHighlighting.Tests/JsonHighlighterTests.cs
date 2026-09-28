@@ -920,4 +920,16 @@ null
 <span class="hljs-literal"><span class="hljs-keyword">null</span></span>
 """);
     }
+
+    [Fact]
+    public void Illegal_KeyAfterBackslash_IsAString()
+    {
+        AssertHighlighter("json",
+"""
+\"a":1
+""",
+"""
+\<span class="hljs-string">&quot;a&quot;</span><span class="hljs-punctuation">:</span><span class="hljs-number">1</span>
+""");
+    }
 }

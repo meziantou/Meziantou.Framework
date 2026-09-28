@@ -15,10 +15,13 @@ internal static class Nim
 
     private static Mode CreateMode()
     {
-        // Deviation from highlight.js, which only knows line comments: `#[ ... ]#` is a (nestable) block comment, whose
-        // following lines highlight.js renders as code.
+        // Deviation from highlight.js, which only knows line comments: `#[ ... ]#` is a (nestable) block comment, and
+        // `##[ ... ]##` a (nestable) documentation block comment, whose following lines highlight.js renders as code. As in
+        // the Nim lexer, a documentation comment only nests `##[` and only ends at `]##`.
         var blockComment = CommonModes.Comment(@"#\[", @"\]#");
         blockComment.Contains = [Mode.Self, .. blockComment.Contains];
+        var docBlockComment = CommonModes.Comment(@"##\[", @"\]##");
+        docBlockComment.Contains = [Mode.Self, .. docBlockComment.Contains];
 
         return new Mode
         {
@@ -72,6 +75,7 @@ internal static class Nim
                         new Mode { Begin = @"\b(\d[_\d]*)(\.\d[_\d]*)?([eE][+-]?\d[_\d]*)?('?[iIuUfF](8|16|32|64))?" },
                     ],
                 },
+                docBlockComment,
                 blockComment,
                 CommonModes.HashCommentMode,
             ],

@@ -86,6 +86,21 @@ Section
 Sub
 ~~~~
 
+Close
+^^^^^^
+
+Too long
+^^^^^^^^^^
+
+Too short
+^^^^^^^
+
+Mixed
+-=-=-
+
+?!
+~~
+
 Not [a] title
 -------------
 """,
@@ -99,8 +114,53 @@ Not [a] title
 <span class="hljs-section">Sub
 ~~~~</span>
 
+<span class="hljs-section">Close
+^^^^^^</span>
+
+Too long
+^^^^^^^^^^
+
+Too short
+^^^^^^^
+
+Mixed
+-=-=-
+
+?!
+~~
+
 Not [a] title
--------------
+<span class="hljs-code">-------------</span>
+""");
+    }
+
+    [Fact]
+    public void ListContinuationBeforeListingBlock()
+    {
+        AssertHighlighter("asciidoc",
+"""
+. Install the tool:
++
+----
+npm install -g foo
+----
+
+Then run:
+----
+foo --help
+----
+""",
+"""
+<span class="hljs-bullet">. </span>Install the tool:
++
+<span class="hljs-code">----
+npm install -g foo
+----</span>
+
+Then run:
+<span class="hljs-code">----
+foo --help
+----</span>
 """);
     }
 
@@ -192,6 +252,70 @@ literal block
 code
 ----</span>
 """);
+    }
+
+    [Fact]
+    public void DelimitedBlocks_EndOnTheSameDelimiter()
+    {
+        AssertHighlighter("asciidoc",
+"""
+....
+literal
+----
+still literal
+....
+
+------
+----
+still code
+------
+
+====
+example
+****
+still *example*
+====
+
+////
+////
+
+----
+----
+
+After the blocks, *bold*.
+""",
+"""
+<span class="hljs-code">....
+literal
+----
+still literal
+....</span>
+
+<span class="hljs-code">------
+----
+still code
+------</span>
+
+====
+example
+****
+still *example*
+====
+
+<span class="hljs-comment">////
+////</span>
+
+<span class="hljs-code">----
+----</span>
+
+After the blocks, <span class="hljs-strong">*bold*</span>.
+""");
+    }
+
+    [Fact]
+    public void DelimitedBlocks_TrailingWhitespace()
+    {
+        AssertHighlighter("asciidoc", "---- \ncode\n----\t\n\n*bold*", "<span class=\"hljs-code\">---- \ncode\n----\t</span>\n\n<span class=\"hljs-strong\">*bold*</span>");
     }
 
     [Fact]
@@ -567,6 +691,24 @@ image::<span class="hljs-link">diagram.png</span>[<span class="hljs-string">Diag
 
 A bare URL https://example.com here.
 <span class="hljs-link">ftp://files.example.com</span>[<span class="hljs-string">FTP</span>] and <span class="hljs-link">irc://irc.freenode.org</span>[<span class="hljs-string">IRC</span>].
+""");
+    }
+
+    [Fact]
+    public void LinksAndImages_EndAtTheAttributeList()
+    {
+        AssertHighlighter("asciidoc",
+"""
+See the https://example.com[docs]s for details.
+An image:logo.png[Logo]s here.
+
+The *next* paragraph [x].
+""",
+"""
+See the <span class="hljs-link">https://example.com</span>[<span class="hljs-string">docs</span>]s for details.
+An image:<span class="hljs-link">logo.png</span>[<span class="hljs-string">Logo</span>]s here.
+
+The <span class="hljs-strong">*next*</span> paragraph [x].
 """);
     }
 

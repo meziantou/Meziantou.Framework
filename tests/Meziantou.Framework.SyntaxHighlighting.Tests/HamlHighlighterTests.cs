@@ -369,4 +369,24 @@ Plain text #{<span class="language-ruby"> <span class="hljs-string">&quot;nested
 <span class="hljs-tag">%<span class="hljs-selector-tag">P</span></span> Text
 """);
     }
+
+    [Fact]
+    public void AttributeHashWithWhitespaceBeforeBrace()
+    {
+        AssertHighlighter("haml",
+"""
+%a{:href => "/",   :title => 'Home'   } Home
+%p{  class: "note"
+  }
+%div{ :id => x ,
+  :class => y   } z
+""",
+"""
+<span class="hljs-tag">%<span class="hljs-selector-tag">a</span>{<span class="hljs-attr">:href</span> =&gt; <span class="hljs-string">&quot;/&quot;</span>,   <span class="hljs-attr">:title</span> =&gt; <span class="hljs-string">&#x27;Home&#x27;</span>   }</span> Home
+<span class="hljs-tag">%<span class="hljs-selector-tag">p</span>{  <span class="hljs-attr">class</span>: <span class="hljs-string">&quot;note&quot;</span>
+  }</span>
+<span class="hljs-tag">%<span class="hljs-selector-tag">div</span>{ <span class="hljs-attr">:id</span> =&gt; x ,
+  <span class="hljs-attr">:class</span> =&gt; y   }</span> z
+""");
+    }
 }

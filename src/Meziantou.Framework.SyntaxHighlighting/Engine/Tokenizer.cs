@@ -8,7 +8,17 @@ internal static class Tokenizer
 {
     private const int MaxSubLanguageDepth = 8;
 
+    // Resuming a sub-language reopens the scope of every mode its previous fragment ended in. Each fragment can leave
+    // the stack a few modes deeper (an unterminated `"#{` in each ERB tag, a `${`` on each REPL continuation line), so
+    // without a bound the reopened scopes grow with every fragment and the output with the square of the input. No real
+    // code resumes that deep; a deeper state starts again from the root of the sub-language.
+    private const int MaxContinuationDepth = 16;
+
     private enum HitKind { Begin, End, Illegal }
+
+    /// <summary>The index of the last hit, the depth of the stack before it, and how many hits in a row made no progress there.</summary>
+    [StructLayout(LayoutKind.Auto)]
+    private readonly record struct StallState(int Index, int Depth, int Iterations);
 
     [StructLayout(LayoutKind.Auto)]
     private readonly record struct Hit(int Index, int Length, HitKind Kind, CompiledMode Mode, int EndOwnerDepth);
@@ -27,6 +37,12 @@ internal static class Tokenizer
         /// start in <c>[f, i]</c> — there is nothing in between, or it would have been found first — and a
         /// pattern that did not match from <c>f</c> cannot match from any later start either. The cursor
         /// can move backwards (ReturnBegin/ReturnEnd), so a start before <c>f</c> needs a real scan.
+        /// <para>
+        /// A pattern that uses <c>\G</c> must keep both properties: <c>\G</c> may only let the first candidate of a run
+        /// be tried from wherever the scan starts (<see cref="Languages.Common.CommonModes.RunStart"/>), when a
+        /// candidate that failed from an earlier start fails from a later one too. A pattern that <c>\G</c> lets match
+        /// at a later start only (<c>(?:\G|(?&lt;!\\))"</c>) would depend on where the previous scan happened to start.
+        /// </para>
         /// </remarks>
         public bool TryGet(int from, out int index, out int length)
         {
@@ -56,6 +72,14 @@ internal static class Tokenizer
         public ScanEntry EndCache;
 
         public readonly bool HasOpenScope => Mode.Scope is not null && !Mode.Skip;
+    }
+
+    /// <summary>The state a run ended in: its mode stack, and the state of each sub-language it embeds in turn.</summary>
+    private sealed class Continuation(Frame[] stack, Dictionary<string, Continuation>? nested)
+    {
+        public Frame[] Stack { get; } = stack;
+
+        public Dictionary<string, Continuation>? Nested { get; } = nested;
     }
 
     public static string Highlight(string text, CompiledMode root, HighlightOptions options) => Highlight(text, root, options, out _);
@@ -150,26 +174,30 @@ internal static class Tokenizer
         private int _bufferStart;
         private int _bufferLength;
 
-        // highlight.js "continuations": the mode stack each sub-language ended in, so that the next
+        // highlight.js "continuations": the state each sub-language ended in, so that the next
         // fragment of the same sub-language (e.g. the markup after a `${}` in a JS html`` template)
         // resumes in that state rather than at the sub-language's root.
-        private Dictionary<string, Frame[]>? _continuations;
+        private Dictionary<string, Continuation>? _continuations;
         private BeginGuards.ClosingTagIndex? _closingTags;
 
         // Counted per run, like highlight.js: the hit indexes of a sub-language run are relative to its fragment, so a
         // count shared with the other runs would make a document with many embedded fragments look like a loop.
         private int _iterations;
 
-        /// <summary>The mode stack the run ended in.</summary>
-        public Frame[] FinalStack { get; private set; } = [];
+        /// <summary>The state the run ended in, to resume the next fragment of the same language from.</summary>
+        public Continuation? FinalState { get; private set; }
 
         /// <returns><see langword="false"/> when an illegal lexeme was found and illegal lexemes are not ignored, or when the session was aborted.</returns>
-        public bool Execute(Frame[]? continuation)
+        public bool Execute(Continuation? continuation)
         {
             _scanCache = session.RentScanCache(root);
+
+            // The sub-languages of a resumed run resume too: after a template tag inside a JavaScript string, the markup
+            // resumes inside its <script>, and the script inside its string.
+            _continuations = continuation?.Nested;
             try
             {
-                return ExecuteCore(continuation);
+                return ExecuteCore(continuation?.Stack);
             }
             finally
             {
@@ -195,12 +223,11 @@ internal static class Tokenizer
 
             var index = 0;
             var lastBeginIndex = -1;
-            var stalledIndex = -1;
-            var stalledIterations = 0;
+            var stall = new StallState(Index: -1, Depth: 0, Iterations: 0);
 
             while (FindNextHit(index, out var hit))
             {
-                if (!CheckForInfiniteLoop(hit.Index, ref stalledIndex, ref stalledIterations))
+                if (!CheckForInfiniteLoop(hit.Index, ref stall))
                     return false;
 
                 AppendBuffer(index, hit.Index - index);
@@ -271,7 +298,7 @@ internal static class Tokenizer
                 finalStack[i].EndCache = ScanEntry.Empty;
             }
 
-            FinalStack = finalStack;
+            FinalState = new Continuation(finalStack, _continuations);
             return true;
         }
 
@@ -279,20 +306,27 @@ internal static class Tokenizer
         /// Last-resort guard against grammars that stop making progress (e.g. zero-width begins that
         /// keep entering modes at the same position). highlight.js has the same safety net.
         /// </summary>
-        private bool CheckForInfiniteLoop(int hitIndex, ref int stalledIndex, ref int stalledIterations)
+        /// <remarks>
+        /// The cursor never moves backwards, so a grammar that stops making progress keeps hitting the same index. Hits at
+        /// one index that leave the stack shallower are progress, though: each ends one of the modes entered before, so
+        /// there can only be as many of them as modes were entered (an unclosed Apache <c>%{</c> nested ten thousand
+        /// times ends ten thousand modes at the end of its line). A character can also legitimately make a few
+        /// zero-width hits (MATLAB's <c>)</c> makes three), so the overall budget is several hits per character.
+        /// </remarks>
+        private bool CheckForInfiniteLoop(int hitIndex, ref StallState stall)
         {
             _iterations++;
-            if (hitIndex == stalledIndex)
+            var depth = _stack.Count;
+            if (hitIndex != stall.Index)
             {
-                stalledIterations++;
+                stall = new StallState(hitIndex, depth, Iterations: 0);
             }
             else
             {
-                stalledIndex = hitIndex;
-                stalledIterations = 0;
+                stall = new StallState(hitIndex, depth, depth < stall.Depth ? stall.Iterations : stall.Iterations + 1);
             }
 
-            if (stalledIterations > 10_000 || (_iterations > 100_000 && _iterations > hitIndex * 3))
+            if (stall.Iterations > 10_000 || (_iterations > 100_000 && _iterations > hitIndex * 10))
             {
                 session.Aborted = true;
             }
@@ -645,8 +679,11 @@ internal static class Tokenizer
 
                 // Embedded languages always ignore illegal lexemes, like highlight.js does.
                 var subRoot = LanguageRegistry.Get(subLanguage, root.MatchTimeout);
-                _continuations ??= new Dictionary<string, Frame[]>(StringComparer.Ordinal);
-                _continuations.TryGetValue(subLanguage, out var continuation);
+                _continuations ??= new Dictionary<string, Continuation>(StringComparer.Ordinal);
+                if (_continuations.TryGetValue(subLanguage, out var continuation) && continuation.Stack.Length > MaxContinuationDepth)
+                {
+                    continuation = null;
+                }
 
                 _emitter.OpenSubLanguage(subLanguage);
                 var run = new Run(session, input.Substring(start, length), subRoot, ignoreIllegals: true);
@@ -662,7 +699,14 @@ internal static class Tokenizer
 
                 _emitter.CloseScope();
 
-                _continuations[subLanguage] = run.FinalStack;
+                if (run.FinalState is { } finalState)
+                {
+                    _continuations[subLanguage] = finalState;
+                }
+                else
+                {
+                    _continuations.Remove(subLanguage);
+                }
                 return;
             }
 

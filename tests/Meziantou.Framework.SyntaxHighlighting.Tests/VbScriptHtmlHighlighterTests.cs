@@ -191,6 +191,24 @@ var x = 1;
     }
 
     [Fact]
+    public void BlockInScriptString_ScriptResumesInTheString()
+    {
+        AssertHighlighter("vbscript-html",
+"""
+<script>
+  var url = "<%= url %>";
+  var count = 3;
+</script>
+""",
+"""
+<span class="language-html"><span class="hljs-tag">&lt;<span class="hljs-name">script</span>&gt;</span><span class="language-javascript">
+  <span class="hljs-keyword">var</span> url = <span class="hljs-string">&quot;</span></span></span><span class="language-vbscript">&lt;%= url %&gt;</span><span class="language-html"><span class="language-javascript"><span class="hljs-string">&quot;</span>;
+  <span class="hljs-keyword">var</span> count = <span class="hljs-number">3</span>;
+</span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span></span>
+""");
+    }
+
+    [Fact]
     public void EmptyInput()
     {
         AssertHighlighter("vbscript-html",

@@ -44,8 +44,15 @@ internal static class Clojure
 
     private static Mode CreateMode()
     {
-        var symbol = new Mode { Begin = SymbolRe };
+        // Where a number starts, the number wins (it comes first in every mode that contains both), so the symbol does not
+        // start there either. Otherwise, in `1-1-1...` every number is followed by a match of the symbol over the whole
+        // rest of the run, which is quadratic on a long one.
+        var symbol = new Mode { Begin = @"(?![-+]?\d)" + SymbolRe };
 
+        // The ratio and the float fail identically from every digit of a run of digits that is not followed by what they
+        // expect (`/`, `.`, an exponent, `M`), which is quadratic on a long run: they are only tried from a sign or from
+        // the first digit of a run.
+        var signOrDigitRunStart = "(?:[-+]|" + CommonModes.RunStart("0-9") + ")";
         var number = new Mode
         {
             Scope = "number",
@@ -54,8 +61,8 @@ internal static class Clojure
                 new Mode { Match = "[-+]?0[xX][0-9a-fA-F]+N?" }, // hexadecimal: 0x2a
                 new Mode { Match = "[-+]?0[0-7]+N?" }, // octal: 052
                 new Mode { Match = "[-+]?[1-9][0-9]?[rR][0-9a-zA-Z]+N?" }, // variable radix from 2 to 36: 2r101010, 8r52, 36r16
-                new Mode { Match = @"[-+]?[0-9]+\/[0-9]+N?" }, // ratio: 1/2
-                new Mode { Match = @"[-+]?[0-9]+((\.[0-9]*([eE][+-]?[0-9]+)?M?)|([eE][+-]?[0-9]+M?|M))" }, // float: 0.42 4.2E-1M 42E1 42M
+                new Mode { Match = signOrDigitRunStart + @"[0-9]+\/[0-9]+N?" }, // ratio: 1/2
+                new Mode { Match = signOrDigitRunStart + @"[0-9]+((\.[0-9]*([eE][+-]?[0-9]+)?M?)|([eE][+-]?[0-9]+M?|M))" }, // float: 0.42 4.2E-1M 42E1 42M
                 new Mode { Match = "[-+]?([1-9][0-9]*|0)N?" }, // int (don't match leading 0): 42 42N
             ],
         };

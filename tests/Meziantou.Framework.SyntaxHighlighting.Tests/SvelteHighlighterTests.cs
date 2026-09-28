@@ -303,4 +303,50 @@ public class SvelteHighlighterTests
 <span class="hljs-tag">&lt;<span class="hljs-name">p</span> <span class="hljs-attr">title</span>=<span class="hljs-string">&quot;héllo <span class="hljs-template-variable">{<span class="language-javascript">名前</span>}</span>&quot;</span>&gt;</span><span class="hljs-template-variable">{<span class="language-javascript">名前</span>}</span> — ünïcode<span class="hljs-tag">&lt;/<span class="hljs-name">p</span>&gt;</span>
 """);
     }
+
+    [Fact]
+    public void ConsecutiveScriptsDoNotShareState()
+    {
+        AssertHighlighter("svelte",
+"""
+<script module lang="ts">
+const tag = "</script>";
+</script>
+<script lang="ts">
+let x = 1;
+</script>
+""",
+"""
+<span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">module</span> <span class="hljs-attr">lang</span>=<span class="hljs-string">&quot;ts&quot;</span>&gt;</span><span class="language-typescript">
+<span class="hljs-keyword">const</span> tag = <span class="hljs-string">&quot;</span></span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>&quot;;
+<span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">lang</span>=<span class="hljs-string">&quot;ts&quot;</span>&gt;</span><span class="language-typescript">
+<span class="hljs-keyword">let</span> x = <span class="hljs-number">1</span>;
+</span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
+""");
+    }
+
+    [Fact]
+    public void RunesOnlyInCode()
+    {
+        AssertHighlighter("svelte",
+"""
+<script lang="ts">
+  const url = "http://x"; let a = $state(0);
+  const s = "call $state(1) in string", t = 'it\'s $derived(2)';
+  /* $effect(() => {}) */ let b = $derived(a * 2);
+  const u = `${$state(3)} and ${ { a: "}" } } $props()`; $effect(() => {});
+  const tag = "</script>
+<p>{a}</p>
+""",
+"""
+<span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">lang</span>=<span class="hljs-string">&quot;ts&quot;</span>&gt;</span><span class="language-typescript">
+  <span class="hljs-keyword">const</span> url = <span class="hljs-string">&quot;http://x&quot;</span>; <span class="hljs-keyword">let</span> a = </span><span class="hljs-built_in">$state</span><span class="language-typescript">(<span class="hljs-number">0</span>);
+  <span class="hljs-keyword">const</span> s = <span class="hljs-string">&quot;call $state(1) in string&quot;</span>, t = <span class="hljs-string">&#x27;it\&#x27;s $derived(2)&#x27;</span>;
+  <span class="hljs-comment">/* $effect(() =&gt; {}) */</span> <span class="hljs-keyword">let</span> b = </span><span class="hljs-built_in">$derived</span><span class="language-typescript">(a * <span class="hljs-number">2</span>);
+  <span class="hljs-keyword">const</span> u = <span class="hljs-string">`<span class="hljs-subst">${$state(<span class="hljs-number">3</span>)}</span> and <span class="hljs-subst">${ { a: <span class="hljs-string">&quot;}&quot;</span> } }</span> $props()`</span>; </span><span class="hljs-built_in">$effect</span><span class="language-typescript">(<span class="hljs-function">() =&gt;</span> {});
+  <span class="hljs-keyword">const</span> tag = <span class="hljs-string">&quot;</span></span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">p</span>&gt;</span><span class="hljs-template-variable">{<span class="language-javascript">a</span>}</span><span class="hljs-tag">&lt;/<span class="hljs-name">p</span>&gt;</span>
+""");
+    }
 }

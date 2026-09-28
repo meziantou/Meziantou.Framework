@@ -38,6 +38,14 @@ internal static class AsciiDoc
         FirstCandidate(@"(?<!\w)" + mark + @"(?=\S)", ParagraphCharacter)
         + mark + @"\S[^\n]*\n(?:[^\n]+\n)*?[^\n]*?\S" + mark + @"(?!\w)";
 
+    // Deviation from highlight.js, whose delimited blocks begin on a delimiter followed by a line break and end on any
+    // delimiter of the same family (`\n[\-\.]{4,}$`): a literal block (`....`) ended on a `----` line and an example
+    // block (`====`) on a `****` line, a closing delimiter followed by a space did not end the block, and neither did the
+    // delimiter of an empty block, whose line break was consumed by the opening one. As in Asciidoctor, a delimiter is
+    // a whole line (trailing whitespace is ignored), and a block ends only on the same delimiter (EndSameAsBegin
+    // compares the captured delimiters, so a `------` block does not end on a `----` line).
+    private static string DelimiterLine(string delimiter) => "^(" + delimiter + @")[ \t\r]*$";
+
     private static Mode CreateMode()
     {
         Mode[] escapedFormatting =
@@ -100,7 +108,7 @@ internal static class AsciiDoc
             Contains =
             [
                 // Block comment.
-                CommonModes.Comment(@"^/{4,}\n", @"\n/{4,}$"),
+                new Mode(CommonModes.Comment(DelimiterLine("/{4,}"), DelimiterLine("/{4,}"))) { EndSameAsBegin = true },
 
                 // Line comment.
                 CommonModes.Comment("^//", "$"),
@@ -109,7 +117,7 @@ internal static class AsciiDoc
                 new Mode { Scope = "title", Begin = @"^\.\w.*$" },
 
                 // Example, admonition and sidebar blocks.
-                new Mode { Begin = @"^[=\*]{4,}\n", End = @"\n^[=\*]{4,}$" },
+                new Mode { Begin = DelimiterLine(@"={4,}|\*{4,}"), End = DelimiterLine(@"={4,}|\*{4,}"), EndSameAsBegin = true },
 
                 // Headings.
                 new Mode
@@ -118,7 +126,14 @@ internal static class AsciiDoc
                     Variants =
                     [
                         new Mode { Begin = @"^(={1,6})[ \t].+?([ \t]\1)?$" },
-                        new Mode { Begin = @"^[^\[\]\n]+?\n[=\-~\^\+]{2,}$" },
+
+                        // Deviation from highlight.js, whose two-line (setext) title is any line followed by a line of at
+                        // least two `=`, `-`, `~`, `^` or `+`: a list continuation (`+`) or a paragraph followed by a
+                        // listing block delimiter (`----`) became a title, and so did the closing delimiter with the line
+                        // before it. As in Asciidoctor, the title must have a letter or a digit and not start with `.`,
+                        // and the underline repeats a single character, with a length within one of the title's (each
+                        // title character is pushed on `c`, and each underline character pops one).
+                        new Mode { Begin = @"^(?!\.)(?=[^\n]*?[\p{L}\p{N}])(?<c>[^\[\]\n])+\n(?=[=\-~\^\+]{2})(?<u>[=\-~\^\+])(?<-c>)(?:\k<u>(?<-c>))*\k<u>?(?<-c>)?(?(c)(?!))$" },
                     ],
                 },
 
@@ -129,16 +144,17 @@ internal static class AsciiDoc
                 new Mode { Scope = "meta", Begin = @"^\[.+?\]$" },
 
                 // Quote blocks.
-                new Mode { Scope = "quote", Begin = @"^_{4,}\n", End = @"\n_{4,}$" },
+                new Mode { Scope = "quote", Begin = DelimiterLine("_{4,}"), End = DelimiterLine("_{4,}"), EndSameAsBegin = true },
 
                 // Listing and literal blocks.
-                new Mode { Scope = "code", Begin = @"^[\-\.]{4,}\n", End = @"\n[\-\.]{4,}$" },
+                new Mode { Scope = "code", Begin = DelimiterLine(@"-{4,}|\.{4,}"), End = DelimiterLine(@"-{4,}|\.{4,}"), EndSameAsBegin = true },
 
                 // Passthrough blocks.
                 new Mode
                 {
-                    Begin = @"^\+{4,}\n",
-                    End = @"\n\+{4,}$",
+                    Begin = DelimiterLine(@"\+{4,}"),
+                    End = DelimiterLine(@"\+{4,}"),
+                    EndSameAsBegin = true,
                     Contains = [new Mode { Begin = "<", End = ">", SubLanguage = "xml" }],
                 },
 
@@ -178,16 +194,22 @@ internal static class AsciiDoc
                 // Images and links.
                 // Deviation from highlight.js, whose target is `\S+?`: when the attribute list of the first `[` had no `]`
                 // before the next `[`, the target went on through that `[` to try the next one, to the end of the line.
-                // The target ends at the first `[`, as in AsciiDoc, which also keeps a long line of targets linear.
+                // The target ends at the first `[`, as in AsciiDoc. Every later macro prefix of a run of target characters
+                // reaches the same `[` (or the same whitespace), so only the first one is tried: trying each of them
+                // scanned the rest of the run, which is quadratic on a long run of prefixes (`http://ahttp://a…`).
                 new Mode
                 {
-                    Begin = @"(link:)?(http|https|ftp|file|irc|image:?):[^\s\[]+\[[^\[]*?\]",
+                    Begin = FirstCandidate(@"(?:link:)?(?:http|https|ftp|file|irc|image:?):", @"[^\s\[]") + @"(link:)?(http|https|ftp|file|irc|image:?):[^\s\[]+\[[^\[]*?\]",
                     ReturnBegin = true,
                     Contains =
                     [
                         new Mode { Begin = "(link|image:?):" },
                         new Mode { Scope = "link", Begin = @"\w", End = @"[^\[]+" },
-                        new Mode { Scope = "string", Begin = @"\[", End = @"\]", ExcludeBegin = true, ExcludeEnd = true },
+
+                        // Deviation from highlight.js, where the macro does not end with its attribute list: a word character
+                        // right after the `]` (`https://example.com[docs]s`) started another target, which ran to the next
+                        // `[` of the document, across paragraphs.
+                        new Mode { Scope = "string", Begin = @"\[", End = @"\]", ExcludeBegin = true, ExcludeEnd = true, EndsParent = true },
                     ],
                 },
             ],

@@ -29,12 +29,13 @@ internal static class Mermaid
         var comment = CommonModes.Comment(@"%%(?!\{)", "$");
 
         // A directive can span lines. An unterminated one ends before a blank line or a line made of words only (such as a
-        // diagram declaration), which cannot be part of its JSON.
+        // diagram declaration), which cannot be part of its JSON. Words must be separated by spaces: letting a word be split
+        // anywhere made a line of letters that is not followed by the end of the line exponential.
         var directive = new Mode
         {
             Scope = "meta",
             Begin = @"%%\{",
-            End = @"\}%%|(?=\n[ \t]*(?:[A-Za-z][\w-]*[ \t]*)*$)",
+            End = @"\}%%|(?=\n[ \t]*(?:[A-Za-z][\w-]*(?:[ \t]+[A-Za-z][\w-]*)*[ \t]*)?$)",
             Keywords = Keywords.FromWords(["init", "initialize", "wrap", "config"]),
             Contains = [CommonModes.QuoteStringMode, CommonModes.AposStringMode],
         };
@@ -71,12 +72,22 @@ internal static class Mermaid
             Match = @"(?:<|(?<!\w)[ox])?(?:-{2,}|={2,}|-\.+-|~{3,})(?:>|[ox](?!\w))?",
         };
 
-        // `A -- text --> B`, `A -. text .-> B`, `A == text ==> B`. The text ends at the first closing arrow, which is also
-        // the closing arrow of any earlier opening one on the line: only the first opening one (after the scan start) is
-        // tried, which keeps a long line of unclosed ones linear.
+        // `A -- text --> B`, `A -. text .-> B`, `A == text ==> B`, `A <-- text --x B`, `A o== text ==o B`. The text ends at the
+        // first closing arrow, which is also the closing arrow of any earlier opening one on the line: only the first opening
+        // one (after the scan start) is tried, which keeps a long line of unclosed ones linear. The arrows are those of the
+        // flowchart lexer: an opening is `[xo<]?--`, `[xo<]?==` or `[xo<]?-.`, and a closing is `--+[-xo>]`, `==+[=xo>]` or
+        // `.+-[xo>]?`. The end of a longer arrow (the last `--` of `A --- B`) is not an opening.
+        const string LinkOpening = @"(?:(?<!-)--|(?<!=)==|(?<!-)-\.)";
         var textLink = new Mode
         {
-            BeginParts = [@"(?=(?:--|==|-\.)[ \t]+\S)(?:\G|(?<!(?:--|==|-\.)[ \t]+\S(?:(?!\G)[^\n])*?))(?:--|==|-\.)", @"[ \t]+", @"\S[^\n]*?", @"[ \t]+", @"-{2,}>|={2,}>|\.-+>|-{3,}|={3,}|\.-"],
+            BeginParts =
+            [
+                @"(?=(?:<|(?<!\w)[xo])?" + LinkOpening + @"[ \t]+\S)(?:\G|(?<!" + LinkOpening + @"[ \t]+\S(?:(?!\G)[^\n])*?))(?:<|(?<!\w)[xo])?" + LinkOpening,
+                @"[ \t]+",
+                @"\S[^\n]*?",
+                @"[ \t]+",
+                @"-{2,}(?:>|[xo](?!\w))|={2,}(?:>|[xo](?!\w))|\.+-(?:>|[xo](?!\w))?|-{3,}|={3,}",
+            ],
             BeginScope = new Dictionary<int, string> { [1] = "operator", [3] = "string", [5] = "operator" },
         };
 
@@ -126,7 +137,10 @@ internal static class Mermaid
         // `<<interface>>`, `<<fork>>`, `<<choice>>`.
         var annotation = new Mode { Scope = "meta", Match = @"<<[\w-]+>>" };
 
-        Mode[] nodeShapes = NodeShapes(quotedTexts);
+        Mode[] nodeShapes = NodeShapes(quotedTexts, allowWithoutId: false);
+
+        // In a mindmap or a kanban board, a node can have a shape but no id (`[Create Documentation]`).
+        Mode[] idlessNodeShapes = NodeShapes(quotedTexts, allowWithoutId: true);
 
         // `title`, `accTitle` and `accDescr` are followed by free text.
         var commonStatements = Statement("title|accTitle|accDescr");
@@ -138,12 +152,12 @@ internal static class Mermaid
 
         var sequence = Diagram(
             "sequenceDiagram",
-            "participant actor boundary control entity database collections queue create destroy end activate deactivate Note note over left right of autonumber off link links",
+            "participant actor create destroy end activate deactivate Note note over left right of autonumber off link links properties details",
             [
                 commonStatements,
 
                 // The label of a block is free text.
-                Statement("loop|alt|else|opt|par|and|critical|option|break|rect|box"),
+                Statement("loop|alt|else|opt|par_over|par|and|critical|option|break|rect|box"),
 
                 // So is the alias of a participant.
                 new Mode
@@ -253,7 +267,23 @@ internal static class Mermaid
                 .. strings,
             ]);
 
-        var pie = Diagram("pie", "showData", [commonStatements, number, .. strings]);
+        var pie = Diagram(
+            "pie",
+            "showData",
+            [
+                commonStatements,
+
+                // The title can also follow the declaration on its line (`pie title Pets adopted by volunteers`).
+                new Mode
+                {
+                    BeginParts = [@"(?<=^[ \t]*pie(?:[ \t]+showData)?[ \t]+)title" + WordEnd],
+                    BeginScope = new Dictionary<int, string> { [1] = "keyword" },
+                    End = "$",
+                    Contains = [comment, .. strings],
+                },
+                number,
+                .. strings,
+            ]);
 
         var journey = Diagram(
             "journey",
@@ -271,9 +301,9 @@ internal static class Mermaid
             [
                 commonStatements,
                 new Mode { Scope = "meta", Match = @"::icon\([^)\n]*\)" },
-                new Mode { Scope = "string", Begin = @"(?<=\w)\)\)", End = @"\(\(|$", ExcludeBegin = true, ExcludeEnd = true },
-                new Mode { Scope = "string", Begin = @"(?<=\w)\)", End = @"\(|$", ExcludeBegin = true, ExcludeEnd = true },
-                .. nodeShapes,
+                new Mode { Scope = "string", Begin = @"(?<=\w|^[ \t]*)\)\)", End = @"\(\(|$", ExcludeBegin = true, ExcludeEnd = true },
+                new Mode { Scope = "string", Begin = @"(?<=\w|^[ \t]*)\)", End = @"\(|$", ExcludeBegin = true, ExcludeEnd = true },
+                .. idlessNodeShapes,
                 classShorthand,
                 .. strings,
             ]);
@@ -342,7 +372,7 @@ internal static class Mermaid
         var block = Diagram("block-beta|block", "columns space block end", [commonStatements, styleStatement, .. nodeShapes, arrow, classShorthand, number, .. strings]);
         var packet = Diagram("packet-beta|packet", keywords: null, [commonStatements, number, .. strings]);
         var architecture = Diagram("architecture-beta|architecture", "group service junction in", [commonStatements, .. nodeShapes, arrow, .. strings]);
-        var kanban = Diagram("kanban", keywords: null, [commonStatements, .. nodeShapes, shapeData, .. strings]);
+        var kanban = Diagram("kanban", keywords: null, [commonStatements, .. idlessNodeShapes, shapeData, .. strings]);
         var radar = Diagram("radar-beta|radar", "axis curve max min ticks showLegend graticule circle polygon", [commonStatements, .. nodeShapes, number, .. strings]);
         var treemap = Diagram("treemap-beta|treemap", keywords: null, [commonStatements, styleStatement, classShorthand, number, .. strings]);
         var info = Diagram("info", "showInfo", []);
@@ -415,8 +445,12 @@ internal static class Mermaid
 
     // `A[text]`, `A(text)`, `A([text])`, `A[[text]]`, `A[(text)]`, `A((text))`, `A(((text)))`, `A>text]`, `A{text}`,
     // `A{{text}}`, `A[/text/]`, `A[\text\]`, `A[/text\]`, `A[\text/]`. The text is a string; a shape cannot span lines.
-    private static Mode[] NodeShapes(Mode[] quotedTexts)
+    private static Mode[] NodeShapes(Mode[] quotedTexts, bool allowWithoutId)
     {
+        // The shape follows the node id, possibly after spaces (`subgraph id [title]`), or another shape
+        // (`service db(database)[Database]`). Where a node can have no id, it can also start a line.
+        var prefix = allowWithoutId ? @"(?<=[\w)][ \t]*|^[ \t]*)" : @"(?<=[\w)][ \t]*)";
+
         (string Open, string Close)[] shapes =
         [
             (@"\(\(\(", @"\)\)\)"),
@@ -438,10 +472,7 @@ internal static class Mermaid
             result.Add(new Mode
             {
                 Scope = "string",
-
-                // The shape follows the node id, possibly after spaces (`subgraph id [title]`), or another shape
-                // (`service db(database)[Database]`).
-                Begin = @"(?<=[\w)][ \t]*)" + open,
+                Begin = prefix + open,
                 End = close + "|$",
                 ExcludeBegin = true,
                 ExcludeEnd = true,

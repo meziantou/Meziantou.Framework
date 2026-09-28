@@ -34,6 +34,14 @@ public sealed partial class EscapingTests
         ">",
         "\"",
         "'",
+
+        // A character outside the BMP where grammars match a single UTF-16 unit (an escape, a character literal, a
+        // variable sigil), so a boundary falls between its two halves.
+        "\\\U0001F600",
+        "$\U0001F600",
+        "?\U0001F600",
+        "#\U0001F600 x",
+        "'\U0001F600'",
     ];
 
     [Theory]
@@ -73,6 +81,7 @@ public sealed partial class EscapingTests
     private static string StripEmitterTags(string html, string input, string language)
     {
         var text = new StringBuilder(html.Length);
+        var depth = 0;
         var index = 0;
         while (index < html.Length)
         {
@@ -80,13 +89,26 @@ public sealed partial class EscapingTests
             {
                 var match = EmitterTag().Match(html, index);
                 Assert.True(match.Success, $"Unescaped '<' in the output for language '{language}' and input '{input}': {html}");
+
+                depth += match.ValueSpan is "</span>" ? -1 : 1;
+                if (depth < 0)
+                    Assert.Fail($"A </span> closes no <span> in the output for language '{language}' and input '{input}': {html}");
+
                 index += match.Length;
                 continue;
             }
 
+            // Markup between the two halves of a surrogate pair makes the output invalid UTF-16, which a strict encoder
+            // rejects and a lenient one turns into two replacement characters.
+            if (char.IsLowSurrogate(html[index]) && text.Length > 0 && char.IsHighSurrogate(text[^1]) && !char.IsHighSurrogate(html[index - 1]))
+                Assert.Fail($"A tag splits a surrogate pair in the output for language '{language}' and input '{input}': {html}");
+
             text.Append(html[index]);
             index++;
         }
+
+        if (depth != 0)
+            Assert.Fail($"{depth} <span> are never closed in the output for language '{language}' and input '{input}': {html}");
 
         return text.ToString();
     }

@@ -1,3 +1,5 @@
+using System.Runtime.InteropServices;
+
 namespace Meziantou.Framework.SyntaxHighlighting.Tests;
 
 /// <summary>
@@ -9,6 +11,62 @@ namespace Meziantou.Framework.SyntaxHighlighting.Tests;
 public sealed class LargeInputTests
 {
     private static readonly TimeSpan Budget = TimeSpan.FromSeconds(10);
+
+    // A pattern that is tried from each position of a run and scans to the end of the run makes a grammar quadratic, which
+    // a single realistic document does not show. A run of one delimiter is where that happens most, so a run of 40,000
+    // characters is compared with four runs of 10,000, which also catches a quadratic grammar that is still fast at one
+    // size (the long run then takes four times as long, a linear one as long). The time is the CPU time of the thread, so
+    // the other tests do not count, and both measurements are long enough for Windows' 15.6 ms clock. A garbage
+    // collection can still land in one measurement, so a run that looks quadratic is measured again before failing. The
+    // theory runs alone because it keeps a core busy, which would make the tests with a wall-clock budget miss it.
+    [Theory(DisableParallelization = true)]
+    [MemberData(nameof(Grammars), MemberType = typeof(Helper))]
+    public void Highlight_LongRunOfOneCharacter_ScalesLinearly(string language)
+    {
+        const string Characters = "\"'`/\\*#-=+<>{}[]()$@%:;,.| \t\na1";
+        const int SmallSize = 10_000;
+        const int LargeSize = 4 * SmallSize;
+
+        foreach (var character in Characters)
+        {
+            var smallRun = new string(character, SmallSize);
+            var largeRun = new string(character, LargeSize);
+            HighlightWithFallbackDetection(smallRun, language, out _);
+
+            var smallRuns = MeasureFastest(smallRun, language, repetitions: 4, attempts: 1);
+            var large = MeasureFastest(largeRun, language, repetitions: 1, attempts: 1);
+            if (!ScalesLinearly(smallRuns, large))
+            {
+                smallRuns = MeasureFastest(smallRun, language, repetitions: 4, attempts: 3);
+                large = MeasureFastest(largeRun, language, repetitions: 1, attempts: 3);
+            }
+
+            Assert.True(ScalesLinearly(smallRuns, large), $"Highlighting a run of {LargeSize} '{character}' in '{language}' took {large.TotalMilliseconds:F0} ms of CPU time, and four runs of {SmallSize} took {smallRuns.TotalMilliseconds:F0} ms.");
+        }
+
+        static bool ScalesLinearly(TimeSpan smallRuns, TimeSpan large) => large <= (smallRuns * 2) + TimeSpan.FromMilliseconds(50);
+
+        static TimeSpan MeasureFastest(string code, string language, int repetitions, int attempts)
+        {
+            var fastest = TimeSpan.MaxValue;
+            for (var attempt = 0; attempt < attempts; attempt++)
+            {
+                var start = ThreadCpuTime.GetCurrent();
+                for (var i = 0; i < repetitions; i++)
+                {
+                    HighlightWithFallbackDetection(code, language, out _);
+                }
+
+                var elapsed = ThreadCpuTime.GetCurrent() - start;
+                if (elapsed < fastest)
+                {
+                    fastest = elapsed;
+                }
+            }
+
+            return fastest;
+        }
+    }
 
     [Theory]
     [MemberData(nameof(Grammars), MemberType = typeof(Helper))]
@@ -100,6 +158,92 @@ public sealed class LargeInputTests
         Assert.EndsWith("<span class=\"hljs-literal\">yes</span>", await highlight, StringComparison.Ordinal);
     }
 
+    // A CoffeeScript regular expression literal used to look for its closing `/` from each `/` of a line up to the end of
+    // the line (more than a minute for 100,000 characters).
+    [Theory]
+    [InlineData("x = a", "/a")]
+    [InlineData("x = /", "a/")]
+    [InlineData("", "a/b")]
+    [InlineData("x = ", "/a 0b1")]
+    [InlineData("x = ", "/a\\")]
+    public async Task Highlight_CoffeeScriptLongLineOfSlashes_CompletesInReasonableTime(string prefix, string part)
+    {
+        var code = prefix + string.Concat(Enumerable.Repeat(part, 100_000 / part.Length)) + "\nyes";
+
+        var isFallback = false;
+        var highlight = Task.Run(() => HighlightWithFallbackDetection(code, "coffeescript", out isFallback));
+        var finished = await Task.WhenAny(highlight, Task.Delay(Budget)) == highlight;
+
+        Assert.True(finished, $"Highlighting {code.Length} characters of 'coffeescript' did not finish within {Budget.TotalSeconds:F0}s.");
+        Assert.False(isFallback, $"Highlighting {code.Length} characters of 'coffeescript' was abandoned.");
+        Assert.EndsWith("<span class=\"hljs-literal\">yes</span>", await highlight, StringComparison.Ordinal);
+    }
+
+    // A Verilog parameter list (`#(…)`) used to be looked for from each `#(` of a line that does not close it up to the end
+    // of the line (40 seconds for 100,000 characters).
+    [Theory]
+    [InlineData("#(")]
+    [InlineData("#(a")]
+    [InlineData("#(1")]
+    [InlineData("#(.a")]
+    [InlineData("#((")]
+    public async Task Highlight_VerilogLongLineOfUnclosedParameters_CompletesInReasonableTime(string part)
+    {
+        var code = string.Concat(Enumerable.Repeat(part, 100_000 / part.Length)) + "\nendmodule";
+
+        var isFallback = false;
+        var highlight = Task.Run(() => HighlightWithFallbackDetection(code, "verilog", out isFallback));
+        var finished = await Task.WhenAny(highlight, Task.Delay(Budget)) == highlight;
+
+        Assert.True(finished, $"Highlighting {code.Length} characters of 'verilog' did not finish within {Budget.TotalSeconds:F0}s.");
+        Assert.False(isFallback, $"Highlighting {code.Length} characters of 'verilog' was abandoned.");
+        Assert.EndsWith("<span class=\"hljs-keyword\">endmodule</span>", await highlight, StringComparison.Ordinal);
+    }
+
+    // The whitespace after the `=` of a Zig container declaration (`const Point = struct`) used to be split in every
+    // possible way between two runs of whitespace before failing (4 seconds for 100,000 characters).
+    [Theory]
+    [InlineData("var a = ", " ")]
+    [InlineData("const a =", " ")]
+    [InlineData("var a = ", "\n")]
+    public async Task Highlight_ZigLongWhitespaceAfterAssignment_CompletesInReasonableTime(string prefix, string whitespace)
+    {
+        var code = prefix + string.Concat(Enumerable.Repeat(whitespace, 200_000)) + "1;";
+
+        var isFallback = false;
+        var highlight = Task.Run(() => HighlightWithFallbackDetection(code, "zig", out isFallback));
+        var finished = await Task.WhenAny(highlight, Task.Delay(Budget)) == highlight;
+
+        Assert.True(finished, $"Highlighting {code.Length} characters of 'zig' did not finish within {Budget.TotalSeconds:F0}s.");
+        Assert.False(isFallback, $"Highlighting {code.Length} characters of 'zig' was abandoned.");
+        Assert.EndsWith("<span class=\"hljs-number\">1</span>;", await highlight, StringComparison.Ordinal);
+    }
+
+    // An Erlang triple-quoted string used to be looked for from each quote of a run, each time consuming the rest of the
+    // run and then scanning the rest of the document for a closing delimiter (20 seconds for 40,000 quotes).
+    [Theory]
+    [InlineData("quotes")]
+    [InlineData("sigil")]
+    [InlineData("decreasing")]
+    public async Task Highlight_ErlangLongRunOfQuotes_CompletesInReasonableTime(string content)
+    {
+        var code = content switch
+        {
+            "quotes" => new string('"', 100_000),
+            "sigil" => "~s" + new string('"', 100_000),
+            "decreasing" => string.Concat(Enumerable.Range(3, 440).Reverse().Select(length => new string('"', length) + "a")),
+            _ => throw new ArgumentOutOfRangeException(nameof(content)),
+        } + "\n-module(m).";
+
+        var isFallback = false;
+        var highlight = Task.Run(() => HighlightWithFallbackDetection(code, "erlang", out isFallback));
+        var finished = await Task.WhenAny(highlight, Task.Delay(Budget)) == highlight;
+
+        Assert.True(finished, $"Highlighting {code.Length} characters of 'erlang' did not finish within {Budget.TotalSeconds:F0}s.");
+        Assert.False(isFallback, $"Highlighting {code.Length} characters of 'erlang' was abandoned.");
+        Assert.EndsWith("<span class=\"hljs-keyword\">-module</span><span class=\"hljs-params\">(m)</span>.", await highlight, StringComparison.Ordinal);
+    }
+
     // A properties key used to be matched from each of its positions, which is quadratic on a long key made of escapes
     // (a minute and a half for 60,000 backslashes).
     [Theory]
@@ -131,6 +275,51 @@ public sealed class LargeInputTests
         Assert.EndsWith(" b}}</span>", await highlight, StringComparison.Ordinal);
     }
 
+    // A Svelte rune used to be rejected by a lookbehind that scanned back to the start of its line for a `//`, which is
+    // quadratic on a long line of runes (about 10 seconds for this document).
+    [Fact]
+    public async Task Highlight_SvelteLongLineOfRunes_CompletesInReasonableTime()
+    {
+        var code = "<script>\n" + string.Concat(Enumerable.Repeat("$state(0);", 20_000));
+
+        var highlight = Task.Run(() => HighlightWithFallbackDetection(code, "svelte", out _));
+        var finished = await Task.WhenAny(highlight, Task.Delay(Budget)) == highlight;
+
+        Assert.True(finished, $"Highlighting {code.Length} characters of 'svelte' did not finish within {Budget.TotalSeconds:F0}s.");
+        Assert.EndsWith("<span class=\"hljs-built_in\">$state</span><span class=\"language-javascript\">(<span class=\"hljs-number\">0</span>);</span>", await highlight, StringComparison.Ordinal);
+    }
+
+    // An unclosed dynamic argument of a Vue directive (`:[key`) used to be scanned to the end of the attribute name from
+    // each `:[` of the name (about 8 seconds for this document).
+    [Fact]
+    public async Task Highlight_VueLongRunOfUnclosedDynamicArguments_CompletesInReasonableTime()
+    {
+        var code = "<div " + string.Concat(Enumerable.Repeat(":[", 100_000)) + ">\n<p>";
+
+        var highlight = Task.Run(() => HighlightWithFallbackDetection(code, "vue", out _));
+        var finished = await Task.WhenAny(highlight, Task.Delay(Budget)) == highlight;
+
+        Assert.True(finished, $"Highlighting {code.Length} characters of 'vue' did not finish within {Budget.TotalSeconds:F0}s.");
+        Assert.EndsWith("&gt;</span>\n<span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">p</span>&gt;</span>", await highlight, StringComparison.Ordinal);
+    }
+
+    // A Handlebars `[ abc ]` segment that is not closed used to be scanned to the end of the document from each `[` that
+    // follows it, in the same mustache or in a later one (40, 20 and 25 seconds for these documents).
+    [Theory]
+    [InlineData("{{x ", "[a", "}}", 1_000_000)]
+    [InlineData("{{x ", "a.[a", "}}", 1_000_000)]
+    [InlineData("", "{{x [a}}\n", "", 2_000_000)]
+    public async Task Highlight_HandlebarsUnclosedBracketSegments_CompletesInReasonableTime(string prefix, string part, string suffix, int length)
+    {
+        var code = prefix + string.Concat(Enumerable.Repeat(part, length / part.Length)) + suffix + "\n{{#if a}}";
+
+        var highlight = Task.Run(() => HighlightWithFallbackDetection(code, "handlebars", out _));
+        var finished = await Task.WhenAny(highlight, Task.Delay(Budget)) == highlight;
+
+        Assert.True(finished, $"Highlighting {code.Length} characters of 'handlebars' did not finish within {Budget.TotalSeconds:F0}s.");
+        Assert.EndsWith("{{#<span class=\"hljs-name\"><span class=\"hljs-built_in\">if</span></span> a}}</span>", await highlight, StringComparison.Ordinal);
+    }
+
     // The indentation of a Haml comment line used to be captured before checking that a comment follows, which rescanned
     // the indentation from each of its positions (about 50 seconds for this document).
     [Fact]
@@ -143,6 +332,21 @@ public sealed class LargeInputTests
 
         Assert.True(finished, $"Highlighting {code.Length} characters of 'haml' did not finish within {Budget.TotalSeconds:F0}s.");
         Assert.EndsWith("-# comment</span>", await highlight, StringComparison.Ordinal);
+    }
+
+    // The end of a Haml attribute hash (`}` after optional whitespace, or the end of a line that does not end with a
+    // comma) used to be looked for by scanning a run of whitespace from each of its positions (30 seconds for this
+    // document).
+    [Fact]
+    public async Task Highlight_HamlLongWhitespaceInAttributeHash_CompletesInReasonableTime()
+    {
+        var code = "%a{x" + new string(' ', 100_000) + "y\n%p text";
+
+        var highlight = Task.Run(() => HighlightWithFallbackDetection(code, "haml", out _));
+        var finished = await Task.WhenAny(highlight, Task.Delay(Budget)) == highlight;
+
+        Assert.True(finished, $"Highlighting {code.Length} characters of 'haml' did not finish within {Budget.TotalSeconds:F0}s.");
+        Assert.EndsWith("<span class=\"hljs-tag\">%<span class=\"hljs-selector-tag\">p</span></span> text", await highlight, StringComparison.Ordinal);
     }
 
     // A number pattern that fails identically from every position of a long run of digits, and an identifier that is
@@ -235,6 +439,24 @@ public sealed class LargeInputTests
         Assert.EndsWith("A <span class=\"hljs-operator\">--&gt;</span> B", await highlight, StringComparison.Ordinal);
     }
 
+    // The end of an unterminated Mermaid directive (a line made of words only) used to let a word be split anywhere, so a
+    // line of letters that is not followed by the end of the line took exponential time (hours for 40 letters).
+    [Theory]
+    [InlineData("a", 40)]
+    [InlineData("a", 60_000)]
+    [InlineData(" ", 60_000)]
+    [InlineData("a ", 60_000)]
+    public async Task Highlight_MermaidUnterminatedDirective_CompletesInReasonableTime(string part, int length)
+    {
+        var code = "%%{init: {\"theme\": \"dark\"\n" + string.Concat(Enumerable.Repeat(part, length / part.Length)) + "!\nflowchart LR\nA --> B";
+
+        var highlight = Task.Run(() => HighlightWithFallbackDetection(code, "mermaid", out _));
+        var finished = await Task.WhenAny(highlight, Task.Delay(Budget)) == highlight;
+
+        Assert.True(finished, $"Highlighting {code.Length} characters of 'mermaid' did not finish within {Budget.TotalSeconds:F0}s.");
+        Assert.EndsWith("A <span class=\"hljs-operator\">--&gt;</span> B", await highlight, StringComparison.Ordinal);
+    }
+
     // An AsciiDoc strong, emphasis or smart quote mark used to scan the rest of its line or paragraph for a closing mark
     // from each unclosed mark (8 to 40 seconds for the single-line documents).
     [Theory]
@@ -255,6 +477,133 @@ public sealed class LargeInputTests
         Assert.EndsWith("<span class=\"hljs-strong\">*end*</span>", await highlight, StringComparison.Ordinal);
     }
 
+    // An AsciiDoc link or image macro used to be looked for from each macro prefix of a run of target characters, each
+    // time scanning to the end of the run (0.7 seconds for 100,000 characters, about 20 seconds for this document).
+    [Theory]
+    [InlineData("http://a")]
+    [InlineData("http://a,")]
+    [InlineData("file:/")]
+    [InlineData("image:x")]
+    [InlineData("link:http:")]
+    [InlineData("|http://a")]
+    [InlineData("http://a[b")]
+    public async Task Highlight_AsciiDocLongRunOfMacroPrefixes_CompletesInReasonableTime(string part)
+    {
+        var code = string.Concat(Enumerable.Repeat(part, 600_000 / part.Length)) + "\n\nhttps://example.com[end]";
+
+        var highlight = Task.Run(() => HighlightWithFallbackDetection(code, "asciidoc", out _));
+        var finished = await Task.WhenAny(highlight, Task.Delay(Budget)) == highlight;
+
+        Assert.True(finished, $"Highlighting {code.Length} characters of 'asciidoc' did not finish within {Budget.TotalSeconds:F0}s.");
+        Assert.EndsWith("<span class=\"hljs-link\">https://example.com</span>[<span class=\"hljs-string\">end</span>]", await highlight, StringComparison.Ordinal);
+    }
+
+    // The Haskell operator that ends with dashes (`--+` followed by a symbol) used to be looked for from each dash of a run,
+    // each time scanning to the end of the run (50 seconds for 100,000 dashes).
+    [Theory]
+    [InlineData("-")]
+    [InlineData("-- ")]
+    [InlineData("---a")]
+    public async Task Highlight_HaskellLongDashRun_CompletesInReasonableTime(string part)
+    {
+        var code = "x = 1\n" + string.Concat(Enumerable.Repeat(part, 150_000 / part.Length)) + "\nmain = 1";
+
+        var isFallback = false;
+        var highlight = Task.Run(() => HighlightWithFallbackDetection(code, "haskell", out isFallback));
+        var finished = await Task.WhenAny(highlight, Task.Delay(Budget)) == highlight;
+
+        Assert.True(finished, $"Highlighting {code.Length} characters of 'haskell' did not finish within {Budget.TotalSeconds:F0}s.");
+        Assert.False(isFallback, $"Highlighting {code.Length} characters of 'haskell' was abandoned.");
+        Assert.EndsWith("<span class=\"hljs-title\">main</span> = <span class=\"hljs-number\">1</span>", await highlight, StringComparison.Ordinal);
+    }
+
+    // The Clojure ratio and float used to be looked for from each digit of a run of digits, each time scanning to the end
+    // of the run, and a symbol was matched over the whole rest of a run after each number that wins against it at the same
+    // position (7 seconds for 100,000 digits, 2 seconds for 100,000 characters of `1-`).
+    [Theory]
+    [InlineData("1")]
+    [InlineData("0")]
+    [InlineData("1-")]
+    [InlineData("+1")]
+    public async Task Highlight_ClojureLongNumberRun_CompletesInReasonableTime(string part)
+    {
+        var code = "(f " + string.Concat(Enumerable.Repeat(part, 300_000 / part.Length)) + ")\n(def x 1)";
+
+        var isFallback = false;
+        var highlight = Task.Run(() => HighlightWithFallbackDetection(code, "clojure", out isFallback));
+        var finished = await Task.WhenAny(highlight, Task.Delay(Budget)) == highlight;
+
+        Assert.True(finished, $"Highlighting {code.Length} characters of 'clojure' did not finish within {Budget.TotalSeconds:F0}s.");
+        Assert.False(isFallback, $"Highlighting {code.Length} characters of 'clojure' was abandoned.");
+        Assert.EndsWith("(<span class=\"hljs-keyword\">def</span> <span class=\"hljs-title\">x</span> <span class=\"hljs-number\">1</span>)", await highlight, StringComparison.Ordinal);
+    }
+
+    // The PostgreSQL illegal pattern `\W\s*\(\*` used to be tried from each whitespace of a run of whitespace, each time
+    // scanning to the end of the run (4 seconds for 100,000 characters, a minute for this document).
+    [Theory]
+    [InlineData("\n")]
+    [InlineData(" ")]
+    [InlineData("\t")]
+    [InlineData(" \n")]
+    public async Task Highlight_PgsqlLongWhitespaceRun_CompletesInReasonableTime(string part)
+    {
+        var code = "SELECT 1;" + string.Concat(Enumerable.Repeat(part, 400_000 / part.Length)) + "SELECT 2;";
+
+        var isFallback = false;
+        var highlight = Task.Run(() => HighlightWithFallbackDetection(code, "pgsql", out isFallback));
+        var finished = await Task.WhenAny(highlight, Task.Delay(Budget)) == highlight;
+
+        Assert.True(finished, $"Highlighting {code.Length} characters of 'pgsql' did not finish within {Budget.TotalSeconds:F0}s.");
+        Assert.False(isFallback, $"Highlighting {code.Length} characters of 'pgsql' was abandoned.");
+        Assert.EndsWith("<span class=\"hljs-keyword\">SELECT</span> <span class=\"hljs-number\">2</span>;", await highlight, StringComparison.Ordinal);
+    }
+
+    // A urlencoded value used to be matched over the whole rest of a run after each `=` or name that wins against it at the
+    // same position, and a name was looked for from each character of a run of name characters (4 seconds for 100,000
+    // characters, a minute for this document).
+    [Theory]
+    [InlineData("=")]
+    [InlineData("a=")]
+    [InlineData("=a")]
+    [InlineData("a==")]
+    public async Task Highlight_UrlEncodedLongRun_CompletesInReasonableTime(string part)
+    {
+        var code = "a=1&" + string.Concat(Enumerable.Repeat(part, 400_000 / part.Length)) + "&b=2";
+
+        var isFallback = false;
+        var highlight = Task.Run(() => HighlightWithFallbackDetection(code, "urlencoded", out isFallback));
+        var finished = await Task.WhenAny(highlight, Task.Delay(Budget)) == highlight;
+
+        Assert.True(finished, $"Highlighting {code.Length} characters of 'urlencoded' did not finish within {Budget.TotalSeconds:F0}s.");
+        Assert.False(isFallback, $"Highlighting {code.Length} characters of 'urlencoded' was abandoned.");
+        Assert.EndsWith("<span class=\"hljs-attr\">b</span><span class=\"hljs-punctuation\">=</span><span class=\"hljs-string\">2</span>", await highlight, StringComparison.Ordinal);
+    }
+
+    // A YAML plain scalar used to be matched over the whole rest of a run after each quoted string, number, literal or tag
+    // that wins against it at the same position (2 to 3 seconds for 100,000 characters, a minute for this document).
+    [Theory]
+    [InlineData("\"", false)]
+    [InlineData("\"a\"", false)]
+    [InlineData("\"a\"'a'", false)]
+    [InlineData("1-", false)]
+    [InlineData("true\"a\"", false)]
+    [InlineData("!x\"a\"", false)]
+    [InlineData("\"", true)]
+    [InlineData("1-", true)]
+    public async Task Highlight_YamlLongRun_CompletesInReasonableTime(string part, bool inFlowCollection)
+    {
+        var run = string.Concat(Enumerable.Repeat(part, 400_000 / part.Length));
+        var code = "a: " + (inFlowCollection ? "[" + run + "]" : run) + "\nkey: 1";
+
+        var isFallback = false;
+        var highlight = Task.Run(() => HighlightWithFallbackDetection(code, "yaml", out isFallback));
+        var finished = await Task.WhenAny(highlight, Task.Delay(Budget)) == highlight;
+
+        Assert.True(finished, $"Highlighting {code.Length} characters of 'yaml' did not finish within {Budget.TotalSeconds:F0}s.");
+        Assert.False(isFallback, $"Highlighting {code.Length} characters of 'yaml' was abandoned.");
+        Assert.EndsWith("<span class=\"hljs-attr\">key:</span> <span class=\"hljs-number\">1</span>", await highlight, StringComparison.Ordinal);
+    }
+
     // The guard against grammars that stop making progress used to count the hits of every run of the document, but
     // compared the count with a position in the current fragment, so a document with many embedded fragments was
     // abandoned (plain text).
@@ -273,5 +622,93 @@ public sealed class LargeInputTests
         HighlightWithFallbackDetection(code, language, out var isFallback);
 
         Assert.False(isFallback, $"Highlighting {code.Length} characters of '{language}' was abandoned.");
+    }
+
+    // The guard against grammars that stop making progress used to count every hit at the same index, including the ends
+    // of ten thousand nested modes closing together (Apache), and allowed only three hits per character although MATLAB
+    // makes three zero-width hits for each `)`: both documents were abandoned (plain text).
+    [Theory]
+    [InlineData("apache")]
+    [InlineData("matlab")]
+    public void Highlight_ManyHitsThatMakeProgress_IsNotAbandoned(string language)
+    {
+        var (code, end) = language switch
+        {
+            "apache" => ("Foo " + string.Concat(Enumerable.Repeat("%{", 20_000)) + "\nListen 80", "<span class=\"hljs-attribute\">Listen</span> <span class=\"hljs-number\">80</span>"),
+            "matlab" => (new string(')', 100_000) + "\nx = 1", "x = <span class=\"hljs-number\">1</span>"),
+            _ => throw new ArgumentOutOfRangeException(nameof(language)),
+        };
+
+        var html = HighlightWithFallbackDetection(code, language, out var isFallback);
+
+        Assert.False(isFallback, $"Highlighting {code.Length} characters of '{language}' was abandoned.");
+        Assert.EndsWith(end, html, StringComparison.Ordinal);
+    }
+
+    // Each fragment of these documents leaves the embedded language one or two modes deeper, and resuming a fragment used
+    // to reopen the scope of every one of them: the output grew with the square of the input (hundreds of megabytes, then
+    // an OverflowException, for the longest ones).
+    [Theory]
+    [InlineData("erb")]
+    [InlineData("node-repl")]
+    [InlineData("python-repl")]
+    [InlineData("clojure-repl")]
+    public async Task Highlight_FragmentsThatNestDeeper_OutputIsLinear(string language)
+    {
+        var code = language switch
+        {
+            "erb" => string.Concat(Enumerable.Repeat("<% \"#{ %>", 20_000)),
+            "node-repl" => "> `\n" + string.Concat(Enumerable.Repeat("... ${`\n", 20_000)),
+            "python-repl" => ">>> f\"{\n" + string.Concat(Enumerable.Repeat("... f\"{\n", 20_000)),
+            "clojure-repl" => "user=> (\n" + string.Concat(Enumerable.Repeat("  #_=> (a\n", 20_000)),
+            _ => throw new ArgumentOutOfRangeException(nameof(language)),
+        };
+
+        var isFallback = false;
+        var highlight = Task.Run(() => HighlightWithFallbackDetection(code, language, out isFallback));
+        var finished = await Task.WhenAny(highlight, Task.Delay(Budget)) == highlight;
+
+        Assert.True(finished, $"Highlighting {code.Length} characters of '{language}' did not finish within {Budget.TotalSeconds:F0}s.");
+        Assert.False(isFallback, $"Highlighting {code.Length} characters of '{language}' was abandoned.");
+        Assert.HasCountLessThan(code.Length * 100, await highlight);
+    }
+
+    /// <summary>The CPU time of the current thread (the tests run in parallel, so wall-clock time includes waiting for a core).</summary>
+    private static class ThreadCpuTime
+    {
+        // CLOCK_THREAD_CPUTIME_ID
+        private const int LinuxThreadCpuTimeClock = 3;
+        private const int MacOSThreadCpuTimeClock = 16;
+
+        public static TimeSpan GetCurrent()
+        {
+            if (OperatingSystem.IsWindows())
+            {
+                // FILETIMEs: 100-nanosecond units, like ticks.
+                var kernel32 = NativeLibrary.Load("kernel32.dll");
+                var currentThread = unsafe(((delegate* unmanaged<nint>)NativeLibrary.GetExport(kernel32, "GetCurrentThread"))());
+                long creationTime, exitTime, kernelTime, userTime;
+                var succeeded = unsafe(((delegate* unmanaged<nint, long*, long*, long*, long*, int>)NativeLibrary.GetExport(kernel32, "GetThreadTimes"))(currentThread, &creationTime, &exitTime, &kernelTime, &userTime));
+                if (succeeded is 0)
+                    throw new InvalidOperationException("GetThreadTimes failed.");
+
+                return TimeSpan.FromTicks(kernelTime + userTime);
+            }
+
+            var clockGetTime = NativeLibrary.GetExport(NativeLibrary.GetMainProgramHandle(), "clock_gettime");
+            TimeSpec time;
+            var result = unsafe(((delegate* unmanaged<int, TimeSpec*, int>)clockGetTime)(OperatingSystem.IsMacOS() ? MacOSThreadCpuTimeClock : LinuxThreadCpuTimeClock, &time));
+            if (result is not 0)
+                throw new InvalidOperationException("clock_gettime failed.");
+
+            return TimeSpan.FromTicks((time.Seconds * TimeSpan.TicksPerSecond) + (time.Nanoseconds / 100));
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct TimeSpec
+        {
+            public long Seconds;
+            public long Nanoseconds;
+        }
     }
 }

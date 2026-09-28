@@ -45,6 +45,28 @@ internal static class Yaml
             ],
         };
 
+        const string DateRe = "[0-9]{4}(-[0-9][0-9]){0,2}";
+        const string TimeRe = @"([Tt \t][0-9][0-9]?(:[0-9][0-9]){2})?";
+        const string FractionRe = @"(\.[0-9]*)?";
+        const string ZoneRe = @"([ \t])*(Z|[-+][0-9][0-9]?(:[0-9][0-9])?)?";
+        const string TimestampRe = @"\b" + DateRe + TimeRe + FractionRe + ZoneRe + @"\b";
+        const string NumberRe = CommonModes.CNumberRe + @"\b";
+        const string NamedTagRe = "!\\w+!" + UriChars;
+        const string VerbatimTagRe = "!<" + UriChars + ">";
+        const string PrimaryTagRe = "!" + UriChars;
+        const string SecondaryTagRe = "!!" + UriChars;
+
+        // What `BeginKeywords = literals` builds (see Compiler), written out to be shared with PlainScalarLosesRe.
+        const string LiteralRe = @"(?<!\.)\b(true|false|yes|no|null)(?!\.)(?=\b|\s)";
+
+        // A plain scalar (`\S+`, or a run without flow indicators in a flow collection) comes after the other modes, so
+        // it loses wherever one of them starts. But its match spans the whole rest of the run, and each mode that wins
+        // instead makes the tokenizer look for it again from the end of that mode: after each quoted string or number of
+        // a run such as `"a""b"` or `1-1-1`, it was matched again up to the end of the run (quadratic on a long one).
+        // Where one of the modes that can end inside a run starts, it only matches one character: that match always
+        // loses, so its length does not matter.
+        const string PlainScalarLosesRe = @"(?=[""'{[]|<%|" + NamedTagRe + "|" + VerbatimTagRe + "|" + PrimaryTagRe + "|" + SecondaryTagRe + "|" + LiteralRe + "|" + TimestampRe + "|" + NumberRe + ")";
+
         var singleQuoteString = new Mode
         {
             Scope = "string",
@@ -62,7 +84,7 @@ internal static class Yaml
             Variants =
             [
                 new Mode { Begin = "\"", End = "\"" },
-                new Mode { Begin = @"\S+" },
+                new Mode { Begin = "(?:" + PlainScalarLosesRe + @"\S|\S+)" },
             ],
             Contains =
             [
@@ -82,7 +104,7 @@ internal static class Yaml
                     Contains = [new() { Begin = "''" }],
                 },
                 new Mode { Begin = "\"", End = "\"" },
-                new Mode { Begin = @"[^\s,{}[\]]+" },
+                new Mode { Begin = "(?:" + PlainScalarLosesRe + @"[^\s,{}[\]]|[^\s,{}[\]]+)" },
             ],
             Contains =
             [
@@ -91,11 +113,7 @@ internal static class Yaml
             ],
         };
 
-        const string DateRe = "[0-9]{4}(-[0-9][0-9]){0,2}";
-        const string TimeRe = @"([Tt \t][0-9][0-9]?(:[0-9][0-9]){2})?";
-        const string FractionRe = @"(\.[0-9]*)?";
-        const string ZoneRe = @"([ \t])*(Z|[-+][0-9][0-9]?(:[0-9][0-9])?)?";
-        var timestamp = new Mode { Scope = "number", Begin = @"\b" + DateRe + TimeRe + FractionRe + ZoneRe + @"\b" };
+        var timestamp = new Mode { Scope = "number", Begin = TimestampRe };
 
         var valueContainer = new Mode
         {
@@ -129,21 +147,21 @@ internal static class Yaml
                 Begin = "<%[%=-]?", End = "[%-]?%>",
                 ExcludeBegin = true, ExcludeEnd = true,
             },
-            new() { Scope = "type", Begin = "!\\w+!" + UriChars },
-            new() { Scope = "type", Begin = "!<" + UriChars + ">" },
-            new() { Scope = "type", Begin = "!" + UriChars },
-            new() { Scope = "type", Begin = "!!" + UriChars },
+            new() { Scope = "type", Begin = NamedTagRe },
+            new() { Scope = "type", Begin = VerbatimTagRe },
+            new() { Scope = "type", Begin = PrimaryTagRe },
+            new() { Scope = "type", Begin = SecondaryTagRe },
             new() { Scope = "meta", Begin = "&" + CommonModes.UnderscoreIdentRe + "$" },
             new() { Scope = "meta", Begin = @"\*" + CommonModes.UnderscoreIdentRe + "$" },
             new() { Scope = "bullet", Begin = @"-(?=[ ]|$)" },
             CommonModes.HashCommentMode,
             new()
             {
-                BeginKeywords = literals,
+                Begin = LiteralRe,
                 Keywords = Keywords.FromMap(new Dictionary<string, string[]>(StringComparer.Ordinal) { ["literal"] = literals }),
             },
             timestamp,
-            new() { Scope = "number", Begin = CommonModes.CNumberRe + @"\b" },
+            new() { Scope = "number", Begin = NumberRe },
             obj,
             arr,
             singleQuoteString,

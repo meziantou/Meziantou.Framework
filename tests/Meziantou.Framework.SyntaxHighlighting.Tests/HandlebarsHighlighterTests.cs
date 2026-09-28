@@ -186,8 +186,8 @@ public class HandlebarsHighlighterTests
 """,
 """
 <span class="language-html"><span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">type</span>=<span class="hljs-string">&quot;text/javascript&quot;</span>&gt;</span><span class="language-javascript">
-  <span class="hljs-keyword">var</span> name = <span class="hljs-string">&quot;</span></span></span><span class="hljs-template-variable">{{<span class="hljs-name">name</span>}}</span><span class="language-html"><span class="language-javascript"><span class="hljs-string">&quot;;
-  var count = </span></span></span><span class="hljs-template-variable">{{<span class="hljs-name">count</span>}}</span><span class="language-html"><span class="language-javascript">;
+  <span class="hljs-keyword">var</span> name = <span class="hljs-string">&quot;</span></span></span><span class="hljs-template-variable">{{<span class="hljs-name">name</span>}}</span><span class="language-html"><span class="language-javascript"><span class="hljs-string">&quot;</span>;
+  <span class="hljs-keyword">var</span> count = </span></span><span class="hljs-template-variable">{{<span class="hljs-name">count</span>}}</span><span class="language-html"><span class="language-javascript">;
   <span class="hljs-keyword">if</span> (count &gt; <span class="hljs-number">1</span>) { <span class="hljs-variable language_">console</span>.<span class="hljs-title function_">log</span>(name); }
 </span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
 <span class="hljs-tag">&lt;<span class="hljs-name">style</span>&gt;</span><span class="language-css"><span class="hljs-selector-tag">body</span> { <span class="hljs-attribute">color</span>: </span></span><span class="hljs-template-variable">{{<span class="hljs-name">color</span>}}</span><span class="language-html"><span class="language-css">; }</span><span class="hljs-tag">&lt;/<span class="hljs-name">style</span>&gt;</span></span>
@@ -357,6 +357,22 @@ public class HandlebarsHighlighterTests
     </span><span class="hljs-template-variable">{{{<span class="hljs-name">body</span>}}}</span><span class="language-html">
   <span class="hljs-tag">&lt;/<span class="hljs-name">div</span>&gt;</span>
 <span class="hljs-tag">&lt;/<span class="hljs-name">div</span>&gt;</span></span>
+""");
+    }
+
+    [Fact]
+    public void BracketSegmentsEndAtTheEndOfTheMustache()
+    {
+        AssertHighlighter("handlebars",
+"""
+{{articles.[10].[#comments]}} {{helper [] key=[a b]}}
+{{x [a}} <b>text</b> {{y]}}
+{{x [a[b] c}}
+""",
+"""
+<span class="hljs-template-variable">{{<span class="hljs-name">articles.[10].[#comments]</span>}}</span><span class="language-html"> </span><span class="hljs-template-variable">{{<span class="hljs-name">helper</span> [] <span class="hljs-attr">key</span>=[a b]}}</span><span class="language-html">
+</span><span class="hljs-template-variable">{{<span class="hljs-name">x</span> [a}}</span><span class="language-html"> <span class="hljs-tag">&lt;<span class="hljs-name">b</span>&gt;</span>text<span class="hljs-tag">&lt;/<span class="hljs-name">b</span>&gt;</span> </span><span class="hljs-template-variable">{{<span class="hljs-name">y</span>]}}</span><span class="language-html">
+</span><span class="hljs-template-variable">{{<span class="hljs-name">x</span> [a[b] c}}</span>
 """);
     }
 }

@@ -107,6 +107,26 @@ let y = 2</span>
     }
 
     [Fact]
+    public void DocBlockComments()
+    {
+        AssertHighlighter("nim",
+"""
+##[ Documentation
+    for proc foo ]# is not the end
+    ##[ nested ]##
+    still documentation ]##
+proc foo() = discard
+""",
+"""
+<span class="hljs-comment">##[ Documentation
+    for proc foo ]# is not the end
+    <span class="hljs-comment">##[ nested ]##</span>
+    still documentation ]##</span>
+<span class="hljs-keyword">proc</span> foo() = <span class="hljs-keyword">discard</span>
+""");
+    }
+
+    [Fact]
     public void Edge()
     {
         AssertHighlighter("nim",

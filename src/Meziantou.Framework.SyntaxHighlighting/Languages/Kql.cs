@@ -71,9 +71,9 @@ internal static class Kql
         "abs", "acos", "ago", "array_concat", "array_iff", "array_iif", "array_index_of", "array_length", "array_reverse",
         "array_rotate_left", "array_rotate_right", "array_shift_left", "array_shift_right", "array_slice", "array_sort_asc",
         "array_sort_desc", "array_split", "array_sum", "asin", "atan", "atan2", "bag_has_key", "bag_keys", "bag_merge", "bag_pack",
-        "bag_pack_columns", "bag_remove_keys", "bag_set_key", "base64_decode_toarray", "base64_decode_toguid",
+        "bag_pack_columns", "bag_remove_keys", "bag_set_key", "bag_zip", "base64_decode_toarray", "base64_decode_toguid",
         "base64_decode_tostring", "base64_encode_fromguid", "base64_encode_tostring", "beta_cdf", "beta_inv", "beta_pdf", "bin",
-        "bin_at", "binary_and", "binary_not", "binary_or", "binary_shift_left", "binary_shift_right", "binary_xor",
+        "bin_at", "bin_auto", "binary_and", "binary_not", "binary_or", "binary_shift_left", "binary_shift_right", "binary_xor",
         "bitset_count_ones", "case", "ceiling", "coalesce", "column_ifexists", "convert_angle", "convert_energy", "convert_force",
         "convert_length", "convert_mass", "convert_speed", "convert_temperature", "convert_volume", "cos", "cot", "countof",
         "current_cluster_endpoint", "current_database", "current_principal", "current_principal_details",
@@ -82,7 +82,8 @@ internal static class Kql
         "degrees", "endofday", "endofmonth", "endofweek", "endofyear", "erf", "erfc", "estimate_data_size", "exp", "exp10", "exp2",
         "extent_id", "extent_tags", "extract", "extract_all", "extract_json", "extractjson", "floor", "format_bytes",
         "format_datetime", "format_ipv4", "format_ipv4_mask", "format_timespan", "gamma", "geo_info_from_ip_address", "getmonth",
-        "gettype", "getyear", "has_any_index", "has_any_ipv4", "has_any_ipv4_prefix", "has_ipv4", "has_ipv4_prefix", "hash",
+        "gettype", "getyear", "gzip_compress_to_base64_string", "gzip_decompress_from_base64_string", "has_any_index",
+        "has_any_ipv4", "has_any_ipv4_prefix", "has_ipv4", "has_ipv4_prefix", "hash",
         "hash_combine", "hash_many", "hash_md5", "hash_sha1", "hash_sha256", "hash_xxhash64", "hourofday", "iff", "iif", "indexof",
         "indexof_regex", "ingestion_time", "ipv4_compare", "ipv4_is_in_any_range", "ipv4_is_in_range", "ipv4_is_match",
         "ipv4_is_private", "ipv4_netmask_suffix", "ipv4_range_to_cidr_list", "ipv6_compare", "ipv6_is_in_any_range",
@@ -109,7 +110,8 @@ internal static class Kql
         "toobject", "toreal", "toscalar", "tostring", "totimespan", "toupper", "translate", "treepath", "trim", "trim_end",
         "trim_start", "unicode_codepoints_from_string", "unicode_codepoints_to_string", "unixtime_microseconds_todatetime",
         "unixtime_milliseconds_todatetime", "unixtime_nanoseconds_todatetime", "unixtime_seconds_todatetime", "url_decode",
-        "url_encode", "url_encode_component", "week_of_year", "weekofyear", "welch_test", "zip", "table",
+        "url_encode", "url_encode_component", "week_of_year", "weekofyear", "welch_test", "zip", "zlib_compress_to_base64_string",
+        "zlib_decompress_from_base64_string", "table",
         "geo_angle", "geo_azimuth", "geo_distance_2points", "geo_distance_point_to_line", "geo_distance_point_to_polygon",
         "geo_from_wkt", "geo_geohash_to_central_point", "geo_geohash_to_polygon", "geo_point_in_circle", "geo_point_in_polygon",
         "geo_point_to_geohash", "geo_point_to_h3cell", "geo_point_to_s2cell", "geo_polygon_area", "geo_s2cell_to_central_point",
@@ -144,19 +146,23 @@ internal static class Kql
             new Mode { Scope = "string", Begin = @"(?<!\w)[hH]?'", End = "'|$", Contains = [CommonModes.BackslashEscape] },
         ];
 
+        // A dot next to a number, or before a function name, is a member access unless it is part of a range (`1..10`,
+        // `ago(1d)..now()`).
+        const string NoMemberAccessBefore = @"(?<!(?<!\.)\.|\$)";
         const string TimespanUnit = "(?:d|days?|h|hrs?|hours?|m|mins?|minutes?|s|secs?|seconds?|ms|millis?|milliseconds?|microseconds?|ticks?)";
         var number = new Mode
         {
             Scope = "number",
-            Match = IdentifierStart + @"(?<![.$])(?:0[xX][0-9A-Fa-f]+|\d+(?:\.\d+)?(?:[eE][+-]?\d+)?" + TimespanUnit + "?)(?![\\w.])",
+            Match = IdentifierStart + NoMemberAccessBefore + @"(?:0[xX][0-9A-Fa-f]+|\d+(?:\.\d+)?(?:[eE][+-]?\d+)?" + TimespanUnit + @"?)(?!\w|\.(?!\.))",
         };
 
-        // `datetime(2024-01-01 10:00)`, `timespan(1.02:03:04)`: the literal is not a string.
+        // `datetime(2024-01-01 10:00)`, `timespan(1.02:03:04)`: the literal is not a string. Like a string, an unclosed one
+        // ends with its line.
         var dateTimeLiteral = new Mode
         {
             BeginParts = [IdentifierStart + "(?:datetime|date|timespan|time)", @"[ \t]*\("],
             BeginScope = new Dictionary<int, string> { [1] = "type" },
-            End = @"\)",
+            End = @"\)|$",
             Contains = [new Mode { Scope = "number", Match = @"[^()\s]+(?:[ \t]+[^()\s]+)*" }],
         };
 
@@ -170,7 +176,7 @@ internal static class Kql
         var function = new Mode
         {
             Scope = "built_in",
-            Match = IdentifierStart + @"(?<![.$])(?:" + string.Join('|', Functions.Distinct(StringComparer.Ordinal).OrderByDescending(name => name.Length)) + @")(?=[ \t]*\()",
+            Match = IdentifierStart + NoMemberAccessBefore + "(?:" + string.Join('|', Functions.Distinct(StringComparer.Ordinal).OrderByDescending(name => name.Length)) + @")(?=[ \t]*\()",
         };
 
         // `let name = ...`.

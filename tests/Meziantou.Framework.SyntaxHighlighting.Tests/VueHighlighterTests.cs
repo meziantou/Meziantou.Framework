@@ -289,4 +289,50 @@ div#app
 <span class="hljs-tag">&lt;/<span class="hljs-name">i18n</span>&gt;</span>
 """);
     }
+
+    [Fact]
+    public void ConsecutiveBlocksDoNotShareState()
+    {
+        AssertHighlighter("vue",
+"""
+<script>
+const tag = "</script>";
+</script>
+<script setup>
+import { ref } from "vue";
+</script>
+<style lang="scss">
+a { content: "</style>";
+</style>
+<style lang="scss">
+a { color: red; }
+</style>
+""",
+"""
+<span class="hljs-tag">&lt;<span class="hljs-name">script</span>&gt;</span><span class="language-javascript">
+<span class="hljs-keyword">const</span> tag = <span class="hljs-string">&quot;</span></span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>&quot;;
+<span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">setup</span>&gt;</span><span class="language-javascript">
+<span class="hljs-keyword">import</span> { ref } <span class="hljs-keyword">from</span> <span class="hljs-string">&quot;vue&quot;</span>;
+</span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">style</span> <span class="hljs-attr">lang</span>=<span class="hljs-string">&quot;scss&quot;</span>&gt;</span><span class="language-scss">
+<span class="hljs-selector-tag">a</span> { <span class="hljs-attribute">content</span>: <span class="hljs-string">&quot;</span></span><span class="hljs-tag">&lt;/<span class="hljs-name">style</span>&gt;</span>&quot;;
+<span class="hljs-tag">&lt;/<span class="hljs-name">style</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">style</span> <span class="hljs-attr">lang</span>=<span class="hljs-string">&quot;scss&quot;</span>&gt;</span><span class="language-scss">
+<span class="hljs-selector-tag">a</span> { <span class="hljs-attribute">color</span>: red; }
+</span><span class="hljs-tag">&lt;/<span class="hljs-name">style</span>&gt;</span>
+""");
+    }
+
+    [Fact]
+    public void UnclosedDynamicArgument()
+    {
+        AssertHighlighter("vue",
+"""
+<a :[key]="url" v-on:[event].once="go" :[x>text</a>
+""",
+"""
+<span class="hljs-tag">&lt;<span class="hljs-name">a</span> <span class="hljs-attr">:[key]</span>=&quot;<span class="language-javascript">url</span>&quot; <span class="hljs-attr">v-on:[event].once</span>=&quot;<span class="language-javascript">go</span>&quot; <span class="hljs-attr">:</span>[<span class="hljs-attr">x</span>&gt;</span>text<span class="hljs-tag">&lt;/<span class="hljs-name">a</span>&gt;</span>
+""");
+    }
 }

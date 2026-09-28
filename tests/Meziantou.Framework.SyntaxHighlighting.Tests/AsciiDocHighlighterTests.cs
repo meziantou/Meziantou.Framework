@@ -130,7 +130,7 @@ Mixed
 ~~
 
 Not [a] title
--------------
+<span class="hljs-code">-------------</span>
 """);
     }
 
@@ -252,6 +252,70 @@ literal block
 code
 ----</span>
 """);
+    }
+
+    [Fact]
+    public void DelimitedBlocks_EndOnTheSameDelimiter()
+    {
+        AssertHighlighter("asciidoc",
+"""
+....
+literal
+----
+still literal
+....
+
+------
+----
+still code
+------
+
+====
+example
+****
+still *example*
+====
+
+////
+////
+
+----
+----
+
+After the blocks, *bold*.
+""",
+"""
+<span class="hljs-code">....
+literal
+----
+still literal
+....</span>
+
+<span class="hljs-code">------
+----
+still code
+------</span>
+
+====
+example
+****
+still *example*
+====
+
+<span class="hljs-comment">////
+////</span>
+
+<span class="hljs-code">----
+----</span>
+
+After the blocks, <span class="hljs-strong">*bold*</span>.
+""");
+    }
+
+    [Fact]
+    public void DelimitedBlocks_TrailingWhitespace()
+    {
+        AssertHighlighter("asciidoc", "---- \ncode\n----\t\n\n*bold*", "<span class=\"hljs-code\">---- \ncode\n----\t</span>\n\n<span class=\"hljs-strong\">*bold*</span>");
     }
 
     [Fact]

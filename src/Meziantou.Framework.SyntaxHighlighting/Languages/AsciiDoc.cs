@@ -38,6 +38,14 @@ internal static class AsciiDoc
         FirstCandidate(@"(?<!\w)" + mark + @"(?=\S)", ParagraphCharacter)
         + mark + @"\S[^\n]*\n(?:[^\n]+\n)*?[^\n]*?\S" + mark + @"(?!\w)";
 
+    // Deviation from highlight.js, whose delimited blocks begin on a delimiter followed by a line break and end on any
+    // delimiter of the same family (`\n[\-\.]{4,}$`): a literal block (`....`) ended on a `----` line and an example
+    // block (`====`) on a `****` line, a closing delimiter followed by a space did not end the block, and neither did the
+    // delimiter of an empty block, whose line break was consumed by the opening one. As in Asciidoctor, a delimiter is
+    // a whole line (trailing whitespace is ignored), and a block ends only on the same delimiter (EndSameAsBegin
+    // compares the captured delimiters, so a `------` block does not end on a `----` line).
+    private static string DelimiterLine(string delimiter) => "^(" + delimiter + @")[ \t\r]*$";
+
     private static Mode CreateMode()
     {
         Mode[] escapedFormatting =
@@ -100,7 +108,7 @@ internal static class AsciiDoc
             Contains =
             [
                 // Block comment.
-                CommonModes.Comment(@"^/{4,}\n", @"\n/{4,}$"),
+                new Mode(CommonModes.Comment(DelimiterLine("/{4,}"), DelimiterLine("/{4,}"))) { EndSameAsBegin = true },
 
                 // Line comment.
                 CommonModes.Comment("^//", "$"),
@@ -109,7 +117,7 @@ internal static class AsciiDoc
                 new Mode { Scope = "title", Begin = @"^\.\w.*$" },
 
                 // Example, admonition and sidebar blocks.
-                new Mode { Begin = @"^[=\*]{4,}\n", End = @"\n^[=\*]{4,}$" },
+                new Mode { Begin = DelimiterLine(@"={4,}|\*{4,}"), End = DelimiterLine(@"={4,}|\*{4,}"), EndSameAsBegin = true },
 
                 // Headings.
                 new Mode
@@ -136,16 +144,17 @@ internal static class AsciiDoc
                 new Mode { Scope = "meta", Begin = @"^\[.+?\]$" },
 
                 // Quote blocks.
-                new Mode { Scope = "quote", Begin = @"^_{4,}\n", End = @"\n_{4,}$" },
+                new Mode { Scope = "quote", Begin = DelimiterLine("_{4,}"), End = DelimiterLine("_{4,}"), EndSameAsBegin = true },
 
                 // Listing and literal blocks.
-                new Mode { Scope = "code", Begin = @"^[\-\.]{4,}\n", End = @"\n[\-\.]{4,}$" },
+                new Mode { Scope = "code", Begin = DelimiterLine(@"-{4,}|\.{4,}"), End = DelimiterLine(@"-{4,}|\.{4,}"), EndSameAsBegin = true },
 
                 // Passthrough blocks.
                 new Mode
                 {
-                    Begin = @"^\+{4,}\n",
-                    End = @"\n\+{4,}$",
+                    Begin = DelimiterLine(@"\+{4,}"),
+                    End = DelimiterLine(@"\+{4,}"),
+                    EndSameAsBegin = true,
                     Contains = [new Mode { Begin = "<", End = ">", SubLanguage = "xml" }],
                 },
 

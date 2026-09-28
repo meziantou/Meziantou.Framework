@@ -135,6 +135,7 @@ The package currently supports these language identifiers and common aliases:
 - `rust`, `rs`
 - `scss`
 - `sql`
+- `swift`
 - `typescript`, `ts`, `tsx`, `mts`, `cts`
 - `urlencoded`, `x-www-form-urlencoded`
 - `vbnet`, `vb`

@@ -87,6 +87,7 @@ public class HighlighterTests
     [InlineData("h")]
     [InlineData("patch")]
     [InlineData("txt")]
+    [InlineData("Swift")]
     public void IsSupported_KnownLanguage_ReturnsTrue(string language)
     {
         Assert.True(SyntaxHighlighter.IsSupported(language));

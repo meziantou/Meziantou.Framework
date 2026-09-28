@@ -107,6 +107,7 @@ internal static class LanguageRegistry
             ["plaintext"] = () => Plaintext.Instance,
             ["text"] = () => Plaintext.Instance,
             ["txt"] = () => Plaintext.Instance,
+            ["swift"] = () => Swift.Instance,
         }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
     // Grammars compiled with a non-default match timeout, keyed by the default grammar instance.

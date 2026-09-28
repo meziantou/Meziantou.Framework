@@ -215,3 +215,7 @@ The package currently supports these language identifiers and common aliases:
 - `xml`, `xsd`, `xsl`, `plist`, `rss`, `atom`, `svg`
 - `yaml`, `yml`
 - `zig`, `zon`
+
+Most identifiers resolve to the same language as in highlight.js, so Markdown fences written for highlight.js keep their
+highlighting. Two do not, because the language highlight.js uses for them is not supported: `ml` is OCaml (highlight.js:
+Standard ML) and `gradle` is Groovy (highlight.js has a Gradle grammar).

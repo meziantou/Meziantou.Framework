@@ -19,6 +19,17 @@ internal static class Erlang
         "-feature", "-dialyzer", "-deprecated",
     ];
 
+    // highlight.js's `"""("*)(?!")[\s\S]*?"""\1`: a string delimited by a run of at least three quotes (it can start
+    // anywhere in a longer run), which ends at the first run of at least as many quotes. The closing delimiter only
+    // starts a run of quotes, which does not change what matches (the body starts with a character that is not a quote,
+    // so the first closing delimiter always starts a run), but does not compare a long run of quotes from each of its
+    // positions.
+    // Deviation from highlight.js: a delimiter has at most 16 quotes. The pattern is tried from each quote of a run, and
+    // an opening delimiter that is not closed scans the rest of the document. Without a bound, a long run of quotes was
+    // quadratic. With it, only the last quotes of a run can open a string, and an opening delimiter that fails is longer
+    // than every run of quotes that follows it, so at most one fails per possible length in a document.
+    private const string TripleQuotedStringRe = "\"\"\"(\"{0,13})(?!\")[\\s\\S]*?(?<!\")\"\"\"\\1";
+
     public static CompiledMode Instance { get; } = Compiler.Compile(CreateMode());
 
     private static Mode CreateMode()
@@ -97,7 +108,7 @@ internal static class Erlang
         var tripleQuote = new Mode
         {
             Scope = "string",
-            Match = "\"\"\"(\"*)(?!\")[\\s\\S]*?\"\"\"\\1",
+            Match = TripleQuotedStringRe,
         };
 
         var sigil = new Mode
@@ -106,7 +117,7 @@ internal static class Erlang
             Contains = [CommonModes.BackslashEscape],
             Variants =
             [
-                new Mode { Match = "~\\w?\"\"\"(\"*)(?!\")[\\s\\S]*?\"\"\"\\1" },
+                new Mode { Match = "~\\w?" + TripleQuotedStringRe },
                 new Mode { Begin = @"~\w?\(", End = @"\)" },
                 new Mode { Begin = @"~\w?\[", End = @"\]" },
                 new Mode { Begin = @"~\w?\{", End = @"\}" },

@@ -359,6 +359,18 @@ Contains &quot;&quot;&quot; inside
     }
 
     [Fact]
+    public void TripleQuoteInsideLongerRun()
+    {
+        AssertHighlighter("erlang",
+""""""
+X = """""a""""a"""a.
+"""""",
+"""
+X = <span class="hljs-string">&quot;&quot;</span><span class="hljs-string">&quot;&quot;&quot;a&quot;&quot;&quot;</span><span class="hljs-string">&quot;a&quot;</span><span class="hljs-string">&quot;&quot;</span>a.
+""");
+    }
+
+    [Fact]
     public void Sigils()
     {
         AssertHighlighter("erlang",

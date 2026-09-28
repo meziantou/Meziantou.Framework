@@ -161,6 +161,31 @@ public sealed class LargeInputTests
         Assert.EndsWith("<span class=\"hljs-number\">1</span>;", await highlight, StringComparison.Ordinal);
     }
 
+    // An Erlang triple-quoted string used to be looked for from each quote of a run, each time consuming the rest of the
+    // run and then scanning the rest of the document for a closing delimiter (20 seconds for 40,000 quotes).
+    [Theory]
+    [InlineData("quotes")]
+    [InlineData("sigil")]
+    [InlineData("decreasing")]
+    public async Task Highlight_ErlangLongRunOfQuotes_CompletesInReasonableTime(string content)
+    {
+        var code = content switch
+        {
+            "quotes" => new string('"', 100_000),
+            "sigil" => "~s" + new string('"', 100_000),
+            "decreasing" => string.Concat(Enumerable.Range(3, 440).Reverse().Select(length => new string('"', length) + "a")),
+            _ => throw new ArgumentOutOfRangeException(nameof(content)),
+        } + "\n-module(m).";
+
+        var isFallback = false;
+        var highlight = Task.Run(() => HighlightWithFallbackDetection(code, "erlang", out isFallback));
+        var finished = await Task.WhenAny(highlight, Task.Delay(Budget)) == highlight;
+
+        Assert.True(finished, $"Highlighting {code.Length} characters of 'erlang' did not finish within {Budget.TotalSeconds:F0}s.");
+        Assert.False(isFallback, $"Highlighting {code.Length} characters of 'erlang' was abandoned.");
+        Assert.EndsWith("<span class=\"hljs-keyword\">-module</span><span class=\"hljs-params\">(m)</span>.", await highlight, StringComparison.Ordinal);
+    }
+
     // A properties key used to be matched from each of its positions, which is quadratic on a long key made of escapes
     // (a minute and a half for 60,000 backslashes).
     [Theory]

@@ -739,8 +739,8 @@ public class MiscTests
     [Fact(DisableParallelization = true)]
     public void BlankLinesInDeeplyNestedListsAreParsedInLinearTime()
     {
-        // Each blank line used to update the span of each open list item up to the root, which took more than 15 seconds here
-        const int Depth = 2_100;
+        // Each blank line used to update the span of each open list item up to the root, which took about 20 seconds here
+        const int Depth = 1_700;
         var markdown = string.Concat(Enumerable.Repeat("- ", Depth)) + "a" + new string('\n', Depth);
         var pipeline = new MarkdownPipelineBuilder { MaximumNestingDepth = 10_000 }.Build();
 

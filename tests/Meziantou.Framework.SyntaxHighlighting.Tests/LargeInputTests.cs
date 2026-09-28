@@ -304,14 +304,15 @@ public sealed class LargeInputTests
     }
 
     // A Handlebars `[ abc ]` segment that is not closed used to be scanned to the end of the document from each `[` that
-    // follows it, in the same mustache or in a later one (40, 20 and 25 seconds for these documents).
+    // follows it, in the same mustache or in a later one (40, 20 and 25 seconds for these documents). The text that follows
+    // the last mustache is cheap to highlight, but each of those scans crossed it.
     [Theory]
-    [InlineData("{{x ", "[a", "}}", 1_000_000)]
-    [InlineData("{{x ", "a.[a", "}}", 1_000_000)]
-    [InlineData("", "{{x [a}}\n", "", 2_000_000)]
-    public async Task Highlight_HandlebarsUnclosedBracketSegments_CompletesInReasonableTime(string prefix, string part, string suffix, int length)
+    [InlineData("{{x ", "[a", "}}", 1_000_000, 0)]
+    [InlineData("{{x ", "a.[a", "}}", 1_000_000, 0)]
+    [InlineData("", "{{x [a}}\n", "", 360_000, 10_000_000)]
+    public async Task Highlight_HandlebarsUnclosedBracketSegments_CompletesInReasonableTime(string prefix, string part, string suffix, int length, int textLength)
     {
-        var code = prefix + string.Concat(Enumerable.Repeat(part, length / part.Length)) + suffix + "\n{{#if a}}";
+        var code = prefix + string.Concat(Enumerable.Repeat(part, length / part.Length)) + suffix + new string('x', textLength) + "\n{{#if a}}";
 
         var highlight = Task.Run(() => HighlightWithFallbackDetection(code, "handlebars", out _));
         var finished = await Task.WhenAny(highlight, Task.Delay(Budget)) == highlight;

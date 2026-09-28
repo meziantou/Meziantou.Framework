@@ -682,9 +682,9 @@ public sealed class TestPipeTable
     public void ManyTablesFollowedByAnUnclosedHtmlCommentAreParsedInLinearTime()
     {
         // The scans for the end of the comment were forgotten at each paragraph after a table, so each one scanned the rest
-        // of the text again
-        const int Count = 150_000;
-        var markdown = string.Concat(Enumerable.Repeat("|a|b|\n|-|-|\nx <!--\n", Count));
+        // of the text again, including the long line that ends the last paragraph (about 18 seconds here)
+        const int Count = 30_000;
+        var markdown = string.Concat(Enumerable.Repeat("|a|b|\n|-|-|\nx <!--\n", Count)) + new string('x', 10_000_000) + "\n";
         var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
 
         var stopwatch = Stopwatch.StartNew();

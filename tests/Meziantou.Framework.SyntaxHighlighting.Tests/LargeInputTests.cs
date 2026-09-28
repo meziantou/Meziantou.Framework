@@ -145,6 +145,20 @@ public sealed class LargeInputTests
         Assert.EndsWith("<span class=\"hljs-built_in\">$state</span><span class=\"language-javascript\">(<span class=\"hljs-number\">0</span>);</span>", await highlight, StringComparison.Ordinal);
     }
 
+    // An unclosed dynamic argument of a Vue directive (`:[key`) used to be scanned to the end of the attribute name from
+    // each `:[` of the name (about 8 seconds for this document).
+    [Fact]
+    public async Task Highlight_VueLongRunOfUnclosedDynamicArguments_CompletesInReasonableTime()
+    {
+        var code = "<div " + string.Concat(Enumerable.Repeat(":[", 100_000)) + ">\n<p>";
+
+        var highlight = Task.Run(() => HighlightWithFallbackDetection(code, "vue", out _));
+        var finished = await Task.WhenAny(highlight, Task.Delay(Budget)) == highlight;
+
+        Assert.True(finished, $"Highlighting {code.Length} characters of 'vue' did not finish within {Budget.TotalSeconds:F0}s.");
+        Assert.EndsWith("&gt;</span>\n<span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">p</span>&gt;</span>", await highlight, StringComparison.Ordinal);
+    }
+
     // The indentation of a Haml comment line used to be captured before checking that a comment follows, which rescanned
     // the indentation from each of its positions (about 50 seconds for this document).
     [Fact]

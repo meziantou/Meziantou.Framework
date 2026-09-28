@@ -28,11 +28,14 @@ internal static class Vue
         var html = Html.CreateModes();
 
         // `v-name:argument.modifier`, and the shorthands `:argument` (v-bind), `@argument` (v-on) and `#argument`
-        // (v-slot). An argument can be dynamic (`:[key]`) and contain colons (`@update:model-value`).
+        // (v-slot). An argument can be dynamic (`:[key]`) and contain colons (`@update:model-value`). Like in Vue, a
+        // dynamic argument ends at the end of the attribute name, and it cannot contain another `[`, so an unclosed one
+        // is not scanned again from each `[` of the rest of the name.
+        const string ArgumentRe = @"(?:\[[^\[\]\s=/>]*\]|[\w:-]+)";
         var directive = new Mode
         {
             Scope = "attr",
-            Begin = @"(?:v-[\w-]+(?::(?:\[[^\]\s]*\]|[\w:-]+))?|[:@#](?:\[[^\]\s]*\]|[\w:-]+))(?:\.[\w-]+)*",
+            Begin = @"(?:v-[\w-]+(?::" + ArgumentRe + ")?|[:@#]" + ArgumentRe + @")(?:\.[\w-]+)*",
             Starts = new Mode
             {
                 // Ends right away, unless the directive has a value.

@@ -323,4 +323,16 @@ a { color: red; }
 </span><span class="hljs-tag">&lt;/<span class="hljs-name">style</span>&gt;</span>
 """);
     }
+
+    [Fact]
+    public void UnclosedDynamicArgument()
+    {
+        AssertHighlighter("vue",
+"""
+<a :[key]="url" v-on:[event].once="go" :[x>text</a>
+""",
+"""
+<span class="hljs-tag">&lt;<span class="hljs-name">a</span> <span class="hljs-attr">:[key]</span>=&quot;<span class="language-javascript">url</span>&quot; <span class="hljs-attr">v-on:[event].once</span>=&quot;<span class="language-javascript">go</span>&quot; <span class="hljs-attr">:</span>[<span class="hljs-attr">x</span>&gt;</span>text<span class="hljs-tag">&lt;/<span class="hljs-name">a</span>&gt;</span>
+""");
+    }
 }

@@ -197,6 +197,8 @@ internal static class LanguageRegistry
             ["zon"] = () => Zig.Instance,
             ["solidity"] = () => Solidity.Instance,
             ["sol"] = () => Solidity.Instance,
+            ["bicep"] = () => Bicep.Instance,
+            ["bicepparam"] = () => Bicep.Instance,
         }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
     // Grammars compiled with a non-default match timeout, keyed by the default grammar instance.

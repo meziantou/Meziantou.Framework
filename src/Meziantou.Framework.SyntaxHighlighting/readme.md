@@ -107,6 +107,7 @@ if (!SyntaxHighlighter.TryHighlight(code, language, out var html))
 The package currently supports these language identifiers and common aliases:
 
 - `bash`, `sh`, `zsh`, `ksh`
+- `bicep`, `bicepparam`
 - `bnf`
 - `c`, `h`
 - `clojure`, `clj`, `edn`

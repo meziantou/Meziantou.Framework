@@ -121,6 +121,7 @@ public class HighlighterTests
     [InlineData("erb")]
     [InlineData("zon")]
     [InlineData("sol")]
+    [InlineData("bicepparam")]
     public void IsSupported_KnownLanguage_ReturnsTrue(string language)
     {
         Assert.True(SyntaxHighlighter.IsSupported(language));

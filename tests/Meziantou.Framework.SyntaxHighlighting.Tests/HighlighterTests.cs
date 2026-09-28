@@ -133,6 +133,7 @@ public class HighlighterTests
     [InlineData("ll")]
     [InlineData("arm")]
     [InlineData("frag")]
+    [InlineData("sv")]
     public void IsSupported_KnownLanguage_ReturnsTrue(string language)
     {
         Assert.True(SyntaxHighlighter.IsSupported(language));

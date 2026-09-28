@@ -154,6 +154,9 @@ internal static class LanguageRegistry
             ["podspec"] = () => Ruby.Instance,
             ["thor"] = () => Ruby.Instance,
             ["irb"] = () => Ruby.Instance,
+            ["perl"] = () => Perl.Instance,
+            ["pl"] = () => Perl.Instance,
+            ["pm"] = () => Perl.Instance,
         }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
     // Grammars compiled with a non-default match timeout, keyed by the default grammar instance.

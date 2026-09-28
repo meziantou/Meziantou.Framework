@@ -657,6 +657,25 @@ public sealed class TestPipeTable
 
     // Timed: tests running at the same time would slow it down and make the time budget flaky
     [Fact(DisableParallelization = true)]
+    public void ManyTablesFollowedByAnUnclosedHtmlCommentAreParsedInLinearTime()
+    {
+        // The scans for the end of the comment were forgotten at each paragraph after a table, so each one scanned the rest
+        // of the text again
+        const int Count = 250_000;
+        var markdown = string.Concat(Enumerable.Repeat("|a|b|\n|-|-|\nx <!--\n", Count));
+        var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
+
+        var stopwatch = Stopwatch.StartNew();
+        var document = MarkdownConverter.Parse(markdown, pipeline);
+        stopwatch.Stop();
+
+        Assert.HasCount(Count, document.OfType<Table>());
+        Assert.HasCount(Count, document.OfType<ParagraphBlock>());
+        Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(10), $"Parsing took {stopwatch.Elapsed}");
+    }
+
+    // Timed: tests running at the same time would slow it down and make the time budget flaky
+    [Fact(DisableParallelization = true)]
     public void ManyGfmTablesAfterManyParagraphsAreParsedInLinearTime()
     {
         // Each table was inserted in the document at the index of its paragraph, found from the first block of the document

@@ -403,8 +403,10 @@ public class InlineProcessor
         IsParsingStopped = false;
         LineIndex = leafBlock.Line;
 
-        _htmlScanCache?.Clear();
-        _genericAttributesScanCache?.Clear();
+        // The HTML and generic attributes scan caches are not cleared: a scan only depends on the characters from its start to
+        // the end of the text, and the caches are cleared when the text or its end changes. So the paragraphs that continue
+        // the text of a paragraph (after a pipe table) keep the scans done in it, instead of scanning the rest of the text
+        // again for each table.
         StringSlice text;
         if (leafBlock is ParagraphBlock { TextContinuation: { } continuation } continuedParagraph)
         {

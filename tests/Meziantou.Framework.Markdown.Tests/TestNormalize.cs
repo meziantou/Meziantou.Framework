@@ -2,7 +2,6 @@
 // This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
-using System.Diagnostics;
 using Meziantou.Framework.Markdown.Extensions.Tables;
 using Meziantou.Framework.Markdown.Helpers;
 using Meziantou.Framework.Markdown.Renderers.Normalize;
@@ -1007,7 +1006,7 @@ Text following the table.");
         // more than a minute or overflowed the stack
         var markdown = string.Concat(Enumerable.Repeat(item, count));
 
-        var stopwatch = Stopwatch.StartNew();
+        var stopwatch = ThreadCpuStopwatch.StartNew();
         var normalized = MarkdownConverter.Normalize(markdown);
         stopwatch.Stop();
 
@@ -1039,7 +1038,7 @@ Text following the table.");
         // Each code span whose fence is shortened used to look for backticks in all the literals of the paragraph
         var markdown = string.Concat(Enumerable.Repeat(item, count));
 
-        var stopwatch = Stopwatch.StartNew();
+        var stopwatch = ThreadCpuStopwatch.StartNew();
         var normalized = MarkdownConverter.Normalize(markdown);
         stopwatch.Stop();
 
@@ -1060,7 +1059,7 @@ Text following the table.");
         // 10 seconds
         var markdown = string.Concat(Enumerable.Repeat(prefix, prefixCount)) + string.Concat(Enumerable.Repeat(item, count));
 
-        var stopwatch = Stopwatch.StartNew();
+        var stopwatch = ThreadCpuStopwatch.StartNew();
         var normalized = MarkdownConverter.Normalize(markdown);
         stopwatch.Stop();
 

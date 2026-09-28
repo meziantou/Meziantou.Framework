@@ -1,5 +1,3 @@
-using System.Diagnostics;
-
 namespace Meziantou.Framework.Markdown.Tests;
 
 public class TestCodeInline
@@ -32,7 +30,7 @@ public class TestCodeInline
         // Each opening backtick string without a closing one used to scan the rest of the paragraph again
         var markdown = string.Concat(Enumerable.Repeat(item, 100_000));
 
-        var stopwatch = Stopwatch.StartNew();
+        var stopwatch = ThreadCpuStopwatch.StartNew();
         var html = MarkdownConverter.ToHtml(markdown);
         stopwatch.Stop();
 

@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Text;
 
 using Meziantou.Framework.Markdown;
@@ -578,7 +577,7 @@ public sealed class TestPipeTable
         var markdown = string.Concat(Enumerable.Repeat(item, Count));
         var pipeline = new MarkdownPipelineBuilder().UsePipeTables().Build();
 
-        var stopwatch = Stopwatch.StartNew();
+        var stopwatch = ThreadCpuStopwatch.StartNew();
         var html = MarkdownConverter.ToHtml(markdown, pipeline);
         stopwatch.Stop();
 
@@ -607,7 +606,7 @@ public sealed class TestPipeTable
         var markdown = "{" + string.Concat(Enumerable.Repeat(".a ", Count)) + "}a|b\n-|-\n" + string.Concat(Enumerable.Repeat("c|d\n", Count));
         var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
 
-        var stopwatch = Stopwatch.StartNew();
+        var stopwatch = ThreadCpuStopwatch.StartNew();
         var document = MarkdownConverter.Parse(markdown, pipeline);
         stopwatch.Stop();
 
@@ -628,7 +627,7 @@ public sealed class TestPipeTable
         var markdown = prefix + string.Concat(Enumerable.Repeat(line, Count));
         var pipeline = new MarkdownPipelineBuilder().UsePipeTables().Build();
 
-        var stopwatch = Stopwatch.StartNew();
+        var stopwatch = ThreadCpuStopwatch.StartNew();
         var document = MarkdownConverter.Parse(markdown, pipeline);
         stopwatch.Stop();
 
@@ -650,7 +649,7 @@ public sealed class TestPipeTable
         var markdown = "|" + string.Concat(Enumerable.Repeat(imageStart, Depth)) + string.Concat(Enumerable.Repeat("x\n", LineCount)) + string.Concat(Enumerable.Repeat("](u)", Depth)) + "\n";
         var pipeline = new MarkdownPipelineBuilder().UsePipeTables().Build();
 
-        var stopwatch = Stopwatch.StartNew();
+        var stopwatch = ThreadCpuStopwatch.StartNew();
         var document = MarkdownConverter.Parse(markdown, pipeline);
         stopwatch.Stop();
 
@@ -669,7 +668,7 @@ public sealed class TestPipeTable
         var markdown = string.Concat(Enumerable.Repeat("x\n|a|\n|-|\n", Count)) + string.Concat(Enumerable.Repeat("x\n", 10 * Count));
         var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().EnableTrackTrivia().Build();
 
-        var stopwatch = Stopwatch.StartNew();
+        var stopwatch = ThreadCpuStopwatch.StartNew();
         var document = MarkdownConverter.Parse(markdown, pipeline);
         stopwatch.Stop();
 
@@ -687,7 +686,7 @@ public sealed class TestPipeTable
         var markdown = string.Concat(Enumerable.Repeat("|a|b|\n|-|-|\nx <!--\n", Count)) + new string('x', 80 * Count);
         var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
 
-        var stopwatch = Stopwatch.StartNew();
+        var stopwatch = ThreadCpuStopwatch.StartNew();
         var document = MarkdownConverter.Parse(markdown, pipeline);
         stopwatch.Stop();
 
@@ -706,7 +705,7 @@ public sealed class TestPipeTable
         var markdown = string.Concat(Enumerable.Repeat("a\n\n", ParagraphCount)) + string.Concat(Enumerable.Repeat("a|b\n-|-\n\n", TableCount));
         var pipeline = new MarkdownPipelineBuilder().UsePipeTables(new PipeTableOptions { UseGfmRules = true }).Build();
 
-        var stopwatch = Stopwatch.StartNew();
+        var stopwatch = ThreadCpuStopwatch.StartNew();
         var document = MarkdownConverter.Parse(markdown, pipeline);
         stopwatch.Stop();
 
@@ -724,7 +723,7 @@ public sealed class TestPipeTable
         var markdown = "*" + string.Concat(Enumerable.Repeat("---|\n", Count));
         var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
 
-        var stopwatch = Stopwatch.StartNew();
+        var stopwatch = ThreadCpuStopwatch.StartNew();
         var document = MarkdownConverter.Parse(markdown, pipeline);
         stopwatch.Stop();
 
@@ -742,7 +741,7 @@ public sealed class TestPipeTable
         var markdown = "*" + string.Concat(Enumerable.Repeat("a|", Count)) + "\n" + string.Concat(Enumerable.Repeat("-|", Count));
         var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
 
-        var stopwatch = Stopwatch.StartNew();
+        var stopwatch = ThreadCpuStopwatch.StartNew();
         var document = MarkdownConverter.Parse(markdown, pipeline);
         stopwatch.Stop();
 
@@ -763,7 +762,7 @@ public sealed class TestPipeTable
         var markdown = string.Concat(Enumerable.Repeat("a|b\n-|-\nc|d\n" + line + "\n", Count));
         var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
 
-        var stopwatch = Stopwatch.StartNew();
+        var stopwatch = ThreadCpuStopwatch.StartNew();
         var document = MarkdownConverter.Parse(markdown, pipeline);
         stopwatch.Stop();
 
@@ -780,7 +779,7 @@ public sealed class TestPipeTable
         var markdown = "| a | b |\n|---|---|\n" + string.Concat(Enumerable.Repeat("| *x* | [l](u) |\n", RowCount));
         var pipeline = new MarkdownPipelineBuilder().UsePipeTables().Build();
 
-        var stopwatch = Stopwatch.StartNew();
+        var stopwatch = ThreadCpuStopwatch.StartNew();
         var html = MarkdownConverter.ToHtml(markdown, pipeline);
         stopwatch.Stop();
 
@@ -800,7 +799,7 @@ public sealed class TestPipeTable
         var markdown = "| a |\n|---|\n" + string.Concat(Enumerable.Repeat("| *x* `c |\n", RowCount));
         var pipeline = new MarkdownPipelineBuilder().UsePipeTables().Build();
 
-        var stopwatch = Stopwatch.StartNew();
+        var stopwatch = ThreadCpuStopwatch.StartNew();
         var html = MarkdownConverter.ToHtml(markdown, pipeline);
         stopwatch.Stop();
 
@@ -819,7 +818,7 @@ public sealed class TestPipeTable
         var markdown = string.Concat(Enumerable.Repeat(":| ", 50_000));
         var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
 
-        var stopwatch = Stopwatch.StartNew();
+        var stopwatch = ThreadCpuStopwatch.StartNew();
         var html = MarkdownConverter.ToHtml(markdown, pipeline);
         stopwatch.Stop();
 

@@ -112,6 +112,7 @@ public class HighlighterTests
     [InlineData("pycon")]
     [InlineData("tex")]
     [InlineData("feature")]
+    [InlineData("pascal")]
     public void IsSupported_KnownLanguage_ReturnsTrue(string language)
     {
         Assert.True(SyntaxHighlighter.IsSupported(language));

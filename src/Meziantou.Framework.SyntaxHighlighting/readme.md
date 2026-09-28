@@ -115,6 +115,7 @@ The package currently supports these language identifiers and common aliases:
 - `csharp`, `cs`, `c#`
 - `css`
 - `dart`
+- `delphi`, `dpr`, `dfm`, `pas`, `pascal`
 - `diff`, `patch`
 - `dockerfile`, `docker`
 - `dos`, `bat`, `cmd`

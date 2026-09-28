@@ -171,6 +171,11 @@ internal static class LanguageRegistry
             ["tex"] = () => Latex.Instance,
             ["gherkin"] = () => Gherkin.Instance,
             ["feature"] = () => Gherkin.Instance,
+            ["delphi"] = () => Delphi.Instance,
+            ["dpr"] = () => Delphi.Instance,
+            ["dfm"] = () => Delphi.Instance,
+            ["pas"] = () => Delphi.Instance,
+            ["pascal"] = () => Delphi.Instance,
         }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
     // Grammars compiled with a non-default match timeout, keyed by the default grammar instance.

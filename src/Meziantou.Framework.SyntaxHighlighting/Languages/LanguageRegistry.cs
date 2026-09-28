@@ -206,6 +206,8 @@ internal static class LanguageRegistry
             ["clojure-repl"] = () => ClojureRepl.Instance,
             ["arduino"] = () => Arduino.Instance,
             ["ino"] = () => Arduino.Instance,
+            ["vbscript"] = () => VbScript.Instance,
+            ["vbs"] = () => VbScript.Instance,
         }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
     // Grammars compiled with a non-default match timeout, keyed by the default grammar instance.

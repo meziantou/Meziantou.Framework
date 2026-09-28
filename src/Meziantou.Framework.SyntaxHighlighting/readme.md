@@ -178,6 +178,7 @@ The package currently supports these language identifiers and common aliases:
 - `typescript`, `ts`, `tsx`, `mts`, `cts`
 - `urlencoded`, `x-www-form-urlencoded`
 - `vbnet`, `vb`
+- `vbscript`, `vbs`
 - `x86asm`
 - `xml`, `xsd`, `xsl`, `plist`, `rss`, `atom`, `svg`
 - `yaml`, `yml`

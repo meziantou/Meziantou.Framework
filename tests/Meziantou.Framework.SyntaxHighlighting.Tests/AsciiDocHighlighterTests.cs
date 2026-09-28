@@ -86,6 +86,21 @@ Section
 Sub
 ~~~~
 
+Close
+^^^^^^
+
+Too long
+^^^^^^^^^^
+
+Too short
+^^^^^^^
+
+Mixed
+-=-=-
+
+?!
+~~
+
 Not [a] title
 -------------
 """,
@@ -99,8 +114,53 @@ Not [a] title
 <span class="hljs-section">Sub
 ~~~~</span>
 
+<span class="hljs-section">Close
+^^^^^^</span>
+
+Too long
+^^^^^^^^^^
+
+Too short
+^^^^^^^
+
+Mixed
+-=-=-
+
+?!
+~~
+
 Not [a] title
 -------------
+""");
+    }
+
+    [Fact]
+    public void ListContinuationBeforeListingBlock()
+    {
+        AssertHighlighter("asciidoc",
+"""
+. Install the tool:
++
+----
+npm install -g foo
+----
+
+Then run:
+----
+foo --help
+----
+""",
+"""
+<span class="hljs-bullet">. </span>Install the tool:
++
+<span class="hljs-code">----
+npm install -g foo
+----</span>
+
+Then run:
+<span class="hljs-code">----
+foo --help
+----</span>
 """);
     }
 

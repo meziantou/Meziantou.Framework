@@ -118,7 +118,14 @@ internal static class AsciiDoc
                     Variants =
                     [
                         new Mode { Begin = @"^(={1,6})[ \t].+?([ \t]\1)?$" },
-                        new Mode { Begin = @"^[^\[\]\n]+?\n[=\-~\^\+]{2,}$" },
+
+                        // Deviation from highlight.js, whose two-line (setext) title is any line followed by a line of at
+                        // least two `=`, `-`, `~`, `^` or `+`: a list continuation (`+`) or a paragraph followed by a
+                        // listing block delimiter (`----`) became a title, and so did the closing delimiter with the line
+                        // before it. As in Asciidoctor, the title must have a letter or a digit and not start with `.`,
+                        // and the underline repeats a single character, with a length within one of the title's (each
+                        // title character is pushed on `c`, and each underline character pops one).
+                        new Mode { Begin = @"^(?!\.)(?=[^\n]*?[\p{L}\p{N}])(?<c>[^\[\]\n])+\n(?=[=\-~\^\+]{2})(?<u>[=\-~\^\+])(?<-c>)(?:\k<u>(?<-c>))*\k<u>?(?<-c>)?(?(c)(?!))$" },
                     ],
                 },
 

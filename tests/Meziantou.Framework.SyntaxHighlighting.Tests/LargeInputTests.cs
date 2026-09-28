@@ -131,6 +131,20 @@ public sealed class LargeInputTests
         Assert.EndsWith(" b}}</span>", await highlight, StringComparison.Ordinal);
     }
 
+    // A Svelte rune used to be rejected by a lookbehind that scanned back to the start of its line for a `//`, which is
+    // quadratic on a long line of runes (about 10 seconds for this document).
+    [Fact]
+    public async Task Highlight_SvelteLongLineOfRunes_CompletesInReasonableTime()
+    {
+        var code = "<script>\n" + string.Concat(Enumerable.Repeat("$state(0);", 20_000));
+
+        var highlight = Task.Run(() => HighlightWithFallbackDetection(code, "svelte", out _));
+        var finished = await Task.WhenAny(highlight, Task.Delay(Budget)) == highlight;
+
+        Assert.True(finished, $"Highlighting {code.Length} characters of 'svelte' did not finish within {Budget.TotalSeconds:F0}s.");
+        Assert.EndsWith("<span class=\"hljs-built_in\">$state</span><span class=\"language-javascript\">(<span class=\"hljs-number\">0</span>);</span>", await highlight, StringComparison.Ordinal);
+    }
+
     // The indentation of a Haml comment line used to be captured before checking that a comment follows, which rescanned
     // the indentation from each of its positions (about 50 seconds for this document).
     [Fact]

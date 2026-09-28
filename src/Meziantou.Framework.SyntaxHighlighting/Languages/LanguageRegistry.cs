@@ -148,6 +148,12 @@ internal static class LanguageRegistry
             ["terraform"] = () => Hcl.Instance,
             ["tf"] = () => Hcl.Instance,
             ["tfvars"] = () => Hcl.Instance,
+            ["ruby"] = () => Ruby.Instance,
+            ["rb"] = () => Ruby.Instance,
+            ["gemspec"] = () => Ruby.Instance,
+            ["podspec"] = () => Ruby.Instance,
+            ["thor"] = () => Ruby.Instance,
+            ["irb"] = () => Ruby.Instance,
         }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
     // Grammars compiled with a non-default match timeout, keyed by the default grammar instance.

@@ -103,6 +103,7 @@ public class HighlighterTests
     [InlineData("properties")]
     [InlineData("terraform")]
     [InlineData("tfvars")]
+    [InlineData("rb")]
     public void IsSupported_KnownLanguage_ReturnsTrue(string language)
     {
         Assert.True(SyntaxHighlighter.IsSupported(language));

@@ -9,6 +9,9 @@ internal static class CommonModes
     public const string NumberRe = @"\b\d+(\.\d+)?";
     public const string CNumberRe = @"(-?)(\b0[xX][a-fA-F0-9]+|(\b\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?)";
 
+    /// <summary>The operators after which a regular expression literal can start (highlight.js's <c>RE_STARTERS_RE</c>).</summary>
+    public const string ReStartersRe = @"!|!=|!==|%|%=|&|&&|&=|\*|\*=|\+|\+=|,|-|-=|/=|/|:|;|<<|<<=|<=|<|===|==|=|>>>=|>>=|>=|>>>|>>|>|\?|\[|\{|\(|\^|\^=|\||\|=|\|\||~";
+
     /// <summary>
     /// <c>^\s*</c>, restricted to the first line of a run of blank lines.
     /// </summary>

@@ -111,6 +111,7 @@ The package currently supports these language identifiers and common aliases:
 - `bnf`
 - `c`, `h`
 - `clojure`, `clj`, `edn`
+- `clojure-repl`
 - `cmake`, `cmake.in`
 - `cpp`, `c++`, `cc`, `h++`, `hpp`, `hh`, `hxx`, `cxx`
 - `csharp`, `cs`, `c#`

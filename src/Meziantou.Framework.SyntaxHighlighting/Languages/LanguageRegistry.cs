@@ -203,6 +203,7 @@ internal static class LanguageRegistry
             ["julia-repl"] = () => JuliaRepl.Instance,
             ["jldoctest"] = () => JuliaRepl.Instance,
             ["erlang-repl"] = () => ErlangRepl.Instance,
+            ["clojure-repl"] = () => ClojureRepl.Instance,
         }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
     // Grammars compiled with a non-default match timeout, keyed by the default grammar instance.

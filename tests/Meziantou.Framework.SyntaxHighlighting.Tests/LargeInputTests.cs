@@ -185,6 +185,20 @@ public sealed class LargeInputTests
         Assert.EndsWith("<span class=\"hljs-symbol\">./y</span>;", await highlight, StringComparison.Ordinal);
     }
 
+    // An AWK `${…}` variable used to be matched from each `${` of a line without `}` up to the end of the line (twenty
+    // seconds for this document).
+    [Fact]
+    public async Task Highlight_AwkLongLineOfUnclosedVariables_CompletesInReasonableTime()
+    {
+        var code = string.Concat(Enumerable.Repeat("${", 40_000)) + "\nBEGIN";
+
+        var highlight = Task.Run(() => HighlightWithFallbackDetection(code, "awk", out _));
+        var finished = await Task.WhenAny(highlight, Task.Delay(Budget)) == highlight;
+
+        Assert.True(finished, $"Highlighting {code.Length} characters of 'awk' did not finish within {Budget.TotalSeconds:F0}s.");
+        Assert.EndsWith("<span class=\"hljs-keyword\">BEGIN</span>", await highlight, StringComparison.Ordinal);
+    }
+
     // The guard against grammars that stop making progress used to count the hits of every run of the document, but
     // compared the count with a position in the current fragment, so a document with many embedded fragments was
     // abandoned (plain text).

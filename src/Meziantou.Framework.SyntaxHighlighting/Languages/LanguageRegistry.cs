@@ -262,6 +262,10 @@ internal static class LanguageRegistry
             ["htaccess"] = () => Apache.Instance,
             ["vim"] = () => Vim.Instance,
             ["vimscript"] = () => Vim.Instance,
+            ["awk"] = () => Awk.Instance,
+            ["gawk"] = () => Awk.Instance,
+            ["mawk"] = () => Awk.Instance,
+            ["nawk"] = () => Awk.Instance,
         }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
     // Grammars compiled with a non-default match timeout, keyed by the default grammar instance.

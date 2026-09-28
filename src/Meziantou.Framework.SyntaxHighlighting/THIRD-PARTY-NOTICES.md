@@ -7,7 +7,10 @@ components. Each component is used under its own license.
 
 The engine in `Engine/` and the grammars in `Languages/`
 are derived from highlight.js (https://highlightjs.org/), v11.10.0
-(v11.11.1 for the Apache, Arduino, C, CoffeeScript, Dart, Erlang, Java, Lua, Makefile, Nim, Nix, Ruby, Rust and Swift grammars).
+(v11.11.1 for the Apache, Arduino, Bash, C, C#, C++, CoffeeScript, CSS, Dart, Erlang, Java, Less, Lua, Makefile, Nim, Nix,
+Ruby, Rust, SCSS and Swift grammars).
+highlight.js has no Bicep, HCL, KQL, Mermaid, Solidity, Svelte, TOML, Vue or Zig grammar: those grammars are written for
+this project, on top of the derived engine (and, for Svelte and Vue, of the derived HTML grammar).
 
 highlight.js is distributed under the BSD-3-Clause license, the full text of
 which is reproduced below as required by the license terms.

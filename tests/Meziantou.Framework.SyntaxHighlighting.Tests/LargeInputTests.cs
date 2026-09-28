@@ -86,4 +86,17 @@ public sealed class LargeInputTests
         Assert.True(finished, $"Highlighting {code.Length} characters of 'properties' did not finish within {Budget.TotalSeconds:F0}s.");
         Assert.EndsWith("<span class=\"hljs-attr\">key</span> = <span class=\"hljs-string\">value</span>", await highlight, StringComparison.Ordinal);
     }
+
+    // The guard against grammars that stop making progress used to count the hits of every run of the document, but
+    // compared the count with a position in the current fragment, so a document with many embedded fragments was
+    // abandoned (plain text).
+    [Fact]
+    public void Highlight_ManyEmbeddedFragments_IsNotAbandoned()
+    {
+        var code = string.Concat(Enumerable.Repeat("<script>var a = 1;</script>\n", 20_000));
+
+        HighlightWithFallbackDetection(code, "html", out var isFallback);
+
+        Assert.False(isFallback, $"Highlighting {code.Length} characters of 'html' was abandoned.");
+    }
 }

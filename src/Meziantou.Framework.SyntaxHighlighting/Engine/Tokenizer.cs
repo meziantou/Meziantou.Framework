@@ -108,8 +108,6 @@ internal static class Tokenizer
 
         public HtmlEmitter Emitter { get; } = new(options, inputLength * 2);
 
-        public int Iterations { get; set; }
-
         // Set when a grammar stopped making progress; every run then stops and the result is plain text.
         public bool Aborted { get; set; }
 
@@ -152,6 +150,10 @@ internal static class Tokenizer
         // resumes in that state rather than at the sub-language's root.
         private Dictionary<string, Frame[]>? _continuations;
         private BeginGuards.ClosingTagIndex? _closingTags;
+
+        // Counted per run, like highlight.js: the hit indexes of a sub-language run are relative to its fragment, so a
+        // count shared with the other runs would make a document with many embedded fragments look like a loop.
+        private int _iterations;
 
         /// <summary>The mode stack the run ended in.</summary>
         public Frame[] FinalStack { get; private set; } = [];
@@ -274,7 +276,7 @@ internal static class Tokenizer
         /// </summary>
         private bool CheckForInfiniteLoop(int hitIndex, ref int stalledIndex, ref int stalledIterations)
         {
-            session.Iterations++;
+            _iterations++;
             if (hitIndex == stalledIndex)
             {
                 stalledIterations++;
@@ -285,7 +287,7 @@ internal static class Tokenizer
                 stalledIterations = 0;
             }
 
-            if (stalledIterations > 10_000 || (session.Iterations > 100_000 && session.Iterations > hitIndex * 3))
+            if (stalledIterations > 10_000 || (_iterations > 100_000 && _iterations > hitIndex * 3))
             {
                 session.Aborted = true;
             }

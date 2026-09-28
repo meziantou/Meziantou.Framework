@@ -102,6 +102,8 @@ internal static class LanguageRegistry
             ["ipython"] = () => Python.Instance,
             ["c"] = () => C.Instance,
             ["h"] = () => C.Instance,
+            ["diff"] = () => Diff.Instance,
+            ["patch"] = () => Diff.Instance,
         }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
     // Grammars compiled with a non-default match timeout, keyed by the default grammar instance.

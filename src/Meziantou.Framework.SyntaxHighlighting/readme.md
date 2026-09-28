@@ -112,6 +112,7 @@ The package currently supports these language identifiers and common aliases:
 - `cpp`, `c++`, `cc`, `h++`, `hpp`, `hh`, `hxx`, `cxx`
 - `csharp`, `cs`, `c#`
 - `css`
+- `diff`, `patch`
 - `dockerfile`, `docker`
 - `dos`, `bat`, `cmd`
 - `fsharp`, `fs`, `f#`

@@ -85,6 +85,7 @@ public class HighlighterTests
     [InlineData("golang")]
     [InlineData("py")]
     [InlineData("h")]
+    [InlineData("patch")]
     public void IsSupported_KnownLanguage_ReturnsTrue(string language)
     {
         Assert.True(SyntaxHighlighter.IsSupported(language));

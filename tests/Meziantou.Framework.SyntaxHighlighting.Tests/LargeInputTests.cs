@@ -373,6 +373,27 @@ public sealed class LargeInputTests
         Assert.EndsWith("<span class=\"hljs-title\">main</span> = <span class=\"hljs-number\">1</span>", await highlight, StringComparison.Ordinal);
     }
 
+    // The Clojure ratio and float used to be looked for from each digit of a run of digits, each time scanning to the end
+    // of the run, and a symbol was matched over the whole rest of a run after each number that wins against it at the same
+    // position (7 seconds for 100,000 digits, 2 seconds for 100,000 characters of `1-`).
+    [Theory]
+    [InlineData("1")]
+    [InlineData("0")]
+    [InlineData("1-")]
+    [InlineData("+1")]
+    public async Task Highlight_ClojureLongNumberRun_CompletesInReasonableTime(string part)
+    {
+        var code = "(f " + string.Concat(Enumerable.Repeat(part, 300_000 / part.Length)) + ")\n(def x 1)";
+
+        var isFallback = false;
+        var highlight = Task.Run(() => HighlightWithFallbackDetection(code, "clojure", out isFallback));
+        var finished = await Task.WhenAny(highlight, Task.Delay(Budget)) == highlight;
+
+        Assert.True(finished, $"Highlighting {code.Length} characters of 'clojure' did not finish within {Budget.TotalSeconds:F0}s.");
+        Assert.False(isFallback, $"Highlighting {code.Length} characters of 'clojure' was abandoned.");
+        Assert.EndsWith("(<span class=\"hljs-keyword\">def</span> <span class=\"hljs-title\">x</span> <span class=\"hljs-number\">1</span>)", await highlight, StringComparison.Ordinal);
+    }
+
     // The guard against grammars that stop making progress used to count the hits of every run of the document, but
     // compared the count with a position in the current fragment, so a document with many embedded fragments was
     // abandoned (plain text).

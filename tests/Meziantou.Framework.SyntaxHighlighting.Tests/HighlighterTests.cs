@@ -147,6 +147,7 @@ public class HighlighterTests
     [InlineData("scm")]
     [InlineData("elisp")]
     [InlineData("elm")]
+    [InlineData("prolog")]
     public void IsSupported_KnownLanguage_ReturnsTrue(string language)
     {
         Assert.True(SyntaxHighlighter.IsSupported(language));

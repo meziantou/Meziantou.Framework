@@ -121,6 +121,7 @@ The package currently supports these language identifiers and common aliases:
 - `dockerfile`, `docker`
 - `dos`, `bat`, `cmd`
 - `elixir`, `ex`, `exs`
+- `erb`
 - `erlang`, `erl`
 - `fsharp`, `fs`, `f#`
 - `gherkin`, `feature`

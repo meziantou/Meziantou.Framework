@@ -112,7 +112,7 @@ public class PipeTableParser : InlineParser, IPostInlineProcessor
                     tableState.IsLineAfterTableParsed = true;
                     if (EndTable(processor, tableState))
                     {
-                        StopParsing(ref slice);
+                        processor.StopParsing(ref slice);
                         return true;
                     }
                 }
@@ -136,7 +136,7 @@ public class PipeTableParser : InlineParser, IPostInlineProcessor
                         tableState.EndOfTableLineStart = slice.Start;
                         if (EndTable(processor, tableState))
                         {
-                            StopParsing(ref slice);
+                            processor.StopParsing(ref slice);
                         }
                     }
                     else
@@ -241,12 +241,6 @@ public class PipeTableParser : InlineParser, IPostInlineProcessor
         tableState.ColumnDefinitions = columnDefinitions;
         tableState.IsParsingStopped = true;
         return true;
-    }
-
-    // Ends the parse of the paragraph: the text that follows is parsed in the paragraph after the table
-    private static void StopParsing(ref StringSlice slice)
-    {
-        slice.Start = slice.End + 1;
     }
 
     // Whether the line starting at the slice can have a column delimiter: it has a pipe that is not escaped by a backslash.

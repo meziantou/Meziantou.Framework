@@ -209,6 +209,32 @@ public sealed class TestPipeTable
     }
 
     [Fact]
+    public void LineBreaksOfParagraphsAroundTablesHaveTheirSourcePositionWithTrivia()
+    {
+        var markdown = "x\n|a|b|\n|-|-|\ny\r\n|c|d|\n|-|-|\nz\n";
+        var pipeline = new MarkdownPipelineBuilder().UsePipeTables().EnableTrackTrivia().Build();
+
+        var document = MarkdownConverter.Parse(markdown, pipeline);
+
+        var paragraphs = document.OfType<ParagraphBlock>().ToList();
+        Assert.HasCount(3, paragraphs);
+        Assert.HasCount(2, document.OfType<Table>());
+        var expected = new[] { (Position: 1, Line: 0, Column: 1), (Position: 15, Line: 3, Column: 1), (Position: 30, Line: 6, Column: 1) };
+        for (var i = 0; i < paragraphs.Count; i++)
+        {
+            var lineBreak = Assert.IsType<LineBreakInline>(paragraphs[i].Inline!.LastChild);
+            Assert.Equal(expected[i].Position, lineBreak.Span.Start);
+            Assert.Equal(expected[i].Line, lineBreak.Line);
+            Assert.Equal(expected[i].Column, lineBreak.Column);
+        }
+
+        foreach (var lineBreak in document.Descendants<LineBreakInline>())
+        {
+            Assert.True(markdown[lineBreak.Span.Start] is '\r' or '\n', $"Line break at {lineBreak.Span}");
+        }
+    }
+
+    [Fact]
     public void TaskAfterTableInAListItemIsNotTheFirstBlockOfTheItem()
     {
         var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
@@ -608,6 +634,24 @@ public sealed class TestPipeTable
 
         Assert.HasCount(tableCount, document.OfType<Table>());
         Assert.HasCount(Count, document.Descendants<LinkInline>());
+        Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(10), $"Parsing took {stopwatch.Elapsed}");
+    }
+
+    // Timed: tests running at the same time would slow it down and make the time budget flaky
+    [Fact(DisableParallelization = true)]
+    public void ManyTablesInAParagraphAreParsedWithTriviaInLinearTime()
+    {
+        // With trivia, each paragraph that ends before a table positioned a line break at the end of the text of the paragraph,
+        // walking all the lines after it
+        const int Count = 300_000;
+        var markdown = string.Concat(Enumerable.Repeat("x\n|a|\n|-|\n", Count)) + "x\n";
+        var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().EnableTrackTrivia().Build();
+
+        var stopwatch = Stopwatch.StartNew();
+        var document = MarkdownConverter.Parse(markdown, pipeline);
+        stopwatch.Stop();
+
+        Assert.HasCount(Count, document.OfType<Table>());
         Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(10), $"Parsing took {stopwatch.Elapsed}");
     }
 

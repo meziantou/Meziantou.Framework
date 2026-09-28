@@ -38,6 +38,10 @@ public class InlineProcessor
 
     // The text of the block being processed
     private StringSlice _text;
+
+    // Whether a parser ended the parse of the block before the end of its text: the rest of the text is parsed in another
+    // block (e.g. the lines after a pipe table)
+    internal bool IsParsingStopped { get; private set; }
     private int _previousSliceOffset;
     private int _previousLineIndexForSliceOffset;
     private int[]? _unescapedSourceOffsets;
@@ -105,6 +109,14 @@ public class InlineProcessor
         {
             (ProcessedBlocksAfter ??= []).Add(block);
         }
+    }
+
+    // Ends the parse of the block being processed: the parsers are not called for the rest of its text, which is parsed in
+    // another block
+    internal void StopParsing(ref StringSlice slice)
+    {
+        slice.Start = slice.End + 1;
+        IsParsingStopped = true;
     }
 
     // Creates a paragraph with the lines of the text being processed that start at the given position, e.g. the lines after
@@ -388,6 +400,7 @@ public class InlineProcessor
         BlockNew = null;
         ProcessedBlocksAfter = null;
         _blocksInsertedAfter = 0;
+        IsParsingStopped = false;
         LineIndex = leafBlock.Line;
 
         _htmlScanCache?.Clear();
@@ -505,7 +518,9 @@ public class InlineProcessor
             //}
         }
 
-        if (TrackTrivia)
+        // When the parse stopped, the end of the text is not the end of this block. Positioning the line break from the end of
+        // the text would walk all the lines of the text for each block that stops before the end.
+        if (TrackTrivia && !IsParsingStopped)
         {
             if (!(leafBlock is HeadingBlock))
             {
@@ -962,6 +977,7 @@ public class InlineProcessor
         BlockNew = null;
         ProcessedBlocksAfter = null;
         _blocksInsertedAfter = 0;
+        IsParsingStopped = false;
         Inline = null;
         Root = null;
         Parsers = null!;

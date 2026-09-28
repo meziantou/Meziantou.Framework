@@ -142,6 +142,7 @@ The package currently supports these language identifiers and common aliases:
 - `python`, `py`, `gyp`, `ipython`
 - `razor`, `cshtml`, `cshtml-razor`
 - `rust`, `rs`
+- `scala`
 - `scss`
 - `sql`
 - `swift`

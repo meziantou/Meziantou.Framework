@@ -127,6 +127,7 @@ The package currently supports these language identifiers and common aliases:
 - `delphi`, `dpr`, `dfm`, `pas`, `pascal`
 - `diff`, `patch`
 - `django`, `jinja`, `jinja2`, `j2`
+- `dns`, `bind`, `zone`
 - `dockerfile`, `docker`
 - `dos`, `bat`, `cmd`
 - `elixir`, `ex`, `exs`

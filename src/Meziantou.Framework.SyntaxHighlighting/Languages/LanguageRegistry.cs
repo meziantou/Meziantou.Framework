@@ -269,6 +269,9 @@ internal static class LanguageRegistry
             ["puppet"] = () => Puppet.Instance,
             ["pp"] = () => Puppet.Instance,
             ["thrift"] = () => Thrift.Instance,
+            ["dns"] = () => Dns.Instance,
+            ["bind"] = () => Dns.Instance,
+            ["zone"] = () => Dns.Instance,
         }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
     // Grammars compiled with a non-default match timeout, keyed by the default grammar instance.

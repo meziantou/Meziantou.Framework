@@ -6,7 +6,7 @@ namespace Meziantou.Framework.SyntaxHighlighting.Engine;
 
 internal static class Tokenizer
 {
-    private const int MaxSubLanguageDepth = 32;
+    private const int MaxSubLanguageDepth = 8;
 
     private enum HitKind { Begin, End, Illegal }
 

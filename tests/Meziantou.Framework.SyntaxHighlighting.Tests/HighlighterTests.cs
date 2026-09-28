@@ -361,6 +361,20 @@ public class HighlighterTests
     }
 
     [Fact]
+    public void Compile_RestartsSubLanguageWithoutSubLanguage_Throws()
+    {
+        Assert.Throws<InvalidOperationException>(() => Compiler.Compile(new Mode { Contains = [new Mode { Begin = "a", End = "b", RestartsSubLanguage = true }] }));
+    }
+
+    [Fact]
+    public void Compile_RestartsSubLanguageWithSubLanguage_Compiles()
+    {
+        var grammar = Compiler.Compile(new Mode { Contains = [new Mode { Begin = "<", End = ">", SubLanguage = "json", RestartsSubLanguage = true }] });
+
+        Assert.Equal("<span class=\"language-json\">&lt;<span class=\"hljs-number\">1</span>&gt;</span>", Tokenizer.Highlight("<1>", grammar, HighlightOptions.Default));
+    }
+
+    [Fact]
     public void GetSupportedLanguages_CoversEveryGrammar()
     {
         var grammars = SyntaxHighlighter.GetSupportedLanguages().Select(LanguageRegistry.Get).Distinct(ReferenceEqualityComparer.Instance).Count();

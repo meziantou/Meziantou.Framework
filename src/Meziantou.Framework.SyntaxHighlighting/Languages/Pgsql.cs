@@ -525,14 +525,15 @@ internal static class Pgsql
     /// than the previous dollar sign. The lookahead that finds the LANGUAGE clause after the body only runs after
     /// <c>AS</c> or <c>DO</c>, and gives up at the next such body: otherwise, each of many unterminated strings would
     /// scan the rest of the input. A body that contains another one therefore needs its LANGUAGE clause before it to
-    /// not be PL/pgSQL.
+    /// not be PL/pgSQL. The body is skipped a run of non-dollar characters at a time (a vectorized search) and only
+    /// each dollar sign is checked, because every procedural language repeats this lookahead over the same body.
     /// </remarks>
     private static string FunctionBodyRe(string languageNames)
     {
         var language = @"\bLANGUAGE\s+(?:(?:" + languageNames + @")\b|'(?:" + languageNames + @")'|""(?:" + languageNames + @")"")";
         return DollarQuoteStartRe + "(?:"
             + @"(?<=" + language + @"(?:[^;$]*?\bAS\b)?\s*\$)" + DollarTagRe + @"\$"
-            + @"|(?<=\b(?:AS|DO)\b\s*\$)" + DollarTagRe + @"\$(?=(?>(?:(?!\$\2\$|\b(?:AS|DO)\s+\$[a-zA-Z_0-9]*\$)[\s\S])*)\$\2\$[^;$]*?" + language + ")"
+            + @"|(?<=\b(?:AS|DO)\b\s*\$)" + DollarTagRe + @"\$(?=(?>[^$]*(?:(?!\$\2\$)(?!(?<=\b(?:AS|DO)\s+)\$[a-zA-Z_0-9]*\$)\$[^$]*)*)\$\2\$[^;$]*?" + language + ")"
             + ")";
     }
 

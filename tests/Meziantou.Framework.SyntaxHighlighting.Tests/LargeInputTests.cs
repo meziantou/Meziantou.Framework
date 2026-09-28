@@ -145,6 +145,29 @@ public sealed class LargeInputTests
         Assert.EndsWith("-# comment</span>", await highlight, StringComparison.Ordinal);
     }
 
+    // A number pattern that fails identically from every position of a long run of digits, and an identifier that is
+    // matched over the whole rest of a run after each number that wins against it at the same position, used to make
+    // these documents quadratic (more than a minute for the longest ones).
+    [Theory]
+    [InlineData("scheme", "digits")]
+    [InlineData("scheme", "numbers")]
+    public async Task Highlight_LispFamilyLongRun_CompletesInReasonableTime(string language, string content)
+    {
+        var code = content switch
+        {
+            "digits" => "(f " + new string('1', 100_000) + ")\n(define x 1)",
+            "numbers" => "(f " + string.Concat(Enumerable.Repeat("1-", 300_000)) + ")\n(define x 1)",
+            _ => throw new ArgumentOutOfRangeException(nameof(content)),
+        };
+
+        var isFallback = false;
+        var highlight = Task.Run(() => HighlightWithFallbackDetection(code, language, out isFallback));
+        var finished = await Task.WhenAny(highlight, Task.Delay(Budget)) == highlight;
+
+        Assert.True(finished, $"Highlighting {code.Length} characters of '{language}' did not finish within {Budget.TotalSeconds:F0}s.");
+        Assert.False(isFallback, $"Highlighting {code.Length} characters of '{language}' was abandoned.");
+    }
+
     // The guard against grammars that stop making progress used to count the hits of every run of the document, but
     // compared the count with a position in the current fragment, so a document with many embedded fragments was
     // abandoned (plain text).

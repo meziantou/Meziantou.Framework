@@ -178,6 +178,7 @@ The package currently supports these language identifiers and common aliases:
 - `ruby`, `rb`, `gemspec`, `podspec`, `thor`, `irb`
 - `rust`, `rs`
 - `scala`
+- `scheme`, `scm`
 - `scss`
 - `shell`, `console`, `shellsession`
 - `solidity`, `sol`

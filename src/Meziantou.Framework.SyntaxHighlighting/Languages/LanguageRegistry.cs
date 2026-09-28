@@ -247,6 +247,8 @@ internal static class LanguageRegistry
             ["f77"] = () => Fortran.Instance,
             ["for"] = () => Fortran.Instance,
             ["f"] = () => Fortran.Instance,
+            ["scheme"] = () => Scheme.Instance,
+            ["scm"] = () => Scheme.Instance,
         }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
     // Grammars compiled with a non-default match timeout, keyed by the default grammar instance.

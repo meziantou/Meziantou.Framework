@@ -18,6 +18,9 @@ public class KeywordGroupsTests
     {
         string[] expected =
         [
+        "arduino:false:keyword+literal",
+        "arduino:nullptr:keyword+literal",
+        "arduino:true:keyword+literal",
         "cpp:false:keyword+literal",
         "cpp:nullptr:keyword+literal",
         "cpp:true:keyword+literal",

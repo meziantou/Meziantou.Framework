@@ -126,6 +126,7 @@ public class HighlighterTests
     [InlineData("jldoctest")]
     [InlineData("erlang-repl")]
     [InlineData("clojure-repl")]
+    [InlineData("ino")]
     public void IsSupported_KnownLanguage_ReturnsTrue(string language)
     {
         Assert.True(SyntaxHighlighter.IsSupported(language));

@@ -142,6 +142,25 @@ public sealed class LargeInputTests
         Assert.EndsWith("<span class=\"hljs-keyword\">endmodule</span>", await highlight, StringComparison.Ordinal);
     }
 
+    // The whitespace after the `=` of a Zig container declaration (`const Point = struct`) used to be split in every
+    // possible way between two runs of whitespace before failing (4 seconds for 100,000 characters).
+    [Theory]
+    [InlineData("var a = ", " ")]
+    [InlineData("const a =", " ")]
+    [InlineData("var a = ", "\n")]
+    public async Task Highlight_ZigLongWhitespaceAfterAssignment_CompletesInReasonableTime(string prefix, string whitespace)
+    {
+        var code = prefix + string.Concat(Enumerable.Repeat(whitespace, 200_000)) + "1;";
+
+        var isFallback = false;
+        var highlight = Task.Run(() => HighlightWithFallbackDetection(code, "zig", out isFallback));
+        var finished = await Task.WhenAny(highlight, Task.Delay(Budget)) == highlight;
+
+        Assert.True(finished, $"Highlighting {code.Length} characters of 'zig' did not finish within {Budget.TotalSeconds:F0}s.");
+        Assert.False(isFallback, $"Highlighting {code.Length} characters of 'zig' was abandoned.");
+        Assert.EndsWith("<span class=\"hljs-number\">1</span>;", await highlight, StringComparison.Ordinal);
+    }
+
     // A properties key used to be matched from each of its positions, which is quadratic on a long key made of escapes
     // (a minute and a half for 60,000 backslashes).
     [Theory]

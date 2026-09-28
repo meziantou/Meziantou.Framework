@@ -121,9 +121,12 @@ internal static class Zig
         };
 
         // `const Point = struct`, `pub const Color = enum(u8)`, `const Header = extern struct`, `const E = error{`.
+        // The whitespace after `=` is atomic: the next part cannot start with a whitespace, and the whitespace that
+        // follows it only follows `extern` or `packed`. Otherwise, the two runs of whitespace could split a long run
+        // between them in every possible way before failing, which is quadratic.
         var containerDeclaration = new Mode
         {
-            BeginParts = [@"\b(?:const|var)", @"\s+", IdentifierRe, @"\s*=\s*", @"(?:(?:extern|packed)(?=\s))?", @"\s*", @"(?:struct|enum|union|opaque)\b|error(?=\s*\{)"],
+            BeginParts = [@"\b(?:const|var)", @"\s+", IdentifierRe, @"\s*=(?>\s*)", @"(?:(?:extern|packed)(?=\s))?", @"\s*", @"(?:struct|enum|union|opaque)\b|error(?=\s*\{)"],
             BeginScope = new Dictionary<int, string>
             {
                 [1] = "keyword",

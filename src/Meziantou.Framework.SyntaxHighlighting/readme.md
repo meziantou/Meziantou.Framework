@@ -165,6 +165,7 @@ The package currently supports these language identifiers and common aliases:
 - `scala`
 - `scss`
 - `shell`, `console`, `shellsession`
+- `solidity`, `sol`
 - `sql`
 - `swift`
 - `twig`, `craftcms`

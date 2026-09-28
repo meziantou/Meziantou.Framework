@@ -120,6 +120,7 @@ public class HighlighterTests
     [InlineData("craftcms")]
     [InlineData("erb")]
     [InlineData("zon")]
+    [InlineData("sol")]
     public void IsSupported_KnownLanguage_ReturnsTrue(string language)
     {
         Assert.True(SyntaxHighlighter.IsSupported(language));

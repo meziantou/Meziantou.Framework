@@ -195,6 +195,8 @@ internal static class LanguageRegistry
             ["erb"] = () => Erb.Instance,
             ["zig"] = () => Zig.Instance,
             ["zon"] = () => Zig.Instance,
+            ["solidity"] = () => Solidity.Instance,
+            ["sol"] = () => Solidity.Instance,
         }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
     // Grammars compiled with a non-default match timeout, keyed by the default grammar instance.

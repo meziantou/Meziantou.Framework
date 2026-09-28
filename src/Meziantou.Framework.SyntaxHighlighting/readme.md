@@ -156,6 +156,7 @@ The package currently supports these language identifiers and common aliases:
 - `julia`, `jl`
 - `julia-repl`, `jldoctest`
 - `kotlin`, `kt`, `kts`
+- `kql`, `kusto`
 - `latex`, `tex`
 - `less`
 - `lisp`, `elisp`, `emacs-lisp`, `common-lisp`

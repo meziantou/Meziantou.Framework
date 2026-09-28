@@ -276,6 +276,8 @@ internal static class LanguageRegistry
             ["toml"] = () => Toml.Instance,
             ["mermaid"] = () => Mermaid.Instance,
             ["mmd"] = () => Mermaid.Instance,
+            ["kql"] = () => Kql.Instance,
+            ["kusto"] = () => Kql.Instance,
         }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
     // Grammars compiled with a non-default match timeout, keyed by the default grammar instance.

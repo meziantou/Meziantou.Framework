@@ -80,7 +80,7 @@ public class GenericAttributesParser : InlineParser
             }
 
             var currentHtmlAttributes = objectToAttach.GetAttributes();
-            attributes.CopyTo(currentHtmlAttributes, true, false);
+            MergeAttributes(processor, attributes, currentHtmlAttributes);
 
             // Update the position of the attributes
             currentHtmlAttributes.Span.Start = processor.GetSourcePosition(startPosition, out int line, out int column);
@@ -469,6 +469,82 @@ public class GenericAttributesParser : InlineParser
         {
             return (outcomes[position - start] & step) != 0;
         }
+    }
+
+    // Copies the attributes to the attributes of the object they are attached to, like CopyTo merging the id and the properties
+    // without sharing the lists: a property is only added when the object has none with the same name. Searching the
+    // properties of the object for each one made many attributes attached to the same object quadratic, so the names of the
+    // properties of each object are remembered while the inlines of the block are parsed. The properties of an object only
+    // grow while they are parsed, so the names are up to date while the number of properties is unchanged.
+    private void MergeAttributes(InlineProcessor processor, HtmlAttributes attributes, HtmlAttributes target)
+    {
+        const int SmallPropertyCount = 8;
+
+        var properties = attributes.Properties;
+        var targetProperties = target.Properties;
+        if (properties is null || targetProperties is null || targetProperties.Count + properties.Count <= SmallPropertyCount)
+        {
+            attributes.CopyTo(target, mergeIdAndProperties: true, shared: false);
+            return;
+        }
+
+        if (attributes.Id is not null)
+        {
+            target.Id = attributes.Id;
+        }
+
+        if (attributes.Classes is not null)
+        {
+            if (target.Classes is null)
+            {
+                target.Classes = new(attributes.Classes);
+            }
+            else
+            {
+                target.Classes.AddRange(attributes.Classes);
+            }
+        }
+
+        var propertyNamesByList = processor.ParserStates[Index] as Dictionary<List<KeyValuePair<string, string?>>, PropertyNames>;
+        if (propertyNamesByList is null)
+        {
+            propertyNamesByList = new(ReferenceEqualityComparer.Instance);
+            processor.ParserStates[Index] = propertyNamesByList;
+        }
+
+        if (!propertyNamesByList.TryGetValue(targetProperties, out var propertyNames))
+        {
+            propertyNames = new PropertyNames();
+            propertyNamesByList.Add(targetProperties, propertyNames);
+        }
+
+        var names = propertyNames.Names;
+        if (propertyNames.Count != targetProperties.Count)
+        {
+            names.Clear();
+            foreach (var property in targetProperties)
+            {
+                names.Add(property.Key);
+            }
+        }
+
+        foreach (var property in properties)
+        {
+            if (names.Add(property.Key))
+            {
+                targetProperties.Add(property);
+            }
+        }
+
+        propertyNames.Count = targetProperties.Count;
+    }
+
+    // The names of the properties of an object, when it had Count properties
+    private sealed class PropertyNames
+    {
+        public HashSet<string> Names { get; } = new(StringComparer.Ordinal);
+
+        public int Count { get; set; } = -1;
     }
 
     internal static void RemoveFilteredProperties(HtmlAttributes attributes, Func<string, bool> filter)

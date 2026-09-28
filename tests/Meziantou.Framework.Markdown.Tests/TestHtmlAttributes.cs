@@ -3,6 +3,7 @@
 // See the license.txt file in the project root for more information.
 
 using System.Diagnostics;
+using System.Globalization;
 
 using Meziantou.Framework.Markdown.Extensions.GenericAttributes;
 using Meziantou.Framework.Markdown.Helpers;
@@ -225,6 +226,41 @@ public class TestHtmlAttributes
 
         Assert.Equal("<p>" + markdown + "</p>\n", html);
         Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(10), $"Parsing took {stopwatch.Elapsed}");
+    }
+
+    // Timed: tests running at the same time would slow it down and make the time budget flaky
+    [Theory(DisableParallelization = true)]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ManyPropertiesAttachedToABlockAreMergedInLinearTime(bool inOneBlock)
+    {
+        // Each property searched all the properties of the object it is attached to
+        const int Count = 300_000;
+        var names = Enumerable.Range(0, Count).Select(i => "aria-k" + i.ToString(CultureInfo.InvariantCulture));
+        var markdown = inOneBlock
+            ? "a {aria-x=1} {" + string.Join(' ', names.Select(name => name + "=x")) + "}\n"
+            : "a" + string.Concat(names.Select(name => "{" + name + "=x}")) + "{aria-k0=y}\n";
+        var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
+
+        var stopwatch = Stopwatch.StartNew();
+        var document = MarkdownConverter.Parse(markdown, pipeline);
+        stopwatch.Stop();
+
+        var properties = document[0].GetAttributes().Properties!;
+        Assert.HasCount(inOneBlock ? Count + 1 : Count, properties);
+        Assert.Equal(new KeyValuePair<string, string?>("aria-k0", "x"), properties[inOneBlock ? 1 : 0]);
+        Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(10), $"Parsing took {stopwatch.Elapsed}");
+    }
+
+    [Theory]
+    [InlineData("a {aria-a=1 aria-b=2} {aria-b=3 aria-c=4 aria-c=5 aria-d=6 aria-e=7 aria-f=8 aria-g=9 aria-a=10}", "<p aria-a=\"1\" aria-b=\"2\" aria-c=\"4\" aria-d=\"6\" aria-e=\"7\" aria-f=\"8\" aria-g=\"9\">a</p>\n")]
+    [InlineData("a {aria-a=1 aria-a=2} {aria-b=3 aria-b=4 aria-c=5 aria-d=6 aria-e=7 aria-f=8 aria-g=9 aria-h=10} {aria-h=11 aria-i=12}", "<p aria-a=\"1\" aria-a=\"2\" aria-b=\"3\" aria-c=\"5\" aria-d=\"6\" aria-e=\"7\" aria-f=\"8\" aria-g=\"9\" aria-h=\"10\" aria-i=\"12\">a</p>\n")]
+    [InlineData("*a*{aria-a=1 aria-b=2 aria-c=3 aria-d=4 aria-e=5} b {aria-a=6 aria-b=7 aria-c=8 aria-d=9 aria-e=10} *c*{aria-a=11 aria-f=12 aria-g=13 aria-h=14 aria-i=15} {aria-a=16 aria-j=17}", "<p aria-a=\"6\" aria-b=\"7\" aria-c=\"8\" aria-d=\"9\" aria-e=\"10\" aria-j=\"17\"><em aria-a=\"1\" aria-b=\"2\" aria-c=\"3\" aria-d=\"4\" aria-e=\"5\">a</em> b  <em aria-a=\"11\" aria-f=\"12\" aria-g=\"13\" aria-h=\"14\" aria-i=\"15\">c</em></p>\n")]
+    public void MergedPropertiesKeepTheFirstValueOfEachName(string markdown, string expected)
+    {
+        var pipeline = new MarkdownPipelineBuilder().UseGenericAttributes().Build();
+
+        Assert.Equal(expected, MarkdownConverter.ToHtml(markdown, pipeline));
     }
 
     [Theory]

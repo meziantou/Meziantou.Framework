@@ -107,6 +107,14 @@ public class HighlighterTests
     [InlineData("pm")]
     [InlineData("pluto")]
     [InlineData("R")]
+    [InlineData("ml")]
+    [InlineData("cmake.in")]
+    [InlineData("pycon")]
+    [InlineData("tex")]
+    [InlineData("feature")]
+    [InlineData("pascal")]
+    [InlineData("matlab")]
+    [InlineData("postgres")]
     public void IsSupported_KnownLanguage_ReturnsTrue(string language)
     {
         Assert.True(SyntaxHighlighter.IsSupported(language));
@@ -350,6 +358,20 @@ public class HighlighterTests
     public void Compile_ExcludeBeginWithReturnBegin_Throws()
     {
         Assert.Throws<InvalidOperationException>(() => Compiler.Compile(new Mode { Contains = [new Mode { Begin = "a", ExcludeBegin = true, ReturnBegin = true }] }));
+    }
+
+    [Fact]
+    public void Compile_RestartsSubLanguageWithoutSubLanguage_Throws()
+    {
+        Assert.Throws<InvalidOperationException>(() => Compiler.Compile(new Mode { Contains = [new Mode { Begin = "a", End = "b", RestartsSubLanguage = true }] }));
+    }
+
+    [Fact]
+    public void Compile_RestartsSubLanguageWithSubLanguage_Compiles()
+    {
+        var grammar = Compiler.Compile(new Mode { Contains = [new Mode { Begin = "<", End = ">", SubLanguage = "json", RestartsSubLanguage = true }] });
+
+        Assert.Equal("<span class=\"language-json\">&lt;<span class=\"hljs-number\">1</span>&gt;</span>", Tokenizer.Highlight("<1>", grammar, HighlightOptions.Default));
     }
 
     [Fact]

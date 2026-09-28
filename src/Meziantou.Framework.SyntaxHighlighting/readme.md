@@ -110,19 +110,22 @@ The package currently supports these language identifiers and common aliases:
 - `bnf`
 - `c`, `h`
 - `clojure`, `clj`, `edn`
+- `cmake`, `cmake.in`
 - `cpp`, `c++`, `cc`, `h++`, `hpp`, `hh`, `hxx`, `cxx`
 - `csharp`, `cs`, `c#`
 - `css`
 - `dart`
+- `delphi`, `dpr`, `dfm`, `pas`, `pascal`
 - `diff`, `patch`
 - `dockerfile`, `docker`
 - `dos`, `bat`, `cmd`
 - `elixir`, `ex`, `exs`
 - `erlang`, `erl`
 - `fsharp`, `fs`, `f#`
+- `gherkin`, `feature`
 - `go`, `golang`
 - `graphql`, `gql`
-- `groovy`
+- `groovy`, `gradle`
 - `haskell`, `hs`
 - `hcl`, `terraform`, `tf`, `tfvars`
 - `html`, `htm`, `xhtml`
@@ -133,20 +136,25 @@ The package currently supports these language identifiers and common aliases:
 - `json`, `jsonc`
 - `julia`, `jl`
 - `kotlin`, `kt`, `kts`
+- `latex`, `tex`
 - `less`
 - `lua`, `pluto`
 - `makefile`, `mk`, `mak`, `make`
 - `markdown`, `md`, `mkdown`, `mkd`
+- `matlab`
 - `msil`, `il`, `cil`
 - `nginx`, `nginxconf`
 - `objectivec`, `mm`, `objc`, `obj-c`, `obj-c++`, `objective-c++`
+- `ocaml`, `ml`
 - `perl`, `pl`, `pm`
+- `pgsql`, `postgres`, `postgresql`
 - `php`
 - `plaintext`, `text`, `txt`
 - `powershell`, `pwsh`, `ps`, `ps1`
 - `properties`
 - `protobuf`, `proto`
 - `python`, `py`, `gyp`, `ipython`
+- `python-repl`, `pycon`
 - `r`
 - `razor`, `cshtml`, `cshtml-razor`
 - `ruby`, `rb`, `gemspec`, `podspec`, `thor`, `irb`

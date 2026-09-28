@@ -1051,4 +1051,68 @@ class Child extends Parent {
 }
 """);
     }
+
+    [Fact]
+    public void GradleBuildScript_GradleAlias()
+    {
+        AssertHighlighter("gradle",
+"""
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.2.0'
+}
+
+group = 'com.example'
+version = '1.0.0'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    testImplementation "org.junit.jupiter:junit-jupiter:${junitVersion}"
+}
+
+// Run the tests on the JUnit Platform
+tasks.named('test') {
+    useJUnitPlatform()
+}
+""",
+"""
+plugins {
+    id <span class="hljs-string">&#x27;java&#x27;</span>
+    id <span class="hljs-string">&#x27;org.springframework.boot&#x27;</span> version <span class="hljs-string">&#x27;3.2.0&#x27;</span>
+}
+
+group = <span class="hljs-string">&#x27;com.example&#x27;</span>
+version = <span class="hljs-string">&#x27;1.0.0&#x27;</span>
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(<span class="hljs-number">21</span>)
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation <span class="hljs-string">&#x27;org.springframework.boot:spring-boot-starter-web&#x27;</span>
+    testImplementation <span class="hljs-string">&quot;org.junit.jupiter:junit-jupiter:${junitVersion}&quot;</span>
+}
+
+<span class="hljs-comment">// Run the tests on the JUnit Platform</span>
+tasks.named(<span class="hljs-string">&#x27;test&#x27;</span>) {
+    useJUnitPlatform()
+}
+""");
+    }
 }

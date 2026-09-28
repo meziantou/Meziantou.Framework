@@ -6,6 +6,8 @@ namespace Meziantou.Framework.SyntaxHighlighting.Engine;
 
 internal static class Tokenizer
 {
+    private const int MaxSubLanguageDepth = 8;
+
     private enum HitKind { Begin, End, Illegal }
 
     [StructLayout(LayoutKind.Auto)]
@@ -108,7 +110,8 @@ internal static class Tokenizer
 
         public HtmlEmitter Emitter { get; } = new(options, inputLength * 2);
 
-        public int Iterations { get; set; }
+        // The number of sub-language runs in progress, one inside the other.
+        public int SubLanguageDepth { get; set; }
 
         // Set when a grammar stopped making progress; every run then stops and the result is plain text.
         public bool Aborted { get; set; }
@@ -152,6 +155,10 @@ internal static class Tokenizer
         // resumes in that state rather than at the sub-language's root.
         private Dictionary<string, Frame[]>? _continuations;
         private BeginGuards.ClosingTagIndex? _closingTags;
+
+        // Counted per run, like highlight.js: the hit indexes of a sub-language run are relative to its fragment, so a
+        // count shared with the other runs would make a document with many embedded fragments look like a loop.
+        private int _iterations;
 
         /// <summary>The mode stack the run ended in.</summary>
         public Frame[] FinalStack { get; private set; } = [];
@@ -274,7 +281,7 @@ internal static class Tokenizer
         /// </summary>
         private bool CheckForInfiniteLoop(int hitIndex, ref int stalledIndex, ref int stalledIterations)
         {
-            session.Iterations++;
+            _iterations++;
             if (hitIndex == stalledIndex)
             {
                 stalledIterations++;
@@ -285,7 +292,7 @@ internal static class Tokenizer
                 stalledIterations = 0;
             }
 
-            if (stalledIterations > 10_000 || (session.Iterations > 100_000 && session.Iterations > hitIndex * 3))
+            if (stalledIterations > 10_000 || (_iterations > 100_000 && _iterations > hitIndex * 3))
             {
                 session.Aborted = true;
             }
@@ -606,6 +613,9 @@ internal static class Tokenizer
 
         private void PushMode(CompiledMode mode, string? capture)
         {
+            if (mode.RestartsSubLanguage)
+                _continuations?.Remove(mode.SubLanguage!);
+
             var frame = new Frame { Mode = mode, Capture = capture, EndCache = ScanEntry.Empty };
             if (frame.HasOpenScope)
                 _emitter.OpenScope(mode.Scope!, mode.ClassNameAliases);
@@ -624,6 +634,15 @@ internal static class Tokenizer
 
             if (top.SubLanguage is { } subLanguage)
             {
+                // A language can embed itself (e.g. a PL/pgSQL body inside a PL/pgSQL body), so a pathological input
+                // (thousands of unterminated dollar-quoted strings) could nest runs until the stack overflows, each
+                // one holding a copy of the rest of the input. No real code nests that deep.
+                if (session.SubLanguageDepth >= MaxSubLanguageDepth)
+                {
+                    _emitter.AddText(input.AsSpan(start, length));
+                    return;
+                }
+
                 // Embedded languages always ignore illegal lexemes, like highlight.js does.
                 var subRoot = LanguageRegistry.Get(subLanguage, root.MatchTimeout);
                 _continuations ??= new Dictionary<string, Frame[]>(StringComparer.Ordinal);
@@ -631,7 +650,16 @@ internal static class Tokenizer
 
                 _emitter.OpenSubLanguage(subLanguage);
                 var run = new Run(session, input.Substring(start, length), subRoot, ignoreIllegals: true);
-                run.Execute(continuation);
+                session.SubLanguageDepth++;
+                try
+                {
+                    run.Execute(continuation);
+                }
+                finally
+                {
+                    session.SubLanguageDepth--;
+                }
+
                 _emitter.CloseScope();
 
                 _continuations[subLanguage] = run.FinalStack;

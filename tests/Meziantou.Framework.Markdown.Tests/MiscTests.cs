@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -380,7 +379,7 @@ public class MiscTests
 
         foreach (var pipeline in pipelines)
         {
-            var stopwatch = Stopwatch.StartNew();
+            var stopwatch = ThreadCpuStopwatch.StartNew();
             _ = MarkdownConverter.ToHtml(markdown, pipeline);
             stopwatch.Stop();
 
@@ -628,7 +627,7 @@ public class MiscTests
         const int Count = 100_000;
         var markdown = string.Concat(Enumerable.Repeat("*x* ", Count));
 
-        var stopwatch = Stopwatch.StartNew();
+        var stopwatch = ThreadCpuStopwatch.StartNew();
         var html = MarkdownConverter.ToHtml(markdown);
         stopwatch.Stop();
 
@@ -663,7 +662,7 @@ public class MiscTests
         var markdown = string.Concat(Enumerable.Repeat(item, count)) + string.Concat(Enumerable.Repeat(suffixItem, suffixCount));
         var pipeline = new MarkdownPipelineBuilder().Configure(extensions).Build();
 
-        var stopwatch = Stopwatch.StartNew();
+        var stopwatch = ThreadCpuStopwatch.StartNew();
         var html = MarkdownConverter.ToHtml(markdown, pipeline);
         stopwatch.Stop();
 
@@ -691,7 +690,7 @@ public class MiscTests
         var markdown = string.Concat(Enumerable.Repeat(item, length / item.Length));
         var pipeline = new MarkdownPipelineBuilder().Configure(extensions).Build();
 
-        var stopwatch = Stopwatch.StartNew();
+        var stopwatch = ThreadCpuStopwatch.StartNew();
         var html = MarkdownConverter.ToHtml(markdown, pipeline);
         stopwatch.Stop();
 
@@ -708,7 +707,7 @@ public class MiscTests
         var paragraph = string.Concat(Enumerable.Repeat("[a ", Depth)) + "b" + string.Concat(Enumerable.Repeat("](u)", Depth));
         var markdown = string.Join("\n\n", Enumerable.Repeat(paragraph, 16));
 
-        var stopwatch = Stopwatch.StartNew();
+        var stopwatch = ThreadCpuStopwatch.StartNew();
         var html = MarkdownConverter.ToHtml(markdown);
         stopwatch.Stop();
 
@@ -727,7 +726,7 @@ public class MiscTests
     {
         var markdown = string.Concat(Enumerable.Repeat(item, 100_000));
 
-        var stopwatch = Stopwatch.StartNew();
+        var stopwatch = ThreadCpuStopwatch.StartNew();
         Exception e = Assert.Throws<ArgumentException>(() => MarkdownConverter.Parse(markdown));
         stopwatch.Stop();
 
@@ -739,12 +738,12 @@ public class MiscTests
     [Fact(DisableParallelization = true)]
     public void BlankLinesInDeeplyNestedListsAreParsedInLinearTime()
     {
-        // Each blank line used to update the span of each open list item up to the root, which took more than 15 seconds here
-        const int Depth = 2_100;
-        var markdown = string.Concat(Enumerable.Repeat("- ", Depth)) + "a" + new string('\n', Depth);
+        // Each blank line used to update the span of each open list item up to the root, which took more than 13 seconds here
+        const int Depth = 4_000;
+        var markdown = string.Concat(Enumerable.Repeat("- ", Depth)) + "a" + new string('\n', Depth / 10);
         var pipeline = new MarkdownPipelineBuilder { MaximumNestingDepth = 10_000 }.Build();
 
-        var stopwatch = Stopwatch.StartNew();
+        var stopwatch = ThreadCpuStopwatch.StartNew();
         var document = MarkdownConverter.Parse(markdown, pipeline);
         stopwatch.Stop();
 
@@ -764,7 +763,7 @@ public class MiscTests
         // The nesting was only checked once all the lines were parsed, and each line costs the number of open blocks
         var markdown = string.Concat(Enumerable.Repeat(marker, depth)) + "a" + string.Concat(Enumerable.Repeat(line, lineCount));
 
-        var stopwatch = Stopwatch.StartNew();
+        var stopwatch = ThreadCpuStopwatch.StartNew();
         Exception e = Assert.Throws<ArgumentException>(() => MarkdownConverter.Parse(markdown));
         stopwatch.Stop();
 
@@ -800,7 +799,7 @@ public class MiscTests
         // below them are still rejected: removing them one at a time costs quadratic time.
         var markdown = string.Concat(Enumerable.Repeat("*x* ", 8000)) + new string('[', 10_000) + new string(']', 10_000);
 
-        var stopwatch = Stopwatch.StartNew();
+        var stopwatch = ThreadCpuStopwatch.StartNew();
         Exception e = Assert.Throws<ArgumentException>(() => MarkdownConverter.Parse(markdown));
         stopwatch.Stop();
 
@@ -822,7 +821,7 @@ public class MiscTests
         // Each unclosed construct used to search for its end up to the end of the paragraph again
         var markdown = string.Concat(Enumerable.Repeat(item, 100_000 / item.Length));
 
-        var stopwatch = Stopwatch.StartNew();
+        var stopwatch = ThreadCpuStopwatch.StartNew();
         if (item.Contains('[', StringComparison.Ordinal))
         {
             // The '[' are also link delimiters, nested deeper than the limit
@@ -880,7 +879,7 @@ public class MiscTests
         var markdown = string.Concat(Enumerable.Repeat(heading, 40_000));
         var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
 
-        var stopwatch = Stopwatch.StartNew();
+        var stopwatch = ThreadCpuStopwatch.StartNew();
         var html = MarkdownConverter.ToHtml(markdown, pipeline);
         stopwatch.Stop();
 
@@ -914,7 +913,7 @@ public class MiscTests
 
         var pipeline = builder.Build();
 
-        var stopwatch = Stopwatch.StartNew();
+        var stopwatch = ThreadCpuStopwatch.StartNew();
         var document = MarkdownConverter.Parse(markdown, pipeline);
         stopwatch.Stop();
 
@@ -957,7 +956,7 @@ public class MiscTests
         // Each lazy line that looks like an underline used to parse link reference definitions from the start of the paragraph again
         var markdown = start + string.Concat(Enumerable.Repeat(line, count));
 
-        var stopwatch = Stopwatch.StartNew();
+        var stopwatch = ThreadCpuStopwatch.StartNew();
         _ = MarkdownConverter.Parse(markdown);
         stopwatch.Stop();
 

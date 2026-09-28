@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
 using Meziantou.Framework.Markdown.Extensions.AutoLinks;
@@ -207,7 +206,7 @@ public class TestAutoLinks
         var markdown = string.Concat(Enumerable.Repeat(item, 160_000 / item.Length));
         var pipeline = new MarkdownPipelineBuilder().Configure(extensions).Build();
 
-        var stopwatch = Stopwatch.StartNew();
+        var stopwatch = ThreadCpuStopwatch.StartNew();
         var html = MarkdownConverter.ToHtml(markdown, pipeline);
         stopwatch.Stop();
 

@@ -157,6 +157,8 @@ internal static class LanguageRegistry
             ["perl"] = () => Perl.Instance,
             ["pl"] = () => Perl.Instance,
             ["pm"] = () => Perl.Instance,
+            ["lua"] = () => Lua.Instance,
+            ["pluto"] = () => Lua.Instance,
         }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
     // Grammars compiled with a non-default match timeout, keyed by the default grammar instance.

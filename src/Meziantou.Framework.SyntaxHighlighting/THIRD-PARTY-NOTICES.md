@@ -7,7 +7,7 @@ components. Each component is used under its own license.
 
 The engine in `Engine/` and the grammars in `Languages/`
 are derived from highlight.js (https://highlightjs.org/), v11.10.0
-(v11.11.1 for the Arduino, C, CoffeeScript, Dart, Erlang, Java, Lua, Makefile, Nim, Nix, Ruby, Rust and Swift grammars).
+(v11.11.1 for the Apache, Arduino, C, CoffeeScript, Dart, Erlang, Java, Lua, Makefile, Nim, Nix, Ruby, Rust and Swift grammars).
 
 highlight.js is distributed under the BSD-3-Clause license, the full text of
 which is reproduced below as required by the license terms.

@@ -106,6 +106,7 @@ if (!SyntaxHighlighter.TryHighlight(code, language, out var html))
 
 The package currently supports these language identifiers and common aliases:
 
+- `apache`, `apacheconf`, `htaccess`
 - `arduino`, `ino`
 - `armasm`, `arm`
 - `bash`, `sh`, `zsh`, `ksh`

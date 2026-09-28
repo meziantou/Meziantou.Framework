@@ -257,6 +257,9 @@ internal static class LanguageRegistry
             ["prolog"] = () => Prolog.Instance,
             ["nix"] = () => Nix.Instance,
             ["nixos"] = () => Nix.Instance,
+            ["apache"] = () => Apache.Instance,
+            ["apacheconf"] = () => Apache.Instance,
+            ["htaccess"] = () => Apache.Instance,
         }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
     // Grammars compiled with a non-default match timeout, keyed by the default grammar instance.

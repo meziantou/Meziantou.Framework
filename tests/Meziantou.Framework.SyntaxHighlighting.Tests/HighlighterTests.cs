@@ -149,6 +149,7 @@ public class HighlighterTests
     [InlineData("elm")]
     [InlineData("prolog")]
     [InlineData("nixos")]
+    [InlineData("htaccess")]
     public void IsSupported_KnownLanguage_ReturnsTrue(string language)
     {
         Assert.True(SyntaxHighlighter.IsSupported(language));

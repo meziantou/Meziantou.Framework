@@ -18,7 +18,7 @@ public class TestOrderedList
             new C(),
         };
 
-        // Replacing B with D. Order should now be A, D, B.
+        // Replacing B with D. Order should now be A, D, C.
         var result = list.Replace<B>(new D());
         Assert.True(result);
         Assert.HasCount(3, list);

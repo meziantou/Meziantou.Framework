@@ -435,6 +435,31 @@ public sealed class LargeInputTests
         Assert.EndsWith("<span class=\"hljs-attr\">b</span><span class=\"hljs-punctuation\">=</span><span class=\"hljs-string\">2</span>", await highlight, StringComparison.Ordinal);
     }
 
+    // A YAML plain scalar used to be matched over the whole rest of a run after each quoted string, number, literal or tag
+    // that wins against it at the same position (2 to 3 seconds for 100,000 characters, a minute for this document).
+    [Theory]
+    [InlineData("\"", false)]
+    [InlineData("\"a\"", false)]
+    [InlineData("\"a\"'a'", false)]
+    [InlineData("1-", false)]
+    [InlineData("true\"a\"", false)]
+    [InlineData("!x\"a\"", false)]
+    [InlineData("\"", true)]
+    [InlineData("1-", true)]
+    public async Task Highlight_YamlLongRun_CompletesInReasonableTime(string part, bool inFlowCollection)
+    {
+        var run = string.Concat(Enumerable.Repeat(part, 400_000 / part.Length));
+        var code = "a: " + (inFlowCollection ? "[" + run + "]" : run) + "\nkey: 1";
+
+        var isFallback = false;
+        var highlight = Task.Run(() => HighlightWithFallbackDetection(code, "yaml", out isFallback));
+        var finished = await Task.WhenAny(highlight, Task.Delay(Budget)) == highlight;
+
+        Assert.True(finished, $"Highlighting {code.Length} characters of 'yaml' did not finish within {Budget.TotalSeconds:F0}s.");
+        Assert.False(isFallback, $"Highlighting {code.Length} characters of 'yaml' was abandoned.");
+        Assert.EndsWith("<span class=\"hljs-attr\">key:</span> <span class=\"hljs-number\">1</span>", await highlight, StringComparison.Ordinal);
+    }
+
     // The guard against grammars that stop making progress used to count the hits of every run of the document, but
     // compared the count with a position in the current fragment, so a document with many embedded fragments was
     // abandoned (plain text).

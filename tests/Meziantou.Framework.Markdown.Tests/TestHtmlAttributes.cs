@@ -2,7 +2,6 @@
 // This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
-using System.Diagnostics;
 using System.Globalization;
 
 using Meziantou.Framework.Markdown.Extensions.GenericAttributes;
@@ -231,7 +230,7 @@ public class TestHtmlAttributes
         var markdown = string.Concat(Enumerable.Repeat(item, 160 * 1024 / item.Length)) + suffix;
         var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
 
-        var stopwatch = Stopwatch.StartNew();
+        var stopwatch = ThreadCpuStopwatch.StartNew();
         var html = MarkdownConverter.ToHtml(markdown, pipeline);
         stopwatch.Stop();
 
@@ -253,7 +252,7 @@ public class TestHtmlAttributes
             : "a" + string.Concat(names.Select(name => "{" + name + "=x}")) + "{aria-k0=y}\n";
         var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
 
-        var stopwatch = Stopwatch.StartNew();
+        var stopwatch = ThreadCpuStopwatch.StartNew();
         var document = MarkdownConverter.Parse(markdown, pipeline);
         stopwatch.Stop();
 

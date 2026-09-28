@@ -144,6 +144,10 @@ internal static class LanguageRegistry
             ["protobuf"] = () => Protobuf.Instance,
             ["proto"] = () => Protobuf.Instance,
             ["properties"] = () => Properties.Instance,
+            ["hcl"] = () => Hcl.Instance,
+            ["terraform"] = () => Hcl.Instance,
+            ["tf"] = () => Hcl.Instance,
+            ["tfvars"] = () => Hcl.Instance,
         }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
     // Grammars compiled with a non-default match timeout, keyed by the default grammar instance.

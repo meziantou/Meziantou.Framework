@@ -124,6 +124,7 @@ The package currently supports these language identifiers and common aliases:
 - `graphql`, `gql`
 - `groovy`
 - `haskell`, `hs`
+- `hcl`, `terraform`, `tf`, `tfvars`
 - `html`, `htm`, `xhtml`
 - `http`, `https`
 - `ini`, `toml`, `gitconfig`

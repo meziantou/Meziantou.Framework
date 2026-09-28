@@ -127,6 +127,8 @@ internal static class LanguageRegistry
             ["edn"] = () => Clojure.Instance,
             ["julia"] = () => Julia.Instance,
             ["jl"] = () => Julia.Instance,
+            ["java"] = () => Java.Instance,
+            ["jsp"] = () => Java.Instance,
         }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
     // Grammars compiled with a non-default match timeout, keyed by the default grammar instance.

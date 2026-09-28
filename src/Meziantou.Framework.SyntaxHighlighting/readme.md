@@ -126,6 +126,7 @@ The package currently supports these language identifiers and common aliases:
 - `html`, `htm`, `xhtml`
 - `http`, `https`
 - `ini`, `toml`, `gitconfig`
+- `java`, `jsp`
 - `javascript`, `js`, `jsx`, `mjs`, `cjs`
 - `json`, `jsonc`
 - `julia`, `jl`

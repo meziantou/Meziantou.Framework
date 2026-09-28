@@ -173,6 +173,22 @@ print ts = timespan(1.02:03:04), tm = time(1d), d = datetime(2024-01-01 10:00:00
     }
 
     [Fact]
+    public void Numbers_UnclosedDateTimeLiteral()
+    {
+        AssertHighlighter("kql",
+"""
+T | extend d = datetime(2024-01-01
+| take 10
+| extend t = timespan(1d
+""",
+"""
+T <span class="hljs-operator">|</span> <span class="hljs-keyword">extend</span> d = <span class="hljs-type">datetime</span>(<span class="hljs-number">2024-01-01</span>
+<span class="hljs-operator">|</span> <span class="hljs-keyword">take</span> <span class="hljs-number">10</span>
+<span class="hljs-operator">|</span> <span class="hljs-keyword">extend</span> t = <span class="hljs-type">timespan</span>(<span class="hljs-number">1d</span>
+""");
+    }
+
+    [Fact]
     public void Data_Types()
     {
         AssertHighlighter("kql",

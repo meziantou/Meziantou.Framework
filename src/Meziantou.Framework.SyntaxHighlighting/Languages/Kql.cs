@@ -151,12 +151,13 @@ internal static class Kql
             Match = IdentifierStart + @"(?<![.$])(?:0[xX][0-9A-Fa-f]+|\d+(?:\.\d+)?(?:[eE][+-]?\d+)?" + TimespanUnit + "?)(?![\\w.])",
         };
 
-        // `datetime(2024-01-01 10:00)`, `timespan(1.02:03:04)`: the literal is not a string.
+        // `datetime(2024-01-01 10:00)`, `timespan(1.02:03:04)`: the literal is not a string. Like a string, an unclosed one
+        // ends with its line.
         var dateTimeLiteral = new Mode
         {
             BeginParts = [IdentifierStart + "(?:datetime|date|timespan|time)", @"[ \t]*\("],
             BeginScope = new Dictionary<int, string> { [1] = "type" },
-            End = @"\)",
+            End = @"\)|$",
             Contains = [new Mode { Scope = "number", Match = @"[^()\s]+(?:[ \t]+[^()\s]+)*" }],
         };
 

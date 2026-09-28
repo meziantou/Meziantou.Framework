@@ -17,7 +17,7 @@ internal readonly struct BlockWrapper(Block block) : IEquatable<BlockWrapper>
 
     public bool Equals(BlockWrapper other) => ReferenceEquals(Block, other.Block);
 
-    public override bool Equals([NotNullWhen(true)] object? obj) => Block.Equals(obj);
+    public override bool Equals([NotNullWhen(true)] object? obj) => obj is BlockWrapper other && Equals(other);
 
     public override int GetHashCode() => Block.GetHashCode();
 }

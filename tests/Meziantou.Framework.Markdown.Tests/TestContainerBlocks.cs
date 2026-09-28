@@ -352,4 +352,15 @@ public class TestContainerBlocks
         Assert.Equal(expected.Count - 1, container.IndexOf(container.LastChild!));
         Assert.Equal(expected.Count - 1, container.LastIndexOf(container.LastChild!));
     }
+
+    [Fact]
+    public void BoxedBlockWrappersAreEqualWhenTheyWrapTheSameBlock()
+    {
+        var block = new ParagraphBlock();
+        object boxed = new BlockWrapper(block);
+
+        Assert.True(new BlockWrapper(block).Equals(boxed));
+        Assert.Equal(new BlockWrapper(block).GetHashCode(), boxed.GetHashCode());
+        Assert.False(new BlockWrapper(block).Equals((object)new BlockWrapper(new ParagraphBlock())));
+    }
 }

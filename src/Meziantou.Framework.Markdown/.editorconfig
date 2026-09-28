@@ -21,9 +21,6 @@ dotnet_diagnostic.CA1819.severity = none
 # MA0046: Use EventHandler<T> to declare events
 dotnet_diagnostic.MA0046.severity = none
 
-# MA0026: Fix TODO comment. The TODO comments come from Markdig and document known limitations.
-dotnet_diagnostic.MA0026.severity = none
-
 # CA2000: ValueStringBuilder returns its pooled buffer in ToString(); a using declaration would make it readonly, and it is
 # passed by reference to helper methods.
 dotnet_code_quality.CA2000.excluded_symbol_names = T:Meziantou.Framework.Markdown.Helpers.ValueStringBuilder

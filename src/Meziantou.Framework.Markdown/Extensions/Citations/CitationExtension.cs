@@ -39,7 +39,6 @@ public class CitationExtension : IMarkdownExtension
             var emphasisRenderer = renderer.ObjectRenderers.FindExact<EmphasisInlineRenderer>();
             if (emphasisRenderer != null)
             {
-                // TODO: Use an ordered list instead as we don't know if this specific GetTag has been already added
                 var previousTag = emphasisRenderer.GetTag;
                 emphasisRenderer.GetTag = inline => GetTag(inline) ?? previousTag(inline);
             }

@@ -95,10 +95,8 @@ public class ThematicBreakParser : BlockParser
             Span = new SourceSpan(startPosition, line.End),
             ThematicChar = breakChar,
             ThematicCharCount = breakCharCount,
-            // TODO: should we separate whitespace before/after?
-            //BeforeWhitespace = beforeWhitespace,
-            //AfterWhitespace = processor.PopBeforeWhitespace(processor.CurrentLineStartPosition),
-            Content = new StringSlice(line.Text, processor.TriviaStart, line.End, line.NewLine), //include whitespace for now
+            // The content includes the whitespace before and after the thematic break characters
+            Content = new StringSlice(line.Text, processor.TriviaStart, line.End, line.NewLine),
         };
 
         if (processor.TrackTrivia)

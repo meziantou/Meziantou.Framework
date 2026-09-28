@@ -145,9 +145,7 @@ public class TestNormalize
     [Fact]
     public void HtmlBlock()
     {
-        /*AssertNormalizeNoTrim(@"<div id=""foo"" class=""bar
-baz"">
-</ div >");*/ // TODO: Bug: Throws Exception during emit
+        AssertNormalizeNoTrim("<div id=\"foo\" class=\"bar\nbaz\">\n</ div >", "<div id=\"foo\" class=\"bar\nbaz\">\n</ div >\n");
     }
 
     [Fact]

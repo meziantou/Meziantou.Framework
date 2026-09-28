@@ -350,28 +350,11 @@ public class BlockProcessor
         }
         else
         {
-            Line.Start = _originalLineStart;
-            Column = 0;
-            ColumnBeforeIndent = 0;
-            StartBeforeIndent = _originalLineStart;
+            MoveToOriginalLineStart();
         }
         for (; Line.Start <= Line.End && Column < newColumn; Line.Start++)
         {
-            var c = Line.Text[Line.Start];
-            if (c == '\t')
-            {
-                Column = CharHelper.AddTab(Column);
-            }
-            else
-            {
-                if (!c.IsSpaceOrTab())
-                {
-                    ColumnBeforeIndent = Column + 1;
-                    StartBeforeIndent = Line.Start + 1;
-                }
-
-                Column++;
-            }
+            AdvanceColumn();
         }
         if (Column > newColumn)
         {
@@ -415,36 +398,45 @@ public class BlockProcessor
             return;
         }
 
-        // TODO: factorize the following code with what is done with GoToColumn
-
         // If we have found the first space, we need to recalculate the correct column
-        Line.Start = _originalLineStart;
-        Column = 0;
-        ColumnBeforeIndent = 0;
-        StartBeforeIndent = _originalLineStart;
-
+        MoveToOriginalLineStart();
         for (; Line.Start < targetStart; Line.Start++)
         {
-            var c = Line.Text[Line.Start];
-            if (c == '\t')
-            {
-                Column = CharHelper.AddTab(Column);
-            }
-            else
-            {
-                if (!c.IsSpaceOrTab())
-                {
-                    ColumnBeforeIndent = Column + 1;
-                    StartBeforeIndent = Line.Start + 1;
-                }
-
-                Column++;
-            }
+            AdvanceColumn();
         }
 
         // Reset the indent
         ColumnBeforeIndent = Column;
         StartBeforeIndent = Start;
+    }
+
+    private void MoveToOriginalLineStart()
+    {
+        Line.Start = _originalLineStart;
+        Column = 0;
+        ColumnBeforeIndent = 0;
+        StartBeforeIndent = _originalLineStart;
+    }
+
+    // Accounts for the character at Line.Start in the column, before the caller moves to the next character
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void AdvanceColumn()
+    {
+        var c = Line.Text[Line.Start];
+        if (c == '\t')
+        {
+            Column = CharHelper.AddTab(Column);
+        }
+        else
+        {
+            if (!c.IsSpaceOrTab())
+            {
+                ColumnBeforeIndent = Column + 1;
+                StartBeforeIndent = Line.Start + 1;
+            }
+
+            Column++;
+        }
     }
 
     /// <summary>

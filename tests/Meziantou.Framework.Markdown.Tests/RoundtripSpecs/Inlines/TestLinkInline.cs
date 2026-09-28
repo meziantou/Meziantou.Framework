@@ -5,7 +5,7 @@ namespace Meziantou.Framework.Markdown.Tests.RoundtripSpecs.Inlines;
 public class TestLinkInline
 {
     [Theory]
-    [InlineData("[a]")] // TODO: this is not a link but a paragraph
+    [InlineData("[a]")] // Not a link: there is no link reference definition, so it is parsed as a paragraph
     [InlineData("[a]()")]
 
     [InlineData("[](b)")]

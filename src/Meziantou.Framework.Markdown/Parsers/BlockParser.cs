@@ -32,9 +32,8 @@ public abstract class BlockParser : ParserBase<BlockProcessor>, IBlockParser<Blo
         return false;
     }
 
-    // TODO: Add comment
     /// <summary>
-    /// Occurs when closed.
+    /// Occurs when a block opened by this parser is closed. The block is complete and can be post-processed.
     /// </summary>
     public event ProcessBlockDelegate? Closed;
 

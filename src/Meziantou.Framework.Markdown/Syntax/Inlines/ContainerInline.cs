@@ -283,7 +283,6 @@ public class ContainerInline : Inline, IEnumerable<Inline>
         while (child != null)
         {
             var next = child.NextSibling;
-            // TODO: optimize this
             child.Remove();
             nextSibling.InsertAfter(child);
             nextSibling = child;
@@ -303,7 +302,6 @@ public class ContainerInline : Inline, IEnumerable<Inline>
         while (child != null)
         {
             var next = child.NextSibling;
-            // TODO: optimize this
             child.Remove();
             container.AppendChild(child);
             child = next;

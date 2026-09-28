@@ -95,7 +95,6 @@ Later in a text we are using HTML and it becomes an abbr tag HTML
     [Fact]
     public void TestListBug()
     {
-        // TODO: Add this test back to the CommonMark specs
         var text = @"- item1
   - item2
     - item3

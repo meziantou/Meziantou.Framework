@@ -196,9 +196,20 @@ public class TestHtmlAttributes
     [InlineData("data-src", false)]
     [InlineData("x-init", false)]
     [InlineData("hx-on:click", false)]
+    [InlineData("name", false)]
+    [InlineData("class", false)]
+    [InlineData("ariaLabel", false)]
     [InlineData("title", true)]
     [InlineData("LANG", true)]
     [InlineData("aria-label", true)]
+    [InlineData("ARIA-HIDDEN", true)]
+    [InlineData("role", true)]
+    [InlineData("alt", true)]
+    [InlineData("colspan", true)]
+    [InlineData("start", true)]
+    [InlineData("tabindex", true)]
+    [InlineData("target", true)]
+    [InlineData("datetime", true)]
     public void GenericAttributesIsSafeAttributeName(string name, bool expected)
     {
         Assert.Equal(expected, GenericAttributesExtension.IsSafeAttributeName(name));

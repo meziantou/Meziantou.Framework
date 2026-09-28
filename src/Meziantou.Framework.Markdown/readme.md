@@ -85,7 +85,7 @@ var pipeline = new MarkdownPipelineBuilder()
 | `UseFigures` | `^^^` blocks rendered as `<figure>` |
 | `UseFooters` | `^^` blocks rendered as `<footer>` |
 | `UseFootnotes` | `[^1]` footnotes |
-| `UseGenericAttributes` | `{#id .class key=value}` attributes on blocks and inlines. By default, only `align`, `dir`, `height`, `lang`, `role`, `title`, `width` and `aria-*` are written; pass a filter to allow more. Enable it last. |
+| `UseGenericAttributes` | `{#id .class key=value}` attributes on blocks and inlines. By default, only the attributes that describe the content are written, such as `title`, `lang`, `alt`, `colspan`, `target`, `role` and `aria-*` (the list is below); pass a filter to allow more. Enable it last. |
 | `UseGlobalization` | Adds `dir="rtl"` to right-to-left content |
 | `UseGridTables` | Pandoc grid tables |
 | `UseJiraLinks` | `PROJECT-123` references rendered as links to a Jira instance |
@@ -117,6 +117,22 @@ CommonMark allows raw HTML, and it is copied to the output unchanged. Links are 
 - call `DisableHtml()` on the pipeline builder, so that raw HTML is written as escaped text,
 - keep the default attribute filter of `UseGenericAttributes`. It only allows attributes that describe the content: `style`, `data-*` and the directive attributes of client-side frameworks (`x-init`, `hx-get`...) can run script or cover the page,
 - sanitize the generated HTML (for example with `Meziantou.Framework.HtmlSanitizer`) to remove unsafe URLs and attributes.
+
+The default attribute filter of `UseGenericAttributes` allows the attributes that only describe the content: the
+general attributes that `Meziantou.Framework.HtmlSanitizer` allows, other than `class`. They are `abbr`, `align`, `alt`,
+`axis`, `bgcolor`, `border`, `cellpadding`, `cellspacing`, `clear`, `color`, `cols`, `colspan`, `compact`, `coords`,
+`datetime`, `decoding`, `dir`, `face`, `headers`, `height`, `hidden`, `hreflang`, `hspace`, `ismap`, `lang`,
+`language`, `loading`, `nohref`, `nowrap`, `open`, `rel`, `rev`, `reversed`, `role`, `rows`, `rowspan`, `rules`,
+`scope`, `scrolling`, `shape`, `size`, `span`, `start`, `summary`, `tabindex`, `target`, `title`, `translate`, `type`,
+`valign`, `value`, `vspace`, `width` and `aria-*`. `{#id}` and `{.class}` are always written. When the Markdown is
+trusted, pass a filter to allow more attributes:
+
+```csharp
+var pipeline = new MarkdownPipelineBuilder()
+    .UseAdvancedExtensions()
+    .UseGenericAttributes(name => GenericAttributesExtension.IsSafeAttributeName(name) || name.StartsWith("data-", StringComparison.OrdinalIgnoreCase))
+    .Build();
+```
 
 Nesting depth is limited so that hostile input cannot overflow the stack: a document nested too deeply throws an
 `ArgumentException` instead. Catch it when you process untrusted input.
@@ -201,5 +217,7 @@ them. These properties are only populated when trivia tracking is enabled.
 - The static `Markdig.Markdown` class is named `MarkdownConverter`, so it does not share its name with the namespace.
 - The package targets .NET 10 and later only. .NET Framework and .NET Standard are not supported.
 - `HostProviderBuilder` is a static class.
+- Generic attributes only write the attributes that describe the content by default (see [Security](#security)).
+  Markdig writes every attribute; pass `_ => true` as the filter of `UseGenericAttributes` to do the same.
 - The self pipeline extension (`UseSelfPipeline`) is removed: it let the Markdown document choose the extensions of the
   pipeline, including removing the ones that the host used to make the output safe.

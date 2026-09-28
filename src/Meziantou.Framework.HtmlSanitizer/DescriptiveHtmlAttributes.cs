@@ -1,7 +1,8 @@
 namespace Meziantou.Framework.Sanitizers;
 
 // The HTML attributes that only describe the content: whatever their value, they cannot run script or load a resource.
-// Attributes that hold a URL are not part of them, as their value must be validated.
+// Attributes that hold a URL are not part of them, as their value must be validated. This file is also compiled into
+// Meziantou.Framework.Markdown, whose generic attributes only allow these attributes by default.
 internal static class DescriptiveHtmlAttributes
 {
     public static string[] Names { get; } =

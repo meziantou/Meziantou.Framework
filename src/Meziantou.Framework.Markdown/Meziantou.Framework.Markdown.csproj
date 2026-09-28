@@ -12,4 +12,8 @@
   <ItemGroup>
     <InternalsVisibleTo Include="Meziantou.Framework.Markdown.Tests" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="../Meziantou.Framework.HtmlSanitizer/DescriptiveHtmlAttributes.cs" Link="Extensions/GenericAttributes/DescriptiveHtmlAttributes.cs" />
+  </ItemGroup>
 </Project>

@@ -15,7 +15,7 @@ Attributes can be of 3 kinds:
 - A class element, starting by `.` that will be appended to the CSS class property of the HTML element
 - a `name=value` or `name="value"` that will be appended as an attribute of the HTML element
 
-By default, only the attributes that describe the content are written: `align`, `dir`, `height`, `lang`, `role`, `title`, `width` and `aria-*`. Other attributes, such as event handlers, URL attributes, `style` or `data-*`, are removed, because they can run script or change the page when the Markdown is not trusted. `GenericAttributesExtension.AttributeFilter` (or the filter passed to `UseGenericAttributes`) changes this policy.
+By default, only the attributes that describe the content are written: `abbr`, `align`, `alt`, `axis`, `bgcolor`, `border`, `cellpadding`, `cellspacing`, `clear`, `color`, `cols`, `colspan`, `compact`, `coords`, `datetime`, `decoding`, `dir`, `face`, `headers`, `height`, `hidden`, `hreflang`, `hspace`, `ismap`, `lang`, `language`, `loading`, `nohref`, `nowrap`, `open`, `rel`, `rev`, `reversed`, `role`, `rows`, `rowspan`, `rules`, `scope`, `scrolling`, `shape`, `size`, `span`, `start`, `summary`, `tabindex`, `target`, `title`, `translate`, `type`, `valign`, `value`, `vspace`, `width` and `aria-*`. Other attributes, such as event handlers, URL attributes, `style`, `name` or `data-*`, are removed, because they can run script or change the page when the Markdown is not trusted. `GenericAttributesExtension.AttributeFilter` (or the filter passed to `UseGenericAttributes`) changes this policy.
 
 The following shows that attributes is attached to the current block or the previous inline:
 
@@ -67,9 +67,9 @@ Attribute values can be one character long
 Attributes that are not allowed by the filter are removed:
 
 ```````````````````````````````` example
-[Foo](url){title=t data-x=1 onclick="alert(1)" style="position:fixed" x-init="alert(1)" href=javascript:alert(1)}
+[Foo](url){title=t target=_blank data-x=1 onclick="alert(1)" style="position:fixed" x-init="alert(1)" href=javascript:alert(1) name=x}
 .
-<p><a href="url" title="t">Foo</a></p>
+<p><a href="url" title="t" target="_blank">Foo</a></p>
 ````````````````````````````````
 
 Attributes that occur immediately before a block element, on a line by themselves, affect that element

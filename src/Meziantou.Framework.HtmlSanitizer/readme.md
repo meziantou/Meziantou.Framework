@@ -211,6 +211,9 @@ By default, the sanitizer allows common HTML attributes like:
 - **General attributes**: `abbr`, `align`, `alt`, `axis`, `bgcolor`, `border`, `cellpadding`, `cellspacing`, `class`, `clear`, `color`, `cols`, `colspan`, `compact`, `coords`, `datetime`, `decoding`, `dir`, `face`, `headers`, `height`, `hidden`, `hreflang`, `hspace`, `ismap`, `lang`, `language`, `loading`, `nohref`, `nowrap`, `open`, `rel`, `rev`, `reversed`, `role`, `rows`, `rowspan`, `rules`, `scope`, `scrolling`, `shape`, `size`, `span`, `start`, `summary`, `tabindex`, `target`, `title`, `translate`, `type`, `valign`, `value`, `vspace`, `width`
 - **Attribute prefixes**: `aria-*`
 
+The general attributes other than `class` are shared with the generic attributes of
+[Meziantou.Framework.Markdown](../Meziantou.Framework.Markdown), which allows them by default.
+
 ## URL Sanitizer
 
 The library includes a `UrlSanitizer` class that validates URLs:

@@ -8,6 +8,7 @@ using Meziantou.Framework.Markdown.Renderers;
 using Meziantou.Framework.Markdown.Renderers.Html;
 using Meziantou.Framework.Markdown.Syntax;
 using Meziantou.Framework.Markdown.Syntax.Inlines;
+using Meziantou.Framework.Sanitizers;
 
 namespace Meziantou.Framework.Markdown.Extensions.GenericAttributes;
 
@@ -18,19 +19,11 @@ namespace Meziantou.Framework.Markdown.Extensions.GenericAttributes;
 /// <seealso cref="IMarkdownExtension" />
 public class GenericAttributesExtension : IMarkdownExtension
 {
-    // Attributes that only describe the content. A deny-list is not enough: besides event handlers and URL attributes,
-    // client-side frameworks run the value of their own attributes (x-init, hx-get, v-html, data-bind...), and style
-    // can cover the page with an invisible link.
-    private static readonly HashSet<string> SafeAttributeNames = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "align",
-        "dir",
-        "height",
-        "lang",
-        "role",
-        "title",
-        "width",
-    };
+    // Attributes that only describe the content, the same as the ones that Meziantou.Framework.HtmlSanitizer allows
+    // without validating their value. A deny-list is not enough: besides event handlers and URL attributes, client-side
+    // frameworks run the value of their own attributes (x-init, hx-get, v-html, data-bind...), and style can cover the
+    // page with an invisible link.
+    private static readonly HashSet<string> SafeAttributeNames = new(DescriptiveHtmlAttributes.Names, StringComparer.OrdinalIgnoreCase);
 
     /// <summary>
     /// Gets or sets the predicate that decides whether an attribute parsed from the Markdown (other than the id and the
@@ -39,11 +32,12 @@ public class GenericAttributesExtension : IMarkdownExtension
     public Func<string, bool> AttributeFilter { get; set; } = IsSafeAttributeName;
 
     /// <summary>
-    /// Returns <see langword="true"/> for the attributes that only describe the content: <c>align</c>, <c>dir</c>,
-    /// <c>height</c>, <c>lang</c>, <c>role</c>, <c>title</c>, <c>width</c> and <c>aria-*</c>.
-    /// Other attributes are rejected, including event handlers, attributes that hold a URL, <c>style</c>, and the
-    /// <c>data-*</c> and directive attributes that client-side frameworks execute. Use <see cref="AttributeFilter"/> to
-    /// allow more attributes when the Markdown is trusted.
+    /// Returns <see langword="true"/> for the attributes that only describe the content, such as <c>title</c>,
+    /// <c>lang</c>, <c>alt</c>, <c>colspan</c>, <c>target</c>, <c>role</c> and <c>aria-*</c>: the general attributes that
+    /// Meziantou.Framework.HtmlSanitizer allows, other than <c>class</c>.
+    /// Other attributes are rejected, including event handlers, attributes that hold a URL, <c>style</c>, <c>name</c>,
+    /// and the <c>data-*</c> and directive attributes that client-side frameworks execute. Use
+    /// <see cref="AttributeFilter"/> to allow more attributes when the Markdown is trusted.
     /// </summary>
     /// <param name="name">The name of the attribute.</param>
     /// <returns><see langword="true"/> if the attribute can be written to the HTML output.</returns>
@@ -51,7 +45,20 @@ public class GenericAttributesExtension : IMarkdownExtension
     {
         ArgumentNullException.ThrowIfNull(name);
 
-        return SafeAttributeNames.Contains(name) || name.StartsWith("aria-", StringComparison.OrdinalIgnoreCase);
+        if (SafeAttributeNames.Contains(name))
+        {
+            return true;
+        }
+
+        foreach (var prefix in DescriptiveHtmlAttributes.Prefixes)
+        {
+            if (name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /// <summary>

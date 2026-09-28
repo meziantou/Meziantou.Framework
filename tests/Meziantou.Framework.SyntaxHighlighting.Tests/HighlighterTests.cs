@@ -153,6 +153,7 @@ public class HighlighterTests
     [InlineData("vimscript")]
     [InlineData("gawk")]
     [InlineData("pp")]
+    [InlineData("thrift")]
     public void IsSupported_KnownLanguage_ReturnsTrue(string language)
     {
         Assert.True(SyntaxHighlighter.IsSupported(language));

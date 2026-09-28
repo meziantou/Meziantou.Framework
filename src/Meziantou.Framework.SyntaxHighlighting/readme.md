@@ -107,6 +107,7 @@ if (!SyntaxHighlighter.TryHighlight(code, language, out var html))
 The package currently supports these language identifiers and common aliases:
 
 - `arduino`, `ino`
+- `armasm`, `arm`
 - `bash`, `sh`, `zsh`, `ksh`
 - `bicep`, `bicepparam`
 - `bnf`

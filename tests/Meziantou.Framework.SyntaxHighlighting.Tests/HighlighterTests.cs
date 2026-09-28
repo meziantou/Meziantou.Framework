@@ -131,6 +131,7 @@ public class HighlighterTests
     [InlineData("vbscript-html")]
     [InlineData("wat")]
     [InlineData("ll")]
+    [InlineData("arm")]
     public void IsSupported_KnownLanguage_ReturnsTrue(string language)
     {
         Assert.True(SyntaxHighlighter.IsSupported(language));

@@ -638,6 +638,28 @@ public sealed class TestPipeTable
     }
 
     // Timed: tests running at the same time would slow it down and make the time budget flaky
+    [Theory(DisableParallelization = true)]
+    [InlineData("![|")]
+    [InlineData("![||")]
+    public void ManyNestedImagesWithPipesAreParsedInLinearTime(string imageStart)
+    {
+        // The pipes of each image were searched from the end of the delimiters, then removed by moving the delimiters after
+        // them: the line breaks of all the images nested in it
+        const int Depth = 9_000;
+        const int LineCount = 400_000;
+        var markdown = "|" + string.Concat(Enumerable.Repeat(imageStart, Depth)) + string.Concat(Enumerable.Repeat("x\n", LineCount)) + string.Concat(Enumerable.Repeat("](u)", Depth)) + "\n";
+        var pipeline = new MarkdownPipelineBuilder().UsePipeTables().Build();
+
+        var stopwatch = Stopwatch.StartNew();
+        var document = MarkdownConverter.Parse(markdown, pipeline);
+        stopwatch.Stop();
+
+        Assert.Empty(document.OfType<Table>());
+        Assert.HasCount(Depth, document.Descendants<LinkInline>());
+        Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(10), $"Parsing took {stopwatch.Elapsed}");
+    }
+
+    // Timed: tests running at the same time would slow it down and make the time budget flaky
     [Fact(DisableParallelization = true)]
     public void ManyTablesInAParagraphAreParsedWithTriviaInLinearTime()
     {

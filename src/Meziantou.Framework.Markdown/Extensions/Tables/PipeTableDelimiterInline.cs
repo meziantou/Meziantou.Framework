@@ -25,6 +25,9 @@ public class PipeTableDelimiterInline : DelimiterInline
     /// </summary>
     public int LocalLineIndex { get; set; }
 
+    // The index of this pipe in the delimiters of the table being parsed, or -1 once it is removed from them
+    internal int TableDelimiterIndex { get; set; } = -1;
+
     /// <summary>
     /// Performs the to literal operation.
     /// </summary>

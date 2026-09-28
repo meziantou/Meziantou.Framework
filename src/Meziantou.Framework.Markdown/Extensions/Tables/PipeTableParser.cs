@@ -122,7 +122,7 @@ public class PipeTableParser : InlineParser, IPostInlineProcessor
             if (!isFirstLineEmpty)
             {
                 var lineBreak = processor.Inline!;
-                tableState.ColumnAndLineDelimiters.Add(lineBreak);
+                tableState.AddDelimiter(lineBreak);
                 tableState.EndOfLines.Add(lineBreak);
                 tableState.LineStart = slice.Start;
                 if (tableState.EndOfTable is null && !tableState.IsInvalidTable)
@@ -149,7 +149,7 @@ public class PipeTableParser : InlineParser, IPostInlineProcessor
         }
         else
         {
-            processor.Inline = new PipeTableDelimiterInline(this)
+            var pipe = new PipeTableDelimiterInline(this)
             {
                 Span = new SourceSpan(position, position),
                 Line = globalLineIndex,
@@ -161,67 +161,11 @@ public class PipeTableParser : InlineParser, IPostInlineProcessor
             tableState.LineHasPipe = true;
             slice.SkipChar(); // Skip the `|` character
 
-            tableState.ColumnAndLineDelimiters.Add(processor.Inline);
+            processor.Inline = pipe;
+            tableState.AddDelimiter(pipe);
         }
 
         return true;
-    }
-
-    // Removes the pipes of an inline that was just closed (e.g. a link) from the delimiters of the table, and returns whether
-    // a pipe delimiter is next to them: before the last one, or after the first one once the other ones are removed. The
-    // pipes are in reverse order, and they are the last pipes added to the delimiters, so the delimiters that follow the
-    // first one are all in the inline: they are removed in one pass over these delimiters. Searching and removing each
-    // pipe in the whole list made the pipes of the links of a paragraph quadratic.
-    private static bool RemoveDelimitersOfClosedInline(List<Inline> delimiters, List<PipeTableDelimiterInline> pipes)
-    {
-        var lastPipeIndex = delimiters.LastIndexOf(pipes[0]);
-        var hasDelimiterNextToPipes = lastPipeIndex > 0 && delimiters[lastPipeIndex - 1] is PipeTableDelimiterInline;
-        if (pipes.Count == 1)
-        {
-            if (lastPipeIndex >= 0)
-            {
-                delimiters.RemoveAt(lastPipeIndex);
-            }
-
-            return hasDelimiterNextToPipes;
-        }
-
-        var firstPipeIndex = delimiters.LastIndexOf(pipes[^1]);
-        if (firstPipeIndex < 0)
-        {
-            // Not expected: every pipe is a delimiter until it is removed. The first delimiter is the one "after" it.
-            RemoveAll(delimiters, pipes, 0);
-            return hasDelimiterNextToPipes || (delimiters.Count > 0 && delimiters[0] is PipeTableDelimiterInline);
-        }
-
-        var removed = new HashSet<Inline>(pipes, ReferenceEqualityComparer.Instance);
-        for (var i = firstPipeIndex + 1; i < delimiters.Count; i++)
-        {
-            if (!removed.Contains(delimiters[i]))
-            {
-                hasDelimiterNextToPipes |= delimiters[i] is PipeTableDelimiterInline;
-                break;
-            }
-        }
-
-        RemoveAll(delimiters, removed, firstPipeIndex);
-        return hasDelimiterNextToPipes;
-    }
-
-    // Removes the given delimiters found from the index start, in one pass
-    private static void RemoveAll(List<Inline> delimiters, IEnumerable<Inline> items, int start)
-    {
-        var removed = items as HashSet<Inline> ?? new HashSet<Inline>(items, ReferenceEqualityComparer.Instance);
-        var count = start;
-        for (var i = start; i < delimiters.Count; i++)
-        {
-            if (!removed.Contains(delimiters[i]))
-            {
-                delimiters[count++] = delimiters[i];
-            }
-        }
-
-        delimiters.RemoveRange(count, delimiters.Count - count);
     }
 
     // Whether the lines before the end of the table are a table, which ends the paragraph: the lines after it are a new
@@ -468,7 +412,7 @@ public class PipeTableParser : InlineParser, IPostInlineProcessor
                 }
 
                 // If we didn't have any delimiter before and after the delimiters we just removed, we mark the processor of the current line as no pipe
-                if (!RemoveDelimitersOfClosedInline(tableState.ColumnAndLineDelimiters, delimitersToRemove))
+                if (!tableState.RemovePipesOfClosedInline(delimitersToRemove))
                 {
                     tableState.LineHasPipe = false;
                 }
@@ -1552,7 +1496,146 @@ public class PipeTableParser : InlineParser, IPostInlineProcessor
 
         public bool LineHasPipe { get; set; }
 
-        public List<Inline> ColumnAndLineDelimiters { get; } = [];
+        // The pipes and line breaks of the paragraph, in source order. The pipes of a closed inline (e.g. a link) are removed
+        // from them while the paragraph is parsed: they are unlinked from a doubly linked list over the indexes of the list,
+        // and the list is compacted when it is read. Removing them from the list itself shifted all the delimiters after
+        // them (e.g. the line breaks of the images nested in an image), and finding them searched the list.
+        private readonly List<Inline> _delimiters = [];
+
+        private readonly List<int> _previousDelimiters = [];
+
+        private readonly List<int> _nextDelimiters = [];
+
+        private int _firstDelimiter = -1;
+
+        private int _lastDelimiter = -1;
+
+        private int _removedDelimiterCount;
+
+        // Once the table is post-processed, the list is edited directly and the links are no longer used
+        public List<Inline> ColumnAndLineDelimiters
+        {
+            get
+            {
+                CompactDelimiters();
+                return _delimiters;
+            }
+        }
+
+        public void AddDelimiter(Inline delimiter)
+        {
+            var index = _delimiters.Count;
+            _delimiters.Add(delimiter);
+            _previousDelimiters.Add(_lastDelimiter);
+            _nextDelimiters.Add(-1);
+            if (_lastDelimiter >= 0)
+            {
+                _nextDelimiters[_lastDelimiter] = index;
+            }
+            else
+            {
+                _firstDelimiter = index;
+            }
+
+            _lastDelimiter = index;
+            if (delimiter is PipeTableDelimiterInline pipe)
+            {
+                pipe.TableDelimiterIndex = index;
+            }
+        }
+
+        // Removes the pipes of an inline that was just closed (e.g. a link) from the delimiters, and returns whether a pipe
+        // delimiter is next to them: before the last one, or after the first one once the other ones are removed. The pipes
+        // are in reverse order.
+        public bool RemovePipesOfClosedInline(List<PipeTableDelimiterInline> pipes)
+        {
+            var lastPipeIndex = pipes[0].TableDelimiterIndex;
+            var hasDelimiterNextToPipes = lastPipeIndex >= 0 && IsPipe(_previousDelimiters[lastPipeIndex]);
+            var firstPipeIndex = pipes[^1].TableDelimiterIndex;
+            foreach (var pipe in pipes)
+            {
+                RemovePipe(pipe);
+            }
+
+            if (pipes.Count > 1)
+            {
+                // The first pipe is removed last, so the delimiter after it is the first one after the removed pipes. When it
+                // is not a delimiter (not expected: every pipe is one until it is removed), it is the first delimiter.
+                hasDelimiterNextToPipes |= IsPipe(firstPipeIndex >= 0 ? _nextDelimiters[firstPipeIndex] : _firstDelimiter);
+            }
+
+            return hasDelimiterNextToPipes;
+        }
+
+        private bool IsPipe(int index) => index >= 0 && _delimiters[index] is PipeTableDelimiterInline;
+
+        private void RemovePipe(PipeTableDelimiterInline pipe)
+        {
+            var index = pipe.TableDelimiterIndex;
+            if (index < 0 || index >= _delimiters.Count || !ReferenceEquals(_delimiters[index], pipe))
+            {
+                return;
+            }
+
+            var previous = _previousDelimiters[index];
+            var next = _nextDelimiters[index];
+            if (previous >= 0)
+            {
+                _nextDelimiters[previous] = next;
+            }
+            else
+            {
+                _firstDelimiter = next;
+            }
+
+            if (next >= 0)
+            {
+                _previousDelimiters[next] = previous;
+            }
+            else
+            {
+                _lastDelimiter = previous;
+            }
+
+            pipe.TableDelimiterIndex = -1;
+            _removedDelimiterCount++;
+        }
+
+        // Removes the unlinked pipes from the list. The linked delimiters are in increasing order of their indexes, so they
+        // are moved in place.
+        private void CompactDelimiters()
+        {
+            if (_removedDelimiterCount == 0)
+            {
+                return;
+            }
+
+            var count = 0;
+            for (var index = _firstDelimiter; index >= 0; index = _nextDelimiters[index])
+            {
+                var delimiter = _delimiters[index];
+                _delimiters[count] = delimiter;
+                if (delimiter is PipeTableDelimiterInline pipe)
+                {
+                    pipe.TableDelimiterIndex = count;
+                }
+
+                count++;
+            }
+
+            _delimiters.RemoveRange(count, _delimiters.Count - count);
+            _previousDelimiters.Clear();
+            _nextDelimiters.Clear();
+            for (var index = 0; index < count; index++)
+            {
+                _previousDelimiters.Add(index - 1);
+                _nextDelimiters.Add(index + 1 < count ? index + 1 : -1);
+            }
+
+            _firstDelimiter = count > 0 ? 0 : -1;
+            _lastDelimiter = count - 1;
+            _removedDelimiterCount = 0;
+        }
 
         public List<TableCell> Cells { get; } = [];
 

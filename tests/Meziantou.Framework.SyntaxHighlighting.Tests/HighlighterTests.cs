@@ -106,6 +106,7 @@ public class HighlighterTests
     [InlineData("rb")]
     [InlineData("pm")]
     [InlineData("pluto")]
+    [InlineData("R")]
     public void IsSupported_KnownLanguage_ReturnsTrue(string language)
     {
         Assert.True(SyntaxHighlighter.IsSupported(language));

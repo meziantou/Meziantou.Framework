@@ -147,6 +147,7 @@ The package currently supports these language identifiers and common aliases:
 - `properties`
 - `protobuf`, `proto`
 - `python`, `py`, `gyp`, `ipython`
+- `r`
 - `razor`, `cshtml`, `cshtml-razor`
 - `ruby`, `rb`, `gemspec`, `podspec`, `thor`, `irb`
 - `rust`, `rs`

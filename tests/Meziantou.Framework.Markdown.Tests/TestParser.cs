@@ -259,8 +259,8 @@ public class TestParser
     {
         // Normalize the output to make it compatible with CommonMark specs
         html = html.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n').Trim();
-        html = Regex.Replace(html, @"\s+</li>", "</li>");
-        html = Regex.Replace(html, @"<li>\s+", "<li>");
+        html = Regex.Replace(html, @"\s+</li>", "</li>", RegexOptions.None, Regex.InfiniteMatchTimeout);
+        html = Regex.Replace(html, @"<li>\s+", "<li>", RegexOptions.None, Regex.InfiniteMatchTimeout);
         return html;
     }
 

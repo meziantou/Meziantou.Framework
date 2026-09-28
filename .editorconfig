@@ -177,8 +177,3 @@ dotnet_diagnostic.MFAS0050.severity = none
 dotnet_diagnostic.MFAS0054.severity = none
 # MFAS0055: Use Assert.DoesNotContain with the expected value instead of an equality predicate
 dotnet_diagnostic.MFAS0055.severity = none
-
-[tests/Meziantou.Framework.Markdown.Tests/**.cs]
-# MA0009: Add regex evaluation timeout
-# The patterns are constants and only run on test data.
-dotnet_diagnostic.MA0009.severity = none

@@ -114,7 +114,7 @@ public class TestMediaLinks
 
         public TestHostProvider(string provider, string replace)
         {
-            _matcher = new Regex(provider);
+            _matcher = new Regex(provider, RegexOptions.None, Regex.InfiniteMatchTimeout);
             _replacement = replace;
         }
     }

@@ -4,9 +4,13 @@ namespace Meziantou.Framework.SyntaxHighlighting.Languages;
 
 internal static class Html
 {
-    public static CompiledMode Instance { get; } = Compiler.Compile(CreateMode());
+    public static CompiledMode Instance { get; } = Compiler.Compile(CreateModes().Root);
 
-    private static Mode CreateMode()
+    /// <summary>
+    /// Creates a new instance of the modes of the grammar. The grammars that extend HTML (Vue, Svelte) add their own
+    /// modes to it before compiling its root.
+    /// </summary>
+    internal static HtmlModes CreateModes()
     {
         var root = new Mode { CaseInsensitive = true };
 
@@ -78,6 +82,17 @@ internal static class Html
         openTagName.Starts = attributes;
         closeTag.Contains = [closeTagName, closeTagEnd];
 
-        return root;
+        return new HtmlModes(root, attributes, attributeValue, doubleQuotedValue, singleQuotedValue, scriptTag, scriptBody, styleTag, styleBody);
     }
+
+    /// <param name="Root">The root of the grammar: the content of the document.</param>
+    /// <param name="Attributes">The attributes of an open tag.</param>
+    /// <param name="AttributeValue">The value of an attribute, whose variants are the quoted and unquoted values.</param>
+    /// <param name="DoubleQuotedValue">The variant of <paramref name="AttributeValue"/> for a double-quoted value.</param>
+    /// <param name="SingleQuotedValue">The variant of <paramref name="AttributeValue"/> for a single-quoted value.</param>
+    /// <param name="ScriptTag">The open tag of a <c>script</c> element, which starts <paramref name="ScriptBody"/>.</param>
+    /// <param name="ScriptBody">The content of a <c>script</c> element.</param>
+    /// <param name="StyleTag">The open tag of a <c>style</c> element, which starts <paramref name="StyleBody"/>.</param>
+    /// <param name="StyleBody">The content of a <c>style</c> element.</param>
+    internal sealed record HtmlModes(Mode Root, Mode Attributes, Mode AttributeValue, Mode DoubleQuotedValue, Mode SingleQuotedValue, Mode ScriptTag, Mode ScriptBody, Mode StyleTag, Mode StyleBody);
 }

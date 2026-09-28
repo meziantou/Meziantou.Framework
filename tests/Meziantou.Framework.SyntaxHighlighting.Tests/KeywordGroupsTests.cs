@@ -18,6 +18,9 @@ public class KeywordGroupsTests
     {
         string[] expected =
         [
+        "arduino:false:keyword+literal",
+        "arduino:nullptr:keyword+literal",
+        "arduino:true:keyword+literal",
         "cpp:false:keyword+literal",
         "cpp:nullptr:keyword+literal",
         "cpp:true:keyword+literal",
@@ -26,9 +29,11 @@ public class KeywordGroupsTests
         "dart:dynamic:keyword+built_in",
         "julia:false:keyword+literal",
         "julia:true:keyword+literal",
+        "llvm:opaque:keyword+type",
         "msil:native:built_in+keyword",
         "objectivec:id:keyword+type",
         "pgsql:WARNING:keyword+built_in",
+        "puppet:gid:literal+built_in",
         "rust:false:keyword+literal",
         "rust:true:keyword+literal",
         "sql:bigint:keyword+type",

@@ -106,44 +106,71 @@ if (!SyntaxHighlighter.TryHighlight(code, language, out var html))
 
 The package currently supports these language identifiers and common aliases:
 
+- `apache`, `apacheconf`, `htaccess`
+- `arduino`, `ino`
+- `armasm`, `arm`
+- `asciidoc`, `adoc`
+- `awk`, `gawk`, `mawk`, `nawk`
 - `bash`, `sh`, `zsh`, `ksh`
+- `bicep`, `bicepparam`
 - `bnf`
 - `c`, `h`
 - `clojure`, `clj`, `edn`
+- `clojure-repl`
 - `cmake`, `cmake.in`
+- `coffeescript`, `coffee`, `cson`, `iced`
 - `cpp`, `c++`, `cc`, `h++`, `hpp`, `hh`, `hxx`, `cxx`
+- `crystal`, `cr`
 - `csharp`, `cs`, `c#`
 - `css`
+- `d`
 - `dart`
 - `delphi`, `dpr`, `dfm`, `pas`, `pascal`
 - `diff`, `patch`
+- `django`, `jinja`, `jinja2`, `j2`
+- `dns`, `bind`, `zone`
 - `dockerfile`, `docker`
 - `dos`, `bat`, `cmd`
 - `elixir`, `ex`, `exs`
+- `elm`
+- `erb`
 - `erlang`, `erl`
+- `erlang-repl`
+- `fortran`, `f90`, `f95`, `f03`, `f08`, `f77`, `for`, `f`
 - `fsharp`, `fs`, `f#`
 - `gherkin`, `feature`
+- `glsl`, `vert`, `frag`
 - `go`, `golang`
 - `graphql`, `gql`
 - `groovy`, `gradle`
+- `haml`
+- `handlebars`, `hbs`, `html.hbs`, `html.handlebars`, `htmlbars`, `mustache`
 - `haskell`, `hs`
 - `hcl`, `terraform`, `tf`, `tfvars`
 - `html`, `htm`, `xhtml`
 - `http`, `https`
-- `ini`, `toml`, `gitconfig`
+- `ini`, `gitconfig`
 - `java`, `jsp`
 - `javascript`, `js`, `jsx`, `mjs`, `cjs`
 - `json`, `jsonc`
 - `julia`, `jl`
+- `julia-repl`, `jldoctest`
 - `kotlin`, `kt`, `kts`
+- `kql`, `kusto`
 - `latex`, `tex`
 - `less`
+- `lisp`, `elisp`, `emacs-lisp`, `common-lisp`
+- `llvm`, `ll`
 - `lua`, `pluto`
 - `makefile`, `mk`, `mak`, `make`
 - `markdown`, `md`, `mkdown`, `mkd`
 - `matlab`
+- `mermaid`, `mmd`
 - `msil`, `il`, `cil`
 - `nginx`, `nginxconf`
+- `nim`, `nims`
+- `nix`, `nixos`
+- `node-repl`
 - `objectivec`, `mm`, `objc`, `obj-c`, `obj-c++`, `objective-c++`
 - `ocaml`, `ml`
 - `perl`, `pl`, `pm`
@@ -151,8 +178,10 @@ The package currently supports these language identifiers and common aliases:
 - `php`
 - `plaintext`, `text`, `txt`
 - `powershell`, `pwsh`, `ps`, `ps1`
+- `prolog`
 - `properties`
 - `protobuf`, `proto`
+- `puppet`, `pp`
 - `python`, `py`, `gyp`, `ipython`
 - `python-repl`, `pycon`
 - `r`
@@ -160,13 +189,28 @@ The package currently supports these language identifiers and common aliases:
 - `ruby`, `rb`, `gemspec`, `podspec`, `thor`, `irb`
 - `rust`, `rs`
 - `scala`
+- `scheme`, `scm`
 - `scss`
 - `shell`, `console`, `shellsession`
+- `solidity`, `sol`
 - `sql`
+- `svelte`
 - `swift`
+- `tcl`, `tk`
+- `thrift`
+- `toml`
+- `twig`, `craftcms`
 - `typescript`, `ts`, `tsx`, `mts`, `cts`
 - `urlencoded`, `x-www-form-urlencoded`
 - `vbnet`, `vb`
+- `vbscript`, `vbs`
+- `vbscript-html`
+- `verilog`, `v`, `sv`, `svh`
+- `vhdl`, `vhd`
+- `vim`, `vimscript`
+- `vue`
+- `wasm`, `wat`, `wast`
 - `x86asm`
 - `xml`, `xsd`, `xsl`, `plist`, `rss`, `atom`, `svg`
 - `yaml`, `yml`
+- `zig`, `zon`

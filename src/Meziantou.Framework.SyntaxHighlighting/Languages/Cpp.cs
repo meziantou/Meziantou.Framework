@@ -23,25 +23,29 @@ internal static class Cpp
         "typeid","typename","union","using","virtual","volatile","while","xor","xor_eq",
     ];
 
-    private static readonly string[] ReservedTypes =
+    internal static readonly string[] ReservedTypes =
     [
         "bool","char","char16_t","char32_t","char8_t","double","float","int","long","short","void",
         "wchar_t","unsigned","signed","const","static",
     ];
 
-    private static readonly string[] Literals = ["NULL", "false", "nullopt", "nullptr", "true"];
-    private static readonly string[] BuiltIn = ["_Pragma"];
+    internal static readonly string[] Literals = ["NULL", "false", "nullopt", "nullptr", "true"];
+    internal static readonly string[] BuiltIn = ["_Pragma"];
 
-    public static CompiledMode Instance { get; } = Compiler.Compile(CreateMode());
+    public static CompiledMode Instance { get; } = Compiler.Compile(CreateMode(ReservedTypes, Literals, BuiltIn));
 
-    private static Mode CreateMode()
+    /// <summary>
+    /// Creates the C++ grammar with the given keyword groups, so that a superset of C++ (Arduino) can add its own
+    /// words to every mode that recognizes the C++ keywords.
+    /// </summary>
+    internal static Mode CreateMode(string[] types, string[] literals, string[] builtIns)
     {
         var keywords = Engine.Keywords.FromMap(new Dictionary<string, string[]>(StringComparer.Ordinal)
         {
-            ["type"] = ReservedTypes,
+            ["type"] = types,
             ["keyword"] = ReservedKeywords,
-            ["literal"] = Literals,
-            ["built_in"] = BuiltIn,
+            ["literal"] = literals,
+            ["built_in"] = builtIns,
         });
 
         var cLineCommentBackslash = new Mode { Begin = @"\\\n" };

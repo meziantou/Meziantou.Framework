@@ -121,6 +121,21 @@ public class TestNormalize
     }
 
     [Fact]
+    public void SoftLineBreaksCanBeRenderedAsHardLineBreaks()
+    {
+        var markdown = "a\nb  \nc\\\nd";
+        var document = MarkdownConverter.Parse(markdown);
+        using var writer = new StringWriter();
+        var renderer = new NormalizeRenderer(writer);
+        renderer.ObjectRenderers.Find<Renderers.Normalize.Inlines.LineBreakInlineRenderer>()!.RenderAsHardlineBreak = true;
+
+        renderer.Render(document);
+
+        Assert.Equal("a\\\nb  \nc\\\nd", writer.ToString());
+        Assert.Equal("<p>a<br />\nb<br />\nc<br />\nd</p>\n", MarkdownConverter.ToHtml(writer.ToString()));
+    }
+
+    [Fact]
     public void Backslash()
     {
         AssertNormalizeNoTrim("This is a hardline  \nAnd this is another hardline\\\nThis is standard newline");

@@ -13,7 +13,7 @@ namespace Meziantou.Framework.Markdown.Renderers.Normalize.Inlines;
 public class LineBreakInlineRenderer : NormalizeObjectRenderer<LineBreakInline>
 {
     /// <summary>
-    /// Gets or sets a value indicating whether to render this softline break as a Normalize hardline break tag (&lt;br /&gt;)
+    /// Gets or sets a value indicating whether to render soft line breaks as hard line breaks (a backslash at the end of the line)
     /// </summary>
     public bool RenderAsHardlineBreak { get; set; }
 
@@ -25,6 +25,10 @@ public class LineBreakInlineRenderer : NormalizeObjectRenderer<LineBreakInline>
         if (obj.IsHard)
         {
             renderer.Write(obj.IsBackslash ? "\\" : "  ");
+        }
+        else if (RenderAsHardlineBreak)
+        {
+            renderer.Write('\\');
         }
         renderer.WriteLine();
     }

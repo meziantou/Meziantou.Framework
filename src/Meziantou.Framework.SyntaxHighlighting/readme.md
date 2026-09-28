@@ -184,6 +184,7 @@ The package currently supports these language identifiers and common aliases:
 - `vbscript`, `vbs`
 - `vbscript-html`
 - `verilog`, `v`, `sv`, `svh`
+- `vhdl`, `vhd`
 - `wasm`, `wat`, `wast`
 - `x86asm`
 - `xml`, `xsd`, `xsl`, `plist`, `rss`, `atom`, `svg`

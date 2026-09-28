@@ -110,6 +110,7 @@ public class HighlighterTests
     [InlineData("ml")]
     [InlineData("cmake.in")]
     [InlineData("pycon")]
+    [InlineData("tex")]
     public void IsSupported_KnownLanguage_ReturnsTrue(string language)
     {
         Assert.True(SyntaxHighlighter.IsSupported(language));

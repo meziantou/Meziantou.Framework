@@ -56,6 +56,20 @@ public sealed class LargeInputTests
         Assert.Contains("<span class=\"hljs-keyword\">class</span>", html[^100..], ignoreCase: false);
     }
 
+    // Before a LaTeX3 macro name could only start right after a backslash, looking for the next one scanned a run of letters
+    // from each of its positions to the end of the run (half a minute for this document).
+    [Fact]
+    public async Task Highlight_LatexLongLetterRun_CompletesInReasonableTime()
+    {
+        var code = "\\x " + string.Concat(Enumerable.Repeat("aa_", 40_000)) + "\n\\end";
+
+        var highlight = Task.Run(() => HighlightWithFallbackDetection(code, "latex", out _));
+        var finished = await Task.WhenAny(highlight, Task.Delay(Budget)) == highlight;
+
+        Assert.True(finished, $"Highlighting {code.Length} characters of 'latex' did not finish within {Budget.TotalSeconds:F0}s.");
+        Assert.EndsWith("<span class=\"hljs-keyword\">\\end</span>", await highlight, StringComparison.Ordinal);
+    }
+
     // A properties key used to be matched from each of its positions, which is quadratic on a long key made of escapes
     // (a minute and a half for 60,000 backslashes).
     [Theory]

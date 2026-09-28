@@ -167,6 +167,8 @@ internal static class LanguageRegistry
             ["python-repl"] = () => Pycon.Instance,
             ["pycon"] = () => Pycon.Instance,
             ["gradle"] = () => Groovy.Instance,
+            ["latex"] = () => Latex.Instance,
+            ["tex"] = () => Latex.Instance,
         }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
     // Grammars compiled with a non-default match timeout, keyed by the default grammar instance.

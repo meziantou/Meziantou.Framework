@@ -134,6 +134,7 @@ The package currently supports these language identifiers and common aliases:
 - `json`, `jsonc`
 - `julia`, `jl`
 - `kotlin`, `kt`, `kts`
+- `latex`, `tex`
 - `less`
 - `lua`, `pluto`
 - `makefile`, `mk`, `mak`, `make`

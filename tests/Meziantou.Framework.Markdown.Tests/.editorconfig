@@ -1,5 +1,0 @@
-root = false
-
-[*.cs]
-# MA0009: Regular expressions should not be vulnerable to Denial of Service attacks. The patterns are constants and only run on test data.
-dotnet_diagnostic.MA0009.severity = none

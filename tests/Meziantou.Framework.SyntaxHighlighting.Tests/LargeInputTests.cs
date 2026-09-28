@@ -414,6 +414,27 @@ public sealed class LargeInputTests
         Assert.EndsWith("<span class=\"hljs-keyword\">SELECT</span> <span class=\"hljs-number\">2</span>;", await highlight, StringComparison.Ordinal);
     }
 
+    // A urlencoded value used to be matched over the whole rest of a run after each `=` or name that wins against it at the
+    // same position, and a name was looked for from each character of a run of name characters (4 seconds for 100,000
+    // characters, a minute for this document).
+    [Theory]
+    [InlineData("=")]
+    [InlineData("a=")]
+    [InlineData("=a")]
+    [InlineData("a==")]
+    public async Task Highlight_UrlEncodedLongRun_CompletesInReasonableTime(string part)
+    {
+        var code = "a=1&" + string.Concat(Enumerable.Repeat(part, 400_000 / part.Length)) + "&b=2";
+
+        var isFallback = false;
+        var highlight = Task.Run(() => HighlightWithFallbackDetection(code, "urlencoded", out isFallback));
+        var finished = await Task.WhenAny(highlight, Task.Delay(Budget)) == highlight;
+
+        Assert.True(finished, $"Highlighting {code.Length} characters of 'urlencoded' did not finish within {Budget.TotalSeconds:F0}s.");
+        Assert.False(isFallback, $"Highlighting {code.Length} characters of 'urlencoded' was abandoned.");
+        Assert.EndsWith("<span class=\"hljs-attr\">b</span><span class=\"hljs-punctuation\">=</span><span class=\"hljs-string\">2</span>", await highlight, StringComparison.Ordinal);
+    }
+
     // The guard against grammars that stop making progress used to count the hits of every run of the document, but
     // compared the count with a position in the current fragment, so a document with many embedded fragments was
     // abandoned (plain text).

@@ -217,6 +217,24 @@ public sealed class LargeInputTests
         Assert.EndsWith("<span class=\"hljs-attr\">key</span> = <span class=\"hljs-number\">1</span>", await highlight, StringComparison.Ordinal);
     }
 
+    // A Mermaid link text (`-- text -->`) is only looked for from the first opening of a line, and the backward scan that
+    // finds that opening only runs from an opening: either mistake makes a long line quadratic.
+    [Theory]
+    [InlineData("-")]
+    [InlineData("- ")]
+    [InlineData("A-->")]
+    [InlineData("-- a ")]
+    public async Task Highlight_MermaidLongLine_CompletesInReasonableTime(string part)
+    {
+        var code = "flowchart LR\n" + string.Concat(Enumerable.Repeat(part, 60_000 / part.Length)) + "\nA --> B";
+
+        var highlight = Task.Run(() => HighlightWithFallbackDetection(code, "mermaid", out _));
+        var finished = await Task.WhenAny(highlight, Task.Delay(Budget)) == highlight;
+
+        Assert.True(finished, $"Highlighting {code.Length} characters of 'mermaid' did not finish within {Budget.TotalSeconds:F0}s.");
+        Assert.EndsWith("A <span class=\"hljs-operator\">--&gt;</span> B", await highlight, StringComparison.Ordinal);
+    }
+
     // An AsciiDoc strong, emphasis or smart quote mark used to scan the rest of its line or paragraph for a closing mark
     // from each unclosed mark (8 to 40 seconds for the single-line documents).
     [Theory]

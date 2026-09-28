@@ -164,6 +164,7 @@ The package currently supports these language identifiers and common aliases:
 - `makefile`, `mk`, `mak`, `make`
 - `markdown`, `md`, `mkdown`, `mkd`
 - `matlab`
+- `mermaid`, `mmd`
 - `msil`, `il`, `cil`
 - `nginx`, `nginxconf`
 - `nim`, `nims`

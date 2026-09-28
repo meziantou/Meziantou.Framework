@@ -274,6 +274,8 @@ internal static class LanguageRegistry
             ["asciidoc"] = () => AsciiDoc.Instance,
             ["adoc"] = () => AsciiDoc.Instance,
             ["toml"] = () => Toml.Instance,
+            ["mermaid"] = () => Mermaid.Instance,
+            ["mmd"] = () => Mermaid.Instance,
         }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
     // Grammars compiled with a non-default match timeout, keyed by the default grammar instance.

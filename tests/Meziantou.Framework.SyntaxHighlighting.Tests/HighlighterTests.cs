@@ -157,6 +157,7 @@ public class HighlighterTests
     [InlineData("zone")]
     [InlineData("adoc")]
     [InlineData("toml")]
+    [InlineData("mmd")]
     public void IsSupported_KnownLanguage_ReturnsTrue(string language)
     {
         Assert.True(SyntaxHighlighter.IsSupported(language));

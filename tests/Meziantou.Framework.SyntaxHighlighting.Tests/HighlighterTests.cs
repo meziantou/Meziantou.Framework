@@ -138,6 +138,7 @@ public class HighlighterTests
     [InlineData("HAML")]
     [InlineData("vue")]
     [InlineData("Svelte")]
+    [InlineData("nims")]
     public void IsSupported_KnownLanguage_ReturnsTrue(string language)
     {
         Assert.True(SyntaxHighlighter.IsSupported(language));

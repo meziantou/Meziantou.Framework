@@ -228,6 +228,8 @@ internal static class LanguageRegistry
             ["haml"] = () => Haml.Instance,
             ["vue"] = () => Vue.Instance,
             ["svelte"] = () => Svelte.Instance,
+            ["nim"] = () => Nim.Instance,
+            ["nims"] = () => Nim.Instance,
         }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
     // Grammars compiled with a non-default match timeout, keyed by the default grammar instance.

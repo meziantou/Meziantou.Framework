@@ -156,6 +156,7 @@ The package currently supports these language identifiers and common aliases:
 - `matlab`
 - `msil`, `il`, `cil`
 - `nginx`, `nginxconf`
+- `nim`, `nims`
 - `node-repl`
 - `objectivec`, `mm`, `objc`, `obj-c`, `obj-c++`, `objective-c++`
 - `ocaml`, `ml`

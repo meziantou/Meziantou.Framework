@@ -394,6 +394,26 @@ public sealed class LargeInputTests
         Assert.EndsWith("(<span class=\"hljs-keyword\">def</span> <span class=\"hljs-title\">x</span> <span class=\"hljs-number\">1</span>)", await highlight, StringComparison.Ordinal);
     }
 
+    // The PostgreSQL illegal pattern `\W\s*\(\*` used to be tried from each whitespace of a run of whitespace, each time
+    // scanning to the end of the run (4 seconds for 100,000 characters, a minute for this document).
+    [Theory]
+    [InlineData("\n")]
+    [InlineData(" ")]
+    [InlineData("\t")]
+    [InlineData(" \n")]
+    public async Task Highlight_PgsqlLongWhitespaceRun_CompletesInReasonableTime(string part)
+    {
+        var code = "SELECT 1;" + string.Concat(Enumerable.Repeat(part, 400_000 / part.Length)) + "SELECT 2;";
+
+        var isFallback = false;
+        var highlight = Task.Run(() => HighlightWithFallbackDetection(code, "pgsql", out isFallback));
+        var finished = await Task.WhenAny(highlight, Task.Delay(Budget)) == highlight;
+
+        Assert.True(finished, $"Highlighting {code.Length} characters of 'pgsql' did not finish within {Budget.TotalSeconds:F0}s.");
+        Assert.False(isFallback, $"Highlighting {code.Length} characters of 'pgsql' was abandoned.");
+        Assert.EndsWith("<span class=\"hljs-keyword\">SELECT</span> <span class=\"hljs-number\">2</span>;", await highlight, StringComparison.Ordinal);
+    }
+
     // The guard against grammars that stop making progress used to count the hits of every run of the document, but
     // compared the count with a position in the current fragment, so a document with many embedded fragments was
     // abandoned (plain text).

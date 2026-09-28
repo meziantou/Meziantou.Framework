@@ -72,12 +72,21 @@ internal static class Mermaid
             Match = @"(?:<|(?<!\w)[ox])?(?:-{2,}|={2,}|-\.+-|~{3,})(?:>|[ox](?!\w))?",
         };
 
-        // `A -- text --> B`, `A -. text .-> B`, `A == text ==> B`. The text ends at the first closing arrow, which is also
-        // the closing arrow of any earlier opening one on the line: only the first opening one (after the scan start) is
-        // tried, which keeps a long line of unclosed ones linear.
+        // `A -- text --> B`, `A -. text .-> B`, `A == text ==> B`, `A <-- text --x B`, `A o== text ==o B`. The text ends at the
+        // first closing arrow, which is also the closing arrow of any earlier opening one on the line: only the first opening
+        // one (after the scan start) is tried, which keeps a long line of unclosed ones linear. The arrows are those of the
+        // flowchart lexer: an opening is `[xo<]?--`, `[xo<]?==` or `[xo<]?-.`, and a closing is `--+[-xo>]`, `==+[=xo>]` or
+        // `.+-[xo>]?`.
         var textLink = new Mode
         {
-            BeginParts = [@"(?=(?:--|==|-\.)[ \t]+\S)(?:\G|(?<!(?:--|==|-\.)[ \t]+\S(?:(?!\G)[^\n])*?))(?:--|==|-\.)", @"[ \t]+", @"\S[^\n]*?", @"[ \t]+", @"-{2,}>|={2,}>|\.-+>|-{3,}|={3,}|\.-"],
+            BeginParts =
+            [
+                @"(?=(?:<|(?<!\w)[xo])?(?:--|==|-\.)[ \t]+\S)(?:\G|(?<!(?:--|==|-\.)[ \t]+\S(?:(?!\G)[^\n])*?))(?:<|(?<!\w)[xo])?(?:--|==|-\.)",
+                @"[ \t]+",
+                @"\S[^\n]*?",
+                @"[ \t]+",
+                @"-{2,}(?:>|[xo](?!\w))|={2,}(?:>|[xo](?!\w))|\.+-(?:>|[xo](?!\w))?|-{3,}|={3,}",
+            ],
             BeginScope = new Dictionary<int, string> { [1] = "operator", [3] = "string", [5] = "operator" },
         };
 

@@ -127,6 +127,44 @@ flowchart LR
     }
 
     [Fact]
+    public void Flowchart_LinkTextArrowEnds()
+    {
+        AssertHighlighter("mermaid",
+"""
+flowchart LR
+    A -- text --x B --> C
+    D -- no --o E
+    A -. text .-x B
+    A -. text ..-o B
+    A == text ==x B
+    A == text ===o B
+    A <-- text --> B
+    A x-- text --x B
+    A o== text ==o B
+    A <-. text .-> B
+    A -- text --- B
+    A -- text ---- B
+    box -- text --> ox
+""",
+"""
+<span class="hljs-keyword">flowchart</span> <span class="hljs-keyword">LR</span>
+    A <span class="hljs-operator">--</span> <span class="hljs-string">text</span> <span class="hljs-operator">--x</span> B <span class="hljs-operator">--&gt;</span> C
+    D <span class="hljs-operator">--</span> <span class="hljs-string">no</span> <span class="hljs-operator">--o</span> E
+    A <span class="hljs-operator">-.</span> <span class="hljs-string">text</span> <span class="hljs-operator">.-x</span> B
+    A <span class="hljs-operator">-.</span> <span class="hljs-string">text</span> <span class="hljs-operator">..-o</span> B
+    A <span class="hljs-operator">==</span> <span class="hljs-string">text</span> <span class="hljs-operator">==x</span> B
+    A <span class="hljs-operator">==</span> <span class="hljs-string">text</span> <span class="hljs-operator">===o</span> B
+    A <span class="hljs-operator">&lt;--</span> <span class="hljs-string">text</span> <span class="hljs-operator">--&gt;</span> B
+    A <span class="hljs-operator">x--</span> <span class="hljs-string">text</span> <span class="hljs-operator">--x</span> B
+    A <span class="hljs-operator">o==</span> <span class="hljs-string">text</span> <span class="hljs-operator">==o</span> B
+    A <span class="hljs-operator">&lt;-.</span> <span class="hljs-string">text</span> <span class="hljs-operator">.-&gt;</span> B
+    A <span class="hljs-operator">--</span> <span class="hljs-string">text</span> <span class="hljs-operator">---</span> B
+    A <span class="hljs-operator">--</span> <span class="hljs-string">text</span> <span class="hljs-operator">----</span> B
+    box <span class="hljs-operator">--</span> <span class="hljs-string">text</span> <span class="hljs-operator">--&gt;</span> ox
+""");
+    }
+
+    [Fact]
     public void Flowchart_QuotedText()
     {
         AssertHighlighter("mermaid",

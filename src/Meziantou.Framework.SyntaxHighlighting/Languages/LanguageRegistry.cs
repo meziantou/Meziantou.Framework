@@ -200,6 +200,8 @@ internal static class LanguageRegistry
             ["bicep"] = () => Bicep.Instance,
             ["bicepparam"] = () => Bicep.Instance,
             ["node-repl"] = () => NodeRepl.Instance,
+            ["julia-repl"] = () => JuliaRepl.Instance,
+            ["jldoctest"] = () => JuliaRepl.Instance,
         }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
     // Grammars compiled with a non-default match timeout, keyed by the default grammar instance.

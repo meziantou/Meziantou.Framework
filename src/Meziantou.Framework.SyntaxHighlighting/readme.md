@@ -139,6 +139,7 @@ The package currently supports these language identifiers and common aliases:
 - `javascript`, `js`, `jsx`, `mjs`, `cjs`
 - `json`, `jsonc`
 - `julia`, `jl`
+- `julia-repl`, `jldoctest`
 - `kotlin`, `kt`, `kts`
 - `latex`, `tex`
 - `less`

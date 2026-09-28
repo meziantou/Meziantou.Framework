@@ -123,6 +123,7 @@ public class HighlighterTests
     [InlineData("sol")]
     [InlineData("bicepparam")]
     [InlineData("node-repl")]
+    [InlineData("jldoctest")]
     public void IsSupported_KnownLanguage_ReturnsTrue(string language)
     {
         Assert.True(SyntaxHighlighter.IsSupported(language));

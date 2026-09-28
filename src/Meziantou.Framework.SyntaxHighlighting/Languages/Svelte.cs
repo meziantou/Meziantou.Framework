@@ -65,9 +65,9 @@ internal static class Svelte
         html.DoubleQuotedValue.Contains = [expression, .. html.DoubleQuotedValue.Contains];
         html.SingleQuotedValue.Contains = [expression, .. html.SingleQuotedValue.Contains];
 
-        // The expressions of the markup are JavaScript too, so a script restarts from the root of the JavaScript grammar
-        // instead of resuming the state the last expression ended in.
-        html.ScriptTag.Starts = new Mode(html.ScriptBody) { Contains = [rune], RestartsSubLanguage = true };
+        // Like the HTML script body, this one restarts from the root of the JavaScript grammar, so it does not resume the
+        // state the last expression of the markup (which is JavaScript too) ended in.
+        html.ScriptTag.Starts = new Mode(html.ScriptBody) { Contains = [rune] };
         html.Root.Contains =
         [
             block,

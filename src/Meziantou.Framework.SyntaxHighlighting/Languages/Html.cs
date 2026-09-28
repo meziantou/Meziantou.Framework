@@ -38,9 +38,11 @@ internal static class Html
         var otherProcessingInstruction = new Mode { Begin = "<\\?[a-z][a-z0-9]+" };
 
         var styleTag = new Mode { Scope = "tag", Begin = "<style(?=\\s|>)", End = ">", Keywords = Keywords.FromMap(new Dictionary<string, string[]>(StringComparer.Ordinal) { ["name"] = ["style"] }) };
-        var styleBody = new Mode { End = "<\\/style>", ReturnEnd = true, SubLanguage = "css" };
+        // highlight.js highlights the content of a `style` or `script` element with a list of languages, which it does not
+        // resume from one element to the next, so a string that one element leaves open does not leak into the next one.
+        var styleBody = new Mode { End = "<\\/style>", ReturnEnd = true, SubLanguage = "css", RestartsSubLanguage = true };
         var scriptTag = new Mode { Scope = "tag", Begin = "<script(?=\\s|>)", End = ">", Keywords = Keywords.FromMap(new Dictionary<string, string[]>(StringComparer.Ordinal) { ["name"] = ["script"] }) };
-        var scriptBody = new Mode { End = "<\\/script>", ReturnEnd = true, SubLanguage = "javascript" };
+        var scriptBody = new Mode { End = "<\\/script>", ReturnEnd = true, SubLanguage = "javascript", RestartsSubLanguage = true };
 
         // The attributes of an open tag, and the values they can take.
         var attributes = new Mode { Illegal = "<", EndsWithParent = true };

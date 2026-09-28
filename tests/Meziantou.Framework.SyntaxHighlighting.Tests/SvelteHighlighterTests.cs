@@ -303,4 +303,26 @@ public class SvelteHighlighterTests
 <span class="hljs-tag">&lt;<span class="hljs-name">p</span> <span class="hljs-attr">title</span>=<span class="hljs-string">&quot;héllo <span class="hljs-template-variable">{<span class="language-javascript">名前</span>}</span>&quot;</span>&gt;</span><span class="hljs-template-variable">{<span class="language-javascript">名前</span>}</span> — ünïcode<span class="hljs-tag">&lt;/<span class="hljs-name">p</span>&gt;</span>
 """);
     }
+
+    [Fact]
+    public void ConsecutiveScriptsDoNotShareState()
+    {
+        AssertHighlighter("svelte",
+"""
+<script module lang="ts">
+const tag = "</script>";
+</script>
+<script lang="ts">
+let x = 1;
+</script>
+""",
+"""
+<span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">module</span> <span class="hljs-attr">lang</span>=<span class="hljs-string">&quot;ts&quot;</span>&gt;</span><span class="language-typescript">
+<span class="hljs-keyword">const</span> tag = <span class="hljs-string">&quot;</span></span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>&quot;;
+<span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">lang</span>=<span class="hljs-string">&quot;ts&quot;</span>&gt;</span><span class="language-typescript">
+<span class="hljs-keyword">let</span> x = <span class="hljs-number">1</span>;
+</span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
+""");
+    }
 }

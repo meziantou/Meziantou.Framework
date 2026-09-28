@@ -199,6 +199,7 @@ The package currently supports these language identifiers and common aliases:
 - `vbscript-html`
 - `verilog`, `v`, `sv`, `svh`
 - `vhdl`, `vhd`
+- `vim`, `vimscript`
 - `vue`
 - `wasm`, `wat`, `wast`
 - `x86asm`

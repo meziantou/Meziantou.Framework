@@ -150,6 +150,7 @@ public class HighlighterTests
     [InlineData("prolog")]
     [InlineData("nixos")]
     [InlineData("htaccess")]
+    [InlineData("vimscript")]
     public void IsSupported_KnownLanguage_ReturnsTrue(string language)
     {
         Assert.True(SyntaxHighlighter.IsSupported(language));

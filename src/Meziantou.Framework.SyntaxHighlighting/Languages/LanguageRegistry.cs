@@ -260,6 +260,8 @@ internal static class LanguageRegistry
             ["apache"] = () => Apache.Instance,
             ["apacheconf"] = () => Apache.Instance,
             ["htaccess"] = () => Apache.Instance,
+            ["vim"] = () => Vim.Instance,
+            ["vimscript"] = () => Vim.Instance,
         }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
     // Grammars compiled with a non-default match timeout, keyed by the default grammar instance.

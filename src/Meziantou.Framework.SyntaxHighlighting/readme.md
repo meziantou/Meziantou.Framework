@@ -117,6 +117,7 @@ The package currently supports these language identifiers and common aliases:
 - `dart`
 - `delphi`, `dpr`, `dfm`, `pas`, `pascal`
 - `diff`, `patch`
+- `django`, `jinja`, `jinja2`, `j2`
 - `dockerfile`, `docker`
 - `dos`, `bat`, `cmd`
 - `elixir`, `ex`, `exs`

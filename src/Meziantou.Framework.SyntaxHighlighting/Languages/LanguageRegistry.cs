@@ -186,6 +186,10 @@ internal static class LanguageRegistry
             ["html.handlebars"] = () => Handlebars.Instance,
             ["htmlbars"] = () => Handlebars.Instance,
             ["mustache"] = () => Handlebars.Instance,
+            ["django"] = () => Django.Instance,
+            ["jinja"] = () => Django.Instance,
+            ["jinja2"] = () => Django.Instance,
+            ["j2"] = () => Django.Instance,
         }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
     // Grammars compiled with a non-default match timeout, keyed by the default grammar instance.

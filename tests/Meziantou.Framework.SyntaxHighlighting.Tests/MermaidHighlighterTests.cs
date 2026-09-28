@@ -165,6 +165,24 @@ flowchart LR
     }
 
     [Fact]
+    public void Flowchart_LinkTextAfterLongerArrow()
+    {
+        AssertHighlighter("mermaid",
+"""
+flowchart LR
+    A --- B -- text --> C
+    A === B == text ==> C
+    A -.- B -. text .-> C
+""",
+"""
+<span class="hljs-keyword">flowchart</span> <span class="hljs-keyword">LR</span>
+    A <span class="hljs-operator">---</span> B <span class="hljs-operator">--</span> <span class="hljs-string">text</span> <span class="hljs-operator">--&gt;</span> C
+    A <span class="hljs-operator">===</span> B <span class="hljs-operator">==</span> <span class="hljs-string">text</span> <span class="hljs-operator">==&gt;</span> C
+    A <span class="hljs-operator">-.-</span> B <span class="hljs-operator">-.</span> <span class="hljs-string">text</span> <span class="hljs-operator">.-&gt;</span> C
+""");
+    }
+
+    [Fact]
     public void Flowchart_QuotedText()
     {
         AssertHighlighter("mermaid",
@@ -434,6 +452,30 @@ sequenceDiagram
     <span class="hljs-keyword">end</span>
     <span class="hljs-keyword">rect</span> rgb(191, 223, 255)
     Alice<span class="hljs-operator">-&gt;&gt;</span>Bob: <span class="hljs-string">Colored</span>
+    <span class="hljs-keyword">end</span>
+""");
+    }
+
+    [Fact]
+    public void Sequence_ParticipantTypes()
+    {
+        AssertHighlighter("mermaid",
+"""
+sequenceDiagram
+    participant database@{ "type": "database" }
+    participant queue
+    database->>queue: Enqueue
+    par_over Parallel
+    properties queue: {"class": "internal"}
+    end
+""",
+"""
+<span class="hljs-keyword">sequenceDiagram</span>
+    <span class="hljs-keyword">participant</span> database@{ <span class="hljs-string">&quot;type&quot;</span>: <span class="hljs-string">&quot;database&quot;</span> }
+    <span class="hljs-keyword">participant</span> queue
+    database<span class="hljs-operator">-&gt;&gt;</span>queue: <span class="hljs-string">Enqueue</span>
+    <span class="hljs-keyword">par_over</span> Parallel
+    <span class="hljs-keyword">properties</span> queue: <span class="hljs-string">{&quot;class&quot;: &quot;internal&quot;}</span>
     <span class="hljs-keyword">end</span>
 """);
     }
@@ -731,6 +773,22 @@ pie showData
     }
 
     [Fact]
+    public void Pie_TitleOnDeclarationLine()
+    {
+        AssertHighlighter("mermaid",
+"""
+pie title Pets adopted by volunteers 2024
+    "Dogs" : 386
+pie showData title Pets %% comment
+""",
+"""
+<span class="hljs-keyword">pie</span> <span class="hljs-keyword">title</span> Pets adopted by volunteers 2024
+    <span class="hljs-string">&quot;Dogs&quot;</span> : <span class="hljs-number">386</span>
+pie <span class="hljs-keyword">showData</span> <span class="hljs-keyword">title</span> Pets <span class="hljs-comment">%% comment</span>
+""");
+    }
+
+    [Fact]
     public void Journey_Basic()
     {
         AssertHighlighter("mermaid",
@@ -817,6 +875,30 @@ mindmap
     id)<span class="hljs-string">I am a cloud</span>(
     id))<span class="hljs-string">I am a bang</span>((
     id{{<span class="hljs-string">Hexagon</span>}}:::<span class="hljs-title class_">urgent</span>
+""");
+    }
+
+    [Fact]
+    public void Mindmap_NodesWithoutId()
+    {
+        AssertHighlighter("mermaid",
+"""
+mindmap
+  ((Root))
+    [Square]
+    (Rounded)
+    ))Bang((
+    )Cloud(
+    {{Hexagon}}
+""",
+"""
+<span class="hljs-keyword">mindmap</span>
+  ((<span class="hljs-string">Root</span>))
+    [<span class="hljs-string">Square</span>]
+    (<span class="hljs-string">Rounded</span>)
+    ))<span class="hljs-string">Bang</span>((
+    )<span class="hljs-string">Cloud</span>(
+    {{<span class="hljs-string">Hexagon</span>}}
 """);
     }
 
@@ -1052,7 +1134,7 @@ kanban
 """
 <span class="hljs-keyword">kanban</span>
   Todo
-    [Create Documentation]
+    [<span class="hljs-string">Create Documentation</span>]
     docs[<span class="hljs-string">Create Blog about the new diagram</span>]
   id9[<span class="hljs-string">Ready for deploy</span>]@{ <span class="hljs-attr">assigned</span>: <span class="hljs-string">&#x27;knsv&#x27;</span>, <span class="hljs-attr">priority</span>: <span class="hljs-string">&#x27;High&#x27;</span> }
 """);

@@ -15,5 +15,7 @@
 
   <ItemGroup>
     <Compile Include="../Meziantou.Framework.HtmlSanitizer/DescriptiveHtmlAttributes.cs" Link="Extensions/GenericAttributes/DescriptiveHtmlAttributes.cs" />
+    <Compile Include="../Meziantou.Framework.ValueStringBuilder/ValueStringBuilder.cs" Link="Internals/ValueStringBuilder/ValueStringBuilder.cs" />
+    <Compile Include="../Meziantou.Framework.ValueStringBuilder/ValueStringBuilder.AppendSpanFormattable.cs" Link="Internals/ValueStringBuilder/ValueStringBuilder.AppendSpanFormattable.cs" />
   </ItemGroup>
 </Project>

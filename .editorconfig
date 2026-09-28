@@ -116,7 +116,7 @@ dotnet_diagnostic.MA0046.severity = none
 # CA2000: Dispose objects before losing scope
 # ValueStringBuilder returns its pooled buffer in ToString(); a using declaration would make it readonly, and it is
 # passed by reference to helper methods.
-dotnet_code_quality.CA2000.excluded_symbol_names = T:Meziantou.Framework.Markdown.Helpers.ValueStringBuilder
+dotnet_code_quality.CA2000.excluded_symbol_names = T:Meziantou.Framework.ValueStringBuilder
 
 [src/Meziantou.Framework.NuGetPackageValidation.Tool/**.cs]
 # MA0004: Use Task.ConfigureAwait

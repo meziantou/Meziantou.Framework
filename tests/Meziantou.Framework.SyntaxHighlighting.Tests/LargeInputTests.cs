@@ -173,6 +173,21 @@ public sealed class LargeInputTests
         Assert.EndsWith("-# comment</span>", await highlight, StringComparison.Ordinal);
     }
 
+    // The end of a Haml attribute hash (`}` after optional whitespace, or the end of a line that does not end with a
+    // comma) used to be looked for by scanning a run of whitespace from each of its positions (30 seconds for this
+    // document).
+    [Fact]
+    public async Task Highlight_HamlLongWhitespaceInAttributeHash_CompletesInReasonableTime()
+    {
+        var code = "%a{x" + new string(' ', 100_000) + "y\n%p text";
+
+        var highlight = Task.Run(() => HighlightWithFallbackDetection(code, "haml", out _));
+        var finished = await Task.WhenAny(highlight, Task.Delay(Budget)) == highlight;
+
+        Assert.True(finished, $"Highlighting {code.Length} characters of 'haml' did not finish within {Budget.TotalSeconds:F0}s.");
+        Assert.EndsWith("<span class=\"hljs-tag\">%<span class=\"hljs-selector-tag\">p</span></span> text", await highlight, StringComparison.Ordinal);
+    }
+
     // A number pattern that fails identically from every position of a long run of digits, and an identifier that is
     // matched over the whole rest of a run after each number that wins against it at the same position, used to make
     // these documents quadratic (more than a minute for the longest ones).

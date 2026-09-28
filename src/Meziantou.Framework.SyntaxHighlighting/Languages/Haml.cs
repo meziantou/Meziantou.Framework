@@ -23,8 +23,9 @@ internal static class Haml
 
             // Deviation from highlight.js, whose attribute hash only ends at `}`, even lines later: a hash that is not
             // closed turned the rest of the document into attributes. As in Haml, a hash can only continue on the next
-            // line after a comma.
-            End = @"\s*\}|(?<!,[ \t]*)$",
+            // line after a comma. The closing brace is only looked for from the start of a run of whitespace, and the line
+            // end is tested before the comma, so a long run of whitespace is not scanned from each of its positions.
+            End = CommonModes.RunStart(@"\s") + @"\s*\}|$(?<!,[ \t]*)",
             Contains =
             [
                 new Mode

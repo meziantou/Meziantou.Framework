@@ -89,6 +89,20 @@ public sealed class LargeInputTests
         Assert.EndsWith("<span class=\"hljs-attr\">key</span> = <span class=\"hljs-string\">value</span>", await highlight, StringComparison.Ordinal);
     }
 
+    // A Handlebars hash parameter (`key=value`) used to be matched from each position of an identifier, which is
+    // quadratic on a long identifier that is not followed by `=` (2.5 seconds for 60,000 characters).
+    [Fact]
+    public async Task Highlight_HandlebarsLongIdentifier_CompletesInReasonableTime()
+    {
+        var code = "{{helper " + new string('a', 150_000) + " b}}";
+
+        var highlight = Task.Run(() => HighlightWithFallbackDetection(code, "handlebars", out _));
+        var finished = await Task.WhenAny(highlight, Task.Delay(Budget)) == highlight;
+
+        Assert.True(finished, $"Highlighting {code.Length} characters of 'handlebars' did not finish within {Budget.TotalSeconds:F0}s.");
+        Assert.EndsWith(" b}}</span>", await highlight, StringComparison.Ordinal);
+    }
+
     // The guard against grammars that stop making progress used to count the hits of every run of the document, but
     // compared the count with a position in the current fragment, so a document with many embedded fragments was
     // abandoned (plain text).

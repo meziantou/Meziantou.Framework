@@ -115,6 +115,7 @@ public class HighlighterTests
     [InlineData("pascal")]
     [InlineData("matlab")]
     [InlineData("postgres")]
+    [InlineData("hbs")]
     public void IsSupported_KnownLanguage_ReturnsTrue(string language)
     {
         Assert.True(SyntaxHighlighter.IsSupported(language));

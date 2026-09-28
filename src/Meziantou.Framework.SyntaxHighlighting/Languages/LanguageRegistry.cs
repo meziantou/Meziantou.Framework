@@ -180,6 +180,12 @@ internal static class LanguageRegistry
             ["pgsql"] = () => Pgsql.Instance,
             ["postgres"] = () => Pgsql.Instance,
             ["postgresql"] = () => Pgsql.Instance,
+            ["handlebars"] = () => Handlebars.Instance,
+            ["hbs"] = () => Handlebars.Instance,
+            ["html.hbs"] = () => Handlebars.Instance,
+            ["html.handlebars"] = () => Handlebars.Instance,
+            ["htmlbars"] = () => Handlebars.Instance,
+            ["mustache"] = () => Handlebars.Instance,
         }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
     // Grammars compiled with a non-default match timeout, keyed by the default grammar instance.

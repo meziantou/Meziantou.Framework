@@ -92,6 +92,8 @@ internal static class LanguageRegistry
             ["msil"] = () => Msil.Instance,
             ["il"] = () => Msil.Instance,
             ["cil"] = () => Msil.Instance,
+            ["go"] = () => Go.Instance,
+            ["golang"] = () => Go.Instance,
             ["rust"] = () => Rust.Instance,
             ["rs"] = () => Rust.Instance,
         }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);

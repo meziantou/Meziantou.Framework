@@ -130,6 +130,7 @@ The package currently supports these language identifiers and common aliases:
 - `javascript`, `js`, `jsx`, `mjs`, `cjs`
 - `json`, `jsonc`
 - `julia`, `jl`
+- `kotlin`, `kt`, `kts`
 - `less`
 - `markdown`, `md`, `mkdown`, `mkd`
 - `msil`, `il`, `cil`

@@ -129,6 +129,9 @@ internal static class LanguageRegistry
             ["jl"] = () => Julia.Instance,
             ["java"] = () => Java.Instance,
             ["jsp"] = () => Java.Instance,
+            ["kotlin"] = () => Kotlin.Instance,
+            ["kt"] = () => Kotlin.Instance,
+            ["kts"] = () => Kotlin.Instance,
         }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
     // Grammars compiled with a non-default match timeout, keyed by the default grammar instance.

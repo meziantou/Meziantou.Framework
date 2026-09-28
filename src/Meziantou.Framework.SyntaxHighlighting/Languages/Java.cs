@@ -41,11 +41,13 @@ internal static class Java
         Scope = "number",
         Variants =
         [
+            // A `..` is a Kotlin range (`1..10`), not two numbers `1.` and `.10` like in highlight.js: a number cannot start
+            // with a `.` that follows another one, or end with a `.` that another one follows.
             // Decimal floating point with an exponent
-            new Mode { Begin = @"(?:\b(?:" + DecimalDigitsRe + ")(?:(?:" + FractionRe + @")|\.)?|(?:" + FractionRe + @"))[eE][+-]?(?:" + DecimalDigitsRe + @")[fFdD]?\b" },
+            new Mode { Begin = @"(?:\b(?:" + DecimalDigitsRe + ")(?:(?:" + FractionRe + @")|\.)?|(?<!\.)(?:" + FractionRe + @"))[eE][+-]?(?:" + DecimalDigitsRe + @")[fFdD]?\b" },
             // Decimal floating point without an exponent
-            new Mode { Begin = @"\b(?:" + DecimalDigitsRe + ")(?:(?:" + FractionRe + @")[fFdD]?\b|\.(?:[fFdD]\b)?)" },
-            new Mode { Begin = "(?:" + FractionRe + @")[fFdD]?\b" },
+            new Mode { Begin = @"\b(?:" + DecimalDigitsRe + ")(?:(?:" + FractionRe + @")[fFdD]?\b|\.(?!\.)(?:[fFdD]\b)?)" },
+            new Mode { Begin = @"(?<!\.)(?:" + FractionRe + @")[fFdD]?\b" },
             new Mode { Begin = @"\b(?:" + DecimalDigitsRe + @")[fFdD]\b" },
             // Hexadecimal floating point
             new Mode { Begin = @"\b0[xX](?:(?:" + HexDigitsRe + @")\.?|(?:" + HexDigitsRe + @")?\.(?:" + HexDigitsRe + @"))[pP][+-]?(?:" + DecimalDigitsRe + @")[fFdD]?\b" },

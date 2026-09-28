@@ -20,7 +20,11 @@ public class HtmlDefinitionListRenderer : HtmlObjectRenderer<DefinitionList>
     protected override void Write(HtmlRenderer renderer, DefinitionList list)
     {
         renderer.EnsureLine();
-        renderer.Write("<dl").WriteAttributes(list).WriteLine('>');
+        if (renderer.EnableHtmlForBlock)
+        {
+            renderer.Write("<dl").WriteAttributes(list).WriteLine('>');
+        }
+
         foreach (var item in list)
         {
             bool hasOpendd = false;
@@ -35,24 +39,34 @@ public class HtmlDefinitionListRenderer : HtmlObjectRenderer<DefinitionList>
                 {
                     if (hasOpendd)
                     {
-                        if (!lastWasSimpleParagraph)
-                        {
-                            renderer.EnsureLine();
-                        }
-                        renderer.WriteLine("</dd>");
+                        WriteDefinitionEnd(renderer, lastWasSimpleParagraph);
                         lastWasSimpleParagraph = false;
                         hasOpendd = false;
                         countdd = 0;
                     }
-                    renderer.Write("<dt").WriteAttributes(definitionTerm).Write('>');
+
+                    if (renderer.EnableHtmlForBlock)
+                    {
+                        renderer.Write("<dt").WriteAttributes(definitionTerm).Write('>');
+                    }
+
                     renderer.WriteLeafInline(definitionTerm);
-                    renderer.WriteLine("</dt>");
+                    if (renderer.EnableHtmlForBlock)
+                    {
+                        renderer.WriteLine("</dt>");
+                    }
+
+                    renderer.EnsureLine();
                 }
                 else
                 {
                     if (!hasOpendd)
                     {
-                        renderer.Write("<dd").WriteAttributes(definitionItem).Write('>');
+                        if (renderer.EnableHtmlForBlock)
+                        {
+                            renderer.Write("<dd").WriteAttributes(definitionItem).Write('>');
+                        }
+
                         countdd = 0;
                         hasOpendd = true;
                     }
@@ -74,14 +88,26 @@ public class HtmlDefinitionListRenderer : HtmlObjectRenderer<DefinitionList>
             }
             if (hasOpendd)
             {
-                if (!lastWasSimpleParagraph)
-                {
-                    renderer.EnsureLine();
-                }
-                renderer.WriteLine("</dd>");
+                WriteDefinitionEnd(renderer, lastWasSimpleParagraph);
             }
         }
         renderer.EnsureLine();
-        renderer.WriteLine("</dl>");
+        if (renderer.EnableHtmlForBlock)
+        {
+            renderer.WriteLine("</dl>");
+        }
+    }
+
+    private static void WriteDefinitionEnd(HtmlRenderer renderer, bool lastWasSimpleParagraph)
+    {
+        if (!lastWasSimpleParagraph || !renderer.EnableHtmlForBlock)
+        {
+            renderer.EnsureLine();
+        }
+
+        if (renderer.EnableHtmlForBlock)
+        {
+            renderer.WriteLine("</dd>");
+        }
     }
 }

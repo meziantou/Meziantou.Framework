@@ -19,8 +19,17 @@ public class HtmlFigureCaptionRenderer : HtmlObjectRenderer<FigureCaption>
     protected override void Write(HtmlRenderer renderer, FigureCaption obj)
     {
         renderer.EnsureLine();
-        renderer.Write("<figcaption").WriteAttributes(obj).Write('>');
+        if (renderer.EnableHtmlForBlock)
+        {
+            renderer.Write("<figcaption").WriteAttributes(obj).Write('>');
+        }
+
         renderer.WriteLeafInline(obj);
-        renderer.WriteLine("</figcaption>");
+        if (renderer.EnableHtmlForBlock)
+        {
+            renderer.WriteLine("</figcaption>");
+        }
+
+        renderer.EnsureLine();
     }
 }

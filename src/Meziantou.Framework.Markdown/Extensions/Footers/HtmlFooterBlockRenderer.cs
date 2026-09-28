@@ -19,11 +19,22 @@ public class HtmlFooterBlockRenderer : HtmlObjectRenderer<FooterBlock>
     protected override void Write(HtmlRenderer renderer, FooterBlock footer)
     {
         renderer.EnsureLine();
-        renderer.Write("<footer").WriteAttributes(footer).Write(">");
+        if (renderer.EnableHtmlForBlock)
+        {
+            renderer.Write("<footer").WriteAttributes(footer).Write(">");
+        }
+
         var implicitParagraph = renderer.ImplicitParagraph;
         renderer.ImplicitParagraph = true;
         renderer.WriteChildren(footer);
         renderer.ImplicitParagraph = implicitParagraph;
-        renderer.WriteLine("</footer>");
+        if (renderer.EnableHtmlForBlock)
+        {
+            renderer.WriteLine("</footer>");
+        }
+        else
+        {
+            renderer.EnsureLine();
+        }
     }
 }

@@ -32,6 +32,18 @@ public class HtmlFootnoteGroupRenderer : HtmlObjectRenderer<FootnoteGroup>
     protected override void Write(HtmlRenderer renderer, FootnoteGroup footnotes)
     {
         renderer.EnsureLine();
+        if (!renderer.EnableHtmlForBlock)
+        {
+            // Without HTML for blocks (e.g. plain text), only the content of the footnotes is written
+            for (int i = 0; i < footnotes.Count; i++)
+            {
+                renderer.WriteChildren((Footnote)footnotes[i]);
+                renderer.EnsureLine();
+            }
+
+            return;
+        }
+
         renderer.WriteLine($"<div class=\"{GroupClass}\">");
         renderer.WriteLine("<hr />");
         renderer.WriteLine("<ol>");

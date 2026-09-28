@@ -17,6 +17,10 @@ public class HtmlBlockRenderer : HtmlObjectRenderer<HtmlBlock>
     /// </summary>
     protected override void Write(HtmlRenderer renderer, HtmlBlock obj)
     {
-        renderer.WriteLeafRawLines(obj, true, false);
+        // Without HTML for blocks (e.g. plain text), raw HTML is removed like raw inline HTML
+        if (renderer.EnableHtmlForBlock)
+        {
+            renderer.WriteLeafRawLines(obj, true, false);
+        }
     }
 }

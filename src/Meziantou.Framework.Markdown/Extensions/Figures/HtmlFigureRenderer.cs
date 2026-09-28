@@ -19,8 +19,17 @@ public class HtmlFigureRenderer : HtmlObjectRenderer<Figure>
     protected override void Write(HtmlRenderer renderer, Figure obj)
     {
         renderer.EnsureLine();
-        renderer.Write("<figure").WriteAttributes(obj).WriteLine(">");
+        if (renderer.EnableHtmlForBlock)
+        {
+            renderer.Write("<figure").WriteAttributes(obj).WriteLine(">");
+        }
+
         renderer.WriteChildren(obj);
-        renderer.WriteLine("</figure>");
+        if (renderer.EnableHtmlForBlock)
+        {
+            renderer.WriteLine("</figure>");
+        }
+
+        renderer.EnsureLine();
     }
 }

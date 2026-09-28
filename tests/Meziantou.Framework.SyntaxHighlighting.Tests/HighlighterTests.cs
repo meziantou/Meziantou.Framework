@@ -92,6 +92,7 @@ public class HighlighterTests
     [InlineData("Dart")]
     [InlineData("exs")]
     [InlineData("erl")]
+    [InlineData("hs")]
     public void IsSupported_KnownLanguage_ReturnsTrue(string language)
     {
         Assert.True(SyntaxHighlighter.IsSupported(language));

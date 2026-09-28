@@ -120,6 +120,8 @@ internal static class LanguageRegistry
             ["exs"] = () => Elixir.Instance,
             ["erlang"] = () => Erlang.Instance,
             ["erl"] = () => Erlang.Instance,
+            ["haskell"] = () => Haskell.Instance,
+            ["hs"] = () => Haskell.Instance,
         }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
     // Grammars compiled with a non-default match timeout, keyed by the default grammar instance.

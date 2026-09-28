@@ -695,6 +695,24 @@ A bare URL https://example.com here.
     }
 
     [Fact]
+    public void LinksAndImages_EndAtTheAttributeList()
+    {
+        AssertHighlighter("asciidoc",
+"""
+See the https://example.com[docs]s for details.
+An image:logo.png[Logo]s here.
+
+The *next* paragraph [x].
+""",
+"""
+See the <span class="hljs-link">https://example.com</span>[<span class="hljs-string">docs</span>]s for details.
+An image:<span class="hljs-link">logo.png</span>[<span class="hljs-string">Logo</span>]s here.
+
+The <span class="hljs-strong">*next*</span> paragraph [x].
+""");
+    }
+
+    [Fact]
     public void PassthroughBlock_EmbedsXml()
     {
         AssertHighlighter("asciidoc",

@@ -205,7 +205,11 @@ internal static class AsciiDoc
                     [
                         new Mode { Begin = "(link|image:?):" },
                         new Mode { Scope = "link", Begin = @"\w", End = @"[^\[]+" },
-                        new Mode { Scope = "string", Begin = @"\[", End = @"\]", ExcludeBegin = true, ExcludeEnd = true },
+
+                        // Deviation from highlight.js, where the macro does not end with its attribute list: a word character
+                        // right after the `]` (`https://example.com[docs]s`) started another target, which ran to the next
+                        // `[` of the document, across paragraphs.
+                        new Mode { Scope = "string", Begin = @"\[", End = @"\]", ExcludeBegin = true, ExcludeEnd = true, EndsParent = true },
                     ],
                 },
             ],

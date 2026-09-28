@@ -116,6 +116,7 @@ The package currently supports these language identifiers and common aliases:
 - `clojure-repl`
 - `cmake`, `cmake.in`
 - `cpp`, `c++`, `cc`, `h++`, `hpp`, `hh`, `hxx`, `cxx`
+- `crystal`, `cr`
 - `csharp`, `cs`, `c#`
 - `css`
 - `dart`

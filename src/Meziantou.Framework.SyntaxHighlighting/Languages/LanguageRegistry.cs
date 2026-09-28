@@ -230,6 +230,8 @@ internal static class LanguageRegistry
             ["svelte"] = () => Svelte.Instance,
             ["nim"] = () => Nim.Instance,
             ["nims"] = () => Nim.Instance,
+            ["crystal"] = () => Crystal.Instance,
+            ["cr"] = () => Crystal.Instance,
         }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
     // Grammars compiled with a non-default match timeout, keyed by the default grammar instance.

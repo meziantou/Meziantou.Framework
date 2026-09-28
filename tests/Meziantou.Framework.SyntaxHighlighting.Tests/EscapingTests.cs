@@ -81,6 +81,7 @@ public sealed partial class EscapingTests
     private static string StripEmitterTags(string html, string input, string language)
     {
         var text = new StringBuilder(html.Length);
+        var depth = 0;
         var index = 0;
         while (index < html.Length)
         {
@@ -88,6 +89,11 @@ public sealed partial class EscapingTests
             {
                 var match = EmitterTag().Match(html, index);
                 Assert.True(match.Success, $"Unescaped '<' in the output for language '{language}' and input '{input}': {html}");
+
+                depth += match.ValueSpan is "</span>" ? -1 : 1;
+                if (depth < 0)
+                    Assert.Fail($"A </span> closes no <span> in the output for language '{language}' and input '{input}': {html}");
+
                 index += match.Length;
                 continue;
             }
@@ -100,6 +106,9 @@ public sealed partial class EscapingTests
             text.Append(html[index]);
             index++;
         }
+
+        if (depth != 0)
+            Assert.Fail($"{depth} <span> are never closed in the output for language '{language}' and input '{input}': {html}");
 
         return text.ToString();
     }

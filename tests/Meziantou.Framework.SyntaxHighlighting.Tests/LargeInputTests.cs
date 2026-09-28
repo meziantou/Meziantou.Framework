@@ -1,3 +1,5 @@
+using System.Runtime.InteropServices;
+
 namespace Meziantou.Framework.SyntaxHighlighting.Tests;
 
 /// <summary>
@@ -9,6 +11,56 @@ namespace Meziantou.Framework.SyntaxHighlighting.Tests;
 public sealed class LargeInputTests
 {
     private static readonly TimeSpan Budget = TimeSpan.FromSeconds(10);
+
+    // A pattern that is tried from each position of a run and scans to the end of the run makes a grammar quadratic, which
+    // a single realistic document does not show. A run of one delimiter is where that happens most, so the time for such a
+    // run is compared between two sizes, which also catches a quadratic grammar that is still fast at one size (4x the
+    // input takes 16x the time). The time is the CPU time of the thread, and a garbage collection can still land in one
+    // measurement, so a run that looks quadratic is measured again before failing.
+    [Theory]
+    [MemberData(nameof(Grammars), MemberType = typeof(Helper))]
+    public void Highlight_LongRunOfOneCharacter_ScalesLinearly(string language)
+    {
+        const string Characters = "\"'`/\\*#-=+<>{}[]()$@%:;,.| \t\na1";
+        const int SmallSize = 10_000;
+        const int LargeSize = 4 * SmallSize;
+
+        foreach (var character in Characters)
+        {
+            var smallRun = new string(character, SmallSize);
+            var largeRun = new string(character, LargeSize);
+            HighlightWithFallbackDetection(smallRun, language, out _);
+
+            var small = MeasureFastest(smallRun, language, attempts: 1);
+            var large = MeasureFastest(largeRun, language, attempts: 1);
+            if (!ScalesLinearly(small, large))
+            {
+                small = MeasureFastest(smallRun, language, attempts: 3);
+                large = MeasureFastest(largeRun, language, attempts: 3);
+            }
+
+            Assert.True(ScalesLinearly(small, large), $"Highlighting a run of {LargeSize} '{character}' in '{language}' took {large.TotalMilliseconds:F0} ms of CPU time, and a run of {SmallSize} took {small.TotalMilliseconds:F0} ms.");
+        }
+
+        static bool ScalesLinearly(TimeSpan small, TimeSpan large) => large <= (small * 8) + TimeSpan.FromMilliseconds(50);
+
+        static TimeSpan MeasureFastest(string code, string language, int attempts)
+        {
+            var fastest = TimeSpan.MaxValue;
+            for (var i = 0; i < attempts; i++)
+            {
+                var start = ThreadCpuTime.GetCurrent();
+                HighlightWithFallbackDetection(code, language, out _);
+                var elapsed = ThreadCpuTime.GetCurrent() - start;
+                if (elapsed < fastest)
+                {
+                    fastest = elapsed;
+                }
+            }
+
+            return fastest;
+        }
+    }
 
     [Theory]
     [MemberData(nameof(Grammars), MemberType = typeof(Helper))]
@@ -613,5 +665,44 @@ public sealed class LargeInputTests
         Assert.True(finished, $"Highlighting {code.Length} characters of '{language}' did not finish within {Budget.TotalSeconds:F0}s.");
         Assert.False(isFallback, $"Highlighting {code.Length} characters of '{language}' was abandoned.");
         Assert.HasCountLessThan(code.Length * 100, await highlight);
+    }
+
+    /// <summary>The CPU time of the current thread (the tests run in parallel, so wall-clock time includes waiting for a core).</summary>
+    private static class ThreadCpuTime
+    {
+        // CLOCK_THREAD_CPUTIME_ID
+        private const int LinuxThreadCpuTimeClock = 3;
+        private const int MacOSThreadCpuTimeClock = 16;
+
+        public static TimeSpan GetCurrent()
+        {
+            if (OperatingSystem.IsWindows())
+            {
+                // FILETIMEs: 100-nanosecond units, like ticks.
+                var kernel32 = NativeLibrary.Load("kernel32.dll");
+                var currentThread = unsafe(((delegate* unmanaged<nint>)NativeLibrary.GetExport(kernel32, "GetCurrentThread"))());
+                long creationTime, exitTime, kernelTime, userTime;
+                var succeeded = unsafe(((delegate* unmanaged<nint, long*, long*, long*, long*, int>)NativeLibrary.GetExport(kernel32, "GetThreadTimes"))(currentThread, &creationTime, &exitTime, &kernelTime, &userTime));
+                if (succeeded is 0)
+                    throw new InvalidOperationException("GetThreadTimes failed.");
+
+                return TimeSpan.FromTicks(kernelTime + userTime);
+            }
+
+            var clockGetTime = NativeLibrary.GetExport(NativeLibrary.GetMainProgramHandle(), "clock_gettime");
+            TimeSpec time;
+            var result = unsafe(((delegate* unmanaged<int, TimeSpec*, int>)clockGetTime)(OperatingSystem.IsMacOS() ? MacOSThreadCpuTimeClock : LinuxThreadCpuTimeClock, &time));
+            if (result is not 0)
+                throw new InvalidOperationException("clock_gettime failed.");
+
+            return TimeSpan.FromTicks((time.Seconds * TimeSpan.TicksPerSecond) + (time.Nanoseconds / 100));
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct TimeSpec
+        {
+            public long Seconds;
+            public long Nanoseconds;
+        }
     }
 }

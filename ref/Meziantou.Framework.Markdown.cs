@@ -189,7 +189,7 @@ namespace Meziantou.Framework.Markdown.Extensions.AutoIdentifiers
     public class HeadingLinkReferenceDefinition : Meziantou.Framework.Markdown.Syntax.LinkReferenceDefinition
     {
         public Meziantou.Framework.Markdown.Syntax.HeadingBlock Heading { get => throw null; set { } }
-        public HeadingLinkReferenceDefinition(Meziantou.Framework.Markdown.Syntax.HeadingBlock headling) { }
+        public HeadingLinkReferenceDefinition(Meziantou.Framework.Markdown.Syntax.HeadingBlock heading) { }
     }
 }
 namespace Meziantou.Framework.Markdown.Extensions.AutoLinks

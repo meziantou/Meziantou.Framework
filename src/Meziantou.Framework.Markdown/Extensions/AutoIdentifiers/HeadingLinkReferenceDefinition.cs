@@ -16,9 +16,9 @@ public class HeadingLinkReferenceDefinition : LinkReferenceDefinition
     /// <summary>
     /// Initializes a new instance of the HeadingLinkReferenceDefinition class.
     /// </summary>
-    public HeadingLinkReferenceDefinition(HeadingBlock headling)
+    public HeadingLinkReferenceDefinition(HeadingBlock heading)
     {
-        Heading = headling;
+        Heading = heading;
         // Created implicitly, so it must not resolve inside another still-open
         // link bracket, e.g. [Some text [Heading]](url).
         AllowResolutionInsideOpenLink = false;

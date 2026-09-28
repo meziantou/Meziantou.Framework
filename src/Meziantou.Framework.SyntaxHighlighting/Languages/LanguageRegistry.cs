@@ -209,6 +209,9 @@ internal static class LanguageRegistry
             ["vbscript"] = () => VbScript.Instance,
             ["vbs"] = () => VbScript.Instance,
             ["vbscript-html"] = () => VbScriptHtml.Instance,
+            ["wasm"] = () => Wasm.Instance,
+            ["wat"] = () => Wasm.Instance,
+            ["wast"] = () => Wasm.Instance,
         }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
     // Grammars compiled with a non-default match timeout, keyed by the default grammar instance.

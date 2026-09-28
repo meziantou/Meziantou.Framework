@@ -129,6 +129,7 @@ public class HighlighterTests
     [InlineData("ino")]
     [InlineData("vbs")]
     [InlineData("vbscript-html")]
+    [InlineData("wat")]
     public void IsSupported_KnownLanguage_ReturnsTrue(string language)
     {
         Assert.True(SyntaxHighlighter.IsSupported(language));

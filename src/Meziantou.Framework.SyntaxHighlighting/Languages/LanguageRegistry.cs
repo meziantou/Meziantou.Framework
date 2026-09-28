@@ -216,6 +216,9 @@ internal static class LanguageRegistry
             ["ll"] = () => Llvm.Instance,
             ["armasm"] = () => ArmAsm.Instance,
             ["arm"] = () => ArmAsm.Instance,
+            ["glsl"] = () => Glsl.Instance,
+            ["vert"] = () => Glsl.Instance,
+            ["frag"] = () => Glsl.Instance,
         }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
     // Grammars compiled with a non-default match timeout, keyed by the default grammar instance.

@@ -130,6 +130,7 @@ The package currently supports these language identifiers and common aliases:
 - `erlang-repl`
 - `fsharp`, `fs`, `f#`
 - `gherkin`, `feature`
+- `glsl`, `vert`, `frag`
 - `go`, `golang`
 - `graphql`, `gql`
 - `groovy`, `gradle`

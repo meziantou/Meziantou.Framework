@@ -160,6 +160,8 @@ internal static class LanguageRegistry
             ["lua"] = () => Lua.Instance,
             ["pluto"] = () => Lua.Instance,
             ["r"] = () => R.Instance,
+            ["ocaml"] = () => Ocaml.Instance,
+            ["ml"] = () => Ocaml.Instance,
         }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
     // Grammars compiled with a non-default match timeout, keyed by the default grammar instance.

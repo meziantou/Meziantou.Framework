@@ -140,6 +140,7 @@ The package currently supports these language identifiers and common aliases:
 - `msil`, `il`, `cil`
 - `nginx`, `nginxconf`
 - `objectivec`, `mm`, `objc`, `obj-c`, `obj-c++`, `objective-c++`
+- `ocaml`, `ml`
 - `perl`, `pl`, `pm`
 - `php`
 - `plaintext`, `text`, `txt`

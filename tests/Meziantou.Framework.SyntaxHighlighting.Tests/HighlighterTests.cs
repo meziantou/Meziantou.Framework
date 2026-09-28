@@ -91,6 +91,7 @@ public class HighlighterTests
     [InlineData("obj-c++")]
     [InlineData("Dart")]
     [InlineData("exs")]
+    [InlineData("erl")]
     public void IsSupported_KnownLanguage_ReturnsTrue(string language)
     {
         Assert.True(SyntaxHighlighter.IsSupported(language));

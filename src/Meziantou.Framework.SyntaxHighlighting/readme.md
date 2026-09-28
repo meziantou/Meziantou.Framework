@@ -117,6 +117,7 @@ The package currently supports these language identifiers and common aliases:
 - `dockerfile`, `docker`
 - `dos`, `bat`, `cmd`
 - `elixir`, `ex`, `exs`
+- `erlang`, `erl`
 - `fsharp`, `fs`, `f#`
 - `go`, `golang`
 - `graphql`, `gql`

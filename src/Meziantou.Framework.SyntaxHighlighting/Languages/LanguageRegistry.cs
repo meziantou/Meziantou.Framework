@@ -118,6 +118,8 @@ internal static class LanguageRegistry
             ["elixir"] = () => Elixir.Instance,
             ["ex"] = () => Elixir.Instance,
             ["exs"] = () => Elixir.Instance,
+            ["erlang"] = () => Erlang.Instance,
+            ["erl"] = () => Erlang.Instance,
         }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
     // Grammars compiled with a non-default match timeout, keyed by the default grammar instance.

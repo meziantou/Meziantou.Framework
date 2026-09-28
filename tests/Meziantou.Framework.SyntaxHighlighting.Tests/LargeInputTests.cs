@@ -199,6 +199,24 @@ public sealed class LargeInputTests
         Assert.EndsWith("<span class=\"hljs-keyword\">BEGIN</span>", await highlight, StringComparison.Ordinal);
     }
 
+    // A TOML key that is not followed by `=` must not be rescanned from each of its characters or dotted segments.
+    [Theory]
+    [InlineData("a")]
+    [InlineData("a.")]
+    [InlineData("a . ")]
+    [InlineData("\"a\".")]
+    [InlineData("\\\"a")]
+    public async Task Highlight_TomlLongKey_CompletesInReasonableTime(string keyPart)
+    {
+        var code = string.Concat(Enumerable.Repeat(keyPart, 60_000 / keyPart.Length)) + "\nkey = 1";
+
+        var highlight = Task.Run(() => HighlightWithFallbackDetection(code, "toml", out _));
+        var finished = await Task.WhenAny(highlight, Task.Delay(Budget)) == highlight;
+
+        Assert.True(finished, $"Highlighting {code.Length} characters of 'toml' did not finish within {Budget.TotalSeconds:F0}s.");
+        Assert.EndsWith("<span class=\"hljs-attr\">key</span> = <span class=\"hljs-number\">1</span>", await highlight, StringComparison.Ordinal);
+    }
+
     // An AsciiDoc strong, emphasis or smart quote mark used to scan the rest of its line or paragraph for a closing mark
     // from each unclosed mark (8 to 40 seconds for the single-line documents).
     [Theory]

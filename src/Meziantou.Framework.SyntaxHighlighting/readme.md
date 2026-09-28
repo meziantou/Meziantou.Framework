@@ -149,7 +149,7 @@ The package currently supports these language identifiers and common aliases:
 - `hcl`, `terraform`, `tf`, `tfvars`
 - `html`, `htm`, `xhtml`
 - `http`, `https`
-- `ini`, `toml`, `gitconfig`
+- `ini`, `gitconfig`
 - `java`, `jsp`
 - `javascript`, `js`, `jsx`, `mjs`, `cjs`
 - `json`, `jsonc`
@@ -196,6 +196,7 @@ The package currently supports these language identifiers and common aliases:
 - `swift`
 - `tcl`, `tk`
 - `thrift`
+- `toml`
 - `twig`, `craftcms`
 - `typescript`, `ts`, `tsx`, `mts`, `cts`
 - `urlencoded`, `x-www-form-urlencoded`

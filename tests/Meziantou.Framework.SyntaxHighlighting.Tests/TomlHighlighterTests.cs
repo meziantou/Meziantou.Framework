@@ -11,7 +11,7 @@ public class TomlHighlighterTests
 name = "alice"
 """,
 """
-<span class="hljs-attr">name</span> = &quot;alice&quot;
+<span class="hljs-attr">name</span> = <span class="hljs-string">&quot;alice&quot;</span>
 """);
     }
 
@@ -23,7 +23,7 @@ name = "alice"
 key2 = 1
 """,
 """
-<span class="hljs-attr">key2</span> = 1
+<span class="hljs-attr">key2</span> = <span class="hljs-number">1</span>
 """);
     }
 
@@ -35,7 +35,7 @@ key2 = 1
 my_key = 1
 """,
 """
-<span class="hljs-attr">my_key</span> = 1
+<span class="hljs-attr">my_key</span> = <span class="hljs-number">1</span>
 """);
     }
 
@@ -47,7 +47,7 @@ my_key = 1
 my-key = 1
 """,
 """
-<span class="hljs-attr">my-key</span> = 1
+<span class="hljs-attr">my-key</span> = <span class="hljs-number">1</span>
 """);
     }
 
@@ -59,7 +59,7 @@ my-key = 1
 "my key" = 1
 """,
 """
-<span class="hljs-attr">&quot;my key&quot;</span> = 1
+<span class="hljs-attr">&quot;my key&quot;</span> = <span class="hljs-number">1</span>
 """);
     }
 
@@ -71,7 +71,7 @@ my-key = 1
 'my key' = 1
 """,
 """
-<span class="hljs-attr">&#x27;my key&#x27;</span> = 1
+<span class="hljs-attr">&#x27;my key&#x27;</span> = <span class="hljs-number">1</span>
 """);
     }
 
@@ -83,7 +83,7 @@ my-key = 1
 site.name = "demo"
 """,
 """
-<span class="hljs-attr">site.name</span> = &quot;demo&quot;
+<span class="hljs-attr">site.name</span> = <span class="hljs-string">&quot;demo&quot;</span>
 """);
     }
 
@@ -95,7 +95,7 @@ site.name = "demo"
 a.b.c.d = 1
 """,
 """
-<span class="hljs-attr">a.b.c.d</span> = 1
+<span class="hljs-attr">a.b.c.d</span> = <span class="hljs-number">1</span>
 """);
     }
 
@@ -107,7 +107,7 @@ a.b.c.d = 1
 site."my key".value = 1
 """,
 """
-<span class="hljs-attr">site.&quot;my key&quot;.value</span> = 1
+<span class="hljs-attr">site.&quot;my key&quot;.value</span> = <span class="hljs-number">1</span>
 """);
     }
 
@@ -119,7 +119,7 @@ site."my key".value = 1
 1234 = "value"
 """,
 """
-<span class="hljs-attr">1234</span> = &quot;value&quot;
+<span class="hljs-attr">1234</span> = <span class="hljs-string">&quot;value&quot;</span>
 """);
     }
 
@@ -134,8 +134,8 @@ port = 8080
 """,
 """
 <span class="hljs-section">[server]</span>
-<span class="hljs-attr">host</span> = &quot;localhost&quot;
-<span class="hljs-attr">port</span> = 8080
+<span class="hljs-attr">host</span> = <span class="hljs-string">&quot;localhost&quot;</span>
+<span class="hljs-attr">port</span> = <span class="hljs-number">8080</span>
 """);
     }
 
@@ -149,7 +149,7 @@ url = "postgres://localhost/db"
 """,
 """
 <span class="hljs-section">[database.primary]</span>
-<span class="hljs-attr">url</span> = &quot;postgres://localhost/db&quot;
+<span class="hljs-attr">url</span> = <span class="hljs-string">&quot;postgres://localhost/db&quot;</span>
 """);
     }
 
@@ -163,7 +163,7 @@ value = 1
 """,
 """
 <span class="hljs-section">[a.b.c.d]</span>
-<span class="hljs-attr">value</span> = 1
+<span class="hljs-attr">value</span> = <span class="hljs-number">1</span>
 """);
     }
 
@@ -177,7 +177,7 @@ ip = "10.0.0.1"
 """,
 """
 <span class="hljs-section">[servers.&quot;east-us&quot;]</span>
-<span class="hljs-attr">ip</span> = &quot;10.0.0.1&quot;
+<span class="hljs-attr">ip</span> = <span class="hljs-string">&quot;10.0.0.1&quot;</span>
 """);
     }
 
@@ -209,13 +209,13 @@ color = "orange"
 """,
 """
 <span class="hljs-section">[fruit.apple]</span>
-<span class="hljs-attr">color</span> = &quot;red&quot;
+<span class="hljs-attr">color</span> = <span class="hljs-string">&quot;red&quot;</span>
 
 <span class="hljs-section">[animal]</span>
-<span class="hljs-attr">name</span> = &quot;cat&quot;
+<span class="hljs-attr">name</span> = <span class="hljs-string">&quot;cat&quot;</span>
 
 <span class="hljs-section">[fruit.orange]</span>
-<span class="hljs-attr">color</span> = &quot;orange&quot;
+<span class="hljs-attr">color</span> = <span class="hljs-string">&quot;orange&quot;</span>
 """);
     }
 
@@ -230,8 +230,8 @@ price = 9.99
 """,
 """
 <span class="hljs-section">[[products]]</span>
-<span class="hljs-attr">name</span> = &quot;Widget&quot;
-<span class="hljs-attr">price</span> = 9.99
+<span class="hljs-attr">name</span> = <span class="hljs-string">&quot;Widget&quot;</span>
+<span class="hljs-attr">price</span> = <span class="hljs-number">9.99</span>
 """);
     }
 
@@ -248,10 +248,10 @@ name = "Gadget"
 """,
 """
 <span class="hljs-section">[[products]]</span>
-<span class="hljs-attr">name</span> = &quot;Widget&quot;
+<span class="hljs-attr">name</span> = <span class="hljs-string">&quot;Widget&quot;</span>
 
 <span class="hljs-section">[[products]]</span>
-<span class="hljs-attr">name</span> = &quot;Gadget&quot;
+<span class="hljs-attr">name</span> = <span class="hljs-string">&quot;Gadget&quot;</span>
 """);
     }
 
@@ -268,10 +268,10 @@ name = "granny smith"
 """,
 """
 <span class="hljs-section">[[fruit.varieties]]</span>
-<span class="hljs-attr">name</span> = &quot;red delicious&quot;
+<span class="hljs-attr">name</span> = <span class="hljs-string">&quot;red delicious&quot;</span>
 
 <span class="hljs-section">[[fruit.varieties]]</span>
-<span class="hljs-attr">name</span> = &quot;granny smith&quot;
+<span class="hljs-attr">name</span> = <span class="hljs-string">&quot;granny smith&quot;</span>
 """);
     }
 
@@ -289,11 +289,11 @@ height = 20
 """,
 """
 <span class="hljs-section">[[products]]</span>
-<span class="hljs-attr">name</span> = &quot;Widget&quot;
+<span class="hljs-attr">name</span> = <span class="hljs-string">&quot;Widget&quot;</span>
 
 <span class="hljs-section">[products.dimensions]</span>
-<span class="hljs-attr">width</span> = 10
-<span class="hljs-attr">height</span> = 20
+<span class="hljs-attr">width</span> = <span class="hljs-number">10</span>
+<span class="hljs-attr">height</span> = <span class="hljs-number">20</span>
 """);
     }
 
@@ -305,7 +305,7 @@ height = 20
 name = "alice"
 """,
 """
-<span class="hljs-attr">name</span> = &quot;alice&quot;
+<span class="hljs-attr">name</span> = <span class="hljs-string">&quot;alice&quot;</span>
 """);
     }
 
@@ -317,7 +317,7 @@ name = "alice"
 name = ""
 """,
 """
-<span class="hljs-attr">name</span> = &quot;&quot;
+<span class="hljs-attr">name</span> = <span class="hljs-string">&quot;&quot;</span>
 """);
     }
 
@@ -329,7 +329,7 @@ name = ""
 title = "The Quick Brown Fox"
 """,
 """
-<span class="hljs-attr">title</span> = &quot;The Quick Brown Fox&quot;
+<span class="hljs-attr">title</span> = <span class="hljs-string">&quot;The Quick Brown Fox&quot;</span>
 """);
     }
 
@@ -341,7 +341,7 @@ title = "The Quick Brown Fox"
 msg = "line1\nline2"
 """,
 """
-<span class="hljs-attr">msg</span> = &quot;line1\nline2&quot;
+<span class="hljs-attr">msg</span> = <span class="hljs-string">&quot;line1<span class="hljs-char escape_">\n</span>line2&quot;</span>
 """);
     }
 
@@ -353,7 +353,7 @@ msg = "line1\nline2"
 msg = "a\tb"
 """,
 """
-<span class="hljs-attr">msg</span> = &quot;a\tb&quot;
+<span class="hljs-attr">msg</span> = <span class="hljs-string">&quot;a<span class="hljs-char escape_">\t</span>b&quot;</span>
 """);
     }
 
@@ -365,7 +365,7 @@ msg = "a\tb"
 msg = "She said \"hi\""
 """,
 """
-<span class="hljs-attr">msg</span> = &quot;She said \&quot;hi\&quot;&quot;
+<span class="hljs-attr">msg</span> = <span class="hljs-string">&quot;She said <span class="hljs-char escape_">\&quot;</span>hi<span class="hljs-char escape_">\&quot;</span>&quot;</span>
 """);
     }
 
@@ -377,7 +377,7 @@ msg = "She said \"hi\""
 path = "a\\b"
 """,
 """
-<span class="hljs-attr">path</span> = &quot;a\\b&quot;
+<span class="hljs-attr">path</span> = <span class="hljs-string">&quot;a<span class="hljs-char escape_">\\</span>b&quot;</span>
 """);
     }
 
@@ -389,7 +389,7 @@ path = "a\\b"
 msg = "\u0041"
 """,
 """
-<span class="hljs-attr">msg</span> = &quot;\u0041&quot;
+<span class="hljs-attr">msg</span> = <span class="hljs-string">&quot;<span class="hljs-char escape_">\u0041</span>&quot;</span>
 """);
     }
 
@@ -401,7 +401,7 @@ msg = "\u0041"
 msg = "\U0001F600"
 """,
 """
-<span class="hljs-attr">msg</span> = &quot;\U0001F600&quot;
+<span class="hljs-attr">msg</span> = <span class="hljs-string">&quot;<span class="hljs-char escape_">\U0001F600</span>&quot;</span>
 """);
     }
 
@@ -413,7 +413,7 @@ msg = "\U0001F600"
 path = 'C:\Users\alice'
 """,
 """
-<span class="hljs-attr">path</span> = &#x27;C:\Users\alice&#x27;
+<span class="hljs-attr">path</span> = <span class="hljs-string">&#x27;C:\Users\alice&#x27;</span>
 """);
     }
 
@@ -425,7 +425,7 @@ path = 'C:\Users\alice'
 name = ''
 """,
 """
-<span class="hljs-attr">name</span> = &#x27;&#x27;
+<span class="hljs-attr">name</span> = <span class="hljs-string">&#x27;&#x27;</span>
 """);
     }
 
@@ -437,7 +437,7 @@ name = ''
 pattern = '\d{3}-\d{4}'
 """,
 """
-<span class="hljs-attr">pattern</span> = &#x27;\d{3}-\d{4}&#x27;
+<span class="hljs-attr">pattern</span> = <span class="hljs-string">&#x27;\d{3}-\d{4}&#x27;</span>
 """);
     }
 
@@ -449,7 +449,7 @@ pattern = '\d{3}-\d{4}'
 quote = 'She said hi'
 """,
 """
-<span class="hljs-attr">quote</span> = &#x27;She said hi&#x27;
+<span class="hljs-attr">quote</span> = <span class="hljs-string">&#x27;She said hi&#x27;</span>
 """);
     }
 
@@ -464,10 +464,10 @@ second line
 """
 """",
 """
-<span class="hljs-attr">desc</span> = &quot;&quot;&quot;
+<span class="hljs-attr">desc</span> = <span class="hljs-string">&quot;&quot;&quot;
 first line
 second line
-&quot;&quot;&quot;
+&quot;&quot;&quot;</span>
 """);
     }
 
@@ -482,10 +482,10 @@ stays on one line\
 """
 """",
 """
-<span class="hljs-attr">desc</span> = &quot;&quot;&quot;\
-first line \
-stays on one line\
-&quot;&quot;&quot;
+<span class="hljs-attr">desc</span> = <span class="hljs-string">&quot;&quot;&quot;<span class="hljs-char escape_">\</span>
+first line <span class="hljs-char escape_">\</span>
+stays on one line<span class="hljs-char escape_">\</span>
+&quot;&quot;&quot;</span>
 """);
     }
 
@@ -499,9 +499,9 @@ line with \"quote\"\nand newline
 """
 """",
 """
-<span class="hljs-attr">msg</span> = &quot;&quot;&quot;
-line with \&quot;quote\&quot;\nand newline
-&quot;&quot;&quot;
+<span class="hljs-attr">msg</span> = <span class="hljs-string">&quot;&quot;&quot;
+line with <span class="hljs-char escape_">\&quot;</span>quote<span class="hljs-char escape_">\&quot;</span><span class="hljs-char escape_">\n</span>and newline
+&quot;&quot;&quot;</span>
 """);
     }
 
@@ -515,9 +515,9 @@ regex = '''
 '''
 """,
 """
-<span class="hljs-attr">regex</span> = &#x27;&#x27;&#x27;
+<span class="hljs-attr">regex</span> = <span class="hljs-string">&#x27;&#x27;&#x27;
 \d{3}-\d{4}
-&#x27;&#x27;&#x27;
+&#x27;&#x27;&#x27;</span>
 """);
     }
 
@@ -531,9 +531,9 @@ She said "hi"
 '''
 """,
 """
-<span class="hljs-attr">msg</span> = &#x27;&#x27;&#x27;
+<span class="hljs-attr">msg</span> = <span class="hljs-string">&#x27;&#x27;&#x27;
 She said &quot;hi&quot;
-&#x27;&#x27;&#x27;
+&#x27;&#x27;&#x27;</span>
 """);
     }
 
@@ -545,7 +545,7 @@ She said &quot;hi&quot;
 count = 42
 """,
 """
-<span class="hljs-attr">count</span> = 42
+<span class="hljs-attr">count</span> = <span class="hljs-number">42</span>
 """);
     }
 
@@ -557,7 +557,7 @@ count = 42
 count = +42
 """,
 """
-<span class="hljs-attr">count</span> = +42
+<span class="hljs-attr">count</span> = <span class="hljs-number">+42</span>
 """);
     }
 
@@ -569,7 +569,7 @@ count = +42
 count = -42
 """,
 """
-<span class="hljs-attr">count</span> = -42
+<span class="hljs-attr">count</span> = <span class="hljs-number">-42</span>
 """);
     }
 
@@ -581,7 +581,7 @@ count = -42
 count = 0
 """,
 """
-<span class="hljs-attr">count</span> = 0
+<span class="hljs-attr">count</span> = <span class="hljs-number">0</span>
 """);
     }
 
@@ -593,7 +593,7 @@ count = 0
 big = 1_000_000
 """,
 """
-<span class="hljs-attr">big</span> = 1_000_000
+<span class="hljs-attr">big</span> = <span class="hljs-number">1_000_000</span>
 """);
     }
 
@@ -605,7 +605,7 @@ big = 1_000_000
 big = 1_000_000_000
 """,
 """
-<span class="hljs-attr">big</span> = 1_000_000_000
+<span class="hljs-attr">big</span> = <span class="hljs-number">1_000_000_000</span>
 """);
     }
 
@@ -617,7 +617,7 @@ big = 1_000_000_000
 mask = 0xDEADBEEF
 """,
 """
-<span class="hljs-attr">mask</span> = 0xDEADBEEF
+<span class="hljs-attr">mask</span> = <span class="hljs-number">0xDEADBEEF</span>
 """);
     }
 
@@ -629,7 +629,7 @@ mask = 0xDEADBEEF
 mask = 0xDEAD_BEEF
 """,
 """
-<span class="hljs-attr">mask</span> = 0xDEAD_BEEF
+<span class="hljs-attr">mask</span> = <span class="hljs-number">0xDEAD_BEEF</span>
 """);
     }
 
@@ -641,7 +641,7 @@ mask = 0xDEAD_BEEF
 mode = 0o755
 """,
 """
-<span class="hljs-attr">mode</span> = 0o755
+<span class="hljs-attr">mode</span> = <span class="hljs-number">0o755</span>
 """);
     }
 
@@ -653,7 +653,7 @@ mode = 0o755
 flags = 0b10101100
 """,
 """
-<span class="hljs-attr">flags</span> = 0b10101100
+<span class="hljs-attr">flags</span> = <span class="hljs-number">0b10101100</span>
 """);
     }
 
@@ -665,7 +665,7 @@ flags = 0b10101100
 flags = 0b1010_1100
 """,
 """
-<span class="hljs-attr">flags</span> = 0b1010_1100
+<span class="hljs-attr">flags</span> = <span class="hljs-number">0b1010_1100</span>
 """);
     }
 
@@ -677,7 +677,7 @@ flags = 0b1010_1100
 pi = 3.14
 """,
 """
-<span class="hljs-attr">pi</span> = 3.14
+<span class="hljs-attr">pi</span> = <span class="hljs-number">3.14</span>
 """);
     }
 
@@ -689,7 +689,7 @@ pi = 3.14
 temp = -3.14
 """,
 """
-<span class="hljs-attr">temp</span> = -3.14
+<span class="hljs-attr">temp</span> = <span class="hljs-number">-3.14</span>
 """);
     }
 
@@ -701,7 +701,7 @@ temp = -3.14
 temp = +3.14
 """,
 """
-<span class="hljs-attr">temp</span> = +3.14
+<span class="hljs-attr">temp</span> = <span class="hljs-number">+3.14</span>
 """);
     }
 
@@ -713,7 +713,7 @@ temp = +3.14
 big = 1e10
 """,
 """
-<span class="hljs-attr">big</span> = 1e10
+<span class="hljs-attr">big</span> = <span class="hljs-number">1e10</span>
 """);
     }
 
@@ -725,7 +725,7 @@ big = 1e10
 big = 1E10
 """,
 """
-<span class="hljs-attr">big</span> = 1E10
+<span class="hljs-attr">big</span> = <span class="hljs-number">1E10</span>
 """);
     }
 
@@ -737,7 +737,7 @@ big = 1E10
 small = 1.5e-3
 """,
 """
-<span class="hljs-attr">small</span> = 1.5e-3
+<span class="hljs-attr">small</span> = <span class="hljs-number">1.5e-3</span>
 """);
     }
 
@@ -749,7 +749,7 @@ small = 1.5e-3
 big = 2.5e+4
 """,
 """
-<span class="hljs-attr">big</span> = 2.5e+4
+<span class="hljs-attr">big</span> = <span class="hljs-number">2.5e+4</span>
 """);
     }
 
@@ -761,7 +761,7 @@ big = 2.5e+4
 big = 9_224_617.445_991_228
 """,
 """
-<span class="hljs-attr">big</span> = 9_224_617.445_991_228
+<span class="hljs-attr">big</span> = <span class="hljs-number">9_224_617.445_991_228</span>
 """);
     }
 
@@ -773,7 +773,7 @@ big = 9_224_617.445_991_228
 sentinel = inf
 """,
 """
-<span class="hljs-attr">sentinel</span> = inf
+<span class="hljs-attr">sentinel</span> = <span class="hljs-number">inf</span>
 """);
     }
 
@@ -785,7 +785,7 @@ sentinel = inf
 sentinel = +inf
 """,
 """
-<span class="hljs-attr">sentinel</span> = +inf
+<span class="hljs-attr">sentinel</span> = <span class="hljs-number">+inf</span>
 """);
     }
 
@@ -797,7 +797,7 @@ sentinel = +inf
 sentinel = -inf
 """,
 """
-<span class="hljs-attr">sentinel</span> = -inf
+<span class="hljs-attr">sentinel</span> = <span class="hljs-number">-inf</span>
 """);
     }
 
@@ -809,7 +809,7 @@ sentinel = -inf
 sentinel = nan
 """,
 """
-<span class="hljs-attr">sentinel</span> = nan
+<span class="hljs-attr">sentinel</span> = <span class="hljs-number">nan</span>
 """);
     }
 
@@ -821,7 +821,7 @@ sentinel = nan
 sentinel = +nan
 """,
 """
-<span class="hljs-attr">sentinel</span> = +nan
+<span class="hljs-attr">sentinel</span> = <span class="hljs-number">+nan</span>
 """);
     }
 
@@ -833,7 +833,7 @@ sentinel = +nan
 sentinel = -nan
 """,
 """
-<span class="hljs-attr">sentinel</span> = -nan
+<span class="hljs-attr">sentinel</span> = <span class="hljs-number">-nan</span>
 """);
     }
 
@@ -845,7 +845,7 @@ sentinel = -nan
 flag = true
 """,
 """
-<span class="hljs-attr">flag</span> = true
+<span class="hljs-attr">flag</span> = <span class="hljs-literal">true</span>
 """);
     }
 
@@ -857,7 +857,7 @@ flag = true
 flag = false
 """,
 """
-<span class="hljs-attr">flag</span> = false
+<span class="hljs-attr">flag</span> = <span class="hljs-literal">false</span>
 """);
     }
 
@@ -869,7 +869,7 @@ flag = false
 created = 2026-05-26T10:30:00Z
 """,
 """
-<span class="hljs-attr">created</span> = 2026-05-26T10:30:00Z
+<span class="hljs-attr">created</span> = <span class="hljs-number">2026-05-26T10:30:00Z</span>
 """);
     }
 
@@ -881,7 +881,7 @@ created = 2026-05-26T10:30:00Z
 created = 2026-05-26T10:30:00+02:00
 """,
 """
-<span class="hljs-attr">created</span> = 2026-05-26T10:30:00+02:00
+<span class="hljs-attr">created</span> = <span class="hljs-number">2026-05-26T10:30:00+02:00</span>
 """);
     }
 
@@ -893,7 +893,7 @@ created = 2026-05-26T10:30:00+02:00
 created = 2026-05-26T10:30:00-05:00
 """,
 """
-<span class="hljs-attr">created</span> = 2026-05-26T10:30:00-05:00
+<span class="hljs-attr">created</span> = <span class="hljs-number">2026-05-26T10:30:00-05:00</span>
 """);
     }
 
@@ -905,7 +905,7 @@ created = 2026-05-26T10:30:00-05:00
 precise = 2026-05-26T10:30:00.123456Z
 """,
 """
-<span class="hljs-attr">precise</span> = 2026-05-26T10:30:00.123456Z
+<span class="hljs-attr">precise</span> = <span class="hljs-number">2026-05-26T10:30:00.123456Z</span>
 """);
     }
 
@@ -917,7 +917,7 @@ precise = 2026-05-26T10:30:00.123456Z
 created = 2026-05-26 10:30:00Z
 """,
 """
-<span class="hljs-attr">created</span> = 2026-05-26 10:30:00Z
+<span class="hljs-attr">created</span> = <span class="hljs-number">2026-05-26 10:30:00Z</span>
 """);
     }
 
@@ -929,7 +929,7 @@ created = 2026-05-26 10:30:00Z
 created = 2026-05-26T10:30:00
 """,
 """
-<span class="hljs-attr">created</span> = 2026-05-26T10:30:00
+<span class="hljs-attr">created</span> = <span class="hljs-number">2026-05-26T10:30:00</span>
 """);
     }
 
@@ -941,7 +941,7 @@ created = 2026-05-26T10:30:00
 created = 2026-05-26T10:30:00.5
 """,
 """
-<span class="hljs-attr">created</span> = 2026-05-26T10:30:00.5
+<span class="hljs-attr">created</span> = <span class="hljs-number">2026-05-26T10:30:00.5</span>
 """);
     }
 
@@ -953,7 +953,7 @@ created = 2026-05-26T10:30:00.5
 birthday = 2026-05-26
 """,
 """
-<span class="hljs-attr">birthday</span> = 2026-05-26
+<span class="hljs-attr">birthday</span> = <span class="hljs-number">2026-05-26</span>
 """);
     }
 
@@ -965,7 +965,7 @@ birthday = 2026-05-26
 lunch = 12:00:00
 """,
 """
-<span class="hljs-attr">lunch</span> = 12:00:00
+<span class="hljs-attr">lunch</span> = <span class="hljs-number">12:00:00</span>
 """);
     }
 
@@ -977,7 +977,7 @@ lunch = 12:00:00
 lunch = 12:00:00.123
 """,
 """
-<span class="hljs-attr">lunch</span> = 12:00:00.123
+<span class="hljs-attr">lunch</span> = <span class="hljs-number">12:00:00.123</span>
 """);
     }
 
@@ -1001,7 +1001,7 @@ list = []
 list = [1, 2, 3]
 """,
 """
-<span class="hljs-attr">list</span> = [1, 2, 3]
+<span class="hljs-attr">list</span> = [<span class="hljs-number">1</span>, <span class="hljs-number">2</span>, <span class="hljs-number">3</span>]
 """);
     }
 
@@ -1013,7 +1013,7 @@ list = [1, 2, 3]
 list = ["a", "b", "c"]
 """,
 """
-<span class="hljs-attr">list</span> = [&quot;a&quot;, &quot;b&quot;, &quot;c&quot;]
+<span class="hljs-attr">list</span> = [<span class="hljs-string">&quot;a&quot;</span>, <span class="hljs-string">&quot;b&quot;</span>, <span class="hljs-string">&quot;c&quot;</span>]
 """);
     }
 
@@ -1025,7 +1025,7 @@ list = ["a", "b", "c"]
 list = [1, "two", true]
 """,
 """
-<span class="hljs-attr">list</span> = [1, &quot;two&quot;, true]
+<span class="hljs-attr">list</span> = [<span class="hljs-number">1</span>, <span class="hljs-string">&quot;two&quot;</span>, <span class="hljs-literal">true</span>]
 """);
     }
 
@@ -1037,7 +1037,7 @@ list = [1, "two", true]
 matrix = [[1, 2], [3, 4]]
 """,
 """
-<span class="hljs-attr">matrix</span> = [[1, 2], [3, 4]]
+<span class="hljs-attr">matrix</span> = [[<span class="hljs-number">1</span>, <span class="hljs-number">2</span>], [<span class="hljs-number">3</span>, <span class="hljs-number">4</span>]]
 """);
     }
 
@@ -1054,9 +1054,9 @@ list = [
 """,
 """
 <span class="hljs-attr">list</span> = [
-  1,
-  2,
-  3,
+  <span class="hljs-number">1</span>,
+  <span class="hljs-number">2</span>,
+  <span class="hljs-number">3</span>,
 ]
 """);
     }
@@ -1074,9 +1074,9 @@ list = [
 """,
 """
 <span class="hljs-attr">list</span> = [
-  1,  <span class="hljs-comment"># first</span>
-  2,  <span class="hljs-comment"># second</span>
-  3,  <span class="hljs-comment"># third</span>
+  <span class="hljs-number">1</span>,  <span class="hljs-comment"># first</span>
+  <span class="hljs-number">2</span>,  <span class="hljs-comment"># second</span>
+  <span class="hljs-number">3</span>,  <span class="hljs-comment"># third</span>
 ]
 """);
     }
@@ -1089,7 +1089,7 @@ list = [
 list = [1, 2, 3,]
 """,
 """
-<span class="hljs-attr">list</span> = [1, 2, 3,]
+<span class="hljs-attr">list</span> = [<span class="hljs-number">1</span>, <span class="hljs-number">2</span>, <span class="hljs-number">3</span>,]
 """);
     }
 
@@ -1101,7 +1101,7 @@ list = [1, 2, 3,]
 inline_list = [{ x = 1 }, { x = 2 }]
 """,
 """
-<span class="hljs-attr">inline_list</span> = [{ x = 1 }, { x = 2 }]
+<span class="hljs-attr">inline_list</span> = [{ <span class="hljs-attr">x</span> = <span class="hljs-number">1</span> }, { <span class="hljs-attr">x</span> = <span class="hljs-number">2</span> }]
 """);
     }
 
@@ -1113,7 +1113,7 @@ inline_list = [{ x = 1 }, { x = 2 }]
 when = [2026-05-26, 2026-06-01, 2026-07-04]
 """,
 """
-<span class="hljs-attr">when</span> = [2026-05-26, 2026-06-01, 2026-07-04]
+<span class="hljs-attr">when</span> = [<span class="hljs-number">2026-05-26</span>, <span class="hljs-number">2026-06-01</span>, <span class="hljs-number">2026-07-04</span>]
 """);
     }
 
@@ -1137,7 +1137,7 @@ point = {}
 point = { x = 1 }
 """,
 """
-<span class="hljs-attr">point</span> = { x = 1 }
+<span class="hljs-attr">point</span> = { <span class="hljs-attr">x</span> = <span class="hljs-number">1</span> }
 """);
     }
 
@@ -1149,7 +1149,7 @@ point = { x = 1 }
 point = { x = 1, y = 2 }
 """,
 """
-<span class="hljs-attr">point</span> = { x = 1, y = 2 }
+<span class="hljs-attr">point</span> = { <span class="hljs-attr">x</span> = <span class="hljs-number">1</span>, <span class="hljs-attr">y</span> = <span class="hljs-number">2</span> }
 """);
     }
 
@@ -1161,7 +1161,7 @@ point = { x = 1, y = 2 }
 config = { name = "demo", version = "1.0", debug = false }
 """,
 """
-<span class="hljs-attr">config</span> = { name = &quot;demo&quot;, version = &quot;1.0&quot;, debug = false }
+<span class="hljs-attr">config</span> = { <span class="hljs-attr">name</span> = <span class="hljs-string">&quot;demo&quot;</span>, <span class="hljs-attr">version</span> = <span class="hljs-string">&quot;1.0&quot;</span>, <span class="hljs-attr">debug</span> = <span class="hljs-literal">false</span> }
 """);
     }
 
@@ -1173,7 +1173,7 @@ config = { name = "demo", version = "1.0", debug = false }
 server = { host = "localhost", db = { name = "main", port = 5432 } }
 """,
 """
-<span class="hljs-attr">server</span> = { host = &quot;localhost&quot;, db = { name = &quot;main&quot;, port = 5432 } }
+<span class="hljs-attr">server</span> = { <span class="hljs-attr">host</span> = <span class="hljs-string">&quot;localhost&quot;</span>, <span class="hljs-attr">db</span> = { <span class="hljs-attr">name</span> = <span class="hljs-string">&quot;main&quot;</span>, <span class="hljs-attr">port</span> = <span class="hljs-number">5432</span> } }
 """);
     }
 
@@ -1185,7 +1185,7 @@ server = { host = "localhost", db = { name = "main", port = 5432 } }
 address = { city.name = "Paris", country.code = "FR" }
 """,
 """
-<span class="hljs-attr">address</span> = { city.name = &quot;Paris&quot;, country.code = &quot;FR&quot; }
+<span class="hljs-attr">address</span> = { <span class="hljs-attr">city.name</span> = <span class="hljs-string">&quot;Paris&quot;</span>, <span class="hljs-attr">country.code</span> = <span class="hljs-string">&quot;FR&quot;</span> }
 """);
     }
 
@@ -1209,7 +1209,7 @@ address = { city.name = "Paris", country.code = "FR" }
 name = "alice"  # the user
 """,
 """
-<span class="hljs-attr">name</span> = &quot;alice&quot;  # the user
+<span class="hljs-attr">name</span> = <span class="hljs-string">&quot;alice&quot;</span>  <span class="hljs-comment"># the user</span>
 """);
     }
 
@@ -1225,7 +1225,7 @@ host = "localhost"
 """
 <span class="hljs-comment"># server config</span>
 <span class="hljs-section">[server]</span>
-<span class="hljs-attr">host</span> = &quot;localhost&quot;
+<span class="hljs-attr">host</span> = <span class="hljs-string">&quot;localhost&quot;</span>
 """);
     }
 
@@ -1239,7 +1239,7 @@ name = "alice"
 """,
 """
 <span class="hljs-comment"># username</span>
-<span class="hljs-attr">name</span> = &quot;alice&quot;
+<span class="hljs-attr">name</span> = <span class="hljs-string">&quot;alice&quot;</span>
 """);
     }
 
@@ -1283,21 +1283,21 @@ path = "src/main.rs"
 """,
 """
 <span class="hljs-section">[package]</span>
-<span class="hljs-attr">name</span> = &quot;demo&quot;
-<span class="hljs-attr">version</span> = &quot;1.0.0&quot;
-<span class="hljs-attr">authors</span> = [&quot;Alice &lt;alice@example.com&gt;&quot;]
-<span class="hljs-attr">edition</span> = &quot;2021&quot;
+<span class="hljs-attr">name</span> = <span class="hljs-string">&quot;demo&quot;</span>
+<span class="hljs-attr">version</span> = <span class="hljs-string">&quot;1.0.0&quot;</span>
+<span class="hljs-attr">authors</span> = [<span class="hljs-string">&quot;Alice &lt;alice@example.com&gt;&quot;</span>]
+<span class="hljs-attr">edition</span> = <span class="hljs-string">&quot;2021&quot;</span>
 
 <span class="hljs-section">[dependencies]</span>
-<span class="hljs-attr">serde</span> = { version = &quot;1.0&quot;, features = [&quot;derive&quot;] }
-<span class="hljs-attr">tokio</span> = { version = &quot;1&quot;, features = [&quot;full&quot;] }
+<span class="hljs-attr">serde</span> = { <span class="hljs-attr">version</span> = <span class="hljs-string">&quot;1.0&quot;</span>, <span class="hljs-attr">features</span> = [<span class="hljs-string">&quot;derive&quot;</span>] }
+<span class="hljs-attr">tokio</span> = { <span class="hljs-attr">version</span> = <span class="hljs-string">&quot;1&quot;</span>, <span class="hljs-attr">features</span> = [<span class="hljs-string">&quot;full&quot;</span>] }
 
 <span class="hljs-section">[dev-dependencies]</span>
-<span class="hljs-attr">criterion</span> = &quot;0.5&quot;
+<span class="hljs-attr">criterion</span> = <span class="hljs-string">&quot;0.5&quot;</span>
 
 <span class="hljs-section">[[bin]]</span>
-<span class="hljs-attr">name</span> = &quot;demo&quot;
-<span class="hljs-attr">path</span> = &quot;src/main.rs&quot;
+<span class="hljs-attr">name</span> = <span class="hljs-string">&quot;demo&quot;</span>
+<span class="hljs-attr">path</span> = <span class="hljs-string">&quot;src/main.rs&quot;</span>
 """);
     }
 
@@ -1326,22 +1326,22 @@ Issues = "https://github.com/example/demo/issues"
 """,
 """
 <span class="hljs-section">[build-system]</span>
-<span class="hljs-attr">requires</span> = [&quot;setuptools&gt;=64&quot;]
-<span class="hljs-attr">build-backend</span> = &quot;setuptools.build_meta&quot;
+<span class="hljs-attr">requires</span> = [<span class="hljs-string">&quot;setuptools&gt;=64&quot;</span>]
+<span class="hljs-attr">build-backend</span> = <span class="hljs-string">&quot;setuptools.build_meta&quot;</span>
 
 <span class="hljs-section">[project]</span>
-<span class="hljs-attr">name</span> = &quot;demo&quot;
-<span class="hljs-attr">version</span> = &quot;1.0.0&quot;
-<span class="hljs-attr">description</span> = &quot;A demo project&quot;
-<span class="hljs-attr">requires-python</span> = &quot;&gt;=3.10&quot;
+<span class="hljs-attr">name</span> = <span class="hljs-string">&quot;demo&quot;</span>
+<span class="hljs-attr">version</span> = <span class="hljs-string">&quot;1.0.0&quot;</span>
+<span class="hljs-attr">description</span> = <span class="hljs-string">&quot;A demo project&quot;</span>
+<span class="hljs-attr">requires-python</span> = <span class="hljs-string">&quot;&gt;=3.10&quot;</span>
 <span class="hljs-attr">dependencies</span> = [
-  &quot;requests&gt;=2.31&quot;,
-  &quot;pydantic&gt;=2.0&quot;,
+  <span class="hljs-string">&quot;requests&gt;=2.31&quot;</span>,
+  <span class="hljs-string">&quot;pydantic&gt;=2.0&quot;</span>,
 ]
 
 <span class="hljs-section">[project.urls]</span>
-<span class="hljs-attr">Homepage</span> = &quot;https://example.com&quot;
-<span class="hljs-attr">Issues</span> = &quot;https://github.com/example/demo/issues&quot;
+<span class="hljs-attr">Homepage</span> = <span class="hljs-string">&quot;https://example.com&quot;</span>
+<span class="hljs-attr">Issues</span> = <span class="hljs-string">&quot;https://github.com/example/demo/issues&quot;</span>
 """);
     }
 
@@ -1373,27 +1373,27 @@ ip = "10.0.0.2"
 role = "backend"
 """,
 """
-<span class="hljs-attr">title</span> = &quot;TOML Example&quot;
+<span class="hljs-attr">title</span> = <span class="hljs-string">&quot;TOML Example&quot;</span>
 
 <span class="hljs-section">[owner]</span>
-<span class="hljs-attr">name</span> = &quot;Alice&quot;
-<span class="hljs-attr">dob</span> = 1990-01-15T00:00:00Z
+<span class="hljs-attr">name</span> = <span class="hljs-string">&quot;Alice&quot;</span>
+<span class="hljs-attr">dob</span> = <span class="hljs-number">1990-01-15T00:00:00Z</span>
 
 <span class="hljs-section">[database]</span>
-<span class="hljs-attr">enabled</span> = true
-<span class="hljs-attr">ports</span> = [8000, 8001, 8002]
-<span class="hljs-attr">data</span> = [[&quot;delta&quot;, &quot;phi&quot;], [3.14]]
-<span class="hljs-attr">temp_targets</span> = { cpu = 79.5, case = 72.0 }
+<span class="hljs-attr">enabled</span> = <span class="hljs-literal">true</span>
+<span class="hljs-attr">ports</span> = [<span class="hljs-number">8000</span>, <span class="hljs-number">8001</span>, <span class="hljs-number">8002</span>]
+<span class="hljs-attr">data</span> = [[<span class="hljs-string">&quot;delta&quot;</span>, <span class="hljs-string">&quot;phi&quot;</span>], [<span class="hljs-number">3.14</span>]]
+<span class="hljs-attr">temp_targets</span> = { <span class="hljs-attr">cpu</span> = <span class="hljs-number">79.5</span>, <span class="hljs-attr">case</span> = <span class="hljs-number">72.0</span> }
 
 <span class="hljs-section">[servers]</span>
 
 <span class="hljs-section">[servers.alpha]</span>
-<span class="hljs-attr">ip</span> = &quot;10.0.0.1&quot;
-<span class="hljs-attr">role</span> = &quot;frontend&quot;
+<span class="hljs-attr">ip</span> = <span class="hljs-string">&quot;10.0.0.1&quot;</span>
+<span class="hljs-attr">role</span> = <span class="hljs-string">&quot;frontend&quot;</span>
 
 <span class="hljs-section">[servers.beta]</span>
-<span class="hljs-attr">ip</span> = &quot;10.0.0.2&quot;
-<span class="hljs-attr">role</span> = &quot;backend&quot;
+<span class="hljs-attr">ip</span> = <span class="hljs-string">&quot;10.0.0.2&quot;</span>
+<span class="hljs-attr">role</span> = <span class="hljs-string">&quot;backend&quot;</span>
 """);
     }
 
@@ -1419,19 +1419,19 @@ role = "backend"
 """,
 """
 <span class="hljs-section">[build]</span>
-  <span class="hljs-attr">command</span> = &quot;npm run build&quot;
-  <span class="hljs-attr">publish</span> = &quot;dist&quot;
+  <span class="hljs-attr">command</span> = <span class="hljs-string">&quot;npm run build&quot;</span>
+  <span class="hljs-attr">publish</span> = <span class="hljs-string">&quot;dist&quot;</span>
 
 <span class="hljs-section">[[redirects]]</span>
-  <span class="hljs-attr">from</span> = &quot;/old&quot;
-  <span class="hljs-attr">to</span>   = &quot;/new&quot;
-  <span class="hljs-attr">status</span> = 301
+  <span class="hljs-attr">from</span> = <span class="hljs-string">&quot;/old&quot;</span>
+  <span class="hljs-attr">to</span>   = <span class="hljs-string">&quot;/new&quot;</span>
+  <span class="hljs-attr">status</span> = <span class="hljs-number">301</span>
 
 <span class="hljs-section">[[redirects]]</span>
-  <span class="hljs-attr">from</span> = &quot;/api/*&quot;
-  <span class="hljs-attr">to</span>   = &quot;https://api.example.com/:splat&quot;
-  <span class="hljs-attr">status</span> = 200
-  <span class="hljs-attr">force</span> = true
+  <span class="hljs-attr">from</span> = <span class="hljs-string">&quot;/api/*&quot;</span>
+  <span class="hljs-attr">to</span>   = <span class="hljs-string">&quot;https://api.example.com/:splat&quot;</span>
+  <span class="hljs-attr">status</span> = <span class="hljs-number">200</span>
+  <span class="hljs-attr">force</span> = <span class="hljs-literal">true</span>
 """);
     }
 
@@ -1483,9 +1483,9 @@ a = 1
 b = 2
 """,
 """
-<span class="hljs-attr">a</span> = 1
+<span class="hljs-attr">a</span> = <span class="hljs-number">1</span>
 
-<span class="hljs-attr">b</span> = 2
+<span class="hljs-attr">b</span> = <span class="hljs-number">2</span>
 """);
     }
 
@@ -1497,7 +1497,7 @@ b = 2
 global_key = "value"
 """,
 """
-<span class="hljs-attr">global_key</span> = &quot;value&quot;
+<span class="hljs-attr">global_key</span> = <span class="hljs-string">&quot;value&quot;</span>
 """);
     }
 
@@ -1510,8 +1510,454 @@ a = 1
 
 """,
 """
-<span class="hljs-attr">a</span> = 1
+<span class="hljs-attr">a</span> = <span class="hljs-number">1</span>
 
+""");
+    }
+
+    [Fact]
+    public void MultiLineStringQuotesBeforeClosingDelimiter()
+    {
+        AssertHighlighter("toml",
+""""""
+a = """He said "hi"."""
+b = """ends with two quotes"""""
+c = '''it''s'''
+d = ''''quoted'''''
+"""""",
+"""
+<span class="hljs-attr">a</span> = <span class="hljs-string">&quot;&quot;&quot;He said &quot;hi&quot;.&quot;&quot;&quot;</span>
+<span class="hljs-attr">b</span> = <span class="hljs-string">&quot;&quot;&quot;ends with two quotes&quot;&quot;&quot;&quot;&quot;</span>
+<span class="hljs-attr">c</span> = <span class="hljs-string">&#x27;&#x27;&#x27;it&#x27;&#x27;s&#x27;&#x27;&#x27;</span>
+<span class="hljs-attr">d</span> = <span class="hljs-string">&#x27;&#x27;&#x27;&#x27;quoted&#x27;&#x27;&#x27;&#x27;&#x27;</span>
+""");
+    }
+
+    [Fact]
+    public void MultiLineStringCommentMarkersAreText()
+    {
+        AssertHighlighter("toml",
+""""
+s = """
+# not a comment
+"""  # a comment
+"""",
+"""
+<span class="hljs-attr">s</span> = <span class="hljs-string">&quot;&quot;&quot;
+# not a comment
+&quot;&quot;&quot;</span>  <span class="hljs-comment"># a comment</span>
+""");
+    }
+
+    [Fact]
+    public void MultiLineStringUnterminated()
+    {
+        AssertHighlighter("toml",
+""""
+s = """
+never closed
+key = 1
+"""",
+"""
+<span class="hljs-attr">s</span> = <span class="hljs-string">&quot;&quot;&quot;
+never closed
+key = 1</span>
+""");
+    }
+
+    [Fact]
+    public void BasicStringToml11Escapes()
+    {
+        AssertHighlighter("toml",
+"""
+a = "\e[0m"
+b = "\x41"
+""",
+"""
+<span class="hljs-attr">a</span> = <span class="hljs-string">&quot;<span class="hljs-char escape_">\e</span>[0m&quot;</span>
+<span class="hljs-attr">b</span> = <span class="hljs-string">&quot;<span class="hljs-char escape_">\x41</span>&quot;</span>
+""");
+    }
+
+    [Fact]
+    public void BasicStringInvalidEscapeDoesNotEndString()
+    {
+        AssertHighlighter("toml",
+"""
+a = "\q\" still a string"
+""",
+"""
+<span class="hljs-attr">a</span> = <span class="hljs-string">&quot;\q<span class="hljs-char escape_">\&quot;</span> still a string&quot;</span>
+""");
+    }
+
+    [Fact]
+    public void BasicStringUnterminatedEndsAtEndOfLine()
+    {
+        AssertHighlighter("toml",
+"""
+a = "unterminated
+b = 'also unterminated
+c = 1
+""",
+"""
+<span class="hljs-attr">a</span> = <span class="hljs-string">&quot;unterminated</span>
+<span class="hljs-attr">b</span> = <span class="hljs-string">&#x27;also unterminated</span>
+<span class="hljs-attr">c</span> = <span class="hljs-number">1</span>
+""");
+    }
+
+    [Fact]
+    public void StringHashInside()
+    {
+        AssertHighlighter("toml",
+"""
+url = "https://example.com/#anchor" # comment
+lit = 'C:\#dir'
+""",
+"""
+<span class="hljs-attr">url</span> = <span class="hljs-string">&quot;https://example.com/#anchor&quot;</span> <span class="hljs-comment"># comment</span>
+<span class="hljs-attr">lit</span> = <span class="hljs-string">&#x27;C:\#dir&#x27;</span>
+""");
+    }
+
+    [Fact]
+    public void ArrayNestedOnSeparateLines()
+    {
+        AssertHighlighter("toml",
+"""
+matrix = [
+  [1, 2],
+  [3],
+  [
+    "a", # comment
+    'b',
+  ],
+]
+[table]
+k = 1
+""",
+"""
+<span class="hljs-attr">matrix</span> = [
+  [<span class="hljs-number">1</span>, <span class="hljs-number">2</span>],
+  [<span class="hljs-number">3</span>],
+  [
+    <span class="hljs-string">&quot;a&quot;</span>, <span class="hljs-comment"># comment</span>
+    <span class="hljs-string">&#x27;b&#x27;</span>,
+  ],
+]
+<span class="hljs-section">[table]</span>
+<span class="hljs-attr">k</span> = <span class="hljs-number">1</span>
+""");
+    }
+
+    [Fact]
+    public void ArrayUnterminatedEndsBeforeNextKey()
+    {
+        AssertHighlighter("toml",
+"""
+a = [1, 2,
+  3
+b = "next"
+[table]
+c = true
+""",
+"""
+<span class="hljs-attr">a</span> = [<span class="hljs-number">1</span>, <span class="hljs-number">2</span>,
+  <span class="hljs-number">3</span>
+<span class="hljs-attr">b</span> = <span class="hljs-string">&quot;next&quot;</span>
+<span class="hljs-section">[table]</span>
+<span class="hljs-attr">c</span> = <span class="hljs-literal">true</span>
+""");
+    }
+
+    [Fact]
+    public void InlineTableUnterminatedEndsBeforeTableHeader()
+    {
+        AssertHighlighter("toml",
+"""
+a = { x = 1, y = [2, 3]
+b = 2
+[table]
+c = 3
+""",
+"""
+<span class="hljs-attr">a</span> = { <span class="hljs-attr">x</span> = <span class="hljs-number">1</span>, <span class="hljs-attr">y</span> = [<span class="hljs-number">2</span>, <span class="hljs-number">3</span>]
+<span class="hljs-attr">b</span> = <span class="hljs-number">2</span>
+<span class="hljs-section">[table]</span>
+<span class="hljs-attr">c</span> = <span class="hljs-number">3</span>
+""");
+    }
+
+    [Fact]
+    public void InlineTableMultiLineToml11()
+    {
+        AssertHighlighter("toml",
+"""
+point = {
+  x = 1, # comment
+  y = 2,
+}
+""",
+"""
+<span class="hljs-attr">point</span> = {
+  <span class="hljs-attr">x</span> = <span class="hljs-number">1</span>, <span class="hljs-comment"># comment</span>
+  <span class="hljs-attr">y</span> = <span class="hljs-number">2</span>,
+}
+""");
+    }
+
+    [Fact]
+    public void TableIndented()
+    {
+        AssertHighlighter("toml",
+"""
+  [indented]
+  key = 1
+	[[also.indented]]
+""",
+"""
+  <span class="hljs-section">[indented]</span>
+  <span class="hljs-attr">key</span> = <span class="hljs-number">1</span>
+	<span class="hljs-section">[[also.indented]]</span>
+""");
+    }
+
+    [Fact]
+    public void TableSpacesAroundDots()
+    {
+        AssertHighlighter("toml",
+"""
+[ a . "b c" . 'd' ]
+[[ e . f ]]
+""",
+"""
+<span class="hljs-section">[ a . &quot;b c&quot; . &#x27;d&#x27; ]</span>
+<span class="hljs-section">[[ e . f ]]</span>
+""");
+    }
+
+    [Fact]
+    public void TableWithComment()
+    {
+        AssertHighlighter("toml",
+"""
+[server] # the server
+[[items]]# item
+""",
+"""
+<span class="hljs-section">[server]</span> <span class="hljs-comment"># the server</span>
+<span class="hljs-section">[[items]]</span><span class="hljs-comment"># item</span>
+""");
+    }
+
+    [Fact]
+    public void KeySpacesAroundDots()
+    {
+        AssertHighlighter("toml",
+"""
+fruit . color = "red"
+"quoted" . bare = 1
+""",
+"""
+<span class="hljs-attr">fruit . color</span> = <span class="hljs-string">&quot;red&quot;</span>
+<span class="hljs-attr">&quot;quoted&quot; . bare</span> = <span class="hljs-number">1</span>
+""");
+    }
+
+    [Fact]
+    public void KeyLooksLikeValue()
+    {
+        AssertHighlighter("toml",
+"""
+true = 1
+inf = 2
+2024-01-01 = 3
+3.14 = 4
+""",
+"""
+<span class="hljs-attr">true</span> = <span class="hljs-number">1</span>
+<span class="hljs-attr">inf</span> = <span class="hljs-number">2</span>
+<span class="hljs-attr">2024-01-01</span> = <span class="hljs-number">3</span>
+<span class="hljs-attr">3.14</span> = <span class="hljs-number">4</span>
+""");
+    }
+
+    [Fact]
+    public void KeyEscapedQuote()
+    {
+        AssertHighlighter("toml",
+"""
+"a \"b\" c" = 1
+""",
+"""
+<span class="hljs-attr">&quot;a \&quot;b\&quot; c&quot;</span> = <span class="hljs-number">1</span>
+""");
+    }
+
+    [Fact]
+    public void KeyWithoutValue()
+    {
+        AssertHighlighter("toml",
+"""
+lonely
+= 1
+""",
+"""
+lonely
+= <span class="hljs-number">1</span>
+""");
+    }
+
+    [Fact]
+    public void DateTimeOptionalSecondsToml11()
+    {
+        AssertHighlighter("toml",
+"""
+a = 07:32
+b = 1979-05-27 07:32Z
+c = 1979-05-27T07:32
+""",
+"""
+<span class="hljs-attr">a</span> = <span class="hljs-number">07:32</span>
+<span class="hljs-attr">b</span> = <span class="hljs-number">1979-05-27 07:32Z</span>
+<span class="hljs-attr">c</span> = <span class="hljs-number">1979-05-27T07:32</span>
+""");
+    }
+
+    [Fact]
+    public void DateTimeLowercaseSeparators()
+    {
+        AssertHighlighter("toml",
+"""
+a = 1987-07-05t17:45:00z
+""",
+"""
+<span class="hljs-attr">a</span> = <span class="hljs-number">1987-07-05t17:45:00z</span>
+""");
+    }
+
+    [Fact]
+    public void DateTimeFollowedByComment()
+    {
+        AssertHighlighter("toml",
+"""
+a = 1979-05-27 # a date
+b = 07:32:00 # a time
+""",
+"""
+<span class="hljs-attr">a</span> = <span class="hljs-number">1979-05-27</span> <span class="hljs-comment"># a date</span>
+<span class="hljs-attr">b</span> = <span class="hljs-number">07:32:00</span> <span class="hljs-comment"># a time</span>
+""");
+    }
+
+    [Fact]
+    public void NumberNotInsideWords()
+    {
+        AssertHighlighter("toml",
+"""
+a = [1a, 0x, 1__0, 1.2.3]
+""",
+"""
+<span class="hljs-attr">a</span> = [1a, 0x, 1__0, 1.2.3]
+""");
+    }
+
+    [Fact]
+    public void Crlf()
+    {
+        AssertHighlighter("toml", "[t]\r\na = 1\r\nb = \"x\" # c\r\n", "<span class=\"hljs-section\">[t]</span>\r\n<span class=\"hljs-attr\">a</span> = <span class=\"hljs-number\">1</span>\r\n<span class=\"hljs-attr\">b</span> = <span class=\"hljs-string\">&quot;x&quot;</span> <span class=\"hljs-comment\"># c</span>\r\n");
+    }
+
+    [Fact]
+    public void Unicode()
+    {
+        AssertHighlighter("toml",
+"""
+"clé" = "valeur é"
+[tableau."é"]
+emoji = "😀"
+""",
+"""
+<span class="hljs-attr">&quot;clé&quot;</span> = <span class="hljs-string">&quot;valeur é&quot;</span>
+<span class="hljs-section">[tableau.&quot;é&quot;]</span>
+<span class="hljs-attr">emoji</span> = <span class="hljs-string">&quot;😀&quot;</span>
+""");
+    }
+
+    [Fact]
+    public void RealWorldRustToolchain()
+    {
+        AssertHighlighter("toml",
+"""
+[toolchain]
+channel = "1.80.0"
+components = ["rustfmt", "clippy"]
+targets = [
+    "x86_64-unknown-linux-gnu",
+    "aarch64-apple-darwin",
+]
+profile = "minimal"
+""",
+"""
+<span class="hljs-section">[toolchain]</span>
+<span class="hljs-attr">channel</span> = <span class="hljs-string">&quot;1.80.0&quot;</span>
+<span class="hljs-attr">components</span> = [<span class="hljs-string">&quot;rustfmt&quot;</span>, <span class="hljs-string">&quot;clippy&quot;</span>]
+<span class="hljs-attr">targets</span> = [
+    <span class="hljs-string">&quot;x86_64-unknown-linux-gnu&quot;</span>,
+    <span class="hljs-string">&quot;aarch64-apple-darwin&quot;</span>,
+]
+<span class="hljs-attr">profile</span> = <span class="hljs-string">&quot;minimal&quot;</span>
+""");
+    }
+
+    [Fact]
+    public void RealWorldHugoConfig()
+    {
+        AssertHighlighter("toml",
+""""
+baseURL = 'https://example.org/'
+languageCode = 'en-us'
+title = 'My New Hugo Site'
+paginate = 10
+
+[params]
+  description = """
+  A blog about \
+  things."""
+  showReadingTime = true
+  dateFormat = "Jan 2, 2006"
+
+[[menu.main]]
+  identifier = "posts"
+  name = "Posts"
+  url = "/posts/"
+  weight = 10
+
+[markup.goldmark.renderer]
+  unsafe = true
+"""",
+"""
+<span class="hljs-attr">baseURL</span> = <span class="hljs-string">&#x27;https://example.org/&#x27;</span>
+<span class="hljs-attr">languageCode</span> = <span class="hljs-string">&#x27;en-us&#x27;</span>
+<span class="hljs-attr">title</span> = <span class="hljs-string">&#x27;My New Hugo Site&#x27;</span>
+<span class="hljs-attr">paginate</span> = <span class="hljs-number">10</span>
+
+<span class="hljs-section">[params]</span>
+  <span class="hljs-attr">description</span> = <span class="hljs-string">&quot;&quot;&quot;
+  A blog about <span class="hljs-char escape_">\</span>
+  things.&quot;&quot;&quot;</span>
+  <span class="hljs-attr">showReadingTime</span> = <span class="hljs-literal">true</span>
+  <span class="hljs-attr">dateFormat</span> = <span class="hljs-string">&quot;Jan 2, 2006&quot;</span>
+
+<span class="hljs-section">[[menu.main]]</span>
+  <span class="hljs-attr">identifier</span> = <span class="hljs-string">&quot;posts&quot;</span>
+  <span class="hljs-attr">name</span> = <span class="hljs-string">&quot;Posts&quot;</span>
+  <span class="hljs-attr">url</span> = <span class="hljs-string">&quot;/posts/&quot;</span>
+  <span class="hljs-attr">weight</span> = <span class="hljs-number">10</span>
+
+<span class="hljs-section">[markup.goldmark.renderer]</span>
+  <span class="hljs-attr">unsafe</span> = <span class="hljs-literal">true</span>
 """);
     }
 }

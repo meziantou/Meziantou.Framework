@@ -18,7 +18,6 @@ internal static class LanguageRegistry
             ["cs"] = () => CSharp.Instance,
             ["c#"] = () => CSharp.Instance,
             ["ini"] = () => Ini.Instance,
-            ["toml"] = () => Ini.Instance,
             ["gitconfig"] = () => Ini.Instance,
             ["bnf"] = () => Bnf.Instance,
             ["x86asm"] = () => X86Asm.Instance,
@@ -274,6 +273,7 @@ internal static class LanguageRegistry
             ["zone"] = () => Dns.Instance,
             ["asciidoc"] = () => AsciiDoc.Instance,
             ["adoc"] = () => AsciiDoc.Instance,
+            ["toml"] = () => Toml.Instance,
         }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
     // Grammars compiled with a non-default match timeout, keyed by the default grammar instance.

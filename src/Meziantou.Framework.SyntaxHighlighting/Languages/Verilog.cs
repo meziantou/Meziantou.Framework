@@ -53,7 +53,19 @@ internal static class Verilog
         "delay_mode_path delay_mode_unit delay_mode_zero else elsif end_keywords endcelldefine endif ifdef ifndef include line " +
         "nounconnected_drive pragma resetall timescale unconnected_drive undef undefineall";
 
+    // A parameter list is only recognized when its parentheses are nested at most this deep. From a `#(` that is not
+    // closed on its line, the list is looked for up to the end of the line; bounding the depth bounds the number of such
+    // `#(` whose search covers a given character (each of them is still open there), which keeps a long line of them
+    // linear instead of quadratic.
+    private const int MaxNestedParentheses = 5;
+
     public static CompiledMode Instance { get; } = Compiler.Compile(CreateMode());
+
+    // Text of a line in which the parentheses are balanced and nested at most `depth` deep. The groups are atomic: the
+    // text can only be split one way, so backtracking into them could not find another match.
+    private static string NestedParenthesesRe(int depth) => depth is 0
+        ? @"(?>[^()\n]*)"
+        : @"(?>(?:[^()\n]+|\(" + NestedParenthesesRe(depth - 1) + @"\))*)";
 
     private static Mode CreateMode() => new()
     {
@@ -89,7 +101,7 @@ internal static class Verilog
                     // Deviation from highlight.js, whose parameter list ends at the last `)` of the line: in
                     // `adder #(8) u1 (.a(a));`, the instance name and its ports were part of the parameters. The list
                     // ends at its matching parenthesis.
-                    new Mode { Begin = @"#\((?!parameter)(?>(?:[^()\n]+|\((?<depth>)|\)(?<-depth>))*)(?(depth)(?!))\)" },
+                    new Mode { Begin = @"#\((?!parameter)" + NestedParenthesesRe(MaxNestedParentheses) + @"\)" },
                     new Mode { Begin = @"\.\w+" },
                 ],
             },

@@ -121,6 +121,27 @@ public sealed class LargeInputTests
         Assert.EndsWith("<span class=\"hljs-literal\">yes</span>", await highlight, StringComparison.Ordinal);
     }
 
+    // A Verilog parameter list (`#(…)`) used to be looked for from each `#(` of a line that does not close it up to the end
+    // of the line (40 seconds for 100,000 characters).
+    [Theory]
+    [InlineData("#(")]
+    [InlineData("#(a")]
+    [InlineData("#(1")]
+    [InlineData("#(.a")]
+    [InlineData("#((")]
+    public async Task Highlight_VerilogLongLineOfUnclosedParameters_CompletesInReasonableTime(string part)
+    {
+        var code = string.Concat(Enumerable.Repeat(part, 100_000 / part.Length)) + "\nendmodule";
+
+        var isFallback = false;
+        var highlight = Task.Run(() => HighlightWithFallbackDetection(code, "verilog", out isFallback));
+        var finished = await Task.WhenAny(highlight, Task.Delay(Budget)) == highlight;
+
+        Assert.True(finished, $"Highlighting {code.Length} characters of 'verilog' did not finish within {Budget.TotalSeconds:F0}s.");
+        Assert.False(isFallback, $"Highlighting {code.Length} characters of 'verilog' was abandoned.");
+        Assert.EndsWith("<span class=\"hljs-keyword\">endmodule</span>", await highlight, StringComparison.Ordinal);
+    }
+
     // A properties key used to be matched from each of its positions, which is quadratic on a long key made of escapes
     // (a minute and a half for 60,000 backslashes).
     [Theory]

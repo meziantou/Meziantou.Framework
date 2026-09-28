@@ -29,12 +29,13 @@ internal static class Mermaid
         var comment = CommonModes.Comment(@"%%(?!\{)", "$");
 
         // A directive can span lines. An unterminated one ends before a blank line or a line made of words only (such as a
-        // diagram declaration), which cannot be part of its JSON.
+        // diagram declaration), which cannot be part of its JSON. Words must be separated by spaces: letting a word be split
+        // anywhere made a line of letters that is not followed by the end of the line exponential.
         var directive = new Mode
         {
             Scope = "meta",
             Begin = @"%%\{",
-            End = @"\}%%|(?=\n[ \t]*(?:[A-Za-z][\w-]*[ \t]*)*$)",
+            End = @"\}%%|(?=\n[ \t]*(?:[A-Za-z][\w-]*(?:[ \t]+[A-Za-z][\w-]*)*[ \t]*)?$)",
             Keywords = Keywords.FromWords(["init", "initialize", "wrap", "config"]),
             Contains = [CommonModes.QuoteStringMode, CommonModes.AposStringMode],
         };

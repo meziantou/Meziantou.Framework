@@ -235,6 +235,24 @@ public sealed class LargeInputTests
         Assert.EndsWith("A <span class=\"hljs-operator\">--&gt;</span> B", await highlight, StringComparison.Ordinal);
     }
 
+    // The end of an unterminated Mermaid directive (a line made of words only) used to let a word be split anywhere, so a
+    // line of letters that is not followed by the end of the line took exponential time (hours for 40 letters).
+    [Theory]
+    [InlineData("a", 40)]
+    [InlineData("a", 60_000)]
+    [InlineData(" ", 60_000)]
+    [InlineData("a ", 60_000)]
+    public async Task Highlight_MermaidUnterminatedDirective_CompletesInReasonableTime(string part, int length)
+    {
+        var code = "%%{init: {\"theme\": \"dark\"\n" + string.Concat(Enumerable.Repeat(part, length / part.Length)) + "!\nflowchart LR\nA --> B";
+
+        var highlight = Task.Run(() => HighlightWithFallbackDetection(code, "mermaid", out _));
+        var finished = await Task.WhenAny(highlight, Task.Delay(Budget)) == highlight;
+
+        Assert.True(finished, $"Highlighting {code.Length} characters of 'mermaid' did not finish within {Budget.TotalSeconds:F0}s.");
+        Assert.EndsWith("A <span class=\"hljs-operator\">--&gt;</span> B", await highlight, StringComparison.Ordinal);
+    }
+
     // An AsciiDoc strong, emphasis or smart quote mark used to scan the rest of its line or paragraph for a closing mark
     // from each unclosed mark (8 to 40 seconds for the single-line documents).
     [Theory]

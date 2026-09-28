@@ -189,6 +189,38 @@ T <span class="hljs-operator">|</span> <span class="hljs-keyword">extend</span> 
     }
 
     [Fact]
+    public void Ranges_WithoutSpaces()
+    {
+        AssertHighlighter("kql",
+"""
+T | where x between (1..10) and t between (ago(1d)..now()) and y between (1.5..2.5)
+print a.b, 1.x, T.now(), x.1
+""",
+"""
+T <span class="hljs-operator">|</span> <span class="hljs-keyword">where</span> x <span class="hljs-keyword">between</span> (<span class="hljs-number">1</span><span class="hljs-operator">..</span><span class="hljs-number">10</span>) <span class="hljs-keyword">and</span> t <span class="hljs-keyword">between</span> (<span class="hljs-built_in">ago</span>(<span class="hljs-number">1d</span>)<span class="hljs-operator">..</span><span class="hljs-built_in">now</span>()) <span class="hljs-keyword">and</span> y <span class="hljs-keyword">between</span> (<span class="hljs-number">1.5</span><span class="hljs-operator">..</span><span class="hljs-number">2.5</span>)
+<span class="hljs-keyword">print</span> a.b, 1.x, T.now(), x.1
+""");
+    }
+
+    [Fact]
+    public void Functions_CompressionAndBins()
+    {
+        AssertHighlighter("kql",
+"""
+T
+| summarize count() by bin_auto(Timestamp)
+| extend b = bag_zip(Keys, Values), g = gzip_compress_to_base64_string(s), z = zlib_decompress_from_base64_string(c)
+| extend g2 = gzip_decompress_from_base64_string(g), z2 = zlib_compress_to_base64_string(s)
+""",
+"""
+T
+<span class="hljs-operator">|</span> <span class="hljs-keyword">summarize</span> <span class="hljs-built_in">count</span>() <span class="hljs-keyword">by</span> <span class="hljs-built_in">bin_auto</span>(Timestamp)
+<span class="hljs-operator">|</span> <span class="hljs-keyword">extend</span> b = <span class="hljs-built_in">bag_zip</span>(Keys, Values), g = <span class="hljs-built_in">gzip_compress_to_base64_string</span>(s), z = <span class="hljs-built_in">zlib_decompress_from_base64_string</span>(c)
+<span class="hljs-operator">|</span> <span class="hljs-keyword">extend</span> g2 = <span class="hljs-built_in">gzip_decompress_from_base64_string</span>(g), z2 = <span class="hljs-built_in">zlib_compress_to_base64_string</span>(s)
+""");
+    }
+
+    [Fact]
     public void Data_Types()
     {
         AssertHighlighter("kql",

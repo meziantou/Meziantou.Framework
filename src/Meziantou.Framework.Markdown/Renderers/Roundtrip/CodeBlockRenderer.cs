@@ -52,12 +52,14 @@ public class CodeBlockRenderer : RoundtripObjectRenderer<CodeBlock>
 
             renderer.Write(fencedCodeBlock.TriviaBeforeClosingFence);
             renderer.Write(fencedCodeBlock.FencedChar, fencedCodeBlock.ClosingFencedCharCount);
+
+            // The spaces after the closing fence are on the same line
+            renderer.Write(obj.TriviaAfter);
             if (fencedCodeBlock.ClosingFencedCharCount > 0)
             {
                 // See example 207: "> ```\nfoo\n```"
                 renderer.WriteLine(obj.NewLine);
             }
-            renderer.Write(obj.TriviaAfter);
         }
         else
         {

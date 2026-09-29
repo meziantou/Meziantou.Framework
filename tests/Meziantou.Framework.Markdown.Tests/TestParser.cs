@@ -9,7 +9,6 @@ using Meziantou.Framework.Markdown.Extensions.Alerts;
 using Meziantou.Framework.Markdown.Extensions.AutoIdentifiers;
 using Meziantou.Framework.Markdown.Extensions.AutoLinks;
 using Meziantou.Framework.Markdown.Extensions.CustomContainers;
-using Meziantou.Framework.Markdown.Extensions.DefinitionLists;
 using Meziantou.Framework.Markdown.Extensions.Emoji;
 using Meziantou.Framework.Markdown.Extensions.Figures;
 using Meziantou.Framework.Markdown.Extensions.Footers;
@@ -126,7 +125,6 @@ public class TestParser
         typeof(AutoIdentifierExtension),
         typeof(AutoLinkExtension),
         typeof(CustomContainerExtension),
-        typeof(DefinitionListExtension),
         typeof(EmojiExtension),
         typeof(FigureExtension),
         typeof(FooterExtension),

@@ -825,4 +825,22 @@ public sealed class TestPipeTable
         Assert.Equal("<p>" + markdown.TrimEnd() + "</p>\n", html);
         Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(10), $"Rendering took {stopwatch.Elapsed}");
     }
+
+    [Theory]
+    [InlineData("+---+---+\n| a | b |\n+===+===+\n| c | d |\n+---+---+\n")]
+    [InlineData("+---+---+---+\n| AAAAA | B |\n+ A +---+ B +\n| A | C | B |\n+---+---+---+\n")]
+    [InlineData("  +---+\r\n  | a |\r\n  +---+\r\n")]
+    [InlineData("+---+\n| a |")]
+    [InlineData("x\n\n+---+\n| a |\n+---+\n\n\ny\n")]
+    [InlineData("> +---+\n> | a |\n> +---+\n")]
+    [InlineData("- +---+\n  | a |\n  +---+\n")]
+    [InlineData("+---+\nnot a table\n")]
+    [InlineData("  +---+\r\n   | a |\r\n  not\r\n")]
+    [InlineData("+---+\n| a |\n+ b +\n")]
+    [InlineData("> +---+\n> + b +\n")]
+    public void GridTableRoundtrip(string markdown)
+    {
+        TestRoundtrip.RoundTrip(markdown, new MarkdownPipelineBuilder().UseGridTables());
+    }
 }
+

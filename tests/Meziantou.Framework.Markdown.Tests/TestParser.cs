@@ -131,7 +131,6 @@ public class TestParser
         typeof(FigureExtension),
         typeof(FooterExtension),
         typeof(GenericAttributesExtension),
-        typeof(GridTableExtension),
         typeof(JiraLinkExtension),
         typeof(ListExtraExtension),
         typeof(MathExtension),

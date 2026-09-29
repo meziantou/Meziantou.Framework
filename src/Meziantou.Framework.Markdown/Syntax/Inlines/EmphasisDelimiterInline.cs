@@ -20,12 +20,8 @@ public class EmphasisDelimiterInline : DelimiterInline
     /// <param name="parser">The parser.</param>
     /// <param name="descriptor">The descriptor.</param>
     /// <param name="content">The source text of the delimiter run, used when the delimiter is rendered as a literal.</param>
-    /// <exception cref="ArgumentNullException"></exception>
-    public EmphasisDelimiterInline(InlineParser parser, EmphasisDescriptor descriptor, StringSlice content) : base(parser)
+    internal EmphasisDelimiterInline(InlineParser parser, EmphasisDescriptor descriptor, StringSlice content) : base(parser)
     {
-        if (descriptor is null)
-            ThrowHelper.ArgumentNullException(nameof(descriptor));
-
         Descriptor = descriptor;
         DelimiterChar = descriptor.Character;
         Content = content;
@@ -46,13 +42,9 @@ public class EmphasisDelimiterInline : DelimiterInline
     /// </summary>
     public int DelimiterCount { get; set; }
 
-    // The length of the delimiter run in the source, used by the rule of 3. It is unknown for a delimiter created by
-    // another parser, which then only gives its DelimiterCount.
-    internal int RunLength
-    {
-        get => field > 0 ? field : DelimiterCount;
-        set;
-    }
+    // The length of the delimiter run in the source, used by the rule of 3. Unlike DelimiterCount, it does not change
+    // as the delimiter is consumed.
+    internal int RunLength { get; init; }
 
     /// <summary>
     /// The content as a <see cref="StringSlice"/>.

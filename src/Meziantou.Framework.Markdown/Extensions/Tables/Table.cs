@@ -38,6 +38,11 @@ public class Table : ContainerBlock
     // the layout of a grid table cannot be computed from its cells
     internal List<StringSlice>? SourceLines { get; set; }
 
+    // With trivia, the header separator row of a pipe table as written in the source, and the index of its line
+    internal StringSlice DelimiterRow { get; set; }
+
+    internal int DelimiterRowSourceLine { get; set; } = -1;
+
     /// <summary>
     /// Checks if the table structure is valid.
     /// </summary>

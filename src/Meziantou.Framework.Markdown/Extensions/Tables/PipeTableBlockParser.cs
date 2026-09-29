@@ -47,6 +47,12 @@ public class PipeTableBlockParser : BlockParser
             {
                 if (countPipe > 0)
                 {
+                    // With trivia, the line keeps its indent, like the other lines of the paragraph
+                    if (processor.TrackTrivia)
+                    {
+                        processor.UnwindAllIndents();
+                    }
+
                     // Mark the paragraph as open (important, otherwise we would have an infinite loop)
                     paragraph.AppendLine(ref processor.Line, processor.Column, processor.LineIndex, processor.Line.Start, processor.TrackTrivia, processor.IsInPartiallyConsumedTab());
                     paragraph.IsOpen = true;

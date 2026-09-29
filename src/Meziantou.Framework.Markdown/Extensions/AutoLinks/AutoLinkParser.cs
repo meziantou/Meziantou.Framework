@@ -183,6 +183,11 @@ public class AutoLinkParser : InlineParser
 
         inline.Span.End = inline.Span.Start + url.Length - 1;
         inline.UrlSpan = inline.Span;
+        if (processor.TrackTrivia)
+        {
+            inline.UnescapedUrl = new StringSlice(slice.Text, startPosition, startPosition + url.Length - 1);
+        }
+
         inline.AppendChild(new LiteralInline()
         {
             Span = inline.Span,

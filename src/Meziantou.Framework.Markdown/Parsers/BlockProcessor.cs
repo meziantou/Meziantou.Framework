@@ -175,7 +175,7 @@ public class BlockProcessor
 
     // The first container that did not continue on the current line, when it is a quote that recorded the line: the line is removed
     // from the quote when it closes it, as it is not a lazy continuation line of the quote
-    private QuoteBlock? _unmatchedQuoteWithLine;
+    private IQuoteLikeBlock? _unmatchedQuoteWithLine;
 
     /// <summary>
     /// Gets the current stack of <see cref="Block"/> being processed.
@@ -628,7 +628,7 @@ public class BlockProcessor
                     _unmatchedQuoteWithLine = null;
                 }
 
-                if (block is QuoteBlock closingQuote && LinesBefore is not null)
+                if (block is IQuoteLikeBlock closingQuote && LinesBefore is not null)
                 {
                     MoveQuoteLinesWithoutContent(LinesBefore, closingQuote);
                 }
@@ -743,7 +743,7 @@ public class BlockProcessor
 
             // If we have a discard, we can remove it from the current state
             UpdateLastBlockAndContainer(i);
-            var quoteLineCount = TrackTrivia && block is QuoteBlock { QuoteLines: var quoteLines } ? quoteLines.Count : 0;
+            var quoteLineCount = TrackTrivia && block is IQuoteLikeBlock { QuoteLines: var quoteLines } ? quoteLines.Count : 0;
             var result = parser.TryContinue(this, block);
             if (result == BlockState.Skip)
             {
@@ -753,7 +753,7 @@ public class BlockProcessor
             if (result == BlockState.None)
             {
                 HasUnmatchedBlocks = true;
-                _unmatchedQuoteWithLine = TrackTrivia && block is QuoteBlock unmatchedQuote && unmatchedQuote.QuoteLines.Count > quoteLineCount ? unmatchedQuote : null;
+                _unmatchedQuoteWithLine = TrackTrivia && block is IQuoteLikeBlock unmatchedQuote && unmatchedQuote.QuoteLines.Count > quoteLineCount ? unmatchedQuote : null;
                 break;
             }
 
@@ -802,7 +802,7 @@ public class BlockProcessor
                 {
                     if (TrackTrivia)
                     {
-                        if (block is QuoteBlock closedQuote && LinesBefore is not null)
+                        if (block is IQuoteLikeBlock closedQuote && LinesBefore is not null)
                         {
                             MoveQuoteLinesWithoutContent(LinesBefore, closedQuote);
                         }
@@ -877,7 +877,7 @@ public class BlockProcessor
     {
         for (int i = OpenedBlocks.Count - 1; i >= 1; i--)
         {
-            if (!OpenedBlocks[i].Block.IsOpen && OpenedBlocks[i].Block is QuoteBlock quote)
+            if (!OpenedBlocks[i].Block.IsOpen && OpenedBlocks[i].Block is IQuoteLikeBlock quote)
             {
                 MoveQuoteLinesWithoutContent(block.LinesBefore!, quote);
                 return;
@@ -887,10 +887,11 @@ public class BlockProcessor
 
     // Moves the quote lines without content at the start of the empty lines to the end of the quote, where the roundtrip renderer
     // writes them with the markers of the quote. Otherwise, they are written before the next block, outside the quote.
-    private static void MoveQuoteLinesWithoutContent(List<StringSlice> lines, QuoteBlock quote)
+    private static void MoveQuoteLinesWithoutContent(List<StringSlice> lines, IQuoteLikeBlock quote)
     {
         var count = 0;
-        while (count < lines.Count && IsQuoteLineWithoutContent(lines[count]))
+        var markerChar = quote.Marker[^1];
+        while (count < lines.Count && IsQuoteLineWithoutContent(lines[count], markerChar))
         {
             count++;
         }
@@ -901,7 +902,7 @@ public class BlockProcessor
             lines.RemoveRange(0, count);
         }
 
-        static bool IsQuoteLineWithoutContent(StringSlice line)
+        static bool IsQuoteLineWithoutContent(StringSlice line, char markerChar)
         {
             var index = line.Start - 1;
             if (index >= 0 && line.Text[index] is ' ' or '\t')
@@ -909,7 +910,7 @@ public class BlockProcessor
                 index--;
             }
 
-            return index >= 0 && line.Text[index] == '>';
+            return index >= 0 && line.Text[index] == markerChar;
         }
     }
 
@@ -927,7 +928,7 @@ public class BlockProcessor
                 continue;
             }
 
-            if (block is QuoteBlock quote && !ReferenceEquals(quote, _unmatchedQuoteWithLine))
+            if (block is IQuoteLikeBlock quote && !ReferenceEquals(quote, _unmatchedQuoteWithLine))
             {
                 var quoteLines = quote.QuoteLines;
                 if (quoteLines.Count == 0)
@@ -1023,7 +1024,7 @@ public class BlockProcessor
                     _unmatchedQuoteWithLine = null;
 
                     // special case: take care when refactoring this
-                    if (currentBlock.Parent is QuoteBlock qb)
+                    if (currentBlock.Parent is IQuoteLikeBlock qb)
                     {
                         var triviaAfter = UseTrivia(Start - 1);
                         var quoteLines = qb.QuoteLines;

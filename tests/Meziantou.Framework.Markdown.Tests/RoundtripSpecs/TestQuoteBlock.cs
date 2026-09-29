@@ -1,3 +1,7 @@
+using Meziantou.Framework.Markdown.Extensions.Footers;
+using Meziantou.Framework.Markdown.Extensions.Alerts;
+using Meziantou.Framework.Markdown.Helpers;
+using Meziantou.Framework.Markdown.Renderers.Roundtrip;
 using Meziantou.Framework.Markdown.Syntax;
 using static Meziantou.Framework.Markdown.Tests.TestRoundtrip;
 
@@ -358,4 +362,84 @@ public class TestQuoteBlock
         Assert.True(quoteLines <= Depth + LazyLines, $"{quoteLines} quote lines");
         RoundTrip(markdown);
     }
+
+    [Theory]
+    [InlineData("> [!NOTE]")]
+    [InlineData("> [!NOTE]  ")]
+    [InlineData("> [!NOTE]\n> a")]
+    [InlineData(">[!TIP] \r\n>a\r\n")]
+    [InlineData("> [!NOTE]\r> a\r")]
+    [InlineData("  > [!WARNING]\n  > a\nlazy\n")]
+    [InlineData("> [!NOTE]\n> a\n>\n> b\n\npara\n")]
+    [InlineData("> [!NOTE]\n>\n>\n")]
+    [InlineData("> [!NOTE]\n> - a\n>   b\n> ```\n> c\n> ```\n")]
+    [InlineData("> [!NOTE]\n> > [!TIP]\n> > b\n")]
+    [InlineData("x\n\n> [!NOTE]\n> a\n\n\n")]
+    public void TestAlert(string value)
+    {
+        RoundTrip(value, new MarkdownPipelineBuilder().UseAlertBlocks());
+    }
+
+    [Theory]
+    [InlineData("- > [!NOTE]\n  > a\n")]
+    [InlineData("> > [!NOTE]\n> > a\n> b\n")]
+    public void TestNestedAlert(string value)
+    {
+        RoundTrip(value, new MarkdownPipelineBuilder().UseAlertBlocks(allowNestedAlerts: true));
+    }
+
+    [Fact]
+    public void TestAlertWithoutSource()
+    {
+        var pipeline = new MarkdownPipelineBuilder().UseAlertBlocks().EnableTrackTrivia().Build();
+        var document = MarkdownConverter.Parse("a\n", pipeline);
+        var paragraph = document[0];
+        document.RemoveAt(0);
+        var alert = new AlertBlock(new StringSlice("NOTE"));
+        alert.Add(paragraph);
+        document.Add(alert);
+
+        var writer = new StringWriter();
+        var renderer = new RoundtripRenderer(writer);
+        pipeline.Setup(renderer);
+        renderer.Write(document);
+
+        Assert.Equal("> [!NOTE]\n> a\n", writer.ToString());
+    }
+
+    [Theory]
+    [InlineData("^^ This is a footer\n^^ multi-line\n")]
+    [InlineData("^^a\n^^b")]
+    [InlineData("  ^^  a  \r\n^^\tb\r\n")]
+    [InlineData("^^ a\nlazy\n^^ b\n")]
+    [InlineData("^^ a\n^^\n^^ b\n\nafter\n")]
+    [InlineData("^^ a\n\n\n^^ b\n")]
+    [InlineData("^^ a\n^^\n")]
+    [InlineData("> ^^ a\n> ^^ b\n")]
+    [InlineData("^^ - a\n^^   b\n")]
+    [InlineData("p\n^^ a\n")]
+    public void TestFooter(string value)
+    {
+        RoundTrip(value, new MarkdownPipelineBuilder().UseFooters());
+    }
+
+    [Fact]
+    public void TestFooterWithoutSource()
+    {
+        var pipeline = new MarkdownPipelineBuilder().UseFooters().EnableTrackTrivia().Build();
+        var document = MarkdownConverter.Parse("a\n", pipeline);
+        var paragraph = document[0];
+        document.RemoveAt(0);
+        var footer = new FooterBlock(new FooterBlockParser()) { OpeningCharacter = '^' };
+        footer.Add(paragraph);
+        document.Add(footer);
+
+        var writer = new StringWriter();
+        var renderer = new RoundtripRenderer(writer);
+        pipeline.Setup(renderer);
+        renderer.Write(document);
+
+        Assert.Equal("^^ a\n", writer.ToString());
+    }
 }
+

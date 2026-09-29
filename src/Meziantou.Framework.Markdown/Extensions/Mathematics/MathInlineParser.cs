@@ -166,6 +166,11 @@ public class MathInlineParser : InlineParser
             // We substract the end to the number of opening $ to keep inside the block the additionals $
             inline.Content.End = end - openDollars;
 
+            if (processor.TrackTrivia)
+            {
+                inline.SourceText = new StringSlice(slice.Text, startPosition, slice.Start - 1);
+            }
+
             // Add the default class if necessary
             if (DefaultClass != null)
             {

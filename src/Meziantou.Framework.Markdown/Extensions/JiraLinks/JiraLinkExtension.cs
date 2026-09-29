@@ -6,6 +6,7 @@ using Meziantou.Framework.Markdown.Parsers.Inlines;
 using Meziantou.Framework.Markdown.Renderers;
 using Meziantou.Framework.Markdown.Renderers.Normalize;
 using Meziantou.Framework.Markdown.Renderers.Normalize.Inlines;
+using Meziantou.Framework.Markdown.Renderers.Roundtrip;
 
 namespace Meziantou.Framework.Markdown.Extensions.JiraLinks;
 
@@ -47,6 +48,10 @@ public class JiraLinkExtension : IMarkdownExtension
         if (renderer is NormalizeRenderer normalizeRenderer && !normalizeRenderer.ObjectRenderers.Contains<NormalizeJiraLinksRenderer>())
         {
             normalizeRenderer.ObjectRenderers.InsertBefore<LinkInlineRenderer>(new NormalizeJiraLinksRenderer());
+        }
+        else if (renderer is RoundtripRenderer roundtripRenderer && !roundtripRenderer.ObjectRenderers.Contains<RoundtripJiraLinkRenderer>())
+        {
+            roundtripRenderer.ObjectRenderers.InsertBefore<Renderers.Roundtrip.Inlines.LinkInlineRenderer>(new RoundtripJiraLinkRenderer());
         }
     }
 }

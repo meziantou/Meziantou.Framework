@@ -1,3 +1,7 @@
+using Meziantou.Framework.Markdown.Extensions.Mathematics;
+using Meziantou.Framework.Markdown.Helpers;
+using Meziantou.Framework.Markdown.Renderers.Roundtrip;
+using Meziantou.Framework.Markdown.Syntax;
 using static Meziantou.Framework.Markdown.Tests.TestRoundtrip;
 
 namespace Meziantou.Framework.Markdown.Tests.RoundtripSpecs.Inlines;
@@ -84,5 +88,37 @@ public class TestCodeInline
     public void TestSpanningLinesInContainer(string value)
     {
         RoundTrip(value);
+    }
+
+    [Theory]
+    [InlineData("$x$")]
+    [InlineData("a $x$ b")]
+    [InlineData("a $$x$$ b")]
+    [InlineData("a $ x $ b")]
+    [InlineData("a $$  x  $$ b")]
+    [InlineData("a $x$$ b")]
+    [InlineData("a $x\\$y$ b")]
+    [InlineData("a $x$\r\nb $y$\r\n")]
+    [InlineData("> a $x$\n> b $$y$$\n")]
+    [InlineData("- a $x$\n  b $y$\n")]
+    public void TestMathInline(string value)
+    {
+        RoundTrip(value, new MarkdownPipelineBuilder().UseMathematics());
+    }
+
+    [Fact]
+    public void TestMathInlineWithoutSource()
+    {
+        var pipeline = new MarkdownPipelineBuilder().UseMathematics().EnableTrackTrivia().Build();
+        var document = MarkdownConverter.Parse("a", pipeline);
+        var paragraph = (ParagraphBlock)document[0];
+        paragraph.Inline!.AppendChild(new MathInline { Delimiter = '$', DelimiterCount = 2, Content = new StringSlice("x") });
+
+        using var writer = new StringWriter();
+        var renderer = new RoundtripRenderer(writer);
+        pipeline.Setup(renderer);
+        renderer.Write(document);
+
+        Assert.Equal("a$$x$$", writer.ToString());
     }
 }

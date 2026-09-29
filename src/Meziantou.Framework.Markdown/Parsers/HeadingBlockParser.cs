@@ -104,13 +104,13 @@ public class HeadingBlockParser : BlockParser, IAttributesParseable
 
             processor.NewBlocks.Push(headingBlock);
 
-            // Gives a chance to parse attributes
+            // Gives a chance to parse attributes. With trivia, the text from the attributes is part of the trivia after the heading.
+            int sourceEnd = processor.Line.End;
             TryParseAttributes?.Invoke(processor, ref processor.Line, headingBlock);
 
             // The optional closing sequence of #s must be preceded by a space and may be followed by spaces only.
             int endState = 0;
             int countClosingTags = 0;
-            int sourceEnd = processor.Line.End;
             for (int i = processor.Line.End; i >= processor.Line.Start - 1; i--)  // Go up to Start - 1 in order to match the space after the first ###
             {
                 c = processor.Line.Text[i];

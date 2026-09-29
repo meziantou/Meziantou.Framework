@@ -28,6 +28,14 @@ public class CustomContainerParser : FencedBlockParserBase<CustomContainer>
     /// </summary>
     protected override CustomContainer CreateFencedBlock(BlockProcessor processor)
     {
-        return new CustomContainer(this);
+        var container = new CustomContainer(this);
+        if (processor.TrackTrivia)
+        {
+            container.LinesBefore = processor.TakeLinesBefore();
+            container.TriviaBefore = processor.UseTrivia(processor.Start - 1);
+            container.NewLine = processor.Line.NewLine;
+        }
+
+        return container;
     }
 }

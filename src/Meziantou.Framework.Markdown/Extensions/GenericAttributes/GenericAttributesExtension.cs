@@ -90,6 +90,10 @@ public class GenericAttributesExtension : IMarkdownExtension
     /// </summary>
     public void Setup(MarkdownPipeline pipeline, IMarkdownRenderer renderer)
     {
+        if (renderer is Renderers.Roundtrip.RoundtripRenderer roundtripRenderer)
+        {
+            roundtripRenderer.ObjectRenderers.AddIfNotAlready(new RoundtripGenericAttributesInlineRenderer());
+        }
     }
 
     private bool TryProcessAttributesForHeading(BlockProcessor processor, ref StringSlice line, IBlock block)

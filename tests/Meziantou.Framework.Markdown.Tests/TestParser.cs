@@ -17,7 +17,6 @@ using Meziantou.Framework.Markdown.Extensions.GenericAttributes;
 using Meziantou.Framework.Markdown.Extensions.JiraLinks;
 using Meziantou.Framework.Markdown.Extensions.ListExtras;
 using Meziantou.Framework.Markdown.Extensions.Mathematics;
-using Meziantou.Framework.Markdown.Extensions.SmartyPants;
 using Meziantou.Framework.Markdown.Extensions.Tables;
 using Meziantou.Framework.Markdown.Parsers.Inlines;
 using Meziantou.Framework.Markdown.Renderers.Roundtrip;
@@ -136,7 +135,6 @@ public class TestParser
         typeof(ListExtraExtension),
         typeof(MathExtension),
         typeof(PipeTableExtension),
-        typeof(SmartyPantsExtension),
     ];
 
     /// <summary>

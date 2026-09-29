@@ -171,6 +171,24 @@ public class LinkInlineParser : InlineParser
             link.Span = new SourceSpan(parent.Span.Start, endPosition);
             link.Line = parent.Line;
             link.Column = parent.Column;
+
+            // The callback does not know how the reference is written in the source
+            if (link is LinkInline { Label: null } referenceLink)
+            {
+                referenceLink.Label = label;
+                referenceLink.LabelSpan = labelSpan;
+                referenceLink.IsImage |= parent.IsImage;
+                referenceLink.IsShortcut = isShortcut;
+                referenceLink.Reference ??= linkRef;
+
+                if (state.TrackTrivia)
+                {
+                    referenceLink.LabelWithTrivia = new StringSlice(text.Text, labelWithriviaSpan.Start, labelWithriviaSpan.End);
+                    referenceLink.LinkRefDefLabel = linkRef.Label;
+                    referenceLink.LinkRefDefLabelWithTrivia = linkRef.LabelWithTrivia;
+                    referenceLink.LocalLabel = localLabel;
+                }
+            }
         }
 
         // Create a default link if the callback was not found

@@ -79,46 +79,55 @@ public class AlertInlineParser : InlineParser
         var alertType = new StringSlice(slice.Text, start, end);
         c = slice.NextChar(); // Skip ]
 
+        // Only spaces can follow the kind on its line
         start = slice.Start;
-        while (true)
+        while (c.IsSpaceOrTab())
         {
-            if (c == '\0' || c == '\n' || c == '\r')
-            {
-                end = slice.Start;
-                if (c == '\r')
+            c = slice.NextChar();
+        }
+
+        var triviaSpaceAfterKind = new StringSlice(slice.Text, start, slice.Start - 1);
+        NewLine newLineAfterKind;
+        switch (c)
+        {
+            case '\0':
+                newLineAfterKind = NewLine.None;
+                break;
+            case '\n':
+                newLineAfterKind = NewLine.LineFeed;
+                slice.SkipChar();
+                break;
+            case '\r':
+                if (slice.NextChar() == '\n')
                 {
-                    c = slice.NextChar(); // Skip \r
-                    if (c == '\0' || c == '\n')
-                    {
-                        end = slice.Start;
-                        if (c == '\n')
-                        {
-                            slice.SkipChar(); // Skip \n
-                        }
-                    }
+                    newLineAfterKind = NewLine.CarriageReturnLineFeed;
+                    slice.SkipChar();
                 }
-                else if (c == '\n')
+                else
                 {
-                    slice.SkipChar(); // Skip \n
+                    newLineAfterKind = NewLine.CarriageReturn;
                 }
                 break;
-            }
-            else if (!c.IsSpaceOrTab())
-            {
+            default:
                 slice = saved;
                 return false;
-            }
-
-            c = slice.NextChar();
         }
 
         var alertBlock = new AlertBlock(alertType)
         {
             Span = quoteBlock.Span,
-            TriviaSpaceAfterKind = new StringSlice(slice.Text, start, end),
+            TriviaSpaceAfterKind = triviaSpaceAfterKind,
+            NewLineAfterKind = newLineAfterKind,
             Line = quoteBlock.Line,
             Column = quoteBlock.Column,
         };
+
+        if (processor.TrackTrivia)
+        {
+            // The alert replaces the quote, so it takes the quote lines and the trivia around the quote
+            quoteBlock.CopyTriviaTo(alertBlock);
+            alertBlock.QuoteChar = quoteBlock.QuoteChar;
+        }
 
         HtmlAttributes attributes = alertBlock.GetAttributes();
         attributes.AddClass("markdown-alert");

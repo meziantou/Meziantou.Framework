@@ -5,19 +5,10 @@ using System.Text;
 using System.Text.RegularExpressions;
 
 using Meziantou.Framework.Markdown.Extensions.Abbreviations;
-using Meziantou.Framework.Markdown.Extensions.Alerts;
-using Meziantou.Framework.Markdown.Extensions.AutoIdentifiers;
-using Meziantou.Framework.Markdown.Extensions.AutoLinks;
 using Meziantou.Framework.Markdown.Extensions.CustomContainers;
 using Meziantou.Framework.Markdown.Extensions.DefinitionLists;
 using Meziantou.Framework.Markdown.Extensions.Emoji;
-using Meziantou.Framework.Markdown.Extensions.Footers;
-using Meziantou.Framework.Markdown.Extensions.GenericAttributes;
 using Meziantou.Framework.Markdown.Extensions.JiraLinks;
-using Meziantou.Framework.Markdown.Extensions.ListExtras;
-using Meziantou.Framework.Markdown.Extensions.Mathematics;
-using Meziantou.Framework.Markdown.Extensions.SmartyPants;
-using Meziantou.Framework.Markdown.Extensions.Tables;
 using Meziantou.Framework.Markdown.Parsers.Inlines;
 using Meziantou.Framework.Markdown.Renderers.Roundtrip;
 using Meziantou.Framework.Markdown.Syntax;
@@ -121,20 +112,9 @@ public class TestParser
     private static readonly HashSet<Type> ExtensionsWithoutRoundtrip =
     [
         typeof(AbbreviationExtension),
-        typeof(AlertExtension),
-        typeof(AutoIdentifierExtension),
-        typeof(AutoLinkExtension),
         typeof(CustomContainerExtension),
         typeof(DefinitionListExtension),
         typeof(EmojiExtension),
-        typeof(FooterExtension),
-        typeof(GenericAttributesExtension),
-        typeof(GridTableExtension),
-        typeof(JiraLinkExtension),
-        typeof(ListExtraExtension),
-        typeof(MathExtension),
-        typeof(PipeTableExtension),
-        typeof(SmartyPantsExtension),
     ];
 
     /// <summary>

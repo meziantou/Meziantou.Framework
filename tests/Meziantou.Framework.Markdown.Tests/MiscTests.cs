@@ -589,6 +589,16 @@ public class MiscTests
         Assert.Equal(10_000, CountOccurrences(html, "<a href=\"#intro\">Intro</a>"));
     }
 
+    [Fact]
+    public void ImageReferenceToHeadingIsAnImage()
+    {
+        var pipeline = new MarkdownPipelineBuilder().UseAutoIdentifiers().Build();
+
+        var html = MarkdownConverter.ToHtml("# Intro\n\n![alt][Intro]", pipeline);
+
+        Assert.Equal("<h1 id=\"intro\">Intro</h1>\n<p><img src=\"#intro\" alt=\"alt\" /></p>\n", html);
+    }
+
     private static int CountOccurrences(string text, string value)
     {
         var count = 0;

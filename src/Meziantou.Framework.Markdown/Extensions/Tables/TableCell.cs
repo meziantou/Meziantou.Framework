@@ -51,4 +51,11 @@ public class TableCell : ContainerBlock
     /// Gets or sets whether this cell can be closed.
     /// </summary>
     public bool AllowClose { get; set; }
+
+    // With trivia, the source positions of the text of the cell in a pipe table, around its content. SourceStart is -1 when the
+    // cell starts at the start of its line, and SourceEnd is -1 when it ends at the end of its line. int.MinValue when the cell
+    // is not in the source, such as a cell added to complete a row.
+    internal int SourceStart { get; set; } = int.MinValue;
+
+    internal int SourceEnd { get; set; }
 }

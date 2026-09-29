@@ -51,5 +51,11 @@ public class AlertExtension : IMarkdownExtension
                 RenderKind = RenderKind ?? AlertBlockRenderer.DefaultRenderKind
             });
         }
+
+        // AlertBlock is a QuoteBlock, so its renderer must come first
+        if (renderer is Renderers.Roundtrip.RoundtripRenderer roundtripRenderer && !roundtripRenderer.ObjectRenderers.Contains<RoundtripAlertBlockRenderer>())
+        {
+            roundtripRenderer.ObjectRenderers.InsertBefore<Renderers.Roundtrip.QuoteBlockRenderer>(new RoundtripAlertBlockRenderer());
+        }
     }
 }

@@ -23,10 +23,10 @@ public class TestAutoLinkInline
     }
 
     [Theory]
-    [InlineData("http://example.com/", "[http://example.com/](http://example.com/)")]
-    [InlineData("www.example.com", "[www.example.com](http://www.example.com)")]
-    [InlineData("mailto:user@example.com", "[user@example.com](mailto:user@example.com)")]
-    public void AutoLinksKeepUrlWhenRoundTripped(string markdown, string expected)
+    [InlineData("http://example.com/")]
+    [InlineData("www.example.com")]
+    [InlineData("mailto:user@example.com")]
+    public void AutoLinksKeepUrlWhenRoundTripped(string markdown)
     {
         var pipeline = new MarkdownPipelineBuilder()
             .DisableHtml()
@@ -39,6 +39,6 @@ public class TestAutoLinkInline
 
         rr.Write(markdownDocument);
 
-        Assert.Equal(expected, sw.ToString());
+        Assert.Equal(markdown, sw.ToString());
     }
 }

@@ -107,12 +107,17 @@ internal sealed class GfmPipeTableParser : BlockParser
             }
             table.ColumnDefinitions.Add(definition);
         }
-        AddRow(table, header, headerCells, true, completeRow: true);
+        AddRow(table, header, headerCells, true, completeRow: true, processor.TrackTrivia ? header.Slice : default);
+        if (processor.TrackTrivia)
+        {
+            table.DelimiterRow = UseLine(processor);
+        }
 
         paragraph.Lines.RemoveAt(paragraph.Lines.Count - 1);
         if (paragraph.Lines.Count == 0)
         {
             table.LinesBefore = paragraph.LinesBefore;
+            table.TriviaBefore = paragraph.TriviaBefore;
         }
         else
         {
@@ -128,13 +133,22 @@ internal sealed class GfmPipeTableParser : BlockParser
                 LinesBefore = paragraph.LinesBefore,
                 IsOpen = false
             };
-            for (int i = 0; i < preceding.Lines.Count; i++)
+            if (processor.TrackTrivia)
             {
-                ref var slice = ref preceding.Lines.Lines[i].Slice;
-                while (!slice.IsEmpty && slice.CurrentChar.IsSpaceOrTab()) slice.SkipChar();
+                // The text of the paragraph is kept as written, with the line ending of its last line
+                preceding.TriviaBefore = paragraph.TriviaBefore;
+                preceding.NewLine = preceding.Lines.Lines[preceding.Lines.Count - 1].NewLine;
             }
-            ref var last = ref preceding.Lines.Lines[preceding.Lines.Count - 1].Slice;
-            while (!last.IsEmpty && last.Text[last.End].IsSpaceOrTab()) last.End--;
+            else
+            {
+                for (int i = 0; i < preceding.Lines.Count; i++)
+                {
+                    ref var slice = ref preceding.Lines.Lines[i].Slice;
+                    while (!slice.IsEmpty && slice.CurrentChar.IsSpaceOrTab()) slice.SkipChar();
+                }
+                ref var last = ref preceding.Lines.Lines[preceding.Lines.Count - 1].Slice;
+                while (!last.IsEmpty && last.Text[last.End].IsSpaceOrTab()) last.End--;
+            }
             // The paragraph is the last block of its parent, or near it: search from the end
             paragraph.Parent!.Insert(paragraph.Parent.LastIndexOf(paragraph), preceding);
             paragraph.Lines = new StringLineGroup(1);
@@ -154,6 +168,12 @@ internal sealed class GfmPipeTableParser : BlockParser
         {
             var parent = pending.Parent!;
             pending.Table.IsOpen = false;
+            if (processor.TrackTrivia)
+            {
+                // The empty lines after the table are attached to the temporary block
+                pending.Table.LinesAfter = pending.LinesAfter;
+            }
+
             parent.Insert(parent.LastIndexOf(pending), pending.Table);
             return false;
         }
@@ -212,7 +232,15 @@ internal sealed class GfmPipeTableParser : BlockParser
         while (!cell.IsEmpty && cell.Text[cell.End].IsSpaceOrTab()) cell.End--;
     }
 
-    private static void AddRow(Table table, StringLine line, List<StringSlice> cells, bool isHeader, bool completeRow)
+    // With trivia, takes the current line, with its indent, and the trivia before it
+    private static StringSlice UseLine(BlockProcessor processor)
+    {
+        var start = processor.TriviaStart;
+        processor.UseTrivia(processor.Start - 1);
+        return new StringSlice(processor.Line.Text, start, processor.Line.End, processor.Line.NewLine);
+    }
+
+    private static void AddRow(Table table, StringLine line, List<StringSlice> cells, bool isHeader, bool completeRow, StringSlice source)
     {
         var row = new TableRow
         {
@@ -237,8 +265,48 @@ internal sealed class GfmPipeTableParser : BlockParser
             cell.Add(paragraph);
             row.Add(cell);
         }
+
+        if (source.Text is not null)
+        {
+            SetRowTrivia(row, source, cells);
+        }
+
         table.Add(row);
         table.Span.End = Math.Max(table.Span.End, line.Slice.End);
+    }
+
+    // Writes the pipes and the spaces of the source around the content of the cells. The cells that complete a short row are not
+    // in the source, and the cells past the column count stay in the text after the last cell.
+    private static void SetRowTrivia(TableRow row, StringSlice source, List<StringSlice> cells)
+    {
+        row.SourceLine = row.Line;
+        row.NewLine = source.NewLine;
+        var previousEnd = source.Start - 1;
+        Block previous = row;
+        for (var i = 0; i < row.Count && i < cells.Count; i++)
+        {
+            var cell = (TableCell)row[i];
+            var content = cells[i];
+            cell.SourceStart = content.Start;
+            cell.SourceEnd = content.End;
+            SetTrivia(previous, new StringSlice(source.Text, previousEnd + 1, content.Start - 1));
+            previous = cell;
+            previousEnd = Math.Max(content.End, content.Start - 1);
+        }
+
+        SetTrivia(previous, new StringSlice(source.Text, previousEnd + 1, source.End));
+
+        static void SetTrivia(Block block, StringSlice trivia)
+        {
+            if (block is TableRow)
+            {
+                block.TriviaBefore = trivia;
+            }
+            else
+            {
+                block.TriviaAfter = trivia;
+            }
+        }
     }
 
     // Pipe unescaping precedes *all* inline parsing (including reference lookup
@@ -285,11 +353,12 @@ internal sealed class GfmPipeTableParser : BlockParser
             var line = new StringLine(processor.Line, processor.LineIndex, processor.Column, processor.Line.Start, processor.Line.NewLine);
             var cells = SplitRow(line.Slice);
             if (cells.Count == 0) return BlockState.None;
+            var source = processor.TrackTrivia ? UseLine(processor) : default;
             // Match cmark-gfm's bound on amplification from padding short rows, for the whole document. Past the bound, a
             // short row is kept without padding: ending the table would turn the rows of every later table into text.
             var missingCells = pending.Table.ColumnDefinitions.Count - cells.Count;
             var completeRow = missingCells <= 0 || Table.TryAddAutocompletedCells(processor.Document, missingCells);
-            AddRow(pending.Table, line, cells, false, completeRow);
+            AddRow(pending.Table, line, cells, false, completeRow, source);
             pending.IsOpen = true;
             return BlockState.BreakDiscard;
         }

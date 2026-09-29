@@ -38,17 +38,19 @@ public class SmartyPant : LeafInline
             case SmartyPantType.DoubleQuote:
                 return "\"";
             case SmartyPantType.LeftDoubleQuote:
-                return OpeningCharacter == '`' ? "``" : "\"";
+                return OpeningCharacter == '\'' ? "''" : "\"";
             case SmartyPantType.RightDoubleQuote:
                 return OpeningCharacter == '\'' ? "''" : "\"";
             case SmartyPantType.Dash2:
                 return "--";
             case SmartyPantType.Dash3:
-                return "--";
+                return "---";
             case SmartyPantType.LeftAngleQuote:
                 return "<<";
             case SmartyPantType.RightAngleQuote:
                 return ">>";
+            case SmartyPantType.Ellipsis:
+                return "...";
         }
         return OpeningCharacter != 0 ? OpeningCharacter.ToString() : string.Empty;
     }

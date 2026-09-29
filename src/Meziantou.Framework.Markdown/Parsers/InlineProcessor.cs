@@ -321,6 +321,41 @@ public class InlineProcessor
     }
 
     /// <summary>
+    /// Gets a line of the text being processed, with its line ending, and the source position of its first character.
+    /// </summary>
+    internal bool TryGetLine(int lineIndex, out StringSlice line, out int sourcePosition)
+    {
+        var offsets = CollectionsMarshal.AsSpan(_lineOffsets);
+        var index = lineIndex - LineIndex + _lineOffsetsBase;
+        if ((uint)index >= (uint)offsets.Length)
+        {
+            line = default;
+            sourcePosition = 0;
+            return false;
+        }
+
+        ref var lineOffset = ref offsets[index];
+        var text = _text.Text;
+
+        // The line ending follows the line in the text, except for the last line of a block made of several lines
+        var newLine = Block?.NewLine ?? NewLine.None;
+        if (index < offsets.Length - 1 || lineOffset.End < text.Length)
+        {
+            newLine = lineOffset.End >= text.Length ? NewLine.None : text[lineOffset.End] switch
+            {
+                '\r' when lineOffset.End + 1 < text.Length && text[lineOffset.End + 1] == '\n' => NewLine.CarriageReturnLineFeed,
+                '\r' => NewLine.CarriageReturn,
+                '\n' => NewLine.LineFeed,
+                _ => NewLine.None,
+            };
+        }
+
+        line = new StringSlice(text, lineOffset.Start, lineOffset.End - 1, newLine);
+        sourcePosition = lineOffset.LinePosition + lineOffset.Offset;
+        return true;
+    }
+
+    /// <summary>
     /// Gets the source position for the specified offset within the current slice.
     /// </summary>
     /// <param name="sliceOffset">The slice offset.</param>

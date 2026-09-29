@@ -4,6 +4,7 @@
 
 using Meziantou.Framework.Markdown.Parsers.Inlines;
 using Meziantou.Framework.Markdown.Renderers;
+using Meziantou.Framework.Markdown.Renderers.Roundtrip;
 
 namespace Meziantou.Framework.Markdown.Extensions.CustomContainers;
 
@@ -22,6 +23,12 @@ public class CustomContainerExtension : IMarkdownExtension
         {
             // Insert the parser before any other parsers
             pipeline.BlockParsers.Insert(0, new CustomContainerParser());
+        }
+
+        // Keep the info string as written, like EnableTrackTrivia does for fenced code blocks
+        if (pipeline.TrackTrivia && pipeline.BlockParsers.TryFind<CustomContainerParser>(out var parser))
+        {
+            parser.InfoParser = CustomContainerParser.RoundtripInfoParser;
         }
 
         // Plug the inline parser for CustomContainerInline
@@ -61,6 +68,10 @@ public class CustomContainerExtension : IMarkdownExtension
                 // Must be inserted before EmphasisRenderer
                 htmlRenderer.ObjectRenderers.Insert(0, new HtmlCustomContainerInlineRenderer());
             }
+        }
+        else if (renderer is RoundtripRenderer roundtripRenderer)
+        {
+            roundtripRenderer.ObjectRenderers.AddIfNotAlready(new RoundtripCustomContainerRenderer());
         }
 
     }

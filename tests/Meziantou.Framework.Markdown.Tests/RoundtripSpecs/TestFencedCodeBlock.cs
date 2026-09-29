@@ -1,3 +1,4 @@
+using Meziantou.Framework.Markdown.Extensions.CustomContainers;
 using Meziantou.Framework.Markdown.Extensions.Figures;
 using Meziantou.Framework.Markdown.Renderers.Roundtrip;
 using static Meziantou.Framework.Markdown.Tests.TestRoundtrip;
@@ -6,6 +7,39 @@ namespace Meziantou.Framework.Markdown.Tests.RoundtripSpecs;
 
 public class TestFencedCodeBlock
 {
+    [Theory]
+    [InlineData(":::spoiler\nx\n:::")]
+    [InlineData(":::\n:::\n")]
+    [InlineData("  ::: spoiler  arg  \r\nx\r\n  ::::  \r\n")]
+    [InlineData("a\n\n:::a\n- b\n\n  c\n:::\n\nd\n")]
+    [InlineData("> :::a\n> b\n> :::\n")]
+    [InlineData("::::a\n:::b\nc\n:::\n::::\n")]
+    [InlineData(":::a\nunclosed\n")]
+    [InlineData("::inline:: text ::x::\n")]
+    public void TestCustomContainer(string value)
+    {
+        RoundTrip(value, new MarkdownPipelineBuilder().UseCustomContainers());
+    }
+
+    [Fact]
+    public void TestCustomContainerWithoutSource()
+    {
+        var pipeline = new MarkdownPipelineBuilder().UseCustomContainers().EnableTrackTrivia().Build();
+        var document = MarkdownConverter.Parse("a\n", pipeline);
+        var paragraph = document[0];
+        document.RemoveAt(0);
+        var container = new CustomContainer(new CustomContainerParser()) { Info = "note" };
+        container.Add(paragraph);
+        document.Add(container);
+
+        var writer = new StringWriter();
+        var renderer = new RoundtripRenderer(writer);
+        pipeline.Setup(renderer);
+        renderer.Write(document);
+
+        Assert.Equal(":::note\na\n:::\n", writer.ToString());
+    }
+
     [Theory]
     [InlineData("```\nc\n```")]
     [InlineData("```\nc\n```\n")]

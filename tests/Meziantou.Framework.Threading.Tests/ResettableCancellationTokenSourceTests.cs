@@ -270,7 +270,7 @@ public sealed class ResettableCancellationTokenSourceTests
             using var cts = new ResettableCancellationTokenSource(cancelOnResetAndDispose: true);
             using var start = new Barrier(2);
 
-            var resets = Task.Run(() =>
+            var resets = RunOnDedicatedThread(() =>
             {
                 start.SignalAndWait();
                 for (var i = 0; i < 200; i++)
@@ -279,7 +279,7 @@ public sealed class ResettableCancellationTokenSourceTests
                 }
             });
 
-            var readers = Task.Run(() =>
+            var readers = RunOnDedicatedThread(() =>
             {
                 start.SignalAndWait();
                 for (var i = 0; i < 200; i++)
@@ -290,7 +290,7 @@ public sealed class ResettableCancellationTokenSourceTests
                 }
             });
 
-            await Task.WhenAll(resets, readers).WaitAsync(TimeSpan.FromSeconds(30));
+            await Task.WhenAll(resets, readers).WaitAsync(TimeSpan.FromMinutes(2));
         }
     }
 
@@ -300,13 +300,13 @@ public sealed class ResettableCancellationTokenSourceTests
         using var cts = new ResettableCancellationTokenSource(cancelOnResetAndDispose: true);
         using var start = new Barrier(4);
 
-        var tasks = Enumerable.Range(0, 4).Select(_ => Task.Run(() =>
+        var tasks = Enumerable.Range(0, 4).Select(_ => RunOnDedicatedThread(() =>
         {
             start.SignalAndWait();
             cts.Dispose();
         })).ToArray();
 
-        await Task.WhenAll(tasks).WaitAsync(TimeSpan.FromSeconds(30));
+        await Task.WhenAll(tasks).WaitAsync(TimeSpan.FromMinutes(2));
     }
 
     [Fact]
@@ -315,12 +315,18 @@ public sealed class ResettableCancellationTokenSourceTests
         await using var cts = new ResettableCancellationTokenSource(cancelOnResetAndDispose: true);
         using var start = new Barrier(4);
 
-        var tasks = Enumerable.Range(0, 4).Select(_ => Task.Run(async () =>
+        var tasks = Enumerable.Range(0, 4).Select(_ => RunOnDedicatedThread(() =>
         {
             start.SignalAndWait();
-            await cts.DisposeAsync();
+            return cts.DisposeAsync().AsTask();
         })).ToArray();
 
-        await Task.WhenAll(tasks).WaitAsync(TimeSpan.FromSeconds(30));
+        await Task.WhenAll(tasks).WaitAsync(TimeSpan.FromMinutes(2));
     }
+
+    /// <summary>Runs the participant of a barrier on a thread of its own. On the thread pool, the participants that already wait on the barrier hold their threads, and a busy pool can take more than 30 seconds to start the last one.</summary>
+    private static Task RunOnDedicatedThread(Action action) => Task.Factory.StartNew(action, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+
+    /// <inheritdoc cref="RunOnDedicatedThread(Action)"/>
+    private static Task RunOnDedicatedThread(Func<Task> action) => Task.Factory.StartNew(action, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default).Unwrap();
 }

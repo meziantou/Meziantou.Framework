@@ -5,7 +5,6 @@ using System.Text;
 using System.Text.RegularExpressions;
 
 using Meziantou.Framework.Markdown.Extensions.Abbreviations;
-using Meziantou.Framework.Markdown.Extensions.CustomContainers;
 using Meziantou.Framework.Markdown.Extensions.DefinitionLists;
 using Meziantou.Framework.Markdown.Extensions.Figures;
 using Meziantou.Framework.Markdown.Extensions.JiraLinks;
@@ -112,7 +111,6 @@ public class TestParser
     private static readonly HashSet<Type> ExtensionsWithoutRoundtrip =
     [
         typeof(AbbreviationExtension),
-        typeof(CustomContainerExtension),
         typeof(DefinitionListExtension),
         typeof(FigureExtension),
     ];

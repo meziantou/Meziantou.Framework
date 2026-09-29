@@ -4,6 +4,7 @@
 
 using Meziantou.Framework.Markdown.Extensions.Figures;
 using Meziantou.Framework.Markdown.Renderers;
+using Meziantou.Framework.Markdown.Renderers.Roundtrip;
 
 namespace Meziantou.Framework.Markdown.Extensions.Footers;
 
@@ -40,6 +41,10 @@ public class FooterExtension : IMarkdownExtension
         if (renderer is HtmlRenderer htmlRenderer)
         {
             htmlRenderer.ObjectRenderers.AddIfNotAlready(new HtmlFooterBlockRenderer());
+        }
+        else if (renderer is RoundtripRenderer roundtripRenderer)
+        {
+            roundtripRenderer.ObjectRenderers.AddIfNotAlready(new RoundtripFooterBlockRenderer());
         }
     }
 }

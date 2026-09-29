@@ -64,8 +64,9 @@ public class GenericAttributesParser : InlineParser
 
             // If the current block is a Paragraph, but only the HtmlAttributes is used,
             // Try to attach the attributes to the following block
+            var isParagraphRemoved = false;
             if (objectToAttach is ParagraphBlock paragraph &&
-                paragraph.Inline!.FirstChild is null &&
+                HasOnlyAttributes(paragraph.Inline!) &&
                 processor.Inline is null &&
                 slice.IsEmptyOrWhitespace())
             {
@@ -76,7 +77,28 @@ public class GenericAttributesParser : InlineParser
                     objectToAttach = parent[indexOfParagraph + 1];
                     // We can remove the paragraph as it is empty
                     paragraph.RemoveAfterProcessInlines = true;
+                    isParagraphRemoved = true;
+                    if (processor.TrackTrivia)
+                    {
+                        // The attributes before these ones are in the paragraph too
+                        var textStart = paragraph.Inline!.FirstChild is GenericAttributesInline first ? first.SourceText.Start : startPosition;
+                        MoveParagraphToLinesBefore(paragraph, new StringSlice(slice.Text, textStart, slice.End), (Block)objectToAttach);
+                    }
                 }
+            }
+
+            if (processor.TrackTrivia && !isParagraphRemoved)
+            {
+                // The attributes are written back by the roundtrip renderer. They are not an inline that other attributes
+                // can be attached to, so the current inline stays the same.
+                var previousInline = processor.Inline;
+                processor.Emit(new GenericAttributesInline
+                {
+                    SourceText = new StringSlice(slice.Text, startPosition, slice.Start - 1),
+                    Span = new SourceSpan(processor.GetSourcePosition(startPosition), processor.GetSourcePosition(slice.Start - 1)),
+                    IsClosed = true,
+                });
+                processor.Inline = previousInline;
             }
 
             var currentHtmlAttributes = objectToAttach.GetAttributes();
@@ -545,6 +567,44 @@ public class GenericAttributesParser : InlineParser
         public HashSet<string> Names { get; } = new(StringComparer.Ordinal);
 
         public int Count { get; set; } = -1;
+    }
+
+    // With trivia, the attributes are kept in the inlines, but a paragraph that only has attributes has no content
+    private static bool HasOnlyAttributes(ContainerInline inline)
+    {
+        for (var child = inline.FirstChild; child is not null; child = child.NextSibling)
+        {
+            if (child is not GenericAttributesInline)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    // With trivia, the line of a paragraph that only has attributes is written back before the block they are attached to, as the
+    // paragraph is removed
+    private static void MoveParagraphToLinesBefore(ParagraphBlock paragraph, StringSlice attributes, Block block)
+    {
+        var lines = new List<StringSlice>();
+        if (paragraph.LinesBefore is { } linesBefore)
+        {
+            lines.AddRange(linesBefore);
+        }
+
+        lines.Add(new StringSlice(paragraph.TriviaBefore.ToString() + attributes.ToString(), paragraph.NewLine));
+        if (paragraph.LinesAfter is { } linesAfter)
+        {
+            lines.AddRange(linesAfter);
+        }
+
+        if (block.LinesBefore is { } blockLinesBefore)
+        {
+            lines.AddRange(blockLinesBefore);
+        }
+
+        block.LinesBefore = lines;
     }
 
     internal static void RemoveFilteredProperties(HtmlAttributes attributes, Func<string, bool> filter)

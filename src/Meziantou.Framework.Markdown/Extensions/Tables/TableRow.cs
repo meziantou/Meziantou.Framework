@@ -23,4 +23,7 @@ public class TableRow : ContainerBlock
     /// Gets or sets a value indicating whether this instance is header row.
     /// </summary>
     public bool IsHeader { get; set; }
+
+    // With trivia, the index of the line of a row of a pipe table
+    internal int SourceLine { get; set; } = -1;
 }

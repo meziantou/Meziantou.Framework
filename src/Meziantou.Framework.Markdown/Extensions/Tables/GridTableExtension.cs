@@ -3,6 +3,7 @@
 // See the license.txt file in the project root for more information.
 
 using Meziantou.Framework.Markdown.Renderers;
+using Meziantou.Framework.Markdown.Renderers.Roundtrip;
 
 namespace Meziantou.Framework.Markdown.Extensions.Tables;
 
@@ -31,6 +32,10 @@ public class GridTableExtension : IMarkdownExtension
         if (renderer is HtmlRenderer htmlRenderer && !htmlRenderer.ObjectRenderers.Contains<HtmlTableRenderer>())
         {
             htmlRenderer.ObjectRenderers.Add(new HtmlTableRenderer());
+        }
+        else if (renderer is RoundtripRenderer roundtripRenderer)
+        {
+            roundtripRenderer.ObjectRenderers.AddIfNotAlready(new RoundtripTableRenderer());
         }
     }
 }

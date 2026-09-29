@@ -10,11 +10,12 @@ namespace Meziantou.Framework.UrlPatternInternal;
 /// </remarks>
 internal sealed class UrlPatternComponent
 {
-    public UrlPatternComponent(string patternString, Regex regularExpression, List<string> groupNameList, bool hasRegexpGroups)
+    public UrlPatternComponent(string patternString, Regex regularExpression, List<string> groupNameList, List<bool> emptyGroupIsUnmatchedList, bool hasRegexpGroups)
     {
         PatternString = patternString;
         RegularExpression = regularExpression;
         GroupNameList = groupNameList;
+        EmptyGroupIsUnmatchedList = emptyGroupIsUnmatchedList;
         HasRegexpGroups = hasRegexpGroups;
     }
 
@@ -26,6 +27,13 @@ internal sealed class UrlPatternComponent
 
     /// <summary>Gets the list of group names.</summary>
     public List<string> GroupNameList { get; }
+
+    /// <summary>Gets, for each group, whether an empty capture means that the group did not participate in the match.</summary>
+    /// <remarks>
+    /// JavaScript rejects an iteration of a quantified atom that consumes nothing, so the group of an optional part
+    /// without prefix and suffix is undefined when it would capture the empty string. .NET accepts that iteration.
+    /// </remarks>
+    public List<bool> EmptyGroupIsUnmatchedList { get; }
 
     /// <summary>Gets whether this component has regexp groups.</summary>
     public bool HasRegexpGroups { get; }
@@ -45,7 +53,7 @@ internal sealed class UrlPatternComponent
         var parser = new PatternParser(tokenList, encodingCallback, options);
         var partList = parser.Parse();
 
-        var (regexpString, nameList) = GenerateRegularExpressionAndNameList(partList, options);
+        var (regexpString, nameList, emptyGroupIsUnmatchedList) = GenerateRegularExpressionAndNameList(partList, options);
 
         var regexOptions = RegexOptions.CultureInvariant;
         if (options.IgnoreCase)
@@ -75,20 +83,21 @@ internal sealed class UrlPatternComponent
             }
         }
 
-        return new UrlPatternComponent(patternString, regularExpression, nameList, hasRegexpGroups);
+        return new UrlPatternComponent(patternString, regularExpression, nameList, emptyGroupIsUnmatchedList, hasRegexpGroups);
     }
 
     /// <summary>Generates a regular expression and name list from a part list.</summary>
     /// <remarks>
     /// <see href="https://urlpattern.spec.whatwg.org/#generate-a-regular-expression-and-name-list">WHATWG URL Pattern Spec - Generate a regular expression and name list</see>
     /// </remarks>
-    private static (string RegexpString, List<string> NameList) GenerateRegularExpressionAndNameList(List<Part> partList, PatternOptions options)
+    private static (string RegexpString, List<string> NameList, List<bool> EmptyGroupIsUnmatchedList) GenerateRegularExpressionAndNameList(List<Part> partList, PatternOptions options)
     {
         // \A and \z rather than ^ and $: in .NET, $ also matches immediately before a trailing "\n",
         // so "/admin\n" would match a pattern of "/admin". The spec's regexes are evaluated in
         // JavaScript, where $ without the m flag anchors to the very end of the input.
         var result = new StringBuilder("\\A");
         var nameList = new List<string>();
+        var emptyGroupIsUnmatchedList = new List<bool>();
 
         foreach (var part in partList)
         {
@@ -110,6 +119,7 @@ internal sealed class UrlPatternComponent
             }
 
             nameList.Add(part.Name);
+            emptyGroupIsUnmatchedList.Add(part.Modifier is PartModifier.Optional && string.IsNullOrEmpty(part.Prefix) && string.IsNullOrEmpty(part.Suffix));
 
             var regexpValue = part.Value;
             if (part.Type == PartType.SegmentWildcard)
@@ -178,7 +188,7 @@ internal sealed class UrlPatternComponent
         }
 
         result.Append("\\z");
-        return (result.ToString(), nameList);
+        return (result.ToString(), nameList, emptyGroupIsUnmatchedList);
     }
 
     /// <summary>Generates a pattern string from a part list.</summary>

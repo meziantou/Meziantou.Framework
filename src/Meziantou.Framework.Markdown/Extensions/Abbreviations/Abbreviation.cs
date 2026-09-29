@@ -38,4 +38,7 @@ public class Abbreviation : LeafBlock
     /// The label span
     /// </summary>
     public SourceSpan LabelSpan;
+
+    // With trivia, the definition as written in the source, from the '*' to the end of the line
+    internal StringSlice SourceText { get; set; }
 }

@@ -71,6 +71,17 @@ public class AbbreviationParser : BlockParser
         }
         processor.Document.AddAbbreviation(abbr.Label, abbr);
 
+        if (processor.TrackTrivia)
+        {
+            // The definition stays in the document so that the roundtrip renderer can write it back
+            abbr.LinesBefore = processor.TakeLinesBefore();
+            abbr.TriviaBefore = processor.UseTrivia(startPosition - 1);
+            abbr.SourceText = new StringSlice(processor.Line.Text, startPosition, processor.Line.End);
+            abbr.NewLine = processor.Line.NewLine;
+            processor.NewBlocks.Push(abbr);
+            return BlockState.Break;
+        }
+
         return BlockState.BreakDiscard;
     }
 

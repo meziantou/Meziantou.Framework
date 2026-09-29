@@ -4,7 +4,6 @@
 using System.Text;
 using System.Text.RegularExpressions;
 
-using Meziantou.Framework.Markdown.Extensions.Abbreviations;
 using Meziantou.Framework.Markdown.Extensions.Alerts;
 using Meziantou.Framework.Markdown.Extensions.AutoIdentifiers;
 using Meziantou.Framework.Markdown.Extensions.AutoLinks;
@@ -121,7 +120,6 @@ public class TestParser
     // The extensions that do not write their syntax back yet, so the examples that use them are not round-tripped
     private static readonly HashSet<Type> ExtensionsWithoutRoundtrip =
     [
-        typeof(AbbreviationExtension),
         typeof(AlertExtension),
         typeof(AutoIdentifierExtension),
         typeof(AutoLinkExtension),

@@ -4,6 +4,7 @@
 
 using Meziantou.Framework.Markdown.Parsers.Inlines;
 using Meziantou.Framework.Markdown.Renderers;
+using Meziantou.Framework.Markdown.Renderers.Roundtrip;
 
 namespace Meziantou.Framework.Markdown.Extensions.SmartyPants;
 
@@ -49,6 +50,10 @@ public class SmartyPantsExtension : IMarkdownExtension
             {
                 htmlRenderer.ObjectRenderers.Add(new HtmlSmartyPantRenderer(Options));
             }
+        }
+        else if (renderer is RoundtripRenderer roundtripRenderer)
+        {
+            roundtripRenderer.ObjectRenderers.AddIfNotAlready(new RoundtripSmartyPantRenderer());
         }
     }
 }

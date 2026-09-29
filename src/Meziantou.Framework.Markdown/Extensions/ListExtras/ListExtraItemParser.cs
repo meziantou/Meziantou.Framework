@@ -38,6 +38,7 @@ public class ListExtraItemParser : OrderedListItemParser
         result = new ListInfo();
 
         var c = state.CurrentChar;
+        var sourcePosition = state.Start;
 
         var isRomanLow = CharHelper.IsRomanLetterLowerPartial(c);
         var isRomanUp = !isRomanLow && CharHelper.IsRomanLetterUpperPartial(c);
@@ -45,7 +46,6 @@ public class ListExtraItemParser : OrderedListItemParser
         // We allow to parse roman only if we start on a new list or the pending list is already a roman list)
         if ((isRomanLow || isRomanUp) && (pendingBulletType == '\0' || pendingBulletType == 'i' || pendingBulletType == 'I'))
         {
-            int startChar = state.Start;
             // With a roman, we can have multiple characters
             // Note that we don't validate roman numbers
             do
@@ -54,7 +54,7 @@ public class ListExtraItemParser : OrderedListItemParser
             }
             while (isRomanLow ? CharHelper.IsRomanLetterLowerPartial(c) : CharHelper.IsRomanLetterUpperPartial(c));
 
-            int orderValue = CharHelper.RomanToArabic(state.Line.Text.AsSpan(startChar, state.Start - startChar));
+            int orderValue = CharHelper.RomanToArabic(state.Line.Text.AsSpan(sourcePosition, state.Start - sourcePosition));
             result.OrderedStart = CharHelper.SmallNumberToString(orderValue);
             result.BulletType = isRomanLow ? 'i' : 'I';
             result.DefaultOrderedStart = isRomanLow ? "i" : "I";
@@ -69,6 +69,8 @@ public class ListExtraItemParser : OrderedListItemParser
             state.NextChar();
         }
 
+        var sourceBullet = new StringSlice(state.Line.Text, sourcePosition, state.Start - 1);
+
         // Finally we expect to always have a delimiter '.' or ')'
         if (!TryParseDelimiter(state, out char orderedDelimiter))
         {
@@ -76,6 +78,7 @@ public class ListExtraItemParser : OrderedListItemParser
         }
 
         result.OrderedDelimiter = orderedDelimiter;
+        result.SourceBullet = sourceBullet;
         return true;
     }
 }

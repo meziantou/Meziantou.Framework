@@ -30,4 +30,7 @@ public class AlertBlock : QuoteBlock
     /// Gets or sets the trivia space after the kind.
     /// </summary>
     public StringSlice TriviaSpaceAfterKind { get; set; }
+
+    // The line ending after the kind and the spaces that follow it
+    internal NewLine NewLineAfterKind { get; set; }
 }

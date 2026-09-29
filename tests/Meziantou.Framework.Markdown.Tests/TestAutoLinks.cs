@@ -218,6 +218,37 @@ public class TestAutoLinks
         Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(10), $"Rendering took {stopwatch.Elapsed}");
     }
 
+    [Theory]
+    [InlineData("https://example.com")]
+    [InlineData("a www.example.com b")]
+    [InlineData("a mailto:me@example.com b tel:+1555123456")]
+    [InlineData("(https://example.com/a_(b)) and https://example.com.")]
+    [InlineData("**http://www.a.com** or __http://www.b.com__")]
+    [InlineData("< https://foo.bar > <https://foo.bar>")]
+    [InlineData("[text https://example.com](url)")]
+    [InlineData("a https://example.com\r\nb www.example.com\r\n")]
+    [InlineData("> https://example.com\n> - www.example.com\n")]
+    public void Roundtrip(string markdown)
+    {
+        TestRoundtrip.RoundTrip(markdown, new MarkdownPipelineBuilder().UseAutoLinks());
+    }
+
+    [Fact]
+    public void RoundtripOfLinkWithoutSource()
+    {
+        var pipeline = new MarkdownPipelineBuilder().UseAutoLinks().EnableTrackTrivia().Build();
+        var document = MarkdownConverter.Parse("a ", pipeline);
+        var paragraph = (Syntax.ParagraphBlock)document[0];
+        paragraph.Inline!.AppendChild(new Syntax.Inlines.LinkInline { Url = "https://example.com", IsAutoLink = true });
+
+        using var writer = new StringWriter();
+        var renderer = new Renderers.Roundtrip.RoundtripRenderer(writer);
+        pipeline.Setup(renderer);
+        renderer.Write(document);
+
+        Assert.Equal("a https://example.com", writer.ToString());
+    }
+
     private static void AssertEqualIgnoringWhiteSpace(string expected, string actual, string? message = null)
     {
         Assert.Equal(RemoveWhiteSpace(expected), RemoveWhiteSpace(actual), message: message);

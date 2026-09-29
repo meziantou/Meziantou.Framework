@@ -7,6 +7,7 @@ using Meziantou.Framework.Markdown.Parsers;
 using Meziantou.Framework.Markdown.Parsers.Inlines;
 using Meziantou.Framework.Markdown.Renderers;
 using Meziantou.Framework.Markdown.Renderers.Normalize;
+using Meziantou.Framework.Markdown.Renderers.Roundtrip;
 
 namespace Meziantou.Framework.Markdown.Extensions.Tables;
 
@@ -80,6 +81,11 @@ public class PipeTableExtension : IMarkdownExtension
         if (renderer is NormalizeRenderer normalizeRenderer && !normalizeRenderer.ObjectRenderers.Contains<NormalizeTableRenderer>())
         {
             normalizeRenderer.ObjectRenderers.AddIfNotAlready<NormalizeTableRenderer>();
+        }
+
+        if (renderer is RoundtripRenderer roundtripRenderer)
+        {
+            roundtripRenderer.ObjectRenderers.AddIfNotAlready(new RoundtripTableRenderer());
         }
     }
 }

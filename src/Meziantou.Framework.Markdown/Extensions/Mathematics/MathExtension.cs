@@ -3,6 +3,7 @@
 // See the license.txt file in the project root for more information.
 
 using Meziantou.Framework.Markdown.Renderers;
+using Meziantou.Framework.Markdown.Renderers.Roundtrip;
 
 namespace Meziantou.Framework.Markdown.Extensions.Mathematics;
 
@@ -46,6 +47,10 @@ public class MathExtension : IMarkdownExtension
             {
                 htmlRenderer.ObjectRenderers.Insert(0, new HtmlMathBlockRenderer());
             }
+        }
+        else if (renderer is RoundtripRenderer roundtripRenderer)
+        {
+            roundtripRenderer.ObjectRenderers.AddIfNotAlready(new RoundtripMathInlineRenderer());
         }
     }
 }

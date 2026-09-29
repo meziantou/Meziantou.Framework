@@ -291,12 +291,21 @@ public abstract class FencedBlockParserBase<T> : FencedBlockParserBase where T :
         }
 
         // Try to parse any attached attributes
+        var lineEndBeforeAttributes = line.End;
         TryParseAttributes?.Invoke(processor, ref line, fenced);
 
         // If the info parser was not successful, early exit
         if (InfoParser != null && !InfoParser(processor, ref line, fenced, matchChar))
         {
             return BlockState.None;
+        }
+
+        if (processor.TrackTrivia && line.End < lineEndBeforeAttributes)
+        {
+            // The attributes, and the text after them, are written back after the arguments
+            var afterArguments = fenced.TriviaAfterArguments;
+            var start = afterArguments.Text is not null && afterArguments.End == line.End ? afterArguments.Start : line.End + 1;
+            fenced.TriviaAfterArguments = new StringSlice(line.Text, start, lineEndBeforeAttributes);
         }
 
         // Add the language as an attribute by default

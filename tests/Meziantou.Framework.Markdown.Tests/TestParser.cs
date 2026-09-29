@@ -11,7 +11,6 @@ using Meziantou.Framework.Markdown.Extensions.CustomContainers;
 using Meziantou.Framework.Markdown.Extensions.DefinitionLists;
 using Meziantou.Framework.Markdown.Extensions.Emoji;
 using Meziantou.Framework.Markdown.Extensions.Figures;
-using Meziantou.Framework.Markdown.Extensions.Footers;
 using Meziantou.Framework.Markdown.Extensions.GenericAttributes;
 using Meziantou.Framework.Markdown.Extensions.JiraLinks;
 using Meziantou.Framework.Markdown.Extensions.ListExtras;
@@ -127,7 +126,6 @@ public class TestParser
         typeof(DefinitionListExtension),
         typeof(EmojiExtension),
         typeof(FigureExtension),
-        typeof(FooterExtension),
         typeof(GenericAttributesExtension),
         typeof(GridTableExtension),
         typeof(JiraLinkExtension),

@@ -1,3 +1,4 @@
+using Meziantou.Framework.Markdown.Extensions.Footers;
 using Meziantou.Framework.Markdown.Extensions.Alerts;
 using Meziantou.Framework.Markdown.Helpers;
 using Meziantou.Framework.Markdown.Renderers.Roundtrip;
@@ -404,6 +405,41 @@ public class TestQuoteBlock
         renderer.Write(document);
 
         Assert.Equal("> [!NOTE]\n> a\n", writer.ToString());
+    }
+
+    [Theory]
+    [InlineData("^^ This is a footer\n^^ multi-line\n")]
+    [InlineData("^^a\n^^b")]
+    [InlineData("  ^^  a  \r\n^^\tb\r\n")]
+    [InlineData("^^ a\nlazy\n^^ b\n")]
+    [InlineData("^^ a\n^^\n^^ b\n\nafter\n")]
+    [InlineData("^^ a\n\n\n^^ b\n")]
+    [InlineData("^^ a\n^^\n")]
+    [InlineData("> ^^ a\n> ^^ b\n")]
+    [InlineData("^^ - a\n^^   b\n")]
+    [InlineData("p\n^^ a\n")]
+    public void TestFooter(string value)
+    {
+        RoundTrip(value, new MarkdownPipelineBuilder().UseFooters());
+    }
+
+    [Fact]
+    public void TestFooterWithoutSource()
+    {
+        var pipeline = new MarkdownPipelineBuilder().UseFooters().EnableTrackTrivia().Build();
+        var document = MarkdownConverter.Parse("a\n", pipeline);
+        var paragraph = document[0];
+        document.RemoveAt(0);
+        var footer = new FooterBlock(new FooterBlockParser()) { OpeningCharacter = '^' };
+        footer.Add(paragraph);
+        document.Add(footer);
+
+        var writer = new StringWriter();
+        var renderer = new RoundtripRenderer(writer);
+        pipeline.Setup(renderer);
+        renderer.Write(document);
+
+        Assert.Equal("^^ a\n", writer.ToString());
     }
 }
 

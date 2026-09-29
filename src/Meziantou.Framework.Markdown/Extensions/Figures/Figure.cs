@@ -2,6 +2,7 @@
 // This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
+using Meziantou.Framework.Markdown.Helpers;
 using Meziantou.Framework.Markdown.Parsers;
 using Meziantou.Framework.Markdown.Syntax;
 
@@ -30,4 +31,20 @@ public class Figure : ContainerBlock
     /// Gets or sets the opening character used to open and close this figure code block.
     /// </summary>
     public char OpeningCharacter { get; set; }
+
+    // With trivia, the source of the fences, which the roundtrip renderer writes back. The captions are children of the figure.
+    internal FigureTrivia? SourceTrivia => TryGetDerivedTrivia<FigureTrivia>();
+
+    internal FigureTrivia GetOrCreateSourceTrivia() => GetOrSetDerivedTrivia<FigureTrivia>();
+
+    internal sealed class FigureTrivia
+    {
+        public StringSlice TriviaAfterOpeningFence;
+        public NewLine OpeningNewLine;
+        public FigureCaption? OpeningCaption;
+        public StringSlice TriviaBeforeClosingFence;
+        public int ClosingCharacterCount;
+        public StringSlice TriviaAfterClosingFence;
+        public FigureCaption? ClosingCaption;
+    }
 }

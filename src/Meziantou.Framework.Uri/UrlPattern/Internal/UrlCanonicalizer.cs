@@ -1,6 +1,4 @@
 using System.Buffers;
-using System.Net;
-using System.Net.Sockets;
 
 namespace Meziantou.Framework.UrlPatternInternal;
 
@@ -20,9 +18,6 @@ namespace Meziantou.Framework.UrlPatternInternal;
 /// </remarks>
 internal static class UrlCanonicalizer
 {
-    // AllowUnassigned and UseStd3AsciiRules mirror the "domain to ASCII" parameters of the URL Standard,
-    // which runs Unicode ToASCII with UseSTD3ASCIIRules and VerifyDnsLength both false
-    private static readonly IdnMapping IdnMapping = new() { AllowUnassigned = true, UseStd3AsciiRules = false };
     private static readonly SearchValues<char> TabsAndNewlines = SearchValues.Create("\t\n\r");
 
     /// <summary>Canonicalizes a protocol.</summary>
@@ -77,8 +72,9 @@ internal static class UrlCanonicalizer
     /// <remarks>
     /// <para>
     /// The IPv4 normalization of the URL Standard (which rewrites "0x7f.1" as "127.0.0.1") is deliberately
-    /// not applied: the values a pattern is matched against come from a <see cref="Uri"/>, which does not
-    /// apply it either, so normalizing only the pattern would stop the two from lining up.
+    /// not applied, as in the URLPattern implementation of Node.js. The parts of a pattern are canonicalized one
+    /// at a time, so it would rewrite the "192.168." of "192.168.*.1" as "192.0.0.168", and reject the ".1".
+    /// A URL that is matched is still normalized, so "http://127.1/" matches the pattern "127.0.0.1".
     /// </para>
     /// <see href="https://urlpattern.spec.whatwg.org/#canon-a-hostname">WHATWG URL Pattern Spec - Canonicalize a hostname</see>
     /// </remarks>
@@ -122,11 +118,12 @@ internal static class UrlCanonicalizer
             return CanonicalizeIPv6Hostname(value);
 
         var domain = PercentEncoding.Decode(value);
-        var asciiDomain = DomainToAscii(domain);
+        if (!HostParser.TryDomainToAscii(domain, out var asciiDomain))
+            throw new UrlPatternException($"Invalid hostname: '{value}'");
 
         foreach (var c in asciiDomain)
         {
-            if (IsForbiddenDomainCodePoint(c))
+            if (HostParser.IsForbiddenDomainCodePoint(c))
                 throw new UrlPatternException($"Invalid hostname: '{value}' contains '{c}'");
         }
 
@@ -281,81 +278,6 @@ internal static class UrlCanonicalizer
         return builder.ToString();
     }
 
-    /// <summary>Serializes an IPv6 address the way the URL Standard does.</summary>
-    /// <remarks>
-    /// <see cref="Uri"/> writes the last two pieces of an address such as "::ab:1" in the dotted-decimal
-    /// form ("::0.171.0.1"), which the URL Standard never does, so a host read from a <see cref="Uri"/>
-    /// has to be written out again to be comparable with a pattern.
-    /// <see href="https://url.spec.whatwg.org/#concept-ipv6-serializer">URL Standard - IPv6 serializer</see>
-    /// </remarks>
-    public static string SerializeIPv6Hostname(string value)
-    {
-        var address = value.AsSpan().Trim(['[', ']']);
-        if (!IPAddress.TryParse(address, out var parsed) || parsed.AddressFamily is not AddressFamily.InterNetworkV6)
-            return value.ToLowerInvariant();
-
-        Span<byte> bytes = stackalloc byte[16];
-        if (!parsed.TryWriteBytes(bytes, out _))
-            return value.ToLowerInvariant();
-
-        Span<ushort> pieces = stackalloc ushort[8];
-        for (var i = 0; i < pieces.Length; i++)
-        {
-            pieces[i] = (ushort)((bytes[i * 2] << 8) | bytes[(i * 2) + 1]);
-        }
-
-        // The longest run of zero pieces is replaced by "::", but only when it covers more than one piece
-        var compress = -1;
-        var compressLength = 1;
-        for (var i = 0; i < pieces.Length; i++)
-        {
-            if (pieces[i] is not 0)
-                continue;
-
-            var length = 0;
-            while (i + length < pieces.Length && pieces[i + length] is 0)
-            {
-                length++;
-            }
-
-            if (length > compressLength)
-            {
-                compress = i;
-                compressLength = length;
-            }
-
-            i += length - 1;
-        }
-
-        var builder = new StringBuilder(41).Append('[');
-        var ignoreZeroes = false;
-        for (var i = 0; i < pieces.Length; i++)
-        {
-            if (ignoreZeroes)
-            {
-                if (pieces[i] is 0)
-                    continue;
-
-                ignoreZeroes = false;
-            }
-
-            if (i == compress)
-            {
-                builder.Append(i is 0 ? "::" : ":");
-                ignoreZeroes = true;
-                continue;
-            }
-
-            builder.Append(pieces[i].ToString("x", CultureInfo.InvariantCulture));
-            if (i is not 7)
-            {
-                builder.Append(':');
-            }
-        }
-
-        return builder.Append(']').ToString();
-    }
-
     /// <summary>Removes the leading C0 controls and spaces, as the basic URL parser does when no URL record is given.</summary>
     private static string TrimLeadingC0ControlsAndSpaces(string value)
     {
@@ -411,7 +333,7 @@ internal static class UrlCanonicalizer
         var segment = buffer.ToString();
         buffer.Clear();
 
-        if (IsDoubleDotSegment(segment))
+        if (UrlRecord.IsDoubleDotPathSegment(segment))
         {
             if (path.Count > 0)
             {
@@ -424,7 +346,7 @@ internal static class UrlCanonicalizer
                 path.Add("");
             }
         }
-        else if (IsSingleDotSegment(segment))
+        else if (UrlRecord.IsSingleDotPathSegment(segment))
         {
             if (!atSegmentSeparator)
             {
@@ -448,19 +370,6 @@ internal static class UrlCanonicalizer
         return builder.ToString();
     }
 
-    private static bool IsSingleDotSegment(string segment)
-    {
-        return segment is "." || segment.Equals("%2e", StringComparison.OrdinalIgnoreCase);
-    }
-
-    private static bool IsDoubleDotSegment(string segment)
-    {
-        return segment is ".." ||
-            segment.Equals(".%2e", StringComparison.OrdinalIgnoreCase) ||
-            segment.Equals("%2e.", StringComparison.OrdinalIgnoreCase) ||
-            segment.Equals("%2e%2e", StringComparison.OrdinalIgnoreCase);
-    }
-
     /// <summary>Percent-encodes the code point at the start of <paramref name="value"/> and returns how many chars it spanned.</summary>
     private static int AppendEncodedCodePoint(StringBuilder builder, ReadOnlySpan<char> value, PercentEncodeSet set)
     {
@@ -469,52 +378,5 @@ internal static class UrlCanonicalizer
         PercentEncoding.EncodeCodePoint(builder, rune, set);
 
         return consumed;
-    }
-
-    /// <summary>Runs the "domain to ASCII" operation of the URL Standard.</summary>
-    /// <remarks>
-    /// Unicode ToASCII is defined label by label, so an empty label (which a fixed-text part such as "."
-    /// consists of) has to stay empty instead of failing.
-    /// <see href="https://url.spec.whatwg.org/#concept-domain-to-ascii">URL Standard - Domain to ASCII</see>
-    /// </remarks>
-    private static string DomainToAscii(string domain)
-    {
-        if (Ascii.IsValid(domain))
-            return domain.ToLowerInvariant();
-
-        var labels = domain.Split('.');
-        for (var i = 0; i < labels.Length; i++)
-        {
-            // ToASCII maps a label to lower case before it encodes it. IdnMapping only does so when ICU is
-            // available, so in globalization-invariant mode "CAFÉ" would encode as "xn--caf-pia" instead of
-            // "xn--caf-dma" and stop matching the host a Uri reports. Mapping it here covers both modes
-            var label = labels[i].ToLowerInvariant();
-            if (Ascii.IsValid(label))
-            {
-                labels[i] = label;
-                continue;
-            }
-
-            try
-            {
-                labels[i] = IdnMapping.GetAscii(label);
-            }
-            catch (ArgumentException ex)
-            {
-                throw new UrlPatternException($"Invalid hostname: '{domain}'", ex);
-            }
-        }
-
-        return string.Join('.', labels);
-    }
-
-    /// <remarks>
-    /// <see href="https://url.spec.whatwg.org/#forbidden-domain-code-point">URL Standard - Forbidden domain code point</see>
-    /// </remarks>
-    private static bool IsForbiddenDomainCodePoint(char c)
-    {
-        // Forbidden host code points, plus the C0 controls, '%' and U+007F DELETE
-        return c <= 0x20 ||
-            c is '#' or '%' or '/' or ':' or '<' or '>' or '?' or '@' or '[' or '\\' or ']' or '^' or '|' or (char)0x7F;
     }
 }

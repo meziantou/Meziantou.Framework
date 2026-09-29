@@ -17,6 +17,10 @@
     <EmbeddedResource Include="files/urlpatterntestdata.json">
       <LogicalName>%(FileName)%(Extension)</LogicalName>
     </EmbeddedResource>
+    <None Remove="files/urltestdata.json" />
+    <EmbeddedResource Include="files/urltestdata.json">
+      <LogicalName>%(FileName)%(Extension)</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
 
 </Project>

@@ -285,20 +285,26 @@ public sealed class UrlPattern
     {
         ArgumentNullException.ThrowIfNull(url);
 
-        var uri = ParseUrl(url, baseUrl);
-        if (uri is null)
+        var record = ParseUrl(url, baseUrl);
+        if (record is null)
             return false;
 
-        return IsMatchUrl(uri);
+        return IsMatchUrl(record);
     }
 
     /// <summary>Indicates whether the pattern finds a match in the specified URL.</summary>
     /// <param name="url">The URL to test.</param>
     /// <returns><see langword="true"/> if the pattern matches the URL; otherwise, <see langword="false"/>.</returns>
+    /// <remarks>A relative URL never matches.</remarks>
     public bool IsMatch(Uri url)
     {
         ArgumentNullException.ThrowIfNull(url);
-        return IsMatchUrl(url);
+
+        var record = ParseUrl(url);
+        if (record is null)
+            return false;
+
+        return IsMatchUrl(record);
     }
 
     /// <summary>Indicates whether the pattern finds a match in the specified URL input.</summary>
@@ -332,20 +338,26 @@ public sealed class UrlPattern
     {
         ArgumentNullException.ThrowIfNull(url);
 
-        var uri = ParseUrl(url, baseUrl);
-        if (uri is null)
+        var record = ParseUrl(url, baseUrl);
+        if (record is null)
             return null;
 
-        return MatchUrl(uri, url);
+        return MatchUrl(record, url);
     }
 
     /// <summary>Searches the specified URL for the first occurrence of the pattern and returns the match result with captured groups.</summary>
     /// <param name="url">The URL to match.</param>
     /// <returns>A <see cref="UrlPatternResult"/> containing the match result, or <see langword="null"/> if no match.</returns>
+    /// <remarks>A relative URL never matches.</remarks>
     public UrlPatternResult? Match(Uri url)
     {
         ArgumentNullException.ThrowIfNull(url);
-        return MatchUrl(url, url.ToString());
+
+        var record = ParseUrl(url);
+        if (record is null)
+            return null;
+
+        return MatchUrl(record, url.ToString());
     }
 
     /// <summary>Searches the specified URL input for the first occurrence of the pattern and returns the match result with captured groups.</summary>
@@ -357,7 +369,7 @@ public sealed class UrlPattern
         return MatchInit(input);
     }
 
-    private UrlPatternResult? MatchUrl(Uri url, string originalInput)
+    private UrlPatternResult? MatchUrl(UrlRecord url, string originalInput)
     {
         var (protocol, username, password, hostname, port, pathname, search, hash) = GetUrlComponents(url);
 
@@ -366,50 +378,21 @@ public sealed class UrlPattern
 
     /// <summary>Splits the URL into the eight component values that are matched against the pattern.</summary>
     /// <remarks>
-    /// <para>
-    /// The components are taken in their least-escaped form and canonicalized again, because
-    /// <see cref="Uri"/> escapes a few code points that the URL Standard leaves alone ("^" and "|") and
-    /// leaves alone one that it escapes ("'" in a query). Running both sides of a match through
-    /// <see cref="UrlCanonicalizer"/> is what makes them comparable.
-    /// </para>
-    /// <para>
-    /// What remains of <see cref="Uri"/>'s own normalization is that it decodes the escape of an unreserved
-    /// code point, so "/%41" arrives as "/A" where the URL Standard would have kept "/%41".
-    /// </para>
+    /// The URL parser already leaves each component in its canonical form, which is the form the fixed-text
+    /// parts of the pattern were canonicalized to.
+    /// <see href="https://urlpattern.spec.whatwg.org/#url-pattern-match">WHATWG URL Pattern Spec - Match</see>
     /// </remarks>
-    private static (string Protocol, string Username, string Password, string Hostname, string Port, string Pathname, string Search, string Hash) GetUrlComponents(Uri url)
+    private static (string Protocol, string Username, string Password, string Hostname, string Port, string Pathname, string Search, string Hash) GetUrlComponents(UrlRecord url)
     {
-        // An escaped ":" stays escaped in this form, so the first one is always the separator
-        var userInfo = url.GetComponents(UriComponents.UserInfo, UriFormat.SafeUnescaped);
-        var separatorIndex = userInfo.IndexOf(':', StringComparison.Ordinal);
-        var username = separatorIndex == -1 ? userInfo : userInfo[..separatorIndex];
-        var password = separatorIndex == -1 ? "" : userInfo[(separatorIndex + 1)..];
-
-        // IdnHost is the ASCII form the URL Standard serializes, but it drops the brackets of an IPv6 host
-        var hostname = url.Host.StartsWith('[', StringComparison.Ordinal)
-            ? UrlCanonicalizer.SerializeIPv6Hostname(url.Host)
-            : url.IdnHost;
-
-        var pathname = url.GetComponents(UriComponents.Path, UriFormat.SafeUnescaped);
-        if (SpecialSchemes.Contains(url.Scheme))
-        {
-            // The path component is reported without its leading separator
-            pathname = UrlCanonicalizer.CanonicalizePathname("/" + pathname);
-        }
-        else
-        {
-            pathname = UrlCanonicalizer.CanonicalizeOpaquePathname(pathname);
-        }
-
         return (
-            UrlCanonicalizer.CanonicalizeProtocol(url.Scheme),
-            UrlCanonicalizer.CanonicalizeUsername(username),
-            UrlCanonicalizer.CanonicalizePassword(password),
-            UrlCanonicalizer.CanonicalizeHostname(hostname),
-            url.IsDefaultPort ? "" : url.Port.ToString(CultureInfo.InvariantCulture),
-            pathname,
-            UrlCanonicalizer.CanonicalizeSearch(url.GetComponents(UriComponents.Query, UriFormat.SafeUnescaped)),
-            UrlCanonicalizer.CanonicalizeHash(url.GetComponents(UriComponents.Fragment, UriFormat.SafeUnescaped)));
+            url.Scheme,
+            url.Username,
+            url.Password,
+            url.Host ?? "",
+            url.Port ?? "",
+            url.SerializePath(),
+            url.Query ?? "",
+            url.Fragment ?? "");
     }
 
     private UrlPatternResult? MatchInit(UrlPatternInit init)
@@ -524,7 +507,7 @@ public sealed class UrlPattern
         return new UrlPatternComponentResult(input, groups);
     }
 
-    private bool IsMatchUrl(Uri url)
+    private bool IsMatchUrl(UrlRecord url)
     {
         var (protocol, username, password, hostname, port, pathname, search, hash) = GetUrlComponents(url);
 
@@ -584,33 +567,33 @@ public sealed class UrlPattern
         return true;
     }
 
-    private static Uri? ParseUrl(string url, string? baseUrl)
+    private static UrlRecord? ParseUrl(string url, string? baseUrl)
     {
-        Uri? baseUri = null;
-        if (!string.IsNullOrEmpty(baseUrl))
-        {
-            if (!Uri.TryCreate(baseUrl, UriKind.Absolute, out baseUri))
-            {
-                return null;
-            }
-        }
-
-        if (baseUri is not null)
-        {
-            if (Uri.TryCreate(baseUri, url, out var result))
-            {
-                return result;
-            }
-
+        UrlRecord? baseRecord = null;
+        if (!string.IsNullOrEmpty(baseUrl) && !UrlRecord.TryParse(baseUrl, baseUrl: null, out baseRecord))
             return null;
-        }
 
-        if (Uri.TryCreate(url, UriKind.Absolute, out var uri))
+        return UrlRecord.TryParse(url, baseRecord, out var result) ? result : null;
+    }
+
+    /// <summary>Parses a <see cref="Uri"/> again, with the URL parser of the URL Standard.</summary>
+    /// <remarks>
+    /// The text the <see cref="Uri"/> was created from is parsed, because its other forms follow RFC 3986
+    /// (for example, "/%41" becomes "/A"). A <see cref="Uri"/> created from a file path is the exception: that
+    /// text is not a URL, so its absolute form is parsed when the text does not give the same scheme.
+    /// </remarks>
+    private static UrlRecord? ParseUrl(Uri url)
+    {
+        if (!url.IsAbsoluteUri)
+            return null;
+
+        if (UrlRecord.TryParse(url.OriginalString, baseUrl: null, out var result) &&
+            string.Equals(result.Scheme, url.Scheme, StringComparison.OrdinalIgnoreCase))
         {
-            return uri;
+            return result;
         }
 
-        return null;
+        return UrlRecord.TryParse(url.AbsoluteUri, baseUrl: null, out result) ? result : null;
     }
 
     /// <summary>Processes a URLPatternInit to resolve base URL and fill in defaults.</summary>
@@ -628,13 +611,15 @@ public sealed class UrlPattern
         string? basePathname = null;
         if (init.BaseUrl is not null)
         {
-            if (!Uri.TryCreate(init.BaseUrl, UriKind.Absolute, out var baseUri))
+            if (!UrlRecord.TryParse(init.BaseUrl, baseUrl: null, out var baseRecord))
             {
                 throw new UrlPatternException($"Invalid base URL: {init.BaseUrl}");
             }
 
-            var baseComponents = GetUrlComponents(baseUri);
-            basePathname = baseComponents.Pathname;
+            var baseComponents = GetUrlComponents(baseRecord);
+
+            // A relative pathname is only resolved against a base URL whose path is made of segments
+            basePathname = baseRecord.HasOpaquePath ? null : baseComponents.Pathname;
 
             // A component is inherited only when the init specifies nothing at least as specific as it,
             // following the two orders of the spec:
@@ -675,7 +660,7 @@ public sealed class UrlPattern
 
             if (!hasPathname)
             {
-                result.Pathname = ProcessBaseUrlString(basePathname, isPattern);
+                result.Pathname = ProcessBaseUrlString(baseComponents.Pathname, isPattern);
             }
 
             if (!hasSearch)

@@ -142,12 +142,12 @@ internal static class PercentEncoding
         if (set is PercentEncodeSet.SpecialQuery)
             return c is '\'';
 
-        if (c is '?' or '`' or '{' or '}')
+        if (c is '?' or '^' or '`' or '{' or '}')
             return true;
 
         if (set is PercentEncodeSet.Path)
             return false;
 
-        return c is '/' or ':' or ';' or '=' or '@' or '[' or '\\' or ']' or '^' or '|';
+        return c is '/' or ':' or ';' or '=' or '@' or '[' or '\\' or ']' or '|';
     }
 }

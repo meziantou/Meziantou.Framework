@@ -472,18 +472,19 @@ public sealed class UrlPattern
 
         return new UrlPatternResult(
             [input],
-            CreateComponentResult(protocol, protocolMatch, _protocolComponent.GroupNameList),
-            CreateComponentResult(username, usernameMatch, _usernameComponent.GroupNameList),
-            CreateComponentResult(password, passwordMatch, _passwordComponent.GroupNameList),
-            CreateComponentResult(hostname, hostnameMatch, _hostnameComponent.GroupNameList),
-            CreateComponentResult(port, portMatch, _portComponent.GroupNameList),
-            CreateComponentResult(pathname, pathnameMatch, _pathnameComponent.GroupNameList),
-            CreateComponentResult(search, searchMatch, _searchComponent.GroupNameList),
-            CreateComponentResult(hash, hashMatch, _hashComponent.GroupNameList));
+            CreateComponentResult(protocol, protocolMatch, _protocolComponent),
+            CreateComponentResult(username, usernameMatch, _usernameComponent),
+            CreateComponentResult(password, passwordMatch, _passwordComponent),
+            CreateComponentResult(hostname, hostnameMatch, _hostnameComponent),
+            CreateComponentResult(port, portMatch, _portComponent),
+            CreateComponentResult(pathname, pathnameMatch, _pathnameComponent),
+            CreateComponentResult(search, searchMatch, _searchComponent),
+            CreateComponentResult(hash, hashMatch, _hashComponent));
     }
 
-    private static UrlPatternComponentResult CreateComponentResult(string input, Match match, List<string> groupNameList)
+    private static UrlPatternComponentResult CreateComponentResult(string input, Match match, UrlPatternComponent component)
     {
+        var groupNameList = component.GroupNameList;
         var groups = new Dictionary<string, string?>(StringComparer.Ordinal);
 
         // The GroupNameList contains the names in order, and they correspond to
@@ -496,7 +497,7 @@ public sealed class UrlPattern
             if (groupIndex < match.Groups.Count)
             {
                 var group = match.Groups[groupIndex];
-                groups[groupName] = group.Success ? group.Value : null;
+                groups[groupName] = group.Success && (group.Length > 0 || !component.EmptyGroupIsUnmatchedList[i]) ? group.Value : null;
             }
             else
             {

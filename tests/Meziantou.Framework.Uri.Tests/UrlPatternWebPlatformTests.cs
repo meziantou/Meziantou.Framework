@@ -13,14 +13,10 @@ public sealed class UrlPatternWebPlatformTests
     /// <summary>The cases that are known not to pass, by their index in the corpus.</summary>
     /// <remarks>
     /// A case listed here is asserted to still fail, so that fixing one of them fails this test rather than
-    /// passing silently. None of these are canonicalization: they are the parts of the spec that rely on a
-    /// JavaScript regular expression feature that .NET does not have.
+    /// passing silently. They rely on a JavaScript regular expression feature that .NET does not have.
     /// </remarks>
     private static readonly FrozenDictionary<int, string> ExpectedFailures = new Dictionary<int, string>
     {
-        // A group that did not participate reports the empty string rather than being absent
-        [329] = "*{}**?",
-
         // The "v" flag set operations of a JavaScript regular expression, which .NET cannot express
         [352] = "/([[a-z]--a])",
         [353] = @"/([\d&&[0-1]])",

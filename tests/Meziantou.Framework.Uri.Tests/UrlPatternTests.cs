@@ -1905,13 +1905,9 @@ public sealed class UrlPatternTests
     }
 
     [Fact]
-    public void IsMatch_SpecialSchemeWithoutSlashes_IsReadAsAnAuthority()
+    public void Match_SpecialSchemeWithoutSlashes_ReportsTheAuthority()
     {
-        // The URL Standard reads "https:foo:bar@example.com" as "https://foo:bar@example.com/", which Uri rejects
-        var pattern = UrlPattern.Create(@"https\:foo\:bar@example.com");
-
-        Assert.True(pattern.IsMatch("https:foo:bar@example.com"));
-
+        // The URL Standard reads "https:example.com/books" as "https://example.com/books", which Uri rejects
         var result = UrlPattern.Create("https://example.com/books").Match("https:example.com/books");
         Assert.NotNull(result);
         Assert.Equal("example.com", result.Hostname.Input);
@@ -1919,11 +1915,30 @@ public sealed class UrlPatternTests
     }
 
     [Fact]
-    public void IsMatch_RelativeUrlAgainstABaseUrlWithAnOpaquePath_DoesNotMatch()
+    public void IsMatch_SpecialSchemeWithoutSlashes_ParsesTheAuthority()
+    {
+        var pattern = UrlPattern.Create(@"https\:foo\:bar@example.com");
+
+        Assert.True(pattern.IsMatch("https:foo:bar@example.com"));
+        Assert.True(pattern.IsMatch("https://foo:bar@example.com"));
+    }
+
+    [Fact]
+    public void IsMatch_SpecialSchemeWithoutSlashes_WithSameSchemeBaseUrl_IsRelative()
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit { Hostname = "example.com", Pathname = "/dir/foo" });
+
+        Assert.True(pattern.IsMatch("https:foo", "https://example.com/dir/bar"));
+    }
+
+    [Fact]
+    public void IsMatch_RelativeUrl_AgainstBaseUrlWithOpaquePath_DoesNotMatch()
     {
         var pattern = UrlPattern.Create(new UrlPatternInit { Pathname = "*" });
 
         Assert.False(pattern.IsMatch("foo", "data:data-urls-cannot-be-base-urls"));
+        Assert.False(pattern.IsMatch("/foo", "data:data-urls-cannot-be-base-urls"));
+        Assert.True(pattern.IsMatch("https://example.com/foo", "data:data-urls-cannot-be-base-urls"));
 
         // A fragment is the only thing that can be resolved against such a base URL
         Assert.True(pattern.IsMatch("#foo", "data:text"));
@@ -1992,5 +2007,26 @@ public sealed class UrlPatternTests
 
         Assert.NotNull(result);
         Assert.Equal("file", result.Protocol.Input);
+    }
+
+    [Fact]
+    public void Match_OptionalGroupThatMatchesNothing_IsNull()
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit { Pathname = "*{}**?" });
+
+        var result = pattern.Match(new UrlPatternInit { Pathname = "foobar" });
+
+        Assert.NotNull(result);
+        Assert.Equal("foobar", result.Pathname.Groups["0"]);
+        Assert.Null(result.Pathname.Groups["1"]);
+    }
+
+    [Fact]
+    public void Match_OptionalGroupWithPrefix_IsNullOnlyWhenAbsent()
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit { Pathname = "/foo{/:id}?" });
+
+        Assert.Null(pattern.Match(new UrlPatternInit { Pathname = "/foo" })!.Pathname.Groups["id"]);
+        Assert.Equal("1", pattern.Match(new UrlPatternInit { Pathname = "/foo/1" })!.Pathname.Groups["id"]);
     }
 }

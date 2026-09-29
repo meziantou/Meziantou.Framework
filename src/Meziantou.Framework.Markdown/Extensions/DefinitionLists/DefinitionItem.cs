@@ -26,4 +26,7 @@ public class DefinitionItem : ContainerBlock
     /// Gets or sets the opening character for this definition item (either `:` or `~`)
     /// </summary>
     public char OpeningCharacter { get; set; }
+
+    // True when the trivia of the opening character was recorded. The spaces after it are the trivia of the first block of the definition.
+    internal bool HasOpeningCharacterTrivia { get; set; }
 }

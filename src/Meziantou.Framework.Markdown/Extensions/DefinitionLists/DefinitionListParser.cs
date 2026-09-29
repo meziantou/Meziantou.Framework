@@ -2,6 +2,7 @@
 // This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
+using Meziantou.Framework.Markdown.Helpers;
 using Meziantou.Framework.Markdown.Parsers;
 using Meziantou.Framework.Markdown.Syntax;
 
@@ -33,6 +34,7 @@ public class DefinitionListParser : BlockParser
         }
 
         var column = processor.ColumnBeforeIndent;
+        var markerPosition = processor.Start;
         processor.NextChar();
         processor.ParseIndent();
         var delta = processor.Column - column;
@@ -77,8 +79,12 @@ public class DefinitionListParser : BlockParser
             Line = processor.LineIndex,
             Column = column,
             Span = new SourceSpan(paragraphBlock.Span.Start, processor.Line.End),
-            OpeningCharacter = processor.CurrentChar,
+            OpeningCharacter = processor.Line.Text[markerPosition],
         };
+        if (processor.TrackTrivia)
+        {
+            SetMarkerTrivia(processor, definitionItem, markerPosition);
+        }
 
         for (int i = 0; i < paragraphBlock.Lines.Count; i++)
         {
@@ -91,6 +97,21 @@ public class DefinitionListParser : BlockParser
                 IsOpen = false
             };
             term.AppendLine(ref line.Slice, line.Column, line.Line, line.Position, processor.TrackTrivia);
+            if (processor.TrackTrivia)
+            {
+                // The terms replace the paragraph, so they take the trivia around it
+                if (i == 0)
+                {
+                    term.LinesBefore = paragraphBlock.LinesBefore;
+                    term.TriviaBefore = paragraphBlock.TriviaBefore;
+                }
+
+                if (i == paragraphBlock.Lines.Count - 1)
+                {
+                    term.LinesAfter = paragraphBlock.LinesAfter;
+                }
+            }
+
             definitionItem.Add(term);
         }
         currentDefinitionList.Add(definitionItem);
@@ -100,6 +121,16 @@ public class DefinitionListParser : BlockParser
         currentDefinitionList.UpdateSpanEnd(processor.Line.End);
 
         return BlockState.Continue;
+    }
+
+    // Records the lines and the indent before the opening character. The spaces after it are the trivia of the first block of the definition.
+    private static void SetMarkerTrivia(BlockProcessor processor, DefinitionItem item, int markerPosition)
+    {
+        item.LinesBefore = processor.TakeLinesBefore();
+        item.TriviaBefore = processor.UseTrivia(markerPosition - 1);
+        item.NewLine = processor.Line.NewLine;
+        item.HasOpeningCharacterTrivia = true;
+        processor.TriviaStart = markerPosition + 1;
     }
 
     private static DefinitionList? GetCurrentDefinitionList(ParagraphBlock paragraphBlock, ContainerBlock previousParent)
@@ -170,8 +201,13 @@ public class DefinitionListParser : BlockParser
                 Span = new SourceSpan(startPosition, processor.Line.End),
                 Line = processor.LineIndex,
                 Column = processor.Column,
-                OpeningCharacter = processor.CurrentChar,
+                OpeningCharacter = processor.Line.Text[startPosition],
             };
+            if (processor.TrackTrivia)
+            {
+                SetMarkerTrivia(processor, nextDefinitionItem, startPosition);
+            }
+
             list.Add(nextDefinitionItem);
             processor.Open(nextDefinitionItem);
 
@@ -185,6 +221,15 @@ public class DefinitionListParser : BlockParser
             {
                 definitionItem.Add(new BlankLineBlock());
             }
+
+            if (isBreakable && processor.TrackTrivia)
+            {
+                // The line is discarded: keep it for the block that follows, like the processor does for the other empty lines
+                var line = processor.UseTrivia(processor.Line.End);
+                line.NewLine = processor.Line.NewLine;
+                (processor.LinesBefore ??= []).Add(line);
+            }
+
             return isBreakable ? BlockState.ContinueDiscard : BlockState.Continue;
         }
 

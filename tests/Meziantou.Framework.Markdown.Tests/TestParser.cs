@@ -4,7 +4,6 @@
 using System.Text;
 using System.Text.RegularExpressions;
 
-using Meziantou.Framework.Markdown.Extensions.DefinitionLists;
 using Meziantou.Framework.Markdown.Extensions.JiraLinks;
 using Meziantou.Framework.Markdown.Parsers.Inlines;
 using Meziantou.Framework.Markdown.Renderers.Roundtrip;
@@ -108,7 +107,6 @@ public class TestParser
     // The extensions that do not write their syntax back yet, so the examples that use them are not round-tripped
     private static readonly HashSet<Type> ExtensionsWithoutRoundtrip =
     [
-        typeof(DefinitionListExtension),
     ];
 
     /// <summary>

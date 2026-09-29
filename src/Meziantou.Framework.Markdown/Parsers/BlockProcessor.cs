@@ -7,6 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.CompilerServices;
 
+using Meziantou.Framework.Markdown.Extensions.DefinitionLists;
 using Meziantou.Framework.Markdown.Extensions.Footnotes;
 using Meziantou.Framework.Markdown.Helpers;
 using Meziantou.Framework.Markdown.Syntax;
@@ -778,7 +779,7 @@ public class BlockProcessor
                 {
                     if (TrackTrivia)
                     {
-                        if (block is FencedCodeBlock or HtmlBlock && block.Parent is ListItemBlock or Footnote)
+                        if (block is FencedCodeBlock or HtmlBlock && block.Parent is ListItemBlock or Footnote or DefinitionItem)
                         {
                             // the line was already given to the parent, rendering will ignore that parent line.
                             // The child FencedCodeBlock or HtmlBlock should get the eaten whitespace at start of the line.

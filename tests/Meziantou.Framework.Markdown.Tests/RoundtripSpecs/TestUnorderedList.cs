@@ -1,3 +1,5 @@
+using Meziantou.Framework.Markdown.Extensions.DefinitionLists;
+using Meziantou.Framework.Markdown.Renderers.Roundtrip;
 using static Meziantou.Framework.Markdown.Tests.TestRoundtrip;
 
 namespace Meziantou.Framework.Markdown.Tests.RoundtripSpecs;
@@ -199,4 +201,45 @@ public class TestUnorderedList
     {
         RoundTrip(value);
     }
+
+    [Theory]
+    [InlineData("T\n:   d")]
+    [InlineData("T\r\n~   d\r\n")]
+    [InlineData("  T\n  :   d\n")]
+    [InlineData("T\n:\td\n")]
+    [InlineData("T\n:     d\n")]
+    [InlineData("T\n\n\n:   d\n")]
+    [InlineData("T\n:   d\nlazy\n\n    p2\n\n\nafter\n")]
+    [InlineData("T1\nT2 *b*\n:   a\n:   b\n\nT3\n:   c\n")]
+    [InlineData("> T\n> :   d\n")]
+    [InlineData("- T\n  :   d\n")]
+    [InlineData("T\n:   ```\n    code\n\n\n    ```\n")]
+    [InlineData("T\n:   <div>\n    x\n    </div>\n")]
+    [InlineData("T\n:   - a\n    - b\n\n    > q\n")]
+    public void TestDefinitionList(string value)
+    {
+        RoundTrip(value, new MarkdownPipelineBuilder().UseDefinitionLists());
+    }
+
+    [Fact]
+    public void TestDefinitionListWithoutSource()
+    {
+        var pipeline = new MarkdownPipelineBuilder().UseDefinitionLists().EnableTrackTrivia().Build();
+        var document = MarkdownConverter.Parse("a\n", pipeline);
+        var paragraph = document[0];
+        document.RemoveAt(0);
+        var parser = new DefinitionListParser();
+        var item = new DefinitionItem(parser) { OpeningCharacter = ':' };
+        item.Add(paragraph);
+        var list = new DefinitionList(parser) { item };
+        document.Add(list);
+
+        var writer = new StringWriter();
+        var renderer = new RoundtripRenderer(writer);
+        pipeline.Setup(renderer);
+        renderer.Write(document);
+
+        Assert.Equal(":   a\n", writer.ToString());
+    }
 }
+

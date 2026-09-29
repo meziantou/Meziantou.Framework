@@ -190,4 +190,17 @@ public class TestOrderedList
     {
         RoundTrip(value);
     }
+
+    [Theory]
+    [InlineData("a. i\nb. i")]
+    [InlineData("A) i\nB) i\n")]
+    [InlineData("iv. i\nv. i")]
+    [InlineData("IX. i\r\nX. i\r\n")]
+    [InlineData(" c.  i \n d.  i  \n")]
+    [InlineData("a. i\n   i. i\n   ii. i\nb. i")]
+    [InlineData("a. i\n\n1. i\n\ni) i\n")]
+    public void TestListExtras(string value)
+    {
+        RoundTrip(value, new MarkdownPipelineBuilder().UseListExtras());
+    }
 }

@@ -27,4 +27,7 @@ public class MathInline : LeafInline
     /// The content as a <see cref="StringSlice"/>.
     /// </summary>
     public StringSlice Content;
+
+    // With trivia, the math as written in the source, including the delimiters and the spaces around the content
+    internal StringSlice SourceText { get; set; }
 }

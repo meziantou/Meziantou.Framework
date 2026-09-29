@@ -14,7 +14,10 @@ public class QuoteBlockRenderer : RoundtripObjectRenderer<QuoteBlock>
     /// <summary>
     /// Writes the object to the specified renderer.
     /// </summary>
-    protected override void Write(RoundtripRenderer renderer, QuoteBlock quoteBlock)
+    protected override void Write(RoundtripRenderer renderer, QuoteBlock quoteBlock) => WriteQuote(renderer, quoteBlock, writeFirstLine: null);
+
+    // Writes a quote. The optional callback writes text at the start of the first line, before the children of the quote.
+    internal static void WriteQuote(RoundtripRenderer renderer, QuoteBlock quoteBlock, Action<RoundtripRenderer, QuoteBlock>? writeFirstLine)
     {
         renderer.RenderLinesBefore(quoteBlock);
         renderer.Write(quoteBlock.TriviaBefore);
@@ -37,6 +40,7 @@ public class QuoteBlockRenderer : RoundtripObjectRenderer<QuoteBlock>
         }
 
         renderer.PushIndent(indents, lazyLines);
+        writeFirstLine?.Invoke(renderer, quoteBlock);
         renderer.WriteChildren(quoteBlock);
 
         // The quote lines that are not written yet have no content (all of them when the quote has no children). The parser

@@ -259,6 +259,25 @@ public abstract class Block : MarkdownObject, IBlock
         return block;
     }
 
+    /// <summary>
+    /// Copies the trivia of this block, including the trivia of a derived type, to a block that replaces it.
+    /// </summary>
+    internal void CopyTriviaTo(Block target)
+    {
+        target.NewLine = NewLine;
+        if (TriviaOrNull is not { } trivia)
+        {
+            return;
+        }
+
+        var targetTrivia = target.Trivia;
+        targetTrivia.DerivedTriviaSlot = trivia.DerivedTriviaSlot;
+        targetTrivia.TriviaBefore = trivia.TriviaBefore;
+        targetTrivia.TriviaAfter = trivia.TriviaAfter;
+        targetTrivia.LinesBefore = trivia.LinesBefore;
+        targetTrivia.LinesAfter = trivia.LinesAfter;
+    }
+
     private protected T? TryGetDerivedTrivia<T>() where T : class => TriviaOrNull?.DerivedTriviaSlot as T;
     private protected T GetOrSetDerivedTrivia<T>() where T : new() => (T)(Trivia.DerivedTriviaSlot ??= new T());
 

@@ -4,6 +4,7 @@
 
 using Meziantou.Framework.Markdown.Extensions.Footers;
 using Meziantou.Framework.Markdown.Renderers;
+using Meziantou.Framework.Markdown.Renderers.Roundtrip;
 
 namespace Meziantou.Framework.Markdown.Extensions.Figures;
 
@@ -41,6 +42,11 @@ public class FigureExtension : IMarkdownExtension
         {
             htmlRenderer.ObjectRenderers.AddIfNotAlready<HtmlFigureRenderer>();
             htmlRenderer.ObjectRenderers.AddIfNotAlready<HtmlFigureCaptionRenderer>();
+        }
+        else if (renderer is RoundtripRenderer roundtripRenderer)
+        {
+            roundtripRenderer.ObjectRenderers.AddIfNotAlready<RoundtripFigureRenderer>();
+            roundtripRenderer.ObjectRenderers.AddIfNotAlready<RoundtripFigureCaptionRenderer>();
         }
     }
 }

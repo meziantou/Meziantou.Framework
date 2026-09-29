@@ -1,3 +1,5 @@
+using Meziantou.Framework.Markdown.Extensions.Figures;
+using Meziantou.Framework.Markdown.Renderers.Roundtrip;
 using static Meziantou.Framework.Markdown.Tests.TestRoundtrip;
 
 namespace Meziantou.Framework.Markdown.Tests.RoundtripSpecs;
@@ -38,6 +40,40 @@ public class TestFencedCodeBlock
     public void TestTilde(string value)
     {
         RoundTrip(value);
+    }
+
+    [Theory]
+    [InlineData("^^^\nThis is a figure\n^^^ This is a *caption*\n")]
+    [InlineData("^^^ top\nx\n^^^\n")]
+    [InlineData("^^^\nx\n^^^")]
+    [InlineData("  ^^^   top  \r\nx\r\n  ^^^^^   bottom  \r\n")]
+    [InlineData("^^^ top\n^^^ bottom")]
+    [InlineData("^^^\n")]
+    [InlineData("^^^\nunclosed\n")]
+    [InlineData("a\n\n^^^\n- b\n\n  c\n^^^ cap\n\nd\n")]
+    [InlineData("> ^^^\n> x\n> ^^^ c\n")]
+    public void TestFigure(string value)
+    {
+        RoundTrip(value, new MarkdownPipelineBuilder().UseFigures());
+    }
+
+    [Fact]
+    public void TestFigureWithoutSource()
+    {
+        var pipeline = new MarkdownPipelineBuilder().UseFigures().EnableTrackTrivia().Build();
+        var document = MarkdownConverter.Parse("a\n", pipeline);
+        var paragraph = document[0];
+        document.RemoveAt(0);
+        var figure = new Figure(new FigureBlockParser());
+        figure.Add(paragraph);
+        document.Add(figure);
+
+        var writer = new StringWriter();
+        var renderer = new RoundtripRenderer(writer);
+        pipeline.Setup(renderer);
+        renderer.Write(document);
+
+        Assert.Equal("^^^\na\n^^^\n", writer.ToString());
     }
 
     [Theory]

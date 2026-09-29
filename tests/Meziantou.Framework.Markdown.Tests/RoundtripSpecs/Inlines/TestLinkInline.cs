@@ -1,3 +1,4 @@
+using Meziantou.Framework.Markdown.Extensions.JiraLinks;
 using static Meziantou.Framework.Markdown.Tests.TestRoundtrip;
 
 namespace Meziantou.Framework.Markdown.Tests.RoundtripSpecs.Inlines;
@@ -249,5 +250,16 @@ public class TestLinkInline
     public void TestFullReferenceLabelWithWhitespace(string value)
     {
         RoundTrip(value);
+    }
+
+    [Theory]
+    [InlineData("ABC-123")]
+    [InlineData("a ABC-123, b\r\nXY-1\r\n")]
+    [InlineData("*ABC-123* **ABC-1**")]
+    [InlineData("> ABC-123\n> - XY-9\n")]
+    [InlineData("[see ABC-123](url)")]
+    public void TestJiraLink(string value)
+    {
+        RoundTrip(value, new MarkdownPipelineBuilder().UseJiraLinks(new JiraLinkOptions("https://jira.example.com")));
     }
 }

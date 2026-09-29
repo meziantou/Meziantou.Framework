@@ -57,10 +57,10 @@ public class TestGfmPipeTableDifferential
     }
 
     private static string Normalize(string html) => Regex.Replace(html.Replace("\r\n", "\n", StringComparison.Ordinal),
-        @"<li>\n?(?=<(?:h[1-6]|table|blockquote|pre|ul|ol|hr|p)[ >])", "<li>\n").Trim();
+        @"<li>\n?(?=<(?:h[1-6]|table|blockquote|pre|ul|ol|hr|p)[ >])", "<li>\n", RegexOptions.None, Regex.InfiniteMatchTimeout).Trim();
 
     private static string Tables(string html) => string.Join("\n",
-        Regex.Matches(html, @"(?s)<table>.*?</table>").Select(match => match.Value));
+        Regex.Matches(html, @"(?s)<table>.*?</table>", RegexOptions.None, Regex.InfiniteMatchTimeout).Select(match => match.Value));
 
     public static TheoryData<string, string> NormalizationCases()
     {

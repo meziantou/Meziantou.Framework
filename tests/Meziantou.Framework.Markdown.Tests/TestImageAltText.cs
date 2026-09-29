@@ -16,7 +16,7 @@ public class TestImageAltText
     public void TestImageHtmlAltText(string markdown, string expectedAltText)
     {
         string html = MarkdownConverter.ToHtml(markdown);
-        string actualAltText = Regex.Match(html, "alt=\"(.*?)\"").Groups[1].Value;
+        string actualAltText = Regex.Match(html, "alt=\"(?<alt>.*?)\"", RegexOptions.ExplicitCapture, Regex.InfiniteMatchTimeout).Groups["alt"].Value;
         Assert.Equal(expectedAltText, actualAltText);
     }
 

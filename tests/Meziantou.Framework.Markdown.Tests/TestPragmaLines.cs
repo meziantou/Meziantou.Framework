@@ -107,10 +107,10 @@ public class TestPragmaLines
         var exampleCount = 0;
         foreach (var file in Directory.GetFiles(Path.Combine(TestParser.TestsDirectory, "Specs"), "*.md"))
         {
-            foreach (Match match in Regex.Matches(File.ReadAllText(file), "^`{32} example\n(?<markdown>.*?)^\\.\n", RegexOptions.Multiline | RegexOptions.Singleline | RegexOptions.ExplicitCapture))
+            foreach (Match match in Regex.Matches(File.ReadAllText(file), "^`{32} example\n(?<markdown>.*?)^\\.\n", RegexOptions.Multiline | RegexOptions.Singleline | RegexOptions.ExplicitCapture, Regex.InfiniteMatchTimeout))
             {
                 var markdown = match.Groups["markdown"].Value.Replace('→', '\t');
-                var ids = Regex.Matches(MarkdownConverter.ToHtml(markdown, pipeline), "id=\"(?<id>pragma-line-[0-9]+)\"", RegexOptions.ExplicitCapture).Select(id => id.Groups["id"].Value).ToList();
+                var ids = Regex.Matches(MarkdownConverter.ToHtml(markdown, pipeline), "id=\"(?<id>pragma-line-[0-9]+)\"", RegexOptions.ExplicitCapture, Regex.InfiniteMatchTimeout).Select(id => id.Groups["id"].Value).ToList();
                 Assert.HasCount(ids.Count, ids.Distinct(StringComparer.Ordinal), message: markdown);
                 exampleCount++;
             }

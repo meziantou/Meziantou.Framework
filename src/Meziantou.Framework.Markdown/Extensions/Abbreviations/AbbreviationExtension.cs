@@ -3,6 +3,7 @@
 // See the license.txt file in the project root for more information.
 
 using Meziantou.Framework.Markdown.Renderers;
+using Meziantou.Framework.Markdown.Renderers.Roundtrip;
 
 namespace Meziantou.Framework.Markdown.Extensions.Abbreviations;
 
@@ -29,6 +30,11 @@ public class AbbreviationExtension : IMarkdownExtension
         {
             // Must be inserted before CodeBlockRenderer
             htmlRenderer.ObjectRenderers.Insert(0, new HtmlAbbreviationRenderer());
+        }
+        else if (renderer is RoundtripRenderer roundtripRenderer)
+        {
+            roundtripRenderer.ObjectRenderers.AddIfNotAlready(new RoundtripAbbreviationRenderer());
+            roundtripRenderer.ObjectRenderers.AddIfNotAlready(new RoundtripAbbreviationInlineRenderer());
         }
     }
 }

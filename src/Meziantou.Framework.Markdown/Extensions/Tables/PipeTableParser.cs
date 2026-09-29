@@ -533,6 +533,7 @@ public class PipeTableParser : InlineParser, IPostInlineProcessor
         //       a | b |    (trailing pipe only)
 
         // Ensure the table ends with a line break to simplify row detection
+        LineBreakInline? addedEndOfTable = null;
         var lastElement = delimiters[delimiters.Count - 1];
         if (!(lastElement is LineBreakInline))
         {
@@ -542,13 +543,27 @@ public class PipeTableParser : InlineParser, IPostInlineProcessor
                 lastElement = lastElement.NextSibling;
             }
 
-            var endOfTable = new LineBreakInline();
-            lastElement.InsertAfter(endOfTable);
-            delimiters.Add(endOfTable);
-            tableState.EndOfLines.Add(endOfTable);
+            if (state.TrackTrivia && lastElement is LineBreakInline lastLineBreak)
+            {
+                // With trivia, the paragraph ends with the line break of its last line, which ends the table
+                delimiters.Add(lastLineBreak);
+                tableState.EndOfLines.Add(lastLineBreak);
+            }
+            else
+            {
+                var endOfTable = new LineBreakInline();
+                lastElement.InsertAfter(endOfTable);
+                delimiters.Add(endOfTable);
+                tableState.EndOfLines.Add(endOfTable);
+                addedEndOfTable = endOfTable;
+            }
         }
 
         int lastPipePos = 0;
+
+        // With trivia, the source position after which the next cell starts (the previous pipe), or -1 at the start of a row
+        var trackTrivia = state.TrackTrivia;
+        var cellSourceStart = -1;
 
         // Build table rows and cells by iterating through delimiters
         TableRow? row = null;
@@ -562,6 +577,11 @@ public class PipeTableParser : InlineParser, IPostInlineProcessor
             if (row is null)
             {
                 row = new TableRow();
+                if (trackTrivia)
+                {
+                    row.SourceLine = delimiter.Line;
+                    cellSourceStart = -1;
+                }
 
                 firstRow ??= row;
 
@@ -571,6 +591,7 @@ public class PipeTableParser : InlineParser, IPostInlineProcessor
                 var previousSignificantSibling = SkipPreviousEmptyInlines(delimiter.PreviousSibling);
                 if (pipeSeparator != null && (previousSignificantSibling is null || previousSignificantSibling is LineBreakInline))
                 {
+                    cellSourceStart = delimiter.Span.End + 1;
                     delimiter.Remove();
                     if (table.Span.IsEmpty)
                     {
@@ -664,6 +685,15 @@ public class PipeTableParser : InlineParser, IPostInlineProcessor
                     Column = cellContainer.Column,
                 };
 
+                if (trackTrivia)
+                {
+                    // The source of the cell, between the previous pipe (or the start of the line) and the next pipe (or the end
+                    // of the line). The positions of a line are resolved once the table is complete.
+                    tableCell.SourceStart = cellSourceStart;
+                    tableCell.SourceEnd = ReferenceEquals(delimiter, addedEndOfTable) ? -1 : delimiter.Span.Start - 1;
+                    cellSourceStart = delimiter.Span.End + 1;
+                }
+
                 tableCell.Add(tableParagraph);
                 if (row.Span.IsEmpty)
                 {
@@ -673,6 +703,16 @@ public class PipeTableParser : InlineParser, IPostInlineProcessor
                 }
                 row.Add(tableCell);
                 cells.Add(tableCell);
+            }
+            else if (trackTrivia)
+            {
+                // The spaces after the last pipe of the row are written with the trivia of the row, not in a paragraph
+                for (var it = beginOfCell; it is not null && !ReferenceEquals(it, delimiter);)
+                {
+                    var next = it.NextSibling;
+                    it.Remove();
+                    it = next;
+                }
             }
 
             // If we have a new line, we can add the row
@@ -707,6 +747,11 @@ public class PipeTableParser : InlineParser, IPostInlineProcessor
         if (aligns != null)
         {
             tableRow.IsHeader = true;
+            if (trackTrivia)
+            {
+                table.DelimiterRowSourceLine = ((TableRow)table[1]).SourceLine;
+            }
+
             table.RemoveAt(1);
             table.ColumnDefinitions.AddRange(aligns);
         }
@@ -737,6 +782,11 @@ public class PipeTableParser : InlineParser, IPostInlineProcessor
         else
         {
             table.NormalizeUsingMaxWidth(state.Document);
+        }
+
+        if (trackTrivia)
+        {
+            TableTrivia.SetFromSource(state, table, (ParagraphBlock)state.Block!, trailingParagraph);
         }
 
         if (state.Block is ParagraphBlock { Inline.FirstChild: not null } leadingParagraph)

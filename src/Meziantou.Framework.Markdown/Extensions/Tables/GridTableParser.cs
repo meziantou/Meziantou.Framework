@@ -76,6 +76,12 @@ public class GridTableParser : BlockParser
             Column = processor.Column,
             Span = { Start = lineStart }
         };
+        if (processor.TrackTrivia)
+        {
+            table.LinesBefore = processor.TakeLinesBefore();
+            table.SourceLines = [];
+            AddSourceLine(processor, table);
+        }
         table.SetData(typeof(GridTableState), tableState);
 
         // Calculate the total width of all columns
@@ -112,6 +118,11 @@ public class GridTableParser : BlockParser
 
         // Only store the lines that belong to the table: if the table is invalid, they become a paragraph, and the
         // current line is processed again once the table is closed
+        if (processor.CurrentChar is '+' or '|' && processor.TrackTrivia)
+        {
+            AddSourceLine(processor, gridTable);
+        }
+
         if (processor.CurrentChar == '+')
         {
             tableState.AddLine(ref processor.Line);
@@ -139,6 +150,14 @@ public class GridTableParser : BlockParser
             }
         }
         return BlockState.Break;
+    }
+
+    // Keeps the line as written, with the indent before it
+    private static void AddSourceLine(BlockProcessor processor, Table table)
+    {
+        var start = processor.TriviaStart;
+        processor.UseTrivia(processor.Start - 1);
+        table.SourceLines!.Add(new StringSlice(processor.Line.Text, start, processor.Line.End, processor.Line.NewLine));
     }
 
     private BlockState HandleNewRow(BlockProcessor processor, GridTableState tableState, Table gridTable)
@@ -391,6 +410,25 @@ public class GridTableParser : BlockParser
             Column = gridTable.Column,
             Span = gridTable.Span,
         };
+
+        if (gridTable.SourceLines is { } sourceLines)
+        {
+            // The paragraph takes the trivia of the table. Its lines keep their indent, except the first one, whose indent is
+            // the trivia before the paragraph.
+            var lines = new StringLineGroup(sourceLines.Count);
+            for (var i = 0; i < sourceLines.Count; i++)
+            {
+                var line = i == 0 ? tableState.Lines.Lines[0].Slice : sourceLines[i];
+                lines.Add(new StringLine(ref line, tableState.Lines.Lines[i].Line, tableState.Lines.Lines[i].Column, tableState.Lines.Lines[i].Position, line.NewLine));
+            }
+
+            var firstLine = sourceLines[0];
+            paragraphBlock.Lines = lines;
+            paragraphBlock.LinesBefore = gridTable.LinesBefore;
+            paragraphBlock.TriviaBefore = new StringSlice(firstLine.Text, firstLine.Start, tableState.Lines.Lines[0].Slice.Start - 1);
+            paragraphBlock.NewLine = sourceLines[^1].NewLine;
+        }
+
         parent.Add(paragraphBlock);
         processor.Open(paragraphBlock);
         return paragraphBlock;

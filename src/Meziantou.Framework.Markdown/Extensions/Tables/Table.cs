@@ -2,6 +2,7 @@
 // This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
+using Meziantou.Framework.Markdown.Helpers;
 using Meziantou.Framework.Markdown.Parsers;
 using Meziantou.Framework.Markdown.Syntax;
 
@@ -32,6 +33,15 @@ public class Table : ContainerBlock
     /// Gets or sets the column alignments. May be null.
     /// </summary>
     public List<TableColumnDefinition> ColumnDefinitions { get; } = new();
+
+    // With trivia, the lines of a grid table as written in the source, which the roundtrip renderer writes back as they are:
+    // the layout of a grid table cannot be computed from its cells
+    internal List<StringSlice>? SourceLines { get; set; }
+
+    // With trivia, the header separator row of a pipe table as written in the source, and the index of its line
+    internal StringSlice DelimiterRow { get; set; }
+
+    internal int DelimiterRowSourceLine { get; set; } = -1;
 
     /// <summary>
     /// Checks if the table structure is valid.

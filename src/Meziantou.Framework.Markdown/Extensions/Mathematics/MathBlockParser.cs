@@ -44,6 +44,13 @@ public class MathBlockParser : FencedBlockParserBase<MathBlock>
     protected override MathBlock CreateFencedBlock(BlockProcessor processor)
     {
         var block = new MathBlock(this);
+        if (processor.TrackTrivia)
+        {
+            block.LinesBefore = processor.TakeLinesBefore();
+            block.TriviaBefore = processor.UseTrivia(processor.Start - 1);
+            block.NewLine = processor.Line.NewLine;
+        }
+
         if (DefaultClass != null)
         {
             block.GetAttributes().AddClass(DefaultClass);
@@ -60,6 +67,10 @@ public class MathBlockParser : FencedBlockParserBase<MathBlock>
                 return false;
             }
         }
+
+        // With trivia, the spaces after the fence are written back by the roundtrip renderer
+        fenced.TriviaAfterFencedChar = line;
+        fenced.InfoNewLine = line.NewLine;
         return true;
     }
 }

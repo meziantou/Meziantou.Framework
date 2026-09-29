@@ -372,7 +372,9 @@ internal static partial class CSharp
         // leftmost match and is skipped: otherwise, each type of a long sequence would rescan it. The
         // previous type does not count when the scan starts after it (e.g. after a preprocessor directive).
         var typeIdentNoCaptureRe = CommonModes.IdentRe + @"(?:<" + CommonModes.IdentRe + @"(?:\s*,\s*" + CommonModes.IdentRe + @")*>)?(?:\[\])?";
-        var functionDeclarationRe = CommonModes.RunStart(@"\w", "a-zA-Z") + @"(?:\G|(?<!" + typeIdentNoCaptureRe + @"(?:(?!\G)\s)+))(" + typeIdentRe + @"\s+)+" + identifierWithParametersRe;
+        // The `union` keyword is not a type: a union declaration (`public union Pet(Cat, Dog)`) is left to the union
+        // mode, which highlights its case types as types rather than as parameters.
+        var functionDeclarationRe = CommonModes.RunStart(@"\w", "a-zA-Z") + @"(?:\G|(?<!" + typeIdentNoCaptureRe + @"(?:(?!\G)\s)+))((?!union\s)" + typeIdentRe + @"\s+)+" + identifierWithParametersRe;
 
         // A class, struct or record with a parameter list (`class Foo<T>(T value)`, `record Person(string Name)`,
         // `record struct Point(int X, int Y)`) declares a primary constructor. The class and record modes do not
@@ -390,6 +392,29 @@ internal static partial class CSharp
             KeywordValidator = ValidateKeyword,
         };
         nestedParameterParentheses.Contains = [stringMode, numbers, CommonModes.CBlockCommentMode, nestedParameterParentheses];
+
+        // The case types of a union declaration (`union Pet(Cat, Dog, int?)`). Parentheses inside them are tuple types.
+        var builtInType = new Mode { Scope = "built_in", Begin = @"\b(?:" + string.Join('|', BuiltInKeywords) + @")\b" };
+        var unionCaseTypeArguments = new Mode
+        {
+            Begin = "<",
+            End = ">",
+        };
+        unionCaseTypeArguments.Contains = [builtInType, titleMode, unionCaseTypeArguments];
+        var unionCaseTypes = new Mode
+        {
+            Begin = @"\(",
+            End = @"\)",
+        };
+        unionCaseTypes.Contains =
+        [
+            builtInType,
+            titleMode,
+            unionCaseTypeArguments,
+            CommonModes.CLineCommentMode,
+            CommonModes.CBlockCommentMode,
+            unionCaseTypes,
+        ];
 
         // The `new()` generic constraint (`class Foo<T> where T : new()`): its parentheses are not illegal.
         var newConstraint = new Mode { Begin = @"\bnew\s*\(\s*\)", Keywords = Keywords.FromWords(["new"]) };
@@ -472,6 +497,23 @@ internal static partial class CSharp
                         newConstraint,
                         titleMode,
                         genericModifier,
+                        CommonModes.CLineCommentMode,
+                        CommonModes.CBlockCommentMode,
+                    ],
+                },
+                new()
+                {
+                    Begin = @"(?<!\.)\b(union)(?!\.)(?=\s+@?\w+\s*[<(])",
+                    Keywords = Keywords.FromWords(["union"]),
+                    End = "[{;]",
+                    Illegal = @"[^\s:,]",
+                    Contains =
+                    [
+                        new() { BeginKeywords = ["where", "class", "struct"] },
+                        newConstraint,
+                        titleMode,
+                        genericModifier,
+                        unionCaseTypes,
                         CommonModes.CLineCommentMode,
                         CommonModes.CBlockCommentMode,
                     ],

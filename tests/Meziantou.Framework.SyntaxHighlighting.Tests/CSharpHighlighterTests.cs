@@ -133,7 +133,7 @@ readonly record struct Money(decimal Amount, string Currency);
 union Pet(Cat, Dog);
 """,
 """
-<span class="hljs-function"><span class="hljs-keyword">union</span> <span class="hljs-title">Pet</span>(<span class="hljs-params">Cat, Dog</span>)</span>;
+<span class="hljs-keyword">union</span> <span class="hljs-title">Pet</span>(<span class="hljs-title">Cat</span>, <span class="hljs-title">Dog</span>);
 """);
     }
 
@@ -152,7 +152,7 @@ public union OneOrMore<T>(T, IEnumerable<T>) : IEnumerable<T> where T : class
 }
 """,
 """
-<span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">union</span> <span class="hljs-title">OneOrMore</span>&lt;<span class="hljs-title">T</span>&gt;(<span class="hljs-params">T, IEnumerable&lt;T&gt;</span>) : IEnumerable&lt;T&gt; <span class="hljs-keyword">where</span> T : <span class="hljs-keyword">class</span></span>
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">union</span> <span class="hljs-title">OneOrMore</span>&lt;<span class="hljs-title">T</span>&gt;(<span class="hljs-title">T</span>, <span class="hljs-title">IEnumerable</span>&lt;<span class="hljs-title">T</span>&gt;) : <span class="hljs-title">IEnumerable</span>&lt;<span class="hljs-title">T</span>&gt; <span class="hljs-keyword">where</span> <span class="hljs-title">T</span> : <span class="hljs-keyword">class</span>
 {
     <span class="hljs-function"><span class="hljs-keyword">public</span> IEnumerable&lt;T&gt; <span class="hljs-title">AsEnumerable</span>()</span> =&gt; Value <span class="hljs-keyword">switch</span>
     {
@@ -160,6 +160,18 @@ public union OneOrMore<T>(T, IEnumerable<T>) : IEnumerable<T> where T : class
         T item =&gt; [item],
     };
 }
+""");
+    }
+
+    [Fact]
+    public void Keyword_UnionCaseTypes()
+    {
+        AssertHighlighter("csharp",
+"""
+public partial union Value(int?, string, System.Uri, Dictionary<string, List<Dog>>, Cat[]);
+""",
+"""
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">partial</span> <span class="hljs-keyword">union</span> <span class="hljs-title">Value</span>(<span class="hljs-built_in">int</span>?, <span class="hljs-built_in">string</span>, <span class="hljs-title">System.Uri</span>, <span class="hljs-title">Dictionary</span>&lt;<span class="hljs-built_in">string</span>, <span class="hljs-title">List</span>&lt;<span class="hljs-title">Dog</span>&gt;&gt;, <span class="hljs-title">Cat</span>[]);
 """);
     }
 

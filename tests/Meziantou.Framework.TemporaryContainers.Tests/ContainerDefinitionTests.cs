@@ -534,6 +534,7 @@ public sealed class ContainerDefinitionTests
         private int _logStreamGeneration;
         private int _logAttachCount;
         private int _inspectCount;
+        private int _inspectCountAtLogStreamEnd;
         private long _clock;
 
         public InMemoryRuntime()
@@ -641,10 +642,11 @@ public sealed class ContainerDefinitionTests
                 await Task.Delay(10, XunitCancellationToken);
         }
 
-        /// <summary>Waits until the container is inspected again, which is what the log pump and the wait do once a log stream ends.</summary>
+        /// <summary>Waits until the container is inspected after the last call to <see cref="EndLogStream"/>, which is what the log pump and the wait do once a log stream ends.</summary>
+        /// <remarks>The count to exceed is taken by <see cref="EndLogStream"/>: the pump can inspect the container before this method even starts, and it inspects only once when the container is no longer running.</remarks>
         public async Task WaitForInspectionAsync()
         {
-            var initial = Volatile.Read(ref _inspectCount);
+            var initial = Volatile.Read(ref _inspectCountAtLogStreamEnd);
             while (Volatile.Read(ref _inspectCount) <= initial)
                 await Task.Delay(10, XunitCancellationToken);
         }
@@ -702,6 +704,7 @@ public sealed class ContainerDefinitionTests
         /// <summary>Ends the current log stream, as the runtimes do while the container is still running.</summary>
         public void EndLogStream()
         {
+            Volatile.Write(ref _inspectCountAtLogStreamEnd, Volatile.Read(ref _inspectCount));
             Interlocked.Increment(ref _logStreamGeneration);
         }
     }

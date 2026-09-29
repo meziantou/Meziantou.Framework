@@ -250,4 +250,18 @@ public class TestLinkInline
     {
         RoundTrip(value);
     }
+
+    [Theory]
+    [InlineData("# a\n\n[a]")]
+    [InlineData("# a\n\n[a][]")]
+    [InlineData("# a\n\n[b][a]")]
+    [InlineData("# a\n\n[b][ A ]\n")]
+    [InlineData("[b][Heading 1]\r\n# Heading 1\r\n")]
+    [InlineData("# a\n\n![b][a]")]
+    [InlineData("# a\n\n> *[b][a]*\n")]
+    public void TestReferenceToHeading(string value)
+    {
+        RoundTrip(value, new MarkdownPipelineBuilder().UseAutoIdentifiers());
+    }
 }
+

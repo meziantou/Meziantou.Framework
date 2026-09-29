@@ -4,6 +4,7 @@
 
 using Meziantou.Framework.Markdown.Parsers.Inlines;
 using Meziantou.Framework.Markdown.Renderers;
+using Meziantou.Framework.Markdown.Renderers.Roundtrip;
 
 namespace Meziantou.Framework.Markdown.Extensions.Emoji;
 
@@ -44,5 +45,10 @@ public class EmojiExtension : IMarkdownExtension
     /// </summary>
     public void Setup(MarkdownPipeline pipeline, IMarkdownRenderer renderer)
     {
+        // EmojiInline is a LiteralInline, so its renderer must come first
+        if (renderer is RoundtripRenderer roundtripRenderer && !roundtripRenderer.ObjectRenderers.Contains<RoundtripEmojiInlineRenderer>())
+        {
+            roundtripRenderer.ObjectRenderers.InsertBefore<Renderers.Roundtrip.Inlines.LiteralInlineRenderer>(new RoundtripEmojiInlineRenderer());
+        }
     }
 }

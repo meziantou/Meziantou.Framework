@@ -195,7 +195,7 @@ public class AutoIdentifierExtension : IMarkdownExtension
             do
             {
                 index++;
-                headingBuffer.Append(index);
+                headingBuffer.AppendSpanFormattable(index, provider: CultureInfo.InvariantCulture);
                 headingId = headingBuffer.AsSpan().ToString();
                 headingBuffer.Length = baseHeadingId.Length + 1;
             }

@@ -17,6 +17,21 @@ public class LinkInlineRenderer : RoundtripObjectRenderer<LinkInline>
     /// </summary>
     protected override void Write(RoundtripRenderer renderer, LinkInline link)
     {
+        // A link found by the auto-links extension is plain text in the source
+        if (link.IsAutoLink)
+        {
+            if (link.UnescapedUrl.IsEmpty)
+            {
+                renderer.Write(link.Url);
+            }
+            else
+            {
+                renderer.Write(link.UnescapedUrl);
+            }
+
+            return;
+        }
+
         if (link.IsImage)
         {
             renderer.Write('!');

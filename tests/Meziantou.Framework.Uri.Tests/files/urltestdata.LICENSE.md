@@ -1,10 +1,11 @@
 The file `urltestdata.json` in this directory is the URL parser conformance corpus of the
 web-platform-tests project, vendored unmodified from:
 
-  https://github.com/web-platform-tests/wpt/blob/9eac644ddfadefbbcb4d99780c82465d4dd33db7/url/resources/urltestdata.json
+  https://github.com/web-platform-tests/wpt/blob/c48d58747e1f211527fb695fd60548a997fae617/url/resources/urltestdata.json
 
-To refresh it, download that path at a newer commit and update the URL above. It is covered by the
-following license, reproduced from https://github.com/web-platform-tests/wpt/blob/9eac644ddfadefbbcb4d99780c82465d4dd33db7/LICENSE.md
+To refresh it, run `dotnet run --project tools/Meziantou.Framework.Uri.UrlTestData.Generator`, which the
+update-url-test-data workflow does every week. It is covered by the following license, reproduced from
+https://github.com/web-platform-tests/wpt/blob/c48d58747e1f211527fb695fd60548a997fae617/LICENSE.md
 
 ---
 

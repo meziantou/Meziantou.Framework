@@ -326,5 +326,6 @@
     <Project Path="tools/Meziantou.Framework.Markdown.Specs.Generator/Meziantou.Framework.Markdown.Specs.Generator.csproj" />
     <Project Path="tools/Meziantou.Framework.Unicode.Generator/Meziantou.Framework.Unicode.Generator.csproj" />
     <Project Path="tools/Meziantou.Framework.Uri.PublicSuffix.Generator/Meziantou.Framework.Uri.PublicSuffix.Generator.csproj" />
+    <Project Path="tools/Meziantou.Framework.Uri.UrlTestData.Generator/Meziantou.Framework.Uri.UrlTestData.Generator.csproj" />
   </Folder>
 </Solution>

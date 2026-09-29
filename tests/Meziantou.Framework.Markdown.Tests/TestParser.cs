@@ -13,7 +13,6 @@ using Meziantou.Framework.Markdown.Extensions.Emoji;
 using Meziantou.Framework.Markdown.Extensions.Figures;
 using Meziantou.Framework.Markdown.Extensions.Footers;
 using Meziantou.Framework.Markdown.Extensions.JiraLinks;
-using Meziantou.Framework.Markdown.Extensions.SmartyPants;
 using Meziantou.Framework.Markdown.Extensions.Tables;
 using Meziantou.Framework.Markdown.Parsers.Inlines;
 using Meziantou.Framework.Markdown.Renderers.Roundtrip;
@@ -127,7 +126,6 @@ public class TestParser
         typeof(FooterExtension),
         typeof(GridTableExtension),
         typeof(PipeTableExtension),
-        typeof(SmartyPantsExtension),
     ];
 
     /// <summary>

@@ -825,4 +825,108 @@ public sealed class TestPipeTable
         Assert.Equal("<p>" + markdown.TrimEnd() + "</p>\n", html);
         Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(10), $"Rendering took {stopwatch.Elapsed}");
     }
+
+    [Theory]
+    [InlineData("+---+---+\n| a | b |\n+===+===+\n| c | d |\n+---+---+\n")]
+    [InlineData("+---+---+---+\n| AAAAA | B |\n+ A +---+ B +\n| A | C | B |\n+---+---+---+\n")]
+    [InlineData("  +---+\r\n  | a |\r\n  +---+\r\n")]
+    [InlineData("+---+\n| a |")]
+    [InlineData("x\n\n+---+\n| a |\n+---+\n\n\ny\n")]
+    [InlineData("> +---+\n> | a |\n> +---+\n")]
+    [InlineData("- +---+\n  | a |\n  +---+\n")]
+    [InlineData("+---+\nnot a table\n")]
+    [InlineData("  +---+\r\n   | a |\r\n  not\r\n")]
+    [InlineData("+---+\n| a |\n+ b +\n")]
+    [InlineData("> +---+\n> + b +\n")]
+    public void GridTableRoundtrip(string markdown)
+    {
+        TestRoundtrip.RoundTrip(markdown, new MarkdownPipelineBuilder().UseGridTables());
+    }
+
+    [Theory]
+    [InlineData("a | b\n-- | --\n0 | 1\n")]
+    [InlineData("| a | b |\r\n|:--|--:|\r\n| 0 | 1 |\r\n")]
+    [InlineData("|a|b|\n|-|-|\n|0|1|")]
+    [InlineData("  a  |  b  \n --- | :-: \n  0  |  1  \n")]
+    [InlineData("| a | b | \n|---|---|\n| 0 | \n| 1 | 2 | 3 |\n")]
+    [InlineData("| a | b |\n|---|---|\n|   |   |\n")]
+    [InlineData("text\n| a | b |\n|---|---|\n| 0 | 1 |\n")]
+    [InlineData("| a | b |\n|---|---|\n| 0 | 1 |\ntext\n| c | d |\n|---|---|\n| 2 | 3 |\n")]
+    [InlineData("x\n\n| a |\n|---|\n| *b* `c` [d](e) |\n\n\ny\n")]
+    [InlineData("> | a | b |\n> |---|---|\n> | 0 | 1 |\n")]
+    [InlineData("- | a | b |\n  |---|---|\n  | 0 | 1 |\n")]
+    [InlineData("| a \\| b |\n|---|\n| `c \\| d` |\n")]
+    public void PipeTableRoundtrip(string markdown)
+    {
+        TestRoundtrip.RoundTrip(markdown, new MarkdownPipelineBuilder().UsePipeTables());
+    }
+
+    [Theory]
+    [InlineData("a | b\n-- | --\n0 | 1\n")]
+    [InlineData("| a | b |\r\n|:--|--:|\r\n| 0 | 1 |\r\n")]
+    [InlineData("  a  |  b  \n --- | :-: \n  0  |  1  \n")]
+    [InlineData("| a | b |\n|---|---|\n| 0 |\n| 1 | 2 | 3 |\n")]
+    [InlineData("text\n  | a | b |\n|---|---|\n| 0 | 1 |\n")]
+    [InlineData("| a | b |\n|---|---|\n| 0 | 1 |\n\n\ntext\n")]
+    [InlineData("> | a | b |\n> |---|---|\n> | 0 | 1 |\n")]
+    [InlineData("| f\\|oo  |\n| ------ |\n| b `\\|` az |\n| b **\\|** im |\n")]
+    public void GfmPipeTableRoundtrip(string markdown)
+    {
+        TestRoundtrip.RoundTrip(markdown, new MarkdownPipelineBuilder().UsePipeTables(new PipeTableOptions { UseGfmRules = true }));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void PipeTableRoundtripWritesTheChangedCells(bool useGfmRules)
+    {
+        var pipeline = new MarkdownPipelineBuilder().UsePipeTables(new PipeTableOptions { UseGfmRules = useGfmRules }).EnableTrackTrivia().Build();
+        var document = MarkdownConverter.Parse("|  a  | b |\n|-----|---|\n|  c  | d |\n", pipeline);
+        var table = (Table)document[0];
+        var cell = (TableCell)((TableRow)table[1])[0];
+        ((ParagraphBlock)cell[0]).Inline = new ContainerInline().AppendChild(new LiteralInline("xyz"));
+        var row = new TableRow();
+        foreach (var text in new[] { "e", "f" })
+        {
+            row.Add(new TableCell { new ParagraphBlock { Inline = new ContainerInline().AppendChild(new LiteralInline(text)) } });
+        }
+
+        table.Add(row);
+
+        using var writer = new StringWriter();
+        var renderer = new Renderers.Roundtrip.RoundtripRenderer(writer);
+        pipeline.Setup(renderer);
+        renderer.Write(document);
+
+        Assert.Equal("|  a  | b |\n|-----|---|\n|  xyz  | d |\n| e | f |\n", writer.ToString());
+    }
+
+    [Fact]
+    public void PipeTableRoundtripOfTableWithoutSource()
+    {
+        var pipeline = new MarkdownPipelineBuilder().UsePipeTables().EnableTrackTrivia().Build();
+        var table = new Table();
+        table.ColumnDefinitions.Add(new TableColumnDefinition { Alignment = TableColumnAlign.Left });
+        table.ColumnDefinitions.Add(new TableColumnDefinition());
+        foreach (var texts in new[] { new[] { "a", "b" }, new[] { "c", "d" } })
+        {
+            var row = new TableRow();
+            foreach (var text in texts)
+            {
+                row.Add(new TableCell { new ParagraphBlock { Inline = new ContainerInline().AppendChild(new LiteralInline(text)) } });
+            }
+
+            table.Add(row);
+        }
+
+        var document = new MarkdownDocument { table };
+
+        using var writer = new StringWriter();
+        var renderer = new Renderers.Roundtrip.RoundtripRenderer(writer);
+        pipeline.Setup(renderer);
+        renderer.Write(document);
+
+        Assert.Equal("| a | b |\n| :-- | --- |\n| c | d |\n", writer.ToString());
+    }
 }
+

@@ -819,6 +819,15 @@ Text following the table.");
     }
 
     [Theory]
+    [InlineData("# a\n\n[b][a]", "# a\n\n[b][a]")]
+    [InlineData("# a\n\n[a][]", "# a\n\n[a][]")]
+    [InlineData("# a\n\n![b][a]", "# a\n\n![b][a]")]
+    public void ReferencesToHeadingsKeepTheirLabel(string markdown, string expected)
+    {
+        AssertNormalizePreservesHtml(markdown, expected, new MarkdownPipelineBuilder().UseAutoIdentifiers().Build());
+    }
+
+    [Theory]
     [InlineData("[a](<b c>)", "[a](<b c>)")]
     [InlineData("[a](<b)c>)", "[a](<b)c>)")]
     [InlineData("[a](b \"c\\\\\")", "[a](b \"c\\\\\")")]

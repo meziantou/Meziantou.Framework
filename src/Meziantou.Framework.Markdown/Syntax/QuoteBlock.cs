@@ -11,7 +11,7 @@ namespace Meziantou.Framework.Markdown.Syntax;
 /// A block quote (Section 5.1 CommonMark specs)
 /// </summary>
 /// <seealso cref="ContainerBlock" />
-public class QuoteBlock : ContainerBlock
+public class QuoteBlock : ContainerBlock, IQuoteLikeBlock
 {
     private List<QuoteBlockLine> Trivia => GetOrSetDerivedTrivia<List<QuoteBlockLine>>();
 
@@ -33,4 +33,6 @@ public class QuoteBlock : ContainerBlock
     /// Gets or sets the quote character (usually `&gt;`)
     /// </summary>
     public char QuoteChar { get; set; }
+
+    string IQuoteLikeBlock.Marker => ">";
 }

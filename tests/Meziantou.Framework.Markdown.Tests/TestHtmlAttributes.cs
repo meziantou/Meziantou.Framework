@@ -330,4 +330,45 @@ public class TestHtmlAttributes
             }
         }
     }
+
+    [Theory]
+    [InlineData("# H{#id}\n")]
+    [InlineData("# H # {#id}  \n")]
+    [InlineData("## H {.a} more\n")]
+    [InlineData("Setext{#id}\n---\n")]
+    [InlineData("{#id .c}\n~~~\ncode\n~~~\n")]
+    [InlineData("  {#id}  \r\n\r\n~~~\ncode\n~~~\n")]
+    [InlineData("{.a}{.b}\n# H\n")]
+    [InlineData("{.a}\n{.b}\n# H\n")]
+    [InlineData("``` js {#id} x\ncode\n```\n")]
+    [InlineData("```js{#id}\ncode\n```\n")]
+    [InlineData("text {#p aria-busy}\n")]
+    [InlineData("a {.b}{.c} d\n")]
+    [InlineData("{.a} b\n")]
+    [InlineData("[l](u){title=1} ![i](j){width=10}\n")]
+    [InlineData("*e*{.x}\n")]
+    [InlineData("a{.b}\r\nc\r\n")]
+    [InlineData("> a {.b}\n> c\n")]
+    [InlineData("- a\n  {.b}\n  c\n")]
+    public void GenericAttributesRoundtrip(string markdown)
+    {
+        TestRoundtrip.RoundTrip(markdown, new MarkdownPipelineBuilder().UseGenericAttributes());
+    }
+
+    [Theory]
+    [InlineData("{.a}{.b}\n# H")]
+    [InlineData("{.a}\n{.b}\n# H")]
+    [InlineData("a {.b}{.c} d")]
+    [InlineData("{.a} b")]
+    [InlineData("[l](u){.a}{.b}")]
+    [InlineData("{#id .c}\n~~~\ncode\n~~~")]
+    [InlineData("``` js {#id} x\ncode\n```")]
+    public void GenericAttributesAreAttachedToTheSameObjectsWithTrivia(string markdown)
+    {
+        var html = MarkdownConverter.ToHtml(markdown, new MarkdownPipelineBuilder().UseGenericAttributes().Build());
+        var htmlWithTrivia = MarkdownConverter.ToHtml(markdown, new MarkdownPipelineBuilder().UseGenericAttributes().EnableTrackTrivia().Build());
+
+        Assert.Equal(html, htmlWithTrivia);
+    }
 }
+

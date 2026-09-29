@@ -53,6 +53,8 @@ public class TestEmojiEmphasis
             if (trackTrivia) builder.EnableTrackTrivia();
             Assert.Equal($"<p>{expected}</p>\n", MarkdownConverter.ToHtml(markdown, builder.Build()));
         }
+
+        TestRoundtrip.RoundTrip(markdown, new MarkdownPipelineBuilder().UseEmojiAndSmiley());
     }
 
     [Theory]
@@ -72,6 +74,8 @@ public class TestEmojiEmphasis
         var pipeline = new MarkdownPipelineBuilder().UseEmojiAndSmiley(customEmojiMapping: mapping)
             .UseEmphasisExtras(EmphasisExtraOptions.Default).Build();
         Assert.Equal($"<p>{expected}</p>\n", MarkdownConverter.ToHtml(markdown, pipeline));
+
+        TestRoundtrip.RoundTrip(markdown, new MarkdownPipelineBuilder().UseEmojiAndSmiley(customEmojiMapping: mapping).UseEmphasisExtras(EmphasisExtraOptions.Default));
     }
 
     [Fact]

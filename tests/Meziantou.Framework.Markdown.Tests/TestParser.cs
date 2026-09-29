@@ -15,7 +15,6 @@ using Meziantou.Framework.Markdown.Extensions.Figures;
 using Meziantou.Framework.Markdown.Extensions.Footers;
 using Meziantou.Framework.Markdown.Extensions.GenericAttributes;
 using Meziantou.Framework.Markdown.Extensions.JiraLinks;
-using Meziantou.Framework.Markdown.Extensions.ListExtras;
 using Meziantou.Framework.Markdown.Extensions.Mathematics;
 using Meziantou.Framework.Markdown.Extensions.SmartyPants;
 using Meziantou.Framework.Markdown.Extensions.Tables;
@@ -132,7 +131,6 @@ public class TestParser
         typeof(FooterExtension),
         typeof(GenericAttributesExtension),
         typeof(GridTableExtension),
-        typeof(ListExtraExtension),
         typeof(MathExtension),
         typeof(PipeTableExtension),
         typeof(SmartyPantsExtension),

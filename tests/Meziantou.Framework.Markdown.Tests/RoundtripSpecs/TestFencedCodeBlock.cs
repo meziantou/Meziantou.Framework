@@ -104,4 +104,17 @@ public class TestFencedCodeBlock
     {
         RoundTrip(value);
     }
+
+    [Theory]
+    [InlineData("```\nc\n``` ")]
+    [InlineData("```\nc\n```  \n")]
+    [InlineData("~~~\nc\n~~~\t\n")]
+    [InlineData("```\nc\n````  \r\n")]
+    [InlineData("```\nc\n  ```  \n\na\n")]
+    [InlineData("> ```\n> c\n> ```  \n> a\n")]
+    [InlineData("- ```\n  c\n  ``` \n- a\n")]
+    public void TestSpacesAfterClosingFence(string value)
+    {
+        RoundTrip(value);
+    }
 }

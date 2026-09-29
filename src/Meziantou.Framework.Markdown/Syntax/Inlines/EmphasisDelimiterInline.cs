@@ -19,30 +19,9 @@ public class EmphasisDelimiterInline : DelimiterInline
     /// </summary>
     /// <param name="parser">The parser.</param>
     /// <param name="descriptor">The descriptor.</param>
-    /// <exception cref="ArgumentNullException"></exception>
-    [SuppressMessage("Design", "MA0056:Do not call overridable members in constructor", Justification = "Kept for compatibility with Markdig")]
-    public EmphasisDelimiterInline(InlineParser parser, EmphasisDescriptor descriptor) : base(parser)
-    {
-        if (descriptor is null)
-            ThrowHelper.ArgumentNullException(nameof(descriptor));
-
-        Descriptor = descriptor;
-        DelimiterChar = descriptor.Character;
-        Content = new StringSlice(ToLiteral());
-    }
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="EmphasisDelimiterInline" /> class.
-    /// </summary>
-    /// <param name="parser">The parser.</param>
-    /// <param name="descriptor">The descriptor.</param>
-    /// <param name="content">The content.</param>
-    /// <exception cref="ArgumentNullException"></exception>
+    /// <param name="content">The source text of the delimiter run, used when the delimiter is rendered as a literal.</param>
     internal EmphasisDelimiterInline(InlineParser parser, EmphasisDescriptor descriptor, StringSlice content) : base(parser)
     {
-        if (descriptor is null)
-            ThrowHelper.ArgumentNullException(nameof(descriptor));
-
         Descriptor = descriptor;
         DelimiterChar = descriptor.Character;
         Content = content;
@@ -63,13 +42,9 @@ public class EmphasisDelimiterInline : DelimiterInline
     /// </summary>
     public int DelimiterCount { get; set; }
 
-    // The length of the delimiter run in the source, used by the rule of 3. It is unknown for a delimiter created by
-    // another parser, which then only gives its DelimiterCount.
-    internal int RunLength
-    {
-        get => field > 0 ? field : DelimiterCount;
-        set;
-    }
+    // The length of the delimiter run in the source, used by the rule of 3. Unlike DelimiterCount, it does not change
+    // as the delimiter is consumed.
+    internal int RunLength { get; init; }
 
     /// <summary>
     /// The content as a <see cref="StringSlice"/>.

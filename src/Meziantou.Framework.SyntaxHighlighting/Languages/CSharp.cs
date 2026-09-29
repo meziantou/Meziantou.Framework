@@ -38,8 +38,8 @@ internal static partial class CSharp
         "add","allows","alias","and","ascending","args","async","await","by","closed",
         "descending","dynamic","equals","extension","field","file","from","get","global","group",
         "init","into","join","let","nameof","not","notnull","on","or","orderby","partial",
-        "record","remove","required","scoped","select","set","unmanaged","value","var","when",
-        "where","with","yield",
+        "record","remove","required","scoped","select","set","union","unmanaged","value","var",
+        "when","where","with","yield",
     ];
 
     private static Keywords BuildKeywords() => Keywords.FromMap(new Dictionary<string, string[]>(StringComparer.Ordinal)
@@ -67,6 +67,16 @@ internal static partial class CSharp
     [GeneratedRegex(@"\bfrom\s+\w+\s+in\b", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: -1)]
     private static partial Regex PrecedingFromPattern();
 
+    // `closed class Shape`, `public closed partial record Shape`: the modifiers that can follow `closed`, then the
+    // class or record keyword.
+    [GeneratedRegex(@"^\s+(?:(?:public|private|protected|internal|file|partial|unsafe|new|static|abstract|sealed)\s+)*(?:class|record)\b", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: -1)]
+    private static partial Regex ClosedModifierPattern();
+
+    // `union Pet(Cat, Dog)`, `union Option<T>(None, Some<T>)`: the name of the union, then its type parameters or
+    // its case types.
+    [GeneratedRegex(@"^\s+@?\w+\s*[<(]", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: -1)]
+    private static partial Regex UnionDeclarationPattern();
+
     private static bool ValidateKeyword(string input, int index, ReadOnlySpan<char> word)
     {
         // Universal: a keyword preceded by `.` is a member name, not a keyword
@@ -74,10 +84,18 @@ internal static partial class CSharp
         if (index > 0 && input[index - 1] == '.')
             return false;
 
+        var after = input.AsSpan(index + word.Length);
+
+        // `closed` and `union` are only keywords in a type declaration. Elsewhere, they are common identifiers
+        // (`var closed = true;`, `var union = a.Union(b);`).
+        if (word is "closed")
+            return ClosedModifierPattern().IsMatch(after);
+
+        if (word is "union")
+            return UnionDeclarationPattern().IsMatch(after);
+
         if (!LinqContextualKeywords.Contains(word.ToString()))
             return true;
-
-        var after = input.AsSpan(index + word.Length);
 
         if (word is "from")
             return FromInPattern().IsMatch(after);
@@ -354,7 +372,9 @@ internal static partial class CSharp
         // leftmost match and is skipped: otherwise, each type of a long sequence would rescan it. The
         // previous type does not count when the scan starts after it (e.g. after a preprocessor directive).
         var typeIdentNoCaptureRe = CommonModes.IdentRe + @"(?:<" + CommonModes.IdentRe + @"(?:\s*,\s*" + CommonModes.IdentRe + @")*>)?(?:\[\])?";
-        var functionDeclarationRe = CommonModes.RunStart(@"\w", "a-zA-Z") + @"(?:\G|(?<!" + typeIdentNoCaptureRe + @"(?:(?!\G)\s)+))(" + typeIdentRe + @"\s+)+" + identifierWithParametersRe;
+        // The `union` keyword is not a type: a union declaration (`public union Pet(Cat, Dog)`) is left to the union
+        // mode, which highlights its case types as types rather than as parameters.
+        var functionDeclarationRe = CommonModes.RunStart(@"\w", "a-zA-Z") + @"(?:\G|(?<!" + typeIdentNoCaptureRe + @"(?:(?!\G)\s)+))((?!union\s)" + typeIdentRe + @"\s+)+" + identifierWithParametersRe;
 
         // A class, struct or record with a parameter list (`class Foo<T>(T value)`, `record Person(string Name)`,
         // `record struct Point(int X, int Y)`) declares a primary constructor. The class and record modes do not
@@ -372,6 +392,29 @@ internal static partial class CSharp
             KeywordValidator = ValidateKeyword,
         };
         nestedParameterParentheses.Contains = [stringMode, numbers, CommonModes.CBlockCommentMode, nestedParameterParentheses];
+
+        // The case types of a union declaration (`union Pet(Cat, Dog, int?)`). Parentheses inside them are tuple types.
+        var builtInType = new Mode { Scope = "built_in", Begin = @"\b(?:" + string.Join('|', BuiltInKeywords) + @")\b" };
+        var unionCaseTypeArguments = new Mode
+        {
+            Begin = "<",
+            End = ">",
+        };
+        unionCaseTypeArguments.Contains = [builtInType, titleMode, unionCaseTypeArguments];
+        var unionCaseTypes = new Mode
+        {
+            Begin = @"\(",
+            End = @"\)",
+        };
+        unionCaseTypes.Contains =
+        [
+            builtInType,
+            titleMode,
+            unionCaseTypeArguments,
+            CommonModes.CLineCommentMode,
+            CommonModes.CBlockCommentMode,
+            unionCaseTypes,
+        ];
 
         // The `new()` generic constraint (`class Foo<T> where T : new()`): its parentheses are not illegal.
         var newConstraint = new Mode { Begin = @"\bnew\s*\(\s*\)", Keywords = Keywords.FromWords(["new"]) };
@@ -454,6 +497,23 @@ internal static partial class CSharp
                         newConstraint,
                         titleMode,
                         genericModifier,
+                        CommonModes.CLineCommentMode,
+                        CommonModes.CBlockCommentMode,
+                    ],
+                },
+                new()
+                {
+                    Begin = @"(?<!\.)\b(union)(?!\.)(?=\s+@?\w+\s*[<(])",
+                    Keywords = Keywords.FromWords(["union"]),
+                    End = "[{;]",
+                    Illegal = @"[^\s:,]",
+                    Contains =
+                    [
+                        new() { BeginKeywords = ["where", "class", "struct"] },
+                        newConstraint,
+                        titleMode,
+                        genericModifier,
+                        unionCaseTypes,
                         CommonModes.CLineCommentMode,
                         CommonModes.CBlockCommentMode,
                     ],

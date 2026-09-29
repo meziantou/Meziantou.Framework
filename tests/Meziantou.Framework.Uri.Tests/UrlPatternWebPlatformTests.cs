@@ -13,20 +13,10 @@ public sealed class UrlPatternWebPlatformTests
     /// <summary>The cases that are known not to pass, by their index in the corpus.</summary>
     /// <remarks>
     /// A case listed here is asserted to still fail, so that fixing one of them fails this test rather than
-    /// passing silently. None of these are canonicalization: they are the parts of the spec that either rely
-    /// on a JavaScript regular expression feature that .NET does not have, or on a URL parser of our own.
+    /// passing silently. They rely on a JavaScript regular expression feature that .NET does not have.
     /// </remarks>
     private static readonly FrozenDictionary<int, string> ExpectedFailures = new Dictionary<int, string>
     {
-        // Uri resolves a relative URL against a base URL that has an opaque path, where the URL Standard fails
-        [254] = "\"foo\" against the base URL \"data:data-urls-cannot-be-base-urls\"",
-
-        // The constructor string parser does not read an escaped ":" as part of the username
-        [260] = @"https\:foo\:bar@example.com",
-
-        // A group that did not participate reports the empty string rather than being absent
-        [329] = "*{}**?",
-
         // The "v" flag set operations of a JavaScript regular expression, which .NET cannot express
         [352] = "/([[a-z]--a])",
         [353] = @"/([\d&&[0-1]])",

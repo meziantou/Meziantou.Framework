@@ -1902,4 +1902,52 @@ public sealed class UrlPatternTests
     {
         Assert.Throws<UrlPatternException>(() => UrlPattern.Create(new UrlPatternInit { Pathname = "/foo", BaseUrl = "" }));
     }
+
+    [Fact]
+    public void IsMatch_SpecialSchemeWithoutSlashes_ParsesTheAuthority()
+    {
+        var pattern = UrlPattern.Create(@"https\:foo\:bar@example.com");
+
+        Assert.True(pattern.IsMatch("https:foo:bar@example.com"));
+        Assert.True(pattern.IsMatch("https://foo:bar@example.com"));
+    }
+
+    [Fact]
+    public void IsMatch_SpecialSchemeWithoutSlashes_WithSameSchemeBaseUrl_IsRelative()
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit { Hostname = "example.com", Pathname = "/dir/foo" });
+
+        Assert.True(pattern.IsMatch("https:foo", "https://example.com/dir/bar"));
+    }
+
+    [Fact]
+    public void IsMatch_RelativeUrl_AgainstBaseUrlWithOpaquePath_DoesNotMatch()
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit { Pathname = "*" });
+
+        Assert.False(pattern.IsMatch("foo", "data:data-urls-cannot-be-base-urls"));
+        Assert.False(pattern.IsMatch("/foo", "data:data-urls-cannot-be-base-urls"));
+        Assert.True(pattern.IsMatch("https://example.com/foo", "data:data-urls-cannot-be-base-urls"));
+    }
+
+    [Fact]
+    public void Match_OptionalGroupThatMatchesNothing_IsNull()
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit { Pathname = "*{}**?" });
+
+        var result = pattern.Match(new UrlPatternInit { Pathname = "foobar" });
+
+        Assert.NotNull(result);
+        Assert.Equal("foobar", result.Pathname.Groups["0"]);
+        Assert.Null(result.Pathname.Groups["1"]);
+    }
+
+    [Fact]
+    public void Match_OptionalGroupWithPrefix_IsNullOnlyWhenAbsent()
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit { Pathname = "/foo{/:id}?" });
+
+        Assert.Null(pattern.Match(new UrlPatternInit { Pathname = "/foo" })!.Pathname.Groups["id"]);
+        Assert.Equal("1", pattern.Match(new UrlPatternInit { Pathname = "/foo/1" })!.Pathname.Groups["id"]);
+    }
 }

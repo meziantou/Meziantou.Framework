@@ -489,18 +489,19 @@ public sealed class UrlPattern
 
         return new UrlPatternResult(
             [input],
-            CreateComponentResult(protocol, protocolMatch, _protocolComponent.GroupNameList),
-            CreateComponentResult(username, usernameMatch, _usernameComponent.GroupNameList),
-            CreateComponentResult(password, passwordMatch, _passwordComponent.GroupNameList),
-            CreateComponentResult(hostname, hostnameMatch, _hostnameComponent.GroupNameList),
-            CreateComponentResult(port, portMatch, _portComponent.GroupNameList),
-            CreateComponentResult(pathname, pathnameMatch, _pathnameComponent.GroupNameList),
-            CreateComponentResult(search, searchMatch, _searchComponent.GroupNameList),
-            CreateComponentResult(hash, hashMatch, _hashComponent.GroupNameList));
+            CreateComponentResult(protocol, protocolMatch, _protocolComponent),
+            CreateComponentResult(username, usernameMatch, _usernameComponent),
+            CreateComponentResult(password, passwordMatch, _passwordComponent),
+            CreateComponentResult(hostname, hostnameMatch, _hostnameComponent),
+            CreateComponentResult(port, portMatch, _portComponent),
+            CreateComponentResult(pathname, pathnameMatch, _pathnameComponent),
+            CreateComponentResult(search, searchMatch, _searchComponent),
+            CreateComponentResult(hash, hashMatch, _hashComponent));
     }
 
-    private static UrlPatternComponentResult CreateComponentResult(string input, Match match, List<string> groupNameList)
+    private static UrlPatternComponentResult CreateComponentResult(string input, Match match, UrlPatternComponent component)
     {
+        var groupNameList = component.GroupNameList;
         var groups = new Dictionary<string, string?>(StringComparer.Ordinal);
 
         // The GroupNameList contains the names in order, and they correspond to
@@ -513,7 +514,7 @@ public sealed class UrlPattern
             if (groupIndex < match.Groups.Count)
             {
                 var group = match.Groups[groupIndex];
-                groups[groupName] = group.Success ? group.Value : null;
+                groups[groupName] = group.Success && (group.Length > 0 || !component.EmptyGroupIsUnmatchedList[i]) ? group.Value : null;
             }
             else
             {
@@ -595,6 +596,25 @@ public sealed class UrlPattern
             }
         }
 
+        // The URL parser reads a special scheme that is not followed by a slash as if the slashes were there
+        // ("https:host" is "https://host"), unless the base URL has the same scheme. System.Uri rejects it.
+        var trimmedUrl = url.Trim(UrlWhitespace);
+        if (TryGetScheme(trimmedUrl, out var scheme, out var rest))
+        {
+            if (SpecialSchemes.Contains(scheme) &&
+                !string.Equals(scheme, "file", StringComparison.OrdinalIgnoreCase) &&
+                !rest.StartsWith('/', StringComparison.Ordinal) && !rest.StartsWith('\\', StringComparison.Ordinal) &&
+                (baseUri is null || !string.Equals(baseUri.Scheme, scheme, StringComparison.OrdinalIgnoreCase)))
+            {
+                url = scheme + "://" + rest;
+            }
+        }
+        else if (baseUri is not null && !trimmedUrl.StartsWith('#', StringComparison.Ordinal) && HasOpaquePath(baseUrl!.Trim(UrlWhitespace)))
+        {
+            // A relative URL cannot be resolved against a base URL that has an opaque path, except for a fragment
+            return null;
+        }
+
         if (baseUri is not null)
         {
             if (Uri.TryCreate(baseUri, url, out var result))
@@ -611,6 +631,43 @@ public sealed class UrlPattern
         }
 
         return null;
+
+        static bool HasOpaquePath(string url)
+        {
+            return TryGetScheme(url, out var scheme, out var rest) && !SpecialSchemes.Contains(scheme) && !rest.StartsWith('/', StringComparison.Ordinal);
+        }
+    }
+
+    // The URL parser removes the leading and trailing C0 control or space
+    private static readonly char[] UrlWhitespace = [.. Enumerable.Range(0, 0x21).Select(i => (char)i)];
+
+    /// <remarks>
+    /// <see href="https://url.spec.whatwg.org/#scheme-start-state">WHATWG URL Standard - Scheme start state</see>
+    /// </remarks>
+    private static bool TryGetScheme(string url, out string scheme, out string rest)
+    {
+        if (url.Length > 0 && char.IsAsciiLetter(url[0]))
+        {
+            for (var i = 1; i < url.Length; i++)
+            {
+                var c = url[i];
+                if (c == ':')
+                {
+                    scheme = url[..i];
+                    rest = url[(i + 1)..];
+                    return true;
+                }
+
+                if (!char.IsAsciiLetterOrDigit(c) && c is not '+' and not '-' and not '.')
+                {
+                    break;
+                }
+            }
+        }
+
+        scheme = "";
+        rest = "";
+        return false;
     }
 
     /// <summary>Processes a URLPatternInit to resolve base URL and fill in defaults.</summary>

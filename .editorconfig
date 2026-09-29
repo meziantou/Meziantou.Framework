@@ -76,12 +76,6 @@ dotnet_diagnostic.MA0004.severity = none
 # MA0032: Use an overload with a CancellationToken argument, even when no token is available in scope
 dotnet_diagnostic.MA0032.severity = none
 
-[src/Meziantou.Framework.Language.Json/**.cs]
-# MA0182: Avoid unused internal types
-# The immutable half of the tree is built by the parser and projected into the public nodes; the analyzer does not
-# follow that, and reports every green node type as unused.
-dotnet_diagnostic.MA0182.severity = none
-
 [src/Meziantou.Framework.Language/**.cs]
 # MA0182: Avoid unused internal types
 # The green layer is shared infrastructure: most of it has no caller inside this assembly and is consumed by the

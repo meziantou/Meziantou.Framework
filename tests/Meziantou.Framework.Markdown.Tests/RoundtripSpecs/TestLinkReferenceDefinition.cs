@@ -1,3 +1,5 @@
+using Meziantou.Framework.Markdown.Extensions.Abbreviations;
+using Meziantou.Framework.Markdown.Helpers;
 using Meziantou.Framework.Markdown.Renderers.Roundtrip;
 using static Meziantou.Framework.Markdown.Tests.TestRoundtrip;
 
@@ -296,4 +298,36 @@ public class TestLinkReferenceDefinition
 
         Assert.Equal(value, writer.ToString());
     }
+
+    [Theory]
+    [InlineData("*[HTML]: Hypertext Markup Language\n\nHTML text")]
+    [InlineData("*[HTML]: Hypertext Markup Language")]
+    [InlineData("  *[HTML]:   Hypertext Markup Language  \n")]
+    [InlineData("*[A]: a\n*[B]: b\n\nA B\n")]
+    [InlineData("*[A]: first\n*[A]: second\n\nA\n")]
+    [InlineData("*[SUPER HTML]: x\r\n\r\nThis is a SUPER HTML document\r\n")]
+    [InlineData("text\n*[A]: b\nA\n")]
+    [InlineData("> *[A]: b\n> A\n")]
+    [InlineData("- a\n  *[A]: b\n- c A\n")]
+    [InlineData("A *A* [A](u)\n\n*[A]: b\n\n\n")]
+    public void TestAbbreviation(string value)
+    {
+        RoundTrip(value, new MarkdownPipelineBuilder().UseAbbreviations());
+    }
+
+    [Fact]
+    public void TestAbbreviationWithoutSource()
+    {
+        var pipeline = new MarkdownPipelineBuilder().UseAbbreviations().EnableTrackTrivia().Build();
+        var document = MarkdownConverter.Parse("text\n", pipeline);
+        document.Add(new Abbreviation(new AbbreviationParser()) { Label = "A", Text = new StringSlice("b"), NewLine = NewLine.LineFeed });
+
+        var writer = new StringWriter();
+        var renderer = new RoundtripRenderer(writer);
+        pipeline.Setup(renderer);
+        renderer.Write(document);
+
+        Assert.Equal("text\n*[A]: b\n", writer.ToString());
+    }
 }
+

@@ -4,7 +4,21 @@
 using System.Text;
 using System.Text.RegularExpressions;
 
+using Meziantou.Framework.Markdown.Extensions.Abbreviations;
+using Meziantou.Framework.Markdown.Extensions.Alerts;
+using Meziantou.Framework.Markdown.Extensions.AutoIdentifiers;
+using Meziantou.Framework.Markdown.Extensions.AutoLinks;
+using Meziantou.Framework.Markdown.Extensions.CustomContainers;
+using Meziantou.Framework.Markdown.Extensions.DefinitionLists;
+using Meziantou.Framework.Markdown.Extensions.Emoji;
+using Meziantou.Framework.Markdown.Extensions.Figures;
+using Meziantou.Framework.Markdown.Extensions.Footers;
+using Meziantou.Framework.Markdown.Extensions.GenericAttributes;
 using Meziantou.Framework.Markdown.Extensions.JiraLinks;
+using Meziantou.Framework.Markdown.Extensions.ListExtras;
+using Meziantou.Framework.Markdown.Extensions.Mathematics;
+using Meziantou.Framework.Markdown.Extensions.SmartyPants;
+using Meziantou.Framework.Markdown.Extensions.Tables;
 using Meziantou.Framework.Markdown.Parsers.Inlines;
 using Meziantou.Framework.Markdown.Renderers.Roundtrip;
 using Meziantou.Framework.Markdown.Syntax;
@@ -91,7 +105,39 @@ public class TestParser
         {
             TestSpec(inputText, expectedOutputText, UseMinimumThresholds(pipeline.Value), plainText, context: context + $"Pipeline configured with extensions: {pipeline.Key}, with the minimum thresholds");
         }
+
+        // With trivia, every example must be written back exactly as it was parsed
+        foreach (var builder in GetPipelineBuilders(extensions))
+        {
+            if (builder.Value.Extensions.Any(extension => ExtensionsWithoutRoundtrip.Contains(extension.GetType())))
+            {
+                continue;
+            }
+
+            TestRoundtrip.RoundTrip(inputText, builder.Value, context: context + $"Roundtrip with extensions: {builder.Key}");
+        }
     }
+
+    // The extensions that do not write their syntax back yet, so the examples that use them are not round-tripped
+    private static readonly HashSet<Type> ExtensionsWithoutRoundtrip =
+    [
+        typeof(AbbreviationExtension),
+        typeof(AlertExtension),
+        typeof(AutoIdentifierExtension),
+        typeof(AutoLinkExtension),
+        typeof(CustomContainerExtension),
+        typeof(DefinitionListExtension),
+        typeof(EmojiExtension),
+        typeof(FigureExtension),
+        typeof(FooterExtension),
+        typeof(GenericAttributesExtension),
+        typeof(GridTableExtension),
+        typeof(JiraLinkExtension),
+        typeof(ListExtraExtension),
+        typeof(MathExtension),
+        typeof(PipeTableExtension),
+        typeof(SmartyPantsExtension),
+    ];
 
     /// <summary>
     /// Makes the inline processor track the chain of open containers, and the emphasis parser track the openers bottoms, from
@@ -205,14 +251,20 @@ public class TestParser
 
     public static IEnumerable<KeyValuePair<string, MarkdownPipeline>> GetPipeline(string? extensionsGroupText)
     {
+        foreach (var builder in GetPipelineBuilders(extensionsGroupText))
+        {
+            yield return new KeyValuePair<string, MarkdownPipeline>(builder.Key, builder.Value.Build());
+        }
+    }
+
+    private static IEnumerable<KeyValuePair<string, MarkdownPipelineBuilder>> GetPipelineBuilders(string? extensionsGroupText)
+    {
         // For the standard case, we make sure that both the CommmonMark core and Extra/Advanced are CommonMark compliant!
         if (string.IsNullOrEmpty(extensionsGroupText))
         {
-            yield return new KeyValuePair<string, MarkdownPipeline>("default", new MarkdownPipelineBuilder().Build());
+            yield return new KeyValuePair<string, MarkdownPipelineBuilder>("default", new MarkdownPipelineBuilder());
 
-            //yield return new KeyValuePair<string, MarkdownPipeline>("default-trivia", new MarkdownPipelineBuilder().EnableTrackTrivia().Build());
-
-            yield return new KeyValuePair<string, MarkdownPipeline>("advanced", new MarkdownPipelineBuilder()  // Use similar to advanced extension without auto-identifier
+            yield return new KeyValuePair<string, MarkdownPipelineBuilder>("advanced", new MarkdownPipelineBuilder()  // Use similar to advanced extension without auto-identifier
              .UseAbbreviations()
             //.UseAutoIdentifiers()
             .UseCitations()
@@ -227,7 +279,7 @@ public class TestParser
             .UseMediaLinks()
             .UsePipeTables()
             .UseListExtras()
-            .UseGenericAttributes().Build());
+            .UseGenericAttributes());
 
             yield break;
         }
@@ -245,7 +297,7 @@ public class TestParser
             {
                 builder = builder.Configure(extensionsText);
             }
-            yield return new KeyValuePair<string, MarkdownPipeline>(extensionsText, builder.Build());
+            yield return new KeyValuePair<string, MarkdownPipelineBuilder>(extensionsText, builder);
         }
     }
 

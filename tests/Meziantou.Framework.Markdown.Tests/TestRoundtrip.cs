@@ -14,9 +14,12 @@ internal static class TestRoundtrip
 
     internal static void RoundTrip(string markdown, string? context = null)
     {
-        var pipelineBuilder = new MarkdownPipelineBuilder();
+        RoundTrip(markdown, new MarkdownPipelineBuilder().UseYamlFrontMatter(), context);
+    }
+
+    internal static void RoundTrip(string markdown, MarkdownPipelineBuilder pipelineBuilder, string? context = null)
+    {
         pipelineBuilder.EnableTrackTrivia();
-        pipelineBuilder.UseYamlFrontMatter();
         MarkdownPipeline pipeline = pipelineBuilder.Build();
         MarkdownDocument markdownDocument = MarkdownConverter.Parse(markdown, pipeline);
         var sw = new StringWriter();

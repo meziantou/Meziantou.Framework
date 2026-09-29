@@ -7,7 +7,6 @@ using System.Text.RegularExpressions;
 using Meziantou.Framework.Markdown.Extensions.Abbreviations;
 using Meziantou.Framework.Markdown.Extensions.CustomContainers;
 using Meziantou.Framework.Markdown.Extensions.DefinitionLists;
-using Meziantou.Framework.Markdown.Extensions.Emoji;
 using Meziantou.Framework.Markdown.Extensions.JiraLinks;
 using Meziantou.Framework.Markdown.Parsers.Inlines;
 using Meziantou.Framework.Markdown.Renderers.Roundtrip;
@@ -114,7 +113,6 @@ public class TestParser
         typeof(AbbreviationExtension),
         typeof(CustomContainerExtension),
         typeof(DefinitionListExtension),
-        typeof(EmojiExtension),
     ];
 
     /// <summary>

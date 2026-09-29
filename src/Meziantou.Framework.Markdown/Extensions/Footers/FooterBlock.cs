@@ -11,7 +11,7 @@ namespace Meziantou.Framework.Markdown.Extensions.Footers;
 /// A block element for a footer.
 /// </summary>
 /// <seealso cref="ContainerBlock" />
-public class FooterBlock : ContainerBlock
+public class FooterBlock : ContainerBlock, IQuoteLikeBlock
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="FooterBlock"/> class.
@@ -25,4 +25,9 @@ public class FooterBlock : ContainerBlock
     /// Gets or sets the opening character used to match this footer (by default it is ^)
     /// </summary>
     public char OpeningCharacter { get; set; }
+
+    // With trivia, the trivia of the marker of each line
+    List<QuoteBlockLine> IQuoteLikeBlock.QuoteLines => GetOrSetDerivedTrivia<List<QuoteBlockLine>>();
+
+    string IQuoteLikeBlock.Marker => OpeningCharacter == '^' ? "^^" : new string(OpeningCharacter, 2);
 }

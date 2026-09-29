@@ -14,7 +14,12 @@ public class QuoteBlockRenderer : RoundtripObjectRenderer<QuoteBlock>
     /// <summary>
     /// Writes the object to the specified renderer.
     /// </summary>
-    protected override void Write(RoundtripRenderer renderer, QuoteBlock quoteBlock)
+    protected override void Write(RoundtripRenderer renderer, QuoteBlock quoteBlock) => WriteQuote(renderer, quoteBlock, writeFirstLine: null);
+
+    // Writes a quote, or a block whose lines start with a marker like a quote. The optional callback writes text at the start of
+    // the first line, before the children of the quote.
+    internal static void WriteQuote<TBlock>(RoundtripRenderer renderer, TBlock quoteBlock, Action<RoundtripRenderer, TBlock>? writeFirstLine)
+        where TBlock : ContainerBlock, IQuoteLikeBlock
     {
         renderer.RenderLinesBefore(quoteBlock);
         renderer.Write(quoteBlock.TriviaBefore);
@@ -26,7 +31,7 @@ public class QuoteBlockRenderer : RoundtripObjectRenderer<QuoteBlock>
         {
             var quoteLine = quoteLines[i];
             var wsb = quoteLine.TriviaBefore.ToString();
-            var quoteChar = quoteLine.QuoteChar ? ">" : "";
+            var quoteChar = quoteLine.QuoteChar ? quoteBlock.Marker : "";
             var spaceAfterQuoteChar = quoteLine.HasSpaceAfterQuoteChar ? " " : "";
             var wsa = quoteLine.TriviaAfter.ToString();
             indents[i] = (wsb + quoteChar + spaceAfterQuoteChar + wsa);
@@ -37,6 +42,7 @@ public class QuoteBlockRenderer : RoundtripObjectRenderer<QuoteBlock>
         }
 
         renderer.PushIndent(indents, lazyLines);
+        writeFirstLine?.Invoke(renderer, quoteBlock);
         renderer.WriteChildren(quoteBlock);
 
         // The quote lines that are not written yet have no content (all of them when the quote has no children). The parser

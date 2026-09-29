@@ -1,3 +1,5 @@
+using Meziantou.Framework.Markdown.Helpers;
+using Meziantou.Framework.Markdown.Parsers.Inlines;
 using Meziantou.Framework.Markdown.Renderers;
 using Meziantou.Framework.Markdown.Syntax;
 using Meziantou.Framework.Markdown.Syntax.Inlines;
@@ -323,5 +325,17 @@ public class TestCoreApi
         Assert.Equal(new Inline[] { a, emphasis, b }, paragraph.Inline.Descendants<Inline>().ToArray());
         Assert.Equal(new Inline[] { b }, emphasis.Descendants<LiteralInline>().ToArray());
         Assert.Empty(((MarkdownObject)new ParagraphBlock()).Descendants<Inline>());
+    }
+
+    [Fact]
+    public void EmphasisDelimiterInlineKeepsItsContent()
+    {
+        var delimiter = new EmphasisDelimiterInline(new EmphasisInlineParser(), new EmphasisDescriptor('*', 1, 2, enableWithinWord: true), new StringSlice("**"))
+        {
+            DelimiterCount = 2,
+        };
+
+        Assert.Equal('*', delimiter.DelimiterChar);
+        Assert.Equal("**", delimiter.AsLiteralInline().Content.ToString());
     }
 }

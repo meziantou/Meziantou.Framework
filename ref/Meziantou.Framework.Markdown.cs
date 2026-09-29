@@ -2424,7 +2424,7 @@ namespace Meziantou.Framework.Markdown.Syntax.Inlines
         public Meziantou.Framework.Markdown.Parsers.Inlines.EmphasisDescriptor Descriptor { get => throw null; }
         public char DelimiterChar { get => throw null; }
         public int DelimiterCount { get => throw null; set { } }
-        public EmphasisDelimiterInline(Meziantou.Framework.Markdown.Parsers.InlineParser parser, Meziantou.Framework.Markdown.Parsers.Inlines.EmphasisDescriptor descriptor) : base(default(Meziantou.Framework.Markdown.Parsers.InlineParser)) { }
+        public EmphasisDelimiterInline(Meziantou.Framework.Markdown.Parsers.InlineParser parser, Meziantou.Framework.Markdown.Parsers.Inlines.EmphasisDescriptor descriptor, Meziantou.Framework.Markdown.Helpers.StringSlice content) : base(default(Meziantou.Framework.Markdown.Parsers.InlineParser)) { }
         public override string ToLiteral() => throw null;
         public Meziantou.Framework.Markdown.Syntax.Inlines.LiteralInline AsLiteralInline() => throw null;
     }

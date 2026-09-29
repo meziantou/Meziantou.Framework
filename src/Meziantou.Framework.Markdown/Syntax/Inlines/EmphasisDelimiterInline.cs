@@ -19,26 +19,9 @@ public class EmphasisDelimiterInline : DelimiterInline
     /// </summary>
     /// <param name="parser">The parser.</param>
     /// <param name="descriptor">The descriptor.</param>
+    /// <param name="content">The source text of the delimiter run, used when the delimiter is rendered as a literal.</param>
     /// <exception cref="ArgumentNullException"></exception>
-    [SuppressMessage("Design", "MA0056:Do not call overridable members in constructor", Justification = "Kept for compatibility with Markdig")]
-    public EmphasisDelimiterInline(InlineParser parser, EmphasisDescriptor descriptor) : base(parser)
-    {
-        if (descriptor is null)
-            ThrowHelper.ArgumentNullException(nameof(descriptor));
-
-        Descriptor = descriptor;
-        DelimiterChar = descriptor.Character;
-        Content = new StringSlice(ToLiteral());
-    }
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="EmphasisDelimiterInline" /> class.
-    /// </summary>
-    /// <param name="parser">The parser.</param>
-    /// <param name="descriptor">The descriptor.</param>
-    /// <param name="content">The content.</param>
-    /// <exception cref="ArgumentNullException"></exception>
-    internal EmphasisDelimiterInline(InlineParser parser, EmphasisDescriptor descriptor, StringSlice content) : base(parser)
+    public EmphasisDelimiterInline(InlineParser parser, EmphasisDescriptor descriptor, StringSlice content) : base(parser)
     {
         if (descriptor is null)
             ThrowHelper.ArgumentNullException(nameof(descriptor));

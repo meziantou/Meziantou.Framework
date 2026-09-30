@@ -52,8 +52,8 @@ public abstract class SyntaxNode : SyntaxNodeBase
     /// <returns>A child at the specified index</returns>
     public SyntaxNode? GetChild(int index)
     {
-        if (index < 0) throw ThrowHelper.GetIndexNegativeArgumentOutOfRangeException(nameof(index));
-        if (index >= ChildrenCount) throw ThrowHelper.GetIndexArgumentOutOfRangeException(nameof(index), ChildrenCount);
+        ArgumentOutOfRangeException.ThrowIfNegative(index);
+        ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, ChildrenCount);
         return GetChildImpl(index);
     }
 

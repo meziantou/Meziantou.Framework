@@ -21,8 +21,8 @@ public static class MarkdownObjectDataExtensions
     /// <exception cref="ArgumentNullException">Thrown if <paramref name="markdownObject"/> or <paramref name="key"/> is null.</exception>
     public static T? GetData<T>(this IMarkdownObject markdownObject, object key)
     {
-        if (markdownObject is null) ThrowHelper.ArgumentNullException(nameof(markdownObject));
-        if (key is null) ThrowHelper.ArgumentNullException(nameof(key));
+        ArgumentNullException.ThrowIfNull(markdownObject);
+        ArgumentNullException.ThrowIfNull(key);
 
         return markdownObject.GetData(key) is T data ? data : default;
     }
@@ -37,7 +37,7 @@ public static class MarkdownObjectDataExtensions
     /// <exception cref="ArgumentNullException">Thrown if <paramref name="markdownObject"/> or <paramref name="key"/> is null.</exception>
     public static T? GetData<T>(this IMarkdownObject markdownObject, DataKey<T> key)
     {
-        if (key is null) ThrowHelper.ArgumentNullException(nameof(key));
+        ArgumentNullException.ThrowIfNull(key);
         return markdownObject.GetData<T>(key.Key);
     }
 
@@ -50,7 +50,7 @@ public static class MarkdownObjectDataExtensions
     /// <exception cref="ArgumentNullException">Thrown if <paramref name="markdownObject"/> is null.</exception>
     public static T? GetData<T>(this IMarkdownObject markdownObject)
     {
-        if (markdownObject is null) ThrowHelper.ArgumentNullException(nameof(markdownObject));
+        ArgumentNullException.ThrowIfNull(markdownObject);
         return markdownObject.GetData<T>(typeof(T));
     }
 
@@ -65,8 +65,8 @@ public static class MarkdownObjectDataExtensions
     /// <exception cref="ArgumentNullException">Thrown if <paramref name="markdownObject"/> or <paramref name="key"/> is null.</exception>
     public static bool TryGetData<T>(this IMarkdownObject markdownObject, object key, out T? value)
     {
-        if (markdownObject is null) ThrowHelper.ArgumentNullException(nameof(markdownObject));
-        if (key is null) ThrowHelper.ArgumentNullException(nameof(key));
+        ArgumentNullException.ThrowIfNull(markdownObject);
+        ArgumentNullException.ThrowIfNull(key);
 
         if (markdownObject.GetData(key) is T typedValue)
         {
@@ -89,7 +89,7 @@ public static class MarkdownObjectDataExtensions
     /// <exception cref="ArgumentNullException">Thrown if <paramref name="markdownObject"/> or <paramref name="key"/> is null.</exception>
     public static bool TryGetData<T>(this IMarkdownObject markdownObject, DataKey<T> key, out T? value)
     {
-        if (key is null) ThrowHelper.ArgumentNullException(nameof(key));
+        ArgumentNullException.ThrowIfNull(key);
         return markdownObject.TryGetData(key.Key, out value);
     }
 
@@ -102,7 +102,7 @@ public static class MarkdownObjectDataExtensions
     /// <exception cref="ArgumentNullException">Thrown if <paramref name="markdownObject"/> is null.</exception>
     public static void SetData<T>(this IMarkdownObject markdownObject, T value)
     {
-        if (markdownObject is null) ThrowHelper.ArgumentNullException(nameof(markdownObject));
+        ArgumentNullException.ThrowIfNull(markdownObject);
         markdownObject.SetData(typeof(T), value!);
     }
 
@@ -116,8 +116,8 @@ public static class MarkdownObjectDataExtensions
     /// <exception cref="ArgumentNullException">Thrown if <paramref name="markdownObject"/> or <paramref name="key"/> is null.</exception>
     public static void SetData<T>(this IMarkdownObject markdownObject, DataKey<T> key, T value)
     {
-        if (markdownObject is null) ThrowHelper.ArgumentNullException(nameof(markdownObject));
-        if (key is null) ThrowHelper.ArgumentNullException(nameof(key));
+        ArgumentNullException.ThrowIfNull(markdownObject);
+        ArgumentNullException.ThrowIfNull(key);
 
         markdownObject.SetData(key.Key, value!);
     }

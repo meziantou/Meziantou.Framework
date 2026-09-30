@@ -39,7 +39,7 @@ public class LiteralInline : LeafInline
     /// <exception cref="ArgumentNullException"></exception>
     public LiteralInline(string text)
     {
-        if (text is null) ThrowHelper.ArgumentNullException_text();
+        ArgumentNullException.ThrowIfNull(text);
         Content = new StringSlice(text);
     }
 

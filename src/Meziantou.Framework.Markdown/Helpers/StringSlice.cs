@@ -55,8 +55,7 @@ public struct StringSlice : ICharIterator
     /// <exception cref="ArgumentNullException"></exception>
     public StringSlice(string text, int start, int end)
     {
-        if (text is null)
-            ThrowHelper.ArgumentNullException_text();
+        ArgumentNullException.ThrowIfNull(text);
 
         Text = text;
         Start = start;
@@ -74,8 +73,7 @@ public struct StringSlice : ICharIterator
     /// <exception cref="ArgumentNullException"></exception>
     public StringSlice(string text, int start, int end, NewLine newLine)
     {
-        if (text is null)
-            ThrowHelper.ArgumentNullException_text();
+        ArgumentNullException.ThrowIfNull(text);
 
         Text = text;
         Start = start;

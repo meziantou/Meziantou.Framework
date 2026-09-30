@@ -400,8 +400,8 @@ public class InlineProcessor
     /// </remarks>
     public void ReplaceParentContainer(ContainerBlock previousParentContainer, ContainerBlock newParentContainer)
     {
-        if (previousParentContainer is null) ThrowHelper.ArgumentNullException(nameof(previousParentContainer));
-        if (newParentContainer is null) ThrowHelper.ArgumentNullException(nameof(newParentContainer));
+        ArgumentNullException.ThrowIfNull(previousParentContainer);
+        ArgumentNullException.ThrowIfNull(newParentContainer);
 
         // Limitation for now, only one parent container can be replaced.
         if (_previousContainerToReplace != null)
@@ -419,7 +419,7 @@ public class InlineProcessor
     /// <param name="leafBlock">The leaf block.</param>
     public void ProcessInlineLeaf(LeafBlock leafBlock)
     {
-        if (leafBlock is null) ThrowHelper.ArgumentNullException_leafBlock();
+        ArgumentNullException.ThrowIfNull(leafBlock);
 
         _previousContainerToReplace = null;
         _newContainerToReplace = null;
@@ -639,8 +639,8 @@ public class InlineProcessor
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public TState GetParserState<TState>(InlineParser parser, Func<TState> factory) where TState : class
     {
-        if (parser is null) ThrowHelper.ArgumentNullException(nameof(parser));
-        if (factory is null) ThrowHelper.ArgumentNullException(nameof(factory));
+        ArgumentNullException.ThrowIfNull(parser);
+        ArgumentNullException.ThrowIfNull(factory);
 
         ref var slot = ref ParserStates[parser.Index];
         if (slot is TState state)
@@ -679,7 +679,7 @@ public class InlineProcessor
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Emit(Inline inline)
     {
-        if (inline is null) ThrowHelper.ArgumentNullException(nameof(inline));
+        ArgumentNullException.ThrowIfNull(inline);
         if (inline.Parent is not null)
         {
             ThrowHelper.ArgumentException("Inline has already a parent", nameof(inline));
@@ -975,8 +975,8 @@ public class InlineProcessor
     [MemberNotNull(nameof(Document), nameof(Parsers), nameof(ParserStates))]
     private void Setup(MarkdownDocument document, InlineParserList parsers, bool preciseSourcelocation, MarkdownParserContext? context, bool trackTrivia)
     {
-        if (document is null) ThrowHelper.ArgumentNullException(nameof(document));
-        if (parsers is null) ThrowHelper.ArgumentNullException(nameof(parsers));
+        ArgumentNullException.ThrowIfNull(document);
+        ArgumentNullException.ThrowIfNull(parsers);
 
         Document = document;
         Parsers = parsers;

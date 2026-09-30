@@ -22,8 +22,7 @@ public struct LineReader
     /// <exception cref="ArgumentOutOfRangeException">bufferSize cannot be &lt;= 0</exception>
     public LineReader(string text)
     {
-        if (text is null)
-            ThrowHelper.ArgumentNullException_text();
+        ArgumentNullException.ThrowIfNull(text);
 
         _text = text;
         SourcePosition = 0;

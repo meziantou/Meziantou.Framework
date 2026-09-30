@@ -1744,11 +1744,9 @@ public class EmojiMapping
     /// </summary>
     public EmojiMapping(IDictionary<string, string> shortcodeToUnicode, IDictionary<string, string> smileyToShortcode)
     {
-        if (shortcodeToUnicode is null)
-            ThrowHelper.ArgumentNullException(nameof(shortcodeToUnicode));
+        ArgumentNullException.ThrowIfNull(shortcodeToUnicode);
 
-        if (smileyToShortcode is null)
-            ThrowHelper.ArgumentNullException(nameof(smileyToShortcode));
+        ArgumentNullException.ThrowIfNull(smileyToShortcode);
 
         // Build emojis and smileys CompactPrefixTree
 

@@ -20,7 +20,7 @@ public static class LinkReferenceDefinitionExtensions
     /// </summary>
     public static bool ContainsLinkReferenceDefinition(this MarkdownDocument document, string label)
     {
-        if (label is null) ThrowHelper.ArgumentNullException_label();
+        ArgumentNullException.ThrowIfNull(label);
         var references = document.GetData(DocumentKey) as LinkReferenceDefinitionGroup;
         if (references is null)
         {
@@ -34,7 +34,7 @@ public static class LinkReferenceDefinitionExtensions
     /// </summary>
     public static void SetLinkReferenceDefinition(this MarkdownDocument document, string label, LinkReferenceDefinition linkReferenceDefinition, bool addGroup)
     {
-        if (label is null) ThrowHelper.ArgumentNullException_label();
+        ArgumentNullException.ThrowIfNull(label);
         var references = document.GetLinkReferenceDefinitions(addGroup);
         references.Set(label, linkReferenceDefinition);
     }
@@ -44,7 +44,7 @@ public static class LinkReferenceDefinitionExtensions
     /// </summary>
     public static bool TryGetLinkReferenceDefinition(this MarkdownDocument document, string label, [NotNullWhen(true)] out LinkReferenceDefinition? linkReferenceDefinition)
     {
-        if (label is null) ThrowHelper.ArgumentNullException_label();
+        ArgumentNullException.ThrowIfNull(label);
         linkReferenceDefinition = null;
         var references = document.GetData(DocumentKey) as LinkReferenceDefinitionGroup;
         if (references is null)

@@ -26,36 +26,6 @@ internal static class ThrowHelper
     internal const int LargeDepthLimit = 10 * 1024;
 
     [DoesNotReturn]
-    public static void ArgumentNullException(string paramName) => throw new ArgumentNullException(paramName);
-
-    [DoesNotReturn]
-    public static void ArgumentNullException_item() => throw new ArgumentNullException("item");
-
-    [DoesNotReturn]
-    public static void ArgumentNullException_text() => throw new ArgumentNullException("text");
-
-    [DoesNotReturn]
-    public static void ArgumentNullException_label() => throw new ArgumentNullException("label");
-
-    [DoesNotReturn]
-    public static void ArgumentNullException_key() => throw new ArgumentNullException("key");
-
-    [DoesNotReturn]
-    public static void ArgumentNullException_name() => throw new ArgumentNullException("name");
-
-    [DoesNotReturn]
-    public static void ArgumentNullException_markdown() => throw new ArgumentNullException("markdown");
-
-    [DoesNotReturn]
-    public static void ArgumentNullException_writer() => throw new ArgumentNullException("writer");
-
-    [DoesNotReturn]
-    public static void ArgumentNullException_leafBlock() => throw new ArgumentNullException("leafBlock");
-
-    [DoesNotReturn]
-    public static void ArgumentNullException_markdownObject() => throw new ArgumentNullException("markdownObject");
-
-    [DoesNotReturn]
     public static void ArgumentException(string message) => throw new ArgumentException(message);
 
     [DoesNotReturn]
@@ -97,12 +67,6 @@ internal static class ThrowHelper
 
     [DoesNotReturn]
     private static void DepthLimitExceeded() => throw new ArgumentException("Markdown elements in the input are too deeply nested - depth limit exceeded. Input is most likely not sensible or is a very large table.");
-
-    [DoesNotReturn]
-    public static void ThrowArgumentNullException(ExceptionArgument argument)
-    {
-        throw new ArgumentNullException(argument.ToString());
-    }
 
     [DoesNotReturn]
     public static void ThrowArgumentException(ExceptionArgument argument, ExceptionReason reason)

@@ -374,7 +374,7 @@ public class HtmlRenderer : TextRendererBase<HtmlRenderer>
     /// <returns></returns>
     public HtmlRenderer WriteAttributes(MarkdownObject markdownObject)
     {
-        if (markdownObject is null) ThrowHelper.ArgumentNullException_markdownObject();
+        ArgumentNullException.ThrowIfNull(markdownObject);
         return WriteAttributes(markdownObject.TryGetAttributes());
     }
 
@@ -438,7 +438,7 @@ public class HtmlRenderer : TextRendererBase<HtmlRenderer>
     /// <returns>This instance</returns>
     public HtmlRenderer WriteLeafRawLines(LeafBlock leafBlock, bool writeEndOfLines, bool escape, bool softEscape = false)
     {
-        if (leafBlock is null) ThrowHelper.ArgumentNullException_leafBlock();
+        ArgumentNullException.ThrowIfNull(leafBlock);
 
         var slices = leafBlock.Lines.Lines;
         if (slices is not null)

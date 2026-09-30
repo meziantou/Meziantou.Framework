@@ -90,7 +90,7 @@ public class ContainerInline : Inline, IEnumerable<Inline>
     /// <exception cref="ArgumentException">Inline has already a parent</exception>
     public virtual ContainerInline AppendChild(Inline child)
     {
-        if (child is null) ThrowHelper.ArgumentNullException(nameof(child));
+        ArgumentNullException.ThrowIfNull(child);
         if (child.Parent != null)
         {
             ThrowHelper.ArgumentException("Inline has already a parent", nameof(child));
@@ -254,7 +254,7 @@ public class ContainerInline : Inline, IEnumerable<Inline>
     /// <exception cref="ArgumentNullException">Thrown if <paramref name="destination"/> is null.</exception>
     public void TransferChildrenTo(ContainerInline destination)
     {
-        if (destination is null) ThrowHelper.ArgumentNullException(nameof(destination));
+        ArgumentNullException.ThrowIfNull(destination);
 
         if (ReferenceEquals(this, destination))
         {
@@ -277,7 +277,7 @@ public class ContainerInline : Inline, IEnumerable<Inline>
     /// <param name="parent">The parent.</param>
     public void MoveChildrenAfter(Inline parent)
     {
-        if (parent is null) ThrowHelper.ArgumentNullException(nameof(parent));
+        ArgumentNullException.ThrowIfNull(parent);
         var child = FirstChild;
         var nextSibling = parent;
         while (child != null)
@@ -297,7 +297,7 @@ public class ContainerInline : Inline, IEnumerable<Inline>
     /// <exception cref="ArgumentNullException">If the container is null</exception>
     public void EmbraceChildrenBy(ContainerInline container)
     {
-        if (container is null) ThrowHelper.ArgumentNullException(nameof(container));
+        ArgumentNullException.ThrowIfNull(container);
         var child = FirstChild;
         while (child != null)
         {
@@ -500,7 +500,7 @@ public class ContainerInline : Inline, IEnumerable<Inline>
         /// </summary>
         public Enumerator(ContainerInline container) : this()
         {
-            if (container is null) ThrowHelper.ArgumentNullException(nameof(container));
+            ArgumentNullException.ThrowIfNull(container);
             this._container = container;
             _currentChild = _nextChild = container.FirstChild;
         }

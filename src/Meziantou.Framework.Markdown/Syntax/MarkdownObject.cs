@@ -171,7 +171,7 @@ public abstract class MarkdownObject : IMarkdownObject
 
         public void SetData(object key, object value)
         {
-            if (key is null) ThrowHelper.ArgumentNullException_key();
+            ArgumentNullException.ThrowIfNull(key);
 
             DataEntry[]? entries = _entries;
             int count = _count;
@@ -204,7 +204,7 @@ public abstract class MarkdownObject : IMarkdownObject
 
         public object? GetData(object key)
         {
-            if (key is null) ThrowHelper.ArgumentNullException_key();
+            ArgumentNullException.ThrowIfNull(key);
 
             DataEntry[]? entries = _entries;
             if (entries is null)
@@ -228,7 +228,7 @@ public abstract class MarkdownObject : IMarkdownObject
 
         public bool ContainsData(object key)
         {
-            if (key is null) ThrowHelper.ArgumentNullException_key();
+            ArgumentNullException.ThrowIfNull(key);
 
             DataEntry[]? entries = _entries;
             if (entries is null)
@@ -251,7 +251,7 @@ public abstract class MarkdownObject : IMarkdownObject
 
         public bool RemoveData(object key)
         {
-            if (key is null) ThrowHelper.ArgumentNullException_key();
+            ArgumentNullException.ThrowIfNull(key);
 
             DataEntry[]? entries = _entries;
             if (entries is null)

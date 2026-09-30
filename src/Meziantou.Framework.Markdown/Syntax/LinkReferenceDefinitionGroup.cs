@@ -38,7 +38,7 @@ public class LinkReferenceDefinitionGroup : ContainerBlock
     /// </summary>
     public void Set(string label, LinkReferenceDefinition link)
     {
-        if (link is null) ThrowHelper.ArgumentNullException(nameof(link));
+        ArgumentNullException.ThrowIfNull(link);
 
         if (!IsChild(link))
         {

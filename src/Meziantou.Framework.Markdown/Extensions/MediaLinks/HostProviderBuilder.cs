@@ -63,8 +63,7 @@ public static class HostProviderBuilder
     {
         if (string.IsNullOrEmpty(host))
             ThrowHelper.ArgumentException("host is null or empty.", nameof(host));
-        if (handler is null)
-            ThrowHelper.ArgumentNullException(nameof(handler));
+        ArgumentNullException.ThrowIfNull(handler);
 
         return new DelegateProvider(host, handler, allowFullScreen, iframeClass);
     }

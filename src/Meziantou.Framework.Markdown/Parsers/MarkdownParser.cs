@@ -25,7 +25,7 @@ public static class MarkdownParser
     /// <exception cref="ArgumentNullException">if reader variable is null</exception>
     public static MarkdownDocument Parse([StringSyntax("Markdown")] string text, MarkdownPipeline? pipeline = null, MarkdownParserContext? context = null)
     {
-        if (text is null) ThrowHelper.ArgumentNullException_text();
+        ArgumentNullException.ThrowIfNull(text);
 
         pipeline ??= MarkdownConverter.DefaultPipeline;
 

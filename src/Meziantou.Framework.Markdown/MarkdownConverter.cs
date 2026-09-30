@@ -59,7 +59,7 @@ public static class MarkdownConverter
     /// <returns>A normalized markdown text.</returns>
     public static MarkdownDocument Normalize([StringSyntax("Markdown")] string markdown, TextWriter writer, NormalizeOptions? options = null, MarkdownPipeline? pipeline = null, MarkdownParserContext? context = null)
     {
-        if (markdown is null) ThrowHelper.ArgumentNullException_markdown();
+        ArgumentNullException.ThrowIfNull(markdown);
 
         pipeline = GetPipeline(pipeline);
 
@@ -84,7 +84,7 @@ public static class MarkdownConverter
     /// <exception cref="ArgumentNullException">If <paramref name="markdown"/> is null.</exception>
     public static string ToHtml([StringSyntax("Markdown")] string markdown, MarkdownPipeline? pipeline = null, MarkdownParserContext? context = null)
     {
-        if (markdown is null) ThrowHelper.ArgumentNullException_markdown();
+        ArgumentNullException.ThrowIfNull(markdown);
 
         pipeline = GetPipeline(pipeline);
 
@@ -102,7 +102,7 @@ public static class MarkdownConverter
     /// <exception cref="ArgumentNullException">If <paramref name="document"/> is null.</exception>
     public static string ToHtml(this MarkdownDocument document, MarkdownPipeline? pipeline = null)
     {
-        if (document is null) ThrowHelper.ArgumentNullException(nameof(document));
+        ArgumentNullException.ThrowIfNull(document);
 
         pipeline ??= DefaultPipeline;
 
@@ -124,8 +124,8 @@ public static class MarkdownConverter
     /// <exception cref="ArgumentNullException">If <paramref name="document"/> is null.</exception>
     public static void ToHtml(this MarkdownDocument document, TextWriter writer, MarkdownPipeline? pipeline = null)
     {
-        if (document is null) ThrowHelper.ArgumentNullException(nameof(document));
-        if (writer is null) ThrowHelper.ArgumentNullException_writer();
+        ArgumentNullException.ThrowIfNull(document);
+        ArgumentNullException.ThrowIfNull(writer);
 
         pipeline ??= DefaultPipeline;
 
@@ -147,8 +147,8 @@ public static class MarkdownConverter
     /// <exception cref="ArgumentNullException">if reader or writer variable are null</exception>
     public static MarkdownDocument ToHtml([StringSyntax("Markdown")] string markdown, TextWriter writer, MarkdownPipeline? pipeline = null, MarkdownParserContext? context = null)
     {
-        if (markdown is null) ThrowHelper.ArgumentNullException_markdown();
-        if (writer is null) ThrowHelper.ArgumentNullException_writer();
+        ArgumentNullException.ThrowIfNull(markdown);
+        ArgumentNullException.ThrowIfNull(writer);
 
         pipeline = GetPipeline(pipeline);
 
@@ -169,8 +169,8 @@ public static class MarkdownConverter
     /// <exception cref="ArgumentNullException">if markdown or writer variable are null</exception>
     public static object Convert([StringSyntax("Markdown")] string markdown, IMarkdownRenderer renderer, MarkdownPipeline? pipeline = null, MarkdownParserContext? context = null)
     {
-        if (markdown is null) ThrowHelper.ArgumentNullException_markdown();
-        if (renderer is null) ThrowHelper.ArgumentNullException(nameof(renderer));
+        ArgumentNullException.ThrowIfNull(markdown);
+        ArgumentNullException.ThrowIfNull(renderer);
 
         pipeline = GetPipeline(pipeline);
 
@@ -189,7 +189,7 @@ public static class MarkdownConverter
     /// <exception cref="ArgumentNullException">if markdown variable is null</exception>
     public static MarkdownDocument Parse([StringSyntax("Markdown")] string markdown, bool trackTrivia = false)
     {
-        if (markdown is null) ThrowHelper.ArgumentNullException_markdown();
+        ArgumentNullException.ThrowIfNull(markdown);
 
         MarkdownPipeline? pipeline = trackTrivia ? DefaultTrackTriviaPipeline : null;
 
@@ -206,7 +206,7 @@ public static class MarkdownConverter
     /// <exception cref="ArgumentNullException">if markdown variable is null</exception>
     public static MarkdownDocument Parse([StringSyntax("Markdown")] string markdown, MarkdownPipeline? pipeline, MarkdownParserContext? context = null)
     {
-        if (markdown is null) ThrowHelper.ArgumentNullException_markdown();
+        ArgumentNullException.ThrowIfNull(markdown);
 
         pipeline = GetPipeline(pipeline);
 
@@ -224,8 +224,8 @@ public static class MarkdownConverter
     /// <exception cref="ArgumentNullException">if reader or writer variable are null</exception>
     public static MarkdownDocument ToPlainText([StringSyntax("Markdown")] string markdown, TextWriter writer, MarkdownPipeline? pipeline = null, MarkdownParserContext? context = null)
     {
-        if (markdown is null) ThrowHelper.ArgumentNullException_markdown();
-        if (writer is null) ThrowHelper.ArgumentNullException_writer();
+        ArgumentNullException.ThrowIfNull(markdown);
+        ArgumentNullException.ThrowIfNull(writer);
 
         pipeline = GetPipeline(pipeline);
 
@@ -256,7 +256,7 @@ public static class MarkdownConverter
     /// <exception cref="ArgumentNullException">if markdown variable is null</exception>
     public static string ToPlainText([StringSyntax("Markdown")] string markdown, MarkdownPipeline? pipeline = null, MarkdownParserContext? context = null)
     {
-        if (markdown is null) ThrowHelper.ArgumentNullException_markdown();
+        ArgumentNullException.ThrowIfNull(markdown);
         using var writer = new StringWriter();
         ToPlainText(markdown, writer, pipeline, context);
         return writer.ToString();

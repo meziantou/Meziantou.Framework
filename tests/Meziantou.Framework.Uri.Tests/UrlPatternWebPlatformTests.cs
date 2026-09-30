@@ -5,8 +5,8 @@ using System.Text.Json;
 namespace Meziantou.Framework.Tests;
 
 /// <summary>
-/// Runs the URL Pattern conformance corpus of the web-platform-tests project.
-/// See <c>files/urlpatterntestdata.LICENSE.md</c> for its source and its license.
+/// Runs the URL Pattern and the URL conformance corpora of the web-platform-tests project.
+/// See <c>files/urlpatterntestdata.LICENSE.md</c> and <c>files/urltestdata.LICENSE.md</c> for their source and their license.
 /// </summary>
 public sealed class UrlPatternWebPlatformTests
 {
@@ -22,10 +22,14 @@ public sealed class UrlPatternWebPlatformTests
         [353] = @"/([\d&&[0-1]])",
     }.ToFrozenDictionary();
 
-    public static TheoryData<int> TestCaseIndexes()
+    public static TheoryData<int> TestCaseIndexes() => CreateIndexes(TestCases.Length);
+
+    public static TheoryData<int> UrlParserTestCaseIndexes() => CreateIndexes(UrlParserTestCases.Length);
+
+    private static TheoryData<int> CreateIndexes(int count)
     {
         var data = new TheoryData<int>();
-        for (var i = 0; i < TestCases.Length; i++)
+        for (var i = 0; i < count; i++)
         {
             data.Add(i);
         }
@@ -33,11 +37,14 @@ public sealed class UrlPatternWebPlatformTests
         return data;
     }
 
-    private static readonly JsonElement[] TestCases = LoadTestCases();
+    private static readonly JsonElement[] TestCases = LoadTestCases("urlpatterntestdata.json");
 
-    private static JsonElement[] LoadTestCases()
+    // The corpus separates its cases with comments, which are plain strings
+    private static readonly JsonElement[] UrlParserTestCases = [.. LoadTestCases("urltestdata.json").Where(element => element.ValueKind is JsonValueKind.Object)];
+
+    private static JsonElement[] LoadTestCases(string resourceName)
     {
-        using var stream = typeof(UrlPatternWebPlatformTests).GetTypeInfo().Assembly.GetManifestResourceStream("urlpatterntestdata.json");
+        using var stream = typeof(UrlPatternWebPlatformTests).GetTypeInfo().Assembly.GetManifestResourceStream(resourceName);
         Assert.NotNull(stream);
 
         using var document = JsonDocument.Parse(stream);
@@ -65,6 +72,82 @@ public sealed class UrlPatternWebPlatformTests
         // The failure carries the case with it, so that the assertion says which one it was
         Assert.Null(failure is null ? null : $"{testCase.GetProperty("pattern").GetRawText()}: {failure}");
     }
+
+    /// <summary>Checks the URL parser that the inputs of <see cref="UrlPattern.Match(string, string?)"/> go through.</summary>
+    /// <remarks>
+    /// A pattern made only of wildcards matches every URL, and the result reports each component of the URL as
+    /// it was parsed, which is how the parser is observed here.
+    /// </remarks>
+    [Theory]
+    [MemberData(nameof(UrlParserTestCaseIndexes))]
+    public void UrlParserTestSuite(int index)
+    {
+        var testCase = UrlParserTestCases[index];
+        var failure = RunUrlParserCase(testCase);
+
+        Assert.Null(failure is null ? null : $"{testCase.GetProperty("input").GetRawText()}: {failure}");
+    }
+
+    private static string? RunUrlParserCase(JsonElement testCase)
+    {
+        var input = ReadString(testCase.GetProperty("input"));
+        var baseUrl = testCase.TryGetProperty("base", out var baseElement) && baseElement.ValueKind is JsonValueKind.String ? ReadString(baseElement) : null;
+
+#if INVARIANT_GLOBALIZATION_MODE_ENABLED
+        // Without ICU, IdnMapping encodes a label to Punycode without applying the UTS #46 mapping first, so a
+        // host that is not ASCII cannot be canonicalized the way a browser does it
+        if (MayContainNonAsciiHost(input) || (baseUrl is not null && MayContainNonAsciiHost(baseUrl)))
+            global::Xunit.Assert.Skip("A host that is not ASCII needs ICU");
+#endif
+
+        var result = UrlPattern.Create(new UrlPatternInit()).Match(input, baseUrl);
+
+        if (testCase.TryGetProperty("failure", out var failure) && failure.GetBoolean())
+            return result is null ? null : "the URL was expected not to parse";
+
+        if (result is null)
+            return "the URL was expected to parse";
+
+        // The corpus uses the getters of the URL class, which add the delimiter of a component that has one
+        var failures = new List<string>();
+        Compare("protocol", result.Protocol.Input, ReadString(testCase.GetProperty("protocol")).TrimEnd(':'));
+        Compare("username", result.Username.Input, ReadString(testCase.GetProperty("username")));
+        Compare("password", result.Password.Input, ReadString(testCase.GetProperty("password")));
+        Compare("hostname", result.Hostname.Input, ReadString(testCase.GetProperty("hostname")));
+        Compare("port", result.Port.Input, ReadString(testCase.GetProperty("port")));
+        Compare("pathname", result.Pathname.Input, ReadString(testCase.GetProperty("pathname")));
+        Compare("search", result.Search.Input, RemovePrefix(ReadString(testCase.GetProperty("search")), '?'));
+        Compare("hash", result.Hash.Input, RemovePrefix(ReadString(testCase.GetProperty("hash")), '#'));
+
+        return failures.Count is 0 ? null : string.Join("; ", failures);
+
+        void Compare(string component, string actual, string expected)
+        {
+            if (actual != expected)
+            {
+                failures.Add($"{component} is '{actual}' instead of '{expected}'");
+            }
+        }
+
+        static string RemovePrefix(string value, char prefix) => value.StartsWith(prefix, StringComparison.Ordinal) ? value[1..] : value;
+    }
+
+#if INVARIANT_GLOBALIZATION_MODE_ENABLED
+    /// <summary>Determines whether a URL has a code point that is not ASCII, written as is or percent-encoded, anywhere in it.</summary>
+    private static bool MayContainNonAsciiHost(string url)
+    {
+        if (!Ascii.IsValid(url))
+            return true;
+
+        for (var i = 0; i + 2 < url.Length; i++)
+        {
+            if (url[i] is '%' && url[i + 1] is (>= '8' and <= '9') or (>= 'a' and <= 'f') or (>= 'A' and <= 'F') && char.IsAsciiHexDigit(url[i + 2]))
+                return true;
+        }
+
+        return false;
+    }
+#endif
 
     /// <summary>Runs one case and returns what went wrong, or <see langword="null"/> when it passed.</summary>
     private static string? Run(JsonElement testCase)

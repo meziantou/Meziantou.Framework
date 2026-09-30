@@ -1605,8 +1605,9 @@ public sealed class UrlPatternTests
     [InlineData("/a\\`b", "/a%60b")]
     [InlineData("/a\\?b", "/a%3Fb")]
     [InlineData("/a\\#b", "/a%23b")]
-    // "^" and "|" are not in the set, so they stay as written
-    [InlineData("/a^b|c", "/a^b|c")]
+    [InlineData("/a^b", "/a%5Eb")]
+    // "|" is not in the set, so it stays as written
+    [InlineData("/a|b", "/a|b")]
     // An escape that is already present is not encoded a second time
     [InlineData("/path%20with%20spaces", "/path%20with%20spaces")]
     public void Create_Pathname_IsPercentEncoded(string pathname, string expected)
@@ -1904,6 +1905,16 @@ public sealed class UrlPatternTests
     }
 
     [Fact]
+    public void Match_SpecialSchemeWithoutSlashes_ReportsTheAuthority()
+    {
+        // The URL Standard reads "https:example.com/books" as "https://example.com/books", which Uri rejects
+        var result = UrlPattern.Create("https://example.com/books").Match("https:example.com/books");
+        Assert.NotNull(result);
+        Assert.Equal("example.com", result.Hostname.Input);
+        Assert.Equal("/books", result.Pathname.Input);
+    }
+
+    [Fact]
     public void IsMatch_SpecialSchemeWithoutSlashes_ParsesTheAuthority()
     {
         var pattern = UrlPattern.Create(@"https\:foo\:bar@example.com");
@@ -1928,6 +1939,74 @@ public sealed class UrlPatternTests
         Assert.False(pattern.IsMatch("foo", "data:data-urls-cannot-be-base-urls"));
         Assert.False(pattern.IsMatch("/foo", "data:data-urls-cannot-be-base-urls"));
         Assert.True(pattern.IsMatch("https://example.com/foo", "data:data-urls-cannot-be-base-urls"));
+
+        // A fragment is the only thing that can be resolved against such a base URL
+        Assert.True(pattern.IsMatch("#foo", "data:text"));
+    }
+
+    [Theory]
+    [InlineData("http://0x7f.1/")]
+    [InlineData("http://127.1/")]
+    [InlineData("http://2130706433/")]
+    [InlineData("http://0177.0.0.1/")]
+    public void IsMatch_ShorthandIPv4Address_IsNormalized(string url)
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit { Hostname = "127.0.0.1" });
+
+        var result = pattern.Match(url);
+
+        Assert.NotNull(result);
+        Assert.Equal("127.0.0.1", result.Hostname.Input);
+    }
+
+    [Fact]
+    public void Create_IPv4AddressPattern_IsNotNormalized()
+    {
+        // The parts of a pattern are canonicalized one at a time, and normalizing "192.168." on its own would
+        // turn it into "192.0.0.168"
+        var pattern = UrlPattern.Create(new UrlPatternInit { Hostname = "192.168.*.1" });
+
+        Assert.Equal("192.168.*.1", pattern.Hostname);
+        Assert.True(pattern.IsMatch("http://192.168.5.1/"));
+    }
+
+    [Fact]
+    public void IsMatch_PercentEncodedUnreservedCodePoint_IsNotDecoded()
+    {
+        Assert.True(UrlPattern.Create(new UrlPatternInit { Pathname = "/%41" }).IsMatch("https://example.com/%41"));
+        Assert.False(UrlPattern.Create(new UrlPatternInit { Pathname = "/A" }).IsMatch("https://example.com/%41"));
+    }
+
+    [Fact]
+    public void IsMatch_UriResolvedAgainstABaseUri_Matches()
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit { Pathname = "/books/:id" });
+        var uri = new System.Uri(new System.Uri("https://example.com/books/"), "123");
+
+        Assert.True(pattern.IsMatch(uri));
+        Assert.Equal("123", pattern.Match(uri)?.Pathname.Groups["id"]);
+    }
+
+    [Fact]
+    public void MatchAndIsMatch_RelativeUri_ReportNoMatch()
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit { Pathname = "*" });
+        var uri = new System.Uri("/books/123", UriKind.Relative);
+
+        Assert.False(pattern.IsMatch(uri));
+        Assert.Null(pattern.Match(uri));
+    }
+
+    [Fact]
+    public void Match_UriWrittenAsAFilePath_UsesTheFileScheme()
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit { Protocol = "file", Pathname = "*/file.txt" });
+        var uri = new System.Uri(Path.Combine(Path.GetTempPath(), "file.txt"));
+
+        var result = pattern.Match(uri);
+
+        Assert.NotNull(result);
+        Assert.Equal("file", result.Protocol.Input);
     }
 
     [Fact]

@@ -20,9 +20,9 @@ internal enum PercentEncodeSet
     /// <summary>The query set, plus '\''. Used for the query of a URL with a special scheme.</summary>
     SpecialQuery,
 
-    /// <summary>The query set, plus '?', '`', '{' and '}'.</summary>
+    /// <summary>The query set, plus '?', '^', '`', '{' and '}'.</summary>
     Path,
 
-    /// <summary>The path set, plus '/', ':', ';', '=', '@', '[', '\\', ']', '^' and '|'.</summary>
+    /// <summary>The path set, plus '/', ':', ';', '=', '@', '[', '\\', ']' and '|'.</summary>
     UserInfo,
 }

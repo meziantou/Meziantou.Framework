@@ -22,9 +22,9 @@ public sealed class EmphasisDescriptor
     /// <param name="enableWithinWord">if set to <c>true</c> the emphasis can be used inside a word.</param>
     public EmphasisDescriptor(char character, int minimumCount, int maximumCount, bool enableWithinWord)
     {
-        if (minimumCount < 1) ThrowHelper.ArgumentOutOfRangeException(nameof(minimumCount), "minimumCount must be >= 1");
-        if (maximumCount < 1) ThrowHelper.ArgumentOutOfRangeException(nameof(maximumCount), "maximumCount must be >= 1");
-        if (minimumCount > maximumCount) ThrowHelper.ArgumentOutOfRangeException(nameof(minimumCount), "minimumCount must be <= maximumCount");
+        ArgumentOutOfRangeException.ThrowIfLessThan(minimumCount, 1);
+        ArgumentOutOfRangeException.ThrowIfLessThan(maximumCount, 1);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(minimumCount, maximumCount);
 
         Character = character;
         MinimumCount = minimumCount;

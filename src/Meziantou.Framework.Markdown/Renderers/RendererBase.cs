@@ -115,7 +115,7 @@ public abstract class RendererBase : IMarkdownRenderer
         get => _maximumNestingDepth;
         set
         {
-            if (value <= 0) ThrowHelper.ArgumentOutOfRangeException("The maximum nesting depth must be greater than zero.", nameof(value));
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
 
             _maximumNestingDepth = value;
         }

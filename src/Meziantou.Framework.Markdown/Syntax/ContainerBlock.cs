@@ -328,10 +328,8 @@ public abstract class ContainerBlock : Block, IList<Block>, IReadOnlyList<Block>
         {
             ThrowHelper.ArgumentException("Cannot add this block as it as already attached to another container (block.Parent != null)");
         }
-        if ((uint)index > (uint)Count)
-        {
-            ThrowHelper.ArgumentOutOfRangeException_index();
-        }
+        ArgumentOutOfRangeException.ThrowIfNegative(index);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(index, Count);
 
         if (index == Count)
         {
@@ -354,8 +352,8 @@ public abstract class ContainerBlock : Block, IList<Block>, IReadOnlyList<Block>
     /// </summary>
     public void RemoveAt(int index)
     {
-        if ((uint)index >= (uint)Count)
-            ThrowHelper.ArgumentOutOfRangeException_index();
+        ArgumentOutOfRangeException.ThrowIfNegative(index);
+        ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, Count);
 
         _children[PhysicalIndex(index)].Block.Parent = null;
         if (_gapLength == 0)

@@ -32,15 +32,6 @@ internal static class ThrowHelper
     public static void ArgumentException(string message, string paramName) => throw new ArgumentException(message, paramName);
 
     [DoesNotReturn]
-    public static void ArgumentOutOfRangeException(string paramName) => throw new ArgumentOutOfRangeException(paramName);
-
-    [DoesNotReturn]
-    public static void ArgumentOutOfRangeException(string message, string paramName) => throw new ArgumentOutOfRangeException(paramName, message);
-
-    [DoesNotReturn]
-    public static void ArgumentOutOfRangeException_index() => throw new ArgumentOutOfRangeException("index");
-
-    [DoesNotReturn]
     public static void InvalidOperationException(string message) => throw new InvalidOperationException(message);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -72,12 +63,6 @@ internal static class ThrowHelper
     public static void ThrowArgumentException(ExceptionArgument argument, ExceptionReason reason)
     {
         throw new ArgumentException(argument.ToString(), GetExceptionReason(reason));
-    }
-
-    [DoesNotReturn]
-    public static void ThrowArgumentOutOfRangeException(ExceptionArgument argument, ExceptionReason reason)
-    {
-        throw new ArgumentOutOfRangeException(argument.ToString(), GetExceptionReason(reason));
     }
 
     [DoesNotReturn]

@@ -26,14 +26,14 @@ public struct StringLineGroup : IEnumerable
     /// <param name="capacity"></param>
     public StringLineGroup(int capacity)
     {
-        if (capacity <= 0) ThrowHelper.ArgumentOutOfRangeException(nameof(capacity));
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(capacity);
         Lines = Pool.Rent(capacity);
         Count = 0;
     }
 
     internal StringLineGroup(int capacity, bool willRelease)
     {
-        if (capacity <= 0) ThrowHelper.ArgumentOutOfRangeException(nameof(capacity));
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(capacity);
         Lines = Pool.Rent(willRelease ? Math.Max(8, capacity) : capacity);
         Count = 0;
     }
@@ -585,7 +585,7 @@ public struct StringLineGroup : IEnumerable
         /// </summary>
         public readonly char PeekChar(int offset)
         {
-            if (offset < 0) ThrowHelper.ArgumentOutOfRangeException("Negative offset are not supported for StringLineGroup", nameof(offset));
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
 
             if (Start + offset > End)
             {

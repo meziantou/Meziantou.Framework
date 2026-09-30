@@ -102,8 +102,7 @@ internal sealed class CompactPrefixTree<TValue> : IReadOnlyDictionary<string, TV
         }
         set
         {
-            if (value < TreeSize)
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.value, ExceptionReason.SmallCapacity);
+            ArgumentOutOfRangeException.ThrowIfLessThan(value, TreeSize);
 
             if (value != TreeSize)
             {
@@ -151,8 +150,7 @@ internal sealed class CompactPrefixTree<TValue> : IReadOnlyDictionary<string, TV
         }
         set
         {
-            if (value < Count)
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.value, ExceptionReason.SmallCapacity);
+            ArgumentOutOfRangeException.ThrowIfLessThan(value, Count);
 
             if (value != Count)
             {
@@ -204,8 +202,7 @@ internal sealed class CompactPrefixTree<TValue> : IReadOnlyDictionary<string, TV
         }
         set
         {
-            if (value < _childrenIndex)
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.value, ExceptionReason.SmallCapacity);
+            ArgumentOutOfRangeException.ThrowIfLessThan(value, _childrenIndex);
 
             if (value != _childrenIndex)
             {
@@ -425,8 +422,7 @@ internal sealed class CompactPrefixTree<TValue> : IReadOnlyDictionary<string, TV
     private bool TryInsert(in KeyValuePair<string, TValue> pair, InsertionBehavior behavior)
     {
         string key = pair.Key;
-        ArgumentNullException.ThrowIfNull(key, nameof(pair));
-        if (key.Length == 0) ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.key, ExceptionReason.String_Empty);
+        ArgumentException.ThrowIfNullOrEmpty(key, nameof(pair));
         Debug.Assert(!string.IsNullOrEmpty(key));
 
         char rootChar = key[0];

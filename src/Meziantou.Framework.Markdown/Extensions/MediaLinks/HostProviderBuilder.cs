@@ -61,8 +61,7 @@ public static class HostProviderBuilder
     /// <returns>A <see cref="IHostProvider"/> with delegate handler.</returns>
     public static IHostProvider Create(string host, Func<Uri, string?> handler, bool allowFullScreen = true, string? iframeClass = null)
     {
-        if (string.IsNullOrEmpty(host))
-            ThrowHelper.ArgumentException("host is null or empty.", nameof(host));
+        ArgumentException.ThrowIfNullOrEmpty(host);
         ArgumentNullException.ThrowIfNull(handler);
 
         return new DelegateProvider(host, handler, allowFullScreen, iframeClass);

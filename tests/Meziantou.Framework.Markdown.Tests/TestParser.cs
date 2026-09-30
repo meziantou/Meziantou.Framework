@@ -95,19 +95,9 @@ public class TestParser
         // With trivia, every example must be written back exactly as it was parsed
         foreach (var builder in GetPipelineBuilders(extensions))
         {
-            if (builder.Value.Extensions.Any(extension => ExtensionsWithoutRoundtrip.Contains(extension.GetType())))
-            {
-                continue;
-            }
-
             TestRoundtrip.RoundTrip(inputText, builder.Value, context: context + $"Roundtrip with extensions: {builder.Key}");
         }
     }
-
-    // The extensions that do not write their syntax back yet, so the examples that use them are not round-tripped
-    private static readonly HashSet<Type> ExtensionsWithoutRoundtrip =
-    [
-    ];
 
     /// <summary>
     /// Makes the inline processor track the chain of open containers, and the emphasis parser track the openers bottoms, from

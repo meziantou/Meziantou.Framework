@@ -51,7 +51,7 @@ public abstract class ObjectCache<T> where T : class
     /// <exception cref="ArgumentNullException">if instance is null</exception>
     public void Release(T instance)
     {
-        if (instance is null) ThrowHelper.ArgumentNullException(nameof(instance));
+        ArgumentNullException.ThrowIfNull(instance);
         Reset(instance);
         _builders.Enqueue(instance);
     }

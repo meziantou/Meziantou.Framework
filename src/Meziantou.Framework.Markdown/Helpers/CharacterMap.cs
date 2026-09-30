@@ -25,7 +25,7 @@ public sealed class CharacterMap<T> where T : class
     /// <exception cref="ArgumentNullException"></exception>
     public CharacterMap(IEnumerable<KeyValuePair<char, T>> maps)
     {
-        if (maps is null) ThrowHelper.ArgumentNullException(nameof(maps));
+        ArgumentNullException.ThrowIfNull(maps);
 
         var charSet = new HashSet<char>();
 

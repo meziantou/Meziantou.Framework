@@ -27,9 +27,9 @@ public static class AbbreviationHelper
     /// </summary>
     public static void AddAbbreviation(this MarkdownDocument document, string label, Abbreviation abbr)
     {
-        if (document is null) ThrowHelper.ArgumentNullException(nameof(document));
-        if (label is null) ThrowHelper.ArgumentNullException_label();
-        if (abbr is null) ThrowHelper.ArgumentNullException(nameof(abbr));
+        ArgumentNullException.ThrowIfNull(document);
+        ArgumentNullException.ThrowIfNull(label);
+        ArgumentNullException.ThrowIfNull(abbr);
 
         var map = document.GetAbbreviations();
         if (map is null)

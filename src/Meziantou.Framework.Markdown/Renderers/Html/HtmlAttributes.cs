@@ -42,7 +42,7 @@ public class HtmlAttributes : MarkdownObject
     /// <param name="name">The css class name.</param>
     public void AddClass(string name)
     {
-        if (name is null) ThrowHelper.ArgumentNullException_name();
+        ArgumentNullException.ThrowIfNull(name);
 
         Classes ??= new (2);// Use half list compare to default capacity (4), as we don't expect lots of classes
 
@@ -59,7 +59,7 @@ public class HtmlAttributes : MarkdownObject
     /// <param name="value">The value.</param>
     public void AddProperty(string name, string value)
     {
-        if (name is null) ThrowHelper.ArgumentNullException_name();
+        ArgumentNullException.ThrowIfNull(name);
 
         Properties ??= new (2); // Use half list compare to default capacity (4), as we don't expect lots of classes
 
@@ -73,7 +73,7 @@ public class HtmlAttributes : MarkdownObject
     /// <param name="value">The value.</param>
     public void AddPropertyIfNotExist(string name, object? value)
     {
-        if (name is null) ThrowHelper.ArgumentNullException_name();
+        ArgumentNullException.ThrowIfNull(name);
         if (Properties is null)
         {
             Properties = new (4);
@@ -101,7 +101,7 @@ public class HtmlAttributes : MarkdownObject
     /// <exception cref="ArgumentNullException"></exception>
     public void CopyTo(HtmlAttributes htmlAttributes, bool mergeIdAndProperties = false, bool shared = true)
     {
-        if (htmlAttributes is null) ThrowHelper.ArgumentNullException(nameof(htmlAttributes));
+        ArgumentNullException.ThrowIfNull(htmlAttributes);
         // Add html htmlAttributes to the object
         if (!mergeIdAndProperties || Id != null)
         {

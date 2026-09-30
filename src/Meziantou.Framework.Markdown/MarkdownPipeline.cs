@@ -27,8 +27,8 @@ public sealed class MarkdownPipeline
         TextWriter? debugLog,
         ProcessDocumentDelegate? documentProcessed)
     {
-        if (blockParsers is null) ThrowHelper.ArgumentNullException(nameof(blockParsers));
-        if (inlineParsers is null) ThrowHelper.ArgumentNullException(nameof(inlineParsers));
+        ArgumentNullException.ThrowIfNull(blockParsers);
+        ArgumentNullException.ThrowIfNull(inlineParsers);
         // Add all default parsers
         Extensions = extensions;
         BlockParsers = blockParsers;
@@ -79,7 +79,7 @@ public sealed class MarkdownPipeline
     /// <param name="renderer">The markdown renderer to setup</param>
     public void Setup(IMarkdownRenderer renderer)
     {
-        if (renderer is null) ThrowHelper.ArgumentNullException(nameof(renderer));
+        ArgumentNullException.ThrowIfNull(renderer);
         if (renderer is RendererBase rendererBase)
         {
             rendererBase.MaximumNestingDepth = MaximumNestingDepth;

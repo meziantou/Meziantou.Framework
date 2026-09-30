@@ -52,7 +52,7 @@ public class RoundtripRenderer : TextRendererBase<RoundtripRenderer>
     /// <param name="leafBlock">The leaf block.</param>
     public void WriteLeafRawLines(LeafBlock leafBlock)
     {
-        if (leafBlock is null) ThrowHelper.ArgumentNullException_leafBlock();
+        ArgumentNullException.ThrowIfNull(leafBlock);
         if (leafBlock.Lines.Lines != null)
         {
             var lines = leafBlock.Lines;

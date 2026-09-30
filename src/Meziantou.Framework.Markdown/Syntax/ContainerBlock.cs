@@ -81,8 +81,7 @@ public abstract class ContainerBlock : Block, IList<Block>, IReadOnlyList<Block>
     /// </summary>
     public void Add(Block item)
     {
-        if (item is null)
-            ThrowHelper.ArgumentNullException_item();
+        ArgumentNullException.ThrowIfNull(item);
 
         if (item.Parent != null)
         {
@@ -220,10 +219,7 @@ public abstract class ContainerBlock : Block, IList<Block>, IReadOnlyList<Block>
     /// </remarks>
     public void TransferChildrenTo(ContainerBlock destination)
     {
-        if (destination is null)
-        {
-            ThrowHelper.ArgumentNullException(nameof(destination));
-        }
+        ArgumentNullException.ThrowIfNull(destination);
 
         if (ReferenceEquals(this, destination))
         {
@@ -281,8 +277,7 @@ public abstract class ContainerBlock : Block, IList<Block>, IReadOnlyList<Block>
 
     internal int LastIndexOf(Block item)
     {
-        if (item is null)
-            ThrowHelper.ArgumentNullException_item();
+        ArgumentNullException.ThrowIfNull(item);
 
         for (int i = Count - 1; i >= 0; i--)
         {
@@ -310,8 +305,7 @@ public abstract class ContainerBlock : Block, IList<Block>, IReadOnlyList<Block>
     /// </summary>
     public int IndexOf(Block item)
     {
-        if (item is null)
-            ThrowHelper.ArgumentNullException_item();
+        ArgumentNullException.ThrowIfNull(item);
 
         for (int i = 0; i < Count; i++)
         {
@@ -328,8 +322,7 @@ public abstract class ContainerBlock : Block, IList<Block>, IReadOnlyList<Block>
     /// </summary>
     public void Insert(int index, Block item)
     {
-        if (item is null)
-            ThrowHelper.ArgumentNullException_item();
+        ArgumentNullException.ThrowIfNull(item);
 
         if (item.Parent != null)
         {
@@ -403,8 +396,7 @@ public abstract class ContainerBlock : Block, IList<Block>, IReadOnlyList<Block>
         {
             if ((uint)index >= (uint)Count) ThrowHelper.ThrowIndexOutOfRangeException();
 
-            if (value is null)
-                ThrowHelper.ArgumentNullException_item();
+            ArgumentNullException.ThrowIfNull(value);
 
             if (value.Parent != null)
                 ThrowHelper.ArgumentException("Cannot add this block as it as already attached to another container (block.Parent != null)");
@@ -539,7 +531,7 @@ public abstract class ContainerBlock : Block, IList<Block>, IReadOnlyList<Block>
     /// </summary>
     public void Sort(IComparer<Block> comparer)
     {
-        if (comparer is null) ThrowHelper.ArgumentNullException(nameof(comparer));
+        ArgumentNullException.ThrowIfNull(comparer);
         CloseGap();
         Array.Sort(_children, 0, Count, new BlockComparerWrapper(comparer));
     }
@@ -549,7 +541,7 @@ public abstract class ContainerBlock : Block, IList<Block>, IReadOnlyList<Block>
     /// </summary>
     public void Sort(Comparison<Block> comparison)
     {
-        if (comparison is null) ThrowHelper.ArgumentNullException(nameof(comparison));
+        ArgumentNullException.ThrowIfNull(comparison);
         CloseGap();
         Array.Sort(_children, 0, Count, new BlockComparisonWrapper(comparison));
     }

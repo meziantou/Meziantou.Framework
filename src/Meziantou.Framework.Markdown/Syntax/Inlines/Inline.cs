@@ -83,7 +83,7 @@ public abstract class Inline : MarkdownObject, IInline
     /// <exception cref="ArgumentException">Inline has already a parent</exception>
     public void InsertAfter(Inline next)
     {
-        if (next is null) ThrowHelper.ArgumentNullException(nameof(next));
+        ArgumentNullException.ThrowIfNull(next);
         if (next.Parent != null)
         {
             ThrowHelper.ArgumentException("Inline has already a parent", nameof(next));
@@ -114,7 +114,7 @@ public abstract class Inline : MarkdownObject, IInline
     /// <exception cref="ArgumentException">Inline has already a parent</exception>
     public void InsertBefore(Inline previous)
     {
-        if (previous is null) ThrowHelper.ArgumentNullException(nameof(previous));
+        ArgumentNullException.ThrowIfNull(previous);
         if (previous.Parent != null)
         {
             ThrowHelper.ArgumentException("Inline has already a parent", nameof(previous));
@@ -171,7 +171,7 @@ public abstract class Inline : MarkdownObject, IInline
     /// <exception cref="ArgumentNullException">If inline is null</exception>
     public Inline ReplaceBy(Inline inline, bool copyChildren = true)
     {
-        if (inline is null) ThrowHelper.ArgumentNullException(nameof(inline));
+        ArgumentNullException.ThrowIfNull(inline);
 
         // Save sibling
         var parent = Parent;
@@ -422,7 +422,7 @@ public abstract class Inline : MarkdownObject, IInline
     /// <exception cref="ArgumentNullException"></exception>
     public void DumpTo(TextWriter writer)
     {
-        if (writer is null) ThrowHelper.ArgumentNullException_writer();
+        ArgumentNullException.ThrowIfNull(writer);
         DumpTo(writer, 0);
     }
 
@@ -434,7 +434,7 @@ public abstract class Inline : MarkdownObject, IInline
     /// <exception cref="ArgumentNullException">if writer is null</exception>
     public void DumpTo(TextWriter writer, int level)
     {
-        if (writer is null) ThrowHelper.ArgumentNullException_writer();
+        ArgumentNullException.ThrowIfNull(writer);
         for (int i = 0; i < level; i++)
         {
             writer.Write(' ');

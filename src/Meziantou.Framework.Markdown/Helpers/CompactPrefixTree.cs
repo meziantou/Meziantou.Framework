@@ -311,7 +311,7 @@ internal sealed class CompactPrefixTree<TValue> : IReadOnlyDictionary<string, TV
     /// <param name="input">Matches to initialize the <see cref="CompactPrefixTree{TValue}"/> with. For best lookup performance, this collection should be sorted.</param>
     public CompactPrefixTree(ICollection<KeyValuePair<string, TValue>> input)
     {
-        if (input is null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
+        ArgumentNullException.ThrowIfNull(input);
 
         Init(input.Count, input.Count * 2, input.Count * 2);
 
@@ -425,7 +425,7 @@ internal sealed class CompactPrefixTree<TValue> : IReadOnlyDictionary<string, TV
     private bool TryInsert(in KeyValuePair<string, TValue> pair, InsertionBehavior behavior)
     {
         string key = pair.Key;
-        if (key is null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key);
+        ArgumentNullException.ThrowIfNull(key, nameof(pair));
         if (key.Length == 0) ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.key, ExceptionReason.String_Empty);
         Debug.Assert(!string.IsNullOrEmpty(key));
 

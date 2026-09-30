@@ -457,7 +457,7 @@ public class BlockProcessor
     /// <exception cref="ArgumentException">The block must be opened</exception>
     public void Open(Block block)
     {
-        if (block is null) ThrowHelper.ArgumentNullException(nameof(block));
+        ArgumentNullException.ThrowIfNull(block);
         if (!block.IsOpen) ThrowHelper.ArgumentException("The block must be opened", nameof(block));
         OpenedBlocks.Add(block);
     }
@@ -499,7 +499,7 @@ public class BlockProcessor
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="block"/> is null.</exception>
     public bool TryDiscard(Block block)
     {
-        if (block is null) ThrowHelper.ArgumentNullException(nameof(block));
+        ArgumentNullException.ThrowIfNull(block);
 
         for (int i = OpenedBlocks.Count - 1; i >= 1; i--)
         {
@@ -570,7 +570,7 @@ public class BlockProcessor
     /// <returns><c>true</c> if the block is open; otherwise <c>false</c>.</returns>
     public bool IsOpen(Block block)
     {
-        if (block is null) ThrowHelper.ArgumentNullException(nameof(block));
+        ArgumentNullException.ThrowIfNull(block);
         return OpenedBlocks.Contains(block);
     }
 
@@ -1213,8 +1213,8 @@ public class BlockProcessor
     [MemberNotNull(nameof(Document), nameof(Parsers))]
     internal void Setup(MarkdownDocument document, BlockParserList parsers, MarkdownParserContext? context, bool trackTrivia)
     {
-        if (document is null) ThrowHelper.ArgumentNullException(nameof(document));
-        if (parsers is null) ThrowHelper.ArgumentNullException(nameof(parsers));
+        ArgumentNullException.ThrowIfNull(document);
+        ArgumentNullException.ThrowIfNull(parsers);
 
         Document = document;
         Parsers = parsers;

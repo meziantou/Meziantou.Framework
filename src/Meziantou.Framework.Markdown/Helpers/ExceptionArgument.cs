@@ -11,7 +11,6 @@ namespace Meziantou.Framework.Markdown.Helpers;
 internal enum ExceptionArgument
 {
     key,
-    input,
     value,
     length,
     offsetLength,

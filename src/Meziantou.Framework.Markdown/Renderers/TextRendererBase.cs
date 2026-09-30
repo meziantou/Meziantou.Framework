@@ -40,10 +40,7 @@ public abstract class TextRendererBase : RendererBase
         [MemberNotNull(nameof(_writer))]
         set
         {
-            if (value is null)
-            {
-                ThrowHelper.ArgumentNullException(nameof(value));
-            }
+            ArgumentNullException.ThrowIfNull(value);
 
             // By default we output a newline with '\n' only even on Windows platforms
             value.NewLine = "\n";
@@ -197,7 +194,7 @@ public abstract class TextRendererBase<T> : TextRendererBase where T : TextRende
     /// </summary>
     public void PushIndent(string indent)
     {
-        if (indent is null) ThrowHelper.ArgumentNullException(nameof(indent));
+        ArgumentNullException.ThrowIfNull(indent);
         _indents.Add(new Indent(indent));
     }
 
@@ -208,7 +205,7 @@ public abstract class TextRendererBase<T> : TextRendererBase where T : TextRende
     /// <exception cref="ArgumentNullException"><paramref name="lineSpecific"/> is null.</exception>
     public void PushIndent(string[] lineSpecific)
     {
-        if (lineSpecific is null) ThrowHelper.ArgumentNullException(nameof(lineSpecific));
+        ArgumentNullException.ThrowIfNull(lineSpecific);
         _indents.Add(new Indent(lineSpecific));
 
         // ensure that indents are written to the output stream
@@ -237,7 +234,7 @@ public abstract class TextRendererBase<T> : TextRendererBase where T : TextRende
     /// <exception cref="ArgumentNullException"><paramref name="marker"/> is null.</exception>
     public void PushHangingIndent(string marker)
     {
-        if (marker is null) ThrowHelper.ArgumentNullException(nameof(marker));
+        ArgumentNullException.ThrowIfNull(marker);
         _indents.Add(new Indent(marker, new string(' ', marker.Length)));
 
         // ensure that indents are written to the output stream
@@ -465,7 +462,7 @@ public abstract class TextRendererBase<T> : TextRendererBase where T : TextRende
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public T WriteLeafInline(LeafBlock leafBlock)
     {
-        if (leafBlock is null) ThrowHelper.ArgumentNullException_leafBlock();
+        ArgumentNullException.ThrowIfNull(leafBlock);
         Inline? inline = leafBlock.Inline;
 
         while (inline != null)

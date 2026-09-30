@@ -33,7 +33,7 @@ public class OrderedList<T> : List<T> where T: notnull
     /// </summary>
     public bool InsertBefore<TItem>(T item) where TItem : T
     {
-        if (item is null) ThrowHelper.ArgumentNullException_item();
+        ArgumentNullException.ThrowIfNull(item);
         for (int i = 0; i < Count; i++)
         {
             if (this[i] is TItem)
@@ -111,7 +111,7 @@ public class OrderedList<T> : List<T> where T: notnull
     /// </summary>
     public bool InsertAfter<TItem>(T item) where TItem : T
     {
-        if (item is null) ThrowHelper.ArgumentNullException_item();
+        ArgumentNullException.ThrowIfNull(item);
         for (int i = 0; i < Count; i++)
         {
             if (this[i] is TItem)

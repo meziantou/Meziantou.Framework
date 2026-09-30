@@ -20,7 +20,7 @@ public abstract class DelimiterInline : ContainerInline
     /// </summary>
     protected DelimiterInline(InlineParser parser)
     {
-        if (parser is null) ThrowHelper.ArgumentNullException(nameof(parser));
+        ArgumentNullException.ThrowIfNull(parser);
         Parser = parser;
         IsActive = true;
     }

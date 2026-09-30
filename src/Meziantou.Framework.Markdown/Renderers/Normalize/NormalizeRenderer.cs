@@ -514,7 +514,7 @@ public class NormalizeRenderer : TextRendererBase<NormalizeRenderer>
     /// <returns>This instance</returns>
     public NormalizeRenderer WriteLeafRawLines(LeafBlock leafBlock, bool writeEndOfLines, bool indent = false)
     {
-        if (leafBlock is null) ThrowHelper.ArgumentNullException_leafBlock();
+        ArgumentNullException.ThrowIfNull(leafBlock);
         if (leafBlock.Lines.Lines != null)
         {
             var lines = leafBlock.Lines;

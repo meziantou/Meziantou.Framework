@@ -219,7 +219,7 @@ public abstract class Block : MarkdownObject, IBlock
     /// </remarks>
     public void ReplaceBy(Block replacement, bool moveChildren = true)
     {
-        if (replacement is null) ThrowHelper.ArgumentNullException(nameof(replacement));
+        ArgumentNullException.ThrowIfNull(replacement);
         if (replacement.Parent is not null)
         {
             ThrowHelper.ArgumentException("Cannot replace with a block that is already attached to another container (replacement.Parent != null)", nameof(replacement));

@@ -6,7 +6,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Description>A fast, CommonMark compliant, extensible Markdown processor for .NET.</Description>
     <PackageTags>markdown, commonmark, md, html, md2html, parser</PackageTags>
-    <Version>1.0.0</Version>
+    <Version>1.0.1</Version>
   </PropertyGroup>
 
   <ItemGroup>

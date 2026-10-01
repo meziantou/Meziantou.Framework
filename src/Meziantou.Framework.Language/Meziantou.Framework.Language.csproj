@@ -11,6 +11,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Meziantou.Framework.Language.Tests" />
+    <InternalsVisibleTo Include="Meziantou.Framework.Language.Css" />
     <InternalsVisibleTo Include="Meziantou.Framework.Language.Ini" />
     <InternalsVisibleTo Include="Meziantou.Framework.Language.Json" />
     <InternalsVisibleTo Include="Meziantou.Framework.Language.Toml" />

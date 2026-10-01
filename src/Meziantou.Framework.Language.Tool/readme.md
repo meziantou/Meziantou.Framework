@@ -1,6 +1,6 @@
 # Meziantou.Framework.Language.Tool
 
-`Meziantou.Framework.Language.Tool` dumps a syntax tree as JSON, so a parse can be inspected, diffed, or piped into a script without writing any C#. It parses with `Meziantou.Framework.Language.Ini`, `Meziantou.Framework.Language.Json`, `Meziantou.Framework.Language.Xml`, `Meziantou.Framework.Language.Regex`, and `Meziantou.Framework.Language.Shell`.
+`Meziantou.Framework.Language.Tool` dumps a syntax tree as JSON, so a parse can be inspected, diffed, or piped into a script without writing any C#. It parses with `Meziantou.Framework.Language.Css`, `Meziantou.Framework.Language.Ini`, `Meziantou.Framework.Language.Json`, `Meziantou.Framework.Language.Toml`, `Meziantou.Framework.Language.Xml`, `Meziantou.Framework.Language.Regex`, and `Meziantou.Framework.Language.Shell`.
 
 ## Install
 
@@ -49,7 +49,7 @@ The JSON is written on a single line. The document is the same shape for every l
 
 ```jsonc
 {
-  "language": "shell",   // ini | json | xml | regex | shell
+  "language": "shell",   // css | ini | json | toml | xml | regex | shell
   "dialect": "bash",     // regex and shell only
   "diagnostics": [
     { "id": "…", "severity": "Error", "message": "…",
@@ -86,7 +86,7 @@ Regular expressions add `captures`, and `patternOptions` when any option is in e
 
 ```
 Description:
-  Inspect INI, JSON, TOML, XML, regular expression, and shell documents
+  Inspect CSS, INI, JSON, TOML, XML, regular expression, and shell documents
 
 Usage:
   Meziantou.Framework.Language.Tool [command] [options]
@@ -96,14 +96,14 @@ Options:
   --version       Show version information
 
 Commands:
-  syntax  Dump the syntax tree of an INI, JSON, TOML, XML, regular expression, or shell document as JSON
+  syntax  Dump the syntax tree of a CSS, INI, JSON, TOML, XML, regular expression, or shell document as JSON
 ```
 
 ### syntax
 
 ```
 Description:
-  Dump the syntax tree of an INI, JSON, TOML, XML, regular expression, or shell document as JSON
+  Dump the syntax tree of a CSS, INI, JSON, TOML, XML, regular expression, or shell document as JSON
 
 Usage:
   Meziantou.Framework.Language.Tool syntax [options]
@@ -111,7 +111,7 @@ Usage:
 Options:
   --input <input>        Path to the file to parse. If omitted, reads from stdin
   --output <output>      Path to the JSON file to write. If omitted, writes to stdout
-  --language <language>  Language to parse the input as. If omitted, it is detected from the extension of --input, which is why it is required when reading from stdin. One of: ini, json, toml, xml, regex, regex-dotnet, regex-javascript, regex-pcre, regex-ere, regex-bre, sh, bash, zsh, powershell, pwsh, cmd
+  --language <language>  Language to parse the input as. If omitted, it is detected from the extension of --input, which is why it is required when reading from stdin. One of: css, ini, json, toml, xml, regex, regex-dotnet, regex-javascript, regex-pcre, regex-ere, regex-bre, sh, bash, zsh, powershell, pwsh, cmd
   --no-tokens            Omit the tokens of each node, and the trivia they carry
   --no-trivia            Omit the leading and trailing trivia of each token
   --no-text              Omit the source text of each node, token, and trivia

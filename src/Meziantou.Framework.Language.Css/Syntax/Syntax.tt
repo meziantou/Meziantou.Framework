@@ -1,0 +1,562 @@
+<#@ template debug="true" hostspecific="false" language="C#" #>
+<#@ output extension=".g.cs" #>
+<#
+    // The shape of every CSS node.
+    //
+    // A slot is written "<kind>:<Name>[:<Type>]", where the kind is one of:
+    //   t   a token            t?  a token the source may not have
+    //   n   a child node       n?  a child node the source may not have
+    //   l   a list of nodes    s   a list of nodes with separators between them
+    //
+    // An "s" slot may name the separator its list holds, as "s:Name:Type:SeparatorKind". Naming it is what lets a
+    // node be added to a list that has none yet -- a selector list of one selector has no comma to copy.
+    //   tl  a list of tokens
+    //
+    // Node(name, base, kind, visit, slots...) fixes a node's kind; MultiKind(name, base, visit, slots...) is for the
+    // handful of classes that serve several kinds and take theirs from the parser.
+    //
+    // Only the structure is described here. Everything a node computes from its own parts -- a name, a value, which
+    // of its children are arguments -- stays in the hand-written half of the partial class.
+    var nodes = new[]
+    {
+        // The generic layer of CSS Syntax Level 3: rules, declarations, and component values.
+        Node("CssStyleSheetSyntax", "CssSyntaxNode", "StyleSheet", "StyleSheet", "l:Statements:CssStatementSyntax", "t:EndOfFileToken"),
+        MultiKind("CssQualifiedRuleSyntax", "CssRuleSyntax", "QualifiedRule", "n?:Prelude:CssPreludeSyntax", "n:Block:CssBlockSyntax"),
+        MultiKind("CssAtRuleSyntax", "CssRuleSyntax", "AtRule", "t:AtKeywordToken", "n?:Prelude:CssPreludeSyntax", "n?:Block:CssBlockSyntax", "t?:SemicolonToken"),
+        Node("CssBlockSyntax", "CssSyntaxNode", "Block", "Block", "t:OpenBraceToken", "l:Statements:CssStatementSyntax", "t:CloseBraceToken"),
+        Node("CssDeclarationSyntax", "CssStatementSyntax", "Declaration", "Declaration", "t:NameToken", "t:ColonToken", "l:Values:CssComponentValueSyntax", "n?:Important:CssImportantSyntax", "t?:SemicolonToken"),
+        Node("CssImportantSyntax", "CssSyntaxNode", "Important", "Important", "t:ExclamationToken", "t:ImportantKeyword"),
+        Node("CssBadDeclarationSyntax", "CssStatementSyntax", "BadDeclaration", "BadDeclaration", "l:Values:CssComponentValueSyntax", "t?:SemicolonToken"),
+        Node("CssIgnoredTokenSyntax", "CssStatementSyntax", "IgnoredToken", "IgnoredToken", "t:Token"),
+        Node("CssSkippedTextSyntax", "CssStatementSyntax", "SkippedText", "SkippedText", "tl:Tokens"),
+        Node("CssTokenValueSyntax", "CssComponentValueSyntax", "TokenValue", "TokenValue", "t:Token"),
+        Node("CssFunctionSyntax", "CssComponentValueSyntax", "Function", "Function", "t:FunctionToken", "l:Arguments:CssComponentValueSyntax", "t:CloseParenToken"),
+        MultiKind("CssSimpleBlockSyntax", "CssComponentValueSyntax", "SimpleBlock", "t:OpenToken", "l:Values:CssComponentValueSyntax", "t:CloseToken"),
+        Node("CssSkippedValueSyntax", "CssComponentValueSyntax", "SkippedValue", "SkippedValue", "tl:Tokens"),
+        Node("CssGenericPreludeSyntax", "CssPreludeSyntax", "GenericPrelude", "GenericPrelude", "l:Values:CssComponentValueSyntax"),
+
+        // Selectors Level 4 and CSS Nesting.
+        Node("CssSelectorListSyntax", "CssPreludeSyntax", "SelectorList", "SelectorList", "s:Selectors:CssSelectorSyntax:CommaToken"),
+        Node("CssComplexSelectorSyntax", "CssSelectorSyntax", "ComplexSelector", "ComplexSelector", "l:Parts:CssComplexSelectorPartSyntax"),
+        Node("CssComplexSelectorPartSyntax", "CssSyntaxNode", "ComplexSelectorPart", "ComplexSelectorPart", "n?:Combinator:CssCombinatorSyntax", "n:Compound:CssCompoundSelectorSyntax"),
+        MultiKind("CssCombinatorSyntax", "CssSyntaxNode", "Combinator", "t:Token", "t?:SecondToken"),
+        Node("CssCompoundSelectorSyntax", "CssSyntaxNode", "CompoundSelector", "CompoundSelector", "l:Selectors:CssSimpleSelectorSyntax"),
+        Node("CssInvalidSelectorSyntax", "CssSelectorSyntax", "InvalidSelector", "InvalidSelector", "l:Values:CssComponentValueSyntax"),
+        Node("CssNamespacePrefixSyntax", "CssSyntaxNode", "NamespacePrefix", "NamespacePrefix", "t?:PrefixToken", "t:BarToken"),
+        Node("CssTypeSelectorSyntax", "CssSimpleSelectorSyntax", "TypeSelector", "TypeSelector", "n?:NamespacePrefix:CssNamespacePrefixSyntax", "t:NameToken"),
+        Node("CssUniversalSelectorSyntax", "CssSimpleSelectorSyntax", "UniversalSelector", "UniversalSelector", "n?:NamespacePrefix:CssNamespacePrefixSyntax", "t:AsteriskToken"),
+        Node("CssNestingSelectorSyntax", "CssSimpleSelectorSyntax", "NestingSelector", "NestingSelector", "t:AmpersandToken"),
+        Node("CssIdSelectorSyntax", "CssSimpleSelectorSyntax", "IdSelector", "IdSelector", "t:HashToken"),
+        Node("CssClassSelectorSyntax", "CssSimpleSelectorSyntax", "ClassSelector", "ClassSelector", "t:DotToken", "t:NameToken"),
+        Node("CssAttributeSelectorSyntax", "CssSimpleSelectorSyntax", "AttributeSelector", "AttributeSelector", "t:OpenBracketToken", "n?:NamespacePrefix:CssNamespacePrefixSyntax", "t:NameToken", "t?:OperatorPrefixToken", "t?:EqualsToken", "t?:ValueToken", "t?:ModifierToken", "t:CloseBracketToken"),
+        MultiKind("CssPseudoSelectorSyntax", "CssSimpleSelectorSyntax", "PseudoSelector", "t:ColonToken", "t?:SecondColonToken", "t:NameToken"),
+        MultiKind("CssFunctionalPseudoSelectorSyntax", "CssSimpleSelectorSyntax", "FunctionalPseudoSelector", "t:ColonToken", "t?:SecondColonToken", "t:FunctionToken", "n?:Argument:CssSyntaxNode", "t:CloseParenToken"),
+        Node("CssNthArgumentSyntax", "CssSyntaxNode", "NthArgument", "NthArgument", "n:Nth:CssAnPlusBSyntax", "t?:OfKeyword", "n?:Selectors:CssSelectorListSyntax"),
+        Node("CssAnPlusBSyntax", "CssSyntaxNode", "AnPlusB", "AnPlusB", "tl:Tokens"),
+        Node("CssNameListSyntax", "CssPreludeSyntax", "NameList", "NameList", "tl:Tokens"),
+        Node("CssViewTransitionPartSelectorSyntax", "CssSyntaxNode", "ViewTransitionPartSelector", "ViewTransitionPartSelector", "t?:NameToken", "l:Classes:CssClassSelectorSyntax"),
+
+        // The preludes of the at-rules.
+        Node("CssNamePreludeSyntax", "CssPreludeSyntax", "NamePrelude", "NamePrelude", "t:NameToken"),
+        Node("CssImportPreludeSyntax", "CssPreludeSyntax", "ImportPrelude", "ImportPrelude", "n:Url:CssComponentValueSyntax", "n?:Layer:CssImportLayerSyntax", "n?:Supports:CssImportSupportsSyntax", "n?:Media:CssMediaQueryListSyntax"),
+        Node("CssImportLayerSyntax", "CssSyntaxNode", "ImportLayer", "ImportLayer", "t:LayerToken", "n?:Name:CssLayerNameSyntax", "t?:CloseParenToken"),
+        Node("CssImportSupportsSyntax", "CssSyntaxNode", "ImportSupports", "ImportSupports", "t:FunctionToken", "n:Condition:CssConditionSyntax", "t:CloseParenToken"),
+        Node("CssNamespacePreludeSyntax", "CssPreludeSyntax", "NamespacePrelude", "NamespacePrelude", "t?:PrefixToken", "n:Url:CssComponentValueSyntax"),
+        Node("CssLayerNameSyntax", "CssSyntaxNode", "LayerName", "LayerName", "tl:Tokens"),
+        Node("CssLayerPreludeSyntax", "CssPreludeSyntax", "LayerPrelude", "LayerPrelude", "s:Names:CssLayerNameSyntax:CommaToken"),
+        Node("CssScopePreludeSyntax", "CssPreludeSyntax", "ScopePrelude", "ScopePrelude", "n?:Start:CssScopeBoundarySyntax", "t?:ToKeyword", "n?:End:CssScopeBoundarySyntax"),
+        Node("CssScopeBoundarySyntax", "CssSyntaxNode", "ScopeBoundary", "ScopeBoundary", "t:OpenParenToken", "n?:Selectors:CssSelectorListSyntax", "t:CloseParenToken"),
+        Node("CssKeyframeSelectorListSyntax", "CssPreludeSyntax", "KeyframeSelectorList", "KeyframeSelectorList", "s:Selectors:CssKeyframeSelectorSyntax:CommaToken"),
+        Node("CssKeyframeSelectorSyntax", "CssSyntaxNode", "KeyframeSelector", "KeyframeSelector", "t?:RangeNameToken", "t:OffsetToken"),
+        Node("CssPageSelectorListSyntax", "CssPreludeSyntax", "PageSelectorList", "PageSelectorList", "s:Selectors:CssPageSelectorSyntax:CommaToken"),
+        Node("CssPageSelectorSyntax", "CssSyntaxNode", "PageSelector", "PageSelector", "t?:NameToken", "l:PseudoPages:CssPseudoPageSyntax"),
+        Node("CssPseudoPageSyntax", "CssSyntaxNode", "PseudoPage", "PseudoPage", "t:ColonToken", "t:NameToken"),
+        Node("CssCustomMediaPreludeSyntax", "CssPreludeSyntax", "CustomMediaPrelude", "CustomMediaPrelude", "t:NameToken", "n:Queries:CssMediaQueryListSyntax"),
+        Node("CssContainerPreludeSyntax", "CssPreludeSyntax", "ContainerPrelude", "ContainerPrelude", "s:Conditions:CssContainerConditionSyntax:CommaToken"),
+        Node("CssContainerConditionSyntax", "CssSyntaxNode", "ContainerCondition", "ContainerCondition", "t?:NameToken", "n?:Query:CssConditionSyntax"),
+        Node("CssConditionPreludeSyntax", "CssPreludeSyntax", "ConditionPrelude", "ConditionPrelude", "n:Condition:CssConditionSyntax"),
+
+        // Media queries, and the conditions media, supports, and container queries share.
+        Node("CssMediaQueryListSyntax", "CssPreludeSyntax", "MediaQueryList", "MediaQueryList", "s:Queries:CssMediaQuerySyntax:CommaToken"),
+        Node("CssMediaTypeQuerySyntax", "CssMediaQuerySyntax", "MediaTypeQuery", "MediaTypeQuery", "t?:ModifierKeyword", "t:MediaTypeToken", "t?:AndKeyword", "n?:Condition:CssConditionSyntax"),
+        Node("CssMediaConditionQuerySyntax", "CssMediaQuerySyntax", "MediaConditionQuery", "MediaConditionQuery", "n:Condition:CssConditionSyntax"),
+        Node("CssInvalidMediaQuerySyntax", "CssMediaQuerySyntax", "InvalidMediaQuery", "InvalidMediaQuery", "l:Values:CssComponentValueSyntax"),
+        Node("CssNotConditionSyntax", "CssConditionSyntax", "NotCondition", "NotCondition", "t:NotKeyword", "n:Operand:CssConditionSyntax"),
+        MultiKind("CssConditionChainSyntax", "CssConditionSyntax", "ConditionChain", "s:Operands:CssConditionSyntax"),
+        Node("CssParenthesizedConditionSyntax", "CssConditionSyntax", "ParenthesizedCondition", "ParenthesizedCondition", "t:OpenParenToken", "n:Condition:CssConditionSyntax", "t:CloseParenToken"),
+        Node("CssGeneralEnclosedSyntax", "CssConditionSyntax", "GeneralEnclosed", "GeneralEnclosed", "n:Value:CssComponentValueSyntax"),
+        Node("CssPlainFeatureSyntax", "CssConditionSyntax", "PlainFeature", "PlainFeature", "t?:OpenParenToken", "t:NameToken", "t:ColonToken", "n:Value:CssFeatureValueSyntax", "t?:CloseParenToken"),
+        Node("CssBooleanFeatureSyntax", "CssConditionSyntax", "BooleanFeature", "BooleanFeature", "t?:OpenParenToken", "t:NameToken", "t?:CloseParenToken"),
+        Node("CssRangeFeatureSyntax", "CssConditionSyntax", "RangeFeature", "RangeFeature", "t:OpenParenToken", "n:Left:CssFeatureValueSyntax", "n:LeftComparison:CssComparisonSyntax", "n:Middle:CssFeatureValueSyntax", "n?:RightComparison:CssComparisonSyntax", "n?:Right:CssFeatureValueSyntax", "t:CloseParenToken"),
+        MultiKind("CssComparisonSyntax", "CssSyntaxNode", "Comparison", "t:OperatorToken", "t?:EqualsToken"),
+        Node("CssFeatureValueSyntax", "CssSyntaxNode", "FeatureValue", "FeatureValue", "l:Values:CssComponentValueSyntax"),
+        Node("CssDeclarationConditionSyntax", "CssConditionSyntax", "DeclarationCondition", "DeclarationCondition", "t?:OpenParenToken", "n:Declaration:CssDeclarationSyntax", "t?:CloseParenToken"),
+        MultiKind("CssConditionFunctionSyntax", "CssConditionSyntax", "ConditionFunction", "t:FunctionToken", "n?:Argument:CssSyntaxNode", "t:CloseParenToken"),
+    };
+#>
+// <auto-generated />
+// Generated from Syntax.tt. Edit the template, then run: dotnet run ./eng/update-all.cs
+#nullable enable
+
+using Meziantou.Framework.Language.InternalSyntax;
+using GreenNode = Meziantou.Framework.Language.InternalSyntax.GreenNode;
+
+#pragma warning disable MA0048 // File name must match type name
+
+namespace Meziantou.Framework.Language.Css.Syntax.InternalSyntax
+{
+<# foreach (var node in nodes) { #>
+internal sealed partial class <#= node.Name #> : <#= node.Base #>
+{
+<# foreach (var slot in node.Slots) { #>
+    private readonly GreenNode<#= slot.Optional ? "?" : "" #> _<#= Camel(slot.Name) #>;
+<# } #>
+
+    public <#= node.Name #>(<#= GreenParameters(node) #>)
+        : this(<#= GreenParameterNames(node, "diagnostics: null, annotations: null") #>)
+    {
+    }
+
+    private <#= node.Name #>(<#= GreenParametersWithTail(node) #>SyntaxDiagnosticInfo[]? diagnostics, SyntaxAnnotation[]? annotations)
+        : base(<#= node.MultiKind ? "kind" : "SyntaxKind." + node.Kind #>, diagnostics, annotations)
+    {
+        SlotCount = <#= node.Slots.Length #>;
+<# foreach (var slot in node.Slots) { #>
+        AdjustFlagsAndWidth(<#= Camel(slot.Name) #>);
+        _<#= Camel(slot.Name) #> = <#= Camel(slot.Name) #>;
+<# } #>
+    }
+
+    internal override GreenNode? GetSlot(int index) => index switch
+    {
+<# for (var i = 0; i < node.Slots.Length; i++) { #>
+        <#= i #> => _<#= Camel(node.Slots[i].Name) #>,
+<# } #>
+        _ => null,
+    };
+
+    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new <#= node.Name #>(<#= SlotsFromSpan(node) #>GetDiagnostics(), GetAnnotations());
+<# if (SeparatedListSlots(node) is string separated && separated.Length > 0) { #>
+
+    internal override bool IsSeparatedListSlot(int index) => index is <#= separated #>;
+<# } #>
+<# if (ListSlots(node) is string lists && lists.Length > 0) { #>
+
+    internal override bool IsListSlot(int index) => index is <#= lists #>;
+<# } #>
+<# if (HasNamedSeparator(node)) { #>
+
+    internal override GreenNode? CreateSeparator(int index) => index switch
+    {
+<# for (var i = 0; i < node.Slots.Length; i++) { if (node.Slots[i].Kind == "s" && node.Slots[i].Separator.Length > 0) { #>
+        <#= i #> => SyntaxFactory.Token(SyntaxKind.<#= node.Slots[i].Separator #>),
+<# } } #>
+        _ => base.CreateSeparator(index),
+    };
+<# } #>
+
+    internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new <#= node.Name #>(<#= GreenArguments(node, "diagnostics, GetAnnotations()") #>);
+
+    internal override GreenNode SetAnnotations(SyntaxAnnotation[]? annotations) => new <#= node.Name #>(<#= GreenArguments(node, "GetDiagnostics(), annotations") #>);
+
+    internal override SyntaxNode CreateRed(SyntaxNode? parent, int position) => new Css.<#= node.Name #>(this, parent, position);
+}
+
+<# } #>
+}
+
+namespace Meziantou.Framework.Language.Css
+{
+<# foreach (var node in nodes) { #>
+public sealed partial class <#= node.Name #> : <#= node.Base #>
+{
+<# foreach (var slot in node.Slots) { if (slot.Kind is "n" or "n?" or "l" or "s") { #>
+    private SyntaxNode? _<#= Camel(slot.Name) #>;
+<# } } #>
+
+    internal <#= node.Name #>(GreenNode green, SyntaxNode? parent, int position)
+        : base(green, parent, position)
+    {
+    }
+
+<# for (var i = 0; i < node.Slots.Length; i++) { var slot = node.Slots[i]; #>
+<# if (slot.Kind is "t" or "t?") { #>
+    public SyntaxToken <#= slot.Name #> => new(this, Green.GetSlot(<#= i #>), <#= i == 0 ? "Position" : "GetChildPosition(" + i + ")" #>, GetChildIndex(<#= i #>));
+<# } else if (slot.Kind == "tl") { #>
+    public SyntaxTokenList <#= slot.Name #> => new(this, Green.GetSlot(<#= i #>), <#= i == 0 ? "Position" : "GetChildPosition(" + i + ")" #>, GetChildIndex(<#= i #>));
+<# } else if (slot.Kind == "l") { #>
+    public SyntaxList<<#= slot.Type #>> <#= slot.Name #> => new(GetRed(ref _<#= Camel(slot.Name) #>, <#= i #>));
+<# } else if (slot.Kind == "s") { #>
+    public SeparatedSyntaxList<<#= slot.Type #>> <#= slot.Name #>
+    {
+        get
+        {
+            var red = GetRed(ref _<#= Camel(slot.Name) #>, <#= i #>);
+
+            return red is null ? default : new SeparatedSyntaxList<<#= slot.Type #>>(new SyntaxNodeOrTokenList(red, GetChildIndex(<#= i #>)));
+        }
+    }
+<# } else if (slot.Kind == "n") { #>
+    public <#= slot.Type #> <#= slot.Name #> => (<#= slot.Type #>)GetRed(ref _<#= Camel(slot.Name) #>, <#= i #>)!;
+<# } else { #>
+    public <#= slot.Type #>? <#= slot.Name #> => (<#= slot.Type #>?)GetRed(ref _<#= Camel(slot.Name) #>, <#= i #>);
+<# } #>
+
+<# } #>
+<# if (node.Slots.Length > 0) { #>
+    /// <summary>Returns this node with the given parts, or itself when nothing changed.</summary>
+    public <#= node.Name #> Update(<#= RedParameters(node) #>)
+    {
+        if (<#= UnchangedCondition(node) #>)
+            return this;
+
+        return SyntaxFactory.<#= FactoryName(node) #>(<#= RedArguments(node) #>).WithAnnotationsFrom(this);
+    }
+
+<# for (var i = 0; i < node.Slots.Length; i++) { var slot = node.Slots[i]; #>
+    /// <summary>Returns this node with <paramref name="<#= Camel(slot.Name) #>"/> in place of its <see cref="<#= slot.Name #>"/>.</summary>
+    public <#= node.Name #> With<#= slot.Name #>(<#= RedSlotType(slot) #> <#= Camel(slot.Name) #>) => Update(<#= WithArguments(node, i) #>);
+
+<# } #>
+<# } #>
+    internal override SyntaxNode? GetNodeSlot(int index) => index switch
+    {
+<# for (var i = 0; i < node.Slots.Length; i++) { if (node.Slots[i].Kind is "n" or "n?" or "l" or "s") { #>
+        <#= i #> => GetRed(ref _<#= Camel(node.Slots[i].Name) #>, <#= i #>),
+<# } } #>
+        _ => null,
+    };
+
+    internal override SyntaxNode? GetCachedSlot(int index) => index switch
+    {
+<# for (var i = 0; i < node.Slots.Length; i++) { if (node.Slots[i].Kind is "n" or "n?" or "l" or "s") { #>
+        <#= i #> => _<#= Camel(node.Slots[i].Name) #>,
+<# } } #>
+        _ => null,
+    };
+
+    public override void Accept(CssSyntaxVisitor visitor)
+    {
+        ArgumentNullException.ThrowIfNull(visitor);
+
+        visitor.Visit<#= node.Visit #>(this);
+    }
+
+    public override TResult? Accept<TResult>(CssSyntaxVisitor<TResult> visitor)
+        where TResult : default
+    {
+        ArgumentNullException.ThrowIfNull(visitor);
+
+        return visitor.Visit<#= node.Visit #>(this);
+    }
+}
+
+<# } #>
+
+public abstract partial class CssSyntaxVisitor
+{
+<# foreach (var node in nodes) { #>
+    public virtual void Visit<#= node.Visit #>(<#= node.Name #> node) => DefaultVisit(node);
+<# } #>
+}
+
+public abstract partial class CssSyntaxVisitor<TResult>
+{
+<# foreach (var node in nodes) { #>
+    public virtual TResult? Visit<#= node.Visit #>(<#= node.Name #> node) => DefaultVisit(node);
+<# } #>
+}
+
+public partial class CssSyntaxRewriter
+{
+<# foreach (var node in nodes) { if (node.Slots.Length > 0) { #>
+    public override SyntaxNode? Visit<#= node.Visit #>(<#= node.Name #> node)
+    {
+        ArgumentNullException.ThrowIfNull(node);
+
+        return node.Update(<#= RewriteArguments(node) #>);
+    }
+
+<# } } #>
+}
+
+public static partial class SyntaxFactory
+{
+<# foreach (var node in nodes) { #>
+    /// <summary>Builds a <see cref="<#= node.Name #>"/> from its parts.</summary>
+    public static <#= node.Name #> <#= FactoryName(node) #>(<#= FactoryParameters(node) #>)
+        => (<#= node.Name #>)new Syntax.InternalSyntax.<#= node.Name #>(<#= FactoryArguments(node) #>).CreateRed();
+
+<# } #>
+}
+}
+<#+
+record Slot(string Kind, string Name, string Type, string Separator)
+{
+    public bool Optional => Kind is "t?" or "n?" or "l" or "s" or "tl";
+}
+
+record NodeDef(string Name, string Base, string Kind, string Visit, Slot[] Slots, bool MultiKind);
+
+static NodeDef Node(string name, string baseName, string kind, string visit, params string[] slots)
+    => new(name, baseName, kind, visit, ParseSlots(slots), MultiKind: false);
+
+static NodeDef MultiKind(string name, string baseName, string visit, params string[] slots)
+    => new(name, baseName, "", visit, ParseSlots(slots), MultiKind: true);
+
+static Slot[] ParseSlots(string[] slots)
+{
+    var parsed = new Slot[slots.Length];
+    for (var i = 0; i < slots.Length; i++)
+    {
+        var parts = slots[i].Split(':');
+        parsed[i] = new Slot(parts[0], parts[1], parts.Length > 2 ? parts[2] : "", parts.Length > 3 ? parts[3] : "");
+    }
+
+    return parsed;
+}
+
+static bool HasNamedSeparator(NodeDef node)
+{
+    foreach (var slot in node.Slots)
+    {
+        if (slot.Kind == "s" && slot.Separator.Length > 0)
+            return true;
+    }
+
+    return false;
+}
+
+static string Camel(string name) => char.ToLowerInvariant(name[0]) + name.Substring(1);
+
+static string GreenParameters(NodeDef node)
+{
+    var parts = new List<string>();
+    if (node.MultiKind)
+    {
+        parts.Add("SyntaxKind kind");
+    }
+
+    foreach (var slot in node.Slots)
+    {
+        parts.Add("GreenNode" + (slot.Optional ? "?" : "") + " " + Camel(slot.Name));
+    }
+
+    return string.Join(", ", parts);
+}
+
+/// <summary>The green constructor parameters, with a trailing comma when there are any.</summary>
+static string GreenParametersWithTail(NodeDef node)
+{
+    var parameters = GreenParameters(node);
+
+    return parameters.Length == 0 ? "" : parameters + ", ";
+}
+
+static string GreenParameterNames(NodeDef node, string tail)
+{
+    var parts = new List<string>();
+    if (node.MultiKind)
+    {
+        parts.Add("kind");
+    }
+
+    foreach (var slot in node.Slots)
+    {
+        parts.Add(Camel(slot.Name));
+    }
+
+    parts.Add(tail);
+
+    return string.Join(", ", parts);
+}
+
+static string GreenArguments(NodeDef node, string tail)
+{
+    var parts = new List<string>();
+    if (node.MultiKind)
+    {
+        parts.Add("Kind");
+    }
+
+    foreach (var slot in node.Slots)
+    {
+        parts.Add("_" + Camel(slot.Name));
+    }
+
+    parts.Add(tail);
+
+    return string.Join(", ", parts);
+}
+
+// A node whose separated-list slots the untyped editing API cannot otherwise recognise: a list holding one element
+// has no separator in it to go by.
+static string ListSlots(NodeDef node)
+{
+    var parts = new List<int>();
+    for (var i = 0; i < node.Slots.Length; i++)
+    {
+        if (node.Slots[i].Kind is "l" or "s" or "tl")
+        {
+            parts.Add(i);
+        }
+    }
+
+    return parts.Count == 0 ? "" : string.Join(" or ", parts);
+}
+
+static string SeparatedListSlots(NodeDef node)
+{
+    var parts = new List<int>();
+    for (var i = 0; i < node.Slots.Length; i++)
+    {
+        if (node.Slots[i].Kind == "s")
+        {
+            parts.Add(i);
+        }
+    }
+
+    return parts.Count == 0 ? "" : string.Join(" or ", parts);
+}
+
+static string SlotsFromSpan(NodeDef node)
+{
+    var parts = new List<string>();
+    if (node.MultiKind)
+    {
+        parts.Add("Kind");
+    }
+
+    for (var i = 0; i < node.Slots.Length; i++)
+    {
+        parts.Add(node.Slots[i].Optional ? "slots[" + i + "]" : "RequiredSlot(slots[" + i + "])");
+    }
+
+    return parts.Count == 0 ? "" : string.Join(", ", parts) + ", ";
+}
+
+static string RedSlotType(Slot slot) => slot.Kind switch
+{
+    "t" or "t?" => "SyntaxToken",
+    "tl" => "SyntaxTokenList",
+    "l" => "SyntaxList<" + slot.Type + ">",
+    "s" => "SeparatedSyntaxList<" + slot.Type + ">",
+    "n" => slot.Type,
+    _ => slot.Type + "?",
+};
+
+static string RedParameters(NodeDef node)
+{
+    var parts = new List<string>();
+    foreach (var slot in node.Slots)
+    {
+        parts.Add(RedSlotType(slot) + " " + Camel(slot.Name));
+    }
+
+    return string.Join(", ", parts);
+}
+
+static string RedArguments(NodeDef node)
+{
+    var parts = new List<string>();
+    if (node.MultiKind)
+    {
+        parts.Add("Kind()");
+    }
+
+    foreach (var slot in node.Slots)
+    {
+        parts.Add(Camel(slot.Name));
+    }
+
+    return string.Join(", ", parts);
+}
+
+static string UnchangedCondition(NodeDef node)
+{
+    var parts = new List<string>();
+    for (var i = 0; i < node.Slots.Length; i++)
+    {
+        var slot = node.Slots[i];
+        parts.Add(slot.Kind switch
+        {
+            "t" or "t?" or "tl" => Camel(slot.Name) + ".Node == Green.GetSlot(" + i + ")",
+            "l" or "s" => Camel(slot.Name) + ".Green == Green.GetSlot(" + i + ")",
+            "n" => "ReferenceEquals(" + Camel(slot.Name) + ".Green, Green.GetSlot(" + i + "))",
+            _ => "ReferenceEquals(" + Camel(slot.Name) + "?.Green, Green.GetSlot(" + i + "))",
+        });
+    }
+
+    return string.Join(" && ", parts);
+}
+
+static string FactoryName(NodeDef node) => node.Name.EndsWith("Syntax", StringComparison.Ordinal) ? node.Name.Substring(0, node.Name.Length - "Syntax".Length) : node.Name;
+
+static string WithArguments(NodeDef node, int index)
+{
+    var parts = new List<string>();
+    for (var i = 0; i < node.Slots.Length; i++)
+    {
+        parts.Add(i == index ? Camel(node.Slots[i].Name) : node.Slots[i].Name);
+    }
+
+    return string.Join(", ", parts);
+}
+
+static string RewriteArguments(NodeDef node)
+{
+    var parts = new List<string>();
+    foreach (var slot in node.Slots)
+    {
+        parts.Add(slot.Kind switch
+        {
+            "t" or "t?" => "VisitToken(node." + slot.Name + ")",
+            "tl" => "VisitList(node." + slot.Name + ")",
+            "l" or "s" => "VisitList(node." + slot.Name + ")",
+            "n" => "(" + slot.Type + "?)Visit(node." + slot.Name + ") ?? node." + slot.Name,
+            _ => "node." + slot.Name + " is null ? null : (" + slot.Type + "?)Visit(node." + slot.Name + ")",
+        });
+    }
+
+    return string.Join(", ", parts);
+}
+
+static string FactoryParameters(NodeDef node)
+{
+    var parts = new List<string>();
+    if (node.MultiKind)
+    {
+        parts.Add("SyntaxKind kind");
+    }
+
+    foreach (var slot in node.Slots)
+    {
+        parts.Add(RedSlotType(slot) + " " + Camel(slot.Name));
+    }
+
+    return string.Join(", ", parts);
+}
+
+static string FactoryArguments(NodeDef node)
+{
+    var parts = new List<string>();
+    if (node.MultiKind)
+    {
+        parts.Add("kind");
+    }
+
+    foreach (var slot in node.Slots)
+    {
+        parts.Add(slot.Kind switch
+        {
+            "t" => "Required(" + Camel(slot.Name) + ")",
+            "t?" or "tl" => Camel(slot.Name) + ".Node",
+            "l" or "s" => Camel(slot.Name) + ".Green",
+            "n" => Camel(slot.Name) + ".Green",
+            _ => Camel(slot.Name) + "?.Green",
+        });
+    }
+
+    return string.Join(", ", parts);
+}
+#>

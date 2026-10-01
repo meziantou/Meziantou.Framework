@@ -1,3 +1,4 @@
+using Meziantou.Framework.Language.Css;
 using Meziantou.Framework.Language.Json;
 using Meziantou.Framework.Language.Toml;
 using Meziantou.Framework.Language.Regex;
@@ -22,19 +23,21 @@ internal sealed class SyntaxLanguage
     public RegexDialect? RegexDialect { get; }
     public ShellDialect? ShellDialect { get; }
 
+    public static SyntaxLanguage Css { get; } = new(SyntaxLanguageFamily.Css);
     public static SyntaxLanguage Ini { get; } = new(SyntaxLanguageFamily.Ini);
     public static SyntaxLanguage Json { get; } = new(SyntaxLanguageFamily.Json);
     public static SyntaxLanguage Toml { get; } = new(SyntaxLanguageFamily.Toml);
     public static SyntaxLanguage Xml { get; } = new(SyntaxLanguageFamily.Xml);
 
     /// <summary>The values <c>--language</c> documents, in the order the help text lists them.</summary>
-    public static string SupportedValues { get; } = "ini, json, toml, xml, regex, regex-dotnet, regex-javascript, regex-pcre, regex-ere, regex-bre, sh, bash, zsh, powershell, pwsh, cmd";
+    public static string SupportedValues { get; } = "css, ini, json, toml, xml, regex, regex-dotnet, regex-javascript, regex-pcre, regex-ere, regex-bre, sh, bash, zsh, powershell, pwsh, cmd";
 
     /// <summary>The canonical name of the dialect, or <see langword="null"/> for the languages that have none.</summary>
     public string? DialectName => RegexDialect?.Name ?? ShellDialect?.Name;
 
     public SyntaxTree ParseText(string text) => Family switch
     {
+        SyntaxLanguageFamily.Css => CssSyntaxTree.ParseText(text),
         SyntaxLanguageFamily.Ini => Language.Ini.IniSyntaxTree.ParseText(text),
         SyntaxLanguageFamily.Json => JsonSyntaxTree.ParseText(text),
         SyntaxLanguageFamily.Toml => TomlSyntaxTree.ParseText(text),
@@ -50,6 +53,7 @@ internal sealed class SyntaxLanguage
     /// </summary>
     public string GetKindName(int rawKind) => Family switch
     {
+        SyntaxLanguageFamily.Css => ((Language.Css.SyntaxKind)rawKind).ToString(),
         SyntaxLanguageFamily.Ini => ((Language.Ini.SyntaxKind)rawKind).ToString(),
         SyntaxLanguageFamily.Json => ((Language.Json.SyntaxKind)rawKind).ToString(),
         SyntaxLanguageFamily.Toml => ((Language.Toml.SyntaxKind)rawKind).ToString(),
@@ -68,6 +72,10 @@ internal sealed class SyntaxLanguage
         var name = value?.Trim().ToLowerInvariant();
         switch (name)
         {
+            case "css":
+                language = Css;
+                return true;
+
             case "ini":
                 language = Ini;
                 return true;
@@ -119,6 +127,7 @@ internal sealed class SyntaxLanguage
     {
         var name = path.Extension.ToLowerInvariant() switch
         {
+            ".css" => "css",
             ".ini" or ".editorconfig" or ".gitconfig" or ".npmrc" => "ini",
             ".json" or ".jsonc" or ".json5" or ".webmanifest" => "json",
             ".toml" => "toml",

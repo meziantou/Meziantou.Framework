@@ -4,7 +4,7 @@
     <RootNamespace>Meziantou.Framework.Language.Css</RootNamespace>
     <Description>A Roslyn-style immutable CSS syntax tree with lossless parsing and diagnostics: nesting, selectors, media, container and supports queries, cascade layers, and every other modern at-rule.</Description>
     <PackageTags>css, stylesheet, selectors, media-queries, syntax-tree, cst, parser, diagnostics</PackageTags>
-    <Version>1.0.0</Version>
+    <Version>1.0.1</Version>
     <IsTrimmable>true</IsTrimmable>
   </PropertyGroup>
   <ItemGroup>

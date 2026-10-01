@@ -4,6 +4,7 @@ namespace Meziantou.Framework.Language.Tool.Tests;
 
 public sealed class LanguageToolTests(ITestOutputHelper testOutputHelper)
 {
+    private const string CssSample = ".card { color: red; &:hover { color: blue } }\n@media (width >= 600px) { a { b: c } }\n";
     private const string IniSample = "[section]\nname=value\n";
     private const string JsonSample = "{\"a\":[1,/*c*/2]}";
     private const string TomlSample = "title = \"TOML\"\n[owner]\nname = \"Tom\"\n";
@@ -13,6 +14,7 @@ public sealed class LanguageToolTests(ITestOutputHelper testOutputHelper)
 
     public static TheoryData<string, string, string> DetectedSamples => new()
     {
+        { "sample.css", CssSample, "css" },
         { "sample.ini", IniSample, "ini" },
         { ".editorconfig", "root=true\n", "ini" },
         { ".gitconfig", "[user]\nname=Tester\n", "ini" },
@@ -220,8 +222,10 @@ public sealed class LanguageToolTests(ITestOutputHelper testOutputHelper)
     }
 
     [Theory]
+    [InlineData("css", CssSample)]
     [InlineData("ini", IniSample)]
     [InlineData("json", JsonSample)]
+    [InlineData("toml", TomlSample)]
     [InlineData("xml", XmlSample)]
     [InlineData("bash", ShellSample)]
     [InlineData("regex-pcre", RegexSample)]
@@ -281,7 +285,7 @@ public sealed class LanguageToolTests(ITestOutputHelper testOutputHelper)
     [Fact]
     public async Task Dump_JsonAndXmlHaveNoDialect()
     {
-        foreach (var (language, text) in new[] { ("ini", IniSample), ("json", JsonSample), ("xml", XmlSample) })
+        foreach (var (language, text) in new[] { ("css", CssSample), ("ini", IniSample), ("json", JsonSample), ("toml", TomlSample), ("xml", XmlSample) })
         {
             var console = new ConsoleHelper(testOutputHelper);
             Assert.Equal(0, await Program.MainImpl(["syntax", "--language", language], console.ConfigureConsole, new StringReader(text)));

@@ -18,9 +18,9 @@
 
   <!-- The SDK only imports the compile and runtime assets of packages, so the SkiaSharp comparer tests request the native libraries explicitly -->
   <ItemGroup>
-    <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="4.152.0" IncludeAssets="runtime;compile;native" />
-    <PackageReference Include="SkiaSharp.NativeAssets.macOS" Version="4.152.0" IncludeAssets="runtime;compile;native" />
-    <PackageReference Include="SkiaSharp.NativeAssets.Win32" Version="4.152.0" IncludeAssets="runtime;compile;native" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="4.152.1" IncludeAssets="runtime;compile;native" />
+    <PackageReference Include="SkiaSharp.NativeAssets.macOS" Version="4.152.1" IncludeAssets="runtime;compile;native" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Win32" Version="4.152.1" IncludeAssets="runtime;compile;native" />
   </ItemGroup>
 
   <ItemGroup>

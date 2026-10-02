@@ -10,7 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="StackExchange.Redis" Version="3.2.1" />
+    <PackageReference Include="StackExchange.Redis" Version="3.3.0" />
   </ItemGroup>
 
   <ItemGroup>

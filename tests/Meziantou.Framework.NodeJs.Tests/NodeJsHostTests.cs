@@ -779,6 +779,10 @@ public sealed partial class NodeJsHostTests
         var result = await node.InvokeAsync("./describe.mjs", "describeAll",
         [
             JSValue.Undefined,
+            JSValue.Null,
+            JSValue.String("text \"é\" 😀"),
+            JSValue.Boolean(true),
+            JSValue.Boolean(false),
             JSValue.BigInt(BigInteger.Parse("123456789012345678901234567890", CultureInfo.InvariantCulture)),
             JSValue.BigInt(-BigInteger.Pow(2, 100)),
             JSValue.BigInt(long.MinValue),
@@ -803,6 +807,10 @@ public sealed partial class NodeJsHostTests
         string[][] expected =
         [
             ["undefined", "undefined"],
+            ["object", "null"],
+            ["string", "text \"é\" 😀"],
+            ["boolean", "true"],
+            ["boolean", "false"],
             ["bigint", "123456789012345678901234567890"],
             ["bigint", "-1267650600228229401496703205376"],
             ["bigint", "-9223372036854775808"],
@@ -840,7 +848,7 @@ public sealed partial class NodeJsHostTests
         var argument = new JsonObject
         {
             ["missing"] = JSValue.Undefined,
-            ["deep"] = new JsonObject { ["list"] = new JsonArray(JSValue.BigInt(7).ToJsonNode(), 1, JSValue.Undefined.ToJsonNode()) },
+            ["deep"] = new JsonObject { ["list"] = new JsonArray(JSValue.BigInt(7).ToJsonNode(), 1, JSValue.Undefined.ToJsonNode(), JSValue.Null.ToJsonNode(), JSValue.String("s").ToJsonNode(), JSValue.Boolean(true).ToJsonNode()) },
             ["__proto__"] = JSValue.BigInt(5),
             ["text"] = "value",
         };
@@ -849,7 +857,7 @@ public sealed partial class NodeJsHostTests
 
         Assert.True(result.GetProperty("hasMissing").GetBoolean());
         Assert.False(result.TryGetProperty("missing", out _));
-        Assert.Equal("7n,1,undefined", result.GetProperty("list").GetString());
+        Assert.Equal("7n,1,undefined,null,s,true", result.GetProperty("list").GetString());
         Assert.True(result.GetProperty("ownProto").GetBoolean());
         Assert.True(result.GetProperty("prototypeUnchanged").GetBoolean());
         Assert.Equal("value", result.GetProperty("text").GetString());
@@ -872,6 +880,11 @@ public sealed partial class NodeJsHostTests
     public void JSValue_ToString()
     {
         Assert.Equal("undefined", JSValue.Undefined.ToString());
+        Assert.Equal("null", JSValue.Null.ToString());
+        Assert.Equal("text", JSValue.String("text").ToString());
+        Assert.Equal("true", JSValue.Boolean(true).ToString());
+        Assert.Same(JSValue.Boolean(false), JSValue.Boolean(false));
+        Assert.Throws<ArgumentNullException>(() => JSValue.String(null!));
         Assert.Equal("-5n", JSValue.BigInt(-5).ToString());
         Assert.Equal("NaN", JSValue.Number(double.NaN).ToString());
         Assert.Equal("-0", JSValue.Number(-0.0).ToString());

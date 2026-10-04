@@ -214,6 +214,18 @@ internal sealed class ArgumentWriter : IDisposable
     {
         switch (value.Kind)
         {
+            case JSValueKind.Null:
+                _writer.WriteNullValue();
+                return;
+
+            case JSValueKind.String:
+                _writer.WriteStringValue((string)value.Value!);
+                return;
+
+            case JSValueKind.Boolean:
+                _writer.WriteBooleanValue((bool)value.Value!);
+                return;
+
             case JSValueKind.Undefined:
                 StartValue("undefined");
                 break;

@@ -37,6 +37,9 @@ namespace Meziantou.Framework.NodeJs
     public sealed class JSValue
     {
         public static Meziantou.Framework.NodeJs.JSValue Undefined { get => throw null; }
+        public static Meziantou.Framework.NodeJs.JSValue Null { get => throw null; }
+        public static Meziantou.Framework.NodeJs.JSValue String(string value) => throw null;
+        public static Meziantou.Framework.NodeJs.JSValue Boolean(bool value) => throw null;
         public static Meziantou.Framework.NodeJs.JSValue BigInt(System.Numerics.BigInteger value) => throw null;
         public static Meziantou.Framework.NodeJs.JSValue Number(double value) => throw null;
         public static Meziantou.Framework.NodeJs.JSValue Number(float value) => throw null;

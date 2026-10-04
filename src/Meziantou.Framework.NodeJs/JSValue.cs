@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
 using System.Text.Json.Nodes;
@@ -6,7 +7,7 @@ using Meziantou.Framework.NodeJs.Internal;
 
 namespace Meziantou.Framework.NodeJs;
 
-/// <summary>A JavaScript value that JSON cannot represent, such as <c>undefined</c> or a <c>BigInt</c>, passed as an argument of a call.</summary>
+/// <summary>A JavaScript value passed as an argument of a call, including values that JSON cannot represent, such as <c>undefined</c> or a <c>BigInt</c>.</summary>
 /// <remarks>
 /// <para>A <see cref="JSValue"/> converts implicitly to a <see cref="JsonNode"/>, so it can be used as an argument, or nested in a <see cref="JsonObject"/> or a <see cref="JsonArray"/> argument.</para>
 /// <para>It cannot be serialized in any other way: the resulting <see cref="JsonNode"/> cannot be written as JSON, and a <see cref="JSValue"/> cannot be a member of an object serialized using reflection.</para>
@@ -28,9 +29,28 @@ public sealed class JSValue
     /// <summary>Gets the JavaScript <c>undefined</c> value.</summary>
     public static JSValue Undefined { get; } = new(JSValueKind.Undefined, value: null);
 
+    /// <summary>Gets the JavaScript <c>null</c> value.</summary>
+    public static JSValue Null { get; } = new(JSValueKind.Null, value: null);
+
+    private static JSValue True { get; } = new(JSValueKind.Boolean, value: true);
+
+    private static JSValue False { get; } = new(JSValueKind.Boolean, value: false);
+
     internal JSValueKind Kind { get; }
 
     internal object? Value { get; }
+
+    /// <summary>Creates a JavaScript string.</summary>
+    [SuppressMessage("Naming", "CA1720:Identifier contains type name", Justification = "Matches the JavaScript type, like the other factory methods")]
+    public static JSValue String(string value)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+
+        return new(JSValueKind.String, value);
+    }
+
+    /// <summary>Creates a JavaScript boolean.</summary>
+    public static JSValue Boolean(bool value) => value ? True : False;
 
     /// <summary>Creates a JavaScript <c>BigInt</c>.</summary>
     public static JSValue BigInt(BigInteger value) => new(JSValueKind.BigInt, value);
@@ -94,12 +114,15 @@ public sealed class JSValue
     /// <summary>Converts the value to a <see cref="JsonNode"/>, to use it as an argument or in a <see cref="JsonObject"/> or <see cref="JsonArray"/> argument.</summary>
     public static implicit operator JsonNode?(JSValue? value) => value?.ToJsonNode();
 
-    /// <summary>Returns the JavaScript representation of the value (e.g. <c>undefined</c>, <c>123n</c>, <c>NaN</c>).</summary>
+    /// <summary>Returns the JavaScript representation of the value (e.g. <c>undefined</c>, <c>123n</c>, <c>NaN</c>). A string is returned as is.</summary>
     public override string ToString()
     {
         return Kind switch
         {
             JSValueKind.Undefined => "undefined",
+            JSValueKind.Null => "null",
+            JSValueKind.String => (string)Value!,
+            JSValueKind.Boolean => (bool)Value! ? "true" : "false",
             JSValueKind.BigInt => ((BigInteger)Value!).ToString(CultureInfo.InvariantCulture) + "n",
             JSValueKind.Number => FormatNumber((double)Value!),
             JSValueKind.NumberLiteral => (string)Value!,

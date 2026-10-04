@@ -50,11 +50,14 @@ await node.EvaluateVoidAsync("globalThis.server = require('node:http').createSer
 
 ### JavaScript values
 
-Arguments are serialized as JSON. Use `JSValue` for values that JSON cannot represent. It converts implicitly to `JsonNode`, so it can be an argument or be nested in a `JsonObject` or `JsonArray` argument.
+Arguments are serialized as JSON. Use `JSValue` for values that JSON cannot represent; it also covers `null`, strings and booleans, so any argument can be expressed with it. It converts implicitly to `JsonNode`, so it can be an argument or be nested in a `JsonObject` or `JsonArray` argument.
 
 | .NET | JavaScript |
 | --- | --- |
 | `JSValue.Undefined` | `undefined` |
+| `JSValue.Null` | `null` |
+| `JSValue.String(string)` | string |
+| `JSValue.Boolean(bool)` | boolean |
 | `JSValue.BigInt(BigInteger)` | `BigInt`. `long`, `ulong`, `Int128`, and `UInt128` convert implicitly to `BigInteger`. |
 | `JSValue.Number(...)` | `Number`, from `double`, `float`, `Half`, `decimal`, and all integer types. `NaN`, infinities, and `-0` are preserved. Values that are not exactly representable are rounded to the nearest double, as `Number` would. |
 | `JSValue.Date(DateTimeOffset)`, `JSValue.Date(DateTime)` | `Date`, truncated to the millisecond. A local or unspecified `DateTime` is a local time. |

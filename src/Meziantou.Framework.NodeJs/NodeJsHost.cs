@@ -42,6 +42,9 @@ public sealed class NodeJsHost : IAsyncDisposable
     // Messages can be deeply nested (e.g. syntax trees). JsonDocument does not use recursion, so there is no reason to limit the depth.
     private static readonly JsonDocumentOptions UnlimitedDepthDocumentOptions = new() { MaxDepth = int.MaxValue };
 
+    // Initial size of the buffer that receives messages. It grows to contain the largest message, and shrinks back once the message is processed.
+    private const int ReadBufferSize = 16 * 1024;
+
     // The default options, except that NaN and infinities, sent as "NaN", "Infinity", and "-Infinity", can be read as numbers
     [SuppressMessage("Usage", "MA0224:Set RespectNullableAnnotations on the JsonSerializerOptions instance", Justification = "Same behavior as the default options")]
     [SuppressMessage("Usage", "MA0225:Set RespectRequiredConstructorParameters on the JsonSerializerOptions instance", Justification = "Same behavior as the default options")]
@@ -49,7 +52,7 @@ public sealed class NodeJsHost : IAsyncDisposable
 
     private readonly NodeJsHostOptions _options;
     private readonly Process _process;
-    private readonly ConcurrentDictionary<long, TaskCompletionSource<JsonElement>> _pendingRequests = new();
+    private readonly ConcurrentDictionary<long, PendingRequest> _pendingRequests = new();
     [SuppressMessage("Reliability", "CA2213:Disposable fields should be disposed", Justification = "AvailableWaitHandle is never used, and disposing it would leave concurrent callers waiting forever")]
     private readonly SemaphoreSlim _writeLock = new(1, 1);
     [SuppressMessage("Reliability", "CA2213:Disposable fields should be disposed", Justification = "AvailableWaitHandle is never used, and disposing it would leave concurrent callers waiting forever")]
@@ -119,7 +122,7 @@ public sealed class NodeJsHost : IAsyncDisposable
     /// <exception cref="NodeJsException">The JavaScript code throws, or the Node.js process exits.</exception>
     public Task<JsonElement> InvokeAsync(string module, string? exportName, IReadOnlyList<JsonNode?>? arguments = null, CancellationToken cancellationToken = default)
     {
-        return InvokeCoreAsync(module, exportName, arguments, ResultKind.Json, cancellationToken);
+        return InvokeCoreAsync(module, exportName, arguments, ResultKind.Json, ReadJsonElement, cancellationToken);
     }
 
     /// <summary>Imports a module, calls one of its exports, and deserializes the result.</summary>
@@ -128,8 +131,7 @@ public sealed class NodeJsHost : IAsyncDisposable
     {
         ArgumentNullException.ThrowIfNull(resultTypeInfo);
 
-        var result = await InvokeAsync(module, exportName, arguments, cancellationToken).ConfigureAwait(false);
-        return result.Deserialize(resultTypeInfo);
+        return await InvokeCoreAsync(module, exportName, arguments, ResultKind.Json, CreateResultReader(resultTypeInfo), cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>Imports a module, calls one of its exports, and deserializes the result. Arguments are serialized using reflection.</summary>
@@ -138,15 +140,14 @@ public sealed class NodeJsHost : IAsyncDisposable
     [RequiresDynamicCode(ReflectionDynamicCodeMessage)]
     public async Task<T?> InvokeAsync<T>(string module, string? exportName, object?[]? arguments = null, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
     {
-        var result = await InvokeAsync(module, exportName, ArgumentWriter.SerializeArguments(arguments, options), cancellationToken).ConfigureAwait(false);
-        return result.Deserialize<T>(GetResultSerializerOptions(options));
+        return await InvokeCoreAsync(module, exportName, ArgumentWriter.SerializeArguments(arguments, options), ResultKind.Json, CreateResultReader<T>(options), cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>Imports a module and calls one of its exports, ignoring its result. The result does not need to be serializable.</summary>
     /// <inheritdoc cref="InvokeAsync(string, string?, IReadOnlyList{JsonNode?}?, CancellationToken)"/>
     public Task InvokeVoidAsync(string module, string? exportName, IReadOnlyList<JsonNode?>? arguments = null, CancellationToken cancellationToken = default)
     {
-        return InvokeCoreAsync(module, exportName, arguments, ResultKind.Void, cancellationToken);
+        return InvokeCoreAsync(module, exportName, arguments, ResultKind.Void, ReadJsonElement, cancellationToken);
     }
 
     /// <summary>Imports a module and calls one of its exports, ignoring its result. Arguments are serialized using reflection.</summary>
@@ -163,8 +164,8 @@ public sealed class NodeJsHost : IAsyncDisposable
     /// <returns>A reference to the value returned by the function (awaited if it is a promise), or to the value of the export when it is not a function. Dispose it when the value is no longer needed.</returns>
     public async Task<JSReference> InvokeReferenceAsync(string module, string? exportName, IReadOnlyList<JsonNode?>? arguments = null, CancellationToken cancellationToken = default)
     {
-        var result = await InvokeCoreAsync(module, exportName, arguments, ResultKind.Reference, cancellationToken).ConfigureAwait(false);
-        return new JSReference(this, result.GetInt64());
+        var referenceId = await InvokeCoreAsync(module, exportName, arguments, ResultKind.Reference, ReadReferenceId, cancellationToken).ConfigureAwait(false);
+        return new JSReference(this, referenceId);
     }
 
     /// <summary>Imports a module, calls one of its exports, and keeps the result in the Node.js process. Arguments are serialized using reflection.</summary>
@@ -183,7 +184,7 @@ public sealed class NodeJsHost : IAsyncDisposable
     /// <exception cref="NodeJsException">The JavaScript code throws, or the Node.js process exits.</exception>
     public Task<JsonElement> EvaluateAsync(string code, CancellationToken cancellationToken = default)
     {
-        return EvaluateCoreAsync(code, hasArguments: false, arguments: null, ResultKind.Json, cancellationToken);
+        return EvaluateCoreAsync(code, hasArguments: false, arguments: null, ResultKind.Json, ReadJsonElement, cancellationToken);
     }
 
     /// <summary>Evaluates JavaScript code as the body of an async function that receives arguments.</summary>
@@ -194,7 +195,7 @@ public sealed class NodeJsHost : IAsyncDisposable
     /// <exception cref="NodeJsException">The JavaScript code throws, or the Node.js process exits.</exception>
     public Task<JsonElement> EvaluateAsync(string code, IReadOnlyList<JsonNode?>? arguments, CancellationToken cancellationToken = default)
     {
-        return EvaluateCoreAsync(code, hasArguments: true, arguments, ResultKind.Json, cancellationToken);
+        return EvaluateCoreAsync(code, hasArguments: true, arguments, ResultKind.Json, ReadJsonElement, cancellationToken);
     }
 
     /// <summary>Evaluates JavaScript code as the body of an async function that receives arguments, and deserializes the result.</summary>
@@ -203,8 +204,7 @@ public sealed class NodeJsHost : IAsyncDisposable
     {
         ArgumentNullException.ThrowIfNull(resultTypeInfo);
 
-        var result = await EvaluateAsync(code, arguments, cancellationToken).ConfigureAwait(false);
-        return result.Deserialize(resultTypeInfo);
+        return await EvaluateCoreAsync(code, hasArguments: true, arguments, ResultKind.Json, CreateResultReader(resultTypeInfo), cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>Evaluates JavaScript code as the body of an async function that receives arguments, and deserializes the result. Arguments are serialized using reflection.</summary>
@@ -213,8 +213,7 @@ public sealed class NodeJsHost : IAsyncDisposable
     [RequiresDynamicCode(ReflectionDynamicCodeMessage)]
     public async Task<T?> EvaluateAsync<T>(string code, object?[]? arguments, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
     {
-        var result = await EvaluateAsync(code, ArgumentWriter.SerializeArguments(arguments, options), cancellationToken).ConfigureAwait(false);
-        return result.Deserialize<T>(GetResultSerializerOptions(options));
+        return await EvaluateCoreAsync(code, hasArguments: true, ArgumentWriter.SerializeArguments(arguments, options), ResultKind.Json, CreateResultReader<T>(options), cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>Evaluates JavaScript code as the body of an async function and deserializes the result.</summary>
@@ -223,8 +222,7 @@ public sealed class NodeJsHost : IAsyncDisposable
     {
         ArgumentNullException.ThrowIfNull(resultTypeInfo);
 
-        var result = await EvaluateAsync(code, cancellationToken).ConfigureAwait(false);
-        return result.Deserialize(resultTypeInfo);
+        return await EvaluateCoreAsync(code, hasArguments: false, arguments: null, ResultKind.Json, CreateResultReader(resultTypeInfo), cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>Evaluates JavaScript code as the body of an async function and deserializes the result using reflection.</summary>
@@ -233,22 +231,21 @@ public sealed class NodeJsHost : IAsyncDisposable
     [RequiresDynamicCode("JSON deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use the overload that takes a JsonTypeInfo instead.")]
     public async Task<T?> EvaluateAsync<T>(string code, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
     {
-        var result = await EvaluateAsync(code, cancellationToken).ConfigureAwait(false);
-        return result.Deserialize<T>(GetResultSerializerOptions(options));
+        return await EvaluateCoreAsync(code, hasArguments: false, arguments: null, ResultKind.Json, CreateResultReader<T>(options), cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>Evaluates JavaScript code as the body of an async function, ignoring its result. The result does not need to be serializable.</summary>
     /// <inheritdoc cref="EvaluateAsync(string, CancellationToken)"/>
     public Task EvaluateVoidAsync(string code, CancellationToken cancellationToken = default)
     {
-        return EvaluateCoreAsync(code, hasArguments: false, arguments: null, ResultKind.Void, cancellationToken);
+        return EvaluateCoreAsync(code, hasArguments: false, arguments: null, ResultKind.Void, ReadJsonElement, cancellationToken);
     }
 
     /// <summary>Evaluates JavaScript code as the body of an async function that receives arguments, ignoring its result. The result does not need to be serializable.</summary>
     /// <inheritdoc cref="EvaluateAsync(string, IReadOnlyList{JsonNode?}?, CancellationToken)"/>
     public Task EvaluateVoidAsync(string code, IReadOnlyList<JsonNode?>? arguments, CancellationToken cancellationToken = default)
     {
-        return EvaluateCoreAsync(code, hasArguments: true, arguments, ResultKind.Void, cancellationToken);
+        return EvaluateCoreAsync(code, hasArguments: true, arguments, ResultKind.Void, ReadJsonElement, cancellationToken);
     }
 
     /// <summary>Evaluates JavaScript code as the body of an async function that receives arguments, ignoring its result. Arguments are serialized using reflection.</summary>
@@ -265,8 +262,8 @@ public sealed class NodeJsHost : IAsyncDisposable
     /// <returns>A reference to the returned value. Dispose it when the value is no longer needed.</returns>
     public async Task<JSReference> EvaluateReferenceAsync(string code, CancellationToken cancellationToken = default)
     {
-        var result = await EvaluateCoreAsync(code, hasArguments: false, arguments: null, ResultKind.Reference, cancellationToken).ConfigureAwait(false);
-        return new JSReference(this, result.GetInt64());
+        var referenceId = await EvaluateCoreAsync(code, hasArguments: false, arguments: null, ResultKind.Reference, ReadReferenceId, cancellationToken).ConfigureAwait(false);
+        return new JSReference(this, referenceId);
     }
 
     /// <summary>Evaluates JavaScript code as the body of an async function that receives arguments, and keeps the result in the Node.js process.</summary>
@@ -274,8 +271,8 @@ public sealed class NodeJsHost : IAsyncDisposable
     /// <returns>A reference to the returned value. Dispose it when the value is no longer needed.</returns>
     public async Task<JSReference> EvaluateReferenceAsync(string code, IReadOnlyList<JsonNode?>? arguments, CancellationToken cancellationToken = default)
     {
-        var result = await EvaluateCoreAsync(code, hasArguments: true, arguments, ResultKind.Reference, cancellationToken).ConfigureAwait(false);
-        return new JSReference(this, result.GetInt64());
+        var referenceId = await EvaluateCoreAsync(code, hasArguments: true, arguments, ResultKind.Reference, ReadReferenceId, cancellationToken).ConfigureAwait(false);
+        return new JSReference(this, referenceId);
     }
 
     /// <summary>Evaluates JavaScript code as the body of an async function that receives arguments, and keeps the result in the Node.js process. Arguments are serialized using reflection.</summary>
@@ -428,7 +425,7 @@ public sealed class NodeJsHost : IAsyncDisposable
 
             _stream = await acceptTask.ConfigureAwait(false);
 
-            var hello = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var hello = new TaskCompletionSource<byte[]>(TaskCreationOptions.RunContinuationsAsynchronously);
             _readTask = ReadMessagesAsync(_stream, hello);
             ProcessHelloMessage(await hello.Task.WaitAsync(startupCts.Token).ConfigureAwait(false), token);
         }
@@ -469,11 +466,36 @@ public sealed class NodeJsHost : IAsyncDisposable
             throw new ArgumentOutOfRangeException(nameof(options), unresponsiveTimeout, "NodeJsHostOptions.UnresponsiveTimeout must be greater than zero and less than Int32.MaxValue milliseconds.");
     }
 
-    internal static JsonSerializerOptions GetResultSerializerOptions(JsonSerializerOptions? options) => options ?? DefaultResultSerializerOptions;
-
-    private void ProcessHelloMessage(string line, string expectedToken)
+    /// <summary>Creates a reader that deserializes the result directly from the UTF-8 bytes of the response.</summary>
+    internal static ResultReader<T?> CreateResultReader<T>(JsonTypeInfo<T> resultTypeInfo)
     {
-        using var document = JsonDocument.Parse(line);
+        return utf8Json => JsonSerializer.Deserialize(utf8Json, resultTypeInfo);
+    }
+
+    /// <summary>Creates a reader that deserializes the result directly from the UTF-8 bytes of the response, using reflection.</summary>
+    [RequiresUnreferencedCode(ReflectionUnreferencedCodeMessage)]
+    [RequiresDynamicCode(ReflectionDynamicCodeMessage)]
+    internal static ResultReader<T?> CreateResultReader<T>(JsonSerializerOptions? options)
+    {
+        var resultOptions = options ?? DefaultResultSerializerOptions;
+        return utf8Json => JsonSerializer.Deserialize<T>(utf8Json, resultOptions);
+    }
+
+    // The JsonElement owns a copy of the bytes, so it remains valid once the buffer that receives messages is reused
+    internal static JsonElement ReadJsonElement(ReadOnlySpan<byte> utf8Json) => JsonElement.Parse(utf8Json, UnlimitedDepthDocumentOptions);
+
+    internal static long ReadReferenceId(ReadOnlySpan<byte> utf8Json)
+    {
+        var reader = new Utf8JsonReader(utf8Json);
+        if (!reader.Read())
+            throw new JsonException("The reference identifier is missing.");
+
+        return reader.GetInt64();
+    }
+
+    private void ProcessHelloMessage(byte[] message, string expectedToken)
+    {
+        using var document = JsonDocument.Parse(message);
         var root = document.RootElement;
         if (root.ValueKind is not JsonValueKind.Object ||
             !root.TryGetProperty("type", out var type) || !type.ValueEquals("hello") ||
@@ -489,7 +511,7 @@ public sealed class NodeJsHost : IAsyncDisposable
         }
     }
 
-    private Task<JsonElement> InvokeCoreAsync(string module, string? exportName, IReadOnlyList<JsonNode?>? arguments, ResultKind resultKind, CancellationToken cancellationToken)
+    private Task<T> InvokeCoreAsync<T>(string module, string? exportName, IReadOnlyList<JsonNode?>? arguments, ResultKind resultKind, ResultReader<T> readResult, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(module);
 
@@ -499,10 +521,10 @@ public sealed class NodeJsHost : IAsyncDisposable
             writer.WriteString("module", module);
             writer.WriteString("export", exportName);
             ArgumentWriter.Write(writer, this, arguments);
-        }, resultKind, cancellationToken);
+        }, resultKind, readResult, cancellationToken);
     }
 
-    private Task<JsonElement> EvaluateCoreAsync(string code, bool hasArguments, IReadOnlyList<JsonNode?>? arguments, ResultKind resultKind, CancellationToken cancellationToken)
+    private Task<T> EvaluateCoreAsync<T>(string code, bool hasArguments, IReadOnlyList<JsonNode?>? arguments, ResultKind resultKind, ResultReader<T> readResult, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(code);
 
@@ -514,10 +536,10 @@ public sealed class NodeJsHost : IAsyncDisposable
             {
                 ArgumentWriter.Write(writer, this, arguments);
             }
-        }, resultKind, cancellationToken);
+        }, resultKind, readResult, cancellationToken);
     }
 
-    internal Task<JsonElement> InvokeMemberAsync(JSReference target, string? memberName, IReadOnlyList<JsonNode?>? arguments, ResultKind resultKind, CancellationToken cancellationToken)
+    internal Task<T> InvokeMemberAsync<T>(JSReference target, string? memberName, IReadOnlyList<JsonNode?>? arguments, ResultKind resultKind, ResultReader<T> readResult, CancellationToken cancellationToken)
     {
         return SendRequestAsync(writer =>
         {
@@ -526,23 +548,23 @@ public sealed class NodeJsHost : IAsyncDisposable
             writer.WriteNumber("reference", target.Id);
             writer.WriteString("member", memberName);
             ArgumentWriter.Write(writer, this, arguments);
-        }, resultKind, cancellationToken);
+        }, resultKind, readResult, cancellationToken);
     }
 
-    internal Task<JsonElement> GetReferenceValueAsync(JSReference target, CancellationToken cancellationToken)
+    internal Task<T> GetReferenceValueAsync<T>(JSReference target, ResultReader<T> readResult, CancellationToken cancellationToken)
     {
         return SendRequestAsync(writer =>
         {
             ObjectDisposedException.ThrowIf(target.IsDisposed, target);
             writer.WriteString("type", "getReference");
             writer.WriteNumber("reference", target.Id);
-        }, ResultKind.Json, cancellationToken);
+        }, ResultKind.Json, readResult, cancellationToken);
     }
 
     /// <summary>Gets information about the state of the Node.js process, for tests.</summary>
     internal Task<JsonElement> GetDebugInformationAsync(CancellationToken cancellationToken)
     {
-        return SendRequestAsync(writer => writer.WriteString("type", "debug"), ResultKind.Json, cancellationToken);
+        return SendRequestAsync(writer => writer.WriteString("type", "debug"), ResultKind.Json, ReadJsonElement, cancellationToken);
     }
 
     /// <summary>Sends a request that is not valid JSON, for tests.</summary>
@@ -555,7 +577,7 @@ public sealed class NodeJsHost : IAsyncDisposable
 
             // The object is never closed
             writer.WriteRawValue("{", skipInputValidation: true);
-        }, ResultKind.Json, cancellationToken);
+        }, ResultKind.Json, ReadJsonElement, cancellationToken);
     }
 
     /// <summary>Releases a value referenced by a <see cref="JSReference"/>, without waiting for the message to be sent.</summary>
@@ -644,19 +666,19 @@ public sealed class NodeJsHost : IAsyncDisposable
         }
     }
 
-    private async Task<JsonElement> SendRequestAsync(Action<Utf8JsonWriter> writeMessage, ResultKind resultKind, CancellationToken cancellationToken)
+    private async Task<T> SendRequestAsync<T>(Action<Utf8JsonWriter> writeMessage, ResultKind resultKind, ResultReader<T> readResult, CancellationToken cancellationToken)
     {
         ObjectDisposedException.ThrowIf(_disposed is 1, this);
         cancellationToken.ThrowIfCancellationRequested();
 
         if (_concurrencyLimit is null)
-            return await SendRequestCoreAsync(writeMessage, resultKind, cancellationToken).ConfigureAwait(false);
+            return await SendRequestCoreAsync(writeMessage, resultKind, readResult, cancellationToken).ConfigureAwait(false);
 
         // The message is serialized once the call can run, so waiting calls do not keep a serialized copy of their arguments
         await _concurrencyLimit.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            return await SendRequestCoreAsync(writeMessage, resultKind, cancellationToken).ConfigureAwait(false);
+            return await SendRequestCoreAsync(writeMessage, resultKind, readResult, cancellationToken).ConfigureAwait(false);
         }
         finally
         {
@@ -664,7 +686,7 @@ public sealed class NodeJsHost : IAsyncDisposable
         }
     }
 
-    private async Task<JsonElement> SendRequestCoreAsync(Action<Utf8JsonWriter> writeMessage, ResultKind resultKind, CancellationToken cancellationToken)
+    private async Task<T> SendRequestCoreAsync<T>(Action<Utf8JsonWriter> writeMessage, ResultKind resultKind, ResultReader<T> readResult, CancellationToken cancellationToken)
     {
         var id = Interlocked.Increment(ref _nextRequestId);
         PooledBufferWriter? message = SerializeMessage(writer =>
@@ -683,8 +705,8 @@ public sealed class NodeJsHost : IAsyncDisposable
             writeMessage(writer);
         });
 
-        var tcs = new TaskCompletionSource<JsonElement>(TaskCreationOptions.RunContinuationsAsynchronously);
-        _pendingRequests[id] = tcs;
+        var request = new PendingRequest<T>(readResult);
+        _pendingRequests[id] = request;
         try
         {
             // Terminate sets the exception before failing pending requests, so a request added concurrently is never left pending
@@ -716,7 +738,7 @@ public sealed class NodeJsHost : IAsyncDisposable
 
             try
             {
-                return await tcs.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
+                return await request.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
             }
             catch (OperationCanceledException)
             {
@@ -724,7 +746,13 @@ public sealed class NodeJsHost : IAsyncDisposable
                 // When the response is already being processed, the value must be released here.
                 if (!AbandonRequest(id) && resultKind is ResultKind.Reference)
                 {
-                    _ = tcs.Task.ContinueWith(task => ReleaseReference(task.Result.GetInt64()), CancellationToken.None, TaskContinuationOptions.OnlyOnRanToCompletion | TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+                    _ = request.Task.ContinueWith(task =>
+                    {
+                        if (task.Result is long referenceId)
+                        {
+                            ReleaseReference(referenceId);
+                        }
+                    }, CancellationToken.None, TaskContinuationOptions.OnlyOnRanToCompletion | TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
                 }
 
                 throw;
@@ -765,7 +793,7 @@ public sealed class NodeJsHost : IAsyncDisposable
             using var cts = new CancellationTokenSource(timeout);
             try
             {
-                await SendRequestCoreAsync(writer => writer.WriteString("type", "ping"), ResultKind.Void, cts.Token).ConfigureAwait(false);
+                await SendRequestCoreAsync(writer => writer.WriteString("type", "ping"), ResultKind.Void, ReadJsonElement, cts.Token).ConfigureAwait(false);
             }
             catch (OperationCanceledException)
             {
@@ -800,28 +828,87 @@ public sealed class NodeJsHost : IAsyncDisposable
         }
     }
 
-    private async Task ReadMessagesAsync(Stream stream, TaskCompletionSource<string> hello)
+    private async Task ReadMessagesAsync(Stream stream, TaskCompletionSource<byte[]> hello)
     {
         Exception? error = null;
+
+        // Messages are read as UTF-8 bytes and parsed in place, so a large result is not converted to a string, and only the parsed result is allocated.
+        // Messages are separated by a line break, which JSON.stringify never writes in a value.
+        var buffer = ArrayPool<byte>.Shared.Rent(ReadBufferSize);
         try
         {
-            using var reader = new StreamReader(stream, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false), detectEncodingFromByteOrderMarks: false, bufferSize: 4096, leaveOpen: true);
-            string? line;
-            while ((line = await reader.ReadLineAsync().ConfigureAwait(false)) is not null)
+            var messageStart = 0;
+            var dataEnd = 0;
+            while (true)
             {
-                // The first message is the handshake, validated by StartCoreAsync
-                if (!hello.Task.IsCompleted)
+                if (dataEnd == buffer.Length)
                 {
-                    hello.TrySetResult(line);
-                    continue;
+                    if (messageStart > 0)
+                    {
+                        // Move the incomplete message to the start of the buffer
+                        buffer.AsSpan(messageStart, dataEnd - messageStart).CopyTo(buffer);
+                        dataEnd -= messageStart;
+                        messageStart = 0;
+                    }
+                    else
+                    {
+                        // The buffer grows exponentially, so a large message is copied a constant number of times on average
+                        if (buffer.Length == Array.MaxLength)
+                            throw new InvalidOperationException("The message is too large.");
+
+                        var newBuffer = ArrayPool<byte>.Shared.Rent((int)Math.Min(buffer.Length * 2L, Array.MaxLength));
+                        buffer.AsSpan(0, dataEnd).CopyTo(newBuffer);
+                        ArrayPool<byte>.Shared.Return(buffer);
+                        buffer = newBuffer;
+                    }
                 }
 
-                ProcessResponse(line);
+                var bytesRead = await stream.ReadAsync(buffer.AsMemory(dataEnd)).ConfigureAwait(false);
+                if (bytesRead is 0)
+                    break;
+
+                // Only the new bytes are searched for line breaks, so a message split into many chunks is read in linear time
+                var searchStart = dataEnd;
+                dataEnd += bytesRead;
+                int index;
+                while ((index = buffer.AsSpan(searchStart, dataEnd - searchStart).IndexOf((byte)'\n')) >= 0)
+                {
+                    var messageEnd = searchStart + index;
+                    var message = buffer.AsSpan(messageStart, messageEnd - messageStart);
+
+                    // The first message is the handshake, validated by StartCoreAsync
+                    if (!hello.Task.IsCompleted)
+                    {
+                        hello.TrySetResult(message.ToArray());
+                    }
+                    else
+                    {
+                        ProcessResponse(message);
+                    }
+
+                    messageStart = searchStart = messageEnd + 1;
+                }
+
+                if (messageStart == dataEnd)
+                {
+                    messageStart = dataEnd = 0;
+
+                    // Do not keep the large buffer needed by a large message
+                    if (buffer.Length > ReadBufferSize)
+                    {
+                        ArrayPool<byte>.Shared.Return(buffer);
+                        buffer = ArrayPool<byte>.Shared.Rent(ReadBufferSize);
+                    }
+                }
             }
         }
         catch (Exception ex) when (ex is IOException or ObjectDisposedException or OperationCanceledException or JsonException or InvalidOperationException or KeyNotFoundException or FormatException)
         {
             error = ex;
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(buffer);
         }
 
         if (!hello.Task.IsCompleted)
@@ -852,53 +939,72 @@ public sealed class NodeJsHost : IAsyncDisposable
         }
     }
 
-    private void ProcessResponse(string line)
+    // Responses always start with the identifier of the request, followed by at most one property: {"id":1,"result":...}
+    private void ProcessResponse(ReadOnlySpan<byte> message)
     {
-        using var document = JsonDocument.Parse(line, UnlimitedDepthDocumentOptions);
-        var root = document.RootElement;
-        var id = root.GetProperty("id").GetInt64();
-        if (!_pendingRequests.TryRemove(id, out var tcs))
+        var reader = new Utf8JsonReader(message);
+        if (!reader.Read() || reader.TokenType is not JsonTokenType.StartObject ||
+            !reader.Read() || reader.TokenType is not JsonTokenType.PropertyName || !reader.ValueTextEquals("id"u8) ||
+            !reader.Read())
         {
-            // The caller stopped waiting (see AbandonRequest), so the call is no longer running
-            Interlocked.Decrement(ref _abandonedCalls);
+            throw new JsonException("The response does not start with the identifier of the request.");
+        }
 
-            // The value kept for the caller is no longer needed
-            if (root.TryGetProperty("reference", out var unusedReference))
+        var id = reader.GetInt64();
+        if (!reader.Read())
+            throw new JsonException("The response is incomplete.");
+
+        // A void call has no result
+        if (reader.TokenType is JsonTokenType.EndObject)
+        {
+            if (TryRemoveRequest(id, out var request))
             {
-                ReleaseReference(unusedReference.GetInt64());
+                request.SetNoResult();
             }
 
             return;
         }
 
-        try
+        if (reader.TokenType is not JsonTokenType.PropertyName)
+            throw new JsonException("The response is invalid.");
+
+        // The value is the rest of the message, so it is parsed only once, directly by the reader of the request.
+        // Parsing fails when the value is not exactly one JSON value, for instance when another property follows.
+        var valueEnd = message.LastIndexOf((byte)'}');
+        if (valueEnd < reader.BytesConsumed)
+            throw new JsonException("The response is incomplete.");
+
+        var value = message[(int)reader.BytesConsumed..valueEnd];
+
+        // A request is only removed once the response is known to be valid, so it is never left pending when the connection is terminated.
+        // Reading the result cannot terminate the connection, as its failure is reported to the caller.
+        if (reader.ValueTextEquals("result"u8) || reader.ValueTextEquals("reference"u8))
         {
-            if (root.TryGetProperty("error", out var error))
+            if (TryRemoveRequest(id, out var request))
             {
-                var name = GetStringOrNull(error, "name");
-                var message = GetStringOrNull(error, "message");
-                var stack = GetStringOrNull(error, "stack");
-                tcs.TrySetException(new NodeJsException(name is null ? message ?? "" : $"{name}: {message}", name, stack));
+                request.SetResult(value);
             }
-            else if (root.TryGetProperty("reference", out var reference))
+            else if (reader.ValueTextEquals("reference"u8))
             {
-                tcs.TrySetResult(reference.Clone());
-            }
-            else if (root.TryGetProperty("result", out var result))
-            {
-                tcs.TrySetResult(result.Clone());
-            }
-            else
-            {
-                // The result of a void call
-                tcs.TrySetResult(default);
+                // The value kept for the caller is no longer needed
+                ReleaseReference(ReadReferenceId(value));
             }
         }
-        catch (Exception ex) when (ex is JsonException or InvalidOperationException or KeyNotFoundException or FormatException)
+        else if (reader.ValueTextEquals("error"u8))
         {
-            // The request is no longer pending, so terminating the host would not complete it
-            tcs.TrySetException(new NodeJsException("The Node.js process sent an invalid message.", ex));
-            throw;
+            var error = JsonElement.Parse(value);
+            var name = GetStringOrNull(error, "name");
+            var errorMessage = GetStringOrNull(error, "message");
+            var stack = GetStringOrNull(error, "stack");
+            var exception = new NodeJsException(name is null ? errorMessage ?? "" : $"{name}: {errorMessage}", name, stack);
+            if (TryRemoveRequest(id, out var request))
+            {
+                request.SetException(exception);
+            }
+        }
+        else
+        {
+            throw new JsonException("The response contains an unexpected property.");
         }
 
         static string? GetStringOrNull(JsonElement element, string propertyName)
@@ -907,14 +1013,26 @@ public sealed class NodeJsHost : IAsyncDisposable
         }
     }
 
+    /// <summary>Removes the request answered by a response.</summary>
+    /// <returns><see langword="false"/> when the caller stopped waiting (see <see cref="AbandonRequest"/>).</returns>
+    private bool TryRemoveRequest(long id, [NotNullWhen(true)] out PendingRequest? request)
+    {
+        if (_pendingRequests.TryRemove(id, out request))
+            return true;
+
+        // The caller stopped waiting, so the call is no longer running
+        Interlocked.Decrement(ref _abandonedCalls);
+        return false;
+    }
+
     private void Terminate(Exception exception)
     {
         if (Interlocked.CompareExchange(ref _terminationException, exception, comparand: null) is not null)
             return;
 
-        foreach (var (_, tcs) in _pendingRequests)
+        foreach (var (_, request) in _pendingRequests)
         {
-            tcs.TrySetException(exception);
+            request.SetException(exception);
         }
     }
 

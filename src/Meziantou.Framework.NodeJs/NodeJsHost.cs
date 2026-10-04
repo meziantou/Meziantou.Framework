@@ -31,13 +31,16 @@ public sealed class NodeJsHost : IAsyncDisposable
     internal const string ReflectionDynamicCodeMessage = "JSON serialization and deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use the overload that takes a JsonTypeInfo instead.";
     private const int MaxStandardErrorLines = 20;
     private static readonly TimeSpan ExitTimeout = TimeSpan.FromSeconds(10);
+
+    // Once the connection is closed, the process exits immediately unless its event loop is blocked, so there is no reason to wait longer before killing it
+    private static readonly TimeSpan DisposeExitTimeout = TimeSpan.FromSeconds(1);
     private static readonly TimeSpan OutputDrainTimeout = TimeSpan.FromSeconds(1);
 
     // Messages are only read by JSON.parse, so characters that are sensitive in HTML or non-ASCII do not need to be escaped, which would make them up to 6 times larger
     internal static readonly JsonWriterOptions MessageWriterOptions = new() { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
 
-    // Results can be deeply nested (e.g. syntax trees). JsonDocument does not use recursion, so there is no reason to limit the depth.
-    private static readonly JsonDocumentOptions ResponseDocumentOptions = new() { MaxDepth = int.MaxValue };
+    // Messages can be deeply nested (e.g. syntax trees). JsonDocument does not use recursion, so there is no reason to limit the depth.
+    private static readonly JsonDocumentOptions UnlimitedDepthDocumentOptions = new() { MaxDepth = int.MaxValue };
 
     // The default options, except that NaN and infinities, sent as "NaN", "Infinity", and "-Infinity", can be read as numbers
     [SuppressMessage("Usage", "MA0224:Set RespectNullableAnnotations on the JsonSerializerOptions instance", Justification = "Same behavior as the default options")]
@@ -55,8 +58,11 @@ public sealed class NodeJsHost : IAsyncDisposable
     private readonly TaskCompletionSource _exited = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private Stream? _stream;
     private Task? _readTask;
+    private Task _responsivenessCheck = Task.CompletedTask;
     private Exception? _terminationException;
     private long _nextRequestId;
+    private int _abandonedCalls;
+    private int _responsivenessCheckRequests;
     private int _disposed;
 
     private NodeJsHost(NodeJsHostOptions options)
@@ -80,9 +86,12 @@ public sealed class NodeJsHost : IAsyncDisposable
     /// <summary>Gets a value indicating whether the host can no longer run code, because it is disposed or the process exited.</summary>
     internal bool IsTerminated => Volatile.Read(ref _terminationException) is not null;
 
+    /// <summary>Gets the number of canceled calls whose response has not been received yet, so their JavaScript code may still be running.</summary>
+    internal int AbandonedCalls => Volatile.Read(ref _abandonedCalls);
+
     /// <summary>Starts a new Node.js process.</summary>
     /// <exception cref="NodeJsException">The <c>node</c> executable cannot be found, or the process fails to start.</exception>
-    /// <exception cref="ArgumentOutOfRangeException"><see cref="NodeJsHostOptions.MaxConcurrentCalls"/> is zero or negative.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><see cref="NodeJsHostOptions.MaxConcurrentCalls"/> or <see cref="NodeJsHostOptions.UnresponsiveTimeout"/> is zero or negative.</exception>
     public static async Task<NodeJsHost> StartAsync(NodeJsHostOptions? options = null, CancellationToken cancellationToken = default)
     {
         options ??= NodeJsHostOptions.Default;
@@ -297,20 +306,15 @@ public sealed class NodeJsHost : IAsyncDisposable
             await _readTask.ConfigureAwait(false);
         }
 
+        // The host is terminated, so the check completes without waiting for its timeout
+        await _responsivenessCheck.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+
         if (IsProcessStarted())
         {
             // When the connection was never established, the process cannot know it must exit
-            if (_stream is null || !await WaitForExitAsync(ExitTimeout, drainOutput: false).ConfigureAwait(false))
+            if (_stream is null || !await WaitForExitAsync(DisposeExitTimeout, drainOutput: false).ConfigureAwait(false))
             {
-                try
-                {
-                    _process.Kill(entireProcessTree: true);
-                }
-                catch (InvalidOperationException)
-                {
-                    // The process has already exited
-                }
-
+                KillProcess();
                 await WaitForExitAsync(ExitTimeout, drainOutput: false).ConfigureAwait(false);
             }
         }
@@ -460,6 +464,9 @@ public sealed class NodeJsHost : IAsyncDisposable
     {
         if (options.MaxConcurrentCalls is <= 0)
             throw new ArgumentOutOfRangeException(nameof(options), options.MaxConcurrentCalls, "NodeJsHostOptions.MaxConcurrentCalls must be greater than zero.");
+
+        if (options.UnresponsiveTimeout is { } unresponsiveTimeout && (unresponsiveTimeout <= TimeSpan.Zero || unresponsiveTimeout.TotalMilliseconds > int.MaxValue))
+            throw new ArgumentOutOfRangeException(nameof(options), unresponsiveTimeout, "NodeJsHostOptions.UnresponsiveTimeout must be greater than zero and less than Int32.MaxValue milliseconds.");
     }
 
     internal static JsonSerializerOptions GetResultSerializerOptions(JsonSerializerOptions? options) => options ?? DefaultResultSerializerOptions;
@@ -599,7 +606,35 @@ public sealed class NodeJsHost : IAsyncDisposable
                 writer.WriteEndObject();
             }
 
+            // Messages are separated by line breaks. Utf8JsonWriter escapes them in strings, but raw JSON written by a custom converter can contain them as whitespace.
+            if (buffer.WrittenMemory.Span.Contains((byte)'\n'))
+            {
+                var minified = Minify(buffer.WrittenMemory);
+                buffer.Dispose();
+                buffer = minified;
+            }
+
             buffer.Write("\n"u8);
+            return buffer;
+        }
+        catch
+        {
+            buffer.Dispose();
+            throw;
+        }
+    }
+
+    private static PooledBufferWriter Minify(ReadOnlyMemory<byte> json)
+    {
+        var buffer = new PooledBufferWriter();
+        try
+        {
+            using (var document = JsonDocument.Parse(json, UnlimitedDepthDocumentOptions))
+            using (var writer = new Utf8JsonWriter(buffer, MessageWriterOptions))
+            {
+                document.WriteTo(writer);
+            }
+
             return buffer;
         }
         catch
@@ -675,6 +710,7 @@ public sealed class NodeJsHost : IAsyncDisposable
             {
                 // The write continues in the background. A failure means the connection is lost, which is reported by the read loop.
                 _ = writeTask.ContinueWith(static task => _ = task.Exception, CancellationToken.None, TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+                AbandonRequest(id);
                 throw;
             }
 
@@ -682,11 +718,11 @@ public sealed class NodeJsHost : IAsyncDisposable
             {
                 return await tcs.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
             }
-            catch (OperationCanceledException) when (resultKind is ResultKind.Reference)
+            catch (OperationCanceledException)
             {
                 // ProcessResponse releases the value when the response arrives after this point.
                 // When the response is already being processed, the value must be released here.
-                if (!_pendingRequests.TryRemove(id, out _))
+                if (!AbandonRequest(id) && resultKind is ResultKind.Reference)
                 {
                     _ = tcs.Task.ContinueWith(task => ReleaseReference(task.Result.GetInt64()), CancellationToken.None, TaskContinuationOptions.OnlyOnRanToCompletion | TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
                 }
@@ -700,6 +736,54 @@ public sealed class NodeJsHost : IAsyncDisposable
             message?.Dispose();
         }
     }
+
+    /// <summary>Stops waiting for the response of a request that was sent.</summary>
+    /// <returns><see langword="false"/> when the response is already being processed.</returns>
+    private bool AbandonRequest(long id)
+    {
+        if (!_pendingRequests.TryRemove(id, out _))
+            return false;
+
+        // The call keeps running until its response arrives, and its JavaScript code may block the event loop
+        Interlocked.Increment(ref _abandonedCalls);
+        if (_options.UnresponsiveTimeout is { } timeout && Interlocked.Increment(ref _responsivenessCheckRequests) is 1)
+        {
+            _responsivenessCheck = CheckResponsivenessAsync(timeout);
+        }
+
+        return true;
+    }
+
+    /// <summary>Kills the process when its event loop does not respond, as it is the only way to stop the JavaScript code of a canceled call.</summary>
+    private async Task CheckResponsivenessAsync(TimeSpan timeout)
+    {
+        // Calls canceled while the process is being checked are checked again, as they may block the event loop later
+        int requests;
+        do
+        {
+            requests = Volatile.Read(ref _responsivenessCheckRequests);
+            using var cts = new CancellationTokenSource(timeout);
+            try
+            {
+                await SendRequestCoreAsync(writer => writer.WriteString("type", "ping"), ResultKind.Void, cts.Token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                Terminate(new NodeJsException($"The Node.js process did not respond within {timeout} after a call was canceled, so it was killed. Its event loop is blocked, e.g. by an infinite loop."));
+                KillProcess();
+                return;
+            }
+            catch (Exception ex) when (ex is NodeJsException or ObjectDisposedException)
+            {
+                // The process exited, or the host is disposed
+                return;
+            }
+        }
+        while (Interlocked.Add(ref _responsivenessCheckRequests, -requests) is not 0);
+    }
+
+    /// <summary>Waits for the check started when a call is canceled, for tests.</summary>
+    internal Task WaitForResponsivenessCheckAsync() => _responsivenessCheck;
 
     /// <summary>Writes a message, then releases the write lock and the message buffer.</summary>
     private async Task WriteMessageAndReleaseLockAsync(PooledBufferWriter message)
@@ -770,12 +854,15 @@ public sealed class NodeJsHost : IAsyncDisposable
 
     private void ProcessResponse(string line)
     {
-        using var document = JsonDocument.Parse(line, ResponseDocumentOptions);
+        using var document = JsonDocument.Parse(line, UnlimitedDepthDocumentOptions);
         var root = document.RootElement;
         var id = root.GetProperty("id").GetInt64();
         if (!_pendingRequests.TryRemove(id, out var tcs))
         {
-            // The caller stopped waiting, so the value kept for it is no longer needed
+            // The caller stopped waiting (see AbandonRequest), so the call is no longer running
+            Interlocked.Decrement(ref _abandonedCalls);
+
+            // The value kept for the caller is no longer needed
             if (root.TryGetProperty("reference", out var unusedReference))
             {
                 ReleaseReference(unusedReference.GetInt64());
@@ -784,25 +871,34 @@ public sealed class NodeJsHost : IAsyncDisposable
             return;
         }
 
-        if (root.TryGetProperty("error", out var error))
+        try
         {
-            var name = GetStringOrNull(error, "name");
-            var message = GetStringOrNull(error, "message");
-            var stack = GetStringOrNull(error, "stack");
-            tcs.TrySetException(new NodeJsException(name is null ? message ?? "" : $"{name}: {message}", name, stack));
+            if (root.TryGetProperty("error", out var error))
+            {
+                var name = GetStringOrNull(error, "name");
+                var message = GetStringOrNull(error, "message");
+                var stack = GetStringOrNull(error, "stack");
+                tcs.TrySetException(new NodeJsException(name is null ? message ?? "" : $"{name}: {message}", name, stack));
+            }
+            else if (root.TryGetProperty("reference", out var reference))
+            {
+                tcs.TrySetResult(reference.Clone());
+            }
+            else if (root.TryGetProperty("result", out var result))
+            {
+                tcs.TrySetResult(result.Clone());
+            }
+            else
+            {
+                // The result of a void call
+                tcs.TrySetResult(default);
+            }
         }
-        else if (root.TryGetProperty("reference", out var reference))
+        catch (Exception ex) when (ex is JsonException or InvalidOperationException or KeyNotFoundException or FormatException)
         {
-            tcs.TrySetResult(reference.Clone());
-        }
-        else if (root.TryGetProperty("result", out var result))
-        {
-            tcs.TrySetResult(result.Clone());
-        }
-        else
-        {
-            // The result of a void call
-            tcs.TrySetResult(default);
+            // The request is no longer pending, so terminating the host would not complete it
+            tcs.TrySetException(new NodeJsException("The Node.js process sent an invalid message.", ex));
+            throw;
         }
 
         static string? GetStringOrNull(JsonElement element, string propertyName)
@@ -880,6 +976,18 @@ public sealed class NodeJsHost : IAsyncDisposable
         }
 
         return true;
+    }
+
+    private void KillProcess()
+    {
+        try
+        {
+            _process.Kill(entireProcessTree: true);
+        }
+        catch (InvalidOperationException)
+        {
+            // The process has already exited, or the host is disposed
+        }
     }
 
     private bool IsProcessStarted()

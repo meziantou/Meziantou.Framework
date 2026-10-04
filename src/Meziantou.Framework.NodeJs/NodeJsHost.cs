@@ -36,6 +36,8 @@ public sealed class NodeJsHost : IAsyncDisposable
     private static readonly TimeSpan DisposeExitTimeout = TimeSpan.FromSeconds(1);
     private static readonly TimeSpan OutputDrainTimeout = TimeSpan.FromSeconds(1);
 
+    private static readonly string BootstrapScript = GetBootstrapScript();
+
     // While canceled calls are running, the process is checked at this interval, as they can block the event loop at any time
     private static readonly TimeSpan MaxResponsivenessCheckInterval = TimeSpan.FromSeconds(1);
 
@@ -355,6 +357,7 @@ public sealed class NodeJsHost : IAsyncDisposable
         startInfo.RedirectStandardInput = true;
         startInfo.RedirectStandardOutput = true;
         startInfo.RedirectStandardError = true;
+        startInfo.StandardInputEncoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
         startInfo.StandardOutputEncoding = Encoding.UTF8;
         startInfo.StandardErrorEncoding = Encoding.UTF8;
 #if NET11_0_OR_GREATER
@@ -372,9 +375,8 @@ public sealed class NodeJsHost : IAsyncDisposable
             startInfo.ArgumentList.Add(argument);
         }
 
+        // The bootstrap script is read from the standard input (see WriteBootstrapScriptAsync)
         startInfo.ArgumentList.Add("--input-type=module");
-        startInfo.ArgumentList.Add("--eval");
-        startInfo.ArgumentList.Add(GetBootstrapScript());
 
         foreach (var (name, value) in _options.EnvironmentVariables)
         {
@@ -426,7 +428,7 @@ public sealed class NodeJsHost : IAsyncDisposable
             throw new NodeJsException($"Cannot start '{nodePath}': {ex.Message}", ex);
         }
 
-        _process.StandardInput.Close();
+        _ = WriteBootstrapScriptAsync(_process.StandardInput);
         _process.BeginOutputReadLine();
         _process.BeginErrorReadLine();
 
@@ -1295,6 +1297,24 @@ public sealed class NodeJsHost : IAsyncDisposable
         catch (InvalidOperationException)
         {
             return false;
+        }
+    }
+
+    // The script is sent on the standard input instead of the command line, so its size is not limited by the maximum length of a command line
+    // (32,767 characters on Windows), and it does not appear in the list of processes. It is written in the background, as Node.js only reads it once
+    // the modules passed with --import are loaded, and the pipe buffer can be smaller than the script.
+    // Never throws: when the process exits before reading the script, the startup reports it.
+    private static async Task WriteBootstrapScriptAsync(StreamWriter standardInput)
+    {
+        try
+        {
+            await standardInput.WriteAsync(BootstrapScript).ConfigureAwait(false);
+
+            // Node.js runs the script once the standard input is closed
+            standardInput.Close();
+        }
+        catch (Exception ex) when (ex is IOException or ObjectDisposedException)
+        {
         }
     }
 

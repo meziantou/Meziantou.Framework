@@ -1,5 +1,5 @@
 // Bootstrap script executed by Meziantou.Framework.NodeJs.NodeJsHost.
-// It is started with "--input-type=module --eval", so dynamic imports are resolved relative to the working directory.
+// It is read from the standard input with "--input-type=module", so dynamic imports are resolved relative to the working directory.
 // Messages are newline-delimited JSON exchanged over the local socket provided by the .NET host.
 import net from "node:net";
 import path from "node:path";

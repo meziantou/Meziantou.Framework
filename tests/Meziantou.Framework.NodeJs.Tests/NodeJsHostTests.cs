@@ -24,6 +24,20 @@ public sealed partial class NodeJsHostTests
     }
 
     [Fact]
+    public async Task BootstrapScript_IsNotOnCommandLine()
+    {
+        var options = new NodeJsHostOptions();
+        options.NodeArguments.Add("--no-warnings");
+        await using var node = await StartNodeAsync(options);
+
+        // The script is read from the standard input, so the command line only contains the arguments
+        var result = await node.EvaluateAsync("return [process.execArgv, process.argv.length];", XunitCancellationToken);
+
+        Assert.Equal(["--no-warnings", "--input-type=module"], result[0].EnumerateArray().Select(argument => argument.GetString()).ToArray());
+        Assert.Equal(1, result[1].GetInt32());
+    }
+
+    [Fact]
     public async Task Evaluate_UndefinedResult_ReturnsNull()
     {
         await using var node = await StartNodeAsync();

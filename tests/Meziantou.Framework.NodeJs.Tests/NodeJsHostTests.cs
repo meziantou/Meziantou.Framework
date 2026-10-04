@@ -1118,8 +1118,9 @@ public sealed partial class NodeJsHostTests
     {
         await using var node = await StartNodeAsync();
 
-        var result = await node.EvaluateAsync("let value = 'leaf'; for (let i = 0; i < 2000; i++) value = [value]; return value;", XunitCancellationToken);
-        for (var i = 0; i < 2000; i++)
+        // JSON.stringify is recursive, so the depth is limited by the stack of the Node.js process, which is smaller on Windows
+        var result = await node.EvaluateAsync("let value = 'leaf'; for (let i = 0; i < 500; i++) value = [value]; return value;", XunitCancellationToken);
+        for (var i = 0; i < 500; i++)
         {
             result = result[0];
         }

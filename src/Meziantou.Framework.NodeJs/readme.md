@@ -86,7 +86,7 @@ Results are serialized as JSON. Values that JSON does not support, or supports w
 | `Date` | ISO 8601 string | `DateTimeOffset`, `DateTime` |
 | `undefined` | `null` | |
 
-Results can be nested at any depth.
+The depth of results is only limited by the stack of the Node.js process, as `JSON.stringify` is recursive.
 
 When deserializing with a `JsonTypeInfo`, set `NumberHandling = JsonNumberHandling.AllowNamedFloatingPointLiterals` on the `JsonSerializerContext` to read `NaN` and infinities as numbers.
 

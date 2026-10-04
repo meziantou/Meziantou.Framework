@@ -14,7 +14,9 @@ internal abstract class PendingRequest
     public abstract void SetException(Exception exception);
 }
 
-internal sealed class PendingRequest<T>(ResultReader<T> readResult) : PendingRequest
+/// <param name="readResult">Reads the result of the call.</param>
+/// <param name="hasResult">Whether the response must contain a result, i.e. the call is not a void call.</param>
+internal sealed class PendingRequest<T>(ResultReader<T> readResult, bool hasResult) : PendingRequest
 {
     private readonly TaskCompletionSource<T> _completion = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
@@ -38,7 +40,16 @@ internal sealed class PendingRequest<T>(ResultReader<T> readResult) : PendingReq
         _completion.TrySetResult(result);
     }
 
-    public override void SetNoResult() => _completion.TrySetResult(default!);
+    public override void SetNoResult()
+    {
+        if (hasResult)
+        {
+            _completion.TrySetException(new NodeJsException("The Node.js process did not return a result."));
+            return;
+        }
+
+        _completion.TrySetResult(default!);
+    }
 
     public override void SetException(Exception exception) => _completion.TrySetException(exception);
 }

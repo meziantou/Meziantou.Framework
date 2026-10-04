@@ -85,6 +85,9 @@ Results are serialized as JSON. Values that JSON does not support, or supports w
 | `Set` | array | `HashSet<T>`, `List<T>`... |
 | `Date` | ISO 8601 string | `DateTimeOffset`, `DateTime` |
 | `undefined` | `null` | |
+| String or key containing a lone surrogate (e.g. a string cut in the middle of an emoji) | string, the lone surrogate replaced by `U+FFFD` | `string` |
+
+A function or a `Symbol` returned by the call, or a value whose `toJSON` method returns `undefined`, cannot be serialized, so the call fails. Use a call that returns a `JSReference` to keep it in the Node.js process, or a void call to ignore it. Functions and `Symbol`s nested in the result are omitted, as `JSON.stringify` does.
 
 The depth of results is only limited by the stack of the Node.js process, as `JSON.stringify` is recursive.
 
@@ -115,7 +118,7 @@ The value is kept until the reference is disposed or the process exits. A refere
 
 ### Errors
 
-JavaScript errors are thrown as `NodeJsException`, with `JavaScriptErrorName` (e.g. `TypeError`) and `JavaScriptStack`. If the Node.js process exits, pending and future calls throw a `NodeJsException` whose `ExitCode` is set.
+JavaScript errors are thrown as `NodeJsException`, with `JavaScriptErrorName` (e.g. `TypeError`), `JavaScriptStack`, and `JavaScriptErrorCode` (the `code` property of the error, e.g. `ENOENT`). The `cause` of the error is the `InnerException`. A thrown value that is not an `Error` is described by its JSON representation when it is an object. If the Node.js process exits, pending and future calls throw a `NodeJsException` whose `ExitCode` is set.
 
 Errors that are not related to a call, such as an exception thrown by a timer callback or a promise rejection that is never handled, are written to the standard error of the process and do not stop it.
 
@@ -131,7 +134,9 @@ The Node.js process exits when the host is disposed, or when the connection with
 - `StandardOutputReceived` / `StandardErrorReceived`: callbacks for the output of the process (e.g. `console.log`). Exceptions thrown by the callbacks are ignored.
 - `StartupTimeout`: maximum time to wait for the process to start.
 - `MaxConcurrentCalls`: maximum number of calls running at the same time in a process. Other calls wait, without keeping a serialized copy of their arguments. A canceled call no longer counts, even if its JavaScript code is still running. By default, the number of calls is not limited.
-- `UnresponsiveTimeout`: maximum time the process can take to respond once a call is canceled before completing. When it does not respond, its event loop is blocked (e.g. by an infinite loop), so the process is killed and the calls in progress fail. `NodeJsHostPool` replaces it. By default, the process is never killed.
+- `UnresponsiveTimeout`: maximum time a canceled call can block the event loop (e.g. with an infinite loop). The process is then killed and the calls in progress fail. `NodeJsHostPool` replaces it. Calls that are not canceled are never stopped, even when they keep the event loop busy. To know which call blocks the event loop, the process tracks the asynchronous context of each call using `node:async_hooks`, which slows down code that awaits many promises. By default, the process is never killed.
+
+Options are copied when a host or a pool is started, so changing them afterwards has no effect.
 
 ## Security
 
@@ -139,7 +144,7 @@ The JavaScript code runs with the permissions of the .NET process, and the Node.
 
 - The module specifier, the export name, and the member name of a `JSReference` call select the code to run (e.g. `InvokeAsync("node:child_process", "execSync", ["..."])`). Never build them from untrusted input.
 - Never insert untrusted values in the code passed to `EvaluateAsync`. Pass them as arguments, using the `args` array.
-- As a defense in depth, `InvokeAsync` only accepts `file:` and `node:` URLs (a `data:` URL contains the code to run), inherited `constructor` and `__proto__` members cannot be accessed, and functions that compile code (`Function`, `eval`...) cannot be called.
+- `InvokeAsync` only accepts `file:` and `node:` URLs (a `data:` URL contains the code to run), inherited `constructor` and `__proto__` members cannot be accessed, and calling `Function` or `eval` directly is rejected. These checks only close the most direct ways of running code; they are not a sandbox. Built-in modules run code by design (e.g. `InvokeAsync("node:vm", "runInThisContext", [code])`), so a module specifier, an export name, or a member name built from untrusted input can still run arbitrary code.
 - The socket used to communicate with the Node.js process is only accessible by the current user, and the process must prove it was started by the host.
 
 ## Parallel calls
@@ -148,7 +153,7 @@ The JavaScript code runs with the permissions of the .NET process, and the Node.
 
 To run CPU-bound code in parallel, use `NodeJsHostPool`. It starts several Node.js processes and sends each call to the process with the fewest calls in progress, including canceled calls whose JavaScript code has not completed. A process that exits is replaced automatically.
 
-A canceled call keeps running, and synchronous code (e.g. an infinite loop) blocks its process. Set `UnresponsiveTimeout` so such a process is killed and replaced.
+A canceled call keeps running, and synchronous code (e.g. an infinite loop) blocks its process. Set `UnresponsiveTimeout` so such a process is killed and replaced. Only the process blocked by a canceled call is killed: a process busy with calls that are not canceled is not.
 
 Set `MaxConcurrentCalls` so calls wait in the pool and run on the first process that becomes available. Otherwise, all calls are sent immediately, and a call can wait for a long call sent to the same process while other processes are idle. `1` is a good value for CPU-bound code.
 
@@ -173,6 +178,6 @@ A reference returned by the pool is bound to the process that created it. Calls 
 - Arguments and results are serialized as JSON. Use `JSValue` to pass values that JSON cannot represent, and `JSReference` to keep values in the Node.js process. See [Results](#results) for the conversion of results.
 - A message (arguments or result) cannot exceed the maximum length of a JavaScript string (about 512 million UTF-16 characters). A larger message fails its call.
 - `JSValue` and `JSReference` can only be used in the arguments of a call. A `JsonNode` created from them cannot be serialized or cloned, and they cannot be members of objects serialized using reflection.
-- Cancelling a call only stops waiting for the result; the JavaScript code keeps running. Set `UnresponsiveTimeout` to kill the process when the code blocks its event loop.
+- Cancelling a call only stops waiting for the result; the JavaScript code keeps running. Set `UnresponsiveTimeout` to kill the process when the code blocks its event loop. Code run by a callback registered on an object the call did not create (e.g. `process.on(...)`) does not belong to the call.
 - JavaScript code cannot call back into .NET.
 - A synchronous infinite loop blocks all the other calls. Disposing the host kills the process.

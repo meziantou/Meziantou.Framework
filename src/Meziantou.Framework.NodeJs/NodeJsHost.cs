@@ -25,6 +25,8 @@ namespace Meziantou.Framework.NodeJs;
 /// </example>
 public sealed class NodeJsHost : IAsyncDisposable
 {
+    internal const string ReflectionUnreferencedCodeMessage = "JSON serialization and deserialization might require types that cannot be statically analyzed. Use the overload that takes a JsonTypeInfo instead.";
+    internal const string ReflectionDynamicCodeMessage = "JSON serialization and deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use the overload that takes a JsonTypeInfo instead.";
     private const int MaxStandardErrorLines = 20;
     private static readonly TimeSpan ExitTimeout = TimeSpan.FromSeconds(10);
     private static readonly TimeSpan OutputDrainTimeout = TimeSpan.FromSeconds(1);
@@ -78,37 +80,13 @@ public sealed class NodeJsHost : IAsyncDisposable
     /// <summary>Imports a module and calls one of its exports.</summary>
     /// <param name="module">The module specifier: an npm package name, a path relative to <see cref="NodeJsHostOptions.WorkingDirectory"/>, an absolute path, or a URL.</param>
     /// <param name="exportName">The name of the export. When <see langword="null"/>, the default export is used. CommonJS exports are supported.</param>
-    /// <param name="arguments">The arguments passed to the function.</param>
+    /// <param name="arguments">The arguments passed to the function. Use <see cref="JSValue"/> for values that JSON cannot represent, and <see cref="JSReference"/> to pass a value kept in the Node.js process.</param>
     /// <param name="cancellationToken">A token to stop waiting for the result. The JavaScript code keeps running.</param>
-    /// <returns>The JSON representation of the value returned by the function (awaited if it is a promise), or the value of the export when it is not a function.</returns>
+    /// <returns>The JSON representation of the value returned by the function (awaited if it is a promise), or the value of the export when it is not a function. <c>BigInt</c> values are exact JSON numbers (Node.js 21 or later).</returns>
     /// <exception cref="NodeJsException">The JavaScript code throws, or the Node.js process exits.</exception>
     public Task<JsonElement> InvokeAsync(string module, string? exportName, IReadOnlyList<JsonNode?>? arguments = null, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(module);
-
-        return SendRequestAsync(writer =>
-        {
-            writer.WriteString("type", "invoke");
-            writer.WriteString("module", module);
-            writer.WriteString("export", exportName);
-            writer.WriteStartArray("args");
-            if (arguments is not null)
-            {
-                foreach (var argument in arguments)
-                {
-                    if (argument is null)
-                    {
-                        writer.WriteNullValue();
-                    }
-                    else
-                    {
-                        argument.WriteTo(writer);
-                    }
-                }
-            }
-
-            writer.WriteEndArray();
-        }, cancellationToken);
+        return InvokeCoreAsync(module, exportName, arguments, ResultKind.Json, cancellationToken);
     }
 
     /// <summary>Imports a module, calls one of its exports, and deserializes the result.</summary>
@@ -123,39 +101,56 @@ public sealed class NodeJsHost : IAsyncDisposable
 
     /// <summary>Imports a module, calls one of its exports, and deserializes the result. Arguments are serialized using reflection.</summary>
     /// <inheritdoc cref="InvokeAsync(string, string?, IReadOnlyList{JsonNode?}?, CancellationToken)"/>
-    [RequiresUnreferencedCode("JSON serialization and deserialization might require types that cannot be statically analyzed. Use the overload that takes a JsonTypeInfo instead.")]
-    [RequiresDynamicCode("JSON serialization and deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use the overload that takes a JsonTypeInfo instead.")]
+    [RequiresUnreferencedCode(ReflectionUnreferencedCodeMessage)]
+    [RequiresDynamicCode(ReflectionDynamicCodeMessage)]
     public async Task<T?> InvokeAsync<T>(string module, string? exportName, object?[]? arguments = null, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
     {
-        JsonNode?[]? nodes = null;
-        if (arguments is not null)
-        {
-            nodes = new JsonNode?[arguments.Length];
-            for (var i = 0; i < arguments.Length; i++)
-            {
-                var argument = arguments[i];
-                nodes[i] = argument is null ? null : JsonSerializer.SerializeToNode(argument, argument.GetType(), options);
-            }
-        }
-
-        var result = await InvokeAsync(module, exportName, nodes, cancellationToken).ConfigureAwait(false);
+        var result = await InvokeAsync(module, exportName, ArgumentWriter.SerializeArguments(arguments, options), cancellationToken).ConfigureAwait(false);
         return result.Deserialize<T>(options);
+    }
+
+    /// <summary>Imports a module and calls one of its exports, ignoring its result. The result does not need to be serializable.</summary>
+    /// <inheritdoc cref="InvokeAsync(string, string?, IReadOnlyList{JsonNode?}?, CancellationToken)"/>
+    public Task InvokeVoidAsync(string module, string? exportName, IReadOnlyList<JsonNode?>? arguments = null, CancellationToken cancellationToken = default)
+    {
+        return InvokeCoreAsync(module, exportName, arguments, ResultKind.Void, cancellationToken);
+    }
+
+    /// <summary>Imports a module and calls one of its exports, ignoring its result. Arguments are serialized using reflection.</summary>
+    /// <inheritdoc cref="InvokeVoidAsync(string, string?, IReadOnlyList{JsonNode?}?, CancellationToken)"/>
+    [RequiresUnreferencedCode(ReflectionUnreferencedCodeMessage)]
+    [RequiresDynamicCode(ReflectionDynamicCodeMessage)]
+    public Task InvokeVoidAsync(string module, string? exportName, object?[]? arguments, JsonSerializerOptions? options, CancellationToken cancellationToken = default)
+    {
+        return InvokeVoidAsync(module, exportName, ArgumentWriter.SerializeArguments(arguments, options), cancellationToken);
+    }
+
+    /// <summary>Imports a module, calls one of its exports, and keeps the result in the Node.js process.</summary>
+    /// <inheritdoc cref="InvokeAsync(string, string?, IReadOnlyList{JsonNode?}?, CancellationToken)"/>
+    /// <returns>A reference to the value returned by the function (awaited if it is a promise), or to the value of the export when it is not a function. Dispose it when the value is no longer needed.</returns>
+    public async Task<JSReference> InvokeReferenceAsync(string module, string? exportName, IReadOnlyList<JsonNode?>? arguments = null, CancellationToken cancellationToken = default)
+    {
+        var result = await InvokeCoreAsync(module, exportName, arguments, ResultKind.Reference, cancellationToken).ConfigureAwait(false);
+        return new JSReference(this, result.GetInt64());
+    }
+
+    /// <summary>Imports a module, calls one of its exports, and keeps the result in the Node.js process. Arguments are serialized using reflection.</summary>
+    /// <inheritdoc cref="InvokeReferenceAsync(string, string?, IReadOnlyList{JsonNode?}?, CancellationToken)"/>
+    [RequiresUnreferencedCode(ReflectionUnreferencedCodeMessage)]
+    [RequiresDynamicCode(ReflectionDynamicCodeMessage)]
+    public Task<JSReference> InvokeReferenceAsync(string module, string? exportName, object?[]? arguments, JsonSerializerOptions? options, CancellationToken cancellationToken = default)
+    {
+        return InvokeReferenceAsync(module, exportName, ArgumentWriter.SerializeArguments(arguments, options), cancellationToken);
     }
 
     /// <summary>Evaluates JavaScript code as the body of an async function.</summary>
     /// <param name="code">The body of the function. Use <c>return</c> to return a value and <c>await</c> to wait for promises. <c>require</c> is available, and values stored on <c>globalThis</c> persist across calls.</param>
     /// <param name="cancellationToken">A token to stop waiting for the result. The JavaScript code keeps running.</param>
-    /// <returns>The JSON representation of the returned value.</returns>
+    /// <returns>The JSON representation of the returned value. <c>BigInt</c> values are exact JSON numbers (Node.js 21 or later).</returns>
     /// <exception cref="NodeJsException">The JavaScript code throws, or the Node.js process exits.</exception>
     public Task<JsonElement> EvaluateAsync(string code, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(code);
-
-        return SendRequestAsync(writer =>
-        {
-            writer.WriteString("type", "eval");
-            writer.WriteString("code", code);
-        }, cancellationToken);
+        return EvaluateCoreAsync(code, ResultKind.Json, cancellationToken);
     }
 
     /// <summary>Evaluates JavaScript code as the body of an async function and deserializes the result.</summary>
@@ -176,6 +171,22 @@ public sealed class NodeJsHost : IAsyncDisposable
     {
         var result = await EvaluateAsync(code, cancellationToken).ConfigureAwait(false);
         return result.Deserialize<T>(options);
+    }
+
+    /// <summary>Evaluates JavaScript code as the body of an async function, ignoring its result. The result does not need to be serializable.</summary>
+    /// <inheritdoc cref="EvaluateAsync(string, CancellationToken)"/>
+    public Task EvaluateVoidAsync(string code, CancellationToken cancellationToken = default)
+    {
+        return EvaluateCoreAsync(code, ResultKind.Void, cancellationToken);
+    }
+
+    /// <summary>Evaluates JavaScript code as the body of an async function, and keeps the result in the Node.js process.</summary>
+    /// <inheritdoc cref="EvaluateAsync(string, CancellationToken)"/>
+    /// <returns>A reference to the returned value. Dispose it when the value is no longer needed.</returns>
+    public async Task<JSReference> EvaluateReferenceAsync(string code, CancellationToken cancellationToken = default)
+    {
+        var result = await EvaluateCoreAsync(code, ResultKind.Reference, cancellationToken).ConfigureAwait(false);
+        return new JSReference(this, result.GetInt64());
     }
 
     /// <summary>Stops the Node.js process. Pending calls fail with <see cref="ObjectDisposedException"/>.</summary>
@@ -358,22 +369,122 @@ public sealed class NodeJsHost : IAsyncDisposable
         }
     }
 
-    private async Task<JsonElement> SendRequestAsync(Action<Utf8JsonWriter> writeMessage, CancellationToken cancellationToken)
+    private Task<JsonElement> InvokeCoreAsync(string module, string? exportName, IReadOnlyList<JsonNode?>? arguments, ResultKind resultKind, CancellationToken cancellationToken)
     {
-        ObjectDisposedException.ThrowIf(_disposed is 1, this);
-        cancellationToken.ThrowIfCancellationRequested();
+        ArgumentNullException.ThrowIfNull(module);
 
-        var id = Interlocked.Increment(ref _nextRequestId);
+        return SendRequestAsync(writer =>
+        {
+            writer.WriteString("type", "invoke");
+            writer.WriteString("module", module);
+            writer.WriteString("export", exportName);
+            ArgumentWriter.Write(writer, this, arguments);
+        }, resultKind, cancellationToken);
+    }
+
+    private Task<JsonElement> EvaluateCoreAsync(string code, ResultKind resultKind, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(code);
+
+        return SendRequestAsync(writer =>
+        {
+            writer.WriteString("type", "eval");
+            writer.WriteString("code", code);
+        }, resultKind, cancellationToken);
+    }
+
+    internal Task<JsonElement> InvokeMemberAsync(JSReference target, string? memberName, IReadOnlyList<JsonNode?>? arguments, ResultKind resultKind, CancellationToken cancellationToken)
+    {
+        return SendRequestAsync(writer =>
+        {
+            ObjectDisposedException.ThrowIf(target.IsDisposed, target);
+            writer.WriteString("type", "invokeReference");
+            writer.WriteNumber("reference", target.Id);
+            writer.WriteString("member", memberName);
+            ArgumentWriter.Write(writer, this, arguments);
+        }, resultKind, cancellationToken);
+    }
+
+    internal Task<JsonElement> GetReferenceValueAsync(JSReference target, CancellationToken cancellationToken)
+    {
+        return SendRequestAsync(writer =>
+        {
+            ObjectDisposedException.ThrowIf(target.IsDisposed, target);
+            writer.WriteString("type", "getReference");
+            writer.WriteNumber("reference", target.Id);
+        }, ResultKind.Json, cancellationToken);
+    }
+
+    /// <summary>Gets information about the state of the Node.js process, for tests.</summary>
+    internal Task<JsonElement> GetDebugInformationAsync(CancellationToken cancellationToken)
+    {
+        return SendRequestAsync(writer => writer.WriteString("type", "debug"), ResultKind.Json, cancellationToken);
+    }
+
+    /// <summary>Releases a value referenced by a <see cref="JSReference"/>, without waiting for the message to be sent.</summary>
+    internal void ReleaseReference(long referenceId)
+    {
+        _ = ReleaseReferenceAsync(referenceId);
+    }
+
+    /// <summary>Releases a value referenced by a <see cref="JSReference"/>. Never throws: when the process is gone, there is nothing to release.</summary>
+    internal async Task ReleaseReferenceAsync(long referenceId)
+    {
+        if (IsTerminated)
+            return;
+
+        var message = SerializeMessage(writer =>
+        {
+            writer.WriteString("type", "release");
+            writer.WriteNumber("reference", referenceId);
+        });
+
+        try
+        {
+            await _writeLock.WaitAsync().ConfigureAwait(false);
+            await WriteMessageAndReleaseLockAsync(message).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is IOException or ObjectDisposedException or OperationCanceledException)
+        {
+            // The connection is lost, so the process and its values are gone
+        }
+    }
+
+    private static ReadOnlyMemory<byte> SerializeMessage(Action<Utf8JsonWriter> writeMessage)
+    {
         var buffer = new ArrayBufferWriter<byte>();
         using (var writer = new Utf8JsonWriter(buffer))
         {
             writer.WriteStartObject();
-            writer.WriteNumber("id", id);
             writeMessage(writer);
             writer.WriteEndObject();
         }
 
         buffer.Write("\n"u8);
+        return buffer.WrittenMemory;
+    }
+
+    private async Task<JsonElement> SendRequestAsync(Action<Utf8JsonWriter> writeMessage, ResultKind resultKind, CancellationToken cancellationToken)
+    {
+        ObjectDisposedException.ThrowIf(_disposed is 1, this);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var id = Interlocked.Increment(ref _nextRequestId);
+        var message = SerializeMessage(writer =>
+        {
+            writer.WriteNumber("id", id);
+            switch (resultKind)
+            {
+                case ResultKind.Void:
+                    writer.WriteString("returns", "void");
+                    break;
+                case ResultKind.Reference:
+                    writer.WriteString("returns", "reference");
+                    break;
+            }
+
+            writeMessage(writer);
+        });
 
         var tcs = new TaskCompletionSource<JsonElement>(TaskCreationOptions.RunContinuationsAsynchronously);
         _pendingRequests[id] = tcs;
@@ -383,27 +494,59 @@ public sealed class NodeJsHost : IAsyncDisposable
             ThrowIfTerminated();
 
             await _writeLock.WaitAsync(cancellationToken).ConfigureAwait(false);
+
+            // Once started, the message is always written completely, as a partial message would corrupt the following ones.
+            // Canceling only stops waiting for the write to complete.
+            var writeTask = WriteMessageAndReleaseLockAsync(message);
             try
             {
-                await _stream!.WriteAsync(buffer.WrittenMemory, cancellationToken).ConfigureAwait(false);
-                await _stream.FlushAsync(cancellationToken).ConfigureAwait(false);
+                await writeTask.WaitAsync(cancellationToken).ConfigureAwait(false);
             }
             // On Windows, disposing the named pipe cancels the pending write, which throws OperationCanceledException
-            catch (Exception ex) when (ex is IOException or ObjectDisposedException || (ex is OperationCanceledException && !cancellationToken.IsCancellationRequested))
+            catch (Exception ex) when ((writeTask.IsFaulted || writeTask.IsCanceled) && ex is IOException or ObjectDisposedException or OperationCanceledException)
             {
                 ThrowIfTerminated();
                 throw new NodeJsException("Cannot send the message to the Node.js process.", ex);
             }
-            finally
+            catch (OperationCanceledException)
             {
-                _writeLock.Release();
+                // The write continues in the background. A failure means the connection is lost, which is reported by the read loop.
+                _ = writeTask.ContinueWith(static task => _ = task.Exception, CancellationToken.None, TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+                throw;
             }
 
-            return await tcs.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
+            try
+            {
+                return await tcs.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (resultKind is ResultKind.Reference)
+            {
+                // ProcessResponse releases the value when the response arrives after this point.
+                // When the response is already being processed, the value must be released here.
+                if (!_pendingRequests.TryRemove(id, out _))
+                {
+                    _ = tcs.Task.ContinueWith(task => ReleaseReference(task.Result.GetInt64()), CancellationToken.None, TaskContinuationOptions.OnlyOnRanToCompletion | TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+                }
+
+                throw;
+            }
         }
         finally
         {
             _pendingRequests.TryRemove(id, out _);
+        }
+    }
+
+    private async Task WriteMessageAndReleaseLockAsync(ReadOnlyMemory<byte> message)
+    {
+        try
+        {
+            await _stream!.WriteAsync(message, CancellationToken.None).ConfigureAwait(false);
+            await _stream.FlushAsync(CancellationToken.None).ConfigureAwait(false);
+        }
+        finally
+        {
+            _writeLock.Release();
         }
     }
 
@@ -465,7 +608,15 @@ public sealed class NodeJsHost : IAsyncDisposable
         var root = document.RootElement;
         var id = root.GetProperty("id").GetInt64();
         if (!_pendingRequests.TryRemove(id, out var tcs))
-            return; // The caller stopped waiting
+        {
+            // The caller stopped waiting, so the value kept for it is no longer needed
+            if (root.TryGetProperty("reference", out var unusedReference))
+            {
+                ReleaseReference(unusedReference.GetInt64());
+            }
+
+            return;
+        }
 
         if (root.TryGetProperty("error", out var error))
         {
@@ -474,9 +625,18 @@ public sealed class NodeJsHost : IAsyncDisposable
             var stack = GetStringOrNull(error, "stack");
             tcs.TrySetException(new NodeJsException(name is null ? message ?? "" : $"{name}: {message}", name, stack));
         }
+        else if (root.TryGetProperty("reference", out var reference))
+        {
+            tcs.TrySetResult(reference.Clone());
+        }
+        else if (root.TryGetProperty("result", out var result))
+        {
+            tcs.TrySetResult(result.Clone());
+        }
         else
         {
-            tcs.TrySetResult(root.GetProperty("result").Clone());
+            // The result of a void call
+            tcs.TrySetResult(default);
         }
 
         static string? GetStringOrNull(JsonElement element, string propertyName)

@@ -5,7 +5,7 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <IsTrimmable>false</IsTrimmable>
 
-    <Version>1.0.6</Version>
+    <Version>1.0.7</Version>
     <Description>CLI to dump CSS, INI, JSON, TOML, XML, regular expression, and shell syntax trees as JSON</Description>
     <PackageTags>syntax-tree, cst, parser, css, ini, json, toml, xml, regex, shell, cli, dotnet-tool</PackageTags>
   </PropertyGroup>

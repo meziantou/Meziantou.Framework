@@ -130,18 +130,23 @@ function sendResult(id, result) {
     socket.write(JSON.stringify({ id, result: result === undefined ? null : result }, resultReplacer) + "\n");
 }
 
+// A lone surrogate (e.g. a string cut in the middle of an emoji) is serialized as an escape sequence that System.Text.Json cannot convert to a string
+function toWellFormed(value) {
+    return typeof value.toWellFormed === "function" ? value.toWellFormed() : value.replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, "�");
+}
+
 // Never throws, as an error thrown while reporting an error would leave the call without a response
 function describeError(error) {
     try {
         if (error instanceof Error) {
             return {
-                name: String(error.name),
-                message: String(error.message),
-                stack: typeof error.stack === "string" ? error.stack : null,
+                name: toWellFormed(String(error.name)),
+                message: toWellFormed(String(error.message)),
+                stack: typeof error.stack === "string" ? toWellFormed(error.stack) : null,
             };
         }
 
-        return { name: typeof error, message: String(error), stack: null };
+        return { name: typeof error, message: toWellFormed(String(error)), stack: null };
     } catch {
         return { name: typeof error, message: "The error cannot be converted to a string", stack: null };
     }
@@ -316,6 +321,10 @@ async function handle(message) {
                 break;
             case "debug":
                 result = { references: references.size };
+                break;
+            case "ping":
+                // Answered as soon as the event loop is available, to detect a call blocking it
+                result = undefined;
                 break;
             default:
                 throw new Error(`Unknown message type '${message.type}'`);

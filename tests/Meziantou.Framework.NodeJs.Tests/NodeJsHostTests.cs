@@ -1362,6 +1362,135 @@ public sealed partial class NodeJsHostTests
         Assert.All(shortCalls, result => result.GetInt32() != longCallProcessId);
     }
 
+    [Fact]
+    public async Task Evaluate_ErrorWithLoneSurrogates_Throws()
+    {
+        await using var node = await StartNodeAsync();
+
+        var error = await Assert.ThrowsAsync<NodeJsException>(() => node.EvaluateAsync("throw new Error('a\\ud83d');", XunitCancellationToken));
+        var nonError = await Assert.ThrowsAsync<NodeJsException>(() => node.EvaluateAsync("throw '\\udc00b';", XunitCancellationToken));
+        var withoutToWellFormed = await Assert.ThrowsAsync<NodeJsException>(() => node.EvaluateAsync("delete String.prototype.toWellFormed; throw new Error('\\ud83d\\ude00\\ud83d-\\ude00');", XunitCancellationToken));
+        var result = await node.EvaluateAsync("return 1;", XunitCancellationToken);
+
+        Assert.Equal("Error: a\uFFFD", error.Message);
+        Assert.Contains("a\uFFFD", error.JavaScriptStack);
+        Assert.Equal("string: \uFFFDb", nonError.Message);
+        Assert.Equal("Error: \U0001F600\uFFFD-\uFFFD", withoutToWellFormed.Message);
+        Assert.Equal(1, result.GetInt32());
+    }
+
+    [Fact]
+    public async Task Evaluate_RawJsonArgumentWithLineBreaks()
+    {
+        await using var node = await StartNodeAsync();
+        var argument = JsonValue.Create(new RawJson("{\n  \"text\": \"a\\nb\",\n  \"list\": [1,\r\n 2]\n}"), NodeJsTestJsonContext.Default.RawJson);
+
+        var result = await node.EvaluateAsync("return [args[0], typeof args[1]];", [argument, JSValue.Undefined], XunitCancellationToken);
+        var next = await node.EvaluateAsync("return 1;", XunitCancellationToken);
+
+        Assert.Equal("a\nb", result[0].GetProperty("text").GetString());
+        Assert.Equal(2, result[0].GetProperty("list").GetArrayLength());
+        Assert.Equal("undefined", result[1].GetString());
+        Assert.Equal(1, next.GetInt32());
+    }
+
+    [Fact]
+    public async Task UnresponsiveTimeout_KillsBlockedProcess()
+    {
+        await using var node = await StartNodeAsync(new NodeJsHostOptions { UnresponsiveTimeout = TimeSpan.FromMilliseconds(500) });
+        using var process = Process.GetProcessById(node.ProcessId);
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(XunitCancellationToken);
+        var pending = node.EvaluateAsync("await new Promise(r => setTimeout(r, 60_000));", XunitCancellationToken);
+
+        var blocking = node.EvaluateVoidAsync("while (true) { }", cts.Token);
+        await cts.CancelAsync();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => blocking);
+        await node.WaitForResponsivenessCheckAsync();
+        await WaitUntilAsync(() => process.HasExited);
+
+        var pendingException = await Assert.ThrowsAsync<NodeJsException>(() => pending);
+        var nextException = await Assert.ThrowsAsync<NodeJsException>(() => node.EvaluateAsync("return 1;", XunitCancellationToken));
+        Assert.Contains("did not respond", pendingException.Message);
+        Assert.Contains("did not respond", nextException.Message);
+    }
+
+    [Fact]
+    public async Task UnresponsiveTimeout_DoesNotKillResponsiveProcess()
+    {
+        await using var node = await StartNodeAsync(new NodeJsHostOptions { UnresponsiveTimeout = TimeSpan.FromMinutes(1) });
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(XunitCancellationToken);
+
+        var canceled = node.EvaluateAsync("await new Promise(r => setTimeout(r, 60_000));", cts.Token);
+        await cts.CancelAsync();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => canceled);
+        await node.WaitForResponsivenessCheckAsync();
+        var result = await node.EvaluateAsync("return 1;", XunitCancellationToken);
+
+        Assert.Equal(1, result.GetInt32());
+    }
+
+    [Fact]
+    public async Task UnresponsiveTimeout_Invalid_Throws()
+    {
+        SkipIfNodeIsNotInstalled();
+
+        var zero = await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => NodeJsHost.StartAsync(new NodeJsHostOptions { UnresponsiveTimeout = TimeSpan.Zero }, XunitCancellationToken));
+        var tooLarge = await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => NodeJsHostPool.StartAsync(2, new NodeJsHostOptions { UnresponsiveTimeout = TimeSpan.FromDays(30) }, XunitCancellationToken));
+
+        Assert.Equal("options", zero.ParamName);
+        Assert.Equal("options", tooLarge.ParamName);
+    }
+
+    [Fact]
+    public async Task Pool_BlockedByCanceledCall_IsAvoided()
+    {
+        SkipIfNodeIsNotInstalled();
+        await using var pool = await NodeJsHostPool.StartAsync(2, new NodeJsHostOptions { MaxConcurrentCalls = 1 }, XunitCancellationToken);
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(XunitCancellationToken);
+        var blockedProcessId = 0;
+
+        var blocking = pool.RunAsync(async host =>
+        {
+            blockedProcessId = host.ProcessId;
+            await host.EvaluateVoidAsync("while (true) { }", cts.Token);
+        }, XunitCancellationToken);
+        await cts.CancelAsync();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => blocking);
+
+        // Without UnresponsiveTimeout, the blocked process is kept, but calls are sent to the other one
+        var processIds = new List<int>();
+        for (var i = 0; i < 10; i++)
+        {
+            var result = await pool.EvaluateAsync("return process.pid;", XunitCancellationToken).WaitAsync(TimeSpan.FromMinutes(1), XunitCancellationToken);
+            processIds.Add(result.GetInt32());
+        }
+
+        Assert.All(processIds, processId => processId != blockedProcessId);
+    }
+
+    [Fact]
+    public async Task Pool_UnresponsiveTimeout_ReplacesBlockedProcess()
+    {
+        SkipIfNodeIsNotInstalled();
+        await using var pool = await NodeJsHostPool.StartAsync(1, new NodeJsHostOptions { UnresponsiveTimeout = TimeSpan.FromMilliseconds(500) }, XunitCancellationToken);
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(XunitCancellationToken);
+        NodeJsHost? blockedHost = null;
+        var blockedProcessId = 0;
+
+        var blocking = pool.RunAsync(async host =>
+        {
+            blockedHost = host;
+            blockedProcessId = host.ProcessId;
+            await host.EvaluateVoidAsync("while (true) { }", cts.Token);
+        }, XunitCancellationToken);
+        await cts.CancelAsync();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => blocking);
+        await blockedHost!.WaitForResponsivenessCheckAsync();
+        var processId = (await pool.EvaluateAsync("return process.pid;", XunitCancellationToken)).GetInt32();
+
+        Assert.NotEqual(blockedProcessId, processId);
+    }
+
     private const string DescribeModule = """
         const describe = value => ({
             type: value instanceof Date ? "Date" : value instanceof Uint8Array ? value.constructor.name : typeof value,
@@ -1497,7 +1626,19 @@ public sealed partial class NodeJsHostTests
         public int Age { get; set; }
     }
 
+    // Writes the JSON as is, including its whitespace
+    [JsonConverter(typeof(RawJsonConverter))]
+    private sealed record RawJson(string Json);
+
+    private sealed class RawJsonConverter : JsonConverter<RawJson>
+    {
+        public override RawJson Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => throw new NotSupportedException();
+
+        public override void Write(Utf8JsonWriter writer, RawJson value, JsonSerializerOptions options) => writer.WriteRawValue(value.Json);
+    }
+
     [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase, RespectNullableAnnotations = true, RespectRequiredConstructorParameters = true)]
     [JsonSerializable(typeof(Person))]
+    [JsonSerializable(typeof(RawJson))]
     private sealed partial class NodeJsTestJsonContext : JsonSerializerContext;
 }

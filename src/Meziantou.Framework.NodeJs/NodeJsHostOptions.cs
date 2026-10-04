@@ -28,6 +28,13 @@ public sealed class NodeJsHostOptions
     /// </remarks>
     public int? MaxConcurrentCalls { get; set; }
 
+    /// <summary>Gets or sets the maximum time the Node.js process can take to respond once a call is canceled before completing. When the process does not respond in time, its event loop is considered blocked (e.g. by an infinite loop), and the process is killed. When <see langword="null"/>, the process is never killed.</summary>
+    /// <remarks>
+    /// <para>Canceling a call does not stop its JavaScript code, and synchronous code blocks all the other calls of the process. Killing the process is the only way to stop it. The calls in progress then fail with a <see cref="NodeJsException"/>, and <see cref="NodeJsHostPool"/> replaces the process the next time a host is selected.</para>
+    /// <para>The process is not killed while it runs asynchronous code, as it still responds. Choose a value larger than the longest synchronous step of a canceled call that must not be stopped.</para>
+    /// </remarks>
+    public TimeSpan? UnresponsiveTimeout { get; set; }
+
     /// <summary>Gets or sets a callback invoked for each line written by the Node.js process to its standard output. Exceptions thrown by the callback are ignored.</summary>
     public Action<string>? StandardOutputReceived { get; set; }
 

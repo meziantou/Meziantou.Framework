@@ -42,7 +42,7 @@ Modules are loaded using `import()`, so module specifiers follow the rules of ES
 
 The `require` function available to evaluated code follows the rules of CommonJS, so the extension is optional.
 
-A module is loaded once and kept for the lifetime of the process: changes to its file have no effect until a new host is started, and a module whose top-level code throws keeps failing.
+A module is loaded once and kept for the lifetime of the process (or of the worker thread, see [Worker threads](#worker-threads)): changes to its file have no effect until a new host is started, and a module whose top-level code throws keeps failing.
 
 ### Typed results
 
@@ -135,11 +135,11 @@ await using var parser = await node.CreateInstanceAsync("./parser.mjs", "Parser"
 JsonElement value = await client.GetValueAsync();
 ````
 
-The value is kept until the reference is disposed or the process exits. A reference can only be used with the process that created it: once the process exits, calls that use it fail with a `NodeJsException` whose `ExitCode` is set.
+The value is kept until the reference is disposed or the process exits. A reference can only be used with the process that created it: once the process exits, calls that use it fail with a `NodeJsException` whose `ExitCode` is set. With [worker threads](#worker-threads), the value is kept by the worker thread that created it, and is lost when this worker thread exits.
 
 ### Errors
 
-JavaScript errors are thrown as `NodeJsException`, with `JavaScriptErrorName` (e.g. `TypeError`), `JavaScriptStack`, and `JavaScriptErrorCode` (the `code` property of the error, e.g. `ENOENT`). The `cause` of the error is the `InnerException`. A thrown value that is not an `Error` is described by its JSON representation when it is an object. If the Node.js process exits, pending and future calls throw a `NodeJsException` whose `ExitCode` is set, including calls made through its references and calls made once `NodeJsHostPool` has replaced the process. When the process is killed because of `UnresponsiveTimeout`, calls throw a `NodeJsException` whose `ExitCode` is `null`. Calls made once you dispose the host throw an `ObjectDisposedException`.
+JavaScript errors are thrown as `NodeJsException`, with `JavaScriptErrorName` (e.g. `TypeError`), `JavaScriptStack`, and `JavaScriptErrorCode` (the `code` property of the error, e.g. `ENOENT`). The `cause` of the error is the `InnerException`. A thrown value that is not an `Error` is described by its JSON representation when it is an object. If the Node.js process exits, pending and future calls throw a `NodeJsException` whose `ExitCode` is set, including calls made through its references and calls made once `NodeJsHostPool` has replaced the process. When the process is killed because of `UnresponsiveTimeout`, calls throw a `NodeJsException` whose `ExitCode` is `null`. With [worker threads](#worker-threads), when a worker thread exits or is terminated, its calls and the calls made through its references throw a `NodeJsException` whose `ExitCode` is `null`, as the process keeps running. Calls made once you dispose the host throw an `ObjectDisposedException`.
 
 Errors that are not related to a call, such as an exception thrown by a timer callback or a promise rejection that is never handled, are written to the standard error of the process and do not stop it.
 
@@ -162,8 +162,9 @@ On .NET 11, the process does not inherit other handles of the .NET process (file
 - `EnvironmentVariables`: environment variables of the Node.js process.
 - `StandardOutputReceived` / `StandardErrorReceived`: callbacks for the output of the process (e.g. `console.log`). Exceptions thrown by the callbacks are ignored.
 - `StartupTimeout`: maximum time to wait for the process to start.
-- `MaxConcurrentCalls`: maximum number of calls running at the same time in a process. Other calls wait, without keeping a serialized copy of their arguments. A canceled call no longer counts, even if its JavaScript code is still running. By default, the number of calls is not limited.
-- `UnresponsiveTimeout`: maximum time a canceled call can block the event loop (e.g. with an infinite loop, or with promises that never let the event loop run other callbacks). The process is then killed and the calls in progress fail. `NodeJsHostPool` replaces it. Calls that are not canceled are never stopped, even when they keep the event loop busy. To know which call blocks the event loop, the process tracks the asynchronous context of each call using `node:async_hooks`, which slows down code that awaits many promises. By default, the process is never killed. See [Cancellation](#cancellation) for the code that belongs to a call.
+- `MaxConcurrentCalls`: maximum number of calls running at the same time in a process, including all its worker threads. Other calls wait, without keeping a serialized copy of their arguments. A canceled call no longer counts, even if its JavaScript code is still running. By default, the number of calls is not limited.
+- `UnresponsiveTimeout`: maximum time a canceled call can block the event loop (e.g. with an infinite loop, or with promises that never let the event loop run other callbacks). The process is then killed and the calls in progress fail. `NodeJsHostPool` replaces it. Calls that are not canceled are never stopped, even when they keep the event loop busy. To know which call blocks the event loop, the process tracks the asynchronous context of each call using `node:async_hooks`, which slows down code that awaits many promises. By default, the process is never killed. See [Cancellation](#cancellation) for the code that belongs to a call. With `WorkerThreads`, only the blocked worker thread is terminated and restarted.
+- `WorkerThreads`: number of worker threads that run the calls, so CPU-bound calls run in parallel in a single process. By default, calls run on the main thread. See [Worker threads](#worker-threads).
 
 Options are copied when a host or a pool is started, so changing them afterwards has no effect.
 
@@ -180,7 +181,7 @@ The JavaScript code runs with the permissions of the .NET process, and the Node.
 
 `NodeJsHost` is thread-safe, and concurrent calls run concurrently in the Node.js process. Asynchronous code (I/O, timers, promises) overlaps, but synchronous code runs one call at a time on the single event loop.
 
-To run CPU-bound code in parallel, use `NodeJsHostPool`. It starts several Node.js processes and sends each call to the process with the fewest calls in progress, including canceled calls whose JavaScript code has not completed. A process that exits is replaced automatically.
+To run CPU-bound code in parallel, set `WorkerThreads` (see [Worker threads](#worker-threads)), or use `NodeJsHostPool`, which starts several Node.js processes and sends each call to the process with the fewest calls in progress, including canceled calls whose JavaScript code has not completed. A process that exits is replaced automatically.
 
 A canceled call keeps running, and synchronous code (e.g. an infinite loop) blocks its process. Set `UnresponsiveTimeout` so such a process is killed and replaced. Only the process blocked by a canceled call is killed: a process busy with calls that are not canceled is not (see [Cancellation](#cancellation)).
 
@@ -202,9 +203,32 @@ Processes do not share state: values stored on `globalThis` are only visible to 
 
 A reference returned by the pool is bound to the process that created it. Calls of the pool whose arguments contain a reference run on that process, without waiting in the pool: only the `MaxConcurrentCalls` limit of that process applies. Once the process exits, they fail, even after the pool replaces the process.
 
+### Worker threads
+
+Set `WorkerThreads` to run calls on several [worker threads](https://nodejs.org/api/worker_threads.html) of a single Node.js process. Each worker thread has its own connection with the host, so calls do not go through the main thread. Each call is sent to the worker thread with the fewest calls in progress, including canceled calls whose JavaScript code has not completed. Set `MaxConcurrentCalls` to the number of worker threads for CPU-bound code, so calls wait in the host and run on the first worker thread that becomes available.
+
+````c#
+await using var node = await NodeJsHost.StartAsync(new NodeJsHostOptions { WorkerThreads = Environment.ProcessorCount, MaxConcurrentCalls = Environment.ProcessorCount });
+var results = await Task.WhenAll(documents.Select(document => node.InvokeAsync("./render.mjs", "render", [document])));
+````
+
+Compared to `NodeJsHostPool`, worker threads use less memory and start faster, and a worker thread blocked by a canceled call is terminated and restarted without restarting the process (see `UnresponsiveTimeout`). However, a crash of the process (e.g. a native crash, or running out of memory) fails the calls of all the worker threads. Both can be combined: each process of a pool can run worker threads.
+
+Worker threads do not share state:
+
+- Each worker thread has its own `globalThis` and loads its own modules, so consecutive calls may run on different worker threads and not see the same values.
+- A reference is kept by the worker thread that created it. Calls whose arguments contain a reference, and calls made through the reference, run on this worker thread. A call cannot use references kept by different worker threads.
+
+A worker thread that exits is restarted, and its state is lost: its calls in progress fail, and its references can no longer be used. Some APIs behave differently in a worker thread:
+
+- `process.exit()` only stops the worker thread.
+- `process.chdir()` is not supported, and `process.env` is a copy of the environment of the process.
+- Native addons must support worker threads (context-aware addons).
+- The output written asynchronously (e.g. `console.log`) by a worker thread that is terminated may be lost.
+
 ## Cancellation
 
-Canceling a call only stops waiting for its result: the JavaScript code keeps running, and it may block the event loop of the process, and so the other calls. With `UnresponsiveTimeout`, the process is killed when the code of a canceled call blocks the event loop for longer than the timeout, synchronously (e.g. an infinite loop) or with promises that never let the event loop run other callbacks.
+Canceling a call only stops waiting for its result: the JavaScript code keeps running, and it may block the event loop of the process, and so the other calls. With `UnresponsiveTimeout`, the process is killed when the code of a canceled call blocks the event loop for longer than the timeout, synchronously (e.g. an infinite loop) or with promises that never let the event loop run other callbacks. With `WorkerThreads`, only the worker thread whose event loop is blocked is terminated and restarted, and the other worker threads keep running their calls.
 
 The code of a call is its own code, and the callbacks of the promises, timeouts, immediates, and I/O operations (e.g. reading a file) it starts, directly or through other callbacks. To never kill a call that is not canceled, the code run by long-lived objects belongs to no call, as these objects can run code for several calls (e.g. a connection pool created by the first call that needs it):
 
@@ -220,4 +244,4 @@ Such code is never stopped. A call that runs a loop processing jobs for other ca
 - `JSValue` and `JSReference` can only be used in the arguments of a call. A `JsonNode` created from them cannot be serialized or cloned, and they cannot be members of objects serialized using reflection.
 - Cancelling a call only stops waiting for the result; the JavaScript code keeps running. Set `UnresponsiveTimeout` to kill the process when the code blocks its event loop (see [Cancellation](#cancellation)).
 - JavaScript code cannot call back into .NET.
-- A synchronous infinite loop blocks all the other calls. Disposing the host kills the process.
+- A synchronous infinite loop blocks all the other calls, or all the other calls of its worker thread with `WorkerThreads`. Disposing the host kills the process.

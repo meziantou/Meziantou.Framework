@@ -10,7 +10,7 @@ namespace Meziantou.Framework.NodeJs;
 
 /// <summary>A reference to a value kept in the Node.js process, such as an object that cannot be serialized as JSON.</summary>
 /// <remarks>
-/// <para>The value is kept until the reference is disposed or the Node.js process exits. A reference can only be used with the process that created it.</para>
+/// <para>The value is kept until the reference is disposed or the Node.js process exits. A reference can only be used with the process that created it. With <see cref="NodeJsHostOptions.WorkerThreads"/>, the value is kept by the worker thread that created it, and the calls that use the reference run on this worker thread; the value is lost when the worker thread exits or is terminated.</para>
 /// <para>A <see cref="JSReference"/> converts implicitly to a <see cref="JsonNode"/>, so it can be used as an argument, or nested in a <see cref="JsonObject"/> or a <see cref="JsonArray"/> argument. The function receives the referenced value.</para>
 /// </remarks>
 /// <example>
@@ -25,14 +25,18 @@ public sealed class JSReference : IAsyncDisposable, IDisposable
 {
     private int _disposed;
 
-    internal JSReference(NodeJsHost host, long id)
+    internal JSReference(NodeJsHost host, NodeJsChannel channel, long id)
     {
         Host = host;
+        Channel = channel;
         Id = id;
     }
 
     /// <summary>Gets the host of the Node.js process that keeps the value.</summary>
     public NodeJsHost Host { get; }
+
+    /// <summary>Gets the connection with the thread that keeps the value.</summary>
+    internal NodeJsChannel Channel { get; }
 
     internal long Id { get; }
 
@@ -98,10 +102,9 @@ public sealed class JSReference : IAsyncDisposable, IDisposable
     /// <summary>Calls a method of the referenced value, or the referenced function, and returns a reference to its result.</summary>
     /// <inheritdoc cref="InvokeAsync(string?, IReadOnlyList{JsonNode?}?, CancellationToken)"/>
     /// <returns>A reference to the value returned by the function (awaited if it is a promise). Dispose it when the value is no longer needed.</returns>
-    public async Task<JSReference> InvokeReferenceAsync(string? methodName, IReadOnlyList<JsonNode?>? arguments = null, CancellationToken cancellationToken = default)
+    public Task<JSReference> InvokeReferenceAsync(string? methodName, IReadOnlyList<JsonNode?>? arguments = null, CancellationToken cancellationToken = default)
     {
-        var referenceId = await Host.InvokeMemberAsync(this, methodName, arguments, ResultKind.Reference, NodeJsHost.ReadReferenceId, cancellationToken).ConfigureAwait(false);
-        return new JSReference(Host, referenceId);
+        return Host.InvokeMemberReferenceAsync(this, methodName, arguments, cancellationToken);
     }
 
     /// <summary>Calls a method of the referenced value, or the referenced function, and returns a reference to its result. Arguments are serialized using reflection.</summary>
@@ -119,10 +122,9 @@ public sealed class JSReference : IAsyncDisposable, IDisposable
     /// <param name="cancellationToken">A token to stop waiting for the result. The JavaScript code keeps running.</param>
     /// <returns>A reference to the new instance. Dispose it when the instance is no longer needed.</returns>
     /// <exception cref="NodeJsException">The value is not a constructor, the constructor throws, or the Node.js process exits.</exception>
-    public async Task<JSReference> CreateInstanceAsync(string? memberName, IReadOnlyList<JsonNode?>? arguments = null, CancellationToken cancellationToken = default)
+    public Task<JSReference> CreateInstanceAsync(string? memberName, IReadOnlyList<JsonNode?>? arguments = null, CancellationToken cancellationToken = default)
     {
-        var referenceId = await Host.InvokeMemberAsync(this, memberName, arguments, ResultKind.Reference, NodeJsHost.ReadReferenceId, cancellationToken, construct: true).ConfigureAwait(false);
-        return new JSReference(Host, referenceId);
+        return Host.InvokeMemberReferenceAsync(this, memberName, arguments, cancellationToken, construct: true);
     }
 
     /// <summary>Creates an instance (<c>new</c>) of the referenced class, or of a class that is a member of the referenced value, and keeps the instance in the Node.js process. Arguments are serialized using reflection.</summary>
@@ -184,7 +186,7 @@ public sealed class JSReference : IAsyncDisposable, IDisposable
         if (Interlocked.Exchange(ref _disposed, 1) is 1)
             return;
 
-        await Host.ReleaseReferenceAsync(Id).ConfigureAwait(false);
+        await Channel.ReleaseReferenceAsync(Id).ConfigureAwait(false);
     }
 
     /// <summary>Releases the value, so Node.js can collect it. The release message is sent in the background.</summary>
@@ -193,7 +195,7 @@ public sealed class JSReference : IAsyncDisposable, IDisposable
         if (Interlocked.Exchange(ref _disposed, 1) is 1)
             return;
 
-        Host.ReleaseReference(Id);
+        Channel.ReleaseReference(Id);
     }
 
     /// <inheritdoc/>

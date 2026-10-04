@@ -39,6 +39,56 @@ Person? person = await node.InvokeAsync("./people.mjs", "get", [42], MyJsonConte
 Person? person = await node.InvokeAsync<Person>("./people.mjs", "get", [42]);
 ````
 
+### Ignoring the result
+
+`InvokeVoidAsync` and `EvaluateVoidAsync` wait for the call to complete but do not serialize its result, so the result does not need to be serializable.
+
+````c#
+await node.InvokeVoidAsync("./cache.mjs", "warmUp");
+await node.EvaluateVoidAsync("globalThis.server = require('node:http').createServer();");
+````
+
+### JavaScript values
+
+Arguments are serialized as JSON. Use `JSValue` for values that JSON cannot represent. It converts implicitly to `JsonNode`, so it can be an argument or be nested in a `JsonObject` or `JsonArray` argument.
+
+| .NET | JavaScript |
+| --- | --- |
+| `JSValue.Undefined` | `undefined` |
+| `JSValue.BigInt(BigInteger)` | `BigInt`. `long`, `ulong`, `Int128`, and `UInt128` convert implicitly to `BigInteger`. |
+| `JSValue.Number(...)` | `Number`, from `double`, `float`, `Half`, `decimal`, and all integer types. `NaN`, infinities, and `-0` are preserved. Values that are not exactly representable are rounded to the nearest double, as `Number` would. |
+| `JSValue.Date(DateTimeOffset)`, `JSValue.Date(DateTime)` | `Date`, truncated to the millisecond. A local or unspecified `DateTime` is a local time. |
+| `JSValue.Uint8Array(ReadOnlyMemory<byte>)` | `Uint8Array` |
+
+````c#
+await node.InvokeAsync("./module.mjs", "run", [JSValue.Undefined, JSValue.BigInt(long.MaxValue), new JsonObject { ["date"] = JSValue.Date(DateTimeOffset.UtcNow) }]);
+````
+
+In results, `BigInt` values are exact JSON numbers (Node.js 21 or later): read them with `GetInt64()`, deserialize them as `Int128` or `decimal`, or use `BigInteger.Parse(element.GetRawText())`.
+
+### References
+
+A value that cannot be serialized, or that must be reused across calls (a class instance, a `Map`, a database client, a function...), can be kept in the Node.js process. `InvokeReferenceAsync` and `EvaluateReferenceAsync` return a `JSReference` instead of the JSON representation of the result.
+
+````c#
+await using var client = await node.InvokeReferenceAsync("./database.mjs", "connect", ["connection-string"]);
+
+// Call a method of the referenced value, with the value as "this"
+JsonElement rows = await client.InvokeAsync("query", ["SELECT 1"]);
+
+// Pass the referenced value to a function, directly or nested in a JsonObject or JsonArray argument
+await node.InvokeVoidAsync("./database.mjs", "seed", [client]);
+
+// Call a referenced function
+await using var add = await node.EvaluateReferenceAsync("return (a, b) => a + b;");
+JsonElement sum = await add.InvokeAsync(methodName: null, [1, 2]);
+
+// Get the JSON representation of the referenced value
+JsonElement value = await client.GetValueAsync();
+````
+
+The value is kept until the reference is disposed or the process exits. A reference can only be used with the process that created it.
+
 ### Errors
 
 JavaScript errors are thrown as `NodeJsException`, with `JavaScriptErrorName` (e.g. `TypeError`) and `JavaScriptStack`. If the Node.js process exits, pending and future calls throw a `NodeJsException` whose `ExitCode` is set.
@@ -77,9 +127,12 @@ await pool.RunAsync(async host =>
 
 Processes do not share state: values stored on `globalThis` are only visible to calls running on the same process.
 
+A reference returned by the pool is bound to the process that created it. Calls of the pool whose arguments contain a reference run on that process.
+
 ## Limitations
 
-- Arguments and results are serialized as JSON. Functions, symbols, and class instances cannot cross the boundary; `undefined` becomes `null` and `BigInt` values cannot be serialized.
+- Arguments and results are serialized as JSON. Use `JSValue` to pass values that JSON cannot represent, and `JSReference` to keep values in the Node.js process. In results, `undefined` becomes `null`.
+- `JSValue` and `JSReference` can only be used in the arguments of a call. A `JsonNode` created from them cannot be serialized or cloned, and they cannot be members of objects serialized using reflection.
 - Cancelling a call only stops waiting for the result; the JavaScript code keeps running.
 - JavaScript code cannot call back into .NET.
 - A synchronous infinite loop blocks all the other calls. Disposing the host kills the process.

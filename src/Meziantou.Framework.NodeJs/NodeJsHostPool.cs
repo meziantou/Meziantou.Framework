@@ -2,6 +2,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization.Metadata;
+using Meziantou.Framework.NodeJs.Internal;
 
 namespace Meziantou.Framework.NodeJs;
 
@@ -104,23 +105,58 @@ public sealed class NodeJsHostPool : IAsyncDisposable
     }
 
     /// <inheritdoc cref="NodeJsHost.InvokeAsync(string, string?, IReadOnlyList{JsonNode?}?, CancellationToken)"/>
+    /// <remarks>When the arguments contain a <see cref="JSReference"/>, the call runs on the host that keeps the referenced value.</remarks>
     public Task<JsonElement> InvokeAsync(string module, string? exportName, IReadOnlyList<JsonNode?>? arguments = null, CancellationToken cancellationToken = default)
     {
-        return RunAsync(host => host.InvokeAsync(module, exportName, arguments, cancellationToken), cancellationToken);
+        return RunAsync(ArgumentWriter.FindReferenceHost(arguments), host => host.InvokeAsync(module, exportName, arguments, cancellationToken), cancellationToken);
     }
 
     /// <inheritdoc cref="NodeJsHost.InvokeAsync{T}(string, string?, IReadOnlyList{JsonNode?}?, JsonTypeInfo{T}, CancellationToken)"/>
+    /// <remarks>When the arguments contain a <see cref="JSReference"/>, the call runs on the host that keeps the referenced value.</remarks>
     public Task<T?> InvokeAsync<T>(string module, string? exportName, IReadOnlyList<JsonNode?>? arguments, JsonTypeInfo<T> resultTypeInfo, CancellationToken cancellationToken = default)
     {
-        return RunAsync(host => host.InvokeAsync(module, exportName, arguments, resultTypeInfo, cancellationToken), cancellationToken);
+        return RunAsync(ArgumentWriter.FindReferenceHost(arguments), host => host.InvokeAsync(module, exportName, arguments, resultTypeInfo, cancellationToken), cancellationToken);
     }
 
     /// <inheritdoc cref="NodeJsHost.InvokeAsync{T}(string, string?, object?[], JsonSerializerOptions?, CancellationToken)"/>
-    [RequiresUnreferencedCode("JSON serialization and deserialization might require types that cannot be statically analyzed. Use the overload that takes a JsonTypeInfo instead.")]
-    [RequiresDynamicCode("JSON serialization and deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use the overload that takes a JsonTypeInfo instead.")]
+    /// <remarks>When the arguments contain a <see cref="JSReference"/>, the call runs on the host that keeps the referenced value.</remarks>
+    [RequiresUnreferencedCode(NodeJsHost.ReflectionUnreferencedCodeMessage)]
+    [RequiresDynamicCode(NodeJsHost.ReflectionDynamicCodeMessage)]
     public Task<T?> InvokeAsync<T>(string module, string? exportName, object?[]? arguments = null, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
     {
-        return RunAsync(host => host.InvokeAsync<T>(module, exportName, arguments, options, cancellationToken), cancellationToken);
+        return RunAsync(ArgumentWriter.FindReferenceHost(arguments), host => host.InvokeAsync<T>(module, exportName, arguments, options, cancellationToken), cancellationToken);
+    }
+
+    /// <inheritdoc cref="NodeJsHost.InvokeVoidAsync(string, string?, IReadOnlyList{JsonNode?}?, CancellationToken)"/>
+    /// <remarks>When the arguments contain a <see cref="JSReference"/>, the call runs on the host that keeps the referenced value.</remarks>
+    public Task InvokeVoidAsync(string module, string? exportName, IReadOnlyList<JsonNode?>? arguments = null, CancellationToken cancellationToken = default)
+    {
+        return RunAsync(ArgumentWriter.FindReferenceHost(arguments), host => host.InvokeVoidAsync(module, exportName, arguments, cancellationToken), cancellationToken);
+    }
+
+    /// <inheritdoc cref="NodeJsHost.InvokeVoidAsync(string, string?, object?[], JsonSerializerOptions?, CancellationToken)"/>
+    /// <remarks>When the arguments contain a <see cref="JSReference"/>, the call runs on the host that keeps the referenced value.</remarks>
+    [RequiresUnreferencedCode(NodeJsHost.ReflectionUnreferencedCodeMessage)]
+    [RequiresDynamicCode(NodeJsHost.ReflectionDynamicCodeMessage)]
+    public Task InvokeVoidAsync(string module, string? exportName, object?[]? arguments, JsonSerializerOptions? options, CancellationToken cancellationToken = default)
+    {
+        return RunAsync(ArgumentWriter.FindReferenceHost(arguments), host => host.InvokeVoidAsync(module, exportName, arguments, options, cancellationToken), cancellationToken);
+    }
+
+    /// <inheritdoc cref="NodeJsHost.InvokeReferenceAsync(string, string?, IReadOnlyList{JsonNode?}?, CancellationToken)"/>
+    /// <remarks>The reference is bound to the host that ran the call. Calls of the pool whose arguments contain it run on that host.</remarks>
+    public Task<JSReference> InvokeReferenceAsync(string module, string? exportName, IReadOnlyList<JsonNode?>? arguments = null, CancellationToken cancellationToken = default)
+    {
+        return RunAsync(ArgumentWriter.FindReferenceHost(arguments), host => host.InvokeReferenceAsync(module, exportName, arguments, cancellationToken), cancellationToken);
+    }
+
+    /// <inheritdoc cref="NodeJsHost.InvokeReferenceAsync(string, string?, object?[], JsonSerializerOptions?, CancellationToken)"/>
+    /// <remarks>The reference is bound to the host that ran the call. Calls of the pool whose arguments contain it run on that host.</remarks>
+    [RequiresUnreferencedCode(NodeJsHost.ReflectionUnreferencedCodeMessage)]
+    [RequiresDynamicCode(NodeJsHost.ReflectionDynamicCodeMessage)]
+    public Task<JSReference> InvokeReferenceAsync(string module, string? exportName, object?[]? arguments, JsonSerializerOptions? options, CancellationToken cancellationToken = default)
+    {
+        return RunAsync(ArgumentWriter.FindReferenceHost(arguments), host => host.InvokeReferenceAsync(module, exportName, arguments, options, cancellationToken), cancellationToken);
     }
 
     /// <inheritdoc cref="NodeJsHost.EvaluateAsync(string, CancellationToken)"/>
@@ -143,6 +179,19 @@ public sealed class NodeJsHostPool : IAsyncDisposable
         return RunAsync(host => host.EvaluateAsync<T>(code, options, cancellationToken), cancellationToken);
     }
 
+    /// <inheritdoc cref="NodeJsHost.EvaluateVoidAsync(string, CancellationToken)"/>
+    public Task EvaluateVoidAsync(string code, CancellationToken cancellationToken = default)
+    {
+        return RunAsync(host => host.EvaluateVoidAsync(code, cancellationToken), cancellationToken);
+    }
+
+    /// <inheritdoc cref="NodeJsHost.EvaluateReferenceAsync(string, CancellationToken)"/>
+    /// <remarks>The reference is bound to the host that ran the call. Calls of the pool whose arguments contain it run on that host.</remarks>
+    public Task<JSReference> EvaluateReferenceAsync(string code, CancellationToken cancellationToken = default)
+    {
+        return RunAsync(host => host.EvaluateReferenceAsync(code, cancellationToken), cancellationToken);
+    }
+
     /// <summary>Stops all the Node.js processes. Pending calls fail with <see cref="ObjectDisposedException"/>.</summary>
     public async ValueTask DisposeAsync()
     {
@@ -159,6 +208,52 @@ public sealed class NodeJsHostPool : IAsyncDisposable
         await _disposeCts.CancelAsync().ConfigureAwait(false);
         await Task.WhenAll(tasks).ConfigureAwait(false);
         _disposeCts.Dispose();
+    }
+
+    private Task<T> RunAsync<T>(NodeJsHost? host, Func<NodeJsHost, Task<T>> action, CancellationToken cancellationToken)
+    {
+        return host is null ? RunAsync(action, cancellationToken) : RunOnHostAsync(host, action);
+    }
+
+    private async Task RunAsync(NodeJsHost? host, Func<NodeJsHost, Task> action, CancellationToken cancellationToken)
+    {
+        await RunAsync<object?>(host, async host =>
+        {
+            await action(host).ConfigureAwait(false);
+            return null;
+        }, cancellationToken).ConfigureAwait(false);
+    }
+
+    // Runs a call that uses a reference on the host that keeps the referenced value
+    private async Task<T> RunOnHostAsync<T>(NodeJsHost host, Func<NodeJsHost, Task<T>> action)
+    {
+        Slot? hostSlot = null;
+        lock (_lock)
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            foreach (var slot in _slots)
+            {
+                if (slot.Host.IsCompletedSuccessfully && slot.Host.Result == host)
+                {
+                    Interlocked.Increment(ref slot.PendingCalls);
+                    hostSlot = slot;
+                    break;
+                }
+            }
+        }
+
+        // When the host is no longer in the pool (e.g. its process exited and it was replaced), the call fails with the error of the host
+        try
+        {
+            return await action(host).ConfigureAwait(false);
+        }
+        finally
+        {
+            if (hostSlot is not null)
+            {
+                Interlocked.Decrement(ref hostSlot.PendingCalls);
+            }
+        }
     }
 
     private async Task<(Slot Slot, NodeJsHost Host)> AcquireAsync(CancellationToken cancellationToken)

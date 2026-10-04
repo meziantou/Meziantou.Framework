@@ -23,17 +23,36 @@ socket.setEncoding("utf8");
 socket.on("error", () => process.exit(1));
 socket.on("close", () => process.exit(0));
 
+// Values referenced by the .NET host (JSReference), by identifier
+const references = new Map();
+let nextReferenceId = 0;
+
 function send(message) {
     socket.write(JSON.stringify(message) + "\n");
 }
 
+function bigIntReplacer(_, value) {
+    return typeof value === "bigint" ? JSON.rawJSON(value.toString()) : value;
+}
+
 function sendResult(id, result) {
+    const message = { id, result: result === undefined ? null : result };
     let json;
     try {
-        json = JSON.stringify({ id, result: result === undefined ? null : result });
+        json = JSON.stringify(message);
     } catch (error) {
-        sendError(id, error);
-        return;
+        // BigInt values are not serializable by default. The replacer is only used when needed, as it slows down the serialization of large results.
+        if (!(error instanceof TypeError) || typeof JSON.rawJSON !== "function") {
+            sendError(id, error);
+            return;
+        }
+
+        try {
+            json = JSON.stringify(message, bigIntReplacer);
+        } catch (retryError) {
+            sendError(id, retryError);
+            return;
+        }
     }
 
     socket.write(json + "\n");
@@ -55,7 +74,52 @@ function toSpecifier(module) {
     return path.isAbsolute(module) ? pathToFileURL(module).href : module;
 }
 
-async function invoke(message) {
+function getReference(id) {
+    if (!references.has(id)) {
+        throw new Error(`The reference ${id} does not exist or was released`);
+    }
+
+    return references.get(id);
+}
+
+function decodeValue(entry) {
+    switch (entry.type) {
+        case "undefined":
+            return undefined;
+        case "bigint":
+            return BigInt(entry.value);
+        case "number":
+            return Number(entry.value);
+        case "date":
+            return new Date(entry.value);
+        case "uint8Array":
+            // Copy the data, so the Uint8Array does not expose the shared memory pool of Buffer
+            return new Uint8Array(Buffer.from(entry.value, "base64"));
+        case "reference":
+            return getReference(entry.value);
+        default:
+            throw new Error(`Unknown value type '${entry.type}'`);
+    }
+}
+
+// Values that JSON cannot represent are sent as null, with their location in the arguments
+function decodeArguments(message) {
+    const args = message.args ?? [];
+    for (const entry of message.values ?? []) {
+        const path = entry.path;
+        let container = args;
+        for (let i = 0; i < path.length - 1; i++) {
+            container = container[path[i]];
+        }
+
+        // Containers are created by JSON.parse, so even keys such as "__proto__" are own properties
+        container[path[path.length - 1]] = decodeValue(entry);
+    }
+
+    return args;
+}
+
+async function invoke(message, args) {
     const module = await import(toSpecifier(message.module));
 
     // Functions are called with their container as "this", so methods of exported objects work (e.g. CommonJS "module.exports = { method() { return this... } }")
@@ -77,10 +141,31 @@ async function invoke(message) {
     }
 
     if (typeof target === "function") {
-        return await target.apply(container, message.args ?? []);
+        return await target.apply(container, args);
     }
 
     return target;
+}
+
+async function invokeMember(target, member, args) {
+    if (member === null || member === undefined) {
+        if (typeof target !== "function") {
+            throw new TypeError("The referenced value is not a function");
+        }
+
+        return await target(...args);
+    }
+
+    if (target === null || target === undefined || !(member in Object(target))) {
+        throw new Error(`The referenced value does not have a member '${member}'`);
+    }
+
+    const value = target[member];
+    if (typeof value === "function") {
+        return await value.apply(target, args);
+    }
+
+    return value;
 }
 
 async function evaluate(message) {
@@ -89,20 +174,49 @@ async function evaluate(message) {
 }
 
 async function handle(message) {
+    if (message.type === "release") {
+        references.delete(message.reference);
+        return;
+    }
+
     try {
+        // Arguments and targets are resolved before awaiting anything, so a reference released by a later message is still available to this call
         let result;
         switch (message.type) {
             case "invoke":
-                result = await invoke(message);
+                result = invoke(message, decodeArguments(message));
+                break;
+            case "invokeReference":
+                result = invokeMember(getReference(message.reference), message.member, decodeArguments(message));
+                break;
+            case "getReference":
+                result = getReference(message.reference);
                 break;
             case "eval":
-                result = await evaluate(message);
+                result = evaluate(message);
+                break;
+            case "debug":
+                result = { references: references.size };
                 break;
             default:
                 throw new Error(`Unknown message type '${message.type}'`);
         }
 
-        sendResult(message.id, result);
+        result = await result;
+        switch (message.returns) {
+            case "void":
+                send({ id: message.id });
+                break;
+            case "reference": {
+                const reference = ++nextReferenceId;
+                references.set(reference, result);
+                send({ id: message.id, reference });
+                break;
+            }
+            default:
+                sendResult(message.id, result);
+                break;
+        }
     } catch (error) {
         sendError(message.id, error);
     }

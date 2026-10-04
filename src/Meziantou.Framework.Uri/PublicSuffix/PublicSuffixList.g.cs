@@ -7,11 +7,11 @@ namespace Meziantou.Framework;
 
 static partial class PublicSuffixList
 {
-    // Public Suffix List source: https://raw.githubusercontent.com/publicsuffix/list/a179a48c465e818cfd8d626691cb317985da87fb/public_suffix_list.dat
-    // Commit date: 2026-09-24T13:26:24.0000000+00:00
-    private const int EntryCount = 10334;
-    private const int RuleCountValue = 10334;
-    private const long LastUpdatedTicks = 639258531840000000L;
+    // Public Suffix List source: https://raw.githubusercontent.com/publicsuffix/list/6cd82aff889e3d64e5e03bc5c1f43da1934a960a/public_suffix_list.dat
+    // Commit date: 2026-10-01T23:02:42.0000000+00:00
+    private const int EntryCount = 10333;
+    private const int RuleCountValue = 10333;
+    private const long LastUpdatedTicks = 639264925620000000L;
 
     private static FrozenDictionary<string, PublicSuffixRuleFlags> LoadRules()
     {
@@ -2719,7 +2719,6 @@ static partial class PublicSuffixList
         "jprs",
         "js.cn",
         "juegos",
-        "juniper",
         "jur.pro",
         "jus.br",
         "jx.cn",

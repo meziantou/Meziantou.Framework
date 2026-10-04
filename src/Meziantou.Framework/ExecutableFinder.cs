@@ -21,9 +21,14 @@ static class ExecutableFinder
     // https://docs.microsoft.com/en-us/windows-server/administration/windows-commands/path
     public static string? GetFullExecutablePath(string executableName, string? workingDirectory = null)
     {
+        return GetFullExecutablePath(executableName, workingDirectory, Environment.GetEnvironmentVariable("PATH"), Environment.GetEnvironmentVariable("PATHEXT"));
+    }
+
+    internal static string? GetFullExecutablePath(string executableName, string? workingDirectory, string? pathVariable, string? pathExtVariable)
+    {
         var separator = Path.PathSeparator;
-        var extensions = OperatingSystem.IsWindows() ? GetWindowsExecutableExtensions() : [];
-        var path = (Environment.GetEnvironmentVariable("PATH") ?? "").Split(separator);
+        var extensions = OperatingSystem.IsWindows() ? GetWindowsExecutableExtensions(pathExtVariable) : [];
+        var path = (pathVariable ?? "").Split(separator);
 
         IEnumerable<string> searchPaths = path;
         if (workingDirectory is not null)
@@ -62,10 +67,9 @@ static class ExecutableFinder
             return null;
         }
 
-        static string[] GetWindowsExecutableExtensions()
+        static string[] GetWindowsExecutableExtensions(string? pathExt)
         {
             // Same default as cmd.exe when PATHEXT is not set
-            var pathExt = Environment.GetEnvironmentVariable("PATHEXT");
             if (string.IsNullOrWhiteSpace(pathExt))
                 return [".COM", ".EXE", ".BAT", ".CMD"];
 

@@ -1,11 +1,14 @@
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Globalization;
 using Meziantou.Xunit;
 
 namespace Meziantou.Framework.Tests;
 
 public class ExecutableFinderTests
 {
+    private const string DefaultPathExt = ".COM;.EXE;.BAT;.CMD";
+
     [Fact, RunIf(TestOperatingSystems.Windows)]
     public void GetFullExecutablePathTests_Windows()
     {
@@ -160,6 +163,85 @@ public class ExecutableFinderTests
         finally
         {
             Directory.Delete(dir, recursive: true);
+        }
+    }
+
+    // cmd.exe is the reference implementation: each file echoes its own location, so the output of 'cmd /c <name>' tells which
+    // file cmd.exe runs. In the layout, directories are separated by '|' and files by ','. The first directory is the working
+    // directory, which cmd.exe searches before PATH, and the next ones are the PATH entries.
+    [Theory, RunIf(TestOperatingSystems.Windows)]
+    [InlineData("tool", "|tool,tool.cmd", DefaultPathExt)]
+    [InlineData("tool", "|tool", DefaultPathExt)]
+    [InlineData("tool", "|tool|tool.cmd", DefaultPathExt)]
+    [InlineData("tool", "|tool.bat,tool.cmd", DefaultPathExt)]
+    [InlineData("tool", "|tool.bat,tool.cmd", ".CMD;.BAT")]
+    [InlineData("tool", "|tool.cmd|tool.bat", DefaultPathExt)]
+    [InlineData("tool", "tool.cmd|tool.bat", DefaultPathExt)]
+    [InlineData("tool", "tool|tool.cmd", DefaultPathExt)]
+    [InlineData("tool", "|tool,tool.cmd", null)]
+    [InlineData("TOOL", "|tool.cmd", DefaultPathExt)]
+    [InlineData("tool.cmd", "|tool,tool.cmd", DefaultPathExt)]
+    [InlineData("tool.cmd", "|tool.cmd.bat,tool.cmd", DefaultPathExt)]
+    [InlineData("tool.v2", "|tool.v2.cmd", DefaultPathExt)]
+    public async Task GetFullExecutablePathTests_Windows_MatchesCmd(string executableName, string layout, string? pathExt)
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        try
+        {
+            var directories = layout.Split('|');
+            for (var i = 0; i < directories.Length; i++)
+            {
+                var directory = Path.Combine(root, i.ToString(CultureInfo.InvariantCulture));
+                Directory.CreateDirectory(directory);
+                foreach (var fileName in directories[i].Split(',', StringSplitOptions.RemoveEmptyEntries))
+                {
+                    File.WriteAllText(Path.Combine(directory, fileName), $"@echo {i}\\{fileName}\r\n");
+                }
+            }
+
+            var workingDirectory = Path.Combine(root, "0");
+            var path = string.Join(';', Enumerable.Range(1, directories.Length - 1).Select(i => Path.Combine(root, i.ToString(CultureInfo.InvariantCulture))));
+
+            var psi = new ProcessStartInfo(Path.Combine(Environment.SystemDirectory, "cmd.exe"))
+            {
+                ArgumentList = { "/d", "/c", executableName },
+                WorkingDirectory = workingDirectory,
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true,
+            };
+            psi.Environment["PATH"] = path;
+            psi.Environment.Remove("NoDefaultCurrentDirectoryInExePath");
+            if (pathExt is null)
+            {
+                psi.Environment.Remove("PATHEXT");
+            }
+            else
+            {
+                psi.Environment["PATHEXT"] = pathExt;
+            }
+
+            using var process = Process.Start(psi);
+            Assert.NotNull(process);
+            var outputTask = process.StandardOutput.ReadToEndAsync(TestContext.Current.CancellationToken);
+            var errorTask = process.StandardError.ReadToEndAsync(TestContext.Current.CancellationToken);
+            await process.WaitForExitAsync(TestContext.Current.CancellationToken);
+            var output = (await outputTask).Trim();
+            var error = (await errorTask).Trim();
+
+            // cmd.exe exits with 9009 when the command is not recognized
+            var cmdResult = process.ExitCode is 0 && output.Length > 0 ? output : null;
+            Assert.True(cmdResult is not null || process.ExitCode is 9009, $"cmd.exe exited with code {process.ExitCode}: {output} {error}");
+
+            var result = ExecutableFinder.GetFullExecutablePath(executableName, workingDirectory, path, pathExt);
+            var finderResult = result is null ? null : Path.GetRelativePath(root, result);
+
+            Assert.Equal(cmdResult, finderResult, ignoreCase: true);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
         }
     }
 

@@ -388,7 +388,8 @@ public sealed class NodeJsHost : IAsyncDisposable
                 await _stream!.WriteAsync(buffer.WrittenMemory, cancellationToken).ConfigureAwait(false);
                 await _stream.FlushAsync(cancellationToken).ConfigureAwait(false);
             }
-            catch (Exception ex) when (ex is IOException or ObjectDisposedException)
+            // On Windows, disposing the named pipe cancels the pending write, which throws OperationCanceledException
+            catch (Exception ex) when (ex is IOException or ObjectDisposedException || (ex is OperationCanceledException && !cancellationToken.IsCancellationRequested))
             {
                 ThrowIfTerminated();
                 throw new NodeJsException("Cannot send the message to the Node.js process.", ex);

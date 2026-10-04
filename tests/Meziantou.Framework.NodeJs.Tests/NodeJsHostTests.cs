@@ -143,7 +143,8 @@ public sealed partial class NodeJsHostTests
     [Fact]
     public async Task Invoke_NpmInstalledPackage()
     {
-        var npmPath = ExecutableFinder.GetFullExecutablePath("npm");
+        // On Windows, the Node.js folder also contains an extensionless "npm" shell script for Git Bash, which ExecutableFinder finds first but cannot be started
+        var npmPath = ExecutableFinder.GetFullExecutablePath(OperatingSystem.IsWindows() ? "npm.cmd" : "npm");
         global::Xunit.Assert.SkipWhen(npmPath is null, "npm is not installed.");
 
         // A "file:" dependency is installed from the local folder, so the test does not need the npm registry

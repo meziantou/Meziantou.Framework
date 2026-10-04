@@ -57,6 +57,7 @@
     <ProjectReference Include="..\..\src\Meziantou.Framework.Language.Xml\Meziantou.Framework.Language.Xml.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Markdown\Meziantou.Framework.Markdown.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.MediaTags\Meziantou.Framework.MediaTags.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.NodeJs\Meziantou.Framework.NodeJs.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.NtpClient\Meziantou.Framework.NtpClient.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.NtpServer\Meziantou.Framework.NtpServer.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.PooledMemoryStream\Meziantou.Framework.PooledMemoryStream.csproj" />
@@ -129,6 +130,7 @@
     <TrimmerRootAssembly Include="Meziantou.Framework.Language.Xml" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Markdown" />
     <TrimmerRootAssembly Include="Meziantou.Framework.MediaTags" />
+    <TrimmerRootAssembly Include="Meziantou.Framework.NodeJs" />
     <TrimmerRootAssembly Include="Meziantou.Framework.NtpClient" />
     <TrimmerRootAssembly Include="Meziantou.Framework.NtpServer" />
     <TrimmerRootAssembly Include="Meziantou.Framework.PooledMemoryStream" />

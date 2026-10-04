@@ -1397,12 +1397,14 @@ public sealed partial class NodeJsHostTests
     [Fact]
     public async Task UnresponsiveTimeout_KillsBlockedProcess()
     {
-        await using var node = await StartNodeAsync(new NodeJsHostOptions { UnresponsiveTimeout = TimeSpan.FromMilliseconds(500) });
+        var output = new ConcurrentQueue<string>();
+        await using var node = await StartNodeAsync(new NodeJsHostOptions { UnresponsiveTimeout = TimeSpan.FromMilliseconds(500), StandardOutputReceived = output.Enqueue });
         using var process = Process.GetProcessById(node.ProcessId);
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(XunitCancellationToken);
         var pending = node.EvaluateAsync("await new Promise(r => setTimeout(r, 60_000));", XunitCancellationToken);
 
-        var blocking = node.EvaluateVoidAsync("while (true) { }", cts.Token);
+        var blocking = node.EvaluateVoidAsync(BlockingCode, cts.Token);
+        await WaitUntilAsync(() => output.Contains("blocked"));
         await cts.CancelAsync();
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => blocking);
         await node.WaitForResponsivenessCheckAsync();
@@ -1445,15 +1447,17 @@ public sealed partial class NodeJsHostTests
     public async Task Pool_BlockedByCanceledCall_IsAvoided()
     {
         SkipIfNodeIsNotInstalled();
-        await using var pool = await NodeJsHostPool.StartAsync(2, new NodeJsHostOptions { MaxConcurrentCalls = 1 }, XunitCancellationToken);
+        var output = new ConcurrentQueue<string>();
+        await using var pool = await NodeJsHostPool.StartAsync(2, new NodeJsHostOptions { MaxConcurrentCalls = 1, StandardOutputReceived = output.Enqueue }, XunitCancellationToken);
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(XunitCancellationToken);
         var blockedProcessId = 0;
 
         var blocking = pool.RunAsync(async host =>
         {
             blockedProcessId = host.ProcessId;
-            await host.EvaluateVoidAsync("while (true) { }", cts.Token);
+            await host.EvaluateVoidAsync(BlockingCode, cts.Token);
         }, XunitCancellationToken);
+        await WaitUntilAsync(() => output.Contains("blocked"));
         await cts.CancelAsync();
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => blocking);
 
@@ -1472,7 +1476,8 @@ public sealed partial class NodeJsHostTests
     public async Task Pool_UnresponsiveTimeout_ReplacesBlockedProcess()
     {
         SkipIfNodeIsNotInstalled();
-        await using var pool = await NodeJsHostPool.StartAsync(1, new NodeJsHostOptions { UnresponsiveTimeout = TimeSpan.FromMilliseconds(500) }, XunitCancellationToken);
+        var output = new ConcurrentQueue<string>();
+        await using var pool = await NodeJsHostPool.StartAsync(1, new NodeJsHostOptions { UnresponsiveTimeout = TimeSpan.FromMilliseconds(500), StandardOutputReceived = output.Enqueue }, XunitCancellationToken);
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(XunitCancellationToken);
         NodeJsHost? blockedHost = null;
         var blockedProcessId = 0;
@@ -1481,8 +1486,9 @@ public sealed partial class NodeJsHostTests
         {
             blockedHost = host;
             blockedProcessId = host.ProcessId;
-            await host.EvaluateVoidAsync("while (true) { }", cts.Token);
+            await host.EvaluateVoidAsync(BlockingCode, cts.Token);
         }, XunitCancellationToken);
+        await WaitUntilAsync(() => output.Contains("blocked"));
         await cts.CancelAsync();
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => blocking);
         await blockedHost!.WaitForResponsivenessCheckAsync();
@@ -1490,6 +1496,10 @@ public sealed partial class NodeJsHostTests
 
         Assert.NotEqual(blockedProcessId, processId);
     }
+
+    // The marker is written synchronously, so it is received even though the event loop is blocked.
+    // Waiting for it ensures the call was sent before it is canceled: a call canceled while waiting to be sent never runs.
+    private const string BlockingCode = "require('node:fs').writeSync(1, 'blocked\\n'); while (true) { }";
 
     private const string DescribeModule = """
         const describe = value => ({

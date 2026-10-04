@@ -1,10 +1,12 @@
 // Bootstrap script executed by Meziantou.Framework.NodeJs.NodeJsHost.
-// It is started with "--input-type=module --eval", so dynamic imports are resolved relative to the working directory.
+// It is read from the standard input with "--input-type=module", so dynamic imports are resolved relative to the working directory.
 // Messages are newline-delimited JSON exchanged over the local socket provided by the .NET host.
 import net from "node:net";
 import path from "node:path";
+import { AsyncResource, createHook, executionAsyncResource } from "node:async_hooks";
 import { createRequire } from "node:module";
 import { pathToFileURL } from "node:url";
+import { Worker } from "node:worker_threads";
 
 const endpoint = process.env.MEZIANTOU_NODEJS_ENDPOINT;
 const token = process.env.MEZIANTOU_NODEJS_TOKEN;
@@ -38,8 +40,17 @@ socket.on("close", () => process.exit(0));
 const references = new Map();
 let nextReferenceId = 0;
 
+// JSON.stringify escapes a lone surrogate (e.g. a string cut in the middle of an emoji) as \udXXX, which System.Text.Json cannot convert to a string.
+// It is replaced by U+FFFD, as String.prototype.toWellFormed does. Valid surrogate pairs are not escaped, and a backslash preceded by an odd number of backslashes is not an escape.
+const loneSurrogateEscapePattern = /(?<!\\)((?:\\\\)*)\\ud[89a-f][0-9a-f]{2}/g;
+
+function stringify(value, replacer) {
+    const json = JSON.stringify(value, replacer);
+    return json !== undefined && json.includes("\\ud") ? json.replace(loneSurrogateEscapePattern, "$1�") : json;
+}
+
 function send(message) {
-    socket.write(JSON.stringify(message) + "\n");
+    socket.write(stringify(message) + "\n");
 }
 
 function toBase64(bytes) {
@@ -127,29 +138,68 @@ function resultReplacer(key, value) {
 }
 
 function sendResult(id, result) {
-    socket.write(JSON.stringify({ id, result: result === undefined ? null : result }, resultReplacer) + "\n");
+    const json = stringify(result === undefined ? null : result, resultReplacer);
+    if (json === undefined) {
+        // JSON.stringify omits the value, so the response would look like the response of a void call
+        const description = typeof result === "function" || typeof result === "symbol" ? `a ${typeof result}` : "a value whose JSON representation is undefined";
+        throw new TypeError(`The result is ${description}, which cannot be serialized as JSON. Use a call that returns a JSReference to keep it in the Node.js process, or a void call to ignore it.`);
+    }
+
+    // Written in several parts, so a large result is not copied into a new string
+    socket.cork();
+    socket.write(`{"id":${id},"result":`);
+    socket.write(json);
+    socket.write("}\n");
+    socket.uncork();
 }
 
-// A lone surrogate (e.g. a string cut in the middle of an emoji) is serialized as an escape sequence that System.Text.Json cannot convert to a string
-function toWellFormed(value) {
-    return typeof value.toWellFormed === "function" ? value.toWellFormed() : value.replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, "�");
-}
+// Bounds the chain of causes, which can be cyclic
+const MaxErrorCauseDepth = 8;
 
 // Never throws, as an error thrown while reporting an error would leave the call without a response
-function describeError(error) {
+function describeError(error, depth = 0) {
     try {
         if (error instanceof Error) {
-            return {
-                name: toWellFormed(String(error.name)),
-                message: toWellFormed(String(error.message)),
-                stack: typeof error.stack === "string" ? toWellFormed(error.stack) : null,
+            const description = {
+                name: String(error.name),
+                message: String(error.message),
+                stack: typeof error.stack === "string" ? error.stack : null,
             };
+
+            // e.g. "ENOENT" for the errors of node:fs
+            const code = error.code;
+            if (typeof code === "string" || typeof code === "number") {
+                description.code = String(code);
+            }
+
+            const cause = error.cause;
+            if (cause !== undefined && depth < MaxErrorCauseDepth) {
+                description.cause = describeError(cause, depth + 1);
+            }
+
+            return description;
         }
 
-        return { name: typeof error, message: toWellFormed(String(error)), stack: null };
+        return { name: typeof error, message: describeThrownValue(error), stack: null };
     } catch {
         return { name: typeof error, message: "The error cannot be converted to a string", stack: null };
     }
+}
+
+// An object thrown as an error (e.g. { code: "E_INVALID" }) is described by its JSON representation, which is more useful than "[object Object]"
+function describeThrownValue(value) {
+    if (typeof value === "object" && value !== null) {
+        try {
+            const json = JSON.stringify(value, resultReplacer);
+            if (json !== undefined) {
+                return json;
+            }
+        } catch {
+            // e.g. a cyclic object
+        }
+    }
+
+    return String(value);
 }
 
 function sendError(id, error) {
@@ -297,9 +347,104 @@ async function evaluate(message, args) {
     return await new AsyncFunction("require", "args", message.code)(require, args);
 }
 
+// Identifier of the call whose code runs on the main thread, shared with the watchdog thread once it is started: 0 when the event loop is idle, -1 for code that does not belong to a call
+const IdleCall = 0n;
+const UnattributedCode = -1n;
+const callSymbol = Symbol("MeziantouNodeJsCall");
+let runningCall;
+
+// Runs on a worker thread, so it answers the host even when the event loop of the main thread is blocked.
+// The host asks it which call blocks the event loop, so it can kill the process only when the call was canceled (NodeJsHostOptions.UnresponsiveTimeout).
+// Its source code is evaluated by the worker, so it only uses dynamic imports, which work whatever the module type of the worker.
+async function watchdog() {
+    const { workerData } = await import("node:worker_threads");
+    const { default: net } = await import("node:net");
+    const runningCall = new BigInt64Array(workerData.runningCall);
+    const socket = net.connect(workerData.endpoint);
+    socket.setEncoding("utf8");
+    socket.on("error", () => socket.destroy());
+    socket.write(JSON.stringify({ type: "hello", token: workerData.token }) + "\n");
+
+    // Each line is a request for the running call
+    let incompleteLine = "";
+    socket.on("data", chunk => {
+        incompleteLine += chunk;
+        let index;
+        while ((index = incompleteLine.indexOf("\n")) >= 0) {
+            incompleteLine = incompleteLine.slice(index + 1);
+            socket.write(`{"running":${Atomics.load(runningCall, 0)}}\n`);
+        }
+    });
+}
+
+function startWatchdog() {
+    const buffer = new SharedArrayBuffer(BigInt64Array.BYTES_PER_ELEMENT);
+    const state = new BigInt64Array(buffer);
+    const stack = [];
+    let current = IdleCall;
+    const setRunningCall = call => {
+        current = call;
+        Atomics.store(state, 0, call);
+    };
+
+    // Asynchronous operations (promises, timers, I/O...) belong to the call that started them, so the code they run is attributed to it.
+    // An exception thrown by a hook stops the process, so the hooks never throw.
+    createHook({
+        init(asyncId, type, triggerAsyncId, resource) {
+            const call = executionAsyncResource()?.[callSymbol];
+            if (call !== undefined) {
+                try {
+                    resource[callSymbol] = call;
+                } catch {
+                    // The resource is not extensible
+                }
+            }
+        },
+        before() {
+            stack.push(current);
+            setRunningCall(executionAsyncResource()?.[callSymbol] ?? UnattributedCode);
+        },
+        after() {
+            setRunningCall(stack.pop() ?? IdleCall);
+        },
+    }).enable();
+    runningCall = state;
+
+    const worker = new Worker(`(${watchdog})();`, { eval: true, workerData: { endpoint, token, runningCall: buffer } });
+    worker.unref();
+    worker.on("error", error => {
+        console.error("The watchdog failed:", error);
+        socket.destroy();
+    });
+}
+
+// Runs the code of a call in its own asynchronous context once the watchdog is started, so the code it runs is attributed to it
+function run(message) {
+    if (runningCall === undefined || typeof message.id !== "number") {
+        handle(message);
+        return;
+    }
+
+    const resource = new AsyncResource("MeziantouNodeJsCall");
+    resource[callSymbol] = BigInt(message.id);
+    resource.runInAsyncScope(handle, undefined, message);
+}
+
 async function handle(message) {
     if (message.type === "release") {
         references.delete(message.reference);
+        return;
+    }
+
+    if (message.type === "watchdog") {
+        try {
+            startWatchdog();
+        } catch (error) {
+            // The host waits for the watchdog to connect, so stop the process instead
+            console.error("Cannot start the watchdog:", error);
+            socket.destroy();
+        }
+
         return;
     }
 
@@ -384,7 +529,7 @@ function processLine(parts) {
         return;
     }
 
-    handle(message);
+    run(message);
 }
 
 // Only the new chunk is searched for line breaks, and the parts of an incomplete line are joined once complete,

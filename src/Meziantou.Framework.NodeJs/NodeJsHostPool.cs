@@ -45,15 +45,15 @@ public sealed class NodeJsHostPool : IAsyncDisposable
 
     /// <summary>Starts a pool of Node.js processes.</summary>
     /// <param name="size">The number of Node.js processes. <see cref="Environment.ProcessorCount"/> is a good default for CPU-bound code.</param>
-    /// <param name="options">The options used to start each process.</param>
+    /// <param name="options">The options used to start each process. They are copied, so changing them once the pool is started has no effect, including on the processes that replace the ones that exit.</param>
     /// <param name="cancellationToken">A token to cancel the startup.</param>
     /// <exception cref="NodeJsException">A Node.js process fails to start.</exception>
-    /// <exception cref="ArgumentOutOfRangeException"><paramref name="size"/>, <see cref="NodeJsHostOptions.MaxConcurrentCalls"/>, or <see cref="NodeJsHostOptions.UnresponsiveTimeout"/> is zero or negative.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="size"/>, <see cref="NodeJsHostOptions.MaxConcurrentCalls"/>, <see cref="NodeJsHostOptions.StartupTimeout"/>, or <see cref="NodeJsHostOptions.UnresponsiveTimeout"/> is zero or negative.</exception>
     public static async Task<NodeJsHostPool> StartAsync(int size, NodeJsHostOptions? options = null, CancellationToken cancellationToken = default)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(size);
 
-        options ??= NodeJsHostOptions.Default;
+        options = (options ?? NodeJsHostOptions.Default).Clone();
         NodeJsHost.ValidateOptions(options);
         var tasks = new Task<NodeJsHost>[size];
         for (var i = 0; i < size; i++)

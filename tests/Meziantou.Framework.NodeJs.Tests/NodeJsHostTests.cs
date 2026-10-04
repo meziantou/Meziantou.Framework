@@ -24,6 +24,20 @@ public sealed partial class NodeJsHostTests
     }
 
     [Fact]
+    public async Task BootstrapScript_IsNotOnCommandLine()
+    {
+        var options = new NodeJsHostOptions();
+        options.NodeArguments.Add("--no-warnings");
+        await using var node = await StartNodeAsync(options);
+
+        // The script is read from the standard input, so the command line only contains the arguments
+        var result = await node.EvaluateAsync("return [process.execArgv, process.argv.length];", XunitCancellationToken);
+
+        Assert.Equal(["--no-warnings", "--input-type=module"], result[0].EnumerateArray().Select(argument => argument.GetString()).ToArray());
+        Assert.Equal(1, result[1].GetInt32());
+    }
+
+    [Fact]
     public async Task Evaluate_UndefinedResult_ReturnsNull()
     {
         await using var node = await StartNodeAsync();
@@ -276,6 +290,63 @@ public sealed partial class NodeJsHostTests
     }
 
     [Fact]
+    public async Task Evaluate_ErrorWithCode_Throws()
+    {
+        await using var node = await StartNodeAsync();
+
+        var fileSystem = await Assert.ThrowsAsync<NodeJsException>(() => node.EvaluateAsync("return require('node:fs').readFileSync('/path/that/does/not/exist');", XunitCancellationToken));
+        var numberCode = await Assert.ThrowsAsync<NodeJsException>(() => node.EvaluateAsync("throw Object.assign(new Error('a'), { code: 42 });", XunitCancellationToken));
+        var objectCode = await Assert.ThrowsAsync<NodeJsException>(() => node.EvaluateAsync("throw Object.assign(new Error('a'), { code: { value: 1 } });", XunitCancellationToken));
+
+        Assert.Equal("ENOENT", fileSystem.JavaScriptErrorCode);
+        Assert.Equal("42", numberCode.JavaScriptErrorCode);
+        Assert.Null(objectCode.JavaScriptErrorCode);
+    }
+
+    [Fact]
+    public async Task Evaluate_ErrorWithCause_Throws()
+    {
+        await using var node = await StartNodeAsync();
+
+        var exception = await Assert.ThrowsAsync<NodeJsException>(() => node.EvaluateAsync("throw new Error('outer', { cause: Object.assign(new TypeError('inner', { cause: 'root' }), { code: 'E_INNER' }) });", XunitCancellationToken));
+        var cyclic = await Assert.ThrowsAsync<NodeJsException>(() => node.EvaluateAsync("const error = new Error('loop'); error.cause = error; throw error;", XunitCancellationToken));
+        var withoutCause = await Assert.ThrowsAsync<NodeJsException>(() => node.EvaluateAsync("throw new Error('a', { cause: undefined });", XunitCancellationToken));
+
+        Assert.Equal("Error: outer", exception.Message);
+        var inner = Assert.IsType<NodeJsException>(exception.InnerException);
+        Assert.Equal("TypeError: inner", inner.Message);
+        Assert.Equal("TypeError", inner.JavaScriptErrorName);
+        Assert.Equal("E_INNER", inner.JavaScriptErrorCode);
+        Assert.Contains("inner", inner.JavaScriptStack);
+        var root = Assert.IsType<NodeJsException>(inner.InnerException);
+        Assert.Equal("string: root", root.Message);
+        Assert.Null(root.InnerException);
+
+        var depth = 0;
+        for (Exception? current = cyclic; current is not null; current = current.InnerException)
+        {
+            Assert.Equal("Error: loop", current.Message);
+            depth++;
+        }
+
+        Assert.Equal(9, depth);
+        Assert.Null(withoutCause.InnerException);
+    }
+
+    [Fact]
+    public async Task Evaluate_ThrowObject_Throws()
+    {
+        await using var node = await StartNodeAsync();
+
+        var obj = await Assert.ThrowsAsync<NodeJsException>(() => node.EvaluateAsync("throw { code: 'E1', detail: [1, new Map([['a', 2]])] };", XunitCancellationToken));
+        var cyclic = await Assert.ThrowsAsync<NodeJsException>(() => node.EvaluateAsync("const value = {}; value.self = value; throw value;", XunitCancellationToken));
+
+        Assert.Equal("""object: {"code":"E1","detail":[1,{"a":2}]}""", obj.Message);
+        Assert.Equal("object", obj.JavaScriptErrorName);
+        Assert.Equal("object: [object Object]", cyclic.Message);
+    }
+
+    [Fact]
     public async Task Evaluate_ThrowNonError_Throws()
     {
         await using var node = await StartNodeAsync();
@@ -283,6 +354,26 @@ public sealed partial class NodeJsHostTests
         var exception = await Assert.ThrowsAsync<NodeJsException>(() => node.EvaluateAsync("throw 'oops';", XunitCancellationToken));
 
         Assert.Equal("string: oops", exception.Message);
+    }
+
+    [Fact]
+    public async Task Evaluate_ResultWithoutJsonRepresentation_Throws()
+    {
+        await using var node = await StartNodeAsync();
+
+        var function = await Assert.ThrowsAsync<NodeJsException>(() => node.EvaluateAsync("return () => 1;", XunitCancellationToken));
+        var symbol = await Assert.ThrowsAsync<NodeJsException>(() => node.EvaluateAsync("return Symbol('a');", NodeJsTestJsonContext.Default.Int32, XunitCancellationToken));
+        var toJson = await Assert.ThrowsAsync<NodeJsException>(() => node.EvaluateAsync("return { toJSON() { return undefined; } };", XunitCancellationToken));
+        await using var reference = await node.EvaluateReferenceAsync("return () => 1;", XunitCancellationToken);
+        await node.EvaluateVoidAsync("return Symbol('a');", XunitCancellationToken);
+        var nested = await node.EvaluateAsync("return { a: 1, f() { }, s: Symbol('a') };", XunitCancellationToken);
+
+        Assert.Equal("TypeError", function.JavaScriptErrorName);
+        Assert.Contains("The result is a function", function.Message);
+        Assert.Contains("The result is a symbol", symbol.Message);
+        Assert.Contains("JSON representation is undefined", toJson.Message);
+        Assert.Equal(1, (await reference.InvokeAsync(methodName: null, arguments: null, XunitCancellationToken)).GetInt32());
+        Assert.Equal("""{"a":1}""", nested.GetRawText());
     }
 
     [Fact]
@@ -708,17 +799,16 @@ public sealed partial class NodeJsHostTests
     {
         SkipIfNodeIsNotInstalled();
         await using var temporaryDirectory = TemporaryDirectory.Create();
-        var options = new NodeJsHostOptions();
-        await using var pool = await NodeJsHostPool.StartAsync(1, options, XunitCancellationToken);
+        var startupModePath = temporaryDirectory.GetFullPath("startup-mode.txt");
+        await using var pool = await NodeJsHostPool.StartAsync(1, CreateStartupModeOptions(startupModePath), XunitCancellationToken);
 
-        // The pool starts replacements with the same options instance
-        options.NodeExecutablePath = temporaryDirectory.GetFullPath("node-does-not-exist");
+        await File.WriteAllTextAsync(startupModePath, "fail", XunitCancellationToken);
         await Assert.ThrowsAsync<NodeJsException>(() => pool.EvaluateAsync("process.exit(1);", XunitCancellationToken));
         var startException = await Assert.ThrowsAsync<NodeJsException>(() => pool.EvaluateAsync("return 1;", XunitCancellationToken));
-        options.NodeExecutablePath = null;
+        File.Delete(startupModePath);
         var result = await pool.EvaluateAsync("return 1;", XunitCancellationToken);
 
-        Assert.Contains("Cannot start", startException.Message);
+        Assert.Contains("exited before it was ready", startException.Message);
         Assert.Equal(1, result.GetInt32());
     }
 
@@ -726,10 +816,11 @@ public sealed partial class NodeJsHostTests
     public async Task Pool_CanceledWhileReplacementStarts_Throws()
     {
         SkipIfNodeIsNotInstalled();
-        var options = new NodeJsHostOptions();
-        await using var pool = await NodeJsHostPool.StartAsync(1, options, XunitCancellationToken);
+        await using var temporaryDirectory = TemporaryDirectory.Create();
+        var startupModePath = temporaryDirectory.GetFullPath("startup-mode.txt");
+        await using var pool = await NodeJsHostPool.StartAsync(1, CreateStartupModeOptions(startupModePath), XunitCancellationToken);
+        await File.WriteAllTextAsync(startupModePath, "slow", XunitCancellationToken);
         await Assert.ThrowsAsync<NodeJsException>(() => pool.EvaluateAsync("process.exit(1);", XunitCancellationToken));
-        ConfigureSlowStart(options);
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(XunitCancellationToken);
         cts.CancelAfter(TimeSpan.FromMilliseconds(500));
 
@@ -740,10 +831,11 @@ public sealed partial class NodeJsHostTests
     public async Task Pool_DisposedWhileReplacementStarts()
     {
         SkipIfNodeIsNotInstalled();
-        var options = new NodeJsHostOptions();
-        var pool = await NodeJsHostPool.StartAsync(1, options, XunitCancellationToken);
+        await using var temporaryDirectory = TemporaryDirectory.Create();
+        var startupModePath = temporaryDirectory.GetFullPath("startup-mode.txt");
+        var pool = await NodeJsHostPool.StartAsync(1, CreateStartupModeOptions(startupModePath), XunitCancellationToken);
+        await File.WriteAllTextAsync(startupModePath, "slow", XunitCancellationToken);
         await Assert.ThrowsAsync<NodeJsException>(() => pool.EvaluateAsync("process.exit(1);", XunitCancellationToken));
-        ConfigureSlowStart(options);
         var pending = pool.EvaluateAsync("return 1;", XunitCancellationToken);
 
         var stopwatch = Stopwatch.StartNew();
@@ -1156,19 +1248,6 @@ public sealed partial class NodeJsHostTests
     }
 
     [Fact]
-    public async Task Evaluate_FunctionResult_ReturnsNoValue()
-    {
-        await using var node = await StartNodeAsync();
-
-        // JSON.stringify omits functions, so the response has no result
-        var result = await node.EvaluateAsync("return () => 1;", XunitCancellationToken);
-        var typedResult = await node.EvaluateAsync("return () => 1;", NodeJsTestJsonContext.Default.Person, XunitCancellationToken);
-
-        Assert.Equal(JsonValueKind.Undefined, result.ValueKind);
-        Assert.Null(typedResult);
-    }
-
-    [Fact]
     public async Task GetValue_LargeTypedResult()
     {
         await using var node = await StartNodeAsync();
@@ -1188,7 +1267,7 @@ public sealed partial class NodeJsHostTests
         var nullPrototype = await Assert.ThrowsAsync<NodeJsException>(() => node.EvaluateAsync("throw Object.create(null);", XunitCancellationToken));
         var throwingName = await Assert.ThrowsAsync<NodeJsException>(() => node.EvaluateAsync("const error = new Error('oops'); Object.defineProperty(error, 'name', { get() { throw new Error('name'); } }); throw error;", XunitCancellationToken));
 
-        Assert.Equal("object: The error cannot be converted to a string", nullPrototype.Message);
+        Assert.Equal("object: {}", nullPrototype.Message);
         Assert.Equal("object", throwingName.JavaScriptErrorName);
     }
 
@@ -1431,6 +1510,35 @@ public sealed partial class NodeJsHostTests
     }
 
     [Fact]
+    public async Task Evaluate_ResultWithLoneSurrogates()
+    {
+        await using var node = await StartNodeAsync();
+
+        var result = await node.EvaluateAsync("""
+            const emoji = '\u{1F600}';
+            return {
+                cut: emoji.slice(0, 1),
+                low: emoji.slice(1),
+                valid: emoji,
+                escapedBackslash: '\\ud83d',
+                mixed: '\\' + emoji.slice(0, 1) + '\\\\' + emoji.slice(1),
+                ['key' + emoji.slice(0, 1)]: 1,
+                map: new Map([['map' + emoji.slice(1), 2]]),
+            };
+            """, XunitCancellationToken);
+        var typed = await node.EvaluateAsync("return 'a' + '\\u{1F600}'.slice(0, 1);", NodeJsTestJsonContext.Default.String, XunitCancellationToken);
+
+        Assert.Equal("\uFFFD", result.GetProperty("cut").GetString());
+        Assert.Equal("\uFFFD", result.GetProperty("low").GetString());
+        Assert.Equal("\U0001F600", result.GetProperty("valid").GetString());
+        Assert.Equal("\\ud83d", result.GetProperty("escapedBackslash").GetString());
+        Assert.Equal("\\\uFFFD\\\\\uFFFD", result.GetProperty("mixed").GetString());
+        Assert.Equal(1, result.GetProperty("key\uFFFD").GetInt32());
+        Assert.Equal(2, result.GetProperty("map").GetProperty("map\uFFFD").GetInt32());
+        Assert.Equal("a\uFFFD", typed);
+    }
+
+    [Fact]
     public async Task Evaluate_RawJsonArgumentWithLineBreaks()
     {
         await using var node = await StartNodeAsync();
@@ -1463,8 +1571,8 @@ public sealed partial class NodeJsHostTests
 
         var pendingException = await Assert.ThrowsAsync<NodeJsException>(() => pending);
         var nextException = await Assert.ThrowsAsync<NodeJsException>(() => node.EvaluateAsync("return 1;", XunitCancellationToken));
-        Assert.Contains("did not respond", pendingException.Message);
-        Assert.Contains("did not respond", nextException.Message);
+        Assert.Contains("a canceled call blocked its event loop", pendingException.Message);
+        Assert.Contains("a canceled call blocked its event loop", nextException.Message);
     }
 
     [Fact]
@@ -1480,6 +1588,136 @@ public sealed partial class NodeJsHostTests
         var result = await node.EvaluateAsync("return 1;", XunitCancellationToken);
 
         Assert.Equal(1, result.GetInt32());
+    }
+
+    [Fact]
+    public async Task UnresponsiveTimeout_DoesNotKillProcessBusyWithCallsThatAreNotCanceled()
+    {
+        var output = new ConcurrentQueue<string>();
+        await using var node = await StartNodeAsync(new NodeJsHostOptions { UnresponsiveTimeout = TimeSpan.FromMilliseconds(500), StandardOutputReceived = output.Enqueue });
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(XunitCancellationToken);
+
+        // The canceled call only awaits a timer, while the calls that are not canceled keep the event loop busy for longer than the timeout
+        var canceled = node.EvaluateVoidAsync("require('node:fs').writeSync(1, 'waiting\\n'); await new Promise(r => setTimeout(r, 60_000));", cts.Token);
+        await WaitUntilAsync(() => output.Contains("waiting"));
+        var busy = Enumerable.Range(0, 3).Select(_ => node.EvaluateAsync("require('node:fs').writeSync(1, 'busy\\n'); const end = Date.now() + 1000; while (Date.now() < end) { } return 1;", XunitCancellationToken)).ToArray();
+        await WaitUntilAsync(() => output.Contains("busy"));
+        await cts.CancelAsync();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => canceled);
+        var results = await Task.WhenAll(busy);
+        await node.WaitForResponsivenessCheckAsync();
+        var next = await node.EvaluateAsync("return 1;", XunitCancellationToken);
+
+        Assert.All(results, result => Assert.Equal(1, result.GetInt32()));
+        Assert.Equal(1, next.GetInt32());
+    }
+
+    [Fact]
+    public async Task UnresponsiveTimeout_KillsProcessBlockedLaterByCanceledCall()
+    {
+        var output = new ConcurrentQueue<string>();
+        await using var node = await StartNodeAsync(new NodeJsHostOptions { UnresponsiveTimeout = TimeSpan.FromMilliseconds(500), StandardOutputReceived = output.Enqueue });
+        using var process = Process.GetProcessById(node.ProcessId);
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(XunitCancellationToken);
+
+        // The event loop responds when the call is canceled, and is blocked once the timer completes
+        var canceled = node.EvaluateVoidAsync("require('node:fs').writeSync(1, 'waiting\\n'); await new Promise(r => setTimeout(r, 200)); " + BlockingCode, cts.Token);
+        await WaitUntilAsync(() => output.Contains("waiting"));
+        await cts.CancelAsync();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => canceled);
+        await WaitUntilAsync(() => output.Contains("blocked"));
+        await WaitUntilAsync(() => process.HasExited);
+
+        var exception = await Assert.ThrowsAsync<NodeJsException>(() => node.EvaluateAsync("return 1;", XunitCancellationToken));
+        Assert.Contains("a canceled call blocked its event loop", exception.Message);
+    }
+
+    [Fact]
+    public async Task Options_ChangedAfterStart_AreIgnored()
+    {
+        var options = new NodeJsHostOptions { UnresponsiveTimeout = TimeSpan.FromMinutes(1) };
+        await using var node = await StartNodeAsync(options);
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(XunitCancellationToken);
+
+        // With a timeout of zero, the process would be killed as soon as a call is canceled
+        options.UnresponsiveTimeout = TimeSpan.Zero;
+        var canceled = node.EvaluateAsync("await new Promise(r => setTimeout(r, 60_000));", cts.Token);
+        await cts.CancelAsync();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => canceled);
+        await node.WaitForResponsivenessCheckAsync();
+        var result = await node.EvaluateAsync("return 1;", XunitCancellationToken);
+
+        Assert.Equal(1, result.GetInt32());
+    }
+
+    [Fact]
+    public async Task Pool_OptionsChangedAfterStart_AreIgnoredByReplacedProcess()
+    {
+        SkipIfNodeIsNotInstalled();
+        var options = new NodeJsHostOptions();
+        options.EnvironmentVariables["MEZIANTOU_TEST"] = "a";
+        await using var pool = await NodeJsHostPool.StartAsync(1, options, XunitCancellationToken);
+        var processId = (await pool.EvaluateAsync("return process.pid;", XunitCancellationToken)).GetInt32();
+
+        options.EnvironmentVariables["MEZIANTOU_TEST"] = "b";
+        await Assert.ThrowsAsync<NodeJsException>(() => pool.EvaluateVoidAsync("process.exit(0);", XunitCancellationToken));
+        var result = await pool.EvaluateAsync("return [process.pid, process.env.MEZIANTOU_TEST];", XunitCancellationToken);
+
+        Assert.NotEqual(processId, result[0].GetInt32());
+        Assert.Equal("a", result[1].GetString());
+    }
+
+    [Fact]
+    public void Options_Clone_CopiesAllProperties()
+    {
+        Action<string> standardOutput = _ => { };
+        Action<string> standardError = _ => { };
+        var options = new NodeJsHostOptions
+        {
+            NodeExecutablePath = "node-path",
+            WorkingDirectory = "working-directory",
+            StartupTimeout = TimeSpan.FromSeconds(1),
+            MaxConcurrentCalls = 2,
+            UnresponsiveTimeout = TimeSpan.FromSeconds(3),
+            StandardOutputReceived = standardOutput,
+            StandardErrorReceived = standardError,
+        };
+        options.NodeArguments.Add("--a");
+        options.EnvironmentVariables["A"] = "1";
+        options.EnvironmentVariables["B"] = null;
+
+        var clone = options.Clone();
+        options.NodeArguments.Add("--b");
+        options.EnvironmentVariables["C"] = "3";
+
+        Assert.Equal("node-path", clone.NodeExecutablePath);
+        Assert.Equal("working-directory", clone.WorkingDirectory);
+        Assert.Equal(TimeSpan.FromSeconds(1), clone.StartupTimeout);
+        Assert.Equal(2, clone.MaxConcurrentCalls);
+        Assert.Equal(TimeSpan.FromSeconds(3), clone.UnresponsiveTimeout);
+        Assert.Same(standardOutput, clone.StandardOutputReceived);
+        Assert.Same(standardError, clone.StandardErrorReceived);
+        Assert.Equal(["--a"], clone.NodeArguments);
+        Assert.HasCount(2, clone.EnvironmentVariables);
+        Assert.Equal("1", clone.EnvironmentVariables["A"]);
+        Assert.Null(clone.EnvironmentVariables["B"]);
+
+        // Fails when a property is added without being copied by Clone
+        Assert.HasCount(9, typeof(NodeJsHostOptions).GetProperties());
+    }
+
+    [Fact]
+    public async Task StartupTimeout_Invalid_Throws()
+    {
+        SkipIfNodeIsNotInstalled();
+
+        var zero = await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => NodeJsHost.StartAsync(new NodeJsHostOptions { StartupTimeout = TimeSpan.Zero }, XunitCancellationToken));
+        var negative = await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => NodeJsHostPool.StartAsync(2, new NodeJsHostOptions { StartupTimeout = TimeSpan.FromSeconds(-1) }, XunitCancellationToken));
+        await using var infinite = await NodeJsHost.StartAsync(new NodeJsHostOptions { StartupTimeout = Timeout.InfiniteTimeSpan }, XunitCancellationToken);
+
+        Assert.Equal("options", zero.ParamName);
+        Assert.Equal("options", negative.ParamName);
+        Assert.Equal(1, (await infinite.EvaluateAsync("return 1;", XunitCancellationToken)).GetInt32());
     }
 
     [Fact]
@@ -1609,6 +1847,23 @@ public sealed partial class NodeJsHostTests
         options.NodeArguments.Add("data:text/javascript,await new Promise(r => setTimeout(r, 60_000));");
     }
 
+    // Options are copied when a pool starts, so the processes that replace the ones that exit read how to start from a file:
+    // "slow" never completes the startup, "fail" exits before connecting, and a missing file starts normally
+    private static NodeJsHostOptions CreateStartupModeOptions(string startupModePath)
+    {
+        var code = $$"""
+            import fs from "node:fs";
+            const path = {{JsonSerializer.Serialize(startupModePath)}};
+            const mode = fs.existsSync(path) ? fs.readFileSync(path, "utf8") : "";
+            if (mode === "fail") process.exit(3);
+            if (mode === "slow") await new Promise(r => setTimeout(r, 60_000));
+            """;
+        var options = new NodeJsHostOptions();
+        options.NodeArguments.Add("--import");
+        options.NodeArguments.Add("data:text/javascript," + Uri.EscapeDataString(code));
+        return options;
+    }
+
     private static void KillProcess(int processId)
     {
         if (processId is 0)
@@ -1702,6 +1957,7 @@ public sealed partial class NodeJsHostTests
     [JsonSerializable(typeof(Person))]
     [JsonSerializable(typeof(int))]
     [JsonSerializable(typeof(int[]))]
+    [JsonSerializable(typeof(string))]
     [JsonSerializable(typeof(RawJson))]
     private sealed partial class NodeJsTestJsonContext : JsonSerializerContext;
 }

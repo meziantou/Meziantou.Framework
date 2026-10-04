@@ -36,6 +36,13 @@ public sealed class NodeJsHost : IAsyncDisposable
     private static readonly TimeSpan DisposeExitTimeout = TimeSpan.FromSeconds(1);
     private static readonly TimeSpan OutputDrainTimeout = TimeSpan.FromSeconds(1);
 
+    private static readonly string BootstrapScript = GetBootstrapScript();
+
+    // While canceled calls are running, the process is checked at this interval, as they can block the event loop at any time
+    private static readonly TimeSpan MaxResponsivenessCheckInterval = TimeSpan.FromSeconds(1);
+
+    private static readonly byte[] WatchdogRequest = "{\"type\":\"running\"}\n"u8.ToArray();
+
     // Messages are only read by JSON.parse, so characters that are sensitive in HTML or non-ASCII do not need to be escaped, which would make them up to 6 times larger
     internal static readonly JsonWriterOptions MessageWriterOptions = new() { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
 
@@ -57,15 +64,22 @@ public sealed class NodeJsHost : IAsyncDisposable
     private readonly SemaphoreSlim _writeLock = new(1, 1);
     [SuppressMessage("Reliability", "CA2213:Disposable fields should be disposed", Justification = "AvailableWaitHandle is never used, and disposing it would leave concurrent callers waiting forever")]
     private readonly SemaphoreSlim? _concurrencyLimit;
+    [SuppressMessage("Reliability", "CA2213:Disposable fields should be disposed", Justification = "AvailableWaitHandle is never used, and disposing it would make the responsiveness check fail")]
+    private readonly SemaphoreSlim _responsivenessCheckSignal = new(0);
+    private readonly ConcurrentDictionary<long, byte> _abandonedRequests = new();
     private readonly Queue<string> _standardErrorTail = new();
     private readonly TaskCompletionSource _exited = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private Stream? _stream;
+    private Stream? _watchdogStream;
+    private StreamReader? _watchdogReader;
     private Task? _readTask;
     private Task _responsivenessCheck = Task.CompletedTask;
     private Exception? _terminationException;
     private long _nextRequestId;
     private int _abandonedCalls;
-    private int _responsivenessCheckRequests;
+    private long _canceledCalls;
+    private long _checkedCanceledCalls;
+    private int _responsivenessCheckRunning;
     private int _disposed;
 
     private NodeJsHost(NodeJsHostOptions options)
@@ -94,10 +108,12 @@ public sealed class NodeJsHost : IAsyncDisposable
 
     /// <summary>Starts a new Node.js process.</summary>
     /// <exception cref="NodeJsException">The <c>node</c> executable cannot be found, or the process fails to start.</exception>
-    /// <exception cref="ArgumentOutOfRangeException"><see cref="NodeJsHostOptions.MaxConcurrentCalls"/> or <see cref="NodeJsHostOptions.UnresponsiveTimeout"/> is zero or negative.</exception>
+    /// <param name="options">The options. They are copied, so changing them once the process is started has no effect.</param>
+    /// <param name="cancellationToken">A token to cancel the startup.</param>
+    /// <exception cref="ArgumentOutOfRangeException"><see cref="NodeJsHostOptions.MaxConcurrentCalls"/>, <see cref="NodeJsHostOptions.StartupTimeout"/>, or <see cref="NodeJsHostOptions.UnresponsiveTimeout"/> is zero or negative.</exception>
     public static async Task<NodeJsHost> StartAsync(NodeJsHostOptions? options = null, CancellationToken cancellationToken = default)
     {
-        options ??= NodeJsHostOptions.Default;
+        options = (options ?? NodeJsHostOptions.Default).Clone();
         ValidateOptions(options);
 
         var host = new NodeJsHost(options);
@@ -298,6 +314,12 @@ public sealed class NodeJsHost : IAsyncDisposable
             await _stream.DisposeAsync().ConfigureAwait(false);
         }
 
+        _watchdogReader?.Dispose();
+        if (_watchdogStream is not null)
+        {
+            await _watchdogStream.DisposeAsync().ConfigureAwait(false);
+        }
+
         if (_readTask is not null)
         {
             await _readTask.ConfigureAwait(false);
@@ -324,7 +346,8 @@ public sealed class NodeJsHost : IAsyncDisposable
         var nodePath = _options.NodeExecutablePath ?? ExecutableFinder.GetFullExecutablePath("node") ?? throw new NodeJsException("Cannot find the 'node' executable in the PATH. Install Node.js or set NodeJsHostOptions.NodeExecutablePath.");
         var token = Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(32));
 
-        using var endpoint = NodeJsEndpoint.Create();
+        // The watchdog uses a second connection
+        using var endpoint = NodeJsEndpoint.Create(maxConnections: _options.UnresponsiveTimeout is null ? 1 : 2);
 
         var startInfo = _process.StartInfo;
         startInfo.FileName = nodePath;
@@ -334,6 +357,7 @@ public sealed class NodeJsHost : IAsyncDisposable
         startInfo.RedirectStandardInput = true;
         startInfo.RedirectStandardOutput = true;
         startInfo.RedirectStandardError = true;
+        startInfo.StandardInputEncoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
         startInfo.StandardOutputEncoding = Encoding.UTF8;
         startInfo.StandardErrorEncoding = Encoding.UTF8;
 #if NET11_0_OR_GREATER
@@ -351,9 +375,8 @@ public sealed class NodeJsHost : IAsyncDisposable
             startInfo.ArgumentList.Add(argument);
         }
 
+        // The bootstrap script is read from the standard input (see WriteBootstrapScriptAsync)
         startInfo.ArgumentList.Add("--input-type=module");
-        startInfo.ArgumentList.Add("--eval");
-        startInfo.ArgumentList.Add(GetBootstrapScript());
 
         foreach (var (name, value) in _options.EnvironmentVariables)
         {
@@ -405,7 +428,7 @@ public sealed class NodeJsHost : IAsyncDisposable
             throw new NodeJsException($"Cannot start '{nodePath}': {ex.Message}", ex);
         }
 
-        _process.StandardInput.Close();
+        _ = WriteBootstrapScriptAsync(_process.StandardInput);
         _process.BeginOutputReadLine();
         _process.BeginErrorReadLine();
 
@@ -428,6 +451,11 @@ public sealed class NodeJsHost : IAsyncDisposable
             var hello = new TaskCompletionSource<byte[]>(TaskCreationOptions.RunContinuationsAsynchronously);
             _readTask = ReadMessagesAsync(_stream, hello);
             ProcessHelloMessage(await hello.Task.WaitAsync(startupCts.Token).ConfigureAwait(false), token);
+
+            if (_options.UnresponsiveTimeout is not null)
+            {
+                await StartWatchdogAsync(endpoint, token, startupCts.Token).ConfigureAwait(false);
+            }
         }
         catch (OperationCanceledException ex) when (!cancellationToken.IsCancellationRequested && startupCts.IsCancellationRequested)
         {
@@ -461,6 +489,9 @@ public sealed class NodeJsHost : IAsyncDisposable
     {
         if (options.MaxConcurrentCalls is <= 0)
             throw new ArgumentOutOfRangeException(nameof(options), options.MaxConcurrentCalls, "NodeJsHostOptions.MaxConcurrentCalls must be greater than zero.");
+
+        if (options.StartupTimeout != Timeout.InfiniteTimeSpan && (options.StartupTimeout <= TimeSpan.Zero || options.StartupTimeout.TotalMilliseconds > int.MaxValue))
+            throw new ArgumentOutOfRangeException(nameof(options), options.StartupTimeout, "NodeJsHostOptions.StartupTimeout must be greater than zero and less than Int32.MaxValue milliseconds, or Timeout.InfiniteTimeSpan.");
 
         if (options.UnresponsiveTimeout is { } unresponsiveTimeout && (unresponsiveTimeout <= TimeSpan.Zero || unresponsiveTimeout.TotalMilliseconds > int.MaxValue))
             throw new ArgumentOutOfRangeException(nameof(options), unresponsiveTimeout, "NodeJsHostOptions.UnresponsiveTimeout must be greater than zero and less than Int32.MaxValue milliseconds.");
@@ -497,6 +528,16 @@ public sealed class NodeJsHost : IAsyncDisposable
     {
         using var document = JsonDocument.Parse(message);
         var root = document.RootElement;
+        ValidateHelloMessage(root, expectedToken);
+
+        if (root.TryGetProperty("version", out var version) && version.ValueKind is JsonValueKind.String)
+        {
+            NodeVersion = version.GetString()!;
+        }
+    }
+
+    private static void ValidateHelloMessage(JsonElement root, string expectedToken)
+    {
         if (root.ValueKind is not JsonValueKind.Object ||
             !root.TryGetProperty("type", out var type) || !type.ValueEquals("hello") ||
             !root.TryGetProperty("token", out var token) || token.ValueKind is not JsonValueKind.String ||
@@ -504,11 +545,35 @@ public sealed class NodeJsHost : IAsyncDisposable
         {
             throw new NodeJsException("The Node.js process sent an invalid handshake.");
         }
+    }
 
-        if (root.TryGetProperty("version", out var version) && version.ValueKind is JsonValueKind.String)
+    /// <summary>Starts the watchdog, a thread of the Node.js process that tells which call runs on the main thread, even when its event loop is blocked (see <see cref="CheckResponsivenessAsync"/>).</summary>
+    private async Task StartWatchdogAsync(NodeJsEndpoint endpoint, string expectedToken, CancellationToken cancellationToken)
+    {
+        using var acceptCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        var acceptTask = endpoint.AcceptAsync(acceptCts.Token);
+        try
         {
-            NodeVersion = version.GetString()!;
+            await WriteMessageAsync(writer => writer.WriteString("type", "watchdog")).ConfigureAwait(false);
+
+            // The read loop completes when the process exits, e.g. because the watchdog cannot start
+            if (await Task.WhenAny(acceptTask, _readTask!).ConfigureAwait(false) != acceptTask)
+            {
+                ThrowIfTerminated();
+            }
+
+            _watchdogStream = await acceptTask.ConfigureAwait(false);
         }
+        finally
+        {
+            await acceptCts.CancelAsync().ConfigureAwait(false);
+            await ((Task)acceptTask).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+        }
+
+        _watchdogReader = new StreamReader(_watchdogStream, Encoding.UTF8, detectEncodingFromByteOrderMarks: false, bufferSize: 256, leaveOpen: true);
+        var hello = await _watchdogReader.ReadLineAsync(cancellationToken).ConfigureAwait(false) ?? throw CreateProcessExitedException("The Node.js process closed the watchdog connection before it was ready");
+        using var document = JsonDocument.Parse(hello);
+        ValidateHelloMessage(document.RootElement, expectedToken);
     }
 
     private Task<T> InvokeCoreAsync<T>(string module, string? exportName, IReadOnlyList<JsonNode?>? arguments, ResultKind resultKind, ResultReader<T> readResult, CancellationToken cancellationToken)
@@ -592,22 +657,30 @@ public sealed class NodeJsHost : IAsyncDisposable
         if (IsTerminated)
             return;
 
-        PooledBufferWriter? message = SerializeMessage(writer =>
+        try
         {
-            writer.WriteString("type", "release");
-            writer.WriteNumber("reference", referenceId);
-        });
+            await WriteMessageAsync(writer =>
+            {
+                writer.WriteString("type", "release");
+                writer.WriteNumber("reference", referenceId);
+            }).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is IOException or ObjectDisposedException or OperationCanceledException)
+        {
+            // The connection is lost, so the process and its values are gone
+        }
+    }
 
+    /// <summary>Writes a message that has no response.</summary>
+    private async Task WriteMessageAsync(Action<Utf8JsonWriter> writeMessage)
+    {
+        PooledBufferWriter? message = SerializeMessage(writeMessage);
         try
         {
             await _writeLock.WaitAsync().ConfigureAwait(false);
             var writeTask = WriteMessageAndReleaseLockAsync(message);
             message = null;
             await writeTask.ConfigureAwait(false);
-        }
-        catch (Exception ex) when (ex is IOException or ObjectDisposedException or OperationCanceledException)
-        {
-            // The connection is lost, so the process and its values are gone
         }
         finally
         {
@@ -705,7 +778,7 @@ public sealed class NodeJsHost : IAsyncDisposable
             writeMessage(writer);
         });
 
-        var request = new PendingRequest<T>(readResult);
+        var request = new PendingRequest<T>(readResult, hasResult: resultKind is not ResultKind.Void);
         _pendingRequests[id] = request;
         try
         {
@@ -769,49 +842,143 @@ public sealed class NodeJsHost : IAsyncDisposable
     /// <returns><see langword="false"/> when the response is already being processed.</returns>
     private bool AbandonRequest(long id)
     {
+        // The request is added before being removed from the pending requests, so a response received concurrently always finds it in one of them
+        _abandonedRequests[id] = 0;
         if (!_pendingRequests.TryRemove(id, out _))
+        {
+            _abandonedRequests.TryRemove(id, out _);
             return false;
+        }
 
         // The call keeps running until its response arrives, and its JavaScript code may block the event loop
         Interlocked.Increment(ref _abandonedCalls);
-        if (_options.UnresponsiveTimeout is { } timeout && Interlocked.Increment(ref _responsivenessCheckRequests) is 1)
+        Interlocked.Increment(ref _canceledCalls);
+        if (_options.UnresponsiveTimeout is { } timeout)
         {
-            _responsivenessCheck = CheckResponsivenessAsync(timeout);
+            if (Interlocked.CompareExchange(ref _responsivenessCheckRunning, 1, 0) is 0)
+            {
+                _responsivenessCheck = CheckResponsivenessAsync(timeout);
+            }
+            else
+            {
+                // Check the process again, as the call may block the event loop
+                _responsivenessCheckSignal.Release();
+            }
         }
 
         return true;
     }
 
-    /// <summary>Kills the process when its event loop does not respond, as it is the only way to stop the JavaScript code of a canceled call.</summary>
+    /// <summary>Kills the process when a canceled call blocks its event loop, as it is the only way to stop its JavaScript code. Runs until no canceled call is running.</summary>
     private async Task CheckResponsivenessAsync(TimeSpan timeout)
     {
-        // Calls canceled while the process is being checked are checked again, as they may block the event loop later
-        int requests;
-        do
+        var interval = timeout < MaxResponsivenessCheckInterval ? timeout : MaxResponsivenessCheckInterval;
+        while (true)
         {
-            requests = Volatile.Read(ref _responsivenessCheckRequests);
-            using var cts = new CancellationTokenSource(timeout);
+            var canceledCalls = Interlocked.Read(ref _canceledCalls);
             try
             {
-                await SendRequestCoreAsync(writer => writer.WriteString("type", "ping"), ResultKind.Void, ReadJsonElement, cts.Token).ConfigureAwait(false);
+                if (await IsBlockedByCanceledCallAsync(timeout).ConfigureAwait(false))
+                {
+                    Terminate(new NodeJsException($"The Node.js process was killed, as a canceled call blocked its event loop for more than {timeout}, e.g. with an infinite loop."));
+                    KillProcess();
+                    return;
+                }
             }
-            catch (OperationCanceledException)
-            {
-                Terminate(new NodeJsException($"The Node.js process did not respond within {timeout} after a call was canceled, so it was killed. Its event loop is blocked, e.g. by an infinite loop."));
-                KillProcess();
-                return;
-            }
-            catch (Exception ex) when (ex is NodeJsException or ObjectDisposedException)
+            catch (Exception ex) when (ex is NodeJsException or ObjectDisposedException or IOException or OperationCanceledException)
             {
                 // The process exited, or the host is disposed
                 return;
             }
+            catch (Exception ex) when (ex is JsonException or KeyNotFoundException or InvalidOperationException or FormatException)
+            {
+                // The watchdog sent an invalid response, so the process cannot be checked
+                Terminate(new NodeJsException("The Node.js process sent an invalid message.", ex));
+                KillProcess();
+                return;
+            }
+
+            Interlocked.Exchange(ref _checkedCanceledCalls, canceledCalls);
+
+            // A canceled call can block the event loop later (e.g. after awaiting I/O), so the process is checked until no canceled call is running.
+            // The check runs sooner when another call is canceled, or when the host is terminated.
+            if (AbandonedCalls > 0 && !IsTerminated)
+            {
+                await _responsivenessCheckSignal.WaitAsync(interval).ConfigureAwait(false);
+                continue;
+            }
+
+            // A call canceled concurrently either sees that the check is running and signals it, or starts a new check
+            Volatile.Write(ref _responsivenessCheckRunning, 0);
+            if (AbandonedCalls is 0 || IsTerminated || Interlocked.CompareExchange(ref _responsivenessCheckRunning, 1, 0) is not 0)
+                return;
         }
-        while (Interlocked.Add(ref _responsivenessCheckRequests, -requests) is not 0);
     }
 
-    /// <summary>Waits for the check started when a call is canceled, for tests.</summary>
-    internal Task WaitForResponsivenessCheckAsync() => _responsivenessCheck;
+    /// <summary>Waits for the event loop to respond. While it does not, gets the call that blocks it from the watchdog.</summary>
+    /// <returns><see langword="true"/> when a canceled call blocks the event loop for more than <paramref name="timeout"/>.</returns>
+    private async Task<bool> IsBlockedByCanceledCallAsync(TimeSpan timeout)
+    {
+        var ping = SendRequestCoreAsync(writer => writer.WriteString("type", "ping"), ResultKind.Void, ReadJsonElement, CancellationToken.None);
+        try
+        {
+            while (true)
+            {
+                try
+                {
+                    await ping.WaitAsync(timeout).ConfigureAwait(false);
+                    return false;
+                }
+                catch (TimeoutException)
+                {
+                }
+
+                // The event loop may be busy with calls that were not canceled, which must not be stopped
+                using var cts = new CancellationTokenSource(timeout);
+                long runningCall;
+                try
+                {
+                    runningCall = await GetRunningCallAsync(cts.Token).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException) when (cts.IsCancellationRequested)
+                {
+                    // The watchdog runs on its own thread, so the whole process is unresponsive (e.g. suspended)
+                    return true;
+                }
+
+                if (_abandonedRequests.ContainsKey(runningCall))
+                    return true;
+            }
+        }
+        finally
+        {
+            if (!ping.IsCompleted)
+            {
+                // The ping fails when the process is killed
+                _ = ping.ContinueWith(static task => _ = task.Exception, CancellationToken.None, TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+            }
+        }
+    }
+
+    /// <summary>Gets the identifier of the call whose code runs on the main thread of the Node.js process: 0 when its event loop is idle, -1 when the code does not belong to a call.</summary>
+    private async Task<long> GetRunningCallAsync(CancellationToken cancellationToken)
+    {
+        await _watchdogStream!.WriteAsync(WatchdogRequest, cancellationToken).ConfigureAwait(false);
+        await _watchdogStream.FlushAsync(cancellationToken).ConfigureAwait(false);
+        var response = await _watchdogReader!.ReadLineAsync(cancellationToken).ConfigureAwait(false) ?? throw new IOException("The watchdog connection is closed.");
+        using var document = JsonDocument.Parse(response);
+        return document.RootElement.GetProperty("running").GetInt64();
+    }
+
+    /// <summary>Waits until the process is checked after the last canceled call, or the check stops, for tests.</summary>
+    internal async Task WaitForResponsivenessCheckAsync()
+    {
+        var canceledCalls = Interlocked.Read(ref _canceledCalls);
+        while (Interlocked.Read(ref _checkedCanceledCalls) < canceledCalls && !_responsivenessCheck.IsCompleted)
+        {
+            await Task.Delay(10).ConfigureAwait(false);
+        }
+    }
 
     /// <summary>Writes a message, then releases the write lock and the message buffer.</summary>
     private async Task WriteMessageAndReleaseLockAsync(PooledBufferWriter message)
@@ -992,11 +1159,7 @@ public sealed class NodeJsHost : IAsyncDisposable
         }
         else if (reader.ValueTextEquals("error"u8))
         {
-            var error = JsonElement.Parse(value);
-            var name = GetStringOrNull(error, "name");
-            var errorMessage = GetStringOrNull(error, "message");
-            var stack = GetStringOrNull(error, "stack");
-            var exception = new NodeJsException(name is null ? errorMessage ?? "" : $"{name}: {errorMessage}", name, stack);
+            var exception = CreateJavaScriptException(JsonElement.Parse(value));
             if (TryRemoveRequest(id, out var request))
             {
                 request.SetException(exception);
@@ -1006,6 +1169,15 @@ public sealed class NodeJsHost : IAsyncDisposable
         {
             throw new JsonException("The response contains an unexpected property.");
         }
+    }
+
+    // The cause of the error, if any, is the inner exception. The depth of the causes is bounded by the Node.js process.
+    private static NodeJsException CreateJavaScriptException(JsonElement error)
+    {
+        var name = GetStringOrNull(error, "name");
+        var message = GetStringOrNull(error, "message");
+        var cause = error.TryGetProperty("cause", out var causeElement) && causeElement.ValueKind is JsonValueKind.Object ? CreateJavaScriptException(causeElement) : null;
+        return new NodeJsException(name is null ? message ?? "" : $"{name}: {message}", name, GetStringOrNull(error, "stack"), GetStringOrNull(error, "code"), cause);
 
         static string? GetStringOrNull(JsonElement element, string propertyName)
         {
@@ -1020,8 +1192,12 @@ public sealed class NodeJsHost : IAsyncDisposable
         if (_pendingRequests.TryRemove(id, out request))
             return true;
 
-        // The caller stopped waiting, so the call is no longer running
-        Interlocked.Decrement(ref _abandonedCalls);
+        // The caller stopped waiting, and the call is no longer running
+        if (_abandonedRequests.TryRemove(id, out _))
+        {
+            Interlocked.Decrement(ref _abandonedCalls);
+        }
+
         return false;
     }
 
@@ -1034,6 +1210,9 @@ public sealed class NodeJsHost : IAsyncDisposable
         {
             request.SetException(exception);
         }
+
+        // Stop the responsiveness check
+        _responsivenessCheckSignal.Release();
     }
 
     private void ThrowIfTerminated()
@@ -1118,6 +1297,24 @@ public sealed class NodeJsHost : IAsyncDisposable
         catch (InvalidOperationException)
         {
             return false;
+        }
+    }
+
+    // The script is sent on the standard input instead of the command line, so its size is not limited by the maximum length of a command line
+    // (32,767 characters on Windows), and it does not appear in the list of processes. It is written in the background, as Node.js only reads it once
+    // the modules passed with --import are loaded, and the pipe buffer can be smaller than the script.
+    // Never throws: when the process exits before reading the script, the startup reports it.
+    private static async Task WriteBootstrapScriptAsync(StreamWriter standardInput)
+    {
+        try
+        {
+            await standardInput.WriteAsync(BootstrapScript).ConfigureAwait(false);
+
+            // Node.js runs the script once the standard input is closed
+            standardInput.Close();
+        }
+        catch (Exception ex) when (ex is IOException or ObjectDisposedException)
+        {
         }
     }
 

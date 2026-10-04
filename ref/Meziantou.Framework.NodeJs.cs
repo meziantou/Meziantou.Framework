@@ -67,6 +67,7 @@ namespace Meziantou.Framework.NodeJs
     {
         public string? JavaScriptErrorName { get => throw null; }
         public string? JavaScriptStack { get => throw null; }
+        public string? JavaScriptErrorCode { get => throw null; }
         public int? ExitCode { get => throw null; }
         public NodeJsException(string message) { }
         public NodeJsException(string message, System.Exception innerException) { }

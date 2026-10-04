@@ -20,11 +20,12 @@ public sealed class NodeJsException : Exception
     {
     }
 
-    internal NodeJsException(string message, string? javaScriptErrorName, string? javaScriptStack)
-        : base(message)
+    internal NodeJsException(string message, string? javaScriptErrorName, string? javaScriptStack, string? javaScriptErrorCode, NodeJsException? cause)
+        : base(message, cause)
     {
         JavaScriptErrorName = javaScriptErrorName;
         JavaScriptStack = javaScriptStack;
+        JavaScriptErrorCode = javaScriptErrorCode;
     }
 
     internal NodeJsException(string message, int? exitCode)
@@ -38,6 +39,10 @@ public sealed class NodeJsException : Exception
 
     /// <summary>Gets the JavaScript stack trace, if available.</summary>
     public string? JavaScriptStack { get; }
+
+    /// <summary>Gets the <c>code</c> property of the JavaScript error (e.g. <c>ENOENT</c> for the errors of <c>node:fs</c>), converted to a string, or <see langword="null"/> when the error has no <c>code</c>.</summary>
+    /// <remarks>The <c>cause</c> of the JavaScript error, if any, is the <see cref="Exception.InnerException"/>.</remarks>
+    public string? JavaScriptErrorCode { get; }
 
     /// <summary>Gets the exit code of the Node.js process when the error is caused by the process exiting.</summary>
     public int? ExitCode { get; }

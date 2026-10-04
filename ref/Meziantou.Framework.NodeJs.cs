@@ -4,10 +4,80 @@
 
 namespace Meziantou.Framework.NodeJs
 {
+    [System.Text.Json.Serialization.JsonConverter(typeof(Meziantou.Framework.NodeJs.Internal.NodeJsArgumentConverter<Meziantou.Framework.NodeJs.JSReference>))]
+    public sealed class JSReference : System.IAsyncDisposable, System.IDisposable
+    {
+        public Meziantou.Framework.NodeJs.NodeJsHost Host { get => throw null; }
+        public System.Threading.Tasks.Task<System.Text.Json.JsonElement> InvokeAsync(string? methodName, System.Collections.Generic.IReadOnlyList<System.Text.Json.Nodes.JsonNode?>? arguments = null, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public System.Threading.Tasks.Task<T> InvokeAsync<T>(string? methodName, System.Collections.Generic.IReadOnlyList<System.Text.Json.Nodes.JsonNode?>? arguments, System.Text.Json.Serialization.Metadata.JsonTypeInfo<T> resultTypeInfo, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("JSON serialization and deserialization might require types that cannot be statically analyzed. Use the overload that takes a JsonTypeInfo instead.")]
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("JSON serialization and deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use the overload that takes a JsonTypeInfo instead.")]
+        public System.Threading.Tasks.Task<T> InvokeAsync<T>(string? methodName, object?[]? arguments = null, System.Text.Json.JsonSerializerOptions? options = null, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("JSON serialization and deserialization might require types that cannot be statically analyzed. Use the overload that takes a JsonTypeInfo instead.")]
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("JSON serialization and deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use the overload that takes a JsonTypeInfo instead.")]
+        public System.Threading.Tasks.Task<T> InvokeAsync<T>(string? methodName, System.Threading.CancellationToken cancellationToken) => throw null;
+        public System.Threading.Tasks.Task InvokeVoidAsync(string? methodName, System.Collections.Generic.IReadOnlyList<System.Text.Json.Nodes.JsonNode?>? arguments = null, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("JSON serialization and deserialization might require types that cannot be statically analyzed. Use the overload that takes a JsonTypeInfo instead.")]
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("JSON serialization and deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use the overload that takes a JsonTypeInfo instead.")]
+        public System.Threading.Tasks.Task InvokeVoidAsync(string? methodName, object?[]? arguments, System.Text.Json.JsonSerializerOptions? options, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.NodeJs.JSReference?> InvokeReferenceAsync(string? methodName, System.Collections.Generic.IReadOnlyList<System.Text.Json.Nodes.JsonNode?>? arguments = null, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("JSON serialization and deserialization might require types that cannot be statically analyzed. Use the overload that takes a JsonTypeInfo instead.")]
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("JSON serialization and deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use the overload that takes a JsonTypeInfo instead.")]
+        public System.Threading.Tasks.Task<Meziantou.Framework.NodeJs.JSReference?> InvokeReferenceAsync(string? methodName, object?[]? arguments, System.Text.Json.JsonSerializerOptions? options, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.NodeJs.JSReference?> CreateInstanceAsync(string? memberName, System.Collections.Generic.IReadOnlyList<System.Text.Json.Nodes.JsonNode?>? arguments = null, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("JSON serialization and deserialization might require types that cannot be statically analyzed. Use the overload that takes a JsonTypeInfo instead.")]
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("JSON serialization and deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use the overload that takes a JsonTypeInfo instead.")]
+        public System.Threading.Tasks.Task<Meziantou.Framework.NodeJs.JSReference?> CreateInstanceAsync(string? memberName, object?[]? arguments, System.Text.Json.JsonSerializerOptions? options, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public System.Threading.Tasks.Task<System.Text.Json.JsonElement> GetValueAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public System.Threading.Tasks.Task<T> GetValueAsync<T>(System.Text.Json.Serialization.Metadata.JsonTypeInfo<T> resultTypeInfo, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("JSON deserialization might require types that cannot be statically analyzed. Use the overload that takes a JsonTypeInfo instead.")]
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("JSON deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use the overload that takes a JsonTypeInfo instead.")]
+        public System.Threading.Tasks.Task<T> GetValueAsync<T>(System.Text.Json.JsonSerializerOptions? options = null, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("JSON deserialization might require types that cannot be statically analyzed. Use the overload that takes a JsonTypeInfo instead.")]
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("JSON deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use the overload that takes a JsonTypeInfo instead.")]
+        public System.Threading.Tasks.Task<T> GetValueAsync<T>(System.Threading.CancellationToken cancellationToken) => throw null;
+        public System.Text.Json.Nodes.JsonNode ToJsonNode() => throw null;
+        public static implicit operator System.Text.Json.Nodes.JsonNode?(Meziantou.Framework.NodeJs.JSReference? value) => throw null;
+        public System.Threading.Tasks.ValueTask DisposeAsync() => throw null;
+        public void Dispose() { }
+        public override string ToString() => throw null;
+    }
+
+    [System.Text.Json.Serialization.JsonConverter(typeof(Meziantou.Framework.NodeJs.Internal.NodeJsArgumentConverter<Meziantou.Framework.NodeJs.JSValue>))]
+    public sealed class JSValue
+    {
+        public static Meziantou.Framework.NodeJs.JSValue Undefined { get => throw null; }
+        public static Meziantou.Framework.NodeJs.JSValue Null { get => throw null; }
+        public static Meziantou.Framework.NodeJs.JSValue String(string value) => throw null;
+        public static Meziantou.Framework.NodeJs.JSValue Boolean(bool value) => throw null;
+        public static Meziantou.Framework.NodeJs.JSValue BigInt(System.Numerics.BigInteger value) => throw null;
+        public static Meziantou.Framework.NodeJs.JSValue Number(double value) => throw null;
+        public static Meziantou.Framework.NodeJs.JSValue Number(float value) => throw null;
+        public static Meziantou.Framework.NodeJs.JSValue Number(System.Half value) => throw null;
+        public static Meziantou.Framework.NodeJs.JSValue Number(decimal value) => throw null;
+        public static Meziantou.Framework.NodeJs.JSValue Number(System.Int128 value) => throw null;
+        public static Meziantou.Framework.NodeJs.JSValue Number(System.UInt128 value) => throw null;
+        public static Meziantou.Framework.NodeJs.JSValue Number(long value) => throw null;
+        public static Meziantou.Framework.NodeJs.JSValue Number(ulong value) => throw null;
+        public static Meziantou.Framework.NodeJs.JSValue Number(int value) => throw null;
+        public static Meziantou.Framework.NodeJs.JSValue Number(uint value) => throw null;
+        public static Meziantou.Framework.NodeJs.JSValue Number(short value) => throw null;
+        public static Meziantou.Framework.NodeJs.JSValue Number(ushort value) => throw null;
+        public static Meziantou.Framework.NodeJs.JSValue Number(sbyte value) => throw null;
+        public static Meziantou.Framework.NodeJs.JSValue Number(byte value) => throw null;
+        public static Meziantou.Framework.NodeJs.JSValue Date(System.DateTimeOffset value) => throw null;
+        public static Meziantou.Framework.NodeJs.JSValue Date(System.DateTime value) => throw null;
+        public static Meziantou.Framework.NodeJs.JSValue Uint8Array(System.ReadOnlyMemory<byte> value) => throw null;
+        public System.Text.Json.Nodes.JsonNode ToJsonNode() => throw null;
+        public static implicit operator System.Text.Json.Nodes.JsonNode?(Meziantou.Framework.NodeJs.JSValue? value) => throw null;
+        public override string ToString() => throw null;
+    }
+
     public sealed class NodeJsException : System.Exception
     {
         public string? JavaScriptErrorName { get => throw null; }
         public string? JavaScriptStack { get => throw null; }
+        public string? JavaScriptErrorCode { get => throw null; }
         public int? ExitCode { get => throw null; }
         public NodeJsException(string message) { }
         public NodeJsException(string message, System.Exception innerException) { }
@@ -23,11 +93,44 @@ namespace Meziantou.Framework.NodeJs
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("JSON serialization and deserialization might require types that cannot be statically analyzed. Use the overload that takes a JsonTypeInfo instead.")]
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("JSON serialization and deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use the overload that takes a JsonTypeInfo instead.")]
         public System.Threading.Tasks.Task<T> InvokeAsync<T>(string module, string? exportName, object?[]? arguments = null, System.Text.Json.JsonSerializerOptions? options = null, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("JSON serialization and deserialization might require types that cannot be statically analyzed. Use the overload that takes a JsonTypeInfo instead.")]
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("JSON serialization and deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use the overload that takes a JsonTypeInfo instead.")]
+        public System.Threading.Tasks.Task<T> InvokeAsync<T>(string module, string? exportName, System.Threading.CancellationToken cancellationToken) => throw null;
+        public System.Threading.Tasks.Task InvokeVoidAsync(string module, string? exportName, System.Collections.Generic.IReadOnlyList<System.Text.Json.Nodes.JsonNode>? arguments = null, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("JSON serialization and deserialization might require types that cannot be statically analyzed. Use the overload that takes a JsonTypeInfo instead.")]
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("JSON serialization and deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use the overload that takes a JsonTypeInfo instead.")]
+        public System.Threading.Tasks.Task InvokeVoidAsync(string module, string? exportName, object?[]? arguments, System.Text.Json.JsonSerializerOptions? options, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.NodeJs.JSReference> InvokeReferenceAsync(string module, string? exportName, System.Collections.Generic.IReadOnlyList<System.Text.Json.Nodes.JsonNode>? arguments = null, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("JSON serialization and deserialization might require types that cannot be statically analyzed. Use the overload that takes a JsonTypeInfo instead.")]
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("JSON serialization and deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use the overload that takes a JsonTypeInfo instead.")]
+        public System.Threading.Tasks.Task<Meziantou.Framework.NodeJs.JSReference?> InvokeReferenceAsync(string module, string? exportName, object?[]? arguments, System.Text.Json.JsonSerializerOptions? options, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.NodeJs.JSReference> CreateInstanceAsync(string module, string? exportName, System.Collections.Generic.IReadOnlyList<System.Text.Json.Nodes.JsonNode>? arguments = null, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("JSON serialization and deserialization might require types that cannot be statically analyzed. Use the overload that takes a JsonTypeInfo instead.")]
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("JSON serialization and deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use the overload that takes a JsonTypeInfo instead.")]
+        public System.Threading.Tasks.Task<Meziantou.Framework.NodeJs.JSReference?> CreateInstanceAsync(string module, string? exportName, object?[]? arguments, System.Text.Json.JsonSerializerOptions? options, System.Threading.CancellationToken cancellationToken = null) => throw null;
         public System.Threading.Tasks.Task<System.Text.Json.JsonElement> EvaluateAsync(string code, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public System.Threading.Tasks.Task<System.Text.Json.JsonElement> EvaluateAsync(string code, System.Collections.Generic.IReadOnlyList<System.Text.Json.Nodes.JsonNode>? arguments, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public System.Threading.Tasks.Task<T> EvaluateAsync<T>(string code, System.Collections.Generic.IReadOnlyList<System.Text.Json.Nodes.JsonNode>? arguments, System.Text.Json.Serialization.Metadata.JsonTypeInfo<T> resultTypeInfo, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("JSON serialization and deserialization might require types that cannot be statically analyzed. Use the overload that takes a JsonTypeInfo instead.")]
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("JSON serialization and deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use the overload that takes a JsonTypeInfo instead.")]
+        public System.Threading.Tasks.Task<T> EvaluateAsync<T>(string code, object?[]? arguments, System.Text.Json.JsonSerializerOptions? options = null, System.Threading.CancellationToken cancellationToken = null) => throw null;
         public System.Threading.Tasks.Task<T> EvaluateAsync<T>(string code, System.Text.Json.Serialization.Metadata.JsonTypeInfo<T> resultTypeInfo, System.Threading.CancellationToken cancellationToken = null) => throw null;
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("JSON deserialization might require types that cannot be statically analyzed. Use the overload that takes a JsonTypeInfo instead.")]
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("JSON deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use the overload that takes a JsonTypeInfo instead.")]
         public System.Threading.Tasks.Task<T> EvaluateAsync<T>(string code, System.Text.Json.JsonSerializerOptions? options = null, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("JSON deserialization might require types that cannot be statically analyzed. Use the overload that takes a JsonTypeInfo instead.")]
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("JSON deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use the overload that takes a JsonTypeInfo instead.")]
+        public System.Threading.Tasks.Task<T> EvaluateAsync<T>(string code, System.Threading.CancellationToken cancellationToken) => throw null;
+        public System.Threading.Tasks.Task EvaluateVoidAsync(string code, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public System.Threading.Tasks.Task EvaluateVoidAsync(string code, System.Collections.Generic.IReadOnlyList<System.Text.Json.Nodes.JsonNode>? arguments, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("JSON serialization and deserialization might require types that cannot be statically analyzed. Use the overload that takes a JsonTypeInfo instead.")]
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("JSON serialization and deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use the overload that takes a JsonTypeInfo instead.")]
+        public System.Threading.Tasks.Task EvaluateVoidAsync(string code, object[]? arguments, System.Text.Json.JsonSerializerOptions? options, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.NodeJs.JSReference> EvaluateReferenceAsync(string code, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.NodeJs.JSReference> EvaluateReferenceAsync(string code, System.Collections.Generic.IReadOnlyList<System.Text.Json.Nodes.JsonNode>? arguments, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("JSON serialization and deserialization might require types that cannot be statically analyzed. Use the overload that takes a JsonTypeInfo instead.")]
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("JSON serialization and deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use the overload that takes a JsonTypeInfo instead.")]
+        public System.Threading.Tasks.Task<Meziantou.Framework.NodeJs.JSReference> EvaluateReferenceAsync(string code, object[]? arguments, System.Text.Json.JsonSerializerOptions? options, System.Threading.CancellationToken cancellationToken = null) => throw null;
         public System.Threading.Tasks.ValueTask DisposeAsync() => throw null;
     }
 
@@ -38,6 +141,9 @@ namespace Meziantou.Framework.NodeJs
         public System.Collections.Generic.IList<string> NodeArguments { get => throw null; }
         public System.Collections.Generic.IDictionary<string, string?> EnvironmentVariables { get => throw null; }
         public System.TimeSpan StartupTimeout { get => throw null; set { } }
+        public int? MaxConcurrentCalls { get => throw null; set { } }
+        public System.TimeSpan? UnresponsiveTimeout { get => throw null; set { } }
+        public int? WorkerThreads { get => throw null; set { } }
         public System.Action<string>? StandardOutputReceived { get => throw null; set { } }
         public System.Action<string>? StandardErrorReceived { get => throw null; set { } }
     }
@@ -53,11 +159,44 @@ namespace Meziantou.Framework.NodeJs
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("JSON serialization and deserialization might require types that cannot be statically analyzed. Use the overload that takes a JsonTypeInfo instead.")]
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("JSON serialization and deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use the overload that takes a JsonTypeInfo instead.")]
         public System.Threading.Tasks.Task<T> InvokeAsync<T>(string module, string? exportName, object?[]? arguments = null, System.Text.Json.JsonSerializerOptions? options = null, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("JSON serialization and deserialization might require types that cannot be statically analyzed. Use the overload that takes a JsonTypeInfo instead.")]
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("JSON serialization and deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use the overload that takes a JsonTypeInfo instead.")]
+        public System.Threading.Tasks.Task<T> InvokeAsync<T>(string module, string? exportName, System.Threading.CancellationToken cancellationToken) => throw null;
+        public System.Threading.Tasks.Task InvokeVoidAsync(string module, string? exportName, System.Collections.Generic.IReadOnlyList<System.Text.Json.Nodes.JsonNode>? arguments = null, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("JSON serialization and deserialization might require types that cannot be statically analyzed. Use the overload that takes a JsonTypeInfo instead.")]
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("JSON serialization and deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use the overload that takes a JsonTypeInfo instead.")]
+        public System.Threading.Tasks.Task InvokeVoidAsync(string module, string? exportName, object?[]? arguments, System.Text.Json.JsonSerializerOptions? options, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.NodeJs.JSReference> InvokeReferenceAsync(string module, string? exportName, System.Collections.Generic.IReadOnlyList<System.Text.Json.Nodes.JsonNode>? arguments = null, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("JSON serialization and deserialization might require types that cannot be statically analyzed. Use the overload that takes a JsonTypeInfo instead.")]
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("JSON serialization and deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use the overload that takes a JsonTypeInfo instead.")]
+        public System.Threading.Tasks.Task<Meziantou.Framework.NodeJs.JSReference?> InvokeReferenceAsync(string module, string? exportName, object?[]? arguments, System.Text.Json.JsonSerializerOptions? options, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.NodeJs.JSReference> CreateInstanceAsync(string module, string? exportName, System.Collections.Generic.IReadOnlyList<System.Text.Json.Nodes.JsonNode>? arguments = null, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("JSON serialization and deserialization might require types that cannot be statically analyzed. Use the overload that takes a JsonTypeInfo instead.")]
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("JSON serialization and deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use the overload that takes a JsonTypeInfo instead.")]
+        public System.Threading.Tasks.Task<Meziantou.Framework.NodeJs.JSReference?> CreateInstanceAsync(string module, string? exportName, object?[]? arguments, System.Text.Json.JsonSerializerOptions? options, System.Threading.CancellationToken cancellationToken = null) => throw null;
         public System.Threading.Tasks.Task<System.Text.Json.JsonElement> EvaluateAsync(string code, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public System.Threading.Tasks.Task<System.Text.Json.JsonElement> EvaluateAsync(string code, System.Collections.Generic.IReadOnlyList<System.Text.Json.Nodes.JsonNode>? arguments, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public System.Threading.Tasks.Task<T> EvaluateAsync<T>(string code, System.Collections.Generic.IReadOnlyList<System.Text.Json.Nodes.JsonNode>? arguments, System.Text.Json.Serialization.Metadata.JsonTypeInfo<T> resultTypeInfo, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("JSON serialization and deserialization might require types that cannot be statically analyzed. Use the overload that takes a JsonTypeInfo instead.")]
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("JSON serialization and deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use the overload that takes a JsonTypeInfo instead.")]
+        public System.Threading.Tasks.Task<T> EvaluateAsync<T>(string code, object?[]? arguments, System.Text.Json.JsonSerializerOptions? options = null, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public System.Threading.Tasks.Task EvaluateVoidAsync(string code, System.Collections.Generic.IReadOnlyList<System.Text.Json.Nodes.JsonNode>? arguments, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("JSON serialization and deserialization might require types that cannot be statically analyzed. Use the overload that takes a JsonTypeInfo instead.")]
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("JSON serialization and deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use the overload that takes a JsonTypeInfo instead.")]
+        public System.Threading.Tasks.Task EvaluateVoidAsync(string code, object[]? arguments, System.Text.Json.JsonSerializerOptions? options, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.NodeJs.JSReference> EvaluateReferenceAsync(string code, System.Collections.Generic.IReadOnlyList<System.Text.Json.Nodes.JsonNode>? arguments, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("JSON serialization and deserialization might require types that cannot be statically analyzed. Use the overload that takes a JsonTypeInfo instead.")]
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("JSON serialization and deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use the overload that takes a JsonTypeInfo instead.")]
+        public System.Threading.Tasks.Task<Meziantou.Framework.NodeJs.JSReference> EvaluateReferenceAsync(string code, object[]? arguments, System.Text.Json.JsonSerializerOptions? options, System.Threading.CancellationToken cancellationToken = null) => throw null;
         public System.Threading.Tasks.Task<T> EvaluateAsync<T>(string code, System.Text.Json.Serialization.Metadata.JsonTypeInfo<T> resultTypeInfo, System.Threading.CancellationToken cancellationToken = null) => throw null;
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("JSON deserialization might require types that cannot be statically analyzed. Use the overload that takes a JsonTypeInfo instead.")]
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("JSON deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use the overload that takes a JsonTypeInfo instead.")]
         public System.Threading.Tasks.Task<T> EvaluateAsync<T>(string code, System.Text.Json.JsonSerializerOptions? options = null, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("JSON deserialization might require types that cannot be statically analyzed. Use the overload that takes a JsonTypeInfo instead.")]
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("JSON deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use the overload that takes a JsonTypeInfo instead.")]
+        public System.Threading.Tasks.Task<T> EvaluateAsync<T>(string code, System.Threading.CancellationToken cancellationToken) => throw null;
+        public System.Threading.Tasks.Task EvaluateVoidAsync(string code, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.NodeJs.JSReference> EvaluateReferenceAsync(string code, System.Threading.CancellationToken cancellationToken = null) => throw null;
         public System.Threading.Tasks.ValueTask DisposeAsync() => throw null;
     }
 }

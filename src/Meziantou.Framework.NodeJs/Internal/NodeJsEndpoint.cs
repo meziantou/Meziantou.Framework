@@ -11,27 +11,33 @@ internal abstract class NodeJsEndpoint : IDisposable
     /// <summary>Gets the address passed to <c>net.connect</c> in the Node.js process.</summary>
     public abstract string Address { get; }
 
+    /// <summary>Accepts the next connection. The caller owns the returned stream.</summary>
     public abstract Task<Stream> AcceptAsync(CancellationToken cancellationToken);
 
     public abstract void Dispose();
 
-    public static NodeJsEndpoint Create()
+    /// <summary>Creates an endpoint that accepts up to <paramref name="maxConnections"/> connections, or any number of connections when <see langword="null"/>, until it is disposed.</summary>
+    public static NodeJsEndpoint Create(int? maxConnections)
     {
         var name = "mfnodejs-" + Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(8));
         if (OperatingSystem.IsWindows())
-            return new NamedPipeEndpoint(name);
+            return new NamedPipeEndpoint(name, maxConnections);
 
-        return new UnixSocketEndpoint(name);
+        return new UnixSocketEndpoint(name, maxConnections);
     }
 
     private sealed class NamedPipeEndpoint : NodeJsEndpoint
     {
-        private readonly NamedPipeServerStream _server;
-        private bool _accepted;
+        private readonly string _name;
+        private readonly int? _maxConnections;
+        private NamedPipeServerStream? _server;
+        private int _acceptedConnections;
 
-        public NamedPipeEndpoint(string name)
+        public NamedPipeEndpoint(string name, int? maxConnections)
         {
-            _server = new NamedPipeServerStream(name, PipeDirection.InOut, maxNumberOfServerInstances: 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
+            _name = name;
+            _maxConnections = maxConnections;
+            _server = CreateServer();
             Address = @"\\.\pipe\" + name;
         }
 
@@ -39,17 +45,34 @@ internal abstract class NodeJsEndpoint : IDisposable
 
         public override async Task<Stream> AcceptAsync(CancellationToken cancellationToken)
         {
-            await _server.WaitForConnectionAsync(cancellationToken).ConfigureAwait(false);
-            _accepted = true;
-            return _server;
+            var server = _server ?? throw new InvalidOperationException("The endpoint does not accept more connections.");
+            try
+            {
+                await server.WaitForConnectionAsync(cancellationToken).ConfigureAwait(false);
+            }
+            catch (IOException)
+            {
+                // The client disconnected before the connection was accepted, so the instance cannot be used anymore
+                await server.DisposeAsync().ConfigureAwait(false);
+                _server = CreateServer();
+                throw;
+            }
+
+            // The next instance is created before the host asks the process to connect again, as a client cannot connect when no instance is waiting
+            _acceptedConnections++;
+            _server = _maxConnections is null || _acceptedConnections < _maxConnections ? CreateServer() : null;
+            return server;
         }
 
         public override void Dispose()
         {
-            if (!_accepted)
-            {
-                _server.Dispose();
-            }
+            _server?.Dispose();
+            _server = null;
+        }
+
+        private NamedPipeServerStream CreateServer()
+        {
+            return new NamedPipeServerStream(_name, PipeDirection.InOut, _maxConnections ?? NamedPipeServerStream.MaxAllowedServerInstances, PipeTransmissionMode.Byte, PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
         }
     }
 
@@ -62,7 +85,7 @@ internal abstract class NodeJsEndpoint : IDisposable
         private readonly string _directory;
         private readonly Socket _listener;
 
-        public UnixSocketEndpoint(string name)
+        public UnixSocketEndpoint(string name, int? maxConnections)
         {
             var root = Path.GetTempPath();
             if (Path.Combine(root, name, "s").Length > MaxSocketPathLength)
@@ -79,7 +102,14 @@ internal abstract class NodeJsEndpoint : IDisposable
             try
             {
                 _listener.Bind(new UnixDomainSocketEndPoint(Address));
-                _listener.Listen(1);
+                if (maxConnections is null)
+                {
+                    _listener.Listen();
+                }
+                else
+                {
+                    _listener.Listen(maxConnections.Value);
+                }
             }
             catch
             {
@@ -93,7 +123,6 @@ internal abstract class NodeJsEndpoint : IDisposable
         public override async Task<Stream> AcceptAsync(CancellationToken cancellationToken)
         {
             var socket = await _listener.AcceptAsync(cancellationToken).ConfigureAwait(false);
-            Dispose();
             return new NetworkStream(socket, ownsSocket: true);
         }
 

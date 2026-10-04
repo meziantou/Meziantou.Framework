@@ -18,6 +18,17 @@ process.on("unhandledRejection", reason => console.error("Unhandled promise reje
 const AsyncFunction = (async function () { }).constructor;
 const require = createRequire(path.join(process.cwd(), "/"));
 
+// Functions that compile code. They cannot be called by name, so a module, export, or member name cannot be used to run arbitrary code.
+const codeCompilingFunctions = new Set([
+    Function,
+    AsyncFunction,
+    (function* () { }).constructor,
+    (async function* () { }).constructor,
+    globalThis.eval,
+]);
+
+const canWriteRawJson = typeof JSON.rawJSON === "function";
+
 const socket = net.connect(endpoint);
 socket.setEncoding("utf8");
 socket.on("error", () => process.exit(1));
@@ -31,47 +42,151 @@ function send(message) {
     socket.write(JSON.stringify(message) + "\n");
 }
 
-function bigIntReplacer(_, value) {
-    return typeof value === "bigint" ? JSON.rawJSON(value.toString()) : value;
+function toBase64(bytes) {
+    return Buffer.from(bytes.buffer, bytes.byteOffset, bytes.byteLength).toString("base64");
+}
+
+function mapToObject(map) {
+    // A null prototype, so a "__proto__" key is an own property
+    const result = Object.create(null);
+    for (const [key, value] of map) {
+        let name;
+        switch (typeof key) {
+            case "string":
+                name = key;
+                break;
+            case "number":
+            case "bigint":
+            case "boolean":
+                name = String(key);
+                break;
+            default:
+                throw new TypeError(`Cannot serialize a Map with a key of type '${key === null ? "null" : typeof key}'. Only string, number, bigint, and boolean keys are supported.`);
+        }
+
+        if (Object.hasOwn(result, name)) {
+            throw new TypeError(`Cannot serialize a Map with several keys converted to '${name}'`);
+        }
+
+        result[name] = value;
+    }
+
+    return result;
+}
+
+// Converts values that JSON.stringify cannot represent, or represents in a lossy way
+function resultReplacer(key, value) {
+    switch (typeof value) {
+        case "number":
+            if (Number.isFinite(value)) {
+                return value === 0 && canWriteRawJson && Object.is(value, -0) ? JSON.rawJSON("-0") : value;
+            }
+
+            // Same representation as JsonNumberHandling.AllowNamedFloatingPointLiterals
+            return Number.isNaN(value) ? "NaN" : value > 0 ? "Infinity" : "-Infinity";
+
+        case "bigint":
+            // Without JSON.rawJSON (Node.js 20 or earlier), JSON.stringify throws as BigInt values are not serializable
+            return canWriteRawJson ? JSON.rawJSON(value.toString()) : value;
+
+        case "object":
+            if (value === null || Array.isArray(value)) {
+                return value;
+            }
+
+            if (value instanceof Map) {
+                return mapToObject(value);
+            }
+
+            if (value instanceof Set) {
+                return Array.from(value);
+            }
+
+            if (value instanceof ArrayBuffer || (typeof SharedArrayBuffer === "function" && value instanceof SharedArrayBuffer)) {
+                return toBase64(new Uint8Array(value));
+            }
+
+            if (ArrayBuffer.isView(value)) {
+                // Bytes are sent as base64, as System.Text.Json does for byte[]. Other typed arrays are sent as arrays of numbers.
+                return value instanceof Uint8Array || value instanceof Uint8ClampedArray || value instanceof DataView ? toBase64(value) : Array.from(value);
+            }
+
+            // Buffer.prototype.toJSON converts the buffer to { type: "Buffer", data: [...] } before the replacer is called.
+            // The property is read without invoking getters, and the original value is only read for this shape, as reading it again may have side effects.
+            if (Object.getOwnPropertyDescriptor(value, "type")?.value === "Buffer") {
+                const original = this[key];
+                if (original instanceof Uint8Array) {
+                    return toBase64(original);
+                }
+            }
+
+            return value;
+    }
+
+    return value;
 }
 
 function sendResult(id, result) {
-    const message = { id, result: result === undefined ? null : result };
-    let json;
+    socket.write(JSON.stringify({ id, result: result === undefined ? null : result }, resultReplacer) + "\n");
+}
+
+// Never throws, as an error thrown while reporting an error would leave the call without a response
+function describeError(error) {
     try {
-        json = JSON.stringify(message);
-    } catch (error) {
-        // BigInt values are not serializable by default. The replacer is only used when needed, as it slows down the serialization of large results.
-        if (!(error instanceof TypeError) || typeof JSON.rawJSON !== "function") {
-            sendError(id, error);
-            return;
+        if (error instanceof Error) {
+            return {
+                name: String(error.name),
+                message: String(error.message),
+                stack: typeof error.stack === "string" ? error.stack : null,
+            };
         }
 
-        try {
-            json = JSON.stringify(message, bigIntReplacer);
-        } catch (retryError) {
-            sendError(id, retryError);
-            return;
-        }
+        return { name: typeof error, message: String(error), stack: null };
+    } catch {
+        return { name: typeof error, message: "The error cannot be converted to a string", stack: null };
     }
-
-    socket.write(json + "\n");
 }
 
 function sendError(id, error) {
-    const isError = error instanceof Error;
-    send({
-        id,
-        error: {
-            name: isError ? error.name : typeof error,
-            message: isError ? error.message : String(error),
-            stack: isError && typeof error.stack === "string" ? error.stack : null,
-        },
-    });
+    send({ id, error: describeError(error) });
 }
 
 function toSpecifier(module) {
-    return path.isAbsolute(module) ? pathToFileURL(module).href : module;
+    if (path.isAbsolute(module)) {
+        return pathToFileURL(module).href;
+    }
+
+    // Only file and built-in module URLs are supported. Other schemes, such as data:, would run the code contained in the specifier.
+    let url;
+    try {
+        url = new URL(module);
+    } catch {
+        // Not a URL: a relative path or a package name
+        return module;
+    }
+
+    if (url.protocol !== "file:" && url.protocol !== "node:") {
+        throw new Error(`The module '${module}' uses the unsupported URL scheme '${url.protocol}'. Only file: and node: URLs are supported.`);
+    }
+
+    return module;
+}
+
+// Inherited "constructor" and "__proto__" members give access to the Function constructor and to prototypes, so only own members with these names are accessible
+function hasMember(target, member) {
+    if (member === "constructor" || member === "__proto__") {
+        return Object.hasOwn(target, member);
+    }
+
+    return member in target;
+}
+
+function callFunction(fn, thisArg, args) {
+    if (codeCompilingFunctions.has(fn)) {
+        throw new TypeError("Functions that compile code, such as the Function constructor or eval, cannot be called");
+    }
+
+    return fn.apply(thisArg, args);
 }
 
 function getReference(id) {
@@ -133,7 +248,7 @@ async function invoke(message, args) {
 
         // Named exports detected in a CommonJS module are copies of the properties of module.exports, which is the expected "this"
         container = hasObjectDefault && module.default[message.export] === target ? module.default : module;
-    } else if (hasObjectDefault && message.export in module.default) {
+    } else if (hasObjectDefault && hasMember(module.default, message.export)) {
         container = module.default;
         target = module.default[message.export];
     } else {
@@ -141,7 +256,7 @@ async function invoke(message, args) {
     }
 
     if (typeof target === "function") {
-        return await target.apply(container, args);
+        return await callFunction(target, container, args);
     }
 
     return target;
@@ -153,24 +268,28 @@ async function invokeMember(target, member, args) {
             throw new TypeError("The referenced value is not a function");
         }
 
-        return await target(...args);
+        return await callFunction(target, undefined, args);
     }
 
-    if (target === null || target === undefined || !(member in Object(target))) {
+    if (target === null || target === undefined || !hasMember(Object(target), member)) {
         throw new Error(`The referenced value does not have a member '${member}'`);
     }
 
     const value = target[member];
     if (typeof value === "function") {
-        return await value.apply(target, args);
+        return await callFunction(value, target, args);
     }
 
     return value;
 }
 
-async function evaluate(message) {
-    const fn = new AsyncFunction("require", message.code);
-    return await fn(require);
+async function evaluate(message, args) {
+    // "args" is only declared when the caller provides arguments, so code declaring its own "args" variable still compiles
+    if (args === undefined) {
+        return await new AsyncFunction("require", message.code)(require);
+    }
+
+    return await new AsyncFunction("require", "args", message.code)(require, args);
 }
 
 async function handle(message) {
@@ -193,7 +312,7 @@ async function handle(message) {
                 result = getReference(message.reference);
                 break;
             case "eval":
-                result = evaluate(message);
+                result = evaluate(message, message.args === undefined ? undefined : decodeArguments(message));
                 break;
             case "debug":
                 result = { references: references.size };
@@ -222,6 +341,43 @@ async function handle(message) {
     }
 }
 
+// Requests always start with their identifier, so a request that cannot be parsed can still be answered
+const requestIdPattern = /^\{"id":(\d+)[,}]/;
+
+function processLine(parts) {
+    let message;
+    try {
+        const line = parts.length === 1 ? parts[0] : parts.join("");
+        if (line.length === 0) {
+            return;
+        }
+
+        message = JSON.parse(line);
+    } catch (error) {
+        // e.g. the message exceeds the maximum length of a string
+        let prefix = "";
+        for (const part of parts) {
+            prefix += part.slice(0, 32);
+            if (prefix.length >= 32) {
+                break;
+            }
+        }
+
+        const match = requestIdPattern.exec(prefix);
+        if (match === null) {
+            // Nothing can be answered, so stop the process instead of leaving calls pending forever
+            console.error("Invalid message:", error);
+            socket.destroy();
+            return;
+        }
+
+        sendError(Number(match[1]), error instanceof RangeError ? new RangeError(`The message is too large to be processed by Node.js: ${error.message}`) : error);
+        return;
+    }
+
+    handle(message);
+}
+
 // Only the new chunk is searched for line breaks, and the parts of an incomplete line are joined once complete,
 // so a large message split into many chunks is processed in linear time
 let incompleteLine = [];
@@ -230,12 +386,12 @@ socket.on("data", chunk => {
     let index;
     while ((index = chunk.indexOf("\n", start)) >= 0) {
         incompleteLine.push(chunk.slice(start, index));
-        const line = incompleteLine.join("");
-        incompleteLine = [];
         start = index + 1;
-        if (line.length > 0) {
-            handle(JSON.parse(line));
-        }
+
+        // The parts are detached before being processed, so a line that cannot be processed does not corrupt the following ones
+        const parts = incompleteLine;
+        incompleteLine = [];
+        processLine(parts);
     }
 
     if (start < chunk.length) {

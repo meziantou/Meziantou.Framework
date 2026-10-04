@@ -66,7 +66,7 @@ public sealed class JSReference : IAsyncDisposable, IDisposable
     public async Task<T?> InvokeAsync<T>(string? methodName, object?[]? arguments = null, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
     {
         var result = await InvokeAsync(methodName, ArgumentWriter.SerializeArguments(arguments, options), cancellationToken).ConfigureAwait(false);
-        return result.Deserialize<T>(options);
+        return result.Deserialize<T>(NodeJsHost.GetResultSerializerOptions(options));
     }
 
     /// <summary>Calls a method of the referenced value, or the referenced function, and ignores its result.</summary>
@@ -128,7 +128,7 @@ public sealed class JSReference : IAsyncDisposable, IDisposable
     public async Task<T?> GetValueAsync<T>(JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
     {
         var result = await GetValueAsync(cancellationToken).ConfigureAwait(false);
-        return result.Deserialize<T>(options);
+        return result.Deserialize<T>(NodeJsHost.GetResultSerializerOptions(options));
     }
 
     /// <summary>Converts the reference to a <see cref="JsonNode"/>, to use it as an argument or in a <see cref="JsonObject"/> or <see cref="JsonArray"/> argument.</summary>

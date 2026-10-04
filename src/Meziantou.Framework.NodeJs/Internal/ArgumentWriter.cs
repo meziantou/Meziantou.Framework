@@ -283,7 +283,7 @@ internal sealed class ArgumentWriter : IDisposable
         if (_valuesWriter is null)
         {
             _valuesBuffer = new ArrayBufferWriter<byte>();
-            _valuesWriter = new Utf8JsonWriter(_valuesBuffer);
+            _valuesWriter = new Utf8JsonWriter(_valuesBuffer, NodeJsHost.MessageWriterOptions);
             _valuesWriter.WriteStartArray();
         }
 

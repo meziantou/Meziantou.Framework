@@ -19,6 +19,9 @@ JsonElement sum = await node.EvaluateAsync("return 1 + 2;");
 // Values stored on globalThis persist across calls, and require is available
 await node.EvaluateAsync("globalThis.path = require('node:path');");
 
+// Pass values as arguments, available in the args array, instead of inserting them in the code
+JsonElement joined = await node.EvaluateAsync("return path.join(...args);", ["a", userInput]);
+
 // Call an export of a module (ESM or CommonJS): npm package, relative path, absolute path, or URL
 JsonElement html = await node.InvokeAsync("marked", "parse", ["# Hello"]);
 JsonElement result = await node.InvokeAsync("./scripts/math.mjs", "add", [1, 2]);
@@ -67,7 +70,25 @@ Arguments are serialized as JSON. Use `JSValue` for values that JSON cannot repr
 await node.InvokeAsync("./module.mjs", "run", [JSValue.Undefined, JSValue.BigInt(long.MaxValue), new JsonObject { ["date"] = JSValue.Date(DateTimeOffset.UtcNow) }]);
 ````
 
-In results, `BigInt` values are exact JSON numbers (Node.js 21 or later): read them with `GetInt64()`, deserialize them as `Int128` or `decimal`, or use `BigInteger.Parse(element.GetRawText())`.
+### Results
+
+Results are serialized as JSON. Values that JSON does not support, or supports with a loss of information, are converted:
+
+| JavaScript | JSON | .NET |
+| --- | --- | --- |
+| `BigInt` | exact number (Node.js 21 or later) | `GetInt64()`, `Int128`, `decimal`, or `BigInteger.Parse(element.GetRawText())` |
+| `NaN`, `Infinity`, `-Infinity` | `"NaN"`, `"Infinity"`, `"-Infinity"` | `double` or `float` with `JsonNumberHandling.AllowNamedFloatingPointLiterals` (the default when no `JsonSerializerOptions` are provided) |
+| `-0` | `-0` (Node.js 21 or later) | `double` |
+| `Uint8Array`, `Buffer`, `Uint8ClampedArray`, `DataView`, `ArrayBuffer` | base64 string | `byte[]`, or `GetBytesFromBase64()` |
+| Other typed arrays (`Float64Array`, `Int32Array`...) | array of numbers | `double[]`, `int[]`... |
+| `Map` | object, keys converted to strings | `Dictionary<string, T>`, `Dictionary<int, T>`... Keys must be strings, numbers, `BigInt`s, or booleans. |
+| `Set` | array | `HashSet<T>`, `List<T>`... |
+| `Date` | ISO 8601 string | `DateTimeOffset`, `DateTime` |
+| `undefined` | `null` | |
+
+The depth of results is only limited by the stack of the Node.js process, as `JSON.stringify` is recursive.
+
+When deserializing with a `JsonTypeInfo`, set `NumberHandling = JsonNumberHandling.AllowNamedFloatingPointLiterals` on the `JsonSerializerContext` to read `NaN` and infinities as numbers.
 
 ### References
 
@@ -107,8 +128,18 @@ The Node.js process exits when the host is disposed, or when the connection with
 - `NodeExecutablePath`: path of `node`. By default, `node` is searched in the `PATH`.
 - `NodeArguments`: additional arguments, such as `--max-old-space-size=4096`.
 - `EnvironmentVariables`: environment variables of the Node.js process.
-- `StandardOutputReceived` / `StandardErrorReceived`: callbacks for the output of the process (e.g. `console.log`).
+- `StandardOutputReceived` / `StandardErrorReceived`: callbacks for the output of the process (e.g. `console.log`). Exceptions thrown by the callbacks are ignored.
 - `StartupTimeout`: maximum time to wait for the process to start.
+- `MaxConcurrentCalls`: maximum number of calls running at the same time in a process. Other calls wait, without keeping a serialized copy of their arguments. A canceled call no longer counts, even if its JavaScript code is still running. By default, the number of calls is not limited.
+
+## Security
+
+The JavaScript code runs with the permissions of the .NET process, and the Node.js process inherits its environment variables. Only run code you trust.
+
+- The module specifier, the export name, and the member name of a `JSReference` call select the code to run (e.g. `InvokeAsync("node:child_process", "execSync", ["..."])`). Never build them from untrusted input.
+- Never insert untrusted values in the code passed to `EvaluateAsync`. Pass them as arguments, using the `args` array.
+- As a defense in depth, `InvokeAsync` only accepts `file:` and `node:` URLs (a `data:` URL contains the code to run), inherited `constructor` and `__proto__` members cannot be accessed, and functions that compile code (`Function`, `eval`...) cannot be called.
+- The socket used to communicate with the Node.js process is only accessible by the current user, and the process must prove it was started by the host.
 
 ## Parallel calls
 
@@ -116,8 +147,10 @@ The Node.js process exits when the host is disposed, or when the connection with
 
 To run CPU-bound code in parallel, use `NodeJsHostPool`. It starts several Node.js processes and sends each call to the process with the fewest calls in progress. A process that exits is replaced automatically.
 
+Set `MaxConcurrentCalls` so calls wait in the pool and run on the first process that becomes available. Otherwise, all calls are sent immediately, and a call can wait for a long call sent to the same process while other processes are idle. `1` is a good value for CPU-bound code.
+
 ````c#
-await using var pool = await NodeJsHostPool.StartAsync(Environment.ProcessorCount, new NodeJsHostOptions { WorkingDirectory = "path/to/js/project" });
+await using var pool = await NodeJsHostPool.StartAsync(Environment.ProcessorCount, new NodeJsHostOptions { WorkingDirectory = "path/to/js/project", MaxConcurrentCalls = 1 });
 var results = await Task.WhenAll(documents.Select(document => pool.InvokeAsync("./render.mjs", "render", [document])));
 
 // Run several calls on the same process
@@ -134,7 +167,8 @@ A reference returned by the pool is bound to the process that created it. Calls 
 
 ## Limitations
 
-- Arguments and results are serialized as JSON. Use `JSValue` to pass values that JSON cannot represent, and `JSReference` to keep values in the Node.js process. In results, `undefined` becomes `null`.
+- Arguments and results are serialized as JSON. Use `JSValue` to pass values that JSON cannot represent, and `JSReference` to keep values in the Node.js process. See [Results](#results) for the conversion of results.
+- A message (arguments or result) cannot exceed the maximum length of a JavaScript string (about 512 million UTF-16 characters). A larger message fails its call.
 - `JSValue` and `JSReference` can only be used in the arguments of a call. A `JsonNode` created from them cannot be serialized or cloned, and they cannot be members of objects serialized using reflection.
 - Cancelling a call only stops waiting for the result; the JavaScript code keeps running.
 - JavaScript code cannot call back into .NET.

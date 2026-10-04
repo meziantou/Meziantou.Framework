@@ -230,9 +230,10 @@ public class ExecutableFinderTests
             var output = (await outputTask).Trim();
             var error = (await errorTask).Trim();
 
-            // cmd.exe exits with 9009 when the command is not recognized
-            var cmdResult = process.ExitCode is 0 && output.Length > 0 ? output : null;
-            Assert.True(cmdResult is not null || process.ExitCode is 9009, $"cmd.exe exited with code {process.ExitCode}: {output} {error}");
+            // Every file echoes its location, so no output means cmd.exe did not recognize the command. It then exits with 9009,
+            // or with 1 when an extensionless file with this name exists.
+            var cmdResult = output.Length > 0 ? output : null;
+            Assert.True(cmdResult is null ? process.ExitCode is not 0 : process.ExitCode is 0, $"cmd.exe exited with code {process.ExitCode}: {output} {error}");
 
             var result = ExecutableFinder.GetFullExecutablePath(executableName, workingDirectory, path, pathExt);
             var finderResult = result is null ? null : Path.GetRelativePath(root, result);

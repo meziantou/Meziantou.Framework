@@ -60,18 +60,8 @@ internal abstract class ExecutableContainerRuntime : ContainerRuntime
         if (_executablePath is not null)
             return _executablePath;
 
-        // On Windows, Docker Desktop ships both an extensionless shim and the real '.exe';
-        // the shim cannot be launched by Process.Start, so prefer an executable extension.
-        if (OperatingSystem.IsWindows())
-        {
-            foreach (var extension in (Environment.GetEnvironmentVariable("PATHEXT") ?? ".EXE;.CMD;.BAT")
-                .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
-            {
-                if (ExecutableFinder.GetFullExecutablePath(ExecutableName + extension) is { } withExtension)
-                    return withExtension;
-            }
-        }
-
+        // On Windows, Docker Desktop ships both an extensionless shim and the real '.exe'. ExecutableFinder only
+        // considers PATHEXT extensions there, so the shim, which Process.Start cannot launch, is never returned.
         return ExecutableFinder.GetFullExecutablePath(ExecutableName);
     }
 

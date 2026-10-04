@@ -131,6 +131,7 @@ The Node.js process exits when the host is disposed, or when the connection with
 - `StandardOutputReceived` / `StandardErrorReceived`: callbacks for the output of the process (e.g. `console.log`). Exceptions thrown by the callbacks are ignored.
 - `StartupTimeout`: maximum time to wait for the process to start.
 - `MaxConcurrentCalls`: maximum number of calls running at the same time in a process. Other calls wait, without keeping a serialized copy of their arguments. A canceled call no longer counts, even if its JavaScript code is still running. By default, the number of calls is not limited.
+- `UnresponsiveTimeout`: maximum time the process can take to respond once a call is canceled before completing. When it does not respond, its event loop is blocked (e.g. by an infinite loop), so the process is killed and the calls in progress fail. `NodeJsHostPool` replaces it. By default, the process is never killed.
 
 ## Security
 
@@ -145,7 +146,9 @@ The JavaScript code runs with the permissions of the .NET process, and the Node.
 
 `NodeJsHost` is thread-safe, and concurrent calls run concurrently in the Node.js process. Asynchronous code (I/O, timers, promises) overlaps, but synchronous code runs one call at a time on the single event loop.
 
-To run CPU-bound code in parallel, use `NodeJsHostPool`. It starts several Node.js processes and sends each call to the process with the fewest calls in progress. A process that exits is replaced automatically.
+To run CPU-bound code in parallel, use `NodeJsHostPool`. It starts several Node.js processes and sends each call to the process with the fewest calls in progress, including canceled calls whose JavaScript code has not completed. A process that exits is replaced automatically.
+
+A canceled call keeps running, and synchronous code (e.g. an infinite loop) blocks its process. Set `UnresponsiveTimeout` so such a process is killed and replaced.
 
 Set `MaxConcurrentCalls` so calls wait in the pool and run on the first process that becomes available. Otherwise, all calls are sent immediately, and a call can wait for a long call sent to the same process while other processes are idle. `1` is a good value for CPU-bound code.
 
@@ -170,6 +173,6 @@ A reference returned by the pool is bound to the process that created it. Calls 
 - Arguments and results are serialized as JSON. Use `JSValue` to pass values that JSON cannot represent, and `JSReference` to keep values in the Node.js process. See [Results](#results) for the conversion of results.
 - A message (arguments or result) cannot exceed the maximum length of a JavaScript string (about 512 million UTF-16 characters). A larger message fails its call.
 - `JSValue` and `JSReference` can only be used in the arguments of a call. A `JsonNode` created from them cannot be serialized or cloned, and they cannot be members of objects serialized using reflection.
-- Cancelling a call only stops waiting for the result; the JavaScript code keeps running.
+- Cancelling a call only stops waiting for the result; the JavaScript code keeps running. Set `UnresponsiveTimeout` to kill the process when the code blocks its event loop.
 - JavaScript code cannot call back into .NET.
 - A synchronous infinite loop blocks all the other calls. Disposing the host kills the process.

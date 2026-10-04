@@ -31,13 +31,16 @@ public sealed class NodeJsHost : IAsyncDisposable
     internal const string ReflectionDynamicCodeMessage = "JSON serialization and deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use the overload that takes a JsonTypeInfo instead.";
     private const int MaxStandardErrorLines = 20;
     private static readonly TimeSpan ExitTimeout = TimeSpan.FromSeconds(10);
+
+    // Once the connection is closed, the process exits immediately unless its event loop is blocked, so there is no reason to wait longer before killing it
+    private static readonly TimeSpan DisposeExitTimeout = TimeSpan.FromSeconds(1);
     private static readonly TimeSpan OutputDrainTimeout = TimeSpan.FromSeconds(1);
 
     // Messages are only read by JSON.parse, so characters that are sensitive in HTML or non-ASCII do not need to be escaped, which would make them up to 6 times larger
     internal static readonly JsonWriterOptions MessageWriterOptions = new() { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
 
-    // Results can be deeply nested (e.g. syntax trees). JsonDocument does not use recursion, so there is no reason to limit the depth.
-    private static readonly JsonDocumentOptions ResultDocumentOptions = new() { MaxDepth = int.MaxValue };
+    // Messages can be deeply nested (e.g. syntax trees). JsonDocument does not use recursion, so there is no reason to limit the depth.
+    private static readonly JsonDocumentOptions UnlimitedDepthDocumentOptions = new() { MaxDepth = int.MaxValue };
 
     // Initial size of the buffer that receives messages. It grows to contain the largest message, and shrinks back once the message is processed.
     private const int ReadBufferSize = 16 * 1024;
@@ -58,8 +61,11 @@ public sealed class NodeJsHost : IAsyncDisposable
     private readonly TaskCompletionSource _exited = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private Stream? _stream;
     private Task? _readTask;
+    private Task _responsivenessCheck = Task.CompletedTask;
     private Exception? _terminationException;
     private long _nextRequestId;
+    private int _abandonedCalls;
+    private int _responsivenessCheckRequests;
     private int _disposed;
 
     private NodeJsHost(NodeJsHostOptions options)
@@ -83,9 +89,12 @@ public sealed class NodeJsHost : IAsyncDisposable
     /// <summary>Gets a value indicating whether the host can no longer run code, because it is disposed or the process exited.</summary>
     internal bool IsTerminated => Volatile.Read(ref _terminationException) is not null;
 
+    /// <summary>Gets the number of canceled calls whose response has not been received yet, so their JavaScript code may still be running.</summary>
+    internal int AbandonedCalls => Volatile.Read(ref _abandonedCalls);
+
     /// <summary>Starts a new Node.js process.</summary>
     /// <exception cref="NodeJsException">The <c>node</c> executable cannot be found, or the process fails to start.</exception>
-    /// <exception cref="ArgumentOutOfRangeException"><see cref="NodeJsHostOptions.MaxConcurrentCalls"/> is zero or negative.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><see cref="NodeJsHostOptions.MaxConcurrentCalls"/> or <see cref="NodeJsHostOptions.UnresponsiveTimeout"/> is zero or negative.</exception>
     public static async Task<NodeJsHost> StartAsync(NodeJsHostOptions? options = null, CancellationToken cancellationToken = default)
     {
         options ??= NodeJsHostOptions.Default;
@@ -294,20 +303,15 @@ public sealed class NodeJsHost : IAsyncDisposable
             await _readTask.ConfigureAwait(false);
         }
 
+        // The host is terminated, so the check completes without waiting for its timeout
+        await _responsivenessCheck.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+
         if (IsProcessStarted())
         {
             // When the connection was never established, the process cannot know it must exit
-            if (_stream is null || !await WaitForExitAsync(ExitTimeout, drainOutput: false).ConfigureAwait(false))
+            if (_stream is null || !await WaitForExitAsync(DisposeExitTimeout, drainOutput: false).ConfigureAwait(false))
             {
-                try
-                {
-                    _process.Kill(entireProcessTree: true);
-                }
-                catch (InvalidOperationException)
-                {
-                    // The process has already exited
-                }
-
+                KillProcess();
                 await WaitForExitAsync(ExitTimeout, drainOutput: false).ConfigureAwait(false);
             }
         }
@@ -457,6 +461,9 @@ public sealed class NodeJsHost : IAsyncDisposable
     {
         if (options.MaxConcurrentCalls is <= 0)
             throw new ArgumentOutOfRangeException(nameof(options), options.MaxConcurrentCalls, "NodeJsHostOptions.MaxConcurrentCalls must be greater than zero.");
+
+        if (options.UnresponsiveTimeout is { } unresponsiveTimeout && (unresponsiveTimeout <= TimeSpan.Zero || unresponsiveTimeout.TotalMilliseconds > int.MaxValue))
+            throw new ArgumentOutOfRangeException(nameof(options), unresponsiveTimeout, "NodeJsHostOptions.UnresponsiveTimeout must be greater than zero and less than Int32.MaxValue milliseconds.");
     }
 
     /// <summary>Creates a reader that deserializes the result directly from the UTF-8 bytes of the response.</summary>
@@ -475,7 +482,7 @@ public sealed class NodeJsHost : IAsyncDisposable
     }
 
     // The JsonElement owns a copy of the bytes, so it remains valid once the buffer that receives messages is reused
-    internal static JsonElement ReadJsonElement(ReadOnlySpan<byte> utf8Json) => JsonElement.Parse(utf8Json, ResultDocumentOptions);
+    internal static JsonElement ReadJsonElement(ReadOnlySpan<byte> utf8Json) => JsonElement.Parse(utf8Json, UnlimitedDepthDocumentOptions);
 
     internal static long ReadReferenceId(ReadOnlySpan<byte> utf8Json)
     {
@@ -621,7 +628,35 @@ public sealed class NodeJsHost : IAsyncDisposable
                 writer.WriteEndObject();
             }
 
+            // Messages are separated by line breaks. Utf8JsonWriter escapes them in strings, but raw JSON written by a custom converter can contain them as whitespace.
+            if (buffer.WrittenMemory.Span.Contains((byte)'\n'))
+            {
+                var minified = Minify(buffer.WrittenMemory);
+                buffer.Dispose();
+                buffer = minified;
+            }
+
             buffer.Write("\n"u8);
+            return buffer;
+        }
+        catch
+        {
+            buffer.Dispose();
+            throw;
+        }
+    }
+
+    private static PooledBufferWriter Minify(ReadOnlyMemory<byte> json)
+    {
+        var buffer = new PooledBufferWriter();
+        try
+        {
+            using (var document = JsonDocument.Parse(json, UnlimitedDepthDocumentOptions))
+            using (var writer = new Utf8JsonWriter(buffer, MessageWriterOptions))
+            {
+                document.WriteTo(writer);
+            }
+
             return buffer;
         }
         catch
@@ -697,6 +732,7 @@ public sealed class NodeJsHost : IAsyncDisposable
             {
                 // The write continues in the background. A failure means the connection is lost, which is reported by the read loop.
                 _ = writeTask.ContinueWith(static task => _ = task.Exception, CancellationToken.None, TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+                AbandonRequest(id);
                 throw;
             }
 
@@ -704,11 +740,11 @@ public sealed class NodeJsHost : IAsyncDisposable
             {
                 return await request.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
             }
-            catch (OperationCanceledException) when (resultKind is ResultKind.Reference)
+            catch (OperationCanceledException)
             {
                 // ProcessResponse releases the value when the response arrives after this point.
                 // When the response is already being processed, the value must be released here.
-                if (!_pendingRequests.TryRemove(id, out _))
+                if (!AbandonRequest(id) && resultKind is ResultKind.Reference)
                 {
                     _ = request.Task.ContinueWith(task =>
                     {
@@ -728,6 +764,54 @@ public sealed class NodeJsHost : IAsyncDisposable
             message?.Dispose();
         }
     }
+
+    /// <summary>Stops waiting for the response of a request that was sent.</summary>
+    /// <returns><see langword="false"/> when the response is already being processed.</returns>
+    private bool AbandonRequest(long id)
+    {
+        if (!_pendingRequests.TryRemove(id, out _))
+            return false;
+
+        // The call keeps running until its response arrives, and its JavaScript code may block the event loop
+        Interlocked.Increment(ref _abandonedCalls);
+        if (_options.UnresponsiveTimeout is { } timeout && Interlocked.Increment(ref _responsivenessCheckRequests) is 1)
+        {
+            _responsivenessCheck = CheckResponsivenessAsync(timeout);
+        }
+
+        return true;
+    }
+
+    /// <summary>Kills the process when its event loop does not respond, as it is the only way to stop the JavaScript code of a canceled call.</summary>
+    private async Task CheckResponsivenessAsync(TimeSpan timeout)
+    {
+        // Calls canceled while the process is being checked are checked again, as they may block the event loop later
+        int requests;
+        do
+        {
+            requests = Volatile.Read(ref _responsivenessCheckRequests);
+            using var cts = new CancellationTokenSource(timeout);
+            try
+            {
+                await SendRequestCoreAsync(writer => writer.WriteString("type", "ping"), ResultKind.Void, ReadJsonElement, cts.Token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                Terminate(new NodeJsException($"The Node.js process did not respond within {timeout} after a call was canceled, so it was killed. Its event loop is blocked, e.g. by an infinite loop."));
+                KillProcess();
+                return;
+            }
+            catch (Exception ex) when (ex is NodeJsException or ObjectDisposedException)
+            {
+                // The process exited, or the host is disposed
+                return;
+            }
+        }
+        while (Interlocked.Add(ref _responsivenessCheckRequests, -requests) is not 0);
+    }
+
+    /// <summary>Waits for the check started when a call is canceled, for tests.</summary>
+    internal Task WaitForResponsivenessCheckAsync() => _responsivenessCheck;
 
     /// <summary>Writes a message, then releases the write lock and the message buffer.</summary>
     private async Task WriteMessageAndReleaseLockAsync(PooledBufferWriter message)
@@ -873,7 +957,7 @@ public sealed class NodeJsHost : IAsyncDisposable
         // A void call has no result
         if (reader.TokenType is JsonTokenType.EndObject)
         {
-            if (_pendingRequests.TryRemove(id, out var request))
+            if (TryRemoveRequest(id, out var request))
             {
                 request.SetNoResult();
             }
@@ -892,28 +976,30 @@ public sealed class NodeJsHost : IAsyncDisposable
 
         var value = message[(int)reader.BytesConsumed..valueEnd];
 
-        // A request is only removed once the response is known to be valid, so it is never left pending when the connection is terminated
+        // A request is only removed once the response is known to be valid, so it is never left pending when the connection is terminated.
+        // Reading the result cannot terminate the connection, as its failure is reported to the caller.
         if (reader.ValueTextEquals("result"u8) || reader.ValueTextEquals("reference"u8))
         {
-            if (_pendingRequests.TryRemove(id, out var request))
+            if (TryRemoveRequest(id, out var request))
             {
                 request.SetResult(value);
             }
             else if (reader.ValueTextEquals("reference"u8))
             {
-                // The caller stopped waiting, so the value kept for it is no longer needed
+                // The value kept for the caller is no longer needed
                 ReleaseReference(ReadReferenceId(value));
             }
         }
         else if (reader.ValueTextEquals("error"u8))
         {
             var error = JsonElement.Parse(value);
-            if (_pendingRequests.TryRemove(id, out var request))
+            var name = GetStringOrNull(error, "name");
+            var errorMessage = GetStringOrNull(error, "message");
+            var stack = GetStringOrNull(error, "stack");
+            var exception = new NodeJsException(name is null ? errorMessage ?? "" : $"{name}: {errorMessage}", name, stack);
+            if (TryRemoveRequest(id, out var request))
             {
-                var name = GetStringOrNull(error, "name");
-                var errorMessage = GetStringOrNull(error, "message");
-                var stack = GetStringOrNull(error, "stack");
-                request.SetException(new NodeJsException(name is null ? errorMessage ?? "" : $"{name}: {errorMessage}", name, stack));
+                request.SetException(exception);
             }
         }
         else
@@ -925,6 +1011,18 @@ public sealed class NodeJsHost : IAsyncDisposable
         {
             return element.TryGetProperty(propertyName, out var value) && value.ValueKind is JsonValueKind.String ? value.GetString() : null;
         }
+    }
+
+    /// <summary>Removes the request answered by a response.</summary>
+    /// <returns><see langword="false"/> when the caller stopped waiting (see <see cref="AbandonRequest"/>).</returns>
+    private bool TryRemoveRequest(long id, [NotNullWhen(true)] out PendingRequest? request)
+    {
+        if (_pendingRequests.TryRemove(id, out request))
+            return true;
+
+        // The caller stopped waiting, so the call is no longer running
+        Interlocked.Decrement(ref _abandonedCalls);
+        return false;
     }
 
     private void Terminate(Exception exception)
@@ -996,6 +1094,18 @@ public sealed class NodeJsHost : IAsyncDisposable
         }
 
         return true;
+    }
+
+    private void KillProcess()
+    {
+        try
+        {
+            _process.Kill(entireProcessTree: true);
+        }
+        catch (InvalidOperationException)
+        {
+            // The process has already exited, or the host is disposed
+        }
     }
 
     private bool IsProcessStarted()

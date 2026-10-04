@@ -1,0 +1,18 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <RootNamespace>Meziantou.Framework.NodeJs</RootNamespace>
+    <Description>Run JavaScript and call Node.js modules (local files or npm packages) from .NET by hosting a Node.js process.</Description>
+    <PackageTags>nodejs, node, javascript, interop, npm, esm, commonjs</PackageTags>
+    <Version>1.0.0</Version>
+    <IsTrimmable>true</IsTrimmable>
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Meziantou.Framework.NodeJs.Tests" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="../Meziantou.Framework/ExecutableFinder.cs" Link="Utils/ExecutableFinder.cs" />
+    <EmbeddedResource Include="bootstrap.mjs" LogicalName="Meziantou.Framework.NodeJs.bootstrap.mjs" />
+  </ItemGroup>
+</Project>

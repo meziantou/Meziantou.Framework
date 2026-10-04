@@ -52,6 +52,10 @@ public sealed class NodeJsHostOptions
     /// <summary>Gets or sets a callback invoked for each line written by the Node.js process to its standard error (e.g. <c>console.error</c>). When <see langword="null"/>, the output is discarded, except the last lines, which are included in the message of the exception thrown when the process exits. Exceptions thrown by the callback are ignored.</summary>
     public Action<string>? StandardErrorReceived { get; set; }
 
+    /// <summary>Gets or sets the maximum time to wait for the Node.js process to exit once its connection is closed or it is killed, or <see cref="Timeout.InfiniteTimeSpan"/> to wait indefinitely.</summary>
+    /// <remarks>Tests wait indefinitely, so a wait that depends on something other than the exit of the process hangs instead of completing after a delay.</remarks>
+    internal TimeSpan ExitTimeout { get; set; } = TimeSpan.FromSeconds(10);
+
     /// <summary>Creates a copy of the options, so changes made once a host is started do not affect it.</summary>
     internal NodeJsHostOptions Clone()
     {
@@ -65,6 +69,7 @@ public sealed class NodeJsHostOptions
             WorkerThreads = WorkerThreads,
             StandardOutputReceived = StandardOutputReceived,
             StandardErrorReceived = StandardErrorReceived,
+            ExitTimeout = ExitTimeout,
         };
 
         foreach (var argument in NodeArguments)

@@ -12,6 +12,9 @@ public sealed partial class NodeJsHostTests
 {
     private static readonly TimeSpan OutputTimeout = TimeSpan.FromSeconds(30);
 
+    // Only detects a hang: a test waiting for this long must not depend on the time it takes, which varies a lot on CI agents
+    private static readonly TimeSpan HangTimeout = TimeSpan.FromMinutes(2);
+
     [Fact]
     public async Task Evaluate_ReturnsValue()
     {
@@ -609,58 +612,48 @@ public sealed partial class NodeJsHostTests
     [Fact]
     public async Task ChildProcessInheritingOutput_DoesNotDelayExitDetection()
     {
-        var node = await StartNodeAsync(new NodeJsHostOptions { StandardErrorReceived = _ => { } });
+        // Without a timeout, waiting for the output to be closed hangs until the child process exits. The time it takes is not
+        // checked, as observing the exit can take more than 10s on a loaded CI agent, like waiting for the output used to.
+        var node = await StartNodeAsync(new NodeJsHostOptions { StandardErrorReceived = _ => { }, ExitTimeout = Timeout.InfiniteTimeSpan });
         var childProcessId = 0;
         try
         {
-            // The child process keeps the redirected standard output and error open after the Node.js process exits
-            childProcessId = (await node.EvaluateAsync("""
-                const { spawn } = require('node:child_process');
-                const child = spawn(process.execPath, ['-e', 'setTimeout(() => {}, 60_000)'], { stdio: 'inherit', detached: true });
-                child.unref();
-                return child.pid;
-                """, XunitCancellationToken)).GetInt32();
+            childProcessId = await StartChildProcessInheritingOutputAsync(node);
+            using var childProcess = Process.GetProcessById(childProcessId);
 
-            var stopwatch = Stopwatch.StartNew();
-            var exception = await Assert.ThrowsAsync<NodeJsException>(() => node.EvaluateAsync("process.exit(4);", XunitCancellationToken));
-            var exitDetectionDuration = stopwatch.Elapsed;
+            var exception = await Assert.ThrowsAsync<NodeJsException>(() => node.EvaluateAsync("process.exit(4);", XunitCancellationToken).WaitAsync(HangTimeout, XunitCancellationToken));
+            await node.DisposeAsync().AsTask().WaitAsync(HangTimeout, XunitCancellationToken);
 
-            stopwatch.Restart();
-            await node.DisposeAsync();
-            var disposeDuration = stopwatch.Elapsed;
-
-            // Waiting for the output to be closed took 10s to detect the exit, and 20s to dispose
             Assert.Equal(4, exception.ExitCode);
-            Assert.True(exitDetectionDuration < TimeSpan.FromSeconds(8), $"Exit detected after {exitDetectionDuration}");
-            Assert.True(disposeDuration < TimeSpan.FromSeconds(8), $"Disposed after {disposeDuration}");
+
+            // The child process still keeps the output open
+            Assert.False(childProcess.HasExited);
         }
         finally
         {
-            await node.DisposeAsync();
+            // Disposing waits for the output to be closed if the exit is not detected
             KillProcess(childProcessId);
+            await node.DisposeAsync();
         }
     }
 
     [Fact]
     public async Task Dispose_ChildProcessInheritingOutput_DoesNotDelayDispose()
     {
-        var node = await StartNodeAsync();
+        var node = await StartNodeAsync(new NodeJsHostOptions { ExitTimeout = Timeout.InfiniteTimeSpan });
         var childProcessId = 0;
         try
         {
-            childProcessId = (await node.EvaluateAsync("""
-                const { spawn } = require('node:child_process');
-                const child = spawn(process.execPath, ['-e', 'setTimeout(() => {}, 60_000)'], { stdio: 'inherit', detached: true });
-                child.unref();
-                return child.pid;
-                """, XunitCancellationToken)).GetInt32();
+            childProcessId = await StartChildProcessInheritingOutputAsync(node);
+            using var childProcess = Process.GetProcessById(childProcessId);
             using var process = Process.GetProcessById(node.ProcessId);
 
-            var stopwatch = Stopwatch.StartNew();
-            await node.DisposeAsync();
+            await node.DisposeAsync().AsTask().WaitAsync(HangTimeout, XunitCancellationToken);
 
-            Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(8), $"Disposed after {stopwatch.Elapsed}");
             Assert.True(process.HasExited);
+
+            // The child process still keeps the output open
+            Assert.False(childProcess.HasExited);
         }
         finally
         {
@@ -2369,6 +2362,18 @@ public sealed partial class NodeJsHostTests
         options.NodeArguments.Add("--import");
         options.NodeArguments.Add("data:text/javascript," + Uri.EscapeDataString(code));
         return options;
+    }
+
+    // The child process outlives the hang timeout, so a wait for the output to be closed cannot complete before it
+    private static async Task<int> StartChildProcessInheritingOutputAsync(NodeJsHost node)
+    {
+        var result = await node.EvaluateAsync("""
+            const { spawn } = require('node:child_process');
+            const child = spawn(process.execPath, ['-e', 'setTimeout(() => {}, 600_000)'], { stdio: 'inherit', detached: true });
+            child.unref();
+            return child.pid;
+            """, XunitCancellationToken);
+        return result.GetInt32();
     }
 
     private static void KillProcess(int processId)

@@ -16,8 +16,8 @@ internal abstract class NodeJsEndpoint : IDisposable
 
     public abstract void Dispose();
 
-    /// <summary>Creates an endpoint that accepts up to <paramref name="maxConnections"/> connections, until it is disposed.</summary>
-    public static NodeJsEndpoint Create(int maxConnections)
+    /// <summary>Creates an endpoint that accepts up to <paramref name="maxConnections"/> connections, or any number of connections when <see langword="null"/>, until it is disposed.</summary>
+    public static NodeJsEndpoint Create(int? maxConnections)
     {
         var name = "mfnodejs-" + Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(8));
         if (OperatingSystem.IsWindows())
@@ -29,11 +29,11 @@ internal abstract class NodeJsEndpoint : IDisposable
     private sealed class NamedPipeEndpoint : NodeJsEndpoint
     {
         private readonly string _name;
-        private readonly int _maxConnections;
+        private readonly int? _maxConnections;
         private NamedPipeServerStream? _server;
         private int _acceptedConnections;
 
-        public NamedPipeEndpoint(string name, int maxConnections)
+        public NamedPipeEndpoint(string name, int? maxConnections)
         {
             _name = name;
             _maxConnections = maxConnections;
@@ -46,11 +46,21 @@ internal abstract class NodeJsEndpoint : IDisposable
         public override async Task<Stream> AcceptAsync(CancellationToken cancellationToken)
         {
             var server = _server ?? throw new InvalidOperationException("The endpoint does not accept more connections.");
-            await server.WaitForConnectionAsync(cancellationToken).ConfigureAwait(false);
+            try
+            {
+                await server.WaitForConnectionAsync(cancellationToken).ConfigureAwait(false);
+            }
+            catch (IOException)
+            {
+                // The client disconnected before the connection was accepted, so the instance cannot be used anymore
+                await server.DisposeAsync().ConfigureAwait(false);
+                _server = CreateServer();
+                throw;
+            }
 
             // The next instance is created before the host asks the process to connect again, as a client cannot connect when no instance is waiting
             _acceptedConnections++;
-            _server = _acceptedConnections < _maxConnections ? CreateServer() : null;
+            _server = _maxConnections is null || _acceptedConnections < _maxConnections ? CreateServer() : null;
             return server;
         }
 
@@ -62,7 +72,7 @@ internal abstract class NodeJsEndpoint : IDisposable
 
         private NamedPipeServerStream CreateServer()
         {
-            return new NamedPipeServerStream(_name, PipeDirection.InOut, _maxConnections, PipeTransmissionMode.Byte, PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
+            return new NamedPipeServerStream(_name, PipeDirection.InOut, _maxConnections ?? NamedPipeServerStream.MaxAllowedServerInstances, PipeTransmissionMode.Byte, PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
         }
     }
 
@@ -75,7 +85,7 @@ internal abstract class NodeJsEndpoint : IDisposable
         private readonly string _directory;
         private readonly Socket _listener;
 
-        public UnixSocketEndpoint(string name, int maxConnections)
+        public UnixSocketEndpoint(string name, int? maxConnections)
         {
             var root = Path.GetTempPath();
             if (Path.Combine(root, name, "s").Length > MaxSocketPathLength)
@@ -92,7 +102,14 @@ internal abstract class NodeJsEndpoint : IDisposable
             try
             {
                 _listener.Bind(new UnixDomainSocketEndPoint(Address));
-                _listener.Listen(maxConnections);
+                if (maxConnections is null)
+                {
+                    _listener.Listen();
+                }
+                else
+                {
+                    _listener.Listen(maxConnections.Value);
+                }
             }
             catch
             {

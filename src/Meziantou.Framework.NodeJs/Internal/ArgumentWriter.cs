@@ -14,26 +14,26 @@ namespace Meziantou.Framework.NodeJs.Internal;
 internal sealed class ArgumentWriter : IDisposable
 {
     private readonly Utf8JsonWriter _writer;
-    private readonly NodeJsHost _host;
+    private readonly NodeJsChannel _channel;
     private readonly List<PathSegment> _path = [];
     private ArrayBufferWriter<byte>? _valuesBuffer;
     private Utf8JsonWriter? _valuesWriter;
 
     private readonly string _parameterName;
 
-    private ArgumentWriter(Utf8JsonWriter writer, NodeJsHost host, string parameterName)
+    private ArgumentWriter(Utf8JsonWriter writer, NodeJsChannel channel, string parameterName)
     {
         _writer = writer;
-        _host = host;
+        _channel = channel;
         _parameterName = parameterName;
     }
 
-    /// <summary>Writes the <c>args</c> and <c>values</c> properties.</summary>
-    /// <exception cref="ArgumentException">A <see cref="JSReference"/> belongs to another host.</exception>
+    /// <summary>Writes the <c>args</c> and <c>values</c> properties of a message sent on <paramref name="channel"/>.</summary>
+    /// <exception cref="ArgumentException">A <see cref="JSReference"/> belongs to another host, or to another worker thread.</exception>
     /// <exception cref="ObjectDisposedException">A <see cref="JSReference"/> is disposed.</exception>
-    public static void Write(Utf8JsonWriter writer, NodeJsHost host, IReadOnlyList<JsonNode?>? arguments)
+    public static void Write(Utf8JsonWriter writer, NodeJsChannel channel, IReadOnlyList<JsonNode?>? arguments)
     {
-        using var argumentWriter = new ArgumentWriter(writer, host, nameof(arguments));
+        using var argumentWriter = new ArgumentWriter(writer, channel, nameof(arguments));
         argumentWriter.WriteArguments(arguments);
     }
 
@@ -46,7 +46,7 @@ internal sealed class ArgumentWriter : IDisposable
         {
             foreach (var argument in arguments)
             {
-                FindReferenceHost(argument, ref host, nameof(arguments));
+                VisitReferences(argument, reference => SetReferenceHost(reference, ref host, nameof(arguments)));
             }
         }
 
@@ -67,13 +67,38 @@ internal sealed class ArgumentWriter : IDisposable
                         SetReferenceHost(reference, ref host, nameof(arguments));
                         break;
                     case JsonNode node:
-                        FindReferenceHost(node, ref host, nameof(arguments));
+                        VisitReferences(node, reference => SetReferenceHost(reference, ref host, nameof(arguments)));
                         break;
                 }
             }
         }
 
         return host;
+    }
+
+    /// <summary>Gets the connection with the thread that keeps the values of <paramref name="target"/> and of the <see cref="JSReference"/> instances contained in the arguments, or <see langword="null"/> when there is none.</summary>
+    /// <exception cref="ArgumentException">The references belong to another host, or to different worker threads.</exception>
+    public static NodeJsChannel? FindReferenceChannel(NodeJsHost host, JSReference? target, IReadOnlyList<JsonNode?>? arguments)
+    {
+        NodeJsChannel? channel = target?.Channel;
+        if (arguments is not null)
+        {
+            foreach (var argument in arguments)
+            {
+                VisitReferences(argument, reference =>
+                {
+                    if (reference.Host != host)
+                        throw new ArgumentException("The reference belongs to another Node.js process.", nameof(arguments));
+
+                    if (channel is not null && channel != reference.Channel)
+                        throw new ArgumentException("The arguments contain references to values of different worker threads of the Node.js process.", nameof(arguments));
+
+                    channel = reference.Channel;
+                });
+            }
+        }
+
+        return channel;
     }
 
     /// <summary>Converts arguments to JSON nodes using reflection. <see cref="JsonNode"/>, <see cref="JSValue"/>, and <see cref="JSReference"/> arguments are used as is.</summary>
@@ -102,14 +127,14 @@ internal sealed class ArgumentWriter : IDisposable
         return nodes;
     }
 
-    private static void FindReferenceHost(JsonNode? node, ref NodeJsHost? host, string parameterName)
+    private static void VisitReferences(JsonNode? node, Action<JSReference> visitor)
     {
         switch (node)
         {
             case JsonObject obj:
                 foreach (var (_, child) in obj)
                 {
-                    FindReferenceHost(child, ref host, parameterName);
+                    VisitReferences(child, visitor);
                 }
 
                 break;
@@ -117,13 +142,13 @@ internal sealed class ArgumentWriter : IDisposable
             case JsonArray array:
                 foreach (var child in array)
                 {
-                    FindReferenceHost(child, ref host, parameterName);
+                    VisitReferences(child, visitor);
                 }
 
                 break;
 
             case JsonValue value when value.TryGetValue(out JSReference? reference):
-                SetReferenceHost(reference, ref host, parameterName);
+                visitor(reference);
                 break;
         }
     }
@@ -271,8 +296,11 @@ internal sealed class ArgumentWriter : IDisposable
     private void WriteReference(JSReference reference)
     {
         ObjectDisposedException.ThrowIf(reference.IsDisposed, reference);
-        if (reference.Host != _host)
+        if (reference.Host != _channel.Host)
             throw new ArgumentException("The reference belongs to another Node.js process.", _parameterName);
+
+        if (reference.Channel != _channel)
+            throw new ArgumentException("The reference belongs to another worker thread of the Node.js process.", _parameterName);
 
         StartValue("reference").WriteNumber("value", reference.Id);
         EndValue();

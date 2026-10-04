@@ -2,6 +2,7 @@ using System.Buffers;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Encodings.Web;
@@ -16,7 +17,7 @@ namespace Meziantou.Framework.NodeJs;
 /// <summary>Hosts a Node.js process and runs JavaScript code in it.</summary>
 /// <remarks>
 /// <para>The Node.js process runs out of process and communicates with the host using JSON messages over a private local socket. Arguments and results are serialized as JSON.</para>
-/// <para>Calls can run concurrently. The Node.js process exits when the host is disposed, or when the connection with the .NET process is closed (e.g. when the .NET process exits) unless its event loop is blocked. Its standard input is closed, and its standard output and error are only passed to <see cref="NodeJsHostOptions.StandardOutputReceived"/> and <see cref="NodeJsHostOptions.StandardErrorReceived"/>.</para>
+/// <para>Calls can run concurrently. They run on the main thread of the process, or on worker threads when <see cref="NodeJsHostOptions.WorkerThreads"/> is set, so CPU-bound calls run in parallel. The Node.js process exits when the host is disposed, or when the connection with the .NET process is closed (e.g. when the .NET process exits) unless its event loop is blocked. Its standard input is closed, and its standard output and error are only passed to <see cref="NodeJsHostOptions.StandardOutputReceived"/> and <see cref="NodeJsHostOptions.StandardErrorReceived"/>.</para>
 /// </remarks>
 /// <example>
 /// <code>
@@ -47,10 +48,7 @@ public sealed class NodeJsHost : IAsyncDisposable
     internal static readonly JsonWriterOptions MessageWriterOptions = new() { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
 
     // Messages can be deeply nested (e.g. syntax trees). JsonDocument does not use recursion, so there is no reason to limit the depth.
-    private static readonly JsonDocumentOptions UnlimitedDepthDocumentOptions = new() { MaxDepth = int.MaxValue };
-
-    // Initial size of the buffer that receives messages. It grows to contain the largest message, and shrinks back once the message is processed.
-    private const int ReadBufferSize = 16 * 1024;
+    internal static readonly JsonDocumentOptions UnlimitedDepthDocumentOptions = new() { MaxDepth = int.MaxValue };
 
     // JavaScript code uses camelCase names, so the web defaults are used (camelCase names, case-insensitive matching) when serializing using reflection without options
     [SuppressMessage("Usage", "MA0224:Set RespectNullableAnnotations on the JsonSerializerOptions instance", Justification = "Same behavior as the default options")]
@@ -64,24 +62,34 @@ public sealed class NodeJsHost : IAsyncDisposable
 
     private readonly NodeJsHostOptions _options;
     private readonly Process _process;
-    private readonly ConcurrentDictionary<long, PendingRequest> _pendingRequests = new();
-    [SuppressMessage("Reliability", "CA2213:Disposable fields should be disposed", Justification = "AvailableWaitHandle is never used, and disposing it would leave concurrent callers waiting forever")]
-    private readonly SemaphoreSlim _writeLock = new(1, 1);
+
+    // The connections with the threads of the process, so they are all terminated with the host
+    private readonly ConcurrentDictionary<NodeJsChannel, byte> _channels = new();
     [SuppressMessage("Reliability", "CA2213:Disposable fields should be disposed", Justification = "AvailableWaitHandle is never used, and disposing it would leave concurrent callers waiting forever")]
     private readonly SemaphoreSlim? _concurrencyLimit;
     [SuppressMessage("Reliability", "CA2213:Disposable fields should be disposed", Justification = "AvailableWaitHandle is never used, and disposing it would make the responsiveness check fail")]
     private readonly SemaphoreSlim _responsivenessCheckSignal = new(0);
-    private readonly ConcurrentDictionary<long, byte> _abandonedRequests = new();
     private readonly Queue<string> _standardErrorTail = new();
     private readonly TaskCompletionSource _exited = new(TaskCreationOptions.RunContinuationsAsynchronously);
-    private Stream? _stream;
+    private readonly TaskCompletionSource _terminated = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    private readonly CancellationTokenSource _acceptCts = new();
+    private readonly Func<NodeJsChannel, ResultReader<JSReference>> _referenceReader;
+
+    // The worker threads that run the calls when NodeJsHostOptions.WorkerThreads is set
+    private readonly WorkerSlot[]? _workers;
+    private readonly Lock _workersLock = new();
+    private readonly ConcurrentDictionary<(int Worker, int Generation), TaskCompletionSource<int?>> _workerExits = new();
+    private NodeJsEndpoint? _endpoint;
+
+    // The connection with the main thread. With worker threads, it only controls them.
+    private NodeJsChannel? _mainChannel;
     private Stream? _watchdogStream;
     private StreamReader? _watchdogReader;
-    private Task? _readTask;
+    private Task _acceptTask = Task.CompletedTask;
     private Task _responsivenessCheck = Task.CompletedTask;
     private Exception? _terminationException;
     private long _nextRequestId;
-    private int _abandonedCalls;
+    private uint _nextWorker;
     private int _processId;
     private long _canceledCalls;
     private long _checkedCanceledCalls;
@@ -95,6 +103,18 @@ public sealed class NodeJsHost : IAsyncDisposable
         {
             _concurrencyLimit = new SemaphoreSlim(maxConcurrentCalls, maxConcurrentCalls);
         }
+
+        if (options.WorkerThreads is { } workerThreads)
+        {
+            _workers = new WorkerSlot[workerThreads];
+            for (var i = 0; i < workerThreads; i++)
+            {
+                _workers[i] = new WorkerSlot();
+            }
+        }
+
+        // A reference is bound to the thread that created it
+        _referenceReader = channel => utf8Json => new JSReference(this, channel, ReadReferenceId(utf8Json));
 
         _process = new Process { EnableRaisingEvents = true };
         _process.Exited += (_, _) => _exited.TrySetResult();
@@ -111,13 +131,32 @@ public sealed class NodeJsHost : IAsyncDisposable
     internal bool IsTerminated => Volatile.Read(ref _terminationException) is not null;
 
     /// <summary>Gets the number of canceled calls whose response has not been received yet, so their JavaScript code may still be running.</summary>
-    internal int AbandonedCalls => Volatile.Read(ref _abandonedCalls);
+    /// <remarks>The calls of a worker thread that exited are not counted, as their JavaScript code no longer runs.</remarks>
+    internal int AbandonedCalls
+    {
+        get
+        {
+            if (_workers is null)
+                return _mainChannel?.AbandonedCalls ?? 0;
+
+            var result = 0;
+            lock (_workersLock)
+            {
+                foreach (var slot in _workers)
+                {
+                    result += slot.Channel?.AbandonedCalls ?? 0;
+                }
+            }
+
+            return result;
+        }
+    }
 
     /// <summary>Starts a new Node.js process.</summary>
     /// <exception cref="NodeJsException">The <c>node</c> executable cannot be found, or the process fails to start.</exception>
     /// <param name="options">The options. They are copied, so changing them once the process is started has no effect.</param>
     /// <param name="cancellationToken">A token to cancel the startup.</param>
-    /// <exception cref="ArgumentOutOfRangeException"><see cref="NodeJsHostOptions.MaxConcurrentCalls"/>, <see cref="NodeJsHostOptions.StartupTimeout"/>, or <see cref="NodeJsHostOptions.UnresponsiveTimeout"/> is zero or negative.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><see cref="NodeJsHostOptions.MaxConcurrentCalls"/>, <see cref="NodeJsHostOptions.StartupTimeout"/>, <see cref="NodeJsHostOptions.UnresponsiveTimeout"/>, or <see cref="NodeJsHostOptions.WorkerThreads"/> is zero or negative.</exception>
     public static async Task<NodeJsHost> StartAsync(NodeJsHostOptions? options = null, CancellationToken cancellationToken = default)
     {
         options = (options ?? NodeJsHostOptions.Default).Clone();
@@ -197,10 +236,9 @@ public sealed class NodeJsHost : IAsyncDisposable
     /// <summary>Imports a module, calls one of its exports, and keeps the result in the Node.js process.</summary>
     /// <inheritdoc cref="InvokeAsync(string, string?, IReadOnlyList{JsonNode?}?, CancellationToken)"/>
     /// <returns>A reference to the value returned by the function (awaited if it is a promise), or to the value of the export when it is not a function. Dispose it when the value is no longer needed.</returns>
-    public async Task<JSReference> InvokeReferenceAsync(string module, string? exportName, IReadOnlyList<JsonNode?>? arguments = null, CancellationToken cancellationToken = default)
+    public Task<JSReference> InvokeReferenceAsync(string module, string? exportName, IReadOnlyList<JsonNode?>? arguments = null, CancellationToken cancellationToken = default)
     {
-        var referenceId = await InvokeCoreAsync(module, exportName, arguments, ResultKind.Reference, ReadReferenceId, cancellationToken).ConfigureAwait(false);
-        return new JSReference(this, referenceId);
+        return InvokeCoreAsync(module, exportName, arguments, ResultKind.Reference, _referenceReader, cancellationToken);
     }
 
     /// <summary>Imports a module, calls one of its exports, and keeps the result in the Node.js process. Arguments are serialized using reflection.</summary>
@@ -219,10 +257,9 @@ public sealed class NodeJsHost : IAsyncDisposable
     /// <param name="cancellationToken">A token to stop waiting for the result. The JavaScript code keeps running.</param>
     /// <returns>A reference to the new instance. Dispose it when the instance is no longer needed.</returns>
     /// <exception cref="NodeJsException">The export is not a constructor, the constructor throws, or the Node.js process exits.</exception>
-    public async Task<JSReference> CreateInstanceAsync(string module, string? exportName, IReadOnlyList<JsonNode?>? arguments = null, CancellationToken cancellationToken = default)
+    public Task<JSReference> CreateInstanceAsync(string module, string? exportName, IReadOnlyList<JsonNode?>? arguments = null, CancellationToken cancellationToken = default)
     {
-        var referenceId = await InvokeCoreAsync(module, exportName, arguments, ResultKind.Reference, ReadReferenceId, cancellationToken, construct: true).ConfigureAwait(false);
-        return new JSReference(this, referenceId);
+        return InvokeCoreAsync(module, exportName, arguments, ResultKind.Reference, _referenceReader, cancellationToken, construct: true);
     }
 
     /// <summary>Imports a module, creates an instance of one of its exported classes (<c>new</c>), and keeps the instance in the Node.js process. Arguments are serialized using reflection.</summary>
@@ -331,19 +368,17 @@ public sealed class NodeJsHost : IAsyncDisposable
     /// <summary>Evaluates JavaScript code as the body of an async function, and keeps the result in the Node.js process.</summary>
     /// <inheritdoc cref="EvaluateAsync(string, CancellationToken)"/>
     /// <returns>A reference to the returned value. Dispose it when the value is no longer needed.</returns>
-    public async Task<JSReference> EvaluateReferenceAsync(string code, CancellationToken cancellationToken = default)
+    public Task<JSReference> EvaluateReferenceAsync(string code, CancellationToken cancellationToken = default)
     {
-        var referenceId = await EvaluateCoreAsync(code, hasArguments: false, arguments: null, ResultKind.Reference, ReadReferenceId, cancellationToken).ConfigureAwait(false);
-        return new JSReference(this, referenceId);
+        return EvaluateCoreAsync(code, hasArguments: false, arguments: null, ResultKind.Reference, _referenceReader, cancellationToken);
     }
 
     /// <summary>Evaluates JavaScript code as the body of an async function that receives arguments, and keeps the result in the Node.js process.</summary>
     /// <inheritdoc cref="EvaluateAsync(string, IReadOnlyList{JsonNode?}?, CancellationToken)"/>
     /// <returns>A reference to the returned value. Dispose it when the value is no longer needed.</returns>
-    public async Task<JSReference> EvaluateReferenceAsync(string code, IReadOnlyList<JsonNode?>? arguments, CancellationToken cancellationToken = default)
+    public Task<JSReference> EvaluateReferenceAsync(string code, IReadOnlyList<JsonNode?>? arguments, CancellationToken cancellationToken = default)
     {
-        var referenceId = await EvaluateCoreAsync(code, hasArguments: true, arguments, ResultKind.Reference, ReadReferenceId, cancellationToken).ConfigureAwait(false);
-        return new JSReference(this, referenceId);
+        return EvaluateCoreAsync(code, hasArguments: true, arguments, ResultKind.Reference, _referenceReader, cancellationToken);
     }
 
     /// <summary>Evaluates JavaScript code as the body of an async function that receives arguments, and keeps the result in the Node.js process. Arguments are serialized using reflection.</summary>
@@ -363,10 +398,10 @@ public sealed class NodeJsHost : IAsyncDisposable
 
         Terminate(new ObjectDisposedException(nameof(NodeJsHost)));
 
-        // Closing the socket makes the Node.js process exit
-        if (_stream is not null)
+        // Closing the connection with the main thread makes the Node.js process exit, without restarting the worker threads
+        if (_mainChannel is not null)
         {
-            await _stream.DisposeAsync().ConfigureAwait(false);
+            await _mainChannel.CloseAsync().ConfigureAwait(false);
         }
 
         _watchdogReader?.Dispose();
@@ -375,9 +410,23 @@ public sealed class NodeJsHost : IAsyncDisposable
             await _watchdogStream.DisposeAsync().ConfigureAwait(false);
         }
 
-        if (_readTask is not null)
+        // Stop accepting the connections of the worker threads, then close the connections of the worker threads
+        await _acceptTask.ConfigureAwait(false);
+        _endpoint?.Dispose();
+        var channels = _channels.Keys.ToArray();
+        foreach (var channel in channels)
         {
-            await _readTask.ConfigureAwait(false);
+            await channel.CloseAsync().ConfigureAwait(false);
+        }
+
+        if (_mainChannel is not null)
+        {
+            await _mainChannel.ReadTask.ConfigureAwait(false);
+        }
+
+        foreach (var channel in channels)
+        {
+            await channel.ReadTask.ConfigureAwait(false);
         }
 
         // The host is terminated, so the check completes without waiting for its timeout
@@ -386,7 +435,7 @@ public sealed class NodeJsHost : IAsyncDisposable
         if (IsProcessStarted())
         {
             // When the connection was never established, the process cannot know it must exit
-            if (_stream is null || !await WaitForExitAsync(DisposeExitTimeout, drainOutput: false).ConfigureAwait(false))
+            if (_mainChannel is null || !await WaitForExitAsync(DisposeExitTimeout, drainOutput: false).ConfigureAwait(false))
             {
                 KillProcess();
                 await WaitForExitAsync(ExitTimeout, drainOutput: false).ConfigureAwait(false);
@@ -394,6 +443,7 @@ public sealed class NodeJsHost : IAsyncDisposable
         }
 
         _process.Dispose();
+        _acceptCts.Dispose();
     }
 
     private async Task StartCoreAsync(CancellationToken cancellationToken)
@@ -401,9 +451,25 @@ public sealed class NodeJsHost : IAsyncDisposable
         var nodePath = _options.NodeExecutablePath ?? ExecutableFinder.GetFullExecutablePath("node") ?? throw new NodeJsException("Cannot find the 'node' executable in the PATH. Install Node.js or set NodeJsHostOptions.NodeExecutablePath.");
         var token = Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(32));
 
-        // The watchdog uses a second connection
-        using var endpoint = NodeJsEndpoint.Create(maxConnections: _options.UnresponsiveTimeout is null ? 1 : 2);
+        // The watchdog uses a second connection. Worker threads connect when they start, including when they are restarted, so the endpoint lives as long as the host.
+        var endpoint = NodeJsEndpoint.Create(maxConnections: _workers is not null ? null : _options.UnresponsiveTimeout is null ? 1 : 2);
+        _endpoint = endpoint;
+        try
+        {
+            await StartProcessAsync(nodePath, endpoint, token, cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            if (_workers is null)
+            {
+                _endpoint = null;
+                endpoint.Dispose();
+            }
+        }
+    }
 
+    private async Task StartProcessAsync(string nodePath, NodeJsEndpoint endpoint, string token, CancellationToken cancellationToken)
+    {
         var startInfo = _process.StartInfo;
         startInfo.FileName = nodePath;
         startInfo.WorkingDirectory = _options.WorkingDirectory ?? Environment.CurrentDirectory;
@@ -502,13 +568,14 @@ public sealed class NodeJsHost : IAsyncDisposable
                 throw CreateProcessExitedException("The Node.js process exited before it was ready");
             }
 
-            _stream = await acceptTask.ConfigureAwait(false);
+            var mainChannel = CreateChannel(await acceptTask.ConfigureAwait(false), isMainChannel: true);
+            ProcessHelloMessage(await mainChannel.Hello.WaitAsync(startupCts.Token).ConfigureAwait(false), token);
 
-            var hello = new TaskCompletionSource<byte[]>(TaskCreationOptions.RunContinuationsAsynchronously);
-            _readTask = ReadMessagesAsync(_stream, hello);
-            ProcessHelloMessage(await hello.Task.WaitAsync(startupCts.Token).ConfigureAwait(false), token);
-
-            if (_options.UnresponsiveTimeout is not null)
+            if (_workers is not null)
+            {
+                await StartWorkersAsync(endpoint, token, startupCts.Token).ConfigureAwait(false);
+            }
+            else if (_options.UnresponsiveTimeout is not null)
             {
                 await StartWatchdogAsync(endpoint, token, startupCts.Token).ConfigureAwait(false);
             }
@@ -551,6 +618,9 @@ public sealed class NodeJsHost : IAsyncDisposable
 
         if (options.UnresponsiveTimeout is { } unresponsiveTimeout && (unresponsiveTimeout <= TimeSpan.Zero || unresponsiveTimeout.TotalMilliseconds > int.MaxValue))
             throw new ArgumentOutOfRangeException(nameof(options), unresponsiveTimeout, "NodeJsHostOptions.UnresponsiveTimeout must be greater than zero and less than Int32.MaxValue milliseconds.");
+
+        if (options.WorkerThreads is <= 0)
+            throw new ArgumentOutOfRangeException(nameof(options), options.WorkerThreads, "NodeJsHostOptions.WorkerThreads must be greater than zero.");
     }
 
     /// <summary>Creates a reader that deserializes the result directly from the UTF-8 bytes of the response.</summary>
@@ -567,6 +637,9 @@ public sealed class NodeJsHost : IAsyncDisposable
         var resultOptions = options ?? DefaultResultSerializerOptions;
         return utf8Json => JsonSerializer.Deserialize<T>(utf8Json, resultOptions);
     }
+
+    /// <summary>Uses the same reader whatever the connection the call is sent on.</summary>
+    private static Func<NodeJsChannel, ResultReader<T>> ForAnyChannel<T>(ResultReader<T> readResult) => _ => readResult;
 
     // The JsonElement owns a copy of the bytes, so it remains valid once the buffer that receives messages is reused
     internal static JsonElement ReadJsonElement(ReadOnlySpan<byte> utf8Json) => JsonElement.Parse(utf8Json, UnlimitedDepthDocumentOptions);
@@ -610,10 +683,10 @@ public sealed class NodeJsHost : IAsyncDisposable
         var acceptTask = endpoint.AcceptAsync(acceptCts.Token);
         try
         {
-            await WriteMessageAsync(writer => writer.WriteString("type", "watchdog")).ConfigureAwait(false);
+            await _mainChannel!.WriteMessageAsync(writer => writer.WriteString("type", "watchdog")).ConfigureAwait(false);
 
             // The read loop completes when the process exits, e.g. because the watchdog cannot start
-            if (await Task.WhenAny(acceptTask, _readTask!).ConfigureAwait(false) != acceptTask)
+            if (await Task.WhenAny(acceptTask, _mainChannel.ReadTask).ConfigureAwait(false) != acceptTask)
             {
                 ThrowIfTerminated();
             }
@@ -632,11 +705,268 @@ public sealed class NodeJsHost : IAsyncDisposable
         ValidateHelloMessage(document.RootElement, expectedToken);
     }
 
+    /// <summary>Asks the main thread to start the worker threads, and waits for all of them to connect.</summary>
+    private async Task StartWorkersAsync(NodeJsEndpoint endpoint, string token, CancellationToken cancellationToken)
+    {
+        _acceptTask = AcceptWorkersAsync(endpoint, token);
+        await _mainChannel!.WriteMessageAsync(writer =>
+        {
+            writer.WriteString("type", "workers");
+            writer.WriteNumber("count", _workers!.Length);
+            writer.WriteBoolean("tracking", _options.UnresponsiveTimeout is not null);
+            if (_options.StartupTimeout != Timeout.InfiniteTimeSpan)
+            {
+                writer.WriteNumber("connectTimeout", (long)_options.StartupTimeout.TotalMilliseconds);
+            }
+        }).ConfigureAwait(false);
+
+        // The read loop completes when the process exits, e.g. because a worker thread cannot start
+        Task[] ready;
+        lock (_workersLock)
+        {
+            ready = Array.ConvertAll(_workers!, slot => (Task)slot.Ready.Task);
+        }
+
+        await Task.WhenAny(Task.WhenAll(ready), _mainChannel.ReadTask).WaitAsync(cancellationToken).ConfigureAwait(false);
+        ThrowIfTerminated();
+    }
+
+    /// <summary>Accepts the connections of the worker threads, when they start and each time they are restarted, until the host is terminated.</summary>
+    private async Task AcceptWorkersAsync(NodeJsEndpoint endpoint, string token)
+    {
+        while (true)
+        {
+            Stream stream;
+            try
+            {
+                stream = await endpoint.AcceptAsync(_acceptCts.Token).ConfigureAwait(false);
+            }
+            catch (IOException) when (!_acceptCts.IsCancellationRequested)
+            {
+                // The client disconnected before the connection was accepted
+                continue;
+            }
+            catch (Exception ex) when (ex is OperationCanceledException or ObjectDisposedException or IOException or SocketException)
+            {
+                return;
+            }
+
+            // A client that never sends its handshake must not prevent other worker threads from connecting
+            _ = AttachWorkerAsync(stream, token);
+        }
+    }
+
+    /// <summary>Validates the handshake of a worker thread, then sends calls to it.</summary>
+    private async Task AttachWorkerAsync(Stream stream, string token)
+    {
+        var channel = CreateChannel(stream, isMainChannel: false);
+        var attached = false;
+        try
+        {
+            var hello = await channel.Hello.WaitAsync(_options.StartupTimeout).ConfigureAwait(false);
+            using var document = JsonDocument.Parse(hello);
+            var root = document.RootElement;
+            ValidateHelloMessage(root, token);
+            var worker = root.GetProperty("worker").GetInt32();
+            var generation = root.GetProperty("generation").GetInt32();
+            if (worker >= 0 && worker < _workers!.Length)
+            {
+                lock (_workersLock)
+                {
+                    // A worker thread that restarts always has a new generation, so a connection cannot replace a newer one.
+                    // A connection closed before being attached is terminated, as nothing would fail its calls.
+                    var slot = _workers[worker];
+                    if (!IsTerminated && !channel.IsTerminated && generation > slot.Generation)
+                    {
+                        channel.Worker = worker;
+                        channel.Generation = generation;
+                        slot.Channel = channel;
+                        slot.Generation = generation;
+                        slot.Ready.TrySetResult();
+                        attached = true;
+                    }
+                }
+            }
+        }
+        catch (Exception ex) when (ex is JsonException or NodeJsException or TimeoutException or IOException or KeyNotFoundException or InvalidOperationException or FormatException)
+        {
+        }
+
+        if (!attached)
+        {
+            await channel.CloseAsync().ConfigureAwait(false);
+        }
+    }
+
+    private NodeJsChannel CreateChannel(Stream stream, bool isMainChannel)
+    {
+        var channel = new NodeJsChannel(this, stream);
+        if (isMainChannel)
+        {
+            _mainChannel = channel;
+        }
+
+        _channels[channel] = 0;
+        channel.StartReading();
+        return channel;
+    }
+
+    /// <summary>Called by a channel once its connection is closed.</summary>
+    internal async Task OnChannelClosedAsync(NodeJsChannel channel, Exception? error)
+    {
+        try
+        {
+            if (channel == _mainChannel)
+            {
+                await OnMainChannelClosedAsync(channel, error).ConfigureAwait(false);
+                return;
+            }
+
+            int? worker;
+            lock (_workersLock)
+            {
+                worker = channel.Worker;
+                if (worker is null)
+                {
+                    // A connection whose handshake is not accepted, so it can no longer be attached to a worker thread
+                    channel.Terminate(new NodeJsException("The connection was closed."));
+                }
+                else
+                {
+                    // No new call is sent to the worker thread
+                    ResetSlot(_workers![worker.Value], channel);
+                }
+            }
+
+            if (worker is not null)
+            {
+                await OnWorkerChannelClosedAsync(channel, worker.Value, error).ConfigureAwait(false);
+            }
+        }
+        finally
+        {
+            _channels.TryRemove(channel, out _);
+        }
+    }
+
+    private async Task OnMainChannelClosedAsync(NodeJsChannel channel, Exception? error)
+    {
+        if (!channel.Hello.IsCompleted)
+        {
+            if (!IsTerminated)
+            {
+                await WaitForExitAsync(ExitTimeout, drainOutput: true).ConfigureAwait(false);
+            }
+
+            channel.FailHello(CreateProcessExitedException("The Node.js process closed the connection before it was ready"));
+        }
+
+        if (!IsTerminated)
+        {
+            Exception exception;
+            if (error is JsonException or InvalidOperationException or KeyNotFoundException or FormatException)
+            {
+                exception = new NodeJsException("The Node.js process sent an invalid message.", error);
+            }
+            else
+            {
+                // The connection is lost, most likely because the process exited (e.g. process.exit() or a crash)
+                await WaitForExitAsync(ExitTimeout, drainOutput: true).ConfigureAwait(false);
+                exception = CreateProcessExitedException("The Node.js process exited unexpectedly");
+            }
+
+            Terminate(exception);
+        }
+    }
+
+    /// <summary>Fails the calls of a worker thread whose connection is closed. The main thread restarts the worker thread, which connects again.</summary>
+    private async Task OnWorkerChannelClosedAsync(NodeJsChannel channel, int worker, Exception? error)
+    {
+        // The worker thread stops once its connection is closed, including when it sent an invalid message
+        await channel.CloseAsync().ConfigureAwait(false);
+
+        // The connection is closed before the main thread reports the exit of the worker thread
+        var exitCode = await WaitForWorkerExitAsync(worker, channel.Generation).ConfigureAwait(false);
+        Exception exception;
+        if (Volatile.Read(ref _terminationException) is { } terminationException)
+        {
+            exception = terminationException;
+        }
+        else if (error is JsonException or InvalidOperationException or KeyNotFoundException or FormatException)
+        {
+            exception = new NodeJsException("The Node.js worker thread sent an invalid message.", error);
+        }
+        else
+        {
+            var message = new StringBuilder("The Node.js worker thread exited unexpectedly");
+            if (exitCode is not null)
+            {
+                message.Append(" with exit code ").Append(exitCode.Value);
+            }
+
+            message.Append('.');
+            AppendStandardErrorTail(message);
+
+            // The process did not exit
+            exception = new NodeJsException(message.ToString(), exitCode: null);
+        }
+
+        channel.Terminate(exception);
+    }
+
+    private async Task<int?> WaitForWorkerExitAsync(int worker, int generation)
+    {
+        var key = (worker, generation);
+        var exit = _workerExits.GetOrAdd(key, _ => new TaskCompletionSource<int?>(TaskCreationOptions.RunContinuationsAsynchronously));
+        try
+        {
+            await Task.WhenAny(exit.Task, _terminated.Task).WaitAsync(ExitTimeout).ConfigureAwait(false);
+        }
+        catch (TimeoutException)
+        {
+        }
+
+        _workerExits.TryRemove(key, out _);
+        return exit.Task.IsCompletedSuccessfully ? exit.Task.Result : null;
+    }
+
+    /// <summary>Processes a message of the main thread that is not a response.</summary>
+    internal void OnNotice(NodeJsChannel channel, ReadOnlySpan<byte> message)
+    {
+        if (channel != _mainChannel || _workers is null)
+            throw new JsonException("The message is not a response.");
+
+        var root = JsonElement.Parse(message);
+        if (!root.GetProperty("type").ValueEquals("workerExit"))
+            throw new JsonException("The message is not a known notice.");
+
+        // A worker thread exited, and the main thread restarts it
+        var worker = root.GetProperty("worker").GetInt32();
+        var generation = root.GetProperty("generation").GetInt32();
+        int? exitCode = root.TryGetProperty("exitCode", out var exitCodeElement) && exitCodeElement.ValueKind is JsonValueKind.Number ? exitCodeElement.GetInt32() : null;
+        _workerExits.GetOrAdd((worker, generation), _ => new TaskCompletionSource<int?>(TaskCreationOptions.RunContinuationsAsynchronously)).TrySetResult(exitCode);
+    }
+
+    /// <summary>Stops sending calls to a worker thread, until it is restarted. Must be called while holding <see cref="_workersLock"/>.</summary>
+    private static void ResetSlot(WorkerSlot slot, NodeJsChannel channel)
+    {
+        if (slot.Channel != channel)
+            return;
+
+        slot.Channel = null;
+        slot.Ready = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+    }
+
     private Task<T> InvokeCoreAsync<T>(string module, string? exportName, IReadOnlyList<JsonNode?>? arguments, ResultKind resultKind, ResultReader<T> readResult, CancellationToken cancellationToken, bool construct = false)
+    {
+        return InvokeCoreAsync(module, exportName, arguments, resultKind, ForAnyChannel(readResult), cancellationToken, construct);
+    }
+
+    private Task<T> InvokeCoreAsync<T>(string module, string? exportName, IReadOnlyList<JsonNode?>? arguments, ResultKind resultKind, Func<NodeJsChannel, ResultReader<T>> createReader, CancellationToken cancellationToken, bool construct = false)
     {
         ArgumentNullException.ThrowIfNull(module);
 
-        return SendRequestAsync(writer =>
+        return SendRequestAsync(target: null, arguments, (writer, channel) =>
         {
             writer.WriteString("type", "invoke");
             writer.WriteString("module", module);
@@ -646,28 +976,43 @@ public sealed class NodeJsHost : IAsyncDisposable
                 writer.WriteBoolean("construct", true);
             }
 
-            ArgumentWriter.Write(writer, this, arguments);
-        }, resultKind, readResult, cancellationToken);
+            ArgumentWriter.Write(writer, channel, arguments);
+        }, resultKind, createReader, cancellationToken);
     }
 
     private Task<T> EvaluateCoreAsync<T>(string code, bool hasArguments, IReadOnlyList<JsonNode?>? arguments, ResultKind resultKind, ResultReader<T> readResult, CancellationToken cancellationToken)
     {
+        return EvaluateCoreAsync(code, hasArguments, arguments, resultKind, ForAnyChannel(readResult), cancellationToken);
+    }
+
+    private Task<T> EvaluateCoreAsync<T>(string code, bool hasArguments, IReadOnlyList<JsonNode?>? arguments, ResultKind resultKind, Func<NodeJsChannel, ResultReader<T>> createReader, CancellationToken cancellationToken)
+    {
         ArgumentNullException.ThrowIfNull(code);
 
-        return SendRequestAsync(writer =>
+        return SendRequestAsync(target: null, arguments, (writer, channel) =>
         {
             writer.WriteString("type", "eval");
             writer.WriteString("code", code);
             if (hasArguments)
             {
-                ArgumentWriter.Write(writer, this, arguments);
+                ArgumentWriter.Write(writer, channel, arguments);
             }
-        }, resultKind, readResult, cancellationToken);
+        }, resultKind, createReader, cancellationToken);
     }
 
-    internal Task<T> InvokeMemberAsync<T>(JSReference target, string? memberName, IReadOnlyList<JsonNode?>? arguments, ResultKind resultKind, ResultReader<T> readResult, CancellationToken cancellationToken, bool construct = false)
+    internal Task<T> InvokeMemberAsync<T>(JSReference target, string? memberName, IReadOnlyList<JsonNode?>? arguments, ResultKind resultKind, ResultReader<T> readResult, CancellationToken cancellationToken)
     {
-        return SendRequestAsync(writer =>
+        return InvokeMemberCoreAsync(target, memberName, arguments, resultKind, ForAnyChannel(readResult), construct: false, cancellationToken);
+    }
+
+    internal Task<JSReference> InvokeMemberReferenceAsync(JSReference target, string? memberName, IReadOnlyList<JsonNode?>? arguments, CancellationToken cancellationToken, bool construct = false)
+    {
+        return InvokeMemberCoreAsync(target, memberName, arguments, ResultKind.Reference, _referenceReader, construct, cancellationToken);
+    }
+
+    private Task<T> InvokeMemberCoreAsync<T>(JSReference target, string? memberName, IReadOnlyList<JsonNode?>? arguments, ResultKind resultKind, Func<NodeJsChannel, ResultReader<T>> createReader, bool construct, CancellationToken cancellationToken)
+    {
+        return SendRequestAsync(target, arguments, (writer, channel) =>
         {
             ObjectDisposedException.ThrowIf(target.IsDisposed, target);
             writer.WriteString("type", "invokeReference");
@@ -678,148 +1023,66 @@ public sealed class NodeJsHost : IAsyncDisposable
                 writer.WriteBoolean("construct", true);
             }
 
-            ArgumentWriter.Write(writer, this, arguments);
-        }, resultKind, readResult, cancellationToken);
+            ArgumentWriter.Write(writer, channel, arguments);
+        }, resultKind, createReader, cancellationToken);
     }
 
     internal Task<T> GetReferenceValueAsync<T>(JSReference target, ResultReader<T> readResult, CancellationToken cancellationToken)
     {
-        return SendRequestAsync(writer =>
+        return SendRequestAsync(target, arguments: null, (writer, _) =>
         {
             ObjectDisposedException.ThrowIf(target.IsDisposed, target);
             writer.WriteString("type", "getReference");
             writer.WriteNumber("reference", target.Id);
-        }, ResultKind.Json, readResult, cancellationToken);
+        }, ResultKind.Json, ForAnyChannel(readResult), cancellationToken);
+    }
+
+    /// <summary>Gets information about the state of the thread that keeps the value of <paramref name="target"/>, or of any thread that runs calls, for tests.</summary>
+    internal Task<JsonElement> GetDebugInformationAsync(JSReference? target, CancellationToken cancellationToken)
+    {
+        return SendRequestAsync(target, arguments: null, (writer, _) => writer.WriteString("type", "debug"), ResultKind.Json, ForAnyChannel<JsonElement>(ReadJsonElement), cancellationToken);
     }
 
     /// <summary>Gets information about the state of the Node.js process, for tests.</summary>
-    internal Task<JsonElement> GetDebugInformationAsync(CancellationToken cancellationToken)
-    {
-        return SendRequestAsync(writer => writer.WriteString("type", "debug"), ResultKind.Json, ReadJsonElement, cancellationToken);
-    }
+    internal Task<JsonElement> GetDebugInformationAsync(CancellationToken cancellationToken) => GetDebugInformationAsync(target: null, cancellationToken);
 
     /// <summary>Sends a request that is not valid JSON, for tests.</summary>
     internal Task<JsonElement> SendInvalidRequestAsync(CancellationToken cancellationToken)
     {
-        return SendRequestAsync(writer =>
+        return SendRequestAsync(target: null, arguments: null, (writer, _) =>
         {
             writer.WriteString("type", "debug");
             writer.WritePropertyName("invalid");
 
             // The object is never closed
             writer.WriteRawValue("{", skipInputValidation: true);
-        }, ResultKind.Json, ReadJsonElement, cancellationToken);
+        }, ResultKind.Json, ForAnyChannel<JsonElement>(ReadJsonElement), cancellationToken);
     }
 
-    /// <summary>Releases a value referenced by a <see cref="JSReference"/>, without waiting for the message to be sent.</summary>
-    internal void ReleaseReference(long referenceId)
-    {
-        _ = ReleaseReferenceAsync(referenceId);
-    }
-
-    /// <summary>Releases a value referenced by a <see cref="JSReference"/>. Never throws: when the process is gone, there is nothing to release.</summary>
-    internal async Task ReleaseReferenceAsync(long referenceId)
-    {
-        if (IsTerminated)
-            return;
-
-        try
-        {
-            await WriteMessageAsync(writer =>
-            {
-                writer.WriteString("type", "release");
-                writer.WriteNumber("reference", referenceId);
-            }).ConfigureAwait(false);
-        }
-        catch (Exception ex) when (ex is IOException or ObjectDisposedException or OperationCanceledException)
-        {
-            // The connection is lost, so the process and its values are gone
-        }
-    }
-
-    /// <summary>Writes a message that has no response.</summary>
-    private async Task WriteMessageAsync(Action<Utf8JsonWriter> writeMessage)
-    {
-        PooledBufferWriter? message = SerializeMessage(writeMessage);
-        try
-        {
-            await _writeLock.WaitAsync().ConfigureAwait(false);
-            var writeTask = WriteMessageAndReleaseLockAsync(message);
-            message = null;
-            await writeTask.ConfigureAwait(false);
-        }
-        finally
-        {
-            message?.Dispose();
-        }
-    }
-
-    /// <summary>Serializes a message. The caller must dispose the returned buffer, or pass it to <see cref="WriteMessageAndReleaseLockAsync"/>.</summary>
-    private static PooledBufferWriter SerializeMessage(Action<Utf8JsonWriter> writeMessage)
-    {
-        var buffer = new PooledBufferWriter();
-        try
-        {
-            using (var writer = new Utf8JsonWriter(buffer, MessageWriterOptions))
-            {
-                writer.WriteStartObject();
-                writeMessage(writer);
-                writer.WriteEndObject();
-            }
-
-            // Messages are separated by line breaks. Utf8JsonWriter escapes them in strings, but raw JSON written by a custom converter can contain them as whitespace.
-            if (buffer.WrittenMemory.Span.Contains((byte)'\n'))
-            {
-                var minified = Minify(buffer.WrittenMemory);
-                buffer.Dispose();
-                buffer = minified;
-            }
-
-            buffer.Write("\n"u8);
-            return buffer;
-        }
-        catch
-        {
-            buffer.Dispose();
-            throw;
-        }
-    }
-
-    private static PooledBufferWriter Minify(ReadOnlyMemory<byte> json)
-    {
-        var buffer = new PooledBufferWriter();
-        try
-        {
-            using (var document = JsonDocument.Parse(json, UnlimitedDepthDocumentOptions))
-            using (var writer = new Utf8JsonWriter(buffer, MessageWriterOptions))
-            {
-                document.WriteTo(writer);
-            }
-
-            return buffer;
-        }
-        catch
-        {
-            buffer.Dispose();
-            throw;
-        }
-    }
-
-    private async Task<T> SendRequestAsync<T>(Action<Utf8JsonWriter> writeMessage, ResultKind resultKind, ResultReader<T> readResult, CancellationToken cancellationToken)
+    /// <param name="target">The reference whose value the call uses, if any.</param>
+    /// <param name="arguments">The arguments of the call. With worker threads, the call runs on the worker thread that keeps the values of the references they contain.</param>
+    /// <param name="writeMessage">Writes the message, for the connection it is sent on.</param>
+    /// <param name="resultKind">How the result is returned.</param>
+    /// <param name="createReader">Creates the reader of the result, for the connection the message is sent on.</param>
+    /// <param name="cancellationToken">A token to stop waiting for the result.</param>
+    private async Task<T> SendRequestAsync<T>(JSReference? target, IReadOnlyList<JsonNode?>? arguments, Action<Utf8JsonWriter, NodeJsChannel> writeMessage, ResultKind resultKind, Func<NodeJsChannel, ResultReader<T>> createReader, CancellationToken cancellationToken)
     {
         // A host whose process exited reports the exit even once disposed (e.g. by NodeJsHostPool when it replaces the process), as it is the cause of the failure
         ThrowIfTerminated();
         ObjectDisposedException.ThrowIf(_disposed is 1, this);
         cancellationToken.ThrowIfCancellationRequested();
 
+        // A call that uses a reference runs on the worker thread that keeps the referenced value
+        var owner = _workers is null ? null : ArgumentWriter.FindReferenceChannel(this, target, arguments);
+
         if (_concurrencyLimit is null)
-            return await SendRequestCoreAsync(writeMessage, resultKind, readResult, cancellationToken).ConfigureAwait(false);
+            return await SendRequestCoreAsync(owner, writeMessage, resultKind, createReader, cancellationToken).ConfigureAwait(false);
 
         // The message is serialized once the call can run, so waiting calls do not keep a serialized copy of their arguments
         await _concurrencyLimit.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            return await SendRequestCoreAsync(writeMessage, resultKind, readResult, cancellationToken).ConfigureAwait(false);
+            return await SendRequestCoreAsync(owner, writeMessage, resultKind, createReader, cancellationToken).ConfigureAwait(false);
         }
         finally
         {
@@ -827,99 +1090,101 @@ public sealed class NodeJsHost : IAsyncDisposable
         }
     }
 
-    private async Task<T> SendRequestCoreAsync<T>(Action<Utf8JsonWriter> writeMessage, ResultKind resultKind, ResultReader<T> readResult, CancellationToken cancellationToken)
+    private async Task<T> SendRequestCoreAsync<T>(NodeJsChannel? owner, Action<Utf8JsonWriter, NodeJsChannel> writeMessage, ResultKind resultKind, Func<NodeJsChannel, ResultReader<T>> createReader, CancellationToken cancellationToken)
     {
-        var id = Interlocked.Increment(ref _nextRequestId);
-        PooledBufferWriter? message = SerializeMessage(writer =>
-        {
-            writer.WriteNumber("id", id);
-            switch (resultKind)
-            {
-                case ResultKind.Void:
-                    writer.WriteString("returns", "void");
-                    break;
-                case ResultKind.Reference:
-                    writer.WriteString("returns", "reference");
-                    break;
-            }
-
-            writeMessage(writer);
-        });
-
-        var request = new PendingRequest<T>(readResult, hasResult: resultKind is not ResultKind.Void);
-        _pendingRequests[id] = request;
+        var (channel, slot) = await AcquireChannelAsync(owner, cancellationToken).ConfigureAwait(false);
         try
         {
-            // Terminate sets the exception before failing pending requests, so a request added concurrently is never left pending
-            ThrowIfTerminated();
-
-            await _writeLock.WaitAsync(cancellationToken).ConfigureAwait(false);
-
-            // Once started, the message is always written completely, as a partial message would corrupt the following ones.
-            // Canceling only stops waiting for the write to complete.
-            var writeTask = WriteMessageAndReleaseLockAsync(message);
-            message = null;
-            try
-            {
-                await writeTask.WaitAsync(cancellationToken).ConfigureAwait(false);
-            }
-            // On Windows, disposing the named pipe cancels the pending write, which throws OperationCanceledException
-            catch (Exception ex) when ((writeTask.IsFaulted || writeTask.IsCanceled) && ex is IOException or ObjectDisposedException or OperationCanceledException)
-            {
-                ThrowIfTerminated();
-                throw new NodeJsException("Cannot send the message to the Node.js process.", ex);
-            }
-            catch (OperationCanceledException)
-            {
-                // The write continues in the background. A failure means the connection is lost, which is reported by the read loop.
-                _ = writeTask.ContinueWith(static task => _ = task.Exception, CancellationToken.None, TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
-                AbandonRequest(id);
-                throw;
-            }
-
-            try
-            {
-                return await request.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
-            }
-            catch (OperationCanceledException)
-            {
-                // ProcessResponse releases the value when the response arrives after this point.
-                // When the response is already being processed, the value must be released here.
-                if (!AbandonRequest(id) && resultKind is ResultKind.Reference)
-                {
-                    _ = request.Task.ContinueWith(task =>
-                    {
-                        if (task.Result is long referenceId)
-                        {
-                            ReleaseReference(referenceId);
-                        }
-                    }, CancellationToken.None, TaskContinuationOptions.OnlyOnRanToCompletion | TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
-                }
-
-                throw;
-            }
+            var id = Interlocked.Increment(ref _nextRequestId);
+            return await channel.SendRequestAsync(id, writer => writeMessage(writer, channel), resultKind, createReader(channel), cancellationToken).ConfigureAwait(false);
         }
         finally
         {
-            _pendingRequests.TryRemove(id, out _);
-            message?.Dispose();
+            if (slot is not null)
+            {
+                lock (_workersLock)
+                {
+                    slot.PendingCalls--;
+                }
+            }
         }
     }
 
-    /// <summary>Stops waiting for the response of a request that was sent.</summary>
-    /// <returns><see langword="false"/> when the response is already being processed.</returns>
-    private bool AbandonRequest(long id)
+    /// <summary>Selects the connection a call is sent on: the main thread, the worker thread that keeps the referenced values, or the worker thread with the fewest calls in progress.</summary>
+    /// <returns>The connection, and the worker thread whose pending calls must be decremented once the call completes.</returns>
+    private async ValueTask<(NodeJsChannel Channel, WorkerSlot? Slot)> AcquireChannelAsync(NodeJsChannel? owner, CancellationToken cancellationToken)
     {
-        // The request is added before being removed from the pending requests, so a response received concurrently always finds it in one of them
-        _abandonedRequests[id] = 0;
-        if (!_pendingRequests.TryRemove(id, out _))
+        if (_workers is null)
+            return (_mainChannel!, null);
+
+        if (owner is not null)
         {
-            _abandonedRequests.TryRemove(id, out _);
-            return false;
+            // The values of a worker thread that exited are lost
+            owner.ThrowIfTerminated();
+            lock (_workersLock)
+            {
+                var slot = _workers[owner.Worker!.Value];
+                if (slot.Channel == owner)
+                {
+                    slot.PendingCalls++;
+                    return (owner, slot);
+                }
+            }
+
+            // The worker thread is exiting, so the call fails once its connection is terminated
+            return (owner, null);
         }
 
-        // The call keeps running until its response arrives, and its JavaScript code may block the event loop
-        Interlocked.Increment(ref _abandonedCalls);
+        while (true)
+        {
+            Task ready;
+            lock (_workersLock)
+            {
+                ThrowIfTerminated();
+
+                // Start from a different worker thread each time, so worker threads with the same number of pending calls are used in turn
+                var offset = (int)(_nextWorker++ % (uint)_workers.Length);
+                WorkerSlot? bestSlot = null;
+                var bestLoad = 0;
+                for (var i = 0; i < _workers.Length; i++)
+                {
+                    var slot = _workers[(offset + i) % _workers.Length];
+                    if (slot.Channel is null)
+                        continue;
+
+                    // A canceled call may still be running, e.g. blocking the event loop, so it counts until the worker thread responds
+                    var load = slot.PendingCalls + slot.Channel.AbandonedCalls;
+                    if (bestSlot is null || load < bestLoad)
+                    {
+                        bestSlot = slot;
+                        bestLoad = load;
+                    }
+                }
+
+                if (bestSlot is not null)
+                {
+                    bestSlot.PendingCalls++;
+                    return (bestSlot.Channel!, bestSlot);
+                }
+
+                // Every worker thread is restarting
+                var tasks = new Task[_workers.Length + 1];
+                for (var i = 0; i < _workers.Length; i++)
+                {
+                    tasks[i] = _workers[i].Ready.Task;
+                }
+
+                tasks[^1] = _terminated.Task;
+                ready = Task.WhenAny(tasks);
+            }
+
+            await ready.WaitAsync(cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>Called by a channel when the caller stops waiting for the response of a call.</summary>
+    internal void OnRequestAbandoned()
+    {
         Interlocked.Increment(ref _canceledCalls);
         if (_options.UnresponsiveTimeout is { } timeout)
         {
@@ -933,13 +1198,12 @@ public sealed class NodeJsHost : IAsyncDisposable
                 _responsivenessCheckSignal.Release();
             }
         }
-
-        return true;
     }
 
-    /// <summary>Kills the process when a canceled call blocks its event loop, as it is the only way to stop its JavaScript code. Runs until no canceled call is running.</summary>
+    /// <summary>Kills the process, or terminates the worker thread, when a canceled call blocks its event loop, as it is the only way to stop its JavaScript code. Runs until no canceled call is running.</summary>
     /// <remarks>
-    /// The decision only depends on the watchdog, a thread of the Node.js process that measures for how long the event loop has been running the same turn, and tells which call runs.
+    /// The decision only depends on a thread of the Node.js process that measures for how long the event loop has been running the same turn, and tells which call runs:
+    /// the watchdog thread for the main thread, or the main thread for the worker threads.
     /// It does not depend on the time it takes to exchange messages with the process, which also depends on this process (e.g. a large message being sent, or a busy thread pool).
     /// </remarks>
     private async Task CheckResponsivenessAsync(TimeSpan timeout)
@@ -951,36 +1215,47 @@ public sealed class NodeJsHost : IAsyncDisposable
             var delay = interval;
             try
             {
-                var (runningCall, elapsed) = await GetRunningCallAsync().ConfigureAwait(false);
-                if (_abandonedRequests.ContainsKey(runningCall))
+                var blocked = false;
+                foreach (var (channel, runningCall, elapsed) in await GetRunningCallsAsync().ConfigureAwait(false))
                 {
+                    if (!channel.IsAbandoned(runningCall))
+                        continue;
+
                     if (elapsed >= timeout)
                     {
-                        Terminate(new NodeJsException($"The Node.js process was killed, as a canceled call blocked its event loop for more than {timeout}, e.g. with an infinite loop."));
-                        KillProcess();
-                        return;
+                        if (_workers is null)
+                        {
+                            Terminate(new NodeJsException($"The Node.js process was killed, as a canceled call blocked its event loop for more than {timeout}, e.g. with an infinite loop."));
+                            KillProcess();
+                            return;
+                        }
+
+                        await TerminateWorkerAsync(channel, timeout).ConfigureAwait(false);
+                        continue;
                     }
 
                     // Check again as soon as the call may have blocked the event loop for longer than the timeout
+                    blocked = true;
                     if (timeout - elapsed < delay)
                     {
                         delay = timeout - elapsed;
                     }
                 }
-                else
+
+                if (!blocked)
                 {
-                    // No canceled call blocks the event loop now
+                    // No canceled call blocks an event loop now
                     Interlocked.Exchange(ref _checkedCanceledCalls, canceledCalls);
                 }
             }
-            catch (Exception ex) when (ex is ObjectDisposedException or IOException or OperationCanceledException)
+            catch (Exception ex) when (ex is ObjectDisposedException or IOException or OperationCanceledException or NodeJsException)
             {
                 // The process exited, or the host is disposed
                 return;
             }
             catch (Exception ex) when (ex is JsonException or KeyNotFoundException or InvalidOperationException or FormatException)
             {
-                // The watchdog sent an invalid response, so the process cannot be checked
+                // The process sent an invalid response, so it cannot be checked
                 Terminate(new NodeJsException("The Node.js process sent an invalid message.", ex));
                 KillProcess();
                 return;
@@ -1001,16 +1276,65 @@ public sealed class NodeJsHost : IAsyncDisposable
         }
     }
 
-    /// <summary>Gets the identifier of the call whose code runs on the main thread of the Node.js process (0 when its event loop is idle, -1 when the code does not belong to a call), and for how long its event loop has been running the same turn.</summary>
-    /// <remarks>The watchdog answers even when the event loop is blocked. When the whole process is unresponsive (e.g. suspended), this waits until it responds or exits.</remarks>
-    private async Task<(long RunningCall, TimeSpan Elapsed)> GetRunningCallAsync()
+    /// <summary>Gets the identifier of the call whose code runs on each thread that runs calls (0 when its event loop is idle, -1 when the code does not belong to a call), and for how long its event loop has been running the same turn.</summary>
+    /// <remarks>The main thread, or the watchdog thread when the calls run on the main thread, answers even when an event loop is blocked. When the whole process is unresponsive (e.g. suspended), this waits until it responds or exits.</remarks>
+    private async Task<List<(NodeJsChannel Channel, long RunningCall, TimeSpan Elapsed)>> GetRunningCallsAsync()
     {
-        await _watchdogStream!.WriteAsync(WatchdogRequest).ConfigureAwait(false);
-        await _watchdogStream.FlushAsync().ConfigureAwait(false);
-        var response = await _watchdogReader!.ReadLineAsync().ConfigureAwait(false) ?? throw new IOException("The watchdog connection is closed.");
-        using var document = JsonDocument.Parse(response);
-        var root = document.RootElement;
-        return (root.GetProperty("running").GetInt64(), TimeSpan.FromMilliseconds(root.GetProperty("elapsed").GetInt64()));
+        var result = new List<(NodeJsChannel Channel, long RunningCall, TimeSpan Elapsed)>();
+        if (_workers is null)
+        {
+            await _watchdogStream!.WriteAsync(WatchdogRequest).ConfigureAwait(false);
+            await _watchdogStream.FlushAsync().ConfigureAwait(false);
+            var response = await _watchdogReader!.ReadLineAsync().ConfigureAwait(false) ?? throw new IOException("The watchdog connection is closed.");
+            using var document = JsonDocument.Parse(response);
+            var root = document.RootElement;
+            result.Add((_mainChannel!, root.GetProperty("running").GetInt64(), TimeSpan.FromMilliseconds(root.GetProperty("elapsed").GetInt64())));
+            return result;
+        }
+
+        // The main thread does not run calls, so it answers even when the event loop of a worker thread is blocked
+        var id = Interlocked.Increment(ref _nextRequestId);
+        var calls = await _mainChannel!.SendRequestAsync(id, writer => writer.WriteString("type", "running"), ResultKind.Json, ReadJsonElement, CancellationToken.None).ConfigureAwait(false);
+        foreach (var call in calls.EnumerateArray())
+        {
+            var worker = call.GetProperty("worker").GetInt32();
+            var generation = call.GetProperty("generation").GetInt32();
+            if (worker < 0 || worker >= _workers.Length)
+                throw new JsonException("The worker thread does not exist.");
+
+            NodeJsChannel? channel;
+            lock (_workersLock)
+            {
+                channel = _workers[worker].Channel;
+            }
+
+            // A worker thread that is restarting runs no call
+            if (channel is not null && channel.Generation == generation)
+            {
+                result.Add((channel, call.GetProperty("running").GetInt64(), TimeSpan.FromMilliseconds(call.GetProperty("elapsed").GetInt64())));
+            }
+        }
+
+        return result;
+    }
+
+    /// <summary>Terminates a worker thread blocked by a canceled call. Its calls fail, and the main thread restarts it.</summary>
+    private async Task TerminateWorkerAsync(NodeJsChannel channel, TimeSpan timeout)
+    {
+        channel.Terminate(new NodeJsException($"The Node.js worker thread was terminated, as a canceled call blocked its event loop for more than {timeout}, e.g. with an infinite loop.", exitCode: null));
+        lock (_workersLock)
+        {
+            ResetSlot(_workers![channel.Worker!.Value], channel);
+        }
+
+        // The worker thread cannot process its connection being closed while its event loop is blocked, so the main thread terminates it
+        await _mainChannel!.WriteMessageAsync(writer =>
+        {
+            writer.WriteString("type", "terminateWorker");
+            writer.WriteNumber("worker", channel.Worker!.Value);
+            writer.WriteNumber("generation", channel.Generation);
+        }).ConfigureAwait(false);
+        await channel.CloseAsync().ConfigureAwait(false);
     }
 
     /// <summary>Waits until the process is found not blocked by a canceled call after the last canceled call, or the check stops (e.g. when the process is killed), for tests.</summary>
@@ -1023,251 +1347,42 @@ public sealed class NodeJsHost : IAsyncDisposable
         }
     }
 
-    /// <summary>Writes a message, then releases the write lock and the message buffer.</summary>
-    private async Task WriteMessageAndReleaseLockAsync(PooledBufferWriter message)
-    {
-        try
-        {
-            await _stream!.WriteAsync(message.WrittenMemory, CancellationToken.None).ConfigureAwait(false);
-            await _stream.FlushAsync(CancellationToken.None).ConfigureAwait(false);
-        }
-        finally
-        {
-            _writeLock.Release();
-            message.Dispose();
-        }
-    }
-
-    private async Task ReadMessagesAsync(Stream stream, TaskCompletionSource<byte[]> hello)
-    {
-        Exception? error = null;
-
-        // Messages are read as UTF-8 bytes and parsed in place, so a large result is not converted to a string, and only the parsed result is allocated.
-        // Messages are separated by a line break, which JSON.stringify never writes in a value.
-        var buffer = ArrayPool<byte>.Shared.Rent(ReadBufferSize);
-        try
-        {
-            var messageStart = 0;
-            var dataEnd = 0;
-            while (true)
-            {
-                if (dataEnd == buffer.Length)
-                {
-                    if (messageStart > 0)
-                    {
-                        // Move the incomplete message to the start of the buffer
-                        buffer.AsSpan(messageStart, dataEnd - messageStart).CopyTo(buffer);
-                        dataEnd -= messageStart;
-                        messageStart = 0;
-                    }
-                    else
-                    {
-                        // The buffer grows exponentially, so a large message is copied a constant number of times on average
-                        if (buffer.Length == Array.MaxLength)
-                            throw new InvalidOperationException("The message is too large.");
-
-                        var newBuffer = ArrayPool<byte>.Shared.Rent((int)Math.Min(buffer.Length * 2L, Array.MaxLength));
-                        buffer.AsSpan(0, dataEnd).CopyTo(newBuffer);
-                        ArrayPool<byte>.Shared.Return(buffer);
-                        buffer = newBuffer;
-                    }
-                }
-
-                var bytesRead = await stream.ReadAsync(buffer.AsMemory(dataEnd)).ConfigureAwait(false);
-                if (bytesRead is 0)
-                    break;
-
-                // Only the new bytes are searched for line breaks, so a message split into many chunks is read in linear time
-                var searchStart = dataEnd;
-                dataEnd += bytesRead;
-                int index;
-                while ((index = buffer.AsSpan(searchStart, dataEnd - searchStart).IndexOf((byte)'\n')) >= 0)
-                {
-                    var messageEnd = searchStart + index;
-                    var message = buffer.AsSpan(messageStart, messageEnd - messageStart);
-
-                    // The first message is the handshake, validated by StartCoreAsync
-                    if (!hello.Task.IsCompleted)
-                    {
-                        hello.TrySetResult(message.ToArray());
-                    }
-                    else
-                    {
-                        ProcessResponse(message);
-                    }
-
-                    messageStart = searchStart = messageEnd + 1;
-                }
-
-                if (messageStart == dataEnd)
-                {
-                    messageStart = dataEnd = 0;
-
-                    // Do not keep the large buffer needed by a large message
-                    if (buffer.Length > ReadBufferSize)
-                    {
-                        ArrayPool<byte>.Shared.Return(buffer);
-                        buffer = ArrayPool<byte>.Shared.Rent(ReadBufferSize);
-                    }
-                }
-            }
-        }
-        catch (Exception ex) when (ex is IOException or ObjectDisposedException or OperationCanceledException or JsonException or InvalidOperationException or KeyNotFoundException or FormatException)
-        {
-            error = ex;
-        }
-        finally
-        {
-            ArrayPool<byte>.Shared.Return(buffer);
-        }
-
-        if (!hello.Task.IsCompleted)
-        {
-            if (Volatile.Read(ref _terminationException) is null)
-            {
-                await WaitForExitAsync(ExitTimeout, drainOutput: true).ConfigureAwait(false);
-            }
-
-            hello.TrySetException(CreateProcessExitedException("The Node.js process closed the connection before it was ready"));
-        }
-
-        if (Volatile.Read(ref _terminationException) is null)
-        {
-            Exception exception;
-            if (error is JsonException or InvalidOperationException or KeyNotFoundException or FormatException)
-            {
-                exception = new NodeJsException("The Node.js process sent an invalid message.", error);
-            }
-            else
-            {
-                // The connection is lost, most likely because the process exited (e.g. process.exit() or a crash)
-                await WaitForExitAsync(ExitTimeout, drainOutput: true).ConfigureAwait(false);
-                exception = CreateProcessExitedException("The Node.js process exited unexpectedly");
-            }
-
-            Terminate(exception);
-        }
-    }
-
-    // Responses always start with the identifier of the request, followed by at most one property: {"id":1,"result":...}
-    private void ProcessResponse(ReadOnlySpan<byte> message)
-    {
-        var reader = new Utf8JsonReader(message);
-        if (!reader.Read() || reader.TokenType is not JsonTokenType.StartObject ||
-            !reader.Read() || reader.TokenType is not JsonTokenType.PropertyName || !reader.ValueTextEquals("id"u8) ||
-            !reader.Read())
-        {
-            throw new JsonException("The response does not start with the identifier of the request.");
-        }
-
-        var id = reader.GetInt64();
-        if (!reader.Read())
-            throw new JsonException("The response is incomplete.");
-
-        // A void call has no result
-        if (reader.TokenType is JsonTokenType.EndObject)
-        {
-            if (TryRemoveRequest(id, out var request))
-            {
-                request.SetNoResult();
-            }
-
-            return;
-        }
-
-        if (reader.TokenType is not JsonTokenType.PropertyName)
-            throw new JsonException("The response is invalid.");
-
-        // The value is the rest of the message, so it is parsed only once, directly by the reader of the request.
-        // Parsing fails when the value is not exactly one JSON value, for instance when another property follows.
-        var valueEnd = message.LastIndexOf((byte)'}');
-        if (valueEnd < reader.BytesConsumed)
-            throw new JsonException("The response is incomplete.");
-
-        var value = message[(int)reader.BytesConsumed..valueEnd];
-
-        // A request is only removed once the response is known to be valid, so it is never left pending when the connection is terminated.
-        // Reading the result cannot terminate the connection, as its failure is reported to the caller.
-        if (reader.ValueTextEquals("result"u8) || reader.ValueTextEquals("reference"u8))
-        {
-            if (TryRemoveRequest(id, out var request))
-            {
-                request.SetResult(value);
-            }
-            else if (reader.ValueTextEquals("reference"u8))
-            {
-                // The value kept for the caller is no longer needed
-                ReleaseReference(ReadReferenceId(value));
-            }
-        }
-        else if (reader.ValueTextEquals("error"u8))
-        {
-            var exception = CreateJavaScriptException(JsonElement.Parse(value));
-            if (TryRemoveRequest(id, out var request))
-            {
-                request.SetException(exception);
-            }
-        }
-        else
-        {
-            throw new JsonException("The response contains an unexpected property.");
-        }
-    }
-
-    // The cause of the error, if any, is the inner exception. The depth of the causes is bounded by the Node.js process.
-    private static NodeJsException CreateJavaScriptException(JsonElement error)
-    {
-        var name = GetStringOrNull(error, "name");
-        var message = GetStringOrNull(error, "message");
-        var cause = error.TryGetProperty("cause", out var causeElement) && causeElement.ValueKind is JsonValueKind.Object ? CreateJavaScriptException(causeElement) : null;
-        return new NodeJsException(name is null ? message ?? "" : $"{name}: {message}", name, GetStringOrNull(error, "stack"), GetStringOrNull(error, "code"), cause);
-
-        static string? GetStringOrNull(JsonElement element, string propertyName)
-        {
-            return element.TryGetProperty(propertyName, out var value) && value.ValueKind is JsonValueKind.String ? value.GetString() : null;
-        }
-    }
-
-    /// <summary>Removes the request answered by a response.</summary>
-    /// <returns><see langword="false"/> when the caller stopped waiting (see <see cref="AbandonRequest"/>).</returns>
-    private bool TryRemoveRequest(long id, [NotNullWhen(true)] out PendingRequest? request)
-    {
-        if (_pendingRequests.TryRemove(id, out request))
-            return true;
-
-        // The caller stopped waiting, and the call is no longer running
-        if (_abandonedRequests.TryRemove(id, out _))
-        {
-            Interlocked.Decrement(ref _abandonedCalls);
-        }
-
-        return false;
-    }
-
     private void Terminate(Exception exception)
     {
         if (Interlocked.CompareExchange(ref _terminationException, exception, comparand: null) is not null)
             return;
 
-        foreach (var (_, request) in _pendingRequests)
+        foreach (var (channel, _) in _channels)
         {
-            request.SetException(exception);
+            channel.Terminate(exception);
         }
 
-        // Stop the responsiveness check
+        _terminated.TrySetResult();
+
+        // Stop accepting the connections of the worker threads, and the responsiveness check
+        _acceptCts.Cancel();
         _responsivenessCheckSignal.Release();
     }
 
     private void ThrowIfTerminated()
     {
         var exception = Volatile.Read(ref _terminationException);
+        if (exception is not null)
+        {
+            ThrowTerminationException(exception);
+        }
+    }
+
+    /// <summary>Throws the exception of a call made once the host or one of its connections is terminated by <paramref name="exception"/>.</summary>
+    [DoesNotReturn]
+    internal void ThrowTerminationException(Exception exception)
+    {
         ObjectDisposedException.ThrowIf(exception is ObjectDisposedException, this);
 
         if (exception is NodeJsException nodeJsException)
             throw new NodeJsException(nodeJsException.Message, nodeJsException.ExitCode);
 
-        if (exception is not null)
-            throw new NodeJsException(exception.Message, exception);
+        throw new NodeJsException(exception.Message, exception);
     }
 
     private NodeJsException CreateProcessExitedException(string message)
@@ -1280,19 +1395,23 @@ public sealed class NodeJsHost : IAsyncDisposable
         }
 
         result.Append('.');
+        AppendStandardErrorTail(result);
+        return new NodeJsException(result.ToString(), exitCode);
+    }
+
+    private void AppendStandardErrorTail(StringBuilder message)
+    {
         lock (_standardErrorTail)
         {
             if (_standardErrorTail.Count > 0)
             {
-                result.AppendLine().Append("Standard error:");
+                message.AppendLine().Append("Standard error:");
                 foreach (var line in _standardErrorTail)
                 {
-                    result.AppendLine().Append(line);
+                    message.AppendLine().Append(line);
                 }
             }
         }
-
-        return new NodeJsException(result.ToString(), exitCode);
     }
 
     // Process.WaitForExitAsync also waits for the redirected output to be closed. A child process of Node.js that
@@ -1341,6 +1460,22 @@ public sealed class NodeJsHost : IAsyncDisposable
         {
             return false;
         }
+    }
+
+    /// <summary>A worker thread that runs calls. It is restarted with a new connection when it exits.</summary>
+    private sealed class WorkerSlot
+    {
+        /// <summary>Gets or sets the connection with the worker thread, or <see langword="null"/> while it is restarting.</summary>
+        public NodeJsChannel? Channel;
+
+        /// <summary>Gets or sets the generation of the last connection of the worker thread.</summary>
+        public int Generation;
+
+        /// <summary>Gets or sets the number of calls sent to the worker thread that are waiting for their response.</summary>
+        public int PendingCalls;
+
+        /// <summary>Gets or sets a task that completes once the worker thread is connected.</summary>
+        public TaskCompletionSource Ready = new(TaskCreationOptions.RunContinuationsAsynchronously);
     }
 
     // The script is sent on the standard input instead of the command line, so its size is not limited by the maximum length of a command line

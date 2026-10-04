@@ -9,7 +9,7 @@ namespace Meziantou.Framework.NodeJs;
 /// <summary>Runs JavaScript code on a fixed number of Node.js processes, so CPU-bound code can run in parallel.</summary>
 /// <remarks>
 /// <para>Each call is sent to the host with the fewest calls in progress, including canceled calls whose JavaScript code has not completed. When <see cref="NodeJsHostOptions.MaxConcurrentCalls"/> is set, calls wait in the pool until a host can run them, so a host busy with a long call does not delay the following calls. Hosts do not share state: values stored on <c>globalThis</c> are only visible to calls running on the same host. Use <see cref="RunAsync{T}(Func{NodeJsHost, Task{T}}, CancellationToken)"/> to run several calls on the same host.</para>
-/// <para>When a Node.js process exits, its host is replaced by a new one the next time a host is selected. Set <see cref="NodeJsHostOptions.UnresponsiveTimeout"/> to also replace a process whose event loop is blocked by a canceled call.</para>
+/// <para>When a Node.js process exits, its host is replaced by a new one the next time a host is selected. Set <see cref="NodeJsHostOptions.UnresponsiveTimeout"/> to also replace a process whose event loop is blocked by a canceled call. With <see cref="NodeJsHostOptions.WorkerThreads"/>, each process runs the calls on several worker threads, and only the worker thread blocked by a canceled call is restarted.</para>
 /// </remarks>
 /// <example>
 /// <code>
@@ -51,7 +51,7 @@ public sealed class NodeJsHostPool : IAsyncDisposable
     /// <param name="options">The options used to start each process. They are copied, so changing them once the pool is started has no effect, including on the processes that replace the ones that exit.</param>
     /// <param name="cancellationToken">A token to cancel the startup.</param>
     /// <exception cref="NodeJsException">A Node.js process fails to start.</exception>
-    /// <exception cref="ArgumentOutOfRangeException"><paramref name="size"/>, <see cref="NodeJsHostOptions.MaxConcurrentCalls"/>, <see cref="NodeJsHostOptions.StartupTimeout"/>, or <see cref="NodeJsHostOptions.UnresponsiveTimeout"/> is zero or negative.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="size"/>, <see cref="NodeJsHostOptions.MaxConcurrentCalls"/>, <see cref="NodeJsHostOptions.StartupTimeout"/>, <see cref="NodeJsHostOptions.UnresponsiveTimeout"/>, or <see cref="NodeJsHostOptions.WorkerThreads"/> is zero or negative.</exception>
     public static async Task<NodeJsHostPool> StartAsync(int size, NodeJsHostOptions? options = null, CancellationToken cancellationToken = default)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(size);

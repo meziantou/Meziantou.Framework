@@ -143,6 +143,7 @@ namespace Meziantou.Framework.NodeJs
         public System.TimeSpan StartupTimeout { get => throw null; set { } }
         public int? MaxConcurrentCalls { get => throw null; set { } }
         public System.TimeSpan? UnresponsiveTimeout { get => throw null; set { } }
+        public int? WorkerThreads { get => throw null; set { } }
         public System.Action<string>? StandardOutputReceived { get => throw null; set { } }
         public System.Action<string>? StandardErrorReceived { get => throw null; set { } }
     }

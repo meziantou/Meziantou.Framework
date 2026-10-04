@@ -1932,6 +1932,7 @@ public sealed partial class NodeJsHostTests
             StartupTimeout = TimeSpan.FromSeconds(1),
             MaxConcurrentCalls = 2,
             UnresponsiveTimeout = TimeSpan.FromSeconds(3),
+            WorkerThreads = 4,
             StandardOutputReceived = standardOutput,
             StandardErrorReceived = standardError,
         };
@@ -1948,6 +1949,7 @@ public sealed partial class NodeJsHostTests
         Assert.Equal(TimeSpan.FromSeconds(1), clone.StartupTimeout);
         Assert.Equal(2, clone.MaxConcurrentCalls);
         Assert.Equal(TimeSpan.FromSeconds(3), clone.UnresponsiveTimeout);
+        Assert.Equal(4, clone.WorkerThreads);
         Assert.Same(standardOutput, clone.StandardOutputReceived);
         Assert.Same(standardError, clone.StandardErrorReceived);
         Assert.Equal(["--a"], clone.NodeArguments);
@@ -1956,7 +1958,7 @@ public sealed partial class NodeJsHostTests
         Assert.Null(clone.EnvironmentVariables["B"]);
 
         // Fails when a property is added without being copied by Clone
-        Assert.HasCount(9, typeof(NodeJsHostOptions).GetProperties());
+        Assert.HasCount(10, typeof(NodeJsHostOptions).GetProperties());
     }
 
     [Fact]
@@ -2039,6 +2041,224 @@ public sealed partial class NodeJsHostTests
         Assert.NotEqual(blockedProcessId, processId);
     }
 
+    [Fact]
+    public async Task WorkerThreads_RunsCpuBoundCallsInParallel()
+    {
+        await using var temporaryDirectory = TemporaryDirectory.Create();
+        var node = await StartNodeAsync(new NodeJsHostOptions { WorkerThreads = 2 });
+
+        // Each call blocks its event loop until both calls have started, which is only possible when they run on different threads
+        var code = CreateBarrierCode(temporaryDirectory.GetFullPath("barrier.txt"), count: 2, "[process.pid, require('node:worker_threads').threadId, require('node:worker_threads').isMainThread]");
+        var results = await Task.WhenAll(node.EvaluateAsync(code, XunitCancellationToken), node.EvaluateAsync(code, XunitCancellationToken));
+
+        Assert.All(results, result => Assert.Equal(node.ProcessId, result[0].GetInt32()));
+        Assert.All(results, result => Assert.False(result[2].GetBoolean()));
+        Assert.NotEqual(results[0][1].GetInt32(), results[1][1].GetInt32());
+
+        using var process = Process.GetProcessById(node.ProcessId);
+        await node.DisposeAsync();
+        Assert.True(process.HasExited);
+        await Assert.ThrowsAsync<ObjectDisposedException>(() => node.EvaluateAsync("return 1;", XunitCancellationToken));
+    }
+
+    [Fact]
+    public async Task WorkerThreads_StateIsPerWorkerThread()
+    {
+        await using var temporaryDirectory = TemporaryDirectory.Create();
+        await using var node = await StartNodeAsync(new NodeJsHostOptions { WorkerThreads = 2 });
+        var code = CreateBarrierCode(temporaryDirectory.GetFullPath("barrier.txt"), count: 2, "globalThis.marker = require('node:worker_threads').threadId");
+        await Task.WhenAll(node.EvaluateAsync(code, XunitCancellationToken), node.EvaluateAsync(code, XunitCancellationToken));
+
+        var threadIds = new HashSet<int>();
+        for (var i = 0; i < 10; i++)
+        {
+            var result = await node.EvaluateAsync("return [require('node:worker_threads').threadId, globalThis.marker];", XunitCancellationToken);
+            Assert.Equal(result[0].GetInt32(), result[1].GetInt32());
+            threadIds.Add(result[0].GetInt32());
+        }
+
+        Assert.HasCount(2, threadIds);
+    }
+
+    [Fact]
+    public async Task WorkerThreads_Reference_RunsOnItsWorkerThread()
+    {
+        await using var temporaryDirectory = TemporaryDirectory.Create();
+        await using var node = await StartNodeAsync(new NodeJsHostOptions { WorkerThreads = 2 });
+        var (first, second) = await CreateReferencePerWorkerThreadAsync(node, temporaryDirectory.GetFullPath("barrier.txt"));
+        await using var firstReference = first;
+        await using var secondReference = second;
+
+        foreach (var reference in new[] { first, second })
+        {
+            var threadId = (await reference.GetValueAsync(XunitCancellationToken)).GetProperty("threadId").GetInt32();
+            for (var i = 0; i < 5; i++)
+            {
+                Assert.Equal(threadId, (await node.EvaluateAsync("return [args[0].threadId, require('node:worker_threads').threadId];", [reference], XunitCancellationToken))[1].GetInt32());
+                Assert.Equal(threadId, (await node.EvaluateAsync("return require('node:worker_threads').threadId;", [new JsonObject { ["value"] = reference }], XunitCancellationToken)).GetInt32());
+                Assert.Equal(threadId, (await reference.InvokeAsync("currentThreadId", cancellationToken: XunitCancellationToken)).GetInt32());
+
+                await using var self = await reference.InvokeReferenceAsync("self", cancellationToken: XunitCancellationToken);
+                Assert.Equal(threadId, (await self.InvokeAsync("currentThreadId", cancellationToken: XunitCancellationToken)).GetInt32());
+
+                await using var instance = await reference.CreateInstanceAsync("Child", cancellationToken: XunitCancellationToken);
+                Assert.Equal(threadId, (await instance.GetValueAsync(XunitCancellationToken)).GetProperty("threadId").GetInt32());
+            }
+        }
+
+        // The value is released on the worker thread that keeps it
+        var count = await GetReferenceCountAsync(node, first);
+        var extra = await first.InvokeReferenceAsync("self", cancellationToken: XunitCancellationToken);
+        Assert.Equal(count + 1, await GetReferenceCountAsync(node, first));
+        await extra.DisposeAsync();
+        await WaitUntilAsync(async () => await GetReferenceCountAsync(node, first) == count);
+    }
+
+    [Fact]
+    public async Task WorkerThreads_ReferencesOfDifferentWorkerThreads_Throws()
+    {
+        await using var temporaryDirectory = TemporaryDirectory.Create();
+        await using var node = await StartNodeAsync(new NodeJsHostOptions { WorkerThreads = 2 });
+        var (first, second) = await CreateReferencePerWorkerThreadAsync(node, temporaryDirectory.GetFullPath("barrier.txt"));
+        await using var firstReference = first;
+        await using var secondReference = second;
+        await using var otherNode = await StartNodeAsync();
+        await using var otherReference = await otherNode.EvaluateReferenceAsync("return {};", XunitCancellationToken);
+
+        var arguments = await Assert.ThrowsAsync<ArgumentException>(() => node.EvaluateAsync("return 1;", [first, new JsonObject { ["value"] = second }], XunitCancellationToken));
+        var target = await Assert.ThrowsAsync<ArgumentException>(() => first.InvokeAsync("currentThreadId", [second], XunitCancellationToken));
+        var otherProcess = await Assert.ThrowsAsync<ArgumentException>(() => node.EvaluateAsync("return 1;", [otherReference], XunitCancellationToken));
+
+        Assert.Equal("arguments", arguments.ParamName);
+        Assert.Equal("arguments", target.ParamName);
+        Assert.Equal("arguments", otherProcess.ParamName);
+        Assert.Contains("different worker threads", arguments.Message);
+        Assert.Contains("another Node.js process", otherProcess.Message);
+    }
+
+    [Fact]
+    public async Task WorkerThreads_UnresponsiveTimeout_TerminatesOnlyBlockedWorkerThread()
+    {
+        await using var temporaryDirectory = TemporaryDirectory.Create();
+        var output = new ConcurrentQueue<string>();
+        await using var node = await StartNodeAsync(new NodeJsHostOptions { WorkerThreads = 2, UnresponsiveTimeout = TimeSpan.FromMilliseconds(500), StandardOutputReceived = output.Enqueue });
+        using var process = Process.GetProcessById(node.ProcessId);
+        var (blocked, other) = await CreateReferencePerWorkerThreadAsync(node, temporaryDirectory.GetFullPath("barrier.txt"));
+        await using var blockedReference = blocked;
+        await using var otherReference = other;
+        var otherThreadId = (await other.GetValueAsync(XunitCancellationToken)).GetProperty("threadId").GetInt32();
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(XunitCancellationToken);
+
+        var blocking = node.EvaluateVoidAsync(BlockingCode, [blocked], cts.Token);
+        await WaitUntilAsync(() => output.Contains("blocked"));
+        var running = node.EvaluateAsync("await new Promise(r => setTimeout(r, 1000)); return require('node:worker_threads').threadId;", XunitCancellationToken);
+        var queued = blocked.GetValueAsync(XunitCancellationToken);
+        await cts.CancelAsync();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => blocking);
+        await node.WaitForResponsivenessCheckAsync();
+
+        var queuedException = await Assert.ThrowsAsync<NodeJsException>(() => queued);
+        Assert.Contains("a canceled call blocked its event loop", queuedException.Message);
+        Assert.Null(queuedException.ExitCode);
+        Assert.Equal(otherThreadId, (await running).GetInt32());
+        Assert.Equal(otherThreadId, (await other.GetValueAsync(XunitCancellationToken)).GetProperty("threadId").GetInt32());
+        var referenceException = await Assert.ThrowsAsync<NodeJsException>(() => blocked.GetValueAsync(XunitCancellationToken));
+        Assert.Contains("a canceled call blocked its event loop", referenceException.Message);
+
+        // The worker thread is restarted, so calls run on two worker threads again
+        await WaitUntilAsync(async () => (await node.EvaluateAsync("return require('node:worker_threads').threadId;", XunitCancellationToken)).GetInt32() != otherThreadId);
+        Assert.False(process.HasExited);
+        Assert.Equal(process.Id, node.ProcessId);
+    }
+
+    [Fact]
+    public async Task WorkerThreads_UnresponsiveTimeout_DoesNotTerminateWorkerThreadBusyWithCallsThatAreNotCanceled()
+    {
+        var output = new ConcurrentQueue<string>();
+        await using var node = await StartNodeAsync(new NodeJsHostOptions { WorkerThreads = 1, UnresponsiveTimeout = TimeSpan.FromMilliseconds(500), StandardOutputReceived = output.Enqueue });
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(XunitCancellationToken);
+        var threadId = (await node.EvaluateAsync("return require('node:worker_threads').threadId;", XunitCancellationToken)).GetInt32();
+
+        // The canceled call only awaits a timer, while the calls that are not canceled keep the event loop busy for longer than the timeout
+        var canceled = node.EvaluateVoidAsync("require('node:fs').writeSync(1, 'waiting\\n'); await new Promise(r => setTimeout(r, 60_000));", cts.Token);
+        await WaitUntilAsync(() => output.Contains("waiting"));
+        var busy = Enumerable.Range(0, 3).Select(_ => node.EvaluateAsync("require('node:fs').writeSync(1, 'busy\\n'); const end = Date.now() + 1000; while (Date.now() < end) { } return 1;", XunitCancellationToken)).ToArray();
+        await WaitUntilAsync(() => output.Contains("busy"));
+        await cts.CancelAsync();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => canceled);
+        var results = await Task.WhenAll(busy);
+        await node.WaitForResponsivenessCheckAsync();
+        var next = await node.EvaluateAsync("return require('node:worker_threads').threadId;", XunitCancellationToken);
+
+        Assert.All(results, result => Assert.Equal(1, result.GetInt32()));
+        Assert.Equal(threadId, next.GetInt32());
+    }
+
+    [Fact]
+    public async Task WorkerThreads_WorkerThreadExit_FailsItsCallsAndRestartsIt()
+    {
+        await using var node = await StartNodeAsync(new NodeJsHostOptions { WorkerThreads = 1 });
+        using var process = Process.GetProcessById(node.ProcessId);
+        var threadId = (await node.EvaluateAsync("globalThis.value = 1; return require('node:worker_threads').threadId;", XunitCancellationToken)).GetInt32();
+        await using var reference = await node.EvaluateReferenceAsync("return {};", XunitCancellationToken);
+
+        var exception = await Assert.ThrowsAsync<NodeJsException>(() => node.EvaluateVoidAsync("process.exit(5);", XunitCancellationToken));
+        var result = await node.EvaluateAsync("return [typeof globalThis.value, require('node:worker_threads').threadId];", XunitCancellationToken);
+        var referenceException = await Assert.ThrowsAsync<NodeJsException>(() => reference.GetValueAsync(XunitCancellationToken));
+
+        Assert.Contains("worker thread exited unexpectedly with exit code 5", exception.Message);
+        Assert.Null(exception.ExitCode);
+        Assert.Equal("undefined", result[0].GetString());
+        Assert.NotEqual(threadId, result[1].GetInt32());
+        Assert.Contains("exit code 5", referenceException.Message);
+        Assert.False(process.HasExited);
+    }
+
+    [Fact]
+    public async Task WorkerThreads_MaxConcurrentCalls_UsesAvailableWorkerThread()
+    {
+        await using var node = await StartNodeAsync(new NodeJsHostOptions { WorkerThreads = 2, MaxConcurrentCalls = 2 });
+
+        // The long call keeps a worker thread busy, so the following calls run on the other one
+        var longCall = node.EvaluateAsync("const end = Date.now() + 3000; while (Date.now() < end) { } return require('node:worker_threads').threadId;", XunitCancellationToken);
+        var threadIds = new List<int>();
+        for (var i = 0; i < 5; i++)
+        {
+            threadIds.Add((await node.EvaluateAsync("return require('node:worker_threads').threadId;", XunitCancellationToken)).GetInt32());
+        }
+
+        var longCallThreadId = (await longCall).GetInt32();
+        Assert.All(threadIds, threadId => Assert.NotEqual(longCallThreadId, threadId));
+    }
+
+    [Fact]
+    public async Task WorkerThreads_Pool()
+    {
+        SkipIfNodeIsNotInstalled();
+        await using var temporaryDirectory = TemporaryDirectory.Create();
+        await using var pool = await NodeJsHostPool.StartAsync(2, new NodeJsHostOptions { WorkerThreads = 2, MaxConcurrentCalls = 2 }, XunitCancellationToken);
+
+        // 4 calls run at the same time: 2 per process, 1 per worker thread
+        var code = CreateBarrierCode(temporaryDirectory.GetFullPath("barrier.txt"), count: 4, "`${process.pid}:${require('node:worker_threads').threadId}`");
+        var results = await Task.WhenAll(Enumerable.Range(0, 4).Select(_ => pool.EvaluateAsync(code, XunitCancellationToken)));
+        var threads = results.Select(result => result.GetString()!).ToArray();
+
+        Assert.HasCount(4, threads.Distinct(StringComparer.Ordinal));
+        Assert.HasCount(2, threads.Select(thread => thread.Split(':')[0]).Distinct(StringComparer.Ordinal));
+    }
+
+    [Fact]
+    public async Task WorkerThreads_Invalid_Throws()
+    {
+        SkipIfNodeIsNotInstalled();
+
+        var zero = await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => NodeJsHost.StartAsync(new NodeJsHostOptions { WorkerThreads = 0 }, XunitCancellationToken));
+        var negative = await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => NodeJsHostPool.StartAsync(2, new NodeJsHostOptions { WorkerThreads = -1 }, XunitCancellationToken));
+
+        Assert.Equal("options", zero.ParamName);
+        Assert.Equal("options", negative.ParamName);
+    }
+
     // The marker is written synchronously, so it is received even though the event loop is blocked.
     // Waiting for it ensures the call was sent before it is canceled: a call canceled while waiting to be sent never runs.
     private const string BlockingCode = "require('node:fs').writeSync(1, 'blocked\\n'); while (true) { }";
@@ -2075,10 +2295,44 @@ public sealed partial class NodeJsHostTests
         export const isParent = (child, parent) => child.parent === parent;
         """;
 
-    private static async Task<int> GetReferenceCountAsync(NodeJsHost node)
+    private static async Task<int> GetReferenceCountAsync(NodeJsHost node, JSReference? target = null)
     {
-        var information = await node.GetDebugInformationAsync(XunitCancellationToken);
+        var information = await node.GetDebugInformationAsync(target, XunitCancellationToken);
         return information.GetProperty("references").GetInt32();
+    }
+
+    // Each call blocks its event loop until all the calls have started, then returns the expression.
+    // With worker threads, calls are sent to the least busy worker thread, so concurrent calls run on different worker threads.
+    private static string CreateBarrierCode(string barrierPath, int count, string expression)
+    {
+        return $$"""
+            const fs = require('node:fs');
+            const path = {{JsonSerializer.Serialize(barrierPath)}};
+            fs.appendFileSync(path, 'x');
+            const deadline = Date.now() + 60_000;
+            while (fs.readFileSync(path, 'utf8').length < {{count.ToString(CultureInfo.InvariantCulture)}}) {
+                if (Date.now() > deadline) throw new Error('The other calls did not start');
+            }
+            return {{expression}};
+            """;
+    }
+
+    // Creates a reference on each of the 2 worker threads of the host
+    private static async Task<(JSReference First, JSReference Second)> CreateReferencePerWorkerThreadAsync(NodeJsHost node, string barrierPath)
+    {
+        var code = CreateBarrierCode(barrierPath, count: 2, """
+            {
+                threadId: require('node:worker_threads').threadId,
+                currentThreadId() { return require('node:worker_threads').threadId; },
+                self() { return this; },
+                Child: class { constructor() { this.threadId = require('node:worker_threads').threadId; } },
+            }
+            """);
+        var references = await Task.WhenAll(node.EvaluateReferenceAsync(code, XunitCancellationToken), node.EvaluateReferenceAsync(code, XunitCancellationToken));
+        var firstThreadId = (await references[0].GetValueAsync(XunitCancellationToken)).GetProperty("threadId").GetInt32();
+        var secondThreadId = (await references[1].GetValueAsync(XunitCancellationToken)).GetProperty("threadId").GetInt32();
+        Assert.NotEqual(firstThreadId, secondThreadId);
+        return (references[0], references[1]);
     }
 
     // The bootstrap script waits for this module to be imported before connecting, so the startup does not complete

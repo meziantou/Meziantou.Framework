@@ -19,6 +19,9 @@ namespace Meziantou.Framework.NodeJs;
 /// </example>
 public sealed class NodeJsHostPool : IAsyncDisposable
 {
+    // The pool whose RunAsync callback is running, so the calls the callback makes on the pool do not wait for the capacity it already holds
+    private static readonly AsyncLocal<NodeJsHostPool?> RunningPool = new();
+
     private readonly NodeJsHostOptions _options;
     private readonly Slot[] _slots;
     private readonly Lock _lock = new();
@@ -84,14 +87,16 @@ public sealed class NodeJsHostPool : IAsyncDisposable
     /// <summary>Runs a function with one host of the pool. Use it to run several calls on the same Node.js process.</summary>
     /// <param name="action">The function to run. The host must not be used after the returned task completes.</param>
     /// <param name="cancellationToken">A token to stop waiting for a host to be available.</param>
+    /// <remarks>Calls made on the pool by the function, instead of on the host, do not wait for <see cref="NodeJsHostOptions.MaxConcurrentCalls"/>: the function already counts as a call, and waiting would never end when all the calls of the pool are such functions.</remarks>
     public async Task<T> RunAsync<T>(Func<NodeJsHost, Task<T>> action, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(action);
 
         // Calls wait here instead of being queued on a host, so they run on the first host that becomes available
-        if (_capacity is not null)
+        var capacity = RunningPool.Value == this ? null : _capacity;
+        if (capacity is not null)
         {
-            await _capacity.WaitAsync(cancellationToken).ConfigureAwait(false);
+            await capacity.WaitAsync(cancellationToken).ConfigureAwait(false);
         }
 
         try
@@ -99,6 +104,8 @@ public sealed class NodeJsHostPool : IAsyncDisposable
             var (slot, host) = await AcquireAsync(cancellationToken).ConfigureAwait(false);
             try
             {
+                // The value flows to the function, and is not visible to the caller of this async method
+                RunningPool.Value = this;
                 return await action(host).ConfigureAwait(false);
             }
             finally
@@ -108,7 +115,7 @@ public sealed class NodeJsHostPool : IAsyncDisposable
         }
         finally
         {
-            _capacity?.Release();
+            capacity?.Release();
         }
     }
 
@@ -149,6 +156,14 @@ public sealed class NodeJsHostPool : IAsyncDisposable
         return RunAsync(ArgumentWriter.FindReferenceHost(arguments), host => host.InvokeAsync<T>(module, exportName, arguments, options, cancellationToken), cancellationToken);
     }
 
+    /// <inheritdoc cref="NodeJsHost.InvokeAsync{T}(string, string?, CancellationToken)"/>
+    [RequiresUnreferencedCode(NodeJsHost.ReflectionUnreferencedCodeMessage)]
+    [RequiresDynamicCode(NodeJsHost.ReflectionDynamicCodeMessage)]
+    public Task<T?> InvokeAsync<T>(string module, string? exportName, CancellationToken cancellationToken)
+    {
+        return RunAsync(host => host.InvokeAsync<T>(module, exportName, cancellationToken), cancellationToken);
+    }
+
     /// <inheritdoc cref="NodeJsHost.InvokeVoidAsync(string, string?, IReadOnlyList{JsonNode?}?, CancellationToken)"/>
     /// <remarks>When the arguments contain a <see cref="JSReference"/>, the call runs on the host that keeps the referenced value.</remarks>
     public Task InvokeVoidAsync(string module, string? exportName, IReadOnlyList<JsonNode?>? arguments = null, CancellationToken cancellationToken = default)
@@ -179,6 +194,22 @@ public sealed class NodeJsHostPool : IAsyncDisposable
     public Task<JSReference> InvokeReferenceAsync(string module, string? exportName, object?[]? arguments, JsonSerializerOptions? options, CancellationToken cancellationToken = default)
     {
         return RunAsync(ArgumentWriter.FindReferenceHost(arguments), host => host.InvokeReferenceAsync(module, exportName, arguments, options, cancellationToken), cancellationToken);
+    }
+
+    /// <inheritdoc cref="NodeJsHost.CreateInstanceAsync(string, string?, IReadOnlyList{JsonNode?}?, CancellationToken)"/>
+    /// <remarks>The reference is bound to the host that ran the call. When the arguments contain a <see cref="JSReference"/>, the call runs on the host that keeps the referenced value.</remarks>
+    public Task<JSReference> CreateInstanceAsync(string module, string? exportName, IReadOnlyList<JsonNode?>? arguments = null, CancellationToken cancellationToken = default)
+    {
+        return RunAsync(ArgumentWriter.FindReferenceHost(arguments), host => host.CreateInstanceAsync(module, exportName, arguments, cancellationToken), cancellationToken);
+    }
+
+    /// <inheritdoc cref="NodeJsHost.CreateInstanceAsync(string, string?, object?[], JsonSerializerOptions?, CancellationToken)"/>
+    /// <remarks>The reference is bound to the host that ran the call. When the arguments contain a <see cref="JSReference"/>, the call runs on the host that keeps the referenced value.</remarks>
+    [RequiresUnreferencedCode(NodeJsHost.ReflectionUnreferencedCodeMessage)]
+    [RequiresDynamicCode(NodeJsHost.ReflectionDynamicCodeMessage)]
+    public Task<JSReference> CreateInstanceAsync(string module, string? exportName, object?[]? arguments, JsonSerializerOptions? options, CancellationToken cancellationToken = default)
+    {
+        return RunAsync(ArgumentWriter.FindReferenceHost(arguments), host => host.CreateInstanceAsync(module, exportName, arguments, options, cancellationToken), cancellationToken);
     }
 
     /// <inheritdoc cref="NodeJsHost.EvaluateAsync(string, CancellationToken)"/>
@@ -254,6 +285,14 @@ public sealed class NodeJsHostPool : IAsyncDisposable
     public Task<T?> EvaluateAsync<T>(string code, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
     {
         return RunAsync(host => host.EvaluateAsync<T>(code, options, cancellationToken), cancellationToken);
+    }
+
+    /// <inheritdoc cref="NodeJsHost.EvaluateAsync{T}(string, CancellationToken)"/>
+    [RequiresUnreferencedCode("JSON deserialization might require types that cannot be statically analyzed. Use the overload that takes a JsonTypeInfo instead.")]
+    [RequiresDynamicCode("JSON deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use the overload that takes a JsonTypeInfo instead.")]
+    public Task<T?> EvaluateAsync<T>(string code, CancellationToken cancellationToken)
+    {
+        return RunAsync(host => host.EvaluateAsync<T>(code, cancellationToken), cancellationToken);
     }
 
     /// <inheritdoc cref="NodeJsHost.EvaluateVoidAsync(string, CancellationToken)"/>

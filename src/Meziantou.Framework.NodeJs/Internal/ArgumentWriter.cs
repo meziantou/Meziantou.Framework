@@ -77,6 +77,8 @@ internal sealed class ArgumentWriter : IDisposable
     }
 
     /// <summary>Converts arguments to JSON nodes using reflection. <see cref="JsonNode"/>, <see cref="JSValue"/>, and <see cref="JSReference"/> arguments are used as is.</summary>
+    /// <param name="arguments">The arguments.</param>
+    /// <param name="options">The serialization options. When <see langword="null"/>, the web defaults are used, so property names are camelCase like in JavaScript.</param>
     [RequiresUnreferencedCode("JSON serialization might require types that cannot be statically analyzed.")]
     [RequiresDynamicCode("JSON serialization might require types that cannot be statically analyzed and might need runtime code generation.")]
     public static JsonNode?[]? SerializeArguments(object?[]? arguments, JsonSerializerOptions? options)
@@ -93,7 +95,7 @@ internal sealed class ArgumentWriter : IDisposable
                 JsonNode node => node,
                 JSValue value => value.ToJsonNode(),
                 JSReference reference => reference.ToJsonNode(),
-                var argument => JsonSerializer.SerializeToNode(argument, argument.GetType(), options),
+                var argument => JsonSerializer.SerializeToNode(argument, argument.GetType(), options ?? NodeJsHost.DefaultArgumentSerializerOptions),
             };
         }
 

@@ -31,7 +31,8 @@ public sealed class NodeJsHost : IAsyncDisposable
     internal const string ReflectionUnreferencedCodeMessage = "JSON serialization and deserialization might require types that cannot be statically analyzed. Use the overload that takes a JsonTypeInfo instead.";
     internal const string ReflectionDynamicCodeMessage = "JSON serialization and deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use the overload that takes a JsonTypeInfo instead.";
     private const int MaxStandardErrorLines = 20;
-    private static readonly TimeSpan ExitTimeout = TimeSpan.FromSeconds(10);
+    private static readonly TimeSpan WorkerExitTimeout = TimeSpan.FromSeconds(10);
+    private static readonly TimeSpan ExitPollingInterval = TimeSpan.FromMilliseconds(100);
 
     // Once the connection is closed, the process exits immediately unless its event loop is blocked, so there is no reason to wait longer before killing it
     private static readonly TimeSpan DisposeExitTimeout = TimeSpan.FromSeconds(1);
@@ -438,7 +439,7 @@ public sealed class NodeJsHost : IAsyncDisposable
             if (_mainChannel is null || !await WaitForExitAsync(DisposeExitTimeout, drainOutput: false).ConfigureAwait(false))
             {
                 KillProcess();
-                await WaitForExitAsync(ExitTimeout, drainOutput: false).ConfigureAwait(false);
+                await WaitForExitAsync(_options.ExitTimeout, drainOutput: false).ConfigureAwait(false);
             }
         }
 
@@ -564,7 +565,7 @@ public sealed class NodeJsHost : IAsyncDisposable
             await Task.WhenAny(acceptTask, exitTask).ConfigureAwait(false);
             if (!acceptTask.IsCompleted && exitTask.IsCompletedSuccessfully)
             {
-                await WaitForExitAsync(ExitTimeout, drainOutput: true).ConfigureAwait(false);
+                await WaitForExitAsync(_options.ExitTimeout, drainOutput: true).ConfigureAwait(false);
                 throw CreateProcessExitedException("The Node.js process exited before it was ready");
             }
 
@@ -855,7 +856,7 @@ public sealed class NodeJsHost : IAsyncDisposable
         {
             if (!IsTerminated)
             {
-                await WaitForExitAsync(ExitTimeout, drainOutput: true).ConfigureAwait(false);
+                await WaitForExitAsync(_options.ExitTimeout, drainOutput: true).ConfigureAwait(false);
             }
 
             channel.FailHello(CreateProcessExitedException("The Node.js process closed the connection before it was ready"));
@@ -871,7 +872,7 @@ public sealed class NodeJsHost : IAsyncDisposable
             else
             {
                 // The connection is lost, most likely because the process exited (e.g. process.exit() or a crash)
-                await WaitForExitAsync(ExitTimeout, drainOutput: true).ConfigureAwait(false);
+                await WaitForExitAsync(_options.ExitTimeout, drainOutput: true).ConfigureAwait(false);
                 exception = CreateProcessExitedException("The Node.js process exited unexpectedly");
             }
 
@@ -920,7 +921,7 @@ public sealed class NodeJsHost : IAsyncDisposable
         var exit = _workerExits.GetOrAdd(key, _ => new TaskCompletionSource<int?>(TaskCreationOptions.RunContinuationsAsynchronously));
         try
         {
-            await Task.WhenAny(exit.Task, _terminated.Task).WaitAsync(ExitTimeout).ConfigureAwait(false);
+            await Task.WhenAny(exit.Task, _terminated.Task).WaitAsync(WorkerExitTimeout).ConfigureAwait(false);
         }
         catch (TimeoutException)
         {
@@ -1418,13 +1419,26 @@ public sealed class NodeJsHost : IAsyncDisposable
     // inherited the output keeps it open after Node.js exits, so it is only used for a short time to read the remaining output.
     private async Task<bool> WaitForExitAsync(TimeSpan timeout, bool drainOutput)
     {
-        try
+        // Process.Exited is raised once the process is signaled, from a thread pool callback. On Windows, the exit code is set
+        // as soon as the process starts terminating, and the process can be signaled much later. Process.HasExited checks the
+        // exit code, and raises Process.Exited once it is set.
+        var start = Stopwatch.GetTimestamp();
+        while (!_process.HasExited)
         {
-            await _exited.Task.WaitAsync(timeout).ConfigureAwait(false);
-        }
-        catch (TimeoutException)
-        {
-            return false;
+            var delay = ExitPollingInterval;
+            if (timeout != Timeout.InfiniteTimeSpan)
+            {
+                var remaining = timeout - Stopwatch.GetElapsedTime(start);
+                if (remaining <= TimeSpan.Zero)
+                    return false;
+
+                if (remaining < delay)
+                {
+                    delay = remaining;
+                }
+            }
+
+            await _exited.Task.WaitAsync(delay).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
         }
 
         if (drainOutput)

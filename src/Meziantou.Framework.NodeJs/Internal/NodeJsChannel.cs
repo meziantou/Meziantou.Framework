@@ -168,7 +168,11 @@ internal sealed class NodeJsChannel
             // On Windows, disposing the named pipe cancels the pending write, which throws OperationCanceledException
             catch (Exception ex) when ((writeTask.IsFaulted || writeTask.IsCanceled) && ex is IOException or ObjectDisposedException or OperationCanceledException)
             {
+                // The connection is lost, e.g. because the thread exited, and the host may still be processing it (e.g. waiting for the exit code).
+                // The read loop terminates the connection with the cause of the failure, which explains it better than the write error.
+                await ReadTask.WaitAsync(cancellationToken).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
                 ThrowIfTerminated();
+                cancellationToken.ThrowIfCancellationRequested();
                 throw new NodeJsException("Cannot send the message to the Node.js process.", ex);
             }
             catch (OperationCanceledException)

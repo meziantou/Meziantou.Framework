@@ -490,6 +490,28 @@ public sealed partial class NodeJsHostTests
     }
 
     [Fact]
+    public async Task StandardOutputAndError_SynchronousPipes_AreNotReadOnThreadPool()
+    {
+        var threadPoolThreads = new ConcurrentQueue<bool>();
+        await using var node = await StartNodeAsync(new NodeJsHostOptions
+        {
+            StandardOutputReceived = _ => threadPoolThreads.Enqueue(Thread.CurrentThread.IsThreadPoolThread),
+            StandardErrorReceived = _ => threadPoolThreads.Enqueue(Thread.CurrentThread.IsThreadPoolThread),
+        });
+
+        await node.EvaluateAsync("console.log('output'); console.error('error');", XunitCancellationToken);
+
+        await WaitUntilAsync(() => threadPoolThreads.Count is 2);
+        // Before .NET 11, the pipes are synchronous on Windows, so they are read on dedicated threads instead of blocking thread pool threads
+#if NET11_0_OR_GREATER
+        var expected = true;
+#else
+        var expected = !OperatingSystem.IsWindows();
+#endif
+        Assert.All(threadPoolThreads, isThreadPoolThread => Assert.Equal(expected, isThreadPoolThread));
+    }
+
+    [Fact]
     public async Task EnvironmentVariablesAndArguments()
     {
         await using var node = await StartNodeAsync(new NodeJsHostOptions
@@ -531,6 +553,24 @@ public sealed partial class NodeJsHostTests
         Assert.Contains("exiting", exception.Message);
         Assert.Equal(3, (await Assert.ThrowsAsync<NodeJsException>(() => pending)).ExitCode);
         Assert.Equal(3, (await Assert.ThrowsAsync<NodeJsException>(() => node.EvaluateAsync("return 1;", XunitCancellationToken))).ExitCode);
+    }
+
+    [Fact]
+    public async Task ProcessExit_WhileSendingCall_ReportsExit()
+    {
+        await using var node = await StartNodeAsync();
+
+        // Some calls are written once the process closed the connection, so their write fails
+        var exiting = node.EvaluateVoidAsync("process.exit(3);", XunitCancellationToken);
+        var sending = Enumerable.Range(0, 1000).Select(_ => node.EvaluateAsync("return 1;", XunitCancellationToken)).ToArray();
+
+        await Assert.ThrowsAsync<NodeJsException>(() => exiting);
+        foreach (var call in sending)
+        {
+            var exception = await Assert.ThrowsAsync<NodeJsException>(() => call);
+            Assert.Contains("process exited unexpectedly with exit code 3", exception.Message);
+            Assert.Equal(3, exception.ExitCode);
+        }
     }
 
     [Fact]
@@ -2205,6 +2245,25 @@ public sealed partial class NodeJsHostTests
         Assert.NotEqual(threadId, result[1].GetInt32());
         Assert.Contains("exit code 5", referenceException.Message);
         Assert.False(process.HasExited);
+    }
+
+    [Fact]
+    public async Task WorkerThreads_WorkerThreadExitWhileSendingCall_ReportsExit()
+    {
+        await using var node = await StartNodeAsync(new NodeJsHostOptions { WorkerThreads = 1 });
+        await using var reference = await node.EvaluateReferenceAsync("return {};", XunitCancellationToken);
+
+        // Some calls are written once the worker thread closed the connection, so their write fails. They use the reference, so they are not sent to the restarted worker thread.
+        var exiting = node.EvaluateVoidAsync("process.exit(5);", XunitCancellationToken);
+        var sending = Enumerable.Range(0, 1000).Select(_ => reference.GetValueAsync(XunitCancellationToken)).ToArray();
+
+        await Assert.ThrowsAsync<NodeJsException>(() => exiting);
+        foreach (var call in sending)
+        {
+            var exception = await Assert.ThrowsAsync<NodeJsException>(() => call);
+            Assert.Contains("worker thread exited unexpectedly with exit code 5", exception.Message);
+            Assert.Null(exception.ExitCode);
+        }
     }
 
     [Fact]

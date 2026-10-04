@@ -96,6 +96,11 @@ public sealed class NodeJsHost : IAsyncDisposable
     private long _checkedCanceledCalls;
     private int _responsivenessCheckRunning;
     private int _disposed;
+#if !NET11_0_OR_GREATER
+
+    // Completes once the output is read to the end, when it is read by dedicated threads (see StartReadingOutput)
+    private Task? _outputReaders;
+#endif
 
     private NodeJsHost(NodeJsHostOptions options)
     {
@@ -497,7 +502,7 @@ public sealed class NodeJsHost : IAsyncDisposable
             startInfo.ArgumentList.Add(argument);
         }
 
-        // The bootstrap script is read from the standard input (see WriteBootstrapScriptAsync)
+        // The bootstrap script is read from the standard input (see WriteBootstrapScript)
         startInfo.ArgumentList.Add("--input-type=module");
 
         foreach (var (name, value) in _options.EnvironmentVariables)
@@ -519,7 +524,7 @@ public sealed class NodeJsHost : IAsyncDisposable
         {
             if (e.Data is not null)
             {
-                InvokeOutputCallback(_options.StandardOutputReceived, e.Data);
+                OnStandardOutputLine(e.Data);
             }
         };
 
@@ -527,17 +532,7 @@ public sealed class NodeJsHost : IAsyncDisposable
         {
             if (e.Data is not null)
             {
-                lock (_standardErrorTail)
-                {
-                    if (_standardErrorTail.Count == MaxStandardErrorLines)
-                    {
-                        _standardErrorTail.Dequeue();
-                    }
-
-                    _standardErrorTail.Enqueue(e.Data);
-                }
-
-                InvokeOutputCallback(_options.StandardErrorReceived, e.Data);
+                OnStandardErrorLine(e.Data);
             }
         };
 
@@ -551,9 +546,22 @@ public sealed class NodeJsHost : IAsyncDisposable
             throw new NodeJsException($"Cannot start '{nodePath}': {ex.Message}", ex);
         }
 
-        _ = WriteBootstrapScriptAsync(_process.StandardInput);
-        _process.BeginOutputReadLine();
-        _process.BeginErrorReadLine();
+        StartWritingBootstrapScript(_process.StandardInput);
+#if !NET11_0_OR_GREATER
+        // Before .NET 11, the output pipes are synchronous on Windows, so reading them asynchronously would block a thread pool thread per pipe for as long
+        // as the process runs. With a few hosts, the thread pool is starved, and calls and startups wait for threads.
+        if (OperatingSystem.IsWindows())
+        {
+            _outputReaders = Task.WhenAll(
+                StartReadingOutput(_process.StandardOutput, OnStandardOutputLine, "Node.js standard output reader"),
+                StartReadingOutput(_process.StandardError, OnStandardErrorLine, "Node.js standard error reader"));
+        }
+        else
+#endif
+        {
+            _process.BeginOutputReadLine();
+            _process.BeginErrorReadLine();
+        }
 
         using var startupCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         startupCts.CancelAfter(_options.StartupTimeout);
@@ -592,6 +600,65 @@ public sealed class NodeJsHost : IAsyncDisposable
             await exitTask.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
         }
     }
+
+    private void OnStandardOutputLine(string line)
+    {
+        InvokeOutputCallback(_options.StandardOutputReceived, line);
+    }
+
+    private void OnStandardErrorLine(string line)
+    {
+        lock (_standardErrorTail)
+        {
+            if (_standardErrorTail.Count == MaxStandardErrorLines)
+            {
+                _standardErrorTail.Dequeue();
+            }
+
+            _standardErrorTail.Enqueue(line);
+        }
+
+        InvokeOutputCallback(_options.StandardErrorReceived, line);
+    }
+
+#if !NET11_0_OR_GREATER
+    /// <summary>Reads the lines of a synchronous pipe on a dedicated thread, until the end of the stream.</summary>
+    /// <returns>A task that completes once the stream is read to the end, or cannot be read anymore.</returns>
+    private static Task StartReadingOutput(StreamReader reader, Action<string> onLine, string threadName)
+    {
+        var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var thread = new Thread(() => ReadOutput(reader, onLine, completion))
+        {
+            IsBackground = true,
+            Name = threadName,
+        };
+        thread.UnsafeStart();
+        return completion.Task;
+    }
+
+    // Never throws, as an exception would crash the application. The callbacks never throw (see InvokeOutputCallback).
+    [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "An exception thrown on a dedicated thread would crash the application")]
+    private static void ReadOutput(StreamReader reader, Action<string> onLine, TaskCompletionSource completion)
+    {
+        try
+        {
+            while (reader.ReadLine() is { } line)
+            {
+                onLine(line);
+            }
+        }
+        catch (Exception)
+        {
+            // The pipe cannot be read anymore
+        }
+        finally
+        {
+            // Process does not close a stream read synchronously when it is disposed
+            reader.Dispose();
+            completion.TrySetResult();
+        }
+    }
+#endif
 
     // An exception thrown by the callback would be rethrown on a thread pool thread by Process, which would crash the application
     [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "The callback is user code, and its exceptions must not crash the application")]
@@ -1445,10 +1512,21 @@ public sealed class NodeJsHost : IAsyncDisposable
         {
             // Read the remaining output, so the standard error tail is complete
             using var cts = new CancellationTokenSource(OutputDrainTimeout);
-            await _process.WaitForExitAsync(cts.Token).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            await WaitForOutputReadAsync(cts.Token).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
         }
 
         return true;
+    }
+
+    // Process.WaitForExitAsync only waits for the output read by Process
+    private Task WaitForOutputReadAsync(CancellationToken cancellationToken)
+    {
+#if !NET11_0_OR_GREATER
+        if (_outputReaders is not null)
+            return _outputReaders.WaitAsync(cancellationToken);
+#endif
+
+        return _process.WaitForExitAsync(cancellationToken);
     }
 
     private void KillProcess()
@@ -1495,17 +1573,30 @@ public sealed class NodeJsHost : IAsyncDisposable
     // The script is sent on the standard input instead of the command line, so its size is not limited by the maximum length of a command line
     // (32,767 characters on Windows), and it does not appear in the list of processes. It is written in the background, as Node.js only reads it once
     // the modules passed with --import are loaded, and the pipe buffer can be smaller than the script.
-    // Never throws: when the process exits before reading the script, the startup reports it.
-    private static async Task WriteBootstrapScriptAsync(StreamWriter standardInput)
+    // It is written on a dedicated thread: the standard input is a synchronous pipe on Windows, so an asynchronous write would wait for thread pool
+    // threads several times, and the startup could exceed StartupTimeout when the thread pool is starved.
+    private static void StartWritingBootstrapScript(StreamWriter standardInput)
+    {
+        var thread = new Thread(() => WriteBootstrapScript(standardInput))
+        {
+            IsBackground = true,
+            Name = "Node.js bootstrap script writer",
+        };
+        thread.UnsafeStart();
+    }
+
+    // Never throws, as an exception would crash the application: when the process exits before reading the script, the startup reports it
+    [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "An exception thrown on a dedicated thread would crash the application")]
+    private static void WriteBootstrapScript(StreamWriter standardInput)
     {
         try
         {
-            await standardInput.WriteAsync(BootstrapScript).ConfigureAwait(false);
+            standardInput.Write(BootstrapScript);
 
             // Node.js runs the script once the standard input is closed
             standardInput.Close();
         }
-        catch (Exception ex) when (ex is IOException or ObjectDisposedException)
+        catch (Exception)
         {
         }
     }

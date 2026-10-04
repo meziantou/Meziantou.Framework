@@ -143,8 +143,7 @@ public sealed partial class NodeJsHostTests
     [Fact]
     public async Task Invoke_NpmInstalledPackage()
     {
-        // On Windows, the Node.js folder also contains an extensionless "npm" shell script for Git Bash, which ExecutableFinder finds first but cannot be started
-        var npmPath = ExecutableFinder.GetFullExecutablePath(OperatingSystem.IsWindows() ? "npm.cmd" : "npm");
+        var npmPath = ExecutableFinder.GetFullExecutablePath("npm");
         global::Xunit.Assert.SkipWhen(npmPath is null, "npm is not installed.");
 
         // A "file:" dependency is installed from the local folder, so the test does not need the npm registry
@@ -433,10 +432,16 @@ public sealed partial class NodeJsHostTests
         // The JSON writer escapes 'é' as "\u00E9", so Node.js receives a 60 MB message split into many chunks
         var value = new string('é', 10_000_000);
 
-        // Splitting the received chunks into lines must be linear: rescanning the whole buffer for each chunk took 24s for this payload, instead of about 1s
-        var result = await node.InvokeAsync("node:util", "format", [value], XunitCancellationToken).WaitAsync(TimeSpan.FromSeconds(15), XunitCancellationToken);
+        // Splitting the received chunks into lines must be linear: rescanning the whole buffer for each chunk used 27s of CPU
+        // time for this payload, instead of about 0.2s. The CPU time of the Node.js process is measured instead of the elapsed
+        // time, which varies too much on loaded CI agents (from 3s to 22s for the same commit on Windows).
+        await node.EvaluateAsync("globalThis.cpuUsageBeforeLargePayload = process.cpuUsage();", XunitCancellationToken);
+        var result = await node.InvokeAsync("node:util", "format", [value], XunitCancellationToken).WaitAsync(TimeSpan.FromMinutes(2), XunitCancellationToken);
+        var cpuUsage = await node.EvaluateAsync("const usage = process.cpuUsage(globalThis.cpuUsageBeforeLargePayload); return (usage.user + usage.system) / 1000;", XunitCancellationToken);
 
         Assert.Equal(value, result.GetString());
+        var cpuTime = TimeSpan.FromMilliseconds(cpuUsage.GetDouble());
+        Assert.True(cpuTime < TimeSpan.FromSeconds(5), $"Node.js used {cpuTime} of CPU time to process the message");
     }
 
     [Fact]

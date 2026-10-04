@@ -383,20 +383,25 @@ public sealed class NodeJsHost : IAsyncDisposable
             ThrowIfTerminated();
 
             await _writeLock.WaitAsync(cancellationToken).ConfigureAwait(false);
+
+            // Once started, the message is always written completely, as a partial message would corrupt the following ones.
+            // Canceling only stops waiting for the write to complete.
+            var writeTask = WriteMessageAndReleaseLockAsync(buffer.WrittenMemory);
             try
             {
-                await _stream!.WriteAsync(buffer.WrittenMemory, cancellationToken).ConfigureAwait(false);
-                await _stream.FlushAsync(cancellationToken).ConfigureAwait(false);
+                await writeTask.WaitAsync(cancellationToken).ConfigureAwait(false);
             }
             // On Windows, disposing the named pipe cancels the pending write, which throws OperationCanceledException
-            catch (Exception ex) when (ex is IOException or ObjectDisposedException || (ex is OperationCanceledException && !cancellationToken.IsCancellationRequested))
+            catch (Exception ex) when ((writeTask.IsFaulted || writeTask.IsCanceled) && ex is IOException or ObjectDisposedException or OperationCanceledException)
             {
                 ThrowIfTerminated();
                 throw new NodeJsException("Cannot send the message to the Node.js process.", ex);
             }
-            finally
+            catch (OperationCanceledException)
             {
-                _writeLock.Release();
+                // The write continues in the background. A failure means the connection is lost, which is reported by the read loop.
+                _ = writeTask.ContinueWith(static task => _ = task.Exception, CancellationToken.None, TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+                throw;
             }
 
             return await tcs.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
@@ -404,6 +409,19 @@ public sealed class NodeJsHost : IAsyncDisposable
         finally
         {
             _pendingRequests.TryRemove(id, out _);
+        }
+    }
+
+    private async Task WriteMessageAndReleaseLockAsync(ReadOnlyMemory<byte> message)
+    {
+        try
+        {
+            await _stream!.WriteAsync(message, CancellationToken.None).ConfigureAwait(false);
+            await _stream.FlushAsync(CancellationToken.None).ConfigureAwait(false);
+        }
+        finally
+        {
+            _writeLock.Release();
         }
     }
 

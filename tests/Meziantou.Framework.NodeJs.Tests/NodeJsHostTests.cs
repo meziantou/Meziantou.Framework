@@ -556,6 +556,32 @@ public sealed partial class NodeJsHostTests
     }
 
     [Fact]
+    public async Task Cancellation_DuringLargeWrite_DoesNotCorruptProtocol()
+    {
+        await using var node = await StartNodeAsync();
+        var value = new string('a', 20_000_000);
+
+        // A write canceled in the middle of a message used to leave a partial line, so the next message could not be parsed and the calls never completed
+        for (var i = 0; i < 5; i++)
+        {
+            using var cts = CancellationTokenSource.CreateLinkedTokenSource(XunitCancellationToken);
+            var canceled = node.InvokeAsync("node:util", "format", [value], cts.Token);
+            await Task.Delay(i, XunitCancellationToken);
+            await cts.CancelAsync();
+            try
+            {
+                await canceled;
+            }
+            catch (OperationCanceledException)
+            {
+            }
+
+            var result = await node.EvaluateAsync("return 1;", XunitCancellationToken).WaitAsync(TimeSpan.FromSeconds(30), XunitCancellationToken);
+            Assert.Equal(1, result.GetInt32());
+        }
+    }
+
+    [Fact]
     public async Task Dispose_Concurrent()
     {
         var node = await StartNodeAsync();

@@ -1130,6 +1130,57 @@ public sealed partial class NodeJsHostTests
     }
 
     [Fact]
+    public async Task Evaluate_LargeTypedResult()
+    {
+        await using var node = await StartNodeAsync();
+
+        // The result is read from a buffer that grows to contain the whole message, then shrinks back for the following messages
+        var result = await node.EvaluateAsync("return Array.from({ length: 2_000_000 }, (_, i) => i);", NodeJsTestJsonContext.Default.Int32Array, XunitCancellationToken);
+        var next = await node.EvaluateAsync("return 'é'.repeat(3);", XunitCancellationToken);
+
+        Assert.NotNull(result);
+        Assert.HasCount(2_000_000, result);
+        Assert.Equal(1_999_999, result[^1]);
+        Assert.Equal("ééé", next.GetString());
+    }
+
+    [Fact]
+    public async Task Evaluate_TypedResultCannotBeDeserialized_FailsOnlyThisCall()
+    {
+        await using var node = await StartNodeAsync();
+
+        await Assert.ThrowsAsync<JsonException>(() => node.EvaluateAsync("return 'not a number';", NodeJsTestJsonContext.Default.Int32, XunitCancellationToken));
+        var result = await node.EvaluateAsync("return 1;", NodeJsTestJsonContext.Default.Int32, XunitCancellationToken);
+
+        Assert.Equal(1, result);
+    }
+
+    [Fact]
+    public async Task Evaluate_FunctionResult_ReturnsNoValue()
+    {
+        await using var node = await StartNodeAsync();
+
+        // JSON.stringify omits functions, so the response has no result
+        var result = await node.EvaluateAsync("return () => 1;", XunitCancellationToken);
+        var typedResult = await node.EvaluateAsync("return () => 1;", NodeJsTestJsonContext.Default.Person, XunitCancellationToken);
+
+        Assert.Equal(JsonValueKind.Undefined, result.ValueKind);
+        Assert.Null(typedResult);
+    }
+
+    [Fact]
+    public async Task GetValue_LargeTypedResult()
+    {
+        await using var node = await StartNodeAsync();
+        await using var reference = await node.EvaluateReferenceAsync("return Array.from({ length: 1_000_000 }, (_, i) => i);", XunitCancellationToken);
+
+        var result = await reference.GetValueAsync(NodeJsTestJsonContext.Default.Int32Array, XunitCancellationToken);
+
+        Assert.NotNull(result);
+        Assert.Equal(999_999, result[^1]);
+    }
+
+    [Fact]
     public async Task Evaluate_ThrowUnprintableValue_Throws()
     {
         await using var node = await StartNodeAsync();
@@ -1499,5 +1550,7 @@ public sealed partial class NodeJsHostTests
 
     [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase, RespectNullableAnnotations = true, RespectRequiredConstructorParameters = true)]
     [JsonSerializable(typeof(Person))]
+    [JsonSerializable(typeof(int))]
+    [JsonSerializable(typeof(int[]))]
     private sealed partial class NodeJsTestJsonContext : JsonSerializerContext;
 }

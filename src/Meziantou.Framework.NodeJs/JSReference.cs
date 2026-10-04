@@ -51,6 +51,7 @@ public sealed class JSReference : IAsyncDisposable, IDisposable
 
     /// <summary>Calls a method of the referenced value, or the referenced function, and deserializes the result.</summary>
     /// <inheritdoc cref="InvokeAsync(string?, IReadOnlyList{JsonNode?}?, CancellationToken)"/>
+    /// <exception cref="JsonException">The result cannot be deserialized to <typeparamref name="T"/>.</exception>
     public async Task<T?> InvokeAsync<T>(string? methodName, IReadOnlyList<JsonNode?>? arguments, JsonTypeInfo<T> resultTypeInfo, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(resultTypeInfo);
@@ -60,11 +61,22 @@ public sealed class JSReference : IAsyncDisposable, IDisposable
 
     /// <summary>Calls a method of the referenced value, or the referenced function, and deserializes the result. Arguments are serialized using reflection.</summary>
     /// <inheritdoc cref="InvokeAsync(string?, IReadOnlyList{JsonNode?}?, CancellationToken)"/>
+    /// <exception cref="JsonException">The result cannot be deserialized to <typeparamref name="T"/>.</exception>
     [RequiresUnreferencedCode(NodeJsHost.ReflectionUnreferencedCodeMessage)]
     [RequiresDynamicCode(NodeJsHost.ReflectionDynamicCodeMessage)]
     public async Task<T?> InvokeAsync<T>(string? methodName, object?[]? arguments = null, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
     {
         return await Host.InvokeMemberAsync(this, methodName, ArgumentWriter.SerializeArguments(arguments, options), ResultKind.Json, NodeJsHost.CreateResultReader<T>(options), cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>Calls a method of the referenced value without arguments, or the referenced function, and deserializes the result using reflection.</summary>
+    /// <inheritdoc cref="InvokeAsync(string?, IReadOnlyList{JsonNode?}?, CancellationToken)"/>
+    /// <exception cref="JsonException">The result cannot be deserialized to <typeparamref name="T"/>.</exception>
+    [RequiresUnreferencedCode(NodeJsHost.ReflectionUnreferencedCodeMessage)]
+    [RequiresDynamicCode(NodeJsHost.ReflectionDynamicCodeMessage)]
+    public Task<T?> InvokeAsync<T>(string? methodName, CancellationToken cancellationToken)
+    {
+        return InvokeAsync<T>(methodName, arguments: null, options: null, cancellationToken);
     }
 
     /// <summary>Calls a method of the referenced value, or the referenced function, and ignores its result.</summary>
@@ -101,6 +113,27 @@ public sealed class JSReference : IAsyncDisposable, IDisposable
         return InvokeReferenceAsync(methodName, ArgumentWriter.SerializeArguments(arguments, options), cancellationToken);
     }
 
+    /// <summary>Creates an instance (<c>new</c>) of the referenced class, or of a class that is a member of the referenced value, and keeps the instance in the Node.js process.</summary>
+    /// <param name="memberName">The name of the member of the referenced value that is a class or a constructor function. When <see langword="null"/>, the referenced value is the class.</param>
+    /// <param name="arguments">The arguments passed to the constructor.</param>
+    /// <param name="cancellationToken">A token to stop waiting for the result. The JavaScript code keeps running.</param>
+    /// <returns>A reference to the new instance. Dispose it when the instance is no longer needed.</returns>
+    /// <exception cref="NodeJsException">The value is not a constructor, the constructor throws, or the Node.js process exits.</exception>
+    public async Task<JSReference> CreateInstanceAsync(string? memberName, IReadOnlyList<JsonNode?>? arguments = null, CancellationToken cancellationToken = default)
+    {
+        var referenceId = await Host.InvokeMemberAsync(this, memberName, arguments, ResultKind.Reference, NodeJsHost.ReadReferenceId, cancellationToken, construct: true).ConfigureAwait(false);
+        return new JSReference(Host, referenceId);
+    }
+
+    /// <summary>Creates an instance (<c>new</c>) of the referenced class, or of a class that is a member of the referenced value, and keeps the instance in the Node.js process. Arguments are serialized using reflection.</summary>
+    /// <inheritdoc cref="CreateInstanceAsync(string?, IReadOnlyList{JsonNode?}?, CancellationToken)"/>
+    [RequiresUnreferencedCode(NodeJsHost.ReflectionUnreferencedCodeMessage)]
+    [RequiresDynamicCode(NodeJsHost.ReflectionDynamicCodeMessage)]
+    public Task<JSReference> CreateInstanceAsync(string? memberName, object?[]? arguments, JsonSerializerOptions? options, CancellationToken cancellationToken = default)
+    {
+        return CreateInstanceAsync(memberName, ArgumentWriter.SerializeArguments(arguments, options), cancellationToken);
+    }
+
     /// <summary>Gets the JSON representation of the referenced value (awaited if it is a promise).</summary>
     /// <param name="cancellationToken">A token to stop waiting for the result.</param>
     /// <exception cref="NodeJsException">The value cannot be serialized, or the Node.js process exits.</exception>
@@ -111,6 +144,7 @@ public sealed class JSReference : IAsyncDisposable, IDisposable
 
     /// <summary>Gets the referenced value, deserialized from its JSON representation.</summary>
     /// <inheritdoc cref="GetValueAsync(CancellationToken)"/>
+    /// <exception cref="JsonException">The result cannot be deserialized to <typeparamref name="T"/>.</exception>
     public async Task<T?> GetValueAsync<T>(JsonTypeInfo<T> resultTypeInfo, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(resultTypeInfo);
@@ -120,11 +154,22 @@ public sealed class JSReference : IAsyncDisposable, IDisposable
 
     /// <summary>Gets the referenced value, deserialized from its JSON representation using reflection.</summary>
     /// <inheritdoc cref="GetValueAsync(CancellationToken)"/>
+    /// <exception cref="JsonException">The result cannot be deserialized to <typeparamref name="T"/>.</exception>
     [RequiresUnreferencedCode("JSON deserialization might require types that cannot be statically analyzed. Use the overload that takes a JsonTypeInfo instead.")]
     [RequiresDynamicCode("JSON deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use the overload that takes a JsonTypeInfo instead.")]
     public async Task<T?> GetValueAsync<T>(JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
     {
         return await Host.GetReferenceValueAsync(this, NodeJsHost.CreateResultReader<T>(options), cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>Gets the referenced value, deserialized from its JSON representation using reflection.</summary>
+    /// <inheritdoc cref="GetValueAsync(CancellationToken)"/>
+    /// <exception cref="JsonException">The result cannot be deserialized to <typeparamref name="T"/>.</exception>
+    [RequiresUnreferencedCode("JSON deserialization might require types that cannot be statically analyzed. Use the overload that takes a JsonTypeInfo instead.")]
+    [RequiresDynamicCode("JSON deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use the overload that takes a JsonTypeInfo instead.")]
+    public Task<T?> GetValueAsync<T>(CancellationToken cancellationToken)
+    {
+        return GetValueAsync<T>(options: null, cancellationToken);
     }
 
     /// <summary>Converts the reference to a <see cref="JsonNode"/>, to use it as an argument or in a <see cref="JsonObject"/> or <see cref="JsonArray"/> argument.</summary>

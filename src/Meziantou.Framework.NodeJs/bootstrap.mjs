@@ -18,7 +18,7 @@ process.on("uncaughtException", error => console.error("Uncaught exception:", er
 process.on("unhandledRejection", reason => console.error("Unhandled promise rejection:", reason));
 
 const AsyncFunction = (async function () { }).constructor;
-const require = createRequire(path.join(process.cwd(), "/"));
+const nodeRequire = createRequire(path.join(process.cwd(), "/"));
 
 // Functions that compile code. They cannot be called by name, so a module, export, or member name cannot be used to run arbitrary code.
 const codeCompilingFunctions = new Set([
@@ -244,6 +244,32 @@ function callFunction(fn, thisArg, args) {
     return fn.apply(thisArg, args);
 }
 
+// Checks whether a value can be used with "new" without calling it. Arrow functions and methods are functions that are not constructors.
+function isConstructor(value) {
+    if (typeof value !== "function") {
+        return false;
+    }
+
+    try {
+        Reflect.construct(Object, [], value);
+        return true;
+    } catch {
+        return false;
+    }
+}
+
+function constructInstance(constructor, args, description) {
+    if (!isConstructor(constructor)) {
+        throw new TypeError(`${description} is not a constructor`);
+    }
+
+    if (codeCompilingFunctions.has(constructor)) {
+        throw new TypeError("Functions that compile code, such as the Function constructor or eval, cannot be called");
+    }
+
+    return Reflect.construct(constructor, args);
+}
+
 function getReference(id) {
     if (!references.has(id)) {
         throw new Error(`The reference ${id} does not exist or was released`);
@@ -290,7 +316,7 @@ function decodeArguments(message) {
 }
 
 async function invoke(message, args) {
-    const module = await import(toSpecifier(message.module));
+    const module = await importModule(toSpecifier(message.module));
 
     // Functions are called with their container as "this", so methods of exported objects work (e.g. CommonJS "module.exports = { method() { return this... } }")
     const hasObjectDefault = module.default !== null && (typeof module.default === "object" || typeof module.default === "function");
@@ -310,6 +336,10 @@ async function invoke(message, args) {
         throw new Error(`The module '${message.module}' does not export '${message.export}'`);
     }
 
+    if (message.construct === true) {
+        return constructInstance(target, args, message.export === null || message.export === undefined ? `The default export of the module '${message.module}'` : `The export '${message.export}' of the module '${message.module}'`);
+    }
+
     if (typeof target === "function") {
         return await callFunction(target, container, args);
     }
@@ -317,7 +347,11 @@ async function invoke(message, args) {
     return target;
 }
 
-async function invokeMember(target, member, args) {
+async function invokeMember(target, member, args, construct) {
+    if (construct && (member === null || member === undefined)) {
+        return constructInstance(target, args, "The referenced value");
+    }
+
     if (member === null || member === undefined) {
         if (typeof target !== "function") {
             throw new TypeError("The referenced value is not a function");
@@ -331,6 +365,10 @@ async function invokeMember(target, member, args) {
     }
 
     const value = target[member];
+    if (construct) {
+        return constructInstance(value, args, `The member '${member}' of the referenced value`);
+    }
+
     if (typeof value === "function") {
         return await callFunction(value, target, args);
     }
@@ -340,6 +378,7 @@ async function invokeMember(target, member, args) {
 
 async function evaluate(message, args) {
     // "args" is only declared when the caller provides arguments, so code declaring its own "args" variable still compiles
+    const require = watchdogStarted ? requireOutsideOfCall : nodeRequire;
     if (args === undefined) {
         return await new AsyncFunction("require", message.code)(require);
     }
@@ -351,19 +390,53 @@ async function evaluate(message, args) {
 const IdleCall = 0n;
 const UnattributedCode = -1n;
 const callSymbol = Symbol("MeziantouNodeJsCall");
-let runningCall;
+const microtaskSymbol = Symbol("MeziantouNodeJsMicrotask");
+let watchdogStarted = false;
+
+// Resources that run their callback once (promises, timeouts, I/O requests...) belong to the call that creates them.
+// Long-lived resources (intervals, sockets, servers, workers...) can run code for other calls, e.g. a connection pool created by the first call that needs it,
+// so the code they run does not belong to a call: it would make the host kill the process for a call that is not canceled.
+const oneShotResourceTypePattern = /^(?:PROMISE|Microtask|TickObject|Immediate)$|REQ|CONNECTWRAP|WRITEWRAP|SHUTDOWNWRAP|SENDWRAP|QUERYWRAP/;
+const oneShotResourceTypes = new Map();
+
+function isOneShotResource(type, resource) {
+    if (type === "Timeout") {
+        // _repeat is set when the timeout is created by setInterval
+        return !resource._repeat;
+    }
+
+    let result = oneShotResourceTypes.get(type);
+    if (result === undefined) {
+        result = oneShotResourceTypePattern.test(type);
+        oneShotResourceTypes.set(type, result);
+    }
+
+    return result;
+}
+
+// Microtasks (promise reactions, queueMicrotask, process.nextTick) run between the callbacks of the event loop, so they are part of the same turn of the event loop
+function isMacrotask(resource) {
+    return !(resource instanceof Promise) && resource?.[microtaskSymbol] !== true;
+}
 
 // Runs on a worker thread, so it answers the host even when the event loop of the main thread is blocked.
-// The host asks it which call blocks the event loop, so it can kill the process only when the call was canceled (NodeJsHostOptions.UnresponsiveTimeout).
+// The host asks it which call runs on the main thread, and for how long the event loop has been running the same turn,
+// so it can kill the process only when a canceled call blocks the event loop (NodeJsHostOptions.UnresponsiveTimeout).
 // Its source code is evaluated by the worker, so it only uses dynamic imports, which work whatever the module type of the worker.
 async function watchdog() {
     const { workerData } = await import("node:worker_threads");
     const { default: net } = await import("node:net");
-    const runningCall = new BigInt64Array(workerData.runningCall);
+    const runningCall = new BigInt64Array(workerData.state, 0, 1);
+    const turn = new Int32Array(workerData.state, BigInt64Array.BYTES_PER_ELEMENT, 1);
     const socket = net.connect(workerData.endpoint);
     socket.setEncoding("utf8");
     socket.on("error", () => socket.destroy());
     socket.write(JSON.stringify({ type: "hello", token: workerData.token }) + "\n");
+
+    // The turn is observed by this thread, so the duration does not depend on the clock of the main thread, nor on the time the host takes to ask.
+    // It is the time since the turn was first observed, so it never exceeds the time the event loop has been running it.
+    let observedTurn;
+    let observedSince = 0;
 
     // Each line is a request for the running call
     let incompleteLine = "";
@@ -372,45 +445,70 @@ async function watchdog() {
         let index;
         while ((index = incompleteLine.indexOf("\n")) >= 0) {
             incompleteLine = incompleteLine.slice(index + 1);
-            socket.write(`{"running":${Atomics.load(runningCall, 0)}}\n`);
+
+            // The main thread changes the turn before the call, so reading the call first never associates it with an older turn
+            const call = Atomics.load(runningCall, 0);
+            const currentTurn = Atomics.load(turn, 0);
+            const now = performance.now();
+            if (currentTurn !== observedTurn) {
+                observedTurn = currentTurn;
+                observedSince = now;
+            }
+
+            socket.write(`{"running":${call},"elapsed":${Math.floor(now - observedSince)}}\n`);
         }
     });
 }
 
 function startWatchdog() {
-    const buffer = new SharedArrayBuffer(BigInt64Array.BYTES_PER_ELEMENT);
-    const state = new BigInt64Array(buffer);
+    const buffer = new SharedArrayBuffer(BigInt64Array.BYTES_PER_ELEMENT * 2);
+    const runningCall = new BigInt64Array(buffer, 0, 1);
+    const turn = new Int32Array(buffer, BigInt64Array.BYTES_PER_ELEMENT, 1);
     const stack = [];
     let current = IdleCall;
     const setRunningCall = call => {
         current = call;
-        Atomics.store(state, 0, call);
+        Atomics.store(runningCall, 0, call);
     };
 
-    // Asynchronous operations (promises, timers, I/O...) belong to the call that started them, so the code they run is attributed to it.
+    // A new turn starts and ends with each callback run by the event loop, so the turn does not change while microtasks keep the event loop busy
+    const changeTurnIfMacrotask = () => {
+        if (stack.length === 0 && isMacrotask(executionAsyncResource())) {
+            Atomics.add(turn, 0, 1);
+        }
+    };
+
+    // Asynchronous operations (promises, timeouts, I/O...) belong to the call that started them, so the code they run is attributed to it.
     // An exception thrown by a hook stops the process, so the hooks never throw.
     createHook({
         init(asyncId, type, triggerAsyncId, resource) {
-            const call = executionAsyncResource()?.[callSymbol];
-            if (call !== undefined) {
-                try {
-                    resource[callSymbol] = call;
-                } catch {
-                    // The resource is not extensible
+            try {
+                if (type === "TickObject" || type === "Microtask") {
+                    resource[microtaskSymbol] = true;
                 }
+
+                const call = executionAsyncResource()?.[callSymbol];
+                if (call !== undefined && isOneShotResource(type, resource)) {
+                    resource[callSymbol] = call;
+                }
+            } catch {
+                // The resource is not extensible
             }
         },
         before() {
+            changeTurnIfMacrotask();
             stack.push(current);
             setRunningCall(executionAsyncResource()?.[callSymbol] ?? UnattributedCode);
         },
         after() {
-            setRunningCall(stack.pop() ?? IdleCall);
+            const call = stack.pop() ?? IdleCall;
+            changeTurnIfMacrotask();
+            setRunningCall(call);
         },
     }).enable();
-    runningCall = state;
+    watchdogStarted = true;
 
-    const worker = new Worker(`(${watchdog})();`, { eval: true, workerData: { endpoint, token, runningCall: buffer } });
+    const worker = new Worker(`(${watchdog})();`, { eval: true, workerData: { endpoint, token, state: buffer } });
     worker.unref();
     worker.on("error", error => {
         console.error("The watchdog failed:", error);
@@ -418,9 +516,26 @@ function startWatchdog() {
     });
 }
 
+// Module initialization (the top-level code of a module, and the timers and connections it creates) is shared by all the calls,
+// so it does not belong to the call that happens to load the module first
+function runOutsideOfCall(fn, ...args) {
+    if (!watchdogStarted) {
+        return fn(...args);
+    }
+
+    return new AsyncResource("MeziantouNodeJsModuleLoading").runInAsyncScope(fn, undefined, ...args);
+}
+
+function importModule(specifier) {
+    return runOutsideOfCall(() => import(specifier));
+}
+
+// The require function passed to evaluated code. Its properties (resolve, cache...) are the ones of the actual require function.
+const requireOutsideOfCall = Object.assign(function require(id) { return runOutsideOfCall(nodeRequire, id); }, nodeRequire);
+
 // Runs the code of a call in its own asynchronous context once the watchdog is started, so the code it runs is attributed to it
 function run(message) {
-    if (runningCall === undefined || typeof message.id !== "number") {
+    if (!watchdogStarted || typeof message.id !== "number") {
         handle(message);
         return;
     }
@@ -456,7 +571,7 @@ async function handle(message) {
                 result = invoke(message, decodeArguments(message));
                 break;
             case "invokeReference":
-                result = invokeMember(getReference(message.reference), message.member, decodeArguments(message));
+                result = invokeMember(getReference(message.reference), message.member, decodeArguments(message), message.construct === true);
                 break;
             case "getReference":
                 result = getReference(message.reference);
@@ -466,10 +581,6 @@ async function handle(message) {
                 break;
             case "debug":
                 result = { references: references.size };
-                break;
-            case "ping":
-                // Answered as soon as the event loop is available, to detect a call blocking it
-                result = undefined;
                 break;
             default:
                 throw new Error(`Unknown message type '${message.type}'`);

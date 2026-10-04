@@ -16,7 +16,7 @@ namespace Meziantou.Framework.NodeJs;
 /// <summary>Hosts a Node.js process and runs JavaScript code in it.</summary>
 /// <remarks>
 /// <para>The Node.js process runs out of process and communicates with the host using JSON messages over a private local socket. Arguments and results are serialized as JSON.</para>
-/// <para>Calls can run concurrently. The Node.js process exits when the host is disposed or when the .NET process exits.</para>
+/// <para>Calls can run concurrently. The Node.js process exits when the host is disposed, or when the connection with the .NET process is closed (e.g. when the .NET process exits) unless its event loop is blocked. Its standard input is closed, and its standard output and error are only passed to <see cref="NodeJsHostOptions.StandardOutputReceived"/> and <see cref="NodeJsHostOptions.StandardErrorReceived"/>.</para>
 /// </remarks>
 /// <example>
 /// <code>
@@ -52,10 +52,15 @@ public sealed class NodeJsHost : IAsyncDisposable
     // Initial size of the buffer that receives messages. It grows to contain the largest message, and shrinks back once the message is processed.
     private const int ReadBufferSize = 16 * 1024;
 
-    // The default options, except that NaN and infinities, sent as "NaN", "Infinity", and "-Infinity", can be read as numbers
+    // JavaScript code uses camelCase names, so the web defaults are used (camelCase names, case-insensitive matching) when serializing using reflection without options
     [SuppressMessage("Usage", "MA0224:Set RespectNullableAnnotations on the JsonSerializerOptions instance", Justification = "Same behavior as the default options")]
     [SuppressMessage("Usage", "MA0225:Set RespectRequiredConstructorParameters on the JsonSerializerOptions instance", Justification = "Same behavior as the default options")]
-    private static readonly JsonSerializerOptions DefaultResultSerializerOptions = new() { NumberHandling = JsonNumberHandling.AllowNamedFloatingPointLiterals };
+    internal static readonly JsonSerializerOptions DefaultArgumentSerializerOptions = new(JsonSerializerDefaults.Web);
+
+    // The web defaults, except that NaN and infinities, sent as "NaN", "Infinity", and "-Infinity", can be read as numbers
+    [SuppressMessage("Usage", "MA0224:Set RespectNullableAnnotations on the JsonSerializerOptions instance", Justification = "Same behavior as the default options")]
+    [SuppressMessage("Usage", "MA0225:Set RespectRequiredConstructorParameters on the JsonSerializerOptions instance", Justification = "Same behavior as the default options")]
+    private static readonly JsonSerializerOptions DefaultResultSerializerOptions = new(JsonSerializerDefaults.Web) { NumberHandling = JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.AllowNamedFloatingPointLiterals };
 
     private readonly NodeJsHostOptions _options;
     private readonly Process _process;
@@ -77,6 +82,7 @@ public sealed class NodeJsHost : IAsyncDisposable
     private Exception? _terminationException;
     private long _nextRequestId;
     private int _abandonedCalls;
+    private int _processId;
     private long _canceledCalls;
     private long _checkedCanceledCalls;
     private int _responsivenessCheckRunning;
@@ -95,7 +101,8 @@ public sealed class NodeJsHost : IAsyncDisposable
     }
 
     /// <summary>Gets the identifier of the Node.js process.</summary>
-    public int ProcessId => _process.Id;
+    /// <remarks>The identifier remains available once the process exits or the host is disposed.</remarks>
+    public int ProcessId => _processId;
 
     /// <summary>Gets the version of Node.js, as reported by <c>process.version</c> (e.g. <c>v24.15.0</c>).</summary>
     public string NodeVersion { get; private set; } = "";
@@ -130,7 +137,7 @@ public sealed class NodeJsHost : IAsyncDisposable
     }
 
     /// <summary>Imports a module and calls one of its exports.</summary>
-    /// <param name="module">The module specifier: an npm package name, a path relative to <see cref="NodeJsHostOptions.WorkingDirectory"/>, an absolute path, or a URL.</param>
+    /// <param name="module">The module specifier, as used by <c>import()</c>: an npm package name, a relative path starting with <c>./</c> or <c>../</c> and including the file extension, resolved from <see cref="NodeJsHostOptions.WorkingDirectory"/>, an absolute path, or a <c>file:</c> or <c>node:</c> URL. A module is loaded once, and kept for the lifetime of the process.</param>
     /// <param name="exportName">The name of the export. When <see langword="null"/>, the default export is used. CommonJS exports are supported.</param>
     /// <param name="arguments">The arguments passed to the function. Use <see cref="JSValue"/> for values that JSON cannot represent, and <see cref="JSReference"/> to pass a value kept in the Node.js process.</param>
     /// <param name="cancellationToken">A token to stop waiting for the result. The JavaScript code keeps running.</param>
@@ -143,6 +150,7 @@ public sealed class NodeJsHost : IAsyncDisposable
 
     /// <summary>Imports a module, calls one of its exports, and deserializes the result.</summary>
     /// <inheritdoc cref="InvokeAsync(string, string?, IReadOnlyList{JsonNode?}?, CancellationToken)"/>
+    /// <exception cref="JsonException">The result cannot be deserialized to <typeparamref name="T"/>.</exception>
     public async Task<T?> InvokeAsync<T>(string module, string? exportName, IReadOnlyList<JsonNode?>? arguments, JsonTypeInfo<T> resultTypeInfo, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(resultTypeInfo);
@@ -152,11 +160,22 @@ public sealed class NodeJsHost : IAsyncDisposable
 
     /// <summary>Imports a module, calls one of its exports, and deserializes the result. Arguments are serialized using reflection.</summary>
     /// <inheritdoc cref="InvokeAsync(string, string?, IReadOnlyList{JsonNode?}?, CancellationToken)"/>
+    /// <exception cref="JsonException">The result cannot be deserialized to <typeparamref name="T"/>.</exception>
     [RequiresUnreferencedCode(ReflectionUnreferencedCodeMessage)]
     [RequiresDynamicCode(ReflectionDynamicCodeMessage)]
     public async Task<T?> InvokeAsync<T>(string module, string? exportName, object?[]? arguments = null, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
     {
         return await InvokeCoreAsync(module, exportName, ArgumentWriter.SerializeArguments(arguments, options), ResultKind.Json, CreateResultReader<T>(options), cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>Imports a module, calls one of its exports without arguments, and deserializes the result using reflection.</summary>
+    /// <inheritdoc cref="InvokeAsync(string, string?, IReadOnlyList{JsonNode?}?, CancellationToken)"/>
+    /// <exception cref="JsonException">The result cannot be deserialized to <typeparamref name="T"/>.</exception>
+    [RequiresUnreferencedCode(ReflectionUnreferencedCodeMessage)]
+    [RequiresDynamicCode(ReflectionDynamicCodeMessage)]
+    public Task<T?> InvokeAsync<T>(string module, string? exportName, CancellationToken cancellationToken)
+    {
+        return InvokeAsync<T>(module, exportName, arguments: null, options: null, cancellationToken);
     }
 
     /// <summary>Imports a module and calls one of its exports, ignoring its result. The result does not need to be serializable.</summary>
@@ -193,6 +212,28 @@ public sealed class NodeJsHost : IAsyncDisposable
         return InvokeReferenceAsync(module, exportName, ArgumentWriter.SerializeArguments(arguments, options), cancellationToken);
     }
 
+    /// <summary>Imports a module, creates an instance of one of its exported classes (<c>new</c>), and keeps the instance in the Node.js process.</summary>
+    /// <param name="module">The module specifier, as used by <c>import()</c>: an npm package name, a relative path starting with <c>./</c> or <c>../</c> and including the file extension, resolved from <see cref="NodeJsHostOptions.WorkingDirectory"/>, an absolute path, or a <c>file:</c> or <c>node:</c> URL. A module is loaded once, and kept for the lifetime of the process.</param>
+    /// <param name="exportName">The name of the exported class or constructor function. When <see langword="null"/>, the default export is used.</param>
+    /// <param name="arguments">The arguments passed to the constructor. Use <see cref="JSValue"/> for values that JSON cannot represent, and <see cref="JSReference"/> to pass a value kept in the Node.js process.</param>
+    /// <param name="cancellationToken">A token to stop waiting for the result. The JavaScript code keeps running.</param>
+    /// <returns>A reference to the new instance. Dispose it when the instance is no longer needed.</returns>
+    /// <exception cref="NodeJsException">The export is not a constructor, the constructor throws, or the Node.js process exits.</exception>
+    public async Task<JSReference> CreateInstanceAsync(string module, string? exportName, IReadOnlyList<JsonNode?>? arguments = null, CancellationToken cancellationToken = default)
+    {
+        var referenceId = await InvokeCoreAsync(module, exportName, arguments, ResultKind.Reference, ReadReferenceId, cancellationToken, construct: true).ConfigureAwait(false);
+        return new JSReference(this, referenceId);
+    }
+
+    /// <summary>Imports a module, creates an instance of one of its exported classes (<c>new</c>), and keeps the instance in the Node.js process. Arguments are serialized using reflection.</summary>
+    /// <inheritdoc cref="CreateInstanceAsync(string, string?, IReadOnlyList{JsonNode?}?, CancellationToken)"/>
+    [RequiresUnreferencedCode(ReflectionUnreferencedCodeMessage)]
+    [RequiresDynamicCode(ReflectionDynamicCodeMessage)]
+    public Task<JSReference> CreateInstanceAsync(string module, string? exportName, object?[]? arguments, JsonSerializerOptions? options, CancellationToken cancellationToken = default)
+    {
+        return CreateInstanceAsync(module, exportName, ArgumentWriter.SerializeArguments(arguments, options), cancellationToken);
+    }
+
     /// <summary>Evaluates JavaScript code as the body of an async function.</summary>
     /// <param name="code">The body of the function. Use <c>return</c> to return a value and <c>await</c> to wait for promises. <c>require</c> is available, and values stored on <c>globalThis</c> persist across calls.</param>
     /// <param name="cancellationToken">A token to stop waiting for the result. The JavaScript code keeps running.</param>
@@ -216,6 +257,7 @@ public sealed class NodeJsHost : IAsyncDisposable
 
     /// <summary>Evaluates JavaScript code as the body of an async function that receives arguments, and deserializes the result.</summary>
     /// <inheritdoc cref="EvaluateAsync(string, IReadOnlyList{JsonNode?}?, CancellationToken)"/>
+    /// <exception cref="JsonException">The result cannot be deserialized to <typeparamref name="T"/>.</exception>
     public async Task<T?> EvaluateAsync<T>(string code, IReadOnlyList<JsonNode?>? arguments, JsonTypeInfo<T> resultTypeInfo, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(resultTypeInfo);
@@ -225,6 +267,7 @@ public sealed class NodeJsHost : IAsyncDisposable
 
     /// <summary>Evaluates JavaScript code as the body of an async function that receives arguments, and deserializes the result. Arguments are serialized using reflection.</summary>
     /// <inheritdoc cref="EvaluateAsync(string, IReadOnlyList{JsonNode?}?, CancellationToken)"/>
+    /// <exception cref="JsonException">The result cannot be deserialized to <typeparamref name="T"/>.</exception>
     [RequiresUnreferencedCode(ReflectionUnreferencedCodeMessage)]
     [RequiresDynamicCode(ReflectionDynamicCodeMessage)]
     public async Task<T?> EvaluateAsync<T>(string code, object?[]? arguments, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
@@ -234,6 +277,7 @@ public sealed class NodeJsHost : IAsyncDisposable
 
     /// <summary>Evaluates JavaScript code as the body of an async function and deserializes the result.</summary>
     /// <inheritdoc cref="EvaluateAsync(string, CancellationToken)"/>
+    /// <exception cref="JsonException">The result cannot be deserialized to <typeparamref name="T"/>.</exception>
     public async Task<T?> EvaluateAsync<T>(string code, JsonTypeInfo<T> resultTypeInfo, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(resultTypeInfo);
@@ -243,11 +287,22 @@ public sealed class NodeJsHost : IAsyncDisposable
 
     /// <summary>Evaluates JavaScript code as the body of an async function and deserializes the result using reflection.</summary>
     /// <inheritdoc cref="EvaluateAsync(string, CancellationToken)"/>
+    /// <exception cref="JsonException">The result cannot be deserialized to <typeparamref name="T"/>.</exception>
     [RequiresUnreferencedCode("JSON deserialization might require types that cannot be statically analyzed. Use the overload that takes a JsonTypeInfo instead.")]
     [RequiresDynamicCode("JSON deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use the overload that takes a JsonTypeInfo instead.")]
     public async Task<T?> EvaluateAsync<T>(string code, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
     {
         return await EvaluateCoreAsync(code, hasArguments: false, arguments: null, ResultKind.Json, CreateResultReader<T>(options), cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>Evaluates JavaScript code as the body of an async function and deserializes the result using reflection.</summary>
+    /// <inheritdoc cref="EvaluateAsync(string, CancellationToken)"/>
+    /// <exception cref="JsonException">The result cannot be deserialized to <typeparamref name="T"/>.</exception>
+    [RequiresUnreferencedCode("JSON deserialization might require types that cannot be statically analyzed. Use the overload that takes a JsonTypeInfo instead.")]
+    [RequiresDynamicCode("JSON deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use the overload that takes a JsonTypeInfo instead.")]
+    public Task<T?> EvaluateAsync<T>(string code, CancellationToken cancellationToken)
+    {
+        return EvaluateAsync<T>(code, options: null, cancellationToken);
     }
 
     /// <summary>Evaluates JavaScript code as the body of an async function, ignoring its result. The result does not need to be serializable.</summary>
@@ -422,6 +477,7 @@ public sealed class NodeJsHost : IAsyncDisposable
         try
         {
             _process.Start();
+            _processId = _process.Id;
         }
         catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or IOException)
         {
@@ -576,7 +632,7 @@ public sealed class NodeJsHost : IAsyncDisposable
         ValidateHelloMessage(document.RootElement, expectedToken);
     }
 
-    private Task<T> InvokeCoreAsync<T>(string module, string? exportName, IReadOnlyList<JsonNode?>? arguments, ResultKind resultKind, ResultReader<T> readResult, CancellationToken cancellationToken)
+    private Task<T> InvokeCoreAsync<T>(string module, string? exportName, IReadOnlyList<JsonNode?>? arguments, ResultKind resultKind, ResultReader<T> readResult, CancellationToken cancellationToken, bool construct = false)
     {
         ArgumentNullException.ThrowIfNull(module);
 
@@ -585,6 +641,11 @@ public sealed class NodeJsHost : IAsyncDisposable
             writer.WriteString("type", "invoke");
             writer.WriteString("module", module);
             writer.WriteString("export", exportName);
+            if (construct)
+            {
+                writer.WriteBoolean("construct", true);
+            }
+
             ArgumentWriter.Write(writer, this, arguments);
         }, resultKind, readResult, cancellationToken);
     }
@@ -604,7 +665,7 @@ public sealed class NodeJsHost : IAsyncDisposable
         }, resultKind, readResult, cancellationToken);
     }
 
-    internal Task<T> InvokeMemberAsync<T>(JSReference target, string? memberName, IReadOnlyList<JsonNode?>? arguments, ResultKind resultKind, ResultReader<T> readResult, CancellationToken cancellationToken)
+    internal Task<T> InvokeMemberAsync<T>(JSReference target, string? memberName, IReadOnlyList<JsonNode?>? arguments, ResultKind resultKind, ResultReader<T> readResult, CancellationToken cancellationToken, bool construct = false)
     {
         return SendRequestAsync(writer =>
         {
@@ -612,6 +673,11 @@ public sealed class NodeJsHost : IAsyncDisposable
             writer.WriteString("type", "invokeReference");
             writer.WriteNumber("reference", target.Id);
             writer.WriteString("member", memberName);
+            if (construct)
+            {
+                writer.WriteBoolean("construct", true);
+            }
+
             ArgumentWriter.Write(writer, this, arguments);
         }, resultKind, readResult, cancellationToken);
     }
@@ -741,6 +807,8 @@ public sealed class NodeJsHost : IAsyncDisposable
 
     private async Task<T> SendRequestAsync<T>(Action<Utf8JsonWriter> writeMessage, ResultKind resultKind, ResultReader<T> readResult, CancellationToken cancellationToken)
     {
+        // A host whose process exited reports the exit even once disposed (e.g. by NodeJsHostPool when it replaces the process), as it is the cause of the failure
+        ThrowIfTerminated();
         ObjectDisposedException.ThrowIf(_disposed is 1, this);
         cancellationToken.ThrowIfCancellationRequested();
 
@@ -870,22 +938,42 @@ public sealed class NodeJsHost : IAsyncDisposable
     }
 
     /// <summary>Kills the process when a canceled call blocks its event loop, as it is the only way to stop its JavaScript code. Runs until no canceled call is running.</summary>
+    /// <remarks>
+    /// The decision only depends on the watchdog, a thread of the Node.js process that measures for how long the event loop has been running the same turn, and tells which call runs.
+    /// It does not depend on the time it takes to exchange messages with the process, which also depends on this process (e.g. a large message being sent, or a busy thread pool).
+    /// </remarks>
     private async Task CheckResponsivenessAsync(TimeSpan timeout)
     {
         var interval = timeout < MaxResponsivenessCheckInterval ? timeout : MaxResponsivenessCheckInterval;
         while (true)
         {
             var canceledCalls = Interlocked.Read(ref _canceledCalls);
+            var delay = interval;
             try
             {
-                if (await IsBlockedByCanceledCallAsync(timeout).ConfigureAwait(false))
+                var (runningCall, elapsed) = await GetRunningCallAsync().ConfigureAwait(false);
+                if (_abandonedRequests.ContainsKey(runningCall))
                 {
-                    Terminate(new NodeJsException($"The Node.js process was killed, as a canceled call blocked its event loop for more than {timeout}, e.g. with an infinite loop."));
-                    KillProcess();
-                    return;
+                    if (elapsed >= timeout)
+                    {
+                        Terminate(new NodeJsException($"The Node.js process was killed, as a canceled call blocked its event loop for more than {timeout}, e.g. with an infinite loop."));
+                        KillProcess();
+                        return;
+                    }
+
+                    // Check again as soon as the call may have blocked the event loop for longer than the timeout
+                    if (timeout - elapsed < delay)
+                    {
+                        delay = timeout - elapsed;
+                    }
+                }
+                else
+                {
+                    // No canceled call blocks the event loop now
+                    Interlocked.Exchange(ref _checkedCanceledCalls, canceledCalls);
                 }
             }
-            catch (Exception ex) when (ex is NodeJsException or ObjectDisposedException or IOException or OperationCanceledException)
+            catch (Exception ex) when (ex is ObjectDisposedException or IOException or OperationCanceledException)
             {
                 // The process exited, or the host is disposed
                 return;
@@ -898,13 +986,11 @@ public sealed class NodeJsHost : IAsyncDisposable
                 return;
             }
 
-            Interlocked.Exchange(ref _checkedCanceledCalls, canceledCalls);
-
             // A canceled call can block the event loop later (e.g. after awaiting I/O), so the process is checked until no canceled call is running.
             // The check runs sooner when another call is canceled, or when the host is terminated.
             if (AbandonedCalls > 0 && !IsTerminated)
             {
-                await _responsivenessCheckSignal.WaitAsync(interval).ConfigureAwait(false);
+                await _responsivenessCheckSignal.WaitAsync(delay).ConfigureAwait(false);
                 continue;
             }
 
@@ -915,62 +1001,19 @@ public sealed class NodeJsHost : IAsyncDisposable
         }
     }
 
-    /// <summary>Waits for the event loop to respond. While it does not, gets the call that blocks it from the watchdog.</summary>
-    /// <returns><see langword="true"/> when a canceled call blocks the event loop for more than <paramref name="timeout"/>.</returns>
-    private async Task<bool> IsBlockedByCanceledCallAsync(TimeSpan timeout)
+    /// <summary>Gets the identifier of the call whose code runs on the main thread of the Node.js process (0 when its event loop is idle, -1 when the code does not belong to a call), and for how long its event loop has been running the same turn.</summary>
+    /// <remarks>The watchdog answers even when the event loop is blocked. When the whole process is unresponsive (e.g. suspended), this waits until it responds or exits.</remarks>
+    private async Task<(long RunningCall, TimeSpan Elapsed)> GetRunningCallAsync()
     {
-        var ping = SendRequestCoreAsync(writer => writer.WriteString("type", "ping"), ResultKind.Void, ReadJsonElement, CancellationToken.None);
-        try
-        {
-            while (true)
-            {
-                try
-                {
-                    await ping.WaitAsync(timeout).ConfigureAwait(false);
-                    return false;
-                }
-                catch (TimeoutException)
-                {
-                }
-
-                // The event loop may be busy with calls that were not canceled, which must not be stopped
-                using var cts = new CancellationTokenSource(timeout);
-                long runningCall;
-                try
-                {
-                    runningCall = await GetRunningCallAsync(cts.Token).ConfigureAwait(false);
-                }
-                catch (OperationCanceledException) when (cts.IsCancellationRequested)
-                {
-                    // The watchdog runs on its own thread, so the whole process is unresponsive (e.g. suspended)
-                    return true;
-                }
-
-                if (_abandonedRequests.ContainsKey(runningCall))
-                    return true;
-            }
-        }
-        finally
-        {
-            if (!ping.IsCompleted)
-            {
-                // The ping fails when the process is killed
-                _ = ping.ContinueWith(static task => _ = task.Exception, CancellationToken.None, TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
-            }
-        }
-    }
-
-    /// <summary>Gets the identifier of the call whose code runs on the main thread of the Node.js process: 0 when its event loop is idle, -1 when the code does not belong to a call.</summary>
-    private async Task<long> GetRunningCallAsync(CancellationToken cancellationToken)
-    {
-        await _watchdogStream!.WriteAsync(WatchdogRequest, cancellationToken).ConfigureAwait(false);
-        await _watchdogStream.FlushAsync(cancellationToken).ConfigureAwait(false);
-        var response = await _watchdogReader!.ReadLineAsync(cancellationToken).ConfigureAwait(false) ?? throw new IOException("The watchdog connection is closed.");
+        await _watchdogStream!.WriteAsync(WatchdogRequest).ConfigureAwait(false);
+        await _watchdogStream.FlushAsync().ConfigureAwait(false);
+        var response = await _watchdogReader!.ReadLineAsync().ConfigureAwait(false) ?? throw new IOException("The watchdog connection is closed.");
         using var document = JsonDocument.Parse(response);
-        return document.RootElement.GetProperty("running").GetInt64();
+        var root = document.RootElement;
+        return (root.GetProperty("running").GetInt64(), TimeSpan.FromMilliseconds(root.GetProperty("elapsed").GetInt64()));
     }
 
-    /// <summary>Waits until the process is checked after the last canceled call, or the check stops, for tests.</summary>
+    /// <summary>Waits until the process is found not blocked by a canceled call after the last canceled call, or the check stops (e.g. when the process is killed), for tests.</summary>
     internal async Task WaitForResponsivenessCheckAsync()
     {
         var canceledCalls = Interlocked.Read(ref _canceledCalls);

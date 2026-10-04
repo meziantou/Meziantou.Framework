@@ -29,18 +29,18 @@ public sealed class NodeJsHostOptions
     /// </remarks>
     public int? MaxConcurrentCalls { get; set; }
 
-    /// <summary>Gets or sets the maximum time a canceled call can block the event loop of the Node.js process (e.g. with an infinite loop) before the process is killed. When <see langword="null"/>, the process is never killed.</summary>
+    /// <summary>Gets or sets the maximum time a canceled call can block the event loop of the Node.js process (e.g. with an infinite loop, or with promises that never let the event loop run other callbacks) before the process is killed. When <see langword="null"/>, the process is never killed.</summary>
     /// <remarks>
-    /// <para>Canceling a call does not stop its JavaScript code, and synchronous code blocks all the other calls of the process. Killing the process is the only way to stop it. The calls in progress then fail with a <see cref="NodeJsException"/>, and <see cref="NodeJsHostPool"/> replaces the process the next time a host is selected.</para>
-    /// <para>The process is killed only when the code blocking its event loop belongs to a canceled call, including code run by the promises, timers, and callbacks it created. Calls that are not canceled are never stopped, even when they keep the event loop busy for longer. While canceled calls are running, the process is checked at least every second, so a canceled call that blocks the event loop after awaiting is also stopped. Choose a value larger than the longest synchronous step of a canceled call that must not be stopped.</para>
+    /// <para>Canceling a call does not stop its JavaScript code, and synchronous code blocks all the other calls of the process. Killing the process is the only way to stop it. The calls in progress then fail with a <see cref="NodeJsException"/> whose <see cref="NodeJsException.ExitCode"/> is <see langword="null"/>, and <see cref="NodeJsHostPool"/> replaces the process the next time a host is selected.</para>
+    /// <para>The process is killed only when the code blocking its event loop belongs to a canceled call, including code run by the promises, timeouts, and I/O operations it started. Code run by long-lived objects (intervals, sockets, servers, event listeners on objects the call did not create...) and the code that loads a module imported by <see cref="NodeJsHost.InvokeAsync(string, string?, IReadOnlyList{System.Text.Json.Nodes.JsonNode?}?, CancellationToken)"/> or <c>require</c> belong to no call, as they can run code for several calls. Calls that are not canceled are never stopped, even when they keep the event loop busy for longer. While canceled calls are running, the process is checked at least every second, so a canceled call that blocks the event loop after awaiting is also stopped. Choose a value larger than the longest synchronous step of a canceled call that must not be stopped.</para>
     /// <para>To know which call runs, the process tracks the asynchronous context of each call using <c>node:async_hooks</c>, which slows down code that awaits many promises, and a watchdog thread answers the host while the event loop is blocked.</para>
     /// </remarks>
     public TimeSpan? UnresponsiveTimeout { get; set; }
 
-    /// <summary>Gets or sets a callback invoked for each line written by the Node.js process to its standard output. Exceptions thrown by the callback are ignored.</summary>
+    /// <summary>Gets or sets a callback invoked for each line written by the Node.js process to its standard output (e.g. <c>console.log</c>). When <see langword="null"/>, the output is discarded. Exceptions thrown by the callback are ignored.</summary>
     public Action<string>? StandardOutputReceived { get; set; }
 
-    /// <summary>Gets or sets a callback invoked for each line written by the Node.js process to its standard error. Exceptions thrown by the callback are ignored.</summary>
+    /// <summary>Gets or sets a callback invoked for each line written by the Node.js process to its standard error (e.g. <c>console.error</c>). When <see langword="null"/>, the output is discarded, except the last lines, which are included in the message of the exception thrown when the process exits. Exceptions thrown by the callback are ignored.</summary>
     public Action<string>? StandardErrorReceived { get; set; }
 
     /// <summary>Creates a copy of the options, so changes made once a host is started do not affect it.</summary>

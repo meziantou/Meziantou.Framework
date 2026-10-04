@@ -250,6 +250,54 @@ public sealed partial class NodeJsHostTests
     }
 
     [Fact]
+    public async Task Reflection_DefaultOptions_UseCamelCaseNames()
+    {
+        await using var temporaryDirectory = TemporaryDirectory.Create();
+        temporaryDirectory.CreateTextFile("person.mjs", "export const create = (name, age) => ({ name, age }); export const describe = person => `${person.name} ${person.age} ${Object.keys(person)}`;");
+        await using var node = await StartNodeAsync(new NodeJsHostOptions { WorkingDirectory = temporaryDirectory.FullPath });
+
+        var person = await node.InvokeAsync<Person>("./person.mjs", "create", ["Jane", 31], options: null, XunitCancellationToken);
+        var description = await node.InvokeAsync<string>("./person.mjs", "describe", [new Person { Name = "John", Age = 42 }], options: null, XunitCancellationToken);
+        var specialValues = await node.EvaluateAsync<double[]>("return [NaN, -Infinity, 1];", options: null, XunitCancellationToken);
+        var numberAsString = await node.EvaluateAsync<int>("return '42';", options: null, XunitCancellationToken);
+
+        Assert.NotNull(person);
+        Assert.Equal("Jane", person.Name);
+        Assert.Equal(31, person.Age);
+        Assert.Equal("John 42 name,age", description);
+        Assert.NotNull(specialValues);
+        Assert.True(double.IsNaN(specialValues[0]));
+        Assert.Equal(double.NegativeInfinity, specialValues[1]);
+        Assert.Equal(42, numberAsString);
+    }
+
+    [Fact]
+    public async Task Reflection_CancellationTokenOnlyOverloads()
+    {
+        await using var temporaryDirectory = TemporaryDirectory.Create();
+        temporaryDirectory.CreateTextFile("values.mjs", "export const answer = () => 42; export const create = () => ({ value: 10 });");
+        var options = new NodeJsHostOptions { WorkingDirectory = temporaryDirectory.FullPath };
+        await using var node = await StartNodeAsync(options);
+        await using var pool = await NodeJsHostPool.StartAsync(1, options, XunitCancellationToken);
+        await using var reference = await node.InvokeReferenceAsync("./values.mjs", "create", arguments: null, XunitCancellationToken);
+
+        var evaluated = await node.EvaluateAsync<int>("return 1;", XunitCancellationToken);
+        var invoked = await node.InvokeAsync<int>("./values.mjs", "answer", XunitCancellationToken);
+        var poolEvaluated = await pool.EvaluateAsync<int>("return 2;", XunitCancellationToken);
+        var poolInvoked = await pool.InvokeAsync<int>("./values.mjs", "answer", XunitCancellationToken);
+        var member = await reference.InvokeAsync<int>("value", XunitCancellationToken);
+        var value = await reference.GetValueAsync<Dictionary<string, int>>(XunitCancellationToken);
+
+        Assert.Equal(1, evaluated);
+        Assert.Equal(42, invoked);
+        Assert.Equal(2, poolEvaluated);
+        Assert.Equal(42, poolInvoked);
+        Assert.Equal(10, member);
+        Assert.NotNull(value);
+        Assert.Equal(10, value["value"]);
+    }
+
+    [Fact]
     public async Task Invoke_MissingExport_Throws()
     {
         await using var temporaryDirectory = TemporaryDirectory.Create();
@@ -495,6 +543,17 @@ public sealed partial class NodeJsHostTests
         await Assert.ThrowsAsync<ObjectDisposedException>(() => pending);
         await Assert.ThrowsAsync<ObjectDisposedException>(() => node.EvaluateAsync("return 1;", XunitCancellationToken));
         await node.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task ProcessId_IsAvailableAfterDispose()
+    {
+        var node = await StartNodeAsync();
+        var processId = (await node.EvaluateAsync("return process.pid;", XunitCancellationToken)).GetInt32();
+
+        await node.DisposeAsync();
+
+        Assert.Equal(processId, node.ProcessId);
     }
 
     [Fact]
@@ -1063,6 +1122,51 @@ public sealed partial class NodeJsHostTests
     }
 
     [Fact]
+    public async Task CreateInstance()
+    {
+        await using var temporaryDirectory = TemporaryDirectory.Create();
+        temporaryDirectory.CreateTextFile("shapes.mjs", """
+            export default class Rectangle {
+                constructor(width, height) { this.width = width; this.height = height; }
+                area() { return this.width * this.height; }
+            }
+
+            export class Square extends Rectangle {
+                constructor(side) { super(side, side); }
+            }
+
+            export const shapes = { Circle: class { constructor(radius) { this.radius = radius; } } };
+            export const notConstructor = () => 1;
+            """);
+        var options = new NodeJsHostOptions { WorkingDirectory = temporaryDirectory.FullPath };
+        await using var node = await StartNodeAsync(options);
+        await using var pool = await NodeJsHostPool.StartAsync(1, options, XunitCancellationToken);
+
+        await using var rectangle = await node.CreateInstanceAsync("./shapes.mjs", exportName: null, [2, 3], XunitCancellationToken);
+        await using var square = await node.CreateInstanceAsync("./shapes.mjs", "Square", [4], XunitCancellationToken);
+        await using var reflectionSquare = await node.CreateInstanceAsync("./shapes.mjs", "Square", [5], options: null, XunitCancellationToken);
+        await using var poolSquare = await pool.CreateInstanceAsync("./shapes.mjs", "Square", [6], XunitCancellationToken);
+        await using var shapes = await node.InvokeReferenceAsync("./shapes.mjs", "shapes", arguments: null, XunitCancellationToken);
+        await using var circle = await shapes.CreateInstanceAsync("Circle", [1], XunitCancellationToken);
+        await using var pointClass = await node.EvaluateReferenceAsync("return class { constructor(x) { this.x = x; } };", XunitCancellationToken);
+        await using var point = await pointClass.CreateInstanceAsync(memberName: null, [7], XunitCancellationToken);
+        await using var functionConstructor = await node.EvaluateReferenceAsync("return Function;", XunitCancellationToken);
+        var notConstructor = await Assert.ThrowsAsync<NodeJsException>(() => node.CreateInstanceAsync("./shapes.mjs", "notConstructor", arguments: null, XunitCancellationToken));
+        var methodMember = await Assert.ThrowsAsync<NodeJsException>(() => rectangle.CreateInstanceAsync("area", arguments: null, XunitCancellationToken));
+        var compilesCode = await Assert.ThrowsAsync<NodeJsException>(() => functionConstructor.CreateInstanceAsync(memberName: null, ["return 1;"], XunitCancellationToken));
+
+        Assert.Equal(6, (await rectangle.InvokeAsync("area", arguments: null, XunitCancellationToken)).GetInt32());
+        Assert.Equal(16, (await square.InvokeAsync("area", arguments: null, XunitCancellationToken)).GetInt32());
+        Assert.Equal(25, (await reflectionSquare.InvokeAsync("area", arguments: null, XunitCancellationToken)).GetInt32());
+        Assert.Equal(36, (await poolSquare.InvokeAsync("area", arguments: null, XunitCancellationToken)).GetInt32());
+        Assert.Equal("""{"radius":1}""", (await circle.GetValueAsync(XunitCancellationToken)).GetRawText());
+        Assert.Equal("""{"x":7}""", (await point.GetValueAsync(XunitCancellationToken)).GetRawText());
+        Assert.Contains("The export 'notConstructor' of the module './shapes.mjs' is not a constructor", notConstructor.Message);
+        Assert.Contains("The member 'area' of the referenced value is not a constructor", methodMember.Message);
+        Assert.Contains("Functions that compile code", compilesCode.Message);
+    }
+
+    [Fact]
     public async Task Reference_Evaluate()
     {
         await using var node = await StartNodeAsync();
@@ -1179,6 +1283,25 @@ public sealed partial class NodeJsHostTests
         Assert.All(results, result => result[0].GetInt32() == reference.Host.ProcessId && result[1].GetInt32() == reference.Host.ProcessId);
         Assert.All(evaluateResults, result => result[0].GetInt32() == reference.Host.ProcessId && result[1].GetInt32() == reference.Host.ProcessId);
         Assert.All(evaluatedResults, result => result is [var referencedProcessId, var currentProcessId] && referencedProcessId == evaluated.Host.ProcessId && currentProcessId == evaluated.Host.ProcessId);
+    }
+
+    [Fact]
+    public async Task Pool_ReferenceOfReplacedProcess_ThrowsProcessExitedException()
+    {
+        SkipIfNodeIsNotInstalled();
+        await using var pool = await NodeJsHostPool.StartAsync(1, cancellationToken: XunitCancellationToken);
+        await using var reference = await pool.EvaluateReferenceAsync("return { value: 1 };", XunitCancellationToken);
+
+        await Assert.ThrowsAsync<NodeJsException>(() => pool.EvaluateVoidAsync("process.exit(3);", XunitCancellationToken));
+
+        // The process is replaced when the next call selects a host, and its host is disposed
+        var result = await pool.EvaluateAsync("return 1;", XunitCancellationToken);
+        var valueException = await Assert.ThrowsAsync<NodeJsException>(() => reference.GetValueAsync(XunitCancellationToken));
+        var argumentException = await Assert.ThrowsAsync<NodeJsException>(() => pool.EvaluateAsync("return args[0].value;", [reference], XunitCancellationToken));
+
+        Assert.Equal(1, result.GetInt32());
+        Assert.Equal(3, valueException.ExitCode);
+        Assert.Equal(3, argumentException.ExitCode);
     }
 
     [Fact]
@@ -1493,6 +1616,31 @@ public sealed partial class NodeJsHostTests
     }
 
     [Fact]
+    public async Task Pool_RunAsync_CallsMadeOnThePool_DoNotWaitForCapacity()
+    {
+        SkipIfNodeIsNotInstalled();
+        await using var pool = await NodeJsHostPool.StartAsync(2, new NodeJsHostOptions { MaxConcurrentCalls = 1 }, XunitCancellationToken);
+        var runningCallbacks = 0;
+        var allRunning = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        // Each callback holds one of the 2 slots of the pool while it calls the pool
+        var callbacks = Enumerable.Range(0, 2).Select(_ => pool.RunAsync(async host =>
+        {
+            if (Interlocked.Increment(ref runningCallbacks) is 2)
+            {
+                allRunning.SetResult();
+            }
+
+            await allRunning.Task;
+            var result = await pool.EvaluateAsync("return 1;", XunitCancellationToken);
+            return result.GetInt32();
+        }, XunitCancellationToken)).ToArray();
+        var results = await Task.WhenAll(callbacks).WaitAsync(TimeSpan.FromMinutes(1), XunitCancellationToken);
+
+        Assert.All(results, result => Assert.Equal(1, result));
+    }
+
+    [Fact]
     public async Task Evaluate_ErrorWithLoneSurrogates_Throws()
     {
         await using var node = await StartNodeAsync();
@@ -1630,6 +1778,111 @@ public sealed partial class NodeJsHostTests
 
         var exception = await Assert.ThrowsAsync<NodeJsException>(() => node.EvaluateAsync("return 1;", XunitCancellationToken));
         Assert.Contains("a canceled call blocked its event loop", exception.Message);
+    }
+
+    [Fact]
+    public async Task UnresponsiveTimeout_KillsProcessBlockedByMicrotasksOfCanceledCall()
+    {
+        var output = new ConcurrentQueue<string>();
+        await using var node = await StartNodeAsync(new NodeJsHostOptions { UnresponsiveTimeout = TimeSpan.FromMilliseconds(500), StandardOutputReceived = output.Enqueue });
+        using var process = Process.GetProcessById(node.ProcessId);
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(XunitCancellationToken);
+
+        // Promises that are already resolved never let the event loop run other callbacks
+        var canceled = node.EvaluateVoidAsync("require('node:fs').writeSync(1, 'blocked\\n'); while (true) { await null; }", cts.Token);
+        await WaitUntilAsync(() => output.Contains("blocked"));
+        await cts.CancelAsync();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => canceled);
+        await WaitUntilAsync(() => process.HasExited);
+
+        var exception = await Assert.ThrowsAsync<NodeJsException>(() => node.EvaluateAsync("return 1;", XunitCancellationToken));
+        Assert.Contains("a canceled call blocked its event loop", exception.Message);
+    }
+
+    [Fact]
+    public async Task UnresponsiveTimeout_DoesNotKillProcessRunningCallsInResourcesCreatedByCanceledCall()
+    {
+        await using var temporaryDirectory = TemporaryDirectory.Create();
+
+        // The jobs run in a recursive timeout started when the module is loaded, so by the call that loads it first
+        temporaryDirectory.CreateTextFile("queue.mjs", """
+            import fs from "node:fs";
+            const jobs = [];
+            function poll() {
+                while (jobs.length > 0) jobs.shift()();
+                setTimeout(poll, 10);
+            }
+
+            setTimeout(poll, 10);
+            export function hang() {
+                fs.writeSync(1, "hanging\n");
+                return new Promise(() => { });
+            }
+
+            export function busy(milliseconds) {
+                return new Promise(resolve => jobs.push(() => {
+                    const end = Date.now() + milliseconds;
+                    while (Date.now() < end) { }
+                    resolve(1);
+                }));
+            }
+            """);
+        var output = new ConcurrentQueue<string>();
+        await using var node = await StartNodeAsync(new NodeJsHostOptions { WorkingDirectory = temporaryDirectory.FullPath, UnresponsiveTimeout = TimeSpan.FromMilliseconds(500), StandardOutputReceived = output.Enqueue });
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(XunitCancellationToken);
+
+        var loadingCall = node.InvokeVoidAsync("./queue.mjs", "hang", arguments: null, cts.Token);
+        await WaitUntilAsync(() => output.Contains("hanging"));
+
+        // The jobs run in an interval created by a call
+        var intervalCall = node.EvaluateVoidAsync("""
+            globalThis.intervalJobs = [];
+            setInterval(() => { while (intervalJobs.length > 0) intervalJobs.shift()(); }, 10);
+            require('node:fs').writeSync(1, 'interval\n');
+            await new Promise(() => { });
+            """, cts.Token);
+        await WaitUntilAsync(() => output.Contains("interval"));
+        await cts.CancelAsync();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => loadingCall);
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => intervalCall);
+
+        // The jobs of calls that are not canceled block the event loop for longer than the timeout
+        var moduleJob = await node.InvokeAsync("./queue.mjs", "busy", [1500], XunitCancellationToken);
+        var intervalJob = await node.EvaluateAsync("""
+            return await new Promise(resolve => intervalJobs.push(() => {
+                const end = Date.now() + 1500;
+                while (Date.now() < end) { }
+                resolve(2);
+            }));
+            """, XunitCancellationToken);
+        await node.WaitForResponsivenessCheckAsync();
+        var next = await node.EvaluateAsync("return 3;", XunitCancellationToken);
+
+        Assert.Equal(1, moduleJob.GetInt32());
+        Assert.Equal(2, intervalJob.GetInt32());
+        Assert.Equal(3, next.GetInt32());
+    }
+
+    [Fact]
+    public async Task UnresponsiveTimeout_DoesNotKillProcessWhenResponsesAreSlowToRead()
+    {
+        var output = new ConcurrentQueue<string>();
+        await using var node = await StartNodeAsync(new NodeJsHostOptions { UnresponsiveTimeout = TimeSpan.FromMilliseconds(500), StandardOutputReceived = output.Enqueue });
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(XunitCancellationToken);
+
+        // The canceled call keeps the event loop busy, but lets it run other callbacks every 20 ms
+        var canceled = node.EvaluateVoidAsync("require('node:fs').writeSync(1, 'cooperative\\n'); while (true) { const end = Date.now() + 20; while (Date.now() < end) { } await new Promise(r => setImmediate(r)); }", cts.Token);
+        await WaitUntilAsync(() => output.Contains("cooperative"));
+        await cts.CancelAsync();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => canceled);
+
+        // Reading this result delays the reading of all the responses for longer than the timeout
+        var slowOptions = new JsonSerializerOptions { Converters = { new SlowInt32Converter(TimeSpan.FromSeconds(2)) }, RespectNullableAnnotations = true, RespectRequiredConstructorParameters = true };
+        var slow = await node.EvaluateAsync<int>("return 1;", slowOptions, XunitCancellationToken);
+        var next = await node.EvaluateAsync("return 2;", XunitCancellationToken);
+
+        Assert.Equal(1, slow);
+        Assert.Equal(2, next.GetInt32());
     }
 
     [Fact]
@@ -1951,6 +2204,18 @@ public sealed partial class NodeJsHostTests
         public override RawJson Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => throw new NotSupportedException();
 
         public override void Write(Utf8JsonWriter writer, RawJson value, JsonSerializerOptions options) => writer.WriteRawValue(value.Json);
+    }
+
+    // Blocks the thread that reads the responses of the Node.js process while the result is read
+    private sealed class SlowInt32Converter(TimeSpan delay) : JsonConverter<int>
+    {
+        public override int Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            Thread.Sleep(delay);
+            return reader.GetInt32();
+        }
+
+        public override void Write(Utf8JsonWriter writer, int value, JsonSerializerOptions options) => writer.WriteNumberValue(value);
     }
 
     [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase, RespectNullableAnnotations = true, RespectRequiredConstructorParameters = true)]

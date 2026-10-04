@@ -22,7 +22,7 @@ static class ExecutableFinder
     public static string? GetFullExecutablePath(string executableName, string? workingDirectory = null)
     {
         var separator = Path.PathSeparator;
-        var extensions = OperatingSystem.IsWindows() ? (Environment.GetEnvironmentVariable("PATHEXT") ?? "").Split(separator) : [];
+        var extensions = OperatingSystem.IsWindows() ? GetWindowsExecutableExtensions() : [];
         var path = (Environment.GetEnvironmentVariable("PATH") ?? "").Split(separator);
 
         IEnumerable<string> searchPaths = path;
@@ -43,8 +43,14 @@ static class ExecutableFinder
         static string? TryFindInDirectory(string executableName, string directory, string[] extensions)
         {
             var fullPath = Path.Combine(directory, executableName);
-            if (File.Exists(fullPath) && IsExecutable(fullPath))
-                return fullPath;
+
+            // On Windows, cmd.exe never runs an extensionless file. For instance, the Node.js folder contains both 'npm' (a shell
+            // script for Git Bash) and 'npm.cmd', and only the latter can be started by Process.Start.
+            if (!OperatingSystem.IsWindows() || Path.HasExtension(executableName))
+            {
+                if (File.Exists(fullPath) && IsExecutable(fullPath))
+                    return fullPath;
+            }
 
             foreach (var extension in extensions)
             {
@@ -54,6 +60,16 @@ static class ExecutableFinder
             }
 
             return null;
+        }
+
+        static string[] GetWindowsExecutableExtensions()
+        {
+            // Same default as cmd.exe when PATHEXT is not set
+            var pathExt = Environment.GetEnvironmentVariable("PATHEXT");
+            if (string.IsNullOrWhiteSpace(pathExt))
+                return [".COM", ".EXE", ".BAT", ".CMD"];
+
+            return pathExt.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
         }
 
         static bool IsExecutable(string path)

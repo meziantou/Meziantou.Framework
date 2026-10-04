@@ -21,6 +21,79 @@ public class ExecutableFinderTests
         Assert.Equal(path, result, ignoreCase: true);
     }
 
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void GetFullExecutablePathTests_Windows_PrefersPathExtOverExtensionlessFile()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        try
+        {
+            var fileName = $"meziantou.{Guid.NewGuid():N}";
+            File.WriteAllBytes(Path.Combine(dir, fileName), []);
+            var cmdPath = Path.Combine(dir, fileName + ".cmd");
+            File.WriteAllBytes(cmdPath, []);
+
+            var result = ExecutableFinder.GetFullExecutablePath(fileName, dir);
+
+            Assert.Equal(cmdPath, result, ignoreCase: true);
+        }
+        finally
+        {
+            Directory.Delete(dir, recursive: true);
+        }
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void GetFullExecutablePathTests_Windows_ExtensionlessFileOnly_ReturnsNull()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        try
+        {
+            var fileName = $"meziantou.{Guid.NewGuid():N}";
+            File.WriteAllBytes(Path.Combine(dir, fileName), []);
+
+            var result = ExecutableFinder.GetFullExecutablePath(fileName, dir);
+
+            Assert.Null(result);
+        }
+        finally
+        {
+            Directory.Delete(dir, recursive: true);
+        }
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void GetFullExecutablePathTests_Windows_NameWithExtension_ReturnsExactFile()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        try
+        {
+            var fileName = $"meziantou.{Guid.NewGuid():N}";
+            File.WriteAllBytes(Path.Combine(dir, fileName), []);
+            var cmdPath = Path.Combine(dir, fileName + ".cmd");
+            File.WriteAllBytes(cmdPath, []);
+
+            var result = ExecutableFinder.GetFullExecutablePath(fileName + ".cmd", dir);
+
+            Assert.Equal(cmdPath, result, ignoreCase: true);
+        }
+        finally
+        {
+            Directory.Delete(dir, recursive: true);
+        }
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void GetFullExecutablePathTests_Windows_Npm()
+    {
+        var npmPath = ExecutableFinder.GetFullExecutablePath("npm");
+        global::Xunit.Assert.SkipWhen(npmPath is null, "npm is not installed.");
+
+        Assert.True(Path.HasExtension(npmPath), $"'{npmPath}' must have an extension");
+    }
+
     [Fact, RunIf(TestOperatingSystems.Linux | TestOperatingSystems.MacOS)]
     public void GetFullExecutablePathTests_Linux()
     {

@@ -21,9 +21,16 @@ public sealed class NodeJsHostOptions
     /// <summary>Gets or sets the maximum time to wait for the Node.js process to start.</summary>
     public TimeSpan StartupTimeout { get; set; } = TimeSpan.FromSeconds(30);
 
-    /// <summary>Gets or sets a callback invoked for each line written by the Node.js process to its standard output. The callback must not throw.</summary>
+    /// <summary>Gets or sets the maximum number of calls that run at the same time in a Node.js process. Other calls wait until a call completes. When <see langword="null"/>, the number of calls is not limited.</summary>
+    /// <remarks>
+    /// <para>Limiting the number of calls bounds the memory and the work queued in the Node.js process. With <see cref="NodeJsHostPool"/>, calls wait in the pool and run on the first process that becomes available, which balances calls of different durations; <c>1</c> is a good value for CPU-bound code.</para>
+    /// <para>A canceled call no longer counts, even if its JavaScript code is still running. A call made using <see cref="NodeJsHostPool.RunAsync{T}(Func{NodeJsHost, Task{T}}, CancellationToken)"/> counts as one call of the pool, and each call it makes on the host counts as one call of the host.</para>
+    /// </remarks>
+    public int? MaxConcurrentCalls { get; set; }
+
+    /// <summary>Gets or sets a callback invoked for each line written by the Node.js process to its standard output. Exceptions thrown by the callback are ignored.</summary>
     public Action<string>? StandardOutputReceived { get; set; }
 
-    /// <summary>Gets or sets a callback invoked for each line written by the Node.js process to its standard error. The callback must not throw.</summary>
+    /// <summary>Gets or sets a callback invoked for each line written by the Node.js process to its standard error. Exceptions thrown by the callback are ignored.</summary>
     public Action<string>? StandardErrorReceived { get; set; }
 }

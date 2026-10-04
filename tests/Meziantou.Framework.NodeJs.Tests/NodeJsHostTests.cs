@@ -1082,8 +1082,10 @@ public sealed partial class NodeJsHostTests
         var results = await Task.WhenAll(Enumerable.Range(0, 10).Select(_ => pool.InvokeAsync("./process.mjs", "read", [reference], XunitCancellationToken)));
         var evaluatedResults = await Task.WhenAll(Enumerable.Range(0, 10).Select(_ => pool.InvokeAsync<int[]>("./process.mjs", "read", [evaluated], options: null, XunitCancellationToken)));
         await pool.InvokeVoidAsync("./process.mjs", "read", [new JsonObject { ["nested"] = reference }], XunitCancellationToken);
+        var evaluateResults = await Task.WhenAll(Enumerable.Range(0, 10).Select(_ => pool.EvaluateAsync("return [args[0].pid, process.pid];", [reference], XunitCancellationToken)));
 
         Assert.All(results, result => result[0].GetInt32() == reference.Host.ProcessId && result[1].GetInt32() == reference.Host.ProcessId);
+        Assert.All(evaluateResults, result => result[0].GetInt32() == reference.Host.ProcessId && result[1].GetInt32() == reference.Host.ProcessId);
         Assert.All(evaluatedResults, result => result is [var referencedProcessId, var currentProcessId] && referencedProcessId == evaluated.Host.ProcessId && currentProcessId == evaluated.Host.ProcessId);
     }
 
@@ -1097,6 +1099,266 @@ public sealed partial class NodeJsHostTests
         await using var secondReference = await second.EvaluateReferenceAsync("return {};", XunitCancellationToken);
 
         await Assert.ThrowsAsync<ArgumentException>(async () => await pool.InvokeAsync("node:util", "format", [firstReference, secondReference], XunitCancellationToken));
+    }
+
+    [Fact]
+    public async Task InvalidRequest_FailsOnlyThisCall()
+    {
+        await using var node = await StartNodeAsync();
+
+        var exception = await Assert.ThrowsAsync<NodeJsException>(() => node.SendInvalidRequestAsync(XunitCancellationToken));
+        var result = await node.EvaluateAsync("return 1;", XunitCancellationToken);
+
+        Assert.Equal("SyntaxError", exception.JavaScriptErrorName);
+        Assert.Equal(1, result.GetInt32());
+    }
+
+    [Fact]
+    public async Task Evaluate_DeeplyNestedResult()
+    {
+        await using var node = await StartNodeAsync();
+
+        var result = await node.EvaluateAsync("let value = 'leaf'; for (let i = 0; i < 2000; i++) value = [value]; return value;", XunitCancellationToken);
+        for (var i = 0; i < 2000; i++)
+        {
+            result = result[0];
+        }
+
+        Assert.Equal("leaf", result.GetString());
+        Assert.Equal(1, (await node.EvaluateAsync("return 1;", XunitCancellationToken)).GetInt32());
+    }
+
+    [Fact]
+    public async Task Evaluate_ThrowUnprintableValue_Throws()
+    {
+        await using var node = await StartNodeAsync();
+
+        var nullPrototype = await Assert.ThrowsAsync<NodeJsException>(() => node.EvaluateAsync("throw Object.create(null);", XunitCancellationToken));
+        var throwingName = await Assert.ThrowsAsync<NodeJsException>(() => node.EvaluateAsync("const error = new Error('oops'); Object.defineProperty(error, 'name', { get() { throw new Error('name'); } }); throw error;", XunitCancellationToken));
+
+        Assert.Equal("object: The error cannot be converted to a string", nullPrototype.Message);
+        Assert.Equal("object", throwingName.JavaScriptErrorName);
+    }
+
+    [Fact]
+    public async Task OutputCallbacksThrow_DoesNotCrash()
+    {
+        var calls = 0;
+        await using var node = await StartNodeAsync(new NodeJsHostOptions
+        {
+            StandardOutputReceived = _ => { Interlocked.Increment(ref calls); throw new InvalidOperationException("output"); },
+            StandardErrorReceived = _ => { Interlocked.Increment(ref calls); throw new InvalidOperationException("error"); },
+        });
+
+        await node.EvaluateVoidAsync("console.log('out'); console.error('err');", XunitCancellationToken);
+        await WaitUntilAsync(() => Volatile.Read(ref calls) >= 2);
+
+        Assert.Equal(1, (await node.EvaluateAsync("return 1;", XunitCancellationToken)).GetInt32());
+    }
+
+    [Fact]
+    public async Task Evaluate_Arguments()
+    {
+        await using var temporaryDirectory = TemporaryDirectory.Create();
+        temporaryDirectory.CreateTextFile("counter.mjs", CounterModule);
+        await using var node = await StartNodeAsync(new NodeJsHostOptions { WorkingDirectory = temporaryDirectory.FullPath });
+        await using var counter = await node.InvokeReferenceAsync("./counter.mjs", "createCounter", [10], XunitCancellationToken);
+
+        var sum = await node.EvaluateAsync("return args[0] + args[1];", [1, 2], XunitCancellationToken);
+        var types = await node.EvaluateAsync("return args.map(value => typeof value);", [JSValue.Undefined, JSValue.BigInt(1), counter], XunitCancellationToken);
+        var empty = await node.EvaluateAsync("return args.length;", arguments: null, XunitCancellationToken);
+        var typed = await node.EvaluateAsync("return { name: args[0], age: args[1] };", ["John", 42], NodeJsTestJsonContext.Default.Person, XunitCancellationToken);
+        var reflection = await node.EvaluateAsync<int>("return args[0].value * args[1];", [counter, 2], options: null, XunitCancellationToken);
+        await node.EvaluateVoidAsync("globalThis.saved = args[0];", ["value"], XunitCancellationToken);
+        await node.EvaluateVoidAsync("globalThis.savedReflection = args[0];", [5], options: null, XunitCancellationToken);
+        await using var reference = await node.EvaluateReferenceAsync("return { doubled: args[0] * 2 };", [21], XunitCancellationToken);
+        await using var reflectionReference = await node.EvaluateReferenceAsync("return args[0];", [counter], options: null, XunitCancellationToken);
+
+        // Without arguments, "args" is not declared, so the code can declare it
+        var declared = await node.EvaluateAsync("const args = 'own'; return [args, globalThis.saved, globalThis.savedReflection];", XunitCancellationToken);
+
+        Assert.Equal(3, sum.GetInt32());
+        Assert.Equal("""["undefined","bigint","object"]""", types.GetRawText());
+        Assert.Equal(0, empty.GetInt32());
+        Assert.NotNull(typed);
+        Assert.Equal("John", typed.Name);
+        Assert.Equal(42, typed.Age);
+        Assert.Equal(20, reflection);
+        Assert.Equal("""["own","value",5]""", declared.GetRawText());
+        Assert.Equal(42, (await reference.GetValueAsync(XunitCancellationToken)).GetProperty("doubled").GetInt32());
+        Assert.Equal(11, (await reflectionReference.InvokeAsync("increment", [1], XunitCancellationToken)).GetInt32());
+    }
+
+    [Fact]
+    public async Task Evaluate_Arguments_SpecialCharactersRoundTrip()
+    {
+        await using var node = await StartNodeAsync();
+        const string Text = "<script>&'\"+ \\ é 日本 😀 \u2028\u2029 \n\r\t \0 \u001f";
+        const string Key = "clé <&>";
+
+        var result = await node.EvaluateAsync("return [args[0], Object.keys(args[1]), args[1][Object.keys(args[1])[0]] === undefined];", [Text, new JsonObject { [Key] = JSValue.Undefined }], XunitCancellationToken);
+
+        Assert.Equal(Text, result[0].GetString());
+        Assert.Equal(Key, result[1][0].GetString());
+        Assert.True(result[2].GetBoolean());
+    }
+
+    [Fact]
+    public async Task Evaluate_SpecialValuesResult()
+    {
+        await using var node = await StartNodeAsync();
+
+        var result = await node.EvaluateAsync("""
+            return {
+                bytes: new Uint8Array([1, 2, 255]),
+                buffer: Buffer.from('hi'),
+                arrayBuffer: new Uint8Array([7]).buffer,
+                view: new Uint8Array([0, 1, 2, 3]).subarray(1, 3),
+                clamped: new Uint8ClampedArray([4]),
+                floats: new Float64Array([1.5, NaN]),
+                bigInts: new BigInt64Array([-1n]),
+                map: new Map([['a', 1], [2, new Set([3])], ['__proto__', 4]]),
+                set: new Set(['x', 'y']),
+                numbers: [NaN, Infinity, -Infinity, -0, 1],
+                nested: [new Map([['k', Buffer.from([9])]])],
+                notBuffer: { type: 'Buffer', data: [1] },
+            };
+            """, XunitCancellationToken);
+
+        Assert.Equal([1, 2, 255], result.GetProperty("bytes").GetBytesFromBase64());
+        Assert.Equal("hi"u8.ToArray(), result.GetProperty("buffer").GetBytesFromBase64());
+        Assert.Equal([7], result.GetProperty("arrayBuffer").GetBytesFromBase64());
+        Assert.Equal([1, 2], result.GetProperty("view").GetBytesFromBase64());
+        Assert.Equal([4], result.GetProperty("clamped").GetBytesFromBase64());
+        Assert.Equal("""[1.5,"NaN"]""", result.GetProperty("floats").GetRawText());
+        Assert.Equal("[-1]", result.GetProperty("bigInts").GetRawText());
+        // As for any JavaScript object, integer keys come first
+        Assert.Equal("""{"2":[3],"a":1,"__proto__":4}""", result.GetProperty("map").GetRawText());
+        Assert.Equal("""["x","y"]""", result.GetProperty("set").GetRawText());
+        Assert.Equal("""["NaN","Infinity","-Infinity",-0,1]""", result.GetProperty("numbers").GetRawText());
+        Assert.Equal("""[{"k":"CQ=="}]""", result.GetProperty("nested").GetRawText());
+        Assert.Equal("""{"type":"Buffer","data":[1]}""", result.GetProperty("notBuffer").GetRawText());
+    }
+
+    [Fact]
+    public async Task Evaluate_SpecialValuesResult_Reflection()
+    {
+        await using var node = await StartNodeAsync();
+
+        var numbers = await node.EvaluateAsync<double[]>("return [NaN, Infinity, -Infinity, -0, 1.5];", options: null, XunitCancellationToken);
+        var bytes = await node.EvaluateAsync<byte[]>("return Buffer.from([1, 2]);", options: null, XunitCancellationToken);
+        var map = await node.EvaluateAsync<Dictionary<int, string>>("return new Map([[1, 'a'], [2, 'b']]);", options: null, XunitCancellationToken);
+        var set = await node.EvaluateAsync<HashSet<string>>("return new Set(['a', 'b']);", options: null, XunitCancellationToken);
+
+        Assert.NotNull(numbers);
+        Assert.True(double.IsNaN(numbers[0]));
+        Assert.True(double.IsPositiveInfinity(numbers[1]));
+        Assert.True(double.IsNegativeInfinity(numbers[2]));
+        Assert.True(double.IsNegative(numbers[3]) && numbers[3] == 0);
+        Assert.Equal(1.5, numbers[4]);
+        Assert.Equal([1, 2], bytes);
+        Assert.Equal(new Dictionary<int, string> { [1] = "a", [2] = "b" }, map);
+        Assert.Equal(new HashSet<string>(StringComparer.Ordinal) { "a", "b" }, set);
+    }
+
+    [Fact]
+    public async Task Evaluate_UnsupportedMapKeys_Throws()
+    {
+        await using var node = await StartNodeAsync();
+
+        var objectKey = await Assert.ThrowsAsync<NodeJsException>(() => node.EvaluateAsync("return new Map([[{}, 1]]);", XunitCancellationToken));
+        var duplicateKey = await Assert.ThrowsAsync<NodeJsException>(() => node.EvaluateAsync("return new Map([[1, 'a'], ['1', 'b']]);", XunitCancellationToken));
+
+        Assert.Equal("TypeError", objectKey.JavaScriptErrorName);
+        Assert.Equal("TypeError", duplicateKey.JavaScriptErrorName);
+    }
+
+    [Fact]
+    public async Task Invoke_UrlSchemes()
+    {
+        await using var temporaryDirectory = TemporaryDirectory.Create();
+        var modulePath = temporaryDirectory.CreateTextFile("module.mjs", "export const value = 42;");
+        await using var node = await StartNodeAsync();
+
+        var fileUrl = await node.InvokeAsync(new Uri(modulePath).AbsoluteUri, "value", arguments: null, XunitCancellationToken);
+        var builtIn = await node.InvokeAsync("node:path", "basename", ["/a/b"], XunitCancellationToken);
+        var exception = await Assert.ThrowsAsync<NodeJsException>(() => node.InvokeAsync("data:text/javascript,export const value = 1;", "value", arguments: null, XunitCancellationToken));
+
+        Assert.Equal(42, fileUrl.GetInt32());
+        Assert.Equal("b", builtIn.GetString());
+        Assert.Contains("unsupported URL scheme 'data:'", exception.Message);
+    }
+
+    [Fact]
+    public async Task CodeCompilingMembers_Throws()
+    {
+        await using var node = await StartNodeAsync();
+        await using var function = await node.EvaluateReferenceAsync("return function () { };", XunitCancellationToken);
+        await using var obj = await node.EvaluateReferenceAsync("return { constructor: () => 42 };", XunitCancellationToken);
+        await using var functionConstructor = await node.EvaluateReferenceAsync("return Function;", XunitCancellationToken);
+
+        var inheritedConstructor = await Assert.ThrowsAsync<NodeJsException>(() => function.InvokeAsync("constructor", ["return 1;"], XunitCancellationToken));
+        var prototype = await Assert.ThrowsAsync<NodeJsException>(() => function.InvokeReferenceAsync("__proto__", arguments: null, XunitCancellationToken));
+        var exportConstructor = await Assert.ThrowsAsync<NodeJsException>(() => node.InvokeAsync("node:path", "constructor", ["return 1;"], XunitCancellationToken));
+        var callFunctionConstructor = await Assert.ThrowsAsync<NodeJsException>(() => functionConstructor.InvokeAsync(methodName: null, ["return 1;"], XunitCancellationToken));
+        var ownConstructor = await obj.InvokeAsync("constructor", arguments: null, XunitCancellationToken);
+
+        Assert.Contains("does not have a member 'constructor'", inheritedConstructor.Message);
+        Assert.Contains("does not have a member '__proto__'", prototype.Message);
+        Assert.Contains("does not export 'constructor'", exportConstructor.Message);
+        Assert.Equal("TypeError", callFunctionConstructor.JavaScriptErrorName);
+        Assert.Equal(42, ownConstructor.GetInt32());
+    }
+
+    [Fact]
+    public async Task MaxConcurrentCalls_LimitsCallsInProgress()
+    {
+        await using var node = await StartNodeAsync(new NodeJsHostOptions { MaxConcurrentCalls = 2 });
+        const string Code = """
+            globalThis.running = (globalThis.running ?? 0) + 1;
+            globalThis.max = Math.max(globalThis.max ?? 0, globalThis.running);
+            await new Promise(r => setTimeout(r, 10));
+            globalThis.running--;
+            """;
+
+        await Task.WhenAll(Enumerable.Range(0, 20).Select(_ => node.EvaluateVoidAsync(Code, XunitCancellationToken)));
+        var max = (await node.EvaluateAsync("return globalThis.max;", XunitCancellationToken)).GetInt32();
+
+        Assert.True(max is 1 or 2, $"Unexpected number of concurrent calls: {max}");
+    }
+
+    [Fact]
+    public async Task MaxConcurrentCalls_Invalid_Throws()
+    {
+        SkipIfNodeIsNotInstalled();
+        var options = new NodeJsHostOptions { MaxConcurrentCalls = 0 };
+
+        var hostException = await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => NodeJsHost.StartAsync(options, XunitCancellationToken));
+        var poolException = await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => NodeJsHostPool.StartAsync(2, options, XunitCancellationToken));
+
+        Assert.Equal("options", hostException.ParamName);
+        Assert.Equal("options", poolException.ParamName);
+    }
+
+    [Fact]
+    public async Task Pool_MaxConcurrentCalls_UsesAvailableHost()
+    {
+        SkipIfNodeIsNotInstalled();
+        await using var temporaryDirectory = TemporaryDirectory.Create();
+        var releasePath = temporaryDirectory.GetFullPath("release.txt");
+        await using var pool = await NodeJsHostPool.StartAsync(2, new NodeJsHostOptions { MaxConcurrentCalls = 1 }, XunitCancellationToken);
+
+        // The long call keeps its host busy until the short calls complete, so a short call sent to that host would never complete
+        var longCall = pool.EvaluateAsync("""
+            const fs = require('node:fs');
+            while (!fs.existsSync(args[0])) await new Promise(r => setTimeout(r, 10));
+            return process.pid;
+            """, [(string)releasePath], XunitCancellationToken);
+        var shortCalls = await Task.WhenAll(Enumerable.Range(0, 10).Select(_ => pool.EvaluateAsync("return process.pid;", XunitCancellationToken))).WaitAsync(TimeSpan.FromMinutes(1), XunitCancellationToken);
+        await File.WriteAllTextAsync(releasePath, "", XunitCancellationToken);
+        var longCallProcessId = (await longCall).GetInt32();
+
+        Assert.All(shortCalls, result => result.GetInt32() != longCallProcessId);
     }
 
     private const string DescribeModule = """

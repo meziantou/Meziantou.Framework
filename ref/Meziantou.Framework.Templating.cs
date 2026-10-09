@@ -200,7 +200,7 @@ namespace Meziantou.Framework.Templating
         protected virtual object CreateOutput(System.IO.TextWriter writer) => throw null;
         public string Run(params object?[] parameters) => throw null;
         public virtual void Run(System.IO.TextWriter writer, params object?[] parameters) { }
-        protected virtual object[] CreateMethodParameters(System.IO.TextWriter writer, object[]? parameters) => throw null;
+        protected virtual object[] CreateMethodParameters(System.IO.TextWriter writer, object?[]? parameters) => throw null;
         public string Run(System.Collections.Generic.IReadOnlyDictionary<string, object?> parameters) => throw null;
         public virtual void Run(System.IO.TextWriter writer, System.Collections.Generic.IReadOnlyDictionary<string, object?> parameters) { }
         protected virtual object?[] CreateMethodParameters(System.IO.TextWriter writer, System.Collections.Generic.IReadOnlyDictionary<string, object?> parameters) => throw null;

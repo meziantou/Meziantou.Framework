@@ -18,7 +18,7 @@ namespace Meziantou.Framework.Diagnostics.ContextSnapshot
         public bool ReflectionOnly { get => throw null; }
         public System.Version? Version { get => throw null; }
         public System.Reflection.AssemblyNameFlags Flags { get => throw null; }
-        public System.Collections.Immutable.ImmutableArray? PublicKeyToken { get => throw null; }
+        public System.Collections.Immutable.ImmutableArray<byte>? PublicKeyToken { get => throw null; }
         public Meziantou.Framework.Diagnostics.ContextSnapshot.CultureInfoSnapshot? CultureInfo { get => throw null; }
         public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.Diagnostics.ContextSnapshot.ModuleSnapshot> Modules { get => throw null; }
     }

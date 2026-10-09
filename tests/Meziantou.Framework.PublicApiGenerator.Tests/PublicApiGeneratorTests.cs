@@ -1,7 +1,11 @@
 using System.Buffers.Binary;
 using System.Reflection;
+using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
+using System.Reflection.PortableExecutable;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
+using System.Xml.Linq;
 using Meziantou.Framework.InlineSnapshotTesting;
 using Meziantou.Framework.PublicApiGenerator.Tool;
 using Xunit.Sdk;
@@ -1860,6 +1864,52 @@ public sealed class PublicApiGeneratorTests
     }
 
     [Fact]
+    public async Task Method_NullableAnnotationsOfValueTypesAndArrays()
+    {
+        await Validate("""
+            using System;
+            using System.Collections.Generic;
+
+            [System.Diagnostics.DebuggerTypeProxy(typeof(Sample.DebugView))]
+            public class Sample
+            {
+                public Dictionary<int, string?> A() => null!;
+                public object?[]? B(object?[] values) => null;
+                public ReadOnlyMemory<byte>? C() => null;
+                public int[,] D() => null!;
+                public unsafe void* E() => null;
+            #nullable disable
+                public string F(string value) => value;
+            #nullable enable
+                public string G(string value) => value;
+
+                public sealed class DebugView
+                {
+                }
+            }
+            """, """
+            #nullable enable
+
+            [System.Diagnostics.DebuggerTypeProxy(typeof(Sample.DebugView))]
+            public class Sample
+            {
+                public System.Collections.Generic.Dictionary<int, string?> A() => throw null;
+                public object?[]? B(object?[] values) => throw null;
+                public System.ReadOnlyMemory<byte>? C() => throw null;
+                public int[,] D() => throw null;
+                public unsafe void* E() => throw null;
+                #nullable disable
+                public string F(string value) => throw null;
+                #nullable restore
+                public string G(string value) => throw null;
+                public sealed class DebugView
+                {
+                }
+            }
+            """);
+    }
+
+    [Fact]
     public async Task Event_Basic()
     {
         await Validate("""
@@ -3252,6 +3302,866 @@ public sealed class PublicApiGeneratorTests
             });
     }
 
+    private const string ModelSource = """
+        using System;
+        using System.Collections;
+        using System.Collections.Generic;
+        using System.ComponentModel;
+        using System.Threading;
+
+        namespace Demo;
+
+        public class Outer<T> where T : class?
+        {
+            public Inner2<string> Create() => null!;
+
+            public class Inner
+            {
+            }
+
+            public class Inner2<U> where U : notnull
+            {
+                public U M<V>(T t, V v) where V : unmanaged => default!;
+            }
+        }
+
+        public interface IVariant<in TIn, out TOut>
+        {
+            TOut Invoke(TIn value);
+            static abstract int Create();
+        }
+
+        public readonly struct ReadOnlyPoint
+        {
+            public readonly int Y;
+            public int X { get; init; }
+        }
+
+        public ref struct RefStruct
+        {
+            public ref int Value;
+            public ref readonly int ReadOnlyValue;
+        }
+
+        [Flags]
+        public enum Options : byte
+        {
+            None = 0,
+            A = 1,
+            B = 2,
+        }
+
+        public delegate TResult Transformer<in T, out TResult>(T value, params object?[] arguments) where T : notnull;
+
+        public sealed record Person(string Name, int Age);
+
+        public abstract class Base : IDisposable, IEnumerable<string>
+        {
+            public const string Constant = "text";
+            public static readonly int StaticReadOnly;
+            public volatile int Volatile;
+
+            protected Base() { }
+
+            public abstract int Value { get; protected set; }
+            public required string Required { get; init; }
+            public int this[int index, string? key = null] => 0;
+            public virtual event EventHandler? Changed;
+
+            [EditorBrowsable(EditorBrowsableState.Never)]
+            [Obsolete("Use Value")]
+            public int Hidden() => 0;
+            public Dictionary<int, string?> Dictionary() => null!;
+            public KeyValuePair<int?, string?>? NullablePair() => null;
+            public (int Count, string? Name) Tuple() => default;
+            public string?[]? Array(int[,] matrix, int[][] jagged) => null;
+            public void RefKinds(ref int a, out int b, in int c, ref readonly int d) { b = 0; }
+            public void Defaults(int value = 42, string? text = null, Options options = Options.A, CancellationToken cancellationToken = default) { }
+            public T Generic<T>(T value) where T : struct, IComparable<T> => value;
+        #nullable disable
+            public string Oblivious(string value) => value;
+        #nullable enable
+            public static Base operator +(Base left, Base right) => left;
+            public static implicit operator int(Base value) => 0;
+            public static explicit operator Base(long value) => null!;
+            public static explicit operator checked Base(long value) => null!;
+            void IDisposable.Dispose() { }
+            IEnumerator<string> IEnumerable<string>.GetEnumerator() => null!;
+            IEnumerator IEnumerable.GetEnumerator() => null!;
+            ~Base() { }
+        }
+
+        public static class Extensions
+        {
+            public static int Count(this IEnumerable<int> source) => 0;
+        }
+        """;
+
+    [Fact]
+    public async Task Model_ReadAssembly()
+    {
+        var assembly = await ReadAssembly(ModelSource);
+        InlineSnapshot.Validate(DumpModel(assembly), """
+            T:Demo.Base
+                public abstract class Base : System.Collections.Generic.IEnumerable<string>, System.Collections.IEnumerable, System.IDisposable
+            F:Demo.Base.Constant
+                public const string Constant = "text"
+            F:Demo.Base.StaticReadOnly
+                public static readonly int StaticReadOnly
+            F:Demo.Base.Volatile
+                public volatile int Volatile
+            P:Demo.Base.Value
+                public abstract int Value { get; protected set; }
+            P:Demo.Base.Required
+                public required string Required { get; init; }
+            P:Demo.Base.Item(System.Int32,System.String)
+                public int this[int index, string? key = null] { get; }
+            E:Demo.Base.Changed
+                public virtual event System.EventHandler? Changed
+            M:Demo.Base.#ctor
+                protected Base()
+            M:Demo.Base.Hidden
+                [System.Obsolete("Use Value")]
+                public int Hidden()
+            M:Demo.Base.Dictionary
+                public System.Collections.Generic.Dictionary<int, string?> Dictionary()
+            M:Demo.Base.NullablePair
+                public System.Collections.Generic.KeyValuePair<int?, string?>? NullablePair()
+            M:Demo.Base.Tuple
+                public (int Count, string? Name) Tuple()
+            M:Demo.Base.Array(System.Int32[0:,0:],System.Int32[][])
+                public string?[]? Array(int[,] matrix, int[][] jagged)
+            M:Demo.Base.RefKinds(System.Int32@,System.Int32@,System.Int32@,System.Int32@)
+                public void RefKinds(ref int a, out int b, in int c, ref readonly int d)
+            M:Demo.Base.Defaults(System.Int32,System.String,Demo.Options,System.Threading.CancellationToken)
+                public void Defaults(int value = 42, string? text = null, Demo.Options options = Demo.Options.A, System.Threading.CancellationToken cancellationToken = default)
+            M:Demo.Base.Generic``1(``0)
+                public T Generic<T>(T value) where T : struct, System.IComparable<T>
+            M:Demo.Base.Oblivious(System.String)
+                public string Oblivious(string value)
+            M:Demo.Base.op_Addition(Demo.Base,Demo.Base)
+                public static Demo.Base operator +(Demo.Base left, Demo.Base right)
+            M:Demo.Base.op_Implicit(Demo.Base)~System.Int32
+                public static implicit operator int(Demo.Base value)
+            M:Demo.Base.op_Explicit(System.Int64)~Demo.Base
+                public static explicit operator Demo.Base(long value)
+            M:Demo.Base.op_CheckedExplicit(System.Int64)~Demo.Base
+                public static explicit operator checked Demo.Base(long value)
+            M:Demo.Base.System#IDisposable#Dispose
+                void System.IDisposable.Dispose()
+            M:Demo.Base.System#Collections#Generic#IEnumerable{System#String}#GetEnumerator
+                System.Collections.Generic.IEnumerator<string> System.Collections.Generic.IEnumerable<string>.GetEnumerator()
+            M:Demo.Base.System#Collections#IEnumerable#GetEnumerator
+                System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+            M:Demo.Base.Finalize
+                ~Base()
+            T:Demo.Extensions
+                public static class Extensions
+            M:Demo.Extensions.Count(System.Collections.Generic.IEnumerable{System.Int32})
+                public static int Count(this System.Collections.Generic.IEnumerable<int> source)
+            T:Demo.IVariant`2
+                public interface IVariant<in TIn, out TOut>
+            M:Demo.IVariant`2.Invoke(`0)
+                TOut Invoke(TIn value)
+            M:Demo.IVariant`2.Create
+                public static abstract int Create()
+            T:Demo.Options
+                [System.Flags]
+                public enum Options : byte
+            F:Demo.Options.None
+                None = 0
+            F:Demo.Options.A
+                A = 1
+            F:Demo.Options.B
+                B = 2
+            T:Demo.Outer`1
+                public class Outer<T> where T : class?
+            M:Demo.Outer`1.Create
+                public Demo.Outer<T>.Inner2<string> Create()
+            M:Demo.Outer`1.#ctor
+                public Outer()
+            T:Demo.Outer`1.Inner
+                public class Inner
+            M:Demo.Outer`1.Inner.#ctor
+                public Inner()
+            T:Demo.Outer`1.Inner2`1
+                public class Inner2<U> where U : notnull
+            M:Demo.Outer`1.Inner2`1.M``1(`0,``0)
+                public U M<V>(T t, V v) where V : unmanaged
+            M:Demo.Outer`1.Inner2`1.#ctor
+                public Inner2()
+            T:Demo.Person
+                public sealed class Person : System.IEquatable<Demo.Person>
+            P:Demo.Person.Name
+                public string Name { get; init; }
+            P:Demo.Person.Age
+                public int Age { get; init; }
+            M:Demo.Person.#ctor(System.String,System.Int32)
+                public Person(string Name, int Age)
+            M:Demo.Person.ToString (compiler-generated)
+                public override string ToString()
+            M:Demo.Person.op_Inequality(Demo.Person,Demo.Person) (compiler-generated)
+                public static bool operator !=(Demo.Person? left, Demo.Person? right)
+            M:Demo.Person.op_Equality(Demo.Person,Demo.Person) (compiler-generated)
+                public static bool operator ==(Demo.Person? left, Demo.Person? right)
+            M:Demo.Person.GetHashCode (compiler-generated)
+                public override int GetHashCode()
+            M:Demo.Person.Equals(System.Object) (compiler-generated)
+                public override bool Equals(object? obj)
+            M:Demo.Person.Equals(Demo.Person) (compiler-generated)
+                public bool Equals(Demo.Person? other)
+            M:Demo.Person.Deconstruct(System.String@,System.Int32@) (compiler-generated)
+                public void Deconstruct(out string Name, out int Age)
+            T:Demo.ReadOnlyPoint
+                public readonly struct ReadOnlyPoint
+            F:Demo.ReadOnlyPoint.Y
+                public readonly int Y
+            P:Demo.ReadOnlyPoint.X
+                public int X { get; init; }
+            T:Demo.RefStruct
+                public ref struct RefStruct
+            F:Demo.RefStruct.Value
+                public ref int Value
+            F:Demo.RefStruct.ReadOnlyValue
+                public ref readonly int ReadOnlyValue
+            T:Demo.Transformer`2
+                public delegate TResult Transformer<in T, out TResult>(T value, params object?[] arguments) where T : notnull
+            M:Demo.Transformer`2.Invoke(`0,System.Object[])
+                public virtual TResult Invoke(T value, params object?[] arguments)
+            """);
+    }
+
+    [Fact]
+    public async Task Model_TypesAndMembers()
+    {
+        var assembly = await ReadAssembly(ModelSource);
+
+        var outer = Assert.Single(assembly.Types, type => type.Name is "Outer");
+        Assert.Equal("Demo.Outer`1", outer.FullName);
+        var inner2 = Assert.Single(outer.NestedTypes, type => type.Name is "Inner2");
+        Assert.Same(outer, inner2.DeclaringType);
+        Assert.Equal("Demo.Outer`1+Inner2`1", inner2.FullName);
+        Assert.Equal("U", Assert.Single(inner2.GenericParameters).Name);
+        Assert.Same(inner2, assembly.FindSymbolByDocumentationId("T:Demo.Outer`1.Inner2`1"));
+        Assert.Same(inner2, assembly.FindType("Demo.Outer`1+Inner2`1"));
+
+        var method = Assert.IsType<PublicApiMethod>(Assert.Single(inner2.Members, member => member.Name is "M"));
+        Assert.Same(inner2, method.DeclaringType);
+        Assert.Equal("M:Demo.Outer`1.Inner2`1.M``1(`0,``0)", method.DocumentationId);
+        var typeParameter = Assert.IsType<PublicApiTypeParameterReference>(method.Parameters[0].Type);
+        Assert.Equal(("T", 0, false), (typeParameter.Name, typeParameter.Ordinal, typeParameter.IsMethodTypeParameter));
+        Assert.True(Assert.Single(method.GenericParameters).HasUnmanagedTypeConstraint);
+
+        var create = Assert.IsType<PublicApiMethod>(Assert.Single(outer.Members, member => member.Name is "Create"));
+        var returnType = Assert.IsType<PublicApiNamedTypeReference>(create.ReturnType);
+        Assert.Equal("Inner2`1", returnType.MetadataName);
+        Assert.Equal("Source", returnType.AssemblyName);
+        Assert.Equal("T:Demo.Outer`1.Inner2`1", returnType.DocumentationId);
+        Assert.IsType<PublicApiTypeParameterReference>(Assert.Single(returnType.ContainingType!.TypeArguments));
+        Assert.Equal("String", Assert.IsType<PublicApiNamedTypeReference>(Assert.Single(returnType.TypeArguments)).MetadataName);
+
+        var @base = assembly.FindType("Demo.Base")!;
+        Assert.Equal(["T:System.Collections.Generic.IEnumerable`1", "T:System.Collections.IEnumerable", "T:System.IDisposable"], @base.Interfaces.Select(type => ((PublicApiNamedTypeReference)type).DocumentationId));
+
+        var dictionary = (PublicApiMethod)assembly.FindSymbolByDocumentationId("M:Demo.Base.Dictionary")!;
+        var dictionaryType = Assert.IsType<PublicApiNamedTypeReference>(dictionary.ReturnType);
+        Assert.Equal(PublicApiNullableAnnotation.NotAnnotated, dictionaryType.NullableAnnotation);
+        Assert.Equal([PublicApiNullableAnnotation.NotAnnotated, PublicApiNullableAnnotation.Annotated], dictionaryType.TypeArguments.Select(type => type.NullableAnnotation));
+
+        var oblivious = (PublicApiMethod)assembly.FindSymbolByDocumentationId("M:Demo.Base.Oblivious(System.String)")!;
+        Assert.Equal(PublicApiNullableAnnotation.Oblivious, oblivious.ReturnType.NullableAnnotation);
+        Assert.Equal(PublicApiNullableAnnotation.Oblivious, oblivious.Parameters[0].Type.NullableAnnotation);
+
+        var tuple = (PublicApiNamedTypeReference)((PublicApiMethod)assembly.FindSymbolByDocumentationId("M:Demo.Base.Tuple")!).ReturnType;
+        Assert.True(tuple.IsTupleType);
+        Assert.Equal(["Count", "Name"], tuple.TupleElementNames);
+
+        var refKinds = (PublicApiMethod)assembly.FindSymbolByDocumentationId("M:Demo.Base.RefKinds(System.Int32@,System.Int32@,System.Int32@,System.Int32@)")!;
+        Assert.Equal([PublicApiRefKind.Ref, PublicApiRefKind.Out, PublicApiRefKind.In, PublicApiRefKind.RefReadOnly], refKinds.Parameters.Select(parameter => parameter.RefKind));
+
+        var defaults = (PublicApiMethod)assembly.FindSymbolByDocumentationId("M:Demo.Base.Defaults(System.Int32,System.String,Demo.Options,System.Threading.CancellationToken)")!;
+        Assert.Equal([42, null, (byte)1, null], defaults.Parameters.Select(parameter => parameter.DefaultValue));
+        Assert.All(defaults.Parameters, parameter => Assert.True(parameter.HasDefaultValue));
+
+        var indexer = (PublicApiProperty)assembly.FindSymbolByDocumentationId("P:Demo.Base.Item(System.Int32,System.String)")!;
+        Assert.True(indexer.IsIndexer);
+        Assert.Equal(["index", "key"], indexer.Parameters.Select(parameter => parameter.Name));
+        Assert.Null(indexer.SetMethod);
+        Assert.Same(indexer, indexer.GetMethod!.AssociatedSymbol);
+        Assert.Same(indexer.GetMethod, assembly.FindSymbolByDocumentationId("M:Demo.Base.get_Item(System.Int32,System.String)"));
+
+        var value = (PublicApiProperty)assembly.FindSymbolByDocumentationId("P:Demo.Base.Value")!;
+        Assert.Equal((PublicApiAccessibility.Public, true), (value.Accessibility, value.IsAbstract));
+        Assert.Equal(PublicApiAccessibility.Protected, value.SetMethod!.Accessibility);
+        Assert.True(((PublicApiProperty)assembly.FindSymbolByDocumentationId("P:Demo.Base.Required")!) is { IsRequired: true, IsInitOnly: true });
+
+        // Attributes that are not displayed are still part of the model
+        var hidden = assembly.FindSymbolByDocumentationId("M:Demo.Base.Hidden")!;
+        Assert.Equal(["System.ComponentModel.EditorBrowsableAttribute", "System.ObsoleteAttribute"], hidden.Attributes.Select(attribute => attribute.AttributeType.FullName).Order(StringComparer.Ordinal));
+        var editorBrowsable = hidden.Attributes.Single(attribute => attribute.AttributeType.Name is "EditorBrowsableAttribute");
+        var editorBrowsableArgument = Assert.Single(editorBrowsable.ConstructorArguments);
+        Assert.Equal(PublicApiAttributeArgumentKind.Enum, editorBrowsableArgument.Kind);
+        Assert.Equal(1, editorBrowsableArgument.Value);
+        Assert.Equal(["Never"], editorBrowsableArgument.EnumMemberNames);
+
+        var dispose = (PublicApiMethod)assembly.FindSymbolByDocumentationId("M:Demo.Base.System#IDisposable#Dispose")!;
+        Assert.True(dispose.IsExplicitInterfaceImplementation);
+        Assert.Equal(PublicApiAccessibility.Private, dispose.Accessibility);
+        Assert.Equal("M:System.IDisposable.Dispose", Assert.Single(dispose.ExplicitInterfaceImplementations).DocumentationId);
+
+        var getEnumerator = (PublicApiMethod)assembly.FindSymbolByDocumentationId("M:Demo.Base.System#Collections#Generic#IEnumerable{System#String}#GetEnumerator")!;
+        var implemented = Assert.Single(getEnumerator.ExplicitInterfaceImplementations);
+        Assert.Equal("M:System.Collections.Generic.IEnumerable`1.GetEnumerator", implemented.DocumentationId);
+        Assert.Equal("System.Collections.Generic.IEnumerable<string>", implemented.ContainingType.ToString());
+
+        var options = assembly.FindType("Demo.Options")!;
+        Assert.Equal("Byte", options.EnumUnderlyingType!.MetadataName);
+        Assert.Equal([0, 1, 2], options.Members.Cast<PublicApiField>().Select(field => Convert.ToInt32(field.ConstantValue, CultureInfo.InvariantCulture)));
+
+        var transformer = assembly.FindType("Demo.Transformer`2")!;
+        Assert.Empty(transformer.Members);
+        Assert.Equal("M:Demo.Transformer`2.Invoke(`0,System.Object[])", transformer.DelegateInvokeMethod!.DocumentationId);
+        Assert.Equal([PublicApiVariance.Contravariant, PublicApiVariance.Covariant], transformer.GenericParameters.Select(parameter => parameter.Variance));
+
+        // Compiler-generated members are part of the model, unless their name is unspeakable
+        var person = assembly.FindType("Demo.Person")!;
+        Assert.True(person.Members.Single(member => member.Name is "op_Equality").IsCompilerGenerated);
+        Assert.DoesNotContain(person.Members, member => member.Name.Contains('<', StringComparison.Ordinal));
+        Assert.Contains(person.Members, member => member.Name is "Deconstruct");
+        Assert.True(((PublicApiProperty)person.Members.Single(member => member.Name is "Name")).GetMethod!.IsCompilerGenerated);
+    }
+
+    [Fact]
+    public async Task Model_DocumentationIds_MatchCompilerGeneratedXmlFile()
+    {
+        await using var temporaryDirectory = TemporaryDirectory.Create();
+        var assemblyPath = await CompileSource(temporaryDirectory, "source", "net10.0", """
+            #nullable enable
+            using System;
+            using System.Collections;
+            using System.Collections.Generic;
+
+            /// <summary/>
+            public class GlobalType
+            {
+                /// <summary/>
+                public GlobalType() { }
+            }
+
+            namespace Demo
+            {
+                /// <summary/>
+                public class Outer<T>
+                {
+                    /// <summary/>
+                    public Outer() { }
+
+                    /// <summary/>
+                    public class Inner
+                    {
+                        /// <summary/>
+                        public Inner() { }
+
+                        /// <summary/>
+                        public T? Value;
+                    }
+
+                    /// <summary/>
+                    public class Inner2<U>
+                    {
+                        /// <summary/>
+                        public Inner2() { }
+
+                        /// <summary/>
+                        public U M<V>(T t, V v, Inner2<U> self, Outer<int>.Inner2<string> other, Outer<T>.Inner inner) => default!;
+                    }
+                }
+
+                /// <summary/>
+                public interface IGeneric<TKey, TValue>
+                {
+                    /// <summary/>
+                    void Add(TKey key, TValue value);
+
+                    /// <summary/>
+                    int Property { get; }
+
+                    /// <summary/>
+                    event EventHandler Event;
+
+                    /// <summary/>
+                    int this[TKey key] { get; }
+                }
+
+                /// <summary/>
+                public delegate void Handler<T>(T value, ref int count);
+
+                /// <summary/>
+                public enum Kind
+                {
+                    /// <summary/>
+                    First,
+
+                    /// <summary/>
+                    Second,
+                }
+
+                /// <summary/>
+                public unsafe class Sample : IGeneric<string, int>, IEnumerable, IDisposable
+                {
+                    /// <summary/>
+                    public Sample() { }
+
+                    /// <summary/>
+                    public Sample(int value) { }
+
+                    /// <summary/>
+                    public const int Constant = 1;
+
+                    /// <summary/>
+                    public event EventHandler? Changed;
+
+                    /// <summary/>
+                    public (int a, string? b) Tuple() => default;
+
+                    /// <summary/>
+                    public void Arrays(int[] a, int[,] b, int[][] c, int[,,][] d) { }
+
+                    /// <summary/>
+                    public void ByRef(ref int a, out int b, in int c, ref readonly int d, ref string e) { b = 0; }
+
+                    /// <summary/>
+                    public void Pointers(int* a, void** b, delegate*<int, ref int, void> c, delegate* unmanaged<int> d) { }
+
+                    /// <summary/>
+                    public void Generic<T1, T2>(T1 a, List<T2> b, Dictionary<T1, List<T2[]>> c) { }
+
+                    /// <summary/>
+                    public void Nullable(int? a, List<int?>? b, KeyValuePair<int?, string?>? c) { }
+
+                    /// <summary/>
+                    public void Misc(dynamic a, nint b, nuint c, object d, params string[] e) { }
+
+                    /// <summary/>
+                    public int this[int index, string key] => 0;
+
+                    /// <summary/>
+                    public string this[string key] { get => ""; set { } }
+
+                    /// <summary/>
+                    public static implicit operator int(Sample sample) => 0;
+
+                    /// <summary/>
+                    public static explicit operator Sample(int value) => null!;
+
+                    /// <summary/>
+                    public static explicit operator checked Sample(int value) => null!;
+
+                    /// <summary/>
+                    public static Sample operator +(Sample left, Sample right) => left;
+
+                    /// <summary/>
+                    public static Sample operator checked +(Sample left, Sample right) => left;
+
+                    /// <summary/>
+                    public static bool operator ==(Sample? left, Sample? right) => true;
+
+                    /// <summary/>
+                    public static bool operator !=(Sample? left, Sample? right) => false;
+
+                    /// <summary/>
+                    public override bool Equals(object? obj) => true;
+
+                    /// <summary/>
+                    public override int GetHashCode() => 0;
+
+                    /// <summary/>
+                    void IGeneric<string, int>.Add(string key, int value) { }
+
+                    /// <summary/>
+                    int IGeneric<string, int>.Property => 0;
+
+                    /// <summary/>
+                    event EventHandler IGeneric<string, int>.Event { add { } remove { } }
+
+                    /// <summary/>
+                    int IGeneric<string, int>.this[string key] => 0;
+
+                    /// <summary/>
+                    IEnumerator IEnumerable.GetEnumerator() => null!;
+
+                    /// <summary/>
+                    void IDisposable.Dispose() { }
+
+                    /// <summary/>
+                    ~Sample() { }
+
+                    /// <summary/>
+                    public struct NestedStruct
+                    {
+                        /// <summary/>
+                        public static NestedStruct operator -(NestedStruct value) => value;
+                    }
+                }
+
+                /// <summary/>
+                public static class Extensions
+                {
+                    /// <summary/>
+                    public static void Classic(this string value) { }
+                }
+            }
+            """, generateDocumentationFile: true);
+
+        var assembly = PublicApi.ReadAssembly(assemblyPath);
+        var documentedIds = XDocument.Load(assemblyPath.ChangeExtension(".xml")).Descendants("member").Select(member => (string)member.Attribute("name")!).ToList();
+        Assert.NotEmpty(documentedIds);
+
+        // Every documented symbol can be found using the ID generated by the compiler
+        Assert.All(documentedIds, id => Assert.Equal(id, assembly.FindSymbolByDocumentationId(id)?.DocumentationId));
+
+        // Every symbol of the model has the ID generated by the compiler, except the ones that cannot have a documentation comment
+        var undocumentedIds = assembly.GetAllSymbols()
+            .Where(symbol => symbol is not PublicApiMethod { AssociatedSymbol: not null } and not PublicApiMethod { MethodKind: PublicApiMethodKind.DelegateInvoke })
+            .Select(symbol => symbol.DocumentationId)
+            .Except(documentedIds, StringComparer.Ordinal);
+        Assert.Empty(undocumentedIds);
+
+        var accessor = assembly.FindSymbolByDocumentationId("M:Demo.Sample.Demo#IGeneric{System#String,System#Int32}#get_Property");
+        Assert.Equal("P:Demo.Sample.Demo#IGeneric{System#String,System#Int32}#Property", Assert.IsType<PublicApiMethod>(accessor).AssociatedSymbol!.DocumentationId);
+        var explicitIndexer = (PublicApiProperty)assembly.FindSymbolByDocumentationId("P:Demo.Sample.Demo#IGeneric{System#String,System#Int32}#Item(System.String)")!;
+        Assert.Equal("P:Demo.IGeneric`2.Item(`0)", Assert.Single(explicitIndexer.ExplicitInterfaceImplementations).DocumentationId);
+        var explicitEvent = (PublicApiEvent)assembly.FindSymbolByDocumentationId("E:Demo.Sample.Demo#IGeneric{System#String,System#Int32}#Event")!;
+        Assert.Equal("E:Demo.IGeneric`2.Event", Assert.Single(explicitEvent.ExplicitInterfaceImplementations).DocumentationId);
+    }
+
+    [Fact]
+    public async Task Model_Provenance()
+    {
+        await using var temporaryDirectory = TemporaryDirectory.Create();
+        var assemblyPath = await CompileSource(temporaryDirectory, "net10.0", """
+            namespace Demo;
+
+            public class Sample
+            {
+                public int Field;
+                public int Property { get; set; }
+                public event System.EventHandler? Changed;
+                public void Method() { }
+                public class Nested { }
+            }
+            """);
+
+        var assembly = PublicApi.ReadAssembly(assemblyPath);
+        using var stream = File.OpenRead(assemblyPath);
+        using var peReader = new PEReader(stream);
+        var metadataReader = peReader.GetMetadataReader();
+        var moduleVersionId = metadataReader.GetGuid(metadataReader.GetModuleDefinition().Mvid);
+        Assert.Equal(moduleVersionId, assembly.Module.ModuleVersionId);
+        Assert.Equal("Source.dll", assembly.Module.Name);
+        Assert.Contains(moduleVersionId.ToString("D"), assembly.Scope, StringComparison.Ordinal);
+        Assert.NotEmpty(assembly.Module.PdbReferences);
+
+        foreach (var symbol in assembly.GetAllSymbols())
+        {
+            var origin = symbol.Origin!;
+            Assert.Equal(moduleVersionId, origin.ModuleVersionId);
+            var handle = MetadataTokens.EntityHandle(origin.MetadataToken);
+            var name = handle.Kind switch
+            {
+                HandleKind.TypeDefinition => metadataReader.GetString(metadataReader.GetTypeDefinition((TypeDefinitionHandle)handle).Name),
+                HandleKind.MethodDefinition => metadataReader.GetString(metadataReader.GetMethodDefinition((MethodDefinitionHandle)handle).Name),
+                HandleKind.FieldDefinition => metadataReader.GetString(metadataReader.GetFieldDefinition((FieldDefinitionHandle)handle).Name),
+                HandleKind.PropertyDefinition => metadataReader.GetString(metadataReader.GetPropertyDefinition((PropertyDefinitionHandle)handle).Name),
+                HandleKind.EventDefinition => metadataReader.GetString(metadataReader.GetEventDefinition((EventDefinitionHandle)handle).Name),
+                _ => throw new InvalidOperationException("Unexpected handle kind " + handle.Kind),
+            };
+
+            Assert.Equal(symbol.MetadataName, name);
+        }
+
+        var property = (PublicApiProperty)assembly.FindSymbolByDocumentationId("P:Demo.Sample.Property")!;
+        Assert.Equal(HandleKind.PropertyDefinition, MetadataTokens.EntityHandle(property.Origin!.MetadataToken).Kind);
+        Assert.Equal("get_Property", metadataReader.GetString(metadataReader.GetMethodDefinition((MethodDefinitionHandle)MetadataTokens.EntityHandle(property.GetMethod!.Origin!.MetadataToken)).Name));
+        Assert.Equal("set_Property", metadataReader.GetString(metadataReader.GetMethodDefinition((MethodDefinitionHandle)MetadataTokens.EntityHandle(property.SetMethod!.Origin!.MetadataToken)).Name));
+        var @event = (PublicApiEvent)assembly.FindSymbolByDocumentationId("E:Demo.Sample.Changed")!;
+        Assert.Equal("add_Changed", metadataReader.GetString(metadataReader.GetMethodDefinition((MethodDefinitionHandle)MetadataTokens.EntityHandle(@event.AddMethod.Origin!.MetadataToken)).Name));
+        Assert.Equal("remove_Changed", metadataReader.GetString(metadataReader.GetMethodDefinition((MethodDefinitionHandle)MetadataTokens.EntityHandle(@event.RemoveMethod!.Origin!.MetadataToken)).Name));
+    }
+
+    [Fact]
+    public async Task Model_ReadFromStream_RemainsUsableAfterTheStreamIsDisposed()
+    {
+        await using var temporaryDirectory = TemporaryDirectory.Create();
+        var assemblyPath = await CompileSource(temporaryDirectory, "net10.0", ModelSource);
+
+        PublicApiAssembly assembly;
+        var stream = new MemoryStream(File.ReadAllBytes(assemblyPath));
+        await using (stream)
+        {
+            assembly = PublicApi.ReadAssembly(stream, new PublicApiReadOptions { TargetFramework = "net10.0", InputIdentity = "Demo/1.0.0/lib/net10.0/Source.dll" });
+            Assert.True(stream.CanRead);
+        }
+
+        Assert.Equal("net10.0", assembly.TargetFramework);
+        Assert.Equal(".NETCoreApp,Version=v10.0", assembly.TargetFrameworkMoniker);
+        Assert.Equal("Demo/1.0.0/lib/net10.0/Source.dll", assembly.Scope);
+        Assert.Equal(DumpModel(PublicApi.ReadAssembly(assemblyPath)), DumpModel(assembly));
+
+        // Reading an assembly never loads it
+        Assert.DoesNotContain(AppDomain.CurrentDomain.GetAssemblies(), loadedAssembly => !loadedAssembly.IsDynamic && string.Equals(loadedAssembly.Location, assemblyPath, StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task Model_SymbolIdentity()
+    {
+        await using var temporaryDirectory = TemporaryDirectory.Create();
+        var assemblyPath = await CompileSource(temporaryDirectory, "net10.0", "public class Sample { }");
+
+        var first = PublicApi.ReadAssembly(assemblyPath, new PublicApiReadOptions { InputIdentity = "first" });
+        var second = PublicApi.ReadAssembly(assemblyPath, new PublicApiReadOptions { InputIdentity = "second" });
+        var firstType = first.FindSymbolByDocumentationId("T:Sample")!;
+        var secondType = second.FindSymbolByDocumentationId("T:Sample")!;
+        Assert.Equal(firstType.DocumentationId, secondType.DocumentationId);
+        Assert.NotEqual(firstType.Identity, secondType.Identity);
+        Assert.Equal(new PublicApiSymbolIdentity("first", "T:Sample"), firstType.Identity);
+        Assert.Equal(first.Module.ModuleVersionId, firstType.Origin!.ModuleVersionId);
+    }
+
+    [Fact]
+    public async Task Format_Declaration()
+    {
+        var assembly = await ReadAssembly(ModelSource);
+        var method = assembly.FindSymbolByDocumentationId("M:Demo.Outer`1.Create")!;
+        var declaration = PublicApiFormatter.Format(method);
+        Assert.Equal("public Demo.Outer<T>.Inner2<string> Create()", declaration.Text);
+        Assert.Equal(declaration.Text, string.Concat(declaration.Segments.Select(segment => segment.Text)));
+
+        var identifier = Assert.Single(declaration.Segments, segment => segment.Kind == PublicApiDeclarationSegmentKind.Identifier);
+        Assert.Equal(("Create", method), (identifier.Text, identifier.Symbol));
+        var typeNames = declaration.Segments.Where(segment => segment.Kind == PublicApiDeclarationSegmentKind.TypeName).ToList();
+        Assert.Equal(["Demo.Outer", "Inner2", "string"], typeNames.Select(segment => segment.Text));
+        Assert.Equal(["T:Demo.Outer`1", "T:Demo.Outer`1.Inner2`1", "T:System.String"], typeNames.Select(segment => ((PublicApiNamedTypeReference)segment.TypeReference!).DocumentationId));
+        Assert.Same(assembly.FindSymbolByDocumentationId("T:Demo.Outer`1.Inner2`1"), assembly.FindSymbolByDocumentationId(((PublicApiNamedTypeReference)typeNames[1].TypeReference!).DocumentationId));
+
+        var unqualified = new PublicApiFormattingOptions { QualifyTypeNames = false };
+        Assert.Equal("public static int Count(this IEnumerable<int> source)", PublicApiFormatter.Format(assembly.FindSymbolByDocumentationId("M:Demo.Extensions.Count(System.Collections.Generic.IEnumerable{System.Int32})")!, unqualified).Text);
+
+        var hidden = assembly.FindSymbolByDocumentationId("M:Demo.Base.Hidden")!;
+        Assert.Equal("[System.Obsolete(\"Use Value\")]\npublic int Hidden()", PublicApiFormatter.Format(hidden, new PublicApiFormattingOptions { NewLine = "\n" }).Text);
+        Assert.Equal("public int Hidden()", PublicApiFormatter.Format(hidden, new PublicApiFormattingOptions { IncludeAttributes = false }).Text);
+        Assert.Equal("[System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]", PublicApiFormatter.Format(hidden.Attributes.Single(attribute => attribute.AttributeType.Name is "EditorBrowsableAttribute")).Text);
+
+        var setter = ((PublicApiProperty)assembly.FindSymbolByDocumentationId("P:Demo.Base.Value")!).SetMethod!;
+        Assert.Equal("public abstract int Value { protected set; }", PublicApiFormatter.Format(setter).Text);
+    }
+
+    [Fact]
+    public async Task Format_Compilable()
+    {
+        var assembly = await ReadAssembly(ModelSource);
+        var options = new PublicApiFormattingOptions { Style = PublicApiDeclarationStyle.Compilable, NewLine = "\n" };
+        Assert.Equal("public abstract int Value { get; protected set; }", PublicApiFormatter.Format(assembly.FindSymbolByDocumentationId("P:Demo.Base.Value")!, options).Text);
+        Assert.Equal("public Person(string Name, int Age) { }", PublicApiFormatter.Format(assembly.FindSymbolByDocumentationId("M:Demo.Person.#ctor(System.String,System.Int32)")!, options).Text);
+        Assert.Equal("""
+            public class Inner2<T, U> where T : class
+            {
+                public U M<V>(T t, V v) where V : struct => throw null;
+            }
+
+            """, PublicApiFormatter.Format(assembly.FindSymbolByDocumentationId("T:Demo.Outer`1.Inner2`1")!, options).Text);
+    }
+
+    [Fact]
+    public async Task Aggregate_TargetFrameworks()
+    {
+        await using var temporaryDirectory = TemporaryDirectory.Create();
+        const string Source = """
+            using System;
+            using System.Collections.Generic;
+
+            namespace Demo;
+
+            public interface IMarker { }
+
+            public class Sample
+            #if NET10_0_OR_GREATER
+                : IMarker
+            #endif
+            {
+                public void Shared() { }
+            #if NET10_0_OR_GREATER
+                public void NewMethod() { }
+                public string? Nullability(string? value) => value;
+                [Obsolete]
+                public void Attribute() { }
+                public void Constraint<T>() where T : class { }
+                public void Signature(long value) { }
+                public long ReturnType() => 0;
+                public virtual void Modifier(in int value) { }
+            #else
+                public string Nullability(string value) => value;
+                public void Attribute() { }
+                public void Constraint<T>() { }
+                public void Signature(int value) { }
+                public int ReturnType() => 0;
+                public void Modifier(ref int value) { }
+            #endif
+
+                public class Nested<T>
+            #if NET10_0_OR_GREATER
+                    where T : notnull
+            #endif
+                {
+                }
+            }
+
+            #if NET10_0_OR_GREATER
+            public class NewType { }
+            #endif
+            """;
+
+        var net8 = PublicApi.ReadAssembly(await CompileSource(temporaryDirectory, "net8_0", "net8.0", Source));
+        var net10 = PublicApi.ReadAssembly(await CompileSource(temporaryDirectory, "net10_0", "net10.0", Source));
+        var aggregate = PublicApi.Aggregate([net8, net10]);
+
+        Assert.Equal(["net8.0", "net10.0"], aggregate.TargetFrameworks);
+        Assert.Same(net10, aggregate.GetAssembly("net10.0"));
+        InlineSnapshot.Validate(DumpAggregate(aggregate), """
+            T:Demo.IMarker [net8.0, net10.0]
+                [net8.0, net10.0] public interface IMarker
+            T:Demo.NewType [net10.0]
+                [net10.0] public class NewType
+            M:Demo.NewType.#ctor [net10.0]
+                [net10.0] public NewType()
+            T:Demo.Sample [net8.0, net10.0] differences: Inheritance
+                [net8.0] public class Sample
+                [net10.0] public class Sample : Demo.IMarker
+            M:Demo.Sample.Shared [net8.0, net10.0]
+                [net8.0, net10.0] public void Shared()
+            M:Demo.Sample.Nullability(System.String) [net8.0, net10.0] differences: Nullability
+                [net8.0] public string Nullability(string value)
+                [net10.0] public string? Nullability(string? value)
+            M:Demo.Sample.Attribute [net8.0, net10.0] differences: Attributes
+                [net8.0] public void Attribute()
+                [net10.0] [System.Obsolete] public void Attribute()
+            M:Demo.Sample.Constraint``1 [net8.0, net10.0] differences: Constraints
+                [net8.0] public void Constraint<T>()
+                [net10.0] public void Constraint<T>() where T : class
+            M:Demo.Sample.Signature(System.Int32) [net8.0]
+                [net8.0] public void Signature(int value)
+            M:Demo.Sample.ReturnType [net8.0, net10.0] differences: Signature
+                [net8.0] public int ReturnType()
+                [net10.0] public long ReturnType()
+            M:Demo.Sample.Modifier(System.Int32@) [net8.0, net10.0] differences: Modifiers, Signature
+                [net8.0] public void Modifier(ref int value)
+                [net10.0] public virtual void Modifier(in int value)
+            M:Demo.Sample.#ctor [net8.0, net10.0]
+                [net8.0, net10.0] public Sample()
+            M:Demo.Sample.NewMethod [net10.0]
+                [net10.0] public void NewMethod()
+            M:Demo.Sample.Signature(System.Int64) [net10.0]
+                [net10.0] public void Signature(long value)
+            T:Demo.Sample.Nested`1 [net8.0, net10.0] differences: Constraints
+                [net8.0] public class Nested<T>
+                [net10.0] public class Nested<T> where T : notnull
+            M:Demo.Sample.Nested`1.#ctor [net8.0, net10.0]
+                [net8.0, net10.0] public Nested()
+            """);
+
+        var shared = aggregate.FindSymbolByDocumentationId("M:Demo.Sample.Shared")!;
+        Assert.Equal([net8.Module.ModuleVersionId, net10.Module.ModuleVersionId], Assert.Single(shared.Variants).Symbols.Select(symbol => symbol.Origin!.ModuleVersionId));
+        Assert.Same(net8, shared.GetSymbol("net8.0")!.Assembly);
+        Assert.Null(aggregate.FindSymbolByDocumentationId("T:Demo.NewType")!.GetSymbol("net8.0"));
+    }
+
+    [Fact]
+    public async Task Aggregate_RejectsAmbiguousInputs()
+    {
+        await using var temporaryDirectory = TemporaryDirectory.Create();
+        var assemblyPath = await CompileSource(temporaryDirectory, "net10.0", "public class Sample { }");
+        var first = PublicApi.ReadAssembly(assemblyPath, new PublicApiReadOptions { TargetFramework = "net10.0" });
+        var second = PublicApi.ReadAssembly(assemblyPath, new PublicApiReadOptions { TargetFramework = "NET10.0" });
+        var other = PublicApi.ReadAssembly(typeof(PublicApi).Assembly.Location, new PublicApiReadOptions { TargetFramework = "net8.0" });
+
+        Assert.Throws<ArgumentException>(() => PublicApi.Aggregate([first, second]));
+        Assert.Throws<ArgumentException>(() => PublicApi.Aggregate([first, other]));
+        Assert.Throws<ArgumentException>(() => PublicApi.Aggregate([]));
+    }
+
+    private static async Task<PublicApiAssembly> ReadAssembly(string source)
+    {
+        await using var temporaryDirectory = TemporaryDirectory.Create();
+        return PublicApi.ReadAssembly(await CompileSource(temporaryDirectory, "net10.0", source));
+    }
+
+    private static Task<FullPath> CompileSource(TemporaryDirectory temporaryDirectory, string targetFramework, string source)
+    {
+        return CompileSource(temporaryDirectory, "source", targetFramework, source);
+    }
+
+    private static string DumpModel(PublicApiAssembly assembly)
+    {
+        var options = new PublicApiFormattingOptions { NewLine = "\n" };
+        var sb = new StringBuilder();
+        foreach (var symbol in assembly.GetAllSymbols())
+        {
+            if (symbol is PublicApiMethod { AssociatedSymbol: not null })
+                continue;
+
+            sb.Append(symbol.DocumentationId);
+            if (symbol.IsCompilerGenerated)
+            {
+                sb.Append(" (compiler-generated)");
+            }
+
+            sb.Append('\n');
+            foreach (var line in PublicApiFormatter.Format(symbol, options).Text.Split('\n'))
+            {
+                sb.Append("    ").Append(line).Append('\n');
+            }
+        }
+
+        return sb.ToString().TrimEnd('\n');
+    }
+
+    private static string DumpAggregate(PublicApiAggregatedAssembly assembly)
+    {
+        var options = new PublicApiFormattingOptions { NewLine = "\n" };
+        var sb = new StringBuilder();
+        foreach (var type in assembly.Types)
+        {
+            Append(type);
+        }
+
+        return sb.ToString().TrimEnd('\n');
+
+        void Append(PublicApiAggregatedSymbol symbol)
+        {
+            sb.Append(symbol.DocumentationId).Append(" [").AppendJoin(", ", symbol.TargetFrameworks).Append(']');
+            if (symbol.Differences != PublicApiSymbolDifferences.None)
+            {
+                sb.Append(" differences: ").Append(symbol.Differences);
+            }
+
+            sb.Append('\n');
+            foreach (var variant in symbol.Variants)
+            {
+                sb.Append("    [").AppendJoin(", ", variant.TargetFrameworks).Append("] ").Append(PublicApiFormatter.Format(variant.Symbol, options).Text.Replace("\n", " ", StringComparison.Ordinal)).Append('\n');
+            }
+
+            foreach (var member in symbol.Members)
+            {
+                Append(member);
+            }
+
+            foreach (var nestedType in symbol.NestedTypes)
+            {
+                Append(nestedType);
+            }
+        }
+    }
+
     [InlineSnapshotAssertion(nameof(expected))]
     private static async Task Validate(string source, string expected, PublicApiOptions? options = null, CompilerOptions? compilerOptions = null, [CallerFilePath] string? filePath = null, [CallerLineNumber] int lineNumber = -1)
     {
@@ -3424,8 +4334,9 @@ public sealed class PublicApiGeneratorTests
         return normalizedTargetFramework;
     }
 
-    private static async Task<FullPath> CompileSource(TemporaryDirectory temporaryDirectory, string projectDirectoryName, string targetFramework, string source)
+    private static async Task<FullPath> CompileSource(TemporaryDirectory temporaryDirectory, string projectDirectoryName, string targetFramework, string source, bool generateDocumentationFile = false)
     {
+        var documentation = generateDocumentationFile ? "\n    <GenerateDocumentationFile>true</GenerateDocumentationFile>" : "";
         var sourceProjectDirectory = temporaryDirectory / projectDirectoryName;
         temporaryDirectory.CreateTextFile(sourceProjectDirectory / "project.csproj", $$"""
             <Project Sdk="Microsoft.NET.Sdk">
@@ -3434,7 +4345,7 @@ public sealed class PublicApiGeneratorTests
                 <LangVersion>preview</LangVersion>
                 <Nullable>enable</Nullable>
                 <ImplicitUsings>enable</ImplicitUsings>
-                <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+                <AllowUnsafeBlocks>true</AllowUnsafeBlocks>{{documentation}}
               </PropertyGroup>
             </Project>
             """);
@@ -3460,6 +4371,14 @@ public sealed class PublicApiGeneratorTests
         await RunDotNetAsync(temporaryDirectory, ["build", projectPath, "-nologo", "--disable-build-servers", "--no-restore", "--output", outputPath, "/p:AssemblyName=Source"]);
 
         var builtAssemblyPath = outputPath / "Source.dll";
+        var builtDocumentationPath = outputPath / "Source.xml";
+        if (File.Exists(builtDocumentationPath))
+        {
+            // Copied before the assembly, whose presence marks the cache entry as complete
+            cachedAssemblyPath.CreateParentDirectory();
+            File.Copy(builtDocumentationPath, cachedAssemblyPath.ChangeExtension(".xml"), overwrite: true);
+        }
+
         var stagingAssemblyPath = cacheDirectory / "staging" / cacheKey / $"{Guid.NewGuid():N}.dll";
         stagingAssemblyPath.CreateParentDirectory();
         File.Copy(builtAssemblyPath, stagingAssemblyPath, overwrite: true);

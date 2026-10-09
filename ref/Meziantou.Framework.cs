@@ -477,8 +477,8 @@ namespace Meziantou.Framework
         public static bool IsFlagsEnum(this System.Type type) => throw null;
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Use reflection to find static methods")]
         public static System.Reflection.MethodInfo? GetImplicitConversion(object? value, System.Type targetType) => throw null;
-        public static System.ValueTuple? GetMethodLocation(this System.Reflection.MethodInfo methodInfo) => throw null;
-        public static System.Threading.Tasks.Task<System.ValueTuple?> GetMethodLocationAsync(this System.Reflection.MethodInfo methodInfo) => throw null;
+        public static System.ValueTuple<string, System.Reflection.Metadata.SequencePoint>? GetMethodLocation(this System.Reflection.MethodInfo methodInfo) => throw null;
+        public static System.Threading.Tasks.Task<System.ValueTuple<string, System.Reflection.Metadata.SequencePoint>?> GetMethodLocationAsync(this System.Reflection.MethodInfo methodInfo) => throw null;
     }
 
     public static class RegexExtensions
@@ -834,7 +834,7 @@ namespace Meziantou.Framework.Collections
     }
 
     [System.Diagnostics.DebuggerDisplay("Length = {Length}")]
-    [System.Diagnostics.DebuggerTypeProxy(typeof(Meziantou.Framework.Collections.ImmutableEquatableArray))]
+    [System.Diagnostics.DebuggerTypeProxy(typeof(Meziantou.Framework.Collections.ImmutableEquatableArray.DebugView))]
     [System.Runtime.CompilerServices.CollectionBuilder(typeof(Meziantou.Framework.Collections.ImmutableEquatableArray), "Create")]
     public sealed class ImmutableEquatableArray<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IList<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.IReadOnlyList<T>, System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList, System.IEquatable<Meziantou.Framework.Collections.ImmutableEquatableArray<T>> where T : System.IEquatable<T>
     {
@@ -873,7 +873,7 @@ namespace Meziantou.Framework.Collections
     }
 
     [System.Diagnostics.DebuggerDisplay("Count = {Count}")]
-    [System.Diagnostics.DebuggerTypeProxy(typeof(Meziantou.Framework.Collections.ImmutableEquatableDictionary))]
+    [System.Diagnostics.DebuggerTypeProxy(typeof(Meziantou.Framework.Collections.ImmutableEquatableDictionary.DebugView))]
     public sealed class ImmutableEquatableDictionary<TKey, TValue> : System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IDictionary<TKey, TValue>, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IReadOnlyCollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>, System.Collections.ICollection, System.Collections.IDictionary, System.Collections.IEnumerable, System.IEquatable<Meziantou.Framework.Collections.ImmutableEquatableDictionary<TKey, TValue>> where TKey : System.IEquatable<TKey> where TValue : System.IEquatable<TValue>
     {
         public static Meziantou.Framework.Collections.ImmutableEquatableDictionary<TKey, TValue> Empty { get => throw null; }
@@ -906,7 +906,7 @@ namespace Meziantou.Framework.Collections
     }
 
     [System.Diagnostics.DebuggerDisplay("Count = {Count}")]
-    [System.Diagnostics.DebuggerTypeProxy(typeof(Meziantou.Framework.Collections.ImmutableEquatableSet))]
+    [System.Diagnostics.DebuggerTypeProxy(typeof(Meziantou.Framework.Collections.ImmutableEquatableSet.DebugView))]
     [System.Runtime.CompilerServices.CollectionBuilder(typeof(Meziantou.Framework.Collections.ImmutableEquatableSet), "Create")]
     public sealed class ImmutableEquatableSet<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.ISet<T>, System.Collections.ICollection, System.Collections.IEnumerable, System.IEquatable<Meziantou.Framework.Collections.ImmutableEquatableSet<T>> where T : System.IEquatable<T>
     {

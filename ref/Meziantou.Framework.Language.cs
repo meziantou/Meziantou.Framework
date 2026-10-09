@@ -656,11 +656,15 @@ namespace Meziantou.Framework.Language
         public int End { get => throw null; init { } }
         public string Text { get => throw null; init { } }
         public TextLine(int LineNumber, int Start, int End, string Text) { }
+        #nullable disable
         public override string ToString() => throw null;
+        #nullable restore
         public static bool operator !=(Meziantou.Framework.Language.TextLine left, Meziantou.Framework.Language.TextLine right) => throw null;
         public static bool operator ==(Meziantou.Framework.Language.TextLine left, Meziantou.Framework.Language.TextLine right) => throw null;
         public override int GetHashCode() => throw null;
+        #nullable disable
         public override bool Equals(object obj) => throw null;
+        #nullable restore
         public bool Equals(Meziantou.Framework.Language.TextLine other) => throw null;
         public void Deconstruct(out int LineNumber, out int Start, out int End, out string Text) => throw null;
     }

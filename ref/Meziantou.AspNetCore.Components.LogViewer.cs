@@ -30,7 +30,9 @@ namespace Meziantou.AspNetCore.Components
         public Meziantou.AspNetCore.Components.LogDetailsDisplayFormat Format { get => throw null; set { } }
         public bool CanChangeDisplayFormat { get => throw null; set { } }
         public int MaxDepth { get => throw null; set { } }
+        #nullable disable
         protected override void BuildRenderTree(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder __builder) { }
+        #nullable restore
         protected override void OnParametersSet() { }
     }
 
@@ -73,7 +75,9 @@ namespace Meziantou.AspNetCore.Components
         public string? DateTimeStringFormat { get => throw null; set { } }
         public bool ShowLineNumbers { get => throw null; set { } }
         public System.Collections.Generic.IEnumerable<Meziantou.AspNetCore.Components.ILogHighlighter> LogHighlighters { get => throw null; set { } }
+        #nullable disable
         protected override void BuildRenderTree(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder __builder) { }
+        #nullable restore
         protected override void OnParametersSet() { }
     }
 

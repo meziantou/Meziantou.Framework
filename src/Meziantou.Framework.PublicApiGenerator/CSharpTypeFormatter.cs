@@ -24,10 +24,4 @@ internal static class CSharpTypeFormatter
         sb.Append('>');
         return sb.ToString();
     }
-
-    public static string NormalizeWellKnownTypeName(string typeFullName)
-    {
-        // decimal has no metadata primitive type code, so it reaches the readers as an ordinary type reference
-        return string.Equals(typeFullName, "System.Decimal", StringComparison.Ordinal) ? "decimal" : typeFullName;
-    }
 }

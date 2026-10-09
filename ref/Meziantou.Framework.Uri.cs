@@ -16,7 +16,9 @@ namespace Meziantou.Framework
         public static bool operator !=(Meziantou.Framework.DomainInfo left, Meziantou.Framework.DomainInfo right) => throw null;
         public static bool operator ==(Meziantou.Framework.DomainInfo left, Meziantou.Framework.DomainInfo right) => throw null;
         public override int GetHashCode() => throw null;
-        public override bool Equals(object? obj) => throw null;
+        #nullable disable
+        public override bool Equals(object obj) => throw null;
+        #nullable restore
         public bool Equals(Meziantou.Framework.DomainInfo other) => throw null;
     }
 

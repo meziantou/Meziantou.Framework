@@ -128,7 +128,7 @@ internal static class PublicApiTargetFramework
         }
     }
 
-    private static string? GetFrameworkMonikerFromMetadata(MetadataReader metadataReader)
+    public static string? GetFrameworkMonikerFromMetadata(MetadataReader metadataReader)
     {
         var assemblyDefinition = metadataReader.GetAssemblyDefinition();
         foreach (var customAttributeHandle in assemblyDefinition.GetCustomAttributes())
@@ -153,6 +153,18 @@ internal static class PublicApiTargetFramework
         }
 
         return null;
+    }
+
+    public static string? TryConvertFrameworkMonikerToTargetFramework(string frameworkMoniker)
+    {
+        try
+        {
+            return ConvertFrameworkMonikerToTargetFramework(frameworkMoniker);
+        }
+        catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
+        {
+            return null;
+        }
     }
 
     private static string ConvertFrameworkMonikerToTargetFramework(string frameworkMoniker)

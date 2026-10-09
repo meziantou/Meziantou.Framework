@@ -155,11 +155,15 @@ namespace Meziantou.Framework.Language.Regex
         public string Name { get => throw null; init { } }
         public Meziantou.Framework.Language.TextSpan Span { get => throw null; init { } }
         public RegexCaptureInfo(int Number, string Name, Meziantou.Framework.Language.TextSpan Span) { }
+        #nullable disable
         public override string ToString() => throw null;
+        #nullable restore
         public static bool operator !=(Meziantou.Framework.Language.Regex.RegexCaptureInfo left, Meziantou.Framework.Language.Regex.RegexCaptureInfo right) => throw null;
         public static bool operator ==(Meziantou.Framework.Language.Regex.RegexCaptureInfo left, Meziantou.Framework.Language.Regex.RegexCaptureInfo right) => throw null;
         public override int GetHashCode() => throw null;
+        #nullable disable
         public override bool Equals(object obj) => throw null;
+        #nullable restore
         public bool Equals(Meziantou.Framework.Language.Regex.RegexCaptureInfo other) => throw null;
         public void Deconstruct(out int Number, out string Name, out Meziantou.Framework.Language.TextSpan Span) => throw null;
     }

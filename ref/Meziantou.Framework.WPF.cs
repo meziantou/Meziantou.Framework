@@ -16,13 +16,13 @@ namespace Meziantou.Framework.WPF
     public static class DelegateCommand
     {
         public static Meziantou.Framework.WPF.IDelegateCommand Create(System.Action? execute) => throw null;
-        public static Meziantou.Framework.WPF.IDelegateCommand Create(System.Action<object>? execute) => throw null;
+        public static Meziantou.Framework.WPF.IDelegateCommand Create(System.Action<object?>? execute) => throw null;
         public static Meziantou.Framework.WPF.IDelegateCommand Create(System.Action? execute, System.Func<bool>? canExecute) => throw null;
         public static Meziantou.Framework.WPF.IDelegateCommand Create(System.Action<object?>? execute, System.Func<object?, bool>? canExecute) => throw null;
         public static Meziantou.Framework.WPF.IDelegateCommand Create(System.Func<System.Threading.Tasks.Task>? execute) => throw null;
         public static Meziantou.Framework.WPF.IDelegateCommand Create(System.Func<object?, System.Threading.Tasks.Task>? execute) => throw null;
         public static Meziantou.Framework.WPF.IDelegateCommand Create(System.Func<System.Threading.Tasks.Task>? execute, System.Func<bool>? canExecute) => throw null;
-        public static Meziantou.Framework.WPF.IDelegateCommand Create(System.Func<object?, System.Threading.Tasks.Task>? execute, System.Func<object, bool>? canExecute) => throw null;
+        public static Meziantou.Framework.WPF.IDelegateCommand Create(System.Func<object?, System.Threading.Tasks.Task>? execute, System.Func<object?, bool>? canExecute) => throw null;
     }
 
     public static class DispatcherExtensions

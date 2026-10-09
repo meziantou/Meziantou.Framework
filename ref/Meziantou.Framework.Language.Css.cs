@@ -307,7 +307,7 @@ namespace Meziantou.Framework.Language.Css
         public static bool IsInteger(this Meziantou.Framework.Language.SyntaxToken token) => throw null;
         public static string? GetUnit(this Meziantou.Framework.Language.SyntaxToken token) => throw null;
         public static bool IsIdHash(this Meziantou.Framework.Language.SyntaxToken token) => throw null;
-        public static System.ValueTuple? GetUnicodeRange(this Meziantou.Framework.Language.SyntaxToken token) => throw null;
+        public static System.ValueTuple<int, int>? GetUnicodeRange(this Meziantou.Framework.Language.SyntaxToken token) => throw null;
     }
 
     public sealed class CssFeatureValueSyntax : Meziantou.Framework.Language.Css.CssSyntaxNode

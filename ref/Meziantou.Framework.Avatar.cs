@@ -9,11 +9,15 @@ namespace Meziantou.Framework
         public string BackgroundColor { get => throw null; }
         public string ForegroundColor { get => throw null; }
         public AvatarColorPair(string backgroundColor, string foregroundColor) { }
+        #nullable disable
         public override string ToString() => throw null;
+        #nullable restore
         public static bool operator !=(Meziantou.Framework.AvatarColorPair left, Meziantou.Framework.AvatarColorPair right) => throw null;
         public static bool operator ==(Meziantou.Framework.AvatarColorPair left, Meziantou.Framework.AvatarColorPair right) => throw null;
         public override int GetHashCode() => throw null;
+        #nullable disable
         public override bool Equals(object obj) => throw null;
+        #nullable restore
         public bool Equals(Meziantou.Framework.AvatarColorPair other) => throw null;
     }
 

@@ -128,7 +128,7 @@ namespace Meziantou.Framework.PostgreSql.Handler
         public required Meziantou.Framework.PostgreSql.Handler.PostgreSqlColumnType Type { get => throw null; init { } }
         public uint TypeOid { get => throw null; init { } }
         public int FormatCode { get => throw null; init { } }
-        public System.ReadOnlyMemory? RawValue { get => throw null; init { } }
+        public System.ReadOnlyMemory<byte>? RawValue { get => throw null; init { } }
         public bool IsNull { get => throw null; }
         public string? AsString() => throw null;
         public int? AsInt32() => throw null;

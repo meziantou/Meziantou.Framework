@@ -55,7 +55,9 @@ namespace Meziantou.Framework.Toml
         public static implicit operator Meziantou.Framework.Toml.TomlDateTime(System.DateTime dateTime) => throw null;
         public static bool operator !=(Meziantou.Framework.Toml.TomlDateTime left, Meziantou.Framework.Toml.TomlDateTime right) => throw null;
         public static bool operator ==(Meziantou.Framework.Toml.TomlDateTime left, Meziantou.Framework.Toml.TomlDateTime right) => throw null;
-        public readonly override bool Equals(object? obj) => throw null;
+        #nullable disable
+        public readonly override bool Equals(object obj) => throw null;
+        #nullable restore
         public readonly void Deconstruct(out System.DateTimeOffset DateTime, out int SecondPrecision, out Meziantou.Framework.Toml.TomlDateTimeKind Kind) => throw null;
     }
 
@@ -519,11 +521,15 @@ namespace Meziantou.Framework.Toml.Model
         public string? Text { readonly get => throw null; set { } }
         public TomlSyntaxTriviaMetadata(Meziantou.Framework.Toml.Syntax.TokenKind Kind, string? Text) { }
         public static implicit operator Meziantou.Framework.Toml.Model.TomlSyntaxTriviaMetadata(Meziantou.Framework.Toml.Syntax.SyntaxTrivia trivia) => throw null;
-        public readonly override string? ToString() => throw null;
+        #nullable disable
+        public readonly override string ToString() => throw null;
+        #nullable restore
         public static bool operator !=(Meziantou.Framework.Toml.Model.TomlSyntaxTriviaMetadata left, Meziantou.Framework.Toml.Model.TomlSyntaxTriviaMetadata right) => throw null;
         public static bool operator ==(Meziantou.Framework.Toml.Model.TomlSyntaxTriviaMetadata left, Meziantou.Framework.Toml.Model.TomlSyntaxTriviaMetadata right) => throw null;
         public readonly override int GetHashCode() => throw null;
-        public readonly override bool Equals(object? obj) => throw null;
+        #nullable disable
+        public readonly override bool Equals(object obj) => throw null;
+        #nullable restore
         public readonly bool Equals(Meziantou.Framework.Toml.Model.TomlSyntaxTriviaMetadata other) => throw null;
         public readonly void Deconstruct(out Meziantou.Framework.Toml.Syntax.TokenKind Kind, out string? Text) => throw null;
     }

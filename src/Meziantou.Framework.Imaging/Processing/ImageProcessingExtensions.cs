@@ -25,6 +25,14 @@ namespace Meziantou.Framework.Imaging;
 /// EXIF profile is left as is (serializing it fails).
 /// </para>
 /// <para>
+/// A cursor hotspot (<see cref="FrameMetadata.Hotspot"/>) follows the pixel it designates: crops translate it, rotations,
+/// mirrors and auto-orient permute it exactly, and a resize moves it to <c>floor(x * newWidth / width)</c> (and likewise
+/// vertically, through the kept region for <see cref="ResizeMode.Cover"/>), so a hotspot in the top-left corner stays
+/// there. When the pixel it designates is not part of the result (a crop or a cover resize that removes it), the operation
+/// throws an <see cref="UnsupportedImageFeatureException"/> and leaves the image unchanged: clear or move the hotspot
+/// first. Pixel-only operations keep it.
+/// </para>
+/// <para>
 /// Crop, rotations, mirrors and auto-orient are exact pixel permutations: every sample, including 16-bit low bits and
 /// alpha, is copied unchanged. Operations run on the calling thread, except that <see cref="Resize"/> and
 /// <see cref="Convolve(Image, ConvolutionOptions, CancellationToken)"/> may also use up to
@@ -38,6 +46,7 @@ public static class ImageProcessingExtensions
     /// <param name="rectangle">The region to keep. It must be non-empty and entirely inside the canvas; it is never clamped.</param>
     /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="rectangle"/> is empty or not entirely inside the canvas.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">The cursor hotspot of a frame is outside <paramref name="rectangle"/>. The image is unchanged.</exception>
     /// <exception cref="ImageResourceLimitException">The replacement buffers would exceed the allocation limit. The image is unchanged.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled. The image is unchanged.</exception>
     /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
@@ -88,7 +97,7 @@ public static class ImageProcessingExtensions
     /// <param name="options">The resize options.</param>
     /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
     /// <exception cref="ArgumentException">Upscaling is required but <see cref="ResizeOptions.AllowUpscaling"/> is <see langword="false"/> (for <see cref="ResizeMode.Stretch"/> and <see cref="ResizeMode.Cover"/>).</exception>
-    /// <exception cref="UnsupportedImageFeatureException"><see cref="ResizeWorkingSpace.LinearSrgb"/> is requested for an image with an incompatible ICC profile.</exception>
+    /// <exception cref="UnsupportedImageFeatureException"><see cref="ResizeWorkingSpace.LinearSrgb"/> is requested for an image with an incompatible ICC profile, or the cursor hotspot of a frame designates a pixel that <see cref="ResizeMode.Cover"/> removes. The image is unchanged.</exception>
     /// <exception cref="ImageResourceLimitException">The replacement buffers would exceed the allocation limit. The image is unchanged.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled. The image is unchanged.</exception>
     /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
@@ -186,9 +195,13 @@ public static class ImageProcessingExtensions
 
         var storage = frame.GetStorage();
         cancellationToken.ThrowIfCancellationRequested();
-        using var lease = storage.AcquireLease();
-        frame.OwnerImage.Metadata.RemoveStaleThumbnail();
-        frame.FlipPixels(lease, mode, cancellationToken);
+        using (var lease = storage.AcquireLease())
+        {
+            frame.OwnerImage.Metadata.RemoveStaleThumbnail();
+            frame.FlipPixels(lease, mode, cancellationToken);
+        }
+
+        Image.FlipHotspot(frame, mode);
     }
 
     /// <summary>

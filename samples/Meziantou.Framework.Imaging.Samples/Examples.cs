@@ -110,6 +110,28 @@ internal static class Examples
     }
     // end-snippet
 
+    /// <summary>An animated cursor: an animation whose frames are cursor images with a hotspot, played forever.</summary>
+    // begin-snippet: animated-cursor
+    public static Point WriteAndReadAnimatedCursor(string animationPath, string cursorPath)
+    {
+        using var animation = Image.Load(animationPath);
+        animation.Resize(new ResizeOptions(32, 32) { Mode = ResizeMode.Stretch });
+        foreach (var frame in animation.Frames)
+        {
+            frame.Metadata.Hotspot = new Point(4, 2); // the pixel that designates the pointer position
+        }
+
+        // An animated cursor always loops: a finite play count is rejected instead of being dropped
+        animation.Animation = new AnimationMetadata();
+        animation.Save(cursorPath); // ".ani" selects AniEncoder; durations are rounded to sixtieths of a second
+
+        // A hotspot follows its pixel through geometry operations: (4, 2) at 32x32 is (8, 4) at 64x64
+        using var cursor = Image.Load(cursorPath);
+        cursor.Resize(new ResizeOptions(64, 64) { Mode = ResizeMode.Stretch, AllowUpscaling = true });
+        return cursor.Frames[0].Metadata.Hotspot!.Value;
+    }
+    // end-snippet
+
     /// <summary>JPEG stores a single frame: export one frame explicitly and choose how to remove alpha.</summary>
     // begin-snippet: export-jpeg-frame
     public static void ExportFrameAsJpeg(string animatedPath, int frameIndex, string jpegPath)

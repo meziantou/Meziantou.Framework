@@ -101,6 +101,7 @@ public sealed class DefaultsTests
         Assert.IsType<TiffEncoder>(ImageEncoder.FromPath("a.TIFF"));
         Assert.IsType<IcoEncoder>(ImageEncoder.FromPath("a.ico"));
         Assert.Equal(IconKind.Cursor, Assert.IsType<IcoEncoder>(ImageEncoder.FromPath("a.cur")).Kind);
+        Assert.IsType<AniEncoder>(ImageEncoder.FromPath("a.ANI"));
         Assert.Throws<ArgumentException>(() => ImageEncoder.FromPath("a.heic"));
         Assert.Throws<ArgumentException>(() => ImageEncoder.FromPath("noextension"));
     }

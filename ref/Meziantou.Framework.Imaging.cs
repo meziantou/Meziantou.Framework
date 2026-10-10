@@ -250,6 +250,7 @@ namespace Meziantou.Framework.Imaging
         Tiff = 9,
         Ico = 10,
         Cur = 11,
+        Ani = 12,
     }
 
     public abstract class ImageFrame
@@ -710,6 +711,14 @@ namespace Meziantou.Framework.Imaging
 }
 namespace Meziantou.Framework.Imaging.Formats
 {
+    public sealed class AniEncoder : Meziantou.Framework.Imaging.Formats.ImageEncoder
+    {
+        public const int MaxDimension = 256;
+        public override Meziantou.Framework.Imaging.ImageFormat Format { get => throw null; }
+        public Meziantou.Framework.Imaging.Formats.IconPayloadFormat PayloadFormat { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Formats.FrameDurationRounding DurationRounding { get => throw null; init { } }
+    }
+
     public sealed class BmpEncoder : Meziantou.Framework.Imaging.Formats.ImageEncoder
     {
         public override Meziantou.Framework.Imaging.ImageFormat Format { get => throw null; }
@@ -935,6 +944,7 @@ namespace Meziantou.Framework.Imaging.Metadata
     public sealed class FrameMetadata
     {
         public Meziantou.Framework.Imaging.FrameDuration Duration { get => throw null; set { } }
+        public Meziantou.Framework.Imaging.Point? Hotspot { get => throw null; set { } }
         public Meziantou.Framework.Imaging.Metadata.FrameMetadata Clone() => throw null;
     }
 

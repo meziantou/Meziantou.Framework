@@ -19,6 +19,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </description></item>
 /// <item><description>every DIB-backed representation therefore decodes to <see cref="PixelFormat.Rgba32"/>.</description></item>
 /// </list>
+/// <para>The hotspot of a cursor representation becomes the hotspot of the decoded frame.</para>
 /// </remarks>
 internal static class IcoEntryDecoder
 {
@@ -35,9 +36,13 @@ internal static class IcoEntryDecoder
         ArgumentNullException.ThrowIfNull(representation);
         ArgumentNullException.ThrowIfNull(request);
         ArgumentNullException.ThrowIfNull(context);
-        return representation.PayloadFormat == ImageFormat.Png
+        var image = representation.PayloadFormat == ImageFormat.Png
             ? DecodePng(source, format, representation, request, context)
             : DecodeDib(source, format, representation, request, context);
+
+        // The hotspot was validated against this representation when the directory was resolved
+        Image.GetFrameForDecoder(image, 0).MetadataCore.SetHotspotUnchecked(representation.Hotspot);
+        return image;
     }
 
     private static Image DecodePng(RandomAccessSource source, ImageFormat format, IcoRepresentation representation, ImageDecodeRequest request, ImageCodecContext context)

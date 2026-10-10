@@ -58,7 +58,7 @@ internal static class ImageIO
         => LoadCoreAsync(ImageCodecRegistry.Current, path, options, pixelFormat, cancellationToken);
 
     /// <summary>
-    /// Creates the random-access view a TIFF, BigTIFF, ICO or CUR input needs, when the source stream can provide one
+    /// Creates the random-access view a TIFF, BigTIFF, ICO, CUR or ANI input needs, when the source stream can provide one
     /// without copying it.
     /// </summary>
     /// <remarks>

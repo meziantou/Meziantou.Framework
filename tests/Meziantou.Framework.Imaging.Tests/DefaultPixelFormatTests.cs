@@ -30,6 +30,13 @@ public sealed class DefaultPixelFormatTests
         => Assert.Equal(expected, DefaultPixelFormats.ForPng(colorType, bitDepth, transparency, animated));
 
     [Fact]
+    public void AnAnimatedCursorHasOnePixelFormatThatStoresEveryFrameLosslessly()
+    {
+        Assert.Equal(PixelFormat.Rgba32, DefaultPixelFormats.ForAni(hasSixteenBitFrame: false));
+        Assert.Equal(PixelFormat.Rgba64, DefaultPixelFormats.ForAni(hasSixteenBitFrame: true));
+    }
+
+    [Fact]
     public void GifAndJpegDefaults()
     {
         Assert.Equal(PixelFormat.Rgba32, DefaultPixelFormats.Gif);

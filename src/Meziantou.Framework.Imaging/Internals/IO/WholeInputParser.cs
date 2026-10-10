@@ -1,7 +1,7 @@
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
-/// The bridge between the forward-only input pipeline and the random-access container formats (TIFF, BigTIFF, ICO, CUR):
+/// The bridge between the forward-only input pipeline and the random-access container formats (TIFF, BigTIFF, ICO, CUR, ANI):
 /// it buffers the whole input, then runs the random-access decoder over the buffered bytes.
 /// </summary>
 /// <remarks>

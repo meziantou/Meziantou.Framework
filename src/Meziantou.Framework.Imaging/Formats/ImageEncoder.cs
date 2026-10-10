@@ -72,6 +72,9 @@ public abstract class ImageEncoder
         if (extension.Equals(".cur", StringComparison.OrdinalIgnoreCase))
             return new IcoEncoder { Kind = IconKind.Cursor };
 
+        if (extension.Equals(".ani", StringComparison.OrdinalIgnoreCase))
+            return new AniEncoder();
+
         throw new ArgumentException($"Cannot select an encoder for the file extension '{extension}'. Specify an encoder explicitly.", nameof(path));
     }
 }

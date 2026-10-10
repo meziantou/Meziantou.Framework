@@ -253,6 +253,84 @@ public sealed class ImageSaveTests
         Assert.Equal(2, decoded.Frames.Count);
     }
 
+    public static TheoryData<ImageEncoder> EncodersWithoutHotspot() =>
+    [
+        new PngEncoder(),
+        new PngEncoder { AnimationMode = PngAnimationMode.Animated },
+        new GifEncoder(),
+        new JpegEncoder(),
+        new WebPEncoder(),
+        new QoiEncoder(),
+        new BmpEncoder(),
+        new TgaEncoder(),
+        new PnmEncoder(),
+        new TiffEncoder(),
+        new IcoEncoder(),
+    ];
+
+    [Theory]
+    [MemberData(nameof(EncodersWithoutHotspot))]
+    public void OnlyCursorOutputsStoreAHotspotAndTheOthersFollowTheMetadataPolicy(ImageEncoder encoder)
+    {
+        Rgb24[] pixels = [new Rgb24(1, 2, 3), new Rgb24(4, 5, 6), new Rgb24(7, 8, 9), new Rgb24(10, 11, 12)];
+        using var image = Image.ImportPixelData<Rgb24>(pixels, 2, 2);
+        image.Frames[0].Metadata.Hotspot = new Point(1, 1);
+        using var stream = new MemoryStream();
+        var exception = Assert.Throws<UnsupportedImageFeatureException>(() => image.Save(stream, encoder));
+        Assert.Equal(encoder.Format, exception.Format);
+        Assert.Equal("Metadata: cursor hotspot", exception.Feature);
+        Assert.Equal(0, stream.Length);
+
+        foreach (var handling in (MetadataHandling[])[MetadataHandling.DiscardUnsupported, MetadataHandling.Strip])
+        {
+            using var discarded = new MemoryStream();
+            image.Save(discarded, WithHandling(encoder, handling));
+            discarded.Position = 0;
+            using var reloaded = Image.Load(discarded);
+            Assert.Null(reloaded.Frames[0].Metadata.Hotspot);
+        }
+
+        // Without a hotspot there is nothing to reject
+        image.Frames[0].Metadata.Hotspot = null;
+        image.Save(stream, encoder);
+        Assert.True(stream.Length > 0);
+
+        static ImageEncoder WithHandling(ImageEncoder encoder, MetadataHandling handling) => encoder switch
+        {
+            PngEncoder png => new PngEncoder { AnimationMode = png.AnimationMode, MetadataHandling = handling },
+            GifEncoder => new GifEncoder { MetadataHandling = handling },
+            JpegEncoder => new JpegEncoder { MetadataHandling = handling },
+            WebPEncoder => new WebPEncoder { MetadataHandling = handling },
+            QoiEncoder => new QoiEncoder { MetadataHandling = handling },
+            BmpEncoder => new BmpEncoder { MetadataHandling = handling },
+            TgaEncoder => new TgaEncoder { MetadataHandling = handling },
+            PnmEncoder => new PnmEncoder { MetadataHandling = handling },
+            TiffEncoder => new TiffEncoder { MetadataHandling = handling },
+            _ => new IcoEncoder { MetadataHandling = handling },
+        };
+    }
+
+    [Fact]
+    public void AHotspotOnALaterFrameFailsBeforeTheFirstByte()
+    {
+        using var image = StreamImages.CreateAnimation(Width, Height, 3);
+        image.Frames[2].Metadata.Hotspot = new Point(0, 0);
+        using var stream = new MemoryStream();
+        var exception = Assert.Throws<UnsupportedImageFeatureException>(() => image.Save(stream, new GifEncoder()));
+        Assert.Equal("Metadata: cursor hotspot", exception.Feature);
+        Assert.Equal(0, stream.Length);
+
+        // A sequential writer reports it for the frame that has it, and stays usable
+        using var writer = Image.CreateWriter<Rgba32>(stream, new ImageWriterOptions(Width, Height) { Encoder = new GifEncoder(), LeaveOpen = true });
+        writer.WriteFrame(image.Frames[0]);
+        Assert.Throws<UnsupportedImageFeatureException>(() => writer.WriteFrame(image.Frames[2]));
+        writer.WriteFrame(image.Frames[1]);
+        writer.Complete();
+        stream.Position = 0;
+        using var decoded = Image.Load(stream);
+        Assert.Equal(2, decoded.Frames.Count);
+    }
+
     [Fact]
     public void SavingFramesLeasedByTheCallerFaultsTheSave()
     {

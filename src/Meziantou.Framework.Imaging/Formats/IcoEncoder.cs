@@ -12,7 +12,11 @@ namespace Meziantou.Framework.Imaging.Formats;
 /// Output is conservative: every representation is written either as a still PNG or as a 32-bit
 /// <c>BITMAPINFOHEADER</c> DIB with straight alpha in the fourth byte and an all-zero AND mask (which is what the alpha
 /// channel makes redundant), selected by <see cref="PayloadFormat"/>. Indexed payloads, 1/4/8/16/24-bit DIBs and
-/// <c>BI_BITFIELDS</c> masks are decoded but never written.
+/// <c>BI_BITFIELDS</c> masks are decoded but never written. A DIB stores 8-bit samples, so pixels with 16-bit samples
+/// (<see cref="PixelFormat.Rgba64"/>, <see cref="PixelFormat.Gray16"/>) are written as a PNG by
+/// <see cref="IconPayloadFormat.Auto"/> whatever their size, and rejected with an
+/// <see cref="UnsupportedImageFeatureException"/> by <see cref="IconPayloadFormat.Dib"/>: precision is never reduced
+/// silently.
 /// </para>
 /// <para>
 /// The container stores at most 256 pixels per side; a larger image is rejected with an
@@ -21,9 +25,12 @@ namespace Meziantou.Framework.Imaging.Formats;
 /// </para>
 /// <para>
 /// <see cref="IconKind.Cursor"/> writes the hotspot of every entry
-/// (<see cref="ImageCollectionEntry.Hotspot"/>, defaulting to the top-left corner when the entry has none);
-/// <see cref="IconKind.Icon"/> writes the conventional 1 color plane and the bit count instead, and an entry hotspot is
-/// metadata the format cannot store (rejected by default, see <see cref="ImageEncoder.MetadataHandling"/>).
+/// (<see cref="ImageCollectionEntry.Hotspot"/>), or the hotspot of the frame for
+/// <see cref="Image.Save(string, ImageEncoder?)"/> (<see cref="Metadata.FrameMetadata.Hotspot"/>), defaulting to the
+/// top-left corner when there is none; a cursor always has a hotspot, so it is written whatever
+/// <see cref="ImageEncoder.MetadataHandling"/> is. <see cref="IconKind.Icon"/> writes the conventional 1 color plane and
+/// the bit count instead, and a hotspot is metadata the format cannot store (rejected by default, see
+/// <see cref="ImageEncoder.MetadataHandling"/>).
 /// </para>
 /// <para>
 /// Metadata (subject to <see cref="ImageEncoder.MetadataHandling"/>): an icon directory stores none. A resolution, an
@@ -37,7 +44,7 @@ public sealed class IcoEncoder : ImageEncoder
     /// <summary>The largest representation an icon or cursor can store, per side (256 pixels).</summary>
     public const int MaxDimension = 256;
 
-    /// <summary>The largest side written as a DIB by <see cref="IconPayloadFormat.Auto"/> (64 pixels).</summary>
+    /// <summary>The largest side written as a DIB by <see cref="IconPayloadFormat.Auto"/> (64 pixels), for pixels with 8-bit samples.</summary>
     public const int AutoDibMaxDimension = 64;
 
     /// <inheritdoc />
@@ -58,6 +65,10 @@ public sealed class IcoEncoder : ImageEncoder
     } = IconKind.Icon;
 
     /// <summary>Gets how the pixels of a representation are stored. Defaults to <see cref="IconPayloadFormat.Auto"/>.</summary>
+    /// <remarks>
+    /// <see cref="IconPayloadFormat.Dib"/> with a pixel format that has 16-bit samples is rejected when the image is saved,
+    /// before any output.
+    /// </remarks>
     /// <exception cref="ArgumentOutOfRangeException">The value is not a defined <see cref="IconPayloadFormat"/>.</exception>
     public IconPayloadFormat PayloadFormat
     {

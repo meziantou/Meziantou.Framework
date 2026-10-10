@@ -22,12 +22,14 @@ namespace Meziantou.Framework.Imaging;
 public abstract class ImageFrame
 {
     private PixelStorage _storage;
+    private FrameMetadata _metadata;
 
     private protected ImageFrame(Image image, PixelStorage storage, FrameMetadata metadata)
     {
         OwnerImage = image;
         _storage = storage;
-        MetadataCore = metadata;
+        _metadata = metadata;
+        metadata.Owner = this;
     }
 
     /// <summary>Gets the frame width, in pixels (always the canvas width).</summary>
@@ -50,7 +52,7 @@ public abstract class ImageFrame
     /// <summary>Gets the pixel format (always the image pixel format).</summary>
     public abstract PixelFormat PixelFormat { get; }
 
-    /// <summary>Gets the mutable per-frame metadata, such as the display duration.</summary>
+    /// <summary>Gets the mutable per-frame metadata, such as the display duration and the cursor hotspot.</summary>
     /// <exception cref="ObjectDisposedException">The frame is no longer attached to a live image.</exception>
     public FrameMetadata Metadata
     {
@@ -67,8 +69,20 @@ public abstract class ImageFrame
     /// <summary>Gets the image this frame belongs to (pixel operations on a frame reconcile the image metadata).</summary>
     internal Image OwnerImage { get; }
 
-    /// <summary>Gets or sets the metadata without validation. Only set while the owning image is being built (clones).</summary>
-    internal FrameMetadata MetadataCore { get; set; }
+    /// <summary>
+    /// Gets or sets the metadata without validation. Only set while the owning image is being built (clones). The metadata
+    /// is attached to this frame, which bounds its hotspot; a replaced instance is detached.
+    /// </summary>
+    internal FrameMetadata MetadataCore
+    {
+        get => _metadata;
+        set
+        {
+            _metadata.Owner = null;
+            value.Owner = this;
+            _metadata = value;
+        }
+    }
 
     /// <summary>Gets a value indicating whether the frame is attached to a live image.</summary>
     internal bool IsValid => !_storage.IsDisposed;

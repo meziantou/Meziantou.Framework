@@ -26,7 +26,8 @@ the library guarantees to its callers (support matrix, limitations, defaults). K
 
 - **Never lose information silently.** Losing alpha, precision, animation, a poster, metadata or a color profile needs an
   explicit setting; otherwise throw `UnsupportedImageFeatureException`. Color profiles are preserved and labeled, never
-  applied.
+  applied implicitly: only `ConvertColorProfile` and `IccColorTransform` convert colors, and the pixels and their
+  profile always change together.
 - **An image holds full displayed frames**, not encoded deltas; decoders composite, encoders write what they are given.
   Timing is exact (`FrameDuration` is a rational number); a duration or play count the output format cannot represent is
   an error unless a rounding policy is set.

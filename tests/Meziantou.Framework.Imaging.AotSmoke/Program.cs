@@ -21,6 +21,7 @@ Run("pnm", SmokeTests.Pnm);
 Run("tiff", SmokeTests.Tiff);
 Run("icon", SmokeTests.Icon);
 Run("processing", SmokeTests.Processing);
+Run("color", SmokeTests.ColorConversion);
 Run("streaming", SmokeTests.Streaming);
 Run("errors", SmokeTests.Errors);
 

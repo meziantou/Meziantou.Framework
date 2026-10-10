@@ -137,6 +137,9 @@ public abstract class ImageFrame
     /// <summary>Convolves the leased pixels in place with the kernel of the frame pixel type.</summary>
     internal abstract void ConvolvePixels(scoped in PixelLease lease, ConvolutionPlan plan, CancellationToken cancellationToken);
 
+    /// <summary>Converts the colors of the leased source to the leased destination with an ICC conversion (color profile transactions).</summary>
+    internal abstract void ConvertColorPixels(scoped in PixelLease source, scoped in PixelLease destination, IccPipeline pipeline, CancellationToken cancellationToken);
+
     /// <summary>Replaces the storage after a committed geometry transaction; the frame keeps its identity.</summary>
     /// <param name="storage">The replacement storage, owned by the same image.</param>
     internal void ReplaceStorage(PixelStorage storage) => _storage = storage;

@@ -1,5 +1,6 @@
 using Meziantou.Framework.Imaging.Internals;
 using Meziantou.Framework.Imaging.Metadata;
+using Meziantou.Framework.Imaging.TestHarness.Color;
 
 namespace Meziantou.Framework.Imaging.Tests;
 
@@ -650,6 +651,321 @@ public sealed class ProcessingTests
         Assert.Equal(0, image.Owner.ActiveLeaseCount);
         image.Grayscale(Ct);
         Assert.Equal(new Rgba32(54, 54, 54, 255), image.Frames[1][1, 199]);
+    }
+
+    // -----------------------------------------------------------------------------------------------------------------
+    // Color profile conversion. Expected samples are literals computed outside the library (see IccColorTransformTests)
+    // or come from the independent reference of the test harness.
+    // -----------------------------------------------------------------------------------------------------------------
+
+    [Fact]
+    public void ConvertColorProfileConvertsUntaggedPixelsFromSrgbAndLabelsTheImage()
+    {
+        var displayP3 = IccTestProfiles.Rgb(IccTestProfiles.DisplayP3Colorants, IccTestProfiles.SrgbCurve());
+
+        // sRGB red is (234, 51, 35) in Display P3; alpha is kept, the hidden color of a transparent pixel is converted too
+        using var rgba = new Image<Rgba32>(2, 1, new Rgba32(255, 0, 0, 128));
+        rgba.Frames[0][1, 0] = new Rgba32(200, 100, 50, 0);
+        var frame = rgba.Frames[0];
+        rgba.ConvertColorProfile(displayP3, cancellationToken: Ct);
+        Assert.Same(frame, rgba.Frames[0]);
+        Assert.Equal(new Rgba32(234, 51, 35, 128), rgba.Frames[0][0, 0]);
+        Assert.Equal(new Rgba32(187, 105, 62, 0), rgba.Frames[0][1, 0]);
+        Assert.Same(displayP3, rgba.Metadata.IccProfile);
+        Assert.Equal(ColorTransferFunction.Srgb, rgba.Metadata.TransferFunction);
+
+        // The same colors in blue-green-red order, and without alpha
+        using var bgra = new Image<Bgra32>(1, 1, new Bgra32(255, 0, 0, 7));
+        bgra.ConvertColorProfile(displayP3, cancellationToken: Ct);
+        Assert.Equal(new Bgra32(234, 51, 35, 7), bgra.Frames[0][0, 0]);
+
+        using var rgb = new Image<Rgb24>(1, 1, new Rgb24(0, 255, 0));
+        rgb.ConvertColorProfile(displayP3, cancellationToken: Ct);
+        Assert.Equal(new Rgb24(117, 251, 76), rgb.Frames[0][0, 0]);
+
+        // 16-bit samples are converted with 16-bit precision
+        using var rgba64 = new Image<Rgba64>(1, 1, new Rgba64(12345, 23456, 34567, 4660));
+        rgba64.ConvertColorProfile(displayP3, cancellationToken: Ct);
+        Assert.Equal(new Rgba64(15033, 23185, 33666, 4660), rgba64.Frames[0][0, 0]);
+
+        // Untagged grayscale pixels are sGray
+        var grayGamma = IccTestProfiles.Gray(IccTestProfiles.Gamma(563));
+        using var gray8 = new Image<Gray8>(1, 1, new Gray8(64));
+        gray8.ConvertColorProfile(grayGamma, cancellationToken: Ct);
+        Assert.Equal(new Gray8(66), gray8.Frames[0][0, 0]);
+        Assert.Same(grayGamma, gray8.Metadata.IccProfile);
+    }
+
+    [Fact]
+    public void ConvertColorProfileUsesTheAttachedProfileForEveryPixelFormat()
+    {
+        var displayP3 = IccTestProfiles.Rgb(IccTestProfiles.DisplayP3Colorants, IccTestProfiles.SrgbCurve());
+        var grayGamma = IccTestProfiles.Gray(IccTestProfiles.Gamma(563));
+        CheckColor<Rgba32>(4, static (Rgba32 pixel) => [pixel.R, pixel.G, pixel.B, pixel.A]);
+        CheckColor<Bgra32>(4, static (Bgra32 pixel) => [pixel.R, pixel.G, pixel.B, pixel.A]);
+        CheckColor<Rgb24>(3, static (Rgb24 pixel) => [pixel.R, pixel.G, pixel.B]);
+        CheckColor<Rgba64>(4, static (Rgba64 pixel) => [pixel.R, pixel.G, pixel.B, pixel.A]);
+        CheckGray<Gray8>(static (Gray8 pixel) => pixel.Value);
+        CheckGray<Gray16>(static (Gray16 pixel) => pixel.Value);
+
+        void CheckColor<TPixel>(int channels, Func<TPixel, int[]> read)
+            where TPixel : unmanaged
+        {
+            using var image = Build<TPixel>(Source4X3, Offset(Source4X3, 20));
+            image.SetPosterFrame(image.Frames[1]);
+            image.Metadata.IccProfile = displayP3;
+            var before = AllFrames(image).Select(frame => ReadPixels(frame, read)).ToArray();
+            image.ConvertColorProfile(IccProfile.Srgb, cancellationToken: Ct);
+            Assert.Same(IccProfile.Srgb, image.Metadata.IccProfile);
+
+            var reference = ReferenceIccTransform.Create(displayP3.Data.Span, IccProfile.Srgb.Data.Span);
+            var after = AllFrames(image).Select(frame => ReadPixels(frame, read)).ToArray();
+            Assert.HasCount(3, after);
+            for (var i = 0; i < after.Length; i++)
+            {
+                var source = before[i].SelectMany(pixel => pixel.Take(3)).ToArray();
+                var actual = after[i].SelectMany(pixel => pixel.Take(3)).ToArray();
+                Assert.Empty(typeof(TPixel) == typeof(Rgba64)
+                    ? reference.Compare(source.Select(value => (ushort)value).ToArray(), actual.Select(value => (ushort)value).ToArray())
+                    : reference.Compare(source.Select(value => (byte)value).ToArray(), actual.Select(value => (byte)value).ToArray()));
+                Assert.NotEqual(source, actual);
+                if (channels == 4)
+                {
+                    Assert.Equal(before[i].Select(pixel => pixel[3]).ToArray(), after[i].Select(pixel => pixel[3]).ToArray());
+                }
+            }
+        }
+
+        void CheckGray<TPixel>(Func<TPixel, int> read)
+            where TPixel : unmanaged
+        {
+            using var image = Build<TPixel>(Source4X3, Offset(Source4X3, 20));
+            image.Metadata.IccProfile = grayGamma;
+            var before = AllFrames(image).Select(frame => ReadPixels(frame, pixel => new[] { read(pixel) })).ToArray();
+            image.ConvertColorProfile(IccProfile.SrgbGray, cancellationToken: Ct);
+            Assert.Same(IccProfile.SrgbGray, image.Metadata.IccProfile);
+
+            var reference = ReferenceIccTransform.Create(grayGamma.Data.Span, IccProfile.SrgbGray.Data.Span);
+            var after = AllFrames(image).Select(frame => ReadPixels(frame, pixel => new[] { read(pixel) })).ToArray();
+            for (var i = 0; i < after.Length; i++)
+            {
+                var source = before[i].Select(pixel => pixel[0]).ToArray();
+                var actual = after[i].Select(pixel => pixel[0]).ToArray();
+                Assert.Empty(typeof(TPixel) == typeof(Gray16)
+                    ? reference.Compare(source.Select(value => (ushort)value).ToArray(), actual.Select(value => (ushort)value).ToArray())
+                    : reference.Compare(source.Select(value => (byte)value).ToArray(), actual.Select(value => (byte)value).ToArray()));
+                Assert.NotEqual(source, actual);
+            }
+        }
+
+        static IEnumerable<ImageFrame<TPixel>> AllFrames<TPixel>(Image<TPixel> image)
+            where TPixel : unmanaged
+            => image.PosterFrame is null ? image.Frames : image.Frames.Append(image.PosterFrame);
+
+        static int[][] ReadPixels<TPixel>(ImageFrame<TPixel> frame, Func<TPixel, int[]> read)
+            where TPixel : unmanaged
+        {
+            var pixels = new List<int[]>();
+            for (var y = 0; y < frame.Height; y++)
+            {
+                for (var x = 0; x < frame.Width; x++)
+                {
+                    pixels.Add(read(frame[x, y]));
+                }
+            }
+
+            return [.. pixels];
+        }
+    }
+
+    [Fact]
+    public void ConvertColorProfileBetweenIdenticalProfilesOnlyLabelsTheImage()
+    {
+        // An untagged image is already sRGB: converting it to sRGB keeps the buffers and every sample
+        using var image = Build<Rgba32>(Source3X2);
+        image.Metadata.ExifProfile = CreateExif(orientation: 1, width: 3, height: 2);
+        var storage = image.Frames[0].Storage;
+        image.ConvertColorProfile(IccProfile.Srgb, cancellationToken: Ct);
+        Assert.Same(storage, image.Frames[0].Storage);
+        AssertFrame(image.Frames[0], Source3X2);
+        Assert.Same(IccProfile.Srgb, image.Metadata.IccProfile);
+        Assert.True(ExifTiff.HasThumbnail(image.Metadata.ExifProfile!.Data.Span));
+
+        // Same bytes in another instance: still nothing to convert, and the new instance is the label
+        var copy = new IccProfile(new MetadataBlob(IccProfile.Srgb.Data.Span));
+        image.ConvertColorProfile(copy, cancellationToken: Ct);
+        Assert.Same(storage, image.Frames[0].Storage);
+        Assert.Same(copy, image.Metadata.IccProfile);
+    }
+
+    [Fact]
+    public void ConvertColorProfileConvertsLinearLightSamplesAndResetsTheLabel()
+    {
+        // Linear light with the sRGB primaries: only the sRGB encoding is applied (32768 / 65535 encodes to 48192 / 65535)
+        using var image = new Image<Rgba64>(1, 1, new Rgba64(65535, 32768, 0, 999));
+        image.Metadata.TransferFunction = ColorTransferFunction.Linear;
+        image.ConvertColorProfile(IccProfile.Srgb, cancellationToken: Ct);
+        Assert.Equal(new Rgba64(65535, 48192, 0, 999), image.Frames[0][0, 0]);
+        Assert.Equal(ColorTransferFunction.Srgb, image.Metadata.TransferFunction);
+        Assert.Same(IccProfile.Srgb, image.Metadata.IccProfile);
+
+        using var gray = new Image<Gray8>(3, 1, new Gray8(128));
+        gray.Frames[0][1, 0] = new Gray8(1);
+        gray.Frames[0][2, 0] = new Gray8(64);
+        gray.Metadata.TransferFunction = ColorTransferFunction.Linear;
+        gray.ConvertColorProfile(IccProfile.SrgbGray, cancellationToken: Ct);
+        Assert.Equal([new Gray8(188), new Gray8(13), new Gray8(137)], new[] { gray.Frames[0][0, 0], gray.Frames[0][1, 0], gray.Frames[0][2, 0] });
+        Assert.Equal(ColorTransferFunction.Srgb, gray.Metadata.TransferFunction);
+
+        // Linear sRGB (255, 128, 0) is (245, 191, 65) in Display P3
+        var displayP3 = IccTestProfiles.Rgb(IccTestProfiles.DisplayP3Colorants, IccTestProfiles.SrgbCurve());
+        using var rgb = new Image<Rgb24>(1, 1, new Rgb24(255, 128, 0));
+        rgb.Metadata.TransferFunction = ColorTransferFunction.Linear;
+        rgb.ConvertColorProfile(displayP3, cancellationToken: Ct);
+        Assert.Equal(new Rgb24(245, 191, 65), rgb.Frames[0][0, 0]);
+
+        // A profile together with the linear label is ambiguous: nothing is guessed
+        using var ambiguous = new Image<Rgb24>(1, 1, new Rgb24(1, 2, 3));
+        ambiguous.Metadata.IccProfile = displayP3;
+        ambiguous.Metadata.TransferFunction = ColorTransferFunction.Linear;
+        var exception = Assert.Throws<UnsupportedImageFeatureException>(() => ambiguous.ConvertColorProfile(IccProfile.Srgb, cancellationToken: Ct));
+        Assert.Equal("ICC profile on linear-light samples", exception.Feature);
+        Assert.Equal(new Rgb24(1, 2, 3), ambiguous.Frames[0][0, 0]);
+        Assert.Same(displayP3, ambiguous.Metadata.IccProfile);
+        Assert.Equal(ColorTransferFunction.Linear, ambiguous.Metadata.TransferFunction);
+    }
+
+    [Fact]
+    public void ConvertColorProfileRejectsProfilesThatCannotLabelThePixelsAndInvalidProfiles()
+    {
+        var displayP3 = IccTestProfiles.Rgb(IccTestProfiles.DisplayP3Colorants, IccTestProfiles.SrgbCurve());
+        var cmyk = new IccProfile(MetadataBlob.FromOwnedArray(CreateIccHeader("CMYK")));
+        var malformed = new IccProfile(MetadataBlob.FromOwnedArray([1, 2, 3]));
+        var unsupported = new IccProfile(new MetadataBlob(IccTestProfiles.BuildBytes("RGB ", "XYZ ", [], static data => "link"u8.CopyTo(data.AsSpan(12)))));
+
+        using var image = BuildWithPool(new SlabPool(), ImageConfiguration.Default);
+        image.Metadata.IccProfile = displayP3;
+        var snapshot = ImageState.Capture(image);
+
+        // Destination: a grayscale or CMYK profile on color pixels, a profile too short to declare a color space, an
+        // unsupported profile class, a profile without the tags of its model
+        Assert.Equal("Incompatible color profile", Assert.Throws<UnsupportedImageFeatureException>(() => image.ConvertColorProfile(IccProfile.SrgbGray, cancellationToken: Ct)).Feature);
+        Assert.Equal("Incompatible color profile", Assert.Throws<UnsupportedImageFeatureException>(() => image.ConvertColorProfile(cmyk, cancellationToken: Ct)).Feature);
+        Assert.Throws<UnsupportedImageFeatureException>(() => image.ConvertColorProfile(malformed, cancellationToken: Ct));
+        Assert.Throws<UnsupportedImageFeatureException>(() => image.ConvertColorProfile(unsupported, cancellationToken: Ct));
+        Assert.Throws<InvalidImageContentException>(() => image.ConvertColorProfile(IccTestProfiles.Build("RGB ", "XYZ "), cancellationToken: Ct));
+        snapshot.AssertUnchanged(image);
+        Assert.Same(displayP3, image.Metadata.IccProfile);
+
+        // Source: the attached profile must label the pixels and be usable
+        image.Metadata.IccProfile = IccProfile.SrgbGray;
+        Assert.Equal("Incompatible color profile", Assert.Throws<UnsupportedImageFeatureException>(() => image.ConvertColorProfile(IccProfile.Srgb, cancellationToken: Ct)).Feature);
+        var withoutTags = IccTestProfiles.Build("RGB ", "XYZ ");
+        image.Metadata.IccProfile = withoutTags;
+        Assert.Throws<InvalidImageContentException>(() => image.ConvertColorProfile(IccProfile.Srgb, cancellationToken: Ct));
+        snapshot.AssertUnchanged(image);
+        Assert.Same(withoutTags, image.Metadata.IccProfile);
+
+        using var gray = new Image<Gray8>(1, 1, new Gray8(5));
+        Assert.Equal("Incompatible color profile", Assert.Throws<UnsupportedImageFeatureException>(() => gray.ConvertColorProfile(IccProfile.Srgb, cancellationToken: Ct)).Feature);
+        Assert.Null(gray.Metadata.IccProfile);
+    }
+
+    [Fact]
+    public void ConvertColorProfileIsTransactional()
+    {
+        var displayP3 = IccTestProfiles.Rgb(IccTestProfiles.DisplayP3Colorants, IccTestProfiles.SrgbCurve());
+
+        // Cancellation before or during the conversion: pixels, buffers and label are unchanged
+        var pool = new SlabPool();
+        using (var image = BuildWithPool(pool, ImageConfiguration.Default))
+        {
+            var snapshot = ImageState.Capture(image);
+            using var cancellation = new CancellationTokenSource();
+            cancellation.Cancel();
+            Assert.ThrowsAny<OperationCanceledException>(() => image.ConvertColorProfile(displayP3, cancellationToken: cancellation.Token));
+            snapshot.AssertUnchanged(image);
+            Assert.Null(image.Metadata.IccProfile);
+
+            // An allocation failure in the middle of the frames
+            var rents = 0;
+            pool.RentFailureInjector = _ => ++rents == 2 ? new InjectedAllocationFailureException() : null;
+            Assert.Throws<InjectedAllocationFailureException>(() => image.ConvertColorProfile(displayP3, cancellationToken: Ct));
+            pool.RentFailureInjector = null;
+            snapshot.AssertUnchanged(image);
+            Assert.Null(image.Metadata.IccProfile);
+            Assert.Equal(0, image.Owner.ActiveLeaseCount);
+
+            // An active lease
+            image.Frames[0].ProcessPixelRows(_ => Assert.Throws<InvalidOperationException>(() => image.ConvertColorProfile(displayP3)));
+            snapshot.AssertUnchanged(image);
+        }
+
+        // The old and new buffers are budgeted together
+        long live;
+        using (var probe = BuildWithPool(new SlabPool(), ImageConfiguration.Default))
+        {
+            live = probe.Owner.Scope.LiveBytes;
+        }
+
+        var tight = new ImageConfiguration { Limits = new ImageResourceLimits { MaxLiveAllocationBytes = (2 * live) - 1 } };
+        using (var image = BuildWithPool(new SlabPool(), tight))
+        {
+            var snapshot = ImageState.Capture(image);
+            var exception = Assert.Throws<ImageResourceLimitException>(() => image.ConvertColorProfile(displayP3, cancellationToken: Ct));
+            Assert.Equal(ImageResourceLimitKind.LiveAllocationBytes, exception.Kind);
+            snapshot.AssertUnchanged(image);
+            Assert.Null(image.Metadata.IccProfile);
+        }
+
+        var exact = new ImageConfiguration { Limits = new ImageResourceLimits { MaxLiveAllocationBytes = 2 * live } };
+        using (var image = BuildWithPool(new SlabPool(), exact))
+        {
+            var frames = ((IEnumerable<ImageFrame<Rgba32>>)image.Frames).ToArray();
+            var poster = image.PosterFrame;
+            image.ConvertColorProfile(displayP3, cancellationToken: Ct);
+            Assert.Same(displayP3, image.Metadata.IccProfile);
+            Assert.Equal(frames, ((IEnumerable<ImageFrame<Rgba32>>)image.Frames).ToArray());
+            Assert.Same(poster, image.PosterFrame);
+            Assert.Equal(live, image.Owner.Scope.LiveBytes);
+            Assert.Equal(new FrameDuration(1, 3), image.Frames[0].Metadata.Duration);
+
+            // The pixels changed: the EXIF thumbnail is removed, dimensions and orientation are kept
+            var exif = image.Metadata.ExifProfile!.Data.Span;
+            Assert.False(ExifTiff.HasThumbnail(exif));
+            Assert.Equal((3u, 2u), ReadIfd0Dimensions(exif));
+            Assert.Equal(ExifOrientation.RightBottom, image.Metadata.Orientation);
+        }
+    }
+
+    [Fact]
+    public void ConvertColorProfileValidatesItsArgumentsAndState()
+    {
+        Assert.Throws<ArgumentNullException>("image", () => ImageProcessingExtensions.ConvertColorProfile(null!, IccProfile.Srgb));
+        using var image = new Image<Rgba32>(1, 1, new Rgba32(1, 2, 3, 4));
+        Assert.Throws<ArgumentNullException>("destinationProfile", () => image.ConvertColorProfile(null!));
+
+        // Options select the conversion: the absolute colorimetric intent is accepted, an undefined one cannot be built
+        image.ConvertColorProfile(IccProfile.Srgb, new IccColorTransformOptions { Intent = IccRenderingIntent.Perceptual, BlackPointCompensation = false }, Ct);
+        Assert.Equal(new Rgba32(1, 2, 3, 4), image.Frames[0][0, 0]);
+
+        image.Dispose();
+        Assert.Throws<ObjectDisposedException>(() => image.ConvertColorProfile(IccProfile.Srgb));
+    }
+
+    [Fact]
+    public void ConvertColorProfileToSrgbEnablesLinearLightProcessing()
+    {
+        // Display P3 pixels are rejected by the linear-light working space until they are converted to sRGB
+        var displayP3 = IccTestProfiles.Rgb(IccTestProfiles.DisplayP3Colorants, IccTestProfiles.SrgbCurve());
+        var linear = new ResizeOptions(1, 1) { Mode = ResizeMode.Stretch, WorkingSpace = ResizeWorkingSpace.LinearSrgb };
+        using var image = new Image<Rgba64>(2, 2, new Rgba64(40000, 40000, 40000, 65535));
+        image.Metadata.IccProfile = displayP3;
+        Assert.Throws<UnsupportedImageFeatureException>(() => image.Resize(linear, Ct));
+        image.ConvertColorProfile(IccProfile.Srgb, cancellationToken: Ct);
+        image.Resize(linear, Ct);
+        Assert.Equal(new Rgba64(40000, 40000, 40000, 65535), image.Frames[0][0, 0]);
+        Assert.Same(IccProfile.Srgb, image.Metadata.IccProfile);
     }
 
     // -----------------------------------------------------------------------------------------------------------------

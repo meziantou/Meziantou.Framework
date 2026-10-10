@@ -14,6 +14,8 @@ encoding, animation-aware processing, and bounded-memory streaming.
 - Six working pixel formats (`Rgba32`, `Bgra32`, `Rgb24`, `Rgba64`, `Gray8`, `Gray16`) with 16-bit precision preserved
 - Crop, resize (alpha-aware, Contain/Cover/Stretch), rotate, auto-orient, flip, grayscale and convolution matrices
   (sharpen, blur, edge detection) applied to all frames
+- ICC color management on request: convert an image to another color profile, or convert sample buffers between two
+  profiles (profiles are never applied implicitly)
 - Bounded-memory sequential readers and writers for long animations
 - Explicit policies for alpha, precision, metadata and color-profile losses; configurable resource limits
 
@@ -35,6 +37,7 @@ compiled and run by the test suite.
   - [Pixel formats, precision and alpha](#pixel-formats-precision-and-alpha)
   - [Processing](#processing)
   - [Metadata, color profiles and orientation](#metadata-color-profiles-and-orientation)
+  - [Color management](#color-management)
   - [Loading, identification and limits](#loading-identification-and-limits)
   - [Streaming readers and writers](#streaming-readers-and-writers)
   - [Saving files](#saving-files)
@@ -433,7 +436,8 @@ In-place extension methods (`ImageProcessingExtensions`), applied to every frame
 (all eight EXIF orientations), `Grayscale` (Rec. 709 at storage precision, ties upward; keeps the storage format and
 alpha, and rejects incompatible ICC profiles; use `CloneAs<Gray8>` to change the storage) and `Convolve` (a convolution
 matrix). `Flip`, `Grayscale` and `Convolve` also exist for one frame. Geometry changes preserve 16-bit precision and alpha, and reconcile the EXIF dimensions,
-orientation and thumbnail.
+orientation and thumbnail. `ConvertColorProfile` converts the colors to another ICC profile
+(see [Color management](#color-management)).
 
 **Resizing**. `ResizeOptions` sets the target box and `Mode`: `Contain` (default: fit inside,
 never padded), `Cover` (fill exactly, cropped around `Anchor`, one of nine positions) or `Stretch`;
@@ -448,7 +452,7 @@ precision.
 - `ResizeWorkingSpace.LinearSrgb` converts sRGB samples to linear light (IEC 61966-2-1 transfer) before filtering and back
   afterward (more physically correct averages, for example for thin bright lines). It accepts untagged images (assumed
   sRGB) and ICC profiles recognized as sRGB or sGray only; any other profile is rejected rather than misinterpreted. No
-  ICC transform is applied in either space.
+  ICC transform is applied in either space: convert such an image first with `ConvertColorProfile(IccProfile.Srgb)`.
 
 A resize to the current size leaves the image unchanged. Results do not depend on the worker count or on SIMD support:
 the vectorized and parallel kernels are bit-identical to the scalar reference.
@@ -508,21 +512,22 @@ public static void SharpenAndDetectEdges(string inputPath, string sharpenedPath,
 }
 ```
 
-There is no ICC color conversion, HDR processing, drawing, text rendering or custom processor.
+There is no HDR processing, drawing, text rendering or custom processor.
 
 ### Metadata, color profiles and orientation
 
 `Image.Metadata` holds the source format (informational only), the EXIF orientation, the
 resolution, ICC/EXIF/XMP profiles (byte-for-byte payloads) and text entries.
 
-- **Color profiles are preserved, never applied.** A profile labels the pixels; untagged pixels are assumed sRGB.
-  Decoders keep it, encoders write it (for example PNG `iCCP`, JPEG APP2), conversions keep it only when it can still
-  label the converted pixels (gray profile for gray formats, RGB profile for color formats). There is no color
-  management.
+- **Color profiles are preserved, never applied implicitly.** A profile labels the pixels; untagged pixels are assumed
+  sRGB. Decoders keep it, encoders write it (for example PNG `iCCP`, JPEG APP2), conversions keep it only when it can
+  still label the converted pixels (gray profile for gray formats, RGB profile for color formats). Colors are converted
+  only on request (see [Color management](#color-management)).
 - **Transfer functions are labels too.** `Metadata.TransferFunction` is `Srgb` (the default: sRGB samples, or as described
-  by the ICC profile) or `Linear` (linear-light samples, declared by a QOI colorspace of 1). No operation converts the
-  pixels; linear-light resizing filters `Linear` samples directly. Only QOI stores the label: the other encoders treat
-  `Linear` as metadata they cannot store, so the samples are never silently relabeled as sRGB.
+  by the ICC profile) or `Linear` (linear-light samples, declared by a QOI colorspace of 1). Only `ConvertColorProfile`
+  converts the pixels (and resets the label); linear-light resizing filters `Linear` samples directly. Only QOI stores
+  the label: the other encoders treat `Linear` as metadata they cannot store, so the samples are never silently
+  relabeled as sRGB.
 - **Orientation is reported, never applied by decoders.** `Metadata.Orientation` reports the EXIF orientation;
   `AutoOrient()` transforms the pixels for all eight orientations and resets it to `TopLeft`. On save, the typed
   orientation is authoritative: EXIF orientation and dimension tags are rewritten and thumbnails made stale by geometry
@@ -554,6 +559,71 @@ public static void EditMetadata(string path)
     image.Save(path, new PngEncoder { MetadataHandling = MetadataHandling.Strict });
 }
 ```
+
+### Color management
+
+Color conversion between ICC profiles is always explicit. `image.ConvertColorProfile(profile)` converts every frame and
+the poster from the color space of the image to the color space of `profile`, then labels the image with it:
+
+- The source is `Metadata.IccProfile`. Without profile it is sRGB (`IccProfile.Srgb`), sGray for grayscale pixel formats
+  (`IccProfile.SrgbGray`), or their linear-light counterparts when `Metadata.TransferFunction` is `Linear`. A profile
+  together with the `Linear` label is ambiguous and rejected.
+- The pixel format is kept, so the destination must be an RGB profile for color formats and a grayscale profile for
+  `Gray8`/`Gray16`. Colors are converted at the storage precision (16-bit formats stay 16-bit); alpha is copied
+  unchanged and the color of transparent pixels is converted like any other.
+- The operation is transactional, like a geometry change: on failure or cancellation the image keeps its pixels and
+  its profile, so pixels are never left with a profile that does not describe them. The old and new buffers are
+  budgeted together.
+- When both profiles have identical bytes nothing is converted: converting an untagged image to `IccProfile.Srgb` only
+  labels it.
+
+<!-- snippet: convert-to-srgb -->
+```csharp
+public static void ConvertToSrgb(string inputPath, string outputPath)
+{
+    using var image = Image.Load(inputPath);
+
+    // Decoders keep the embedded profile as a label; converting the colors is always explicit.
+    // An image without profile is already sRGB (sGray for grayscale pixels): nothing is converted then.
+    var grayscale = image.PixelFormat is PixelFormat.Gray8 or PixelFormat.Gray16;
+    image.ConvertColorProfile(grayscale ? IccProfile.SrgbGray : IccProfile.Srgb);
+
+    // Untagged pixels are read as sRGB: the label can be removed for formats that cannot store a profile
+    image.Metadata.IccProfile = null;
+    image.Save(outputPath);
+}
+```
+
+`IccColorTransform` is the underlying primitive: an immutable, thread-safe conversion between two profiles for
+interleaved 8-bit, 16-bit or floating-point samples without alpha (in place when both profiles have the same number of
+channels). Integer samples cover the whole range of their type, floating-point samples are in [0, 1], and colors
+outside the destination gamut are clipped per channel.
+
+<!-- snippet: convert-samples -->
+```csharp
+public static byte[] ConvertSamplesToSrgb(IccProfile sourceProfile, ReadOnlySpan<byte> samples)
+{
+    // A transform is immutable and thread-safe: create it once for a pair of profiles and reuse it
+    var options = new IccColorTransformOptions { Intent = IccRenderingIntent.Perceptual };
+    var transform = IccColorTransform.Create(sourceProfile, IccProfile.Srgb, options);
+
+    // Interleaved samples without alpha: 1 (gray), 3 (RGB) or 4 (CMYK) per source color, 3 per sRGB color
+    var converted = new byte[samples.Length / transform.SourceChannelCount * transform.DestinationChannelCount];
+    transform.Convert(samples, converted);
+    return converted;
+}
+```
+
+Supported profiles are ICC version 2 and version 4 input, display, output and color space profiles for grayscale and
+RGB data, based on a matrix and tone curves (`rXYZ`/`gXYZ`/`bXYZ` with `rTRC`/`gTRC`/`bTRC`, or `kTRC`; sampled, gamma
+and parametric curves). A malformed profile is an `InvalidImageContentException`; a valid profile of another kind
+(version 5, device link, abstract, named color, other data color spaces), or one that cannot be a destination
+(a constant tone curve, colorants that do not span a color space), is an `UnsupportedImageFeatureException`.
+
+The conversion is evaluated in double precision, one color at a time, from the formulas of the ICC specification:
+results are the same on every platform up to the last bit of `Math.Pow`, and integer samples are rounded to nearest
+with ties upward. A destination tone curve is inverted exactly (the smallest input reaching the value), so a round trip
+through a profile and back changes a 16-bit sample only where the curve itself is not invertible.
 
 ### Loading, identification and limits
 
@@ -1016,7 +1086,8 @@ Everything below is rejected explicitly (never decoded or encoded approximately)
 | TIFF | Decoding: LZW, PackBits, CCITT fax and JPEG compression, palette, CMYK, YCbCr and L\*a\*b\* photometric interpretations, planar storage, reversed fill order, the floating-point predictor, signed and floating-point samples, sample widths other than 8 and 16 bits, more than one extra sample, and associated (premultiplied) or unspecified extra samples are all rejected with `UnsupportedImageFeatureException`. No EXIF block, no sub-IFD, no unknown-tag round trip. Encoding: one page per `Image.Save` (use `ImageCollection.Save`), strips only, no predictor, no tiles, a seekable destination required |
 | ICO/CUR | Decoding: a top-down DIB payload, a DIB whose stored height is not doubled, an animated PNG payload, a representation larger than 256 pixels per side and the DIB variants the BMP decoder rejects (RLE, embedded codecs, OS/2 headers) are rejected. `.ani` animated cursors are a different container and are not supported. Encoding: 32-bit DIB or still PNG payloads only, at most 256 pixels per side, no metadata; an icon cannot store a hotspot |
 | PNG/APNG | No palette output (paletted inputs are re-encoded as RGB/RGBA), no RGB 16-bit or gray+alpha output layouts (16-bit color is written as RGBA 16), no APNG delta-rectangle optimization, unknown critical chunks rejected, unknown ancillary chunks not round-tripped |
-| Metadata | Profiles are preserved and labeled, never applied (no color management); EXIF orientation is reported, applied only by `AutoOrient`; extended XMP in JPEG is not supported; per-format storage limits are listed in [Metadata, color profiles and orientation](#metadata-color-profiles-and-orientation); unsupported items follow `MetadataHandling` (`Strict` throws by default) |
-| Processing | No ICC color conversion, HDR, drawing, text rendering or custom processors; `LinearSrgb` resizing and convolution accept untagged or recognized sRGB/sGray profiles only; convolution matrices have odd dimensions, no bias or divisor, no ready-made matrices and no separable fast path |
+| Metadata | Profiles are preserved and labeled, never applied implicitly (colors are converted only by `ConvertColorProfile` and `IccColorTransform`); EXIF orientation is reported, applied only by `AutoOrient`; extended XMP in JPEG is not supported; per-format storage limits are listed in [Metadata, color profiles and orientation](#metadata-color-profiles-and-orientation); unsupported items follow `MetadataHandling` (`Strict` throws by default) |
+| Color management | ICC version 2 and 4 matrix-based grayscale and RGB profiles only: no version 5 (iccMAX), device-link, abstract or named-color profile; `ConvertColorProfile` keeps the pixel format (an RGB image cannot become grayscale or CMYK this way); CMYK images cannot be decoded; no gamut mapping beyond per-channel clipping |
+| Processing | No HDR, drawing, text rendering or custom processors; `LinearSrgb` resizing and convolution accept untagged or recognized sRGB/sGray profiles only; convolution matrices have odd dimensions, no bias or divisor, no ready-made matrices and no separable fast path |
 | Formats | JPEG XL and AVIF are not supported |
 | API | No public allocator, custom pixel type, codec plug-in or image-processor interface; implementation types are internal |

@@ -106,6 +106,9 @@ public sealed class ImageFrame<TPixel> : ImageFrame
     internal override void ConvolvePixels(scoped in PixelLease lease, ConvolutionPlan plan, CancellationToken cancellationToken)
         => Convolver.Convolve<TPixel>(lease, plan, cancellationToken);
 
+    internal override void ConvertColorPixels(scoped in PixelLease source, scoped in PixelLease destination, IccPipeline pipeline, CancellationToken cancellationToken)
+        => ColorConversionKernels.ConvertRows<TPixel>(source, destination, pipeline, cancellationToken);
+
     private static void ValidateCoordinates(PixelStorage storage, int x, int y)
     {
         if ((uint)x >= (uint)storage.Width)

@@ -2,8 +2,10 @@ namespace Meziantou.Framework.Imaging.Metadata;
 
 /// <summary>Identifies how the stored color samples of an image relate to light intensity (the transfer function).</summary>
 /// <remarks>
-/// Pixels are never converted between transfer functions: the value labels the stored samples, like an ICC profile. Alpha is
-/// a linear coverage value in both cases. Only QOI stores the label (its header colorspace field); saving
+/// The value labels the stored samples, like an ICC profile: pixels are never converted between transfer functions
+/// implicitly. <see cref="ImageProcessingExtensions.ConvertColorProfile"/> reads the label of an image without profile and
+/// resets it to <see cref="Srgb"/>. Alpha is a linear coverage value in both cases. Only QOI stores the label (its header
+/// colorspace field); saving
 /// <see cref="Linear"/> pixels to another format follows <see cref="Formats.ImageEncoder.MetadataHandling"/>, so they are
 /// never silently relabeled as sRGB.
 /// </remarks>

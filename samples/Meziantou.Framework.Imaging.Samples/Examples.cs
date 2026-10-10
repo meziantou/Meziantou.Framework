@@ -373,4 +373,36 @@ internal static class Examples
         image.Save(path, new PngEncoder { MetadataHandling = MetadataHandling.Strict });
     }
     // end-snippet
+
+    /// <summary>Explicit color management of an image: convert the pixels to sRGB.</summary>
+    // begin-snippet: convert-to-srgb
+    public static void ConvertToSrgb(string inputPath, string outputPath)
+    {
+        using var image = Image.Load(inputPath);
+
+        // Decoders keep the embedded profile as a label; converting the colors is always explicit.
+        // An image without profile is already sRGB (sGray for grayscale pixels): nothing is converted then.
+        var grayscale = image.PixelFormat is PixelFormat.Gray8 or PixelFormat.Gray16;
+        image.ConvertColorProfile(grayscale ? IccProfile.SrgbGray : IccProfile.Srgb);
+
+        // Untagged pixels are read as sRGB: the label can be removed for formats that cannot store a profile
+        image.Metadata.IccProfile = null;
+        image.Save(outputPath);
+    }
+    // end-snippet
+
+    /// <summary>Color conversion of sample buffers between two ICC profiles.</summary>
+    // begin-snippet: convert-samples
+    public static byte[] ConvertSamplesToSrgb(IccProfile sourceProfile, ReadOnlySpan<byte> samples)
+    {
+        // A transform is immutable and thread-safe: create it once for a pair of profiles and reuse it
+        var options = new IccColorTransformOptions { Intent = IccRenderingIntent.Perceptual };
+        var transform = IccColorTransform.Create(sourceProfile, IccProfile.Srgb, options);
+
+        // Interleaved samples without alpha: 1 (gray), 3 (RGB) or 4 (CMYK) per source color, 3 per sRGB color
+        var converted = new byte[samples.Length / transform.SourceChannelCount * transform.DestinationChannelCount];
+        transform.Convert(samples, converted);
+        return converted;
+    }
+    // end-snippet
 }

@@ -11,6 +11,8 @@ namespace Meziantou.Framework.Imaging;
 /// and metadata before committing them together: on failure or cancellation before the commit, the image is left exactly
 /// as it was (dimensions, pixels, frame identities and order, metadata). The old and new buffers are budgeted together.
 /// After a successful commit, existing <see cref="ImageFrame"/> references designate the same logical frames.
+/// <see cref="ConvertColorProfile"/> is transactional in the same way, so that pixels and their color profile always
+/// change together.
 /// </para>
 /// <para>
 /// Pixel-only operations (<see cref="Flip(Image, FlipMode, CancellationToken)"/>, <see cref="Grayscale(Image, CancellationToken)"/>,
@@ -225,6 +227,59 @@ public static class ImageProcessingExtensions
         using var lease = storage.AcquireLease();
         image.Metadata.RemoveStaleThumbnail();
         frame.GrayscalePixels(lease, cancellationToken);
+    }
+
+    /// <summary>
+    /// Converts the colors of every frame of the image (including the poster frame) to the color space described by an
+    /// ICC profile, and labels the image with that profile.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The source color space is the one of <see cref="ImageMetadata.IccProfile"/>. An image without profile is sRGB, or
+    /// sGray for grayscale pixel formats (<see cref="IccProfile.Srgb"/>, <see cref="IccProfile.SrgbGray"/>); when
+    /// <see cref="ImageMetadata.TransferFunction"/> is <see cref="ColorTransferFunction.Linear"/>, it is linear light with
+    /// the sRGB primaries and white point. This is the only operation that applies a color profile: loading, saving,
+    /// pixel format conversion and the other processing operations never do.
+    /// </para>
+    /// <para>
+    /// The pixel format is kept, so the destination profile must be able to label it: an RGB profile for color formats, a
+    /// grayscale profile for <see cref="Gray8"/> and <see cref="Gray16"/>. To change the color model, convert the pixel
+    /// format with <see cref="Image.CloneAs{TPixel}(PixelConversionOptions?)"/>, or convert sample buffers with
+    /// <see cref="IccColorTransform"/> (the only way to reach CMYK).
+    /// </para>
+    /// <para>
+    /// Colors are converted at the storage precision (16-bit formats are never reduced to 8 bits) by the scalar reference
+    /// conversion, on the calling thread. Alpha is copied unchanged and the color of transparent pixels is converted like
+    /// any other. Colors outside the destination gamut are clipped per channel.
+    /// </para>
+    /// <para>
+    /// The operation is transactional: the converted pixels are built in new buffers, budgeted together with the current
+    /// ones, and published with the new profile. On failure or cancellation the image is left exactly as it was. After a
+    /// successful conversion, <see cref="ImageMetadata.IccProfile"/> is <paramref name="destinationProfile"/>,
+    /// <see cref="ImageMetadata.TransferFunction"/> is <see cref="ColorTransferFunction.Srgb"/> (the samples are described
+    /// by the profile) and the EXIF thumbnail, which no longer matches the pixels, is removed. When the source and
+    /// destination profiles have identical bytes, the pixels are not touched and only the label is set.
+    /// </para>
+    /// </remarks>
+    /// <param name="image">The image to modify.</param>
+    /// <param name="destinationProfile">The profile of the converted pixels.</param>
+    /// <param name="options">The conversion options, or <see langword="null"/> for <see cref="IccColorTransformOptions.Default"/>.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="image"/> or <paramref name="destinationProfile"/> is <see langword="null"/>.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">
+    /// The current or the destination profile cannot label the pixel format, the image has both a profile and the linear
+    /// transfer function label, or a profile is of a kind that is not supported. The image is unchanged.
+    /// </exception>
+    /// <exception cref="InvalidImageContentException">The current or the destination profile is malformed. The image is unchanged.</exception>
+    /// <exception cref="ImageResourceLimitException">The replacement buffers would exceed the allocation limit. The image is unchanged.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled. The image is unchanged.</exception>
+    /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
+    /// <exception cref="ObjectDisposedException">The image is disposed.</exception>
+    public static void ConvertColorProfile(this Image image, IccProfile destinationProfile, IccColorTransformOptions? options = null, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(image);
+        ArgumentNullException.ThrowIfNull(destinationProfile);
+        image.ConvertAllFramesToColorProfile(destinationProfile, options ?? IccColorTransformOptions.Default, cancellationToken);
     }
 
     /// <summary>Applies a convolution matrix to every frame of the image (including the poster frame) in place.</summary>

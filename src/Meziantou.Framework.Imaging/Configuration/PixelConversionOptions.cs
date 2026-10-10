@@ -9,7 +9,8 @@ namespace Meziantou.Framework.Imaging;
 /// content) is an explicit precision reduction and uses nearest rounding.
 /// </para>
 /// <para>
-/// Layout conversion is not color management: no ICC transform is applied. A retained ICC profile whose color space is
+/// Layout conversion is not color management: no ICC transform is applied (use
+/// <see cref="ImageProcessingExtensions.ConvertColorProfile"/> to convert colors). A retained ICC profile whose color space is
 /// incompatible with the converted pixels (for example an RGB profile on grayscale pixels) causes an
 /// <see cref="UnsupportedImageFeatureException"/> unless <see cref="DiscardIncompatibleColorProfile"/> is <see langword="true"/>.
 /// </para>

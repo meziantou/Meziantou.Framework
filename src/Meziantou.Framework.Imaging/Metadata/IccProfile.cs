@@ -5,10 +5,11 @@ namespace Meziantou.Framework.Imaging.Metadata;
 /// <summary>An immutable, uncompressed ICC color profile.</summary>
 /// <remarks>
 /// <para>
-/// Profiles are preserved and labeled, never applied: the library does not perform ICC color conversion in this version.
-/// A profile is only kept when its <see cref="ColorSpace"/> is compatible with the pixels it describes (a grayscale profile
-/// for grayscale pixels, an RGB profile for color pixels); incompatible combinations are rejected unless the caller
-/// explicitly discards the profile.
+/// A profile labels the pixels of an image: it is preserved by decoders, encoders and conversions, and never applied
+/// implicitly. Colors are converted only on request, by <see cref="ImageProcessingExtensions.ConvertColorProfile"/> for an
+/// image or by <see cref="IccColorTransform"/> for sample buffers. A profile is only kept on an image when its
+/// <see cref="ColorSpace"/> is compatible with the pixels it describes (a grayscale profile for grayscale pixels, an RGB
+/// profile for color pixels); incompatible combinations are rejected unless the caller explicitly discards the profile.
 /// </para>
 /// <para>
 /// The properties expose the header fields as declared, without validating the profile: a profile shorter than an ICC

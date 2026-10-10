@@ -5,7 +5,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
 /// Recognizes ICC profiles that describe sRGB (or sGray) pixels, for <see cref="ResizeWorkingSpace.LinearSrgb"/>
-///. No ICC transform is ever applied: a profile is accepted only when its matrix/TRC tags
+///. No ICC transform is applied by these operations: a profile is accepted only when its matrix/TRC tags
 /// already describe the IEC 61966-2-1 encoding, so that linearizing with the sRGB transfer function is correct.
 /// </summary>
 /// <remarks>

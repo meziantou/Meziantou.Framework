@@ -383,4 +383,55 @@ public sealed class DocumentationExampleTests : IDisposable
         Assert.Equal(new ImageTextEntry("Title", "Sunset"), entry);
         Assert.Equal(300, edited.Metadata.Resolution!.HorizontalDpi, precision: 1); // PNG stores pixels per meter
     }
+
+    [Fact]
+    public void ConvertToSrgbConvertsTheColorsAndRemovesTheLabel()
+    {
+        // Display P3 (200, 100, 50) is sRGB (215, 93, 31); the result is saved to QOI, which stores no profile
+        var input = GetPath("display-p3.png");
+        var output = GetPath("srgb.qoi");
+        using (var image = new Image<Rgb24>(2, 2, new Rgb24(200, 100, 50)))
+        {
+            image.Metadata.IccProfile = IccTestProfiles.Rgb(IccTestProfiles.DisplayP3Colorants, IccTestProfiles.SrgbCurve());
+            image.Save(input);
+        }
+
+        Examples.ConvertToSrgb(input, output);
+        using (var converted = Image.Load<Rgb24>(output))
+        {
+            Assert.Null(converted.Metadata.IccProfile);
+            Assert.Equal(new Rgb24(215, 93, 31), converted.Frames[0][1, 1]);
+        }
+
+        // Grayscale pixels: gamma 563/256 gray 64 is sGray 62; an untagged image is left as it is
+        var grayInput = GetPath("gray-gamma.png");
+        var grayOutput = GetPath("sgray.png");
+        using (var image = new Image<Gray8>(2, 2, new Gray8(64)))
+        {
+            image.Metadata.IccProfile = IccTestProfiles.Gray(IccTestProfiles.Gamma(563));
+            image.Save(grayInput);
+        }
+
+        Examples.ConvertToSrgb(grayInput, grayOutput);
+        using (var converted = Image.Load<Gray8>(grayOutput))
+        {
+            Assert.Null(converted.Metadata.IccProfile);
+            Assert.Equal(new Gray8(62), converted.Frames[0][0, 0]);
+        }
+
+        Examples.ConvertToSrgb(grayOutput, grayInput);
+        using var unchanged = Image.Load<Gray8>(grayInput);
+        Assert.Equal(new Gray8(62), unchanged.Frames[0][0, 0]);
+    }
+
+    [Fact]
+    public void ConvertSamplesToSrgbConvertsInterleavedSamples()
+    {
+        var displayP3 = IccTestProfiles.Rgb(IccTestProfiles.DisplayP3Colorants, IccTestProfiles.SrgbCurve());
+        Assert.Equal([215, 93, 31, 128, 128, 128], Examples.ConvertSamplesToSrgb(displayP3, [200, 100, 50, 128, 128, 128]));
+
+        // One gray sample becomes three sRGB samples
+        var grayGamma = IccTestProfiles.Gray(IccTestProfiles.Gamma(563));
+        Assert.Equal([62, 62, 62, 255, 255, 255], Examples.ConvertSamplesToSrgb(grayGamma, [64, 255]));
+    }
 }

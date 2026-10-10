@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -8,6 +9,54 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </summary>
 internal static class ColorConversionKernels
 {
+    /// <summary>
+    /// Converts every pixel of a frame from the leased source to the leased destination of the same size and pixel
+    /// format: the color channels go through the conversion at the storage precision (16-bit samples never go through
+    /// 8 bits), alpha is copied unchanged, hidden colors of transparent pixels included.
+    /// </summary>
+    /// <typeparam name="TPixel">The pixel type of both storages; its color channels match the channel counts of the conversion.</typeparam>
+    public static void ConvertRows<TPixel>(scoped in PixelLease source, scoped in PixelLease destination, IccPipeline pipeline, CancellationToken cancellationToken)
+        where TPixel : unmanaged
+    {
+        var height = source.Height;
+        for (var y = 0; y < height; y++)
+        {
+            if (y % ProcessingKernels.RowsPerCancellationCheck == 0)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+            }
+
+            if (typeof(TPixel) == typeof(Rgba32))
+            {
+                Convert<byte, IccByteSample>(pipeline, source.GetRowBytes(y), destination.GetRowBytes(y), 4, 4);
+            }
+            else if (typeof(TPixel) == typeof(Bgra32))
+            {
+                Convert<byte, IccByteSample>(pipeline, source.GetRowBytes(y), destination.GetRowBytes(y), 4, 4, reverseColorOrder: true);
+            }
+            else if (typeof(TPixel) == typeof(Rgb24))
+            {
+                Convert<byte, IccByteSample>(pipeline, source.GetRowBytes(y), destination.GetRowBytes(y), 3, 3);
+            }
+            else if (typeof(TPixel) == typeof(Gray8))
+            {
+                Convert<byte, IccByteSample>(pipeline, source.GetRowBytes(y), destination.GetRowBytes(y), 1, 1);
+            }
+            else if (typeof(TPixel) == typeof(Rgba64))
+            {
+                Convert<ushort, IccUInt16Sample>(pipeline, unsafe(MemoryMarshal.Cast<byte, ushort>(source.GetRowBytes(y))), unsafe(MemoryMarshal.Cast<byte, ushort>(destination.GetRowBytes(y))), 4, 4);
+            }
+            else if (typeof(TPixel) == typeof(Gray16))
+            {
+                Convert<ushort, IccUInt16Sample>(pipeline, unsafe(MemoryMarshal.Cast<byte, ushort>(source.GetRowBytes(y))), unsafe(MemoryMarshal.Cast<byte, ushort>(destination.GetRowBytes(y))), 1, 1);
+            }
+            else
+            {
+                throw new NotSupportedException($"The pixel type '{typeof(TPixel).Name}' is not supported.");
+            }
+        }
+    }
+
     /// <summary>Converts interleaved colors.</summary>
     /// <typeparam name="T">The stored sample type.</typeparam>
     /// <typeparam name="TSample">The sample conversion.</typeparam>

@@ -52,7 +52,7 @@ public sealed class Image<TPixel> : Image
     /// <summary>
     /// Initializes a new single-frame still image with a zeroed frame. This is the internal construction hook used by
     /// imports, clones and decoders: <paramref name="configuration"/> and <paramref name="size"/> must already be validated
-    /// (<see cref="ImageResourceLimits.EnsureCanvasWithinLimits(int, int)"/>).
+    /// (<see cref="ImageResourceLimits.EnsureCanvasWithinLimits(long, long)"/>).
     /// </summary>
     /// <param name="configuration">The configuration captured by the image.</param>
     /// <param name="size">The canvas size.</param>

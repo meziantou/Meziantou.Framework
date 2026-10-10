@@ -47,7 +47,7 @@ the library guarantees to its callers (support matrix, limitations, defaults). K
 - **Resource limits** (`ImageResourceLimits`) are enforced incrementally, before allocating or consuming. They are
   inclusive and always positive (no zero-as-unlimited). A limit failure is never turned into a truncation error or a
   success. Test each limit at the boundary and one over.
-- **Atomicity.** Geometry-changing operations (crop, resize, rotate, auto-orient) are transactional across all frames and
+- **Atomicity.** Geometry-changing operations (crop, auto-crop, resize, rotate, auto-orient) are transactional across all frames and
   the poster. Pixel-only edits may be partially applied on failure but leave the image valid and disposable. A failed
   operation releases every resource it acquired.
 - **Ownership.** Images are owned and disposed by their creator. Frames are borrowed views: they are not disposable and

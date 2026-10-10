@@ -23,6 +23,7 @@ public sealed class ApiSurfaceTests
         typeof(ResizeOptions),
         typeof(ConvolutionOptions),
         typeof(ConvolutionKernel),
+        typeof(AutoCropOptions),
         typeof(PngEncoder),
         typeof(GifEncoder),
         typeof(JpegEncoder),
@@ -55,6 +56,7 @@ public sealed class ApiSurfaceTests
     [InlineData(typeof(ImageReader<>))]
     [InlineData(typeof(ImageWriter<>))]
     [InlineData(typeof(ImageInfo))]
+    [InlineData(typeof(AutoCropAnalysis))]
     [InlineData(typeof(ImageMetadata))]
     [InlineData(typeof(FrameMetadata))]
     [InlineData(typeof(AnimationMetadata))]

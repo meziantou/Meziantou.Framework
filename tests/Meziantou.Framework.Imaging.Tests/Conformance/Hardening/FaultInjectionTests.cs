@@ -25,7 +25,7 @@ public sealed class FaultInjectionTests
 
     public static TheoryData<string, string> SaveCases => Combine(ValidIds, ["png", "gif", "jpeg", "webp", "qoi", "bmp", "tga", "pnm"]);
 
-    public static TheoryData<string, string> GeometryCases => Combine(ValidIds, ["crop", "resize", "rotate", "auto-orient"]);
+    public static TheoryData<string, string> GeometryCases => Combine(ValidIds, ["crop", "auto-crop", "resize", "rotate", "auto-orient"]);
 
     private static IEnumerable<string> ValidIds => GoldenCorpus.Default.GetIds(kind: FixtureKinds.Valid).Where(id => GoldenCorpus.Default.Get(id).Entry.DecodeOptions is null);
 
@@ -353,6 +353,12 @@ public sealed class FaultInjectionTests
         {
             case "crop":
                 image.Crop(new Rectangle(image.Width / 3, image.Height / 4, Math.Max(1, image.Width - (image.Width / 3) - 1), Math.Max(1, image.Height / 2)), cancellationToken);
+                break;
+            case "auto-crop":
+                // A known analysis whose padded box reaches outside the canvas: every fixture runs the enlarging transaction,
+                // with a background (opaque white) that every pixel format represents exactly
+                var analysis = new AutoCropAnalysis(success: true, image.Size, new Rectangle(0, 0, image.Width, image.Height), new Rgba64(ushort.MaxValue, ushort.MaxValue, ushort.MaxValue), weightX: 0, weightY: 0);
+                Assert.True(image.AutoCrop(analysis, new AutoCropOptions { PaddingX = 1, PaddingY = 2 }, cancellationToken));
                 break;
             case "resize":
                 image.Resize(new ResizeOptions((image.Width * 3 / 2) + 1, Math.Max(1, image.Height / 2)) { Mode = ResizeMode.Stretch }, cancellationToken);

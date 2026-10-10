@@ -120,6 +120,36 @@ public sealed class DefaultsTests
     }
 
     [Fact]
+    public void AutoCropDefaults()
+    {
+        var options = new AutoCropOptions();
+        Assert.Equal(0, options.PaddingX);
+        Assert.Equal(0, options.PaddingY);
+        Assert.Equal(35, options.ColorThreshold);
+        Assert.Null(options.BucketThreshold);
+        Assert.Equal(AutoCropPaddingMode.Expand, options.PaddingMode);
+        Assert.Equal(default, options.PaddingMode);
+        Assert.False(options.AnalyzeWeights);
+
+        var defaults = AutoCropOptions.Default;
+        Assert.Equal(35, defaults.ColorThreshold);
+        Assert.Null(defaults.BucketThreshold);
+        Assert.Equal(AutoCropPaddingMode.Expand, defaults.PaddingMode);
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => new AutoCropOptions { PaddingX = -1 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new AutoCropOptions { PaddingY = -1 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new AutoCropOptions { ColorThreshold = 0 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new AutoCropOptions { ColorThreshold = 256 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new AutoCropOptions { BucketThreshold = -0.5 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new AutoCropOptions { BucketThreshold = 1.5 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new AutoCropOptions { BucketThreshold = double.NaN });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new AutoCropOptions { PaddingMode = (AutoCropPaddingMode)2 });
+        Assert.Equal(255, new AutoCropOptions { ColorThreshold = 255 }.ColorThreshold);
+        Assert.Equal(1d, new AutoCropOptions { BucketThreshold = 1 }.BucketThreshold);
+        Assert.Equal(0d, new AutoCropOptions { BucketThreshold = 0 }.BucketThreshold);
+    }
+
+    [Fact]
     public void ConvolutionDefaults()
     {
         var kernel = new ConvolutionKernel(3, 1, [1, 2, 3]);

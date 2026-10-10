@@ -363,6 +363,8 @@ public sealed class ProcessingTests
         var snapshot = ImageState.Capture(image);
         var canceled = new CancellationToken(canceled: true);
         Assert.ThrowsAny<OperationCanceledException>(() => image.Crop(new Rectangle(1, 0, 2, 2), canceled));
+        Assert.ThrowsAny<OperationCanceledException>(() => image.AutoCrop(cancellationToken: canceled));
+        Assert.ThrowsAny<OperationCanceledException>(() => image.AnalyzeAutoCrop(cancellationToken: canceled));
         Assert.ThrowsAny<OperationCanceledException>(() => image.Rotate(RotateMode.Rotate270, canceled));
         Assert.ThrowsAny<OperationCanceledException>(() => image.AutoOrient(canceled));
         Assert.ThrowsAny<OperationCanceledException>(() => image.Flip(FlipMode.Horizontal, canceled));
@@ -409,6 +411,8 @@ public sealed class ProcessingTests
         image.Frames[1].ProcessPixelRows(image, static (_, image) =>
         {
             Assert.Throws<InvalidOperationException>(() => image.Crop(new Rectangle(0, 0, 1, 1), Ct));
+            Assert.Throws<InvalidOperationException>(() => image.AutoCrop(cancellationToken: Ct));
+            Assert.Throws<InvalidOperationException>(() => image.AnalyzeAutoCrop(cancellationToken: Ct));
             Assert.Throws<InvalidOperationException>(() => image.Rotate(RotateMode.Rotate90, Ct));
             Assert.Throws<InvalidOperationException>(() => image.AutoOrient(Ct));
             Assert.Throws<InvalidOperationException>(() => image.Flip(FlipMode.Vertical, Ct));
@@ -430,6 +434,7 @@ public sealed class ProcessingTests
     public void DisposedImagesAndDetachedFramesAreRejected()
     {
         var image = Build<Rgba32>(Source3X2, Offset(Source3X2, 10));
+        var analysis = image.AnalyzeAutoCrop(cancellationToken: Ct);
         var removed = image.Frames[1];
         image.RemoveFrame(1);
         Assert.Throws<ObjectDisposedException>(() => removed.Flip(FlipMode.Horizontal, Ct));
@@ -438,6 +443,9 @@ public sealed class ProcessingTests
 
         image.Dispose();
         Assert.Throws<ObjectDisposedException>(() => image.Crop(new Rectangle(0, 0, 1, 1), Ct));
+        Assert.Throws<ObjectDisposedException>(() => image.AutoCrop(cancellationToken: Ct));
+        Assert.Throws<ObjectDisposedException>(() => image.AutoCrop(analysis, cancellationToken: Ct));
+        Assert.Throws<ObjectDisposedException>(() => image.AnalyzeAutoCrop(cancellationToken: Ct));
         Assert.Throws<ObjectDisposedException>(() => image.Rotate(RotateMode.Rotate90, Ct));
         Assert.Throws<ObjectDisposedException>(() => image.AutoOrient(Ct));
         Assert.Throws<ObjectDisposedException>(() => image.Flip(FlipMode.Horizontal, Ct));
@@ -450,6 +458,10 @@ public sealed class ProcessingTests
     {
         using var image = Build<Rgba32>(Source3X2);
         Assert.Throws<ArgumentNullException>("image", () => ((Image)null!).Crop(new Rectangle(0, 0, 1, 1), Ct));
+        Assert.Throws<ArgumentNullException>("image", () => ((Image)null!).AutoCrop(cancellationToken: Ct));
+        Assert.Throws<ArgumentNullException>("image", () => ((Image)null!).AutoCrop(image.AnalyzeAutoCrop(cancellationToken: Ct), cancellationToken: Ct));
+        Assert.Throws<ArgumentNullException>("image", () => ((Image)null!).AnalyzeAutoCrop(cancellationToken: Ct));
+        Assert.Throws<ArgumentNullException>("analysis", () => image.AutoCrop((AutoCropAnalysis)null!, cancellationToken: Ct));
         Assert.Throws<ArgumentNullException>("image", () => ((Image)null!).Rotate(RotateMode.Rotate90, Ct));
         Assert.Throws<ArgumentNullException>("image", () => ((Image)null!).AutoOrient(Ct));
         Assert.Throws<ArgumentNullException>("image", () => ((Image)null!).Flip(FlipMode.Vertical, Ct));
@@ -711,6 +723,34 @@ public sealed class ProcessingTests
         Assert.Equal(((uint?)3, (uint?)1), ExifTiff.ReadPixelDimensions(exif));
         Assert.False(ExifTiff.HasThumbnail(exif));
         Assert.Equal(ExifOrientation.TopLeft, image.Metadata.Orientation);
+    }
+
+    [Theory]
+    [InlineData(0, 3, 3)] // a plain crop to the 3x3 content
+    [InlineData(2, 7, 7)] // the padding reaches one pixel outside the 5x5 canvas on every side
+    public void AutoCropUpdatesDimensionTags(int padding, ushort expectedWidth, ushort expectedHeight)
+    {
+        // Ids 1 and 60 differ by 59 on every color channel: 59 * 10000 is above the default tolerance of 35 * 10000
+        using var image = Build<Rgba32>([[1, 1, 1, 1, 1], [1, 60, 60, 60, 1], [1, 60, 60, 60, 1], [1, 60, 60, 60, 1], [1, 1, 1, 1, 1]]);
+        image.Metadata.ExifProfile = CreateExif(orientation: 6, width: 5, height: 5);
+        image.Metadata.Orientation = ExifOrientation.RightTop;
+        Assert.True(image.AutoCrop(new AutoCropOptions { PaddingX = padding, PaddingY = padding }, Ct));
+        var exif = image.Metadata.ExifProfile!.Data.Span;
+        Assert.Equal(((uint)expectedWidth, (uint)expectedHeight), ReadIfd0Dimensions(exif));
+        Assert.Equal(((uint?)expectedWidth, (uint?)expectedHeight), ExifTiff.ReadPixelDimensions(exif));
+        Assert.False(ExifTiff.HasThumbnail(exif));
+        Assert.Equal(ExifOrientation.RightTop, image.Metadata.Orientation);
+    }
+
+    [Fact]
+    public void AnalyzeAutoCropKeepsTheThumbnail()
+    {
+        using var image = Build<Rgba32>(Source4X3);
+        var profile = CreateExif(orientation: 1, width: 4, height: 3);
+        image.Metadata.ExifProfile = profile;
+        _ = image.AnalyzeAutoCrop(cancellationToken: Ct);
+        Assert.Same(profile, image.Metadata.ExifProfile);
+        Assert.True(ExifTiff.HasThumbnail(image.Metadata.ExifProfile!.Data.Span));
     }
 
     [Fact]

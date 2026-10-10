@@ -7,7 +7,8 @@ namespace Meziantou.Framework.Imaging.Tests.Conformance;
 /// ICC color conversion checked against an independent color management system: the <c>colorTransforms</c> of the golden
 /// corpus are colors converted by LittleCMS between ICC profiles of the corpus (see the fixtures README, "Color
 /// management"). They guard the interpretation of the ICC specification, which the reference of the test harness
-/// shares with the library: encodings, table order, tag selection, rendering intents.
+/// shares with the library: encodings, table order and element order, tag selection, rendering intents, media white
+/// points, black point compensation.
 /// </summary>
 /// <remarks>
 /// Tolerance: two color management systems never agree bit for bit. Each conversion declares its measured tolerance in
@@ -25,17 +26,66 @@ public sealed class ColorConversionGoldenTests
     {
         var profiles = Manifest.ColorProfiles ?? [];
         var features = profiles.SelectMany(profile => profile.Features ?? []).ToHashSet(StringComparer.Ordinal);
-        foreach (var feature in new[] { "icc.version=2", "icc.version=4", "icc.model=matrix", "icc.model=monochrome", "icc.model=lut16", "icc.curve=parametric", "icc.curve=sampled", "icc.curve=gamma", "icc.space=gray", "icc.space=rgb", "icc.space=cmyk" })
+        foreach (var feature in new[] { "icc.version=2", "icc.version=4", "icc.model=matrix", "icc.model=monochrome", "icc.model=lut8", "icc.model=lut16", "icc.model=lutAToB", "icc.pcs=lab", "icc.pcs=xyz", "icc.curve=parametric", "icc.curve=sampled", "icc.curve=gamma", "icc.space=gray", "icc.space=rgb", "icc.space=cmyk" })
         {
             Assert.Contains(feature, features);
         }
 
         var transforms = Manifest.ColorTransforms ?? [];
         Assert.Equal(ColorTransformEntry.Intents.Order(StringComparer.Ordinal), transforms.Select(transform => transform.Intent).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal));
-        Assert.Contains((1, 3), transforms.Select(transform => (transform.SourceChannels, transform.DestinationChannels)));
-        Assert.Contains((3, 1), transforms.Select(transform => (transform.SourceChannels, transform.DestinationChannels)));
-        Assert.Contains((4, 3), transforms.Select(transform => (transform.SourceChannels, transform.DestinationChannels)));
-        Assert.Contains((4, 1), transforms.Select(transform => (transform.SourceChannels, transform.DestinationChannels)));
+        foreach (var channels in new[] { (1, 1), (1, 3), (3, 1), (3, 3), (3, 4), (4, 1), (4, 3) })
+        {
+            Assert.Contains(channels, transforms.Select(transform => (transform.SourceChannels, transform.DestinationChannels)));
+        }
+
+        // Every table type is used in both directions: from the device (source) and to the device (destination)
+        bool Has(string profileId, string feature) => profiles.Single(profile => profile.Id == profileId).Features!.Contains(feature, StringComparer.Ordinal);
+        foreach (var model in new[] { "icc.model=lut8", "icc.model=lut16", "icc.model=lutAToB" })
+        {
+            Assert.Contains(transforms, transform => Has(transform.Source, model));
+            Assert.Contains(transforms, transform => Has(transform.Destination, model));
+        }
+
+        // To CMYK with the table of each intent; the absolute colorimetric intent with a media white point that is not the
+        // illuminant on either side; black point compensation with a black point that is not black on either side
+        foreach (var intent in ColorTransformEntry.Intents)
+        {
+            Assert.Contains(transforms, transform => transform.Intent == intent && transform.DestinationChannels == 4);
+        }
+
+        Assert.Contains(transforms, transform => transform.Intent == ColorTransformEntry.Intents[3] && Has(transform.Source, "icc.media-white"));
+        Assert.Contains(transforms, transform => transform.Intent == ColorTransformEntry.Intents[3] && Has(transform.Destination, "icc.media-white"));
+        Assert.Contains(transforms, transform => transform.BlackPointCompensation && Has(transform.Source, "icc.black-point"));
+        Assert.Contains(transforms, transform => transform.BlackPointCompensation && Has(transform.Destination, "icc.black-point"));
+        Assert.Contains(transforms, transform => transform.BlackPointCompensation && Has(transform.Destination, "icc.black-point") && Has(transform.Destination, "icc.direction=both"));
+    }
+
+    [Fact]
+    public void SyntheticProfilesOfTheCorpusAreTheOnesTheTestsBuild()
+    {
+        // The generator and the tests compile the same builders: a change of a builder without regenerating the corpus
+        // (or the reverse) is reported here, before any vector is compared with a profile it was not made for
+        var builders = new Dictionary<string, Func<IccProfile>>(StringComparer.Ordinal)
+        {
+            ["icc/synthetic-rgb-lab-lut8"] = IccTestProfiles.RgbLabLut8,
+            ["icc/synthetic-rgb-xyz-lut16"] = IccTestProfiles.RgbXyzLut16,
+            ["icc/synthetic-rgb-lab-mab"] = IccTestProfiles.RgbLabLutAToB,
+            ["icc/synthetic-rgb-xyz-mab"] = IccTestProfiles.RgbXyzMatrixLutAToB,
+            ["icc/synthetic-cmyk-lab-lut16"] = () => IccTestProfiles.CmykLabLut16(),
+            ["icc/synthetic-cmyk-lab-mab"] = IccTestProfiles.CmykLabLutAToB,
+            ["icc/synthetic-gray-lab-lut8"] = IccTestProfiles.GrayLabLut8,
+            ["icc/synthetic-gray-paper"] = IccTestProfiles.GrayPaper,
+            ["icc/synthetic-rgb-scanner"] = IccTestProfiles.RgbScanner,
+            ["icc/synthetic-gray-printer-lut8"] = IccTestProfiles.GrayPrinterLut8,
+        };
+
+        var root = FixtureRoot.GetDirectory();
+        var generated = (Manifest.ColorProfiles ?? []).Where(profile => profile.Provenance.Origin == "generated").ToList();
+        Assert.Equal(builders.Keys.Order(StringComparer.Ordinal), generated.Select(profile => profile.Id).Order(StringComparer.Ordinal));
+        foreach (var profile in generated)
+        {
+            Assert.True(builders[profile.Id]().Data.Span.SequenceEqual(File.ReadAllBytes(root / profile.File.Path)), $"{profile.Id} differs from the profile built by the tests: regenerate the corpus with the icc generator.");
+        }
     }
 
     [Theory]

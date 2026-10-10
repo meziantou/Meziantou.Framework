@@ -2,6 +2,7 @@ using System.Buffers.Binary;
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
+using Meziantou.Framework.Imaging.CorpusGenerator.Common;
 using Meziantou.Framework.Imaging.CorpusGenerator.Infrastructure;
 
 namespace Meziantou.Framework.Imaging.CorpusGenerator;
@@ -15,6 +16,13 @@ namespace Meziantou.Framework.Imaging.CorpusGenerator;
 /// <para>
 /// The profiles come from a checkout of https://github.com/saucecontrol/Compact-ICC-Profiles (CC0-1.0) at the pinned
 /// commit, given by --icc-profiles; each file is checked against its pinned SHA-256 before it is copied.
+/// </para>
+/// <para>
+/// The external profiles are matrix-based, plus one CMYK input profile with a single table. The tag types, directions and
+/// media they lack come from synthetic profiles built by Common/IccProfileBuilder.cs (shared with the tests, without any
+/// dependency on the library): lut8Type, lutAToBType and lutBToAType tables, tables from the connection space (including
+/// to CMYK, one per rendering intent), media white points that are not the illuminant, and black points that are not
+/// black.
 /// </para>
 /// <para>
 /// <c>transicc</c> runs without precalculation (-c0), so that LittleCMS evaluates its conversion for each color instead
@@ -33,23 +41,37 @@ namespace Meziantou.Framework.Imaging.CorpusGenerator;
 /// several levels apart for some colors, while they agree on the grid points. Interpolation is therefore not covered
 /// by these vectors; the reference of the test harness covers it.
 /// </para>
+/// <para>
+/// Black point compensation (-b) is compared where the two systems implement the same published algorithm with the same
+/// outcome. Three situations are deliberately absent, because LittleCMS 2.19 was observed to behave differently from
+/// the algorithm published by Adobe, which the library follows: with the relative colorimetric intent and a table-based
+/// monochrome profile whose device black is not black (as a source or as a destination), -b leaves the colors
+/// unchanged; with a CMYK output profile as a source (the one of macOS), it does too; and with the perceptual intent of
+/// a version 4 profile, LittleCMS compensates even without -b.
+/// </para>
 /// </remarks>
 internal static partial class IccCorpus
 {
     public const string ScriptPath = "tools/Meziantou.Framework.Imaging.CorpusGenerator/IccCorpus.cs";
+    private const string BuilderPath = "tools/Meziantou.Framework.Imaging.CorpusGenerator/Common/IccProfileBuilder.cs";
 
     private const string ProfilesRepository = "https://github.com/saucecontrol/Compact-ICC-Profiles";
     private const string ProfilesCommit = "bdd84663061bc4ae95ca70decff54f581e27f702";
     private const string PinnedLittleCms = "2.19";
+    private const int MaxGridPointSamples = 300;
 
-    /// <summary>The largest difference caused by rounding: the samples printed by transicc and their storage on 16 bits.</summary>
-    private const string RoundingJustification = "Both systems evaluate the same matrix and tone curves; the difference is the rounding of the four decimals printed by transicc, of the 16-bit vectors, and of the single-precision arithmetic of LittleCMS.";
+    // The measured reasons of the tolerances, recorded in the manifest with each conversion
+    private const string RoundingJustification = "Same matrix and tone curves in both systems: only the rounding of the printed samples and the single-precision arithmetic of LittleCMS differ.";
 
-    /// <summary>Sampled curves: LittleCMS inverts and interpolates them through tables of its own.</summary>
-    private const string SampledCurveJustification = "Both systems evaluate the same matrix and tone curves, but LittleCMS evaluates a sampled curve in single precision and inverts it through a 4096-entry table, while the library inverts the piecewise-linear curve exactly; the difference stays below a tenth of a level of 255.";
+    private const string SampledCurveJustification = "LittleCMS evaluates a sampled curve in single precision and inverts it through a 4096-entry table; the library inverts it exactly.";
 
-    /// <summary>Grid points of the color lookup table: no interpolation is involved.</summary>
-    private const string GridPointJustification = "The colors are the grid points of the color lookup table, where no interpolation is involved and the two systems must agree; the difference is the rounding of the four decimals printed by transicc, of the 16-bit vectors and of the device values of the grid points.";
+    private const string GridPointJustification = "Grid points of the color lookup table: no interpolation is involved, only the rounding of the printed samples and of the grid point values differs.";
+
+    private const string TableJustification = "Same tables and interpolation in both systems; LittleCMS evaluates tables with 16-bit intermediate values, the library in double precision.";
+
+    private const string CurveBlackPointJustification = "Both systems take the black point from the tone curve and scale CIEXYZ toward white identically; only rounding differs.";
+
+    private const string RampBlackPointJustification = "Both systems estimate the black point from the round trip of a lightness ramp, sampled at 256 points by LittleCMS and at 101 by the library.";
 
     private static readonly Profile[] Profiles =
     [
@@ -62,6 +84,18 @@ internal static partial class IccCorpus
         new("icc/sgrey-v4", "sGrey-v4.icc", "00c0f94e09127520a17dc0e1d9264b5702081d96dbdb1549ee88e3631ce42a9d", 1, ["icc.version=4", "icc.model=monochrome", "icc.curve=parametric", "icc.space=gray"]),
         new("icc/sgrey-v2-nano", "sGrey-v2-nano.icc", "ac2805b9e07b6fa3ba7406aa48e84d87041097da66220cc2a385e17bb2893cc1", 1, ["icc.version=2", "icc.model=monochrome", "icc.curve=sampled", "icc.space=gray"]),
         new("icc/cgats001-compat-v2-micro", "CGATS001Compat-v2-micro.icc", "73e1ba37d2bad5bab2a964f40a9eed96209666efc067c3322626214bbef234a0", 4, ["icc.version=2", "icc.model=lut16", "icc.pcs=lab", "icc.space=cmyk", "icc.class=input"]),
+
+        // Synthetic profiles (Common/IccProfileBuilder.cs): the tag types, directions and media the external profiles lack
+        new("icc/synthetic-rgb-lab-lut8", IccProfileBuilder.RgbLabLut8, nameof(IccProfileBuilder.RgbLabLut8), 3, ["icc.version=4", "icc.model=lut8", "icc.pcs=lab", "icc.space=rgb", "icc.direction=both"]),
+        new("icc/synthetic-rgb-xyz-lut16", IccProfileBuilder.RgbXyzLut16, nameof(IccProfileBuilder.RgbXyzLut16), 3, ["icc.version=4", "icc.model=lut16", "icc.pcs=xyz", "icc.space=rgb", "icc.direction=both"]),
+        new("icc/synthetic-rgb-lab-mab", IccProfileBuilder.RgbLabLutAToB, nameof(IccProfileBuilder.RgbLabLutAToB), 3, ["icc.version=4", "icc.model=lutAToB", "icc.pcs=lab", "icc.space=rgb", "icc.direction=both"]),
+        new("icc/synthetic-rgb-xyz-mab", IccProfileBuilder.RgbXyzMatrixLutAToB, nameof(IccProfileBuilder.RgbXyzMatrixLutAToB), 3, ["icc.version=4", "icc.model=lutAToB", "icc.pcs=xyz", "icc.space=rgb", "icc.direction=both"]),
+        new("icc/synthetic-cmyk-lab-lut16", static () => IccProfileBuilder.CmykLabLut16(), nameof(IccProfileBuilder.CmykLabLut16), 4, ["icc.version=2", "icc.model=lut16", "icc.pcs=lab", "icc.space=cmyk", "icc.direction=both", "icc.class=output", "icc.media-white"]),
+        new("icc/synthetic-cmyk-lab-mab", IccProfileBuilder.CmykLabLutAToB, nameof(IccProfileBuilder.CmykLabLutAToB), 4, ["icc.version=4", "icc.model=lutAToB", "icc.pcs=lab", "icc.space=cmyk", "icc.direction=both", "icc.class=output"]),
+        new("icc/synthetic-gray-lab-lut8", IccProfileBuilder.GrayLabLut8, nameof(IccProfileBuilder.GrayLabLut8), 1, ["icc.version=4", "icc.model=lut8", "icc.pcs=lab", "icc.space=gray", "icc.direction=both"]),
+        new("icc/synthetic-gray-paper", IccProfileBuilder.GrayPaper, nameof(IccProfileBuilder.GrayPaper), 1, ["icc.version=4", "icc.model=monochrome", "icc.pcs=lab", "icc.space=gray", "icc.class=output", "icc.media-white", "icc.black-point"]),
+        new("icc/synthetic-rgb-scanner", IccProfileBuilder.RgbScanner, nameof(IccProfileBuilder.RgbScanner), 3, ["icc.version=4", "icc.model=matrix", "icc.curve=gamma", "icc.space=rgb", "icc.class=input", "icc.media-white"]),
+        new("icc/synthetic-gray-printer-lut8", IccProfileBuilder.GrayPrinterLut8, nameof(IccProfileBuilder.GrayPrinterLut8), 1, ["icc.version=2", "icc.model=lut8", "icc.pcs=lab", "icc.space=gray", "icc.direction=both", "icc.class=output", "icc.black-point"]),
     ];
 
     private static readonly Transform[] Transforms =
@@ -78,6 +112,40 @@ internal static partial class IccCorpus
         new("icc/cgats001-to-srgb-v4", "icc/cgats001-compat-v2-micro", "icc/srgb-v4", 1, false, 3, 0.5, GridPointJustification),
         new("icc/cgats001-to-display-p3-v4-perceptual", "icc/cgats001-compat-v2-micro", "icc/display-p3-v4", 0, false, 3, 0.5, GridPointJustification),
         new("icc/cgats001-to-sgrey-v4", "icc/cgats001-compat-v2-micro", "icc/sgrey-v4", 1, false, 3, 0.5, GridPointJustification),
+
+        // Table-based profiles in both directions: lut8Type and lut16Type (CIELAB and CIEXYZ connection spaces, the matrix
+        // of a lut16Type), lutAToBType and lutBToAType with every element, monochrome tables
+        new("icc/srgb-v4-to-synthetic-rgb-lab-lut8", "icc/srgb-v4", "icc/synthetic-rgb-lab-lut8", 1, false, 12, 1.0, TableJustification),
+        new("icc/synthetic-rgb-lab-lut8-to-srgb-v4", "icc/synthetic-rgb-lab-lut8", "icc/srgb-v4", 1, false, 14, 1.0, TableJustification),
+        new("icc/srgb-v4-to-synthetic-rgb-xyz-lut16", "icc/srgb-v4", "icc/synthetic-rgb-xyz-lut16", 1, false, 17, 2.0, TableJustification),
+        new("icc/synthetic-rgb-xyz-lut16-to-display-p3-v4", "icc/synthetic-rgb-xyz-lut16", "icc/display-p3-v4", 1, false, 46, 2.5, TableJustification),
+        new("icc/srgb-v4-to-synthetic-rgb-lab-mab", "icc/srgb-v4", "icc/synthetic-rgb-lab-mab", 1, false, 6, 1.0, TableJustification),
+        new("icc/synthetic-rgb-lab-mab-to-srgb-v4", "icc/synthetic-rgb-lab-mab", "icc/srgb-v4", 1, false, 9, 1.0, TableJustification),
+        new("icc/display-p3-v4-to-synthetic-rgb-xyz-mab", "icc/display-p3-v4", "icc/synthetic-rgb-xyz-mab", 1, false, 14, 0.5, TableJustification),
+        new("icc/synthetic-rgb-xyz-mab-to-srgb-v4", "icc/synthetic-rgb-xyz-mab", "icc/srgb-v4", 1, false, 3, 0.5, TableJustification),
+        new("icc/synthetic-gray-lab-lut8-to-srgb-v4", "icc/synthetic-gray-lab-lut8", "icc/srgb-v4", 1, false, 3, 0.5, TableJustification),
+        new("icc/srgb-v4-to-synthetic-gray-lab-lut8", "icc/srgb-v4", "icc/synthetic-gray-lab-lut8", 1, false, 3, 0.5, TableJustification),
+
+        // To CMYK, with the table of each rendering intent, and from CMYK on the grid points of the table of the intent
+        new("icc/srgb-v4-to-synthetic-cmyk-lab-lut16-perceptual", "icc/srgb-v4", "icc/synthetic-cmyk-lab-lut16", 0, false, 6, 1.0, TableJustification),
+        new("icc/srgb-v4-to-synthetic-cmyk-lab-lut16", "icc/srgb-v4", "icc/synthetic-cmyk-lab-lut16", 1, false, 5, 1.0, TableJustification),
+        new("icc/srgb-v4-to-synthetic-cmyk-lab-lut16-saturation", "icc/srgb-v4", "icc/synthetic-cmyk-lab-lut16", 2, false, 4, 1.0, TableJustification),
+        new("icc/srgb-v4-to-synthetic-cmyk-lab-mab", "icc/srgb-v4", "icc/synthetic-cmyk-lab-mab", 1, false, 6, 1.0, TableJustification),
+        new("icc/synthetic-cmyk-lab-lut16-to-srgb-v4", "icc/synthetic-cmyk-lab-lut16", "icc/srgb-v4", 1, false, 3, 0.5, GridPointJustification),
+        new("icc/synthetic-cmyk-lab-lut16-to-srgb-v4-saturation", "icc/synthetic-cmyk-lab-lut16", "icc/srgb-v4", 2, false, 6, 0.5, GridPointJustification),
+
+        // The absolute colorimetric intent with media white points that are not the illuminant (source, destination)
+        new("icc/synthetic-rgb-scanner-to-srgb-v4-absolute", "icc/synthetic-rgb-scanner", "icc/srgb-v4", 3, false, 5, 0.5, RoundingJustification),
+        new("icc/srgb-v4-to-synthetic-gray-paper-absolute", "icc/srgb-v4", "icc/synthetic-gray-paper", 3, false, 3, 0.75, RoundingJustification),
+        new("icc/srgb-v4-to-synthetic-cmyk-lab-lut16-absolute", "icc/srgb-v4", "icc/synthetic-cmyk-lab-lut16", 3, false, 5, 1.0, TableJustification),
+
+        // Black point compensation: a black point from a tone curve (both directions), and from the tables of a profile
+        // as a destination (round trip of a lightness ramp) and as a source. See the remarks of the class for the
+        // conversions where LittleCMS applies no compensation
+        new("icc/synthetic-gray-paper-to-sgrey-v4-compensated", "icc/synthetic-gray-paper", "icc/sgrey-v4", 1, true, 3, 0.75, CurveBlackPointJustification),
+        new("icc/sgrey-v4-to-synthetic-gray-paper-compensated", "icc/sgrey-v4", "icc/synthetic-gray-paper", 1, true, 3, 0.75, CurveBlackPointJustification),
+        new("icc/sgrey-v4-to-synthetic-gray-printer-lut8-perceptual-compensated", "icc/sgrey-v4", "icc/synthetic-gray-printer-lut8", 0, true, 15, 5.0, RampBlackPointJustification),
+        new("icc/synthetic-gray-printer-lut8-to-srgb-v4-perceptual-compensated", "icc/synthetic-gray-printer-lut8", "icc/srgb-v4", 0, true, 4, 0.75, RampBlackPointJustification),
     ];
 
     private static readonly string[] IntentNames = ["perceptual", "relative-colorimetric", "saturation", "absolute-colorimetric"];
@@ -106,9 +174,9 @@ internal static partial class IccCorpus
         var paths = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (var profile in Profiles)
         {
-            var data = File.ReadAllBytes(profilesDirectory / profile.FileName);
+            var data = profile.Build is null ? File.ReadAllBytes(profilesDirectory / profile.FileName) : profile.Build();
             var hash = Bytes.Sha256Hex(data);
-            if (hash != profile.Sha256)
+            if (profile.Build is null && hash != profile.Sha256)
                 throw new FatalException($"{profile.FileName} has sha256 {hash} but {profile.Sha256} is pinned (commit {ProfilesCommit} of {ProfilesRepository}).");
 
             var path = "icc/profiles/" + profile.FileName;
@@ -120,13 +188,22 @@ internal static partial class IccCorpus
             {
                 ["id"] = profile.Id,
                 ["file"] = new Obj { ["path"] = path, ["sha256"] = hash, ["role"] = "profile" },
-                ["provenance"] = new Obj
-                {
-                    ["origin"] = "external",
-                    ["license"] = "CC0-1.0",
-                    ["author"] = "Clinton Ingram",
-                    ["source"] = $"{ProfilesRepository}/blob/{ProfilesCommit}/profiles/{profile.FileName}",
-                },
+                ["provenance"] = profile.Build is null
+                    ? new Obj
+                    {
+                        ["origin"] = "external",
+                        ["license"] = "CC0-1.0",
+                        ["author"] = "Clinton Ingram",
+                        ["source"] = $"{ProfilesRepository}/blob/{ProfilesCommit}/profiles/{profile.FileName}",
+                    }
+                    : new Obj
+                    {
+                        ["origin"] = "generated",
+                        ["license"] = "CC0-1.0",
+                        ["author"] = "Meziantou.Framework contributors",
+                        ["generator"] = $"{BuilderPath} ({profile.Function})",
+                        ["tools"] = new List<string> { ToolSet.RuntimeLabel },
+                    },
                 ["features"] = profile.Features.ToList(),
             });
         }
@@ -136,7 +213,7 @@ internal static partial class IccCorpus
         {
             var source = Profiles.Single(profile => profile.Id == transform.Source);
             var destination = Profiles.Single(profile => profile.Id == transform.Destination);
-            var samples = source.Channels == 4 ? CreateGridPointSamples(File.ReadAllBytes(outDir / paths[source.Id])) : CreateSamples(source.Channels);
+            var samples = source.Channels == 4 ? CreateGridPointSamples(File.ReadAllBytes(outDir / paths[source.Id]), transform.Intent) : CreateSamples(source.Channels);
             var count = samples.Length / source.Channels;
             List<string> command = [transicc, "-n", "-c0", "-t" + transform.Intent.ToString(CultureInfo.InvariantCulture)];
             if (transform.BlackPointCompensation)
@@ -233,23 +310,28 @@ internal static partial class IccCorpus
     }
 
     /// <summary>
-    /// The colors of a CMYK conversion: every grid point of the color lookup table of the AToB0 tag (a lut16Type) of the
-    /// profile. The device value of a grid point is the one its input table maps to the grid position: the tables are
+    /// The colors of a CMYK conversion: grid points of the color lookup table of the AToB tag of the intent (a lut16Type)
+    /// of the profile. The device value of a grid point is the one its input table maps to the grid position: the tables are
     /// increasing and interpolated linearly, so each is inverted exactly, then rounded to 16 bits.
     /// </summary>
-    private static ushort[] CreateGridPointSamples(byte[] profile)
+    private static ushort[] CreateGridPointSamples(byte[] profile, int intent)
     {
+        // The table of the intent (ICC.1:2022 section 8.10.2): AToB1 for the colorimetric intents, AToB2 for saturation,
+        // AToB0 otherwise and when the profile does not have the other one
         var tagCount = Bytes.U32BE(profile, 128);
-        byte[]? tag = null;
+        var tags = new Dictionary<string, byte[]>(StringComparer.Ordinal);
         for (var i = 0; i < tagCount; i++)
         {
             var entry = 132 + (12 * i);
-            if (Bytes.Latin1(profile.AsSpan(entry, 4)) == "A2B0")
-                tag = profile.AsSpan((int)Bytes.U32BE(profile, entry + 4), (int)Bytes.U32BE(profile, entry + 8)).ToArray();
+            tags[Bytes.Latin1(profile.AsSpan(entry, 4))] = profile.AsSpan((int)Bytes.U32BE(profile, entry + 4), (int)Bytes.U32BE(profile, entry + 8)).ToArray();
         }
 
-        if (tag is null || Bytes.Latin1(tag.AsSpan(0, 4)) != "mft2")
-            throw new FatalException("The CMYK profile has no lut16Type AToB0 tag.");
+        var signature = intent switch { 0 => "A2B0", 2 => "A2B2", _ => "A2B1" };
+        if (!tags.TryGetValue(signature, out var tag) && !tags.TryGetValue("A2B0", out tag))
+            throw new FatalException("The CMYK profile has no AToB tag.");
+
+        if (Bytes.Latin1(tag.AsSpan(0, 4)) != "mft2")
+            throw new FatalException("The AToB tag of the CMYK profile is not a lut16Type.");
 
         int channels = tag[8];
         int gridPoints = tag[10];
@@ -268,12 +350,17 @@ internal static partial class IccCorpus
             }
         }
 
+        var totalPoints = (int)Math.Pow(gridPoints, channels);
         var samples = new List<ushort>();
         var indexes = new int[channels];
-        while (true)
+        for (var point = 0; ; point++)
         {
-            for (var channel = 0; channel < channels; channel++)
-                samples.Add(levels[channel][indexes[channel]]);
+            // One grid point out of five when the table has more than 300: every level of every channel is still used
+            if (totalPoints <= MaxGridPointSamples || point % 5 == 0)
+            {
+                for (var channel = 0; channel < channels; channel++)
+                    samples.Add(levels[channel][indexes[channel]]);
+            }
 
             var last = 0;
             while (last < channels && ++indexes[last] == gridPoints)
@@ -286,13 +373,13 @@ internal static partial class IccCorpus
     }
 
     /// <summary>
-    /// The colors of a grayscale or RGB conversion: a regular grid including both ends of each channel (every 8-bit level
-    /// for one channel, 7 levels for three channels), then reproducible pseudo-random colors.
+    /// The colors of a grayscale or RGB conversion: every 8-bit level for one channel; for three channels a 4-level grid
+    /// including both ends of each channel, then 64 reproducible pseudo-random colors (the grid points of the synthetic
+    /// tables are not multiples of one third, so nearly every color is interpolated).
     /// </summary>
     private static ushort[] CreateSamples(int channels)
     {
-        var (levels, random) = channels == 1 ? (256, 64) : (7, 157);
-
+        var (levels, random) = channels == 1 ? (256, 0) : (4, 64);
         var samples = new List<ushort>();
         var indexes = new int[channels];
         while (true)
@@ -321,7 +408,14 @@ internal static partial class IccCorpus
     [GeneratedRegex(@"\[LittleCMS ([0-9.]+)\]")]
     private static partial Regex VersionRegex();
 
-    private sealed record Profile(string Id, string FileName, string Sha256, int Channels, string[] Features);
+    /// <param name="Build">The builder of a synthetic profile; <see langword="null"/> for an external profile, read from --icc-profiles.</param>
+    private sealed record Profile(string Id, string FileName, string? Sha256, int Channels, string[] Features, Func<byte[]>? Build = null, string? Function = null)
+    {
+        public Profile(string id, Func<byte[]> build, string function, int channels, string[] features)
+            : this(id, id["icc/".Length..] + ".icc", null, channels, features, build, function)
+        {
+        }
+    }
 
     /// <param name="Intent">The ICC rendering intent number, 0 to 3.</param>
     /// <param name="MaxAbsoluteError">The tolerance in 16-bit units.</param>

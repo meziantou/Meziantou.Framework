@@ -101,9 +101,10 @@ public sealed class ColorProfileFuzzTests
 
     private static List<FuzzSeed> GetSeeds()
     {
+        // The external profiles of the corpus; its synthetic profiles are built below with the others
         var root = FixtureRoot.GetDirectory();
         var manifest = FixtureManifestLoader.Load(root / FixtureRoot.ManifestFileName);
-        List<FuzzSeed> seeds = [.. (manifest.ColorProfiles ?? []).Select(profile => new FuzzSeed(profile.Id, File.ReadAllBytes(root / profile.File.Path)))];
+        List<FuzzSeed> seeds = [.. (manifest.ColorProfiles ?? []).Where(profile => profile.Provenance.Origin == "external").Select(profile => new FuzzSeed(profile.Id, File.ReadAllBytes(root / profile.File.Path)))];
         seeds.AddRange(new (string Id, IccProfile Profile)[]
         {
             ("builtin/srgb", IccProfile.Srgb),
@@ -112,11 +113,13 @@ public sealed class ColorProfileFuzzTests
             ("synthetic/rgb-xyz-lut16", IccTestProfiles.RgbXyzLut16()),
             ("synthetic/cmyk-lab-lut16", IccTestProfiles.CmykLabLut16()),
             ("synthetic/gray-lab-lut8", IccTestProfiles.GrayLabLut8()),
+            ("synthetic/gray-printer-lut8", IccTestProfiles.GrayPrinterLut8()),
             ("synthetic/rgb-lab-mab", IccTestProfiles.RgbLabLutAToB()),
             ("synthetic/rgb-xyz-mab", IccTestProfiles.RgbXyzMatrixLutAToB()),
             ("synthetic/cmyk-lab-mab", IccTestProfiles.CmykLabLutAToB()),
             ("synthetic/gray-paper", IccTestProfiles.GrayPaper()),
             ("synthetic/rgb-scanner", IccTestProfiles.RgbScanner()),
+            ("synthetic/gray-printer-mab", IccTestProfiles.GrayPrinterLutAToB()),
         }.Select(seed => new FuzzSeed(seed.Id, seed.Profile.Data.ToArray())));
         if (seeds.Count < 15)
             throw new InvalidOperationException("The corpus has no color profile.");

@@ -40,10 +40,12 @@ public sealed class ColorConversionReferenceTests
         ("cmyk-lab-mab", IccTestProfiles.CmykLabLutAToB),
         ("gray-paper", IccTestProfiles.GrayPaper),
         ("rgb-scanner", IccTestProfiles.RgbScanner),
+        ("gray-printer-mab", IccTestProfiles.GrayPrinterLutAToB),
+        ("gray-printer-lut8", IccTestProfiles.GrayPrinterLut8),
     ];
 
     /// <summary>The profiles whose black point or media white point makes the intents and black point compensation differ.</summary>
-    private static readonly string[] IntentProfiles = ["srgb", "gray-paper", "rgb-scanner", "rgb-lab-lut8", "cmyk-lab-lut16", "cmyk-lab-mab", "gray-lab-lut8", "rgb-lab-mab"];
+    private static readonly string[] IntentProfiles = ["srgb", "gray-paper", "rgb-scanner", "rgb-lab-lut8", "cmyk-lab-lut16", "cmyk-lab-mab", "gray-lab-lut8", "rgb-lab-mab", "gray-printer-mab", "gray-printer-lut8"];
 
     public static TheoryData<string, string, IccRenderingIntent, bool> IntentCases()
     {

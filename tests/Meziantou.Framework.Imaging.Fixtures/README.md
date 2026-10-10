@@ -90,28 +90,47 @@ The `colorProfiles` and `colorTransforms` sections of the manifest are the refer
 (`ColorConversionGoldenTests`). They are not image fixtures: they have no `format`, `kind` or expected pixels.
 
 - **`colorProfiles`**: ICC profiles (`icc/profiles/`) with their hash, provenance, license and feature tags
-  (`icc.version`, `icc.model`, `icc.curve`, `icc.space`). They come from
-  [Compact-ICC-Profiles](https://github.com/saucecontrol/Compact-ICC-Profiles) (`CC0-1.0`) at a pinned commit:
-  matrix-based RGB profiles of versions 2 and 4 with parametric, sampled and gamma curves, monochrome profiles, and a
-  CMYK input profile with a `lut16Type` table and the CIELAB connection space.
+  (`icc.version`, `icc.model`, `icc.pcs`, `icc.curve`, `icc.space`, `icc.class`, `icc.direction=both` for tables in both
+  directions, `icc.media-white` and `icc.black-point` for a media white that is not the illuminant and a black that is
+  not black). Two origins:
+  - *external*: [Compact-ICC-Profiles](https://github.com/saucecontrol/Compact-ICC-Profiles) (`CC0-1.0`) at a pinned
+    commit, stored unmodified: matrix-based RGB profiles of versions 2 and 4 with parametric, sampled and gamma curves,
+    monochrome profiles, and a CMYK input profile with one `lut16Type` table.
+  - *generated* (`synthetic-*`): built by `Common/IccProfileBuilder.cs` of the generator, a file without any dependency
+    on the library that the test projects also compile (`IccTestProfiles`). They provide what no profile under an
+    allowed license does: `lut8Type`, `lutAToBType` and `lutBToAType` tables, tables in both directions (including to
+    CMYK, one per rendering intent), the CIEXYZ connection space with tables, media white points and black points. Their
+    tables sample simple device models: they are not realistic, only well defined.
 - **`colorTransforms`**: for a source profile, a destination profile, a rendering intent and the black point
   compensation setting, a file of vectors (`icc/vectors/<id>.u16le`): for each color, the source device samples then
   the samples **converted by an independent color management system**, as little-endian 16-bit numbers covering the
   device range. The reference is LittleCMS, through `transicc -n -c0` (no precalculation: each color is evaluated,
-  not interpolated in a device link); its exact version and command line are recorded in `reference`.
+  not interpolated in a device link; `-b` for black point compensation); its exact version and command line are
+  recorded in `reference`.
 - **Comparison**: two color management systems never agree bit for bit. Each entry declares `maxAbsoluteError` and
   `maxMeanAbsoluteError` in 16-bit units (257 is one level of 255; at most 64) with the measured `justification`.
   `ColorConversionGoldenTests` also fails when a declared limit is more than twice the measured difference, so a
   tolerance cannot be left wider than needed. The vectors exist to catch errors of interpretation of the ICC
-  specification (encodings, table order, tag selection, rendering intents), which change samples by whole levels and
-  which the reference of the test harness (`ReferenceIccTransform`) would share with the library.
-- **Colors**: every 8-bit level and random 16-bit values for grayscale sources; a 7-level grid and random colors for
-  RGB sources. For the CMYK source, exactly the grid points of its color lookup table (the device values that its
-  input tables map to the grid): the ICC specification does not define the interpolation between grid points, and
-  color management systems differ there (on this coarse 6-point table, LittleCMS and Apple ColorSync are several
-  levels of 255 apart for some colors; the library interpolates multilinearly, like ColorSync), while on grid points
-  they must agree. Interpolation, table-based destinations, `lutAToBType`/`lutBToAType` and black point compensation
-  are covered by `ReferenceIccTransform` and by hand-computed values in the unit tests, not by these vectors.
+  specification (encodings, table and element order, tag selection, rendering intents, media white points, black
+  points), which change samples by whole levels and which the reference of the test harness (`ReferenceIccTransform`)
+  would share with the library.
+- **Colors**: every 8-bit level for grayscale sources; a 4-level grid and 64 random 16-bit colors for RGB sources. For
+  CMYK sources, grid points of the color lookup table of the intent (the device values that its input tables map to
+  the grid; one point out of five when there are more than 300).
+- **What the vectors do not cover**, because LittleCMS is not a valid judge there (`ReferenceIccTransform` and the
+  hand-computed values of `IccColorTransformTests` cover these):
+  - *Four-channel interpolation between grid points.* The ICC specification does not define the interpolation and
+    color management systems differ: on the coarse 6-point table of the external CMYK profile, LittleCMS (linear along
+    the first input, tetrahedral on the others) and Apple ColorSync (multilinear, like the library) are several levels
+    of 255 apart for some colors, while they agree on grid points. For one and three inputs the two systems use the
+    same interpolation as the library, so those colors are not restricted to grid points.
+  - *Black point compensation where LittleCMS 2.19 was observed not to follow the published algorithm.* It applies no
+    compensation with the relative colorimetric intent to a table-based monochrome profile whose device black is not
+    black, nor (with the CMYK output profile of macOS) to a CMYK output profile used as a source; and with the
+    perceptual intent of a version 4 profile it compensates even when not asked to. The library follows Adobe's
+    published algorithm in all three cases. The compensated vectors are therefore a monochrome profile
+    with a tone curve (both directions) and a version 2 table-based monochrome profile with the perceptual intent
+    (as a destination, where the black point is read from the round trip of a lightness ramp, and as a source).
 
 ## Comparison policies
 
@@ -630,7 +649,7 @@ build to detect reference drift.
   (`Common/HandAssembledCorpus.cs`).
 - `icc` (`IccCorpus.cs`; any OS, `transicc` of LittleCMS 2.19 pinned in the generator) writes the `colorProfiles` and
   `colorTransforms` sections and the `icc/` directory, and keeps every image fixture; the image generators keep these
-  sections. The profiles are never downloaded by the generator: pass the `profiles` directory of a checkout of
+  sections. The synthetic profiles are built by the generator. The external profiles are never downloaded by it: pass the `profiles` directory of a checkout of
   Compact-ICC-Profiles at the commit pinned in the generator with `--icc-profiles <directory>`; each file is checked
   against its pinned SHA-256. The tolerances are literals of the generator, measured with `ColorConversionGoldenTests`.
 
@@ -699,8 +718,9 @@ output does not carry the tool's license.
 
 Metadata payloads embedded in fixtures (EXIF blocks, XMP packets, text, and the small ICC v4.3 test profiles built by
 `icc_profile` in the generator) are hand-built test data under `CC0-1.0`. Never embed third-party ICC profiles (for
-example vendor sRGB profiles) unless their license is on the allow-list. The profiles of `icc/profiles/` are
-third-party files under `CC0-1.0` (Compact-ICC-Profiles); they are stored unmodified.
+example vendor sRGB profiles) unless their license is on the allow-list. The profiles of `icc/profiles/` are either
+third-party files under `CC0-1.0` (Compact-ICC-Profiles), stored unmodified, or synthetic profiles built by the
+generator (`synthetic-*`, `CC0-1.0`).
 
 Adding another license (for example the custom permissive terms of PngSuite as `LicenseRef-PngSuite`) requires a
 reviewed change that updates the allow-list in **both** `manifest.schema.json` and `FixtureManifestValidator`, and adds the

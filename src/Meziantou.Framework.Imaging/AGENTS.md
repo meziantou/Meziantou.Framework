@@ -109,7 +109,10 @@ everything is under `Internals/Color`.
   reference of the harness (`ReferenceIccTransform`, `ColorConversionReferenceTests`), and colors converted by LittleCMS
   (`colorTransforms` of the corpus, `ColorConversionGoldenTests`). The reference shares the reading of the
   specification with the library: only the LittleCMS vectors and the literals catch an error of interpretation, so a
-  new tag type or encoding needs one of them.
+  new tag type or encoding needs one of them. Synthetic profiles are built by `Common/IccProfileBuilder.cs` of the
+  corpus generator (no dependency on the library), shared with the tests through `IccTestProfiles`: add a profile
+  there, then a conversion to `IccCorpus.cs`. The fixtures README lists what LittleCMS cannot judge (CMYK
+  interpolation between grid points, three black point compensation cases).
 - Pixels and their profile change together: `ConvertColorProfile` is transactional. No other operation converts colors.
 
 ## Performance work

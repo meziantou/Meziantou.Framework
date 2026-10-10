@@ -181,5 +181,3 @@ dotnet publish tests/Meziantou.Framework.Imaging.AotSmoke -c Release -f net11.0 
   play counts, and error categories. Not part of the contract: the exact encoded bytes, exception messages, internal
   types and performance numbers.
 - Enums can gain members in minor versions (new formats add `ImageFormat` members).
-- `eng/verify-package.sh` checks a packed package (target frameworks, no dependency, license, README) and
-  `eng/verify-reproducible-pack.sh` checks that two packs are identical.

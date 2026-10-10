@@ -52,9 +52,11 @@ public sealed class ResourceLimitBoundaryTests
         var decodes = context is "load" or "reader";
         Assert.Null(Run(context, data, ImageResourceLimits.Default));
 
-        AssertExactBoundary(context, data, ImageResourceLimitKind.Width, expected.Width);
-        AssertExactBoundary(context, data, ImageResourceLimitKind.Height, expected.Height);
-        AssertExactBoundary(context, data, ImageResourceLimitKind.FramePixels, framePixels);
+        // The canvas limits apply to the coded image, which is larger than the image when a clean aperture crops it
+        var (limitedWidth, limitedHeight) = FixtureTraits.GetLimitedCanvas(fixture);
+        AssertExactBoundary(context, data, ImageResourceLimitKind.Width, limitedWidth);
+        AssertExactBoundary(context, data, ImageResourceLimitKind.Height, limitedHeight);
+        AssertExactBoundary(context, data, ImageResourceLimitKind.FramePixels, (long)limitedWidth * limitedHeight);
         if (full)
         {
             AssertExactBoundary(context, data, ImageResourceLimitKind.Frames, displayed + poster);
@@ -76,12 +78,22 @@ public sealed class ResourceLimitBoundaryTests
             Assert.Null(Run(context, data, Limits(ImageResourceLimitKind.Frames, 1)));
             Assert.Null(Run(context, data, Limits(ImageResourceLimitKind.TotalPixels, 1)));
             var header = Measure(context, data, ImageResourceLimitKind.EncodedBytes, data.Length);
-            Assert.True(header < data.Length, $"Header identification consumed the whole input ({header} bytes)");
+            if (FixtureTraits.HeaderIdentificationReadsWholeInput(fixture))
+            {
+                // The box that describes the image is the last one of the file: the media data come first or are inside it
+                Assert.Equal(data.Length, header);
+            }
+            else
+            {
+                Assert.True(header < data.Length, $"Header identification consumed the whole input ({header} bytes)");
+            }
         }
 
         if (decodes)
         {
-            AssertExactBoundary(context, data, ImageResourceLimitKind.TotalPixels, framePixels * displayed);
+            // The frames that are decoded without being returned count too: the hidden frames of an AVIF image sequence,
+            // and the lower layers of a layered image, each with its own size
+            AssertExactBoundary(context, data, ImageResourceLimitKind.TotalPixels, (framePixels * displayed) + FixtureTraits.GetHiddenPixelCount(fixture));
         }
 
         // Measured requirements: accepted at the measured value, one byte less fails with the right kind

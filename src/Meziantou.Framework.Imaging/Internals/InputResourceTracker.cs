@@ -64,6 +64,19 @@ internal sealed class InputResourceTracker
         Frames = (int)frames;
     }
 
+    /// <summary>
+    /// Charges the pixels of a frame that is decoded but not displayed, such as a frame of a video bitstream that only serves
+    /// as a reference: they count toward <see cref="ImageResourceLimits.MaxTotalPixels"/>, since a few bytes can describe a
+    /// large frame, but no frame is counted.
+    /// </summary>
+    /// <param name="count">The number of pixels (non-negative).</param>
+    /// <exception cref="ImageResourceLimitException">The limit is exceeded; the counter is unchanged.</exception>
+    public void ChargeHiddenPixels(long count)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(count);
+        TotalPixels = Charge(TotalPixels, count, Limits.MaxTotalPixels, ImageResourceLimitKind.TotalPixels);
+    }
+
     /// <summary>Charges encoded bytes before they are consumed.</summary>
     /// <param name="count">The number of bytes (non-negative).</param>
     /// <exception cref="ImageResourceLimitException">The limit is exceeded; the counter is unchanged.</exception>

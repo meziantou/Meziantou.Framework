@@ -2,7 +2,7 @@ using System.Collections.ObjectModel;
 
 namespace Meziantou.Framework.Imaging.Metadata;
 
-/// <summary>Mutable image-wide metadata: orientation, resolution, color profile, transfer function, EXIF, XMP and text entries.</summary>
+/// <summary>Mutable image-wide metadata: orientation, resolution, color profile, transfer function, CICP color description, EXIF, XMP and text entries.</summary>
 /// <remarks>
 /// <para>
 /// <see cref="Clone"/> produces an independent container: mutable state (such as <see cref="TextEntries"/>) is copied,
@@ -63,6 +63,17 @@ public sealed class ImageMetadata
         }
     }
 
+    /// <summary>
+    /// Gets or sets the CICP color description of the pixels, or <see langword="null"/> when none is signalled (the pixels are
+    /// assumed sRGB, or described by <see cref="IccProfile"/>).
+    /// </summary>
+    /// <remarks>
+    /// This is a label: no operation converts the pixels. When an <see cref="IccProfile"/> is also present, the profile
+    /// describes the color primaries and the transfer function. Only AVIF stores a description; encoders treat a description
+    /// that is not equivalent to sRGB as metadata they cannot store (<see cref="Formats.ImageEncoder.MetadataHandling"/>).
+    /// </remarks>
+    public CicpColorDescription? Cicp { get; set; }
+
     /// <summary>Gets or sets the EXIF profile, or <see langword="null"/> if none.</summary>
     public ExifProfile? ExifProfile { get; set; }
 
@@ -83,6 +94,7 @@ public sealed class ImageMetadata
             Resolution = Resolution,
             IccProfile = IccProfile,
             TransferFunction = TransferFunction,
+            Cicp = Cicp,
             ExifProfile = ExifProfile,
             XmpProfile = XmpProfile,
         };

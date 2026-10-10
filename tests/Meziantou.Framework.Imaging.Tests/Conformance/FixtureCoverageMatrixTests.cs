@@ -8,6 +8,7 @@ namespace Meziantou.Framework.Imaging.Tests.Conformance;
 /// <summary>
 /// The fixture-to-feature coverage matrix (tests/Meziantou.Framework.Imaging.Fixtures/README.md) must match the committed manifest: every
 /// count is recomputed, every row has fixtures of the expected kind, and every feature key of the manifest is mapped.
+/// The table of the AV1 conformance vectors is verified the same way against the <c>av1Vectors</c> section.
 /// </summary>
 public sealed class FixtureCoverageMatrixTests
 {
@@ -64,6 +65,38 @@ public sealed class FixtureCoverageMatrixTests
         Assert.All(keys, key => Assert.Contains(key, mapped)); // a manifest feature key is missing from the fixtures README
     }
 
+    [Fact]
+    public void Av1VectorFeatureRowsMatchTheManifest()
+    {
+        var vectors = GoldenCorpus.Default.Av1Vectors.ToList();
+        var rows = ReadTable("### AV1 vector features");
+        Assert.NotEmpty(rows);
+
+        var expected = new List<string>();
+        var actual = new List<string>();
+        foreach (var row in rows)
+        {
+            var selector = ParseSelector(row[1]);
+            var count = vectors.Count(vector => Matches(format: null, vector.Features, selector));
+            expected.Add(VectorRow(row[0], selector, count));
+            actual.Add(VectorRow(row[0], selector, ParseCount(row[2])));
+            Assert.True(count > 0, $"AV1 feature '{row[0]}' has no vector.");
+        }
+
+        AssertRows(expected, actual);
+
+        static string VectorRow(string name, string[] selector, int count)
+            => $"| {name} | {string.Join(" + ", selector.Select(tag => $"`{tag}`"))} | {count} |";
+    }
+
+    [Fact]
+    public void EveryAv1VectorFeatureKeyIsMapped()
+    {
+        var mapped = ReadTable("### AV1 vector features").SelectMany(row => ParseSelector(row[1])).Select(GetKey).ToHashSet(StringComparer.Ordinal);
+        var keys = GoldenCorpus.Default.Av1Vectors.SelectMany(vector => vector.Features).Select(GetKey).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal);
+        Assert.All(keys, key => Assert.Contains(key, mapped)); // a feature key of the av1Vectors section is missing from the fixtures README
+    }
+
     private static void AssertRows(List<string> expected, List<string> actual)
     {
         if (!expected.SequenceEqual(actual, StringComparer.Ordinal))
@@ -76,15 +109,17 @@ public sealed class FixtureCoverageMatrixTests
         return [.. Kinds.Select(kind => list.Count(entry => entry.Kind == kind))];
     }
 
-    private static bool Matches(FixtureEntry entry, string[] selector)
+    private static bool Matches(FixtureEntry entry, string[] selector) => Matches(entry.Format, entry.Features ?? [], selector);
+
+    private static bool Matches(string? format, IReadOnlyList<string> features, string[] selector)
         => selector.All(tag =>
         {
             var key = GetKey(tag);
             var separator = tag.IndexOf('=', StringComparison.Ordinal);
             if (key == "format")
-                return entry.Format == tag[(separator + 1)..];
+                return format == tag[(separator + 1)..];
 
-            return (entry.Features ?? []).Any(feature =>
+            return features.Any(feature =>
             {
                 if (GetKey(feature) != key)
                     return false;

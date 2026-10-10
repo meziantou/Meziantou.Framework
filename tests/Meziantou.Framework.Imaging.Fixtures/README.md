@@ -5,7 +5,8 @@ Independent reference data for the conformance and interop tests, extended with 
 - `manifest.json` — the versioned manifest (schema version 2: `manifest.schema.json`), **written by the reviewed generator**
   `tools/Meziantou.Framework.Imaging.CorpusGenerator` (a .NET console app: the `golden` generator, `GoldenCorpus.cs`, writes
   the PNG, APNG, GIF and JPEG entries; WebP entries: `webp`, `WebPCorpus.cs`; QOI entries: `qoi`, `QoiCorpus.cs`; BMP entries:
-  `bmp`, `BmpCorpus.cs`; TGA entries: `tga`, `TgaCorpus.cs`; Netpbm entries: `pnm`, `PnmCorpus.cs`). Every file of this folder except this README, the manifest, the schema and `LICENSES/` is listed with
+  `bmp`, `BmpCorpus.cs`; TGA entries: `tga`, `TgaCorpus.cs`; Netpbm entries: `pnm`, `PnmCorpus.cs`; the AV1 conformance
+  vectors of the `av1Vectors` section: `avif`, `AvifCorpus.cs`; AVIF entries: `avif-container`, `AvifCorpus.Container.cs`). Every file of this folder except this README, the manifest, the schema and `LICENSES/` is listed with
   its SHA-256 hash, provenance and license.
 - The folder is copied to `<test output>/Fixtures` by the conformance and interop test projects
   (`FixtureRoot.GetDirectory()`). Tests never read fixtures from the source tree, never download anything and never run
@@ -13,19 +14,22 @@ Independent reference data for the conformance and interop tests, extended with 
 - `GoldenCorpus.Default` loads the manifest and validates it completely (`FixtureManifestValidator`) before any pixel
   comparison; `CorpusManifestTests` reports every problem.
 - Licensing and provenance rules: [Licensing and provenance](#licensing-and-provenance). Feature coverage:
-  [Fixture coverage matrix](#fixture-coverage-matrix).
+  [Fixture coverage matrix](#fixture-coverage-matrix) and, for the AV1 decoder, [AV1 conformance vectors](#av1-conformance-vectors).
 
 ## Layout
 
 ```
 tests/Meziantou.Framework.Imaging.Fixtures/
-  png/   apng/   gif/   jpeg/   webp/   qoi/   bmp/   tga/   pnm/ encoded inputs and their raw references
+  png/   apng/   gif/   jpeg/   webp/   qoi/   bmp/   tga/   pnm/   avif/ encoded inputs and their raw references
   invalid/<format>/                   malformed, unsupported or over-limit inputs (expected errors, no expected pixels)
+  limit/avif/                         over-limit inputs that are not valid fixtures (an AVIF sequence with hidden frames)
+  av1/                                raw AV1 OBU streams (*.obu): conformance vectors with plane digests, no raw references
   LICENSES/                           full texts of non-standard licenses (none yet)
 ```
 
 - Fixture ids are lowercase paths without extension (`png/gray16-low-bit-gradient`); `format` is the container
-  (`png` for PNG and APNG, `gif`, `jpeg`, `webp`, `qoi`, `bmp`, `tga`, `pnm` for every Netpbm variant).
+  (`png` for PNG and APNG, `gif`, `jpeg`, `webp`, `qoi`, `bmp`, `tga`, `pnm` for every Netpbm variant, `avif` for AVIF
+  still images and image sequences).
 - Kinds: `valid` (expected pixels and metadata), `invalid` (malformed: expected exception), `unsupported` (recognized but
   unsupported feature: `UnsupportedImageFeatureException`), `limit` (decoded with `decodeOptions.limits`:
   `ImageResourceLimitException` with `limitKind`). Error fixtures never carry fabricated expected pixels and are kept
@@ -34,7 +38,12 @@ tests/Meziantou.Framework.Imaging.Fixtures/
   (never trusted from the requested tool flags): e.g. `png.interlace=adam7`, `png.filters=0,1,2,3,4`,
   `apng.poster=separate`, `apng.dispose=background,none,previous`, `gif.disposal=0,1,2,3`, `gif.lzw.deferredClear`,
   `jpeg.sampling=4:2:2`, `jpeg.restartInterval=2`, `webp.bitstream=vp8l`, `webp.vp8l.transform=color-indexing`,
-  `webp.blend=alpha`. Use them to select fixtures (`GoldenCorpus.GetIds(feature: ...)`).
+  `webp.blend=alpha`, `avif.grid=2x2`, `avif.seq.editList=repeat`, `avif.layers=3`, `avif.lsel=1`. Use them to select fixtures
+  (`GoldenCorpus.GetIds(feature: ...)`).
+- The files of `av1/` are **not fixtures**: they are listed in the separate `av1Vectors` section of the manifest
+  ([AV1 conformance vectors](#av1-conformance-vectors)), with the same hash, provenance and license rules. They have no
+  pixel reference, so `GoldenCorpus.Fixtures`, `GetIds` and the generic conformance suites never see them, and a fixture
+  whose id or input is under `av1/` is a validation error.
 
 ## Expected images
 
@@ -46,20 +55,38 @@ displayed frame** with its exact rational `duration` (`numerator/denominator` se
 encoded fields or the hand-written instructions, never from FFmpeg timestamps. The validator checks the conventions of
 the library: APNG `num_plays` 0 ↔ infinite; GIF NETSCAPE
 loop `L` ↔ `L + 1` plays, absent ↔ 1; WebP `ANIM` loop count 0 ↔ infinite, `N` ↔ `N` plays (the WebP container
-specification counts plays, not repetitions).
+specification counts plays, not repetitions); AVIF image sequences have no loop field: `animation.editList` records the
+edit list of the track of the color images (`repeating`, `segmentDuration`) with the duration of its track header
+(`trackDuration`; `null` when every bit is set), or `null` without edit list, and `totalPlays` must be what they mean: no
+edit list ↔ infinite; not repeating ↔ 1; repeating ↔ the track duration over the edit duration, rounded up, infinite when
+the track duration is indefinite or when the count does not fit 31 bits.
+
+AVIF inputs also record `cicp` (`{colorPrimaries, transferCharacteristics, matrixCoefficients, fullRange}`: the `colr`
+box of type `nclx`, or else the color description of the AV1 sequence header, or `null`), `bitsPerComponent` 10 and 12,
+and an `orientation` that comes from the `irot` and `imir` properties of the primary item (never from the EXIF payload,
+which may say otherwise). The canvas of an AVIF image is its clean aperture. An AVIF image sequence has no
+transformation (its orientation is 1); its `profiles.exif` and `profiles.xmp` are the items of the `meta` box of its
+track, or else of the `meta` box of the file when that box precedes the `moov` box (`ReferenceAvif.FindSequenceMetadata`),
+and `null` otherwise, whatever the `meta` box of the file holds. The frames of a sequence that are decoded without being
+shown are not frames of the fixture: their number is the `avif.seq.hiddenFrames=N` feature, which the limit tests add to
+the displayed frames (`MaxTotalPixels` counts them). A layered image (`avif.layers=N`: a frame per spatial layer) presents
+one frame, the frame of the layer its properties select, at the size of that frame (`ispe`); the frames of the layers
+below it are decoded on the way and counted too, each with its own size: their pixels are the
+`avif.layers.hiddenPixels=N` feature (`FixtureTraits.GetHiddenPixelCount` adds both to the displayed pixels).
 
 Timing and metadata expectations are parsed by the generator from the encoded bytes of every input:
 
 | Field | Meaning |
 | --- | --- |
-| `frames[].encodedDelay` | Raw delay field of the frame: APNG `fcTL` `{numerator, denominator}` as encoded (`denominator` 0 means 100) or GIF Graphic Control Extension `{hundredths}` or WebP `ANMF` `{milliseconds}` (24-bit). Required for every frame of an animated APNG/GIF/WebP (a GIF frame without GCE has none and a zero duration). The validator checks `duration` = `numerator/(denominator or 100)`, `hundredths/100` or `milliseconds/1000` exactly. |
+| `frames[].encodedDelay` | Raw delay field of the frame: APNG `fcTL` `{numerator, denominator}` as encoded (`denominator` 0 means 100) or GIF Graphic Control Extension `{hundredths}` or WebP `ANMF` `{milliseconds}` (24-bit) or the `stts` sample delta of an AVIF image sequence with the `mdhd` time scale of its media `{sampleDelta, timescale}`. Required for every frame of an animated APNG/GIF/WebP/AVIF (a GIF frame without GCE has none and a zero duration). The validator checks `duration` = `numerator/(denominator or 100)`, `hundredths/100`, `milliseconds/1000` or `sampleDelta/timescale` exactly. |
 | `resolution` | `null` (absent, or aspect ratio only: PNG `pHYs` unit 0, JFIF units 0) or `{horizontalDpi, verticalDpi, encoded: {unit, x, y}}` with `unit` `meter` (PNG `pHYs`, BMP `biXPelsPerMeter`), `inch` or `centimeter` (JFIF); the dpi values are the exact IEEE results of `x × 0.0254`, `x` or `x × 2.54`. |
-| `profiles` | `{icc, exif, xmp}`: `null` or `{sha256, length}` of the payload decoders must preserve byte for byte — the uncompressed ICC profile, the EXIF data from the TIFF header (no `Exif\0\0` prefix), the XMP packet (WebP: the `ICCP`, `EXIF` and `XMP ` chunk payloads). `iccProfile` must be `none` exactly when `profiles.icc` is `null`; an orientation other than 1 requires `profiles.exif`. |
+| `profiles` | `{icc, exif, xmp}`: `null` or `{sha256, length}` of the payload decoders must preserve byte for byte — the uncompressed ICC profile, the EXIF data from the TIFF header (no `Exif\0\0` prefix), the XMP packet (WebP: the `ICCP`, `EXIF` and `XMP ` chunk payloads; AVIF: the `colr` box of type `prof`, the `Exif` item after its offset field, the XMP `mime` item; for an image sequence, the items of `ReferenceAvif.FindSequenceMetadata`). `iccProfile` must be `none` exactly when `profiles.icc` is `null`; an orientation other than 1 requires `profiles.exif`. |
 | `transferFunction` | Optional: `srgb` (default) or `linear`, the transfer-function label of the decoded samples (`ImageMetadata.TransferFunction`), read from the QOI header colorspace; only QOI inputs may be `linear`. |
 | `text` | Text entries in file order: `{keyword, value, languageTag, translatedKeyword}` (PNG `tEXt`/`zTXt`/`iTXt` except the XMP `iTXt`; empty language tags and translated keywords are `null`). GIF comments and JPEG `COM` segments use the keyword `Comment` without language. |
 
 `EncodedFieldInspector` (test harness) reads the same raw fields from the inputs independently of the generator and of the
-library (PNG chunks, GIF blocks, JPEG marker segments, WebP RIFF chunks; no pixel decoding).
+library (PNG chunks, GIF blocks, JPEG marker segments, WebP RIFF chunks, AVIF boxes through `ReferenceAvif`; no pixel
+decoding).
 `TimingAndMetadataConformanceTests` checks that the manifest agrees with the bytes and that the library's timing,
 play-count, orientation, resolution and profile conversions turn these raw fields into the expected exact values.
 
@@ -79,7 +106,9 @@ transparent pixels) to check alpha rejection and flattening against explicitly c
 | `rowOrder` | `top-down` |
 | `compression` | `none`, or `gzip` (bounded decompression: stops one byte past `byteLength`) |
 
-Files are named `<input-name>.<role>.<layout>.raw` where role is `frame-<index>` or `poster`. 16-bit samples are always
+Files are named `<input-name>.<role>.<layout>.raw` (`.raw.gz` when compressed) where role is `frame-<index>` or `poster`.
+AVIF fixtures that present the same pixels (one coded payload in several containers: the assembled layouts, the
+orientations) share their reference files, which are named after the first of them. 16-bit samples are always
 little-endian. Every frame and the poster provide the same layouts; 16-bit fixtures always include a 16-bit layout.
 
 ## Comparison policies
@@ -100,6 +129,14 @@ little-endian. Every frame and the poster provide the same layouts; 16-bit fixtu
   checked by `Tests/Conformance/WebPDecoderConformanceTests`), and the independent cross-check is FFmpeg's libavcodec VP8
   decoding to raw `yuv420p` planes converted by the generator with exact BT.601 rationals (FFmpeg's own swscale RGB
   conversion is recorded but excluded from the tolerance: its chroma sample positions differ from centered upsampling).
+- AVIF: decoding AV1 is exact, so the samples that no matrix applies to (identity-matrix RGB, monochrome, alpha) are
+  compared exactly, lossy coding or not. Matrixed samples use `tolerance` with a maximum of **one unit**: the reference is
+  the exact-rational conversion of the planes (`TestHarness/Avif/ReferenceYuvConverter`: H.273 equations, the documented
+  bilinear chroma upsampling at the declared sample position, one rounding), and the library documents coefficients
+  rounded to 16 fractional bits. The mean is the library's measured disagreement + 0.01 (`LibraryAvifMeasurements` in
+  `AvifCorpus.Container.cs`, checked by `Tests/Conformance/AvifDecoderConformanceTests`; currently 0 for every 8-bit
+  fixture). The cross-check that justifies a tolerance is libavif `avifdec`, whose own conversion differs from the exact
+  one by 1 to 75 units (it ignores the chroma sample position); 16-bit errors are recorded on the 8-bit scale (units of 257).
 - Whatever the policy: alpha is compared exactly; dimensions, layouts, buffer lengths, frame counts, poster presence,
   durations, total plays and orientation are compared exactly. A tolerance can never mask channel swaps, missing frames,
   alpha loss or gross errors.
@@ -174,6 +211,76 @@ specifications are recorded as cross-checks with their measured error instead of
 - FFmpeg reads the fourth byte of a 32-bit BMP `BI_RGB` payload and of a 32-bit TGA whose descriptor declares no alpha bit
   as alpha, where the specifications leave it unspecified (every color sample agrees exactly).
 
+AVIF fixtures (`AvifCorpus.Container.cs`, recipes in `AvifCorpus.ContainerFixtures.cs` and `AvifCorpus.ContainerErrors.cs`):
+inputs are written by libavif `avifenc` from hand-defined patterns (two sequences by the FFmpeg `avif` muxer, around
+libaom and SVT-AV1 frames), or assembled
+box by box (`TestHarness/Avif/AvifFileBuilder`) around the AV1 payloads of such a file for what the encoders do not write:
+media data before the index, item data in `idat`, several extents, free and unknown boxes, a `mif1` major brand, 64-bit
+box sizes, a box that extends to the end of the file, files without `colr` box (after and before their media data, with
+and without color description in the bitstream) or with an ICC profile only, a grid smaller than its tiles, a 3x2 grid of
+16x16 tiles coded one by one, sequences without edit list or with `co64`/`stz2` tables, sequences with Exif and XMP items
+(`avifenc` crashes on `--exif` with several frames) in the `meta` box of the file or of the track, in `mdat` or `idat`,
+before or after the samples, and a sequence whose chunks are written from the last one to the first one. Every reference is `decoded`, never taken from one tool: the structure
+is read by `TestHarness/Avif/ReferenceAvif` (an independent reader written from ISO/IEC 14496-12, ISO/IEC 23008-12 and
+the AV1 Image File Format), the AV1 payloads of the items and of the samples are extracted and decoded to planes by
+**two** decoders, dav1d and libaom, through the pinned FFmpeg (the same command and the same rule as the
+[AV1 conformance vectors](#av1-conformance-vectors): same bytes or no reference), and the planes are converted by
+`ReferenceYuvConverter` with the matrix coefficients and the range of the `colr` box, or else of the bitstream
+(unspecified: BT.601). The generator tiles the planes of a grid before the conversion (as libavif does: the chroma
+upsampling interpolates across tile boundaries), scales the alpha plane, and applies the clean aperture. Lossless
+content is also compared with its source pattern. Cross-checks, recorded with their measured differences and never used as
+references: libavif `avifdec` for every input (its own parser, dav1d and conversion; it applies `clap`, `irot` and
+`imir`, so its output is compared with the reference displayed with the expected orientation, which confirms the
+orientation; it rejects `stz2`, in which case its measurement on the same payloads in `stsz` tables is recorded, and grid
+tiles smaller than 64 samples; it returns 8-bit monochrome samples in limited range as stored, without the range, where
+the reference scales them as ITU-T H.273 says and as `avifdec` itself does at 12 bits), and
+FFmpeg (mov demuxer, swscale) for the still images whose samples no matrix applies to. The expected durations, plays,
+orientation, color description and metadata payloads are read from the bytes by `ReferenceAvif`. Malformed, unsupported
+and over-limit inputs are assembled the same way with one defect each (two wrap a committed AV1 vector in an image
+sequence, one temporal unit per sample: frames that change size, frames that are not shown).
+
+Layered AVIF fixtures (`AvifCorpus.ContainerLayered.cs`; the errors are in `AvifCorpus.ContainerErrors.cs`). A layered
+(progressive) image is one AV1 temporal unit that holds a frame per spatial layer, each refining the previous ones; the
+image is the frame of the highest layer of the operating point, unless the `a1op` property selects another operating
+point or the `lsel` property a layer:
+
+- **Inputs.** `avifenc --progressive` (two layers of one input, the first one at half the size) and `avifenc --layered`
+  (one input per layer, 2 to 4 layers, a quality and a scale per layer) write one item with one extent per layer and an
+  `a1lx` property (`avif.a1lx`: the sizes of the layers, which a decoder does not need). avifenc writes neither `a1op`
+  nor `lsel`, and it refuses a layered grid ("Layered grid image unimplemented in avifenc") and codes one layer per frame
+  of a sequence: the files with an `lsel` or an `a1op` property (`avif.lsel=N`, 65535 for the value that selects no
+  layer; `avif.a1op=N`), the grids of layered tiles and the sequence of layered samples are assembled around the
+  payloads of avifenc files.
+- **References.** As for every AVIF fixture: the planes dav1d and libaom agree on. Both decoders output **one frame per
+  temporal unit, the shown frame of the highest spatial layer it holds** (the same rule as the
+  [layered AV1 vectors](#layered-vectors)), which is the image of a file without selection. For a coded item that selects
+  an operating point or a layer, the generator first removes from the payload what a decoder of that selection does not
+  decode, from the specification (`DecodeCodedItem`, `SelectObus`): the units outside the operating point (AV1
+  specification, section 5.3.1: a unit with an extension whose layers are not in the `operating_point_idc` of the
+  operating point is dropped) and the units of the layers above the selected one. What is left is an ordinary stream
+  whose highest layer is the selected one, which both decoders decode by themselves; the generator checks that the frame
+  they output is of the selected layer. This was chosen over asking each decoder for the layer because FFmpeg only
+  exposes that choice for dav1d (`-oppoint`, `-alllayers`), not for libaom, and a reference needs both.
+- **Cross-checks.** `avifdec` reads `a1op` and `lsel` itself and decodes the selected frame with its own parser and
+  dav1d: it agrees exactly with every reference that no matrix applies to. `avifdec --progressive --index N` on the
+  file the payloads come from is recorded as one more cross-check when layer N has the size of the image (it scales a
+  smaller layer up to the size of the last one, so it says nothing about a smaller selected frame). FFmpeg does not
+  read an item that has several extents, nor `a1op` and `lsel`: its failure on the files avifenc writes is recorded, and
+  it is not run on the files that select a layer.
+- **Lower layers.** The pixels of the shown frames that the selection leaves below the returned frame are summed from
+  the frame headers (`trace_headers`) of what is decoded: `avif.layers.hiddenPixels`. `avif.layers.scaled` tells that
+  the layers of a temporal unit have different sizes.
+- A second layer that is coded losslessly (`avif/layered-2-contents-rgb`, the tiles of `avif/layered-grid-2x1`) is also
+  compared with its source pattern.
+
+A valid AVIF fixture costs every generic suite (eager and sequential decoding, fault injection, truncation, limits,
+resize and convolution against decimal references, every encoder) a time in proportion to its pixels and its frames, so
+its content is as small as its feature allows: 8x8 for a matrix, a range, a bit depth or a metadata layout; 16x16 for film
+grain and for the sequences of 8 to 12 images; the 64x64 and 67x65 images, the grids of 64-sample tiles that `avifenc`
+writes and the 64x64 minimum of SVT-AV1 are the exceptions, each for its feature. Matrixed content is subsampled wherever
+`avifdec` converts 4:4:4 samples exactly, because a tolerance must be justified by the measured disagreement of an
+independent decoder; the 4:4:4 conversion of every matrix is checked in `Tests/Conformance/AvifContainerConformanceTests`.
+
 Malformed, unsupported and over-limit inputs are byte edits of the valid files, each confirmed by the strict transcription.
 One exception is recorded in the tests: `invalid/pnm/header-too-long` is legal Netpbm that only this library's bounded
 header (65,536 bytes) rejects.
@@ -198,6 +305,8 @@ header (65,536 bytes) rejects.
 | WebP errors | invalid: RIFF/chunk sizes past the data, `VP8X` canvas mismatch, extended file without image, VP8L bad signature/version/corrupt prefix code/truncation, VP8 bad start code/first partition overflow/truncated partition, `ALPH` bad compression method, `ANIM` missing, frame outside the canvas, truncated animation; unsupported: a VP8 interframe; limits: width, frame pixels, metadata bytes, animation frames and total pixels |
 | Metadata | `png/metadata-rgb8-profiles`: RGB ICC profile (`iCCP`), `pHYs` 3780x2835 per meter, big-endian EXIF (orientation 8, Software, Exif IFD pixel dimensions, IFD1 thumbnail placeholder), XMP `iTXt`, `tEXt`/`zTXt`/international `iTXt`, a `tEXt` after `IDAT`; `png/metadata-gray8-icc`: gray ICC profile, aspect-ratio-only `pHYs`, little-endian EXIF orientation 3. The ICC profiles are small hand-built ICC v4.3 test profiles (CC0, never applied) |
 | APNG errors | Header defects: `acTL` with zero frames or `num_plays` 2^31, partial default-image `fcTL`, `dispose_op` 3, `fdAT` before `IDAT`; structure defects: sequence gap, region outside the canvas, fewer/more frames than declared, `fcTL` without data, `blend_op` 2, `fdAT` shorter than its sequence number; frame datastream defects (`fdAT` zlib truncated, one extra scanline); limits: `MaxFrames` counting the poster, `MaxTotalPixels` counting full-canvas displayed frames (decode-only) |
+| AVIF | lossless identity-matrix RGB at 8, 10 and 12 bits, monochrome (lossless and lossy at 8, 10 and 12 bits, full and limited range), alpha at 8, 10 and 12 bits (lossless, lossy, under limited-range colors, under lossless colors; hidden colors kept), gray + alpha; lossy 4:4:4 / 4:2:2 / 4:2:0 with the BT.709, FCC, BT.470BG, BT.601, SMPTE 240M, YCgCo and BT.2020 matrices and unspecified coefficients, in full and limited range, at 8, 10 (HDR 9/16/9) and 12 bits; sizes 1x1, 5x1, 1x5, odd 4:2:0 and 4:2:2 images at every depth, 33x17, 64x64, 67x65; vertical and co-located chroma samples (y4m inputs); a lossless 2x2 grid, lossy 4:2:0 2x1 (with alpha) and 3x1 grids, a 1x3 grid with an alpha grid, a 10-bit 2x1 grid, a 3x2 grid of 16x16 tiles, a grid cropped below its tiles, a grid whose tiles repeat its `clap`, `irot` and `imir` as avifenc writes them; `irot` 0-3, `imir` 0-1 and both; a clean aperture followed by a rotation, and one on 4:2:0 content; Exif (whose orientation tag contradicts `irot`), XMP and ICC, an ICC profile without `nclx`; colr variants of one payload (`nclx` overriding the bitstream, no `colr` box with identity, BT.709 and undescribed bitstreams, after and before the media data); film grain (4:2:0, odd, monochrome 10-bit, 4:2:2 10-bit limited, 4:4:4 12-bit with chroma scaled from luma, under an alpha plane); assembled layouts (`layout-*`); sequences: lossless with three durations and infinite repetition, alpha with two repetitions, 10-bit played once at 1001/30000 s, 8 to 12 images with inter frames and frames that are not shown (4:2:0, 4:4:4 at speed 2, 4:2:2 with key frames every three images, monochrome, 10-bit, lossless 12-bit, a lossy alpha track, 10-bit alpha), XMP in the `meta` box of the track and an ICC profile (avifenc), Exif and XMP in the `meta` box of the file or of the track with their data in `mdat`, in `idat` and after the samples, a track `meta` box that wins over the file one, a file `meta` box after `moov` (not read), chunks written in reverse order, two from the FFmpeg muxer (libaom, SVT-AV1), no edit list, `mdat` first, `co64` + `stz2` + one sample per chunk; layered images: `--progressive` (4:2:0, identity-matrix 10-bit, with a layered alpha item), `--layered` with 2, 3 and 4 quality layers (4:2:0 limited range, identity, monochrome 12-bit), three layers of growing sizes (4:2:2 10-bit), a second layer that is another picture, coded losslessly; `lsel` 0xFFFF, 0, 1, 2 and 3, `a1op` 0, 1 and 2, both together, a selected frame smaller than the last layer (`ispe` of its size) by `lsel` and by `a1op`, `lsel` on 4:2:0 content; a grid of two layered tiles, grids whose tiles select their own layer and their own operating point; a sequence of two layered samples |
+| AVIF errors | invalid: truncated `meta` box and item data, a box smaller than its header, a child box larger than its parent, no file type box and no AVIF brand (unknown format), no `pitm`, primary item, `ispe` or `av1C`, two `meta` boxes, item data outside the file and outside `idat`, `ispe` and `av1C` contradicting the bitstream, an `a1op` operating point the sequence header does not have (one and three operating points), an `lsel` layer the bitstream does not have (one and three layers) or that its operating point does not have, layer 4, a selected frame of another size than `ispe`, `lsel` and `a1op` on a grid item, grids (tile count, descriptor size, tile sizes), a sequence without AV1 track, without chunk offsets, truncated, with a malformed `meta` box in its track, with a metadata item of its track or of the file located after the end of the file; unsupported: premultiplied alpha, `iden`/`iovl` derived images, fractional `clap`, `clap` after `irot`, an essential unknown property, ICtCp matrix coefficients, an alpha plane of another size, `moof`, an edit that skips the start of the track or that ends before the last image starts, ICtCp matrix coefficients in the sample entry of a sequence, a grid tile that declares another rotation than its grid, a sequence whose images change size; limits: width, height, frame pixels, encoded bytes, live allocations, metadata bytes (ICC, then Exif; the XMP packet of a sequence), sequence frames, displayed pixels, frames that are decoded without being shown, and the lower layers of a layered image |
 | Errors | PNG header defects (bad IHDR CRC, IHDR not first, illegal bit depth, chunk length above 2^31 - 1, unknown critical chunk `CgBI` — unsupported), structure defects (truncated IDAT, bad IDAT CRC, non-consecutive IDAT, PLTE after IDAT, missing IEND) and pixel-data defects with valid containers (truncated zlib, missing or wrong Adler-32, bytes after the zlib datastream, one extra scanline, one missing scanline, filter type 5, out-of-range palette index); truncated GIF image data, GIF plain-text extension (unsupported), arithmetic-coded JPEG (unsupported); GIF LZW and color-table defects inside valid containers (code above the next table code, table code after a clear, end code too early, data ending without end code, too many indices, a string exceeding the image, an index outside the table, no color table) and block defects (unknown block, 3-byte Graphic Control Extension, minimum code size 12, missing trailer, no image, empty logical screen); resource limits: frame count, GIF displayed pixels (`MaxTotalPixels`, decode-only), width, frame pixels, encoded bytes (reached at IEND), and a `zTXt` whose 171-byte zlib stream inflates to 25,801 bytes with `MaxMetadataBytes` = 4096 (deterministic fixed-Huffman stream written by the generator) |
 
 ## Fixture coverage matrix
@@ -229,6 +338,7 @@ follows it, so keep both headings unique in this file.
 
 | Format | Valid | Invalid | Unsupported | Limit |
 | --- | --- | --- | --- | --- |
+| avif | 139 | 33 | 14 | 12 |
 | bmp | 13 | 12 | 6 | 2 |
 | gif | 24 | 15 | 1 | 2 |
 | jpeg | 42 | 15 | 5 | 1 |
@@ -474,9 +584,494 @@ follows it, so keep both headings unique in this file.
 | Netpbm bytes after the first image (not read) | `pnm.trailingData` | 3 | 0 | 0 | 0 |
 | Netpbm odd width | `pnm.width=odd` | 15 | 0 | 0 | 2 |
 | Netpbm unsupported PAM tuple type (rejected) | `pnm.unsupported=tuple-type` | 0 | 0 | 1 | 0 |
+| AVIF 8-bit samples | `avif.bitDepth=8` | 103 | 0 | 0 | 0 |
+| AVIF 10-bit samples | `avif.bitDepth=10` | 22 | 0 | 0 | 0 |
+| AVIF 12-bit samples | `avif.bitDepth=12` | 14 | 0 | 0 | 0 |
+| AVIF 4:2:0, 10-bit | `avif.subsampling=4:2:0` + `avif.bitDepth=10` | 5 | 0 | 0 | 0 |
+| AVIF 4:2:0, 12-bit | `avif.subsampling=4:2:0` + `avif.bitDepth=12` | 4 | 0 | 0 | 0 |
+| AVIF 4:4:4 | `avif.subsampling=4:4:4` | 71 | 0 | 0 | 0 |
+| AVIF 4:2:2 | `avif.subsampling=4:2:2` | 17 | 0 | 0 | 0 |
+| AVIF 4:2:0 | `avif.subsampling=4:2:0` | 37 | 0 | 0 | 0 |
+| AVIF monochrome | `avif.subsampling=4:0:0` | 14 | 0 | 0 | 0 |
+| AVIF monochrome, 10-bit | `avif.subsampling=4:0:0` + `avif.bitDepth=10` | 4 | 0 | 0 | 0 |
+| AVIF monochrome, 12-bit | `avif.subsampling=4:0:0` + `avif.bitDepth=12` | 4 | 0 | 0 | 0 |
+| AVIF monochrome, limited range | `avif.subsampling=4:0:0` + `avif.range=limited` | 2 | 0 | 0 | 0 |
+| AVIF identity matrix (RGB planes) | `avif.matrix=0` | 59 | 0 | 0 | 0 |
+| AVIF BT.709 matrix | `avif.matrix=1` | 15 | 0 | 0 | 0 |
+| AVIF unspecified matrix (BT.601) | `avif.matrix=2` | 5 | 0 | 0 | 0 |
+| AVIF FCC matrix | `avif.matrix=4` | 2 | 0 | 0 | 0 |
+| AVIF BT.470BG matrix | `avif.matrix=5` | 2 | 0 | 0 | 0 |
+| AVIF BT.601 matrix | `avif.matrix=6` | 30 | 0 | 0 | 0 |
+| AVIF SMPTE 240M matrix | `avif.matrix=7` | 2 | 0 | 0 | 0 |
+| AVIF YCgCo matrix | `avif.matrix=8` | 3 | 0 | 0 | 0 |
+| AVIF BT.2020 non-constant luminance matrix | `avif.matrix=9` | 7 | 0 | 0 | 0 |
+| AVIF BT.2020 matrix, limited range | `avif.matrix=9` + `avif.range=limited` | 3 | 0 | 0 | 0 |
+| AVIF BT.2020 matrix, full range | `avif.matrix=9` + `avif.range=full` | 4 | 0 | 0 | 0 |
+| AVIF full range | `avif.range=full` | 115 | 0 | 0 | 0 |
+| AVIF limited range | `avif.range=limited` | 24 | 0 | 0 | 0 |
+| AVIF color description (`colr` `nclx`) | `avif.colr=nclx` | 131 | 0 | 0 | 0 |
+| AVIF ICC profile (`colr` `prof`) | `avif.colr=icc` | 3 | 0 | 0 | 0 |
+| AVIF color description of the bitstream (no `colr`) | `avif.colr=none` | 7 | 0 | 0 | 0 |
+| AVIF no `colr` box and media data first (a header identification cannot tell the color model) | `avif.colr=none` + `avif.layout=media-first` | 2 | 0 | 0 | 0 |
+| AVIF chroma samples on the luma columns | `avif.chromaSamplePosition=vertical` | 1 | 0 | 0 | 0 |
+| AVIF co-located chroma samples | `avif.chromaSamplePosition=colocated` | 1 | 0 | 0 | 0 |
+| AVIF lossless AV1 coding | `avif.lossless` | 45 | 0 | 0 | 0 |
+| AVIF film grain | `avif.filmGrain` | 6 | 0 | 0 | 0 |
+| AVIF film grain, 4:2:2 | `avif.filmGrain` + `avif.subsampling=4:2:2` | 1 | 0 | 0 | 0 |
+| AVIF film grain, 4:4:4 | `avif.filmGrain` + `avif.subsampling=4:4:4` | 1 | 0 | 0 | 0 |
+| AVIF film grain, 12-bit | `avif.filmGrain` + `avif.bitDepth=12` | 1 | 0 | 0 | 0 |
+| AVIF film grain under an alpha plane | `avif.filmGrain` + `avif.alpha` | 1 | 0 | 0 | 0 |
+| AVIF alpha (auxiliary image or track) | `avif.alpha` | 19 | 0 | 0 | 0 |
+| AVIF alpha, 10-bit | `avif.alpha` + `avif.bitDepth=10` | 4 | 0 | 0 | 0 |
+| AVIF alpha, 12-bit | `avif.alpha` + `avif.bitDepth=12` | 2 | 0 | 0 | 0 |
+| AVIF alpha under limited-range colors | `avif.alpha` + `avif.range=limited` | 1 | 0 | 0 | 0 |
+| AVIF grids | `avif.grid` | 11 | 0 | 0 | 0 |
+| AVIF grid of 3 columns | `avif.grid=3x1` | 1 | 0 | 0 | 0 |
+| AVIF grid of 3 rows | `avif.grid=1x3` | 1 | 0 | 0 | 0 |
+| AVIF grid of 3 columns and 2 rows | `avif.grid=3x2` | 1 | 0 | 0 | 0 |
+| AVIF grid with an alpha grid | `avif.grid` + `avif.alpha` | 2 | 0 | 0 | 0 |
+| AVIF grid of 10-bit tiles | `avif.grid` + `avif.bitDepth=10` | 1 | 0 | 0 | 0 |
+| AVIF grid whose tiles repeat its transformations (as avifenc writes them) | `avif.gridTileTransforms` | 1 | 0 | 0 | 0 |
+| AVIF rotation (`irot`) | `avif.irot` | 9 | 0 | 0 | 0 |
+| AVIF mirror (`imir`) | `avif.imir` | 4 | 0 | 0 | 0 |
+| AVIF rotation and mirror | `avif.irot` + `avif.imir` | 2 | 0 | 0 | 0 |
+| AVIF clean aperture (`clap`) | `avif.clap` | 3 | 0 | 0 | 0 |
+| AVIF Exif item | `avif.metadata=exif` | 8 | 0 | 0 | 0 |
+| AVIF XMP item | `avif.metadata=xmp` | 10 | 0 | 0 | 0 |
+| AVIF major brand `avif` | `avif.majorBrand=avif` | 110 | 0 | 0 | 0 |
+| AVIF major brand `avis` | `avif.majorBrand=avis` | 28 | 0 | 0 | 0 |
+| AVIF major brand `mif1`, `avif` compatible | `avif.majorBrand=mif1` | 1 | 0 | 0 | 0 |
+| AVIF media data before their index | `avif.layout=media-first` | 4 | 0 | 0 | 0 |
+| AVIF item data in `idat` | `avif.idat` | 3 | 0 | 0 | 0 |
+| AVIF item in several extents | `avif.extents` | 9 | 0 | 0 | 0 |
+| AVIF `free` boxes | `avif.boxes=free` | 1 | 0 | 0 | 0 |
+| AVIF unknown boxes (skipped) | `avif.boxes=unknown` | 1 | 0 | 0 | 0 |
+| AVIF 64-bit box sizes | `avif.boxes=large-size` | 1 | 0 | 0 | 0 |
+| AVIF box that extends to the end of the file | `avif.boxes=to-end` | 1 | 0 | 0 | 0 |
+| AVIF bytes after the last item (not read) | `avif.trailingData` | 1 | 0 | 0 | 0 |
+| AVIF image sequences | `avif.sequence` | 28 | 0 | 0 | 0 |
+| AVIF sequence with inter frames | `avif.seq.interFrames` | 28 | 0 | 0 | 0 |
+| AVIF sequence with frames that are decoded without being shown | `avif.seq.hiddenFrames` | 7 | 0 | 0 | 0 |
+| AVIF sequence, monochrome | `avif.sequence` + `avif.subsampling=4:0:0` | 2 | 0 | 0 | 0 |
+| AVIF sequence, 4:2:2 | `avif.sequence` + `avif.subsampling=4:2:2` | 1 | 0 | 0 | 0 |
+| AVIF sequence, 10-bit | `avif.sequence` + `avif.bitDepth=10` | 3 | 0 | 0 | 0 |
+| AVIF sequence, 12-bit | `avif.sequence` + `avif.bitDepth=12` | 1 | 0 | 0 | 0 |
+| AVIF sequence with an alpha track | `avif.sequence` + `avif.alpha` | 6 | 0 | 0 | 0 |
+| AVIF sequence with an ICC profile | `avif.sequence` + `avif.colr=icc` | 1 | 0 | 0 | 0 |
+| AVIF sequence with Exif data | `avif.sequence` + `avif.metadata=exif` | 6 | 0 | 0 | 0 |
+| AVIF sequence with an XMP packet | `avif.sequence` + `avif.metadata=xmp` | 8 | 0 | 0 | 0 |
+| AVIF sequence metadata in the `meta` box of the track | `avif.seq.metadataSource=track` | 5 | 0 | 0 | 0 |
+| AVIF sequence metadata in the `meta` box of the file | `avif.seq.metadataSource=file` | 3 | 0 | 0 | 0 |
+| AVIF sequence metadata in an `idat` box | `avif.sequence` + `avif.idat` | 2 | 0 | 0 | 0 |
+| AVIF sequence metadata whose data follow the samples | `avif.seq.metadataAfterSamples` | 2 | 0 | 0 | 0 |
+| AVIF sequence whose file-level Exif and XMP items are not its metadata | `avif.seq.fileMetadataNotRead` | 2 | 0 | 0 | 0 |
+| AVIF sequence whose first sample is not the first one in the file | `avif.seq.samplesOutOfOrder` | 1 | 0 | 0 | 0 |
+| AVIF sequence without edit list (infinite) | `avif.seq.editList=none` | 2 | 0 | 0 | 0 |
+| AVIF sequence played once | `avif.seq.editList=once` | 2 | 0 | 0 | 0 |
+| AVIF sequence repeated a number of times | `avif.seq.editList=repeat` | 6 | 0 | 0 | 0 |
+| AVIF sequence repeated forever (indefinite track duration) | `avif.seq.editList=repeat-indefinite` | 18 | 0 | 0 | 0 |
+| AVIF sample sizes in `stsz` | `avif.seq.sampleSizes=stsz` | 27 | 0 | 0 | 0 |
+| AVIF compact sample sizes (`stz2`) | `avif.seq.sampleSizes=stz2` | 1 | 0 | 0 | 0 |
+| AVIF chunk offsets in `stco` | `avif.seq.chunkOffsets=stco` | 27 | 0 | 0 | 0 |
+| AVIF 64-bit chunk offsets (`co64`) | `avif.seq.chunkOffsets=co64` | 1 | 0 | 0 | 0 |
+| AVIF layered images (a frame per spatial layer) | `avif.layers` | 24 | 0 | 0 | 0 |
+| AVIF layered image, 2 layers | `avif.layers=2` | 10 | 0 | 0 | 0 |
+| AVIF layered image, 3 layers | `avif.layers=3` | 12 | 0 | 0 | 0 |
+| AVIF layered image, 4 layers | `avif.layers=4` | 2 | 0 | 0 | 0 |
+| AVIF layers of growing sizes | `avif.layers.scaled` | 7 | 0 | 0 | 0 |
+| AVIF lower layers that are decoded without being returned | `avif.layers.hiddenPixels` | 18 | 0 | 0 | 0 |
+| AVIF layer sizes (`a1lx`, not needed) | `avif.a1lx` | 23 | 0 | 0 | 0 |
+| AVIF layered image with a layered alpha plane | `avif.layers` + `avif.alpha` | 1 | 0 | 0 | 0 |
+| AVIF layered image, 10-bit | `avif.layers` + `avif.bitDepth=10` | 4 | 0 | 0 | 0 |
+| AVIF layered image, 12-bit | `avif.layers` + `avif.bitDepth=12` | 2 | 0 | 0 | 0 |
+| AVIF layered image, monochrome | `avif.layers` + `avif.subsampling=4:0:0` | 2 | 0 | 0 | 0 |
+| AVIF layered image, 4:2:0 | `avif.layers` + `avif.subsampling=4:2:0` | 4 | 0 | 0 | 0 |
+| AVIF layered image, 4:2:2 | `avif.layers` + `avif.subsampling=4:2:2` | 1 | 0 | 0 | 0 |
+| AVIF grid of layered tiles | `avif.layers` + `avif.grid` | 3 | 0 | 0 | 0 |
+| AVIF sequence of layered samples | `avif.layers` + `avif.sequence` | 1 | 0 | 0 | 0 |
+| AVIF layer selection (`lsel`) | `avif.lsel` | 9 | 0 | 0 | 0 |
+| AVIF `lsel` that selects no layer (0xFFFF) | `avif.lsel=65535` | 1 | 0 | 0 | 0 |
+| AVIF `lsel` layer 0 | `avif.lsel=0` | 5 | 0 | 0 | 0 |
+| AVIF `lsel` layer 1 | `avif.lsel=1` | 2 | 0 | 0 | 0 |
+| AVIF `lsel` layer 2 | `avif.lsel=2` | 1 | 0 | 0 | 0 |
+| AVIF `lsel` layer 3 | `avif.lsel=3` | 1 | 0 | 0 | 0 |
+| AVIF `lsel` of a frame smaller than the last layer | `avif.lsel=0` + `avif.layers.scaled` | 1 | 0 | 0 | 0 |
+| AVIF operating point selection (`a1op`) | `avif.a1op` | 6 | 0 | 0 | 0 |
+| AVIF `a1op` operating point 0 | `avif.a1op=0` | 1 | 0 | 0 | 0 |
+| AVIF `a1op` operating point 1 | `avif.a1op=1` | 4 | 0 | 0 | 0 |
+| AVIF `a1op` operating point 2 | `avif.a1op=2` | 2 | 0 | 0 | 0 |
+| AVIF `a1op` and `lsel` together | `avif.a1op` + `avif.lsel` | 1 | 0 | 0 | 0 |
+| AVIF grid whose tiles select their own layer or operating point | `avif.grid` + `avif.layers=3` | 2 | 0 | 0 | 0 |
+| AVIF premultiplied alpha (rejected) | `avif.unsupported=premultiplied-alpha` | 0 | 0 | 1 | 0 |
+| AVIF derived images other than grids (rejected) | `avif.unsupported=derived-image` | 0 | 0 | 2 | 0 |
+| AVIF grid tile that declares other transformations than its grid (rejected) | `avif.unsupported=grid-tile-transform` | 0 | 0 | 1 | 0 |
+| AVIF clean aperture that is fractional or follows a rotation (rejected) | `avif.unsupported=clap` | 0 | 0 | 2 | 0 |
+| AVIF essential unknown property (rejected) | `avif.unsupported=essential-property` | 0 | 0 | 1 | 0 |
+| AVIF other matrix coefficients (rejected) | `avif.unsupported=matrix` | 0 | 0 | 2 | 0 |
+| AVIF alpha plane of another size (rejected) | `avif.unsupported=alpha-size` | 0 | 0 | 1 | 0 |
+| AVIF fragmented files (rejected) | `avif.unsupported=fragmented` | 0 | 0 | 1 | 0 |
+| AVIF edit list that does not play the whole track (rejected) | `avif.unsupported=edit-list` | 0 | 0 | 2 | 0 |
+| AVIF sequence whose images change size (rejected) | `avif.unsupported=size-change` | 0 | 0 | 1 | 0 |
 
 Not covered by fixtures, and verified elsewhere: encoder outputs (independent readers, FFmpeg and Apple ImageIO), malformed-input robustness beyond the error
 fixtures (`FuzzTests/MutationFuzzTests`, `Tests/Conformance/Hardening/TruncationTests`), and limits at every boundary (`Tests/Conformance/Hardening/ResourceLimitBoundaryTests`).
+
+## AV1 conformance vectors
+
+AV1 decoding is normative: every conforming decoder produces the same samples, film grain synthesis included. The AV1
+decoder is therefore tested below the AVIF container and the color conversion, on raw OBU streams (`av1/*.obu`, the
+"low overhead bitstream format" of the AV1 specification) whose expected output is the **SHA-256 of every plane of every
+output frame**. There are intra vectors (one or several key frames, up to 512x256) and inter vectors (2 to 30 output
+frames, up to 352x288: inter, intra-only and switch frames, hidden frames, frames shown again, frame sizes that change
+inside the stream) and layered vectors (2 to 4 spatial layers in a temporal unit: [below](#layered-vectors)). Most streams
+are what an encoder wrote; a few have a frame header patched or inter frames written by the generator, for the coding
+tools no encoder produces ([below](#vectors-an-encoder-did-not-write-alone)). The vectors are in the `av1Vectors` section
+of `manifest.json`, apart from `fixtures`:
+
+```json
+"av1Vectors": {
+  "generator": { "script": "tools/Meziantou.Framework.Imaging.CorpusGenerator/AvifCorpus.cs", "command": "...", "tools": ["ffmpeg 9.0.2", "libaom 3.15.1", "SVT-AV1 4.2.0", "libdav1d 1.5.4", "libavif 1.4.2 avifenc (aom 3.14.1)", ".NET 10.0"] },
+  "headerParser": { "name": "ffmpeg 9.0.2 (trace_headers bitstream filter)", "command": "ffmpeg ... -bsf:v trace_headers ..." },
+  "decoders": [{ "name": "libdav1d 1.5.4", "command": "ffmpeg ... -c:v libdav1d ..." }, { "name": "libaom 3.15.1", "command": "ffmpeg ... -c:v libaom-av1 ..." }],
+  "planeDigest": "SHA-256 of the samples of one plane ...",
+  "entries": [{
+    "id": "av1/lossless-gbr-8bit-34x36",
+    "input": { "path": "av1/lossless-gbr-8bit-34x36.obu", "sha256": "...", "role": "encoded" },
+    "provenance": { "origin": "generated", "license": "CC0-1.0", "generator": "...", "tools": ["ffmpeg 9.0.2", "libaom 3.15.1"], "commands": ["ffmpeg ... -c:v libaom-av1 ... -f obu {input}"] },
+    "features": ["av1.bitDepth=8", "av1.lossless", "av1.matrix=identity", "av1.subsampling=4:4:4", "..."],
+    "pixelFormat": "gbrp", "bitDepth": 8, "subsampling": "4:4:4", "frameCount": 1,
+    "frames": [{ "width": 34, "height": 36, "planes": ["<sha256 of Y>", "<sha256 of U>", "<sha256 of V>"] }]
+  }]
+}
+```
+
+- **Inputs.** Deterministic FFmpeg `lavfi` sources (`testsrc2`, `testsrc`, `mandelbrot`, `smptebars`, seeded `noise`;
+  for the inter vectors, `testsrc2` at 10 frames per second, as is or rotating around its center with `rotate`, so that
+  the motion is not a translation) encoded by libaom (`libaom-av1`) and SVT-AV1 (`libsvtav1`), single-threaded
+  (`-threads 1`, `-row-mt 0`; `lp=1` for the SVT-AV1 key-frame vectors and `lp=2` for its inter vectors: with `lp=1`
+  this build writes an empty stream as soon as there are inter frames, and without `lp` the stream with a hidden switch
+  frame came out in two forms, one run out of three) and bit-exact (`-flags +bitexact`), written as raw OBU streams (`-f obu`). The
+  exact command of each vector is in its `provenance.commands`, and the check mode of the generator proves that every
+  stream is reproduced byte for byte. Every tool comes from the FFmpeg build of the meziantou/prebuilt release pinned by
+  the `Meziantou.Prebuilt` package (the binaries of the interop tests); the versions of FFmpeg, libaom, SVT-AV1 and dav1d
+  are pinned in `AvifCorpus.PinnedTools`.
+- **Output frames.** `frames` lists what a decoder outputs, in output order: one frame per shown frame and per
+  `show_existing_frame`; a hidden frame (`show_frame = 0`) produces no output, and a frame shown again is output again.
+  When the operating point has several spatial layers, a temporal unit outputs one frame, the shown frame of its highest
+  layer ([layered vectors](#layered-vectors)).
+  Each frame has its own `width` and `height`: with reference scaling they change inside a stream, and they are then
+  smaller than the maximum of the sequence header. The generator computes the size of every output frame from the
+  headers alone, following the reference slots (`AvifCorpus.ResolveFrameSizes`), and fails when `ffprobe` reports another
+  size for a frame of either decoder or when a decoded frame does not have exactly the bytes of that size.
+- **Plane digests.** Each stream is decoded by two independent AV1 decoders, dav1d (`-c:v libdav1d`) and libaom
+  (`-c:v libaom-av1`), to raw planes in the native pixel format of the stream (`pixelFormat`; `ffprobe` must report that
+  format for every frame of both decoders, so no swscale conversion takes part), one raw file per output frame and
+  without scaling (`-noautoscale -f image2 -c:v rawvideo`), so that a frame is never resampled to the size of the first
+  one. **A digest is recorded only when both decoders produce the same bytes for every plane of every output frame, in
+  output order**; when they disagree or when either of them rejects the stream, the generation fails for that vector:
+  a digest from a single decoder is never committed. Film grain is applied by both decoders (their default), and the
+  generator checks that decoding without it gives other samples.
+- **Digest layout** (`planeDigest`): the samples of one plane, rows in order, exactly plane-width samples per row,
+  1 byte per sample for 8-bit streams and 2 little-endian bytes for 10 and 12-bit streams, no padding. Planes are in
+  bitstream order Y, U, V; for an identity-matrix stream (`av1.matrix=identity`) that is FFmpeg's planar GBR order
+  G, B, R. A monochrome stream (`4:0:0`) has one plane. `width` and `height` are those of the luma plane after
+  super-resolution upscaling; a chroma plane is `(width + subsampling_x) >> subsampling_x` samples wide and
+  `(height + subsampling_y) >> subsampling_y` rows high.
+- **Features** are what the sequence header and the frame headers signal, as parsed by a third implementation, FFmpeg's
+  `trace_headers` bitstream filter: never the encoder options, which do not guarantee that a tool is used. A value of a
+  multi-frame vector lists the distinct values of its frames (hidden frames included; a `show_existing_frame` header
+  codes nothing else). The tags of the inter tools (`av1.reference_select`, `av1.interpolation_filter`,
+  `av1.primary_ref_frame`, `av1.gm`...) are those of the inter and switch frames; `av1.frame_types` is absent from a
+  stream made of key frames. Each recipe declares the tags it exists for (`Av1Vector.Requires`), and the generation
+  fails when the encoder did not produce them.
+- **Coding tools.** The headers do not tell which tools the blocks use (palette, chroma from luma, intra block copy,
+  compound prediction types, overlapped and warped motion compensation, scaled references, 64-point transforms...).
+  `Tests/Conformance/Av1ToolCoverageTests` decodes every vector and requires that, together, they reach every tool the
+  decoder reports (`Av1Tools`), without exception. The four tools that neither encoder produces (the bilinear
+  interpolation filter, an interpolation filter per direction, a predicted segment id and the reference-frame
+  segmentation feature) are each required on the vectors made for them
+  ([below](#vectors-an-encoder-did-not-write-alone)), and may be reached by no other vector.
+- **Intra and inter vectors.** An intra vector is made of shown key frames and must not signal `allow_intrabc` (libaom
+  turns it on by itself for screen content) unless it requires that tag: the two `intrabc-*` vectors. An inter vector
+  (`Av1Vector.Inter`) must have a frame that is not a shown key frame. There is no size limit ([Size](#size)): the
+  largest inputs are the two 512x256 loop restoration vectors (25 and 37 KB).
+- **Tests.** `Tests/Conformance/Av1DecoderConformanceTests` decodes every vector with the library and compares the digest
+  of each plane of each output frame, then decodes it again from a pool whose buffers are all filled with a non-zero
+  pattern (`Hardening/DirtySlabPool`): a read of uninitialized state changes the digests. `CorpusManifestTests`
+  validates the section (files, hashes, licenses, two decoders, orphan files), the feature coverage below, and what the
+  provenance of a patched or hand-authored vector claims (the bits that differ from the source vector; the key frame
+  stream the vector starts with).
+  The `verify` subcommand of the generator checks the hash of every vector and re-derives the digests with both decoders.
+
+### Vectors an encoder did not write alone
+
+Four coding tools are produced by neither libaom nor SVT-AV1, whatever their options. They are covered by vectors that
+the generator completes itself, and that are recorded like any other vector: headers and feature tags read back from the
+final stream by `trace_headers`, planes decoded by dav1d and by libaom, digests recorded only when both agree.
+
+- **Header patches** (`av1.patched_header`, `AvifCorpus.Patched`): the stream of another vector whose inter frame headers
+  code `is_filter_switchable = 0` and the 2-bit `interpolation_filter` element, with these 2 bits overwritten in every
+  such header: 3 (`BILINEAR`) or 1 (`EIGHTTAP_SMOOTH`), the two frame-level filters no encoder selects. The position of
+  the element in its OBU is the one `trace_headers` reports, and the bits found there must be the value it read. No
+  length changes and no block codes a filter, so the result is a valid stream that decodes to other pictures (the
+  encoder would not have chosen these residuals for them, which does not matter to a decoder). `provenance.parameters`
+  records the source vector (`patchOf`), the SHA-256 of its stream (`sourceSha256`), the patch and the offset of every
+  patched element (`patchedBitOffsets`); `provenance.commands` is the encoder command of the source.
+- **Hand-authored inter frames** (`av1.hand_authored`, `AvifCorpus.HandAuthored` and `Av1HandAuthoredStream.cs`): one
+  key frame encoded by libaom (128x128, 64x64 superblocks, a full sequence header), followed by inter frames written bit
+  by bit from the specification: the uncompressed header, the tile group and the symbols of the blocks, coded by an
+  arithmetic encoder that mirrors the symbol decoder of section 8.2. The frames are kept to what can be written without
+  a mode decision or a context model (2x2 tiles of one skipped 64x64 block, `disable_cdf_update = 1`), but every syntax
+  element of the tools is coded and shows in the pixels. Two recipes, each at 4:2:0 8 and 10-bit, 4:4:4 10-bit, 4:2:2
+  12-bit and monochrome 8-bit: `dual-filters` (4 frames: `enable_dual_filter` set in the sequence header, `interp_filter`
+  coded per direction with every pair of filters, a last frame with the frame-level `BILINEAR` filter) and
+  `segment-features` (8 frames: a segment map with the reference frame feature, a map predicted from the previous frame
+  with `seg_id_predicted` 1 and 0, a map that is not updated, the skip and global motion features).
+  `provenance.parameters` records the recipe (`handAuthoredRecipe`, `description`) and the key frame stream the frames
+  are appended to (`keyFrameSha256`, `keyFrameLength`); `provenance.commands` is the encoder command of the key frame.
+  The tags that `trace_headers` exposes are read back from the final stream like every other tag
+  (`av1.enable_dual_filter`, `av1.interpolation_filter=bilinear,switchable`, `av1.segmentation.features=5,6,7`: the
+  reference frame, skip and global motion features, `av1.segmentation.temporal_update`, `av1.segmentation.update_map=0,1`,
+  `av1.disable_cdf_update`, `av1.tiles=2x2`). What the blocks code is not in a header and has no tag: the filter of each
+  direction, `seg_id_predicted`, the reference a segment imposes. `Av1ToolCoverageTests` requires these tools by name on
+  these vectors (`DualInterpolationFilter` and `BilinearInterpolationFilter`; `PredictedSegmentId`,
+  `SegmentReferenceFrame`, `IntraBlockInInterFrame` and `GlobalMotionVector`), as the decoder reports them.
+
+`av1.patched_header` and `av1.hand_authored` are the only two tags that do not come from the headers.
+
+### Layered vectors
+
+Spatial layers (AV1 specification, sections 6.2.3 and 6.4.1) are what a layered (progressive) AVIF image is made of: one
+temporal unit holds a shown frame per spatial layer, each one predicting from the layer below, and the sequence header
+declares the operating points a decoder may select. No encoder option of the pinned FFmpeg codes them; libavif does,
+with libaom. The layered vectors (`AvifCorpus.Layered.cs`) are therefore **the payload of the coded item of a file
+written by `avifenc`** from a hand-defined pattern (`--layered`: one input per layer with its quality and its scale;
+`--progressive`: two layers, the first one at half the size), extracted by `ReferenceAvif`. The payload is a temporal
+delimiter (libavif keeps it, so the FFmpeg `obu` demuxer needs nothing more), a sequence header and one frame per layer.
+`provenance.commands` is the `avifenc` command of each temporal unit and `provenance.parameters.files` the SHA-256 of the
+file it wrote; everything else is recorded like any vector, from the stream: headers and tags by `trace_headers`,
+digests only when both decoders agree.
+
+- **What the decoders output.** dav1d and libaom, through FFmpeg and by default, output **one frame per temporal unit:
+  the shown frame of the highest spatial layer the unit holds** (section 7.18.1 "Output process"; dav1d: all layers off,
+  libaom: output all layers off). `frames` records that frame, and `frameCount` the number of temporal units. The
+  generator also asks dav1d for every layer (`-alllayers 1`) and checks that it outputs one frame per shown frame and
+  that the last frame of each temporal unit is the recorded one: this is what a test relies on when it asks the library
+  for every layer (`Av1Decoder.OutputAllLayers`).
+- **Tags** (from the headers, like every tag): `av1.operating_points=N` (the operating points of the sequence header),
+  `av1.operating_point_idc=0xNNN` (the first operating point, which a decoder selects by default: spatial layers in bits
+  8 to 11), `av1.spatial_layers=N` (the layers of that operating point), `av1.spatial_layer_sizes=WxH,...` (the size of
+  the shown frame of each layer, when they differ: a smaller layer is coded with `frame_size_override_flag` and the next
+  one predicts from it with reference scaling) and `av1.spatial_layers.present=N` (the layers the stream holds, when it
+  does not hold every layer of the operating point). avifenc declares one operating point per number of layers
+  (`0x701`, `0x301`, `0x101` for three layers). A stream without scalability information has none of these tags.
+- **Lower layers.** The frames of the lower layers of a layered vector have no digest of their own: FFmpeg gives no
+  access to them for libaom. They have one in the *truncated* vectors (`...-first-layer`, `...-first-N-layers`;
+  `provenance.parameters.truncationOf` and `keptSpatialLayers`): the same payload without the units of its higher layers
+  (section 5.3.1: nothing in a layer refers to a higher one). Such a stream still declares every layer, and both decoders
+  output the frame of the highest layer they find, which is the frame of that layer in the whole stream: the generator
+  checks that it is what dav1d outputs for that layer of the whole stream when it is asked for every layer.
+  `CorpusManifestTests` checks that a truncated vector is its source without those units and nothing else.
+- **Tests.** Every layered vector goes through the tests of every vector (the default output). In addition,
+  `Av1DecoderConformanceTests` decodes it with `OutputAllLayers` (one frame per layer and per temporal unit, in order,
+  with the layer and the size the tags give, the last one with the recorded digests), compares the frame of each lower
+  layer (`OutputAllLayers`, and `MaxSpatialLayer` with and without it) with the digests of the truncated vector of that
+  layer, and decodes two layered temporal units without the temporal delimiter between them and one input at a time.
+
+### AV1 vector features
+
+The table maps the decoding tools to the vectors that exercise them. It is **verified** like the
+[fixture coverage matrix](#fixture-coverage-matrix), with the same selector syntax: `FixtureCoverageMatrixTests` recomputes
+every count from the `av1Vectors` section and fails when the table is stale, when a row has no vector, or when a feature
+key recorded in the section is not mapped by any row.
+
+| Feature | Selector | Vectors |
+| --- | --- | --- |
+| Main profile | `av1.profile=0` | 144 |
+| High profile | `av1.profile=1` | 32 |
+| Professional profile | `av1.profile=2` | 45 |
+| Monochrome (4:0:0), 8-bit | `av1.subsampling=4:0:0` + `av1.bitDepth=8` | 9 |
+| Monochrome (4:0:0), 10-bit | `av1.subsampling=4:0:0` + `av1.bitDepth=10` | 4 |
+| Monochrome (4:0:0), 12-bit | `av1.subsampling=4:0:0` + `av1.bitDepth=12` | 6 |
+| 4:2:0, 8-bit | `av1.subsampling=4:2:0` + `av1.bitDepth=8` | 110 |
+| 4:2:0, 10-bit | `av1.subsampling=4:2:0` + `av1.bitDepth=10` | 21 |
+| 4:2:0, 12-bit | `av1.subsampling=4:2:0` + `av1.bitDepth=12` | 10 |
+| 4:2:2, 8-bit | `av1.subsampling=4:2:2` + `av1.bitDepth=8` | 9 |
+| 4:2:2, 10-bit | `av1.subsampling=4:2:2` + `av1.bitDepth=10` | 6 |
+| 4:2:2, 12-bit | `av1.subsampling=4:2:2` + `av1.bitDepth=12` | 7 |
+| 4:4:4, 8-bit | `av1.subsampling=4:4:4` + `av1.bitDepth=8` | 15 |
+| 4:4:4, 10-bit | `av1.subsampling=4:4:4` + `av1.bitDepth=10` | 17 |
+| 4:4:4, 12-bit | `av1.subsampling=4:4:4` + `av1.bitDepth=12` | 7 |
+| Identity matrix (planar GBR) | `av1.matrix=identity` | 4 |
+| Full-range samples | `av1.color_range=full` | 38 |
+| Lossless (Walsh-Hadamard transform) | `av1.lossless` | 13 |
+| Lossless, identity matrix | `av1.lossless` + `av1.matrix=identity` | 3 |
+| Quantizer index (every vector) | `av1.base_q_idx` | 221 |
+| Highest quantizer index | `av1.base_q_idx=255` | 1 |
+| Still picture | `av1.still_picture` | 75 |
+| Reduced still picture header | `av1.reduced_still_picture_header` | 75 |
+| Operating points in the sequence header | `av1.operating_points` | 22 |
+| First operating point with several spatial layers | `av1.operating_point_idc` | 22 |
+| 2 spatial layers | `av1.spatial_layers=2` | 11 |
+| 3 spatial layers | `av1.spatial_layers=3` | 6 |
+| 4 spatial layers | `av1.spatial_layers=4` | 5 |
+| Spatial layers of growing sizes (reference scaling between layers) | `av1.spatial_layer_sizes` | 5 |
+| Stream without its highest layers (truncated layered vector) | `av1.spatial_layers.present` | 9 |
+| Stream that only holds its first layer | `av1.spatial_layers.present=1` | 5 |
+| Spatial layers, monochrome | `av1.spatial_layers` + `av1.subsampling=4:0:0` | 2 |
+| Spatial layers, 4:2:2 | `av1.spatial_layers` + `av1.subsampling=4:2:2` | 2 |
+| Spatial layers, 4:4:4 | `av1.spatial_layers` + `av1.subsampling=4:4:4` | 8 |
+| Spatial layers, identity matrix | `av1.spatial_layers` + `av1.matrix=identity` | 1 |
+| Spatial layers, 10-bit | `av1.spatial_layers` + `av1.bitDepth=10` | 7 |
+| Spatial layers, 12-bit | `av1.spatial_layers` + `av1.bitDepth=12` | 5 |
+| Spatial layers in several temporal units | `av1.spatial_layers` + `av1.frames` | 1 |
+| Several output frames | `av1.frames` | 97 |
+| Frame types other than key frames | `av1.frame_types` | 111 |
+| Inter frames | `av1.frame_types=inter` | 111 |
+| Intra-only frames | `av1.frame_types=intra_only` | 1 |
+| Switch frames | `av1.frame_types=switch` | 2 |
+| Hidden frames (no output) | `av1.hidden_frames` | 69 |
+| Frames shown again (`show_existing_frame`) | `av1.show_existing_frame` | 59 |
+| Hidden switch frame | `av1.frame_types=switch` + `av1.hidden_frames` | 1 |
+| Inter frames, monochrome | `av1.frame_types=inter` + `av1.subsampling=4:0:0` | 9 |
+| Inter frames, 4:2:2 | `av1.frame_types=inter` + `av1.subsampling=4:2:2` | 10 |
+| Inter frames, 4:4:4 | `av1.frame_types=inter` + `av1.subsampling=4:4:4` | 16 |
+| Inter frames, 10-bit | `av1.frame_types=inter` + `av1.bitDepth=10` | 23 |
+| Inter frames, 12-bit | `av1.frame_types=inter` + `av1.bitDepth=12` | 16 |
+| Inter frames, lossless | `av1.frame_types=inter` + `av1.lossless` | 1 |
+| Inter frames, 128x128 superblocks | `av1.frame_types=inter` + `av1.superblock=128` | 3 |
+| Inter frames, several tiles | `av1.frame_types=inter` + `av1.tiles` | 13 |
+| Inter frames, quantizer matrices | `av1.frame_types=inter` + `av1.using_qmatrix` | 17 |
+| Inter frames, screen content tools | `av1.frame_types=inter` + `av1.allow_screen_content_tools` | 64 |
+| Inter frames, CDEF | `av1.frame_types=inter` + `av1.cdef_bits` | 108 |
+| Inter frames, loop restoration | `av1.frame_types=inter` + `av1.lr.y` | 74 |
+| Inter frames, super-resolution | `av1.frame_types=inter` + `av1.superres.denominator` | 4 |
+| Inter frames, film grain | `av1.frame_types=inter` + `av1.film_grain` | 12 |
+| Inter frames, film grain parameters of a reference frame (`update_grain = 0`) | `av1.film_grain.from_reference` | 1 |
+| Inter frames, luma DC quantizer delta | `av1.frame_types=inter` + `av1.delta_q.y_dc` | 1 |
+| Inter frames, reference scaling at 10 bits | `av1.frame_sizes` + `av1.bitDepth=10` | 1 |
+| Inter frames, super-resolution and reference scaling | `av1.superres.denominator` + `av1.frame_sizes` | 1 |
+| 17 output frames (a whole group of pictures) | `av1.frames=17` | 4 |
+| 30 output frames | `av1.frames=30` | 1 |
+| Film grain on a frame shown again | `av1.show_existing_frame` + `av1.film_grain` | 10 |
+| No primary reference frame | `av1.primary_ref_frame=none` | 79 |
+| Primary reference frame | `av1.primary_ref_frame=set` | 90 |
+| Error-resilient mode | `av1.error_resilient_mode` | 1 |
+| Frame id numbers | `av1.frame_id_numbers_present` | 1 |
+| CDF update at the end of the frame disabled | `av1.disable_frame_end_update_cdf` | 1 |
+| Compound references (`reference_select`) | `av1.reference_select` | 74 |
+| Skip mode | `av1.skip_mode_present` | 67 |
+| Motion vectors projected from the reference frames | `av1.use_ref_frame_mvs` | 98 |
+| Warped motion allowed | `av1.allow_warped_motion` | 81 |
+| Switchable motion mode | `av1.is_motion_mode_switchable` | 100 |
+| Integer motion vectors | `av1.force_integer_mv` | 2 |
+| Global motion, rotation and zoom | `av1.gm=rotzoom` | 24 |
+| Interpolation filter, regular | `av1.interpolation_filter=eighttap` | 60 |
+| Interpolation filter, sharp | `av1.interpolation_filter=sharp` | 6 |
+| Interpolation filter, smooth (header patch or hand-authored) | `av1.interpolation_filter=smooth` | 7 |
+| Interpolation filter, bilinear (header patch or hand-authored) | `av1.interpolation_filter=bilinear` | 11 |
+| Vectors made by a header patch | `av1.patched_header` | 8 |
+| Vectors with hand-authored inter frames | `av1.hand_authored` | 10 |
+| `enable_dual_filter` in the sequence header | `av1.enable_dual_filter` | 12 |
+| Interpolation filter per direction, coded by the blocks (hand-authored) | `av1.enable_dual_filter` + `av1.interpolation_filter=switchable` + `av1.hand_authored` | 5 |
+| Interpolation filter, selected per block | `av1.interpolation_filter=switchable` | 52 |
+| Explicit frame size (`frame_size_override_flag`) | `av1.frame_size_override_flag` | 17 |
+| Frame size of a reference frame (`found_ref`) | `av1.found_ref` | 9 |
+| Frame size changing inside the stream (reference scaling) | `av1.frame_sizes` | 8 |
+| Render size different from the frame size | `av1.render_and_frame_size_different` | 15 |
+| Intra block copy allowed | `av1.allow_intrabc` | 29 |
+| Intra block copy allowed, 4:4:4 | `av1.allow_intrabc` + `av1.subsampling=4:4:4` | 2 |
+| Intra block copy allowed, 10-bit | `av1.allow_intrabc` + `av1.bitDepth=10` | 6 |
+| Intra block copy allowed, 12-bit | `av1.allow_intrabc` + `av1.bitDepth=12` | 1 |
+| Intra block copy allowed, stream with inter frames | `av1.allow_intrabc` + `av1.frame_types=inter` | 24 |
+| Segmentation map kept from the primary reference frame | `av1.segmentation.update_map=0` | 6 |
+| Segmentation map coded in a frame that has a primary reference frame | `av1.segmentation.update_map=1` | 7 |
+| Segmentation map with temporal prediction | `av1.segmentation.temporal_update` | 6 |
+| Segmentation map with temporal prediction and predicted segment ids (hand-authored) | `av1.segmentation.temporal_update` + `av1.hand_authored` | 5 |
+| 64x64 superblocks | `av1.superblock=64` | 213 |
+| 128x128 superblocks | `av1.superblock=128` | 8 |
+| Several tiles | `av1.tiles` | 19 |
+| 2x2 tiles | `av1.tiles=2x2` | 16 |
+| 4x1 tiles | `av1.tiles=4x1` | 2 |
+| 1x2 tiles, 128x128 superblocks | `av1.tiles=1x2` + `av1.superblock=128` | 1 |
+| Uniform tile spacing | `av1.tiles.spacing=uniform` | 18 |
+| Explicit tile sizes | `av1.tiles.spacing=explicit` | 1 |
+| Several tile groups | `av1.tileGroups` | 2 |
+| Quantizer matrices | `av1.using_qmatrix` | 26 |
+| Chroma quantizer deltas | `av1.delta_q.uv` | 21 |
+| Luma DC quantizer delta | `av1.delta_q.y_dc` | 2 |
+| Block-level quantizer deltas | `av1.delta_q_present` | 55 |
+| Block-level loop filter deltas | `av1.delta_lf_present` | 3 |
+| Segmentation | `av1.segmentation_enabled` | 11 |
+| Segmentation feature: quantizer | `av1.segmentation.features=0` | 6 |
+| Segmentation feature: reference frame (hand-authored) | `av1.segmentation.features=5` | 5 |
+| Segmentation feature: skip (hand-authored) | `av1.segmentation.features=6` | 5 |
+| Segmentation feature: global motion (hand-authored) | `av1.segmentation.features=7` | 5 |
+| Screen content tools (palette) | `av1.allow_screen_content_tools` | 80 |
+| Filter intra disabled | `av1.enable_filter_intra=0` | 34 |
+| Intra edge filter disabled | `av1.enable_intra_edge_filter=0` | 4 |
+| CDF update disabled | `av1.disable_cdf_update` | 11 |
+| Reduced transform set | `av1.reduced_tx_set` | 2 |
+| Largest transform size only | `av1.tx_mode=largest` | 107 |
+| Transform size selection | `av1.tx_mode=select` | 195 |
+| Deblocking filter | `av1.loop_filter` | 165 |
+| Deblocking filter sharpness | `av1.loop_filter_sharpness` | 16 |
+| CDEF | `av1.cdef_bits` | 141 |
+| CDEF, 1 strength preset | `av1.cdef_bits=0` | 125 |
+| CDEF, 2 strength presets | `av1.cdef_bits=1` | 23 |
+| CDEF, 4 strength presets | `av1.cdef_bits=2` | 3 |
+| Loop restoration, luma Wiener | `av1.lr.y=wiener` | 84 |
+| Loop restoration, luma self-guided | `av1.lr.y=sgrproj` | 33 |
+| Loop restoration, luma switchable | `av1.lr.y=switchable` | 2 |
+| Loop restoration, U switchable | `av1.lr.u=switchable` | 1 |
+| Loop restoration, switchable in every plane | `av1.lr.y=switchable` + `av1.lr.u=switchable` + `av1.lr.v=switchable` | 1 |
+| Loop restoration, U Wiener | `av1.lr.u=wiener` | 49 |
+| Loop restoration, U self-guided | `av1.lr.u=sgrproj` | 5 |
+| Loop restoration, V Wiener | `av1.lr.v=wiener` | 54 |
+| Loop restoration, V self-guided | `av1.lr.v=sgrproj` | 6 |
+| Loop restoration, V switchable | `av1.lr.v=switchable` | 4 |
+| Loop restoration, 64-sample units | `av1.lr.unitSize=64` | 1 |
+| Loop restoration, 128-sample units | `av1.lr.unitSize=128` | 10 |
+| Loop restoration, 256-sample units | `av1.lr.unitSize=256` | 98 |
+| Super-resolution | `av1.superres.denominator` | 9 |
+| Super-resolution, smallest denominator | `av1.superres.denominator=9` | 2 |
+| Super-resolution, largest denominator | `av1.superres.denominator=16` | 1 |
+| Super-resolution with loop restoration | `av1.superres.denominator` + `av1.lr.y` | 8 |
+| Film grain | `av1.film_grain` | 30 |
+| Film grain, scaling points | `av1.film_grain.points` | 30 |
+| Film grain, auto-regression lag 2 | `av1.film_grain.ar_coeff_lag=2` | 13 |
+| Film grain, auto-regression lag 3 | `av1.film_grain.ar_coeff_lag=3` | 17 |
+| Film grain, chroma scaling from luma | `av1.film_grain.chroma_scaling_from_luma` | 2 |
+| Film grain, overlap between blocks | `av1.film_grain.overlap` | 26 |
+| Film grain, clipping to the restricted range | `av1.film_grain.clip_to_restricted_range` | 9 |
+| Film grain, monochrome | `av1.film_grain` + `av1.subsampling=4:0:0` | 3 |
+| Film grain, 4:2:2 | `av1.film_grain` + `av1.subsampling=4:2:2` | 5 |
+| Film grain, 4:4:4 | `av1.film_grain` + `av1.subsampling=4:4:4` | 6 |
+| Film grain, 10-bit | `av1.film_grain` + `av1.bitDepth=10` | 9 |
+| Film grain, 12-bit | `av1.film_grain` + `av1.bitDepth=12` | 7 |
+
+Not obtained from either encoder, and not covered by a vector: `delta_lf_multi = 1` (libaom rejects `delta-lf-mode=2`
+and never codes it; SVT-AV1 has no block-level loop filter delta), global motion other than rotation and zoom
+(translation, affine), and `frame_refs_short_signaling`. The segmentation features other than the quantizer, the
+interpolation filter per direction and the predicted segment ids only exist in the hand-authored vectors, the bilinear
+and smooth frame-level filters in the patched and hand-authored ones.
+
+What the earlier size limits (8 KB per vector, 176x144, 12 frames) had left out, and what lifted them:
+
+- loop restoration is only switchable within a plane that has several restoration units, and both encoders pick
+  256-sample units for small frames: the vectors with switchable restoration in the U plane, in every plane at once, and
+  with 64-sample units are 512x256 frames whose halves differ (libaom, speed 1; 5 to 37 KB);
+- whole groups of pictures: 30 frames from libaom and 17 from SVT-AV1 at 176x144, where every reference slot is in use
+  and the reference lists change from frame to frame; 352x288 streams from both encoders (several superblocks in both
+  directions); 2x2 tiles of 128x128 superblocks with motion vectors that cross the tile boundaries;
+- reference scaling with five to eight frame sizes in one stream, at 8 and 10 bits, and super-resolution combined with
+  reference scaling (SVT-AV1; its sizes must be multiples of 8: otherwise it codes frames larger than the maximum of
+  the sequence, which libaom rejects);
+- found on the way: SVT-AV1 offsets the luma DC quantizer (`luma-y-dc-qindex-offset`), which libaom never does; the
+  libaom film grain test vector 9 codes `update_grain = 0` on inter frames (parameters of a reference frame).
+
+Still from SVT-AV1 only, because libaom rejects `superres-mode`, `resize-mode`, `sframe-dist` and `enable-fwd-kf` in this
+build: super-resolution, reference scaling, switch frames and intra-only frames, in 4:2:0 at 8 and 10 bits.
 
 ## Using the corpus in tests
 
@@ -557,11 +1152,15 @@ dotnet run --project tools/Meziantou.Framework.Imaging.CorpusGenerator -- golden
 dotnet run --project tools/Meziantou.Framework.Imaging.CorpusGenerator -- verify          # re-decode the committed corpus with the pinned prebuilt tools
 ```
 
-`verify` is read-only and uses the ffmpeg, `dwebp` and `anim_dump` of the meziantou/prebuilt release pinned by the
+`verify` is read-only and uses the ffmpeg, `dwebp`, `anim_dump`, `avifenc` and `avifdec` of the meziantou/prebuilt release pinned by the
 `Meziantou.Prebuilt` package, like the interop tests (downloaded on first use, whatever their versions compared with the manifest): it re-decodes every valid non-JPEG
 fixture whose generation-time FFmpeg cross-check agreed, and every WebP fixture with `dwebp` and `anim_dump`, and compares
-with the committed references. Run it before regenerating with a new tool version to see what changes; the interop CI job runs it on every
-build to detect reference drift.
+with the committed references. It also checks the [AV1 conformance vectors](#av1-conformance-vectors): the SHA-256 of every
+stream, and the digest of every plane of every output frame, re-derived with each of the two decoders (`libdav1d`,
+`libaom-av1`) the FFmpeg build has; a decoder the build lacks is reported and skipped. The references of the valid AVIF
+fixtures are re-derived from their committed inputs the way the generator does (`ReferenceAvif`, both decoders,
+`ReferenceYuvConverter`) and must be identical to the committed buffers. Run it before regenerating with a new
+tool version to see what changes; the interop CI job runs it on every build to detect reference drift.
 
 - The generators are the subcommands of one .NET console app (`tools/Meziantou.Framework.Imaging.CorpusGenerator`) and
   never use the library under test.
@@ -597,6 +1196,45 @@ build to detect reference drift.
 - `bmp` (`BmpCorpus.cs`), `tga` (`TgaCorpus.cs`) and `pnm` (`PnmCorpus.cs`) (any OS, FFmpeg only) each replace only the
   entries and files of their format; they share their driver, helpers and pinned FFmpeg version
   (`Common/HandAssembledCorpus.cs`).
+- `avif` (`AvifCorpus.cs`, recipes in `AvifCorpus.Vectors.cs`, header parsing in `AvifCorpus.Trace.cs`, hand-authored
+  inter frames in `Av1HandAuthoredStream.cs`, layered streams in `AvifCorpus.Layered.cs`) generates the
+  [AV1 conformance vectors](#av1-conformance-vectors): it replaces only the `av1Vectors` section of the manifest and the
+  files of `av1/`, and every other generator keeps them. It needs no installed tool: FFmpeg and ffprobe are downloaded
+  from the meziantou/prebuilt release pinned by the `Meziantou.Prebuilt` package, and the versions of the libraries they
+  are linked with are pinned in `AvifCorpus.PinnedTools` (currently FFmpeg 9.0.2, libaom 3.15.1, SVT-AV1 4.2.0,
+  libdav1d 1.5.4); the layered vectors also need the pinned `avifenc` of `avif-container`. The committed vectors were generated on macOS arm64; an encoder may make other decisions on another
+  platform, in which case the check mode reports the differences.
+
+  ```shell
+  dotnet run --project tools/Meziantou.Framework.Imaging.CorpusGenerator -- avif          # check: re-encodes, re-decodes with both decoders and diffs
+  dotnet run --project tools/Meziantou.Framework.Imaging.CorpusGenerator -- avif --write  # replace the AV1 vectors, then review the diff
+  ```
+
+  To add a vector, add a recipe to `AvifCorpus.Vectors` with the feature tags it must signal (`Requires`; `Inter = true`
+  when it has frames other than shown key frames), run the generator with `--write`, and update the
+  [AV1 vector features](#av1-vector-features) table. `Av1ToolCoverageTests` tells whether the vectors still reach every
+  coding tool. A patched vector is `Patched(vectors, source, name, filter)`, a hand-authored one
+  `HandAuthored(recipe, format, pixelFormat, size)`: see [Vectors an encoder did not write alone](#vectors-an-encoder-did-not-write-alone).
+  A layered vector is a `LayeredVector` of `AvifCorpus.LayeredVectors` (an `avifenc` command per temporal unit), and its
+  truncations `FirstLayers(vector, count)`: see [Layered vectors](#layered-vectors).
+- `avif-container` (`AvifCorpus.Container.cs`: tools, references, cross-checks and manifest entries;
+  `AvifCorpus.ContainerFixtures.cs`: the valid recipes; `AvifCorpus.ContainerLayered.cs`: the layered images;
+  `AvifCorpus.ContainerErrors.cs`: the error recipes) generates the
+  AVIF fixtures; it replaces only the entries of format `avif` and their files (`avif/`, `invalid/avif/`, `limit/avif/`)
+  and keeps the AV1 vectors, as `avif` keeps these fixtures. It needs no installed tool: it uses the pinned FFmpeg of
+  `avif` and the `avifenc` and `avifdec` of the same meziantou/prebuilt release (libavif pinned in `PinnedLibavif`,
+  currently 1.4.2, whose `avifenc` is linked with aom 3.14.1 and `avifdec` with dav1d 1.5.3). It compiles the
+  files of `TestHarness/Avif` (linked into the generator project), which have no dependency on the library. Gzip-compressed
+  references are written by the .NET runtime of the generator, like the encoders an AVIF input depends on the platform:
+  the committed fixtures were generated on macOS arm64.
+
+  ```shell
+  dotnet run --project tools/Meziantou.Framework.Imaging.CorpusGenerator -- avif-container          # check
+  dotnet run --project tools/Meziantou.Framework.Imaging.CorpusGenerator -- avif-container --write  # replace the AVIF fixtures, then review the diff
+  ```
+
+  A valid recipe lists the feature tags it exists for; they are read back from the bytes. After adding a matrixed
+  fixture, run `AvifDecoderConformanceTests`: it prints the measured disagreement to record in `LibraryAvifMeasurements`.
 - To add fixtures for a feature: add a builder (or a case) to the generator, run it with `--write`, review the diff and
   the cross-check results in the manifest, update the [coverage matrix](#fixture-coverage-matrix), and reference the
   fixture ids from the feature's tests.
@@ -615,7 +1253,9 @@ this section.
   specification; JPEG: ITU-T T.81 and JFIF; WebP: RFC 9649 (container, VP8L lossless bitstream, alpha) and RFC 6386 (VP8);
   QOI: the QOI specification 1.0 (qoiformat.org); BMP: the Microsoft Windows GDI `BITMAPFILEHEADER`/`BITMAPINFOHEADER`
   documentation; TGA: the Truevision TGA File Format Specification 2.0; PBM/PGM/PPM/PAM: the Netpbm format
-  specifications; EXIF/TIFF; ICC; future formats: their official specifications).
+  specifications; AVIF: ISO/IEC 14496-12 (boxes), ISO/IEC 23008-12 (image items), the AV1 Image File Format, the AV1
+  Codec ISO Media File Format Binding, the AV1 Bitstream & Decoding Process Specification and ITU-T H.273 (color
+  conversion); EXIF/TIFF; ICC; future formats: their official specifications).
 - Do **not** copy, translate or closely paraphrase code from other image libraries or codecs, whatever their license
   (System.Drawing, libpng, zlib, libjpeg/libjpeg-turbo, giflib, libwebp, qoi.h, stb_image, Pillow, ImageMagick, FFmpeg,
   ...). Specification pseudo-code and published numeric tables (e.g. JPEG Annex K quantization and
@@ -668,8 +1308,19 @@ not be committed.
 
 ### Size
 
-Keep fixtures small (prefer tiny images; a few MB in total). Large inputs for benchmarks are generated at run time and
-never committed.
+There is no size budget: the corpus is as large as a good coverage needs. Still prefer the smallest input that exercises
+a feature (tiny images, few frames): every valid fixture is decoded thousands of times by the conformance, hardening and
+fuzz suites, so a large input costs test time long before it costs disk space. Large inputs for benchmarks are generated
+at run time and never committed. The manifest entry of an AV1 vector holds a digest per plane and per output frame, so a
+long stream is mostly paid for there.
+
+The corpus once had one (a total size, 8 KB per AV1 vector, inter vectors of at most 12 frames and 176x144). It was
+removed because it decided what was tested: coding tools that only show on frames of several restoration units or on
+whole groups of pictures had no vector, and AVIF features had been moved to unit tests or dropped to save bytes. What
+its removal brought is listed with the [AV1 vector features](#av1-vector-features) (63 vectors: 199 in all, 431 KB)
+and in the AVIF rows of the [starter corpus](#starter-corpus) (72 valid and 7 error fixtures: 166 in all). What bounds
+a fixture now is test time, not bytes: an AV1 vector is decoded three times by the tests, whatever its size, but a
+valid fixture goes through every generic suite, and a 192x128 grid alone cost them more than fifty small fixtures.
 
 ### Fuzz regressions
 

@@ -29,15 +29,22 @@ internal sealed class DecodedMetadataBuilder
     public void Charge(long bytes) => _tracker.ChargeMetadataBytes(bytes);
 
     /// <summary>Adopts an EXIF payload (from the TIFF header) and its orientation, unless one was already adopted or it is malformed.</summary>
+    /// <param name="data">The payload.</param>
+    /// <param name="adoptOrientation"><see langword="false"/> for a format whose container, not the EXIF tag, gives the orientation.</param>
+    /// <param name="alreadyCharged"><see langword="true"/> when the caller charged the bytes of the payload before reading them.</param>
     /// <returns><see langword="true"/> if the payload was adopted.</returns>
-    public bool TryAdoptExif(ReadOnlySpan<byte> data)
+    public bool TryAdoptExif(ReadOnlySpan<byte> data, bool adoptOrientation = true, bool alreadyCharged = false)
     {
         if (Metadata.ExifProfile is not null || !MetadataValidation.TryValidateExif(data, out _))
             return false;
 
-        Charge(data.Length);
+        if (!alreadyCharged)
+            Charge(data.Length);
+
         Metadata.ExifProfile = new ExifProfile(new MetadataBlob(data));
-        Metadata.Orientation = ExifTiff.ReadOrientation(data) ?? ExifOrientation.TopLeft;
+        if (adoptOrientation)
+            Metadata.Orientation = ExifTiff.ReadOrientation(data) ?? ExifOrientation.TopLeft;
+
         return true;
     }
 

@@ -91,6 +91,51 @@ public sealed class MetadataTests
     }
 
     [Fact]
+    public void CicpColorDescriptionIsAnImmutableValue()
+    {
+        var description = new CicpColorDescription(colorPrimaries: 9, transferCharacteristics: 16, matrixCoefficients: 6, fullRange: false);
+        Assert.Equal((9, 16, 6, false), (description.ColorPrimaries, description.TransferCharacteristics, description.MatrixCoefficients, description.FullRange));
+        Assert.Equal("9/16/6 limited", description.ToString());
+        Assert.Equal("1/13/0 full", new CicpColorDescription(1, 13, 0, fullRange: true).ToString());
+
+        // Every code point is accepted, reserved values included, so that a description round-trips unchanged
+        var reserved = new CicpColorDescription(255, 0, 3, fullRange: true);
+        Assert.Equal("255/0/3 full", reserved.ToString());
+
+        var same = new CicpColorDescription(9, 16, 6, fullRange: false);
+        Assert.NotSame(description, same);
+        Assert.Equal(description, same);
+        Assert.True(description.Equals((object)same));
+        Assert.Equal(description.GetHashCode(), same.GetHashCode());
+        Assert.True(EqualityComparer<CicpColorDescription>.Default.Equals(description, same));
+
+        // Each of the four components takes part in the equality
+        Assert.NotEqual(description, new CicpColorDescription(1, 16, 6, fullRange: false));
+        Assert.NotEqual(description, new CicpColorDescription(9, 18, 6, fullRange: false));
+        Assert.NotEqual(description, new CicpColorDescription(9, 16, 9, fullRange: false));
+        Assert.NotEqual(description, new CicpColorDescription(9, 16, 6, fullRange: true));
+        Assert.False(description.Equals(null));
+        Assert.False(description.Equals((object)"9/16/6 limited"));
+    }
+
+    [Fact]
+    public void ImageMetadataCloneKeepsTheCicpDescription()
+    {
+        Assert.Null(new ImageMetadata().Cicp);
+
+        var description = new CicpColorDescription(12, 13, 1, fullRange: false);
+        var metadata = new ImageMetadata { Cicp = description };
+        var clone = metadata.Clone();
+        Assert.Same(description, clone.Cicp); // immutable values are shared
+
+        // Mutating either side never affects the other
+        clone.Cicp = null;
+        Assert.Same(description, metadata.Cicp);
+        metadata.Cicp = new CicpColorDescription(1, 13, 1, fullRange: false);
+        Assert.Null(clone.Cicp);
+    }
+
+    [Fact]
     public void MetadataClonesAreIndependent()
     {
         var icc = new IccProfile(new MetadataBlob(new byte[128]));

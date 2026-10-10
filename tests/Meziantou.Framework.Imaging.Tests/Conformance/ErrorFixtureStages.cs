@@ -98,6 +98,43 @@ internal static class ErrorFixtureStages
         "invalid/pnm/pam-unknown-keyword",
         "invalid/pnm/zero-width",
         "limit/pnm/width-over-limit",
+
+        // AVIF: the file type box and the box that describes the image (the meta box: primary item, item properties,
+        // references; or the moov box of an image sequence: tracks, edit lists, sample tables), which is parsed before any
+        // item data or sample is read. The colr box is one of the item properties: matrix coefficients that are not
+        // supported are known there
+        "invalid/avif/a1op-on-grid",
+        "invalid/avif/alpha-different-size",
+        "invalid/avif/box-size-too-small",
+        "invalid/avif/child-box-exceeds-parent",
+        "invalid/avif/clap-after-irot",
+        "invalid/avif/clap-fractional",
+        "invalid/avif/derived-iden",
+        "invalid/avif/derived-iovl",
+        "invalid/avif/essential-unknown-property",
+        "invalid/avif/ftyp-without-avif-brand",
+        "invalid/avif/grid-tile-transform-differs",
+        "invalid/avif/grid-tiles-differ",
+        "invalid/avif/lsel-on-grid",
+        "invalid/avif/lsel-out-of-range",
+        "invalid/avif/matrix-ictcp",
+        "invalid/avif/missing-av1c",
+        "invalid/avif/missing-ftyp",
+        "invalid/avif/missing-ispe",
+        "invalid/avif/missing-pitm",
+        "invalid/avif/missing-primary-item",
+        "invalid/avif/premultiplied-alpha",
+        "invalid/avif/sequence-edit-ends-before-last-image",
+        "invalid/avif/sequence-edit-list-offset",
+        "invalid/avif/sequence-fragmented",
+        "invalid/avif/sequence-matrix-ictcp",
+        "invalid/avif/sequence-missing-chunk-offsets",
+        "invalid/avif/sequence-no-av1-track",
+        "invalid/avif/truncated-meta",
+        "limit/avif/frame-pixels-over-limit",
+        "limit/avif/height-over-limit",
+        "limit/avif/icc-over-metadata-limit",
+        "limit/avif/width-over-limit",
     };
 
     private static readonly HashSet<string> StructureDefects = new(StringComparer.Ordinal)
@@ -156,6 +193,29 @@ internal static class ErrorFixtureStages
         "invalid/pnm/plain-pbm-digit-2",
         "invalid/pnm/sample-above-maxval",
         "invalid/pnm/truncated-raster",
+
+        // AVIF: the boxes that follow the one that describes the image, the location of the item data and of the samples,
+        // the grid descriptor (item data), the Exif and XMP items, and the sequence header of each coded item, which a
+        // full scan compares with the av1C record
+        "invalid/avif/a1op-beyond-operating-points",
+        "invalid/avif/a1op-missing-operating-point",
+        "invalid/avif/av1c-mismatch",
+        "invalid/avif/grid-size-mismatch",
+        "invalid/avif/grid-tile-count-mismatch",
+        "invalid/avif/item-outside-file",
+        "invalid/avif/item-outside-idat",
+        // The Exif and XMP items of an image sequence are data of the file: a header identification does not read them,
+        // nor the meta box of the track that locates them
+        "invalid/avif/sequence-file-metadata-outside-file",
+        "invalid/avif/sequence-track-meta-malformed",
+        "invalid/avif/sequence-track-metadata-outside-file",
+        "invalid/avif/sequence-truncated",
+        "invalid/avif/truncated-item-data",
+        "invalid/avif/two-meta-boxes",
+        "limit/avif/encoded-bytes-over-limit",
+        "limit/avif/exif-over-metadata-limit",
+        "limit/avif/sequence-frames-over-limit",
+        "limit/avif/sequence-xmp-over-metadata-limit",
     };
 
     private static readonly HashSet<string> PixelDefects = new(StringComparer.Ordinal)
@@ -211,6 +271,20 @@ internal static class ErrorFixtureStages
         "invalid/bmp/palette-index-out-of-range",
         "invalid/tga/colormap-index-out-of-range",
         "limit/pnm/total-pixels-over-limit",
+
+        // AVIF: the frame headers and the tile data of the AV1 bitstream are only interpreted by the decoder (the size of a
+        // frame is in its frame header, and its spatial layer in the header of its unit); displayed and hidden frames, and
+        // the lower layers of a layered image, are charged when they are decoded
+        "invalid/avif/ispe-mismatch",
+        "invalid/avif/lsel-beyond-layers",
+        "invalid/avif/lsel-layer-size-mismatch",
+        "invalid/avif/lsel-missing-layer",
+        "invalid/avif/lsel-outside-operating-point",
+        "invalid/avif/sequence-size-changes",
+        "limit/avif/layered-lower-layers-total-pixels",
+        "limit/avif/live-allocation-over-limit",
+        "limit/avif/sequence-hidden-frames-total-pixels",
+        "limit/avif/sequence-total-pixels-over-limit",
     };
 
     /// <summary>Gets a value indicating whether a header identification detects the defect.</summary>

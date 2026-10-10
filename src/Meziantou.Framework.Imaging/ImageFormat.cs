@@ -3,7 +3,7 @@ namespace Meziantou.Framework.Imaging;
 /// <summary>Identifies an encoded image file format.</summary>
 /// <remarks>
 /// Formats are detected from content, never from file names. Animated PNG (APNG) is reported as <see cref="Png"/>:
-/// it is a PNG variant, not a competing signature. Follow-up formats (JPEG XL, AVIF) will be added as new
+/// it is a PNG variant, not a competing signature. Follow-up formats (JPEG XL) will be added as new
 /// members when they are implemented.
 /// </remarks>
 public enum ImageFormat
@@ -49,4 +49,10 @@ public enum ImageFormat
 
     /// <summary>Windows cursor container: an icon directory whose entries also carry a hotspot.</summary>
     Cur = 11,
+
+    /// <summary>
+    /// AV1 Image File Format: still images and image sequences coded with AV1 in an ISO base media (HEIF) container.
+    /// Decoding only: there is no AVIF encoder.
+    /// </summary>
+    Avif = 12,
 }

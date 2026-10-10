@@ -27,11 +27,16 @@
 
   <ItemGroup>
     <!-- `verify` re-decodes the corpus with the tools of the interop tests: keep the same version as the TestHarness project -->
-    <PackageReference Include="Meziantou.Prebuilt" Version="3.1.1" />
+    <PackageReference Include="Meziantou.Prebuilt" Version="3.2.0" />
   </ItemGroup>
 
   <ItemGroup>
     <Compile Include="..\..\src\Meziantou.Framework\ExecutableFinder.cs" Link="Infrastructure\ExecutableFinder.cs" />
+    <!--
+      The independent AVIF reader, the exact color converter and the file builder of the test harness: the generator
+      derives the AVIF references with them (they have no dependency on the library under test)
+    -->
+    <Compile Include="..\..\tests\Meziantou.Framework.Imaging.TestHarness\Avif\*.cs" LinkBase="TestHarness\Avif" />
   </ItemGroup>
 
   <ItemGroup>

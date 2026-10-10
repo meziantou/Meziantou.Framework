@@ -11,6 +11,10 @@ internal static class CorpusDriver
 {
     private static readonly string[] InfrastructureFiles = ["README.md", "manifest.json", "manifest.schema.json"];
 
+    /// <summary>The manifest section of the AV1 conformance vectors (AvifCorpus): raw OBU streams with plane digests, kept
+    /// apart from the fixtures because they have no pixel reference.</summary>
+    public const string Av1VectorsKey = "av1Vectors";
+
     public static FullPath RepoRoot { get; } = FindRepositoryRoot();
 
     public static FullPath CorpusDir => RepoRoot / "tests" / "Meziantou.Framework.Imaging.Fixtures";
@@ -68,13 +72,39 @@ internal static class CorpusDriver
         }
     }
 
+    /// <summary>The input files of the AV1 conformance vectors a manifest lists.</summary>
+    public static SortedSet<string> Av1VectorFiles(Obj manifest)
+    {
+        var paths = new SortedSet<string>(StringComparer.Ordinal);
+        if (manifest.TryGetValue(Av1VectorsKey, out var value) && value is Obj section)
+        {
+            foreach (var entry in ((List<object?>)section["entries"]!).Cast<Obj>())
+                paths.Add((string)((Obj)entry["input"]!)["path"]!);
+        }
+
+        return paths;
+    }
+
+    /// <summary>Copies the committed AV1 conformance vectors to the output directory: AvifCorpus owns them, the other
+    /// generators keep them (and their manifest section) unchanged.</summary>
+    public static void CopyCommittedAv1Vectors(FullPath outDir, Obj committed)
+    {
+        foreach (var path in Av1VectorFiles(committed))
+        {
+            var target = outDir / path;
+            target.CreateParentDirectory();
+            File.Copy(CorpusDir / path, target, overwrite: true);
+        }
+    }
+
     /// <summary>The generators of one format family replace only their own entries: every other fixture and file of the
-    /// committed corpus is kept unchanged (the other generators own them).</summary>
+    /// committed corpus is kept unchanged (the other generators own them), and so are the AV1 conformance vectors.</summary>
     public static void MergeIntoCommittedManifest(FullPath outDir, IReadOnlyList<Obj> fixtures, Func<Obj, bool> owns)
     {
         var committed = LoadCommittedManifest();
         var others = Fixtures(committed).Where(f => !owns(f)).ToList();
         CopyCommittedFiles(outDir, others);
+        CopyCommittedAv1Vectors(outDir, committed);
         committed["fixtures"] = others.Concat(fixtures).OrderBy(f => (string)f["id"]!, StringComparer.Ordinal).Cast<object?>().ToList();
         WriteManifest(outDir, committed);
     }

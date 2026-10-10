@@ -190,6 +190,12 @@ public abstract partial class Image
                 ImageFormat.Unknown,
                 $"Linear sRGB {operation} of a non-sRGB color profile");
 
+        if (_metadata.IccProfile is null && _metadata.Cicp is { } cicp && !MetadataWritePlan.IsSrgbEquivalent(cicp))
+            throw new UnsupportedImageFeatureException(
+                $"Linear-light {operation} assumes sRGB pixels, but the CICP color description ({cicp}) is not equivalent to sRGB. No color transform is applied: use the encoded working space to {verb} the stored samples.",
+                ImageFormat.Unknown,
+                $"Linear sRGB {operation} of a non-sRGB color description");
+
         return true;
     }
 

@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/meziantou/Meziantou.Framework/tests/Meziantou.Framework.Imaging.Fixtures/manifest.schema.json",
   "title": "Meziantou.Framework.Imaging golden corpus manifest",
-  "description": "Schema version 2: identity, files, hashes, provenance and licensing; expected full-canvas displayed frames and posters with exact raw-buffer layouts; rational timing, loop and metadata expectations; reference provenance and independent cross-checks; comparison policies; expected errors. Written by tools/Meziantou.Framework.Imaging.CorpusGenerator (GoldenCorpus.cs) and validated by Meziantou.Framework.Imaging.TestHarness.Fixtures.FixtureManifestValidator (which also checks hashes, lengths, conventions and policy discrimination).",
+  "description": "Schema version 2: identity, files, hashes, provenance and licensing; expected full-canvas displayed frames and posters with exact raw-buffer layouts; rational timing, loop and metadata expectations; reference provenance and independent cross-checks; comparison policies; expected errors. An optional section holds the AV1 conformance vectors (raw OBU streams with plane digests). Written by tools/Meziantou.Framework.Imaging.CorpusGenerator and validated by Meziantou.Framework.Imaging.TestHarness.Fixtures.FixtureManifestValidator (which also checks hashes, lengths, conventions and policy discrimination).",
   "type": "object",
   "additionalProperties": false,
   "required": ["schemaVersion", "fixtures"],
@@ -22,6 +22,28 @@
     "fixtures": {
       "type": "array",
       "items": { "$ref": "#/$defs/fixture" }
+    },
+    "av1Vectors": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["generator", "headerParser", "decoders", "planeDigest", "entries"],
+      "description": "AV1 conformance vectors: raw OBU streams (av1/*.obu) with the SHA-256 of every plane of every output frame. Not fixtures: they have no pixel reference. Written by tools/Meziantou.Framework.Imaging.CorpusGenerator (AvifCorpus.cs).",
+      "properties": {
+        "generator": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["script", "command", "tools"],
+          "properties": {
+            "script": { "type": "string" },
+            "command": { "type": "string" },
+            "tools": { "type": "array", "minItems": 1, "items": { "type": "string" } }
+          }
+        },
+        "headerParser": { "$ref": "#/$defs/av1Tool", "description": "Independent header parser the feature tags are derived from." },
+        "decoders": { "type": "array", "minItems": 2, "items": { "$ref": "#/$defs/av1Tool" }, "description": "Independent decoders; a digest is recorded only when they produce the same bytes." },
+        "planeDigest": { "type": "string", "description": "Definition of a plane digest: sample order, sample size, plane order, plane dimensions." },
+        "entries": { "type": "array", "items": { "$ref": "#/$defs/av1Vector" } }
+      }
     }
   },
   "$defs": {
@@ -81,9 +103,11 @@
             "numerator": { "type": "integer", "minimum": 0, "maximum": 65535 },
             "denominator": { "type": "integer", "minimum": 0, "maximum": 65535 },
             "hundredths": { "type": "integer", "minimum": 0, "maximum": 65535 },
-            "milliseconds": { "type": "integer", "minimum": 0, "maximum": 16777215 }
+            "milliseconds": { "type": "integer", "minimum": 0, "maximum": 16777215 },
+            "sampleDelta": { "type": "integer", "minimum": 0, "maximum": 4294967295 },
+            "timescale": { "type": "integer", "minimum": 1, "maximum": 4294967295 }
           },
-          "description": "Raw delay field read from the encoded input: APNG fcTL delay_num/delay_den (den 0 means 100), GIF Graphic Control Extension hundredths or WebP ANMF frame duration in milliseconds. Absent when the input has no delay field for the frame."
+          "description": "Raw delay field read from the encoded input: APNG fcTL delay_num/delay_den (den 0 means 100), GIF Graphic Control Extension hundredths, WebP ANMF frame duration in milliseconds, or the stts sample delta of an AVIF image sequence with the mdhd time scale of its media. Absent when the input has no delay field for the frame."
         },
         "encoding": { "type": "string", "description": "How the frame is encoded (delta rectangle, blend/dispose, delay field)." },
         "buffers": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/buffer" } }
@@ -140,9 +164,26 @@
         "height": { "type": "integer", "minimum": 1 },
         "pixelFormat": { "enum": ["Rgba32", "Bgra32", "Rgb24", "Rgba64", "Gray8", "Gray16"] },
         "colorModel": { "enum": ["Grayscale", "GrayscaleAlpha", "Rgb", "Rgba", "Indexed", "YCbCr"] },
-        "bitsPerComponent": { "enum": [1, 2, 4, 8, 16] },
+        "bitsPerComponent": { "enum": [1, 2, 4, 8, 10, 12, 16], "description": "10 and 12 are the bit depths of AVIF inputs only." },
         "orientation": { "type": "integer", "minimum": 1, "maximum": 8 },
         "iccProfile": { "enum": ["none", "rgb", "gray"] },
+        "cicp": {
+          "description": "Color description of an AVIF input (ImageMetadata.Cicp): the ITU-T H.273 code points of its colr box of type nclx, or else of its AV1 sequence header; null or absent when the input declares none, and for every other format.",
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["colorPrimaries", "transferCharacteristics", "matrixCoefficients", "fullRange"],
+              "properties": {
+                "colorPrimaries": { "type": "integer", "minimum": 0, "maximum": 255 },
+                "transferCharacteristics": { "type": "integer", "minimum": 0, "maximum": 255 },
+                "matrixCoefficients": { "type": "integer", "minimum": 0, "maximum": 255 },
+                "fullRange": { "type": "boolean" }
+              }
+            }
+          ]
+        },
         "transferFunction": { "enum": ["srgb", "linear"], "description": "Transfer function label of the decoded samples (ImageMetadata.TransferFunction); absent means srgb. QOI colorspace 1 is linear." },
         "resolution": {
           "description": "Physical resolution in dots per inch converted from the encoded fields (dpi = x * 0.0254 per meter, x per inch, x * 2.54 per centimeter); null when absent or aspect-ratio only.",
@@ -203,7 +244,23 @@
               "required": ["totalPlays"],
               "properties": {
                 "totalPlays": { "type": ["integer", "null"], "minimum": 1, "description": "Total plays including the first; null is infinite." },
-                "encodedLoopValue": { "type": ["integer", "null"], "minimum": 0, "description": "Raw APNG num_plays, GIF NETSCAPE2.0 loop count or WebP ANIM loop count; null when absent." }
+                "encodedLoopValue": { "type": ["integer", "null"], "minimum": 0, "description": "Raw APNG num_plays, GIF NETSCAPE2.0 loop count or WebP ANIM loop count; null when absent." },
+                "editList": {
+                  "description": "AVIF image sequences: the edit list of the track of the color images and the duration of its track header, which give the number of plays (none: forever; not repeating: once; repeating: the track duration over the edit duration, rounded up; forever when the track duration is indefinite). null without edit list.",
+                  "oneOf": [
+                    { "type": "null" },
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": ["repeating", "segmentDuration", "trackDuration"],
+                      "properties": {
+                        "repeating": { "type": "boolean", "description": "flags and 1 of the elst box." },
+                        "segmentDuration": { "type": ["integer", "null"], "minimum": 0, "description": "Duration of the edit in units of the movie time scale; null when every bit is set." },
+                        "trackDuration": { "type": ["integer", "null"], "minimum": 0, "description": "Duration of the track header in units of the movie time scale; null when every bit is set (indefinite)." }
+                      }
+                    }
+                  ]
+                }
               }
             }
           ]
@@ -256,6 +313,41 @@
         "frameLimit": { "type": "integer", "minimum": 1 }
       }
     },
+    "av1Tool": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "command"],
+      "properties": {
+        "name": { "type": "string", "description": "Tool and exact version, e.g. 'libdav1d 1.5.4'." },
+        "command": { "type": "string", "description": "Exact command line (symbolic file names)." }
+      }
+    },
+    "av1Frame": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["width", "height", "planes"],
+      "properties": {
+        "width": { "type": "integer", "minimum": 1, "description": "Luma width of this output frame, after super-resolution upscaling. The frames of a stream can have different sizes (reference scaling)." },
+        "height": { "type": "integer", "minimum": 1 },
+        "planes": { "type": "array", "minItems": 1, "maxItems": 3, "items": { "$ref": "#/$defs/sha256" }, "description": "SHA-256 of each plane in bitstream order Y, U, V (one plane for 4:0:0), film grain applied; see av1Vectors.planeDigest." }
+      }
+    },
+    "av1Vector": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "input", "provenance", "features", "pixelFormat", "bitDepth", "subsampling", "frameCount", "frames"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^av1/[a-z0-9][a-z0-9._/-]*$" },
+        "input": { "$ref": "#/$defs/file", "description": "Raw OBU stream, av1/*.obu." },
+        "provenance": { "$ref": "#/$defs/provenance" },
+        "features": { "type": "array", "minItems": 1, "items": { "type": "string" }, "uniqueItems": true, "description": "What the headers signal, as parsed by av1Vectors.headerParser; never the encoder options." },
+        "pixelFormat": { "type": "string", "description": "FFmpeg pixel format the decoders produced without conversion." },
+        "bitDepth": { "enum": [8, 10, 12] },
+        "subsampling": { "enum": ["4:0:0", "4:2:0", "4:2:2", "4:4:4"] },
+        "frameCount": { "type": "integer", "minimum": 1, "description": "Number of output frames." },
+        "frames": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/av1Frame" }, "description": "Output frames in output order: one per shown frame and per show_existing_frame; a hidden frame produces none. When the operating point has several spatial layers, one per temporal unit: the shown frame of its highest layer." }
+      }
+    },
     "fixture": {
       "type": "object",
       "additionalProperties": false,
@@ -263,7 +355,7 @@
       "properties": {
         "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._/-]*$" },
         "kind": { "enum": ["valid", "invalid", "unsupported", "limit"] },
-        "format": { "enum": ["png", "gif", "jpeg", "webp", "qoi", "bmp", "tga", "pnm"] },
+        "format": { "enum": ["png", "gif", "jpeg", "webp", "qoi", "bmp", "tga", "pnm", "avif"] },
         "input": { "$ref": "#/$defs/file" },
         "provenance": { "$ref": "#/$defs/provenance" },
         "features": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },

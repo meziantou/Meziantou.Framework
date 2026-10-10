@@ -26,6 +26,33 @@ public sealed class HardeningHarnessSelfTests
     }
 
     [Fact]
+    public void DirtySlabPoolHandsOutBuffersFilledWithThePattern()
+    {
+        var dirty = new DirtySlabPool();
+        var scope = new AllocationScope(ImageResourceLimits.Default, dirty.Pool, "self-test");
+        using (var first = scope.Rent(1000, AllocationKind.Temporary, clear: false))
+        {
+            Assert.Equal(-1, first.Span.IndexOfAnyExcept(DirtySlabPool.Pattern));
+            first.Span.Clear();
+        }
+
+        // The buffer that was just returned, and a size class that was never used
+        foreach (var length in new[] { 1000, 70_000 })
+        {
+            using var buffer = scope.Rent(length, AllocationKind.Temporary, clear: false);
+            Assert.Equal(-1, buffer.Span.IndexOfAnyExcept(DirtySlabPool.Pattern));
+        }
+
+        using (var cleared = scope.Rent(1000, AllocationKind.Temporary, clear: true))
+        {
+            Assert.Equal(-1, cleared.Span[..1000].IndexOfAnyExcept((byte)0));
+        }
+
+        Assert.Equal(4, dirty.Rentals);
+        dirty.AssertEveryRentalWasDirty("self-test");
+    }
+
+    [Fact]
     public void PoolAuditReportsWritesAfterReturn()
     {
         using var audit = new PoolAudit();

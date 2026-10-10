@@ -62,6 +62,29 @@ internal readonly record struct OrientationTransform(bool Transpose, bool FlipX,
         _ => throw new ArgumentOutOfRangeException(nameof(orientation), orientation, "The orientation must be between 1 and 8."),
     };
 
+    /// <summary>Gets the transform that applies this transform, then <paramref name="next"/> to its result.</summary>
+    public OrientationTransform Then(OrientationTransform next)
+    {
+        // A transposition exchanges the axes that the flips of the next transform act on
+        return new OrientationTransform(
+            Transpose ^ next.Transpose,
+            FlipX ^ (Transpose ? next.FlipY : next.FlipX),
+            FlipY ^ (Transpose ? next.FlipX : next.FlipY));
+    }
+
+    /// <summary>Gets the EXIF orientation of pixels that this transform makes display upright: the inverse of <see cref="ForOrientation(ExifOrientation)"/>.</summary>
+    public ExifOrientation ToExifOrientation() => (Transpose, FlipX, FlipY) switch
+    {
+        (false, false, false) => ExifOrientation.TopLeft,
+        (false, true, false) => ExifOrientation.TopRight,
+        (false, true, true) => ExifOrientation.BottomRight,
+        (false, false, true) => ExifOrientation.BottomLeft,
+        (true, false, false) => ExifOrientation.LeftTop,
+        (true, false, true) => ExifOrientation.RightTop,
+        (true, true, true) => ExifOrientation.RightBottom,
+        (true, true, false) => ExifOrientation.LeftBottom,
+    };
+
     /// <summary>Gets the size of the result for a source of <paramref name="source"/> size.</summary>
     public Size GetOutputSize(Size source) => Transpose ? new Size(source.Height, source.Width) : source;
 }

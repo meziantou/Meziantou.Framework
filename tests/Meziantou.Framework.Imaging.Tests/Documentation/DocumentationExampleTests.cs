@@ -1,12 +1,15 @@
 using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.Metadata;
 using Meziantou.Framework.Imaging.Samples;
+using Meziantou.Framework.Imaging.TestHarness.Adapters;
+using Meziantou.Framework.Imaging.TestHarness.Golden;
 
 namespace Meziantou.Framework.Imaging.Tests.Documentation;
 
 /// <summary>
 /// Runs the published usage examples (samples/Meziantou.Framework.Imaging.Samples/Examples.cs, linked into this project) and
-/// checks that they do what the documentation says. Inputs are built by the examples themselves.
+/// checks that they do what the documentation says. Inputs are built by the examples themselves, except the AVIF inputs
+/// (the library has no AVIF encoder), which are committed fixtures of the golden corpus.
 /// </summary>
 public sealed class DocumentationExampleTests : IDisposable
 {
@@ -171,6 +174,44 @@ public sealed class DocumentationExampleTests : IDisposable
         Assert.Equal(3, animation.Animation!.TotalPlays);
         Assert.Equal(new FrameDuration(33, 1000), animation.Frames[1].Metadata.Duration); // nearest millisecond
         Assert.Equal(expected.Frames[1][63, 63], animation.Frames[1][63, 63]); // lossless
+    }
+
+    [Theory]
+    [InlineData("avif/lossless-rgba8", "12x9 Rgba32, frames: 1, color: 1/13/0 full")]
+    [InlineData("avif/lossless-rgb10", "8x8 Rgba64, frames: 1, color: 1/13/0 full")] // PNG keeps the 16-bit samples
+    [InlineData("avif/lossless-gray8", "9x7 Gray8, frames: 1, color: 1/13/6 full")]
+    [InlineData("avif/sequence-alpha-repeat-2", "8x8 Rgba32, frames: 2, color: 1/13/6 full")] // saved as an animated PNG
+    public void ConvertAvifDescribesTheImageAndSavesItAsPng(string id, string expectedDescription)
+    {
+        var fixture = GoldenCorpus.Default.Get(id);
+        var png = GetPath("converted.png");
+        Assert.Equal(expectedDescription, Examples.ConvertAvif(fixture.InputPath, png));
+
+        // The PNG file holds the frames, the durations and the plays of the AVIF file (its references, not a second decoding)
+        using var converted = Image.Load(png);
+        Assert.Equal(ImageFormat.Png, converted.Metadata.SourceFormat);
+        var snapshot = ImageSnapshots.Capture(converted);
+        Assert.Equal(fixture.Expected.FrameCount, snapshot.Frames.Count);
+        Assert.Equal(fixture.Expected.Animation?.TotalPlays, converted.Animation?.TotalPlays);
+        for (var i = 0; i < snapshot.Frames.Count; i++)
+        {
+            Assert.Equal(fixture.GetDuration(i), snapshot.Frames[i].Duration);
+            GoldenAssert.FrameMatches(fixture, i, snapshot.Frames[i].Pixels);
+        }
+    }
+
+    [Fact]
+    public void ConvertAvifDoesNotRelabelAnHdrImage()
+    {
+        // BT.2020 primaries with the PQ transfer characteristics: PNG cannot store that description, and the strict save
+        // of the example fails instead of writing the samples as if they were sRGB
+        var fixture = GoldenCorpus.Default.Get("avif/lossy-420-bt2020-limited-10bit");
+        var png = GetPath("hdr.png");
+        Assert.Throws<UnsupportedImageFeatureException>(() => Examples.ConvertAvif(fixture.InputPath, png));
+        Assert.False(File.Exists(png));
+
+        using var image = Image.Load(fixture.InputPath);
+        Assert.Equal(new CicpColorDescription(9, 16, 9, fullRange: false), image.Metadata.Cicp);
     }
 
     [Fact]

@@ -5,7 +5,7 @@ namespace Meziantou.Framework.Imaging.TestHarness.ExternalTools;
 /// </summary>
 /// <remarks>
 /// The tools themselves are not configurable: they are downloaded from the release pinned by the <c>Meziantou.Prebuilt</c>
-/// package (<see cref="FFmpegTool.LocateAsync"/>, <see cref="LibWebPTool.LocateAsync"/>).
+/// package (<see cref="FFmpegTool.LocateAsync"/>, <see cref="LibWebPTool.LocateAsync"/>, <see cref="LibAvifTool.LocateAsync"/>).
 /// <list type="bullet">
 /// <item><description><c>MEZIANTOU_FRAMEWORK_IMAGING_IMAGEIO_REQUIRED=true</c>: the Apple ImageIO cases must run; on systems other than macOS they fail instead of skipping. Set by the CI interop job (macOS).</description></item>
 /// <item><description><c>MEZIANTOU_FRAMEWORK_IMAGING_INTEROP_ARTIFACTS</c>: directory where files produced by interop tests are kept for diagnosis (uploaded by CI).</description></item>

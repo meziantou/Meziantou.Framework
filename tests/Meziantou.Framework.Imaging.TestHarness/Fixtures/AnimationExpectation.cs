@@ -16,4 +16,11 @@ public sealed class AnimationExpectation
     /// </summary>
     [JsonPropertyName("encodedLoopValue")]
     public int? EncodedLoopValue { get; init; }
+
+    /// <summary>
+    /// Gets the raw fields that give the number of plays of an AVIF image sequence, or <see langword="null"/> when its track
+    /// has no edit list (and for every other format).
+    /// </summary>
+    [JsonPropertyName("editList")]
+    public EditListExpectation? EditList { get; init; }
 }

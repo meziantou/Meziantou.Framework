@@ -238,6 +238,72 @@ public sealed class MetadataWritePlanTests
         Assert.Throws<UnsupportedImageFeatureException>(() => MetadataWritePlan.Create(metadata, ImageFormat.Gif, MetadataHandling.Strict, Canvas));
     }
 
+    [Theory]
+    [InlineData(9, 16)] // BT.2020 primaries, PQ
+    [InlineData(9, 18)] // BT.2020 primaries, HLG
+    [InlineData(12, 13)] // Display P3 primaries with the sRGB transfer function
+    [InlineData(1, 1)] // BT.709 primaries with the BT.709 transfer function
+    [InlineData(1, 8)] // BT.709 primaries, linear
+    [InlineData(2, 16)] // unspecified primaries, PQ
+    [InlineData(9, 2)] // BT.2020 primaries, unspecified transfer function
+    [InlineData(0, 13)] // reserved primaries
+    public void CicpDescriptionThatIsNotSrgbEquivalentIsUnsupportedMetadata(int colorPrimaries, int transferCharacteristics)
+    {
+        // No format stores the description: without it the samples would be displayed as sRGB
+        var metadata = new ImageMetadata { Cicp = new CicpColorDescription((byte)colorPrimaries, (byte)transferCharacteristics, matrixCoefficients: 1, fullRange: false) };
+        foreach (var format in new[] { ImageFormat.Png, ImageFormat.Jpeg, ImageFormat.Gif })
+        {
+            var exception = Assert.Throws<UnsupportedImageFeatureException>(() => MetadataWritePlan.Create(metadata, format, MetadataHandling.Strict, Canvas));
+            Assert.Equal(format, exception.Format);
+            Assert.StartsWith("Metadata: CICP", exception.Feature);
+            Assert.Contains("DiscardUnsupported", exception.Message, StringComparison.Ordinal);
+
+            // Dropping the description is an explicit choice
+            _ = MetadataWritePlan.Create(metadata, format, MetadataHandling.DiscardUnsupported, Canvas);
+            _ = MetadataWritePlan.Create(metadata, format, MetadataHandling.Strip, Canvas);
+        }
+    }
+
+    [Theory]
+    [InlineData(1, 13)] // BT.709 primaries, sRGB transfer function: sRGB
+    [InlineData(1, 2)] // unspecified transfer function
+    [InlineData(2, 13)] // unspecified primaries
+    [InlineData(2, 2)] // nothing specified
+    public void SrgbEquivalentCicpDescriptionNeverThrows(int colorPrimaries, int transferCharacteristics)
+    {
+        // The matrix coefficients and the range describe the encoded source and are already applied: they never matter
+        foreach (var (matrixCoefficients, fullRange) in new[] { (0, true), (1, false), (6, false), (9, true), (2, false) })
+        {
+            var metadata = new ImageMetadata { Cicp = new CicpColorDescription((byte)colorPrimaries, (byte)transferCharacteristics, (byte)matrixCoefficients, fullRange) };
+            foreach (var format in new[] { ImageFormat.Png, ImageFormat.Jpeg, ImageFormat.Gif })
+            {
+                foreach (var handling in new[] { MetadataHandling.Strict, MetadataHandling.DiscardUnsupported, MetadataHandling.Strip })
+                {
+                    _ = MetadataWritePlan.Create(metadata, format, handling, Canvas);
+                }
+            }
+        }
+    }
+
+    [Fact]
+    public void SavingACicpDescriptionThatIsNotSrgbEquivalentNeedsAnExplicitSetting()
+    {
+        using var image = new Image<Rgb24>(2, 2);
+        image.Metadata.Cicp = new CicpColorDescription(colorPrimaries: 9, transferCharacteristics: 16, matrixCoefficients: 9, fullRange: false);
+
+        var exception = Assert.Throws<UnsupportedImageFeatureException>(() => image.Save(new MemoryStream(), new PngEncoder()));
+        Assert.Equal(ImageFormat.Png, exception.Format);
+
+        using var stream = new MemoryStream();
+        image.Save(stream, new PngEncoder { MetadataHandling = MetadataHandling.DiscardUnsupported });
+        using var reloaded = Image.Load(stream.ToArray());
+        Assert.Null(reloaded.Metadata.Cicp);
+
+        // An sRGB label is saved without any setting: nothing is lost
+        image.Metadata.Cicp = new CicpColorDescription(colorPrimaries: 1, transferCharacteristics: 13, matrixCoefficients: 6, fullRange: true);
+        image.Save(new MemoryStream(), new PngEncoder());
+    }
+
     private static void AssertUnsupported(ImageMetadata metadata, ImageFormat format, string feature)
     {
         var exception = Assert.Throws<UnsupportedImageFeatureException>(() => MetadataWritePlan.Create(metadata, format, MetadataHandling.Strict, Canvas));

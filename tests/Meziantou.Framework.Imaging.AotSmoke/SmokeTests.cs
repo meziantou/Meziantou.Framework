@@ -102,6 +102,93 @@ internal static class SmokeTests
         Check(count == 3, "WebP animation frame count");
     }
 
+    // AVIF is decoded and never encoded: the inputs are files written by avifenc 1.4.2 (lossless, 8x6, with alpha) from
+    // the pattern of GetAvifPixel:
+    //   ffmpeg -f lavfi -i "color=black:size=8x6:rate=10,format=rgba,geq=r='X*36':g='Y*50':b='N*100+X+Y':a='255-X*Y*7'" -frames:v 3 f%d.png
+    //   avifenc -l -s 6 f1.png still.avif
+    //   avifenc -l -s 6 --timescale 25 --duration 2 f1.png --duration 5 f2.png f3.png --repetition-count 4 animation.avif
+    private const string AvifStill =
+        "AAAAIGZ0eXBhdmlmAAAAAGF2aWZtaWYxbWlhZk1BMUEAAAGGbWV0YQAAAAAAAAAhaGRscgAAAAAAAAAAcGljdAAAAAAAAAAAAAAAAAAAAAAOcGl0bQAAAAAA" +
+        "AQAAACxpbG9jAAAAAEQAAAIAAQAAAAEAAAH6AAAATgACAAAAAQAAAa4AAABMAAAAQmlpbmYAAAAAAAIAAAAaaW5mZQIAAAAAAQAAYXYwMUNvbG9yAAAAABpp" +
+        "bmZlAgAAAAACAABhdjAxQWxwaGEAAAAAGmlyZWYAAAAAAAAADmF1eGwAAgABAAEAAADDaXBycAAAAJ1pcGNvAAAAFGlzcGUAAAAAAAAACAAAAAYAAAAQcGl4" +
+        "aQAAAAADCAgIAAAADGF2MUOBIAAAAAAAE2NvbHJuY2x4AAEADQAAgAAAAA5waXhpAAAAAAEIAAAADGF2MUOBABwAAAAAOGF1eEMAAAAAdXJuOm1wZWc6bXBl" +
+        "Z0I6Y2ljcDpzeXN0ZW1zOmF1eGlsaWFyeTphbHBoYQAAAAAeaXBtYQAAAAAAAAACAAEEAQKDBAACBAEFhgcAAACibWRhdBIACgUYCL1hUDJBEAD81KVEBJOg" +
+        "P6voWPECMvxA6kUWAATK/W90hyMf4pOeddePwHUjFXE9SwbZy5ZNW7JFLSu/DUcAwqILr08JfQgSAAoIOAi9YQENACAyQBAAAIvW+KBmlaTxhNHeGqy0X+BH" +
+        "DhjhlTPbuLwOfENChQtnTMv6koNw75d5j830a/MlmtHzQaeA8gVlKkIK5kA=";
+
+    private const string AvifAnimation =
+        "AAAALGZ0eXBhdmlzAAAAAGF2aWZhdmlzbXNmMWlzbzhtaWYxbWlhZk1BMUEAAAGGbWV0YQAAAAAAAAAhaGRscgAAAAAAAAAAcGljdAAAAAAAAAAAAAAAAAAA" +
+        "AAAOcGl0bQAAAAAAAQAAACxpbG9jAAAAAEQAAAIAAQAAAAEAAAeKAAAAUwACAAAAAQAABxcAAABTAAAAQmlpbmYAAAAAAAIAAAAaaW5mZQIAAAAAAQAAYXYw" +
+        "MUNvbG9yAAAAABppbmZlAgAAAAACAABhdjAxQWxwaGEAAAAAGmlyZWYAAAAAAAAADmF1eGwAAgABAAEAAADDaXBycAAAAJ1pcGNvAAAAFGlzcGUAAAAAAAAA" +
+        "CAAAAAYAAAAQcGl4aQAAAAADCAgIAAAADGF2MUOBIAAAAAAAE2NvbHJuY2x4AAEADQAAgAAAAA5waXhpAAAAAAEIAAAADGF2MUOBABwAAAAAOGF1eEMAAAAA" +
+        "dXJuOm1wZWc6bXBlZ0I6Y2ljcDpzeXN0ZW1zOmF1eGlsaWFyeTphbHBoYQAAAAAeaXBtYQAAAAAAAAACAAEEAQKDBAACBAEFhgcAAAVdbW9vdgAAAHhtdmhk" +
+        "AQAAAAAAAADm8DIJAAAAAObwMgkAAAAZAAAAAAAAADwAAQAAAQAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAA" +
+        "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAlJ0cmFrAAAAaHRraGQBAAABAAAAAObwMgkAAAAA5vAyCQAAAAEAAAAAAAAAAAAAADwAAAAAAAAAAAAAAAAAAAAA" +
+        "AAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAABAAAAAAAgAAAAGAAAAAAAsZWR0cwAAACRlbHN0AQAAAQAAAAEAAAAAAAAADAAAAAAAAAAAAAEAAAAA" +
+        "AbZtZGlhAAAALG1kaGQBAAAAAAAAAObwMgkAAAAA5vAyCQAAABkAAAAAAAAADFXEAAAAAAAhaGRscgAAAAAAAAAAcGljdAAAAAAAAAAAAAAAAAAAAAFhbWlu" +
+        "ZgAAABR2bWhkAAAAAQAAAAAAAAAAAAAAJGRpbmYAAAAcZHJlZgAAAAAAAAABAAAADHVybCAAAAABAAABIXN0YmwAAACVc3RzZAAAAAAAAAABAAAAhWF2MDEA" +
+        "AAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAACAAGAEgAAABIAAAAAAAAAAEKQU9NIENvZGluZwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY//8AAAAMYXYxQ4EgAAAA" +
+        "AAATY29scm5jbHgAAQANAACAAAAAEGNjc3QAAAAAfAAAAAAAACBzdHRzAAAAAAAAAAIAAAABAAAAAgAAAAIAAAAFAAAAHHN0c2MAAAAAAAAAAQAAAAEAAAAD" +
+        "AAAAAQAAACBzdHN6AAAAAAAAAAAAAAADAAAAUwAAAB8AAAAcAAAAFHN0Y28AAAAAAAAAAQAAB4oAAAAUc3RzcwAAAAAAAAABAAAAAQAAAot0cmFrAAAAaHRr" +
+        "aGQBAAABAAAAAObwMgkAAAAA5vAyCQAAAAIAAAAAAAAAAAAAADwAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAABAAAAA" +
+        "AAgAAAAGAAAAAAAUdHJlZgAAAAxhdXhsAAAAAQAAACxlZHRzAAAAJGVsc3QBAAABAAAAAQAAAAAAAAAMAAAAAAAAAAAAAQAAAAAB221kaWEAAAAsbWRoZAEA" +
+        "AAAAAAAA5vAyCQAAAADm8DIJAAAAGQAAAAAAAAAMVcQAAAAAACFoZGxyAAAAAAAAAABhdXh2AAAAAAAAAAAAAAAAAAAAAYZtaW5mAAAAFHZtaGQAAAABAAAA" +
+        "AAAAAAAAAAAkZGluZgAAABxkcmVmAAAAAAAAAAEAAAAMdXJsIAAAAAEAAAFGc3RibAAAALpzdHNkAAAAAAAAAAEAAACqYXYwMQAAAAAAAAABAAAAAAAAAAAA" +
+        "AAAAAAAAAAAIAAYASAAAAEgAAAAAAAAAAQpBT00gQ29kaW5nAAAAAAAAAAAAAAAAAAAAAAAAAAAAABj//wAAAAxhdjFDgQAcAAAAABBjY3N0AAAAAHwAAAAA" +
+        "AAA4YXV4aQAAAAB1cm46bXBlZzptcGVnQjpjaWNwOnN5c3RlbXM6YXV4aWxpYXJ5OmFscGhhAAAAACBzdHRzAAAAAAAAAAIAAAABAAAAAgAAAAIAAAAFAAAA" +
+        "HHN0c2MAAAAAAAAAAQAAAAEAAAADAAAAAQAAACBzdHN6AAAAAAAAAAAAAAADAAAAUwAAABAAAAAQAAAAFHN0Y28AAAAAAAAAAQAABxcAAAAUc3RzcwAAAAAA" +
+        "AAABAAAAAQAAAQltZGF0EgAKCQAAAAEXptfNUDJEEACAAIhoKOsQOHPH2WsZ1A+sKBe3WI9ST9/EKe/IC6tYJgFDsOxT+qa4vIpzNjw+RgjSjJfYvXPxoEgs" +
+        "PLytVycUXzASADIMMAPAgAAARoAEAJGQEgAyDDAEAQQAAEaABACNwBIACgwgAAABF6bXzQENACAyQRAAgACL1vigZpWk8YTR3hqstF/gRw4Y4ZUz27i8DnxD" +
+        "QoULZ0zL+pKDcO+XeY/N9GvzJZrR80GngPIFZSpCCuZAEgAyGzADwIAAAEaAAQAgKt+T+n2mzlWGu7ZgUgODwBIAMhgwBAEEAABGgAEAInEUpn+E93lt023a" +
+        "wXA=";
+
+    public static void Avif()
+    {
+        var still = Convert.FromBase64String(AvifStill);
+        Check(Image.DetectFormat(still) == ImageFormat.Avif, "AVIF detection");
+        var info = Image.Identify(still, new ImageIdentifyOptions { Mode = ImageIdentifyMode.FullScan });
+        Check(info.Width == 8 && info.Height == 6 && info.FrameCount == 1 && info.PixelFormat == PixelFormat.Rgba32 && info.MayHaveTransparency == true, "AVIF identification");
+        using (var decoded = Image.Load<Rgba32>(still))
+        {
+            CheckAvifFrame(decoded.Frames[0], index: 0, "AVIF still");
+            Check(new CicpColorDescription(1, 13, 0, fullRange: true).Equals(decoded.Metadata.Cicp), "AVIF color description");
+        }
+
+        var animation = Convert.FromBase64String(AvifAnimation);
+        using (var decoded = Image.Load<Rgba32>(animation))
+        {
+            Check(decoded.Frames.Count == 3 && decoded.Animation?.TotalPlays == 5, "AVIF animation frames and plays");
+            Check(decoded.Frames[0].Metadata.Duration == new FrameDuration(2, 25) && decoded.Frames[2].Metadata.Duration == new FrameDuration(1, 5), "AVIF durations");
+            CheckAvifFrame(decoded.Frames[2], index: 2, "AVIF animation frame");
+        }
+
+        using var reader = Image.OpenReader<Rgba32>(new MemoryStream(animation));
+        var count = 0;
+        while (reader.ReadFrame() is { } frame)
+        {
+            using (frame)
+            {
+                CheckAvifFrame(frame.Frames[0], count, "AVIF reader frame");
+                count++;
+            }
+        }
+
+        Check(count == 3, "AVIF reader frame count");
+    }
+
+    private static void CheckAvifFrame(ImageFrame<Rgba32> frame, int index, string context)
+    {
+        Check(frame.Width == 8 && frame.Height == 6, context + " size");
+        for (var y = 0; y < frame.Height; y++)
+        {
+            for (var x = 0; x < frame.Width; x++)
+            {
+                var expected = new Rgba32((byte)(x * 36), (byte)(y * 50), (byte)((index * 100) + x + y), (byte)(255 - (x * y * 7)));
+                Check(frame[x, y] == expected, string.Create(CultureInfo.InvariantCulture, $"{context} pixel ({x}, {y})"));
+            }
+        }
+    }
+
     public static void Qoi()
     {
         using var still = CreatePattern(seed: 11);

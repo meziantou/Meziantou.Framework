@@ -76,8 +76,8 @@ public sealed class SequentialReaderTests
             {
                 using var reader = Image.OpenReader<Rgba32>(new MemoryStream(data));
                 var snapshot = into
-                    ? await ReaderSnapshots.CaptureIntoAsync(reader, asynchronous, includeMetadata: true, XunitCancellationToken)
-                    : await ReaderSnapshots.CaptureAsync(reader, asynchronous, includeMetadata: true, XunitCancellationToken);
+                    ? await ReaderSnapshots.CaptureIntoAsync(reader, asynchronous, includeMetadata: true, cancellationToken: XunitCancellationToken)
+                    : await ReaderSnapshots.CaptureAsync(reader, asynchronous, includeMetadata: true, cancellationToken: XunitCancellationToken);
                 Assert.Equal(3, snapshot.Frames.Count);
                 Assert.True(snapshot.HasAnimation);
                 Assert.Equal(2, snapshot.TotalPlays);

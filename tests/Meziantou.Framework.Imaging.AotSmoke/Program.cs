@@ -20,6 +20,7 @@ Run("tga", SmokeTests.Tga);
 Run("pnm", SmokeTests.Pnm);
 Run("tiff", SmokeTests.Tiff);
 Run("icon", SmokeTests.Icon);
+Run("avif", SmokeTests.Avif);
 Run("processing", SmokeTests.Processing);
 Run("streaming", SmokeTests.Streaming);
 Run("errors", SmokeTests.Errors);

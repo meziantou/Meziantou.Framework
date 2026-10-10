@@ -222,7 +222,9 @@ public sealed class IdentifyConformanceTests
         Assert.Equal(expected.Width, info.Width);
         Assert.Equal(expected.Height, info.Height);
         Assert.Equal(Enum.Parse<PixelFormat>(expected.PixelFormat), info.PixelFormat);
-        Assert.Equal(Enum.Parse<ImageColorModel>(expected.ColorModel!), info.ColorModel);
+        // A header identification of an AVIF file without color box whose bitstream came first cannot tell the color model
+        var colorModel = mode == ImageIdentifyMode.Header && FixtureTraits.HeaderCannotTellTheColorModel(fixture) ? ImageColorModel.Unknown : Enum.Parse<ImageColorModel>(expected.ColorModel!);
+        Assert.Equal(colorModel, info.ColorModel);
         Assert.Equal(expected.BitsPerComponent, info.BitsPerComponent);
         Assert.Equal(FixtureOptions.GetFormat(fixture), info.Metadata.SourceFormat);
     }

@@ -291,6 +291,21 @@ public sealed class SequentialReaderTests
     }
 
     [Fact]
+    public void ReadFrameIntoReplacesTheHotspotOfTheDestination()
+    {
+        var frames = TestStreamFormat.Frames(Width, Height, Format, 1);
+        var data = TestStreamFormat.Encode(Width, Height, Format, frames);
+        using var codecs = TestCodecs.Use(new TestStreamCodec());
+        using var reader = Image.OpenReader<Rgba32>(new MemoryStream(data));
+        using var destination = new Image<Rgba32>(Width, Height);
+
+        // The hotspot belongs to the previous content of the destination, like its duration
+        destination.Frames[0].Metadata.Hotspot = new Point(1, 1);
+        Assert.True(reader.ReadFrameInto(destination));
+        Assert.Null(destination.Frames[0].Metadata.Hotspot);
+    }
+
+    [Fact]
     public void ReadFrameIntoRejectsIncompatibleDestinationsAndStaysUsable()
     {
         var frames = TestStreamFormat.Frames(Width, Height, Format, 1);

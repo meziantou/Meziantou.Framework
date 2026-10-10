@@ -3,9 +3,62 @@ using Meziantou.Framework.Imaging.Internals;
 
 namespace Meziantou.Framework.Imaging.Tests;
 
-/// <summary>Exact import and policy-driven export of GIF/APNG timing and play counts.</summary>
+/// <summary>Exact import and policy-driven export of GIF/APNG/ANI timing and play counts.</summary>
 public sealed class AnimationTimingTests
 {
+    [Theory]
+    [InlineData(0u, 0, 1)]
+    [InlineData(1u, 1, 60)]
+    [InlineData(6u, 1, 10)]
+    [InlineData(60u, 1, 1)]
+    [InlineData(90u, 3, 2)]
+    [InlineData(uint.MaxValue, 286331153, 4)] // 4294967295 / 60 = 286331153 / 4
+    public void AniRatesImportExactly(uint jiffies, long numerator, long denominator)
+    {
+        var duration = AnimationTiming.FromAniRate(jiffies);
+        Assert.Equal((numerator, denominator), (duration.Numerator, duration.Denominator));
+    }
+
+    [Fact]
+    public void AniExportIsExactWhenPossibleAndFollowsTheRoundingPolicyOtherwise()
+    {
+        foreach (var jiffies in (uint[])[0, 1, 2, 59, 60, 61, 3600, uint.MaxValue])
+        {
+            var duration = AnimationTiming.FromAniRate(jiffies);
+            Assert.Equal(jiffies, AnimationTiming.ToAniRate(duration, FrameDurationRounding.RequireExact));
+            Assert.Equal(jiffies, AnimationTiming.ToAniRate(duration, FrameDurationRounding.RoundToNearest));
+        }
+
+        // 1/120 s is half a jiffy (ties up); 1/121 s is just below
+        Assert.Equal(1u, AnimationTiming.ToAniRate(new FrameDuration(1, 120), FrameDurationRounding.RoundToNearest));
+        Assert.Equal(0u, AnimationTiming.ToAniRate(new FrameDuration(1, 121), FrameDurationRounding.RoundToNearest));
+        Assert.Equal(2u, AnimationTiming.ToAniRate(FrameDuration.FromMilliseconds(40), FrameDurationRounding.RoundToNearest)); // 2.4 jiffies
+        Assert.Equal(3u, AnimationTiming.ToAniRate(FrameDuration.FromMilliseconds(42), FrameDurationRounding.RoundToNearest)); // 2.52 jiffies
+        var precision = Assert.Throws<UnsupportedImageFeatureException>(() => AnimationTiming.ToAniRate(FrameDuration.FromMilliseconds(40), FrameDurationRounding.RequireExact));
+        Assert.Equal((ImageFormat.Ani, "ANI frame duration precision"), (precision.Format, precision.Feature));
+
+        // One jiffy more than the 32-bit field holds, and a value that only exceeds it once rounded up
+        foreach (var rounding in Enum.GetValues<FrameDurationRounding>())
+        {
+            var range = Assert.Throws<UnsupportedImageFeatureException>(() => AnimationTiming.ToAniRate(new FrameDuration(1L << 32, 60), rounding));
+            Assert.Equal((ImageFormat.Ani, "ANI frame duration range"), (range.Format, range.Feature));
+        }
+
+        Assert.Equal("ANI frame duration range", Assert.Throws<UnsupportedImageFeatureException>(() => AnimationTiming.ToAniRate(new FrameDuration((2L * uint.MaxValue) + 1, 120), FrameDurationRounding.RoundToNearest)).Feature);
+        Assert.Equal(uint.MaxValue, AnimationTiming.ToAniRate(new FrameDuration((2L * uint.MaxValue) - 1, 120), FrameDurationRounding.RoundToNearest));
+    }
+
+    [Fact]
+    public void AnAnimatedCursorHasNoPlayCount()
+    {
+        AnimationTiming.EnsureAniPlayCount(null);
+        foreach (var plays in (int[])[1, 2, int.MaxValue])
+        {
+            var exception = Assert.Throws<UnsupportedImageFeatureException>(() => AnimationTiming.EnsureAniPlayCount(plays));
+            Assert.Equal((ImageFormat.Ani, "ANI play count"), (exception.Format, exception.Feature));
+        }
+    }
+
     [Theory]
     [InlineData(0, 0, 1)]
     [InlineData(7, 7, 100)]

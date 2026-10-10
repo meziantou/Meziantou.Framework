@@ -105,4 +105,12 @@ internal static class DefaultPixelFormats
     /// <param name="hasMask">Whether the entry stores an AND mask or an alpha channel.</param>
     /// <returns><see cref="PixelFormat.Rgba32"/> when transparency can be expressed, otherwise <see cref="PixelFormat.Rgb24"/>.</returns>
     public static PixelFormat ForIconDib(bool hasMask) => hasMask ? PixelFormat.Rgba32 : PixelFormat.Rgb24;
+
+    /// <summary>Selects the default pixel format of an animated cursor, whose frames are icon or cursor images.</summary>
+    /// <param name="hasSixteenBitFrame">Whether a displayed frame is a PNG payload with 16-bit samples.</param>
+    /// <returns>
+    /// One format for the whole animation that stores every frame losslessly: <see cref="PixelFormat.Rgba32"/> (what every
+    /// DIB-backed frame decodes to), or <see cref="PixelFormat.Rgba64"/> when a frame has 16-bit samples.
+    /// </returns>
+    public static PixelFormat ForAni(bool hasSixteenBitFrame) => hasSixteenBitFrame ? PixelFormat.Rgba64 : PixelFormat.Rgba32;
 }

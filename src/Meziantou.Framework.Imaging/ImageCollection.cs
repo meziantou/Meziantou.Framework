@@ -235,7 +235,10 @@ public sealed class ImageCollection : IDisposable
 
     /// <summary>Appends a copy of an image as the last entry.</summary>
     /// <param name="image">The image. It is copied; the caller keeps its own image and disposes it.</param>
-    /// <param name="hotspot">The hotspot of a cursor representation, or <see langword="null"/>.</param>
+    /// <param name="hotspot">
+    /// The hotspot of a cursor representation, or <see langword="null"/> to use the hotspot of the frame of
+    /// <paramref name="image"/> (<see cref="Metadata.FrameMetadata.Hotspot"/>), if it has one.
+    /// </param>
     /// <returns>The new entry.</returns>
     /// <exception cref="ArgumentException"><paramref name="image"/> is animated or has a poster frame: a page or a representation is a still image.</exception>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="hotspot"/> is outside the image.</exception>
@@ -250,7 +253,10 @@ public sealed class ImageCollection : IDisposable
     /// <summary>Inserts a copy of an image at an index.</summary>
     /// <param name="index">The zero-based index, from 0 to <see cref="Count"/>.</param>
     /// <param name="image">The image. It is copied.</param>
-    /// <param name="hotspot">The hotspot of a cursor representation, or <see langword="null"/>.</param>
+    /// <param name="hotspot">
+    /// The hotspot of a cursor representation, or <see langword="null"/> to use the hotspot of the frame of
+    /// <paramref name="image"/> (<see cref="Metadata.FrameMetadata.Hotspot"/>), if it has one.
+    /// </param>
     /// <returns>The new entry.</returns>
     /// <exception cref="ArgumentOutOfRangeException">The index is outside the collection, or the hotspot is outside the image.</exception>
     /// <exception cref="ArgumentException"><paramref name="image"/> is animated or has a poster frame.</exception>
@@ -394,6 +400,9 @@ public sealed class ImageCollection : IDisposable
             return IcoCollectionReader.Create(input, configuration);
 
         var format = Image.DetectFormat(prefix[..available]);
+        if (format == ImageFormat.Ani)
+            throw new UnsupportedImageFeatureException("ANI stores an animation, not a collection of pages or representations: its frames are played in order. Use Image.Load instead.", format, "Image collection");
+
         if (format != ImageFormat.Unknown)
             throw new UnsupportedImageFeatureException($"{ImageFormatNames.Get(format)} stores a single image, not a collection of pages or representations. Use Image.Load instead.", format, "Image collection");
 
@@ -410,6 +419,10 @@ public sealed class ImageCollection : IDisposable
         if (hotspot is { } point && (point.X < 0 || point.Y < 0 || point.X >= image.Width || point.Y >= image.Height))
             throw new ArgumentOutOfRangeException(nameof(hotspot), hotspot, "The hotspot is outside the image.");
 
-        return new ImageCollectionEntry(this, image.Clone(), hotspot);
+        // The copy carries the hotspot of the entry on its frame, as a decoded cursor representation does
+        var copy = image.Clone();
+        var effective = hotspot ?? copy.Frames[0].Metadata.Hotspot;
+        Image.GetFrameForDecoder(copy, 0).MetadataCore.SetHotspotUnchecked(effective);
+        return new ImageCollectionEntry(this, copy, effective);
     }
 }

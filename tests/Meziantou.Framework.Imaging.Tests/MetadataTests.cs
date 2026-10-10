@@ -142,6 +142,19 @@ public sealed class MetadataTests
         frameClone.Duration = FrameDuration.Zero;
         Assert.Equal(new FrameDuration(1, 3), frame.Duration);
 
+        Assert.Null(frame.Hotspot); // a frame is not a cursor image by default
+        frame.Hotspot = new Point(3, 4);
+        var cursorClone = frame.Clone();
+        Assert.Equal(new Point(3, 4), cursorClone.Hotspot);
+        cursorClone.Hotspot = null;
+        Assert.Equal(new Point(3, 4), frame.Hotspot);
+
+        // Settings that belong to no frame have no size to check: only negative coordinates are rejected
+        frame.Hotspot = new Point(int.MaxValue, 0);
+        Assert.Throws<ArgumentOutOfRangeException>(() => frame.Hotspot = new Point(-1, 0));
+        Assert.Throws<ArgumentOutOfRangeException>(() => frame.Hotspot = new Point(0, -1));
+        Assert.Equal(new Point(int.MaxValue, 0), frame.Hotspot);
+
         var animation = new AnimationMetadata { TotalPlays = 2 };
         var animationClone = animation.Clone();
         animationClone.TotalPlays = null;

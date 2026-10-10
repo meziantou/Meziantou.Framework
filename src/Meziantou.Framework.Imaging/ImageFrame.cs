@@ -140,6 +140,16 @@ public abstract class ImageFrame
     /// <summary>Converts the colors of the leased source to the leased destination with an ICC conversion (color profile transactions).</summary>
     internal abstract void ConvertColorPixels(scoped in PixelLease source, scoped in PixelLease destination, IccPipeline pipeline, CancellationToken cancellationToken);
 
+    /// <summary>Runs the current pass of an auto-crop analysis over the leased pixels, which are only read.</summary>
+    internal abstract void AutoCropAnalyzePixels(scoped in PixelLease lease, AutoCropAnalyzer analyzer, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Writes the rectangle of the leased source located at <paramref name="origin"/> to the leased destination, filling
+    /// what lies outside the source with <paramref name="fill"/> (geometry transactions). The color must be exactly
+    /// representable in the frame pixel format.
+    /// </summary>
+    internal abstract void ExtendPixels(scoped in PixelLease source, scoped in PixelLease destination, Point origin, Rgba64 fill, CancellationToken cancellationToken);
+
     /// <summary>Replaces the storage after a committed geometry transaction; the frame keeps its identity.</summary>
     /// <param name="storage">The replacement storage, owned by the same image.</param>
     internal void ReplaceStorage(PixelStorage storage) => _storage = storage;

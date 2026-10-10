@@ -97,7 +97,7 @@ public sealed class ImageMetadata
     }
 
     /// <summary>
-    /// Reconciles the metadata after a geometry change (crop, resize, rotation) that produced a canvas of
+    /// Reconciles the metadata after a geometry change (crop, auto-crop, resize, rotation) that produced a canvas of
     /// <paramref name="newSize"/>: existing EXIF pixel-dimension tags are updated and the EXIF thumbnail, now stale, is
     /// removed (its bytes are zeroed, never re-emitted). The typed <see cref="Orientation"/> is kept; it is written to the
     /// EXIF data when the image is serialized. A malformed EXIF profile is left unchanged (serializing it fails).

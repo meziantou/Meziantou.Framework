@@ -21,6 +21,9 @@ internal static class TgaFormat
     /// <summary>The offset of the attributes type inside the extension area.</summary>
     public const int ExtensionAttributesTypeOffset = 494;
 
+    /// <summary>The attributes type of an alpha channel whose color samples are premultiplied by it.</summary>
+    public const byte AttributesTypePremultipliedAlpha = 4;
+
     /// <summary>The largest number of pixels one run-length or raw packet encodes.</summary>
     public const int MaxPacketLength = 128;
 

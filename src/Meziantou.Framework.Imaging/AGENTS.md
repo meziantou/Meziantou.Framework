@@ -18,7 +18,8 @@ the library guarantees to its callers (support matrix, limitations, defaults). K
 - No public allocator, custom pixel type, codec plug-in or image-processor interface. Implementation types are `internal`
   and live under `Internals/`.
 - Public namespaces: `Meziantou.Framework.Imaging`, `.Metadata` and `.Formats` (encoder settings). The base types of the
-  model (`Image`, `ImageFrame`, `ImageFrameCollection`, `ImageEncoder`) cannot be derived outside the library.
+  model (`Image`, `ImageFrame`, `ImageFrameCollection`, `ImageEncoder`, `AutoCropAnalysis`) cannot be derived outside the
+  library.
 - Every public member has XML documentation (`DisableDocumentationWarnings` is `false`).
 - `Meziantou.Framework.FullPath` is used by the tests, benchmarks and tools, never by the library.
 
@@ -48,7 +49,7 @@ the library guarantees to its callers (support matrix, limitations, defaults). K
 - **Resource limits** (`ImageResourceLimits`) are enforced incrementally, before allocating or consuming. They are
   inclusive and always positive (no zero-as-unlimited). A limit failure is never turned into a truncation error or a
   success. Test each limit at the boundary and one over.
-- **Atomicity.** Geometry-changing operations (crop, resize, rotate, auto-orient) are transactional across all frames and
+- **Atomicity.** Geometry-changing operations (crop, auto-crop, resize, rotate, auto-orient) are transactional across all frames and
   the poster. Pixel-only edits may be partially applied on failure but leave the image valid and disposable. A failed
   operation releases every resource it acquired.
 - **Ownership.** Images are owned and disposed by their creator. Frames are borrowed views: they are not disposable and
@@ -76,10 +77,17 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
 `Internals/IO` and `Internals/Codecs`:
 
 - Identifiers and decoders are synchronous push-model parsers (`ImageParser<TResult>`): they consume what they can and
-  return `Complete` or `NeedMoreData(n)`. The driver (`ImageInputPump`) performs the I/O, so the same parser serves the
-  sync and async APIs and CPU work never runs in `Task.Run`. Parsers check cancellation between rows and frames.
-- Streams are read forward only, never rewound, and never read past `MaxEncodedBytes`. Spans and streams must fail
-  identically at the same boundary.
+  return `Complete`, `NeedMoreData(n)`, or `NeedMoreDataOrEnd(n)` when the end of the input satisfies the request too. The
+  driver (`ImageInputPump`) performs the I/O, so the same parser serves the sync and async APIs and CPU work never runs in
+  `Task.Run`. Parsers check cancellation between rows and frames.
+- Streams are read forward only and never rewound, and no byte past `MaxEncodedBytes` reaches a parser.
+  `MaxEncodedBytes` equal to the input length is always enough, and spans and streams fail identically at the same
+  boundary, with the same `Requested`.
+- A span knows where it ends; a stream only says so when it is read past its end. A parser that needs the end of the
+  input (a trailer located from the last bytes, an optional terminator, a container buffered whole) must ask with
+  `NeedMoreDataOrEnd`, never with `NeedMoreData`: at the limit, the driver then reads one discarded byte
+  (`ImageInputBuffer.ProbeEndOfInput`) to tell an input that ends there from a longer one. It is the only read past the
+  limit; do not add another.
 - Each format has a structure parser (container rules, written once and walked as header, full scan or decode), a pixel
   decoder that observes it, and an encoder codec. Decoders hand rows to a `DecodedFrameSink` in a lossless source layout;
   the sink converts to the requested pixel format and charges frames before allocating them.

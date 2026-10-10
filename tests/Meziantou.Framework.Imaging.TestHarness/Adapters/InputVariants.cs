@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using Meziantou.Framework.Imaging.TestHarness.Golden;
 using Meziantou.Framework.Imaging.TestHarness.Streams;
 
@@ -136,6 +137,82 @@ public static class InputVariants
             (path, token) => Image.LoadAsync<TPixel>(path, options, token),
             (stream, token) => Image.LoadAsync<TPixel>(stream, options, token),
             cancellationToken);
+
+    /// <summary>
+    /// Describes what a caller observes when <paramref name="data"/> is identified by a full scan and loaded through a
+    /// variant: the information and the pixels, or the exception with the properties that are part of the contract (the
+    /// kind, limit and requested value of a limit failure, the feature of an unsupported one). Variants that give the same
+    /// description cannot be told apart by the caller, so the description of <see cref="InputVariant.Span"/> is the
+    /// expectation of every other variant.
+    /// </summary>
+    public static async Task<string> DescribeOutcomeAsync(InputVariant variant, byte[] data, ImageFormat format, ImageConfiguration? configuration = null, CancellationToken cancellationToken = default)
+    {
+        configuration ??= ImageConfiguration.Default;
+        var identifyOptions = new ImageIdentifyOptions { Configuration = configuration, Mode = ImageIdentifyMode.FullScan };
+        var decodeOptions = new ImageDecodeOptions { Configuration = configuration };
+        var identified = await DescribeAsync(async () => ImageInfoSnapshots.Describe(await IdentifyAsync(variant, data, format, identifyOptions, cancellationToken).ConfigureAwait(false))).ConfigureAwait(false);
+        var loaded = await DescribeAsync(async () =>
+        {
+            using var image = await LoadAsync<Rgba64>(variant, data, format, decodeOptions, cancellationToken).ConfigureAwait(false);
+            return DescribePixels(image);
+        }).ConfigureAwait(false);
+        return $"identify: {identified}\nload: {loaded}";
+    }
+
+    /// <summary>
+    /// Checks the contract of the encoded-byte limit for one input through one variant: a limit equal to the input length
+    /// never fails, a limit one byte below it fails with the limit, and both outcomes are those of a span.
+    /// </summary>
+    public static async Task AssertEncodedByteLimitBoundaryAsync(InputVariant variant, byte[] data, ImageFormat format, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(data);
+        foreach (var limit in new[] { data.Length, data.Length - 1 })
+        {
+            var configuration = new ImageConfiguration { Limits = new ImageResourceLimits { MaxEncodedBytes = limit } };
+            var expected = await DescribeOutcomeAsync(InputVariant.Span, data, format, configuration, cancellationToken).ConfigureAwait(false);
+            var failures = expected.Split('\n').Count(line => line.Contains("ImageResourceLimitException(EncodedBytes", StringComparison.Ordinal));
+            if (failures != (limit == data.Length ? 0 : 2))
+                throw new GoldenAssertionException($"MaxEncodedBytes = {limit} for a {data.Length}-byte input: a limit equal to the length must be enough and one byte less must fail with the limit.\n{expected}");
+
+            var actual = await DescribeOutcomeAsync(variant, data, format, configuration, cancellationToken).ConfigureAwait(false);
+            if (actual != expected)
+                throw new GoldenAssertionException($"{variant} differs from a span with MaxEncodedBytes = {limit} for a {data.Length}-byte input.\nExpected:\n{expected}\nActual:\n{actual}");
+        }
+    }
+
+    private static async Task<string> DescribeAsync(Func<Task<string>> operation)
+    {
+        try
+        {
+            return await operation().ConfigureAwait(false);
+        }
+        catch (ImageResourceLimitException exception)
+        {
+            return string.Create(CultureInfo.InvariantCulture, $"{exception.GetType().Name}({exception.Kind}, limit {exception.Limit}, requested {exception.Requested})");
+        }
+        catch (UnsupportedImageFeatureException exception)
+        {
+            return $"{exception.GetType().Name}({exception.Feature})";
+        }
+        catch (ImageException exception)
+        {
+            return exception.GetType().Name;
+        }
+    }
+
+    private static string DescribePixels(Image<Rgba64> image)
+    {
+        var builder = new StringBuilder();
+        builder.Append(CultureInfo.InvariantCulture, $"{image.Width}x{image.Height} frames={image.Frames.Count}");
+        var pixels = new byte[image.Width * image.Height * 8];
+        foreach (var frame in image.Frames)
+        {
+            frame.CopyPixelBytesTo(pixels);
+            builder.Append(' ').Append(Convert.ToHexString(SHA256.HashData(pixels)));
+        }
+
+        return builder.ToString();
+    }
 
     /// <summary>Runs an operation through a variant and verifies the stream and file ownership afterward.</summary>
     public static async Task<T> RunAsync<T>(

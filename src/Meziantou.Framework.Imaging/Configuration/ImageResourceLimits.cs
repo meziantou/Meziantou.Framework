@@ -144,7 +144,7 @@ public sealed class ImageResourceLimits
     /// <param name="width">The width. Must be positive (validated by the caller as an argument or as content).</param>
     /// <param name="height">The height. Must be positive.</param>
     /// <exception cref="ImageResourceLimitException">A limit is exceeded.</exception>
-    internal void EnsureCanvasWithinLimits(int width, int height)
+    internal void EnsureCanvasWithinLimits(long width, long height)
     {
         Debug.Assert(width > 0 && height > 0);
         if (width > MaxWidth)
@@ -153,7 +153,8 @@ public sealed class ImageResourceLimits
         if (height > MaxHeight)
             throw new ImageResourceLimitException(ImageResourceLimitKind.Height, MaxHeight, height);
 
-        var pixels = (long)width * height;
+        // Both dimensions fit in 32 bits here: the product cannot overflow
+        var pixels = width * height;
         if (pixels > MaxFramePixels)
             throw new ImageResourceLimitException(ImageResourceLimitKind.FramePixels, MaxFramePixels, pixels);
     }

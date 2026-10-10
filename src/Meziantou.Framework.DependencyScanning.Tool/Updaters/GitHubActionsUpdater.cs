@@ -99,7 +99,7 @@ internal sealed class GitHubActionsUpdater : PackageUpdater
         try
         {
             using var request = CreateTagsRequest(uri);
-            using var response = await SharedHttpClient.Instance.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+            using var response = await SharedHttpClient.InstanceWithAutoRedirect.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
             if (response.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden or HttpStatusCode.TooManyRequests)
             {
                 // Without this the caller cannot tell "rate limited" from "no newer tag exists"

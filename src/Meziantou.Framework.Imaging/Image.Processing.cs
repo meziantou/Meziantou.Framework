@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using Meziantou.Framework.Imaging.Internals;
 using Meziantou.Framework.Imaging.Metadata;
 
@@ -47,6 +48,109 @@ public abstract partial class Image
         // Large frames are resized by up to MaxDegreeOfParallelism workers (row bands, bit-identical results)
         using var plan = new ResizePlan(geometry, options.Filter, workingSpace, PixelFormat, _configuration.MaxDegreeOfParallelism);
         ReplaceGeometry(geometry.OutputSize, normalizeOrientation: false, Operation, new ResizeFiller(plan), cancellationToken);
+    }
+
+    /// <summary>
+    /// Detects the background and the content box of the image over every displayed frame and the poster, without changing
+    /// anything: each pass leases one frame at a time, and no storage is rented.
+    /// </summary>
+    /// <param name="options">The options.</param>
+    /// <param name="cancellationToken">The token checked before the first pass and between row bands.</param>
+    /// <exception cref="InvalidOperationException">A lease is active on a frame.</exception>
+    /// <exception cref="ObjectDisposedException">The image is disposed.</exception>
+    internal AutoCropAnalysis AnalyzeAutoCropCore(AutoCropOptions options, CancellationToken cancellationToken)
+    {
+        ThrowIfDisposed();
+        cancellationToken.ThrowIfCancellationRequested();
+        var frames = GetAllFrames();
+        var canvas = new Rectangle(0, 0, _size.Width, _size.Height);
+        var analyzer = new AutoCropAnalyzer(_size, options.ColorThreshold);
+        RunAutoCropPass(frames, analyzer, cancellationToken);
+        var found = analyzer.CompleteBorderPass(options.BucketThreshold);
+        var background = analyzer.BackgroundColor;
+        if (!found)
+        {
+            analyzer.BeginRetryBorderPass();
+            RunAutoCropPass(frames, analyzer, cancellationToken);
+            if (!analyzer.CompleteBorderPass(bucketThreshold: null))
+                return CreateAutoCropAnalysis(success: false, canvas, background, weightX: 0, weightY: 0);
+
+            background = analyzer.BackgroundColor;
+        }
+
+        analyzer.BeginBoundsPass();
+        RunAutoCropPass(frames, analyzer, cancellationToken);
+        if (!analyzer.TryGetBounds(out var bounds))
+            return CreateAutoCropAnalysis(success: false, canvas, background, weightX: 0, weightY: 0);
+
+        var weights = (X: 0d, Y: 0d);
+        if (options.AnalyzeWeights)
+        {
+            analyzer.BeginWeightsPass();
+            RunAutoCropPass(frames, analyzer, cancellationToken);
+            weights = analyzer.GetWeights();
+        }
+
+        return CreateAutoCropAnalysis(success: true, bounds, background, weights.X, weights.Y);
+    }
+
+    /// <summary>
+    /// Crops every displayed frame and the poster to the padded content box of an analysis, transactionally (see
+    /// <see cref="ReplaceGeometry{TFiller}"/>). A rectangle inside the canvas is a plain crop; otherwise the canvas is
+    /// enlarged and what lies outside the original canvas is filled with the background of the analysis.
+    /// </summary>
+    /// <param name="analysis">An analysis of a canvas of the same size (validated by the caller), or <see langword="null"/> to analyze this image.</param>
+    /// <param name="options">The options.</param>
+    /// <param name="cancellationToken">The token checked during the analysis, between frames and row bands, and once more right before the commit.</param>
+    /// <returns><see langword="true"/> if the image changed; <see langword="false"/> if the analysis failed or the rectangle is the whole canvas.</returns>
+    /// <exception cref="UnsupportedImageFeatureException">The canvas must be enlarged but the background of the analysis is not exactly representable in the pixel format.</exception>
+    internal bool AutoCropCore(AutoCropAnalysis? analysis, AutoCropOptions options, CancellationToken cancellationToken)
+    {
+        const string Operation = "auto-crop the image";
+        Owner.EnsureCanModify(Operation);
+        cancellationToken.ThrowIfCancellationRequested();
+        analysis ??= AnalyzeAutoCropCore(options, cancellationToken);
+        if (!analysis.Success)
+            return false;
+
+        var geometry = AutoCropGeometry.Compute(_size, analysis, options);
+        if (geometry.IsIdentity(_size))
+            return false;
+
+        if (geometry.IsInside(_size))
+        {
+            TransformGeometry(new Rectangle((int)geometry.X, (int)geometry.Y, (int)geometry.Width, (int)geometry.Height), OrientationTransform.Identity, normalizeOrientation: false, Operation, cancellationToken);
+            return true;
+        }
+
+        var fill = analysis.BackgroundColor;
+        if (!PixelConverter.IsExactlyRepresentable(fill, PixelFormat))
+            throw new UnsupportedImageFeatureException(
+                $"Enlarging the canvas fills it with the background color of the analysis ({fill}), which {PixelFormat} pixels cannot represent exactly. Use {nameof(AutoCropPaddingMode)}.{nameof(AutoCropPaddingMode.Contain)}, or analyze an image of the same pixel format.",
+                ImageFormat.Unknown,
+                "Auto-crop background fill");
+
+        // The limits bound both dimensions to 32 bits, and the origin is at most one padded canvas away
+        _configuration.Limits.EnsureCanvasWithinLimits(geometry.Width, geometry.Height);
+        ReplaceGeometry(new Size((int)geometry.Width, (int)geometry.Height), normalizeOrientation: false, Operation, new ExtendFiller(new Point((int)geometry.X, (int)geometry.Y), fill), cancellationToken);
+        return true;
+    }
+
+    /// <summary>Creates the analysis of this image, typed with its pixel type.</summary>
+    /// <param name="success">Whether a border and a content box were found.</param>
+    /// <param name="bounds">The content box, inside the canvas.</param>
+    /// <param name="backgroundColor">The background, exactly representable in the pixel format of the image.</param>
+    /// <param name="weightX">The horizontal weight.</param>
+    /// <param name="weightY">The vertical weight.</param>
+    internal abstract AutoCropAnalysis CreateAutoCropAnalysis(bool success, Rectangle bounds, Rgba64 backgroundColor, double weightX, double weightY);
+
+    private static void RunAutoCropPass(ImageFrame[] frames, AutoCropAnalyzer analyzer, CancellationToken cancellationToken)
+    {
+        foreach (var frame in frames)
+        {
+            using var lease = frame.GetStorage().AcquireLease();
+            frame.AutoCropAnalyzePixels(lease, analyzer, cancellationToken);
+        }
     }
 
     /// <summary>
@@ -305,6 +409,17 @@ public abstract partial class Image
 
         public void Fill(ImageFrame frame, scoped in PixelLease source, scoped in PixelLease destination, CancellationToken cancellationToken)
             => frame.ConvertColorPixels(source, destination, pipeline, cancellationToken);
+    }
+
+    [StructLayout(LayoutKind.Auto)]
+    private readonly struct ExtendFiller(Point origin, Rgba64 fill) : IGeometryFiller
+    {
+        public void Prepare(AllocationScope scope)
+        {
+        }
+
+        public void Fill(ImageFrame frame, scoped in PixelLease source, scoped in PixelLease destination, CancellationToken cancellationToken)
+            => frame.ExtendPixels(source, destination, origin, fill, cancellationToken);
     }
 
     private readonly struct ResizeFiller(ResizePlan plan) : IGeometryFiller

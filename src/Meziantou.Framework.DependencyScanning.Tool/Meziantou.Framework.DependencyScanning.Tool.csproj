@@ -7,11 +7,8 @@
     <Version>2.0.20</Version>
     <Description>CLI tool to update dependencies in source repositories</Description>
     <PackageTags>dependencies, scanner, nuget, npm, docker, cli, dotnet-tool</PackageTags>
+    <IncludeSharedHttpClient>true</IncludeSharedHttpClient>
   </PropertyGroup>
-
-  <ItemGroup>
-    <Compile Include="../../common/SharedHttpClient.cs" Link="SharedHttpClient.cs" />
-  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="NuGet.Configuration" Version="7.9.0" />

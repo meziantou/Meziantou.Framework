@@ -11517,6 +11517,82 @@
       "notes": "A pixel uses the color-map index 1, below the first stored entry (the map starts at index 2 and holds five entries)."
     },
     {
+      "id": "invalid/tga/extension-offset-past-footer",
+      "kind": "invalid",
+      "format": "tga",
+      "input": {
+        "path": "invalid/tga/extension-offset-past-footer.tga",
+        "sha256": "a1a06fd194adfdf0b1ecdfdb70a003066148fe64f43fdd43b8e619e0ca708b49",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/TgaCorpus.cs (BuildErrors)",
+        "tools": [
+          ".NET 10.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "InvalidImageContentException",
+        "format": "Tga"
+      },
+      "notes": "The footer locates the 495-byte extension area one byte after its start, so that it would overlap the footer."
+    },
+    {
+      "id": "invalid/tga/extension-premultiplied-alpha",
+      "kind": "unsupported",
+      "format": "tga",
+      "input": {
+        "path": "invalid/tga/extension-premultiplied-alpha.tga",
+        "sha256": "1300dca068b93a777fb3cb00a99f2504cd97f62b35e6e15f688f3295f1127a52",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/TgaCorpus.cs (BuildErrors)",
+        "tools": [
+          ".NET 10.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "UnsupportedImageFeatureException",
+        "format": "Tga",
+        "feature": "Attributes type: premultiplied alpha"
+      },
+      "features": [
+        "tga.unsupported=premultiplied-alpha"
+      ],
+      "notes": "The extension area declares attributes type 4 (premultiplied alpha) for a 32-bit image with 8 alpha bits: the working pixel formats store straight alpha, and the color samples are never divided by the alpha."
+    },
+    {
+      "id": "invalid/tga/extension-size-too-small",
+      "kind": "invalid",
+      "format": "tga",
+      "input": {
+        "path": "invalid/tga/extension-size-too-small.tga",
+        "sha256": "801f711b5b5c5b5845e9883ba1f416973ad151ad166671e402e66889127036d0",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/TgaCorpus.cs (BuildErrors)",
+        "tools": [
+          ".NET 10.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "InvalidImageContentException",
+        "format": "Tga"
+      },
+      "notes": "The extension area declares 494 bytes, one fewer than the TGA 2.0 extension area: it cannot hold the attributes type, its last byte."
+    },
+    {
       "id": "invalid/tga/grayscale-16bit",
       "kind": "unsupported",
       "format": "tga",
@@ -29538,6 +29614,98 @@
               {
                 "path": "tga/colormap8-rgba-entries.frame-0.rgba8.raw",
                 "sha256": "4c500fa95b0aef60c6d9f011ad994c588ad9e28d550a719f3aaa5b0069f57b1d",
+                "layout": "rgba8",
+                "width": 5,
+                "height": 3,
+                "rowBytes": 20,
+                "byteLength": 60,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "tga/developer-area-extension",
+      "kind": "valid",
+      "format": "tga",
+      "input": {
+        "path": "tga/developer-area-extension.tga",
+        "sha256": "e3ccac76eccda5ce5668afe701355fcf3caf809455b1d28dabf4fd434ade4b90",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/TgaCorpus.cs (BuildTga)",
+        "tools": [
+          "ffmpeg 9.0.2 (cross-check only)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "width": 5,
+          "height": 3,
+          "attributesType": 3,
+          "developerTag": 32768
+        }
+      },
+      "features": [
+        "tga.alphaBits=8",
+        "tga.attributesType=3",
+        "tga.columnOrder=left-to-right",
+        "tga.depth=32",
+        "tga.developerArea",
+        "tga.footer",
+        "tga.imageType=2",
+        "tga.rowOrder=bottom-up",
+        "tga.trailingData",
+        "tga.width=odd"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "A TGA 2.0 file whose extension area does not follow the pixel data: a developer area (an 8-byte field and its one-tag directory) comes first, and the footer locates both. The extension area is read where the footer says; the developer area is application data and is not interpreted.",
+        "crossChecks": [
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec tga decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt rgba -",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "result": "exact"
+          }
+        ]
+      },
+      "expected": {
+        "width": 5,
+        "height": 3,
+        "pixelFormat": "Rgba32",
+        "colorModel": "Rgba",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "tga/developer-area-extension.frame-0.rgba8.raw",
+                "sha256": "f6eed4f74999ed9d76063be1cf63bed8e63ca0fa2639ac2e9676d1f751f6fdd8",
                 "layout": "rgba8",
                 "width": 5,
                 "height": 3,

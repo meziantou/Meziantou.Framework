@@ -245,17 +245,30 @@ internal static class TgaCorpus
 
         var pixelDataEnd = offset;
 
-        // The TGA 2.0 trailer (developer area, extension area and footer) is located by offsets stored at the end of the file.
-        // A forward-only decoder that never reads past the image data cannot follow them, so the library ignores the trailer;
-        // it is only inspected here to describe the fixture (features).
+        // The TGA 2.0 trailer: the footer is the last 26 bytes of the file and holds the offsets of the extension area and of
+        // the developer directory, both counted from the start of the file. The extension area lies between the image data
+        // and the footer, holds at least the 495 bytes of TGA 2.0, and ends with the attributes type, which says what the
+        // alpha data is: 4 is premultiplied alpha, which a reader of straight alpha must not take for straight alpha.
         int? attributesType = null;
+        var hasDeveloperArea = false;
         var trailer = Bytes.Slice(data, pixelDataEnd);
         var hasFooter = trailer.Length >= 26 && Bytes.Slice(trailer, -18).AsSpan().SequenceEqual(TgaFooterSignature);
         if (hasFooter)
         {
-            var extensionOffset = (long)Bytes.U32LE(trailer, trailer.Length - 26);
-            if (extensionOffset == pixelDataEnd && trailer.Length >= TgaExtensionLength + 26 && Bytes.U16LE(trailer, 0) == TgaExtensionLength)
-                attributesType = trailer[494];
+            var footerOffset = data.Length - 26;
+            var extensionOffset = (long)Bytes.U32LE(data, footerOffset);
+            hasDeveloperArea = Bytes.U32LE(data, footerOffset + 4) != 0;
+            if (extensionOffset != 0)
+            {
+                if (extensionOffset < pixelDataEnd || extensionOffset + TgaExtensionLength > footerOffset)
+                    throw new FormatError(Inv($"extension area at {extensionOffset} outside the bytes between the image data ({pixelDataEnd}) and the footer ({footerOffset})"));
+                var extensionSize = Bytes.U16LE(data, (int)extensionOffset);
+                if (extensionSize < TgaExtensionLength)
+                    throw new FormatError(Inv($"extension area of {extensionSize} bytes"));
+                attributesType = data[(int)extensionOffset + 494];
+                if (attributesType == 4 && alphaBits > 0)
+                    throw new FormatError("premultiplied alpha (attributes type 4)");
+            }
         }
 
         var rows = new List<List<Px>>();
@@ -314,6 +327,8 @@ internal static class TgaCorpus
             features.Add("tga.footer");
         if (attributesType is not null)
             features.Add(Inv($"tga.attributesType={attributesType}"));
+        if (hasDeveloperArea)
+            features.Add("tga.developerArea");
         if (width % 2 == 1)
             features.Add("tga.width=odd");
         return (RgbaImage(width, height, rows.SelectMany(r => r)), SortedSet(features));
@@ -529,6 +544,20 @@ internal static class TgaCorpus
             "authoritative for the decoded representation.",
             required: ["tga.footer", "tga.attributesType=3"]);
 
+        // A developer area (one field and its directory, in that order) between the image data and the extension area
+        var developerField = Bytes.Ascii("Fixture\0");
+        var developerOffset = 18 + body.Length;
+        var developerDirectory = new ByteBuilder().U16LE(1).U16LE(32768).U32LE(developerOffset).U32LE(developerField.Length).ToArray();
+        var extensionOffset = developerOffset + developerField.Length + developerDirectory.Length;
+        data = Bytes.Concat(TgaHeader(2, 5, 3, 32, descriptor: 0x08), body, developerField, developerDirectory, TgaExtensionArea(3),
+            TgaFooter(extensionOffset, developerOffset + developerField.Length));
+        AddFixture(c, Format, "tga/developer-area-extension", "tga/developer-area-extension.tga", data, rgbaImg, "Rgba32", "Rgba", 8,
+            "BuildTga", new Obj { ["width"] = 5, ["height"] = 3, ["attributesType"] = 3, ["developerTag"] = 32768 },
+            "A TGA 2.0 file whose extension area does not follow the pixel data: a developer area (an 8-byte field and its " +
+            "one-tag directory) comes first, and the footer locates both. The extension area is read where the footer " +
+            "says; the developer area is application data and is not interpreted.",
+            required: ["tga.footer", "tga.developerArea", "tga.attributesType=3"]);
+
         data = Bytes.Concat([TgaHeader(2, 5, 3, 24, idLength: 11), Bytes.Ascii("Fixture ID\0"),
             .. TgaPixels24(TgaStoreOrder(TgaRgb5X3, 5, 3, false, false)), TgaFooter()]);
         AddFixture(c, Format, "tga/id-field-footer-only", "tga/id-field-footer-only.tga", data, rgbImg, "Rgb24", "Rgb", 8,
@@ -598,6 +627,25 @@ internal static class TgaCorpus
             Bytes.Concat(Bytes.Slice(read["tga/grayscale8"], null, 16), [16], Bytes.Slice(read["tga/grayscale8"], 17)),
             "UnsupportedImageFeatureException", "16-bit grayscale samples are recognized and rejected; this version " +
             "decodes 8-bit grayscale.", feature: "Grayscale: 16-bit samples", features: ["tga.unsupported=grayscale-16bit"]);
+
+        // The trailer of tga/extension-useful-alpha: the 495-byte extension area starts at the end of the image data and
+        // the 26-byte footer ends the file
+        var extended = read["tga/extension-useful-alpha"];
+        var extensionStart = extended.Length - 26 - TgaExtensionLength;
+        AddError(c, Format, "invalid/tga/extension-premultiplied-alpha", "invalid/tga/extension-premultiplied-alpha.tga",
+            Bytes.Concat(Bytes.Slice(extended, null, extensionStart + 494), [4], Bytes.Slice(extended, extensionStart + 495)),
+            "UnsupportedImageFeatureException", "The extension area declares attributes type 4 (premultiplied alpha) for a " +
+            "32-bit image with 8 alpha bits: the working pixel formats store straight alpha, and the color samples are " +
+            "never divided by the alpha.", feature: "Attributes type: premultiplied alpha",
+            features: ["tga.unsupported=premultiplied-alpha"]);
+        AddError(c, Format, "invalid/tga/extension-offset-past-footer", "invalid/tga/extension-offset-past-footer.tga",
+            Bytes.Concat(Bytes.Slice(extended, null, -26), TgaFooter(extensionOffset: extensionStart + 1)),
+            "InvalidImageContentException", "The footer locates the 495-byte extension area one byte after its start, so " +
+            "that it would overlap the footer.");
+        AddError(c, Format, "invalid/tga/extension-size-too-small", "invalid/tga/extension-size-too-small.tga",
+            Bytes.Concat(Bytes.Slice(extended, null, extensionStart), [494 & 0xFF, 494 >> 8], Bytes.Slice(extended, extensionStart + 2)),
+            "InvalidImageContentException", "The extension area declares 494 bytes, one fewer than the TGA 2.0 extension " +
+            "area: it cannot hold the attributes type, its last byte.");
     }
 
     private static void BuildLimits(Corpus<FfmpegTools> c)

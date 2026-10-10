@@ -1,5 +1,6 @@
 using System.Buffers.Binary;
 using Meziantou.Framework.Imaging.Formats;
+using Meziantou.Framework.Imaging.TestHarness.Adapters;
 using Meziantou.Framework.Imaging.Tests.Codecs;
 
 namespace Meziantou.Framework.Imaging.Tests;
@@ -301,6 +302,20 @@ public sealed class IcoCodecTests
 
         using var image = Image.Load(tolerated);
         Assert.Equal(new Size(4, 4), image.Size);
+    }
+
+    /// <summary>The inputs an icon is buffered whole from: every one that is not a synchronous read of a seekable source.</summary>
+    public static TheoryData<InputVariant> BufferedVariants =>
+        [InputVariant.Span, InputVariant.NonSeekableStream, InputVariant.ShortReadStream, InputVariant.AsyncPath, InputVariant.AsyncStream, InputVariant.AsyncShortReadStream];
+
+    [Theory]
+    [MemberData(nameof(BufferedVariants))]
+    public async Task ABufferedInputNeedsExactlyItsLengthInEncodedBytes(InputVariant variant)
+    {
+        // The whole input is buffered up to its end, which a stream only reports once it is read past
+        await InputVariants.AssertEncodedByteLimitBoundaryAsync(variant, SingleIcon(), ImageFormat.Ico, XunitCancellationToken);
+        await InputVariants.AssertEncodedByteLimitBoundaryAsync(variant, SingleCursor(1, 1), ImageFormat.Cur, XunitCancellationToken);
+        await InputVariants.AssertEncodedByteLimitBoundaryAsync(variant, ThreeSizes(), ImageFormat.Ico, XunitCancellationToken);
     }
 
     [Fact]

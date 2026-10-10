@@ -730,7 +730,7 @@ not be committed.
 
 ### Size
 
-Keep fixtures small (prefer tiny images; a few MB in total). Large inputs for benchmarks are generated at run time and
+Keep fixtures small (prefer tiny images). Large inputs for benchmarks are generated at run time and
 never committed.
 
 ### Fuzz regressions

@@ -4,6 +4,38 @@
 
 namespace Meziantou.Framework.Imaging
 {
+    public abstract class AutoCropAnalysis
+    {
+        public bool Success { get => throw null; }
+        public Meziantou.Framework.Imaging.Size CanvasSize { get => throw null; }
+        public Meziantou.Framework.Imaging.Rectangle Bounds { get => throw null; }
+        public Meziantou.Framework.Imaging.Rgba64 BackgroundColor { get => throw null; }
+        public double WeightX { get => throw null; }
+        public double WeightY { get => throw null; }
+    }
+
+    public sealed class AutoCropAnalysis<TPixel> : Meziantou.Framework.Imaging.AutoCropAnalysis where TPixel : struct
+    {
+        public TPixel BackgroundColor { get => throw null; }
+    }
+
+    public sealed class AutoCropOptions
+    {
+        public static Meziantou.Framework.Imaging.AutoCropOptions Default { get => throw null; }
+        public int PaddingX { get => throw null; init { } }
+        public int PaddingY { get => throw null; init { } }
+        public int ColorThreshold { get => throw null; init { } }
+        public double? BucketThreshold { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.AutoCropPaddingMode PaddingMode { get => throw null; init { } }
+        public bool AnalyzeWeights { get => throw null; init { } }
+    }
+
+    public enum AutoCropPaddingMode
+    {
+        Expand = 0,
+        Contain = 1,
+    }
+
     public struct Bgra32 : System.IEquatable<Meziantou.Framework.Imaging.Bgra32>
     {
         public byte B;
@@ -340,6 +372,10 @@ namespace Meziantou.Framework.Imaging
     public static class ImageProcessingExtensions
     {
         public static void Crop(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.Rectangle rectangle, System.Threading.CancellationToken cancellationToken = null) { }
+        public static Meziantou.Framework.Imaging.AutoCropAnalysis AnalyzeAutoCrop(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.AutoCropOptions? options = null, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public static Meziantou.Framework.Imaging.AutoCropAnalysis<TPixel> AnalyzeAutoCrop<TPixel>(this Meziantou.Framework.Imaging.Image<TPixel> image, Meziantou.Framework.Imaging.AutoCropOptions? options = null, System.Threading.CancellationToken cancellationToken = null) where TPixel : struct => throw null;
+        public static bool AutoCrop(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.AutoCropOptions? options = null, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public static bool AutoCrop(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.AutoCropAnalysis analysis, Meziantou.Framework.Imaging.AutoCropOptions? options = null, System.Threading.CancellationToken cancellationToken = null) => throw null;
         public static void Resize(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.ResizeOptions options, System.Threading.CancellationToken cancellationToken = null) { }
         public static void Rotate(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.RotateMode mode, System.Threading.CancellationToken cancellationToken = null) { }
         public static void AutoOrient(this Meziantou.Framework.Imaging.Image image, System.Threading.CancellationToken cancellationToken = null) { }

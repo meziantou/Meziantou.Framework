@@ -12,8 +12,8 @@ encoding, animation-aware processing, and bounded-memory streaming.
   read and written one entry at a time
 - Animation-aware model: every frame is a full-canvas displayed image with exact rational timing
 - Six working pixel formats (`Rgba32`, `Bgra32`, `Rgb24`, `Rgba64`, `Gray8`, `Gray16`) with 16-bit precision preserved
-- Crop, resize (alpha-aware, Contain/Cover/Stretch), rotate, auto-orient, flip, grayscale and convolution matrices
-  (sharpen, blur, edge detection) applied to all frames
+- Crop, auto-crop (background detection), resize (alpha-aware, Contain/Cover/Stretch), rotate, auto-orient, flip,
+  grayscale and convolution matrices (sharpen, blur, edge detection) applied to all frames
 - Bounded-memory sequential readers and writers for long animations
 - Explicit policies for alpha, precision, metadata and color-profile losses; configurable resource limits
 
@@ -93,7 +93,8 @@ frame.Save("first.jpg", new JpegEncoder { Quality = 85, BackgroundColor = new Rg
 - **Precision and alpha.** Six working pixel formats (`Rgba32`, `Bgra32`, `Rgb24`, `Rgba64`, `Gray8`, `Gray16`), 16-bit
   precision preserved, straight alpha, alpha-aware resampling, and no silent alpha/precision/metadata/animation loss.
 - **Exact timing.** Rational `FrameDuration` preserves GIF, APNG and WebP delays exactly; `TotalPlays` counts total plays.
-- **Atomic geometry.** Crop, resize, rotate and auto-orient apply to every frame (and the poster) transactionally.
+- **Atomic geometry.** Crop, auto-crop, resize, rotate and auto-orient apply to every frame (and the poster)
+  transactionally.
 - **Bounded streaming.** Sequential readers and writers process long animations with memory bounded by one frame.
 - **Safety.** Configurable resource limits, distinct exceptions for malformed data, unsupported features, limits,
   cancellation and I/O failures, and atomic file publication.
@@ -362,8 +363,8 @@ split into row bands, with results identical to the sequential ones.
 
 
 
-- **Geometry is atomic.** `Crop`, `Resize`, `Rotate` and `AutoOrient` apply to every frame and the poster in one
-  transaction: replacements are allocated (and charged) while the originals are live, and any failure before the commit
+- **Geometry is atomic.** `Crop`, `AutoCrop`, `Resize`, `Rotate` and `AutoOrient` apply to every frame and the poster in
+  one transaction: replacements are allocated (and charged) while the originals are live, and any failure before the commit
   (limit, allocation failure, cancellation) leaves dimensions, pixels, frame identities and order, and metadata unchanged.
 - **Pixel mutations may be partial.** `Flip`, `Grayscale`, `Convolve`, row callbacks and `ReadFrameInto` write in place: a
   failure or a cancellation can leave some rows or frames updated, but the image stays structurally valid and
@@ -429,11 +430,64 @@ public static void ExportFrameAsJpeg(string animatedPath, int frameIndex, string
 ### Processing
 
 In-place extension methods (`ImageProcessingExtensions`), applied to every frame and the poster:
-`Crop` (an in-canvas rectangle, never clamped), `Resize`, `Rotate` (exact 90/180/270 permutations), `Flip`, `AutoOrient`
-(all eight EXIF orientations), `Grayscale` (Rec. 709 at storage precision, ties upward; keeps the storage format and
+`Crop` (an in-canvas rectangle, never clamped), `AutoCrop` (the detected content), `Resize`, `Rotate` (exact 90/180/270
+permutations), `Flip`, `AutoOrient` (all eight EXIF orientations), `Grayscale` (Rec. 709 at storage precision, ties upward; keeps the storage format and
 alpha, and rejects incompatible ICC profiles; use `CloneAs<Gray8>` to change the storage) and `Convolve` (a convolution
 matrix). `Flip`, `Grayscale` and `Convolve` also exist for one frame. Geometry changes preserve 16-bit precision and alpha, and reconcile the EXIF dimensions,
 orientation and thumbnail.
+
+**Auto-cropping**. `AutoCrop` removes the uniform background around the content of an image, such as the margin of a
+product picture or of a scan, and returns whether the image changed. `AnalyzeAutoCrop` does the detection alone: it
+returns an `AutoCropAnalysis` (`Success`, `Bounds`, `BackgroundColor`, `WeightX`, `WeightY`) and never changes the image.
+On an `Image<TPixel>` the result is an `AutoCropAnalysis<TPixel>`, whose `BackgroundColor` is a `TPixel` as stored in the
+image; on an untyped `Image`, `BackgroundColor` is the same color widened to `Rgba64`. An analysis can be applied later,
+or to another image of the same size, with `AutoCrop(analysis, options)`.
+
+- **Background.** The most frequent color of the one-pixel outer border, over every frame and the poster. The border is
+  accepted when it has fewer than `ColorThreshold` (default 35) distinct colors, or, for noisy and JPEG backgrounds, when
+  at least `BucketThreshold` (unset by default; 0.945 is a good start) of its pixels fall in the same of 11 luma buckets
+  as the background. Otherwise the detection is retried once with half the threshold, without the outer 5% of the image
+  on each side.
+- **Content.** The bounding box of the pixels that are not background, over every frame and the poster, so that an
+  animation is cropped consistently. A pixel is background when its luma-weighted color difference from the background
+  (`0.2126 |dR| + 0.7152 |dG| + 0.0722 |dB|`) is at most `ColorThreshold` and its alpha difference is below it. Thresholds
+  are on the 8-bit scale and comparisons are made at the storage precision. Fully transparent pixels are all equal,
+  whatever their hidden color. The box must be at least 3x3 pixels.
+- **Padding.** `PaddingX` and `PaddingY` keep a margin, in pixels, made of the original pixels. Where the margin reaches
+  outside the canvas, `AutoCropPaddingMode.Expand` (default) enlarges the canvas and fills the new area with the
+  background color, and `Contain` clamps the margin to the canvas.
+- **Weights.** `AnalyzeWeights` also measures on which side of the canvas the content is heavier (from -1 to 1 on each
+  axis) and moves the padded rectangle that way by `padding * weight` pixels.
+
+When no border or no content is found (a uniform image, for instance), `AutoCrop` returns `false` and leaves the image
+untouched. It works in stored-pixel coordinates: call `AutoOrient` first. The options follow those of
+[ImageSharp.Processing.AutoCrop](https://github.com/Geta/ImageSharp.Processing.AutoCrop), with these differences: the
+padding is in pixels instead of percents, the color difference uses the Rec. 709 weights of the library, the six pixel
+formats and every frame are analyzed, the retry removes the 5% on all four sides, `ColorThreshold` is always set, and a
+uniform image reports the whole canvas as its box.
+
+<!-- snippet: auto-crop -->
+```csharp
+public static bool TrimBackground(string inputPath, string outputPath)
+{
+    using var image = Image.Load(inputPath);
+
+    // The detection works on the stored pixels: apply the EXIF orientation first
+    image.AutoOrient();
+
+    // Read-only: the background color and the bounding box of everything else, in every frame
+    var options = new AutoCropOptions { PaddingX = 8, PaddingY = 8, BucketThreshold = 0.945 };
+    var analysis = image.AnalyzeAutoCrop(options);
+    if (!analysis.Success)
+        return false; // no uniform border, or no content of at least 3x3 pixels
+
+    // Keeps 8 pixels around the content. Where the canvas is too small for the margin, it is enlarged and filled with
+    // the background color (AutoCropPaddingMode.Contain clamps the margin instead)
+    var changed = image.AutoCrop(analysis, options);
+    image.Save(outputPath);
+    return changed;
+}
+```
 
 **Resizing**. `ResizeOptions` sets the target box and `Mode`: `Contain` (default: fit inside,
 never padded), `Cover` (fill exactly, cropped around `Anchor`, one of nine positions) or `Stretch`;

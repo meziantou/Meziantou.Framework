@@ -522,6 +522,11 @@ public void Decode(string id)
   harness (`RawPixelBuffer.Crop`, `FlipHorizontal`/`FlipVertical`, `Rotate180`, `Rotate90Clockwise`/`CounterClockwise`,
   `Transpose`, `Transverse`: pure index permutations checked against literals in `PixelBufferTests`). No processed
   reference files are stored; the expected output is never produced by the library.
+- Auto-crop tests (`Tests/Conformance/AutoCropGoldenTests`) import every frame and poster as is and wrapped in a
+  synthetic border (`RawPixelBuffer.Extend`, checked against literals in `PixelBufferTests`), and compare the detected
+  box, the background and the cropped or enlarged pixels exactly with `TestHarness/AutoCrop/ReferenceAutoCrop`, an
+  independent implementation of the auto-crop contract (plain loops over every pixel, linear color lists, exact
+  `BigInteger` weights). No processed reference files are stored.
 - Resize tests (`Tests/Conformance/ResizeGoldenTests`) also import every frame and poster and compare the resized pixels
   with `TestHarness/Resampling/ReferenceResampler`, an independent high-precision implementation of the resize contract
   (exact rational geometry, decimal kernels and

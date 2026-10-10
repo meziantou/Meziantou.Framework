@@ -207,6 +207,29 @@ internal static class PixelConverter
         return ((sample * alpha) + (background * (max - alpha)) + (max / 2)) / max;
     }
 
+    /// <summary>
+    /// Gets a value indicating whether a color converts to a pixel format without any loss: alpha is kept or fully opaque,
+    /// a gray format gets a gray color, and an 8-bit format gets samples that are exact 8-bit values (multiples of 257).
+    /// </summary>
+    /// <param name="color">The color.</param>
+    /// <param name="format">The pixel format.</param>
+    /// <returns><see langword="true"/> if converting the color to <paramref name="format"/> and back gives the same color.</returns>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="format"/> is not a supported pixel format.</exception>
+    public static bool IsExactlyRepresentable(Rgba64 color, PixelFormat format)
+    {
+        var hasAlpha = PixelFormats.HasAlpha(format);
+        if (!hasAlpha && color.A != ushort.MaxValue)
+            return false;
+
+        if (PixelFormats.IsGrayscale(format) && (color.R != color.G || color.G != color.B))
+            return false;
+
+        if (PixelFormats.GetBitsPerComponent(format) == 16)
+            return true;
+
+        return color.R % 257 == 0 && color.G % 257 == 0 && color.B % 257 == 0 && (!hasAlpha || color.A % 257 == 0);
+    }
+
     internal static void ValidateBackground(Rgba64? background)
     {
         if (background is { A: not ushort.MaxValue })
@@ -325,7 +348,7 @@ internal static class PixelConverter
 
     /// <summary>Reads the components at the source precision; gray is replicated and missing alpha is opaque.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static void Read<TPixel>(ref TPixel pixel, out uint r, out uint g, out uint b, out uint a)
+    internal static void Read<TPixel>(ref TPixel pixel, out uint r, out uint g, out uint b, out uint a)
     {
         if (typeof(TPixel) == typeof(Rgba32))
         {

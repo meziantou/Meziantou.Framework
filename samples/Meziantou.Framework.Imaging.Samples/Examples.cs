@@ -22,6 +22,29 @@ internal static class Examples
     }
     // end-snippet
 
+    /// <summary>Auto-crop: trims the uniform background around the content and keeps a margin; returns whether the image changed.</summary>
+    // begin-snippet: auto-crop
+    public static bool TrimBackground(string inputPath, string outputPath)
+    {
+        using var image = Image.Load(inputPath);
+
+        // The detection works on the stored pixels: apply the EXIF orientation first
+        image.AutoOrient();
+
+        // Read-only: the background color and the bounding box of everything else, in every frame
+        var options = new AutoCropOptions { PaddingX = 8, PaddingY = 8, BucketThreshold = 0.945 };
+        var analysis = image.AnalyzeAutoCrop(options);
+        if (!analysis.Success)
+            return false; // no uniform border, or no content of at least 3x3 pixels
+
+        // Keeps 8 pixels around the content. Where the canvas is too small for the margin, it is enlarged and filled with
+        // the background color (AutoCropPaddingMode.Contain clamps the margin instead)
+        var changed = image.AutoCrop(analysis, options);
+        image.Save(outputPath);
+        return changed;
+    }
+    // end-snippet
+
     /// <summary>Convolution matrices: a sharpening matrix on a copy, then edge detection with the alpha of the pixels kept.</summary>
     // begin-snippet: convolve
     public static void SharpenAndDetectEdges(string inputPath, string sharpenedPath, string edgesPath)

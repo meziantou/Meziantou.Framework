@@ -18,7 +18,8 @@ the library guarantees to its callers (support matrix, limitations, defaults). K
 - No public allocator, custom pixel type, codec plug-in or image-processor interface. Implementation types are `internal`
   and live under `Internals/`.
 - Public namespaces: `Meziantou.Framework.Imaging`, `.Metadata` and `.Formats` (encoder settings). The base types of the
-  model (`Image`, `ImageFrame`, `ImageFrameCollection`, `ImageEncoder`) cannot be derived outside the library.
+  model (`Image`, `ImageFrame`, `ImageFrameCollection`, `ImageEncoder`, `AutoCropAnalysis`) cannot be derived outside the
+  library.
 - Every public member has XML documentation (`DisableDocumentationWarnings` is `false`).
 - `Meziantou.Framework.FullPath` is used by the tests, benchmarks and tools, never by the library.
 
@@ -47,7 +48,7 @@ the library guarantees to its callers (support matrix, limitations, defaults). K
 - **Resource limits** (`ImageResourceLimits`) are enforced incrementally, before allocating or consuming. They are
   inclusive and always positive (no zero-as-unlimited). A limit failure is never turned into a truncation error or a
   success. Test each limit at the boundary and one over.
-- **Atomicity.** Geometry-changing operations (crop, resize, rotate, auto-orient) are transactional across all frames and
+- **Atomicity.** Geometry-changing operations (crop, auto-crop, resize, rotate, auto-orient) are transactional across all frames and
   the poster. Pixel-only edits may be partially applied on failure but leave the image valid and disposable. A failed
   operation releases every resource it acquired.
 - **Ownership.** Images are owned and disposed by their creator. Frames are borrowed views: they are not disposable and

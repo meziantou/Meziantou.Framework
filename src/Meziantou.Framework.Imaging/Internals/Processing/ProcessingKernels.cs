@@ -83,6 +83,47 @@ internal static class ProcessingKernels
         }
     }
 
+    /// <summary>
+    /// Writes the rectangle of the source whose top-left corner is <paramref name="origin"/> and whose size is the
+    /// destination size to the whole destination. The part of the rectangle inside the source is a bit-exact copy; the
+    /// part outside the source is <paramref name="fill"/>.
+    /// </summary>
+    public static void Extend<TPixel>(scoped in PixelLease source, scoped in PixelLease destination, Point origin, TPixel fill, CancellationToken cancellationToken)
+        where TPixel : unmanaged
+    {
+        var outputWidth = destination.Width;
+        var outputHeight = destination.Height;
+
+        // The source columns [sourceX, sourceX + count) land at destination column offset
+        var sourceX = Math.Max(origin.X, 0);
+        var offset = sourceX - origin.X;
+        var count = (int)Math.Clamp(Math.Min(source.Width, (long)origin.X + outputWidth) - sourceX, 0, outputWidth);
+        if (count == 0)
+        {
+            offset = 0;
+        }
+
+        for (var dy = 0; dy < outputHeight; dy++)
+        {
+            if (dy % RowsPerCancellationCheck == 0)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+            }
+
+            var output = destination.GetRow<TPixel>(dy);
+            var sy = (long)origin.Y + dy;
+            if (count == 0 || sy < 0 || sy >= source.Height)
+            {
+                output.Fill(fill);
+                continue;
+            }
+
+            output[..offset].Fill(fill);
+            source.GetRow<TPixel>((int)sy).Slice(sourceX, count).CopyTo(output[offset..]);
+            output[(offset + count)..].Fill(fill);
+        }
+    }
+
     /// <summary>Mirrors the leased storage in place. On cancellation, the rows processed so far stay mirrored.</summary>
     public static void Flip<TPixel>(scoped in PixelLease lease, FlipMode mode, CancellationToken cancellationToken)
         where TPixel : unmanaged

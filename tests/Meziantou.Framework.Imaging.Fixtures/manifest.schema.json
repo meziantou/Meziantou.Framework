@@ -1,0 +1,286 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/meziantou/Meziantou.Framework/tests/Meziantou.Framework.Imaging.Fixtures/manifest.schema.json",
+  "title": "Meziantou.Framework.Imaging golden corpus manifest",
+  "description": "Schema version 2: identity, files, hashes, provenance and licensing; expected full-canvas displayed frames and posters with exact raw-buffer layouts; rational timing, loop and metadata expectations; reference provenance and independent cross-checks; comparison policies; expected errors. Written by tools/Meziantou.Framework.Imaging.CorpusGenerator (GoldenCorpus.cs) and validated by Meziantou.Framework.Imaging.TestHarness.Fixtures.FixtureManifestValidator (which also checks hashes, lengths, conventions and policy discrimination).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "fixtures"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "schemaVersion": { "const": 2 },
+    "generator": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["script", "command", "tools"],
+      "properties": {
+        "script": { "type": "string" },
+        "command": { "type": "string" },
+        "tools": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "fixtures": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/fixture" }
+    }
+  },
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "path": { "type": "string", "pattern": "^[^\\\\/][^\\\\]*$", "description": "Path relative to tests/Meziantou.Framework.Imaging.Fixtures, '/' separators." },
+    "profile": {
+      "description": "Exact identity of a preserved payload, null when absent: SHA-256 and length of the EXIF data from the TIFF header, the uncompressed ICC profile, or the XMP packet.",
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["sha256", "length"],
+          "properties": { "sha256": { "$ref": "#/$defs/sha256" }, "length": { "type": "integer", "minimum": 1 } }
+        }
+      ]
+    },
+    "rational": { "type": "string", "pattern": "^[0-9]+/[1-9][0-9]*$", "description": "Exact non-negative rational number of seconds: numerator/denominator." },
+    "file": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": { "$ref": "#/$defs/path" },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "role": { "type": "string", "description": "e.g. encoded." }
+      }
+    },
+    "buffer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256", "layout", "width", "height", "rowBytes", "byteLength", "alpha", "rowOrder", "compression"],
+      "description": "Tightly packed raw pixels. Raw files carry no metadata: this descriptor is authoritative.",
+      "properties": {
+        "path": { "$ref": "#/$defs/path" },
+        "sha256": { "$ref": "#/$defs/sha256", "description": "Hash of the stored file." },
+        "layout": { "enum": ["rgba8", "rgba16le", "rgb8", "gray8", "gray16le", "graya8", "graya16le"], "description": "Channel order and precision; 16-bit samples are little-endian." },
+        "width": { "type": "integer", "minimum": 1 },
+        "height": { "type": "integer", "minimum": 1 },
+        "rowBytes": { "type": "integer", "minimum": 1, "description": "width x bytes per pixel (no padding)." },
+        "byteLength": { "type": "integer", "minimum": 1, "description": "rowBytes x height; exact decoded length." },
+        "alpha": { "enum": ["straight", "premultiplied", "none"] },
+        "rowOrder": { "const": "top-down" },
+        "compression": { "enum": ["none", "gzip"], "description": "gzip is decompressed with a bounded non-image decompressor." }
+      }
+    },
+    "frame": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["buffers"],
+      "properties": {
+        "duration": { "$ref": "#/$defs/rational", "description": "Required for displayed frames; absent for posters." },
+        "encodedDelay": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "numerator": { "type": "integer", "minimum": 0, "maximum": 65535 },
+            "denominator": { "type": "integer", "minimum": 0, "maximum": 65535 },
+            "hundredths": { "type": "integer", "minimum": 0, "maximum": 65535 },
+            "milliseconds": { "type": "integer", "minimum": 0, "maximum": 16777215 }
+          },
+          "description": "Raw delay field read from the encoded input: APNG fcTL delay_num/delay_den (den 0 means 100), GIF Graphic Control Extension hundredths or WebP ANMF frame duration in milliseconds. Absent when the input has no delay field for the frame."
+        },
+        "encoding": { "type": "string", "description": "How the frame is encoded (delta rectangle, blend/dispose, delay field)." },
+        "buffers": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/buffer" } }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["origin", "license"],
+      "properties": {
+        "origin": { "enum": ["hand-authored", "generated", "external"] },
+        "license": { "enum": ["CC0-1.0", "MIT", "Unlicense", "CC-BY-4.0", "Libpng", "Zlib"] },
+        "author": { "type": "string" },
+        "source": { "type": "string", "description": "Required for external fixtures: URL or citation of the original." },
+        "generator": { "type": "string", "description": "Required for generated fixtures: committed script path and function." },
+        "tools": { "type": "array", "items": { "type": "string" }, "description": "Pinned tools with exact versions, e.g. 'ffmpeg 9.0.2'." },
+        "parameters": { "type": "object", "description": "Synthetic pattern parameters and seeds." },
+        "commands": { "type": "array", "items": { "type": "string" }, "description": "Exact external-tool command lines." }
+      }
+    },
+    "crossCheck": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["decoder", "result"],
+      "properties": {
+        "decoder": { "type": "string" },
+        "command": { "type": "string" },
+        "result": { "enum": ["exact", "equivalent", "within-tolerance", "differs"] },
+        "maxAbsoluteError": { "type": "integer", "minimum": 0 },
+        "meanAbsoluteError": { "type": "number", "minimum": 0 },
+        "excludedFromTolerance": { "type": "boolean" },
+        "notes": { "type": "string" }
+      }
+    },
+    "reference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["method", "description"],
+      "properties": {
+        "method": { "enum": ["hand-computed", "decoded"] },
+        "description": { "type": "string" },
+        "decoder": { "type": "string" },
+        "backend": { "type": "string", "description": "Actual decoder implementation and settings behind the tool." },
+        "command": { "type": "string" },
+        "crossChecks": { "type": "array", "items": { "$ref": "#/$defs/crossCheck" } }
+      }
+    },
+    "expected": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["width", "height", "pixelFormat", "orientation", "iccProfile", "resolution", "profiles", "text", "animation", "frameCount", "frames", "poster"],
+      "properties": {
+        "width": { "type": "integer", "minimum": 1 },
+        "height": { "type": "integer", "minimum": 1 },
+        "pixelFormat": { "enum": ["Rgba32", "Bgra32", "Rgb24", "Rgba64", "Gray8", "Gray16"] },
+        "colorModel": { "enum": ["Grayscale", "GrayscaleAlpha", "Rgb", "Rgba", "Indexed", "YCbCr"] },
+        "bitsPerComponent": { "enum": [1, 2, 4, 8, 16] },
+        "orientation": { "type": "integer", "minimum": 1, "maximum": 8 },
+        "iccProfile": { "enum": ["none", "rgb", "gray"] },
+        "transferFunction": { "enum": ["srgb", "linear"], "description": "Transfer function label of the decoded samples (ImageMetadata.TransferFunction); absent means srgb. QOI colorspace 1 is linear." },
+        "resolution": {
+          "description": "Physical resolution in dots per inch converted from the encoded fields (dpi = x * 0.0254 per meter, x per inch, x * 2.54 per centimeter); null when absent or aspect-ratio only.",
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["horizontalDpi", "verticalDpi", "encoded"],
+              "properties": {
+                "horizontalDpi": { "type": "number", "exclusiveMinimum": 0 },
+                "verticalDpi": { "type": "number", "exclusiveMinimum": 0 },
+                "encoded": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["unit", "x", "y"],
+                  "properties": {
+                    "unit": { "enum": ["meter", "inch", "centimeter"] },
+                    "x": { "type": "integer", "minimum": 1 },
+                    "y": { "type": "integer", "minimum": 1 }
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "profiles": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["icc", "exif", "xmp"],
+          "properties": {
+            "icc": { "$ref": "#/$defs/profile" },
+            "exif": { "$ref": "#/$defs/profile" },
+            "xmp": { "$ref": "#/$defs/profile" }
+          }
+        },
+        "text": {
+          "type": "array",
+          "description": "Text entries in file order (PNG tEXt/zTXt/iTXt except XMP; GIF comments and JPEG COM use the keyword 'Comment'; WebP has none).",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["keyword", "value", "languageTag", "translatedKeyword"],
+            "properties": {
+              "keyword": { "type": "string", "minLength": 1 },
+              "value": { "type": "string" },
+              "languageTag": { "type": ["string", "null"] },
+              "translatedKeyword": { "type": ["string", "null"] }
+            }
+          }
+        },
+        "animation": {
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["totalPlays"],
+              "properties": {
+                "totalPlays": { "type": ["integer", "null"], "minimum": 1, "description": "Total plays including the first; null is infinite." },
+                "encodedLoopValue": { "type": ["integer", "null"], "minimum": 0, "description": "Raw APNG num_plays, GIF NETSCAPE2.0 loop count or WebP ANIM loop count; null when absent." }
+              }
+            }
+          ]
+        },
+        "frameCount": { "type": "integer", "minimum": 1 },
+        "frames": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/frame" } },
+        "poster": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/frame" }] }
+      }
+    },
+    "comparison": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode"],
+      "properties": {
+        "mode": { "enum": ["exact", "tolerance"] },
+        "maxAbsoluteError": { "type": "integer", "minimum": 1, "maximum": 12, "description": "Color samples only, 8-bit scale (x257 for 16-bit). Alpha is always exact." },
+        "maxMeanAbsoluteError": { "type": "number", "minimum": 0, "maximum": 2, "description": "Mean over color samples, 8-bit scale." },
+        "justification": { "type": "string", "minLength": 40 }
+      }
+    },
+    "expectedError": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["exception"],
+      "properties": {
+        "exception": { "type": "string", "description": "Exception type name." },
+        "format": { "type": "string", "description": "Expected exception Format (ImageFormat member name)." },
+        "feature": { "type": "string" },
+        "limitKind": { "type": "string", "description": "Expected ImageResourceLimitException.Kind (member name)." }
+      }
+    },
+    "decodeOptions": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "limits": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "MaxWidth": { "type": "integer", "minimum": 1 },
+            "MaxHeight": { "type": "integer", "minimum": 1 },
+            "MaxFramePixels": { "type": "integer", "minimum": 1 },
+            "MaxFrames": { "type": "integer", "minimum": 1 },
+            "MaxTotalPixels": { "type": "integer", "minimum": 1 },
+            "MaxEncodedBytes": { "type": "integer", "minimum": 1 },
+            "MaxMetadataBytes": { "type": "integer", "minimum": 1 },
+            "MaxLiveAllocationBytes": { "type": "integer", "minimum": 1 }
+          }
+        },
+        "frameLimit": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "fixture": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "format", "input", "provenance"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._/-]*$" },
+        "kind": { "enum": ["valid", "invalid", "unsupported", "limit"] },
+        "format": { "enum": ["png", "gif", "jpeg", "webp", "qoi", "bmp", "tga", "pnm"] },
+        "input": { "$ref": "#/$defs/file" },
+        "provenance": { "$ref": "#/$defs/provenance" },
+        "features": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "reference": { "$ref": "#/$defs/reference" },
+        "expected": { "$ref": "#/$defs/expected" },
+        "comparison": { "$ref": "#/$defs/comparison" },
+        "expectedError": { "$ref": "#/$defs/expectedError" },
+        "decodeOptions": { "$ref": "#/$defs/decodeOptions" },
+        "notes": { "type": "string" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "kind": { "const": "valid" } } },
+          "then": { "required": ["reference", "expected", "comparison"], "not": { "required": ["expectedError"] } },
+          "else": { "required": ["expectedError"], "not": { "anyOf": [{ "required": ["expected"] }, { "required": ["comparison"] }] } }
+        }
+      ]
+    }
+  }
+}

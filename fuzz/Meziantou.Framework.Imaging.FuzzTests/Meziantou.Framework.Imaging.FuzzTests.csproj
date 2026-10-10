@@ -1,0 +1,29 @@
+<Project Sdk="Meziantou.NET.Sdk.Test">
+  <!--
+    Deterministic mutation fuzz tests over the golden corpus (tests/Meziantou.Framework.Imaging.Fixtures) and the replay of the
+    committed fuzz regressions (FuzzRegressions). The default budget is small and runs in CI; longer campaigns are opt-in
+    through the MEZIANTOU_FRAMEWORK_IMAGING_FUZZ_* environment variables (FuzzSettings). Tool-free and network-free.
+    Run on net10.0 and net11.0.
+  -->
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <RootNamespace>Meziantou.Framework.Imaging.FuzzTests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Imaging\Meziantou.Framework.Imaging.csproj" />
+    <ProjectReference Include="..\..\tests\Meziantou.Framework.Imaging.TestHarness\Meziantou.Framework.Imaging.TestHarness.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The buffer-lifetime audit shared with the hardening conformance tests (FuzzOracle runs every case under it) -->
+    <Compile Include="..\..\tests\Meziantou.Framework.Imaging.Tests\Conformance\Hardening\PoolAudit.cs" Link="Shared\PoolAudit.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The corpus inputs are the fuzz seeds (FuzzSeeds, through FixtureRoot.GetDirectory) -->
+    <None Include="..\..\tests\Meziantou.Framework.Imaging.Fixtures\**\*" LinkBase="Fixtures" CopyToOutputDirectory="PreserveNewest" />
+    <!-- Minimized fuzz regressions (FuzzRegressionTests), kept apart from the golden corpus -->
+    <None Update="FuzzRegressions\**\*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

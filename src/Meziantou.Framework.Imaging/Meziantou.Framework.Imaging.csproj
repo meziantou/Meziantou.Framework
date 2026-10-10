@@ -1,0 +1,18 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IsTrimmable>true</IsTrimmable>
+    <Version>1.0.0</Version>
+    <Description>Fully managed, performance-oriented image library for .NET: PNG, APNG, GIF, JPEG, WebP, QOI, BMP, TGA, Netpbm, TIFF and ICO/CUR decoding/encoding, animation-aware processing, and bounded-memory streaming.</Description>
+    <PackageTags>image;imaging;png;apng;gif;jpeg;webp;qoi;bmp;tga;netpbm;tiff;ico;animation;resize</PackageTags>
+
+    <!-- Every public member must be documented -->
+    <DisableDocumentationWarnings>false</DisableDocumentationWarnings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Meziantou.Framework.Imaging.Tests" />
+    <InternalsVisibleTo Include="Meziantou.Framework.Imaging.FuzzTests" />
+    <InternalsVisibleTo Include="ImagingBenchmarks" />
+  </ItemGroup>
+</Project>

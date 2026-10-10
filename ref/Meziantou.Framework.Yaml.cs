@@ -18,8 +18,8 @@ namespace Meziantou.Framework.Yaml
         public EventReader(Meziantou.Framework.Yaml.IParser parser) { }
         public T Expect<T>() where T : Meziantou.Framework.Yaml.Events.ParsingEvent => throw null;
         public bool Accept<T>() where T : Meziantou.Framework.Yaml.Events.ParsingEvent => throw null;
-        public T Allow<T>() where T : Meziantou.Framework.Yaml.Events.ParsingEvent => throw null;
-        public T Peek<T>() where T : Meziantou.Framework.Yaml.Events.ParsingEvent => throw null;
+        public T? Allow<T>() where T : Meziantou.Framework.Yaml.Events.ParsingEvent => throw null;
+        public T? Peek<T>() where T : Meziantou.Framework.Yaml.Events.ParsingEvent => throw null;
         public void Skip() { }
         public void Skip(int untilDepth) { }
     }
@@ -279,22 +279,22 @@ namespace Meziantou.Framework.Yaml
         public static void Serialize(System.IO.TextWriter writer, object? value, System.Type inputType, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context) { }
         public static void Serialize(System.IO.Stream utf8Stream, object? value, System.Type inputType, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) { }
         public static void Serialize(System.IO.Stream utf8Stream, object? value, System.Type inputType, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context) { }
-        public static T Deserialize<T>(string yaml, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
-        public static T Deserialize<T>(string yaml, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context) => throw null;
+        public static T? Deserialize<T>(string yaml, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
+        public static T? Deserialize<T>(string yaml, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context) => throw null;
         public static object? Deserialize(string yaml, System.Type returnType, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
         public static object? Deserialize(string yaml, System.Type returnType, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context) => throw null;
-        public static bool TryDeserialize<T>(string yaml, out T value, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
-        public static bool TryDeserialize<T>(string yaml, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context, out T value) => throw null;
+        public static bool TryDeserialize<T>(string yaml, out T? value, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
+        public static bool TryDeserialize<T>(string yaml, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context, out T? value) => throw null;
         public static bool TryDeserialize(string yaml, System.Type returnType, out object? value, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
         public static bool TryDeserialize(string yaml, System.Type returnType, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context, out object? value) => throw null;
-        public static T Deserialize<T>(System.IO.TextReader reader, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
-        public static bool TryDeserialize<T>(System.IO.TextReader reader, out T value, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
-        public static T Deserialize<T>(System.IO.Stream utf8Stream, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
-        public static bool TryDeserialize<T>(System.IO.Stream utf8Stream, out T value, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
-        public static T Deserialize<T>(System.IO.TextReader reader, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context) => throw null;
-        public static bool TryDeserialize<T>(System.IO.TextReader reader, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context, out T value) => throw null;
-        public static T Deserialize<T>(System.IO.Stream utf8Stream, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context) => throw null;
-        public static bool TryDeserialize<T>(System.IO.Stream utf8Stream, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context, out T value) => throw null;
+        public static T? Deserialize<T>(System.IO.TextReader reader, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
+        public static bool TryDeserialize<T>(System.IO.TextReader reader, out T? value, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
+        public static T? Deserialize<T>(System.IO.Stream utf8Stream, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
+        public static bool TryDeserialize<T>(System.IO.Stream utf8Stream, out T? value, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
+        public static T? Deserialize<T>(System.IO.TextReader reader, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context) => throw null;
+        public static bool TryDeserialize<T>(System.IO.TextReader reader, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context, out T? value) => throw null;
+        public static T? Deserialize<T>(System.IO.Stream utf8Stream, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context) => throw null;
+        public static bool TryDeserialize<T>(System.IO.Stream utf8Stream, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context, out T? value) => throw null;
         public static object? Deserialize(System.IO.TextReader reader, System.Type returnType, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
         public static bool TryDeserialize(System.IO.TextReader reader, System.Type returnType, out object? value, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
         public static object? Deserialize(System.IO.Stream utf8Stream, System.Type returnType, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
@@ -310,11 +310,11 @@ namespace Meziantou.Framework.Yaml
         public static void Serialize<T>(System.IO.Stream utf8Stream, T value, Meziantou.Framework.Yaml.YamlTypeInfo<T> typeInfo) { }
         public static void Serialize(System.IO.Stream utf8Stream, object? value, Meziantou.Framework.Yaml.YamlTypeInfo typeInfo) { }
         public static object? Deserialize(string yaml, Meziantou.Framework.Yaml.YamlTypeInfo typeInfo) => throw null;
-        public static T Deserialize<T>(System.IO.TextReader reader, Meziantou.Framework.Yaml.YamlTypeInfo<T> typeInfo) => throw null;
+        public static T? Deserialize<T>(System.IO.TextReader reader, Meziantou.Framework.Yaml.YamlTypeInfo<T> typeInfo) => throw null;
         public static object? Deserialize(System.IO.TextReader reader, Meziantou.Framework.Yaml.YamlTypeInfo typeInfo) => throw null;
-        public static T Deserialize<T>(System.IO.Stream utf8Stream, Meziantou.Framework.Yaml.YamlTypeInfo<T> typeInfo) => throw null;
+        public static T? Deserialize<T>(System.IO.Stream utf8Stream, Meziantou.Framework.Yaml.YamlTypeInfo<T> typeInfo) => throw null;
         public static object? Deserialize(System.IO.Stream utf8Stream, Meziantou.Framework.Yaml.YamlTypeInfo typeInfo) => throw null;
-        public static T Deserialize<T>(string yaml, Meziantou.Framework.Yaml.YamlTypeInfo<T> typeInfo) => throw null;
+        public static T? Deserialize<T>(string yaml, Meziantou.Framework.Yaml.YamlTypeInfo<T> typeInfo) => throw null;
         public static void Serialize<T>(System.Buffers.IBufferWriter<char> destination, T value, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) { }
         public static void Serialize<T>(System.Buffers.IBufferWriter<char> destination, T value, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context) { }
         public static void Serialize(System.Buffers.IBufferWriter<char> destination, object? value, System.Type inputType, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) { }
@@ -394,7 +394,7 @@ namespace Meziantou.Framework.Yaml
     {
         protected YamlTypeInfo(Meziantou.Framework.Yaml.YamlSerializerOptions options) : base(default(System.Type), default(Meziantou.Framework.Yaml.YamlSerializerOptions)) { }
         public abstract void Write(Meziantou.Framework.Yaml.Serialization.YamlWriter writer, T value);
-        public abstract T Read(Meziantou.Framework.Yaml.Serialization.YamlReader reader);
+        public abstract T? Read(Meziantou.Framework.Yaml.Serialization.YamlReader reader);
         public override void Write(Meziantou.Framework.Yaml.Serialization.YamlWriter writer, object? value) { }
         public override object? ReadAsObject(Meziantou.Framework.Yaml.Serialization.YamlReader reader) => throw null;
     }
@@ -560,7 +560,7 @@ namespace Meziantou.Framework.Yaml.Model
         public abstract bool IsCanonical { get; }
     }
 
-    public class YamlMapping : Meziantou.Framework.Yaml.Model.YamlContainer, System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.Model.YamlElement, Meziantou.Framework.Yaml.Model.YamlElement>>, System.Collections.Generic.IDictionary<Meziantou.Framework.Yaml.Model.YamlElement, Meziantou.Framework.Yaml.Model.YamlElement>, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.Model.YamlElement, Meziantou.Framework.Yaml.Model.YamlElement>>, System.Collections.Generic.IList<System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.Model.YamlElement, Meziantou.Framework.Yaml.Model.YamlElement>>, System.Collections.IEnumerable
+    public class YamlMapping : Meziantou.Framework.Yaml.Model.YamlContainer, System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.Model.YamlElement, Meziantou.Framework.Yaml.Model.YamlElement?>>, System.Collections.Generic.IDictionary<Meziantou.Framework.Yaml.Model.YamlElement, Meziantou.Framework.Yaml.Model.YamlElement?>, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.Model.YamlElement, Meziantou.Framework.Yaml.Model.YamlElement?>>, System.Collections.Generic.IList<System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.Model.YamlElement, Meziantou.Framework.Yaml.Model.YamlElement?>>, System.Collections.IEnumerable
     {
         public Meziantou.Framework.Yaml.Events.MappingStart MappingStart { get => throw null; set { } }
         public override string? Anchor { get => throw null; set { } }
@@ -578,7 +578,11 @@ namespace Meziantou.Framework.Yaml.Model
         public static Meziantou.Framework.Yaml.Model.YamlMapping Load(Meziantou.Framework.Yaml.EventReader eventReader) => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
         public System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.Model.YamlElement, Meziantou.Framework.Yaml.Model.YamlElement?>> GetEnumerator() => throw null;
+        void System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.Model.YamlElement,Meziantou.Framework.Yaml.Model.YamlElement>>.Add(System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.Model.YamlElement, Meziantou.Framework.Yaml.Model.YamlElement?> item) { }
         public void Clear() { }
+        bool System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.Model.YamlElement,Meziantou.Framework.Yaml.Model.YamlElement>>.Contains(System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.Model.YamlElement, Meziantou.Framework.Yaml.Model.YamlElement?> item) => throw null;
+        void System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.Model.YamlElement,Meziantou.Framework.Yaml.Model.YamlElement>>.CopyTo(System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.Model.YamlElement, Meziantou.Framework.Yaml.Model.YamlElement?>[] array, int arrayIndex) { }
+        bool System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.Model.YamlElement,Meziantou.Framework.Yaml.Model.YamlElement>>.Remove(System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.Model.YamlElement, Meziantou.Framework.Yaml.Model.YamlElement?> item) => throw null;
         public void Add(Meziantou.Framework.Yaml.Model.YamlElement key, Meziantou.Framework.Yaml.Model.YamlElement? value) { }
         public bool ContainsKey(Meziantou.Framework.Yaml.Model.YamlElement key) => throw null;
         public bool ContainsKey(string key) => throw null;
@@ -599,7 +603,7 @@ namespace Meziantou.Framework.Yaml.Model
         public void WriteTo(System.IO.TextWriter writer, bool suppressDocumentTags = false) { }
         public void WriteTo(Meziantou.Framework.Yaml.IEmitter emitter, bool suppressDocumentTags = false) { }
         public override string ToString() => throw null;
-        public T ToObject<T>(Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
+        public T? ToObject<T>(Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
         public object? ToObject(System.Type type, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
         public static Meziantou.Framework.Yaml.Model.YamlElement FromObject(object value, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null, System.Type? expectedType = null) => throw null;
         public abstract Meziantou.Framework.Yaml.Model.YamlNode DeepClone();
@@ -608,6 +612,7 @@ namespace Meziantou.Framework.Yaml.Model
     public sealed class YamlNodeEventEnumerator : System.Collections.Generic.IEnumerable<Meziantou.Framework.Yaml.Events.ParsingEvent>, System.Collections.Generic.IEnumerator<Meziantou.Framework.Yaml.Events.ParsingEvent>, System.Collections.IEnumerable, System.Collections.IEnumerator, System.IDisposable
     {
         public Meziantou.Framework.Yaml.Events.ParsingEvent Current { get => throw null; }
+        object System.Collections.IEnumerator.Current { get => throw null; }
         public YamlNodeEventEnumerator(Meziantou.Framework.Yaml.Model.YamlNode root) { }
         public System.Collections.Generic.IEnumerator<Meziantou.Framework.Yaml.Events.ParsingEvent> GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
@@ -709,7 +714,9 @@ namespace Meziantou.Framework.Yaml.Schemas
 
     public interface IYamlSchema
     {
+        [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNull("shortTag")]
         string? ExpandTag(string shortTag);
+        [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNull("tag")]
         string? ShortenTag(string tag);
         string? GetDefaultTag(Meziantou.Framework.Yaml.Events.NodeEvent nodeEvent);
         string? GetDefaultTag(System.Type type);
@@ -738,7 +745,9 @@ namespace Meziantou.Framework.Yaml.Schemas
     {
         public const string StrShortTag = "!!str";
         public const string StrLongTag = "tag:yaml.org,2002:str";
+        [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNull("shortTag")]
         public string? ExpandTag(string? shortTag) => throw null;
+        [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNull("tag")]
         public string? ShortenTag(string? tag) => throw null;
         public string? GetDefaultTag(Meziantou.Framework.Yaml.Events.NodeEvent nodeEvent) => throw null;
         public string? GetDefaultTag(System.Type type) => throw null;
@@ -750,7 +759,7 @@ namespace Meziantou.Framework.Yaml.Schemas
         public bool TryParse(Meziantou.Framework.Yaml.Events.Scalar scalar, System.Type type, out object? value) => throw null;
         public System.Type? GetTypeForDefaultTag(string? tag) => throw null;
         protected virtual void PrepareScalarRules() { }
-        protected void AddScalarRule<T>(string tag, [System.Diagnostics.CodeAnalysis.StringSyntax("Regex")] string regex, System.Func<System.Text.RegularExpressions.Match, T> decode, System.Func<T, string>? encode) { }
+        protected void AddScalarRule<T>(string tag, [System.Diagnostics.CodeAnalysis.StringSyntax("Regex")] string regex, System.Func<System.Text.RegularExpressions.Match, T?> decode, System.Func<T, string>? encode) { }
         protected void AddScalarRule(System.Type[] types, string tag, [System.Diagnostics.CodeAnalysis.StringSyntax("Regex")] string regex, System.Func<System.Text.RegularExpressions.Match, object?> decode, System.Func<object, string>? encode) { }
         protected void RegisterDefaultTagMapping<T>(string tag, bool isDefault = false) { }
         protected void RegisterDefaultTagMapping(string tag, System.Type type, bool isDefault) { }
@@ -824,7 +833,7 @@ namespace Meziantou.Framework.Yaml.Serialization
         public sealed override bool CanConvert(System.Type typeToConvert) => throw null;
         public sealed override object? Read(Meziantou.Framework.Yaml.Serialization.YamlReader reader, System.Type typeToConvert) => throw null;
         public sealed override void Write(Meziantou.Framework.Yaml.Serialization.YamlWriter writer, object? value) { }
-        public abstract T Read(Meziantou.Framework.Yaml.Serialization.YamlReader reader);
+        public abstract T? Read(Meziantou.Framework.Yaml.Serialization.YamlReader reader);
         public abstract void Write(Meziantou.Framework.Yaml.Serialization.YamlWriter writer, T value);
     }
 
@@ -1140,8 +1149,8 @@ namespace Meziantou.Framework.Yaml.Serialization
         public YamlWriter(System.IO.TextWriter writer, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) : base(default(Meziantou.Framework.Yaml.YamlSerializerOptions)) { }
         public YamlWriter(System.Text.StringBuilder stringBuilder, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) : base(default(Meziantou.Framework.Yaml.YamlSerializerOptions)) { }
         public bool ShouldInvokeOnSerializing(object value) => throw null;
-        public BlockSequenceItemStyleScope PushBlockSequenceItemStyle(Meziantou.Framework.Yaml.YamlSequenceItemStyle mappingStyle, Meziantou.Framework.Yaml.YamlSequenceItemStyle sequenceStyle) => throw null;
-        public StringStyleScope PushStringStyle(Meziantou.Framework.Yaml.ScalarStyle style) => throw null;
+        public Meziantou.Framework.Yaml.Serialization.YamlWriter.BlockSequenceItemStyleScope PushBlockSequenceItemStyle(Meziantou.Framework.Yaml.YamlSequenceItemStyle mappingStyle, Meziantou.Framework.Yaml.YamlSequenceItemStyle sequenceStyle) => throw null;
+        public Meziantou.Framework.Yaml.Serialization.YamlWriter.StringStyleScope PushStringStyle(Meziantou.Framework.Yaml.ScalarStyle style) => throw null;
         public bool TryWriteReference(object? value) => throw null;
         public void WriteTag(string tag) { }
         public void WriteAnchor(string anchor) { }

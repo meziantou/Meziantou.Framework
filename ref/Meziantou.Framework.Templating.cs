@@ -107,6 +107,7 @@ namespace Meziantou.Framework.Templating
     {
         public const string DefaultTabString = "    ";
         public override System.Text.Encoding Encoding { get => throw null; }
+        [System.Diagnostics.CodeAnalysis.AllowNull]
         public override string NewLine { get => throw null; set { } }
         public int Indent { get => throw null; set { } }
         public System.IO.TextWriter InnerWriter { get => throw null; }
@@ -162,6 +163,7 @@ namespace Meziantou.Framework.Templating
 
     public class Template : System.IDisposable
     {
+        [System.Diagnostics.CodeAnalysis.NotNull]
         public string? OutputParameterName { get => throw null; set { } }
         public System.Type? OutputType { get => throw null; set { } }
         public string? BaseClassFullTypeName { get => throw null; set { } }

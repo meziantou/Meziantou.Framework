@@ -73,7 +73,7 @@ namespace Meziantou.Extensions.Logging
         public FileLoggerProvider(Microsoft.Extensions.Options.IOptionsMonitor<Meziantou.Extensions.Logging.FileLoggerOptions> options, System.TimeProvider timeProvider) { }
         public Microsoft.Extensions.Logging.ILogger CreateLogger(string categoryName) => throw null;
         public void SetScopeProvider(Microsoft.Extensions.Logging.IExternalScopeProvider scopeProvider) { }
-        public System.Threading.Tasks.Task FlushAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public System.Threading.Tasks.Task FlushAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
         public void Dispose() { }
         public System.Threading.Tasks.ValueTask DisposeAsync() => throw null;
     }

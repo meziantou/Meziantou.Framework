@@ -7,8 +7,8 @@ namespace Meziantou.Framework.PublicApiGenerator;
 /// The output must stay identical to the one of the previous versions of the generator, as it is used to track API changes.
 /// </summary>
 /// <remarks>
-/// Multi-line members are written relative to the indentation of the member. Nested types are referenced by their name only,
-/// with the type arguments of all their containing types, which matches the way they are declared in the stub.
+/// Multi-line members are written relative to the indentation of the member. Nested types are referenced through their containing types,
+/// each of them with its own type arguments.
 /// </remarks>
 internal sealed class CSharpCompilableFormatter
 {
@@ -106,6 +106,14 @@ internal sealed class CSharpCompilableFormatter
             writer.Keyword("enum");
             writer.Space();
             WriteTypeDeclarationName(writer, type);
+            if (type.EnumUnderlyingType is { } underlyingType && !underlyingType.IsSystemType("Int32"))
+            {
+                writer.Space();
+                writer.Punctuation(":");
+                writer.Space();
+                WriteTypeReference(writer, underlyingType, includeNullableAnnotations: false);
+            }
+
             writer.WriteLine();
             writer.Punctuation("{");
             writer.WriteLine();
@@ -177,7 +185,7 @@ internal sealed class CSharpCompilableFormatter
         }
 
         WriteBaseTypes(writer, type);
-        WriteConstraints(writer, type.AllGenericParameters);
+        WriteConstraints(writer, type.GenericParameters);
         writer.WriteLine();
         writer.Punctuation("{");
         writer.WriteLine();
@@ -225,10 +233,6 @@ internal sealed class CSharpCompilableFormatter
                 return true;
 
             case PublicApiProperty property:
-                // Explicit implementations of properties and events have never been part of the stubs
-                if (property.IsExplicitInterfaceImplementation)
-                    return false;
-
                 if (type.IsUnion && IsGeneratedUnionValueProperty(property))
                     return false;
 
@@ -236,9 +240,6 @@ internal sealed class CSharpCompilableFormatter
                 return true;
 
             case PublicApiEvent @event:
-                if (@event.IsExplicitInterfaceImplementation)
-                    return false;
-
                 WriteEvent(writer, @event);
                 return true;
 
@@ -249,10 +250,6 @@ internal sealed class CSharpCompilableFormatter
                 return WriteConstructor(writer, constructor, force: false);
 
             case PublicApiMethod method:
-                // Explicit implementations of generic interfaces have never been part of the stubs
-                if (method.IsExplicitInterfaceImplementation && method.Name.Contains('<', StringComparison.Ordinal))
-                    return false;
-
                 WriteMethod(writer, method);
                 return true;
 
@@ -295,7 +292,7 @@ internal sealed class CSharpCompilableFormatter
         writer.Space();
         WriteTypeDeclarationName(writer, type);
         writer.Punctuation("(");
-        var parameters = BuildParameters(invokeMethod.Parameters, includeDefaultValues: true);
+        var parameters = BuildParameters(invokeMethod.Parameters);
         for (var i = 0; i < parameters.Length; i++)
         {
             if (i > 0)
@@ -308,7 +305,7 @@ internal sealed class CSharpCompilableFormatter
         }
 
         writer.Punctuation(")");
-        WriteConstraints(writer, type.AllGenericParameters);
+        WriteConstraints(writer, type.GenericParameters);
         writer.Punctuation(";");
         writer.WriteLine();
     }
@@ -317,8 +314,8 @@ internal sealed class CSharpCompilableFormatter
     {
         writer.Write(PublicApiDeclarationSegmentKind.Identifier, CSharpIdentifierHelper.EscapeIdentifier(type.Name), symbol: type);
 
-        // Nested types repeat the generic parameters of their containing types, as metadata does
-        WriteGenericParameterNames(writer, type.AllGenericParameters);
+        // Metadata repeats the generic parameters of the containing types on nested types, but C# only declares the own ones
+        WriteGenericParameterNames(writer, type.GenericParameters);
     }
 
     private static void WriteGenericParameterNames(DeclarationWriter writer, ImmutableArray<PublicApiGenericParameter> genericParameters)
@@ -347,7 +344,7 @@ internal sealed class CSharpCompilableFormatter
         if (type.TypeKind == PublicApiTypeKind.Class && type.BaseType is PublicApiNamedTypeReference baseType && !baseType.IsSystemType("Object") && !baseType.IsSystemType("ValueType"))
         {
             var baseTypeWriter = writer.CreateWriter();
-            WriteTypeReference(baseTypeWriter, baseType, includeNullableAnnotations: false);
+            WriteTypeReference(baseTypeWriter, baseType, includeNullableAnnotations: true);
             baseTypes.Add(baseTypeWriter);
         }
 
@@ -358,7 +355,7 @@ internal sealed class CSharpCompilableFormatter
                 continue;
 
             var interfaceWriter = writer.CreateWriter();
-            WriteTypeReference(interfaceWriter, @interface, includeNullableAnnotations: false);
+            WriteTypeReference(interfaceWriter, @interface, includeNullableAnnotations: true);
             interfaces.Add(interfaceWriter);
         }
 
@@ -390,6 +387,53 @@ internal sealed class CSharpCompilableFormatter
         }
     }
 
+    // The constraints of an override or of an explicit implementation are inherited, and cannot be repeated.
+    // Only the ones that tell what T? means can be written: class, struct, or default when T has none of them.
+    private static void WriteInheritedConstraints(DeclarationWriter writer, PublicApiMethod method)
+    {
+        foreach (var genericParameter in method.GenericParameters)
+        {
+            string constraint;
+            if (genericParameter.HasReferenceTypeConstraint)
+            {
+                constraint = "class";
+            }
+            else if (genericParameter.HasValueTypeConstraint)
+            {
+                constraint = "struct";
+            }
+            else if (IsAnnotatedTypeParameterUsed(method.ReturnType, genericParameter.Ordinal) || method.Parameters.Any(parameter => IsAnnotatedTypeParameterUsed(parameter.Type, genericParameter.Ordinal)))
+            {
+                constraint = "default";
+            }
+            else
+            {
+                continue;
+            }
+
+            writer.Space();
+            writer.Keyword("where");
+            writer.Space();
+            writer.Write(PublicApiDeclarationSegmentKind.TypeParameterName, CSharpIdentifierHelper.EscapeIdentifier(genericParameter.Name));
+            writer.Space();
+            writer.Punctuation(":");
+            writer.Space();
+            writer.Keyword(constraint);
+        }
+    }
+
+    private static bool IsAnnotatedTypeParameterUsed(PublicApiTypeReference type, int ordinal)
+    {
+        return type switch
+        {
+            PublicApiTypeParameterReference typeParameter => typeParameter.IsMethodTypeParameter && typeParameter.Ordinal == ordinal && typeParameter.NullableAnnotation == PublicApiNullableAnnotation.Annotated,
+            PublicApiArrayTypeReference array => IsAnnotatedTypeParameterUsed(array.ElementType, ordinal),
+            PublicApiPointerTypeReference pointer => IsAnnotatedTypeParameterUsed(pointer.ElementType, ordinal),
+            PublicApiNamedTypeReference named => named.GetAllTypeArguments().Any(typeArgument => IsAnnotatedTypeParameterUsed(typeArgument, ordinal)),
+            _ => false,
+        };
+    }
+
     private static void WriteConstraints(DeclarationWriter writer, ImmutableArray<PublicApiGenericParameter> genericParameters)
     {
         foreach (var genericParameter in genericParameters)
@@ -397,17 +441,33 @@ internal sealed class CSharpCompilableFormatter
             var constraints = new List<Action>();
             if (genericParameter.HasReferenceTypeConstraint)
             {
-                constraints.Add(() => writer.Keyword("class"));
+                // The nullable annotation of a generic parameter encodes the 'class?' and 'notnull' constraints
+                constraints.Add(() =>
+                {
+                    writer.Keyword("class");
+                    if (genericParameter.NullableAnnotation == PublicApiNullableAnnotation.Annotated)
+                    {
+                        writer.Punctuation("?");
+                    }
+                });
+            }
+            else if (!genericParameter.HasValueTypeConstraint && genericParameter.NullableAnnotation == PublicApiNullableAnnotation.NotAnnotated)
+            {
+                constraints.Add(() => writer.Keyword("notnull"));
             }
 
-            if (genericParameter.HasValueTypeConstraint)
+            if (genericParameter.HasUnmanagedTypeConstraint)
+            {
+                constraints.Add(() => writer.Keyword("unmanaged"));
+            }
+            else if (genericParameter.HasValueTypeConstraint)
             {
                 constraints.Add(() => writer.Keyword("struct"));
             }
 
             foreach (var constraintType in genericParameter.ConstraintTypes)
             {
-                constraints.Add(() => WriteTypeReference(writer, constraintType, includeNullableAnnotations: false));
+                constraints.Add(() => WriteTypeReference(writer, constraintType, includeNullableAnnotations: true));
             }
 
             if (genericParameter.HasConstructorConstraint)
@@ -517,7 +577,7 @@ internal sealed class CSharpCompilableFormatter
             writer.Space();
             writer.Punctuation("=");
             writer.Space();
-            WriteConstant(writer, field.ConstantValue);
+            WriteConstant(writer, field.ConstantValue, field.Type, field.ConstantValueEnumMemberNames);
         }
 
         writer.Punctuation(";");
@@ -526,27 +586,34 @@ internal sealed class CSharpCompilableFormatter
     private void WriteProperty(DeclarationWriter writer, PublicApiProperty property)
     {
         WriteMemberAttributes(writer, property.Attributes);
+
+        // The compiler moves the flow analysis attributes of a property to its accessors
+        WriteAccessorFlowAttributes(writer, property, property.SetMethod?.Parameters.LastOrDefault()?.Attributes ?? [], "AllowNullAttribute", "DisallowNullAttribute");
+        WriteAccessorFlowAttributes(writer, property, property.GetMethod?.ReturnAttributes ?? [], "MaybeNullAttribute", "NotNullAttribute");
         var declaringType = property.DeclaringType!;
         var isInterface = declaringType.TypeKind == PublicApiTypeKind.Interface;
         var modifiers = new List<string>();
-        if (!(isInterface && property.IsAbstract))
+        if (!property.IsExplicitInterfaceImplementation)
         {
-            modifiers.Add(CSharpSyntaxFacts.GetAccessibilityText(property.Accessibility));
-        }
+            if (!(isInterface && property.IsAbstract))
+            {
+                modifiers.Add(CSharpSyntaxFacts.GetAccessibilityText(property.Accessibility));
+            }
 
-        if (property.IsStatic)
-        {
-            modifiers.Add("static");
-        }
+            if (property.IsStatic)
+            {
+                modifiers.Add("static");
+            }
 
-        if (!isInterface)
-        {
-            AddInheritanceModifiers(modifiers, property);
-        }
+            if (!isInterface)
+            {
+                AddInheritanceModifiers(modifiers, property);
+            }
 
-        if (property.IsRequired)
-        {
-            modifiers.Add("required");
+            if (property.IsRequired)
+            {
+                modifiers.Add("required");
+            }
         }
 
         var getter = property.GetMethod;
@@ -589,11 +656,12 @@ internal sealed class CSharpCompilableFormatter
 
         WriteTypeReference(writer, property.Type, includeNullableAnnotations: true);
         writer.Space();
+        var propertyName = property.IsExplicitInterfaceImplementation ? WriteExplicitInterfaceQualifier(writer, property) : property.Name;
         if (property.IsIndexer)
         {
             writer.Write(PublicApiDeclarationSegmentKind.Identifier, "this", symbol: property);
             writer.Punctuation("[");
-            var parameters = BuildParameters(property.Parameters, includeDefaultValues: false);
+            var parameters = BuildParameters(property.Parameters);
             for (var i = 0; i < parameters.Length; i++)
             {
                 if (i > 0)
@@ -609,7 +677,7 @@ internal sealed class CSharpCompilableFormatter
         }
         else
         {
-            writer.Write(PublicApiDeclarationSegmentKind.Identifier, CSharpIdentifierHelper.EscapeIdentifier(property.Name), symbol: property);
+            writer.Write(PublicApiDeclarationSegmentKind.Identifier, CSharpIdentifierHelper.EscapeIdentifier(propertyName), symbol: property);
         }
 
         writer.Space();
@@ -651,6 +719,22 @@ internal sealed class CSharpCompilableFormatter
         writer.Punctuation("}");
     }
 
+    private void WriteAccessorFlowAttributes(DeclarationWriter writer, PublicApiProperty property, ImmutableArray<PublicApiAttribute> accessorAttributes, string firstAttributeName, string secondAttributeName)
+    {
+        foreach (var attribute in GetAttributes(accessorAttributes))
+        {
+            var attributeType = attribute.AttributeType;
+            if (attributeType.Namespace is not "System.Diagnostics.CodeAnalysis" || (attributeType.Name != firstAttributeName && attributeType.Name != secondAttributeName))
+                continue;
+
+            if (property.Attributes.Any(propertyAttribute => string.Equals(propertyAttribute.AttributeType.FullName, attributeType.FullName, StringComparison.Ordinal)))
+                continue;
+
+            WriteAttribute(writer, attribute);
+            writer.WriteLine();
+        }
+    }
+
     private static void WriteAccessorModifiers(DeclarationWriter writer, PublicApiMethod accessor, PublicApiAccessibility propertyAccessibility, bool isReadOnly, bool isUnsafe)
     {
         if (accessor.Accessibility != propertyAccessibility)
@@ -675,6 +759,34 @@ internal sealed class CSharpCompilableFormatter
     private void WriteEvent(DeclarationWriter writer, PublicApiEvent @event)
     {
         WriteMemberAttributes(writer, @event.Attributes);
+        if (@event.IsExplicitInterfaceImplementation)
+        {
+            // The explicit implementation of an event has no modifiers, and must declare its accessors
+            writer.Keyword("event");
+            writer.Space();
+            WriteTypeReference(writer, @event.Type, includeNullableAnnotations: true);
+            writer.Space();
+            var eventName = WriteExplicitInterfaceQualifier(writer, @event);
+            writer.Write(PublicApiDeclarationSegmentKind.Identifier, CSharpIdentifierHelper.EscapeIdentifier(eventName), symbol: @event);
+            writer.Space();
+            writer.Punctuation("{");
+            writer.Space();
+            writer.Keyword("add");
+            writer.Space();
+            writer.Punctuation("{");
+            writer.Space();
+            writer.Punctuation("}");
+            writer.Space();
+            writer.Keyword("remove");
+            writer.Space();
+            writer.Punctuation("{");
+            writer.Space();
+            writer.Punctuation("}");
+            writer.Space();
+            writer.Punctuation("}");
+            return;
+        }
+
         var modifiers = new List<string> { CSharpSyntaxFacts.GetAccessibilityText(@event.Accessibility) };
         if (@event.IsStatic)
         {
@@ -787,20 +899,23 @@ internal sealed class CSharpCompilableFormatter
         {
             WriteReturnType(prefix, method);
             prefix.Space();
-            if (method.IsExplicitInterfaceImplementation)
-            {
-                WriteExplicitInterfaceMemberName(prefix, method);
-            }
-            else
-            {
-                prefix.Write(PublicApiDeclarationSegmentKind.Identifier, CSharpIdentifierHelper.EscapeIdentifier(method.Name), symbol: method);
-            }
+            var methodName = method.IsExplicitInterfaceImplementation ? WriteExplicitInterfaceQualifier(prefix, method) : method.Name;
+            prefix.Write(PublicApiDeclarationSegmentKind.Identifier, CSharpIdentifierHelper.EscapeIdentifier(methodName), symbol: method);
 
             WriteGenericParameterNames(prefix, method.GenericParameters);
         }
 
         var suffix = writer.CreateWriter();
-        WriteConstraints(suffix, method.GenericParameters);
+
+        if (method.IsExplicitInterfaceImplementation || method.IsOverride)
+        {
+            WriteInheritedConstraints(suffix, method);
+        }
+        else
+        {
+            WriteConstraints(suffix, method.GenericParameters);
+        }
+
         if (method.IsAbstract)
         {
             suffix.Punctuation(";");
@@ -817,21 +932,30 @@ internal sealed class CSharpCompilableFormatter
             suffix.Punctuation("}");
         }
 
-        var parameters = BuildParameters(method.Parameters, includeDefaultValues: true);
+        var parameters = BuildParameters(method.Parameters);
         var requiresNullableDisableDirective = RequiresNullableDirectives(method.ReturnType) || parameters.Any(static parameter => parameter.RequiresNullableDirectives);
         WriteMemberAttributes(writer, method.Attributes);
+        foreach (var attribute in GetAttributes(method.ReturnAttributes))
+        {
+            writer.Punctuation("[");
+            writer.Keyword("return");
+            writer.Punctuation(":");
+            writer.Space();
+            WriteAttributeContent(writer, attribute);
+            writer.Punctuation("]");
+            writer.WriteLine();
+        }
+
         WriteDeclarationWithParameters(writer, prefix, parameters, suffix, requiresNullableDisableDirective);
     }
 
-    private static void WriteExplicitInterfaceMemberName(DeclarationWriter writer, PublicApiMethod method)
+    // Writes the interface of an explicit implementation, followed by a dot (e.g. "System.IDisposable."), and returns the name of the implemented member
+    private static string WriteExplicitInterfaceQualifier(DeclarationWriter writer, PublicApiMember member)
     {
-        var name = method.Name;
+        var name = member.Name;
         var separatorIndex = name.LastIndexOf(".", StringComparison.Ordinal);
         if (separatorIndex < 0)
-        {
-            writer.Write(PublicApiDeclarationSegmentKind.Identifier, CSharpIdentifierHelper.EscapeIdentifier(name), symbol: method);
-            return;
-        }
+            return name;
 
         var interfaceName = name[..separatorIndex];
         if (interfaceName.StartsWith("global::", StringComparison.Ordinal))
@@ -839,10 +963,10 @@ internal sealed class CSharpCompilableFormatter
             interfaceName = interfaceName["global::".Length..];
         }
 
-        var interfaceType = method.ExplicitInterfaceImplementations.Length > 0 ? method.ExplicitInterfaceImplementations[0].ContainingType : null;
+        var interfaceType = member.ExplicitInterfaceImplementations.Length > 0 ? member.ExplicitInterfaceImplementations[0].ContainingType : null;
         writer.Write(PublicApiDeclarationSegmentKind.TypeName, interfaceName, interfaceType);
         writer.Punctuation(".");
-        writer.Write(PublicApiDeclarationSegmentKind.Identifier, CSharpIdentifierHelper.EscapeIdentifier(name[(separatorIndex + 1)..]), symbol: method);
+        return name[(separatorIndex + 1)..];
     }
 
     private bool WriteConstructor(DeclarationWriter writer, PublicApiMethod constructor, bool force)
@@ -887,7 +1011,7 @@ internal sealed class CSharpCompilableFormatter
             suffix.Punctuation("}");
         }
 
-        var parameters = BuildParameters(constructor.Parameters, includeDefaultValues: true);
+        var parameters = BuildParameters(constructor.Parameters);
         WriteMemberAttributes(writer, constructor.Attributes);
         WriteDeclarationWithParameters(writer, prefix, parameters, suffix, parameters.Any(static parameter => parameter.RequiresNullableDirectives));
         return true;
@@ -1015,12 +1139,30 @@ internal sealed class CSharpCompilableFormatter
         }
     }
 
-    private ImmutableArray<ParameterText> BuildParameters(ImmutableArray<PublicApiParameter> parameters, bool includeDefaultValues)
+    private ImmutableArray<ParameterText> BuildParameters(ImmutableArray<PublicApiParameter> parameters)
     {
+        // A default value can only be written with the C# syntax when all the following parameters have one too, except a params parameter.
+        // Otherwise, the parameter is written with the attributes the default value is compiled to.
+        var usesDefaultValueSyntax = new bool[parameters.Length];
+        var followingParametersHaveDefaultValue = true;
+        for (var i = parameters.Length - 1; i >= 0; i--)
+        {
+            if (parameters[i].IsParams || parameters[i].IsParamsCollection)
+                continue;
+
+            usesDefaultValueSyntax[i] = parameters[i].HasDefaultValue && followingParametersHaveDefaultValue;
+            followingParametersHaveDefaultValue &= parameters[i].HasDefaultValue;
+        }
+
         var result = ImmutableArray.CreateBuilder<ParameterText>(parameters.Length);
         foreach (var parameter in parameters)
         {
             var writer = new DeclarationWriter(_options.NewLine);
+            if (parameter.IsOptional && !usesDefaultValueSyntax[parameter.Ordinal])
+            {
+                WriteOptionalParameterAttributes(writer, parameter);
+            }
+
             foreach (var attribute in GetAttributes(parameter.Attributes))
             {
                 WriteAttribute(writer, attribute);
@@ -1084,18 +1226,67 @@ internal sealed class CSharpCompilableFormatter
             WriteTypeReference(writer, parameter.Type, includeNullableAnnotations: true);
             writer.Space();
             writer.Write(PublicApiDeclarationSegmentKind.ParameterName, GetParameterName(parameter));
-            if (includeDefaultValues && parameter.HasDefaultValue)
+            if (usesDefaultValueSyntax[parameter.Ordinal])
             {
                 writer.Space();
                 writer.Punctuation("=");
                 writer.Space();
-                WriteConstant(writer, parameter.DefaultValue);
+                WriteConstant(writer, parameter.DefaultValue, parameter.Type, parameter.DefaultValueEnumMemberNames);
             }
 
             result.Add(new ParameterText(writer, RequiresNullableDirectives(parameter.Type)));
         }
 
         return result.MoveToImmutable();
+    }
+
+    // [Optional], followed by the attribute that stores the default value when the parameter has one
+    private static void WriteOptionalParameterAttributes(DeclarationWriter writer, PublicApiParameter parameter)
+    {
+        writer.Punctuation("[");
+        writer.Write(PublicApiDeclarationSegmentKind.TypeName, "System.Runtime.InteropServices.Optional");
+        writer.Punctuation("]");
+        writer.Space();
+        if (!parameter.HasDefaultValue)
+            return;
+
+        if (parameter.DefaultValue is decimal decimalValue)
+        {
+            var bits = decimal.GetBits(decimalValue);
+            object[] arguments = [(byte)(bits[3] >> 16), (byte)(bits[3] < 0 ? 128 : 0), unchecked((uint)bits[2]), unchecked((uint)bits[1]), unchecked((uint)bits[0])];
+            writer.Punctuation("[");
+            writer.Write(PublicApiDeclarationSegmentKind.TypeName, "System.Runtime.CompilerServices.DecimalConstant");
+            writer.Punctuation("(");
+            for (var i = 0; i < arguments.Length; i++)
+            {
+                if (i > 0)
+                {
+                    writer.Punctuation(",");
+                    writer.Space();
+                }
+
+                WriteConstant(writer, arguments[i]);
+            }
+
+            writer.Punctuation(")");
+            writer.Punctuation("]");
+            writer.Space();
+            return;
+        }
+
+        // The default value of a value type or of a type parameter needs no attribute
+        var valueWriter = writer.CreateWriter();
+        WriteConstant(valueWriter, parameter.DefaultValue, parameter.Type, parameter.DefaultValueEnumMemberNames);
+        if (valueWriter.GetText() is "default")
+            return;
+
+        writer.Punctuation("[");
+        writer.Write(PublicApiDeclarationSegmentKind.TypeName, "System.Runtime.InteropServices.DefaultParameterValue");
+        writer.Punctuation("(");
+        writer.Write(valueWriter);
+        writer.Punctuation(")");
+        writer.Punctuation("]");
+        writer.Space();
     }
 
     private static string GetParameterName(PublicApiParameter parameter)
@@ -1342,7 +1533,7 @@ internal sealed class CSharpCompilableFormatter
     }
 
     // Types used in attribute arguments are written without nullable annotations.
-    // Types decoded from serialized names (typeof, named arguments) are written with their full name, without keywords.
+    // Types decoded from serialized names (typeof, named arguments) are not known to be primitive types, and can be unbound generic types.
     private static void WriteAttributeTypeReference(DeclarationWriter writer, PublicApiTypeReference type)
     {
         if (IsFromSerializedName(type))
@@ -1370,45 +1561,53 @@ internal sealed class CSharpCompilableFormatter
         switch (type)
         {
             case PublicApiNamedTypeReference named:
+                if (named.IsNullableValueType)
                 {
-                    var path = new List<PublicApiNamedTypeReference>();
-                    for (var current = named; current is not null; current = current.ContainingType)
-                    {
-                        path.Add(current);
-                    }
+                    WriteSerializedTypeName(writer, named.TypeArguments[0]);
+                    writer.Punctuation("?");
+                    return;
+                }
 
-                    path.Reverse();
-                    for (var i = 0; i < path.Count; i++)
+                if (CSharpSyntaxFacts.GetKeywordTypeName(named) is { } keyword)
+                {
+                    writer.Write(PublicApiDeclarationSegmentKind.TypeName, keyword, named);
+                    return;
+                }
+
+                if (named.ContainingType is not null)
+                {
+                    WriteSerializedTypeName(writer, named.ContainingType);
+                    writer.Punctuation(".");
+                }
+
+                writer.Write(PublicApiDeclarationSegmentKind.TypeName, named.Namespace.Length > 0 ? named.Namespace + "." + named.Name : named.Name, named);
+                if (named.TypeArguments.IsEmpty)
+                {
+                    // An unbound generic type (e.g. typeof(Dictionary<,>)) has no type arguments
+                    var arity = MetadataNameHelper.GetGenericArity(named.MetadataName);
+                    if (arity > 0)
+                    {
+                        writer.Punctuation("<" + new string(',', arity - 1) + ">");
+                    }
+                }
+                else
+                {
+                    writer.Punctuation("<");
+                    for (var i = 0; i < named.TypeArguments.Length; i++)
                     {
                         if (i > 0)
                         {
-                            writer.Punctuation(".");
+                            writer.Punctuation(",");
+                            writer.Space();
                         }
 
-                        var name = i == 0 && path[i].Namespace.Length > 0 ? path[i].Namespace + "." + path[i].Name : path[i].Name;
-                        writer.Write(PublicApiDeclarationSegmentKind.TypeName, name, path[i]);
+                        WriteSerializedTypeName(writer, named.TypeArguments[i]);
                     }
 
-                    var typeArguments = named.GetAllTypeArguments().ToArray();
-                    if (typeArguments.Length > 0)
-                    {
-                        writer.Punctuation("<");
-                        for (var i = 0; i < typeArguments.Length; i++)
-                        {
-                            if (i > 0)
-                            {
-                                writer.Punctuation(",");
-                                writer.Space();
-                            }
-
-                            WriteSerializedTypeName(writer, typeArguments[i]);
-                        }
-
-                        writer.Punctuation(">");
-                    }
-
-                    return;
+                    writer.Punctuation(">");
                 }
+
+                return;
 
             case PublicApiArrayTypeReference array:
                 WriteSerializedTypeName(writer, array.ElementType);
@@ -1441,28 +1640,12 @@ internal sealed class CSharpCompilableFormatter
                 }
 
                 isReferenceType = !named.IsValueType;
-                typeWriter.Write(PublicApiDeclarationSegmentKind.TypeName, GetCompilableTypeName(named), named);
-                var typeArguments = named.GetAllTypeArguments().ToArray();
-                if (typeArguments.Length > 0)
-                {
-                    typeWriter.Punctuation("<");
-                    for (var i = 0; i < typeArguments.Length; i++)
-                    {
-                        if (i > 0)
-                        {
-                            typeWriter.Punctuation(",");
-                            typeWriter.Space();
-                        }
-
-                        WriteTypeReference(typeWriter, typeArguments[i], includeNullableAnnotations);
-                    }
-
-                    typeWriter.Punctuation(">");
-                }
-
+                WriteNamedTypeReference(typeWriter, named, includeNullableAnnotations);
                 break;
 
             case PublicApiTypeParameterReference typeParameter:
+                // A type parameter constrained to a value type is never annotated: T? is Nullable<T>
+                isReferenceType = true;
                 typeWriter.Write(PublicApiDeclarationSegmentKind.TypeParameterName, CSharpIdentifierHelper.EscapeIdentifier(typeParameter.Name), typeParameter);
                 break;
 
@@ -1520,8 +1703,63 @@ internal sealed class CSharpCompilableFormatter
         writer.Write(typeWriter);
     }
 
+    // Each nesting level is written with its own type arguments (e.g. Outer<int>.Inner<string>)
+    private static void WriteNamedTypeReference(DeclarationWriter writer, PublicApiNamedTypeReference type, bool includeNullableAnnotations)
+    {
+        // A tuple is written with the tuple syntax when its elements are named (e.g. (int Count, string Name))
+        if (CSharpSyntaxFacts.TryGetTupleElements(type, out var elements) && elements.Exists(static element => element.Name is not null))
+        {
+            writer.Punctuation("(");
+            for (var i = 0; i < elements.Count; i++)
+            {
+                if (i > 0)
+                {
+                    writer.Punctuation(",");
+                    writer.Space();
+                }
+
+                WriteTypeReference(writer, elements[i].Type, includeNullableAnnotations);
+                if (elements[i].Name is { } elementName)
+                {
+                    writer.Space();
+                    writer.Write(PublicApiDeclarationSegmentKind.MemberName, CSharpIdentifierHelper.EscapeIdentifier(elementName));
+                }
+            }
+
+            writer.Punctuation(")");
+            return;
+        }
+
+        if (type.ContainingType is not null)
+        {
+            WriteNamedTypeReference(writer, type.ContainingType, includeNullableAnnotations);
+            writer.Punctuation(".");
+        }
+
+        writer.Write(PublicApiDeclarationSegmentKind.TypeName, GetCompilableTypeName(type), type);
+        if (type.TypeArguments.IsEmpty)
+            return;
+
+        writer.Punctuation("<");
+        for (var i = 0; i < type.TypeArguments.Length; i++)
+        {
+            if (i > 0)
+            {
+                writer.Punctuation(",");
+                writer.Space();
+            }
+
+            WriteTypeReference(writer, type.TypeArguments[i], includeNullableAnnotations);
+        }
+
+        writer.Punctuation(">");
+    }
+
     private static string GetCompilableTypeName(PublicApiNamedTypeReference type)
     {
+        if (type.IsDynamic)
+            return "dynamic";
+
         if (type.IsPrimitive)
         {
             // TypedReference has never been mapped, and was written as object
@@ -1531,11 +1769,57 @@ internal sealed class CSharpCompilableFormatter
         if (type.IsSystemType("Decimal"))
             return "decimal";
 
-        // Nested types are written using their name only
+        // The containing type of a nested type is written by the caller
         if (type.ContainingType is not null || type.Namespace.Length == 0)
             return type.Name;
 
         return type.Namespace + "." + type.Name;
+    }
+
+    // A constant of an enum type is stored as its underlying value, and is written using the members of the enum
+    private static void WriteConstant(DeclarationWriter writer, object? value, PublicApiTypeReference type, ImmutableArray<string> enumMemberNames)
+    {
+        // The default value of a value type or of a type parameter is stored as null
+        if (value is null && type is PublicApiTypeParameterReference or PublicApiNamedTypeReference { IsValueType: true, IsNullableValueType: false })
+        {
+            writer.Keyword("default");
+            return;
+        }
+
+        var enumType = type as PublicApiNamedTypeReference;
+        if (enumType is { IsNullableValueType: true })
+        {
+            enumType = enumType.TypeArguments[0] as PublicApiNamedTypeReference;
+        }
+
+        if (enumType is not { IsValueType: true } || CSharpSyntaxFacts.GetKeywordTypeName(enumType) is not null || !EnumMetadata.TryGetValueBits(value, out _))
+        {
+            WriteConstant(writer, value);
+            return;
+        }
+
+        if (enumMemberNames.IsEmpty)
+        {
+            writer.Punctuation("(");
+            WriteTypeReference(writer, enumType, includeNullableAnnotations: false);
+            writer.Punctuation(")");
+            writer.Write(PublicApiDeclarationSegmentKind.NumericLiteral, Convert.ToString(value, CultureInfo.InvariantCulture)!);
+            return;
+        }
+
+        for (var i = 0; i < enumMemberNames.Length; i++)
+        {
+            if (i > 0)
+            {
+                writer.Space();
+                writer.Punctuation("|");
+                writer.Space();
+            }
+
+            WriteTypeReference(writer, enumType, includeNullableAnnotations: false);
+            writer.Punctuation(".");
+            writer.Write(PublicApiDeclarationSegmentKind.MemberName, enumMemberNames[i]);
+        }
     }
 
     private static void WriteConstant(DeclarationWriter writer, object? value)

@@ -29,7 +29,7 @@ namespace Meziantou.Framework.Win32
     }
 
     [System.Flags]
-    public enum GroupSidAttributes
+    public enum GroupSidAttributes : uint
     {
         SE_GROUP_MANDATORY = 1U,
         SE_GROUP_ENABLED_BY_DEFAULT = 2U,
@@ -55,7 +55,7 @@ namespace Meziantou.Framework.Win32
     }
 
     [System.Flags]
-    public enum PrivilegeAttribute
+    public enum PrivilegeAttribute : uint
     {
         Disabled = 0U,
         Enabled = 2U,
@@ -104,7 +104,7 @@ namespace Meziantou.Framework.Win32
     }
 
     [System.Runtime.Versioning.SupportedOSPlatform("windows5.1.2600")]
-    public sealed class SecurityIdentifier : System.IEquatable<Meziantou.Framework.Win32.SecurityIdentifier>
+    public sealed class SecurityIdentifier : System.IEquatable<Meziantou.Framework.Win32.SecurityIdentifier?>
     {
         public string? Domain { get => throw null; }
         public string? Name { get => throw null; }

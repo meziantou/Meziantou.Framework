@@ -14,7 +14,7 @@ namespace Meziantou.Framework.Imaging
         public double WeightY { get => throw null; }
     }
 
-    public sealed class AutoCropAnalysis<TPixel> : Meziantou.Framework.Imaging.AutoCropAnalysis where TPixel : struct
+    public sealed class AutoCropAnalysis<TPixel> : Meziantou.Framework.Imaging.AutoCropAnalysis where TPixel : unmanaged
     {
         public TPixel BackgroundColor { get => throw null; }
     }
@@ -152,7 +152,7 @@ namespace Meziantou.Framework.Imaging
         public abstract Meziantou.Framework.Imaging.ImageFrame? PosterFrame { get; }
         public bool IsAnimated { get => throw null; }
         public abstract Meziantou.Framework.Imaging.Image Clone();
-        public Meziantou.Framework.Imaging.Image<TPixel> CloneAs<TPixel>(Meziantou.Framework.Imaging.PixelConversionOptions? options = null) where TPixel : struct => throw null;
+        public Meziantou.Framework.Imaging.Image<TPixel> CloneAs<TPixel>(Meziantou.Framework.Imaging.PixelConversionOptions? options = null) where TPixel : unmanaged => throw null;
         public abstract Meziantou.Framework.Imaging.Image CloneFrame(int index);
         public abstract Meziantou.Framework.Imaging.Image ClonePosterFrame();
         public abstract Meziantou.Framework.Imaging.ImageFrame AppendFrame();
@@ -164,33 +164,33 @@ namespace Meziantou.Framework.Imaging
         public bool RemovePosterFrame() => throw null;
         public void Save(string path, Meziantou.Framework.Imaging.Formats.ImageEncoder? encoder = null) { }
         public void Save(System.IO.Stream stream, Meziantou.Framework.Imaging.Formats.ImageEncoder encoder) { }
-        public System.Threading.Tasks.Task SaveAsync(string path, Meziantou.Framework.Imaging.Formats.ImageEncoder? encoder = null, System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public System.Threading.Tasks.Task SaveAsync(System.IO.Stream stream, Meziantou.Framework.Imaging.Formats.ImageEncoder encoder, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public System.Threading.Tasks.Task SaveAsync(string path, Meziantou.Framework.Imaging.Formats.ImageEncoder? encoder = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public System.Threading.Tasks.Task SaveAsync(System.IO.Stream stream, Meziantou.Framework.Imaging.Formats.ImageEncoder encoder, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public void Dispose() { }
         public static Meziantou.Framework.Imaging.ImageFormat DetectFormat(System.ReadOnlySpan<byte> prefix) => throw null;
         public static Meziantou.Framework.Imaging.ImageInfo Identify(string path, Meziantou.Framework.Imaging.ImageIdentifyOptions? options = null) => throw null;
         public static Meziantou.Framework.Imaging.ImageInfo Identify(System.IO.Stream stream, Meziantou.Framework.Imaging.ImageIdentifyOptions? options = null) => throw null;
         public static Meziantou.Framework.Imaging.ImageInfo Identify(System.ReadOnlySpan<byte> data, Meziantou.Framework.Imaging.ImageIdentifyOptions? options = null) => throw null;
-        public static System.Threading.Tasks.Task<Meziantou.Framework.Imaging.ImageInfo> IdentifyAsync(string path, Meziantou.Framework.Imaging.ImageIdentifyOptions? options = null, System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public static System.Threading.Tasks.Task<Meziantou.Framework.Imaging.ImageInfo> IdentifyAsync(System.IO.Stream stream, Meziantou.Framework.Imaging.ImageIdentifyOptions? options = null, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public static System.Threading.Tasks.Task<Meziantou.Framework.Imaging.ImageInfo> IdentifyAsync(string path, Meziantou.Framework.Imaging.ImageIdentifyOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static System.Threading.Tasks.Task<Meziantou.Framework.Imaging.ImageInfo> IdentifyAsync(System.IO.Stream stream, Meziantou.Framework.Imaging.ImageIdentifyOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public static Meziantou.Framework.Imaging.Image Load(string path, Meziantou.Framework.Imaging.ImageDecodeOptions? options = null) => throw null;
         public static Meziantou.Framework.Imaging.Image Load(System.IO.Stream stream, Meziantou.Framework.Imaging.ImageDecodeOptions? options = null) => throw null;
         public static Meziantou.Framework.Imaging.Image Load(System.ReadOnlySpan<byte> data, Meziantou.Framework.Imaging.ImageDecodeOptions? options = null) => throw null;
-        public static Meziantou.Framework.Imaging.Image<TPixel> Load<TPixel>(string path, Meziantou.Framework.Imaging.ImageDecodeOptions? options = null) where TPixel : struct => throw null;
-        public static Meziantou.Framework.Imaging.Image<TPixel> Load<TPixel>(System.IO.Stream stream, Meziantou.Framework.Imaging.ImageDecodeOptions? options = null) where TPixel : struct => throw null;
-        public static Meziantou.Framework.Imaging.Image<TPixel> Load<TPixel>(System.ReadOnlySpan<byte> data, Meziantou.Framework.Imaging.ImageDecodeOptions? options = null) where TPixel : struct => throw null;
-        public static System.Threading.Tasks.Task<Meziantou.Framework.Imaging.Image> LoadAsync(string path, Meziantou.Framework.Imaging.ImageDecodeOptions? options = null, System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public static System.Threading.Tasks.Task<Meziantou.Framework.Imaging.Image> LoadAsync(System.IO.Stream stream, Meziantou.Framework.Imaging.ImageDecodeOptions? options = null, System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public static System.Threading.Tasks.Task<Meziantou.Framework.Imaging.Image<TPixel>> LoadAsync<TPixel>(string path, Meziantou.Framework.Imaging.ImageDecodeOptions? options = null, System.Threading.CancellationToken cancellationToken = null) where TPixel : struct => throw null;
-        public static System.Threading.Tasks.Task<Meziantou.Framework.Imaging.Image<TPixel>> LoadAsync<TPixel>(System.IO.Stream stream, Meziantou.Framework.Imaging.ImageDecodeOptions? options = null, System.Threading.CancellationToken cancellationToken = null) where TPixel : struct => throw null;
-        public static Meziantou.Framework.Imaging.Image<TPixel> ImportPixelData<TPixel>(System.ReadOnlySpan<TPixel> source, int width, int height, int strideInPixels = 0, Meziantou.Framework.Imaging.ImageConfiguration? configuration = null) where TPixel : struct => throw null;
-        public static Meziantou.Framework.Imaging.Image<TPixel> ImportPixelBytes<TPixel>(System.ReadOnlySpan<byte> source, int width, int height, int strideInBytes = 0, Meziantou.Framework.Imaging.ImageConfiguration? configuration = null) where TPixel : struct => throw null;
-        public static Meziantou.Framework.Imaging.ImageReader<TPixel> OpenReader<TPixel>(string path, Meziantou.Framework.Imaging.ImageReaderOptions? options = null) where TPixel : struct => throw null;
-        public static Meziantou.Framework.Imaging.ImageReader<TPixel> OpenReader<TPixel>(System.IO.Stream stream, Meziantou.Framework.Imaging.ImageReaderOptions? options = null) where TPixel : struct => throw null;
-        public static System.Threading.Tasks.Task<Meziantou.Framework.Imaging.ImageReader<TPixel>> OpenReaderAsync<TPixel>(string path, Meziantou.Framework.Imaging.ImageReaderOptions? options = null, System.Threading.CancellationToken cancellationToken = null) where TPixel : struct => throw null;
-        public static System.Threading.Tasks.Task<Meziantou.Framework.Imaging.ImageReader<TPixel>> OpenReaderAsync<TPixel>(System.IO.Stream stream, Meziantou.Framework.Imaging.ImageReaderOptions? options = null, System.Threading.CancellationToken cancellationToken = null) where TPixel : struct => throw null;
-        public static Meziantou.Framework.Imaging.ImageWriter<TPixel> CreateWriter<TPixel>(string path, Meziantou.Framework.Imaging.ImageWriterOptions options) where TPixel : struct => throw null;
-        public static Meziantou.Framework.Imaging.ImageWriter<TPixel> CreateWriter<TPixel>(System.IO.Stream stream, Meziantou.Framework.Imaging.ImageWriterOptions options) where TPixel : struct => throw null;
+        public static Meziantou.Framework.Imaging.Image<TPixel> Load<TPixel>(string path, Meziantou.Framework.Imaging.ImageDecodeOptions? options = null) where TPixel : unmanaged => throw null;
+        public static Meziantou.Framework.Imaging.Image<TPixel> Load<TPixel>(System.IO.Stream stream, Meziantou.Framework.Imaging.ImageDecodeOptions? options = null) where TPixel : unmanaged => throw null;
+        public static Meziantou.Framework.Imaging.Image<TPixel> Load<TPixel>(System.ReadOnlySpan<byte> data, Meziantou.Framework.Imaging.ImageDecodeOptions? options = null) where TPixel : unmanaged => throw null;
+        public static System.Threading.Tasks.Task<Meziantou.Framework.Imaging.Image> LoadAsync(string path, Meziantou.Framework.Imaging.ImageDecodeOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static System.Threading.Tasks.Task<Meziantou.Framework.Imaging.Image> LoadAsync(System.IO.Stream stream, Meziantou.Framework.Imaging.ImageDecodeOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static System.Threading.Tasks.Task<Meziantou.Framework.Imaging.Image<TPixel>> LoadAsync<TPixel>(string path, Meziantou.Framework.Imaging.ImageDecodeOptions? options = null, System.Threading.CancellationToken cancellationToken = default) where TPixel : unmanaged => throw null;
+        public static System.Threading.Tasks.Task<Meziantou.Framework.Imaging.Image<TPixel>> LoadAsync<TPixel>(System.IO.Stream stream, Meziantou.Framework.Imaging.ImageDecodeOptions? options = null, System.Threading.CancellationToken cancellationToken = default) where TPixel : unmanaged => throw null;
+        public static Meziantou.Framework.Imaging.Image<TPixel> ImportPixelData<TPixel>(System.ReadOnlySpan<TPixel> source, int width, int height, int strideInPixels = 0, Meziantou.Framework.Imaging.ImageConfiguration? configuration = null) where TPixel : unmanaged => throw null;
+        public static Meziantou.Framework.Imaging.Image<TPixel> ImportPixelBytes<TPixel>(System.ReadOnlySpan<byte> source, int width, int height, int strideInBytes = 0, Meziantou.Framework.Imaging.ImageConfiguration? configuration = null) where TPixel : unmanaged => throw null;
+        public static Meziantou.Framework.Imaging.ImageReader<TPixel> OpenReader<TPixel>(string path, Meziantou.Framework.Imaging.ImageReaderOptions? options = null) where TPixel : unmanaged => throw null;
+        public static Meziantou.Framework.Imaging.ImageReader<TPixel> OpenReader<TPixel>(System.IO.Stream stream, Meziantou.Framework.Imaging.ImageReaderOptions? options = null) where TPixel : unmanaged => throw null;
+        public static System.Threading.Tasks.Task<Meziantou.Framework.Imaging.ImageReader<TPixel>> OpenReaderAsync<TPixel>(string path, Meziantou.Framework.Imaging.ImageReaderOptions? options = null, System.Threading.CancellationToken cancellationToken = default) where TPixel : unmanaged => throw null;
+        public static System.Threading.Tasks.Task<Meziantou.Framework.Imaging.ImageReader<TPixel>> OpenReaderAsync<TPixel>(System.IO.Stream stream, Meziantou.Framework.Imaging.ImageReaderOptions? options = null, System.Threading.CancellationToken cancellationToken = default) where TPixel : unmanaged => throw null;
+        public static Meziantou.Framework.Imaging.ImageWriter<TPixel> CreateWriter<TPixel>(string path, Meziantou.Framework.Imaging.ImageWriterOptions options) where TPixel : unmanaged => throw null;
+        public static Meziantou.Framework.Imaging.ImageWriter<TPixel> CreateWriter<TPixel>(System.IO.Stream stream, Meziantou.Framework.Imaging.ImageWriterOptions options) where TPixel : unmanaged => throw null;
     }
 
     public sealed class ImageCollection : System.IDisposable
@@ -226,7 +226,7 @@ namespace Meziantou.Framework.Imaging
         public Meziantou.Framework.Imaging.Point? Hotspot { get => throw null; }
         public Meziantou.Framework.Imaging.Metadata.ImageMetadata Metadata { get => throw null; }
         public Meziantou.Framework.Imaging.Image Decode(Meziantou.Framework.Imaging.ImageDecodeOptions? options = null) => throw null;
-        public Meziantou.Framework.Imaging.Image<TPixel> Decode<TPixel>(Meziantou.Framework.Imaging.ImageDecodeOptions? options = null) where TPixel : struct => throw null;
+        public Meziantou.Framework.Imaging.Image<TPixel> Decode<TPixel>(Meziantou.Framework.Imaging.ImageDecodeOptions? options = null) where TPixel : unmanaged => throw null;
     }
 
     public enum ImageCollectionKind
@@ -302,33 +302,37 @@ namespace Meziantou.Framework.Imaging
         public abstract Meziantou.Framework.Imaging.ImageFrame this[int index] { get; }
         public int IndexOf(Meziantou.Framework.Imaging.ImageFrame frame) => throw null;
         public bool Contains(Meziantou.Framework.Imaging.ImageFrame frame) => throw null;
-        public Enumerator GetEnumerator() => throw null;
+        public Meziantou.Framework.Imaging.ImageFrameCollection.Enumerator GetEnumerator() => throw null;
+        System.Collections.Generic.IEnumerator<Meziantou.Framework.Imaging.ImageFrame> System.Collections.Generic.IEnumerable<Meziantou.Framework.Imaging.ImageFrame>.GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
         public struct Enumerator : System.Collections.Generic.IEnumerator<Meziantou.Framework.Imaging.ImageFrame>, System.Collections.IEnumerator, System.IDisposable
         {
             public readonly Meziantou.Framework.Imaging.ImageFrame Current { get => throw null; }
+            readonly object System.Collections.IEnumerator.Current { get => throw null; }
             public bool MoveNext() => throw null;
             public void Reset() { }
             public readonly void Dispose() { }
         }
     }
 
-    public sealed class ImageFrameCollection<TPixel> : Meziantou.Framework.Imaging.ImageFrameCollection, System.Collections.Generic.IEnumerable<Meziantou.Framework.Imaging.ImageFrame<TPixel>>, System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.Imaging.ImageFrame<TPixel>>, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Imaging.ImageFrame<TPixel>>, System.Collections.IEnumerable where TPixel : struct
+    public sealed class ImageFrameCollection<TPixel> : Meziantou.Framework.Imaging.ImageFrameCollection, System.Collections.Generic.IEnumerable<Meziantou.Framework.Imaging.ImageFrame<TPixel>>, System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.Imaging.ImageFrame<TPixel>>, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Imaging.ImageFrame<TPixel>>, System.Collections.IEnumerable where TPixel : unmanaged
     {
         public override int Count { get => throw null; }
         public virtual Meziantou.Framework.Imaging.ImageFrame<TPixel> this[int index] { get => throw null; }
-        public Enumerator<TPixel> GetEnumerator() => throw null;
+        public Meziantou.Framework.Imaging.ImageFrameCollection<TPixel>.Enumerator GetEnumerator() => throw null;
+        System.Collections.Generic.IEnumerator<Meziantou.Framework.Imaging.ImageFrame<TPixel>> System.Collections.Generic.IEnumerable<Meziantou.Framework.Imaging.ImageFrame<TPixel>>.GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
-        public struct Enumerator<TPixel> : System.Collections.Generic.IEnumerator<Meziantou.Framework.Imaging.ImageFrame<TPixel>>, System.Collections.IEnumerator, System.IDisposable where TPixel : struct
+        public struct Enumerator : System.Collections.Generic.IEnumerator<Meziantou.Framework.Imaging.ImageFrame<TPixel>>, System.Collections.IEnumerator, System.IDisposable
         {
             public readonly Meziantou.Framework.Imaging.ImageFrame<TPixel> Current { get => throw null; }
+            readonly object System.Collections.IEnumerator.Current { get => throw null; }
             public bool MoveNext() => throw null;
             public void Reset() { }
             public readonly void Dispose() { }
         }
     }
 
-    public sealed class ImageFrame<TPixel> : Meziantou.Framework.Imaging.ImageFrame where TPixel : struct
+    public sealed class ImageFrame<TPixel> : Meziantou.Framework.Imaging.ImageFrame where TPixel : unmanaged
     {
         public override Meziantou.Framework.Imaging.PixelFormat PixelFormat { get => throw null; }
         public TPixel this[int x, int y] { get => throw null; set { } }
@@ -371,20 +375,20 @@ namespace Meziantou.Framework.Imaging
 
     public static class ImageProcessingExtensions
     {
-        public static void Crop(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.Rectangle rectangle, System.Threading.CancellationToken cancellationToken = null) { }
-        public static Meziantou.Framework.Imaging.AutoCropAnalysis AnalyzeAutoCrop(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.AutoCropOptions? options = null, System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public static Meziantou.Framework.Imaging.AutoCropAnalysis<TPixel> AnalyzeAutoCrop<TPixel>(this Meziantou.Framework.Imaging.Image<TPixel> image, Meziantou.Framework.Imaging.AutoCropOptions? options = null, System.Threading.CancellationToken cancellationToken = null) where TPixel : struct => throw null;
-        public static bool AutoCrop(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.AutoCropOptions? options = null, System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public static bool AutoCrop(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.AutoCropAnalysis analysis, Meziantou.Framework.Imaging.AutoCropOptions? options = null, System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public static void Resize(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.ResizeOptions options, System.Threading.CancellationToken cancellationToken = null) { }
-        public static void Rotate(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.RotateMode mode, System.Threading.CancellationToken cancellationToken = null) { }
-        public static void AutoOrient(this Meziantou.Framework.Imaging.Image image, System.Threading.CancellationToken cancellationToken = null) { }
-        public static void Flip(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.FlipMode mode, System.Threading.CancellationToken cancellationToken = null) { }
-        public static void Flip(this Meziantou.Framework.Imaging.ImageFrame frame, Meziantou.Framework.Imaging.FlipMode mode, System.Threading.CancellationToken cancellationToken = null) { }
-        public static void Grayscale(this Meziantou.Framework.Imaging.Image image, System.Threading.CancellationToken cancellationToken = null) { }
-        public static void Grayscale(this Meziantou.Framework.Imaging.ImageFrame frame, System.Threading.CancellationToken cancellationToken = null) { }
-        public static void Convolve(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.ConvolutionOptions options, System.Threading.CancellationToken cancellationToken = null) { }
-        public static void Convolve(this Meziantou.Framework.Imaging.ImageFrame frame, Meziantou.Framework.Imaging.ConvolutionOptions options, System.Threading.CancellationToken cancellationToken = null) { }
+        public static void Crop(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.Rectangle rectangle, System.Threading.CancellationToken cancellationToken = default) { }
+        public static Meziantou.Framework.Imaging.AutoCropAnalysis AnalyzeAutoCrop(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.AutoCropOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static Meziantou.Framework.Imaging.AutoCropAnalysis<TPixel> AnalyzeAutoCrop<TPixel>(this Meziantou.Framework.Imaging.Image<TPixel> image, Meziantou.Framework.Imaging.AutoCropOptions? options = null, System.Threading.CancellationToken cancellationToken = default) where TPixel : unmanaged => throw null;
+        public static bool AutoCrop(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.AutoCropOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static bool AutoCrop(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.AutoCropAnalysis analysis, Meziantou.Framework.Imaging.AutoCropOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static void Resize(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.ResizeOptions options, System.Threading.CancellationToken cancellationToken = default) { }
+        public static void Rotate(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.RotateMode mode, System.Threading.CancellationToken cancellationToken = default) { }
+        public static void AutoOrient(this Meziantou.Framework.Imaging.Image image, System.Threading.CancellationToken cancellationToken = default) { }
+        public static void Flip(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.FlipMode mode, System.Threading.CancellationToken cancellationToken = default) { }
+        public static void Flip(this Meziantou.Framework.Imaging.ImageFrame frame, Meziantou.Framework.Imaging.FlipMode mode, System.Threading.CancellationToken cancellationToken = default) { }
+        public static void Grayscale(this Meziantou.Framework.Imaging.Image image, System.Threading.CancellationToken cancellationToken = default) { }
+        public static void Grayscale(this Meziantou.Framework.Imaging.ImageFrame frame, System.Threading.CancellationToken cancellationToken = default) { }
+        public static void Convolve(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.ConvolutionOptions options, System.Threading.CancellationToken cancellationToken = default) { }
+        public static void Convolve(this Meziantou.Framework.Imaging.ImageFrame frame, Meziantou.Framework.Imaging.ConvolutionOptions options, System.Threading.CancellationToken cancellationToken = default) { }
     }
 
     public sealed class ImageReaderOptions
@@ -396,16 +400,16 @@ namespace Meziantou.Framework.Imaging
         public bool LeaveOpen { get => throw null; init { } }
     }
 
-    public sealed class ImageReader<TPixel> : System.IAsyncDisposable, System.IDisposable where TPixel : struct
+    public sealed class ImageReader<TPixel> : System.IAsyncDisposable, System.IDisposable where TPixel : unmanaged
     {
         public Meziantou.Framework.Imaging.ImageInfo Info { get => throw null; }
         public int FramesRead { get => throw null; }
         public Meziantou.Framework.Imaging.Image<TPixel>? ReadPosterFrame() => throw null;
-        public System.Threading.Tasks.ValueTask<Meziantou.Framework.Imaging.Image<TPixel>?> ReadPosterFrameAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public System.Threading.Tasks.ValueTask<Meziantou.Framework.Imaging.Image<TPixel>?> ReadPosterFrameAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
         public Meziantou.Framework.Imaging.Image<TPixel>? ReadFrame() => throw null;
-        public System.Threading.Tasks.ValueTask<Meziantou.Framework.Imaging.Image<TPixel>?> ReadFrameAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public System.Threading.Tasks.ValueTask<Meziantou.Framework.Imaging.Image<TPixel>?> ReadFrameAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
         public bool ReadFrameInto(Meziantou.Framework.Imaging.Image<TPixel> destination) => throw null;
-        public System.Threading.Tasks.ValueTask<bool> ReadFrameIntoAsync(Meziantou.Framework.Imaging.Image<TPixel> destination, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public System.Threading.Tasks.ValueTask<bool> ReadFrameIntoAsync(Meziantou.Framework.Imaging.Image<TPixel> destination, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public void Dispose() { }
         public System.Threading.Tasks.ValueTask DisposeAsync() => throw null;
     }
@@ -466,22 +470,22 @@ namespace Meziantou.Framework.Imaging
         public ImageWriterOptions(int width, int height) { }
     }
 
-    public sealed class ImageWriter<TPixel> : System.IAsyncDisposable, System.IDisposable where TPixel : struct
+    public sealed class ImageWriter<TPixel> : System.IAsyncDisposable, System.IDisposable where TPixel : unmanaged
     {
         public Meziantou.Framework.Imaging.Size CanvasSize { get => throw null; }
         public Meziantou.Framework.Imaging.ImageFormat Format { get => throw null; }
         public int FramesWritten { get => throw null; }
         public void WritePosterFrame(Meziantou.Framework.Imaging.ImageFrame<TPixel> frame) { }
-        public System.Threading.Tasks.ValueTask WritePosterFrameAsync(Meziantou.Framework.Imaging.ImageFrame<TPixel> frame, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public System.Threading.Tasks.ValueTask WritePosterFrameAsync(Meziantou.Framework.Imaging.ImageFrame<TPixel> frame, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public void WriteFrame(Meziantou.Framework.Imaging.ImageFrame<TPixel> frame) { }
-        public System.Threading.Tasks.ValueTask WriteFrameAsync(Meziantou.Framework.Imaging.ImageFrame<TPixel> frame, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public System.Threading.Tasks.ValueTask WriteFrameAsync(Meziantou.Framework.Imaging.ImageFrame<TPixel> frame, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public void Complete() { }
-        public System.Threading.Tasks.ValueTask CompleteAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public System.Threading.Tasks.ValueTask CompleteAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
         public void Dispose() { }
         public System.Threading.Tasks.ValueTask DisposeAsync() => throw null;
     }
 
-    public sealed class Image<TPixel> : Meziantou.Framework.Imaging.Image where TPixel : struct
+    public sealed class Image<TPixel> : Meziantou.Framework.Imaging.Image where TPixel : unmanaged
     {
         public override Meziantou.Framework.Imaging.PixelFormat PixelFormat { get => throw null; }
         public virtual Meziantou.Framework.Imaging.ImageFrameCollection<TPixel> Frames { get => throw null; }
@@ -512,7 +516,7 @@ namespace Meziantou.Framework.Imaging
         public InvalidImageContentException(string? message, Meziantou.Framework.Imaging.ImageFormat format, System.Exception? innerException = null) { }
     }
 
-    public ref struct PixelAccessor<TPixel> where TPixel : struct
+    public ref struct PixelAccessor<TPixel> where TPixel : unmanaged
     {
         public int Width { get => throw null; }
         public int Height { get => throw null; }
@@ -553,8 +557,8 @@ namespace Meziantou.Framework.Imaging
     public static class PixelFormats
     {
         public static System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Imaging.PixelFormat> All { get => throw null; }
-        public static bool IsSupported<TPixel>() where TPixel : struct => throw null;
-        public static Meziantou.Framework.Imaging.PixelFormat GetPixelFormat<TPixel>() where TPixel : struct => throw null;
+        public static bool IsSupported<TPixel>() where TPixel : unmanaged => throw null;
+        public static Meziantou.Framework.Imaging.PixelFormat GetPixelFormat<TPixel>() where TPixel : unmanaged => throw null;
         public static System.Type GetPixelType(Meziantou.Framework.Imaging.PixelFormat format) => throw null;
         public static int GetBytesPerPixel(Meziantou.Framework.Imaging.PixelFormat format) => throw null;
         public static int GetBitsPerComponent(Meziantou.Framework.Imaging.PixelFormat format) => throw null;
@@ -563,9 +567,9 @@ namespace Meziantou.Framework.Imaging
         public static bool IsGrayscale(Meziantou.Framework.Imaging.PixelFormat format) => throw null;
     }
 
-    public delegate void PixelRowsAction<TPixel>(Meziantou.Framework.Imaging.PixelAccessor<TPixel> pixels) where TPixel : struct;
+    public delegate void PixelRowsAction<TPixel>(Meziantou.Framework.Imaging.PixelAccessor<TPixel> pixels) where TPixel : unmanaged;
 
-    public delegate void PixelRowsAction<TPixel, TState>(Meziantou.Framework.Imaging.PixelAccessor<TPixel> pixels, TState state) where TPixel : struct where TState : allows ref struct;
+    public delegate void PixelRowsAction<TPixel, TState>(Meziantou.Framework.Imaging.PixelAccessor<TPixel> pixels, TState state) where TPixel : unmanaged where TState : allows ref struct;
 
     public readonly struct Point : System.IEquatable<Meziantou.Framework.Imaging.Point>
     {

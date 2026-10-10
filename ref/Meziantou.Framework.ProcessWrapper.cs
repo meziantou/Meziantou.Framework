@@ -18,6 +18,13 @@ namespace Meziantou.Framework
 
     public sealed class FakeProcess : Meziantou.Framework.IProcessHandle, System.IDisposable
     {
+        int Meziantou.Framework.IProcessHandle.Id { get => throw null; }
+        bool Meziantou.Framework.IProcessHandle.HasExited { get => throw null; }
+        int Meziantou.Framework.IProcessHandle.ExitCode { get => throw null; }
+        System.IO.Stream Meziantou.Framework.IProcessHandle.InputStream { get => throw null; }
+        System.IO.Stream Meziantou.Framework.IProcessHandle.OutputStream { get => throw null; }
+        System.IO.Stream Meziantou.Framework.IProcessHandle.ErrorStream { get => throw null; }
+        Microsoft.Win32.SafeHandles.SafeProcessHandle? Meziantou.Framework.IProcessHandle.SafeProcessHandle { get => throw null; }
         public static Meziantou.Framework.FakeProcess Create(int exitCode) => throw null;
         public static Meziantou.Framework.FakeProcess Create(int exitCode, System.IO.Stream outputStream, System.IO.Stream errorStream) => throw null;
         public static Meziantou.Framework.FakeProcess Create(int exitCode, string outputText, string errorText) => throw null;
@@ -197,8 +204,8 @@ namespace Meziantou.Framework
     {
         public static Meziantou.Framework.ProcessPipeline operator |(Meziantou.Framework.ProcessPipeline left, Meziantou.Framework.ProcessWrapper right) => throw null;
         public static Meziantou.Framework.ProcessPipeline operator |(Meziantou.Framework.ProcessWrapper left, Meziantou.Framework.ProcessPipeline right) => throw null;
-        public System.Threading.Tasks.Task<Meziantou.Framework.ProcessResult> ExecuteAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public System.Threading.Tasks.Task<Meziantou.Framework.BufferedProcessResult> ExecuteBufferedAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.ProcessResult> ExecuteAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.BufferedProcessResult> ExecuteBufferedAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
     }
 
     public class ProcessResult
@@ -267,8 +274,8 @@ namespace Meziantou.Framework
         public Meziantou.Framework.ProcessWrapper WithErrorStream(params System.ReadOnlySpan<Meziantou.Framework.OutputTarget> targets) => throw null;
         public Meziantou.Framework.ProcessWrapper AddErrorStream(params System.ReadOnlySpan<Meziantou.Framework.OutputTarget> targets) => throw null;
         public Meziantou.Framework.ProcessWrapper WithInputStream(Meziantou.Framework.InputSource source) => throw null;
-        public Meziantou.Framework.ProcessInstance ExecuteAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public Meziantou.Framework.BufferedProcessInstance ExecuteBufferedAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public Meziantou.Framework.ProcessInstance ExecuteAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public Meziantou.Framework.BufferedProcessInstance ExecuteBufferedAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
         #if NET11_0
         [System.Runtime.Versioning.UnsupportedOSPlatform("ios")]
         [System.Runtime.Versioning.UnsupportedOSPlatform("tvos")]

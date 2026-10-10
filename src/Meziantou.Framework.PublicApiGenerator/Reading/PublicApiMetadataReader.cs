@@ -20,6 +20,7 @@ internal sealed partial class PublicApiMetadataReader
     private readonly PEReader _peReader;
     private readonly MetadataReader _metadataReader;
     private readonly PublicApiReadOptions _options;
+    private readonly string? _assemblyDirectory;
     private readonly RawTypeProvider _typeProvider;
     private readonly Guid _moduleVersionId;
     private readonly string _moduleName;
@@ -29,11 +30,12 @@ internal sealed partial class PublicApiMetadataReader
     private readonly Dictionary<string, TypeDefinitionHandle> _typeDefinitionsByFullName = new(StringComparer.Ordinal);
     private Dictionary<string, PrimitiveTypeCode>? _enumUnderlyingTypes;
 
-    private PublicApiMetadataReader(PEReader peReader, PublicApiReadOptions options)
+    private PublicApiMetadataReader(PEReader peReader, PublicApiReadOptions options, string? assemblyDirectory)
     {
         _peReader = peReader;
         _metadataReader = peReader.GetMetadataReader();
         _options = options;
+        _assemblyDirectory = assemblyDirectory;
 
         var moduleDefinition = _metadataReader.GetModuleDefinition();
         _moduleVersionId = _metadataReader.GetGuid(moduleDefinition.Mvid);
@@ -50,12 +52,13 @@ internal sealed partial class PublicApiMetadataReader
         _typeProvider = new RawTypeProvider(_assemblyName ?? _moduleName, GetCoreLibraryName(), IsValueTypeDefinition, GetUnderlyingEnumType);
     }
 
-    public static PublicApiAssembly Read(PEReader peReader, PublicApiReadOptions? options)
+    // The directory of the assembly is used to read the enums declared in the referenced assemblies that are next to it
+    public static PublicApiAssembly Read(PEReader peReader, PublicApiReadOptions? options, string? assemblyDirectory = null)
     {
         if (!peReader.HasMetadata)
             throw new InvalidOperationException("The file does not contain .NET metadata.");
 
-        var reader = new PublicApiMetadataReader(peReader, options ?? new PublicApiReadOptions());
+        var reader = new PublicApiMetadataReader(peReader, options ?? new PublicApiReadOptions(), assemblyDirectory);
         return reader.ReadAssembly();
     }
 

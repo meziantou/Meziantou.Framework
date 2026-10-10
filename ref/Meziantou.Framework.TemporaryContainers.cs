@@ -9,6 +9,7 @@ namespace Meziantou.Framework.TemporaryContainers
         public string Source { get => throw null; init { } }
         public string Target { get => throw null; init { } }
         public bool ReadOnly { get => throw null; init { } }
+        string Meziantou.Framework.TemporaryContainers.IMount.ContainerPath { get => throw null; }
         public BindMount(string Source, string Target, bool ReadOnly = false) { }
         public override string ToString() => throw null;
         public static bool operator !=(Meziantou.Framework.TemporaryContainers.BindMount? left, Meziantou.Framework.TemporaryContainers.BindMount? right) => throw null;
@@ -231,12 +232,12 @@ namespace Meziantou.Framework.TemporaryContainers
         public static Meziantou.Framework.TemporaryContainers.ContainerRuntime Podman { get => throw null; }
         public static Meziantou.Framework.TemporaryContainers.ContainerRuntime AppleContainer { get => throw null; }
         public static Meziantou.Framework.TemporaryContainers.ContainerRuntime Wslc { get => throw null; }
-        public System.Threading.Tasks.Task<Meziantou.Framework.TemporaryContainers.ContainerCleanupResult> CleanupAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public System.Threading.Tasks.Task<Meziantou.Framework.TemporaryContainers.ContainerCleanupResult> CleanupAsync(Meziantou.Framework.TemporaryContainers.ContainerCleanupOptions options, System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public virtual System.Threading.Tasks.Task<bool> IsSupportedAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.TemporaryContainers.ContainerCleanupResult> CleanupAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.TemporaryContainers.ContainerCleanupResult> CleanupAsync(Meziantou.Framework.TemporaryContainers.ContainerCleanupOptions options, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public virtual System.Threading.Tasks.Task<bool> IsSupportedAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
         public override string ToString() => throw null;
-        public System.Threading.Tasks.Task<Meziantou.Framework.TemporaryContainers.ContainerReaper> StartReaperAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public System.Threading.Tasks.Task<Meziantou.Framework.TemporaryContainers.ContainerReaper> StartReaperAsync(Meziantou.Framework.TemporaryContainers.ContainerReaperOptions options, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.TemporaryContainers.ContainerReaper> StartReaperAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.TemporaryContainers.ContainerReaper> StartReaperAsync(Meziantou.Framework.TemporaryContainers.ContainerReaperOptions options, System.Threading.CancellationToken cancellationToken = default) => throw null;
     }
 
     public sealed class ContainerRuntimeException : System.Exception
@@ -402,25 +403,25 @@ namespace Meziantou.Framework.TemporaryContainers
         public string Name { get => throw null; }
         public Meziantou.Framework.TemporaryContainers.ContainerDefinition Definition { get => throw null; }
         public Meziantou.Framework.TemporaryContainers.ContainerRuntime Runtime { get => throw null; }
-        public System.Threading.Tasks.Task EnsureCreatedAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public System.Threading.Tasks.Task StartAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public System.Threading.Tasks.Task WaitUntilReadyAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public System.Threading.Tasks.Task EnsureCreatedAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public System.Threading.Tasks.Task StartAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public System.Threading.Tasks.Task WaitUntilReadyAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
         public int GetMappedPort(int containerPort) => throw null;
         public System.Threading.Tasks.ValueTask DisposeAsync() => throw null;
-        public System.Threading.Tasks.Task<Meziantou.Framework.TemporaryContainers.ExecResult> ExecAsync(System.Action<Meziantou.Framework.TemporaryContainers.ExecOptions> configure, System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public System.Threading.Tasks.Task<System.IO.Stream> OpenReadAsync(string path, System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public System.Threading.Tasks.Task WriteFileAsync(string path, System.IO.Stream content, System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public System.Threading.Tasks.Task CopyToContainerAsync(string source, string destination, System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public System.Threading.Tasks.Task CopyFromContainerAsync(string source, string destination, System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public System.Threading.Tasks.Task<Meziantou.Framework.TemporaryContainers.ContainerInfo> InspectAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public System.Threading.Tasks.Task StopAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public System.Threading.Tasks.Task RestartAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public System.Threading.Tasks.Task PauseAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public System.Threading.Tasks.Task UnpauseAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public System.Threading.Tasks.Task KillAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public System.Threading.Tasks.Task DeleteAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public System.Threading.Tasks.Task<bool> ExistsAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public System.Collections.Generic.IAsyncEnumerable<Meziantou.Framework.TemporaryContainers.LogEntry> GetLogsAsync([System.Runtime.CompilerServices.EnumeratorCancellation] System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.TemporaryContainers.ExecResult> ExecAsync(System.Action<Meziantou.Framework.TemporaryContainers.ExecOptions> configure, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public System.Threading.Tasks.Task<System.IO.Stream> OpenReadAsync(string path, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public System.Threading.Tasks.Task WriteFileAsync(string path, System.IO.Stream content, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public System.Threading.Tasks.Task CopyToContainerAsync(string source, string destination, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public System.Threading.Tasks.Task CopyFromContainerAsync(string source, string destination, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.TemporaryContainers.ContainerInfo> InspectAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public System.Threading.Tasks.Task StopAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public System.Threading.Tasks.Task RestartAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public System.Threading.Tasks.Task PauseAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public System.Threading.Tasks.Task UnpauseAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public System.Threading.Tasks.Task KillAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public System.Threading.Tasks.Task DeleteAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public System.Threading.Tasks.Task<bool> ExistsAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public System.Collections.Generic.IAsyncEnumerable<Meziantou.Framework.TemporaryContainers.LogEntry> GetLogsAsync([System.Runtime.CompilerServices.EnumeratorCancellation] System.Threading.CancellationToken cancellationToken = default) => throw null;
     }
 
     public sealed class TemporaryVolume : System.IAsyncDisposable
@@ -428,15 +429,16 @@ namespace Meziantou.Framework.TemporaryContainers
         public string Name { get => throw null; }
         public Meziantou.Framework.TemporaryContainers.VolumeDefinition Definition { get => throw null; }
         public Meziantou.Framework.TemporaryContainers.ContainerRuntime Runtime { get => throw null; }
-        public System.Threading.Tasks.Task EnsureCreatedAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public System.Threading.Tasks.Task<bool> ExistsAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public System.Threading.Tasks.Task DeleteAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public System.Threading.Tasks.Task EnsureCreatedAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public System.Threading.Tasks.Task<bool> ExistsAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public System.Threading.Tasks.Task DeleteAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
         public System.Threading.Tasks.ValueTask DisposeAsync() => throw null;
     }
 
     public sealed class TmpfsMount : Meziantou.Framework.TemporaryContainers.IMount, System.IEquatable<Meziantou.Framework.TemporaryContainers.TmpfsMount>
     {
         public string Target { get => throw null; init { } }
+        string Meziantou.Framework.TemporaryContainers.IMount.ContainerPath { get => throw null; }
         public TmpfsMount(string Target) { }
         public override string ToString() => throw null;
         public static bool operator !=(Meziantou.Framework.TemporaryContainers.TmpfsMount? left, Meziantou.Framework.TemporaryContainers.TmpfsMount? right) => throw null;
@@ -475,6 +477,7 @@ namespace Meziantou.Framework.TemporaryContainers
         public string Name { get => throw null; init { } }
         public string Target { get => throw null; init { } }
         public bool ReadOnly { get => throw null; init { } }
+        string Meziantou.Framework.TemporaryContainers.IMount.ContainerPath { get => throw null; }
         public VolumeMount(string Name, string Target, bool ReadOnly = false) { }
         public override string ToString() => throw null;
         public static bool operator !=(Meziantou.Framework.TemporaryContainers.VolumeMount? left, Meziantou.Framework.TemporaryContainers.VolumeMount? right) => throw null;

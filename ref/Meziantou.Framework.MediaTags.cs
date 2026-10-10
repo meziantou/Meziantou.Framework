@@ -37,7 +37,7 @@ namespace Meziantou.Framework.MediaTags
         public byte[] Data { get => throw null; set { } }
     }
 
-    public enum MediaPictureType
+    public enum MediaPictureType : byte
     {
         Other = 0,
         FileIcon = 1,

@@ -108,7 +108,7 @@ foreach (var type in assembly.GetAllTypes()) // Includes nested types
 
 The model contains:
 
-- The types and members that are visible outside the assembly (`public`, `protected`, `protected internal`), and explicit interface implementations. Members with names that cannot be written in C# (e.g. `<Clone>$`), static constructors and compiler-generated types are excluded. Other compiler-generated members, such as the members of records, are included and can be identified using `IsCompilerGenerated`.
+- The types and members that are visible outside the assembly (`public`, `protected`, `protected internal`), and explicit implementations of interfaces that are visible outside the assembly. Members with names that cannot be written in C# (e.g. `<Clone>$`), static constructors and compiler-generated types are excluded. Other compiler-generated members, such as the members of records, are included and can be identified using `IsCompilerGenerated`.
 - Accessors, available from `PublicApiProperty.GetMethod`, `SetMethod`, `PublicApiEvent.AddMethod`... Accessors that are not visible outside the assembly (e.g. a `private set`) are not exposed.
 - The signature of delegates through `PublicApiType.DelegateInvokeMethod`. The other members of delegates are not exposed.
 - C# 14 extension blocks through the static methods the compiler generates for them (e.g. `get_Length(string)`).

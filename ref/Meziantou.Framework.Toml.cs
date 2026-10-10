@@ -220,18 +220,18 @@ namespace Meziantou.Framework.Toml
         public static void Serialize<T>(System.IO.Stream stream, T value, Meziantou.Framework.Toml.TomlTypeInfo<T> typeInfo) { }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Reflection-based TOML serialization is not compatible with trimming/NativeAOT. Use a source-generated TomlSerializerContext or pass a TomlTypeInfo instance.")]
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Reflection-based TOML serialization is not compatible with trimming/NativeAOT. Use a source-generated TomlSerializerContext or pass a TomlTypeInfo instance.")]
-        public static T Deserialize<T>(string toml, Meziantou.Framework.Toml.TomlSerializerOptions? options = null) => throw null;
-        public static T Deserialize<T>(string toml, Meziantou.Framework.Toml.Serialization.TomlSerializerContext context) => throw null;
-        public static T Deserialize<T>(string toml, Meziantou.Framework.Toml.TomlTypeInfo<T> typeInfo) => throw null;
+        public static T? Deserialize<T>(string toml, Meziantou.Framework.Toml.TomlSerializerOptions? options = null) => throw null;
+        public static T? Deserialize<T>(string toml, Meziantou.Framework.Toml.Serialization.TomlSerializerContext context) => throw null;
+        public static T? Deserialize<T>(string toml, Meziantou.Framework.Toml.TomlTypeInfo<T> typeInfo) => throw null;
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Reflection-based TOML serialization is not compatible with trimming/NativeAOT. Use a source-generated TomlSerializerContext or pass a TomlTypeInfo instance.")]
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Reflection-based TOML serialization is not compatible with trimming/NativeAOT. Use a source-generated TomlSerializerContext or pass a TomlTypeInfo instance.")]
         public static object? Deserialize(string toml, System.Type returnType, Meziantou.Framework.Toml.TomlSerializerOptions? options = null) => throw null;
         public static object? Deserialize(string toml, System.Type returnType, Meziantou.Framework.Toml.Serialization.TomlSerializerContext context) => throw null;
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Reflection-based TOML serialization is not compatible with trimming/NativeAOT. Use a source-generated TomlSerializerContext or pass a TomlTypeInfo instance.")]
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Reflection-based TOML serialization is not compatible with trimming/NativeAOT. Use a source-generated TomlSerializerContext or pass a TomlTypeInfo instance.")]
-        public static T Deserialize<T>(System.IO.TextReader reader, Meziantou.Framework.Toml.TomlSerializerOptions? options = null) => throw null;
-        public static T Deserialize<T>(System.IO.TextReader reader, Meziantou.Framework.Toml.Serialization.TomlSerializerContext context) => throw null;
-        public static T Deserialize<T>(System.IO.TextReader reader, Meziantou.Framework.Toml.TomlTypeInfo<T> typeInfo) => throw null;
+        public static T? Deserialize<T>(System.IO.TextReader reader, Meziantou.Framework.Toml.TomlSerializerOptions? options = null) => throw null;
+        public static T? Deserialize<T>(System.IO.TextReader reader, Meziantou.Framework.Toml.Serialization.TomlSerializerContext context) => throw null;
+        public static T? Deserialize<T>(System.IO.TextReader reader, Meziantou.Framework.Toml.TomlTypeInfo<T> typeInfo) => throw null;
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Reflection-based TOML serialization is not compatible with trimming/NativeAOT. Use a source-generated TomlSerializerContext or pass a TomlTypeInfo instance.")]
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Reflection-based TOML serialization is not compatible with trimming/NativeAOT. Use a source-generated TomlSerializerContext or pass a TomlTypeInfo instance.")]
         public static object? Deserialize(System.IO.TextReader reader, System.Type returnType, Meziantou.Framework.Toml.TomlSerializerOptions? options = null) => throw null;
@@ -239,9 +239,9 @@ namespace Meziantou.Framework.Toml
         public static object? Deserialize(System.IO.TextReader reader, Meziantou.Framework.Toml.TomlTypeInfo typeInfo) => throw null;
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Reflection-based TOML serialization is not compatible with trimming/NativeAOT. Use a source-generated TomlSerializerContext or pass a TomlTypeInfo instance.")]
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Reflection-based TOML serialization is not compatible with trimming/NativeAOT. Use a source-generated TomlSerializerContext or pass a TomlTypeInfo instance.")]
-        public static T Deserialize<T>(System.IO.Stream stream, Meziantou.Framework.Toml.TomlSerializerOptions? options = null) => throw null;
-        public static T Deserialize<T>(System.IO.Stream stream, Meziantou.Framework.Toml.Serialization.TomlSerializerContext context) => throw null;
-        public static T Deserialize<T>(System.IO.Stream stream, Meziantou.Framework.Toml.TomlTypeInfo<T> typeInfo) => throw null;
+        public static T? Deserialize<T>(System.IO.Stream stream, Meziantou.Framework.Toml.TomlSerializerOptions? options = null) => throw null;
+        public static T? Deserialize<T>(System.IO.Stream stream, Meziantou.Framework.Toml.Serialization.TomlSerializerContext context) => throw null;
+        public static T? Deserialize<T>(System.IO.Stream stream, Meziantou.Framework.Toml.TomlTypeInfo<T> typeInfo) => throw null;
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Reflection-based TOML serialization is not compatible with trimming/NativeAOT. Use a source-generated TomlSerializerContext or pass a TomlTypeInfo instance.")]
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Reflection-based TOML serialization is not compatible with trimming/NativeAOT. Use a source-generated TomlSerializerContext or pass a TomlTypeInfo instance.")]
         public static object? Deserialize(System.IO.Stream stream, System.Type returnType, Meziantou.Framework.Toml.TomlSerializerOptions? options = null) => throw null;
@@ -249,53 +249,53 @@ namespace Meziantou.Framework.Toml
         public static object? Deserialize(System.IO.Stream stream, Meziantou.Framework.Toml.TomlTypeInfo typeInfo) => throw null;
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Reflection-based TOML serialization is not compatible with trimming/NativeAOT. Use a source-generated TomlSerializerContext or pass a TomlTypeInfo instance.")]
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Reflection-based TOML serialization is not compatible with trimming/NativeAOT. Use a source-generated TomlSerializerContext or pass a TomlTypeInfo instance.")]
-        public static System.Threading.Tasks.ValueTask<T> DeserializeAsync<T>(System.IO.Stream stream, Meziantou.Framework.Toml.TomlSerializerOptions? options = null, System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public static System.Threading.Tasks.ValueTask<T> DeserializeAsync<T>(System.IO.Stream stream, Meziantou.Framework.Toml.Serialization.TomlSerializerContext context, System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public static System.Threading.Tasks.ValueTask<T> DeserializeAsync<T>(System.IO.Stream stream, Meziantou.Framework.Toml.TomlTypeInfo<T> typeInfo, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public static System.Threading.Tasks.ValueTask<T?> DeserializeAsync<T>(System.IO.Stream stream, Meziantou.Framework.Toml.TomlSerializerOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static System.Threading.Tasks.ValueTask<T?> DeserializeAsync<T>(System.IO.Stream stream, Meziantou.Framework.Toml.Serialization.TomlSerializerContext context, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static System.Threading.Tasks.ValueTask<T?> DeserializeAsync<T>(System.IO.Stream stream, Meziantou.Framework.Toml.TomlTypeInfo<T> typeInfo, System.Threading.CancellationToken cancellationToken = default) => throw null;
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Reflection-based TOML serialization is not compatible with trimming/NativeAOT. Use a source-generated TomlSerializerContext or pass a TomlTypeInfo instance.")]
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Reflection-based TOML serialization is not compatible with trimming/NativeAOT. Use a source-generated TomlSerializerContext or pass a TomlTypeInfo instance.")]
-        public static System.Threading.Tasks.ValueTask<object?> DeserializeAsync(System.IO.Stream stream, System.Type returnType, Meziantou.Framework.Toml.TomlSerializerOptions? options = null, System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public static System.Threading.Tasks.ValueTask<object?> DeserializeAsync(System.IO.Stream stream, System.Type returnType, Meziantou.Framework.Toml.Serialization.TomlSerializerContext context, System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public static System.Threading.Tasks.ValueTask<object?> DeserializeAsync(System.IO.Stream stream, Meziantou.Framework.Toml.TomlTypeInfo typeInfo, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public static System.Threading.Tasks.ValueTask<object?> DeserializeAsync(System.IO.Stream stream, System.Type returnType, Meziantou.Framework.Toml.TomlSerializerOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static System.Threading.Tasks.ValueTask<object?> DeserializeAsync(System.IO.Stream stream, System.Type returnType, Meziantou.Framework.Toml.Serialization.TomlSerializerContext context, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static System.Threading.Tasks.ValueTask<object?> DeserializeAsync(System.IO.Stream stream, Meziantou.Framework.Toml.TomlTypeInfo typeInfo, System.Threading.CancellationToken cancellationToken = default) => throw null;
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Reflection-based TOML serialization is not compatible with trimming/NativeAOT. Use a source-generated TomlSerializerContext or pass a TomlTypeInfo instance.")]
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Reflection-based TOML serialization is not compatible with trimming/NativeAOT. Use a source-generated TomlSerializerContext or pass a TomlTypeInfo instance.")]
-        public static System.Threading.Tasks.Task SerializeAsync<T>(System.IO.Stream stream, T value, Meziantou.Framework.Toml.TomlSerializerOptions? options = null, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public static System.Threading.Tasks.Task SerializeAsync<T>(System.IO.Stream stream, T value, Meziantou.Framework.Toml.TomlSerializerOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Reflection-based TOML serialization is not compatible with trimming/NativeAOT. Use a source-generated TomlSerializerContext or pass a TomlTypeInfo instance.")]
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Reflection-based TOML serialization is not compatible with trimming/NativeAOT. Use a source-generated TomlSerializerContext or pass a TomlTypeInfo instance.")]
-        public static System.Threading.Tasks.Task SerializeAsync(System.IO.Stream stream, object? value, System.Type inputType, Meziantou.Framework.Toml.TomlSerializerOptions? options = null, System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public static System.Threading.Tasks.Task SerializeAsync<T>(System.IO.Stream stream, T value, Meziantou.Framework.Toml.Serialization.TomlSerializerContext context, System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public static System.Threading.Tasks.Task SerializeAsync(System.IO.Stream stream, object? value, System.Type inputType, Meziantou.Framework.Toml.Serialization.TomlSerializerContext context, System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public static System.Threading.Tasks.Task SerializeAsync(System.IO.Stream stream, object? value, Meziantou.Framework.Toml.TomlTypeInfo typeInfo, System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public static System.Threading.Tasks.Task SerializeAsync<T>(System.IO.Stream stream, T value, Meziantou.Framework.Toml.TomlTypeInfo<T> typeInfo, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public static System.Threading.Tasks.Task SerializeAsync(System.IO.Stream stream, object? value, System.Type inputType, Meziantou.Framework.Toml.TomlSerializerOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static System.Threading.Tasks.Task SerializeAsync<T>(System.IO.Stream stream, T value, Meziantou.Framework.Toml.Serialization.TomlSerializerContext context, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static System.Threading.Tasks.Task SerializeAsync(System.IO.Stream stream, object? value, System.Type inputType, Meziantou.Framework.Toml.Serialization.TomlSerializerContext context, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static System.Threading.Tasks.Task SerializeAsync(System.IO.Stream stream, object? value, Meziantou.Framework.Toml.TomlTypeInfo typeInfo, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static System.Threading.Tasks.Task SerializeAsync<T>(System.IO.Stream stream, T value, Meziantou.Framework.Toml.TomlTypeInfo<T> typeInfo, System.Threading.CancellationToken cancellationToken = default) => throw null;
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Reflection-based TOML serialization is not compatible with trimming/NativeAOT. Use a source-generated TomlSerializerContext or pass a TomlTypeInfo instance.")]
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Reflection-based TOML serialization is not compatible with trimming/NativeAOT. Use a source-generated TomlSerializerContext or pass a TomlTypeInfo instance.")]
-        public static bool TryDeserialize<T>(string toml, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out T value, Meziantou.Framework.Toml.TomlSerializerOptions? options = null) => throw null;
+        public static bool TryDeserialize<T>(string toml, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out T? value, Meziantou.Framework.Toml.TomlSerializerOptions? options = null) => throw null;
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Reflection-based TOML serialization is not compatible with trimming/NativeAOT. Use a source-generated TomlSerializerContext or pass a TomlTypeInfo instance.")]
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Reflection-based TOML serialization is not compatible with trimming/NativeAOT. Use a source-generated TomlSerializerContext or pass a TomlTypeInfo instance.")]
         public static bool TryDeserialize(string toml, System.Type returnType, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out object? value, Meziantou.Framework.Toml.TomlSerializerOptions? options = null) => throw null;
-        public static bool TryDeserialize<T>(string toml, Meziantou.Framework.Toml.Serialization.TomlSerializerContext context, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out T value) => throw null;
+        public static bool TryDeserialize<T>(string toml, Meziantou.Framework.Toml.Serialization.TomlSerializerContext context, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out T? value) => throw null;
         public static bool TryDeserialize(string toml, System.Type returnType, Meziantou.Framework.Toml.Serialization.TomlSerializerContext context, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out object? value) => throw null;
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Reflection-based TOML serialization is not compatible with trimming/NativeAOT. Use a source-generated TomlSerializerContext or pass a TomlTypeInfo instance.")]
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Reflection-based TOML serialization is not compatible with trimming/NativeAOT. Use a source-generated TomlSerializerContext or pass a TomlTypeInfo instance.")]
-        public static bool TryDeserialize<T>(System.IO.TextReader reader, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out T value, Meziantou.Framework.Toml.TomlSerializerOptions? options = null) => throw null;
+        public static bool TryDeserialize<T>(System.IO.TextReader reader, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out T? value, Meziantou.Framework.Toml.TomlSerializerOptions? options = null) => throw null;
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Reflection-based TOML serialization is not compatible with trimming/NativeAOT. Use a source-generated TomlSerializerContext or pass a TomlTypeInfo instance.")]
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Reflection-based TOML serialization is not compatible with trimming/NativeAOT. Use a source-generated TomlSerializerContext or pass a TomlTypeInfo instance.")]
         public static bool TryDeserialize(System.IO.TextReader reader, System.Type returnType, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out object? value, Meziantou.Framework.Toml.TomlSerializerOptions? options = null) => throw null;
-        public static bool TryDeserialize<T>(System.IO.TextReader reader, Meziantou.Framework.Toml.Serialization.TomlSerializerContext context, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out T value) => throw null;
+        public static bool TryDeserialize<T>(System.IO.TextReader reader, Meziantou.Framework.Toml.Serialization.TomlSerializerContext context, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out T? value) => throw null;
         public static bool TryDeserialize(System.IO.TextReader reader, System.Type returnType, Meziantou.Framework.Toml.Serialization.TomlSerializerContext context, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out object? value) => throw null;
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Reflection-based TOML serialization is not compatible with trimming/NativeAOT. Use a source-generated TomlSerializerContext or pass a TomlTypeInfo instance.")]
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Reflection-based TOML serialization is not compatible with trimming/NativeAOT. Use a source-generated TomlSerializerContext or pass a TomlTypeInfo instance.")]
-        public static bool TryDeserialize<T>(System.IO.Stream stream, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out T value, Meziantou.Framework.Toml.TomlSerializerOptions? options = null) => throw null;
+        public static bool TryDeserialize<T>(System.IO.Stream stream, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out T? value, Meziantou.Framework.Toml.TomlSerializerOptions? options = null) => throw null;
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Reflection-based TOML serialization is not compatible with trimming/NativeAOT. Use a source-generated TomlSerializerContext or pass a TomlTypeInfo instance.")]
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Reflection-based TOML serialization is not compatible with trimming/NativeAOT. Use a source-generated TomlSerializerContext or pass a TomlTypeInfo instance.")]
         public static bool TryDeserialize(System.IO.Stream stream, System.Type returnType, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out object? value, Meziantou.Framework.Toml.TomlSerializerOptions? options = null) => throw null;
-        public static bool TryDeserialize<T>(System.IO.Stream stream, Meziantou.Framework.Toml.Serialization.TomlSerializerContext context, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out T value) => throw null;
+        public static bool TryDeserialize<T>(System.IO.Stream stream, Meziantou.Framework.Toml.Serialization.TomlSerializerContext context, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out T? value) => throw null;
         public static bool TryDeserialize(System.IO.Stream stream, System.Type returnType, Meziantou.Framework.Toml.Serialization.TomlSerializerContext context, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out object? value) => throw null;
-        public static bool TryDeserialize<T>(string toml, Meziantou.Framework.Toml.TomlTypeInfo<T> typeInfo, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out T value) => throw null;
+        public static bool TryDeserialize<T>(string toml, Meziantou.Framework.Toml.TomlTypeInfo<T> typeInfo, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out T? value) => throw null;
         public static bool TryDeserialize(string toml, Meziantou.Framework.Toml.TomlTypeInfo typeInfo, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out object? value) => throw null;
-        public static bool TryDeserialize<T>(System.IO.TextReader reader, Meziantou.Framework.Toml.TomlTypeInfo<T> typeInfo, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out T value) => throw null;
+        public static bool TryDeserialize<T>(System.IO.TextReader reader, Meziantou.Framework.Toml.TomlTypeInfo<T> typeInfo, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out T? value) => throw null;
         public static bool TryDeserialize(System.IO.TextReader reader, Meziantou.Framework.Toml.TomlTypeInfo typeInfo, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out object? value) => throw null;
-        public static bool TryDeserialize<T>(System.IO.Stream stream, Meziantou.Framework.Toml.TomlTypeInfo<T> typeInfo, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out T value) => throw null;
+        public static bool TryDeserialize<T>(System.IO.Stream stream, Meziantou.Framework.Toml.TomlTypeInfo<T> typeInfo, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out T? value) => throw null;
         public static bool TryDeserialize(System.IO.Stream stream, Meziantou.Framework.Toml.TomlTypeInfo typeInfo, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out object? value) => throw null;
         public static object? Deserialize(string toml, Meziantou.Framework.Toml.TomlTypeInfo typeInfo) => throw null;
         public static void Serialize(System.IO.TextWriter writer, object? value, Meziantou.Framework.Toml.TomlTypeInfo typeInfo) { }
@@ -389,7 +389,7 @@ namespace Meziantou.Framework.Toml
     {
         protected TomlTypeInfo(Meziantou.Framework.Toml.TomlSerializerOptions options) : base(default(System.Type), default(Meziantou.Framework.Toml.TomlSerializerOptions)) { }
         public abstract void Write(Meziantou.Framework.Toml.Serialization.TomlWriter writer, T value);
-        public abstract T Read(Meziantou.Framework.Toml.Serialization.TomlReader reader);
+        public abstract T? Read(Meziantou.Framework.Toml.Serialization.TomlReader reader);
         public sealed override void Write(Meziantou.Framework.Toml.Serialization.TomlWriter writer, object? value) { }
         public sealed override object? ReadAsObject(Meziantou.Framework.Toml.Serialization.TomlReader reader) => throw null;
     }
@@ -449,14 +449,15 @@ namespace Meziantou.Framework.Toml.Model
         LocalTime = 12,
     }
 
-    public sealed class TomlArray : Meziantou.Framework.Toml.Model.TomlObject, System.Collections.Generic.ICollection<object>, System.Collections.Generic.IEnumerable<object>, System.Collections.Generic.IList<object>, System.Collections.IEnumerable
+    public sealed class TomlArray : Meziantou.Framework.Toml.Model.TomlObject, System.Collections.Generic.ICollection<object?>, System.Collections.Generic.IEnumerable<object?>, System.Collections.Generic.IList<object?>, System.Collections.IEnumerable
     {
         public int Count { get => throw null; }
         public bool IsReadOnly { get => throw null; }
         public object? this[int index] { get => throw null; set { } }
         public TomlArray() : base(default(Meziantou.Framework.Toml.Model.ObjectKind)) { }
         public TomlArray(int capacity) : base(default(Meziantou.Framework.Toml.Model.ObjectKind)) { }
-        public Enumerator<object?> GetEnumerator() => throw null;
+        public System.Collections.Generic.List<object?>.Enumerator GetEnumerator() => throw null;
+        System.Collections.Generic.IEnumerator<object?> System.Collections.Generic.IEnumerable<System.Object>.GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
         public void Add(object? item) { }
         public void Clear() { }
@@ -543,9 +544,14 @@ namespace Meziantou.Framework.Toml.Model
         public System.Collections.Generic.ICollection<object> Values { get => throw null; }
         public TomlTable() : base(default(Meziantou.Framework.Toml.Model.ObjectKind)) { }
         public TomlTable(bool inline) : base(default(Meziantou.Framework.Toml.Model.ObjectKind)) { }
-        public Enumerator GetEnumerator() => throw null;
+        public Meziantou.Framework.Toml.Model.TomlTable.Enumerator GetEnumerator() => throw null;
+        System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, object>> System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<System.String,System.Object>>.GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
+        void System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<System.String,System.Object>>.Add(System.Collections.Generic.KeyValuePair<string, object> item) { }
         public void Clear() { }
+        bool System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<System.String,System.Object>>.Contains(System.Collections.Generic.KeyValuePair<string, object> item) => throw null;
+        void System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<System.String,System.Object>>.CopyTo(System.Collections.Generic.KeyValuePair<string, object>[] array, int arrayIndex) { }
+        bool System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<System.String,System.Object>>.Remove(System.Collections.Generic.KeyValuePair<string, object> item) => throw null;
         public void Add(string key, object value) { }
         public bool ContainsKey(string key) => throw null;
         public bool Remove(string key) => throw null;
@@ -553,6 +559,7 @@ namespace Meziantou.Framework.Toml.Model
         public struct Enumerator : System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, object>>, System.Collections.IEnumerator, System.IDisposable
         {
             public System.Collections.Generic.KeyValuePair<string, object> Current { get => throw null; }
+            object System.Collections.IEnumerator.Current { get => throw null; }
             public bool MoveNext() => throw null;
             public void Reset() { }
             public void Dispose() { }
@@ -565,7 +572,8 @@ namespace Meziantou.Framework.Toml.Model
         public bool IsReadOnly { get => throw null; }
         public Meziantou.Framework.Toml.Model.TomlTable this[int index] { get => throw null; set { } }
         public TomlTableArray() : base(default(Meziantou.Framework.Toml.Model.ObjectKind)) { }
-        public Enumerator<Meziantou.Framework.Toml.Model.TomlTable> GetEnumerator() => throw null;
+        public System.Collections.Generic.List<Meziantou.Framework.Toml.Model.TomlTable>.Enumerator GetEnumerator() => throw null;
+        System.Collections.Generic.IEnumerator<Meziantou.Framework.Toml.Model.TomlTable> System.Collections.Generic.IEnumerable<Meziantou.Framework.Toml.Model.TomlTable>.GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
         public void Add(Meziantou.Framework.Toml.Model.TomlTable item) { }
         public void Clear() { }
@@ -781,7 +789,7 @@ namespace Meziantou.Framework.Toml.Serialization
         public sealed override bool CanConvert(System.Type typeToConvert) => throw null;
         public sealed override object? Read(Meziantou.Framework.Toml.Serialization.TomlReader reader, System.Type typeToConvert) => throw null;
         public sealed override void Write(Meziantou.Framework.Toml.Serialization.TomlWriter writer, object? value) { }
-        public abstract T Read(Meziantou.Framework.Toml.Serialization.TomlReader reader);
+        public abstract T? Read(Meziantou.Framework.Toml.Serialization.TomlReader reader);
         public abstract void Write(Meziantou.Framework.Toml.Serialization.TomlWriter writer, T value);
     }
 
@@ -870,7 +878,7 @@ namespace Meziantou.Framework.Toml.Serialization
         public TomlPolymorphicTypeInfo(Meziantou.Framework.Toml.TomlSerializerOptions options, Meziantou.Framework.Toml.TomlTypeInfo<TBase>? baseTypeInfo, string? discriminatorPropertyName, System.Collections.Generic.IReadOnlyDictionary<string, Meziantou.Framework.Toml.TomlTypeInfo> derivedTypeInfoByDiscriminator, Meziantou.Framework.Toml.TomlTypeInfo? defaultDerivedTypeInfo) { }
         public TomlPolymorphicTypeInfo(Meziantou.Framework.Toml.TomlSerializerOptions options, Meziantou.Framework.Toml.TomlTypeInfo<TBase>? baseTypeInfo, string? discriminatorPropertyName, System.Collections.Generic.IReadOnlyDictionary<string, Meziantou.Framework.Toml.TomlTypeInfo> derivedTypeInfoByDiscriminator, Meziantou.Framework.Toml.TomlTypeInfo? defaultDerivedTypeInfo, Meziantou.Framework.Toml.TomlUnknownDerivedTypeHandling? unknownDerivedTypeHandling) { }
         public override void Write(Meziantou.Framework.Toml.Serialization.TomlWriter writer, TBase value) { }
-        public override TBase Read(Meziantou.Framework.Toml.Serialization.TomlReader reader) => throw null;
+        public override TBase? Read(Meziantou.Framework.Toml.Serialization.TomlReader reader) => throw null;
     }
 
     [System.AttributeUsage(System.AttributeTargets.Property | System.AttributeTargets.Field, AllowMultiple = false)]
@@ -1177,7 +1185,8 @@ namespace Meziantou.Framework.Toml.Syntax
         public void Clear() { }
         public void Warning(Meziantou.Framework.Toml.Syntax.SourceSpan span, string text) { }
         public void Error(Meziantou.Framework.Toml.Syntax.SourceSpan span, string text) { }
-        public Enumerator<Meziantou.Framework.Toml.Syntax.DiagnosticMessage> GetEnumerator() => throw null;
+        public System.Collections.Generic.List<Meziantou.Framework.Toml.Syntax.DiagnosticMessage>.Enumerator GetEnumerator() => throw null;
+        System.Collections.Generic.IEnumerator<Meziantou.Framework.Toml.Syntax.DiagnosticMessage> System.Collections.Generic.IEnumerable<Meziantou.Framework.Toml.Syntax.DiagnosticMessage>.GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
         public override string ToString() => throw null;
     }
@@ -1358,15 +1367,17 @@ namespace Meziantou.Framework.Toml.Syntax
     public sealed class SyntaxList<TSyntaxNode> : Meziantou.Framework.Toml.Syntax.SyntaxList, System.Collections.Generic.IEnumerable<TSyntaxNode>, System.Collections.IEnumerable where TSyntaxNode : Meziantou.Framework.Toml.Syntax.SyntaxNode
     {
         public void Add(TSyntaxNode node) { }
-        public TSyntaxNode GetChild(int index) => throw null;
+        public TSyntaxNode? GetChild(int index) => throw null;
         protected override Meziantou.Framework.Toml.Syntax.SyntaxNode GetChildImpl(int index) => throw null;
         public void RemoveChildAt(int index) { }
         public void RemoveChild(TSyntaxNode node) { }
-        public Enumerator<TSyntaxNode> GetEnumerator() => throw null;
+        public Meziantou.Framework.Toml.Syntax.SyntaxList<TSyntaxNode>.Enumerator GetEnumerator() => throw null;
+        System.Collections.Generic.IEnumerator<TSyntaxNode> System.Collections.Generic.IEnumerable<TSyntaxNode>.GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
-        public struct Enumerator<TSyntaxNode> : System.Collections.Generic.IEnumerator<TSyntaxNode>, System.Collections.IEnumerator, System.IDisposable where TSyntaxNode : Meziantou.Framework.Toml.Syntax.SyntaxNode
+        public struct Enumerator : System.Collections.Generic.IEnumerator<TSyntaxNode>, System.Collections.IEnumerator, System.IDisposable
         {
             public TSyntaxNode Current { get => throw null; }
+            object System.Collections.IEnumerator.Current { get => throw null; }
             public Enumerator(System.Collections.Generic.List<Meziantou.Framework.Toml.Syntax.SyntaxNode> nodes) { }
             public bool MoveNext() => throw null;
             public void Reset() { }
@@ -1385,10 +1396,10 @@ namespace Meziantou.Framework.Toml.Syntax
         protected abstract Meziantou.Framework.Toml.Syntax.SyntaxNode? GetChildImpl(int index);
         public override string ToString() => throw null;
         public void WriteTo(System.IO.TextWriter writer) { }
-        protected void ParentToThis<TSyntaxNode>(ref TSyntaxNode set, TSyntaxNode node) where TSyntaxNode : Meziantou.Framework.Toml.Syntax.SyntaxNode { }
-        protected void ParentToThis<TSyntaxNode>(ref TSyntaxNode set, TSyntaxNode node, Meziantou.Framework.Toml.Syntax.TokenKind expectedKind) where TSyntaxNode : Meziantou.Framework.Toml.Syntax.SyntaxToken { }
-        protected void ParentToThis<TSyntaxNode, TExpected>(ref TSyntaxNode set, TSyntaxNode node, bool expectedKindSuccess, TExpected expectedMessage) where TSyntaxNode : Meziantou.Framework.Toml.Syntax.SyntaxToken { }
-        protected void ParentToThis<TSyntaxNode>(ref TSyntaxNode set, TSyntaxNode node, Meziantou.Framework.Toml.Syntax.TokenKind expectedKind1, Meziantou.Framework.Toml.Syntax.TokenKind expectedKind2) where TSyntaxNode : Meziantou.Framework.Toml.Syntax.SyntaxToken { }
+        protected void ParentToThis<TSyntaxNode>(ref TSyntaxNode? set, TSyntaxNode? node) where TSyntaxNode : Meziantou.Framework.Toml.Syntax.SyntaxNode { }
+        protected void ParentToThis<TSyntaxNode>(ref TSyntaxNode? set, TSyntaxNode? node, Meziantou.Framework.Toml.Syntax.TokenKind expectedKind) where TSyntaxNode : Meziantou.Framework.Toml.Syntax.SyntaxToken { }
+        protected void ParentToThis<TSyntaxNode, TExpected>(ref TSyntaxNode? set, TSyntaxNode? node, bool expectedKindSuccess, TExpected expectedMessage) where TSyntaxNode : Meziantou.Framework.Toml.Syntax.SyntaxToken { }
+        protected void ParentToThis<TSyntaxNode>(ref TSyntaxNode? set, TSyntaxNode? node, Meziantou.Framework.Toml.Syntax.TokenKind expectedKind1, Meziantou.Framework.Toml.Syntax.TokenKind expectedKind2) where TSyntaxNode : Meziantou.Framework.Toml.Syntax.SyntaxToken { }
     }
 
     [System.Diagnostics.DebuggerDisplay("{ToDebuggerDisplay(),nq}")]

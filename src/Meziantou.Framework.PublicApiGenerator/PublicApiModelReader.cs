@@ -14,7 +14,7 @@ internal static class PublicApiModelReader
         if (!peReader.HasMetadata)
             throw new InvalidOperationException($"The file '{assemblyPath}' does not contain .NET metadata.");
 
-        return PublicApiMetadataReader.Read(peReader, options);
+        return PublicApiMetadataReader.Read(peReader, options, Path.GetDirectoryName(Path.GetFullPath(assemblyPath)));
     }
 
     public static PublicApiAssembly ReadAssembly(Stream stream, PublicApiReadOptions? options)

@@ -20,7 +20,8 @@ internal sealed partial class PublicApiMetadataReader
         {
             // The NullableAttribute of a type definition describes its base type
             var nullableInfo = GetNullableMetadataInfo(typeDefinitionHandle, typeDefinition.GetCustomAttributes());
-            baseType = TypeReferenceBuilder.Build(DecodeTypeFromEntityHandle(typeDefinition.BaseType, genericContext), nullableInfo);
+            var typeAttributes = typeDefinition.GetCustomAttributes();
+            baseType = TypeReferenceBuilder.Build(DecodeTypeFromEntityHandle(typeDefinition.BaseType, genericContext), nullableInfo, GetTupleElementNames(typeAttributes), GetDynamicFlags(typeAttributes));
         }
 
         var interfaces = ReadInterfaces(typeDefinitionHandle, typeDefinition, genericContext);
@@ -210,7 +211,7 @@ internal sealed partial class PublicApiMetadataReader
             if (!field.Attributes.HasFlag(FieldAttributes.Literal) || field.Attributes.HasFlag(FieldAttributes.SpecialName))
                 continue;
 
-            result.Add(ReadField(typeDefinitionHandle, fieldHandle, field));
+            result.Add(ReadField(typeDefinitionHandle, fieldHandle, field, isEnumMember: true));
         }
 
         return result.ToImmutable();

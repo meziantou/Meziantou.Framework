@@ -30,14 +30,21 @@ namespace Meziantou.Framework.Csv
         protected virtual Meziantou.Framework.Csv.CsvRow CreateRow(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Csv.CsvColumn>? columns, System.Collections.Generic.IReadOnlyList<string> values) => throw null;
     }
 
-    public class CsvRow : System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Collections.Generic.IReadOnlyCollection<System.Collections.Generic.KeyValuePair<string, string>>, System.Collections.Generic.IReadOnlyDictionary<string, string>, System.Collections.IEnumerable
+    public class CsvRow : System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string?>>, System.Collections.Generic.IReadOnlyCollection<System.Collections.Generic.KeyValuePair<string, string?>>, System.Collections.Generic.IReadOnlyDictionary<string, string?>, System.Collections.IEnumerable
     {
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Csv.CsvColumn>? Columns { get => throw null; }
         public System.Collections.Generic.IReadOnlyList<string> Values { get => throw null; }
         public virtual string? this[int index] { get => throw null; }
         public virtual string? this[string columnName] { get => throw null; }
         public virtual string? this[Meziantou.Framework.Csv.CsvColumn column] { get => throw null; }
+        System.Collections.Generic.IEnumerable<string> System.Collections.Generic.IReadOnlyDictionary<System.String,System.String>.Keys { get => throw null; }
+        System.Collections.Generic.IEnumerable<string> System.Collections.Generic.IReadOnlyDictionary<System.String,System.String>.Values { get => throw null; }
+        int System.Collections.Generic.IReadOnlyCollection<System.Collections.Generic.KeyValuePair<System.String,System.String>>.Count { get => throw null; }
+        string? System.Collections.Generic.IReadOnlyDictionary<System.String,System.String>.this[string key] { get => throw null; }
         protected internal CsvRow(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Csv.CsvColumn>? columns, System.Collections.Generic.IReadOnlyList<string> values) { }
+        bool System.Collections.Generic.IReadOnlyDictionary<System.String,System.String>.ContainsKey(string key) => throw null;
+        bool System.Collections.Generic.IReadOnlyDictionary<System.String,System.String>.TryGetValue(string key, out string? value) => throw null;
+        System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, string?>> System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<System.String,System.String>>.GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
     }
 

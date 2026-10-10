@@ -18,6 +18,7 @@ public sealed class PublicApiParameter
         bool isOptional,
         bool hasDefaultValue,
         object? defaultValue,
+        ImmutableArray<string> defaultValueEnumMemberNames,
         bool hasOutAttribute)
     {
         Name = name;
@@ -32,6 +33,7 @@ public sealed class PublicApiParameter
         IsOptional = isOptional;
         HasDefaultValue = hasDefaultValue;
         DefaultValue = defaultValue;
+        DefaultValueEnumMemberNames = defaultValueEnumMemberNames;
         HasOutAttribute = hasOutAttribute;
     }
 
@@ -62,8 +64,14 @@ public sealed class PublicApiParameter
 
     public bool HasDefaultValue { get; }
 
-    /// <summary>Gets the default value, as stored in metadata. A <c>default</c> struct value is stored as <see langword="null"/>.</summary>
+    /// <summary>
+    /// Gets the default value, as stored in metadata. A <c>default</c> struct value is stored as <see langword="null"/>.
+    /// A <see cref="decimal"/> value is read from the <c>DecimalConstantAttribute</c> of the parameter.
+    /// </summary>
     public object? DefaultValue { get; }
+
+    // The names of the enum members that make the default value, when the parameter is of an enum type and the value can be named
+    internal ImmutableArray<string> DefaultValueEnumMemberNames { get; }
 
     // The [Out] pseudo-attribute, which is also set on parameters that are not passed by reference (e.g. arrays in interop signatures)
     internal bool HasOutAttribute { get; }

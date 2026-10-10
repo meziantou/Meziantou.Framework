@@ -9,7 +9,7 @@ namespace Meziantou.Framework.Ntp
         public int Port { get => throw null; }
         public System.Threading.Tasks.Task Completion { get => throw null; }
         public NtpServer(Meziantou.Framework.Ntp.NtpServerOptions? options = null) { }
-        public System.Threading.Tasks.Task StartAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public System.Threading.Tasks.Task StartAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
         public void Dispose() { }
     }
 

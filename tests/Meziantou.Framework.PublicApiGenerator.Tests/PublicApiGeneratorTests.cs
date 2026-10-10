@@ -209,6 +209,147 @@ public sealed class PublicApiGeneratorTests
     }
 
     [Fact]
+    public async Task ExplicitInterfaceImplementations()
+    {
+        await Validate("""
+            using System;
+            using System.Collections.Generic;
+
+            namespace Demo;
+
+            public interface IMembers
+            {
+                int Value { get; set; }
+                int this[int index] { get; }
+                event EventHandler? Changed;
+                void M();
+            }
+
+            public interface IMembers<T>
+            {
+                T Value { get; set; }
+                T this[T index] { get; set; }
+                event EventHandler<T>? Changed;
+                T M(T value);
+                void Generic<U>(U value) where U : T;
+            }
+
+            public class Sample : IMembers, IMembers<string>, IEnumerable<int>, IComparable<Sample[]>
+            {
+                int IMembers.Value { get => 0; set { } }
+                int IMembers.this[int index] => 0;
+                event EventHandler? IMembers.Changed { add { } remove { } }
+                void IMembers.M() { }
+
+                string IMembers<string>.Value { get => ""; set { } }
+                string IMembers<string>.this[string index] { get => ""; set { } }
+                event EventHandler<string>? IMembers<string>.Changed { add { } remove { } }
+                string IMembers<string>.M(string value) => value;
+                void IMembers<string>.Generic<U>(U value) { }
+
+                IEnumerator<int> IEnumerable<int>.GetEnumerator() => null!;
+                System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => null!;
+                int IComparable<Sample[]>.CompareTo(Sample[]? other) => 0;
+            }
+
+            public class GenericSample<T> : IMembers<T>, IMembers<List<T[]>>
+            {
+                T IMembers<T>.Value { get => default!; set { } }
+                T IMembers<T>.this[T index] { get => default!; set { } }
+                event EventHandler<T>? IMembers<T>.Changed { add { } remove { } }
+                T IMembers<T>.M(T value) => value;
+                void IMembers<T>.Generic<U>(U value) { }
+
+                List<T[]> IMembers<List<T[]>>.Value { get => null!; set { } }
+                List<T[]> IMembers<List<T[]>>.this[List<T[]> index] { get => null!; set { } }
+                event EventHandler<List<T[]>>? IMembers<List<T[]>>.Changed { add { } remove { } }
+                List<T[]> IMembers<List<T[]>>.M(List<T[]> value) => value;
+                void IMembers<List<T[]>>.Generic<U>(U value) { }
+            }
+
+            public struct SampleStruct : IMembers
+            {
+                readonly int IMembers.Value { get => 0; set { } }
+                int IMembers.this[int index] => 0;
+                event EventHandler? IMembers.Changed { add { } remove { } }
+                void IMembers.M() { }
+            }
+
+            public interface IDerived<T> : IMembers
+            {
+                int IMembers.Value { get => 0; set { } }
+                void IMembers.M() { }
+            }
+            """, """
+            #nullable enable
+
+            namespace Demo
+            {
+                public class GenericSample<T> : global::Demo.IMembers<System.Collections.Generic.List<T[]>>, global::Demo.IMembers<T>
+                {
+                    T global::Demo.IMembers<T>.Value { get => throw null; set { } }
+                    T global::Demo.IMembers<T>.this[T index] { get => throw null; set { } }
+                    System.Collections.Generic.List<T[]> global::Demo.IMembers<System.Collections.Generic.List<T[]>>.Value { get => throw null; set { } }
+                    System.Collections.Generic.List<T[]> global::Demo.IMembers<System.Collections.Generic.List<T[]>>.this[System.Collections.Generic.List<T[]> index] { get => throw null; set { } }
+                    event System.EventHandler<T>? global::Demo.IMembers<T>.Changed { add { } remove { } }
+                    event System.EventHandler<System.Collections.Generic.List<T[]>>? global::Demo.IMembers<System.Collections.Generic.List<T[]>>.Changed { add { } remove { } }
+                    T global::Demo.IMembers<T>.M(T value) => throw null;
+                    void global::Demo.IMembers<T>.Generic<U>(U value) { }
+                    System.Collections.Generic.List<T[]> global::Demo.IMembers<System.Collections.Generic.List<T[]>>.M(System.Collections.Generic.List<T[]> value) => throw null;
+                    void global::Demo.IMembers<System.Collections.Generic.List<T[]>>.Generic<U>(U value) { }
+                }
+
+                public interface IDerived<T> : global::Demo.IMembers
+                {
+                    int global::Demo.IMembers.Value { get => throw null; set { } }
+                    void global::Demo.IMembers.M() { }
+                }
+
+                public interface IMembers
+                {
+                    int Value { get; set; }
+                    int this[int index] { get; }
+                    public event System.EventHandler? Changed;
+                    void M();
+                }
+
+                public interface IMembers<T>
+                {
+                    T Value { get; set; }
+                    T this[T index] { get; set; }
+                    public event System.EventHandler<T>? Changed;
+                    T M(T value);
+                    void Generic<U>(U value) where U : T;
+                }
+
+                public class Sample : global::Demo.IMembers, global::Demo.IMembers<string>, System.Collections.Generic.IEnumerable<int>, System.Collections.IEnumerable, System.IComparable<global::Demo.Sample[]>
+                {
+                    int global::Demo.IMembers.Value { get => throw null; set { } }
+                    int global::Demo.IMembers.this[int index] { get => throw null; }
+                    string global::Demo.IMembers<System.String>.Value { get => throw null; set { } }
+                    string global::Demo.IMembers<System.String>.this[string index] { get => throw null; set { } }
+                    event System.EventHandler? global::Demo.IMembers.Changed { add { } remove { } }
+                    event System.EventHandler<string>? global::Demo.IMembers<System.String>.Changed { add { } remove { } }
+                    void global::Demo.IMembers.M() { }
+                    string global::Demo.IMembers<System.String>.M(string value) => throw null;
+                    void global::Demo.IMembers<System.String>.Generic<U>(U value) { }
+                    System.Collections.Generic.IEnumerator<int> System.Collections.Generic.IEnumerable<System.Int32>.GetEnumerator() => throw null;
+                    System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
+                    int System.IComparable<global::Demo.Sample[]>.CompareTo(global::Demo.Sample[]? other) => throw null;
+                }
+
+                public struct SampleStruct : global::Demo.IMembers
+                {
+                    readonly int global::Demo.IMembers.Value { get => throw null; set { } }
+                    int global::Demo.IMembers.this[int index] { get => throw null; }
+                    event System.EventHandler? global::Demo.IMembers.Changed { add { } remove { } }
+                    void global::Demo.IMembers.M() { }
+                }
+            }
+            """);
+    }
+
+    [Fact]
     public async Task NestedTypes_Basic()
     {
         await Validate("""
@@ -227,6 +368,330 @@ public sealed class PublicApiGeneratorTests
                 public class Inner
                 {
                     public int M() => throw null;
+                }
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task NestedTypes_NonGenericTypeInGenericType()
+    {
+        await Validate("""
+            namespace Demo;
+
+            public class Base<T>
+            {
+                public class Nested { }
+            }
+            """, """
+            #nullable enable
+
+            namespace Demo
+            {
+                public class Base<T>
+                {
+                    public class Nested
+                    {
+                    }
+                }
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task NestedTypes_InGenericType_DeclareOnlyTheirOwnGenericParameters()
+    {
+        await Validate("""
+            namespace Demo;
+
+            public class Base<T> where T : class
+            {
+                public class Nested
+                {
+                    public T Value => default!;
+
+                    public class Deep { }
+                }
+
+                public class NestedGeneric<U> where U : struct
+                {
+                    public T M(U value) => default!;
+
+                    public class Deep { }
+                    public class DeepGeneric<V> { }
+                }
+
+                public struct NestedStruct { }
+                public interface INested { }
+                public enum NestedEnum { A }
+                public delegate T NestedDelegate(T value);
+                public delegate T NestedGenericDelegate<U>(U value) where U : struct;
+            }
+            """, """
+            #nullable enable
+
+            namespace Demo
+            {
+                public class Base<T> where T : class
+                {
+                    public interface INested
+                    {
+                    }
+                    public class Nested
+                    {
+                        public T Value { get => throw null; }
+                        public class Deep
+                        {
+                        }
+                    }
+                    public delegate T NestedDelegate(T value);
+                    public enum NestedEnum
+                    {
+                        A = 0,
+                    }
+                    public delegate T NestedGenericDelegate<U>(U value) where U : struct;
+                    public class NestedGeneric<U> where U : struct
+                    {
+                        public T M(U value) => throw null;
+                        public class Deep
+                        {
+                        }
+                        public class DeepGeneric<V>
+                        {
+                        }
+                    }
+                    public struct NestedStruct
+                    {
+                    }
+                }
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task NestedTypes_References()
+    {
+        await Validate("""
+            using System.Collections.Generic;
+
+            namespace Demo;
+
+            public class Outer
+            {
+                public class Inner
+                {
+                    public class Deep { }
+
+                    public Deep CreateDeep() => null!;
+                }
+
+                public class InnerGeneric<U> { }
+                public interface IInner { void M(); }
+                public enum InnerEnum { A, B }
+                public struct InnerStruct { }
+                public delegate void InnerHandler(Inner value);
+
+                public Inner Create() => null!;
+                public InnerGeneric<int> CreateGeneric() => null!;
+            }
+
+            [System.Diagnostics.DebuggerTypeProxy(typeof(Outer.Inner.Deep))]
+            public class Sample : Outer.Inner, Outer.IInner
+            {
+                public Outer.InnerStruct? Field;
+
+                [System.ComponentModel.DefaultValue(Outer.InnerEnum.B)]
+                public Outer.InnerEnum Property { get; set; }
+                public event Outer.InnerHandler? Changed;
+
+                public Outer.Inner.Deep[] A(Outer.InnerGeneric<Outer.Inner?> value) => null!;
+                public Dictionary<string, Outer.Inner>.Enumerator B() => default;
+                public List<Outer.Inner?>.Enumerator C() => default;
+                public (Outer.Inner, Outer.InnerEnum) D() => default;
+                public void E<T>(T value) where T : Outer.Inner, Outer.IInner { }
+                void Outer.IInner.M() { }
+            }
+
+            public static class Extensions
+            {
+                public static void Extend(this Outer.Inner value) { }
+            }
+            """, """
+            #nullable enable
+
+            namespace Demo
+            {
+                public static class Extensions
+                {
+                    public static void Extend(this global::Demo.Outer.Inner value) { }
+                }
+
+                public class Outer
+                {
+                    public global::Demo.Outer.Inner Create() => throw null;
+                    public global::Demo.Outer.InnerGeneric<int> CreateGeneric() => throw null;
+                    public interface IInner
+                    {
+                        void M();
+                    }
+                    public class Inner
+                    {
+                        public global::Demo.Outer.Inner.Deep CreateDeep() => throw null;
+                        public class Deep
+                        {
+                        }
+                    }
+                    public enum InnerEnum
+                    {
+                        A = 0,
+                        B = 1,
+                    }
+                    public class InnerGeneric<U>
+                    {
+                    }
+                    public delegate void InnerHandler(global::Demo.Outer.Inner value);
+                    public struct InnerStruct
+                    {
+                    }
+                }
+
+                [System.Diagnostics.DebuggerTypeProxy(typeof(global::Demo.Outer.Inner.Deep))]
+                public class Sample : global::Demo.Outer.Inner, global::Demo.Outer.IInner
+                {
+                    public global::Demo.Outer.InnerStruct? Field;
+                    [System.ComponentModel.DefaultValue(global::Demo.Outer.InnerEnum.B)]
+                    public global::Demo.Outer.InnerEnum Property { get => throw null; set { } }
+                    public event global::Demo.Outer.InnerHandler? Changed;
+                    public global::Demo.Outer.Inner.Deep[] A(global::Demo.Outer.InnerGeneric<global::Demo.Outer.Inner?> value) => throw null;
+                    public System.Collections.Generic.Dictionary<string, global::Demo.Outer.Inner>.Enumerator B() => throw null;
+                    public System.Collections.Generic.List<global::Demo.Outer.Inner?>.Enumerator C() => throw null;
+                    public System.ValueTuple<global::Demo.Outer.Inner, global::Demo.Outer.InnerEnum> D() => throw null;
+                    public void E<T>(T value) where T : global::Demo.Outer.Inner, global::Demo.Outer.IInner { }
+                    void global::Demo.Outer.IInner.M() { }
+                }
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task NestedTypes_InGenericType_References()
+    {
+        await Validate("""
+            namespace Demo;
+
+            public class Base<T>
+            {
+                public class Nested
+                {
+                    public Nested Self => this;
+                }
+
+                public class NestedGeneric<U>
+                {
+                    public class Deep { }
+                    public class DeepGeneric<V> { }
+
+                    public Deep CreateDeep() => null!;
+                }
+
+                public struct NestedStruct { }
+                public enum NestedEnum { A, B }
+                public interface INested { T M(); }
+                public delegate T NestedDelegate(T value);
+
+                public event NestedDelegate? Changed;
+                public Nested Create() => null!;
+                public NestedGeneric<int> CreateGeneric() => null!;
+                public Base<int>.Nested CreateConstructed() => null!;
+            }
+
+            [System.Diagnostics.DebuggerTypeProxy(typeof(Base<Sample>.NestedGeneric<Sample>.Deep))]
+            public class Sample : Base<string>.Nested, Base<int>.INested
+            {
+                public Base<int>.NestedStruct? Field;
+                public Base<Sample>.NestedDelegate? Handler;
+
+                [System.ComponentModel.DefaultValue(Base<Sample>.NestedEnum.B)]
+                public Base<string>.NestedEnum Property { get; set; }
+
+                public int M() => 0;
+                public Base<int>.Nested A() => null!;
+                public Base<string?>.NestedGeneric<long>? B() => null;
+                public Base<int>.NestedGeneric<long>.Deep C() => null!;
+                public Base<int>.NestedGeneric<long>.DeepGeneric<string?>[] D() => null!;
+                public (Base<int>.Nested, Base<string>.NestedEnum) E() => default;
+                public void F<TArg>(TArg value) where TArg : Base<TArg>.Nested { }
+            }
+
+            public class Derived<T> : Base<T>.NestedGeneric<int>.DeepGeneric<T[]> { }
+
+            public static class Extensions
+            {
+                public static void Extend(this Base<int>.Nested value) { }
+            }
+            """, """
+            #nullable enable
+
+            namespace Demo
+            {
+                public class Base<T>
+                {
+                    public event global::Demo.Base<T>.NestedDelegate? Changed;
+                    public global::Demo.Base<T>.Nested Create() => throw null;
+                    public global::Demo.Base<T>.NestedGeneric<int> CreateGeneric() => throw null;
+                    public global::Demo.Base<int>.Nested CreateConstructed() => throw null;
+                    public interface INested
+                    {
+                        T M();
+                    }
+                    public class Nested
+                    {
+                        public global::Demo.Base<T>.Nested Self { get => throw null; }
+                    }
+                    public delegate T NestedDelegate(T value);
+                    public enum NestedEnum
+                    {
+                        A = 0,
+                        B = 1,
+                    }
+                    public class NestedGeneric<U>
+                    {
+                        public global::Demo.Base<T>.NestedGeneric<U>.Deep CreateDeep() => throw null;
+                        public class Deep
+                        {
+                        }
+                        public class DeepGeneric<V>
+                        {
+                        }
+                    }
+                    public struct NestedStruct
+                    {
+                    }
+                }
+
+                public class Derived<T> : global::Demo.Base<T>.NestedGeneric<int>.DeepGeneric<T[]>
+                {
+                }
+
+                public static class Extensions
+                {
+                    public static void Extend(this global::Demo.Base<int>.Nested value) { }
+                }
+
+                [System.Diagnostics.DebuggerTypeProxy(typeof(global::Demo.Base<global::Demo.Sample>.NestedGeneric<global::Demo.Sample>.Deep))]
+                public class Sample : global::Demo.Base<string>.Nested, global::Demo.Base<int>.INested
+                {
+                    public global::Demo.Base<int>.NestedStruct? Field;
+                    public global::Demo.Base<global::Demo.Sample>.NestedDelegate? Handler;
+                    [System.ComponentModel.DefaultValue(global::Demo.Base<global::Demo.Sample>.NestedEnum.B)]
+                    public global::Demo.Base<string>.NestedEnum Property { get => throw null; set { } }
+                    public int M() => throw null;
+                    public global::Demo.Base<int>.Nested A() => throw null;
+                    public global::Demo.Base<string?>.NestedGeneric<long>? B() => throw null;
+                    public global::Demo.Base<int>.NestedGeneric<long>.Deep C() => throw null;
+                    public global::Demo.Base<int>.NestedGeneric<long>.DeepGeneric<string?>[] D() => throw null;
+                    public System.ValueTuple<global::Demo.Base<int>.Nested, global::Demo.Base<string>.NestedEnum> E() => throw null;
+                    public void F<TArg>(TArg value) where TArg : global::Demo.Base<TArg>.Nested { }
                 }
             }
             """);
@@ -2479,6 +2944,1436 @@ public sealed class PublicApiGeneratorTests
     }
 
     [Fact]
+    public async Task MethodParameter_EnumDefaultValues()
+    {
+        await Validate("""
+            namespace Demo;
+
+            public enum ByteEnum : byte { A, B }
+            public enum LongEnum : long { A, B = 5000000000 }
+
+            [System.Flags]
+            public enum FlagsEnum { None = 0, A = 1, B = 2, C = 4, AB = 3 }
+
+            public class Outer
+            {
+                public enum InnerEnum { A, B }
+            }
+
+            public class Sample
+            {
+                public void Member(ByteEnum value = ByteEnum.B) { }
+                public void DefaultMember(ByteEnum value = default) { }
+                public void UndefinedValue(ByteEnum value = (ByteEnum)42) { }
+                public void Nullable(ByteEnum? value = ByteEnum.B, ByteEnum? other = null) { }
+                public void LongValue(LongEnum value = LongEnum.B) { }
+                public void Nested(Outer.InnerEnum value = Outer.InnerEnum.B) { }
+                public void Flags(FlagsEnum value = FlagsEnum.A | FlagsEnum.C, FlagsEnum undefined = (FlagsEnum)64) { }
+                public void External(System.StringComparison value = System.StringComparison.Ordinal) { }
+                public void ExternalFlags(System.IO.FileAttributes value = System.IO.FileAttributes.ReadOnly | System.IO.FileAttributes.Hidden) { }
+            }
+
+            public delegate void SampleDelegate(ByteEnum value = ByteEnum.B);
+            """, """
+            #nullable enable
+
+            namespace Demo
+            {
+                public enum ByteEnum : byte
+                {
+                    A = 0,
+                    B = 1,
+                }
+
+                [System.Flags]
+                public enum FlagsEnum
+                {
+                    None = 0,
+                    A = 1,
+                    B = 2,
+                    C = 4,
+                    AB = 3,
+                }
+
+                public enum LongEnum : long
+                {
+                    A = 0L,
+                    B = 5000000000L,
+                }
+
+                public class Outer
+                {
+                    public enum InnerEnum
+                    {
+                        A = 0,
+                        B = 1,
+                    }
+                }
+
+                public class Sample
+                {
+                    public void Member(global::Demo.ByteEnum value = global::Demo.ByteEnum.B) { }
+                    public void DefaultMember(global::Demo.ByteEnum value = global::Demo.ByteEnum.A) { }
+                    public void UndefinedValue(global::Demo.ByteEnum value = (global::Demo.ByteEnum)42) { }
+                    public void Nullable(global::Demo.ByteEnum? value = global::Demo.ByteEnum.B, global::Demo.ByteEnum? other = null) { }
+                    public void LongValue(global::Demo.LongEnum value = global::Demo.LongEnum.B) { }
+                    public void Nested(global::Demo.Outer.InnerEnum value = global::Demo.Outer.InnerEnum.B) { }
+                    public void Flags(global::Demo.FlagsEnum value = global::Demo.FlagsEnum.A | global::Demo.FlagsEnum.C, global::Demo.FlagsEnum undefined = (global::Demo.FlagsEnum)64) { }
+                    public void External(System.StringComparison value = System.StringComparison.Ordinal) { }
+                    public void ExternalFlags(System.IO.FileAttributes value = System.IO.FileAttributes.ReadOnly | System.IO.FileAttributes.Hidden) { }
+                }
+
+                public delegate void SampleDelegate(global::Demo.ByteEnum value = global::Demo.ByteEnum.B);
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task Field_EnumConstants()
+    {
+        await Validate("""
+            namespace Demo;
+
+            public enum ByteEnum : byte { A, B }
+
+            [System.Flags]
+            public enum FlagsEnum { None = 0, A = 1, B = 2, C = 4 }
+
+            public class Sample
+            {
+                public const ByteEnum Member = ByteEnum.B;
+                public const ByteEnum UndefinedValue = (ByteEnum)42;
+                public const FlagsEnum Flags = FlagsEnum.A | FlagsEnum.C;
+                public const System.StringComparison External = System.StringComparison.Ordinal;
+                public const int Number = 5;
+            }
+            """, """
+            #nullable enable
+
+            namespace Demo
+            {
+                public enum ByteEnum : byte
+                {
+                    A = 0,
+                    B = 1,
+                }
+
+                [System.Flags]
+                public enum FlagsEnum
+                {
+                    None = 0,
+                    A = 1,
+                    B = 2,
+                    C = 4,
+                }
+
+                public class Sample
+                {
+                    public const global::Demo.ByteEnum Member = global::Demo.ByteEnum.B;
+                    public const global::Demo.ByteEnum UndefinedValue = (global::Demo.ByteEnum)42;
+                    public const global::Demo.FlagsEnum Flags = global::Demo.FlagsEnum.A | global::Demo.FlagsEnum.C;
+                    public const System.StringComparison External = System.StringComparison.Ordinal;
+                    public const int Number = 5;
+                }
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task Method_ReturnAttributes()
+    {
+        await Validate("""
+            using System.Diagnostics.CodeAnalysis;
+
+            public class Sample
+            {
+                [return: NotNullIfNotNull(nameof(value))]
+                public string? A(string? value) => value;
+
+                [return: MaybeNull]
+                public T B<T>() => default;
+
+                [System.Obsolete("message")]
+                [return: NotNullIfNotNull(nameof(value))]
+                public static string? C(string? value) => value;
+            }
+            """, """
+            #nullable enable
+
+            public class Sample
+            {
+                [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNull("value")]
+                public string? A(string? value) => throw null;
+                [return: System.Diagnostics.CodeAnalysis.MaybeNull]
+                public T B<T>() => throw null;
+                [System.Obsolete("message")]
+                [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNull("value")]
+                public static string? C(string? value) => throw null;
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task MethodParameter_DefaultValues_ValueTypesAndTypeParameters()
+    {
+        await Validate("""
+            using System;
+            using System.Collections.Generic;
+            using System.Threading;
+
+            namespace Demo;
+
+            public struct SampleStruct { }
+
+            public class Sample
+            {
+                public void Structs(SampleStruct value = default, CancellationToken cancellationToken = default, DateTime date = default, ReadOnlySpan<char> span = default, (int, int) tuple = default) { }
+                public void NullableStructs(SampleStruct? value = null, Guid? guid = null, int? number = null, int? other = 5) { }
+                public void TypeParameters<T, TStruct, TClass>(T value = default!, TStruct structValue = default, TClass? classValue = null, TStruct? nullableValue = null) where TStruct : struct where TClass : class { }
+                public void References(List<int>? list = null, object? value = null, int[]? array = null) { }
+                public void NativeIntegers(nint a = 0, nuint b = 5, IntPtr c = default) { }
+            }
+
+            public delegate void SampleDelegate(CancellationToken cancellationToken = default);
+            """, """
+            #nullable enable
+
+            namespace Demo
+            {
+                public class Sample
+                {
+                    public void Structs(global::Demo.SampleStruct value = default, System.Threading.CancellationToken cancellationToken = default, System.DateTime date = default, System.ReadOnlySpan<char> span = default, System.ValueTuple<int, int> tuple = default) { }
+                    public void NullableStructs(global::Demo.SampleStruct? value = null, System.Guid? guid = null, int? number = null, int? other = 5) { }
+                    public void TypeParameters<T, TStruct, TClass>(T value = default, TStruct structValue = default, TClass? classValue = default, TStruct? nullableValue = null) where TStruct : struct where TClass : class { }
+                    public void References(System.Collections.Generic.List<int>? list = null, object? value = null, int[]? array = null) { }
+                    public void NativeIntegers(nint a = 0, nuint b = 5U, nint c = 0) { }
+                }
+
+                public delegate void SampleDelegate(System.Threading.CancellationToken cancellationToken = default);
+
+                public struct SampleStruct
+                {
+                }
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task MethodParameter_DecimalAndDateTimeDefaultValues()
+    {
+        await Validate("""
+            using System;
+            using System.Runtime.CompilerServices;
+            using System.Runtime.InteropServices;
+
+            public class Sample
+            {
+                public const decimal Constant = 1.5m;
+                public static readonly decimal ReadOnly = 1.5m;
+
+                public void Decimals(decimal a = 1.5m, decimal? b = 2.5m, decimal c = 0, decimal max = 79228162514264337593543950335m, decimal negative = -0.001m) { }
+                public void DateTimes([Optional, DateTimeConstant(636517440000000000L)] DateTime date) { }
+            }
+            """, """
+            #nullable enable
+
+            public class Sample
+            {
+                public const decimal Constant = 1.5m;
+                public static readonly decimal ReadOnly;
+                public void Decimals(decimal a = 1.5m, decimal? b = 2.5m, decimal c = 0m, decimal max = 79228162514264337593543950335m, decimal negative = -0.001m) { }
+                public void DateTimes([System.Runtime.InteropServices.Optional] [System.Runtime.CompilerServices.DateTimeConstant(636517440000000000L)] System.DateTime date) { }
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task Tuples_NamedElementsUseTupleSyntax()
+    {
+        await Validate("""
+            using System;
+            using System.Collections.Generic;
+
+            namespace Demo;
+
+            public class Sample : List<(int Id, string Name)>
+            {
+                public (int First, string Second) Field;
+                public (int First, string? Second)? NullableField;
+                public KeyValuePair<string?, int>? NullableGenericStruct;
+                public (int First, string Second) Property { get; set; }
+                public event Action<(int First, string Second)>? Changed;
+
+                public (int First, string Second) Method((int A, int B) value) => default;
+                public (int, string) Unnamed() => default;
+                public ValueTuple<int> SingleElement() => default;
+                public (int A, int)? PartiallyNamed() => default;
+                public (int A, (string B, int C) D, int) Nested() => default;
+                public (int A, int B, int C, int D, int E, int F, int G, int H, int I) Long() => default;
+                public (int A, (int X, int Y) B, int C, int D, int E, int F, int G, int H, int I) LongWithNestedTuple() => default;
+                public (int, int, int, int, int, int, int, int, int) LongUnnamed() => default;
+                public Dictionary<(int X, int Y), (string Name, object? Value)[]> InTypeArguments() => null!;
+                public void RefParameters(ref (int A, int B) a, out (int C, int D) b, in (int E, int F) c) => throw null!;
+            }
+
+            public delegate (int A, int B) SampleDelegate((int C, int D) value);
+            """, """
+            #nullable enable
+
+            namespace Demo
+            {
+                public class Sample : System.Collections.Generic.List<(int Id, string Name)>
+                {
+                    public (int First, string Second) Field;
+                    public (int First, string? Second)? NullableField;
+                    public System.Collections.Generic.KeyValuePair<string?, int>? NullableGenericStruct;
+                    public (int First, string Second) Property { get => throw null; set { } }
+                    public event System.Action<(int First, string Second)>? Changed;
+                    public (int First, string Second) Method((int A, int B) value) => throw null;
+                    public System.ValueTuple<int, string> Unnamed() => throw null;
+                    public System.ValueTuple<int> SingleElement() => throw null;
+                    public (int A, int)? PartiallyNamed() => throw null;
+                    public (int A, (string B, int C) D, int) Nested() => throw null;
+                    public (int A, int B, int C, int D, int E, int F, int G, int H, int I) Long() => throw null;
+                    public (int A, (int X, int Y) B, int C, int D, int E, int F, int G, int H, int I) LongWithNestedTuple() => throw null;
+                    public System.ValueTuple<int, int, int, int, int, int, int, System.ValueTuple<int, int>> LongUnnamed() => throw null;
+                    public System.Collections.Generic.Dictionary<(int X, int Y), (string Name, object? Value)[]> InTypeArguments() => throw null;
+                    public void RefParameters(ref (int A, int B) a, out (int C, int D) b, in (int E, int F) c) => throw null;
+                }
+
+                public delegate (int A, int B) SampleDelegate((int C, int D) value);
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task Tuples_ElementNamesOfInterfacesAndConstraints()
+    {
+        await Validate("""
+            using System;
+            using System.Collections.Generic;
+
+            namespace Demo;
+
+            public interface IBase<T>
+            {
+                T Value { get; }
+            }
+
+            public interface IDerived : IBase<(int X, int Y)>
+            {
+            }
+
+            public class Sample<T> : IEquatable<(int X, string? Y)>, IComparable<(int, int)>, IDerived, IEnumerable<(T Item, int Index)>
+                where T : IEquatable<(int A, int B)>
+            {
+                public (int X, int Y) Value => default;
+                public bool Equals((int X, string? Y) other) => false;
+                public int CompareTo((int, int) other) => 0;
+                public IEnumerator<(T Item, int Index)> GetEnumerator() => null!;
+                System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => null!;
+            }
+
+            public struct SampleStruct : IEquatable<(int A, (string B, int C) D)>
+            {
+                public bool Equals((int A, (string B, int C) D) other) => false;
+            }
+
+            public class Inherited : Sample<(int A, int B)>, IBase<(string Name, int Count)>
+            {
+                public new (string Name, int Count) Value => default;
+            }
+            """, """
+            #nullable enable
+
+            namespace Demo
+            {
+                public interface IBase<T>
+                {
+                    T Value { get; }
+                }
+
+                public interface IDerived : global::Demo.IBase<(int X, int Y)>
+                {
+                }
+
+                public class Inherited : global::Demo.Sample<(int A, int B)>, global::Demo.IBase<(string Name, int Count)>
+                {
+                    public (string Name, int Count) Value { get => throw null; }
+                }
+
+                public struct SampleStruct : System.IEquatable<(int A, (string B, int C) D)>
+                {
+                    public bool Equals((int A, (string B, int C) D) other) => throw null;
+                }
+
+                public class Sample<T> : global::Demo.IBase<(int X, int Y)>, global::Demo.IDerived, System.Collections.Generic.IEnumerable<(T Item, int Index)>, System.Collections.IEnumerable, System.IComparable<System.ValueTuple<int, int>>, System.IEquatable<(int X, string? Y)> where T : System.IEquatable<(int A, int B)>
+                {
+                    public (int X, int Y) Value { get => throw null; }
+                    public bool Equals((int X, string? Y) other) => throw null;
+                    public int CompareTo(System.ValueTuple<int, int> other) => throw null;
+                    public System.Collections.Generic.IEnumerator<(T Item, int Index)> GetEnumerator() => throw null;
+                    System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
+                }
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task Dynamic_UsesDynamicKeyword()
+    {
+        await Validate("""
+            using System.Collections.Generic;
+
+            public class Sample : List<dynamic>
+            {
+                public dynamic Field = null!;
+                public dynamic? NullableField;
+                public dynamic Property { get; set; } = null!;
+                public dynamic this[dynamic index] => index;
+
+                public dynamic Method(dynamic value, List<dynamic> list, dynamic[] array, Dictionary<string, dynamic?> map, object notDynamic) => value;
+                public void RefParameters(ref dynamic a, out dynamic b, in dynamic c) => throw null!;
+                public ref dynamic RefReturn() => throw null!;
+                public (dynamic A, object B) InTuple() => default;
+                public Dictionary<object, List<dynamic[]>>.Enumerator InNestedType() => default;
+            }
+
+            public delegate dynamic SampleDelegate(dynamic value);
+            """, """
+            #nullable enable
+
+            public class Sample : System.Collections.Generic.List<dynamic>
+            {
+                public dynamic Field;
+                public dynamic? NullableField;
+                public dynamic Property { get => throw null; set { } }
+                public dynamic this[dynamic index] { get => throw null; }
+                public dynamic Method(dynamic value, System.Collections.Generic.List<dynamic> list, dynamic[] array, System.Collections.Generic.Dictionary<string, dynamic?> map, object notDynamic) => throw null;
+                public void RefParameters(ref dynamic a, out dynamic b, in dynamic c) => throw null;
+                public ref dynamic RefReturn() => throw null;
+                public (dynamic A, object B) InTuple() => throw null;
+                public System.Collections.Generic.Dictionary<object, System.Collections.Generic.List<dynamic[]>>.Enumerator InNestedType() => throw null;
+            }
+
+
+            public delegate dynamic SampleDelegate(dynamic value);
+            """);
+    }
+
+    [Fact]
+    public async Task ExplicitInterfaceImplementations_NonVisibleInterfacesAreExcluded()
+    {
+        await Validate("""
+            using System;
+
+            namespace Demo;
+
+            internal interface IHidden { void M(); int Property { get; } event EventHandler Changed; }
+            internal interface IHidden<T> { void M(T value); }
+            public interface IVisible { void M(); }
+
+            public class Sample : IHidden, IHidden<int>, IVisible
+            {
+                void IHidden.M() { }
+                int IHidden.Property => 0;
+                event EventHandler IHidden.Changed { add { } remove { } }
+                void IHidden<int>.M(int value) { }
+                void IVisible.M() { }
+            }
+
+            public class Outer<T>
+            {
+                private interface IPrivate { void M(); }
+                protected interface IProtected { void M(); }
+
+                public class Nested : IPrivate, IProtected
+                {
+                    void IPrivate.M() { }
+                    void IProtected.M() { }
+                }
+            }
+            """, """
+            #nullable enable
+
+            namespace Demo
+            {
+                public interface IVisible
+                {
+                    void M();
+                }
+
+                public class Outer<T>
+                {
+                    protected interface IProtected
+                    {
+                        void M();
+                    }
+                    public class Nested : global::Demo.Outer<T>.IProtected
+                    {
+                        void global::Demo.Outer<T>.IProtected.M() { }
+                    }
+                }
+
+                public class Sample : global::Demo.IVisible
+                {
+                    void global::Demo.IVisible.M() { }
+                }
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task Records_AreWrittenAsTypesWithTheirMembers()
+    {
+        await Validate("""
+            namespace Demo;
+
+            public record Base(int A);
+            public record Derived(int A, string B) : Base(A);
+            public sealed record Sealed(int A)
+            {
+                public int Extra { get; init; }
+            }
+
+            public abstract record Abstract
+            {
+                public abstract int Value { get; }
+            }
+
+            public record struct Struct(int A);
+            public readonly record struct ReadOnlyStruct(int A, string B);
+            """, """
+            #nullable enable
+
+            namespace Demo
+            {
+                public abstract class Abstract : System.IEquatable<global::Demo.Abstract>
+                {
+                    protected virtual System.Type EqualityContract { get => throw null; }
+                    public abstract int Value { get; }
+                    public override string ToString() => throw null;
+                    protected virtual bool PrintMembers(System.Text.StringBuilder builder) => throw null;
+                    public static bool operator !=(global::Demo.Abstract? left, global::Demo.Abstract? right) => throw null;
+                    public static bool operator ==(global::Demo.Abstract? left, global::Demo.Abstract? right) => throw null;
+                    public override int GetHashCode() => throw null;
+                    public override bool Equals(object? obj) => throw null;
+                    public virtual bool Equals(global::Demo.Abstract? other) => throw null;
+                    protected Abstract(global::Demo.Abstract original) { }
+                }
+
+                public class Base : System.IEquatable<global::Demo.Base>
+                {
+                    protected virtual System.Type EqualityContract { get => throw null; }
+                    public int A { get => throw null; init { } }
+                    public Base(int A) { }
+                    public override string ToString() => throw null;
+                    protected virtual bool PrintMembers(System.Text.StringBuilder builder) => throw null;
+                    public static bool operator !=(global::Demo.Base? left, global::Demo.Base? right) => throw null;
+                    public static bool operator ==(global::Demo.Base? left, global::Demo.Base? right) => throw null;
+                    public override int GetHashCode() => throw null;
+                    public override bool Equals(object? obj) => throw null;
+                    public virtual bool Equals(global::Demo.Base? other) => throw null;
+                    protected Base(global::Demo.Base original) { }
+                    public void Deconstruct(out int A) => throw null;
+                }
+
+                public class Derived : global::Demo.Base, System.IEquatable<global::Demo.Derived>
+                {
+                    protected override System.Type EqualityContract { get => throw null; }
+                    public string B { get => throw null; init { } }
+                    public Derived(int A, string B) : base(default(int)) { }
+                    public override string ToString() => throw null;
+                    protected override bool PrintMembers(System.Text.StringBuilder builder) => throw null;
+                    public static bool operator !=(global::Demo.Derived? left, global::Demo.Derived? right) => throw null;
+                    public static bool operator ==(global::Demo.Derived? left, global::Demo.Derived? right) => throw null;
+                    public override int GetHashCode() => throw null;
+                    public override bool Equals(object? obj) => throw null;
+                    public sealed override bool Equals(global::Demo.Base? other) => throw null;
+                    public virtual bool Equals(global::Demo.Derived? other) => throw null;
+                    protected Derived(global::Demo.Derived original) : base(default(int)) { }
+                    public void Deconstruct(out int A, out string B) => throw null;
+                }
+
+                public readonly struct ReadOnlyStruct : System.IEquatable<global::Demo.ReadOnlyStruct>
+                {
+                    public int A { get => throw null; init { } }
+                    public string B { get => throw null; init { } }
+                    public ReadOnlyStruct(int A, string B) { }
+                    #nullable disable
+                    public override string ToString() => throw null;
+                    #nullable restore
+                    public static bool operator !=(global::Demo.ReadOnlyStruct left, global::Demo.ReadOnlyStruct right) => throw null;
+                    public static bool operator ==(global::Demo.ReadOnlyStruct left, global::Demo.ReadOnlyStruct right) => throw null;
+                    public override int GetHashCode() => throw null;
+                    #nullable disable
+                    public override bool Equals(object obj) => throw null;
+                    #nullable restore
+                    public bool Equals(global::Demo.ReadOnlyStruct other) => throw null;
+                    public void Deconstruct(out int A, out string B) => throw null;
+                }
+
+                public sealed class Sealed : System.IEquatable<global::Demo.Sealed>
+                {
+                    public int A { get => throw null; init { } }
+                    public int Extra { get => throw null; init { } }
+                    public Sealed(int A) { }
+                    public override string ToString() => throw null;
+                    public static bool operator !=(global::Demo.Sealed? left, global::Demo.Sealed? right) => throw null;
+                    public static bool operator ==(global::Demo.Sealed? left, global::Demo.Sealed? right) => throw null;
+                    public override int GetHashCode() => throw null;
+                    public override bool Equals(object? obj) => throw null;
+                    public bool Equals(global::Demo.Sealed? other) => throw null;
+                    public void Deconstruct(out int A) => throw null;
+                }
+
+                public struct Struct : System.IEquatable<global::Demo.Struct>
+                {
+                    public int A { readonly get => throw null; set { } }
+                    public Struct(int A) { }
+                    #nullable disable
+                    public readonly override string ToString() => throw null;
+                    #nullable restore
+                    public static bool operator !=(global::Demo.Struct left, global::Demo.Struct right) => throw null;
+                    public static bool operator ==(global::Demo.Struct left, global::Demo.Struct right) => throw null;
+                    public readonly override int GetHashCode() => throw null;
+                    #nullable disable
+                    public readonly override bool Equals(object obj) => throw null;
+                    #nullable restore
+                    public readonly bool Equals(global::Demo.Struct other) => throw null;
+                    public readonly void Deconstruct(out int A) => throw null;
+                }
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task Members_ConstructorsAndMethodsAreInDeclarationOrder()
+    {
+        await Validate("""
+            public class Sample
+            {
+                public void First() { }
+                public Sample() { }
+                public void Second() { }
+                public Sample(int value) { }
+            }
+            """, """
+            #nullable enable
+
+            public class Sample
+            {
+                public void First() { }
+                public void Second() { }
+                public Sample(int value) { }
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task Inheritance_InterfacesOfTheBaseTypeAreNotRepeated()
+    {
+        await Validate("""
+            using System;
+            using System.Collections.Generic;
+
+            public class Base : IDisposable
+            {
+                public void Dispose() { }
+            }
+
+            public class Derived : Base, IComparable
+            {
+                public int CompareTo(object? obj) => 0;
+            }
+
+            public class DerivedList : List<int>, ICloneable
+            {
+                public object Clone() => this;
+            }
+            """, """
+            #nullable enable
+
+            public class Base : System.IDisposable
+            {
+                public void Dispose() { }
+            }
+
+
+            public class Derived : Base, System.IComparable
+            {
+                public int CompareTo(object? obj) => throw null;
+            }
+
+
+            public class DerivedList : System.Collections.Generic.List<int>, System.ICloneable
+            {
+                public object Clone() => throw null;
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task Inheritance_NullableAnnotations()
+    {
+        await Validate("""
+            using System;
+            using System.Collections.Generic;
+
+            namespace Demo;
+
+            public class Base<T> { }
+            public interface IFoo<T> { }
+            public interface IDerived : IFoo<string?[]> { }
+
+            public class Sample : Base<string?>, IFoo<string?>, IFoo<int>, IFoo<object>, IEquatable<Sample?>, IEnumerable<KeyValuePair<string, object?>>
+            {
+                public bool Equals(Sample? other) => false;
+                public IEnumerator<KeyValuePair<string, object?>> GetEnumerator() => null!;
+                System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => null!;
+            }
+
+            public class NotAnnotated : Base<string>, IFoo<string>, IFoo<List<string>> { }
+            public class GenericSample<T> : Base<T?>, IFoo<T?[]>, IFoo<List<T?>?>, IFoo<T> where T : class { }
+            public struct SampleStruct : IFoo<string?[]?>, IFoo<SampleStruct?>, IFoo<(string? Name, int Count)> { }
+            public interface ISample<T> : IFoo<T?[]> where T : class { }
+            public interface IOther : IFoo<string?>, IFoo<object> { }
+            public class ThroughInterface : IDerived { }
+            public class Inherited : Sample, IFoo<Dictionary<string, string?>?> { }
+            public class WithDynamic : Base<dynamic?>, IFoo<List<object?>> { }
+
+            // Most of the members are nullable, so the compiler stores an "annotated" context on the type
+            public class AnnotatedContext : Base<string>, IFoo<object>, IFoo<string?>
+            {
+                public string? A;
+                public string? B;
+                public string? C;
+            }
+
+            // Most of the members are not nullable, so the compiler stores a "not annotated" context on the type
+            public class NotAnnotatedContext : Base<string?>, IFoo<object?>, IFoo<string>
+            {
+                public string A = "";
+                public string B = "";
+                public string C = "";
+            }
+
+            public class Outer<T>
+            {
+                public class Nested : Base<T?>, IFoo<Outer<string?>.Nested?> { }
+            }
+
+            #nullable disable
+            public class Oblivious : Base<string>, IFoo<string> { }
+            """, """
+            #nullable enable
+
+            namespace Demo
+            {
+                public class AnnotatedContext : global::Demo.Base<string>, global::Demo.IFoo<object>, global::Demo.IFoo<string?>
+                {
+                    public string? A;
+                    public string? B;
+                    public string? C;
+                }
+
+                public class Base<T>
+                {
+                }
+
+                public class GenericSample<T> : global::Demo.Base<T?>, global::Demo.IFoo<System.Collections.Generic.List<T?>?>, global::Demo.IFoo<T>, global::Demo.IFoo<T?[]> where T : class
+                {
+                }
+
+                public interface IDerived : global::Demo.IFoo<string?[]>
+                {
+                }
+
+                public interface IFoo<T>
+                {
+                }
+
+                public interface IOther : global::Demo.IFoo<object>, global::Demo.IFoo<string?>
+                {
+                }
+
+                public interface ISample<T> : global::Demo.IFoo<T?[]> where T : class
+                {
+                }
+
+                public class Inherited : global::Demo.Sample, global::Demo.IFoo<System.Collections.Generic.Dictionary<string, string?>?>
+                {
+                }
+
+                public class NotAnnotated : global::Demo.Base<string>, global::Demo.IFoo<System.Collections.Generic.List<string>>, global::Demo.IFoo<string>
+                {
+                }
+
+                public class NotAnnotatedContext : global::Demo.Base<string?>, global::Demo.IFoo<object?>, global::Demo.IFoo<string>
+                {
+                    public string A;
+                    public string B;
+                    public string C;
+                }
+
+                public class Oblivious : global::Demo.Base<string>, global::Demo.IFoo<string>
+                {
+                }
+
+                public class Outer<T>
+                {
+                    public class Nested : global::Demo.Base<T?>, global::Demo.IFoo<global::Demo.Outer<string?>.Nested?>
+                    {
+                    }
+                }
+
+                public class Sample : global::Demo.Base<string?>, global::Demo.IFoo<int>, global::Demo.IFoo<object>, global::Demo.IFoo<string?>, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>, System.Collections.IEnumerable, System.IEquatable<global::Demo.Sample?>
+                {
+                    public bool Equals(global::Demo.Sample? other) => throw null;
+                    public System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, object?>> GetEnumerator() => throw null;
+                    System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
+                }
+
+                public struct SampleStruct : global::Demo.IFoo<(string? Name, int Count)>, global::Demo.IFoo<global::Demo.SampleStruct?>, global::Demo.IFoo<string?[]?>
+                {
+                }
+
+                public class ThroughInterface : global::Demo.IDerived, global::Demo.IFoo<string?[]>
+                {
+                }
+
+                public class WithDynamic : global::Demo.Base<dynamic?>, global::Demo.IFoo<System.Collections.Generic.List<object?>>
+                {
+                }
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task Inheritance_RedeclaredInterfaces()
+    {
+        await Validate("""
+            using System;
+
+            namespace Demo;
+
+            public interface IDerived : IDisposable { }
+
+            public class Base : IDisposable, IComparable
+            {
+                public void Dispose() { }
+                public int CompareTo(object? obj) => 0;
+            }
+
+            public class NotRedeclared : Base { }
+            public class Redeclared : Base, IComparable { }
+
+            public class Reimplemented : Base, IDisposable
+            {
+                void IDisposable.Dispose() { }
+            }
+
+            // IDisposable is implied by IDerived, although Base already implements it
+            public class ThroughInterface : Base, IDerived { }
+
+            public class GenericBase<T> : IEquatable<T>
+            {
+                public bool Equals(T? other) => false;
+            }
+
+            public class GenericNotRedeclared : GenericBase<string> { }
+            public class GenericRedeclared : GenericBase<string>, IEquatable<string> { }
+            public class GenericOtherArgument : GenericBase<string>, IEquatable<int>
+            {
+                public bool Equals(int other) => false;
+            }
+
+            public class GenericDerived<T> : GenericBase<T>, IEquatable<T> { }
+            """, """
+            #nullable enable
+
+            namespace Demo
+            {
+                public class Base : System.IComparable, System.IDisposable
+                {
+                    public void Dispose() { }
+                    public int CompareTo(object? obj) => throw null;
+                }
+
+                public class GenericBase<T> : System.IEquatable<T>
+                {
+                    public bool Equals(T? other) => throw null;
+                }
+
+                public class GenericDerived<T> : global::Demo.GenericBase<T>, System.IEquatable<T>
+                {
+                }
+
+                public class GenericNotRedeclared : global::Demo.GenericBase<string>
+                {
+                }
+
+                public class GenericOtherArgument : global::Demo.GenericBase<string>, System.IEquatable<int>
+                {
+                    public bool Equals(int other) => throw null;
+                }
+
+                public class GenericRedeclared : global::Demo.GenericBase<string>, System.IEquatable<string>
+                {
+                }
+
+                public interface IDerived : System.IDisposable
+                {
+                }
+
+                public class NotRedeclared : global::Demo.Base
+                {
+                }
+
+                public class Redeclared : global::Demo.Base, System.IComparable
+                {
+                }
+
+                public class Reimplemented : global::Demo.Base, System.IDisposable
+                {
+                    void System.IDisposable.Dispose() { }
+                }
+
+                public class ThroughInterface : global::Demo.Base, global::Demo.IDerived, System.IDisposable
+                {
+                }
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task LibraryImport_MethodsAreWrittenAsOrdinaryMethods()
+    {
+        await Validate("""
+            using System;
+            using System.Runtime.InteropServices;
+
+            namespace Demo;
+
+            public static partial class Native
+            {
+                [LibraryImport("kernel32", EntryPoint = "GetTickCount64")]
+                public static partial ulong GetTickCount();
+
+                [LibraryImport("user32", StringMarshalling = StringMarshalling.Utf16, SetLastError = true)]
+                [return: MarshalAs(UnmanagedType.Bool)]
+                public static partial bool SetText(IntPtr handle, string text, [MarshalAs(UnmanagedType.Bool)] bool flag, out int result);
+
+                [LibraryImport("lib")]
+                internal static partial int NotVisible(int value);
+
+                [DllImport("kernel32")]
+                public static extern int DllImport(int value);
+
+                public static int Managed(int value) => value;
+            }
+
+            // A type with a P/Invoke that is not visible is not partial
+            public partial class WithPrivateImport
+            {
+                [LibraryImport("lib")]
+                private static partial int NotVisible(int value);
+            }
+
+            public partial class Outer
+            {
+                public partial struct Nested
+                {
+                    [LibraryImport("lib")]
+                    public static partial void M();
+
+                    [LibraryImport("lib")]
+                    public static unsafe partial void* Pointer(int* value);
+                }
+            }
+
+            public partial interface IWithStaticMethod
+            {
+                [LibraryImport("lib")]
+                public static partial int M(int value);
+            }
+            """, """
+            #nullable enable
+
+            namespace Demo
+            {
+                public interface IWithStaticMethod
+                {
+                    public static int M(int value) => throw null;
+                }
+
+                public static class Native
+                {
+                    public static ulong GetTickCount() => throw null;
+                    public static bool SetText(nint handle, string text, bool flag, out int result) => throw null;
+                    public static int DllImport(int value) => throw null;
+                    public static int Managed(int value) => throw null;
+                }
+
+                public class Outer
+                {
+                    public struct Nested
+                    {
+                        public static void M() { }
+                        public static unsafe void* Pointer(int* value) => throw null;
+                    }
+                }
+
+                public class WithPrivateImport
+                {
+                }
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task Attributes_PseudoAttributesAreNotWritten()
+    {
+        await Validate("""
+            using System;
+            using System.Runtime.InteropServices;
+
+            [StructLayout(LayoutKind.Explicit, Size = 8)]
+            public struct ExplicitLayout
+            {
+                [FieldOffset(0)] public int A;
+                [FieldOffset(4)] public int B;
+            }
+
+            [Serializable]
+            public class Sample
+            {
+                [NonSerialized] public int Field;
+                [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 10)] public string? Marshalled;
+
+                [return: MarshalAs(UnmanagedType.Bool)]
+                public bool Method([MarshalAs(UnmanagedType.LPWStr)] string value, [In, Out] int[] array, [In] ref int a, [In, Out] ref int b, [Out] out int c) { c = 0; return true; }
+
+                [DllImport("kernel32", SetLastError = true)]
+                public static extern int Native(int value);
+
+                [PreserveSig]
+                public int PreserveSignature() => 0;
+            }
+            """, """
+            #nullable enable
+
+            public struct ExplicitLayout
+            {
+                public int A;
+                public int B;
+            }
+
+
+            public class Sample
+            {
+                public int Field;
+                public string? Marshalled;
+                public bool Method(string value, int[] array, ref int a, ref int b, out int c) => throw null;
+                public static int Native(int value) => throw null;
+                public int PreserveSignature() => throw null;
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task NullableFlowAttributes_KeepTheDeclaredAnnotation()
+    {
+        await Validate("""
+            using System.Collections.Generic;
+            using System.Diagnostics.CodeAnalysis;
+
+            public class Sample
+            {
+                [MaybeNull] public string MaybeNullField = "";
+                [NotNull] public string? NotNullField = "";
+                [AllowNull, MaybeNull] public string AllowNullMaybeNullField = "";
+                [NotNull, DisallowNull] public string? NotNullDisallowNullField = "";
+
+                [AllowNull] public string AllowNullProperty { get; set; } = "";
+                [DisallowNull] public string? DisallowNullProperty { get; set; }
+                [MaybeNull] public string MaybeNullProperty { get; set; } = "";
+                [NotNull] public string? NotNullProperty { get; set; } = "";
+                [AllowNull, MaybeNull] public string AllowNullMaybeNullProperty { get; set; } = "";
+                [NotNull, DisallowNull] public string? NotNullDisallowNullProperty { get; set; } = "";
+                [MaybeNull] public string GetOnlyProperty => null;
+                [AllowNull] public string SetOnlyProperty { set { } }
+                [AllowNull] public string InitProperty { get; init; } = "";
+                [MaybeNull] public static string StaticProperty { get; set; } = "";
+                public string AccessorAttributesProperty { [return: MaybeNull] get => null; [param: AllowNull] set { } }
+                [System.Obsolete("message"), MaybeNull] public string WithAnotherAttributeProperty { get; set; } = "";
+                [NotNullIfNotNull(nameof(index))] public string? this[string? index] => index;
+
+                [return: NotNull] public string? NotNullReturn() => "";
+                [return: MaybeNull] public string MaybeNullReturn() => null;
+                [return: MaybeNull] public T MaybeNullTypeParameter<T>() => default;
+                [return: NotNull] public List<string?>? NotNullGeneric() => new();
+                [return: NotNullIfNotNull(nameof(value))] public string? NotNullIfNotNull(string? value) => value;
+
+                public void Parameters([AllowNull] string a, [DisallowNull] string? b, [NotNull] ref string? c, [MaybeNull] out string d) { d = null; }
+                public bool TryGet(string key, [MaybeNullWhen(false)] out string value) { value = null; return false; }
+                public bool TryGet<T>(string key, [MaybeNullWhen(false)] out T value) { value = default; return false; }
+                public bool TryGetNotNull(string key, [NotNullWhen(true)] out string? value) { value = null; return false; }
+            }
+            """, """
+            #nullable enable
+
+            public class Sample
+            {
+                [System.Diagnostics.CodeAnalysis.MaybeNull]
+                public string MaybeNullField;
+                [System.Diagnostics.CodeAnalysis.NotNull]
+                public string? NotNullField;
+                [System.Diagnostics.CodeAnalysis.AllowNull]
+                [System.Diagnostics.CodeAnalysis.MaybeNull]
+                public string AllowNullMaybeNullField;
+                [System.Diagnostics.CodeAnalysis.NotNull]
+                [System.Diagnostics.CodeAnalysis.DisallowNull]
+                public string? NotNullDisallowNullField;
+                [System.Diagnostics.CodeAnalysis.AllowNull]
+                public string AllowNullProperty { get => throw null; set { } }
+                [System.Diagnostics.CodeAnalysis.DisallowNull]
+                public string? DisallowNullProperty { get => throw null; set { } }
+                [System.Diagnostics.CodeAnalysis.MaybeNull]
+                public string MaybeNullProperty { get => throw null; set { } }
+                [System.Diagnostics.CodeAnalysis.NotNull]
+                public string? NotNullProperty { get => throw null; set { } }
+                [System.Diagnostics.CodeAnalysis.AllowNull]
+                [System.Diagnostics.CodeAnalysis.MaybeNull]
+                public string AllowNullMaybeNullProperty { get => throw null; set { } }
+                [System.Diagnostics.CodeAnalysis.DisallowNull]
+                [System.Diagnostics.CodeAnalysis.NotNull]
+                public string? NotNullDisallowNullProperty { get => throw null; set { } }
+                [System.Diagnostics.CodeAnalysis.MaybeNull]
+                public string GetOnlyProperty { get => throw null; }
+                [System.Diagnostics.CodeAnalysis.AllowNull]
+                public string SetOnlyProperty { set { } }
+                [System.Diagnostics.CodeAnalysis.AllowNull]
+                public string InitProperty { get => throw null; init { } }
+                [System.Diagnostics.CodeAnalysis.MaybeNull]
+                public static string StaticProperty { get => throw null; set { } }
+                [System.Diagnostics.CodeAnalysis.AllowNull]
+                [System.Diagnostics.CodeAnalysis.MaybeNull]
+                public string AccessorAttributesProperty { get => throw null; set { } }
+                [System.Obsolete("message")]
+                [System.Diagnostics.CodeAnalysis.MaybeNull]
+                public string WithAnotherAttributeProperty { get => throw null; set { } }
+                [System.Diagnostics.CodeAnalysis.NotNullIfNotNull("index")]
+                public string? this[string? index] { get => throw null; }
+                [return: System.Diagnostics.CodeAnalysis.NotNull]
+                public string? NotNullReturn() => throw null;
+                [return: System.Diagnostics.CodeAnalysis.MaybeNull]
+                public string MaybeNullReturn() => throw null;
+                [return: System.Diagnostics.CodeAnalysis.MaybeNull]
+                public T MaybeNullTypeParameter<T>() => throw null;
+                [return: System.Diagnostics.CodeAnalysis.NotNull]
+                public System.Collections.Generic.List<string?>? NotNullGeneric() => throw null;
+                [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNull("value")]
+                public string? NotNullIfNotNull(string? value) => throw null;
+                public void Parameters([System.Diagnostics.CodeAnalysis.AllowNull] string a, [System.Diagnostics.CodeAnalysis.DisallowNull] string? b, [System.Diagnostics.CodeAnalysis.NotNull] ref string? c, [System.Diagnostics.CodeAnalysis.MaybeNull] out string d) => throw null;
+                public bool TryGet(string key, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out string value) => throw null;
+                public bool TryGet<T>(string key, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out T value) => throw null;
+                public bool TryGetNotNull(string key, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out string? value) => throw null;
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task EnumConstants_EnumDeclaredInAnotherAssembly_UsesTheRuntimeDirectory()
+    {
+        // The metadata of the sample does not contain the enum, and nothing loads System.Net.Mail in the test process
+        var files = await BuildFiles("""
+            public class Sample
+            {
+                public void M(System.Net.Mail.SmtpDeliveryMethod value = System.Net.Mail.SmtpDeliveryMethod.PickupDirectoryFromIis) { }
+            }
+            """, new PublicApiOptions { FileLayout = PublicApiFileLayout.SingleFile, IncludeAutoGeneratedComment = false });
+
+        Assert.Contains("System.Net.Mail.SmtpDeliveryMethod value = System.Net.Mail.SmtpDeliveryMethod.PickupDirectoryFromIis", Assert.Single(files).Content);
+    }
+
+    [Fact]
+    public async Task EnumConstants_EnumDeclaredInAnotherAssembly_UsesTheAssemblyNextToTheInspectedOne()
+    {
+        await using var temporaryDirectory = TemporaryDirectory.Create();
+        var assemblyPath = await CompileSource(temporaryDirectory, "sample", "net10.0", """
+            public class Sample
+            {
+                public void M(System.Net.Mail.SmtpDeliveryMethod value = System.Net.Mail.SmtpDeliveryMethod.Network) { }
+            }
+            """);
+
+        // The members of the enum are read from the file named after the referenced assembly, not from the runtime
+        var referencedAssemblyPath = await CompileSource(temporaryDirectory, "referenced", "net10.0", """
+            namespace System.Net.Mail;
+
+            public enum SmtpDeliveryMethod { FromTheAssemblyNextToTheSample }
+            """);
+
+        var directory = temporaryDirectory / "output";
+        Directory.CreateDirectory(directory);
+        File.Copy(assemblyPath, directory / "Sample.dll");
+        File.Copy(referencedAssemblyPath, directory / "System.Net.Mail.dll");
+
+        var files = PublicApi.Generate((string)(directory / "Sample.dll"), new PublicApiOptions { FileLayout = PublicApiFileLayout.SingleFile, IncludeAutoGeneratedComment = false });
+        Assert.Contains("System.Net.Mail.SmtpDeliveryMethod value = System.Net.Mail.SmtpDeliveryMethod.FromTheAssemblyNextToTheSample", Assert.Single(files).Content);
+    }
+
+    [Fact]
+    public async Task MethodParameter_OptionalAttribute()
+    {
+        await Validate("""
+            using System;
+            using System.Runtime.CompilerServices;
+            using System.Runtime.InteropServices;
+
+            namespace Demo;
+
+            public struct SampleStruct { }
+            public enum SampleEnum { A, B }
+
+            public class Sample
+            {
+                public void OptionalOnly([Optional] int a, [Optional] string? b, [Optional] SampleStruct c) { }
+                public void BeforeDefaultValue(int required, [Optional] object? a, int b = 5) { }
+                public void DefaultValueBeforeOptional([Optional, DefaultParameterValue(5)] int a, [Optional] int b, [Optional, DefaultParameterValue("x")] string c, [Optional, DefaultParameterValue(null)] string? d, [Optional, DefaultParameterValue(SampleEnum.B)] SampleEnum e, [Optional] string f, int g = 3, params int[] rest) { }
+                public void DateTimeConstant([Optional, DateTimeConstant(636517440000000000L)] DateTime date) { }
+                public void Decimal([Optional] decimal a, decimal b = 1.5m) { }
+                public void DecimalBeforeOptional([Optional, DecimalConstant(1, 128, 0u, 0u, 15u)] decimal a, [Optional] int b) { }
+                public int this[[Optional] int index] => 0;
+                public int this[string key, int index = 5] => 0;
+            }
+
+            public delegate void SampleDelegate([Optional] int a);
+            """, """
+            #nullable enable
+
+            namespace Demo
+            {
+                public class Sample
+                {
+                    public int this[[System.Runtime.InteropServices.Optional] int index] { get => throw null; }
+                    public int this[string key, int index = 5] { get => throw null; }
+                    public void OptionalOnly([System.Runtime.InteropServices.Optional] int a, [System.Runtime.InteropServices.Optional] string? b, [System.Runtime.InteropServices.Optional] global::Demo.SampleStruct c) { }
+                    public void BeforeDefaultValue(int required, [System.Runtime.InteropServices.Optional] object? a, int b = 5) { }
+                    public void DefaultValueBeforeOptional([System.Runtime.InteropServices.Optional] [System.Runtime.InteropServices.DefaultParameterValue(5)] int a, [System.Runtime.InteropServices.Optional] int b, [System.Runtime.InteropServices.Optional] [System.Runtime.InteropServices.DefaultParameterValue("x")] string c, [System.Runtime.InteropServices.Optional] [System.Runtime.InteropServices.DefaultParameterValue(null)] string? d, [System.Runtime.InteropServices.Optional] [System.Runtime.InteropServices.DefaultParameterValue(global::Demo.SampleEnum.B)] global::Demo.SampleEnum e, [System.Runtime.InteropServices.Optional] string f, int g = 3, params int[] rest) { }
+                    public void DateTimeConstant([System.Runtime.InteropServices.Optional] [System.Runtime.CompilerServices.DateTimeConstant(636517440000000000L)] System.DateTime date) { }
+                    public void Decimal([System.Runtime.InteropServices.Optional] decimal a, decimal b = 1.5m) { }
+                    public void DecimalBeforeOptional([System.Runtime.InteropServices.Optional] [System.Runtime.CompilerServices.DecimalConstant(1, 128, 0U, 0U, 15U)] decimal a, [System.Runtime.InteropServices.Optional] int b) { }
+                }
+
+                public delegate void SampleDelegate([System.Runtime.InteropServices.Optional] int a);
+
+                public enum SampleEnum
+                {
+                    A = 0,
+                    B = 1,
+                }
+
+                public struct SampleStruct
+                {
+                }
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task TypeParameters_NullableAnnotations()
+    {
+        await Validate("""
+            using System;
+            using System.Collections.Generic;
+            using System.Diagnostics.CodeAnalysis;
+
+            namespace Demo;
+
+            public class Sample<T, TClass, TStruct, TNotNull, TNullableClass>
+                where TClass : class
+                where TStruct : struct
+                where TNotNull : notnull
+                where TNullableClass : class?
+            {
+                public T NotAnnotatedField = default!;
+                public T? Field;
+                public TClass? ClassField;
+                public TStruct? StructField;
+                public TNotNull? NotNullField;
+                public TNullableClass NullableClassField = default!;
+                public TNullableClass? AnnotatedNullableClassField;
+
+                public T? Property { get; set; }
+                public List<T?> InTypeArgument { get; set; } = null!;
+                public T?[] InArray { get; set; } = null!;
+                public T?[]? InNullableArray { get; set; }
+                public Dictionary<TClass?, T?>? InSeveralTypeArguments { get; set; }
+                public (T? First, TClass? Second) InTuple { get; set; }
+                public event Action<T?>? Changed;
+
+                public T? Method(T? value) => value;
+                public TClass? DefaultValue(TClass? value = null) => value;
+                public ref T? ByReference(ref T? value) => ref value;
+                public U? MethodTypeParameter<U>(U? value) => value;
+                public U? ClassConstraint<U>(U? value) where U : class => value;
+                public U? StructConstraint<U>(U? value) where U : struct => value;
+                public U NotNullConstraint<U>(U value) where U : notnull => value;
+                public U? InterfaceConstraint<U>(U? value) where U : IDisposable => value;
+                public Func<T?, U?> InDelegate<U>() => null!;
+
+                [return: MaybeNull] public T MaybeNull() => default;
+                public void AllowNull([AllowNull] T value) { }
+                public bool MaybeNullWhen([MaybeNullWhen(false)] out T value) { value = default; return false; }
+                public bool NotNullWhen([NotNullWhen(true)] out T? value) { value = default; return false; }
+            }
+
+            public delegate T? SampleDelegate<T>(T? value);
+            """, """
+            #nullable enable
+
+            namespace Demo
+            {
+                public delegate T? SampleDelegate<T>(T? value);
+
+                public class Sample<T, TClass, TStruct, TNotNull, TNullableClass> where TClass : class where TStruct : struct where TNotNull : notnull where TNullableClass : class?
+                {
+                    public T NotAnnotatedField;
+                    public T? Field;
+                    public TClass? ClassField;
+                    public TStruct? StructField;
+                    public TNotNull? NotNullField;
+                    public TNullableClass NullableClassField;
+                    public TNullableClass? AnnotatedNullableClassField;
+                    public T? Property { get => throw null; set { } }
+                    public System.Collections.Generic.List<T?> InTypeArgument { get => throw null; set { } }
+                    public T?[] InArray { get => throw null; set { } }
+                    public T?[]? InNullableArray { get => throw null; set { } }
+                    public System.Collections.Generic.Dictionary<TClass?, T?>? InSeveralTypeArguments { get => throw null; set { } }
+                    public (T? First, TClass? Second) InTuple { get => throw null; set { } }
+                    public event System.Action<T?>? Changed;
+                    public T? Method(T? value) => throw null;
+                    public TClass? DefaultValue(TClass? value = default) => throw null;
+                    public ref T? ByReference(ref T? value) => throw null;
+                    public U? MethodTypeParameter<U>(U? value) => throw null;
+                    public U? ClassConstraint<U>(U? value) where U : class => throw null;
+                    public U? StructConstraint<U>(U? value) where U : struct => throw null;
+                    public U NotNullConstraint<U>(U value) where U : notnull => throw null;
+                    public U? InterfaceConstraint<U>(U? value) where U : System.IDisposable => throw null;
+                    public System.Func<T?, U?> InDelegate<U>() => throw null;
+                    [return: System.Diagnostics.CodeAnalysis.MaybeNull]
+                    public T MaybeNull() => throw null;
+                    public void AllowNull([System.Diagnostics.CodeAnalysis.AllowNull] T value) { }
+                    public bool MaybeNullWhen([System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out T value) => throw null;
+                    public bool NotNullWhen([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out T? value) => throw null;
+                }
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task Method_InheritedConstraints()
+    {
+        await Validate("""
+            using System;
+            using System.Collections.Generic;
+
+            namespace Demo;
+
+            public abstract class Base
+            {
+                public abstract T? Unconstrained<T>(T? value);
+                public abstract T NotAnnotated<T>(T value);
+                public abstract T? Class<T>(T? value) where T : class;
+                public abstract T? Struct<T>(T? value) where T : struct;
+                public abstract T Interface<T>(T value) where T : IDisposable;
+                public abstract T? AnnotatedInterface<T>(T? value) where T : IDisposable;
+                public abstract T Several<T>(T value) where T : class, IDisposable, new();
+                public virtual void InTypeArgument<T>(List<T?> value) { }
+            }
+
+            public class Derived : Base
+            {
+                public override T? Unconstrained<T>(T? value) where T : default => value;
+                public override T NotAnnotated<T>(T value) => value;
+                public override T? Class<T>(T? value) where T : class => value;
+                public override T? Struct<T>(T? value) => value;
+                public override T Interface<T>(T value) => value;
+                public override T? AnnotatedInterface<T>(T? value) where T : default => value;
+                public override T Several<T>(T value) => value;
+                public override void InTypeArgument<T>(List<T?> value) where T : default { }
+            }
+
+            public interface ISample
+            {
+                T? Unconstrained<T>(T? value);
+                T NotAnnotated<T>(T value);
+                T? Class<T>(T? value) where T : class;
+                T? Struct<T>(T? value) where T : struct;
+                T? AnnotatedInterface<T>(T? value) where T : IDisposable;
+            }
+
+            public class Explicit : ISample
+            {
+                T? ISample.Unconstrained<T>(T? value) where T : default => value;
+                T ISample.NotAnnotated<T>(T value) => value;
+                T? ISample.Class<T>(T? value) where T : class => value;
+                T? ISample.Struct<T>(T? value) => value;
+                T? ISample.AnnotatedInterface<T>(T? value) where T : default => value;
+            }
+            """, """
+            #nullable enable
+
+            namespace Demo
+            {
+                public abstract class Base
+                {
+                    public abstract T? Unconstrained<T>(T? value);
+                    public abstract T NotAnnotated<T>(T value);
+                    public abstract T? Class<T>(T? value) where T : class;
+                    public abstract T? Struct<T>(T? value) where T : struct;
+                    public abstract T Interface<T>(T value) where T : System.IDisposable;
+                    public abstract T? AnnotatedInterface<T>(T? value) where T : System.IDisposable;
+                    public abstract T Several<T>(T value) where T : class, System.IDisposable, new();
+                    public virtual void InTypeArgument<T>(System.Collections.Generic.List<T?> value) { }
+                }
+
+                public class Derived : global::Demo.Base
+                {
+                    public override T? Unconstrained<T>(T? value) where T : default => throw null;
+                    public override T NotAnnotated<T>(T value) => throw null;
+                    public override T? Class<T>(T? value) where T : class => throw null;
+                    public override T? Struct<T>(T? value) where T : struct => throw null;
+                    public override T Interface<T>(T value) => throw null;
+                    public override T? AnnotatedInterface<T>(T? value) where T : default => throw null;
+                    public override T Several<T>(T value) where T : class => throw null;
+                    public override void InTypeArgument<T>(System.Collections.Generic.List<T?> value) where T : default { }
+                }
+
+                public class Explicit : global::Demo.ISample
+                {
+                    T? global::Demo.ISample.Unconstrained<T>(T? value) where T : default => throw null;
+                    T global::Demo.ISample.NotAnnotated<T>(T value) => throw null;
+                    T? global::Demo.ISample.Class<T>(T? value) where T : class => throw null;
+                    T? global::Demo.ISample.Struct<T>(T? value) where T : struct => throw null;
+                    T? global::Demo.ISample.AnnotatedInterface<T>(T? value) where T : default => throw null;
+                }
+
+                public interface ISample
+                {
+                    T? Unconstrained<T>(T? value);
+                    T NotAnnotated<T>(T value);
+                    T? Class<T>(T? value) where T : class;
+                    T? Struct<T>(T? value) where T : struct;
+                    T? AnnotatedInterface<T>(T? value) where T : System.IDisposable;
+                }
+            }
+            """);
+    }
+
+    [Fact]
     public async Task Method_WithCLSCompliantAttribute()
     {
         await Validate("""
@@ -2653,6 +4548,125 @@ public sealed class PublicApiGeneratorTests
             {
                 public override string Read(ref System.Text.Json.Utf8JsonReader reader, System.Type typeToConvert, System.Text.Json.JsonSerializerOptions options) => throw null;
                 public override void Write(System.Text.Json.Utf8JsonWriter writer, string value, System.Text.Json.JsonSerializerOptions options) { }
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task Attribute_TypeofArguments()
+    {
+        await Validate("""
+            using System.Collections.Generic;
+            using System.Diagnostics;
+
+            namespace Demo;
+
+            [DebuggerTypeProxy(typeof(int))] public class Keyword { }
+            [DebuggerTypeProxy(typeof(string[]))] public class Array { }
+            [DebuggerTypeProxy(typeof(int?))] public class NullableValue { }
+            [DebuggerTypeProxy(typeof(object))] public class Object { }
+            [DebuggerTypeProxy(typeof(nint))] public class NativeInteger { }
+            [DebuggerTypeProxy(typeof(decimal))] public class Decimal { }
+            [DebuggerTypeProxy(typeof(void))] public class Void { }
+            [DebuggerTypeProxy(typeof(List<int>))] public class Constructed { }
+            [DebuggerTypeProxy(typeof(Dictionary<string, object[]>))] public class ConstructedWithArray { }
+            [DebuggerTypeProxy(typeof((int, string)))] public class Tuple { }
+            [DebuggerTypeProxy(typeof(List<>))] public class Unbound { }
+            [DebuggerTypeProxy(typeof(Dictionary<,>))] public class UnboundWithTwoParameters { }
+            [DebuggerTypeProxy(typeof(Dictionary<,>.Enumerator))] public class UnboundNested { }
+            [DebuggerTypeProxy(typeof(Generic<>.Nested<,>))] public class UnboundNestedGeneric { }
+            [DebuggerTypeProxy(typeof(Generic<int>.Nested<string, long>))] public class ConstructedNestedGeneric { }
+
+            public class Generic<T>
+            {
+                public class Nested<U, V> { }
+            }
+            """, """
+            #nullable enable
+
+            namespace Demo
+            {
+                [System.Diagnostics.DebuggerTypeProxy(typeof(string[]))]
+                public class Array
+                {
+                }
+
+                [System.Diagnostics.DebuggerTypeProxy(typeof(System.Collections.Generic.List<int>))]
+                public class Constructed
+                {
+                }
+
+                [System.Diagnostics.DebuggerTypeProxy(typeof(global::Demo.Generic<int>.Nested<string, long>))]
+                public class ConstructedNestedGeneric
+                {
+                }
+
+                [System.Diagnostics.DebuggerTypeProxy(typeof(System.Collections.Generic.Dictionary<string, object[]>))]
+                public class ConstructedWithArray
+                {
+                }
+
+                [System.Diagnostics.DebuggerTypeProxy(typeof(decimal))]
+                public class Decimal
+                {
+                }
+
+                public class Generic<T>
+                {
+                    public class Nested<U, V>
+                    {
+                    }
+                }
+
+                [System.Diagnostics.DebuggerTypeProxy(typeof(int))]
+                public class Keyword
+                {
+                }
+
+                [System.Diagnostics.DebuggerTypeProxy(typeof(nint))]
+                public class NativeInteger
+                {
+                }
+
+                [System.Diagnostics.DebuggerTypeProxy(typeof(int?))]
+                public class NullableValue
+                {
+                }
+
+                [System.Diagnostics.DebuggerTypeProxy(typeof(object))]
+                public class Object
+                {
+                }
+
+                [System.Diagnostics.DebuggerTypeProxy(typeof(System.ValueTuple<int, string>))]
+                public class Tuple
+                {
+                }
+
+                [System.Diagnostics.DebuggerTypeProxy(typeof(System.Collections.Generic.List<>))]
+                public class Unbound
+                {
+                }
+
+                [System.Diagnostics.DebuggerTypeProxy(typeof(System.Collections.Generic.Dictionary<,>.Enumerator))]
+                public class UnboundNested
+                {
+                }
+
+                [System.Diagnostics.DebuggerTypeProxy(typeof(global::Demo.Generic<>.Nested<,>))]
+                public class UnboundNestedGeneric
+                {
+                }
+
+                [System.Diagnostics.DebuggerTypeProxy(typeof(System.Collections.Generic.Dictionary<,>))]
+                public class UnboundWithTwoParameters
+                {
+                }
+
+                [System.Diagnostics.DebuggerTypeProxy(typeof(void))]
+                public class Void
+                {
+                }
             }
             """);
     }
@@ -2956,6 +4970,51 @@ public sealed class PublicApiGeneratorTests
     }
 
     [Fact]
+    public async Task Enum_UnderlyingType()
+    {
+        await Validate("""
+            public enum ByteEnum : byte { A, B }
+            public enum LongEnum : long { A, B = 5000000000 }
+            public enum IntEnum : int { A }
+
+            public class Outer
+            {
+                public enum InnerEnum : ushort { A }
+            }
+            """, """
+            #nullable enable
+
+            public enum ByteEnum : byte
+            {
+                A = 0,
+                B = 1,
+            }
+
+
+            public enum IntEnum
+            {
+                A = 0,
+            }
+
+
+            public enum LongEnum : long
+            {
+                A = 0L,
+                B = 5000000000L,
+            }
+
+
+            public class Outer
+            {
+                public enum InnerEnum : ushort
+                {
+                    A = 0,
+                }
+            }
+            """);
+    }
+
+    [Fact]
     public async Task Enum_ExplicitValues()
     {
         await Validate("""
@@ -3124,6 +5183,224 @@ public sealed class PublicApiGeneratorTests
     }
 
     [Fact]
+    public async Task GenericConstraints_NotNullAndNullableClass()
+    {
+        await Validate("""
+            using System;
+
+            namespace Demo;
+
+            public class Sample<TUnconstrained, TNotNull, TClass, TNullableClass, TStruct, TInterface, TNotNullInterface>
+                where TNotNull : notnull
+                where TClass : class
+                where TNullableClass : class?
+                where TStruct : struct
+                where TInterface : IDisposable
+                where TNotNullInterface : notnull, IDisposable, new()
+            {
+                // Most of the members are not nullable, so the compiler stores a "not annotated" context on the type
+                public string A = "";
+                public string B = "";
+                public string C = "";
+                public TUnconstrained Value = default!;
+
+                public void Method<UUnconstrained, UNotNull, UClass, UNullableClass, UInterface>(UUnconstrained a, UNotNull b, UClass c, UNullableClass d, UInterface e)
+                    where UNotNull : notnull
+                    where UClass : class
+                    where UNullableClass : class?, IDisposable
+                    where UInterface : IDisposable
+                {
+                }
+
+                public class Nested<V, VNotNull> where VNotNull : notnull { }
+            }
+
+            public delegate void SampleDelegate<T, TNotNull, TNullableClass>(T a, TNotNull b, TNullableClass c) where TNotNull : notnull where TNullableClass : class?;
+
+            public interface ISample<TNotNull> where TNotNull : notnull
+            {
+                void Method<UNotNull>(UNotNull value) where UNotNull : notnull;
+            }
+
+            public abstract class Base
+            {
+                public abstract void Method<T>(T value) where T : notnull;
+                public abstract void NullableClass<T>(T value) where T : class?;
+            }
+
+            public class Derived : Base, ISample<string>
+            {
+                public override void Method<T>(T value) { }
+                public override void NullableClass<T>(T value) { }
+                void ISample<string>.Method<UNotNull>(UNotNull value) { }
+            }
+
+            #nullable disable
+            public class Oblivious<T, TClass> where TClass : class
+            {
+                public void Method<U>(U value) { }
+            }
+            """, """
+            #nullable enable
+
+            namespace Demo
+            {
+                public abstract class Base
+                {
+                    public abstract void Method<T>(T value) where T : notnull;
+                    public abstract void NullableClass<T>(T value) where T : class?;
+                }
+
+                public class Derived : global::Demo.Base, global::Demo.ISample<string>
+                {
+                    public override void Method<T>(T value) { }
+                    public override void NullableClass<T>(T value) where T : class { }
+                    void global::Demo.ISample<System.String>.Method<UNotNull>(UNotNull value) { }
+                }
+
+                public interface ISample<TNotNull> where TNotNull : notnull
+                {
+                    void Method<UNotNull>(UNotNull value) where UNotNull : notnull;
+                }
+
+                public class Oblivious<T, TClass> where TClass : class
+                {
+                    public void Method<U>(U value) { }
+                }
+
+                public delegate void SampleDelegate<T, TNotNull, TNullableClass>(T a, TNotNull b, TNullableClass c) where TNotNull : notnull where TNullableClass : class?;
+
+                public class Sample<TUnconstrained, TNotNull, TClass, TNullableClass, TStruct, TInterface, TNotNullInterface> where TNotNull : notnull where TClass : class where TNullableClass : class? where TStruct : struct where TInterface : System.IDisposable where TNotNullInterface : notnull, System.IDisposable, new()
+                {
+                    public string A;
+                    public string B;
+                    public string C;
+                    public TUnconstrained Value;
+                    public void Method<UUnconstrained, UNotNull, UClass, UNullableClass, UInterface>(UUnconstrained a, UNotNull b, UClass c, UNullableClass d, UInterface e) where UNotNull : notnull where UClass : class where UNullableClass : class?, System.IDisposable where UInterface : System.IDisposable { }
+                    public class Nested<V, VNotNull> where VNotNull : notnull
+                    {
+                    }
+                }
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task GenericConstraints_AnnotatedConstraintTypes()
+    {
+        await Validate("""
+            using System;
+            using System.Collections.Generic;
+
+            namespace Demo;
+
+            public interface IFoo { }
+            public class BaseClass { }
+
+            public class Sample<TNullableInterface, TInterface, TNullableBase, TGeneric, TArray, TTuple, TMixed, TOther, TTypeParameter>
+                where TNullableInterface : IFoo?
+                where TInterface : IFoo
+                where TNullableBase : BaseClass?
+                where TGeneric : IEquatable<TGeneric?>, IComparable<string?>, IEnumerable<string>
+                where TArray : IEquatable<string?[]?>
+                where TTuple : IEquatable<(int A, string? B)>
+                where TMixed : class?, IFoo?, IDisposable, new()
+                where TOther : class
+                where TTypeParameter : TOther?
+            {
+                public void Method<U, V>(U a, V b)
+                    where U : IFoo?, IDisposable
+                    where V : notnull, IEquatable<V?>, IComparable<U?>
+                {
+                }
+            }
+
+            public delegate void SampleDelegate<T>(T value) where T : IFoo?, IEquatable<T?>;
+
+            #nullable disable
+            public class Oblivious<T> where T : IFoo, IEquatable<string>
+            {
+            }
+            """, """
+            #nullable enable
+
+            namespace Demo
+            {
+                public class BaseClass
+                {
+                }
+
+                public interface IFoo
+                {
+                }
+
+                public class Oblivious<T> where T : global::Demo.IFoo, System.IEquatable<string>
+                {
+                }
+
+                public delegate void SampleDelegate<T>(T value) where T : global::Demo.IFoo?, System.IEquatable<T?>;
+
+                public class Sample<TNullableInterface, TInterface, TNullableBase, TGeneric, TArray, TTuple, TMixed, TOther, TTypeParameter> where TNullableInterface : global::Demo.IFoo? where TInterface : global::Demo.IFoo where TNullableBase : global::Demo.BaseClass? where TGeneric : System.IEquatable<TGeneric?>, System.IComparable<string?>, System.Collections.Generic.IEnumerable<string> where TArray : System.IEquatable<string?[]?> where TTuple : System.IEquatable<(int A, string? B)> where TMixed : class?, global::Demo.IFoo?, System.IDisposable, new() where TOther : class where TTypeParameter : TOther?
+                {
+                    public void Method<U, V>(U a, V b) where U : global::Demo.IFoo?, System.IDisposable where V : notnull, System.IEquatable<V?>, System.IComparable<U?> { }
+                }
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task GenericConstraints_Unmanaged()
+    {
+        await Validate("""
+            using System;
+
+            namespace Demo;
+
+            public unsafe class Sample<T, TStruct> where T : unmanaged where TStruct : struct
+            {
+                public T* Pointer;
+
+                public static U* Method<U>(U* value) where U : unmanaged, IComparable<U> => value;
+            }
+
+            public delegate void SampleDelegate<T>(T value) where T : unmanaged;
+
+            public abstract class Base
+            {
+                public abstract T? Method<T>(T? value) where T : unmanaged;
+            }
+
+            public class Derived : Base
+            {
+                public override T? Method<T>(T? value) => value;
+            }
+            """, """
+            #nullable enable
+
+            namespace Demo
+            {
+                public abstract class Base
+                {
+                    public abstract T? Method<T>(T? value) where T : unmanaged;
+                }
+
+                public class Derived : global::Demo.Base
+                {
+                    public override T? Method<T>(T? value) where T : struct => throw null;
+                }
+
+                public delegate void SampleDelegate<T>(T value) where T : unmanaged;
+
+                public class Sample<T, TStruct> where T : unmanaged where TStruct : struct
+                {
+                    public T* Pointer;
+                    public static unsafe U* Method<U>(U* value) where U : unmanaged, System.IComparable<U> => throw null;
+                }
+            }
+            """);
+    }
+
+    [Fact]
     public async Task GenericMembers_WithConstraints()
     {
         await Validate("""
@@ -3148,7 +5425,7 @@ public sealed class PublicApiGeneratorTests
 
             public class Sample
             {
-                public void M<TAllowNull, TNew, TStruct, TClass, TEnum, TBase>() where TAllowNull : class where TNew : new() where TStruct : struct where TClass : class where TEnum : System.Enum where TBase : SampleBaseClass { }
+                public void M<TAllowNull, TNew, TStruct, TClass, TEnum, TBase>() where TAllowNull : class? where TNew : new() where TStruct : struct where TClass : class where TEnum : System.Enum where TBase : SampleBaseClass { }
             }
 
 
@@ -3632,6 +5909,32 @@ public sealed class PublicApiGeneratorTests
     }
 
     [Fact]
+    public async Task Model_AttributeArgument_EnumNestedInGenericType()
+    {
+        var assembly = await ReadAssembly("""
+            namespace Demo;
+
+            public class Base<T>
+            {
+                public enum NestedEnum : byte { A, B }
+            }
+
+            public class Sample
+            {
+                [System.ComponentModel.DefaultValue(Base<int>.NestedEnum.B)]
+                public int Property { get; set; }
+            }
+            """);
+
+        var property = assembly.FindSymbolByDocumentationId("P:Demo.Sample.Property")!;
+        var argument = Assert.Single(Assert.Single(property.Attributes).ConstructorArguments);
+        Assert.Equal(PublicApiAttributeArgumentKind.Enum, argument.Kind);
+        Assert.Equal((byte)1, argument.Value);
+        Assert.Equal(["B"], argument.EnumMemberNames);
+        Assert.Equal("Demo.Base<int>.NestedEnum", argument.Type.ToString());
+    }
+
+    [Fact]
     public async Task Model_DocumentationIds_MatchCompilerGeneratedXmlFile()
     {
         await using var temporaryDirectory = TemporaryDirectory.Create();
@@ -3964,9 +6267,9 @@ public sealed class PublicApiGeneratorTests
         Assert.Equal("public abstract int Value { get; protected set; }", PublicApiFormatter.Format(assembly.FindSymbolByDocumentationId("P:Demo.Base.Value")!, options).Text);
         Assert.Equal("public Person(string Name, int Age) { }", PublicApiFormatter.Format(assembly.FindSymbolByDocumentationId("M:Demo.Person.#ctor(System.String,System.Int32)")!, options).Text);
         Assert.Equal("""
-            public class Inner2<T, U> where T : class
+            public class Inner2<U> where U : notnull
             {
-                public U M<V>(T t, V v) where V : struct => throw null;
+                public U M<V>(T t, V v) where V : unmanaged => throw null;
             }
 
             """, PublicApiFormatter.Format(assembly.FindSymbolByDocumentationId("T:Demo.Outer`1.Inner2`1")!, options).Text);

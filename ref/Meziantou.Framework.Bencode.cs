@@ -25,10 +25,10 @@ namespace Meziantou.Framework.Bencode
         public Meziantou.Framework.Bencode.BencodeValue Root { get => throw null; }
         public BencodeDocument(Meziantou.Framework.Bencode.BencodeValue root) { }
         public static Meziantou.Framework.Bencode.BencodeDocument Parse(System.ReadOnlySpan<byte> data) => throw null;
-        public static System.Threading.Tasks.ValueTask<Meziantou.Framework.Bencode.BencodeDocument> ParseAsync(System.IO.Pipelines.PipeReader reader, System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public static System.Threading.Tasks.ValueTask<Meziantou.Framework.Bencode.BencodeDocument> ParseAsync(System.IO.Stream stream, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public static System.Threading.Tasks.ValueTask<Meziantou.Framework.Bencode.BencodeDocument> ParseAsync(System.IO.Pipelines.PipeReader reader, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static System.Threading.Tasks.ValueTask<Meziantou.Framework.Bencode.BencodeDocument> ParseAsync(System.IO.Stream stream, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public byte[] ToArray() => throw null;
-        public System.Threading.Tasks.ValueTask WriteToAsync(System.IO.Stream stream, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public System.Threading.Tasks.ValueTask WriteToAsync(System.IO.Stream stream, System.Threading.CancellationToken cancellationToken = default) => throw null;
     }
 
     public sealed class BencodeInteger : Meziantou.Framework.Bencode.BencodeValue, System.IEquatable<Meziantou.Framework.Bencode.BencodeInteger>
@@ -77,7 +77,7 @@ namespace Meziantou.Framework.Bencode
     public static class BencodeValueExtensions
     {
         public static byte[] ToUtf8ByteArray(this Meziantou.Framework.Bencode.BencodeValue value, bool canonical = true) => throw null;
-        public static System.Threading.Tasks.ValueTask WriteToAsync(this Meziantou.Framework.Bencode.BencodeValue value, System.IO.Stream stream, bool canonical = true, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public static System.Threading.Tasks.ValueTask WriteToAsync(this Meziantou.Framework.Bencode.BencodeValue value, System.IO.Stream stream, bool canonical = true, System.Threading.CancellationToken cancellationToken = default) => throw null;
     }
 
     public enum BencodeValueKind
@@ -121,10 +121,10 @@ namespace Meziantou.Framework.Bencode.Torrent
         public string? PublisherUrl { get => throw null; set { } }
         public Meziantou.Framework.Bencode.Torrent.TorrentInfo Info { get => throw null; set { } }
         public static Meziantou.Framework.Bencode.Torrent.TorrentFile Parse(System.ReadOnlySpan<byte> data) => throw null;
-        public static System.Threading.Tasks.ValueTask<Meziantou.Framework.Bencode.Torrent.TorrentFile> ParseAsync(System.IO.Stream stream, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public static System.Threading.Tasks.ValueTask<Meziantou.Framework.Bencode.Torrent.TorrentFile> ParseAsync(System.IO.Stream stream, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public static bool TryParse(System.ReadOnlySpan<byte> data, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Bencode.Torrent.TorrentFile? result) => throw null;
         public byte[] ToUtf8ByteArray(bool canonical = true) => throw null;
-        public System.Threading.Tasks.ValueTask WriteToAsync(System.IO.Stream stream, bool canonical = true, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public System.Threading.Tasks.ValueTask WriteToAsync(System.IO.Stream stream, bool canonical = true, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public byte[] GetInfoHashSha1() => throw null;
         public byte[] GetInfoHashSha256() => throw null;
     }

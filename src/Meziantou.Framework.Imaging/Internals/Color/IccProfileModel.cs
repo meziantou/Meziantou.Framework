@@ -1,0 +1,201 @@
+using Meziantou.Framework.Imaging.Metadata;
+
+namespace Meziantou.Framework.Imaging.Internals;
+
+/// <summary>
+/// The color model of one validated ICC profile: which of its tags convert device values to the profile connection
+/// space and back for a rendering intent, and the stages they translate to. Both directions meet in CIEXYZ relative to
+/// the D50 illuminant (Y = 1 for the media white), whatever the connection space of the profile.
+/// </summary>
+/// <remarks>
+/// Written from ICC.1:2001-04 (version 2 profiles) and ICC.1:2022 (version 4 profiles). Supported: input, display, output
+/// and color space profiles whose data color space is gray, RGB or CMYK, with a CIEXYZ or CIELAB connection space.
+/// </remarks>
+internal sealed class IccProfileModel
+{
+    private readonly ReadOnlyMemory<byte> _data;
+    private readonly string _role;
+
+    private IccProfileModel(ReadOnlyMemory<byte> data, IccHeader header, string role, int channelCount)
+    {
+        _data = data;
+        _role = role;
+        Header = header;
+        ChannelCount = channelCount;
+        IsLabConnectionSpace = header.ConnectionSpace == IccReader.SignatureLab;
+    }
+
+    /// <summary>Gets the header of the profile.</summary>
+    public IccHeader Header { get; }
+
+    /// <summary>Gets the number of device channels: 1 (gray), 3 (RGB) or 4 (CMYK).</summary>
+    public int ChannelCount { get; }
+
+    /// <summary>Gets a value indicating whether the connection space of the profile is CIELAB instead of CIEXYZ.</summary>
+    public bool IsLabConnectionSpace { get; }
+
+    /// <summary>Validates a profile and creates its model.</summary>
+    /// <param name="profile">The profile.</param>
+    /// <param name="role">The role of the profile in the conversion ("source" or "destination"), for exception messages.</param>
+    /// <exception cref="InvalidImageContentException">The profile is malformed.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">The profile is valid but of a kind that is not supported.</exception>
+    public static IccProfileModel Create(IccProfile profile, string role)
+    {
+        var data = profile.Data.Memory;
+        if (!MetadataValidation.TryValidateIccProfile(data.Span, out var error))
+            throw new InvalidImageContentException($"The {role} ICC profile is invalid: {error}", ImageFormat.Unknown);
+
+        _ = IccHeader.TryRead(data.Span, out var header);
+        if (header.Version.Major > 4)
+            throw CreateUnsupported(role, string.Create(CultureInfo.InvariantCulture, $"has version {header.Version.Major}.{header.Version.Minor} (iccMAX); only versions 2 and 4 are supported."), "ICC profile version 5");
+
+        if (header.ProfileClass is not (IccReader.ClassInput or IccReader.ClassDisplay or IccReader.ClassOutput or IccReader.ClassColorSpace))
+            throw CreateUnsupported(role, $"has the class {IccReader.FormatSignature(header.ProfileClass)}; only input, display, output and color space profiles are supported.", "ICC profile class");
+
+        var channelCount = header.DataColorSpace switch
+        {
+            IccReader.SignatureGray => 1,
+            IccReader.SignatureRgb => 3,
+            IccReader.SignatureCmyk => 4,
+            _ => throw CreateUnsupported(role, $"has the data color space {IccReader.FormatSignature(header.DataColorSpace)}; only gray, RGB and CMYK are supported.", "ICC profile data color space"),
+        };
+
+        if (header.ConnectionSpace is not (IccReader.SignatureXyz or IccReader.SignatureLab))
+            throw new InvalidImageContentException($"The {role} ICC profile is invalid: the profile connection space {IccReader.FormatSignature(header.ConnectionSpace)} is neither 'XYZ ' nor 'Lab '.", ImageFormat.Unknown);
+
+        return new IccProfileModel(data, header, role, channelCount);
+    }
+
+    /// <summary>Appends the stages converting normalized device values to CIEXYZ of the connection space.</summary>
+    /// <param name="stages">The stages of the conversion.</param>
+    /// <param name="intent">The rendering intent selecting the tag (ICC.1:2022 section 8.10.2).</param>
+    public void AppendToConnectionSpace(IccStageList stages, IccRenderingIntent intent)
+    {
+        _ = intent;
+        if (ChannelCount == 1)
+        {
+            // Monochrome profile (ICC.1:2022 annex F.2): the curve gives the fraction of the media white, as Y of a
+            // neutral color in CIEXYZ or as L* / 100 in CIELAB
+            stages.Add(new IccCurvesStage([ReadCurve(IccReader.TagGrayCurve)]));
+            if (IsLabConnectionSpace)
+            {
+                stages.Add(new IccGrayExpandStage(100, 0, 0));
+                stages.Add(IccLabToXyzStage.Instance);
+            }
+            else
+            {
+                stages.Add(new IccGrayExpandStage(IccColorimetry.D50X, IccColorimetry.D50Y, IccColorimetry.D50Z));
+            }
+
+            return;
+        }
+
+        if (ChannelCount == 3)
+        {
+            // Three-component matrix-based profile (annex F.3): linearize each channel, then the colorants give CIEXYZ
+            Span<double> matrix = stackalloc double[9];
+            ReadColorantMatrix(matrix);
+            stages.Add(new IccCurvesStage([ReadCurve(IccReader.TagRedCurve), ReadCurve(IccReader.TagGreenCurve), ReadCurve(IccReader.TagBlueCurve)]));
+            stages.Add(new IccMatrixStage(matrix));
+            return;
+        }
+
+        throw Invalid("the profile has no 'A2B0' tag to convert its device values to the profile connection space.");
+    }
+
+    /// <summary>Appends the stages converting CIEXYZ of the connection space to normalized device values.</summary>
+    /// <param name="stages">The stages of the conversion.</param>
+    /// <param name="intent">The rendering intent selecting the tag (ICC.1:2022 section 8.10.2).</param>
+    public void AppendFromConnectionSpace(IccStageList stages, IccRenderingIntent intent)
+    {
+        _ = intent;
+        if (ChannelCount == 1)
+        {
+            var curve = ReadCurve(IccReader.TagGrayCurve);
+            if (IsLabConnectionSpace)
+            {
+                stages.Add(IccXyzToLabStage.Instance);
+                stages.Add(new IccGrayReduceStage(index: 0, scale: 1.0 / 100));
+            }
+            else
+            {
+                stages.Add(new IccGrayReduceStage(index: 1, scale: 1));
+            }
+
+            stages.Add(new IccInverseCurvesStage([Invert(curve, IccReader.TagGrayCurve)]));
+            return;
+        }
+
+        if (ChannelCount == 3)
+        {
+            Span<double> matrix = stackalloc double[9];
+            Span<double> inverse = stackalloc double[9];
+            ReadColorantMatrix(matrix);
+            if (!IccMatrixStage.TryInvert(matrix, inverse))
+                throw Unsupported("has colorants that do not span a color space, so it cannot be a destination.", "ICC profile with a singular colorant matrix");
+
+            var red = Invert(ReadCurve(IccReader.TagRedCurve), IccReader.TagRedCurve);
+            var green = Invert(ReadCurve(IccReader.TagGreenCurve), IccReader.TagGreenCurve);
+            var blue = Invert(ReadCurve(IccReader.TagBlueCurve), IccReader.TagBlueCurve);
+            stages.Add(new IccMatrixStage(inverse));
+            stages.Add(new IccInverseCurvesStage([red, green, blue]));
+            return;
+        }
+
+        throw Unsupported("has no 'B2A0' tag, so it cannot be a destination.", "ICC profile without a conversion from the profile connection space");
+    }
+
+    /// <summary>Reads the colorant tags of a matrix-based profile as the columns of the matrix converting linear RGB to CIEXYZ.</summary>
+    private void ReadColorantMatrix(Span<double> matrix)
+    {
+        if (IsLabConnectionSpace)
+            throw Invalid("a matrix-based RGB profile must use the 'XYZ ' profile connection space.");
+
+        ReadOnlySpan<uint> signatures = [IccReader.TagRedColorant, IccReader.TagGreenColorant, IccReader.TagBlueColorant];
+        for (var column = 0; column < 3; column++)
+        {
+            var (x, y, z) = ReadXyz(signatures[column]);
+            matrix[column] = x;
+            matrix[3 + column] = y;
+            matrix[6 + column] = z;
+        }
+    }
+
+    private (double X, double Y, double Z) ReadXyz(uint signature)
+    {
+        if (!IccReader.TryGetTag(_data.Span, signature, out var tag))
+            throw Invalid($"the {IccReader.FormatSignature(signature)} tag is missing.");
+
+        if (tag.Length < 20 || IccReader.ReadUInt32(tag) != IccReader.TypeXyz)
+            throw Invalid($"the {IccReader.FormatSignature(signature)} tag is not an XYZType with one value.");
+
+        return (IccReader.ReadS15Fixed16(tag[8..]), IccReader.ReadS15Fixed16(tag[12..]), IccReader.ReadS15Fixed16(tag[16..]));
+    }
+
+    private IccCurve ReadCurve(uint signature)
+    {
+        if (!IccReader.TryGetTag(_data.Span, signature, out var tag))
+            throw Invalid($"the {IccReader.FormatSignature(signature)} tag is missing.");
+
+        if (!IccCurve.TryParse(tag, out var curve, out _))
+            throw Invalid($"the {IccReader.FormatSignature(signature)} tag is not a valid curveType or parametricCurveType.");
+
+        return curve;
+    }
+
+    private IccInverseCurve Invert(IccCurve curve, uint signature)
+    {
+        if (!curve.TryCreateInverse(out var inverse))
+            throw Unsupported($"has a constant {IccReader.FormatSignature(signature)} curve, so it cannot be a destination.", "ICC profile with a constant tone curve");
+
+        return inverse;
+    }
+
+    private InvalidImageContentException Invalid(string message)
+        => new($"The {_role} ICC profile is invalid: {message}", ImageFormat.Unknown);
+
+    private UnsupportedImageFeatureException Unsupported(string message, string feature) => CreateUnsupported(_role, message, feature);
+
+    private static UnsupportedImageFeatureException CreateUnsupported(string role, string message, string feature)
+        => new($"The {role} ICC profile {message}", ImageFormat.Unknown, feature);
+}

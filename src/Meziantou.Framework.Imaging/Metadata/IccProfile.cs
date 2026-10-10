@@ -40,6 +40,18 @@ public sealed class IccProfile
         }
     }
 
+    /// <summary>
+    /// Gets the sRGB profile (IEC 61966-2-1): the color space of untagged RGB pixels. It is a version 4 matrix-based
+    /// display profile whose primaries are adapted to the D50 illuminant of the profile connection space.
+    /// </summary>
+    public static IccProfile Srgb => BuiltInIccProfiles.Srgb;
+
+    /// <summary>
+    /// Gets the grayscale counterpart of <see cref="Srgb"/>: the sRGB transfer function and white point. It is the color
+    /// space of untagged grayscale pixels.
+    /// </summary>
+    public static IccProfile SrgbGray => BuiltInIccProfiles.SrgbGray;
+
     /// <summary>Gets the raw profile bytes.</summary>
     public MetadataBlob Data { get; }
 

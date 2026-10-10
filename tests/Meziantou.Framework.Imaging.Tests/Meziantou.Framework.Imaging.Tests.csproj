@@ -26,6 +26,8 @@
       generators are compiled here (they have no BenchmarkDotNet dependency).
     -->
     <Compile Include="..\..\benchmarks\ImagingBenchmarks\Workloads\*.cs" LinkBase="Conformance\Benchmarks\Workloads" />
+    <!-- The synthetic ICC profile builders are shared with the corpus generator, which writes some of these profiles to the corpus (IccTestProfiles wraps them) -->
+    <Compile Include="..\..\tools\Meziantou.Framework.Imaging.CorpusGenerator\Common\IccProfileBuilder.cs" Link="Shared\IccProfileBuilder.cs" />
   </ItemGroup>
 
   <ItemGroup>

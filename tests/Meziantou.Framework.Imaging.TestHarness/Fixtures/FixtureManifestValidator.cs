@@ -130,6 +130,8 @@ public static partial class FixtureManifestValidator
             }
         }
 
+        ValidateColorSections(manifest, root, ids, referencedFiles, errors);
+
         if (Directory.Exists(root))
         {
             foreach (var file in Directory.EnumerateFiles(root, "*", SearchOption.AllDirectories))
@@ -726,6 +728,106 @@ public static partial class FixtureManifestValidator
         else if (!layouts.SetEquals(frameLayouts))
         {
             errors.Add($"{frameName}: layouts [{string.Join(", ", frameLayouts.Order(StringComparer.Ordinal))}] differ from the other frames [{string.Join(", ", layouts.Order(StringComparer.Ordinal))}]; every frame and the poster provide the same layouts.");
+        }
+    }
+
+    /// <summary>
+    /// Validates the color management sections: profiles (identity, provenance, license, hash) and reference conversions
+    /// (profiles that exist, a defined intent, channel counts, vectors of the declared size, a justified tolerance).
+    /// </summary>
+    private static void ValidateColorSections(FixtureManifest manifest, FullPath root, HashSet<string> ids, HashSet<string> referencedFiles, List<string> errors)
+    {
+        var profiles = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var profile in manifest.ColorProfiles ?? [])
+        {
+            var name = $"Color profile '{profile.Id}'";
+            if (!IdRegex().IsMatch(profile.Id))
+            {
+                errors.Add($"{name}: invalid id (allowed: lowercase letters, digits, '-', '_', '.', '/').");
+            }
+
+            if (!ids.Add(profile.Id))
+            {
+                errors.Add($"{name}: duplicate id.");
+            }
+
+            profiles.Add(profile.Id);
+            if (profile.Features is { } features && (features.Any(string.IsNullOrWhiteSpace) || features.Distinct(StringComparer.Ordinal).Count() != features.Count))
+            {
+                errors.Add($"{name}: features must be non-empty and unique.");
+            }
+
+            ValidateProvenance(name, profile.Provenance, errors);
+            ValidateFile(name, profile.File, root, referencedFiles, errors);
+        }
+
+        foreach (var transform in manifest.ColorTransforms ?? [])
+        {
+            var name = $"Color transform '{transform.Id}'";
+            if (!IdRegex().IsMatch(transform.Id))
+            {
+                errors.Add($"{name}: invalid id (allowed: lowercase letters, digits, '-', '_', '.', '/').");
+            }
+
+            if (!ids.Add(transform.Id))
+            {
+                errors.Add($"{name}: duplicate id.");
+            }
+
+            foreach (var (role, profile) in new[] { ("source", transform.Source), ("destination", transform.Destination) })
+            {
+                if (!profiles.Contains(profile))
+                {
+                    errors.Add($"{name}: the {role} profile '{profile}' is not in 'colorProfiles'.");
+                }
+            }
+
+            if (!ColorTransformEntry.Intents.Contains(transform.Intent, StringComparer.Ordinal))
+            {
+                errors.Add($"{name}: invalid intent '{transform.Intent}' (allowed: {string.Join(", ", ColorTransformEntry.Intents)}).");
+            }
+
+            if (transform.Intent == ColorTransformEntry.Intents[3] && transform.BlackPointCompensation)
+            {
+                errors.Add($"{name}: black point compensation does not apply to the absolute colorimetric intent.");
+            }
+
+            if (transform.SourceChannels is not (1 or 3 or 4) || transform.DestinationChannels is not (1 or 3 or 4))
+            {
+                errors.Add($"{name}: channel counts must be 1, 3 or 4 (source {transform.SourceChannels}, destination {transform.DestinationChannels}).");
+            }
+
+            if (transform.SampleCount <= 0)
+            {
+                errors.Add($"{name}: sampleCount must be positive.");
+            }
+
+            if (string.IsNullOrWhiteSpace(transform.Reference.Tool) || string.IsNullOrWhiteSpace(transform.Reference.Command) || string.IsNullOrWhiteSpace(transform.Reference.Generator))
+            {
+                errors.Add($"{name}: the reference must record the tool with its version, the command and the generator.");
+            }
+
+            var comparison = transform.Comparison;
+            if (comparison.MaxAbsoluteError is < 0 or > ColorTransformComparison.MaximumTolerance || !(comparison.MaxMeanAbsoluteError >= 0 && comparison.MaxMeanAbsoluteError <= comparison.MaxAbsoluteError))
+            {
+                errors.Add($"{name}: the tolerance must be between 0 and {ColorTransformComparison.MaximumTolerance} 16-bit units, with a mean tolerance that does not exceed it.");
+            }
+
+            if (comparison.Justification.Length < 40)
+            {
+                errors.Add($"{name}: the tolerance needs a justification of at least 40 characters.");
+            }
+
+            ValidateFile(name, transform.Vectors, root, referencedFiles, errors);
+            if (FixturePaths.TryResolve(root, transform.Vectors.Path, out _) is { } path && File.Exists(path) && transform.SampleCount > 0)
+            {
+                var expected = (long)transform.SampleCount * (transform.SourceChannels + transform.DestinationChannels) * 2;
+                var actual = new FileInfo(path).Length;
+                if (actual != expected)
+                {
+                    errors.Add($"{name}: '{transform.Vectors.Path}' has {actual} bytes but {expected} are declared ({transform.SampleCount} colors).");
+                }
+            }
         }
     }
 

@@ -110,16 +110,24 @@ internal abstract class DecodedFrameSink : IDisposable
 
     /// <summary>Starts the next displayed frame (zeroed: transparent black or black).</summary>
     /// <param name="duration">The exact frame duration.</param>
+    /// <param name="hotspot">The cursor hotspot of the frame, already validated by the decoder to be inside the canvas, or <see langword="null"/>.</param>
     /// <exception cref="ImageResourceLimitException">A frame, pixel or allocation limit is exceeded.</exception>
-    /// <exception cref="InvalidOperationException">The frame limit is already reached (decoder bug).</exception>
-    public void BeginFrame(FrameDuration duration)
+    /// <exception cref="InvalidOperationException">The frame limit is already reached, or the hotspot is outside the canvas (decoder bug).</exception>
+    public void BeginFrame(FrameDuration duration, Point? hotspot = null)
     {
         if (IsFrameLimitReached)
             throw new InvalidOperationException("The requested frame limit is already reached.");
 
+        if (hotspot is { } point && (point.X < 0 || point.Y < 0 || point.X >= Canvas.Width || point.Y >= Canvas.Height))
+            throw new InvalidOperationException("The hotspot is outside the canvas.");
+
         Context.CancellationToken.ThrowIfCancellationRequested();
-        Context.Tracker.ChargeFrame(Canvas);
-        OnBeginFrame(duration);
+        if (!Request.IsEmbeddedPayload)
+        {
+            Context.Tracker.ChargeFrame(Canvas);
+        }
+
+        OnBeginFrame(duration, hotspot);
         FrameCount++;
     }
 
@@ -185,6 +193,16 @@ internal abstract class DecodedFrameSink : IDisposable
     }
 
     /// <summary>
+    /// Fills the current frame with the pixels of an earlier displayed frame of the same load, already converted to
+    /// <see cref="DestinationPixelFormat"/>: a container that shows one stored image at several steps (an animated cursor
+    /// sequence) decodes it once. Only eager loads support it; such containers are never read sequentially.
+    /// </summary>
+    /// <param name="frameIndex">The zero-based index of the earlier displayed frame.</param>
+    /// <exception cref="NotSupportedException">The sink belongs to a sequential reader.</exception>
+    public virtual void CopyFromFrame(int frameIndex)
+        => throw new NotSupportedException("Only eager loads keep the earlier frames of the input.");
+
+    /// <summary>
     /// Replaces the image-wide metadata given to the images produced afterward by a sequential reader (for example metadata
     /// found between frames). Eager loads receive their metadata in <see cref="Build"/> and ignore it. By default, readers use
     /// the metadata of the header snapshot.
@@ -217,7 +235,7 @@ internal abstract class DecodedFrameSink : IDisposable
         return result;
     }
 
-    private protected abstract void OnBeginFrame(FrameDuration duration);
+    private protected abstract void OnBeginFrame(FrameDuration duration, Point? hotspot);
 
     private protected abstract void OnBeginPoster();
 

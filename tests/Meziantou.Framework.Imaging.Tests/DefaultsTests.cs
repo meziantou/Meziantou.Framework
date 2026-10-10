@@ -101,6 +101,7 @@ public sealed class DefaultsTests
         Assert.IsType<TiffEncoder>(ImageEncoder.FromPath("a.TIFF"));
         Assert.IsType<IcoEncoder>(ImageEncoder.FromPath("a.ico"));
         Assert.Equal(IconKind.Cursor, Assert.IsType<IcoEncoder>(ImageEncoder.FromPath("a.cur")).Kind);
+        Assert.IsType<AniEncoder>(ImageEncoder.FromPath("a.ANI"));
         Assert.Throws<ArgumentException>(() => ImageEncoder.FromPath("a.heic"));
         Assert.Throws<ArgumentException>(() => ImageEncoder.FromPath("noextension"));
     }
@@ -160,6 +161,17 @@ public sealed class DefaultsTests
         Assert.Equal(ConvolutionWorkingSpace.Encoded, options.WorkingSpace);
         Assert.Equal(default, options.EdgeMode);
         Assert.Equal(default, options.WorkingSpace);
+    }
+
+    [Fact]
+    public void ColorConversionDefaults()
+    {
+        var options = new IccColorTransformOptions();
+        Assert.Equal(IccRenderingIntent.RelativeColorimetric, options.Intent);
+        Assert.True(options.BlackPointCompensation);
+        Assert.Equal(IccRenderingIntent.RelativeColorimetric, IccColorTransformOptions.Default.Intent);
+        Assert.True(IccColorTransformOptions.Default.BlackPointCompensation);
+        Assert.Same(IccColorTransformOptions.Default, IccColorTransformOptions.Default);
     }
 
     [Fact]

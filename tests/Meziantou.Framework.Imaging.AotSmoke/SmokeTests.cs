@@ -255,6 +255,39 @@ internal static class SmokeTests
         CheckEqual(still, selected, "CUR representation");
     }
 
+    public static void Ani()
+    {
+        using var animation = CreateAnimation(frames: 3);
+        for (var i = 0; i < animation.Frames.Count; i++)
+        {
+            animation.Frames[i].Metadata.Duration = new FrameDuration(i + 1, 60);
+            animation.Frames[i].Metadata.Hotspot = new Point(i, 1);
+        }
+
+        // The last frame repeats the first one: it is stored once and replayed through the sequence table
+        var repeated = animation.AppendFrame(animation.Frames[0]);
+        repeated.Metadata.Duration = new FrameDuration(7, 60);
+        animation.Animation = new AnimationMetadata();
+        animation.Metadata.TextEntries.Clear();
+        animation.Metadata.TextEntries.Add(new ImageTextEntry("Title", "smoke"));
+        foreach (var payloadFormat in new[] { IconPayloadFormat.Dib, IconPayloadFormat.Png })
+        {
+            var data = Encode(animation, new AniEncoder { PayloadFormat = payloadFormat });
+            Check(Image.DetectFormat(data) == ImageFormat.Ani, "ANI detection");
+            using var decoded = Image.Load(data);
+            CheckEqual(animation, decoded, string.Create(CultureInfo.InvariantCulture, $"ANI {payloadFormat}"));
+            Check(decoded.Animation is { TotalPlays: null }, "ANI always loops");
+            for (var i = 0; i < animation.Frames.Count; i++)
+            {
+                Check(decoded.Frames[i].Metadata.Hotspot == animation.Frames[i].Metadata.Hotspot, "ANI hotspot");
+            }
+
+            Check(decoded.Metadata.TextEntries is [{ Keyword: "Title", Value: "smoke" }], "ANI title");
+            var info = Image.Identify(data, new ImageIdentifyOptions { Mode = ImageIdentifyMode.FullScan });
+            Check(info.Format == ImageFormat.Ani && info.FrameCount == 4 && info.IsAnimated == true, "ANI identification");
+        }
+    }
+
     public static void Processing()
     {
         using var image = CreateAnimation(frames: 2);
@@ -291,6 +324,37 @@ internal static class SmokeTests
         // (5 - 6, 2 - 1, 4 + 12, 3 + 2): the canvas is enlarged on the left and on the right
         Check(bordered.AutoCrop(new AutoCropOptions { PaddingX = 6, PaddingY = 1 }) && bordered.Size == new Size(16, 5), "auto-crop");
         Check(bordered.Frames[0][0, 0] == new Rgba32(255, 255, 255) && bordered.Frames[0][6, 1] == new Rgba32(10, 20, 30), "auto-crop pixels");
+    }
+
+    public static void ColorConversion()
+    {
+        // The built-in profiles go through the same parser and conversion as any profile. sRGB to sGray keeps the
+        // luminance: white stays white, and a mid gray stays the same gray
+        var toGray = IccColorTransform.Create(IccProfile.Srgb, IccProfile.SrgbGray);
+        Check(toGray.SourceChannelCount == 3 && toGray.DestinationChannelCount == 1, "color: channel counts");
+        var gray = new byte[3];
+        toGray.Convert([255, 255, 255, 0, 0, 0, 128, 128, 128], gray);
+        Check(gray is [255, 0, 128], "color: sRGB to sGray");
+
+        var toRgb = IccColorTransform.Create(IccProfile.SrgbGray, IccProfile.Srgb, new IccColorTransformOptions { Intent = IccRenderingIntent.Perceptual });
+        var words = new ushort[6];
+        toRgb.Convert([(ushort)0, 65535], words);
+        Check(words is [0, 0, 0, 65535, 65535, 65535], "color: sGray to sRGB");
+
+        // Linear-light pixels converted to sRGB: 128 / 255 encodes to 188 / 255; alpha is kept
+        using var image = new Image<Rgba32>(Width, Height, new Rgba32(128, 255, 0, 77));
+        image.Metadata.TransferFunction = ColorTransferFunction.Linear;
+        image.ConvertColorProfile(IccProfile.Srgb);
+        Check(image.Frames[0][Width - 1, Height - 1] == new Rgba32(188, 255, 0, 77), "color: linear to sRGB");
+        Check(ReferenceEquals(image.Metadata.IccProfile, IccProfile.Srgb), "color: profile label");
+        Check(image.Metadata.TransferFunction == ColorTransferFunction.Srgb, "color: transfer function label");
+
+        using var stream = new MemoryStream();
+        image.Save(stream, new PngEncoder());
+        stream.Position = 0;
+        using var reloaded = Image.Load<Rgba32>(stream);
+        Check(reloaded.Metadata.IccProfile is { ColorSpace: IccProfileColorSpace.Rgb, ProfileClass: IccProfileClass.Display, Version.Major: 4 }, "color: profile round trip");
+        Check(reloaded.Metadata.IccProfile!.Data.Equals(IccProfile.Srgb.Data), "color: profile bytes");
     }
 
     public static void Streaming()

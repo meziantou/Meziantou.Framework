@@ -133,6 +133,28 @@ internal static class Examples
     }
     // end-snippet
 
+    /// <summary>An animated cursor: an animation whose frames are cursor images with a hotspot, played forever.</summary>
+    // begin-snippet: animated-cursor
+    public static Point WriteAndReadAnimatedCursor(string animationPath, string cursorPath)
+    {
+        using var animation = Image.Load(animationPath);
+        animation.Resize(new ResizeOptions(32, 32) { Mode = ResizeMode.Stretch });
+        foreach (var frame in animation.Frames)
+        {
+            frame.Metadata.Hotspot = new Point(4, 2); // the pixel that designates the pointer position
+        }
+
+        // An animated cursor always loops: a finite play count is rejected instead of being dropped
+        animation.Animation = new AnimationMetadata();
+        animation.Save(cursorPath); // ".ani" selects AniEncoder; durations are rounded to sixtieths of a second
+
+        // A hotspot follows its pixel through geometry operations: (4, 2) at 32x32 is (8, 4) at 64x64
+        using var cursor = Image.Load(cursorPath);
+        cursor.Resize(new ResizeOptions(64, 64) { Mode = ResizeMode.Stretch, AllowUpscaling = true });
+        return cursor.Frames[0].Metadata.Hotspot!.Value;
+    }
+    // end-snippet
+
     /// <summary>JPEG stores a single frame: export one frame explicitly and choose how to remove alpha.</summary>
     // begin-snippet: export-jpeg-frame
     public static void ExportFrameAsJpeg(string animatedPath, int frameIndex, string jpegPath)
@@ -394,6 +416,38 @@ internal static class Examples
         image.Metadata.TextEntries.Add(new ImageTextEntry("Title", "Sunset"));
         image.Metadata.Resolution = new ImageResolution(300, 300);
         image.Save(path, new PngEncoder { MetadataHandling = MetadataHandling.Strict });
+    }
+    // end-snippet
+
+    /// <summary>Explicit color management of an image: convert the pixels to sRGB.</summary>
+    // begin-snippet: convert-to-srgb
+    public static void ConvertToSrgb(string inputPath, string outputPath)
+    {
+        using var image = Image.Load(inputPath);
+
+        // Decoders keep the embedded profile as a label; converting the colors is always explicit.
+        // An image without profile is already sRGB (sGray for grayscale pixels): nothing is converted then.
+        var grayscale = image.PixelFormat is PixelFormat.Gray8 or PixelFormat.Gray16;
+        image.ConvertColorProfile(grayscale ? IccProfile.SrgbGray : IccProfile.Srgb);
+
+        // Untagged pixels are read as sRGB: the label can be removed for formats that cannot store a profile
+        image.Metadata.IccProfile = null;
+        image.Save(outputPath);
+    }
+    // end-snippet
+
+    /// <summary>Color conversion of sample buffers between two ICC profiles.</summary>
+    // begin-snippet: convert-samples
+    public static byte[] ConvertSamplesToSrgb(IccProfile sourceProfile, ReadOnlySpan<byte> samples)
+    {
+        // A transform is immutable and thread-safe: create it once for a pair of profiles and reuse it
+        var options = new IccColorTransformOptions { Intent = IccRenderingIntent.Perceptual };
+        var transform = IccColorTransform.Create(sourceProfile, IccProfile.Srgb, options);
+
+        // Interleaved samples without alpha: 1 (gray), 3 (RGB) or 4 (CMYK) per source color, 3 per sRGB color
+        var converted = new byte[samples.Length / transform.SourceChannelCount * transform.DestinationChannelCount];
+        transform.Convert(samples, converted);
+        return converted;
     }
     // end-snippet
 }

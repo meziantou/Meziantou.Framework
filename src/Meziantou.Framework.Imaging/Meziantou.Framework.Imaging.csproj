@@ -3,8 +3,8 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <IsTrimmable>true</IsTrimmable>
     <Version>1.0.0</Version>
-    <Description>Fully managed, performance-oriented image library for .NET: PNG, APNG, GIF, JPEG, WebP, QOI, BMP, TGA, Netpbm, TIFF and ICO/CUR decoding/encoding, animation-aware processing, and bounded-memory streaming.</Description>
-    <PackageTags>image;imaging;png;apng;gif;jpeg;webp;qoi;bmp;tga;netpbm;tiff;ico;animation;resize</PackageTags>
+    <Description>Fully managed, performance-oriented image library for .NET: PNG, APNG, GIF, JPEG, WebP, QOI, BMP, TGA, Netpbm, TIFF, ICO/CUR and ANI decoding/encoding, animation-aware processing, ICC color conversion, and bounded-memory streaming.</Description>
+    <PackageTags>image;imaging;png;apng;gif;jpeg;webp;qoi;bmp;tga;netpbm;tiff;ico;cur;ani;cursor;animation;resize;icc;color-management</PackageTags>
 
     <!-- Every public member must be documented -->
     <DisableDocumentationWarnings>false</DisableDocumentationWarnings>

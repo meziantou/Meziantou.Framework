@@ -61,6 +61,37 @@ internal static class IcoDirectory
         return (format, representations);
     }
 
+    /// <summary>
+    /// Selects the default representation, used by <c>Image.Load</c> and <c>Image.Identify</c>: the largest representation,
+    /// then the one with the most bits per stored pixel, then the first in directory order.
+    /// </summary>
+    /// <param name="representations">The representations, in directory order. At least one.</param>
+    /// <returns>The default representation.</returns>
+    public static IcoRepresentation SelectDefault(IcoRepresentation[] representations)
+    {
+        ArgumentNullException.ThrowIfNull(representations);
+        var best = representations[0];
+        foreach (var representation in representations)
+        {
+            if (IsBetter(representation, best))
+            {
+                best = representation;
+            }
+        }
+
+        return best;
+    }
+
+    private static bool IsBetter(IcoRepresentation candidate, IcoRepresentation best)
+    {
+        var candidateArea = (long)candidate.Size.Width * candidate.Size.Height;
+        var bestArea = (long)best.Size.Width * best.Size.Height;
+        if (candidateArea != bestArea)
+            return candidateArea > bestArea;
+
+        return candidate.BitsPerPixel > best.BitsPerPixel;
+    }
+
     private static IcoRepresentation ReadEntry(RandomAccessSource source, ImageCodecContext context, ImageFormat format, int type, ReadOnlySpan<byte> entry, int index, long directoryLength)
     {
         var declaredWidth = IcoFormat.FromDimensionByte(entry[0]);

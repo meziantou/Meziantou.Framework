@@ -801,6 +801,112 @@ public sealed class PublicApiGeneratorTests
     }
 
     [Fact]
+    public async Task Inheritance_InterfacesOfBaseTypeFromAnotherAssemblyAreNotRepeated()
+    {
+        await Validate("""
+            namespace Demo;
+
+            public class SampleException : Exception { }
+            public class SampleCollection : System.Collections.ObjectModel.Collection<string> { }
+            """, """
+            #nullable enable
+
+            namespace Demo
+            {
+                public class SampleCollection : System.Collections.ObjectModel.Collection<string>
+                {
+                }
+
+                public class SampleException : System.Exception
+                {
+                }
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task Inheritance_InterfacesOfBaseTypeAreListedOnlyWhenDeclaredAgain()
+    {
+        await Validate("""
+            public interface IMarker { }
+            public interface IDerivedMarker : IMarker { }
+
+            public class Base : IDerivedMarker, IDisposable
+            {
+                public void Dispose() { }
+            }
+
+            public class Derived : Base { }
+            public class DerivedDeclaringInterfaceAgain : Base, IDisposable { }
+            public class DerivedOfDerived : DerivedDeclaringInterfaceAgain, IMarker { }
+            public class GenericBase<T> : IEquatable<T>
+            {
+                public bool Equals(T? other) => false;
+            }
+
+            public class GenericDerived<T> : GenericBase<T>, IEquatable<T>, IComparable<T>
+            {
+                public int CompareTo(T? other) => 0;
+            }
+
+            public class ClosedDerived : GenericBase<int>, IEquatable<string>
+            {
+                public bool Equals(string? other) => false;
+            }
+            """, """
+            #nullable enable
+
+            public class Base : IDerivedMarker, IMarker, System.IDisposable
+            {
+                public void Dispose() { }
+            }
+
+
+            public class ClosedDerived : GenericBase<int>, System.IEquatable<string>
+            {
+                public bool Equals(string? other) => throw null;
+            }
+
+
+            public class Derived : Base
+            {
+            }
+
+
+            public class DerivedDeclaringInterfaceAgain : Base, System.IDisposable
+            {
+            }
+
+
+            public class DerivedOfDerived : DerivedDeclaringInterfaceAgain, IMarker
+            {
+            }
+
+
+            public class GenericBase<T> : System.IEquatable<T>
+            {
+                public bool Equals(T other) => throw null;
+            }
+
+
+            public class GenericDerived<T> : GenericBase<T>, System.IComparable<T>, System.IEquatable<T>
+            {
+                public int CompareTo(T other) => throw null;
+            }
+
+
+            public interface IDerivedMarker : IMarker
+            {
+            }
+
+
+            public interface IMarker
+            {
+            }
+            """);
+    }
+
+    [Fact]
     public async Task Struct_Empty()
     {
         await Validate("""

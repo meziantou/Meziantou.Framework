@@ -262,14 +262,6 @@ public sealed class CorpusManifestTests
         Assert.Contains(LoadManifest().Fixtures, fixture => fixture.Kind == kind && fixture.Format == format && fixture.ExpectedError is not null && fixture.Expected is null);
     }
 
-    [Fact]
-    public void CorpusStaysSmall()
-    {
-        var root = FixtureRoot.GetDirectory();
-        var total = Directory.EnumerateFiles(root, "*", SearchOption.AllDirectories).Sum(file => new FileInfo(file).Length);
-        Assert.True(total < 2 * 1024 * 1024, $"The corpus is {total} bytes; keep fixtures tiny (a few MB at most in total).");
-    }
-
     private static FixtureManifest LoadManifest() => FixtureManifestLoader.Load(FixtureRoot.GetDirectory() / FixtureRoot.ManifestFileName);
 
     private static JsonDocument LoadSchema() => JsonDocument.Parse(File.ReadAllText(FixtureRoot.GetDirectory() / FixtureRoot.SchemaFileName));

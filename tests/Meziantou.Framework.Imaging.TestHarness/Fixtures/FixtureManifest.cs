@@ -15,7 +15,7 @@ namespace Meziantou.Framework.Imaging.TestHarness.Fixtures;
 public sealed class FixtureManifest
 {
     /// <summary>The schema version understood by this harness.</summary>
-    public const int CurrentSchemaVersion = 2;
+    public const int CurrentSchemaVersion = 3;
 
     /// <summary>Gets the optional reference to the JSON schema, for editors.</summary>
     [JsonPropertyName("$schema")]
@@ -32,4 +32,12 @@ public sealed class FixtureManifest
     /// <summary>Gets the fixtures.</summary>
     [JsonPropertyName("fixtures")]
     public required IReadOnlyList<FixtureEntry> Fixtures { get; init; }
+
+    /// <summary>Gets the ICC profiles used by <see cref="ColorTransforms"/>.</summary>
+    [JsonPropertyName("colorProfiles")]
+    public IReadOnlyList<ColorProfileEntry>? ColorProfiles { get; init; }
+
+    /// <summary>Gets the reference color conversions between <see cref="ColorProfiles"/>.</summary>
+    [JsonPropertyName("colorTransforms")]
+    public IReadOnlyList<ColorTransformEntry>? ColorTransforms { get; init; }
 }

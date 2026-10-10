@@ -12,6 +12,8 @@ namespace Meziantou.Framework.Imaging;
 /// together: on failure or cancellation before the commit, the image is left exactly as it was (dimensions, pixels, frame
 /// identities and order, metadata). The old and new buffers are budgeted together. After a successful commit, existing
 /// <see cref="ImageFrame"/> references designate the same logical frames.
+/// <see cref="ConvertColorProfile"/> is transactional in the same way, so that pixels and their color profile always
+/// change together.
 /// </para>
 /// <para>
 /// Pixel-only operations (<see cref="Flip(Image, FlipMode, CancellationToken)"/>, <see cref="Grayscale(Image, CancellationToken)"/>,
@@ -24,6 +26,14 @@ namespace Meziantou.Framework.Imaging;
 /// Geometry changes update the existing EXIF pixel-dimension tags of <see cref="ImageMetadata.ExifProfile"/> to the new
 /// canvas, and every operation that changes pixels removes the EXIF thumbnail, which no longer matches them. A malformed
 /// EXIF profile is left as is (serializing it fails).
+/// </para>
+/// <para>
+/// A cursor hotspot (<see cref="FrameMetadata.Hotspot"/>) follows the pixel it designates: crops and auto-crops translate it, rotations,
+/// mirrors and auto-orient permute it exactly, and a resize moves it to <c>floor(x * newWidth / width)</c> (and likewise
+/// vertically, through the kept region for <see cref="ResizeMode.Cover"/>), so a hotspot in the top-left corner stays
+/// there. When the pixel it designates is not part of the result (a crop, an auto-crop or a cover resize that removes it), the operation
+/// throws an <see cref="UnsupportedImageFeatureException"/> and leaves the image unchanged: clear or move the hotspot
+/// first. Pixel-only operations keep it.
 /// </para>
 /// <para>
 /// Crop, auto-crop, rotations, mirrors and auto-orient are exact pixel permutations: every sample, including 16-bit low
@@ -40,6 +50,7 @@ public static class ImageProcessingExtensions
     /// <param name="rectangle">The region to keep. It must be non-empty and entirely inside the canvas; it is never clamped.</param>
     /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="rectangle"/> is empty or not entirely inside the canvas.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">The cursor hotspot of a frame is outside <paramref name="rectangle"/>. The image is unchanged.</exception>
     /// <exception cref="ImageResourceLimitException">The replacement buffers would exceed the allocation limit. The image is unchanged.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled. The image is unchanged.</exception>
     /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
@@ -156,6 +167,7 @@ public static class ImageProcessingExtensions
     /// <param name="options">The options, or <see langword="null"/> for <see cref="AutoCropOptions.Default"/>.</param>
     /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
     /// <returns><see langword="true"/> if the image was cropped or enlarged; <see langword="false"/> if it is unchanged.</returns>
+    /// <exception cref="UnsupportedImageFeatureException">The cursor hotspot of a frame designates a pixel that the crop removes. The image is unchanged.</exception>
     /// <exception cref="ImageResourceLimitException">The enlarged canvas exceeds <see cref="ImageResourceLimits.MaxWidth"/>, <see cref="ImageResourceLimits.MaxHeight"/> or <see cref="ImageResourceLimits.MaxFramePixels"/>, or the replacement buffers would exceed the allocation limit. The image is unchanged.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled. The image is unchanged.</exception>
     /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
@@ -180,7 +192,7 @@ public static class ImageProcessingExtensions
     /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
     /// <returns><see langword="true"/> if the image was cropped or enlarged; <see langword="false"/> if it is unchanged.</returns>
     /// <exception cref="ArgumentException"><see cref="AutoCropAnalysis.CanvasSize"/> is not the size of the image.</exception>
-    /// <exception cref="UnsupportedImageFeatureException">The canvas must be enlarged but <see cref="AutoCropAnalysis.BackgroundColor"/> is not exactly representable in the pixel format of the image (it comes from an image of another pixel format). The image is unchanged.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">The canvas must be enlarged but <see cref="AutoCropAnalysis.BackgroundColor"/> is not exactly representable in the pixel format of the image (it comes from an image of another pixel format), or the cursor hotspot of a frame designates a pixel that the crop removes. The image is unchanged.</exception>
     /// <exception cref="ImageResourceLimitException">The enlarged canvas exceeds <see cref="ImageResourceLimits.MaxWidth"/>, <see cref="ImageResourceLimits.MaxHeight"/> or <see cref="ImageResourceLimits.MaxFramePixels"/>, or the replacement buffers would exceed the allocation limit. The image is unchanged.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled. The image is unchanged.</exception>
     /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
@@ -221,7 +233,7 @@ public static class ImageProcessingExtensions
     /// <param name="options">The resize options.</param>
     /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
     /// <exception cref="ArgumentException">Upscaling is required but <see cref="ResizeOptions.AllowUpscaling"/> is <see langword="false"/> (for <see cref="ResizeMode.Stretch"/> and <see cref="ResizeMode.Cover"/>).</exception>
-    /// <exception cref="UnsupportedImageFeatureException"><see cref="ResizeWorkingSpace.LinearSrgb"/> is requested for an image with an incompatible ICC profile.</exception>
+    /// <exception cref="UnsupportedImageFeatureException"><see cref="ResizeWorkingSpace.LinearSrgb"/> is requested for an image with an incompatible ICC profile, or the cursor hotspot of a frame designates a pixel that <see cref="ResizeMode.Cover"/> removes. The image is unchanged.</exception>
     /// <exception cref="ImageResourceLimitException">The replacement buffers would exceed the allocation limit. The image is unchanged.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled. The image is unchanged.</exception>
     /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
@@ -319,9 +331,13 @@ public static class ImageProcessingExtensions
 
         var storage = frame.GetStorage();
         cancellationToken.ThrowIfCancellationRequested();
-        using var lease = storage.AcquireLease();
-        frame.OwnerImage.Metadata.RemoveStaleThumbnail();
-        frame.FlipPixels(lease, mode, cancellationToken);
+        using (var lease = storage.AcquireLease())
+        {
+            frame.OwnerImage.Metadata.RemoveStaleThumbnail();
+            frame.FlipPixels(lease, mode, cancellationToken);
+        }
+
+        Image.FlipHotspot(frame, mode);
     }
 
     /// <summary>
@@ -358,6 +374,59 @@ public static class ImageProcessingExtensions
         using var lease = storage.AcquireLease();
         image.Metadata.RemoveStaleThumbnail();
         frame.GrayscalePixels(lease, cancellationToken);
+    }
+
+    /// <summary>
+    /// Converts the colors of every frame of the image (including the poster frame) to the color space described by an
+    /// ICC profile, and labels the image with that profile.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The source color space is the one of <see cref="ImageMetadata.IccProfile"/>. An image without profile is sRGB, or
+    /// sGray for grayscale pixel formats (<see cref="IccProfile.Srgb"/>, <see cref="IccProfile.SrgbGray"/>); when
+    /// <see cref="ImageMetadata.TransferFunction"/> is <see cref="ColorTransferFunction.Linear"/>, it is linear light with
+    /// the sRGB primaries and white point. This is the only operation that applies a color profile: loading, saving,
+    /// pixel format conversion and the other processing operations never do.
+    /// </para>
+    /// <para>
+    /// The pixel format is kept, so the destination profile must be able to label it: an RGB profile for color formats, a
+    /// grayscale profile for <see cref="Gray8"/> and <see cref="Gray16"/>. To change the color model, convert the pixel
+    /// format with <see cref="Image.CloneAs{TPixel}(PixelConversionOptions?)"/>, or convert sample buffers with
+    /// <see cref="IccColorTransform"/> (the only way to reach CMYK).
+    /// </para>
+    /// <para>
+    /// Colors are converted at the storage precision (16-bit formats are never reduced to 8 bits) by the scalar reference
+    /// conversion, on the calling thread. Alpha is copied unchanged and the color of transparent pixels is converted like
+    /// any other. Colors outside the destination gamut are clipped per channel.
+    /// </para>
+    /// <para>
+    /// The operation is transactional: the converted pixels are built in new buffers, budgeted together with the current
+    /// ones, and published with the new profile. On failure or cancellation the image is left exactly as it was. After a
+    /// successful conversion, <see cref="ImageMetadata.IccProfile"/> is <paramref name="destinationProfile"/>,
+    /// <see cref="ImageMetadata.TransferFunction"/> is <see cref="ColorTransferFunction.Srgb"/> (the samples are described
+    /// by the profile) and the EXIF thumbnail, which no longer matches the pixels, is removed. When the source and
+    /// destination profiles have identical bytes, the pixels are not touched and only the label is set.
+    /// </para>
+    /// </remarks>
+    /// <param name="image">The image to modify.</param>
+    /// <param name="destinationProfile">The profile of the converted pixels.</param>
+    /// <param name="options">The conversion options, or <see langword="null"/> for <see cref="IccColorTransformOptions.Default"/>.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="image"/> or <paramref name="destinationProfile"/> is <see langword="null"/>.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">
+    /// The current or the destination profile cannot label the pixel format, the image has both a profile and the linear
+    /// transfer function label, or a profile is of a kind that is not supported. The image is unchanged.
+    /// </exception>
+    /// <exception cref="InvalidImageContentException">The current or the destination profile is malformed. The image is unchanged.</exception>
+    /// <exception cref="ImageResourceLimitException">The replacement buffers would exceed the allocation limit. The image is unchanged.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled. The image is unchanged.</exception>
+    /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
+    /// <exception cref="ObjectDisposedException">The image is disposed.</exception>
+    public static void ConvertColorProfile(this Image image, IccProfile destinationProfile, IccColorTransformOptions? options = null, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(image);
+        ArgumentNullException.ThrowIfNull(destinationProfile);
+        image.ConvertAllFramesToColorProfile(destinationProfile, options ?? IccColorTransformOptions.Default, cancellationToken);
     }
 
     /// <summary>Applies a convolution matrix to every frame of the image (including the poster frame) in place.</summary>

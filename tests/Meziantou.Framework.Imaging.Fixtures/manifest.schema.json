@@ -2,13 +2,13 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/meziantou/Meziantou.Framework/tests/Meziantou.Framework.Imaging.Fixtures/manifest.schema.json",
   "title": "Meziantou.Framework.Imaging golden corpus manifest",
-  "description": "Schema version 2: identity, files, hashes, provenance and licensing; expected full-canvas displayed frames and posters with exact raw-buffer layouts; rational timing, loop and metadata expectations; reference provenance and independent cross-checks; comparison policies; expected errors. Written by tools/Meziantou.Framework.Imaging.CorpusGenerator (GoldenCorpus.cs) and validated by Meziantou.Framework.Imaging.TestHarness.Fixtures.FixtureManifestValidator (which also checks hashes, lengths, conventions and policy discrimination).",
+  "description": "Schema version 3 (adds colorProfiles and colorTransforms, the ICC color management references written by IccCorpus.cs): identity, files, hashes, provenance and licensing; expected full-canvas displayed frames and posters with exact raw-buffer layouts; rational timing, loop and metadata expectations; reference provenance and independent cross-checks; comparison policies; expected errors. Written by tools/Meziantou.Framework.Imaging.CorpusGenerator (GoldenCorpus.cs) and validated by Meziantou.Framework.Imaging.TestHarness.Fixtures.FixtureManifestValidator (which also checks hashes, lengths, conventions and policy discrimination).",
   "type": "object",
   "additionalProperties": false,
   "required": ["schemaVersion", "fixtures"],
   "properties": {
     "$schema": { "type": "string" },
-    "schemaVersion": { "const": 2 },
+    "schemaVersion": { "const": 3 },
     "generator": {
       "type": "object",
       "additionalProperties": false,
@@ -22,9 +22,68 @@
     "fixtures": {
       "type": "array",
       "items": { "$ref": "#/$defs/fixture" }
+    },
+    "colorProfiles": {
+      "type": "array",
+      "description": "ICC profiles used by colorTransforms.",
+      "items": { "$ref": "#/$defs/colorProfile" }
+    },
+    "colorTransforms": {
+      "type": "array",
+      "description": "Colors converted between two colorProfiles by an independent color management system.",
+      "items": { "$ref": "#/$defs/colorTransform" }
     }
   },
   "$defs": {
+    "colorProfile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "file", "provenance"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._/-]*$" },
+        "file": { "$ref": "#/$defs/file" },
+        "provenance": { "$ref": "#/$defs/provenance" },
+        "features": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "notes": { "type": "string" }
+      }
+    },
+    "colorTransform": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "source", "destination", "intent", "blackPointCompensation", "sourceChannels", "destinationChannels", "sampleCount", "vectors", "reference", "comparison"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._/-]*$" },
+        "source": { "type": "string", "description": "Id of the source colorProfile." },
+        "destination": { "type": "string", "description": "Id of the destination colorProfile." },
+        "intent": { "enum": ["perceptual", "relative-colorimetric", "saturation", "absolute-colorimetric"] },
+        "blackPointCompensation": { "type": "boolean" },
+        "sourceChannels": { "enum": [1, 3, 4] },
+        "destinationChannels": { "enum": [1, 3, 4] },
+        "sampleCount": { "type": "integer", "minimum": 1 },
+        "vectors": { "$ref": "#/$defs/file", "description": "For each color, the source samples then the reference destination samples: little-endian 16-bit numbers covering the device range (0 is no light or no ink)." },
+        "reference": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["tool", "command", "generator"],
+          "properties": {
+            "tool": { "type": "string", "description": "Tool and exact version, e.g. 'transicc (LittleCMS 2.19)'." },
+            "command": { "type": "string", "description": "Exact command line; the colors are its standard input." },
+            "generator": { "type": "string", "description": "Committed script path and function." }
+          }
+        },
+        "comparison": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["maxAbsoluteError", "maxMeanAbsoluteError", "justification"],
+          "properties": {
+            "maxAbsoluteError": { "type": "integer", "minimum": 0, "maximum": 64, "description": "16-bit units: 257 is one level of 255." },
+            "maxMeanAbsoluteError": { "type": "number", "minimum": 0, "description": "Mean over all samples, 16-bit units." },
+            "justification": { "type": "string", "minLength": 40 }
+          }
+        },
+        "notes": { "type": "string" }
+      }
+    },
     "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
     "path": { "type": "string", "pattern": "^[^\\\\/][^\\\\]*$", "description": "Path relative to tests/Meziantou.Framework.Imaging.Fixtures, '/' separators." },
     "profile": {

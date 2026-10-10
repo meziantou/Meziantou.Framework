@@ -4,8 +4,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
 /// The rules deciding whether an ICC profile can label pixels of a given format. Layout
-/// conversion is not color management: a profile is never applied, so it can only be kept when its declared color space
-/// matches the pixels: <see cref="IccProfileColorSpace.Gray"/> for gray formats, <see cref="IccProfileColorSpace.Rgb"/> for
+/// conversion is not color management: a profile is never applied implicitly, so it can only be kept when its declared
+/// color space matches the pixels: <see cref="IccProfileColorSpace.Gray"/> for gray formats, <see cref="IccProfileColorSpace.Rgb"/> for
 /// color formats. Profiles declaring any other (or no) color space are compatible with no built-in pixel format.
 /// </summary>
 internal static class ColorProfileCompatibility
@@ -47,7 +47,7 @@ internal static class ColorProfileCompatibility
 
         var kind = PixelFormats.IsGrayscale(destinationFormat) ? "grayscale" : "color";
         throw new UnsupportedImageFeatureException(
-            $"The ICC profile declares the {profile.ColorSpace} color space, which cannot label {kind} {destinationFormat} pixels. Layout conversion does not apply color profiles; set PixelConversionOptions.DiscardIncompatibleColorProfile to remove the profile, or remove it from the metadata.",
+            $"The ICC profile declares the {profile.ColorSpace} color space, which cannot label {kind} {destinationFormat} pixels. Layout conversion does not apply color profiles; convert the colors first with ConvertColorProfile, set PixelConversionOptions.DiscardIncompatibleColorProfile to remove the profile, or remove it from the metadata.",
             format,
             "Incompatible color profile");
     }

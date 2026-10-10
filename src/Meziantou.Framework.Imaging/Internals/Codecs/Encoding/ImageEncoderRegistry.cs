@@ -4,7 +4,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <remarks>
 /// The public API always uses <see cref="Current"/>: <see cref="Default"/>, unless a test replaced it for the current
 /// asynchronous flow with <see cref="Override"/> to plug test-only encoders behind the real writer and save entry points.
-/// Every built-in format has its encoder: PNG and APNG, GIF, JPEG, WebP, QOI, BMP, TGA, PNM, TIFF/BigTIFF and ICO/CUR.
+/// Every built-in format has its encoder: PNG and APNG, GIF, JPEG, WebP, QOI, BMP, TGA, PNM, TIFF/BigTIFF, ICO/CUR and ANI.
 /// </remarks>
 internal sealed class ImageEncoderRegistry
 {
@@ -20,7 +20,7 @@ internal sealed class ImageEncoderRegistry
         }
     }
 
-    /// <summary>Gets the built-in encoders: static PNG and APNG, through the PNG codec, GIF, baseline JPEG, WebP (lossless and lossy), QOI, BMP, TGA, PNM, TIFF and BigTIFF and ICO and CUR.</summary>
+    /// <summary>Gets the built-in encoders: static PNG and APNG, through the PNG codec, GIF, baseline JPEG, WebP (lossless and lossy), QOI, BMP, TGA, PNM, TIFF and BigTIFF, ICO and CUR, and ANI.</summary>
     public static ImageEncoderRegistry Default { get; } = new(
     [
         PngEncoderCodec.Instance,
@@ -34,6 +34,7 @@ internal sealed class ImageEncoderRegistry
         TiffEncoderCodec.Instance,
         IcoEncoderCodec.Icon,
         IcoEncoderCodec.Cursor,
+        AniEncoderCodec.Instance,
     ]);
 
     /// <summary>Gets the registry used by the public API in the current asynchronous flow.</summary>

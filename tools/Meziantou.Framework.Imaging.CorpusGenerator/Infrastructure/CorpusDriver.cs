@@ -3,7 +3,8 @@ using System.Text;
 namespace Meziantou.Framework.Imaging.CorpusGenerator.Infrastructure;
 
 /// <param name="Output">Generates into this (new or empty) directory and keeps it, instead of a temporary directory.</param>
-internal sealed record GeneratorOptions(bool Write, bool AcceptToolVersions, string? QoiHeader, string? Output = null);
+/// <param name="IccProfiles">The directory of the pinned checkout of the external ICC profiles (icc generator).</param>
+internal sealed record GeneratorOptions(bool Write, bool AcceptToolVersions, string? QoiHeader, string? Output = null, string? IccProfiles = null);
 
 /// <summary>Regenerates (a part of) the corpus in a temporary directory, then reports the differences with the committed
 /// corpus (check) or replaces it (write).</summary>
@@ -68,6 +69,50 @@ internal static class CorpusDriver
         }
     }
 
+    /// <summary>The sections of the manifest owned by the icc generator.</summary>
+    public static readonly string[] ColorSections = ["colorProfiles", "colorTransforms"];
+
+    /// <summary>Every file the color management sections of a manifest reference (profiles and vectors).</summary>
+    public static SortedSet<string> ColorFiles(Obj manifest)
+    {
+        var paths = new SortedSet<string>(StringComparer.Ordinal);
+        if (manifest.TryGetValue("colorProfiles", out var profiles) && profiles is List<object?> profileList)
+        {
+            foreach (var profile in profileList.Cast<Obj>())
+                paths.Add((string)((Obj)profile["file"]!)["path"]!);
+        }
+
+        if (manifest.TryGetValue("colorTransforms", out var transforms) && transforms is List<object?> transformList)
+        {
+            foreach (var transform in transformList.Cast<Obj>())
+                paths.Add((string)((Obj)transform["vectors"]!)["path"]!);
+        }
+
+        return paths;
+    }
+
+    /// <summary>The image generators keep the color management sections of the committed manifest, and their files,
+    /// unchanged (the icc generator owns them).</summary>
+    public static void PreserveColorSections(FullPath outDir, Obj manifest)
+    {
+        var committed = LoadCommittedManifest();
+        foreach (var section in ColorSections)
+        {
+            if (committed.TryGetValue(section, out var value))
+                manifest[section] = value;
+        }
+
+        foreach (var path in ColorFiles(committed))
+        {
+            var target = outDir / path;
+            if (!File.Exists(target))
+            {
+                target.CreateParentDirectory();
+                File.Copy(CorpusDir / path, target);
+            }
+        }
+    }
+
     /// <summary>The generators of one format family replace only their own entries: every other fixture and file of the
     /// committed corpus is kept unchanged (the other generators own them).</summary>
     public static void MergeIntoCommittedManifest(FullPath outDir, IReadOnlyList<Obj> fixtures, Func<Obj, bool> owns)
@@ -75,6 +120,7 @@ internal static class CorpusDriver
         var committed = LoadCommittedManifest();
         var others = Fixtures(committed).Where(f => !owns(f)).ToList();
         CopyCommittedFiles(outDir, others);
+        PreserveColorSections(outDir, committed);
         committed["fixtures"] = others.Concat(fixtures).OrderBy(f => (string)f["id"]!, StringComparer.Ordinal).Cast<object?>().ToList();
         WriteManifest(outDir, committed);
     }

@@ -15,6 +15,7 @@ internal sealed class RandomAccessSource
     private readonly RandomAccessInput _input;
     private readonly ImageCodecContext _context;
     private readonly bool _chargeReads;
+    private readonly long _origin;
 
     /// <summary>Creates a view of an input for one operation.</summary>
     /// <param name="input">The input.</param>
@@ -32,10 +33,21 @@ internal sealed class RandomAccessSource
         _context = context;
         _chargeReads = chargeReads;
         Format = format;
+        Length = input.Length;
     }
 
-    /// <summary>Gets the number of bytes of the input.</summary>
-    public long Length => _input.Length;
+    private RandomAccessSource(RandomAccessSource parent, long offset, long length, ImageFormat format)
+    {
+        _input = parent._input;
+        _context = parent._context;
+        _chargeReads = parent._chargeReads;
+        _origin = parent._origin + offset;
+        Format = format;
+        Length = length;
+    }
+
+    /// <summary>Gets the number of bytes of the input (of the range, for a view created by <see cref="Slice"/>).</summary>
+    public long Length { get; }
 
     /// <summary>Gets the format reported in the exceptions of out-of-range offsets.</summary>
     public ImageFormat Format { get; }
@@ -71,7 +83,23 @@ internal sealed class RandomAccessSource
             _context.Tracker.ChargeEncodedBytes(destination.Length);
         }
 
-        _input.Read(offset, destination);
+        _input.Read(_origin + offset, destination);
+    }
+
+    /// <summary>
+    /// Creates a view of a range of this input whose offsets start at zero: a file embedded in a container (an icon inside an
+    /// animated cursor) is read by the code that reads it standalone, and none of its offsets can reach outside the range.
+    /// The view shares the limits, the accounting and the allocation scope of this source.
+    /// </summary>
+    /// <param name="offset">The offset of the range from the first byte of this input.</param>
+    /// <param name="length">The number of bytes of the range.</param>
+    /// <param name="format">The format reported in the exceptions of out-of-range offsets of the view.</param>
+    /// <returns>The view.</returns>
+    /// <exception cref="InvalidImageContentException">The range is outside the input.</exception>
+    public RandomAccessSource Slice(long offset, long length, ImageFormat format)
+    {
+        EnsureRange(offset, length);
+        return new RandomAccessSource(this, offset, length, format);
     }
 
     /// <summary>Reads a range into a buffer rented from the allocation scope.</summary>

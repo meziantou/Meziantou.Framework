@@ -144,8 +144,61 @@ public sealed class FixtureManifestValidatorTests : IDisposable
     public void UnknownManifestPropertiesAreRejected()
     {
         var path = _root / "manifest.json";
-        File.WriteAllText(path, """{ "schemaVersion": 2, "fixtures": [], "unexpected": true }""");
+        File.WriteAllText(path, """{ "schemaVersion": 3, "fixtures": [], "unexpected": true }""");
         Assert.Throws<System.Text.Json.JsonException>(() => FixtureManifestLoader.Load(path));
+    }
+
+    [Fact]
+    public void ColorSectionsAreValidated()
+    {
+        // Two colors of 3 + 1 channels: 2 * 4 * 2 bytes of vectors
+        var profile = WriteFile("icc/a.icc", [1, 2, 3]);
+        var vectors = WriteFile("icc/a.u16le", new byte[16]);
+        ColorProfileEntry Profile(string id = "icc/a", string license = "CC0-1.0") => new() { Id = id, File = profile, Provenance = new FixtureProvenance { Origin = "external", License = license, Source = "https://example.com/a.icc" } };
+        ColorTransformEntry Transform(string id = "icc/a-to-a", string source = "icc/a", string intent = "perceptual", bool compensation = false, int sourceChannels = 3, int sampleCount = 2, int maximum = 2, double mean = 0.5, string justification = "The same matrix and curves; only the rounding of the printed samples differs.", string tool = "transicc (LittleCMS 2.19)") => new()
+        {
+            Id = id,
+            Source = source,
+            Destination = "icc/a",
+            Intent = intent,
+            BlackPointCompensation = compensation,
+            SourceChannels = sourceChannels,
+            DestinationChannels = 1,
+            SampleCount = sampleCount,
+            Vectors = vectors,
+            Reference = new ColorTransformReference { Tool = tool, Command = "transicc -n -c0", Generator = "tools/generator.cs (Generate)" },
+            Comparison = new ColorTransformComparison { MaxAbsoluteError = maximum, MaxMeanAbsoluteError = mean, Justification = justification },
+        };
+
+        IReadOnlyList<string> Validate(ColorProfileEntry[] profiles, ColorTransformEntry[] transforms)
+            => FixtureManifestValidator.Validate(new FixtureManifest { SchemaVersion = FixtureManifest.CurrentSchemaVersion, Fixtures = [], ColorProfiles = profiles, ColorTransforms = transforms }, _root);
+
+        Assert.Empty(Validate([Profile()], [Transform()]));
+
+        // Without the sections, their files are orphans: every committed file needs provenance and a license
+        Assert.Equal(2, FixtureManifestValidator.Validate(CreateManifest(), _root).Count(error => error.Contains("is not referenced by the manifest", StringComparison.Ordinal)));
+
+        void AssertError(string expected, ColorProfileEntry[] profiles, ColorTransformEntry[] transforms)
+            => Assert.Contains(Validate(profiles, transforms), error => error.Contains(expected, StringComparison.Ordinal));
+
+        AssertError("license 'GPL-3.0' is not in the allowed list", [Profile(license: "GPL-3.0")], [Transform()]);
+        AssertError("duplicate id", [Profile(), Profile()], [Transform()]);
+        AssertError("duplicate id", [Profile()], [Transform(), Transform()]);
+        AssertError("invalid id", [Profile(id: "ICC/A")], []);
+        AssertError("the source profile 'icc/missing' is not in 'colorProfiles'", [Profile()], [Transform(source: "icc/missing")]);
+        AssertError("invalid intent 'vivid'", [Profile()], [Transform(intent: "vivid")]);
+        AssertError("black point compensation does not apply", [Profile()], [Transform(intent: "absolute-colorimetric", compensation: true)]);
+        AssertError("channel counts must be 1, 3 or 4", [Profile()], [Transform(sourceChannels: 2)]);
+        AssertError("sampleCount must be positive", [Profile()], [Transform(sampleCount: 0)]);
+        AssertError("has 16 bytes but 24 are declared", [Profile()], [Transform(sampleCount: 3)]);
+        AssertError("the tolerance must be between 0 and 64", [Profile()], [Transform(maximum: 65)]);
+        AssertError("the tolerance must be between 0 and 64", [Profile()], [Transform(maximum: 2, mean: 3)]);
+        AssertError("the tolerance needs a justification", [Profile()], [Transform(justification: "close enough")]);
+        AssertError("the reference must record the tool", [Profile()], [Transform(tool: " ")]);
+
+        // A changed vector file no longer matches its hash
+        File.WriteAllBytes(_root / "icc" / "a.u16le", new byte[] { 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 });
+        AssertError("has sha256", [Profile()], [Transform()]);
     }
 
     private static FixtureManifest CreateManifest(params FixtureEntry[] entries) => new() { SchemaVersion = FixtureManifest.CurrentSchemaVersion, Fixtures = entries };

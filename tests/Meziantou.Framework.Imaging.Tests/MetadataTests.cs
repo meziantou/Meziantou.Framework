@@ -61,6 +61,68 @@ public sealed class MetadataTests
     }
 
     [Fact]
+    public void IccProfileExposesDeclaredHeaderFields()
+    {
+        // ICC.1:2022 section 7.2: version at offset 8 (major, then minor and bug fix nibbles), class at 12, intent at 64
+        var header = new byte[128];
+        header[8] = 4;
+        header[9] = 0x31;
+        "mntr"u8.CopyTo(header.AsSpan(12));
+        "CMYK"u8.CopyTo(header.AsSpan(16));
+        header[67] = 1;
+        var profile = new IccProfile(new MetadataBlob(header));
+        Assert.Equal(new Version(4, 3, 1), profile.Version);
+        Assert.Equal(IccProfileClass.Display, profile.ProfileClass);
+        Assert.Equal(IccProfileColorSpace.Cmyk, profile.ColorSpace);
+        Assert.Equal(IccRenderingIntent.RelativeColorimetric, profile.RenderingIntent);
+
+        header[8] = 2;
+        header[9] = 0x40;
+        header[67] = 4;
+        profile = new IccProfile(new MetadataBlob(header));
+        Assert.Equal(new Version(2, 4, 0), profile.Version);
+        Assert.Null(profile.RenderingIntent);
+
+        header[67] = 3;
+        header[64] = 1;
+        Assert.Null(new IccProfile(new MetadataBlob(header)).RenderingIntent);
+
+        var shortProfile = new IccProfile(new MetadataBlob(new byte[127]));
+        Assert.Equal(new Version(0, 0, 0), shortProfile.Version);
+        Assert.Equal(IccProfileClass.Unknown, shortProfile.ProfileClass);
+        Assert.Equal(IccProfileColorSpace.Unknown, shortProfile.ColorSpace);
+        Assert.Null(shortProfile.RenderingIntent);
+    }
+
+    [Theory]
+    [InlineData("scnr", IccProfileClass.Input)]
+    [InlineData("mntr", IccProfileClass.Display)]
+    [InlineData("prtr", IccProfileClass.Output)]
+    [InlineData("link", IccProfileClass.DeviceLink)]
+    [InlineData("spac", IccProfileClass.ColorSpace)]
+    [InlineData("abst", IccProfileClass.Abstract)]
+    [InlineData("nmcl", IccProfileClass.NamedColor)]
+    [InlineData("zzzz", IccProfileClass.Other)]
+    public void IccProfileExposesDeclaredProfileClass(string signature, IccProfileClass expected)
+    {
+        var header = new byte[128];
+        Encoding.ASCII.GetBytes(signature).CopyTo(header, 12);
+        Assert.Equal(expected, new IccProfile(new MetadataBlob(header)).ProfileClass);
+    }
+
+    [Theory]
+    [InlineData(0, IccRenderingIntent.Perceptual)]
+    [InlineData(1, IccRenderingIntent.RelativeColorimetric)]
+    [InlineData(2, IccRenderingIntent.Saturation)]
+    [InlineData(3, IccRenderingIntent.AbsoluteColorimetric)]
+    public void IccProfileExposesDeclaredRenderingIntent(byte value, IccRenderingIntent expected)
+    {
+        var header = new byte[128];
+        header[67] = value;
+        Assert.Equal(expected, new IccProfile(new MetadataBlob(header)).RenderingIntent);
+    }
+
+    [Fact]
     public void MetadataBlobIsImmutableAndComparedByValue()
     {
         var source = new byte[] { 1, 2, 3, 4 };
@@ -141,6 +203,19 @@ public sealed class MetadataTests
         var frameClone = frame.Clone();
         frameClone.Duration = FrameDuration.Zero;
         Assert.Equal(new FrameDuration(1, 3), frame.Duration);
+
+        Assert.Null(frame.Hotspot); // a frame is not a cursor image by default
+        frame.Hotspot = new Point(3, 4);
+        var cursorClone = frame.Clone();
+        Assert.Equal(new Point(3, 4), cursorClone.Hotspot);
+        cursorClone.Hotspot = null;
+        Assert.Equal(new Point(3, 4), frame.Hotspot);
+
+        // Settings that belong to no frame have no size to check: only negative coordinates are rejected
+        frame.Hotspot = new Point(int.MaxValue, 0);
+        Assert.Throws<ArgumentOutOfRangeException>(() => frame.Hotspot = new Point(-1, 0));
+        Assert.Throws<ArgumentOutOfRangeException>(() => frame.Hotspot = new Point(0, -1));
+        Assert.Equal(new Point(int.MaxValue, 0), frame.Hotspot);
 
         var animation = new AnimationMetadata { TotalPlays = 2 };
         var animationClone = animation.Clone();

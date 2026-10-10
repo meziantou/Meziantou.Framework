@@ -779,6 +779,98 @@ public sealed class ResizeTests
     }
 
     // -----------------------------------------------------------------------------------------------------------------
+    // Cursor hotspots
+    // -----------------------------------------------------------------------------------------------------------------
+
+    [Theory]
+    [InlineData(4, 8, 0, 0)] // the top-left corner stays the top-left corner, whatever the scale
+    [InlineData(4, 8, 3, 6)] // floor(3 * 8 / 4)
+    [InlineData(4, 2, 0, 0)]
+    [InlineData(4, 2, 1, 0)] // floor(1 * 2 / 4)
+    [InlineData(4, 2, 2, 1)]
+    [InlineData(4, 2, 3, 1)]
+    [InlineData(3, 2, 1, 0)] // floor(1 * 2 / 3)
+    [InlineData(3, 2, 2, 1)] // floor(2 * 2 / 3)
+    [InlineData(5, 6, 3, 3)] // floor(3 * 6 / 5)
+    [InlineData(5, 6, 4, 4)] // floor(4 * 6 / 5)
+    [InlineData(1, 7, 0, 0)]
+    [InlineData(7, 1, 6, 0)]
+    public void AResizeScalesTheHotspotLikeTheCornerOfItsPixel(int source, int output, int hotspot, int expected)
+    {
+        using var image = BuildIds(source, source);
+        image.Frames[0].Metadata.Hotspot = new Point(hotspot, hotspot);
+        image.Resize(new ResizeOptions(output, output) { Mode = ResizeMode.Stretch, AllowUpscaling = true }, Ct);
+        Assert.Equal(new Point(expected, expected), image.Frames[0].Metadata.Hotspot);
+    }
+
+    [Fact]
+    public void TheHotspotIsScaledIndependentlyOnEachAxisAndForEachFrame()
+    {
+        using var image = BuildIds(4, 2, frameCount: 2);
+        image.Frames[0].Metadata.Hotspot = new Point(3, 1);
+        image.Resize(new ResizeOptions(8, 2) { Mode = ResizeMode.Stretch, AllowUpscaling = true }, Ct);
+        Assert.Equal(new Point(6, 1), image.Frames[0].Metadata.Hotspot);
+        Assert.Null(image.Frames[1].Metadata.Hotspot);
+
+        // Contain 8x2 -> 4x1 scales both axes by one half
+        image.Frames[1].Metadata.Hotspot = new Point(7, 1);
+        image.Resize(new ResizeOptions(4, 4) { Mode = ResizeMode.Contain }, Ct);
+        Assert.Equal(new Size(4, 1), image.Size);
+        Assert.Equal(new Point(3, 0), image.Frames[0].Metadata.Hotspot);
+        Assert.Equal(new Point(3, 0), image.Frames[1].Metadata.Hotspot);
+
+        // A resize that keeps the size keeps the hotspot
+        image.Resize(new ResizeOptions(4, 1) { Mode = ResizeMode.Stretch }, Ct);
+        Assert.Equal(new Point(3, 0), image.Frames[0].Metadata.Hotspot);
+    }
+
+    [Theory]
+    [InlineData(ResizeAnchor.Left, 0, 0)]
+    [InlineData(ResizeAnchor.Left, 2, 2)]
+    [InlineData(ResizeAnchor.Left, 3, null)]
+    [InlineData(ResizeAnchor.Center, 0, null)]
+    [InlineData(ResizeAnchor.Center, 1, 0)]
+    [InlineData(ResizeAnchor.Center, 3, 2)]
+    [InlineData(ResizeAnchor.Center, 4, null)]
+    [InlineData(ResizeAnchor.Right, 1, null)]
+    [InlineData(ResizeAnchor.Right, 2, 0)]
+    [InlineData(ResizeAnchor.Right, 4, 2)]
+    public void ACoverResizeMovesTheHotspotWithTheKeptRegionOrFails(ResizeAnchor anchor, int column, int? expectedColumn)
+    {
+        // 5x3 -> 3x3 keeps three of the five columns, at the anchor
+        using var image = BuildIds(5, 3);
+        image.Frames[0].Metadata.Hotspot = new Point(column, 2);
+        var options = new ResizeOptions(3, 3) { Mode = ResizeMode.Cover, Anchor = anchor };
+        if (expectedColumn is { } expected)
+        {
+            image.Resize(options, Ct);
+            Assert.Equal(new Point(expected, 2), image.Frames[0].Metadata.Hotspot);
+            Assert.Equal(Id(column, 2), image.Frames[0][expected, 2]); // it still designates the same pixel
+            return;
+        }
+
+        var exception = Assert.Throws<UnsupportedImageFeatureException>(() => image.Resize(options, Ct));
+        Assert.Equal("Cursor hotspot outside the kept region", exception.Feature);
+        Assert.Equal(new Size(5, 3), image.Size);
+        Assert.Equal(new Point(column, 2), image.Frames[0].Metadata.Hotspot);
+        AssertIds(image.Frames[0], 5, 3, (x, y) => Id(x, y));
+    }
+
+    [Theory]
+    [InlineData(0, 0)] // half of this pixel is kept: the hotspot stays on the first column
+    [InlineData(1, 0)]
+    [InlineData(2, 1)]
+    [InlineData(3, 2)] // half of this pixel is kept too
+    public void AHotspotOnAPartlyKeptPixelStaysInsideTheFrame(int column, int expectedColumn)
+    {
+        // 4x1 -> 3x1 centered keeps the source interval [0.5, 3.5)
+        using var image = BuildIds(4, 1);
+        image.Frames[0].Metadata.Hotspot = new Point(column, 0);
+        image.Resize(new ResizeOptions(3, 1) { Mode = ResizeMode.Cover, Anchor = ResizeAnchor.Center }, Ct);
+        Assert.Equal(new Point(expectedColumn, 0), image.Frames[0].Metadata.Hotspot);
+    }
+
+    // -----------------------------------------------------------------------------------------------------------------
     // Helpers
     // -----------------------------------------------------------------------------------------------------------------
 
@@ -878,6 +970,7 @@ public sealed class ResizeTests
 
         image.SetPosterFrame(image.Frames[1]);
         image.Frames[0].Metadata.Duration = new FrameDuration(1, 3);
+        image.Frames[0].Metadata.Hotspot = new Point(3, 2);
         image.Metadata.ExifProfile = new ExifProfile(MetadataBlob.FromOwnedArray(new TiffBuilder(bigEndian: false)
             .Ifd0(TiffBuilder.Short(ExifTiff.ImageWidthTag, 4), TiffBuilder.Short(ExifTiff.ImageLengthTag, 3))
             .Thumbnail("THUMB"u8.ToArray())

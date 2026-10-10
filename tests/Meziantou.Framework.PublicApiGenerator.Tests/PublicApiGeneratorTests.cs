@@ -907,6 +907,449 @@ public sealed class PublicApiGeneratorTests
     }
 
     [Fact]
+    public async Task NewModifier_MembersHidingBaseClassMembers()
+    {
+        await Validate("""
+            namespace Demo;
+
+            public class Base
+            {
+                public int Field;
+                public int Property { get; set; }
+                public int this[int index] => 0;
+                public event EventHandler? Event;
+                public void Method() { }
+                public void Method(int value) { }
+                public void Generic<T>(T value) { }
+                public virtual void Virtual() { }
+                public static void Static() { }
+                protected void Protected() { }
+                internal void Internal() { }
+                public void RefKind(ref int value) { }
+                public void ReadOnlyRefKind(in int value) { }
+                public class Nested { }
+                public class GenericNested<T> { }
+                public delegate void Callback();
+                public enum Kind { A }
+            }
+
+            public class Derived : Base
+            {
+                public new const int Field = 1;
+                public new string? Property { get; set; }
+                public new string? this[int index] => null;
+                public int this[string index] => 0;
+                public new event EventHandler? Event;
+                public new int Method() => 0;
+                public void Method(string value) { }
+                public new void Generic<T>(T value) { }
+                public void Generic<T1, T2>(T1 value) { }
+                public new virtual void Virtual() { }
+                public new static void Static() { }
+                public new void Protected() { }
+                public new void Internal() { }
+                public void RefKind(out int value) => throw null!;
+                public new void ReadOnlyRefKind(ref readonly int value) { }
+                public override string? ToString() => null;
+                public new class Nested { }
+                public class GenericNested { }
+                public new delegate void Callback();
+                public new enum Kind { B }
+            }
+            """, """
+            #nullable enable
+
+            namespace Demo
+            {
+                public class Base
+                {
+                    public int Field;
+                    public int Property { get => throw null; set { } }
+                    public int this[int index] { get => throw null; }
+                    public event System.EventHandler? Event;
+                    public void Method() { }
+                    public void Method(int value) { }
+                    public void Generic<T>(T value) { }
+                    public virtual void Virtual() { }
+                    public static void Static() { }
+                    protected void Protected() { }
+                    public void RefKind(ref int value) { }
+                    public void ReadOnlyRefKind(in int value) { }
+                    public delegate void Callback();
+                    public class GenericNested<T>
+                    {
+                    }
+                    public enum Kind
+                    {
+                        A = 0,
+                    }
+                    public class Nested
+                    {
+                    }
+                }
+
+                public class Derived : global::Demo.Base
+                {
+                    public new const int Field = 1;
+                    public new string? Property { get => throw null; set { } }
+                    public new string? this[int index] { get => throw null; }
+                    public int this[string index] { get => throw null; }
+                    public new event System.EventHandler? Event;
+                    public new int Method() => throw null;
+                    public void Method(string value) { }
+                    public new void Generic<T>(T value) { }
+                    public void Generic<T1, T2>(T1 value) { }
+                    public new virtual void Virtual() { }
+                    public new static void Static() { }
+                    public new void Protected() { }
+                    public void Internal() { }
+                    public void RefKind(out int value) => throw null;
+                    public new void ReadOnlyRefKind(ref readonly int value) { }
+                    public override string? ToString() => throw null;
+                    public new delegate void Callback();
+                    public class GenericNested
+                    {
+                    }
+                    public new enum Kind
+                    {
+                        B = 0,
+                    }
+                    public new class Nested
+                    {
+                    }
+                }
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task NewModifier_GenericBaseClass()
+    {
+        await Validate("""
+            namespace Demo;
+
+            public class Base<T>
+            {
+                public void Method(T value) { }
+                public void Method(List<T> value) { }
+                public class Nested { }
+            }
+
+            public class Derived : Base<int>
+            {
+                public new void Method(int value) { }
+                public void Method(string value) { }
+                public new void Method(List<int> value) { }
+                public void Method(List<string> value) { }
+            }
+
+            public class Derived<T> : Base<T[]>
+            {
+                public new void Method(T[] value) { }
+                public void Method(T value) { }
+                public void Method<TMethod>(TMethod[] value) { }
+                public new class Nested { }
+                public class Nested<TNested> { }
+            }
+
+            public class MostDerived : Derived<string>
+            {
+                public new void Method(string[] value) { }
+                public new void Method(string value) { }
+                public new void Method<TMethod>(TMethod[] value) { }
+                public void Method(List<string> value) { }
+                public new void Method(List<string[]> value) { }
+            }
+            """, """
+            #nullable enable
+
+            namespace Demo
+            {
+                public class Base<T>
+                {
+                    public void Method(T value) { }
+                    public void Method(System.Collections.Generic.List<T> value) { }
+                    public class Nested
+                    {
+                    }
+                }
+
+                public class Derived : global::Demo.Base<int>
+                {
+                    public new void Method(int value) { }
+                    public void Method(string value) { }
+                    public new void Method(System.Collections.Generic.List<int> value) { }
+                    public void Method(System.Collections.Generic.List<string> value) { }
+                }
+
+                public class Derived<T> : global::Demo.Base<T[]>
+                {
+                    public new void Method(T[] value) { }
+                    public void Method(T value) { }
+                    public void Method<TMethod>(TMethod[] value) { }
+                    public new class Nested
+                    {
+                    }
+                    public class Nested<TNested>
+                    {
+                    }
+                }
+
+                public class MostDerived : global::Demo.Derived<string>
+                {
+                    public new void Method(string[] value) { }
+                    public new void Method(string value) { }
+                    public new void Method<TMethod>(TMethod[] value) { }
+                    public void Method(System.Collections.Generic.List<string> value) { }
+                    public new void Method(System.Collections.Generic.List<string[]> value) { }
+                }
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task NewModifier_InterfaceMembersHidingBaseInterfaceMembers()
+    {
+        await Validate("""
+            namespace Demo;
+
+            public interface IBase
+            {
+                int Value { get; }
+                void Method();
+                event EventHandler? Event;
+            }
+
+            public interface IBase<T>
+            {
+                T Convert(T value);
+            }
+
+            public interface IDerived : IBase, IBase<int>
+            {
+                new string Value { get; }
+                new void Method();
+                void Method(int value);
+                new event EventHandler? Event;
+                new int Convert(int value);
+                string Convert(string value);
+                string ToString();
+            }
+
+            public interface IMostDerived : IDerived
+            {
+                new void Method();
+                static new void Method(int value) { }
+            }
+            """, """
+            #nullable enable
+
+            namespace Demo
+            {
+                public interface IBase
+                {
+                    int Value { get; }
+                    public event System.EventHandler? Event;
+                    void Method();
+                }
+
+                public interface IBase<T>
+                {
+                    T Convert(T value);
+                }
+
+                public interface IDerived : global::Demo.IBase, global::Demo.IBase<int>
+                {
+                    new string Value { get; }
+                    public new event System.EventHandler? Event;
+                    new void Method();
+                    void Method(int value);
+                    new int Convert(int value);
+                    string Convert(string value);
+                    string ToString();
+                }
+
+                public interface IMostDerived : global::Demo.IBase, global::Demo.IBase<int>, global::Demo.IDerived
+                {
+                    new void Method();
+                    public new static void Method(int value) { }
+                }
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task NewModifier_MembersHidingMembersOfAnotherAssembly()
+    {
+        await Validate("""
+            namespace Demo;
+
+            public class SampleRandom : Random
+            {
+                public new static SampleRandom? Shared => null;
+                public new int Next() => 0;
+                public int Next(string value) => 0;
+                public new Type GetType() => typeof(SampleRandom);
+                public new static bool Equals(object? left, object? right) => false;
+                public bool Equals(SampleRandom? other) => false;
+                public new object MemberwiseClone() => this;
+                public void Finalize(int value) { }
+            }
+
+            public class SampleSource : TaskCompletionSource<string>
+            {
+                public new Task<string>? Task => null;
+                public new void SetResult(string result) { }
+                public void SetResult(int result) { }
+            }
+
+            public struct SampleStruct
+            {
+                public new string ToString() => "";
+            }
+
+            public static class SampleStatic
+            {
+                public new static bool ReferenceEquals(object? left, object? right) => false;
+                public static bool ReferenceEquals(object? value) => false;
+            }
+
+            public interface ISampleEnumerable<T> : IEnumerable<T>
+            {
+                new IEnumerator<T> GetEnumerator();
+            }
+            """, """
+            #nullable enable
+
+            namespace Demo
+            {
+                public interface ISampleEnumerable<T> : System.Collections.Generic.IEnumerable<T>, System.Collections.IEnumerable
+                {
+                    new System.Collections.Generic.IEnumerator<T> GetEnumerator();
+                }
+
+                public class SampleRandom : System.Random
+                {
+                    public new static global::Demo.SampleRandom? Shared { get => throw null; }
+                    public new int Next() => throw null;
+                    public int Next(string value) => throw null;
+                    public new System.Type GetType() => throw null;
+                    public new static bool Equals(object? left, object? right) => throw null;
+                    public bool Equals(global::Demo.SampleRandom? other) => throw null;
+                    public new object MemberwiseClone() => throw null;
+                    public void Finalize(int value) { }
+                }
+
+                public class SampleSource : System.Threading.Tasks.TaskCompletionSource<string>
+                {
+                    public new System.Threading.Tasks.Task<string>? Task { get => throw null; }
+                    public new void SetResult(string result) { }
+                    public void SetResult(int result) { }
+                }
+
+                public static class SampleStatic
+                {
+                    public new static bool ReferenceEquals(object? left, object? right) => throw null;
+                    public static bool ReferenceEquals(object? value) => throw null;
+                }
+
+                public struct SampleStruct
+                {
+                    public new string ToString() => throw null;
+                }
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task Override_CovariantReturnType()
+    {
+        await Validate("""
+            namespace Demo;
+
+            public class Base
+            {
+                public virtual Base Clone() => this;
+                public virtual object Value => "";
+            }
+
+            public class Derived : Base
+            {
+                public override Derived Clone() => this;
+                public override string Value => "";
+            }
+
+            public class MostDerived : Derived
+            {
+                public sealed override MostDerived Clone() => this;
+            }
+            """, """
+            #nullable enable
+
+            namespace Demo
+            {
+                public class Base
+                {
+                    public virtual object Value { get => throw null; }
+                    public virtual global::Demo.Base Clone() => throw null;
+                }
+
+                public class Derived : global::Demo.Base
+                {
+                    public override string Value { get => throw null; }
+                    public override global::Demo.Derived Clone() => throw null;
+                }
+
+                public class MostDerived : global::Demo.Derived
+                {
+                    public sealed override global::Demo.MostDerived Clone() => throw null;
+                }
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task NewModifier_Model()
+    {
+        var assembly = await ReadAssembly("""
+            namespace Demo;
+
+            public class Base
+            {
+                public int Field;
+                public int Property { get; set; }
+                public void Method() { }
+                public void Overload() { }
+                public class Nested { }
+            }
+
+            public class Derived : Base
+            {
+                public new int Field;
+                public new int Property { get; set; }
+                public new void Method() { }
+                public void Overload(int value) { }
+                public new string ToString() => "";
+                public new class Nested { }
+                public class Other { }
+            }
+            """);
+
+        Assert.Equal(
+            ["F:Demo.Derived.Field", "M:Demo.Derived.Method", "M:Demo.Derived.ToString", "P:Demo.Derived.Property", "T:Demo.Derived.Nested"],
+            assembly.GetAllSymbols().Where(symbol => symbol is PublicApiMember { IsNew: true } or PublicApiType { IsNew: true }).Select(symbol => symbol.DocumentationId).Order(StringComparer.Ordinal));
+
+        var property = (PublicApiProperty)assembly.FindSymbolByDocumentationId("P:Demo.Derived.Property")!;
+        Assert.False(property.GetMethod!.IsNew);
+        Assert.Equal("public new int Property { get; set; }", PublicApiFormatter.Format(property).Text);
+        Assert.Equal("public new void Method()", PublicApiFormatter.Format(assembly.FindSymbolByDocumentationId("M:Demo.Derived.Method")!).Text);
+        Assert.Equal("public void Overload(int value)", PublicApiFormatter.Format(assembly.FindSymbolByDocumentationId("M:Demo.Derived.Overload(System.Int32)")!).Text);
+        Assert.Equal("public new int Field", PublicApiFormatter.Format(assembly.FindSymbolByDocumentationId("F:Demo.Derived.Field")!).Text);
+        Assert.Equal("public new class Nested", PublicApiFormatter.Format(assembly.FindSymbolByDocumentationId("T:Demo.Derived.Nested")!).Text);
+        Assert.Equal("public class Other", PublicApiFormatter.Format(assembly.FindSymbolByDocumentationId("T:Demo.Derived.Other")!).Text);
+    }
+
+    [Fact]
     public async Task Struct_Empty()
     {
         await Validate("""
@@ -3405,7 +3848,7 @@ public sealed class PublicApiGeneratorTests
 
                 public class Inherited : global::Demo.Sample<(int A, int B)>, global::Demo.IBase<(string Name, int Count)>
                 {
-                    public (string Name, int Count) Value { get => throw null; }
+                    public new (string Name, int Count) Value { get => throw null; }
                 }
 
                 public struct SampleStruct : System.IEquatable<(int A, (string B, int C) D)>
@@ -6625,6 +7068,8 @@ public sealed class PublicApiGeneratorTests
                 <Nullable>{{(compilerOptions.Nullable ? "enable" : "disable")}}</Nullable>
                 <ImplicitUsings>enable</ImplicitUsings>
                 <AllowUnsafeBlocks>true</AllowUnsafeBlocks>{{features}}
+                <!-- A member that hides an inherited member must have the new modifier, and the others must not -->
+                <WarningsAsErrors>$(WarningsAsErrors);CS0108;CS0109;CS0114</WarningsAsErrors>
               </PropertyGroup>
             </Project>
             """);

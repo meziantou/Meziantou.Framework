@@ -15,8 +15,8 @@ namespace Meziantou.Framework.Html
         public Meziantou.Framework.Html.HtmlElement? OwnerElement { get => throw null; }
         public override Meziantou.Framework.Html.HtmlNodeType NodeType { get => throw null; }
         public override int ParentIndex { get => throw null; }
-        public Meziantou.Framework.Html.HtmlAttribute? NextSibling { get => throw null; }
-        public Meziantou.Framework.Html.HtmlAttribute? PreviousSibling { get => throw null; }
+        public new Meziantou.Framework.Html.HtmlAttribute? NextSibling { get => throw null; }
+        public new Meziantou.Framework.Html.HtmlAttribute? PreviousSibling { get => throw null; }
         public override string? Value { get => throw null; set { } }
         public override void WriteTo(System.IO.TextWriter writer) { }
         public override void WriteContentTo(System.IO.TextWriter writer) { }
@@ -105,7 +105,7 @@ namespace Meziantou.Framework.Html
     {
         public System.Text.Encoding? StreamEncoding { get => throw null; }
         public System.Text.Encoding? DetectedEncoding { get => throw null; }
-        public System.Uri? BaseAddress { get => throw null; set { } }
+        public new System.Uri? BaseAddress { get => throw null; set { } }
         public bool ReaderWasRestarted { get => throw null; }
         public Meziantou.Framework.Html.HtmlElement? DocumentType { get => throw null; }
         public Meziantou.Framework.Html.HtmlElement? HtmlElement { get => throw null; }

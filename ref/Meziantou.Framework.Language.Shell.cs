@@ -1369,7 +1369,7 @@ namespace Meziantou.Framework.Language.Shell
 
     public abstract class ShellSyntaxNode : Meziantou.Framework.Language.SyntaxNode
     {
-        public Meziantou.Framework.Language.Shell.ShellSyntaxNode? Parent { get => throw null; }
+        public new Meziantou.Framework.Language.Shell.ShellSyntaxNode? Parent { get => throw null; }
         public Meziantou.Framework.Language.Shell.ShellDialect? Dialect { get => throw null; }
         public Meziantou.Framework.Language.Shell.SyntaxKind Kind() => throw null;
         public System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.SyntaxTrivia> DescendantComments() => throw null;
@@ -1485,7 +1485,7 @@ namespace Meziantou.Framework.Language.Shell
         public Meziantou.Framework.Language.Shell.ShellDialect Dialect { get => throw null; }
         public override string? FilePath { get => throw null; }
         public override Meziantou.Framework.Language.SourceText GetText() => throw null;
-        public Meziantou.Framework.Language.Shell.ShellScriptSyntax GetRoot() => throw null;
+        public new Meziantou.Framework.Language.Shell.ShellScriptSyntax GetRoot() => throw null;
         public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Diagnostic> GetDiagnostics() => throw null;
         public static Meziantou.Framework.Language.Shell.ShellSyntaxTree ParseText(string text, Meziantou.Framework.Language.Shell.ShellDialect dialect) => throw null;
         public static Meziantou.Framework.Language.Shell.ShellSyntaxTree ParseText(string text, Meziantou.Framework.Language.Shell.ShellParseOptions options) => throw null;

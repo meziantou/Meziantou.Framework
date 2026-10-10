@@ -47,6 +47,7 @@ public sealed class PublicApiType : PublicApiSymbol
         IsRefLike = flags.IsRefLike;
         IsClosed = flags.IsClosed;
         IsUnion = flags.IsUnion;
+        IsNew = flags.IsNew;
         GenericParameters = allGenericParameters[^genericParameterCount..];
         BaseType = baseType;
         Interfaces = interfaces;
@@ -92,6 +93,12 @@ public sealed class PublicApiType : PublicApiSymbol
 
     /// <summary>Gets a value indicating whether the struct is a C# <c>union</c> declaration. See <see cref="UnionCaseTypes"/>.</summary>
     public bool IsUnion { get; }
+
+    /// <summary>
+    /// Gets a value indicating whether the nested type hides a member its containing type inherits from a base type, that is visible outside its assembly (<c>new</c> in C#).
+    /// The modifier is not stored in metadata, so it is inferred from the members of the base types. The base types that cannot be found are ignored.
+    /// </summary>
+    public bool IsNew { get; }
 
     /// <summary>Gets the generic parameters declared by this type. Nested types do not repeat the generic parameters of their containing types.</summary>
     public ImmutableArray<PublicApiGenericParameter> GenericParameters { get; }

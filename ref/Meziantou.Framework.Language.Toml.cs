@@ -332,7 +332,7 @@ namespace Meziantou.Framework.Language.Toml
 
     public abstract class TomlSyntaxNode : Meziantou.Framework.Language.SyntaxNode
     {
-        public Meziantou.Framework.Language.Toml.TomlSyntaxNode? Parent { get => throw null; }
+        public new Meziantou.Framework.Language.Toml.TomlSyntaxNode? Parent { get => throw null; }
         public Meziantou.Framework.Language.Toml.SyntaxKind Kind() => throw null;
         public abstract void Accept(Meziantou.Framework.Language.Toml.TomlSyntaxVisitor visitor);
         public abstract TResult? Accept<TResult>(Meziantou.Framework.Language.Toml.TomlSyntaxVisitor<TResult> visitor);
@@ -367,7 +367,7 @@ namespace Meziantou.Framework.Language.Toml
         public override string? FilePath { get => throw null; }
         public Meziantou.Framework.Language.Toml.TomlParseOptions Options { get => throw null; }
         public override Meziantou.Framework.Language.SourceText GetText() => throw null;
-        public Meziantou.Framework.Language.Toml.TomlDocumentSyntax GetRoot() => throw null;
+        public new Meziantou.Framework.Language.Toml.TomlDocumentSyntax GetRoot() => throw null;
         public static Meziantou.Framework.Language.Toml.TomlSyntaxTree ParseText(string text, string? path = null) => throw null;
         public static Meziantou.Framework.Language.Toml.TomlSyntaxTree ParseText(string text, Meziantou.Framework.Language.Toml.TomlParseOptions? options, string? path = null) => throw null;
         public static Meziantou.Framework.Language.Toml.TomlSyntaxTree ParseText(Meziantou.Framework.Language.SourceText text, string? path = null) => throw null;
@@ -378,7 +378,7 @@ namespace Meziantou.Framework.Language.Toml
         public override System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.Diagnostic> GetDiagnostics(Meziantou.Framework.Language.SyntaxNode node) => throw null;
         public override System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.Diagnostic> GetDiagnostics(Meziantou.Framework.Language.SyntaxToken token) => throw null;
         public override System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.Diagnostic> GetDiagnostics(Meziantou.Framework.Language.SyntaxTrivia trivia) => throw null;
-        public Meziantou.Framework.Language.Toml.TomlSyntaxTree WithChangedText(Meziantou.Framework.Language.SourceText newText) => throw null;
+        public new Meziantou.Framework.Language.Toml.TomlSyntaxTree WithChangedText(Meziantou.Framework.Language.SourceText newText) => throw null;
         public Meziantou.Framework.Language.Toml.TomlSyntaxTree WithChanges(params Meziantou.Framework.Language.TextChange[] changes) => throw null;
         public Meziantou.Framework.Language.Toml.TomlSyntaxTree WithChanges(System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.TextChange> changes) => throw null;
         public Meziantou.Framework.Language.Toml.TomlSyntaxTree WithRoot(Meziantou.Framework.Language.Toml.TomlDocumentSyntax root) => throw null;

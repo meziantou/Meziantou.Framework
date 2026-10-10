@@ -102,6 +102,7 @@ internal sealed class CSharpCompilableFormatter
         if (type.TypeKind == PublicApiTypeKind.Enum)
         {
             writer.Keyword(accessibility);
+            WriteNewModifier(writer, type);
             writer.Space();
             writer.Keyword("enum");
             writer.Space();
@@ -135,6 +136,7 @@ internal sealed class CSharpCompilableFormatter
         }
 
         writer.Keyword(accessibility);
+        WriteNewModifier(writer, type);
         if (type.TypeKind == PublicApiTypeKind.Class)
         {
             if (type.IsStatic)
@@ -273,10 +275,20 @@ internal sealed class CSharpCompilableFormatter
         };
     }
 
+    private static void WriteNewModifier(DeclarationWriter writer, PublicApiType type)
+    {
+        if (type.IsNew)
+        {
+            writer.Space();
+            writer.Keyword("new");
+        }
+    }
+
     private void WriteDelegate(DeclarationWriter writer, PublicApiType type, string accessibility)
     {
         var invokeMethod = type.DelegateInvokeMethod!;
         writer.Keyword(accessibility);
+        WriteNewModifier(writer, type);
 
         // The unsafe modifier is not allowed on type declarations under the updated memory safety rules
         if (!type.Assembly.UsesUpdatedMemorySafetyRules && HasPointerInSignature(invokeMethod))
@@ -530,6 +542,11 @@ internal sealed class CSharpCompilableFormatter
     {
         WriteMemberAttributes(writer, field.Attributes);
         var modifiers = new List<string> { CSharpSyntaxFacts.GetAccessibilityText(field.Accessibility) };
+        if (field.IsNew)
+        {
+            modifiers.Add("new");
+        }
+
         if (field.IsStatic && !field.IsConst)
         {
             modifiers.Add("static");
@@ -598,6 +615,11 @@ internal sealed class CSharpCompilableFormatter
             if (!(isInterface && property.IsAbstract))
             {
                 modifiers.Add(CSharpSyntaxFacts.GetAccessibilityText(property.Accessibility));
+            }
+
+            if (property.IsNew)
+            {
+                modifiers.Add("new");
             }
 
             if (property.IsStatic)
@@ -788,6 +810,11 @@ internal sealed class CSharpCompilableFormatter
         }
 
         var modifiers = new List<string> { CSharpSyntaxFacts.GetAccessibilityText(@event.Accessibility) };
+        if (@event.IsNew)
+        {
+            modifiers.Add("new");
+        }
+
         if (@event.IsStatic)
         {
             modifiers.Add("static");
@@ -844,6 +871,11 @@ internal sealed class CSharpCompilableFormatter
             if (!(isInterface && method.IsAbstract))
             {
                 modifiers.Add(CSharpSyntaxFacts.GetAccessibilityText(method.Accessibility));
+            }
+
+            if (method.IsNew)
+            {
+                modifiers.Add("new");
             }
 
             if (method.IsStatic)

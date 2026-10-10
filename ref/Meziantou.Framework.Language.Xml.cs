@@ -349,7 +349,7 @@ namespace Meziantou.Framework.Language.Xml
 
     public abstract class XmlSyntaxNode : Meziantou.Framework.Language.SyntaxNode
     {
-        public Meziantou.Framework.Language.Xml.XmlSyntaxNode? Parent { get => throw null; }
+        public new Meziantou.Framework.Language.Xml.XmlSyntaxNode? Parent { get => throw null; }
         public Meziantou.Framework.Language.Xml.SyntaxKind Kind() => throw null;
         public virtual System.Xml.XPath.XPathNavigator CreateNavigator() => throw null;
         public System.Collections.Generic.IEnumerable<System.Xml.XPath.XPathNavigator> SelectNodes(string xpath) => throw null;
@@ -390,7 +390,7 @@ namespace Meziantou.Framework.Language.Xml
     {
         public override string? FilePath { get => throw null; }
         public override Meziantou.Framework.Language.SourceText GetText() => throw null;
-        public Meziantou.Framework.Language.Xml.XmlDocumentSyntax GetRoot() => throw null;
+        public new Meziantou.Framework.Language.Xml.XmlDocumentSyntax GetRoot() => throw null;
         public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Diagnostic> GetDiagnostics() => throw null;
         public static Meziantou.Framework.Language.Xml.XmlSyntaxTree ParseText([System.Diagnostics.CodeAnalysis.StringSyntax("Xml")] string text) => throw null;
         public static Meziantou.Framework.Language.Xml.XmlSyntaxTree ParseText(Meziantou.Framework.Language.SourceText text) => throw null;

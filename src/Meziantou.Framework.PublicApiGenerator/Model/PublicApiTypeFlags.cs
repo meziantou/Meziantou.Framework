@@ -7,4 +7,5 @@ internal readonly record struct PublicApiTypeFlags(
     bool IsReadOnly = false,
     bool IsRefLike = false,
     bool IsClosed = false,
-    bool IsUnion = false);
+    bool IsUnion = false,
+    bool IsNew = false);

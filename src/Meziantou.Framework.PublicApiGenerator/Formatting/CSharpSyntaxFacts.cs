@@ -24,6 +24,7 @@ internal static class CSharpSyntaxFacts
         "System.Runtime.CompilerServices.NullableAttribute",
         "System.Runtime.CompilerServices.NullableContextAttribute",
         "System.Runtime.CompilerServices.IsUnmanagedAttribute",
+        PublicApiMetadataReader.PreserveBaseOverridesAttributeFullName,
         "System.Reflection.DefaultMemberAttribute",
         "System.Diagnostics.DebuggableAttribute",
         "System.Diagnostics.DebuggerNonUserCodeAttribute",

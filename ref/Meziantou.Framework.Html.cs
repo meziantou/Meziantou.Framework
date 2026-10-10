@@ -28,10 +28,18 @@ namespace Meziantou.Framework.Html
     public sealed class HtmlAttributeList : System.Collections.Generic.ICollection<Meziantou.Framework.Html.HtmlAttribute>, System.Collections.Generic.IEnumerable<Meziantou.Framework.Html.HtmlAttribute>, System.Collections.Generic.IList<Meziantou.Framework.Html.HtmlAttribute>, System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.Html.HtmlAttribute>, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Html.HtmlAttribute>, System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList, System.Collections.Specialized.INotifyCollectionChanged
     {
         public Meziantou.Framework.Html.HtmlNode Parent { get => throw null; }
+        [System.Diagnostics.CodeAnalysis.MaybeNull]
         public Meziantou.Framework.Html.HtmlAttribute this[string name] { get => throw null; set { } }
+        [System.Diagnostics.CodeAnalysis.MaybeNull]
         public Meziantou.Framework.Html.HtmlAttribute this[string localName, string namespaceURI] { get => throw null; set { } }
         public Meziantou.Framework.Html.HtmlAttribute this[int index] { get => throw null; set { } }
         public int Count { get => throw null; }
+        bool System.Collections.Generic.ICollection<Meziantou.Framework.Html.HtmlAttribute>.IsReadOnly { get => throw null; }
+        bool System.Collections.IList.IsFixedSize { get => throw null; }
+        bool System.Collections.IList.IsReadOnly { get => throw null; }
+        object? System.Collections.IList.this[int index] { get => throw null; set { } }
+        bool System.Collections.ICollection.IsSynchronized { get => throw null; }
+        object System.Collections.ICollection.SyncRoot { get => throw null; }
         public event System.Collections.Specialized.NotifyCollectionChangedEventHandler? CollectionChanged;
         public Meziantou.Framework.Html.HtmlAttribute Add(string prefix, string localName, string namespaceURI) => throw null;
         public Meziantou.Framework.Html.HtmlAttribute Add(string prefix, string localName, string namespaceURI, string? value) => throw null;
@@ -54,6 +62,7 @@ namespace Meziantou.Framework.Html
         public bool Remove(Meziantou.Framework.Html.HtmlAttribute item) => throw null;
         public System.Collections.Generic.IEnumerator<Meziantou.Framework.Html.HtmlAttribute> GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
+        void System.Collections.Generic.ICollection<Meziantou.Framework.Html.HtmlAttribute>.Clear() { }
         int System.Collections.IList.Add(object? value) => throw null;
         void System.Collections.IList.Clear() { }
         bool System.Collections.IList.Contains(object? value) => throw null;
@@ -61,6 +70,7 @@ namespace Meziantou.Framework.Html
         void System.Collections.IList.Insert(int index, object? value) { }
         void System.Collections.IList.Remove(object? value) { }
         void System.Collections.IList.RemoveAt(int index) { }
+        void System.Collections.Generic.IList<Meziantou.Framework.Html.HtmlAttribute>.RemoveAt(int index) { }
         void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
     }
 
@@ -390,6 +400,12 @@ namespace Meziantou.Framework.Html
         public Meziantou.Framework.Html.HtmlNode? this[string localName, string namespaceURI] { get => throw null; }
         public Meziantou.Framework.Html.HtmlNode this[int index] { get => throw null; set { } }
         public int Count { get => throw null; }
+        bool System.Collections.Generic.ICollection<Meziantou.Framework.Html.HtmlNode>.IsReadOnly { get => throw null; }
+        bool System.Collections.IList.IsFixedSize { get => throw null; }
+        bool System.Collections.IList.IsReadOnly { get => throw null; }
+        bool System.Collections.ICollection.IsSynchronized { get => throw null; }
+        object System.Collections.ICollection.SyncRoot { get => throw null; }
+        object? System.Collections.IList.this[int index] { get => throw null; set { } }
         public event System.Collections.Specialized.NotifyCollectionChangedEventHandler? CollectionChanged;
         public void Replace(Meziantou.Framework.Html.HtmlNode newChild, Meziantou.Framework.Html.HtmlNode oldChild) { }
         public void RemoveAll() { }
@@ -403,6 +419,7 @@ namespace Meziantou.Framework.Html
         public void CopyTo(Meziantou.Framework.Html.HtmlNode[] array, int arrayIndex) { }
         public System.Collections.Generic.IEnumerator<Meziantou.Framework.Html.HtmlNode> GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
+        void System.Collections.Generic.ICollection<Meziantou.Framework.Html.HtmlNode>.Clear() { }
         int System.Collections.IList.Add(object? value) => throw null;
         void System.Collections.IList.Clear() { }
         bool System.Collections.IList.Contains(object? value) => throw null;
@@ -410,6 +427,7 @@ namespace Meziantou.Framework.Html
         void System.Collections.IList.Insert(int index, object? value) { }
         void System.Collections.IList.Remove(object? value) { }
         void System.Collections.IList.RemoveAt(int index) { }
+        void System.Collections.Generic.IList<Meziantou.Framework.Html.HtmlNode>.RemoveAt(int index) { }
         void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
     }
 

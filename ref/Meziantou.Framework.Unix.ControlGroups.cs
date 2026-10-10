@@ -84,7 +84,7 @@ namespace Meziantou.Framework.Unix.ControlGroups
         public bool IsConfigured { get => throw null; }
         public T Value { get => throw null; }
         public bool TryGetValue([System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out T value) => throw null;
-        public T GetValueOrDefault() => throw null;
+        public T? GetValueOrDefault() => throw null;
         public T GetValueOrDefault(T defaultValue) => throw null;
         public bool Equals(Meziantou.Framework.Unix.ControlGroups.CGroupValue<T> other) => throw null;
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;

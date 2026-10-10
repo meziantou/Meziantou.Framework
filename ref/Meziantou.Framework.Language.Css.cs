@@ -13,7 +13,7 @@ namespace Meziantou.Framework.Language.Css
         public Meziantou.Framework.Language.Css.CssAnPlusBSyntax Update(Meziantou.Framework.Language.SyntaxTokenList tokens) => throw null;
         public Meziantou.Framework.Language.Css.CssAnPlusBSyntax WithTokens(Meziantou.Framework.Language.SyntaxTokenList tokens) => throw null;
         public override void Accept(Meziantou.Framework.Language.Css.CssSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public sealed class CssAtRuleSyntax : Meziantou.Framework.Language.Css.CssRuleSyntax
@@ -31,7 +31,7 @@ namespace Meziantou.Framework.Language.Css
         public Meziantou.Framework.Language.Css.CssAtRuleSyntax WithBlock(Meziantou.Framework.Language.Css.CssBlockSyntax? block) => throw null;
         public Meziantou.Framework.Language.Css.CssAtRuleSyntax WithSemicolonToken(Meziantou.Framework.Language.SyntaxToken semicolonToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Css.CssSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public enum CssAttributeOperator
@@ -69,7 +69,7 @@ namespace Meziantou.Framework.Language.Css
         public Meziantou.Framework.Language.Css.CssAttributeSelectorSyntax WithModifierToken(Meziantou.Framework.Language.SyntaxToken modifierToken) => throw null;
         public Meziantou.Framework.Language.Css.CssAttributeSelectorSyntax WithCloseBracketToken(Meziantou.Framework.Language.SyntaxToken closeBracketToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Css.CssSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public sealed class CssBadDeclarationSyntax : Meziantou.Framework.Language.Css.CssStatementSyntax
@@ -80,7 +80,7 @@ namespace Meziantou.Framework.Language.Css
         public Meziantou.Framework.Language.Css.CssBadDeclarationSyntax WithValues(Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Css.CssComponentValueSyntax> values) => throw null;
         public Meziantou.Framework.Language.Css.CssBadDeclarationSyntax WithSemicolonToken(Meziantou.Framework.Language.SyntaxToken semicolonToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Css.CssSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public sealed class CssBlockSyntax : Meziantou.Framework.Language.Css.CssSyntaxNode
@@ -95,7 +95,7 @@ namespace Meziantou.Framework.Language.Css
         public Meziantou.Framework.Language.Css.CssBlockSyntax WithStatements(Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Css.CssStatementSyntax> statements) => throw null;
         public Meziantou.Framework.Language.Css.CssBlockSyntax WithCloseBraceToken(Meziantou.Framework.Language.SyntaxToken closeBraceToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Css.CssSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public sealed class CssBooleanFeatureSyntax : Meziantou.Framework.Language.Css.CssConditionSyntax
@@ -109,7 +109,7 @@ namespace Meziantou.Framework.Language.Css
         public Meziantou.Framework.Language.Css.CssBooleanFeatureSyntax WithNameToken(Meziantou.Framework.Language.SyntaxToken nameToken) => throw null;
         public Meziantou.Framework.Language.Css.CssBooleanFeatureSyntax WithCloseParenToken(Meziantou.Framework.Language.SyntaxToken closeParenToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Css.CssSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public sealed class CssClassSelectorSyntax : Meziantou.Framework.Language.Css.CssSimpleSelectorSyntax
@@ -121,7 +121,7 @@ namespace Meziantou.Framework.Language.Css
         public Meziantou.Framework.Language.Css.CssClassSelectorSyntax WithDotToken(Meziantou.Framework.Language.SyntaxToken dotToken) => throw null;
         public Meziantou.Framework.Language.Css.CssClassSelectorSyntax WithNameToken(Meziantou.Framework.Language.SyntaxToken nameToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Css.CssSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public enum CssCombinatorKind
@@ -142,7 +142,7 @@ namespace Meziantou.Framework.Language.Css
         public Meziantou.Framework.Language.Css.CssCombinatorSyntax WithToken(Meziantou.Framework.Language.SyntaxToken token) => throw null;
         public Meziantou.Framework.Language.Css.CssCombinatorSyntax WithSecondToken(Meziantou.Framework.Language.SyntaxToken secondToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Css.CssSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public sealed class CssComparisonSyntax : Meziantou.Framework.Language.Css.CssSyntaxNode
@@ -153,7 +153,7 @@ namespace Meziantou.Framework.Language.Css
         public Meziantou.Framework.Language.Css.CssComparisonSyntax WithOperatorToken(Meziantou.Framework.Language.SyntaxToken operatorToken) => throw null;
         public Meziantou.Framework.Language.Css.CssComparisonSyntax WithEqualsToken(Meziantou.Framework.Language.SyntaxToken equalsToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Css.CssSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public sealed class CssComplexSelectorPartSyntax : Meziantou.Framework.Language.Css.CssSyntaxNode
@@ -165,7 +165,7 @@ namespace Meziantou.Framework.Language.Css
         public Meziantou.Framework.Language.Css.CssComplexSelectorPartSyntax WithCombinator(Meziantou.Framework.Language.Css.CssCombinatorSyntax? combinator) => throw null;
         public Meziantou.Framework.Language.Css.CssComplexSelectorPartSyntax WithCompound(Meziantou.Framework.Language.Css.CssCompoundSelectorSyntax compound) => throw null;
         public override void Accept(Meziantou.Framework.Language.Css.CssSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public sealed class CssComplexSelectorSyntax : Meziantou.Framework.Language.Css.CssSelectorSyntax
@@ -175,7 +175,7 @@ namespace Meziantou.Framework.Language.Css
         public Meziantou.Framework.Language.Css.CssComplexSelectorSyntax Update(Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Css.CssComplexSelectorPartSyntax> parts) => throw null;
         public Meziantou.Framework.Language.Css.CssComplexSelectorSyntax WithParts(Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Css.CssComplexSelectorPartSyntax> parts) => throw null;
         public override void Accept(Meziantou.Framework.Language.Css.CssSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public abstract class CssComponentValueSyntax : Meziantou.Framework.Language.Css.CssSyntaxNode
@@ -188,7 +188,7 @@ namespace Meziantou.Framework.Language.Css
         public Meziantou.Framework.Language.Css.CssCompoundSelectorSyntax Update(Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Css.CssSimpleSelectorSyntax> selectors) => throw null;
         public Meziantou.Framework.Language.Css.CssCompoundSelectorSyntax WithSelectors(Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Css.CssSimpleSelectorSyntax> selectors) => throw null;
         public override void Accept(Meziantou.Framework.Language.Css.CssSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public sealed class CssConditionChainSyntax : Meziantou.Framework.Language.Css.CssConditionSyntax
@@ -197,7 +197,7 @@ namespace Meziantou.Framework.Language.Css
         public Meziantou.Framework.Language.Css.CssConditionChainSyntax Update(Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Css.CssConditionSyntax> operands) => throw null;
         public Meziantou.Framework.Language.Css.CssConditionChainSyntax WithOperands(Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Css.CssConditionSyntax> operands) => throw null;
         public override void Accept(Meziantou.Framework.Language.Css.CssSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public sealed class CssConditionFunctionSyntax : Meziantou.Framework.Language.Css.CssConditionSyntax
@@ -210,7 +210,7 @@ namespace Meziantou.Framework.Language.Css
         public Meziantou.Framework.Language.Css.CssConditionFunctionSyntax WithArgument(Meziantou.Framework.Language.Css.CssSyntaxNode? argument) => throw null;
         public Meziantou.Framework.Language.Css.CssConditionFunctionSyntax WithCloseParenToken(Meziantou.Framework.Language.SyntaxToken closeParenToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Css.CssSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public sealed class CssConditionPreludeSyntax : Meziantou.Framework.Language.Css.CssPreludeSyntax
@@ -219,7 +219,7 @@ namespace Meziantou.Framework.Language.Css
         public Meziantou.Framework.Language.Css.CssConditionPreludeSyntax Update(Meziantou.Framework.Language.Css.CssConditionSyntax condition) => throw null;
         public Meziantou.Framework.Language.Css.CssConditionPreludeSyntax WithCondition(Meziantou.Framework.Language.Css.CssConditionSyntax condition) => throw null;
         public override void Accept(Meziantou.Framework.Language.Css.CssSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public abstract class CssConditionSyntax : Meziantou.Framework.Language.Css.CssSyntaxNode
@@ -234,7 +234,7 @@ namespace Meziantou.Framework.Language.Css
         public Meziantou.Framework.Language.Css.CssContainerConditionSyntax WithNameToken(Meziantou.Framework.Language.SyntaxToken nameToken) => throw null;
         public Meziantou.Framework.Language.Css.CssContainerConditionSyntax WithQuery(Meziantou.Framework.Language.Css.CssConditionSyntax? query) => throw null;
         public override void Accept(Meziantou.Framework.Language.Css.CssSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public sealed class CssContainerPreludeSyntax : Meziantou.Framework.Language.Css.CssPreludeSyntax
@@ -243,7 +243,7 @@ namespace Meziantou.Framework.Language.Css
         public Meziantou.Framework.Language.Css.CssContainerPreludeSyntax Update(Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Css.CssContainerConditionSyntax> conditions) => throw null;
         public Meziantou.Framework.Language.Css.CssContainerPreludeSyntax WithConditions(Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Css.CssContainerConditionSyntax> conditions) => throw null;
         public override void Accept(Meziantou.Framework.Language.Css.CssSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public sealed class CssCustomMediaPreludeSyntax : Meziantou.Framework.Language.Css.CssPreludeSyntax
@@ -254,7 +254,7 @@ namespace Meziantou.Framework.Language.Css
         public Meziantou.Framework.Language.Css.CssCustomMediaPreludeSyntax WithNameToken(Meziantou.Framework.Language.SyntaxToken nameToken) => throw null;
         public Meziantou.Framework.Language.Css.CssCustomMediaPreludeSyntax WithQueries(Meziantou.Framework.Language.Css.CssMediaQueryListSyntax queries) => throw null;
         public override void Accept(Meziantou.Framework.Language.Css.CssSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public sealed class CssDeclarationConditionSyntax : Meziantou.Framework.Language.Css.CssConditionSyntax
@@ -267,7 +267,7 @@ namespace Meziantou.Framework.Language.Css
         public Meziantou.Framework.Language.Css.CssDeclarationConditionSyntax WithDeclaration(Meziantou.Framework.Language.Css.CssDeclarationSyntax declaration) => throw null;
         public Meziantou.Framework.Language.Css.CssDeclarationConditionSyntax WithCloseParenToken(Meziantou.Framework.Language.SyntaxToken closeParenToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Css.CssSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public sealed class CssDeclarationSyntax : Meziantou.Framework.Language.Css.CssStatementSyntax
@@ -288,7 +288,7 @@ namespace Meziantou.Framework.Language.Css
         public Meziantou.Framework.Language.Css.CssDeclarationSyntax WithImportant(Meziantou.Framework.Language.Css.CssImportantSyntax? important) => throw null;
         public Meziantou.Framework.Language.Css.CssDeclarationSyntax WithSemicolonToken(Meziantou.Framework.Language.SyntaxToken semicolonToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Css.CssSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public static class CssExtensions
@@ -307,7 +307,7 @@ namespace Meziantou.Framework.Language.Css
         public static bool IsInteger(this Meziantou.Framework.Language.SyntaxToken token) => throw null;
         public static string? GetUnit(this Meziantou.Framework.Language.SyntaxToken token) => throw null;
         public static bool IsIdHash(this Meziantou.Framework.Language.SyntaxToken token) => throw null;
-        public static System.ValueTuple<int, int>? GetUnicodeRange(this Meziantou.Framework.Language.SyntaxToken token) => throw null;
+        public static (int Start, int End)? GetUnicodeRange(this Meziantou.Framework.Language.SyntaxToken token) => throw null;
     }
 
     public sealed class CssFeatureValueSyntax : Meziantou.Framework.Language.Css.CssSyntaxNode
@@ -316,7 +316,7 @@ namespace Meziantou.Framework.Language.Css
         public Meziantou.Framework.Language.Css.CssFeatureValueSyntax Update(Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Css.CssComponentValueSyntax> values) => throw null;
         public Meziantou.Framework.Language.Css.CssFeatureValueSyntax WithValues(Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Css.CssComponentValueSyntax> values) => throw null;
         public override void Accept(Meziantou.Framework.Language.Css.CssSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public sealed class CssFunctionSyntax : Meziantou.Framework.Language.Css.CssComponentValueSyntax
@@ -330,7 +330,7 @@ namespace Meziantou.Framework.Language.Css
         public Meziantou.Framework.Language.Css.CssFunctionSyntax WithArguments(Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Css.CssComponentValueSyntax> arguments) => throw null;
         public Meziantou.Framework.Language.Css.CssFunctionSyntax WithCloseParenToken(Meziantou.Framework.Language.SyntaxToken closeParenToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Css.CssSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public sealed class CssFunctionalPseudoSelectorSyntax : Meziantou.Framework.Language.Css.CssSimpleSelectorSyntax
@@ -350,7 +350,7 @@ namespace Meziantou.Framework.Language.Css
         public Meziantou.Framework.Language.Css.CssFunctionalPseudoSelectorSyntax WithArgument(Meziantou.Framework.Language.Css.CssSyntaxNode? argument) => throw null;
         public Meziantou.Framework.Language.Css.CssFunctionalPseudoSelectorSyntax WithCloseParenToken(Meziantou.Framework.Language.SyntaxToken closeParenToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Css.CssSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public sealed class CssGeneralEnclosedSyntax : Meziantou.Framework.Language.Css.CssConditionSyntax
@@ -359,7 +359,7 @@ namespace Meziantou.Framework.Language.Css
         public Meziantou.Framework.Language.Css.CssGeneralEnclosedSyntax Update(Meziantou.Framework.Language.Css.CssComponentValueSyntax value) => throw null;
         public Meziantou.Framework.Language.Css.CssGeneralEnclosedSyntax WithValue(Meziantou.Framework.Language.Css.CssComponentValueSyntax value) => throw null;
         public override void Accept(Meziantou.Framework.Language.Css.CssSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public sealed class CssGenericPreludeSyntax : Meziantou.Framework.Language.Css.CssPreludeSyntax
@@ -368,7 +368,7 @@ namespace Meziantou.Framework.Language.Css
         public Meziantou.Framework.Language.Css.CssGenericPreludeSyntax Update(Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Css.CssComponentValueSyntax> values) => throw null;
         public Meziantou.Framework.Language.Css.CssGenericPreludeSyntax WithValues(Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Css.CssComponentValueSyntax> values) => throw null;
         public override void Accept(Meziantou.Framework.Language.Css.CssSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public sealed class CssIdSelectorSyntax : Meziantou.Framework.Language.Css.CssSimpleSelectorSyntax
@@ -378,7 +378,7 @@ namespace Meziantou.Framework.Language.Css
         public Meziantou.Framework.Language.Css.CssIdSelectorSyntax Update(Meziantou.Framework.Language.SyntaxToken hashToken) => throw null;
         public Meziantou.Framework.Language.Css.CssIdSelectorSyntax WithHashToken(Meziantou.Framework.Language.SyntaxToken hashToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Css.CssSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public sealed class CssIgnoredTokenSyntax : Meziantou.Framework.Language.Css.CssStatementSyntax
@@ -387,7 +387,7 @@ namespace Meziantou.Framework.Language.Css
         public Meziantou.Framework.Language.Css.CssIgnoredTokenSyntax Update(Meziantou.Framework.Language.SyntaxToken token) => throw null;
         public Meziantou.Framework.Language.Css.CssIgnoredTokenSyntax WithToken(Meziantou.Framework.Language.SyntaxToken token) => throw null;
         public override void Accept(Meziantou.Framework.Language.Css.CssSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public sealed class CssImportLayerSyntax : Meziantou.Framework.Language.Css.CssSyntaxNode
@@ -400,7 +400,7 @@ namespace Meziantou.Framework.Language.Css
         public Meziantou.Framework.Language.Css.CssImportLayerSyntax WithName(Meziantou.Framework.Language.Css.CssLayerNameSyntax? name) => throw null;
         public Meziantou.Framework.Language.Css.CssImportLayerSyntax WithCloseParenToken(Meziantou.Framework.Language.SyntaxToken closeParenToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Css.CssSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public sealed class CssImportPreludeSyntax : Meziantou.Framework.Language.Css.CssPreludeSyntax
@@ -415,7 +415,7 @@ namespace Meziantou.Framework.Language.Css
         public Meziantou.Framework.Language.Css.CssImportPreludeSyntax WithSupports(Meziantou.Framework.Language.Css.CssImportSupportsSyntax? supports) => throw null;
         public Meziantou.Framework.Language.Css.CssImportPreludeSyntax WithMedia(Meziantou.Framework.Language.Css.CssMediaQueryListSyntax? media) => throw null;
         public override void Accept(Meziantou.Framework.Language.Css.CssSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public sealed class CssImportSupportsSyntax : Meziantou.Framework.Language.Css.CssSyntaxNode
@@ -428,7 +428,7 @@ namespace Meziantou.Framework.Language.Css
         public Meziantou.Framework.Language.Css.CssImportSupportsSyntax WithCondition(Meziantou.Framework.Language.Css.CssConditionSyntax condition) => throw null;
         public Meziantou.Framework.Language.Css.CssImportSupportsSyntax WithCloseParenToken(Meziantou.Framework.Language.SyntaxToken closeParenToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Css.CssSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public sealed class CssImportantSyntax : Meziantou.Framework.Language.Css.CssSyntaxNode
@@ -439,7 +439,7 @@ namespace Meziantou.Framework.Language.Css
         public Meziantou.Framework.Language.Css.CssImportantSyntax WithExclamationToken(Meziantou.Framework.Language.SyntaxToken exclamationToken) => throw null;
         public Meziantou.Framework.Language.Css.CssImportantSyntax WithImportantKeyword(Meziantou.Framework.Language.SyntaxToken importantKeyword) => throw null;
         public override void Accept(Meziantou.Framework.Language.Css.CssSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public sealed class CssInvalidMediaQuerySyntax : Meziantou.Framework.Language.Css.CssMediaQuerySyntax
@@ -448,7 +448,7 @@ namespace Meziantou.Framework.Language.Css
         public Meziantou.Framework.Language.Css.CssInvalidMediaQuerySyntax Update(Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Css.CssComponentValueSyntax> values) => throw null;
         public Meziantou.Framework.Language.Css.CssInvalidMediaQuerySyntax WithValues(Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Css.CssComponentValueSyntax> values) => throw null;
         public override void Accept(Meziantou.Framework.Language.Css.CssSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public sealed class CssInvalidSelectorSyntax : Meziantou.Framework.Language.Css.CssSelectorSyntax
@@ -457,7 +457,7 @@ namespace Meziantou.Framework.Language.Css
         public Meziantou.Framework.Language.Css.CssInvalidSelectorSyntax Update(Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Css.CssComponentValueSyntax> values) => throw null;
         public Meziantou.Framework.Language.Css.CssInvalidSelectorSyntax WithValues(Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Css.CssComponentValueSyntax> values) => throw null;
         public override void Accept(Meziantou.Framework.Language.Css.CssSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public sealed class CssKeyframeSelectorListSyntax : Meziantou.Framework.Language.Css.CssPreludeSyntax
@@ -466,7 +466,7 @@ namespace Meziantou.Framework.Language.Css
         public Meziantou.Framework.Language.Css.CssKeyframeSelectorListSyntax Update(Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Css.CssKeyframeSelectorSyntax> selectors) => throw null;
         public Meziantou.Framework.Language.Css.CssKeyframeSelectorListSyntax WithSelectors(Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Css.CssKeyframeSelectorSyntax> selectors) => throw null;
         public override void Accept(Meziantou.Framework.Language.Css.CssSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public sealed class CssKeyframeSelectorSyntax : Meziantou.Framework.Language.Css.CssSyntaxNode
@@ -478,7 +478,7 @@ namespace Meziantou.Framework.Language.Css
         public Meziantou.Framework.Language.Css.CssKeyframeSelectorSyntax WithRangeNameToken(Meziantou.Framework.Language.SyntaxToken rangeNameToken) => throw null;
         public Meziantou.Framework.Language.Css.CssKeyframeSelectorSyntax WithOffsetToken(Meziantou.Framework.Language.SyntaxToken offsetToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Css.CssSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public sealed class CssLayerNameSyntax : Meziantou.Framework.Language.Css.CssSyntaxNode
@@ -489,7 +489,7 @@ namespace Meziantou.Framework.Language.Css
         public Meziantou.Framework.Language.Css.CssLayerNameSyntax Update(Meziantou.Framework.Language.SyntaxTokenList tokens) => throw null;
         public Meziantou.Framework.Language.Css.CssLayerNameSyntax WithTokens(Meziantou.Framework.Language.SyntaxTokenList tokens) => throw null;
         public override void Accept(Meziantou.Framework.Language.Css.CssSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public sealed class CssLayerPreludeSyntax : Meziantou.Framework.Language.Css.CssPreludeSyntax
@@ -498,7 +498,7 @@ namespace Meziantou.Framework.Language.Css
         public Meziantou.Framework.Language.Css.CssLayerPreludeSyntax Update(Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Css.CssLayerNameSyntax> names) => throw null;
         public Meziantou.Framework.Language.Css.CssLayerPreludeSyntax WithNames(Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Css.CssLayerNameSyntax> names) => throw null;
         public override void Accept(Meziantou.Framework.Language.Css.CssSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public sealed class CssMediaConditionQuerySyntax : Meziantou.Framework.Language.Css.CssMediaQuerySyntax
@@ -507,7 +507,7 @@ namespace Meziantou.Framework.Language.Css
         public Meziantou.Framework.Language.Css.CssMediaConditionQuerySyntax Update(Meziantou.Framework.Language.Css.CssConditionSyntax condition) => throw null;
         public Meziantou.Framework.Language.Css.CssMediaConditionQuerySyntax WithCondition(Meziantou.Framework.Language.Css.CssConditionSyntax condition) => throw null;
         public override void Accept(Meziantou.Framework.Language.Css.CssSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public sealed class CssMediaQueryListSyntax : Meziantou.Framework.Language.Css.CssPreludeSyntax
@@ -516,7 +516,7 @@ namespace Meziantou.Framework.Language.Css
         public Meziantou.Framework.Language.Css.CssMediaQueryListSyntax Update(Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Css.CssMediaQuerySyntax> queries) => throw null;
         public Meziantou.Framework.Language.Css.CssMediaQueryListSyntax WithQueries(Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Css.CssMediaQuerySyntax> queries) => throw null;
         public override void Accept(Meziantou.Framework.Language.Css.CssSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public abstract class CssMediaQuerySyntax : Meziantou.Framework.Language.Css.CssSyntaxNode
@@ -535,7 +535,7 @@ namespace Meziantou.Framework.Language.Css
         public Meziantou.Framework.Language.Css.CssMediaTypeQuerySyntax WithAndKeyword(Meziantou.Framework.Language.SyntaxToken andKeyword) => throw null;
         public Meziantou.Framework.Language.Css.CssMediaTypeQuerySyntax WithCondition(Meziantou.Framework.Language.Css.CssConditionSyntax? condition) => throw null;
         public override void Accept(Meziantou.Framework.Language.Css.CssSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public sealed class CssNameListSyntax : Meziantou.Framework.Language.Css.CssPreludeSyntax
@@ -544,7 +544,7 @@ namespace Meziantou.Framework.Language.Css
         public Meziantou.Framework.Language.Css.CssNameListSyntax Update(Meziantou.Framework.Language.SyntaxTokenList tokens) => throw null;
         public Meziantou.Framework.Language.Css.CssNameListSyntax WithTokens(Meziantou.Framework.Language.SyntaxTokenList tokens) => throw null;
         public override void Accept(Meziantou.Framework.Language.Css.CssSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public sealed class CssNamePreludeSyntax : Meziantou.Framework.Language.Css.CssPreludeSyntax
@@ -554,7 +554,7 @@ namespace Meziantou.Framework.Language.Css
         public Meziantou.Framework.Language.Css.CssNamePreludeSyntax Update(Meziantou.Framework.Language.SyntaxToken nameToken) => throw null;
         public Meziantou.Framework.Language.Css.CssNamePreludeSyntax WithNameToken(Meziantou.Framework.Language.SyntaxToken nameToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Css.CssSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public sealed class CssNamespacePrefixSyntax : Meziantou.Framework.Language.Css.CssSyntaxNode
@@ -565,7 +565,7 @@ namespace Meziantou.Framework.Language.Css
         public Meziantou.Framework.Language.Css.CssNamespacePrefixSyntax WithPrefixToken(Meziantou.Framework.Language.SyntaxToken prefixToken) => throw null;
         public Meziantou.Framework.Language.Css.CssNamespacePrefixSyntax WithBarToken(Meziantou.Framework.Language.SyntaxToken barToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Css.CssSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public sealed class CssNamespacePreludeSyntax : Meziantou.Framework.Language.Css.CssPreludeSyntax
@@ -576,7 +576,7 @@ namespace Meziantou.Framework.Language.Css
         public Meziantou.Framework.Language.Css.CssNamespacePreludeSyntax WithPrefixToken(Meziantou.Framework.Language.SyntaxToken prefixToken) => throw null;
         public Meziantou.Framework.Language.Css.CssNamespacePreludeSyntax WithUrl(Meziantou.Framework.Language.Css.CssComponentValueSyntax url) => throw null;
         public override void Accept(Meziantou.Framework.Language.Css.CssSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public sealed class CssNestingSelectorSyntax : Meziantou.Framework.Language.Css.CssSimpleSelectorSyntax
@@ -585,7 +585,7 @@ namespace Meziantou.Framework.Language.Css
         public Meziantou.Framework.Language.Css.CssNestingSelectorSyntax Update(Meziantou.Framework.Language.SyntaxToken ampersandToken) => throw null;
         public Meziantou.Framework.Language.Css.CssNestingSelectorSyntax WithAmpersandToken(Meziantou.Framework.Language.SyntaxToken ampersandToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Css.CssSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public sealed class CssNotConditionSyntax : Meziantou.Framework.Language.Css.CssConditionSyntax
@@ -596,7 +596,7 @@ namespace Meziantou.Framework.Language.Css
         public Meziantou.Framework.Language.Css.CssNotConditionSyntax WithNotKeyword(Meziantou.Framework.Language.SyntaxToken notKeyword) => throw null;
         public Meziantou.Framework.Language.Css.CssNotConditionSyntax WithOperand(Meziantou.Framework.Language.Css.CssConditionSyntax operand) => throw null;
         public override void Accept(Meziantou.Framework.Language.Css.CssSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public sealed class CssNthArgumentSyntax : Meziantou.Framework.Language.Css.CssSyntaxNode
@@ -609,7 +609,7 @@ namespace Meziantou.Framework.Language.Css
         public Meziantou.Framework.Language.Css.CssNthArgumentSyntax WithOfKeyword(Meziantou.Framework.Language.SyntaxToken ofKeyword) => throw null;
         public Meziantou.Framework.Language.Css.CssNthArgumentSyntax WithSelectors(Meziantou.Framework.Language.Css.CssSelectorListSyntax? selectors) => throw null;
         public override void Accept(Meziantou.Framework.Language.Css.CssSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public sealed class CssPageSelectorListSyntax : Meziantou.Framework.Language.Css.CssPreludeSyntax
@@ -618,7 +618,7 @@ namespace Meziantou.Framework.Language.Css
         public Meziantou.Framework.Language.Css.CssPageSelectorListSyntax Update(Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Css.CssPageSelectorSyntax> selectors) => throw null;
         public Meziantou.Framework.Language.Css.CssPageSelectorListSyntax WithSelectors(Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Css.CssPageSelectorSyntax> selectors) => throw null;
         public override void Accept(Meziantou.Framework.Language.Css.CssSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public sealed class CssPageSelectorSyntax : Meziantou.Framework.Language.Css.CssSyntaxNode
@@ -629,7 +629,7 @@ namespace Meziantou.Framework.Language.Css
         public Meziantou.Framework.Language.Css.CssPageSelectorSyntax WithNameToken(Meziantou.Framework.Language.SyntaxToken nameToken) => throw null;
         public Meziantou.Framework.Language.Css.CssPageSelectorSyntax WithPseudoPages(Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Css.CssPseudoPageSyntax> pseudoPages) => throw null;
         public override void Accept(Meziantou.Framework.Language.Css.CssSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public sealed class CssParenthesizedConditionSyntax : Meziantou.Framework.Language.Css.CssConditionSyntax
@@ -642,7 +642,7 @@ namespace Meziantou.Framework.Language.Css
         public Meziantou.Framework.Language.Css.CssParenthesizedConditionSyntax WithCondition(Meziantou.Framework.Language.Css.CssConditionSyntax condition) => throw null;
         public Meziantou.Framework.Language.Css.CssParenthesizedConditionSyntax WithCloseParenToken(Meziantou.Framework.Language.SyntaxToken closeParenToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Css.CssSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public sealed class CssParseOptions : System.IEquatable<Meziantou.Framework.Language.Css.CssParseOptions>
@@ -674,7 +674,7 @@ namespace Meziantou.Framework.Language.Css
         public Meziantou.Framework.Language.Css.CssPlainFeatureSyntax WithValue(Meziantou.Framework.Language.Css.CssFeatureValueSyntax value) => throw null;
         public Meziantou.Framework.Language.Css.CssPlainFeatureSyntax WithCloseParenToken(Meziantou.Framework.Language.SyntaxToken closeParenToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Css.CssSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public abstract class CssPreludeSyntax : Meziantou.Framework.Language.Css.CssSyntaxNode
@@ -689,7 +689,7 @@ namespace Meziantou.Framework.Language.Css
         public Meziantou.Framework.Language.Css.CssPseudoPageSyntax WithColonToken(Meziantou.Framework.Language.SyntaxToken colonToken) => throw null;
         public Meziantou.Framework.Language.Css.CssPseudoPageSyntax WithNameToken(Meziantou.Framework.Language.SyntaxToken nameToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Css.CssSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public sealed class CssPseudoSelectorSyntax : Meziantou.Framework.Language.Css.CssSimpleSelectorSyntax
@@ -704,7 +704,7 @@ namespace Meziantou.Framework.Language.Css
         public Meziantou.Framework.Language.Css.CssPseudoSelectorSyntax WithSecondColonToken(Meziantou.Framework.Language.SyntaxToken secondColonToken) => throw null;
         public Meziantou.Framework.Language.Css.CssPseudoSelectorSyntax WithNameToken(Meziantou.Framework.Language.SyntaxToken nameToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Css.CssSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public sealed class CssQualifiedRuleSyntax : Meziantou.Framework.Language.Css.CssRuleSyntax
@@ -718,7 +718,7 @@ namespace Meziantou.Framework.Language.Css
         public Meziantou.Framework.Language.Css.CssQualifiedRuleSyntax WithPrelude(Meziantou.Framework.Language.Css.CssPreludeSyntax? prelude) => throw null;
         public Meziantou.Framework.Language.Css.CssQualifiedRuleSyntax WithBlock(Meziantou.Framework.Language.Css.CssBlockSyntax block) => throw null;
         public override void Accept(Meziantou.Framework.Language.Css.CssSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public sealed class CssRangeFeatureSyntax : Meziantou.Framework.Language.Css.CssConditionSyntax
@@ -740,7 +740,7 @@ namespace Meziantou.Framework.Language.Css
         public Meziantou.Framework.Language.Css.CssRangeFeatureSyntax WithRight(Meziantou.Framework.Language.Css.CssFeatureValueSyntax? right) => throw null;
         public Meziantou.Framework.Language.Css.CssRangeFeatureSyntax WithCloseParenToken(Meziantou.Framework.Language.SyntaxToken closeParenToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Css.CssSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public abstract class CssRuleSyntax : Meziantou.Framework.Language.Css.CssStatementSyntax
@@ -759,7 +759,7 @@ namespace Meziantou.Framework.Language.Css
         public Meziantou.Framework.Language.Css.CssScopeBoundarySyntax WithSelectors(Meziantou.Framework.Language.Css.CssSelectorListSyntax? selectors) => throw null;
         public Meziantou.Framework.Language.Css.CssScopeBoundarySyntax WithCloseParenToken(Meziantou.Framework.Language.SyntaxToken closeParenToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Css.CssSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public sealed class CssScopePreludeSyntax : Meziantou.Framework.Language.Css.CssPreludeSyntax
@@ -772,7 +772,7 @@ namespace Meziantou.Framework.Language.Css
         public Meziantou.Framework.Language.Css.CssScopePreludeSyntax WithToKeyword(Meziantou.Framework.Language.SyntaxToken toKeyword) => throw null;
         public Meziantou.Framework.Language.Css.CssScopePreludeSyntax WithEnd(Meziantou.Framework.Language.Css.CssScopeBoundarySyntax? end) => throw null;
         public override void Accept(Meziantou.Framework.Language.Css.CssSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public sealed class CssSelectorListSyntax : Meziantou.Framework.Language.Css.CssPreludeSyntax
@@ -782,7 +782,7 @@ namespace Meziantou.Framework.Language.Css
         public Meziantou.Framework.Language.Css.CssSelectorListSyntax Update(Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Css.CssSelectorSyntax> selectors) => throw null;
         public Meziantou.Framework.Language.Css.CssSelectorListSyntax WithSelectors(Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Css.CssSelectorSyntax> selectors) => throw null;
         public override void Accept(Meziantou.Framework.Language.Css.CssSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public abstract class CssSelectorSyntax : Meziantou.Framework.Language.Css.CssSyntaxNode
@@ -799,7 +799,7 @@ namespace Meziantou.Framework.Language.Css
         public Meziantou.Framework.Language.Css.CssSimpleBlockSyntax WithValues(Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Css.CssComponentValueSyntax> values) => throw null;
         public Meziantou.Framework.Language.Css.CssSimpleBlockSyntax WithCloseToken(Meziantou.Framework.Language.SyntaxToken closeToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Css.CssSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public abstract class CssSimpleSelectorSyntax : Meziantou.Framework.Language.Css.CssSyntaxNode
@@ -813,7 +813,7 @@ namespace Meziantou.Framework.Language.Css
         public Meziantou.Framework.Language.Css.CssSkippedTextSyntax Update(Meziantou.Framework.Language.SyntaxTokenList tokens) => throw null;
         public Meziantou.Framework.Language.Css.CssSkippedTextSyntax WithTokens(Meziantou.Framework.Language.SyntaxTokenList tokens) => throw null;
         public override void Accept(Meziantou.Framework.Language.Css.CssSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public sealed class CssSkippedValueSyntax : Meziantou.Framework.Language.Css.CssComponentValueSyntax
@@ -823,7 +823,7 @@ namespace Meziantou.Framework.Language.Css
         public Meziantou.Framework.Language.Css.CssSkippedValueSyntax Update(Meziantou.Framework.Language.SyntaxTokenList tokens) => throw null;
         public Meziantou.Framework.Language.Css.CssSkippedValueSyntax WithTokens(Meziantou.Framework.Language.SyntaxTokenList tokens) => throw null;
         public override void Accept(Meziantou.Framework.Language.Css.CssSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public enum CssSourceKind
@@ -846,7 +846,7 @@ namespace Meziantou.Framework.Language.Css
         public Meziantou.Framework.Language.Css.CssStyleSheetSyntax WithStatements(Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Css.CssStatementSyntax> statements) => throw null;
         public Meziantou.Framework.Language.Css.CssStyleSheetSyntax WithEndOfFileToken(Meziantou.Framework.Language.SyntaxToken endOfFileToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Css.CssSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public abstract class CssSyntaxNode : Meziantou.Framework.Language.SyntaxNode
@@ -855,10 +855,10 @@ namespace Meziantou.Framework.Language.Css
         public Meziantou.Framework.Language.Css.SyntaxKind Kind() => throw null;
         public System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.SyntaxTrivia> DescendantComments() => throw null;
         public abstract void Accept(Meziantou.Framework.Language.Css.CssSyntaxVisitor visitor);
-        public abstract TResult Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor);
+        public abstract TResult? Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor);
     }
 
-    public class CssSyntaxRewriter : Meziantou.Framework.Language.Css.CssSyntaxVisitor<Meziantou.Framework.Language.SyntaxNode>
+    public class CssSyntaxRewriter : Meziantou.Framework.Language.Css.CssSyntaxVisitor<Meziantou.Framework.Language.SyntaxNode?>
     {
         public override Meziantou.Framework.Language.SyntaxNode? Visit(Meziantou.Framework.Language.Css.CssSyntaxNode? node) => throw null;
         public virtual Meziantou.Framework.Language.SyntaxToken VisitToken(Meziantou.Framework.Language.SyntaxToken token) => throw null;
@@ -1036,80 +1036,80 @@ namespace Meziantou.Framework.Language.Css
 
     public abstract class CssSyntaxVisitor<TResult>
     {
-        public virtual TResult Visit(Meziantou.Framework.Language.Css.CssSyntaxNode? node) => throw null;
-        public virtual TResult DefaultVisit(Meziantou.Framework.Language.Css.CssSyntaxNode node) => throw null;
-        public virtual TResult VisitStyleSheet(Meziantou.Framework.Language.Css.CssStyleSheetSyntax node) => throw null;
-        public virtual TResult VisitQualifiedRule(Meziantou.Framework.Language.Css.CssQualifiedRuleSyntax node) => throw null;
-        public virtual TResult VisitAtRule(Meziantou.Framework.Language.Css.CssAtRuleSyntax node) => throw null;
-        public virtual TResult VisitBlock(Meziantou.Framework.Language.Css.CssBlockSyntax node) => throw null;
-        public virtual TResult VisitDeclaration(Meziantou.Framework.Language.Css.CssDeclarationSyntax node) => throw null;
-        public virtual TResult VisitImportant(Meziantou.Framework.Language.Css.CssImportantSyntax node) => throw null;
-        public virtual TResult VisitBadDeclaration(Meziantou.Framework.Language.Css.CssBadDeclarationSyntax node) => throw null;
-        public virtual TResult VisitIgnoredToken(Meziantou.Framework.Language.Css.CssIgnoredTokenSyntax node) => throw null;
-        public virtual TResult VisitSkippedText(Meziantou.Framework.Language.Css.CssSkippedTextSyntax node) => throw null;
-        public virtual TResult VisitTokenValue(Meziantou.Framework.Language.Css.CssTokenValueSyntax node) => throw null;
-        public virtual TResult VisitFunction(Meziantou.Framework.Language.Css.CssFunctionSyntax node) => throw null;
-        public virtual TResult VisitSimpleBlock(Meziantou.Framework.Language.Css.CssSimpleBlockSyntax node) => throw null;
-        public virtual TResult VisitSkippedValue(Meziantou.Framework.Language.Css.CssSkippedValueSyntax node) => throw null;
-        public virtual TResult VisitGenericPrelude(Meziantou.Framework.Language.Css.CssGenericPreludeSyntax node) => throw null;
-        public virtual TResult VisitSelectorList(Meziantou.Framework.Language.Css.CssSelectorListSyntax node) => throw null;
-        public virtual TResult VisitComplexSelector(Meziantou.Framework.Language.Css.CssComplexSelectorSyntax node) => throw null;
-        public virtual TResult VisitComplexSelectorPart(Meziantou.Framework.Language.Css.CssComplexSelectorPartSyntax node) => throw null;
-        public virtual TResult VisitCombinator(Meziantou.Framework.Language.Css.CssCombinatorSyntax node) => throw null;
-        public virtual TResult VisitCompoundSelector(Meziantou.Framework.Language.Css.CssCompoundSelectorSyntax node) => throw null;
-        public virtual TResult VisitInvalidSelector(Meziantou.Framework.Language.Css.CssInvalidSelectorSyntax node) => throw null;
-        public virtual TResult VisitNamespacePrefix(Meziantou.Framework.Language.Css.CssNamespacePrefixSyntax node) => throw null;
-        public virtual TResult VisitTypeSelector(Meziantou.Framework.Language.Css.CssTypeSelectorSyntax node) => throw null;
-        public virtual TResult VisitUniversalSelector(Meziantou.Framework.Language.Css.CssUniversalSelectorSyntax node) => throw null;
-        public virtual TResult VisitNestingSelector(Meziantou.Framework.Language.Css.CssNestingSelectorSyntax node) => throw null;
-        public virtual TResult VisitIdSelector(Meziantou.Framework.Language.Css.CssIdSelectorSyntax node) => throw null;
-        public virtual TResult VisitClassSelector(Meziantou.Framework.Language.Css.CssClassSelectorSyntax node) => throw null;
-        public virtual TResult VisitAttributeSelector(Meziantou.Framework.Language.Css.CssAttributeSelectorSyntax node) => throw null;
-        public virtual TResult VisitPseudoSelector(Meziantou.Framework.Language.Css.CssPseudoSelectorSyntax node) => throw null;
-        public virtual TResult VisitFunctionalPseudoSelector(Meziantou.Framework.Language.Css.CssFunctionalPseudoSelectorSyntax node) => throw null;
-        public virtual TResult VisitNthArgument(Meziantou.Framework.Language.Css.CssNthArgumentSyntax node) => throw null;
-        public virtual TResult VisitAnPlusB(Meziantou.Framework.Language.Css.CssAnPlusBSyntax node) => throw null;
-        public virtual TResult VisitNameList(Meziantou.Framework.Language.Css.CssNameListSyntax node) => throw null;
-        public virtual TResult VisitViewTransitionPartSelector(Meziantou.Framework.Language.Css.CssViewTransitionPartSelectorSyntax node) => throw null;
-        public virtual TResult VisitNamePrelude(Meziantou.Framework.Language.Css.CssNamePreludeSyntax node) => throw null;
-        public virtual TResult VisitImportPrelude(Meziantou.Framework.Language.Css.CssImportPreludeSyntax node) => throw null;
-        public virtual TResult VisitImportLayer(Meziantou.Framework.Language.Css.CssImportLayerSyntax node) => throw null;
-        public virtual TResult VisitImportSupports(Meziantou.Framework.Language.Css.CssImportSupportsSyntax node) => throw null;
-        public virtual TResult VisitNamespacePrelude(Meziantou.Framework.Language.Css.CssNamespacePreludeSyntax node) => throw null;
-        public virtual TResult VisitLayerName(Meziantou.Framework.Language.Css.CssLayerNameSyntax node) => throw null;
-        public virtual TResult VisitLayerPrelude(Meziantou.Framework.Language.Css.CssLayerPreludeSyntax node) => throw null;
-        public virtual TResult VisitScopePrelude(Meziantou.Framework.Language.Css.CssScopePreludeSyntax node) => throw null;
-        public virtual TResult VisitScopeBoundary(Meziantou.Framework.Language.Css.CssScopeBoundarySyntax node) => throw null;
-        public virtual TResult VisitKeyframeSelectorList(Meziantou.Framework.Language.Css.CssKeyframeSelectorListSyntax node) => throw null;
-        public virtual TResult VisitKeyframeSelector(Meziantou.Framework.Language.Css.CssKeyframeSelectorSyntax node) => throw null;
-        public virtual TResult VisitPageSelectorList(Meziantou.Framework.Language.Css.CssPageSelectorListSyntax node) => throw null;
-        public virtual TResult VisitPageSelector(Meziantou.Framework.Language.Css.CssPageSelectorSyntax node) => throw null;
-        public virtual TResult VisitPseudoPage(Meziantou.Framework.Language.Css.CssPseudoPageSyntax node) => throw null;
-        public virtual TResult VisitCustomMediaPrelude(Meziantou.Framework.Language.Css.CssCustomMediaPreludeSyntax node) => throw null;
-        public virtual TResult VisitContainerPrelude(Meziantou.Framework.Language.Css.CssContainerPreludeSyntax node) => throw null;
-        public virtual TResult VisitContainerCondition(Meziantou.Framework.Language.Css.CssContainerConditionSyntax node) => throw null;
-        public virtual TResult VisitConditionPrelude(Meziantou.Framework.Language.Css.CssConditionPreludeSyntax node) => throw null;
-        public virtual TResult VisitMediaQueryList(Meziantou.Framework.Language.Css.CssMediaQueryListSyntax node) => throw null;
-        public virtual TResult VisitMediaTypeQuery(Meziantou.Framework.Language.Css.CssMediaTypeQuerySyntax node) => throw null;
-        public virtual TResult VisitMediaConditionQuery(Meziantou.Framework.Language.Css.CssMediaConditionQuerySyntax node) => throw null;
-        public virtual TResult VisitInvalidMediaQuery(Meziantou.Framework.Language.Css.CssInvalidMediaQuerySyntax node) => throw null;
-        public virtual TResult VisitNotCondition(Meziantou.Framework.Language.Css.CssNotConditionSyntax node) => throw null;
-        public virtual TResult VisitConditionChain(Meziantou.Framework.Language.Css.CssConditionChainSyntax node) => throw null;
-        public virtual TResult VisitParenthesizedCondition(Meziantou.Framework.Language.Css.CssParenthesizedConditionSyntax node) => throw null;
-        public virtual TResult VisitGeneralEnclosed(Meziantou.Framework.Language.Css.CssGeneralEnclosedSyntax node) => throw null;
-        public virtual TResult VisitPlainFeature(Meziantou.Framework.Language.Css.CssPlainFeatureSyntax node) => throw null;
-        public virtual TResult VisitBooleanFeature(Meziantou.Framework.Language.Css.CssBooleanFeatureSyntax node) => throw null;
-        public virtual TResult VisitRangeFeature(Meziantou.Framework.Language.Css.CssRangeFeatureSyntax node) => throw null;
-        public virtual TResult VisitComparison(Meziantou.Framework.Language.Css.CssComparisonSyntax node) => throw null;
-        public virtual TResult VisitFeatureValue(Meziantou.Framework.Language.Css.CssFeatureValueSyntax node) => throw null;
-        public virtual TResult VisitDeclarationCondition(Meziantou.Framework.Language.Css.CssDeclarationConditionSyntax node) => throw null;
-        public virtual TResult VisitConditionFunction(Meziantou.Framework.Language.Css.CssConditionFunctionSyntax node) => throw null;
+        public virtual TResult? Visit(Meziantou.Framework.Language.Css.CssSyntaxNode? node) => throw null;
+        public virtual TResult? DefaultVisit(Meziantou.Framework.Language.Css.CssSyntaxNode node) => throw null;
+        public virtual TResult? VisitStyleSheet(Meziantou.Framework.Language.Css.CssStyleSheetSyntax node) => throw null;
+        public virtual TResult? VisitQualifiedRule(Meziantou.Framework.Language.Css.CssQualifiedRuleSyntax node) => throw null;
+        public virtual TResult? VisitAtRule(Meziantou.Framework.Language.Css.CssAtRuleSyntax node) => throw null;
+        public virtual TResult? VisitBlock(Meziantou.Framework.Language.Css.CssBlockSyntax node) => throw null;
+        public virtual TResult? VisitDeclaration(Meziantou.Framework.Language.Css.CssDeclarationSyntax node) => throw null;
+        public virtual TResult? VisitImportant(Meziantou.Framework.Language.Css.CssImportantSyntax node) => throw null;
+        public virtual TResult? VisitBadDeclaration(Meziantou.Framework.Language.Css.CssBadDeclarationSyntax node) => throw null;
+        public virtual TResult? VisitIgnoredToken(Meziantou.Framework.Language.Css.CssIgnoredTokenSyntax node) => throw null;
+        public virtual TResult? VisitSkippedText(Meziantou.Framework.Language.Css.CssSkippedTextSyntax node) => throw null;
+        public virtual TResult? VisitTokenValue(Meziantou.Framework.Language.Css.CssTokenValueSyntax node) => throw null;
+        public virtual TResult? VisitFunction(Meziantou.Framework.Language.Css.CssFunctionSyntax node) => throw null;
+        public virtual TResult? VisitSimpleBlock(Meziantou.Framework.Language.Css.CssSimpleBlockSyntax node) => throw null;
+        public virtual TResult? VisitSkippedValue(Meziantou.Framework.Language.Css.CssSkippedValueSyntax node) => throw null;
+        public virtual TResult? VisitGenericPrelude(Meziantou.Framework.Language.Css.CssGenericPreludeSyntax node) => throw null;
+        public virtual TResult? VisitSelectorList(Meziantou.Framework.Language.Css.CssSelectorListSyntax node) => throw null;
+        public virtual TResult? VisitComplexSelector(Meziantou.Framework.Language.Css.CssComplexSelectorSyntax node) => throw null;
+        public virtual TResult? VisitComplexSelectorPart(Meziantou.Framework.Language.Css.CssComplexSelectorPartSyntax node) => throw null;
+        public virtual TResult? VisitCombinator(Meziantou.Framework.Language.Css.CssCombinatorSyntax node) => throw null;
+        public virtual TResult? VisitCompoundSelector(Meziantou.Framework.Language.Css.CssCompoundSelectorSyntax node) => throw null;
+        public virtual TResult? VisitInvalidSelector(Meziantou.Framework.Language.Css.CssInvalidSelectorSyntax node) => throw null;
+        public virtual TResult? VisitNamespacePrefix(Meziantou.Framework.Language.Css.CssNamespacePrefixSyntax node) => throw null;
+        public virtual TResult? VisitTypeSelector(Meziantou.Framework.Language.Css.CssTypeSelectorSyntax node) => throw null;
+        public virtual TResult? VisitUniversalSelector(Meziantou.Framework.Language.Css.CssUniversalSelectorSyntax node) => throw null;
+        public virtual TResult? VisitNestingSelector(Meziantou.Framework.Language.Css.CssNestingSelectorSyntax node) => throw null;
+        public virtual TResult? VisitIdSelector(Meziantou.Framework.Language.Css.CssIdSelectorSyntax node) => throw null;
+        public virtual TResult? VisitClassSelector(Meziantou.Framework.Language.Css.CssClassSelectorSyntax node) => throw null;
+        public virtual TResult? VisitAttributeSelector(Meziantou.Framework.Language.Css.CssAttributeSelectorSyntax node) => throw null;
+        public virtual TResult? VisitPseudoSelector(Meziantou.Framework.Language.Css.CssPseudoSelectorSyntax node) => throw null;
+        public virtual TResult? VisitFunctionalPseudoSelector(Meziantou.Framework.Language.Css.CssFunctionalPseudoSelectorSyntax node) => throw null;
+        public virtual TResult? VisitNthArgument(Meziantou.Framework.Language.Css.CssNthArgumentSyntax node) => throw null;
+        public virtual TResult? VisitAnPlusB(Meziantou.Framework.Language.Css.CssAnPlusBSyntax node) => throw null;
+        public virtual TResult? VisitNameList(Meziantou.Framework.Language.Css.CssNameListSyntax node) => throw null;
+        public virtual TResult? VisitViewTransitionPartSelector(Meziantou.Framework.Language.Css.CssViewTransitionPartSelectorSyntax node) => throw null;
+        public virtual TResult? VisitNamePrelude(Meziantou.Framework.Language.Css.CssNamePreludeSyntax node) => throw null;
+        public virtual TResult? VisitImportPrelude(Meziantou.Framework.Language.Css.CssImportPreludeSyntax node) => throw null;
+        public virtual TResult? VisitImportLayer(Meziantou.Framework.Language.Css.CssImportLayerSyntax node) => throw null;
+        public virtual TResult? VisitImportSupports(Meziantou.Framework.Language.Css.CssImportSupportsSyntax node) => throw null;
+        public virtual TResult? VisitNamespacePrelude(Meziantou.Framework.Language.Css.CssNamespacePreludeSyntax node) => throw null;
+        public virtual TResult? VisitLayerName(Meziantou.Framework.Language.Css.CssLayerNameSyntax node) => throw null;
+        public virtual TResult? VisitLayerPrelude(Meziantou.Framework.Language.Css.CssLayerPreludeSyntax node) => throw null;
+        public virtual TResult? VisitScopePrelude(Meziantou.Framework.Language.Css.CssScopePreludeSyntax node) => throw null;
+        public virtual TResult? VisitScopeBoundary(Meziantou.Framework.Language.Css.CssScopeBoundarySyntax node) => throw null;
+        public virtual TResult? VisitKeyframeSelectorList(Meziantou.Framework.Language.Css.CssKeyframeSelectorListSyntax node) => throw null;
+        public virtual TResult? VisitKeyframeSelector(Meziantou.Framework.Language.Css.CssKeyframeSelectorSyntax node) => throw null;
+        public virtual TResult? VisitPageSelectorList(Meziantou.Framework.Language.Css.CssPageSelectorListSyntax node) => throw null;
+        public virtual TResult? VisitPageSelector(Meziantou.Framework.Language.Css.CssPageSelectorSyntax node) => throw null;
+        public virtual TResult? VisitPseudoPage(Meziantou.Framework.Language.Css.CssPseudoPageSyntax node) => throw null;
+        public virtual TResult? VisitCustomMediaPrelude(Meziantou.Framework.Language.Css.CssCustomMediaPreludeSyntax node) => throw null;
+        public virtual TResult? VisitContainerPrelude(Meziantou.Framework.Language.Css.CssContainerPreludeSyntax node) => throw null;
+        public virtual TResult? VisitContainerCondition(Meziantou.Framework.Language.Css.CssContainerConditionSyntax node) => throw null;
+        public virtual TResult? VisitConditionPrelude(Meziantou.Framework.Language.Css.CssConditionPreludeSyntax node) => throw null;
+        public virtual TResult? VisitMediaQueryList(Meziantou.Framework.Language.Css.CssMediaQueryListSyntax node) => throw null;
+        public virtual TResult? VisitMediaTypeQuery(Meziantou.Framework.Language.Css.CssMediaTypeQuerySyntax node) => throw null;
+        public virtual TResult? VisitMediaConditionQuery(Meziantou.Framework.Language.Css.CssMediaConditionQuerySyntax node) => throw null;
+        public virtual TResult? VisitInvalidMediaQuery(Meziantou.Framework.Language.Css.CssInvalidMediaQuerySyntax node) => throw null;
+        public virtual TResult? VisitNotCondition(Meziantou.Framework.Language.Css.CssNotConditionSyntax node) => throw null;
+        public virtual TResult? VisitConditionChain(Meziantou.Framework.Language.Css.CssConditionChainSyntax node) => throw null;
+        public virtual TResult? VisitParenthesizedCondition(Meziantou.Framework.Language.Css.CssParenthesizedConditionSyntax node) => throw null;
+        public virtual TResult? VisitGeneralEnclosed(Meziantou.Framework.Language.Css.CssGeneralEnclosedSyntax node) => throw null;
+        public virtual TResult? VisitPlainFeature(Meziantou.Framework.Language.Css.CssPlainFeatureSyntax node) => throw null;
+        public virtual TResult? VisitBooleanFeature(Meziantou.Framework.Language.Css.CssBooleanFeatureSyntax node) => throw null;
+        public virtual TResult? VisitRangeFeature(Meziantou.Framework.Language.Css.CssRangeFeatureSyntax node) => throw null;
+        public virtual TResult? VisitComparison(Meziantou.Framework.Language.Css.CssComparisonSyntax node) => throw null;
+        public virtual TResult? VisitFeatureValue(Meziantou.Framework.Language.Css.CssFeatureValueSyntax node) => throw null;
+        public virtual TResult? VisitDeclarationCondition(Meziantou.Framework.Language.Css.CssDeclarationConditionSyntax node) => throw null;
+        public virtual TResult? VisitConditionFunction(Meziantou.Framework.Language.Css.CssConditionFunctionSyntax node) => throw null;
     }
 
     public class CssSyntaxWalker : Meziantou.Framework.Language.Css.CssSyntaxVisitor
     {
         protected Meziantou.Framework.Language.SyntaxWalkerDepth Depth { get => throw null; }
-        public CssSyntaxWalker(Meziantou.Framework.Language.SyntaxWalkerDepth depth = 0) { }
+        public CssSyntaxWalker(Meziantou.Framework.Language.SyntaxWalkerDepth depth = Meziantou.Framework.Language.SyntaxWalkerDepth.Node) { }
         public override void DefaultVisit(Meziantou.Framework.Language.Css.CssSyntaxNode node) { }
         public virtual void VisitToken(Meziantou.Framework.Language.SyntaxToken token) { }
         public virtual void VisitTrivia(Meziantou.Framework.Language.SyntaxTrivia trivia) { }
@@ -1121,7 +1121,7 @@ namespace Meziantou.Framework.Language.Css
         public Meziantou.Framework.Language.Css.CssTokenValueSyntax Update(Meziantou.Framework.Language.SyntaxToken token) => throw null;
         public Meziantou.Framework.Language.Css.CssTokenValueSyntax WithToken(Meziantou.Framework.Language.SyntaxToken token) => throw null;
         public override void Accept(Meziantou.Framework.Language.Css.CssSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public sealed class CssTypeSelectorSyntax : Meziantou.Framework.Language.Css.CssSimpleSelectorSyntax
@@ -1133,7 +1133,7 @@ namespace Meziantou.Framework.Language.Css
         public Meziantou.Framework.Language.Css.CssTypeSelectorSyntax WithNamespacePrefix(Meziantou.Framework.Language.Css.CssNamespacePrefixSyntax? namespacePrefix) => throw null;
         public Meziantou.Framework.Language.Css.CssTypeSelectorSyntax WithNameToken(Meziantou.Framework.Language.SyntaxToken nameToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Css.CssSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public sealed class CssUniversalSelectorSyntax : Meziantou.Framework.Language.Css.CssSimpleSelectorSyntax
@@ -1144,7 +1144,7 @@ namespace Meziantou.Framework.Language.Css
         public Meziantou.Framework.Language.Css.CssUniversalSelectorSyntax WithNamespacePrefix(Meziantou.Framework.Language.Css.CssNamespacePrefixSyntax? namespacePrefix) => throw null;
         public Meziantou.Framework.Language.Css.CssUniversalSelectorSyntax WithAsteriskToken(Meziantou.Framework.Language.SyntaxToken asteriskToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Css.CssSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public sealed class CssViewTransitionPartSelectorSyntax : Meziantou.Framework.Language.Css.CssSyntaxNode
@@ -1155,7 +1155,7 @@ namespace Meziantou.Framework.Language.Css
         public Meziantou.Framework.Language.Css.CssViewTransitionPartSelectorSyntax WithNameToken(Meziantou.Framework.Language.SyntaxToken nameToken) => throw null;
         public Meziantou.Framework.Language.Css.CssViewTransitionPartSelectorSyntax WithClasses(Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Css.CssClassSelectorSyntax> classes) => throw null;
         public override void Accept(Meziantou.Framework.Language.Css.CssSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public static class SyntaxFactory

@@ -73,7 +73,7 @@ namespace Meziantou.Framework.Diagnostics.ContextSnapshot
         public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddCommonAppContext() => throw null;
         public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddAppContextData() => throw null;
         public static bool IsSecretEnvironmentVariableName(string name) => throw null;
-        public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddEnvironmentVariables(System.EnvironmentVariableTarget target = 0) => throw null;
+        public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddEnvironmentVariables(System.EnvironmentVariableTarget target = System.EnvironmentVariableTarget.Process) => throw null;
         public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddEnvironmentVariables(System.EnvironmentVariableTarget target, System.Func<string, bool> shouldRedact) => throw null;
     }
 

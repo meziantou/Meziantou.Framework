@@ -26,15 +26,15 @@ namespace Meziantou.Framework
     {
         public static int RuleCount { get => throw null; }
         public static System.DateTimeOffset LastUpdated { get => throw null; }
-        public static bool IsPublicSuffix(string? domain, Meziantou.Framework.PublicSuffixRuleSources sources = 3) => throw null;
-        public static bool IsPublicSuffix(System.ReadOnlySpan<char> domain, Meziantou.Framework.PublicSuffixRuleSources sources = 3) => throw null;
-        public static string? GetPublicSuffix(string? domain, Meziantou.Framework.PublicSuffixRuleSources sources = 3) => throw null;
-        public static string? GetPublicSuffix(System.ReadOnlySpan<char> domain, Meziantou.Framework.PublicSuffixRuleSources sources = 3) => throw null;
-        public static string? GetRegistrableDomain(string? domain, Meziantou.Framework.PublicSuffixRuleSources sources = 3) => throw null;
-        public static string? GetRegistrableDomain(System.ReadOnlySpan<char> domain, Meziantou.Framework.PublicSuffixRuleSources sources = 3) => throw null;
-        public static bool TryGetDomainInfo(string? domain, out Meziantou.Framework.DomainInfo domainInfo, Meziantou.Framework.PublicSuffixRuleSources sources = 3) => throw null;
-        public static bool TryGetDomainInfo(System.Uri uri, out Meziantou.Framework.DomainInfo domainInfo, Meziantou.Framework.PublicSuffixRuleSources sources = 3) => throw null;
-        public static bool TryGetDomainInfo(System.ReadOnlySpan<char> domain, out Meziantou.Framework.DomainInfo domainInfo, Meziantou.Framework.PublicSuffixRuleSources sources = 3) => throw null;
+        public static bool IsPublicSuffix(string? domain, Meziantou.Framework.PublicSuffixRuleSources sources = Meziantou.Framework.PublicSuffixRuleSources.All) => throw null;
+        public static bool IsPublicSuffix(System.ReadOnlySpan<char> domain, Meziantou.Framework.PublicSuffixRuleSources sources = Meziantou.Framework.PublicSuffixRuleSources.All) => throw null;
+        public static string? GetPublicSuffix(string? domain, Meziantou.Framework.PublicSuffixRuleSources sources = Meziantou.Framework.PublicSuffixRuleSources.All) => throw null;
+        public static string? GetPublicSuffix(System.ReadOnlySpan<char> domain, Meziantou.Framework.PublicSuffixRuleSources sources = Meziantou.Framework.PublicSuffixRuleSources.All) => throw null;
+        public static string? GetRegistrableDomain(string? domain, Meziantou.Framework.PublicSuffixRuleSources sources = Meziantou.Framework.PublicSuffixRuleSources.All) => throw null;
+        public static string? GetRegistrableDomain(System.ReadOnlySpan<char> domain, Meziantou.Framework.PublicSuffixRuleSources sources = Meziantou.Framework.PublicSuffixRuleSources.All) => throw null;
+        public static bool TryGetDomainInfo(string? domain, out Meziantou.Framework.DomainInfo domainInfo, Meziantou.Framework.PublicSuffixRuleSources sources = Meziantou.Framework.PublicSuffixRuleSources.All) => throw null;
+        public static bool TryGetDomainInfo(System.Uri uri, out Meziantou.Framework.DomainInfo domainInfo, Meziantou.Framework.PublicSuffixRuleSources sources = Meziantou.Framework.PublicSuffixRuleSources.All) => throw null;
+        public static bool TryGetDomainInfo(System.ReadOnlySpan<char> domain, out Meziantou.Framework.DomainInfo domainInfo, Meziantou.Framework.PublicSuffixRuleSources sources = Meziantou.Framework.PublicSuffixRuleSources.All) => throw null;
     }
 
     [System.Flags]
@@ -65,14 +65,14 @@ namespace Meziantou.Framework
     {
         public static string AddQueryString(string uri, string name, string? value) => throw null;
         public static string AddQueryString(string uri, System.Collections.Generic.IDictionary<string, string?> queryString) => throw null;
-        public static string AddQueryString(string uri, [System.Runtime.CompilerServices.TupleElementNames(new string[] { "Name", "Value" })] System.Collections.Generic.IEnumerable<System.ValueTuple<string, string?>>? queryString) => throw null;
-        public static string AddQueryString(string uri, [System.Runtime.CompilerServices.TupleElementNames(new string[] { "Name", "Value" })] System.Collections.Generic.IEnumerable<System.ValueTuple<string, Microsoft.Extensions.Primitives.StringValues>> queryString) => throw null;
+        public static string AddQueryString(string uri, System.Collections.Generic.IEnumerable<(string Name, string? Value)>? queryString) => throw null;
+        public static string AddQueryString(string uri, System.Collections.Generic.IEnumerable<(string Name, Microsoft.Extensions.Primitives.StringValues Value)> queryString) => throw null;
         public static string AddQueryString(string uri, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, Microsoft.Extensions.Primitives.StringValues>> queryString) => throw null;
         public static string AddQueryString(string uri, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string?>> queryString) => throw null;
         public static string SetQueryString(string uri, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, Microsoft.Extensions.Primitives.StringValues>> queryString) => throw null;
         public static string SetQueryString(string uri, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string?>> queryString) => throw null;
-        public static string AddOrReplaceQueryString(string uri, [System.Runtime.CompilerServices.TupleElementNames(new string[] { "Name", "Value" })] System.Collections.Generic.IEnumerable<System.ValueTuple<string, string?>> queryString) => throw null;
-        public static string AddOrReplaceQueryString(string uri, [System.Runtime.CompilerServices.TupleElementNames(new string[] { "Name", "Value" })] System.Collections.Generic.IEnumerable<System.ValueTuple<string, Microsoft.Extensions.Primitives.StringValues>> queryString) => throw null;
+        public static string AddOrReplaceQueryString(string uri, System.Collections.Generic.IEnumerable<(string Name, string? Value)> queryString) => throw null;
+        public static string AddOrReplaceQueryString(string uri, System.Collections.Generic.IEnumerable<(string Name, Microsoft.Extensions.Primitives.StringValues Value)> queryString) => throw null;
         public static string AddOrReplaceQueryString(string uri, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, Microsoft.Extensions.Primitives.StringValues>> queryString) => throw null;
         public static string AddOrReplaceQueryString(string uri, string name, string? value) => throw null;
         public static string AddOrReplaceQueryString(string uri, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string?>> queryString) => throw null;

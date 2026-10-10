@@ -10,6 +10,8 @@ internal sealed partial class PublicApiMetadataReader
     private const string NullableAttributeFullName = "System.Runtime.CompilerServices.NullableAttribute";
     private const string NullableContextAttributeFullName = "System.Runtime.CompilerServices.NullableContextAttribute";
     private const string TupleElementNamesAttributeFullName = "System.Runtime.CompilerServices.TupleElementNamesAttribute";
+    private const string DynamicAttributeFullName = "System.Runtime.CompilerServices.DynamicAttribute";
+    private const string DecimalConstantAttributeFullName = "System.Runtime.CompilerServices.DecimalConstantAttribute";
 
     private ImmutableArray<PublicApiAttribute> ReadAttributes(CustomAttributeHandleCollection attributes)
     {
@@ -99,10 +101,21 @@ internal sealed partial class PublicApiMetadataReader
         if (_typeProvider.IsSystemType(argument.Type))
             return new PublicApiAttributeArgument(type, PublicApiAttributeArgumentKind.Type, value: null);
 
-        if (argument.Value is not null && argument.Type is RawType.Named named && IsEnumType(named))
-            return new PublicApiAttributeArgument(type, PublicApiAttributeArgumentKind.Enum, argument.Value, GetEnumMemberNames(named, argument.Value));
+        if (argument.Value is not null && GetTypeDefinition(argument.Type) is { } definition && IsEnumType(definition))
+            return new PublicApiAttributeArgument(type, PublicApiAttributeArgumentKind.Enum, argument.Value, GetEnumMemberNames(definition, argument.Value));
 
         return new PublicApiAttributeArgument(type, PublicApiAttributeArgumentKind.Constant, argument.Value);
+    }
+
+    // An enum nested in a generic type is constructed with the type arguments of its containing types
+    private static RawType.Named? GetTypeDefinition(RawType type)
+    {
+        return type switch
+        {
+            RawType.Named named => named,
+            RawType.GenericInstance genericInstance => genericInstance.Definition,
+            _ => null,
+        };
     }
 
     private bool IsEnumType(RawType.Named type)
@@ -132,14 +145,31 @@ internal sealed partial class PublicApiMetadataReader
             enumMetadata = EnumMetadata.Create(_metadataReader, typeDefinitionHandle);
         }
 
-        enumMetadata ??= EnumMetadata.FromLoadedAssemblies(enumType.FullName);
+        enumMetadata ??= EnumMetadata.FromReferencedAssembly(_assemblyDirectory, enumType.AssemblyName, enumType.FullName);
         return enumMetadata?.GetMemberNames(valueBits) ?? [];
+    }
+
+    // A constant of an enum type, or of a nullable enum type, is stored as its underlying value.
+    // A non-primitive value type cannot have any other integral constant, so the type does not need to be resolved to know it is an enum.
+    private ImmutableArray<string> GetEnumConstantMemberNames(RawType type, object? value)
+    {
+        if (value is null)
+            return [];
+
+        if (type is RawType.GenericInstance { TypeArguments: [var underlyingType] } nullable && nullable.Definition.IsSystemType("Nullable`1"))
+        {
+            type = underlyingType;
+        }
+
+        return GetTypeDefinition(type) is { IsValueType: true, IsPrimitive: false } definition && EnumMetadata.TryGetValueBits(value, out _)
+            ? GetEnumMemberNames(definition, value)
+            : [];
     }
 
     private PrimitiveTypeCode GetUnderlyingEnumType(RawType type)
     {
         _enumUnderlyingTypes ??= BuildEnumUnderlyingTypeMap();
-        return type is RawType.Named named && _enumUnderlyingTypes.TryGetValue(named.FullName, out var typeCode)
+        return GetTypeDefinition(type) is { } definition && _enumUnderlyingTypes.TryGetValue(definition.FullName, out var typeCode)
             ? typeCode
             : PrimitiveTypeCode.Int32;
     }
@@ -245,7 +275,11 @@ internal sealed partial class PublicApiMetadataReader
 
     private bool TryDecodeNullableAttributeFlags(CustomAttribute attribute, out ImmutableArray<byte> nullableFlags)
     {
-        var value = _metadataReader.GetBlobBytes(attribute.Value);
+        return TryDecodeNullableAttributeFlags(_metadataReader.GetBlobBytes(attribute.Value), out nullableFlags);
+    }
+
+    internal static bool TryDecodeNullableAttributeFlags(byte[] value, out ImmutableArray<byte> nullableFlags)
+    {
         if (value.Length < 5 || value[0] != 1 || value[1] != 0)
         {
             nullableFlags = default;
@@ -276,6 +310,69 @@ internal sealed partial class PublicApiMetadataReader
         return true;
     }
 
+    // Returns the flags of the DynamicAttribute. Without flags, the type itself is dynamic.
+    private ImmutableArray<bool> GetDynamicFlags(CustomAttributeHandleCollection? attributes, int dynamicIndex = 0)
+    {
+        if (attributes is null)
+            return default;
+
+        foreach (var attributeHandle in attributes.Value)
+        {
+            var attribute = _metadataReader.GetCustomAttribute(attributeHandle);
+            if (!string.Equals(GetAttributeTypeFullName(attribute), DynamicAttributeFullName, StringComparison.Ordinal))
+                continue;
+
+            try
+            {
+                var value = attribute.DecodeValue(_typeProvider);
+                if (value.FixedArguments is [{ Value: ImmutableArray<CustomAttributeTypedArgument<RawType>> flags }])
+                    return [.. flags.Select(static flag => flag.Value is true)];
+
+                return [.. Enumerable.Repeat(false, dynamicIndex), true];
+            }
+            catch (BadImageFormatException)
+            {
+                return default;
+            }
+        }
+
+        return default;
+    }
+
+    // The value of a decimal constant is stored in a DecimalConstantAttribute, as metadata has no decimal constants
+    private bool TryGetDecimalConstant(CustomAttributeHandleCollection? attributes, out decimal value)
+    {
+        value = default;
+        if (attributes is null)
+            return false;
+
+        foreach (var attributeHandle in attributes.Value)
+        {
+            var attribute = _metadataReader.GetCustomAttribute(attributeHandle);
+            if (!string.Equals(GetAttributeTypeFullName(attribute), DecimalConstantAttributeFullName, StringComparison.Ordinal))
+                continue;
+
+            try
+            {
+                var arguments = attribute.DecodeValue(_typeProvider).FixedArguments;
+                if (arguments.Length != 5 || arguments[0].Value is not byte scale || arguments[1].Value is not byte sign)
+                    return false;
+
+                var high = unchecked((int)Convert.ToInt64(arguments[2].Value, CultureInfo.InvariantCulture));
+                var middle = unchecked((int)Convert.ToInt64(arguments[3].Value, CultureInfo.InvariantCulture));
+                var low = unchecked((int)Convert.ToInt64(arguments[4].Value, CultureInfo.InvariantCulture));
+                value = new decimal(low, middle, high, sign != 0, scale);
+                return true;
+            }
+            catch (Exception ex) when (ex is BadImageFormatException or ArgumentOutOfRangeException)
+            {
+                return false;
+            }
+        }
+
+        return false;
+    }
+
     private ImmutableArray<string?> GetTupleElementNames(CustomAttributeHandleCollection? attributes)
     {
         if (attributes is null)
@@ -287,31 +384,35 @@ internal sealed partial class PublicApiMetadataReader
             if (!string.Equals(GetAttributeTypeFullName(attribute), TupleElementNamesAttributeFullName, StringComparison.Ordinal))
                 continue;
 
-            try
-            {
-                var blobReader = _metadataReader.GetBlobReader(attribute.Value);
-                if (blobReader.ReadUInt16() != 1)
-                    return default;
-
-                var count = blobReader.ReadInt32();
-                if (count < 0)
-                    return default;
-
-                var builder = ImmutableArray.CreateBuilder<string?>(count);
-                for (var i = 0; i < count; i++)
-                {
-                    builder.Add(blobReader.ReadSerializedString());
-                }
-
-                return builder.MoveToImmutable();
-            }
-            catch (BadImageFormatException)
-            {
-                return default;
-            }
+            return DecodeTupleElementNames(_metadataReader.GetBlobReader(attribute.Value));
         }
 
         return default;
+    }
+
+    internal static ImmutableArray<string?> DecodeTupleElementNames(BlobReader blobReader)
+    {
+        try
+        {
+            if (blobReader.ReadUInt16() != 1)
+                return default;
+
+            var count = blobReader.ReadInt32();
+            if (count < 0)
+                return default;
+
+            var builder = ImmutableArray.CreateBuilder<string?>(count);
+            for (var i = 0; i < count; i++)
+            {
+                builder.Add(blobReader.ReadSerializedString());
+            }
+
+            return builder.MoveToImmutable();
+        }
+        catch (BadImageFormatException)
+        {
+            return default;
+        }
     }
 
     private object? DecodeConstantValue(Constant constant)

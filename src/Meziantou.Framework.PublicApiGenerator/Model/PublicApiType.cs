@@ -47,7 +47,6 @@ public sealed class PublicApiType : PublicApiSymbol
         IsRefLike = flags.IsRefLike;
         IsClosed = flags.IsClosed;
         IsUnion = flags.IsUnion;
-        AllGenericParameters = allGenericParameters;
         GenericParameters = allGenericParameters[^genericParameterCount..];
         BaseType = baseType;
         Interfaces = interfaces;
@@ -119,9 +118,6 @@ public sealed class PublicApiType : PublicApiSymbol
 
     /// <summary>Gets the case types of a C# <c>union</c> declaration.</summary>
     public ImmutableArray<PublicApiTypeReference> UnionCaseTypes { get; }
-
-    // Includes the generic parameters of the containing types, as metadata does
-    internal ImmutableArray<PublicApiGenericParameter> AllGenericParameters { get; }
 
     /// <summary>Enumerates the type and all its nested types, recursively.</summary>
     public IEnumerable<PublicApiType> GetTypeAndNestedTypes()

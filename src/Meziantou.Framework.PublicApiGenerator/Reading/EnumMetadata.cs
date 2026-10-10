@@ -6,11 +6,12 @@ using System.Reflection.PortableExecutable;
 
 namespace Meziantou.Framework.PublicApiGenerator;
 
-// The members of an enum, used to name the enum values passed to attributes
+// The members of an enum, used to name the enum values passed to attributes and the enum constants
 internal sealed class EnumMetadata
 {
     private static readonly Lock LoadedAssembliesCacheLock = new();
     private static readonly Dictionary<string, EnumMetadata?> LoadedAssembliesCache = new(StringComparer.Ordinal);
+    private static readonly Dictionary<(string AssemblyPath, long LastWriteTime, string EnumFullName), EnumMetadata?> AssemblyFilesCache = [];
 
     private readonly bool _isFlags;
     private readonly Dictionary<ulong, string> _memberNamesByValue;
@@ -104,7 +105,61 @@ internal sealed class EnumMetadata
         return new EnumMetadata(isFlags, memberNamesByValue, membersDescending);
     }
 
-    // Enums declared in other assemblies are searched in the assemblies already loaded in the process. Their files are read, never loaded.
+    // Enums declared in other assemblies are searched in the file of the referenced assembly when it is next to the inspected assembly,
+    // then in the assemblies already loaded in the process, then in the directory of the runtime. The files are read, never loaded.
+    public static EnumMetadata? FromReferencedAssembly(string? assemblyDirectory, string? assemblyName, string enumFullName)
+    {
+        // The name comes from metadata, and must not be used to read a file from another directory
+        var fileName = string.IsNullOrEmpty(assemblyName) || !string.Equals(Path.GetFileName(assemblyName), assemblyName, StringComparison.Ordinal)
+            ? null
+            : assemblyName + ".dll";
+
+        EnumMetadata? result = null;
+        if (fileName is not null && !string.IsNullOrEmpty(assemblyDirectory))
+        {
+            result = FromCachedAssemblyFile(Path.Combine(assemblyDirectory, fileName), enumFullName);
+        }
+
+        result ??= FromLoadedAssemblies(enumFullName);
+        if (result is null && fileName is not null && Path.GetDirectoryName(typeof(object).Assembly.Location) is { Length: > 0 } runtimeDirectory)
+        {
+            result = FromCachedAssemblyFile(Path.Combine(runtimeDirectory, fileName), enumFullName);
+        }
+
+        return result;
+    }
+
+    private static EnumMetadata? FromCachedAssemblyFile(string assemblyPath, string enumFullName)
+    {
+        long lastWriteTime;
+        try
+        {
+            if (!File.Exists(assemblyPath))
+                return null;
+
+            lastWriteTime = File.GetLastWriteTimeUtc(assemblyPath).Ticks;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
+        {
+            return null;
+        }
+
+        var key = (assemblyPath, lastWriteTime, enumFullName);
+        lock (LoadedAssembliesCacheLock)
+        {
+            if (AssemblyFilesCache.TryGetValue(key, out var cachedMetadata))
+                return cachedMetadata;
+        }
+
+        var result = FromAssemblyFile(assemblyPath, enumFullName);
+        lock (LoadedAssembliesCacheLock)
+        {
+            AssemblyFilesCache[key] = result;
+        }
+
+        return result;
+    }
+
     public static EnumMetadata? FromLoadedAssemblies(string enumFullName)
     {
         lock (LoadedAssembliesCacheLock)

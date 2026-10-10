@@ -121,10 +121,10 @@ namespace Meziantou.Framework
         public int Height { get => throw null; }
         public int Size { get => throw null; }
         public bool this[int row, int column] { get => throw null; }
-        public static Meziantou.Framework.QRCode Create(string data, Meziantou.Framework.ErrorCorrectionLevel errorCorrectionLevel = 1) => throw null;
-        public static Meziantou.Framework.QRCode Create(System.ReadOnlySpan<byte> data, Meziantou.Framework.ErrorCorrectionLevel errorCorrectionLevel = 1) => throw null;
-        public static Meziantou.Framework.QRCode CreateMicroQR(string data, Meziantou.Framework.ErrorCorrectionLevel errorCorrectionLevel = 0) => throw null;
-        public static Meziantou.Framework.QRCode CreateRMQR(string data, Meziantou.Framework.ErrorCorrectionLevel errorCorrectionLevel = 1) => throw null;
+        public static Meziantou.Framework.QRCode Create(string data, Meziantou.Framework.ErrorCorrectionLevel errorCorrectionLevel = Meziantou.Framework.ErrorCorrectionLevel.M) => throw null;
+        public static Meziantou.Framework.QRCode Create(System.ReadOnlySpan<byte> data, Meziantou.Framework.ErrorCorrectionLevel errorCorrectionLevel = Meziantou.Framework.ErrorCorrectionLevel.M) => throw null;
+        public static Meziantou.Framework.QRCode CreateMicroQR(string data, Meziantou.Framework.ErrorCorrectionLevel errorCorrectionLevel = Meziantou.Framework.ErrorCorrectionLevel.L) => throw null;
+        public static Meziantou.Framework.QRCode CreateRMQR(string data, Meziantou.Framework.ErrorCorrectionLevel errorCorrectionLevel = Meziantou.Framework.ErrorCorrectionLevel.M) => throw null;
     }
 
     public sealed class QRCodeConsoleOptions
@@ -147,7 +147,7 @@ namespace Meziantou.Framework
 
     public static class QRCodePayload
     {
-        public static string Wifi(string ssid, string? password = null, Meziantou.Framework.WifiAuthentication authentication = 2, bool hidden = false) => throw null;
+        public static string Wifi(string ssid, string? password = null, Meziantou.Framework.WifiAuthentication authentication = Meziantou.Framework.WifiAuthentication.WPA, bool hidden = false) => throw null;
         public static string VCard(string lastName, string? firstName = null, string? phone = null, string? email = null, string? organization = null, string? title = null, string? url = null, string? address = null) => throw null;
         public static string Email(string address, string? subject = null, string? body = null) => throw null;
         public static string Phone(string number) => throw null;
@@ -155,7 +155,7 @@ namespace Meziantou.Framework
         public static string Geolocation(double latitude, double longitude) => throw null;
         public static string CalendarEvent(string summary, System.DateTime start, System.DateTime end, string? location = null, string? description = null) => throw null;
         public static string MeCard(string lastName, string? firstName = null, string? phone = null, string? email = null, string? organization = null, string? url = null, string? address = null, string? note = null) => throw null;
-        public static string OneTimePassword(Meziantou.Framework.OneTimePasswordType type, string secret, string accountName, string? issuer = null, Meziantou.Framework.OneTimePasswordAlgorithm algorithm = 0, int digits = 6, int period = 30, long? counter = null) => throw null;
+        public static string OneTimePassword(Meziantou.Framework.OneTimePasswordType type, string secret, string accountName, string? issuer = null, Meziantou.Framework.OneTimePasswordAlgorithm algorithm = Meziantou.Framework.OneTimePasswordAlgorithm.SHA1, int digits = 6, int period = 30, long? counter = null) => throw null;
         public static string Bitcoin(string address, decimal? amount = null, string? label = null, string? message = null) => throw null;
         public static string SepaPayment(string beneficiaryName, string iban, decimal amount, string? bic = null, string? remittanceReference = null, string? remittanceText = null, string? information = null) => throw null;
     }

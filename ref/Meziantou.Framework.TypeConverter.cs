@@ -29,12 +29,12 @@ namespace Meziantou.Framework
         public static object? ChangeType(this Meziantou.Framework.IConverter converter, object? input, System.Type conversionType, object? defaultValue) => throw null;
         public static object? ChangeType(object? input, System.Type conversionType, object? defaultValue, System.IFormatProvider? provider) => throw null;
         public static object? ChangeType(this Meziantou.Framework.IConverter converter, object? input, System.Type conversionType, object? defaultValue, System.IFormatProvider? provider) => throw null;
-        public static T ChangeType<T>(object? input) => throw null;
-        public static T ChangeType<T>(this Meziantou.Framework.IConverter converter, object? input) => throw null;
-        public static T ChangeType<T>(object? input, T defaultValue) => throw null;
-        public static T ChangeType<T>(this Meziantou.Framework.IConverter converter, object? input, T defaultValue) => throw null;
-        public static T ChangeType<T>(object? input, T defaultValue, System.IFormatProvider? provider) => throw null;
-        public static T ChangeType<T>(this Meziantou.Framework.IConverter converter, object? input, T defaultValue, System.IFormatProvider? provider) => throw null;
+        public static T? ChangeType<T>(object? input) => throw null;
+        public static T? ChangeType<T>(this Meziantou.Framework.IConverter converter, object? input) => throw null;
+        public static T? ChangeType<T>(object? input, T defaultValue) => throw null;
+        public static T? ChangeType<T>(this Meziantou.Framework.IConverter converter, object? input, T defaultValue) => throw null;
+        public static T? ChangeType<T>(object? input, T defaultValue, System.IFormatProvider? provider) => throw null;
+        public static T? ChangeType<T>(this Meziantou.Framework.IConverter converter, object? input, T defaultValue, System.IFormatProvider? provider) => throw null;
     }
 
     public class DefaultConverter : Meziantou.Framework.IConverter
@@ -74,8 +74,8 @@ namespace Meziantou.Framework
 
     public static class DictionaryExtensions
     {
-        public static TResult GetValueOrDefault<TKey, TValue, TResult>(this System.Collections.Generic.IReadOnlyDictionary<TKey, TValue> dict, TKey key, TResult defaultValue) => throw null;
-        public static bool TryGetValueOrDefault<TKey, TValue, TResult>(this System.Collections.Generic.IReadOnlyDictionary<TKey, TValue> dict, TKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out TResult value) => throw null;
+        public static TResult GetValueOrDefault<TKey, TValue, TResult>(this System.Collections.Generic.IReadOnlyDictionary<TKey, TValue> dict, TKey key, TResult defaultValue) where TKey : notnull => throw null;
+        public static bool TryGetValueOrDefault<TKey, TValue, TResult>(this System.Collections.Generic.IReadOnlyDictionary<TKey, TValue> dict, TKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out TResult value) where TKey : notnull => throw null;
     }
 
     public interface IConverter

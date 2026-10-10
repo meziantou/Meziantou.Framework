@@ -50,14 +50,21 @@ internal static class CSharpSyntaxFacts
         "System.Reflection.AssemblyTitleAttribute",
         "System.Reflection.AssemblyTrademarkAttribute",
         "System.Runtime.CompilerServices.RequiredMemberAttribute",
+
+        // A P/Invoke is written as any other method: the attribute read by the interop source generator is an implementation detail,
+        // and so is the attribute that the generator adds to skip the initialization of the locals
+        "System.Runtime.InteropServices.LibraryImportAttribute",
+        "System.Runtime.CompilerServices.SkipLocalsInitAttribute",
     };
 
-    // Attributes that the Declaration style represents with the C# syntax, but that the Compilable style writes for compatibility
+    // Attributes that are represented with the C# syntax: tuple element names, dynamic, nint and decimal default values.
+    // The compiler rejects most of them when they are written explicitly.
     private static readonly HashSet<string> SyntaxAttributes = new(StringComparer.Ordinal)
     {
         "System.Runtime.CompilerServices.TupleElementNamesAttribute",
         "System.Runtime.CompilerServices.DynamicAttribute",
         "System.Runtime.CompilerServices.NativeIntegerAttribute",
+        "System.Runtime.CompilerServices.DecimalConstantAttribute",
     };
 
     public static bool IsDisplayedAttribute(PublicApiAttribute attribute, PublicApiDeclarationStyle style)
@@ -73,7 +80,7 @@ internal static class CSharpSyntaxFacts
         if (IrrelevantAttributes.Contains(fullName))
             return false;
 
-        if (style == PublicApiDeclarationStyle.Declaration && SyntaxAttributes.Contains(fullName))
+        if (SyntaxAttributes.Contains(fullName))
             return false;
 
         // The Compilable style has always written the attribute the compiler adds to the constructors of types with required members
@@ -183,6 +190,40 @@ internal static class CSharpSyntaxFacts
             "UIntPtr" => "nuint",
             _ => null,
         };
+    }
+
+    // Returns the elements of a tuple, including the ones stored in the nested tuple of the last type argument of a tuple of more than 7 elements
+    public static bool TryGetTupleElements(PublicApiNamedTypeReference type, out List<(PublicApiTypeReference Type, string? Name)> elements)
+    {
+        elements = [];
+        var current = type;
+        while (true)
+        {
+            if (!current.IsTupleType)
+                return false;
+
+            var arity = current.TypeArguments.Length;
+            if (arity < 8)
+            {
+                for (var i = 0; i < arity; i++)
+                {
+                    elements.Add((current.TypeArguments[i], i < current.TupleElementNames.Length ? current.TupleElementNames[i] : null));
+                }
+
+                // A tuple has at least two elements
+                return elements.Count >= 2;
+            }
+
+            for (var i = 0; i < 7; i++)
+            {
+                elements.Add((current.TypeArguments[i], i < current.TupleElementNames.Length ? current.TupleElementNames[i] : null));
+            }
+
+            if (current.TypeArguments[7] is not PublicApiNamedTypeReference rest)
+                return false;
+
+            current = rest;
+        }
     }
 
     public static bool ContainsPointer(PublicApiTypeReference type)

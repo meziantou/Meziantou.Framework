@@ -10,9 +10,9 @@ namespace Meziantou.Framework
         public const int MaxWorkFactor = 31;
         public const int DefaultWorkFactor = 11;
         public const int MaxPasswordLengthInBytes = 72;
-        public static string GenerateSalt(int workFactor = 11, Meziantou.Framework.BcryptVersion version = 2) => throw null;
-        public static string HashPassword(string password, int workFactor = 11, Meziantou.Framework.BcryptVersion version = 2) => throw null;
-        public static string HashPassword(System.ReadOnlySpan<char> password, int workFactor = 11, Meziantou.Framework.BcryptVersion version = 2) => throw null;
+        public static string GenerateSalt(int workFactor = 11, Meziantou.Framework.BcryptVersion version = Meziantou.Framework.BcryptVersion.Revision2B) => throw null;
+        public static string HashPassword(string password, int workFactor = 11, Meziantou.Framework.BcryptVersion version = Meziantou.Framework.BcryptVersion.Revision2B) => throw null;
+        public static string HashPassword(System.ReadOnlySpan<char> password, int workFactor = 11, Meziantou.Framework.BcryptVersion version = Meziantou.Framework.BcryptVersion.Revision2B) => throw null;
         public static string HashPassword(string password, string salt) => throw null;
         public static string HashPassword(System.ReadOnlySpan<char> password, System.ReadOnlySpan<char> salt) => throw null;
         public static bool Verify(string password, string hash) => throw null;
@@ -21,8 +21,8 @@ namespace Meziantou.Framework
         public static Meziantou.Framework.BcryptHashInfo ParseHash(System.ReadOnlySpan<char> hash) => throw null;
         public static bool TryParseHash(string? hash, out Meziantou.Framework.BcryptHashInfo result) => throw null;
         public static bool TryParseHash(System.ReadOnlySpan<char> hash, out Meziantou.Framework.BcryptHashInfo result) => throw null;
-        public static bool NeedsRehash(string hash, int workFactor = 11, Meziantou.Framework.BcryptVersion version = 2) => throw null;
-        public static bool NeedsRehash(System.ReadOnlySpan<char> hash, int workFactor = 11, Meziantou.Framework.BcryptVersion version = 2) => throw null;
+        public static bool NeedsRehash(string hash, int workFactor = 11, Meziantou.Framework.BcryptVersion version = Meziantou.Framework.BcryptVersion.Revision2B) => throw null;
+        public static bool NeedsRehash(System.ReadOnlySpan<char> hash, int workFactor = 11, Meziantou.Framework.BcryptVersion version = Meziantou.Framework.BcryptVersion.Revision2B) => throw null;
     }
 
     public readonly struct BcryptHashInfo : System.IEquatable<Meziantou.Framework.BcryptHashInfo>

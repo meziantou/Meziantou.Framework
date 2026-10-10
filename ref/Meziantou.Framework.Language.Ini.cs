@@ -15,7 +15,7 @@ namespace Meziantou.Framework.Language.Ini
         public System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.Ini.IniPropertySyntax> GetProperties(string? section, string key, System.StringComparer? comparer = null) => throw null;
         public string? GetValue(string? section, string key, System.StringComparer? comparer = null) => throw null;
         public Meziantou.Framework.Language.Ini.IniDocumentSyntax SetValue(string? section, string key, string value, System.StringComparer? comparer = null) => throw null;
-        public Meziantou.Framework.Language.Ini.IniDocumentSyntax SetValues([System.Runtime.CompilerServices.TupleElementNames(new string[] { "Section", "Key", "Value" })] System.Collections.Generic.IEnumerable<System.ValueTuple<string?, string, string>> values, System.StringComparer? comparer = null) => throw null;
+        public Meziantou.Framework.Language.Ini.IniDocumentSyntax SetValues(System.Collections.Generic.IEnumerable<(string? Section, string Key, string Value)> values, System.StringComparer? comparer = null) => throw null;
         public Meziantou.Framework.Language.Ini.IniDocumentSyntax RemoveProperties(string? section, string key, System.StringComparer? comparer = null) => throw null;
         public Meziantou.Framework.Language.Ini.IniDocumentSyntax RemoveSections(string name, System.StringComparer? comparer = null) => throw null;
         public Meziantou.Framework.Language.Ini.IniDocumentSyntax Update(Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Ini.IniEntrySyntax> entries, Meziantou.Framework.Language.SyntaxToken endOfFileToken) => throw null;
@@ -23,7 +23,7 @@ namespace Meziantou.Framework.Language.Ini
         public Meziantou.Framework.Language.Ini.IniDocumentSyntax WithEndOfFileToken(Meziantou.Framework.Language.SyntaxToken endOfFileToken) => throw null;
         public Meziantou.Framework.Language.Ini.IniDocumentSyntax AddEntries(params Meziantou.Framework.Language.Ini.IniEntrySyntax[] items) => throw null;
         public override void Accept(Meziantou.Framework.Language.Ini.IniSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Ini.IniSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Ini.IniSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public abstract class IniEntrySyntax : Meziantou.Framework.Language.Ini.IniSyntaxNode
@@ -83,7 +83,7 @@ namespace Meziantou.Framework.Language.Ini
         public Meziantou.Framework.Language.Ini.IniPropertySyntax WithContinuationTokens(Meziantou.Framework.Language.SyntaxTokenList continuationTokens) => throw null;
         public Meziantou.Framework.Language.Ini.IniPropertySyntax WithValue(string value) => throw null;
         public override void Accept(Meziantou.Framework.Language.Ini.IniSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Ini.IniSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Ini.IniSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public sealed class IniSectionSyntax : Meziantou.Framework.Language.Ini.IniEntrySyntax
@@ -99,7 +99,7 @@ namespace Meziantou.Framework.Language.Ini
         public Meziantou.Framework.Language.Ini.IniSectionSyntax WithName(string name) => throw null;
         public Meziantou.Framework.Language.Ini.IniSectionSyntax WithCloseBracketToken(Meziantou.Framework.Language.SyntaxToken closeBracketToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Ini.IniSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Ini.IniSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Ini.IniSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public sealed class IniSkippedTextSyntax : Meziantou.Framework.Language.Ini.IniEntrySyntax
@@ -109,7 +109,7 @@ namespace Meziantou.Framework.Language.Ini
         public Meziantou.Framework.Language.Ini.IniSkippedTextSyntax WithTokens(Meziantou.Framework.Language.SyntaxTokenList tokens) => throw null;
         public Meziantou.Framework.Language.Ini.IniSkippedTextSyntax AddTokens(params Meziantou.Framework.Language.SyntaxToken[] items) => throw null;
         public override void Accept(Meziantou.Framework.Language.Ini.IniSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Ini.IniSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Ini.IniSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public abstract class IniSyntaxNode : Meziantou.Framework.Language.SyntaxNode
@@ -117,10 +117,10 @@ namespace Meziantou.Framework.Language.Ini
         public Meziantou.Framework.Language.Ini.IniSyntaxNode? Parent { get => throw null; }
         public Meziantou.Framework.Language.Ini.SyntaxKind Kind() => throw null;
         public abstract void Accept(Meziantou.Framework.Language.Ini.IniSyntaxVisitor visitor);
-        public abstract TResult Accept<TResult>(Meziantou.Framework.Language.Ini.IniSyntaxVisitor<TResult> visitor);
+        public abstract TResult? Accept<TResult>(Meziantou.Framework.Language.Ini.IniSyntaxVisitor<TResult> visitor);
     }
 
-    public class IniSyntaxRewriter : Meziantou.Framework.Language.Ini.IniSyntaxVisitor<Meziantou.Framework.Language.SyntaxNode>
+    public class IniSyntaxRewriter : Meziantou.Framework.Language.Ini.IniSyntaxVisitor<Meziantou.Framework.Language.SyntaxNode?>
     {
         public override Meziantou.Framework.Language.SyntaxNode? VisitIniDocument(Meziantou.Framework.Language.Ini.IniDocumentSyntax node) => throw null;
         public override Meziantou.Framework.Language.SyntaxNode? VisitIniSection(Meziantou.Framework.Language.Ini.IniSectionSyntax node) => throw null;
@@ -170,18 +170,18 @@ namespace Meziantou.Framework.Language.Ini
 
     public abstract class IniSyntaxVisitor<TResult>
     {
-        public virtual TResult Visit(Meziantou.Framework.Language.Ini.IniSyntaxNode? node) => throw null;
-        public virtual TResult DefaultVisit(Meziantou.Framework.Language.Ini.IniSyntaxNode node) => throw null;
-        public virtual TResult VisitIniDocument(Meziantou.Framework.Language.Ini.IniDocumentSyntax node) => throw null;
-        public virtual TResult VisitIniSection(Meziantou.Framework.Language.Ini.IniSectionSyntax node) => throw null;
-        public virtual TResult VisitIniProperty(Meziantou.Framework.Language.Ini.IniPropertySyntax node) => throw null;
-        public virtual TResult VisitIniSkippedText(Meziantou.Framework.Language.Ini.IniSkippedTextSyntax node) => throw null;
+        public virtual TResult? Visit(Meziantou.Framework.Language.Ini.IniSyntaxNode? node) => throw null;
+        public virtual TResult? DefaultVisit(Meziantou.Framework.Language.Ini.IniSyntaxNode node) => throw null;
+        public virtual TResult? VisitIniDocument(Meziantou.Framework.Language.Ini.IniDocumentSyntax node) => throw null;
+        public virtual TResult? VisitIniSection(Meziantou.Framework.Language.Ini.IniSectionSyntax node) => throw null;
+        public virtual TResult? VisitIniProperty(Meziantou.Framework.Language.Ini.IniPropertySyntax node) => throw null;
+        public virtual TResult? VisitIniSkippedText(Meziantou.Framework.Language.Ini.IniSkippedTextSyntax node) => throw null;
     }
 
     public class IniSyntaxWalker : Meziantou.Framework.Language.Ini.IniSyntaxVisitor
     {
         protected Meziantou.Framework.Language.SyntaxWalkerDepth Depth { get => throw null; }
-        public IniSyntaxWalker(Meziantou.Framework.Language.SyntaxWalkerDepth depth = 0) { }
+        public IniSyntaxWalker(Meziantou.Framework.Language.SyntaxWalkerDepth depth = Meziantou.Framework.Language.SyntaxWalkerDepth.Node) { }
         public override void DefaultVisit(Meziantou.Framework.Language.Ini.IniSyntaxNode node) { }
         public virtual void VisitToken(Meziantou.Framework.Language.SyntaxToken token) { }
         public virtual void VisitTrivia(Meziantou.Framework.Language.SyntaxTrivia trivia) { }

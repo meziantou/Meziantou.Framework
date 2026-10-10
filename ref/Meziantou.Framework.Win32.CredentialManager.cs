@@ -38,16 +38,16 @@ namespace Meziantou.Framework.Win32
         public static bool TryDeleteCredential(string applicationName, Meziantou.Framework.Win32.CredentialType type) => throw null;
         public static System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Win32.Credential> EnumerateCredentials() => throw null;
         public static System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Win32.Credential> EnumerateCredentials(string? filter) => throw null;
-        public static Meziantou.Framework.Win32.CredentialResult? PromptForCredentialsConsole(string target, string? userName = null, Meziantou.Framework.Win32.CredentialSaveOption saveCredential = 0) => throw null;
+        public static Meziantou.Framework.Win32.CredentialResult? PromptForCredentialsConsole(string target, string? userName = null, Meziantou.Framework.Win32.CredentialSaveOption saveCredential = Meziantou.Framework.Win32.CredentialSaveOption.Unselected) => throw null;
         [System.Runtime.Versioning.SupportedOSPlatform("windows6.0.6000")]
         public static Meziantou.Framework.Win32.CredentialResult? PromptForCredentials(nint owner, string? messageText, string? captionText, string? userName, Meziantou.Framework.Win32.CredentialSaveOption saveCredential) => throw null;
         [System.Runtime.Versioning.SupportedOSPlatform("windows6.0.6000")]
         public static Meziantou.Framework.Win32.CredentialResult? PromptForCredentials(nint owner, string? messageText, string? captionText, string? userName, string? password, Meziantou.Framework.Win32.CredentialSaveOption saveCredential) => throw null;
         [System.Runtime.Versioning.SupportedOSPlatform("windows6.0.6000")]
-        public static Meziantou.Framework.Win32.CredentialResult? PromptForCredentials(nint owner = 0, string? messageText = null, string? captionText = null, string? userName = null, string? password = null, Meziantou.Framework.Win32.CredentialSaveOption saveCredential = 0, Meziantou.Framework.Win32.CredentialErrorCode error = 0) => throw null;
+        public static Meziantou.Framework.Win32.CredentialResult? PromptForCredentials(nint owner = 0, string? messageText = null, string? captionText = null, string? userName = null, string? password = null, Meziantou.Framework.Win32.CredentialSaveOption saveCredential = Meziantou.Framework.Win32.CredentialSaveOption.Unselected, Meziantou.Framework.Win32.CredentialErrorCode error = Meziantou.Framework.Win32.CredentialErrorCode.None) => throw null;
     }
 
-    public enum CredentialPersistence
+    public enum CredentialPersistence : uint
     {
         Session = 1U,
         LocalMachine = 2U,

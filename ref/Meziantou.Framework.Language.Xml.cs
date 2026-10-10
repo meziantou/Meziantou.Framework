@@ -129,7 +129,7 @@ namespace Meziantou.Framework.Language.Xml
         public Meziantou.Framework.Language.Xml.XmlAttributeSyntax WithValueToken(Meziantou.Framework.Language.SyntaxToken valueToken) => throw null;
         public Meziantou.Framework.Language.Xml.XmlAttributeSyntax WithEndQuoteToken(Meziantou.Framework.Language.SyntaxToken endQuoteToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Xml.XmlSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Xml.XmlSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Xml.XmlSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public sealed class XmlCDataSectionSyntax : Meziantou.Framework.Language.Xml.XmlNodeSyntax
@@ -144,7 +144,7 @@ namespace Meziantou.Framework.Language.Xml
         public Meziantou.Framework.Language.Xml.XmlCDataSectionSyntax WithTextToken(Meziantou.Framework.Language.SyntaxToken textToken) => throw null;
         public Meziantou.Framework.Language.Xml.XmlCDataSectionSyntax WithEndCDataToken(Meziantou.Framework.Language.SyntaxToken endCDataToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Xml.XmlSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Xml.XmlSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Xml.XmlSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public sealed class XmlCommentSyntax : Meziantou.Framework.Language.Xml.XmlNodeSyntax
@@ -159,7 +159,7 @@ namespace Meziantou.Framework.Language.Xml
         public Meziantou.Framework.Language.Xml.XmlCommentSyntax WithTextToken(Meziantou.Framework.Language.SyntaxToken textToken) => throw null;
         public Meziantou.Framework.Language.Xml.XmlCommentSyntax WithEndCommentToken(Meziantou.Framework.Language.SyntaxToken endCommentToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Xml.XmlSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Xml.XmlSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Xml.XmlSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public sealed class XmlDeclarationSyntax : Meziantou.Framework.Language.Xml.XmlNodeSyntax
@@ -182,7 +182,7 @@ namespace Meziantou.Framework.Language.Xml
         public Meziantou.Framework.Language.Xml.XmlDeclarationSyntax WithAttributes(Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Xml.XmlAttributeSyntax> attributes) => throw null;
         public Meziantou.Framework.Language.Xml.XmlDeclarationSyntax WithEndDeclarationToken(Meziantou.Framework.Language.SyntaxToken endDeclarationToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Xml.XmlSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Xml.XmlSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Xml.XmlSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public sealed class XmlDocumentSyntax : Meziantou.Framework.Language.Xml.XmlSyntaxNode, System.Xml.XPath.IXPathNavigable
@@ -198,7 +198,7 @@ namespace Meziantou.Framework.Language.Xml
         public Meziantou.Framework.Language.Xml.XmlDocumentSyntax WithNodes(Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Xml.XmlNodeSyntax> nodes) => throw null;
         public Meziantou.Framework.Language.Xml.XmlDocumentSyntax WithEndOfFileToken(Meziantou.Framework.Language.SyntaxToken endOfFileToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Xml.XmlSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Xml.XmlSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Xml.XmlSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public sealed class XmlDocumentTypeSyntax : Meziantou.Framework.Language.Xml.XmlNodeSyntax
@@ -217,7 +217,7 @@ namespace Meziantou.Framework.Language.Xml
         public Meziantou.Framework.Language.Xml.XmlDocumentTypeSyntax WithContentToken(Meziantou.Framework.Language.SyntaxToken contentToken) => throw null;
         public Meziantou.Framework.Language.Xml.XmlDocumentTypeSyntax WithGreaterThanToken(Meziantou.Framework.Language.SyntaxToken greaterThanToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Xml.XmlSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Xml.XmlSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Xml.XmlSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public sealed class XmlElementEndTagSyntax : Meziantou.Framework.Language.Xml.XmlSyntaxNode
@@ -234,7 +234,7 @@ namespace Meziantou.Framework.Language.Xml
         public Meziantou.Framework.Language.Xml.XmlElementEndTagSyntax WithSkippedTokens(Meziantou.Framework.Language.SyntaxTokenList skippedTokens) => throw null;
         public Meziantou.Framework.Language.Xml.XmlElementEndTagSyntax WithGreaterThanToken(Meziantou.Framework.Language.SyntaxToken greaterThanToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Xml.XmlSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Xml.XmlSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Xml.XmlSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public sealed class XmlElementStartTagSyntax : Meziantou.Framework.Language.Xml.XmlSyntaxNode
@@ -250,7 +250,7 @@ namespace Meziantou.Framework.Language.Xml
         public Meziantou.Framework.Language.Xml.XmlElementStartTagSyntax WithAttributes(Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Xml.XmlAttributeSyntax> attributes) => throw null;
         public Meziantou.Framework.Language.Xml.XmlElementStartTagSyntax WithGreaterThanToken(Meziantou.Framework.Language.SyntaxToken greaterThanToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Xml.XmlSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Xml.XmlSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Xml.XmlSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public sealed class XmlElementSyntax : Meziantou.Framework.Language.Xml.XmlNodeSyntax
@@ -269,7 +269,7 @@ namespace Meziantou.Framework.Language.Xml
         public Meziantou.Framework.Language.Xml.XmlElementSyntax WithContent(Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Xml.XmlNodeSyntax> content) => throw null;
         public Meziantou.Framework.Language.Xml.XmlElementSyntax WithEndTag(Meziantou.Framework.Language.Xml.XmlElementEndTagSyntax? endTag) => throw null;
         public override void Accept(Meziantou.Framework.Language.Xml.XmlSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Xml.XmlSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Xml.XmlSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public sealed class XmlEmptyElementSyntax : Meziantou.Framework.Language.Xml.XmlNodeSyntax
@@ -287,7 +287,7 @@ namespace Meziantou.Framework.Language.Xml
         public Meziantou.Framework.Language.Xml.XmlEmptyElementSyntax WithAttributes(Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Xml.XmlAttributeSyntax> attributes) => throw null;
         public Meziantou.Framework.Language.Xml.XmlEmptyElementSyntax WithSlashGreaterThanToken(Meziantou.Framework.Language.SyntaxToken slashGreaterThanToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Xml.XmlSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Xml.XmlSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Xml.XmlSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public static class XmlExtensions
@@ -334,7 +334,7 @@ namespace Meziantou.Framework.Language.Xml
         public Meziantou.Framework.Language.Xml.XmlProcessingInstructionSyntax WithDataToken(Meziantou.Framework.Language.SyntaxToken dataToken) => throw null;
         public Meziantou.Framework.Language.Xml.XmlProcessingInstructionSyntax WithEndProcessingInstructionToken(Meziantou.Framework.Language.SyntaxToken endProcessingInstructionToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Xml.XmlSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Xml.XmlSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Xml.XmlSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public sealed class XmlSkippedTextSyntax : Meziantou.Framework.Language.Xml.XmlNodeSyntax
@@ -344,7 +344,7 @@ namespace Meziantou.Framework.Language.Xml
         public Meziantou.Framework.Language.Xml.XmlSkippedTextSyntax Update(Meziantou.Framework.Language.SyntaxTokenList tokens) => throw null;
         public Meziantou.Framework.Language.Xml.XmlSkippedTextSyntax WithTokens(Meziantou.Framework.Language.SyntaxTokenList tokens) => throw null;
         public override void Accept(Meziantou.Framework.Language.Xml.XmlSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Xml.XmlSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Xml.XmlSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public abstract class XmlSyntaxNode : Meziantou.Framework.Language.SyntaxNode
@@ -361,10 +361,10 @@ namespace Meziantou.Framework.Language.Xml
         public Meziantou.Framework.Language.Xml.XmlSyntaxNode? SelectSingleSyntaxNode(string xpath) => throw null;
         public Meziantou.Framework.Language.Xml.XmlSyntaxNode? SelectSingleSyntaxNode(string xpath, System.Xml.IXmlNamespaceResolver? namespaceResolver) => throw null;
         public abstract void Accept(Meziantou.Framework.Language.Xml.XmlSyntaxVisitor visitor);
-        public abstract TResult Accept<TResult>(Meziantou.Framework.Language.Xml.XmlSyntaxVisitor<TResult> visitor);
+        public abstract TResult? Accept<TResult>(Meziantou.Framework.Language.Xml.XmlSyntaxVisitor<TResult> visitor);
     }
 
-    public class XmlSyntaxRewriter : Meziantou.Framework.Language.Xml.XmlSyntaxVisitor<Meziantou.Framework.Language.SyntaxNode>
+    public class XmlSyntaxRewriter : Meziantou.Framework.Language.Xml.XmlSyntaxVisitor<Meziantou.Framework.Language.SyntaxNode?>
     {
         public virtual Meziantou.Framework.Language.SyntaxToken VisitToken(Meziantou.Framework.Language.SyntaxToken token) => throw null;
         public virtual Meziantou.Framework.Language.SyntaxTrivia VisitTrivia(Meziantou.Framework.Language.SyntaxTrivia trivia) => throw null;
@@ -423,27 +423,27 @@ namespace Meziantou.Framework.Language.Xml
 
     public abstract class XmlSyntaxVisitor<TResult>
     {
-        public virtual TResult Visit(Meziantou.Framework.Language.Xml.XmlSyntaxNode? node) => throw null;
-        public virtual TResult DefaultVisit(Meziantou.Framework.Language.Xml.XmlSyntaxNode node) => throw null;
-        public virtual TResult VisitDocument(Meziantou.Framework.Language.Xml.XmlDocumentSyntax node) => throw null;
-        public virtual TResult VisitElement(Meziantou.Framework.Language.Xml.XmlElementSyntax node) => throw null;
-        public virtual TResult VisitEmptyElement(Meziantou.Framework.Language.Xml.XmlEmptyElementSyntax node) => throw null;
-        public virtual TResult VisitElementStartTag(Meziantou.Framework.Language.Xml.XmlElementStartTagSyntax node) => throw null;
-        public virtual TResult VisitElementEndTag(Meziantou.Framework.Language.Xml.XmlElementEndTagSyntax node) => throw null;
-        public virtual TResult VisitAttribute(Meziantou.Framework.Language.Xml.XmlAttributeSyntax node) => throw null;
-        public virtual TResult VisitText(Meziantou.Framework.Language.Xml.XmlTextSyntax node) => throw null;
-        public virtual TResult VisitComment(Meziantou.Framework.Language.Xml.XmlCommentSyntax node) => throw null;
-        public virtual TResult VisitCDataSection(Meziantou.Framework.Language.Xml.XmlCDataSectionSyntax node) => throw null;
-        public virtual TResult VisitDeclaration(Meziantou.Framework.Language.Xml.XmlDeclarationSyntax node) => throw null;
-        public virtual TResult VisitProcessingInstruction(Meziantou.Framework.Language.Xml.XmlProcessingInstructionSyntax node) => throw null;
-        public virtual TResult VisitDocumentType(Meziantou.Framework.Language.Xml.XmlDocumentTypeSyntax node) => throw null;
-        public virtual TResult VisitSkippedText(Meziantou.Framework.Language.Xml.XmlSkippedTextSyntax node) => throw null;
+        public virtual TResult? Visit(Meziantou.Framework.Language.Xml.XmlSyntaxNode? node) => throw null;
+        public virtual TResult? DefaultVisit(Meziantou.Framework.Language.Xml.XmlSyntaxNode node) => throw null;
+        public virtual TResult? VisitDocument(Meziantou.Framework.Language.Xml.XmlDocumentSyntax node) => throw null;
+        public virtual TResult? VisitElement(Meziantou.Framework.Language.Xml.XmlElementSyntax node) => throw null;
+        public virtual TResult? VisitEmptyElement(Meziantou.Framework.Language.Xml.XmlEmptyElementSyntax node) => throw null;
+        public virtual TResult? VisitElementStartTag(Meziantou.Framework.Language.Xml.XmlElementStartTagSyntax node) => throw null;
+        public virtual TResult? VisitElementEndTag(Meziantou.Framework.Language.Xml.XmlElementEndTagSyntax node) => throw null;
+        public virtual TResult? VisitAttribute(Meziantou.Framework.Language.Xml.XmlAttributeSyntax node) => throw null;
+        public virtual TResult? VisitText(Meziantou.Framework.Language.Xml.XmlTextSyntax node) => throw null;
+        public virtual TResult? VisitComment(Meziantou.Framework.Language.Xml.XmlCommentSyntax node) => throw null;
+        public virtual TResult? VisitCDataSection(Meziantou.Framework.Language.Xml.XmlCDataSectionSyntax node) => throw null;
+        public virtual TResult? VisitDeclaration(Meziantou.Framework.Language.Xml.XmlDeclarationSyntax node) => throw null;
+        public virtual TResult? VisitProcessingInstruction(Meziantou.Framework.Language.Xml.XmlProcessingInstructionSyntax node) => throw null;
+        public virtual TResult? VisitDocumentType(Meziantou.Framework.Language.Xml.XmlDocumentTypeSyntax node) => throw null;
+        public virtual TResult? VisitSkippedText(Meziantou.Framework.Language.Xml.XmlSkippedTextSyntax node) => throw null;
     }
 
     public class XmlSyntaxWalker : Meziantou.Framework.Language.Xml.XmlSyntaxVisitor
     {
         protected Meziantou.Framework.Language.SyntaxWalkerDepth Depth { get => throw null; }
-        public XmlSyntaxWalker(Meziantou.Framework.Language.SyntaxWalkerDepth depth = 0) { }
+        public XmlSyntaxWalker(Meziantou.Framework.Language.SyntaxWalkerDepth depth = Meziantou.Framework.Language.SyntaxWalkerDepth.Node) { }
         public override void DefaultVisit(Meziantou.Framework.Language.Xml.XmlSyntaxNode node) { }
         public virtual void VisitToken(Meziantou.Framework.Language.SyntaxToken token) { }
         public virtual void VisitTrivia(Meziantou.Framework.Language.SyntaxTrivia trivia) { }
@@ -458,6 +458,6 @@ namespace Meziantou.Framework.Language.Xml
         public Meziantou.Framework.Language.Xml.XmlTextSyntax Update(Meziantou.Framework.Language.SyntaxToken textToken) => throw null;
         public Meziantou.Framework.Language.Xml.XmlTextSyntax WithTextToken(Meziantou.Framework.Language.SyntaxToken textToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Xml.XmlSyntaxVisitor visitor) { }
-        public override TResult Accept<TResult>(Meziantou.Framework.Language.Xml.XmlSyntaxVisitor<TResult> visitor) => throw null;
+        public override TResult? Accept<TResult>(Meziantou.Framework.Language.Xml.XmlSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 }

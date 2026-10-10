@@ -8,10 +8,10 @@ namespace Meziantou.Framework.DnsClient
     {
         public DnsClient(string server, Meziantou.Framework.DnsClient.DnsClientProtocol protocol) { }
         public DnsClient(string server, Meziantou.Framework.DnsClient.DnsClientProtocol protocol, Meziantou.Framework.DnsClient.DnsClientOptions? options) { }
-        public System.Threading.Tasks.Task<Meziantou.Framework.DnsClient.Response.DnsResponseMessage> QueryAsync(string name, Meziantou.Framework.DnsClient.Query.DnsQueryType type, System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public System.Threading.Tasks.Task<Meziantou.Framework.DnsClient.Response.DnsResponseMessage> QueryAsync(string name, Meziantou.Framework.DnsClient.Query.DnsQueryType type, Meziantou.Framework.DnsClient.Query.DnsQueryClass queryClass, System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public System.Threading.Tasks.Task<Meziantou.Framework.DnsClient.Response.DnsResponseMessage> ReverseLookupAsync(System.Net.IPAddress address, System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public System.Threading.Tasks.Task<Meziantou.Framework.DnsClient.Response.DnsResponseMessage> SendAsync(Meziantou.Framework.DnsClient.Query.DnsQueryMessage message, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.DnsClient.Response.DnsResponseMessage> QueryAsync(string name, Meziantou.Framework.DnsClient.Query.DnsQueryType type, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.DnsClient.Response.DnsResponseMessage> QueryAsync(string name, Meziantou.Framework.DnsClient.Query.DnsQueryType type, Meziantou.Framework.DnsClient.Query.DnsQueryClass queryClass, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.DnsClient.Response.DnsResponseMessage> ReverseLookupAsync(System.Net.IPAddress address, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.DnsClient.Response.DnsResponseMessage> SendAsync(Meziantou.Framework.DnsClient.Query.DnsQueryMessage message, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public void Dispose() { }
     }
 
@@ -51,7 +51,7 @@ namespace Meziantou.Framework.DnsClient
         public string Name { get => throw null; }
         public Meziantou.Framework.DnsClient.Query.DnsQueryType Type { get => throw null; }
         public Meziantou.Framework.DnsClient.Query.DnsQueryClass QueryClass { get => throw null; }
-        public DnsQuestion(string name, Meziantou.Framework.DnsClient.Query.DnsQueryType type, Meziantou.Framework.DnsClient.Query.DnsQueryClass queryClass = 1) { }
+        public DnsQuestion(string name, Meziantou.Framework.DnsClient.Query.DnsQueryType type, Meziantou.Framework.DnsClient.Query.DnsQueryClass queryClass = Meziantou.Framework.DnsClient.Query.DnsQueryClass.IN) { }
     }
 
     public sealed class DnssecTrustAnchor
@@ -85,7 +85,7 @@ namespace Meziantou.Framework.DnsClient.Query
         public byte ExtendedRCode { get => throw null; set { } }
     }
 
-    public enum DnsOpCode
+    public enum DnsOpCode : byte
     {
         Query = 0,
         IQuery = 1,
@@ -94,7 +94,7 @@ namespace Meziantou.Framework.DnsClient.Query
         Update = 5,
     }
 
-    public enum DnsQueryClass
+    public enum DnsQueryClass : ushort
     {
         IN = 1,
         CS = 2,
@@ -114,7 +114,7 @@ namespace Meziantou.Framework.DnsClient.Query
         public Meziantou.Framework.DnsClient.Query.DnsEdnsOptions? EdnsOptions { get => throw null; set { } }
     }
 
-    public enum DnsQueryType
+    public enum DnsQueryType : ushort
     {
         A = 1,
         NS = 2,
@@ -202,7 +202,7 @@ namespace Meziantou.Framework.DnsClient.Response
         public static System.Collections.Generic.IEnumerable<System.Net.IPAddress> GetIPv6Addresses(this System.Collections.Generic.IEnumerable<Meziantou.Framework.DnsClient.Response.DnsRecord> records) => throw null;
     }
 
-    public enum DnsResponseCode
+    public enum DnsResponseCode : ushort
     {
         NoError = 0,
         FormError = 1,

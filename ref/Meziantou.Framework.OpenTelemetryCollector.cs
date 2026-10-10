@@ -106,6 +106,7 @@ namespace OpenTelemetry.Proto.Collector.Logs.V1
         public const int ErrorMessageFieldNumber = 2;
         public static Google.Protobuf.MessageParser<OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsPartialSuccess> Parser { get => throw null; }
         public static Google.Protobuf.Reflection.MessageDescriptor Descriptor { get => throw null; }
+        Google.Protobuf.Reflection.MessageDescriptor pb::Google.Protobuf.IMessage.Descriptor { get => throw null; }
         public long RejectedLogRecords { get => throw null; set { } }
         public string ErrorMessage { get => throw null; set { } }
         #nullable disable
@@ -144,6 +145,7 @@ namespace OpenTelemetry.Proto.Collector.Logs.V1
         public const int ResourceLogsFieldNumber = 1;
         public static Google.Protobuf.MessageParser<OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsServiceRequest> Parser { get => throw null; }
         public static Google.Protobuf.Reflection.MessageDescriptor Descriptor { get => throw null; }
+        Google.Protobuf.Reflection.MessageDescriptor pb::Google.Protobuf.IMessage.Descriptor { get => throw null; }
         public Google.Protobuf.Collections.RepeatedField<OpenTelemetry.Proto.Logs.V1.ResourceLogs> ResourceLogs { get => throw null; }
         #nullable disable
         public ExportLogsServiceRequest(OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsServiceRequest other) { }
@@ -181,6 +183,7 @@ namespace OpenTelemetry.Proto.Collector.Logs.V1
         public const int PartialSuccessFieldNumber = 1;
         public static Google.Protobuf.MessageParser<OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsServiceResponse> Parser { get => throw null; }
         public static Google.Protobuf.Reflection.MessageDescriptor Descriptor { get => throw null; }
+        Google.Protobuf.Reflection.MessageDescriptor pb::Google.Protobuf.IMessage.Descriptor { get => throw null; }
         public OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsPartialSuccess PartialSuccess { get => throw null; set { } }
         #nullable disable
         public ExportLogsServiceResponse(OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsServiceResponse other) { }
@@ -216,10 +219,10 @@ namespace OpenTelemetry.Proto.Collector.Logs.V1
     {
         public static Google.Protobuf.Reflection.ServiceDescriptor Descriptor { get => throw null; }
         #nullable disable
-        public static Grpc.Core.ServerServiceDefinition BindService(LogsServiceBase serviceImpl) => throw null;
+        public static Grpc.Core.ServerServiceDefinition BindService(OpenTelemetry.Proto.Collector.Logs.V1.LogsService.LogsServiceBase serviceImpl) => throw null;
         #nullable restore
         #nullable disable
-        public static void BindService(Grpc.Core.ServiceBinderBase serviceBinder, LogsServiceBase serviceImpl) { }
+        public static void BindService(Grpc.Core.ServiceBinderBase serviceBinder, OpenTelemetry.Proto.Collector.Logs.V1.LogsService.LogsServiceBase serviceImpl) { }
         #nullable restore
         public abstract class LogsServiceBase
         {
@@ -227,7 +230,7 @@ namespace OpenTelemetry.Proto.Collector.Logs.V1
             public virtual System.Threading.Tasks.Task<OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsServiceResponse> Export(OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsServiceRequest request, Grpc.Core.ServerCallContext context) => throw null;
             #nullable restore
         }
-        public class LogsServiceClient : Grpc.Core.ClientBase<LogsServiceClient>
+        public class LogsServiceClient : Grpc.Core.ClientBase<OpenTelemetry.Proto.Collector.Logs.V1.LogsService.LogsServiceClient>
         {
             #nullable disable
             public LogsServiceClient(Grpc.Core.ChannelBase channel) { }
@@ -236,7 +239,7 @@ namespace OpenTelemetry.Proto.Collector.Logs.V1
             public LogsServiceClient(Grpc.Core.CallInvoker callInvoker) { }
             #nullable restore
             #nullable disable
-            protected LogsServiceClient(ClientBaseConfiguration configuration) { }
+            protected LogsServiceClient(Grpc.Core.ClientBase.ClientBaseConfiguration configuration) { }
             #nullable restore
             public virtual OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsServiceResponse Export(
             #nullable disable
@@ -246,7 +249,7 @@ namespace OpenTelemetry.Proto.Collector.Logs.V1
                 Grpc.Core.Metadata headers = null,
             #nullable restore
                 System.DateTime? deadline = null,
-                System.Threading.CancellationToken cancellationToken = null
+                System.Threading.CancellationToken cancellationToken = default
                 ) => throw null;
             #nullable disable
             public virtual OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsServiceResponse Export(OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsServiceRequest request, Grpc.Core.CallOptions options) => throw null;
@@ -259,13 +262,13 @@ namespace OpenTelemetry.Proto.Collector.Logs.V1
                 Grpc.Core.Metadata headers = null,
             #nullable restore
                 System.DateTime? deadline = null,
-                System.Threading.CancellationToken cancellationToken = null
+                System.Threading.CancellationToken cancellationToken = default
                 ) => throw null;
             #nullable disable
             public virtual Grpc.Core.AsyncUnaryCall<OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsServiceResponse> ExportAsync(OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsServiceRequest request, Grpc.Core.CallOptions options) => throw null;
             #nullable restore
             #nullable disable
-            protected override LogsServiceClient NewInstance(ClientBaseConfiguration configuration) => throw null;
+            protected override OpenTelemetry.Proto.Collector.Logs.V1.LogsService.LogsServiceClient NewInstance(Grpc.Core.ClientBase.ClientBaseConfiguration configuration) => throw null;
             #nullable restore
         }
     }
@@ -284,6 +287,7 @@ namespace OpenTelemetry.Proto.Collector.Metrics.V1
         public const int ErrorMessageFieldNumber = 2;
         public static Google.Protobuf.MessageParser<OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsPartialSuccess> Parser { get => throw null; }
         public static Google.Protobuf.Reflection.MessageDescriptor Descriptor { get => throw null; }
+        Google.Protobuf.Reflection.MessageDescriptor pb::Google.Protobuf.IMessage.Descriptor { get => throw null; }
         public long RejectedDataPoints { get => throw null; set { } }
         public string ErrorMessage { get => throw null; set { } }
         #nullable disable
@@ -322,6 +326,7 @@ namespace OpenTelemetry.Proto.Collector.Metrics.V1
         public const int ResourceMetricsFieldNumber = 1;
         public static Google.Protobuf.MessageParser<OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsServiceRequest> Parser { get => throw null; }
         public static Google.Protobuf.Reflection.MessageDescriptor Descriptor { get => throw null; }
+        Google.Protobuf.Reflection.MessageDescriptor pb::Google.Protobuf.IMessage.Descriptor { get => throw null; }
         public Google.Protobuf.Collections.RepeatedField<OpenTelemetry.Proto.Metrics.V1.ResourceMetrics> ResourceMetrics { get => throw null; }
         #nullable disable
         public ExportMetricsServiceRequest(OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsServiceRequest other) { }
@@ -359,6 +364,7 @@ namespace OpenTelemetry.Proto.Collector.Metrics.V1
         public const int PartialSuccessFieldNumber = 1;
         public static Google.Protobuf.MessageParser<OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsServiceResponse> Parser { get => throw null; }
         public static Google.Protobuf.Reflection.MessageDescriptor Descriptor { get => throw null; }
+        Google.Protobuf.Reflection.MessageDescriptor pb::Google.Protobuf.IMessage.Descriptor { get => throw null; }
         public OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsPartialSuccess PartialSuccess { get => throw null; set { } }
         #nullable disable
         public ExportMetricsServiceResponse(OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsServiceResponse other) { }
@@ -394,10 +400,10 @@ namespace OpenTelemetry.Proto.Collector.Metrics.V1
     {
         public static Google.Protobuf.Reflection.ServiceDescriptor Descriptor { get => throw null; }
         #nullable disable
-        public static Grpc.Core.ServerServiceDefinition BindService(MetricsServiceBase serviceImpl) => throw null;
+        public static Grpc.Core.ServerServiceDefinition BindService(OpenTelemetry.Proto.Collector.Metrics.V1.MetricsService.MetricsServiceBase serviceImpl) => throw null;
         #nullable restore
         #nullable disable
-        public static void BindService(Grpc.Core.ServiceBinderBase serviceBinder, MetricsServiceBase serviceImpl) { }
+        public static void BindService(Grpc.Core.ServiceBinderBase serviceBinder, OpenTelemetry.Proto.Collector.Metrics.V1.MetricsService.MetricsServiceBase serviceImpl) { }
         #nullable restore
         public abstract class MetricsServiceBase
         {
@@ -405,7 +411,7 @@ namespace OpenTelemetry.Proto.Collector.Metrics.V1
             public virtual System.Threading.Tasks.Task<OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsServiceResponse> Export(OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsServiceRequest request, Grpc.Core.ServerCallContext context) => throw null;
             #nullable restore
         }
-        public class MetricsServiceClient : Grpc.Core.ClientBase<MetricsServiceClient>
+        public class MetricsServiceClient : Grpc.Core.ClientBase<OpenTelemetry.Proto.Collector.Metrics.V1.MetricsService.MetricsServiceClient>
         {
             #nullable disable
             public MetricsServiceClient(Grpc.Core.ChannelBase channel) { }
@@ -414,7 +420,7 @@ namespace OpenTelemetry.Proto.Collector.Metrics.V1
             public MetricsServiceClient(Grpc.Core.CallInvoker callInvoker) { }
             #nullable restore
             #nullable disable
-            protected MetricsServiceClient(ClientBaseConfiguration configuration) { }
+            protected MetricsServiceClient(Grpc.Core.ClientBase.ClientBaseConfiguration configuration) { }
             #nullable restore
             public virtual OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsServiceResponse Export(
             #nullable disable
@@ -424,7 +430,7 @@ namespace OpenTelemetry.Proto.Collector.Metrics.V1
                 Grpc.Core.Metadata headers = null,
             #nullable restore
                 System.DateTime? deadline = null,
-                System.Threading.CancellationToken cancellationToken = null
+                System.Threading.CancellationToken cancellationToken = default
                 ) => throw null;
             #nullable disable
             public virtual OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsServiceResponse Export(OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsServiceRequest request, Grpc.Core.CallOptions options) => throw null;
@@ -437,13 +443,13 @@ namespace OpenTelemetry.Proto.Collector.Metrics.V1
                 Grpc.Core.Metadata headers = null,
             #nullable restore
                 System.DateTime? deadline = null,
-                System.Threading.CancellationToken cancellationToken = null
+                System.Threading.CancellationToken cancellationToken = default
                 ) => throw null;
             #nullable disable
             public virtual Grpc.Core.AsyncUnaryCall<OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsServiceResponse> ExportAsync(OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsServiceRequest request, Grpc.Core.CallOptions options) => throw null;
             #nullable restore
             #nullable disable
-            protected override MetricsServiceClient NewInstance(ClientBaseConfiguration configuration) => throw null;
+            protected override OpenTelemetry.Proto.Collector.Metrics.V1.MetricsService.MetricsServiceClient NewInstance(Grpc.Core.ClientBase.ClientBaseConfiguration configuration) => throw null;
             #nullable restore
         }
     }
@@ -462,6 +468,7 @@ namespace OpenTelemetry.Proto.Collector.Trace.V1
         public const int ErrorMessageFieldNumber = 2;
         public static Google.Protobuf.MessageParser<OpenTelemetry.Proto.Collector.Trace.V1.ExportTracePartialSuccess> Parser { get => throw null; }
         public static Google.Protobuf.Reflection.MessageDescriptor Descriptor { get => throw null; }
+        Google.Protobuf.Reflection.MessageDescriptor pb::Google.Protobuf.IMessage.Descriptor { get => throw null; }
         public long RejectedSpans { get => throw null; set { } }
         public string ErrorMessage { get => throw null; set { } }
         #nullable disable
@@ -500,6 +507,7 @@ namespace OpenTelemetry.Proto.Collector.Trace.V1
         public const int ResourceSpansFieldNumber = 1;
         public static Google.Protobuf.MessageParser<OpenTelemetry.Proto.Collector.Trace.V1.ExportTraceServiceRequest> Parser { get => throw null; }
         public static Google.Protobuf.Reflection.MessageDescriptor Descriptor { get => throw null; }
+        Google.Protobuf.Reflection.MessageDescriptor pb::Google.Protobuf.IMessage.Descriptor { get => throw null; }
         public Google.Protobuf.Collections.RepeatedField<OpenTelemetry.Proto.Trace.V1.ResourceSpans> ResourceSpans { get => throw null; }
         #nullable disable
         public ExportTraceServiceRequest(OpenTelemetry.Proto.Collector.Trace.V1.ExportTraceServiceRequest other) { }
@@ -537,6 +545,7 @@ namespace OpenTelemetry.Proto.Collector.Trace.V1
         public const int PartialSuccessFieldNumber = 1;
         public static Google.Protobuf.MessageParser<OpenTelemetry.Proto.Collector.Trace.V1.ExportTraceServiceResponse> Parser { get => throw null; }
         public static Google.Protobuf.Reflection.MessageDescriptor Descriptor { get => throw null; }
+        Google.Protobuf.Reflection.MessageDescriptor pb::Google.Protobuf.IMessage.Descriptor { get => throw null; }
         public OpenTelemetry.Proto.Collector.Trace.V1.ExportTracePartialSuccess PartialSuccess { get => throw null; set { } }
         #nullable disable
         public ExportTraceServiceResponse(OpenTelemetry.Proto.Collector.Trace.V1.ExportTraceServiceResponse other) { }
@@ -572,10 +581,10 @@ namespace OpenTelemetry.Proto.Collector.Trace.V1
     {
         public static Google.Protobuf.Reflection.ServiceDescriptor Descriptor { get => throw null; }
         #nullable disable
-        public static Grpc.Core.ServerServiceDefinition BindService(TraceServiceBase serviceImpl) => throw null;
+        public static Grpc.Core.ServerServiceDefinition BindService(OpenTelemetry.Proto.Collector.Trace.V1.TraceService.TraceServiceBase serviceImpl) => throw null;
         #nullable restore
         #nullable disable
-        public static void BindService(Grpc.Core.ServiceBinderBase serviceBinder, TraceServiceBase serviceImpl) { }
+        public static void BindService(Grpc.Core.ServiceBinderBase serviceBinder, OpenTelemetry.Proto.Collector.Trace.V1.TraceService.TraceServiceBase serviceImpl) { }
         #nullable restore
         public abstract class TraceServiceBase
         {
@@ -583,7 +592,7 @@ namespace OpenTelemetry.Proto.Collector.Trace.V1
             public virtual System.Threading.Tasks.Task<OpenTelemetry.Proto.Collector.Trace.V1.ExportTraceServiceResponse> Export(OpenTelemetry.Proto.Collector.Trace.V1.ExportTraceServiceRequest request, Grpc.Core.ServerCallContext context) => throw null;
             #nullable restore
         }
-        public class TraceServiceClient : Grpc.Core.ClientBase<TraceServiceClient>
+        public class TraceServiceClient : Grpc.Core.ClientBase<OpenTelemetry.Proto.Collector.Trace.V1.TraceService.TraceServiceClient>
         {
             #nullable disable
             public TraceServiceClient(Grpc.Core.ChannelBase channel) { }
@@ -592,7 +601,7 @@ namespace OpenTelemetry.Proto.Collector.Trace.V1
             public TraceServiceClient(Grpc.Core.CallInvoker callInvoker) { }
             #nullable restore
             #nullable disable
-            protected TraceServiceClient(ClientBaseConfiguration configuration) { }
+            protected TraceServiceClient(Grpc.Core.ClientBase.ClientBaseConfiguration configuration) { }
             #nullable restore
             public virtual OpenTelemetry.Proto.Collector.Trace.V1.ExportTraceServiceResponse Export(
             #nullable disable
@@ -602,7 +611,7 @@ namespace OpenTelemetry.Proto.Collector.Trace.V1
                 Grpc.Core.Metadata headers = null,
             #nullable restore
                 System.DateTime? deadline = null,
-                System.Threading.CancellationToken cancellationToken = null
+                System.Threading.CancellationToken cancellationToken = default
                 ) => throw null;
             #nullable disable
             public virtual OpenTelemetry.Proto.Collector.Trace.V1.ExportTraceServiceResponse Export(OpenTelemetry.Proto.Collector.Trace.V1.ExportTraceServiceRequest request, Grpc.Core.CallOptions options) => throw null;
@@ -615,13 +624,13 @@ namespace OpenTelemetry.Proto.Collector.Trace.V1
                 Grpc.Core.Metadata headers = null,
             #nullable restore
                 System.DateTime? deadline = null,
-                System.Threading.CancellationToken cancellationToken = null
+                System.Threading.CancellationToken cancellationToken = default
                 ) => throw null;
             #nullable disable
             public virtual Grpc.Core.AsyncUnaryCall<OpenTelemetry.Proto.Collector.Trace.V1.ExportTraceServiceResponse> ExportAsync(OpenTelemetry.Proto.Collector.Trace.V1.ExportTraceServiceRequest request, Grpc.Core.CallOptions options) => throw null;
             #nullable restore
             #nullable disable
-            protected override TraceServiceClient NewInstance(ClientBaseConfiguration configuration) => throw null;
+            protected override OpenTelemetry.Proto.Collector.Trace.V1.TraceService.TraceServiceClient NewInstance(Grpc.Core.ClientBase.ClientBaseConfiguration configuration) => throw null;
             #nullable restore
         }
     }
@@ -643,6 +652,7 @@ namespace OpenTelemetry.Proto.Common.V1
         public const int BytesValueFieldNumber = 5;
         public static Google.Protobuf.MessageParser<OpenTelemetry.Proto.Common.V1.AnyValue> Parser { get => throw null; }
         public static Google.Protobuf.Reflection.MessageDescriptor Descriptor { get => throw null; }
+        Google.Protobuf.Reflection.MessageDescriptor pb::Google.Protobuf.IMessage.Descriptor { get => throw null; }
         public string StringValue { get => throw null; set { } }
         public bool HasStringValue { get => throw null; }
         public bool BoolValue { get => throw null; set { } }
@@ -653,7 +663,7 @@ namespace OpenTelemetry.Proto.Common.V1
         public bool HasDoubleValue { get => throw null; }
         public Google.Protobuf.ByteString BytesValue { get => throw null; set { } }
         public bool HasBytesValue { get => throw null; }
-        public ValueOneofCase ValueCase { get => throw null; }
+        public OpenTelemetry.Proto.Common.V1.AnyValue.ValueOneofCase ValueCase { get => throw null; }
         #nullable disable
         public AnyValue(OpenTelemetry.Proto.Common.V1.AnyValue other) { }
         #nullable restore
@@ -712,6 +722,7 @@ namespace OpenTelemetry.Proto.Common.V1
         public const int AttributesFieldNumber = 3;
         public static Google.Protobuf.MessageParser<OpenTelemetry.Proto.Common.V1.InstrumentationScope> Parser { get => throw null; }
         public static Google.Protobuf.Reflection.MessageDescriptor Descriptor { get => throw null; }
+        Google.Protobuf.Reflection.MessageDescriptor pb::Google.Protobuf.IMessage.Descriptor { get => throw null; }
         public string Name { get => throw null; set { } }
         public string Version { get => throw null; set { } }
         public Google.Protobuf.Collections.RepeatedField<OpenTelemetry.Proto.Common.V1.KeyValue> Attributes { get => throw null; }
@@ -752,6 +763,7 @@ namespace OpenTelemetry.Proto.Common.V1
         public const int ValueFieldNumber = 2;
         public static Google.Protobuf.MessageParser<OpenTelemetry.Proto.Common.V1.KeyValue> Parser { get => throw null; }
         public static Google.Protobuf.Reflection.MessageDescriptor Descriptor { get => throw null; }
+        Google.Protobuf.Reflection.MessageDescriptor pb::Google.Protobuf.IMessage.Descriptor { get => throw null; }
         public string Key { get => throw null; set { } }
         public OpenTelemetry.Proto.Common.V1.AnyValue Value { get => throw null; set { } }
         #nullable disable
@@ -794,6 +806,7 @@ namespace OpenTelemetry.Proto.Logs.V1
         public const int AttributesFieldNumber = 6;
         public static Google.Protobuf.MessageParser<OpenTelemetry.Proto.Logs.V1.LogRecord> Parser { get => throw null; }
         public static Google.Protobuf.Reflection.MessageDescriptor Descriptor { get => throw null; }
+        Google.Protobuf.Reflection.MessageDescriptor pb::Google.Protobuf.IMessage.Descriptor { get => throw null; }
         public ulong TimeUnixNano { get => throw null; set { } }
         public OpenTelemetry.Proto.Common.V1.AnyValue Body { get => throw null; set { } }
         public Google.Protobuf.Collections.RepeatedField<OpenTelemetry.Proto.Common.V1.KeyValue> Attributes { get => throw null; }
@@ -840,6 +853,7 @@ namespace OpenTelemetry.Proto.Logs.V1
         public const int SchemaUrlFieldNumber = 3;
         public static Google.Protobuf.MessageParser<OpenTelemetry.Proto.Logs.V1.ResourceLogs> Parser { get => throw null; }
         public static Google.Protobuf.Reflection.MessageDescriptor Descriptor { get => throw null; }
+        Google.Protobuf.Reflection.MessageDescriptor pb::Google.Protobuf.IMessage.Descriptor { get => throw null; }
         public OpenTelemetry.Proto.Resource.V1.Resource Resource { get => throw null; set { } }
         public Google.Protobuf.Collections.RepeatedField<OpenTelemetry.Proto.Logs.V1.ScopeLogs> ScopeLogs { get => throw null; }
         public string SchemaUrl { get => throw null; set { } }
@@ -881,6 +895,7 @@ namespace OpenTelemetry.Proto.Logs.V1
         public const int SchemaUrlFieldNumber = 3;
         public static Google.Protobuf.MessageParser<OpenTelemetry.Proto.Logs.V1.ScopeLogs> Parser { get => throw null; }
         public static Google.Protobuf.Reflection.MessageDescriptor Descriptor { get => throw null; }
+        Google.Protobuf.Reflection.MessageDescriptor pb::Google.Protobuf.IMessage.Descriptor { get => throw null; }
         public OpenTelemetry.Proto.Common.V1.InstrumentationScope Scope { get => throw null; set { } }
         public Google.Protobuf.Collections.RepeatedField<OpenTelemetry.Proto.Logs.V1.LogRecord> LogRecords { get => throw null; }
         public string SchemaUrl { get => throw null; set { } }
@@ -924,6 +939,7 @@ namespace OpenTelemetry.Proto.Metrics.V1
         public const int UnitFieldNumber = 3;
         public static Google.Protobuf.MessageParser<OpenTelemetry.Proto.Metrics.V1.Metric> Parser { get => throw null; }
         public static Google.Protobuf.Reflection.MessageDescriptor Descriptor { get => throw null; }
+        Google.Protobuf.Reflection.MessageDescriptor pb::Google.Protobuf.IMessage.Descriptor { get => throw null; }
         public string Name { get => throw null; set { } }
         public string Description { get => throw null; set { } }
         public string Unit { get => throw null; set { } }
@@ -970,6 +986,7 @@ namespace OpenTelemetry.Proto.Metrics.V1
         public const int SchemaUrlFieldNumber = 3;
         public static Google.Protobuf.MessageParser<OpenTelemetry.Proto.Metrics.V1.ResourceMetrics> Parser { get => throw null; }
         public static Google.Protobuf.Reflection.MessageDescriptor Descriptor { get => throw null; }
+        Google.Protobuf.Reflection.MessageDescriptor pb::Google.Protobuf.IMessage.Descriptor { get => throw null; }
         public OpenTelemetry.Proto.Resource.V1.Resource Resource { get => throw null; set { } }
         public Google.Protobuf.Collections.RepeatedField<OpenTelemetry.Proto.Metrics.V1.ScopeMetrics> ScopeMetrics { get => throw null; }
         public string SchemaUrl { get => throw null; set { } }
@@ -1011,6 +1028,7 @@ namespace OpenTelemetry.Proto.Metrics.V1
         public const int SchemaUrlFieldNumber = 3;
         public static Google.Protobuf.MessageParser<OpenTelemetry.Proto.Metrics.V1.ScopeMetrics> Parser { get => throw null; }
         public static Google.Protobuf.Reflection.MessageDescriptor Descriptor { get => throw null; }
+        Google.Protobuf.Reflection.MessageDescriptor pb::Google.Protobuf.IMessage.Descriptor { get => throw null; }
         public OpenTelemetry.Proto.Common.V1.InstrumentationScope Scope { get => throw null; set { } }
         public Google.Protobuf.Collections.RepeatedField<OpenTelemetry.Proto.Metrics.V1.Metric> Metrics { get => throw null; }
         public string SchemaUrl { get => throw null; set { } }
@@ -1052,6 +1070,7 @@ namespace OpenTelemetry.Proto.Resource.V1
         public const int AttributesFieldNumber = 1;
         public static Google.Protobuf.MessageParser<OpenTelemetry.Proto.Resource.V1.Resource> Parser { get => throw null; }
         public static Google.Protobuf.Reflection.MessageDescriptor Descriptor { get => throw null; }
+        Google.Protobuf.Reflection.MessageDescriptor pb::Google.Protobuf.IMessage.Descriptor { get => throw null; }
         public Google.Protobuf.Collections.RepeatedField<OpenTelemetry.Proto.Common.V1.KeyValue> Attributes { get => throw null; }
         #nullable disable
         public Resource(OpenTelemetry.Proto.Resource.V1.Resource other) { }
@@ -1098,6 +1117,7 @@ namespace OpenTelemetry.Proto.Trace.V1
         public const int SchemaUrlFieldNumber = 3;
         public static Google.Protobuf.MessageParser<OpenTelemetry.Proto.Trace.V1.ResourceSpans> Parser { get => throw null; }
         public static Google.Protobuf.Reflection.MessageDescriptor Descriptor { get => throw null; }
+        Google.Protobuf.Reflection.MessageDescriptor pb::Google.Protobuf.IMessage.Descriptor { get => throw null; }
         public OpenTelemetry.Proto.Resource.V1.Resource Resource { get => throw null; set { } }
         public Google.Protobuf.Collections.RepeatedField<OpenTelemetry.Proto.Trace.V1.ScopeSpans> ScopeSpans { get => throw null; }
         public string SchemaUrl { get => throw null; set { } }
@@ -1139,6 +1159,7 @@ namespace OpenTelemetry.Proto.Trace.V1
         public const int SchemaUrlFieldNumber = 3;
         public static Google.Protobuf.MessageParser<OpenTelemetry.Proto.Trace.V1.ScopeSpans> Parser { get => throw null; }
         public static Google.Protobuf.Reflection.MessageDescriptor Descriptor { get => throw null; }
+        Google.Protobuf.Reflection.MessageDescriptor pb::Google.Protobuf.IMessage.Descriptor { get => throw null; }
         public OpenTelemetry.Proto.Common.V1.InstrumentationScope Scope { get => throw null; set { } }
         public Google.Protobuf.Collections.RepeatedField<OpenTelemetry.Proto.Trace.V1.Span> Spans { get => throw null; }
         public string SchemaUrl { get => throw null; set { } }
@@ -1181,6 +1202,7 @@ namespace OpenTelemetry.Proto.Trace.V1
         public const int NameFieldNumber = 5;
         public static Google.Protobuf.MessageParser<OpenTelemetry.Proto.Trace.V1.Span> Parser { get => throw null; }
         public static Google.Protobuf.Reflection.MessageDescriptor Descriptor { get => throw null; }
+        Google.Protobuf.Reflection.MessageDescriptor pb::Google.Protobuf.IMessage.Descriptor { get => throw null; }
         public Google.Protobuf.ByteString TraceId { get => throw null; set { } }
         public Google.Protobuf.ByteString SpanId { get => throw null; set { } }
         public Google.Protobuf.ByteString ParentSpanId { get => throw null; set { } }

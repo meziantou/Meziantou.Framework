@@ -690,7 +690,7 @@ internal sealed class CSharpDeclarationFormatter
             return;
         }
 
-        if (TryGetTupleElements(type, out var elements))
+        if (CSharpSyntaxFacts.TryGetTupleElements(type, out var elements))
         {
             writer.Punctuation("(");
             WriteList(writer, elements, element =>
@@ -727,39 +727,6 @@ internal sealed class CSharpDeclarationFormatter
         }
 
         WriteNullableAnnotation(writer, type);
-    }
-
-    private static bool TryGetTupleElements(PublicApiNamedTypeReference type, out List<(PublicApiTypeReference Type, string? Name)> elements)
-    {
-        elements = [];
-        var current = type;
-        while (true)
-        {
-            if (!current.IsTupleType)
-                return false;
-
-            var arity = current.TypeArguments.Length;
-            if (arity < 8)
-            {
-                for (var i = 0; i < arity; i++)
-                {
-                    elements.Add((current.TypeArguments[i], i < current.TupleElementNames.Length ? current.TupleElementNames[i] : null));
-                }
-
-                // A tuple has at least two elements
-                return elements.Count >= 2;
-            }
-
-            for (var i = 0; i < 7; i++)
-            {
-                elements.Add((current.TypeArguments[i], i < current.TupleElementNames.Length ? current.TupleElementNames[i] : null));
-            }
-
-            if (current.TypeArguments[7] is not PublicApiNamedTypeReference rest)
-                return false;
-
-            current = rest;
-        }
     }
 
     private static void WriteNullableAnnotation(DeclarationWriter writer, PublicApiTypeReference type)

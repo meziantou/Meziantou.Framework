@@ -40,7 +40,7 @@ namespace Meziantou.Framework.HumanReadable
     {
         public sealed override bool CanConvert(System.Type type) => throw null;
         public sealed override void WriteValue(Meziantou.Framework.HumanReadable.HumanReadableTextWriter writer, object? value, System.Type valueType, Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options) { }
-        protected abstract void WriteValue(Meziantou.Framework.HumanReadable.HumanReadableTextWriter writer, T value, Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options);
+        protected abstract void WriteValue(Meziantou.Framework.HumanReadable.HumanReadableTextWriter writer, T? value, Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options);
     }
 
     [System.AttributeUsage(System.AttributeTargets.Property | System.AttributeTargets.Field, AllowMultiple = false)]
@@ -98,7 +98,7 @@ namespace Meziantou.Framework.HumanReadable
         public static string Serialize(object? value, Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions? options = null) => throw null;
         public static string Serialize(object? value, System.Type type, Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions? options = null) => throw null;
         public static void Serialize(Meziantou.Framework.HumanReadable.HumanReadableTextWriter writer, object? value, System.Type type, Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options) { }
-        public static void Serialize<T>(Meziantou.Framework.HumanReadable.HumanReadableTextWriter writer, T value, Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options) { }
+        public static void Serialize<T>(Meziantou.Framework.HumanReadable.HumanReadableTextWriter writer, T? value, Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options) { }
     }
 
     public class HumanReadableSerializerException : System.Exception

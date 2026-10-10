@@ -109,10 +109,10 @@ namespace Meziantou.Framework.HttpArchive
         public System.Collections.Generic.Dictionary<string, System.Text.Json.JsonElement>? ExtensionData { get => throw null; set { } }
         public static Meziantou.Framework.HttpArchive.HarDocument Parse(string json) => throw null;
         public static Meziantou.Framework.HttpArchive.HarDocument Parse(System.IO.Stream stream) => throw null;
-        public static System.Threading.Tasks.Task<Meziantou.Framework.HttpArchive.HarDocument> ParseAsync(System.IO.Stream stream, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public static System.Threading.Tasks.Task<Meziantou.Framework.HttpArchive.HarDocument> ParseAsync(System.IO.Stream stream, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public string ToJsonString(bool indented = false) => throw null;
         public void WriteTo(System.IO.Stream stream, bool indented = false) { }
-        public System.Threading.Tasks.Task WriteToAsync(System.IO.Stream stream, bool indented = false, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public System.Threading.Tasks.Task WriteToAsync(System.IO.Stream stream, bool indented = false, System.Threading.CancellationToken cancellationToken = default) => throw null;
     }
 
     public sealed class HarEntry

@@ -41,7 +41,7 @@ namespace Meziantou.Framework.Markdown
         public static Meziantou.Framework.Markdown.MarkdownPipelineBuilder UseTaskLists(this Meziantou.Framework.Markdown.MarkdownPipelineBuilder pipeline) => throw null;
         public static Meziantou.Framework.Markdown.MarkdownPipelineBuilder UseCustomContainers(this Meziantou.Framework.Markdown.MarkdownPipelineBuilder pipeline) => throw null;
         public static Meziantou.Framework.Markdown.MarkdownPipelineBuilder UseMediaLinks(this Meziantou.Framework.Markdown.MarkdownPipelineBuilder pipeline, Meziantou.Framework.Markdown.Extensions.MediaLinks.MediaOptions? options = null) => throw null;
-        public static Meziantou.Framework.Markdown.MarkdownPipelineBuilder UseAutoIdentifiers(this Meziantou.Framework.Markdown.MarkdownPipelineBuilder pipeline, Meziantou.Framework.Markdown.Extensions.AutoIdentifiers.AutoIdentifierOptions options = 3) => throw null;
+        public static Meziantou.Framework.Markdown.MarkdownPipelineBuilder UseAutoIdentifiers(this Meziantou.Framework.Markdown.MarkdownPipelineBuilder pipeline, Meziantou.Framework.Markdown.Extensions.AutoIdentifiers.AutoIdentifierOptions options = Meziantou.Framework.Markdown.Extensions.AutoIdentifiers.AutoIdentifierOptions.Default) => throw null;
         public static Meziantou.Framework.Markdown.MarkdownPipelineBuilder UseSmartyPants(this Meziantou.Framework.Markdown.MarkdownPipelineBuilder pipeline, Meziantou.Framework.Markdown.Extensions.SmartyPants.SmartyPantOptions? options = null) => throw null;
         public static Meziantou.Framework.Markdown.MarkdownPipelineBuilder UseBootstrap(this Meziantou.Framework.Markdown.MarkdownPipelineBuilder pipeline) => throw null;
         public static Meziantou.Framework.Markdown.MarkdownPipelineBuilder UseMathematics(this Meziantou.Framework.Markdown.MarkdownPipelineBuilder pipeline) => throw null;
@@ -54,7 +54,7 @@ namespace Meziantou.Framework.Markdown
         public static Meziantou.Framework.Markdown.MarkdownPipelineBuilder UseFooters(this Meziantou.Framework.Markdown.MarkdownPipelineBuilder pipeline) => throw null;
         public static Meziantou.Framework.Markdown.MarkdownPipelineBuilder UseFootnotes(this Meziantou.Framework.Markdown.MarkdownPipelineBuilder pipeline) => throw null;
         public static Meziantou.Framework.Markdown.MarkdownPipelineBuilder UseSoftlineBreakAsHardlineBreak(this Meziantou.Framework.Markdown.MarkdownPipelineBuilder pipeline) => throw null;
-        public static Meziantou.Framework.Markdown.MarkdownPipelineBuilder UseEmphasisExtras(this Meziantou.Framework.Markdown.MarkdownPipelineBuilder pipeline, Meziantou.Framework.Markdown.Extensions.EmphasisExtras.EmphasisExtraOptions options = 31) => throw null;
+        public static Meziantou.Framework.Markdown.MarkdownPipelineBuilder UseEmphasisExtras(this Meziantou.Framework.Markdown.MarkdownPipelineBuilder pipeline, Meziantou.Framework.Markdown.Extensions.EmphasisExtras.EmphasisExtraOptions options = Meziantou.Framework.Markdown.Extensions.EmphasisExtras.EmphasisExtraOptions.Default) => throw null;
         public static Meziantou.Framework.Markdown.MarkdownPipelineBuilder UseListExtras(this Meziantou.Framework.Markdown.MarkdownPipelineBuilder pipeline) => throw null;
         public static Meziantou.Framework.Markdown.MarkdownPipelineBuilder UseGenericAttributes(this Meziantou.Framework.Markdown.MarkdownPipelineBuilder pipeline, System.Func<string, bool>? attributeFilter = null) => throw null;
         public static Meziantou.Framework.Markdown.MarkdownPipelineBuilder UseEmojiAndSmiley(this Meziantou.Framework.Markdown.MarkdownPipelineBuilder pipeline, bool enableSmileys = true) => throw null;
@@ -357,7 +357,7 @@ namespace Meziantou.Framework.Markdown.Extensions.EmphasisExtras
     public class EmphasisExtraExtension : Meziantou.Framework.Markdown.IMarkdownExtension
     {
         public Meziantou.Framework.Markdown.Extensions.EmphasisExtras.EmphasisExtraOptions Options { get => throw null; }
-        public EmphasisExtraExtension(Meziantou.Framework.Markdown.Extensions.EmphasisExtras.EmphasisExtraOptions options = 31) { }
+        public EmphasisExtraExtension(Meziantou.Framework.Markdown.Extensions.EmphasisExtras.EmphasisExtraOptions options = Meziantou.Framework.Markdown.Extensions.EmphasisExtras.EmphasisExtraOptions.Default) { }
         public void Setup(Meziantou.Framework.Markdown.MarkdownPipelineBuilder pipeline) { }
         public void Setup(Meziantou.Framework.Markdown.MarkdownPipeline pipeline, Meziantou.Framework.Markdown.Renderers.IMarkdownRenderer renderer) { }
     }
@@ -949,7 +949,7 @@ namespace Meziantou.Framework.Markdown.Helpers
     public sealed class CharacterMap<T> where T : class
     {
         public char[] OpeningCharacters { get => throw null; }
-        public T this[uint openingChar] { get => throw null; }
+        public T? this[uint openingChar] { get => throw null; }
         public CharacterMap(System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<char, T>> maps) { }
         public int IndexOfOpeningCharacter(string text, int start, int end) => throw null;
     }
@@ -1024,7 +1024,7 @@ namespace Meziantou.Framework.Markdown.Helpers
         public static bool TryParseLabelTrivia<T>(ref T lines, bool allowEmpty, out string? label, out Meziantou.Framework.Markdown.Syntax.SourceSpan labelSpan) where T : Meziantou.Framework.Markdown.Helpers.ICharIterator => throw null;
     }
 
-    public enum NewLine
+    public enum NewLine : byte
     {
         None = 0,
         CarriageReturn = 5,
@@ -1047,13 +1047,13 @@ namespace Meziantou.Framework.Markdown.Helpers
         protected abstract void Reset(T instance);
     }
 
-    public class OrderedList<T> : System.Collections.Generic.List<T>
+    public class OrderedList<T> : System.Collections.Generic.List<T> where T : notnull
     {
         public OrderedList(System.Collections.Generic.IEnumerable<T> collection) { }
         public bool InsertBefore<TItem>(T item) where TItem : T => throw null;
-        public TItem Find<TItem>() where TItem : T => throw null;
-        public bool TryFind<TItem>([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out TItem item) where TItem : T => throw null;
-        public TItem FindExact<TItem>() where TItem : T => throw null;
+        public TItem? Find<TItem>() where TItem : T => throw null;
+        public bool TryFind<TItem>([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out TItem? item) where TItem : T => throw null;
+        public TItem? FindExact<TItem>() where TItem : T => throw null;
         public void AddIfNotAlready<TItem>() where TItem : class, T, new() { }
         public void AddIfNotAlready<TItem>(TItem item) where TItem : T { }
         public bool InsertAfter<TItem>(T item) where TItem : T => throw null;
@@ -1098,10 +1098,10 @@ namespace Meziantou.Framework.Markdown.Helpers
         public void Add(ref Meziantou.Framework.Markdown.Helpers.StringLine line) { }
         public void Add(Meziantou.Framework.Markdown.Helpers.StringSlice slice) { }
         public readonly override string ToString() => throw null;
-        public readonly Meziantou.Framework.Markdown.Helpers.StringSlice ToSlice(System.Collections.Generic.List<LineOffset>? lineOffsets = null) => throw null;
-        public readonly Iterator ToCharIterator() => throw null;
+        public readonly Meziantou.Framework.Markdown.Helpers.StringSlice ToSlice(System.Collections.Generic.List<Meziantou.Framework.Markdown.Helpers.StringLineGroup.LineOffset>? lineOffsets = null) => throw null;
+        public readonly Meziantou.Framework.Markdown.Helpers.StringLineGroup.Iterator ToCharIterator() => throw null;
         public void Trim() { }
-        public Enumerator GetEnumerator() => throw null;
+        public Meziantou.Framework.Markdown.Helpers.StringLineGroup.Enumerator GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
         public struct Enumerator : System.Collections.IEnumerator
         {
@@ -1283,7 +1283,7 @@ namespace Meziantou.Framework.Markdown.Parsers
 
     public abstract class FencedBlockParserBase : Meziantou.Framework.Markdown.Parsers.BlockParser, Meziantou.Framework.Markdown.Parsers.IAttributesParseable
     {
-        public InfoParserDelegate? InfoParser { get => throw null; set { } }
+        public Meziantou.Framework.Markdown.Parsers.FencedBlockParserBase.InfoParserDelegate? InfoParser { get => throw null; set { } }
         public Meziantou.Framework.Markdown.Parsers.TryParseAttributesDelegate? TryParseAttributes { get => throw null; set { } }
         public delegate bool InfoParserDelegate(Meziantou.Framework.Markdown.Parsers.BlockProcessor state, ref Meziantou.Framework.Markdown.Helpers.StringSlice line, Meziantou.Framework.Markdown.Syntax.IFencedBlock fenced, char openingCharacter);
     }
@@ -1459,7 +1459,7 @@ namespace Meziantou.Framework.Markdown.Parsers
         public virtual void Initialize() { }
     }
 
-    public abstract class ParserList<T, TState> : Meziantou.Framework.Markdown.Helpers.OrderedList<T> where T : Meziantou.Framework.Markdown.Parsers.ParserBase<TState>
+    public abstract class ParserList<T, TState> : Meziantou.Framework.Markdown.Helpers.OrderedList<T> where T : notnull, Meziantou.Framework.Markdown.Parsers.ParserBase<TState>
     {
         public T[]? GlobalParsers { get => throw null; }
         public char[] OpeningCharacters { get => throw null; }
@@ -1524,7 +1524,7 @@ namespace Meziantou.Framework.Markdown.Parsers.Inlines
 
     public class EmphasisInlineParser : Meziantou.Framework.Markdown.Parsers.InlineParser, Meziantou.Framework.Markdown.Parsers.IPostInlineProcessor
     {
-        public readonly System.Collections.Generic.List<TryCreateEmphasisInlineDelegate> TryCreateEmphasisInlineList;
+        public readonly System.Collections.Generic.List<Meziantou.Framework.Markdown.Parsers.Inlines.EmphasisInlineParser.TryCreateEmphasisInlineDelegate> TryCreateEmphasisInlineList;
         public System.Collections.Generic.List<Meziantou.Framework.Markdown.Parsers.Inlines.EmphasisDescriptor> EmphasisDescriptors { get => throw null; }
         public bool CjkFriendlyEmphasis { get => throw null; set { } }
         public bool HasEmphasisChar(char c) => throw null;
@@ -1565,7 +1565,7 @@ namespace Meziantou.Framework.Markdown.Parsers.Inlines
 
     public sealed class LiteralInlineParser : Meziantou.Framework.Markdown.Parsers.InlineParser
     {
-        public PostMatchDelegate? PostMatch { get => throw null; set { } }
+        public Meziantou.Framework.Markdown.Parsers.Inlines.LiteralInlineParser.PostMatchDelegate? PostMatch { get => throw null; set { } }
         public override bool Match(Meziantou.Framework.Markdown.Parsers.InlineProcessor processor, ref Meziantou.Framework.Markdown.Helpers.StringSlice slice) => throw null;
         public delegate void PostMatchDelegate(Meziantou.Framework.Markdown.Parsers.InlineProcessor processor, ref Meziantou.Framework.Markdown.Helpers.StringSlice slice);
     }
@@ -1609,11 +1609,11 @@ namespace Meziantou.Framework.Markdown.Renderers
 
     public abstract class MarkdownObjectRenderer<TRenderer, TObject> : Meziantou.Framework.Markdown.Renderers.IMarkdownObjectRenderer where TRenderer : Meziantou.Framework.Markdown.Renderers.RendererBase where TObject : Meziantou.Framework.Markdown.Syntax.MarkdownObject
     {
-        public Meziantou.Framework.Markdown.Helpers.OrderedList<TryWriteDelegate<TRenderer, TObject>> TryWriters { get => throw null; }
+        public Meziantou.Framework.Markdown.Helpers.OrderedList<Meziantou.Framework.Markdown.Renderers.MarkdownObjectRenderer<TRenderer, TObject>.TryWriteDelegate> TryWriters { get => throw null; }
         public bool Accept(Meziantou.Framework.Markdown.Renderers.RendererBase renderer, System.Type objectType) => throw null;
         public virtual void Write(Meziantou.Framework.Markdown.Renderers.RendererBase renderer, Meziantou.Framework.Markdown.Syntax.MarkdownObject objectToRender) { }
         protected abstract void Write(TRenderer renderer, TObject obj);
-        public delegate bool TryWriteDelegate<TRenderer, TObject>(TRenderer renderer, TObject obj) where TRenderer : Meziantou.Framework.Markdown.Renderers.RendererBase where TObject : Meziantou.Framework.Markdown.Syntax.MarkdownObject;
+        public delegate bool TryWriteDelegate(TRenderer renderer, TObject obj);
     }
 
     public class ObjectRendererCollection : Meziantou.Framework.Markdown.Helpers.OrderedList<Meziantou.Framework.Markdown.Renderers.IMarkdownObjectRenderer>
@@ -1747,7 +1747,7 @@ namespace Meziantou.Framework.Markdown.Renderers.Html.Inlines
 
     public class EmphasisInlineRenderer : Meziantou.Framework.Markdown.Renderers.Html.HtmlObjectRenderer<Meziantou.Framework.Markdown.Syntax.Inlines.EmphasisInline>
     {
-        public GetTagDelegate GetTag { get => throw null; set { } }
+        public Meziantou.Framework.Markdown.Renderers.Html.Inlines.EmphasisInlineRenderer.GetTagDelegate GetTag { get => throw null; set { } }
         protected override void Write(Meziantou.Framework.Markdown.Renderers.HtmlRenderer renderer, Meziantou.Framework.Markdown.Syntax.Inlines.EmphasisInline obj) { }
         public static string? GetDefaultTag(Meziantou.Framework.Markdown.Syntax.Inlines.EmphasisInline obj) => throw null;
         public delegate string? GetTagDelegate(Meziantou.Framework.Markdown.Syntax.Inlines.EmphasisInline obj);
@@ -2057,7 +2057,7 @@ namespace Meziantou.Framework.Markdown.Syntax
 
     public class CodeBlock : Meziantou.Framework.Markdown.Syntax.LeafBlock
     {
-        public System.Collections.Generic.List<CodeBlockLine> CodeBlockLines { get => throw null; }
+        public System.Collections.Generic.List<Meziantou.Framework.Markdown.Syntax.CodeBlock.CodeBlockLine> CodeBlockLines { get => throw null; }
         public CodeBlock(Meziantou.Framework.Markdown.Parsers.BlockParser parser) : base(default(Meziantou.Framework.Markdown.Parsers.BlockParser)) { }
         public class CodeBlockLine
         {
@@ -2073,7 +2073,8 @@ namespace Meziantou.Framework.Markdown.Syntax
         public bool IsReadOnly { get => throw null; }
         public Meziantou.Framework.Markdown.Syntax.Block this[int index] { get => throw null; set { } }
         protected ContainerBlock(Meziantou.Framework.Markdown.Parsers.BlockParser? parser) : base(default(Meziantou.Framework.Markdown.Parsers.BlockParser)) { }
-        public Enumerator GetEnumerator() => throw null;
+        public Meziantou.Framework.Markdown.Syntax.ContainerBlock.Enumerator GetEnumerator() => throw null;
+        System.Collections.Generic.IEnumerator<Meziantou.Framework.Markdown.Syntax.Block> System.Collections.Generic.IEnumerable<Meziantou.Framework.Markdown.Syntax.Block>.GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
         public void Add(Meziantou.Framework.Markdown.Syntax.Block item) { }
         public void Clear() { }
@@ -2091,6 +2092,7 @@ namespace Meziantou.Framework.Markdown.Syntax
         public struct Enumerator : System.Collections.Generic.IEnumerator<Meziantou.Framework.Markdown.Syntax.Block>, System.Collections.IEnumerator, System.IDisposable
         {
             public Meziantou.Framework.Markdown.Syntax.Block Current { get => throw null; }
+            object System.Collections.IEnumerator.Current { get => throw null; }
             public void Dispose() { }
             public bool MoveNext() => throw null;
             void System.Collections.IEnumerator.Reset() { }
@@ -2219,7 +2221,7 @@ namespace Meziantou.Framework.Markdown.Syntax
         public string? Title { get => throw null; set { } }
         public Meziantou.Framework.Markdown.Helpers.StringSlice UnescapedTitle { get => throw null; set { } }
         public char TitleEnclosingCharacter { get => throw null; set { } }
-        public CreateLinkInlineDelegate? CreateLinkInline { get => throw null; set { } }
+        public Meziantou.Framework.Markdown.Syntax.LinkReferenceDefinition.CreateLinkInlineDelegate? CreateLinkInline { get => throw null; set { } }
         public LinkReferenceDefinition() : base(default(Meziantou.Framework.Markdown.Parsers.BlockParser)) { }
         public LinkReferenceDefinition(string? label, string? url, string? title) : base(default(Meziantou.Framework.Markdown.Parsers.BlockParser)) { }
         public static bool TryParse<T>(ref T text, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Markdown.Syntax.LinkReferenceDefinition? block) where T : Meziantou.Framework.Markdown.Helpers.ICharIterator => throw null;
@@ -2283,11 +2285,11 @@ namespace Meziantou.Framework.Markdown.Syntax
 
     public static class MarkdownObjectDataExtensions
     {
-        public static T GetData<T>(this Meziantou.Framework.Markdown.Syntax.IMarkdownObject markdownObject, object key) => throw null;
-        public static T GetData<T>(this Meziantou.Framework.Markdown.Syntax.IMarkdownObject markdownObject, Meziantou.Framework.Markdown.Syntax.DataKey<T> key) => throw null;
-        public static T GetData<T>(this Meziantou.Framework.Markdown.Syntax.IMarkdownObject markdownObject) => throw null;
-        public static bool TryGetData<T>(this Meziantou.Framework.Markdown.Syntax.IMarkdownObject markdownObject, object key, out T value) => throw null;
-        public static bool TryGetData<T>(this Meziantou.Framework.Markdown.Syntax.IMarkdownObject markdownObject, Meziantou.Framework.Markdown.Syntax.DataKey<T> key, out T value) => throw null;
+        public static T? GetData<T>(this Meziantou.Framework.Markdown.Syntax.IMarkdownObject markdownObject, object key) => throw null;
+        public static T? GetData<T>(this Meziantou.Framework.Markdown.Syntax.IMarkdownObject markdownObject, Meziantou.Framework.Markdown.Syntax.DataKey<T> key) => throw null;
+        public static T? GetData<T>(this Meziantou.Framework.Markdown.Syntax.IMarkdownObject markdownObject) => throw null;
+        public static bool TryGetData<T>(this Meziantou.Framework.Markdown.Syntax.IMarkdownObject markdownObject, object key, out T? value) => throw null;
+        public static bool TryGetData<T>(this Meziantou.Framework.Markdown.Syntax.IMarkdownObject markdownObject, Meziantou.Framework.Markdown.Syntax.DataKey<T> key, out T? value) => throw null;
         public static void SetData<T>(this Meziantou.Framework.Markdown.Syntax.IMarkdownObject markdownObject, T value) { }
         public static void SetData<T>(this Meziantou.Framework.Markdown.Syntax.IMarkdownObject markdownObject, Meziantou.Framework.Markdown.Syntax.DataKey<T> key, T value) { }
     }
@@ -2387,11 +2389,13 @@ namespace Meziantou.Framework.Markdown.Syntax.Inlines
         protected override void DumpChildTo(System.IO.TextWriter writer, int level) { }
         public bool HasValidSpan(bool recursive = false) => throw null;
         public bool UpdateSpanFromChildren(bool recursive = false, bool preserveSelfSpan = true) => throw null;
-        public Enumerator GetEnumerator() => throw null;
+        public Meziantou.Framework.Markdown.Syntax.Inlines.ContainerInline.Enumerator GetEnumerator() => throw null;
+        System.Collections.Generic.IEnumerator<Meziantou.Framework.Markdown.Syntax.Inlines.Inline> System.Collections.Generic.IEnumerable<Meziantou.Framework.Markdown.Syntax.Inlines.Inline>.GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
         public struct Enumerator : System.Collections.Generic.IEnumerator<Meziantou.Framework.Markdown.Syntax.Inlines.Inline>, System.Collections.IEnumerator, System.IDisposable
         {
             public Meziantou.Framework.Markdown.Syntax.Inlines.Inline Current { get => throw null; }
+            object System.Collections.IEnumerator.Current { get => throw null; }
             public Enumerator(Meziantou.Framework.Markdown.Syntax.Inlines.ContainerInline container) { }
             public void Dispose() { }
             public bool MoveNext() => throw null;
@@ -2411,7 +2415,7 @@ namespace Meziantou.Framework.Markdown.Syntax.Inlines
     }
 
     [System.Flags]
-    public enum DelimiterType
+    public enum DelimiterType : byte
     {
         Undefined = 0,
         Open = 1,
@@ -2470,7 +2474,7 @@ namespace Meziantou.Framework.Markdown.Syntax.Inlines
         public bool ContainsParentOfType<T>() where T : Meziantou.Framework.Markdown.Syntax.Inlines.Inline => throw null;
         public bool ContainsParentOrSiblingOfType<T>() where T : Meziantou.Framework.Markdown.Syntax.Inlines.Inline => throw null;
         public System.Collections.Generic.IEnumerable<T> FindParentOfType<T>() where T : Meziantou.Framework.Markdown.Syntax.Inlines.Inline => throw null;
-        public T FirstParentOfType<T>() where T : Meziantou.Framework.Markdown.Syntax.Inlines.Inline => throw null;
+        public T? FirstParentOfType<T>() where T : notnull, Meziantou.Framework.Markdown.Syntax.Inlines.Inline => throw null;
         public Meziantou.Framework.Markdown.Syntax.Inlines.Inline FindBestParent() => throw null;
         protected virtual void OnChildRemove(Meziantou.Framework.Markdown.Syntax.Inlines.Inline child) { }
         protected virtual void OnChildInsert(Meziantou.Framework.Markdown.Syntax.Inlines.Inline child) { }
@@ -2518,7 +2522,7 @@ namespace Meziantou.Framework.Markdown.Syntax.Inlines
         public string? Url { get => throw null; set { } }
         public Meziantou.Framework.Markdown.Helpers.StringSlice UnescapedUrl { get => throw null; set { } }
         public Meziantou.Framework.Markdown.Helpers.StringSlice TriviaAfterUrl { get => throw null; set { } }
-        public GetUrlDelegate? GetDynamicUrl { get => throw null; set { } }
+        public Meziantou.Framework.Markdown.Syntax.Inlines.LinkInline.GetUrlDelegate? GetDynamicUrl { get => throw null; set { } }
         public char TitleEnclosingCharacter { get => throw null; set { } }
         public string? Title { get => throw null; set { } }
         public Meziantou.Framework.Markdown.Helpers.StringSlice UnescapedTitle { get => throw null; set { } }
@@ -2539,7 +2543,7 @@ namespace Meziantou.Framework.Markdown.Syntax.Inlines
         public override string ToString() => throw null;
     }
 
-    public enum LocalLabel
+    public enum LocalLabel : byte
     {
         Local = 0,
         Empty = 1,

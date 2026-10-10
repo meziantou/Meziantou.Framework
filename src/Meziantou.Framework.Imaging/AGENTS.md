@@ -18,7 +18,8 @@ the library guarantees to its callers (support matrix, limitations, defaults). K
 - No public allocator, custom pixel type, codec plug-in or image-processor interface. Implementation types are `internal`
   and live under `Internals/`.
 - Public namespaces: `Meziantou.Framework.Imaging`, `.Metadata` and `.Formats` (encoder settings). The base types of the
-  model (`Image`, `ImageFrame`, `ImageFrameCollection`, `ImageEncoder`) cannot be derived outside the library.
+  model (`Image`, `ImageFrame`, `ImageFrameCollection`, `ImageEncoder`, `AutoCropAnalysis`) cannot be derived outside the
+  library.
 - Every public member has XML documentation (`DisableDocumentationWarnings` is `false`).
 - `Meziantou.Framework.FullPath` is used by the tests, benchmarks and tools, never by the library.
 

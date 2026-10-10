@@ -179,6 +179,13 @@ public sealed class Image<TPixel> : Image
 
     private protected override ImageFrame CreateFrame(PixelStorage storage, FrameMetadata metadata) => new ImageFrame<TPixel>(this, storage, metadata);
 
+    internal override AutoCropAnalysis<TPixel> CreateAutoCropAnalysis(bool success, Rectangle bounds, Rgba64 backgroundColor, double weightX, double weightY)
+    {
+        TPixel background = default;
+        PixelConverter.ConvertRow(new ReadOnlySpan<Rgba64>(in backgroundColor), new Span<TPixel>(ref background));
+        return new AutoCropAnalysis<TPixel>(success, Size, bounds, backgroundColor, background, weightX, weightY);
+    }
+
     private static ImageConfiguration ValidateCanvas(int width, int height, ImageConfiguration? configuration)
     {
         _ = PixelFormats.GetPixelFormat<TPixel>();

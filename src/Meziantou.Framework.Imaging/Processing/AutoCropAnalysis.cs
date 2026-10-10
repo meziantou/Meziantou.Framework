@@ -5,12 +5,19 @@ namespace Meziantou.Framework.Imaging;
 /// background and the content box detected in an image.
 /// </summary>
 /// <remarks>
+/// <para>
 /// An analysis is an immutable snapshot: it does not follow later changes of the image. It can be applied to any image of
 /// the same canvas size with <see cref="ImageProcessingExtensions.AutoCrop(Image, AutoCropAnalysis, AutoCropOptions?, CancellationToken)"/>.
+/// </para>
+/// <para>
+/// Every analysis is an <see cref="AutoCropAnalysis{TPixel}"/> of the pixel type of the analyzed image, which gives the
+/// background as a pixel. This base type gives it as an <see cref="Rgba64"/>, whatever the pixel type; it cannot be
+/// derived outside the library.
+/// </para>
 /// </remarks>
-public sealed class AutoCropAnalysis
+public abstract class AutoCropAnalysis
 {
-    internal AutoCropAnalysis(bool success, Size canvasSize, Rectangle bounds, Rgba64 backgroundColor, double weightX, double weightY)
+    private protected AutoCropAnalysis(bool success, Size canvasSize, Rectangle bounds, Rgba64 backgroundColor, double weightX, double weightY)
     {
         Success = success;
         CanvasSize = canvasSize;

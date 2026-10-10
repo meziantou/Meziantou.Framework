@@ -195,7 +195,24 @@ public sealed class AutoCropGoldenTests
         Assert.Equal(new Size(buffers[0].Width, buffers[0].Height), analysis.CanvasSize);
         Assert.Equal(new Rectangle(reference.X, reference.Y, reference.Width, reference.Height), analysis.Bounds, context);
         var background = new Rgba64((ushort)(reference.Background.Red * widen), (ushort)(reference.Background.Green * widen), (ushort)(reference.Background.Blue * widen), (ushort)(reference.Background.Alpha * widen));
-        Assert.Equal(background, analysis.BackgroundColor, context);
+        Assert.Equal(background, ((AutoCropAnalysis)analysis).BackgroundColor, context);
+
+        // The typed background is the same pixel in the storage format of the image
+        var layout = buffers[0].Layout;
+        var samples = new int[layout.ChannelCount];
+        for (var c = 0; c < samples.Length; c++)
+        {
+            samples[c] = layout.GetChannelName(c) switch
+            {
+                'R' or 'Y' => reference.Background.Red,
+                'G' => reference.Background.Green,
+                'B' => reference.Background.Blue,
+                _ => reference.Background.Alpha,
+            };
+        }
+
+        var backgroundPixel = RawImport.ToPixelData<TPixel>(buffers[0].Extend(-1, 0, 1, 1, samples))[0];
+        Assert.True(EqualityComparer<TPixel>.Default.Equals(backgroundPixel, analysis.BackgroundColor), $"{context}: expected the background pixel {backgroundPixel}, got {analysis.BackgroundColor}");
         Assert.Equal(reference.WeightX, analysis.WeightX, tolerance: 1e-12, context);
         Assert.Equal(reference.WeightY, analysis.WeightY, tolerance: 1e-12, context);
 

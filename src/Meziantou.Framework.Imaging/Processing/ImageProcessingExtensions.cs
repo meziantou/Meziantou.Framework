@@ -101,7 +101,11 @@ public static class ImageProcessingExtensions
     /// <param name="image">The image to analyze.</param>
     /// <param name="options">The options, or <see langword="null"/> for <see cref="AutoCropOptions.Default"/>.</param>
     /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
-    /// <returns>The analysis. <see cref="AutoCropAnalysis.Success"/> is <see langword="false"/> when no border or no content of at least 3x3 pixels is found, for example for a uniform image.</returns>
+    /// <returns>
+    /// The analysis, an <see cref="AutoCropAnalysis{TPixel}"/> of the pixel type of the image.
+    /// <see cref="AutoCropAnalysis.Success"/> is <see langword="false"/> when no border or no content of at least 3x3 pixels
+    /// is found, for example for a uniform image.
+    /// </returns>
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
     /// <exception cref="InvalidOperationException">A pixel lease is active on a frame.</exception>
     /// <exception cref="ObjectDisposedException">The image is disposed.</exception>
@@ -109,6 +113,25 @@ public static class ImageProcessingExtensions
     {
         ArgumentNullException.ThrowIfNull(image);
         return image.AnalyzeAutoCropCore(options ?? AutoCropOptions.Default, cancellationToken);
+    }
+
+    /// <summary>
+    /// Detects the background and the bounding box of the content of the image, without changing it. The background is
+    /// given as a pixel of the image. See <see cref="AnalyzeAutoCrop(Image, AutoCropOptions?, CancellationToken)"/>.
+    /// </summary>
+    /// <typeparam name="TPixel">The pixel type.</typeparam>
+    /// <param name="image">The image to analyze.</param>
+    /// <param name="options">The options, or <see langword="null"/> for <see cref="AutoCropOptions.Default"/>.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+    /// <returns>The analysis.</returns>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    /// <exception cref="InvalidOperationException">A pixel lease is active on a frame.</exception>
+    /// <exception cref="ObjectDisposedException">The image is disposed.</exception>
+    public static AutoCropAnalysis<TPixel> AnalyzeAutoCrop<TPixel>(this Image<TPixel> image, AutoCropOptions? options = null, CancellationToken cancellationToken = default)
+        where TPixel : unmanaged
+    {
+        ArgumentNullException.ThrowIfNull(image);
+        return (AutoCropAnalysis<TPixel>)image.AnalyzeAutoCropCore(options ?? AutoCropOptions.Default, cancellationToken);
     }
 
     /// <summary>

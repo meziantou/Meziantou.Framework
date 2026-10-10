@@ -4,7 +4,7 @@
 
 namespace Meziantou.Framework.Imaging
 {
-    public sealed class AutoCropAnalysis
+    public abstract class AutoCropAnalysis
     {
         public bool Success { get => throw null; }
         public Meziantou.Framework.Imaging.Size CanvasSize { get => throw null; }
@@ -12,6 +12,11 @@ namespace Meziantou.Framework.Imaging
         public Meziantou.Framework.Imaging.Rgba64 BackgroundColor { get => throw null; }
         public double WeightX { get => throw null; }
         public double WeightY { get => throw null; }
+    }
+
+    public sealed class AutoCropAnalysis<TPixel> : Meziantou.Framework.Imaging.AutoCropAnalysis where TPixel : struct
+    {
+        public TPixel BackgroundColor { get => throw null; }
     }
 
     public sealed class AutoCropOptions
@@ -368,6 +373,7 @@ namespace Meziantou.Framework.Imaging
     {
         public static void Crop(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.Rectangle rectangle, System.Threading.CancellationToken cancellationToken = null) { }
         public static Meziantou.Framework.Imaging.AutoCropAnalysis AnalyzeAutoCrop(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.AutoCropOptions? options = null, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public static Meziantou.Framework.Imaging.AutoCropAnalysis<TPixel> AnalyzeAutoCrop<TPixel>(this Meziantou.Framework.Imaging.Image<TPixel> image, Meziantou.Framework.Imaging.AutoCropOptions? options = null, System.Threading.CancellationToken cancellationToken = null) where TPixel : struct => throw null;
         public static bool AutoCrop(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.AutoCropOptions? options = null, System.Threading.CancellationToken cancellationToken = null) => throw null;
         public static bool AutoCrop(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.AutoCropAnalysis analysis, Meziantou.Framework.Imaging.AutoCropOptions? options = null, System.Threading.CancellationToken cancellationToken = null) => throw null;
         public static void Resize(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.ResizeOptions options, System.Threading.CancellationToken cancellationToken = null) { }

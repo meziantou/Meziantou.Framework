@@ -284,6 +284,7 @@ internal static class SmokeTests
 
         var analysis = bordered.AnalyzeAutoCrop(new AutoCropOptions { AnalyzeWeights = true });
         Check(analysis.Success && analysis.Bounds == new Rectangle(5, 2, 4, 3) && analysis.WeightX > 0 && analysis.WeightY < 0, "auto-crop analysis");
+        Check(analysis.BackgroundColor == new Rgba32(255, 255, 255) && ((Image)bordered).AnalyzeAutoCrop().BackgroundColor == new Rgba64(65535, 65535, 65535), "auto-crop background");
         using var known = bordered.Clone();
         Check(known.AutoCrop(analysis, new AutoCropOptions { PaddingMode = AutoCropPaddingMode.Contain }) && known.Size == new Size(4, 3), "auto-crop with a known analysis");
 

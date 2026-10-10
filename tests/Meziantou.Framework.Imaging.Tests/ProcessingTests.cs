@@ -461,6 +461,7 @@ public sealed class ProcessingTests
         Assert.Throws<ArgumentNullException>("image", () => ((Image)null!).AutoCrop(cancellationToken: Ct));
         Assert.Throws<ArgumentNullException>("image", () => ((Image)null!).AutoCrop(image.AnalyzeAutoCrop(cancellationToken: Ct), cancellationToken: Ct));
         Assert.Throws<ArgumentNullException>("image", () => ((Image)null!).AnalyzeAutoCrop(cancellationToken: Ct));
+        Assert.Throws<ArgumentNullException>("image", () => ((Image<Rgba32>)null!).AnalyzeAutoCrop(cancellationToken: Ct));
         Assert.Throws<ArgumentNullException>("analysis", () => image.AutoCrop((AutoCropAnalysis)null!, cancellationToken: Ct));
         Assert.Throws<ArgumentNullException>("image", () => ((Image)null!).Rotate(RotateMode.Rotate90, Ct));
         Assert.Throws<ArgumentNullException>("image", () => ((Image)null!).AutoOrient(Ct));

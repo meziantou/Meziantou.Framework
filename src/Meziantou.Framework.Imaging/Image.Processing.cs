@@ -73,7 +73,7 @@ public abstract partial class Image
             analyzer.BeginRetryBorderPass();
             RunAutoCropPass(frames, analyzer, cancellationToken);
             if (!analyzer.CompleteBorderPass(bucketThreshold: null))
-                return new AutoCropAnalysis(success: false, _size, canvas, background, weightX: 0, weightY: 0);
+                return CreateAutoCropAnalysis(success: false, canvas, background, weightX: 0, weightY: 0);
 
             background = analyzer.BackgroundColor;
         }
@@ -81,7 +81,7 @@ public abstract partial class Image
         analyzer.BeginBoundsPass();
         RunAutoCropPass(frames, analyzer, cancellationToken);
         if (!analyzer.TryGetBounds(out var bounds))
-            return new AutoCropAnalysis(success: false, _size, canvas, background, weightX: 0, weightY: 0);
+            return CreateAutoCropAnalysis(success: false, canvas, background, weightX: 0, weightY: 0);
 
         var weights = (X: 0d, Y: 0d);
         if (options.AnalyzeWeights)
@@ -91,7 +91,7 @@ public abstract partial class Image
             weights = analyzer.GetWeights();
         }
 
-        return new AutoCropAnalysis(success: true, _size, bounds, background, weights.X, weights.Y);
+        return CreateAutoCropAnalysis(success: true, bounds, background, weights.X, weights.Y);
     }
 
     /// <summary>
@@ -135,6 +135,14 @@ public abstract partial class Image
         ReplaceGeometry(new Size((int)geometry.Width, (int)geometry.Height), normalizeOrientation: false, Operation, new ExtendFiller(new Point((int)geometry.X, (int)geometry.Y), fill), cancellationToken);
         return true;
     }
+
+    /// <summary>Creates the analysis of this image, typed with its pixel type.</summary>
+    /// <param name="success">Whether a border and a content box were found.</param>
+    /// <param name="bounds">The content box, inside the canvas.</param>
+    /// <param name="backgroundColor">The background, exactly representable in the pixel format of the image.</param>
+    /// <param name="weightX">The horizontal weight.</param>
+    /// <param name="weightY">The vertical weight.</param>
+    internal abstract AutoCropAnalysis CreateAutoCropAnalysis(bool success, Rectangle bounds, Rgba64 backgroundColor, double weightX, double weightY);
 
     private static void RunAutoCropPass(ImageFrame[] frames, AutoCropAnalyzer analyzer, CancellationToken cancellationToken)
     {

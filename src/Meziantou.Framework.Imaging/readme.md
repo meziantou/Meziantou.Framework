@@ -439,7 +439,9 @@ orientation and thumbnail.
 **Auto-cropping**. `AutoCrop` removes the uniform background around the content of an image, such as the margin of a
 product picture or of a scan, and returns whether the image changed. `AnalyzeAutoCrop` does the detection alone: it
 returns an `AutoCropAnalysis` (`Success`, `Bounds`, `BackgroundColor`, `WeightX`, `WeightY`) and never changes the image.
-An analysis can be applied later, or to another image of the same size, with `AutoCrop(analysis, options)`.
+On an `Image<TPixel>` the result is an `AutoCropAnalysis<TPixel>`, whose `BackgroundColor` is a `TPixel` as stored in the
+image; on an untyped `Image`, `BackgroundColor` is the same color widened to `Rgba64`. An analysis can be applied later,
+or to another image of the same size, with `AutoCrop(analysis, options)`.
 
 - **Background.** The most frequent color of the one-pixel outer border, over every frame and the poster. The border is
   accepted when it has fewer than `ColorThreshold` (default 35) distinct colors, or, for noisy and JPEG backgrounds, when

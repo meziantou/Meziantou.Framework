@@ -357,7 +357,7 @@ public sealed class FaultInjectionTests
             case "auto-crop":
                 // A known analysis whose padded box reaches outside the canvas: every fixture runs the enlarging transaction,
                 // with a background (opaque white) that every pixel format represents exactly
-                var analysis = new AutoCropAnalysis(success: true, image.Size, new Rectangle(0, 0, image.Width, image.Height), new Rgba64(ushort.MaxValue, ushort.MaxValue, ushort.MaxValue), weightX: 0, weightY: 0);
+                var analysis = image.CreateAutoCropAnalysis(success: true, new Rectangle(0, 0, image.Width, image.Height), new Rgba64(ushort.MaxValue, ushort.MaxValue, ushort.MaxValue), weightX: 0, weightY: 0);
                 Assert.True(image.AutoCrop(analysis, new AutoCropOptions { PaddingX = 1, PaddingY = 2 }, cancellationToken));
                 break;
             case "resize":

@@ -68,7 +68,14 @@ public sealed class AutoCropTests
         Assert.True(analysis.Success);
         Assert.Equal(new Size(8, 7), analysis.CanvasSize);
         Assert.Equal(new Rectangle(2, 1, 4, 4), analysis.Bounds);
-        Assert.Equal(ExpectedBackground<TPixel>(), analysis.BackgroundColor);
+        Assert.Equal(Ink<TPixel>('.'), analysis.BackgroundColor);
+        Assert.Equal(ExpectedBackground<TPixel>(), Widened(analysis));
+
+        // Through the untyped image, the same typed analysis is returned
+        var untyped = ((Image)image).AnalyzeAutoCrop(cancellationToken: Ct);
+        Assert.Equal(Ink<TPixel>('.'), Assert.IsType<AutoCropAnalysis<TPixel>>(untyped).BackgroundColor);
+        Assert.Equal(ExpectedBackground<TPixel>(), untyped.BackgroundColor);
+        Assert.Equal(analysis.Bounds, untyped.Bounds);
         Assert.Equal(0d, analysis.WeightX);
         Assert.Equal(0d, analysis.WeightY);
 
@@ -100,7 +107,8 @@ public sealed class AutoCropTests
         var analysis = image.AnalyzeAutoCrop(cancellationToken: Ct);
         Assert.Equal(expected, analysis.Success);
         Assert.Equal(expected ? new Rectangle(2, 2, contentWidth, contentHeight) : new Rectangle(0, 0, 8, 8), analysis.Bounds);
-        Assert.Equal(White64, analysis.BackgroundColor);
+        Assert.Equal(new Rgba32(255, 255, 255), analysis.BackgroundColor);
+        Assert.Equal(White64, Widened(analysis));
 
         Assert.Equal(expected, image.AutoCrop(cancellationToken: Ct));
         if (!expected)
@@ -118,7 +126,8 @@ public sealed class AutoCropTests
         var analysis = image.AnalyzeAutoCrop(cancellationToken: Ct);
         Assert.False(analysis.Success);
         Assert.Equal(new Rectangle(0, 0, 5, 4), analysis.Bounds);
-        Assert.Equal(new Rgba64(10 * 257, 20 * 257, 30 * 257), analysis.BackgroundColor);
+        Assert.Equal(new Rgba32(10, 20, 30), analysis.BackgroundColor);
+        Assert.Equal(new Rgba64(10 * 257, 20 * 257, 30 * 257), Widened(analysis));
         Assert.False(image.AutoCrop(cancellationToken: Ct));
         Assert.Same(storage, image.Frames[0].Storage);
     }
@@ -196,7 +205,8 @@ public sealed class AutoCropTests
         var analysis = image.AnalyzeAutoCrop(cancellationToken: Ct);
         Assert.True(analysis.Success);
         Assert.Equal(new Rectangle(4, 5, 3, 4), analysis.Bounds);
-        Assert.Equal(new Rgba64(0, 0, 0, 0), analysis.BackgroundColor);
+        Assert.Equal(new Rgba32(0, 0, 0, 0), analysis.BackgroundColor);
+        Assert.Equal(new Rgba64(0, 0, 0, 0), Widened(analysis));
 
         // Kept rectangle: x = 4 - 5 = -1, y = 5 - 1 = 4, 13 x 6. Column 0 is new; the hidden colors inside the canvas are copied
         Assert.True(image.AutoCrop(new AutoCropOptions { PaddingX = 5, PaddingY = 1 }, Ct));
@@ -227,7 +237,8 @@ public sealed class AutoCropTests
         var analysis = image.AnalyzeAutoCrop(new AutoCropOptions { ColorThreshold = 4 }, Ct);
         Assert.True(analysis.Success);
         Assert.Equal(new Rectangle(3, 3, 3, 3), analysis.Bounds);
-        Assert.Equal(new Rgba64(51400, 51400, 51400), analysis.BackgroundColor); // 200 * 257
+        Assert.Equal(new Gray8(200), analysis.BackgroundColor);
+        Assert.Equal(new Rgba64(51400, 51400, 51400), Widened(analysis)); // 200 * 257
     }
 
     [Fact]
@@ -240,7 +251,8 @@ public sealed class AutoCropTests
         var analysis = image.AnalyzeAutoCrop(new AutoCropOptions { ColorThreshold = 4 }, Ct);
         Assert.False(analysis.Success);
         Assert.Equal(new Rectangle(0, 0, 10, 10), analysis.Bounds);
-        Assert.Equal(new Rgba64(51400, 51400, 51400), analysis.BackgroundColor);
+        Assert.Equal(new Gray8(200), analysis.BackgroundColor);
+        Assert.Equal(new Rgba64(51400, 51400, 51400), Widened(analysis));
         Assert.False(image.AutoCrop(new AutoCropOptions { ColorThreshold = 4 }, Ct));
         Assert.Equal(new Size(10, 10), image.Size);
     }
@@ -286,7 +298,8 @@ public sealed class AutoCropTests
         var analysis = image.AnalyzeAutoCrop(cancellationToken: Ct);
         Assert.True(analysis.Success);
         Assert.Equal(new Rectangle(10, 12, 11, 9), analysis.Bounds);
-        Assert.Equal(White64, analysis.BackgroundColor);
+        Assert.Equal(new Rgba32(255, 255, 255), analysis.BackgroundColor);
+        Assert.Equal(White64, Widened(analysis));
 
         Assert.True(image.AutoCrop(cancellationToken: Ct));
         Assert.Equal(new Size(11, 9), image.Size);
@@ -316,13 +329,15 @@ public sealed class AutoCropTests
 
         // The 100s and the 0 are content; 201 to 204 are within the tolerance of 4
         Assert.Equal(new Rectangle(0, 2, 4, 4), accepted.Bounds);
-        Assert.Equal(new Rgba64(51400, 51400, 51400), accepted.BackgroundColor);
+        Assert.Equal(new Gray8(200), accepted.BackgroundColor);
+        Assert.Equal(new Rgba64(51400, 51400, 51400), Widened(accepted));
 
         // 13 / 16 is above 0.75; the retry has no bucket test and tracks two colors with a threshold of 2
         var rejected = image.AnalyzeAutoCrop(new AutoCropOptions { ColorThreshold = 4, BucketThreshold = 0.8125 }, Ct);
         Assert.False(rejected.Success);
         Assert.Equal(new Rectangle(0, 0, 6, 6), rejected.Bounds);
-        Assert.Equal(new Rgba64(51400, 51400, 51400), rejected.BackgroundColor);
+        Assert.Equal(new Gray8(200), rejected.BackgroundColor);
+        Assert.Equal(new Rgba64(51400, 51400, 51400), Widened(rejected));
 
         Assert.False(image.AnalyzeAutoCrop(new AutoCropOptions { ColorThreshold = 4 }, Ct).Success);
     }
@@ -359,12 +374,14 @@ public sealed class AutoCropTests
         var analysis = image.AnalyzeAutoCrop(cancellationToken: Ct);
         Assert.True(analysis.Success);
         Assert.Equal(new Rectangle(1, 1, 3, 3), analysis.Bounds);
-        Assert.Equal(new Rgba64((ushort)(first * 257), (ushort)(first * 257), (ushort)(first * 257)), analysis.BackgroundColor);
+        Assert.Equal(new Gray8((byte)first), analysis.BackgroundColor);
+        Assert.Equal(new Rgba64((ushort)(first * 257), (ushort)(first * 257), (ushort)(first * 257)), Widened(analysis));
 
         // One more pixel of the second color makes it the most frequent (9 against 7)
         image.Frames[0][0, 0] = new Gray8((byte)second);
         analysis = image.AnalyzeAutoCrop(cancellationToken: Ct);
-        Assert.Equal(new Rgba64((ushort)(second * 257), (ushort)(second * 257), (ushort)(second * 257)), analysis.BackgroundColor);
+        Assert.Equal(new Gray8((byte)second), analysis.BackgroundColor);
+        Assert.Equal(new Rgba64((ushort)(second * 257), (ushort)(second * 257), (ushort)(second * 257)), Widened(analysis));
     }
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -539,9 +556,9 @@ public sealed class AutoCropTests
 
         using var gray = new Image<Gray16>(8, 8, new Gray16(65535));
         Fill(gray.Frames[0], new Rectangle(4, 2, 3, 3), new Gray16(0));
-        analysis = gray.AnalyzeAutoCrop(new AutoCropOptions { AnalyzeWeights = true }, Ct);
-        Assert.Equal(0.052734375, analysis.WeightX);
-        Assert.Equal(-0.017578125, analysis.WeightY);
+        var grayAnalysis = gray.AnalyzeAutoCrop(new AutoCropOptions { AnalyzeWeights = true }, Ct);
+        Assert.Equal(0.052734375, grayAnalysis.WeightX);
+        Assert.Equal(-0.017578125, grayAnalysis.WeightY);
 
         // A second, blank frame halves the mean: 27 / 1024 and -9 / 1024
         var blank = image.AppendFrame();
@@ -639,7 +656,8 @@ public sealed class AutoCropTests
         Fill(transparent.Frames[0], new Rectangle(2, 1, 4, 4), new Rgba32(10, 20, 30));
         var analysis = transparent.AnalyzeAutoCrop(cancellationToken: Ct);
         Assert.Equal(new Rectangle(2, 1, 4, 4), analysis.Bounds);
-        Assert.Equal(new Rgba64(0, 0, 0, 0), analysis.BackgroundColor);
+        Assert.Equal(new Rgba32(0, 0, 0, 0), analysis.BackgroundColor);
+        Assert.Equal(new Rgba64(0, 0, 0, 0), Widened(analysis));
 
         using var opaque = Draw<Rgb24>(Framed);
         var storage = opaque.Frames[0].Storage;
@@ -790,6 +808,9 @@ public sealed class AutoCropTests
 
         return (TPixel)pixel;
     }
+
+    /// <summary>The background of an analysis as the untyped API gives it: widened to 16 bits.</summary>
+    private static Rgba64 Widened(AutoCropAnalysis analysis) => analysis.BackgroundColor;
 
     /// <summary>The '.' ink widened to 16 bits by hand.</summary>
     private static Rgba64 ExpectedBackground<TPixel>()

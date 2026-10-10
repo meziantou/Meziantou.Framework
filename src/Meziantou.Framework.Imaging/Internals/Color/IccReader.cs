@@ -90,7 +90,26 @@ internal static class IccReader
     /// <returns><see langword="true"/> if the tag exists and is inside the profile.</returns>
     public static bool TryGetTag(ReadOnlySpan<byte> data, uint signature, out ReadOnlySpan<byte> tag)
     {
+        if (TryFindTag(data, signature, out var offset, out var length))
+        {
+            tag = data.Slice(offset, length);
+            return true;
+        }
+
         tag = default;
+        return false;
+    }
+
+    /// <summary>Finds the position of the data of the first tag with a signature (see <see cref="TryGetTag"/>).</summary>
+    /// <param name="data">The profile bytes.</param>
+    /// <param name="signature">The tag signature.</param>
+    /// <param name="offset">The offset of the tag data in the profile.</param>
+    /// <param name="length">The length of the tag data.</param>
+    /// <returns><see langword="true"/> if the tag exists and is inside the profile.</returns>
+    public static bool TryFindTag(ReadOnlySpan<byte> data, uint signature, out int offset, out int length)
+    {
+        offset = 0;
+        length = 0;
         if (data.Length < HeaderSize + 4)
             return false;
 
@@ -104,12 +123,13 @@ internal static class IccReader
             if (ReadUInt32(entry) != signature)
                 continue;
 
-            var offset = ReadUInt32(entry[4..]);
-            var size = ReadUInt32(entry[8..]);
-            if (offset > (uint)data.Length || size > (uint)data.Length - offset)
+            var tagOffset = ReadUInt32(entry[4..]);
+            var tagSize = ReadUInt32(entry[8..]);
+            if (tagOffset > (uint)data.Length || tagSize > (uint)data.Length - tagOffset)
                 return false;
 
-            tag = data.Slice((int)offset, (int)size);
+            offset = (int)tagOffset;
+            length = (int)tagSize;
             return true;
         }
 

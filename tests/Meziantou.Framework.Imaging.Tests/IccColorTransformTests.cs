@@ -376,6 +376,275 @@ public sealed class IccColorTransformTests
         Assert.Equal([65535, 0, 64535, 25535], actual);
     }
 
+    // -----------------------------------------------------------------------------------------------------------------
+    // Lookup tables. The expected values of the two interpolation tests were computed with exact fractions from the table
+    // entries written in each test.
+    // -----------------------------------------------------------------------------------------------------------------
+
+    /// <summary>A monochrome profile whose device value is L* / 100: converting to it reads the lightness of a color.</summary>
+    private static IccProfile Lightness => IccTestProfiles.Gray(IccTestProfiles.Curve(), "Lab ");
+
+    [Fact]
+    public void DeviceLookupTablesAreInterpolatedOnTheSimplexOfTheMainDiagonal()
+    {
+        // lut8Type, RGB to CIELAB, 2 grid points per input: the L* entry (0-255) of each vertex, the first input (red)
+        // varying least rapidly. Tetrahedral interpolation visits red, green and blue from the largest to the smallest:
+        // (200, 100, 50) goes through the vertices 000, 100, 110, 111 with the weights 55, 100, 50, 50 (out of 255)
+        byte[] lightness = [0, 50, 150, 180, 100, 120, 200, 255];
+        var profile = IccTestProfiles.Lut("RGB ", "Lab ", ("A2B0", IccTestProfiles.Lut8(3, 3, 2, rgb => [lightness[(int)((4 * rgb[0]) + (2 * rgb[1]) + rgb[2])] / 255.0, 128 / 255.0, 128 / 255.0])));
+        var transform = IccColorTransform.Create(profile, Lightness, new IccColorTransformOptions { BlackPointCompensation = false });
+        (byte R, byte G, byte B, byte Expected8, ushort Expected16)[] cases =
+        [
+            (200, 100, 50, 128, 33007), // red > green > blue
+            (200, 50, 100, 113, 28975), // red > blue > green
+            (100, 200, 50, 148, 38046), // green > red > blue
+            (50, 200, 100, 144, 37038), // green > blue > red
+            (100, 50, 200, 93, 23936), // blue > red > green
+            (50, 100, 200, 105, 26960), // blue > green > red
+            (128, 128, 128, 128, 32896), // the diagonal: only the vertices 000 and 111
+            (0, 0, 0, 0, 0),
+            (255, 255, 255, 255, 65535),
+            (255, 0, 0, 100, 25700),
+            (0, 255, 255, 180, 46260),
+            (128, 64, 191, 106, 27363),
+        ];
+
+        foreach (var (r, g, b, expected8, expected16) in cases)
+        {
+            var actual8 = new byte[1];
+            transform.Convert([r, g, b], actual8);
+            Assert.Equal(expected8, actual8[0]);
+
+            var actual16 = new ushort[1];
+            transform.Convert([(ushort)(r * 257), (ushort)(g * 257), (ushort)(b * 257)], actual16);
+            Assert.Equal(expected16, actual16[0]);
+        }
+    }
+
+    [Fact]
+    public void LabLookupTablesAreInterpolatedMultilinearly()
+    {
+        // lut8Type, CIELAB to gray, 2 grid points per input: the gray entry of each vertex, L* varying least rapidly. A
+        // neutral color has a* = b* = 0, encoded 128 / 255: every vertex contributes, with the products of the fractions
+        // as weights (simplex interpolation would give 128, 109, 90, 107 and 120 instead)
+        byte[] gray = [0, 40, 80, 255, 60, 200, 100, 180];
+        var profile = IccTestProfiles.Lut("GRAY", "Lab ", ("B2A0", IccTestProfiles.Lut8(3, 1, 2, lab => [gray[(int)((4 * lab[0]) + (2 * lab[1]) + lab[2])] / 255.0])));
+        var transform = IccColorTransform.Create(Lightness, profile, new IccColorTransformOptions { BlackPointCompensation = false });
+        var actual8 = new byte[5];
+        transform.Convert([0, 64, 128, 200, 255], actual8);
+        Assert.Equal([94, 105, 115, 126, 135], actual8);
+
+        var actual16 = new ushort[5];
+        transform.Convert([(ushort)0, 64 * 257, 128 * 257, 200 * 257, 65535], actual16);
+        Assert.Equal([24222, 26866, 29510, 32484, 34755], actual16);
+    }
+
+    [Fact]
+    public void RenderingIntentSelectsTheLookupTableThenThePerceptualTableThenTheToneCurve()
+    {
+        // Constant tables: L* / 100 is 51 / 255 (perceptual, AToB0), 102 / 255 (colorimetric, AToB1), 153 / 255 (saturation, AToB2)
+        static byte[] Constant(byte lightness) => IccTestProfiles.Lut8(1, 3, 2, _ => [lightness / 255.0, 128 / 255.0, 128 / 255.0]);
+        var table0 = ("A2B0", Constant(51));
+        var table1 = ("A2B1", Constant(102));
+        var table2 = ("A2B2", Constant(153));
+
+        // The tone curve x^2 gives L* / 100 = 0.25 for 0.5 (the profile connection space is CIELAB): 64 / 255
+        var curve = ("kTRC", IccTestProfiles.Parametric(0, 2.0));
+
+        Assert.Equal([51, 102, 153, 102], Convert(IccTestProfiles.Lut("GRAY", "Lab ", table0, table1, table2, curve)));
+        Assert.Equal([51, 51, 153, 51], Convert(IccTestProfiles.Lut("GRAY", "Lab ", table0, table2)));
+        Assert.Equal([51, 51, 51, 51], Convert(IccTestProfiles.Lut("GRAY", "Lab ", table0, curve)));
+        Assert.Equal([64, 102, 64, 102], Convert(IccTestProfiles.Lut("GRAY", "Lab ", table1, curve)));
+        Assert.Equal([64, 64, 153, 64], Convert(IccTestProfiles.Lut("GRAY", "Lab ", table2, curve)));
+
+        // Tags may share their data
+        var shared = Constant(77);
+        Assert.Equal([77, 77, 153, 77], Convert(IccTestProfiles.Lut("GRAY", "Lab ", ("A2B0", shared), ("A2B1", shared), table2)));
+
+        static byte[] Convert(IccProfile profile)
+        {
+            var result = new byte[4];
+            IccRenderingIntent[] intents = [IccRenderingIntent.Perceptual, IccRenderingIntent.RelativeColorimetric, IccRenderingIntent.Saturation, IccRenderingIntent.AbsoluteColorimetric];
+            for (var i = 0; i < intents.Length; i++)
+            {
+                var transform = IccColorTransform.Create(profile, Lightness, new IccColorTransformOptions { Intent = intents[i], BlackPointCompensation = false });
+                transform.Convert([128], result.AsSpan(i, 1));
+            }
+
+            return result;
+        }
+    }
+
+    [Fact]
+    public void CmykProfilesConvertFourChannels()
+    {
+        var cmyk = IccTestProfiles.CmykLabLut16();
+        var toRgb = IccColorTransform.Create(cmyk, IccProfile.Srgb);
+        Assert.Equal(4, toRgb.SourceChannelCount);
+        Assert.Equal(3, toRgb.DestinationChannelCount);
+        var toCmyk = IccColorTransform.Create(IccProfile.Srgb, cmyk);
+        Assert.Equal(3, toCmyk.SourceChannelCount);
+        Assert.Equal(4, toCmyk.DestinationChannelCount);
+        var betweenCmyk = IccColorTransform.Create(cmyk, IccTestProfiles.CmykLabLutAToB());
+        Assert.Equal(4, betweenCmyk.SourceChannelCount);
+        Assert.Equal(4, betweenCmyk.DestinationChannelCount);
+
+        // In the device model of the perceptual tables of the test profile, no ink is white (up to the 16-bit rounding of
+        // the table entries) and full black ink is black
+        var rgb = new byte[6];
+        IccColorTransform.Create(cmyk, IccProfile.Srgb, new IccColorTransformOptions { Intent = IccRenderingIntent.Perceptual }).Convert([0, 0, 0, 0, 0, 0, 0, 255], rgb);
+        Assert.All(rgb[..3], value => Assert.True(value >= 254));
+        Assert.Equal([0, 0, 0], rgb[3..]);
+
+        // In place for CMYK to CMYK
+        var samples = new ushort[] { 0, 0, 0, 65535, 1000, 2000, 3000, 4000 };
+        betweenCmyk.Convert(samples, samples);
+        Assert.Throws<ArgumentException>("source", () => toRgb.Convert(new byte[6], new byte[3]));
+        Assert.Throws<ArgumentException>("destination", () => toCmyk.Convert(new byte[6], new byte[6]));
+    }
+
+    [Fact]
+    public void MalformedLookupTablesAreInvalid()
+    {
+        var valid8 = IccTestProfiles.Lut8(3, 3, 2, rgb => rgb);
+        var valid16 = IccTestProfiles.Lut16(3, 3, 2, rgb => rgb);
+        _ = IccColorTransform.Create(RgbLab("A2B0", valid8), Lightness);
+        _ = IccColorTransform.Create(RgbLab("A2B0", valid16), Lightness);
+
+        // Grid points, channel counts, table sizes
+        AssertInvalidSource(RgbLab("A2B0", Modify(valid8, data => data[10] = 0)));
+        AssertInvalidSource(RgbLab("A2B0", Modify(valid8, data => data[10] = 1)));
+        AssertInvalidSource(RgbLab("A2B0", Modify(valid8, data => data[10] = 3)));
+        AssertInvalidSource(RgbLab("A2B0", Modify(valid8, data => data[8] = 4)));
+        AssertInvalidSource(RgbLab("A2B0", Modify(valid8, data => data[9] = 4)));
+        AssertInvalidSource(RgbLab("A2B0", valid8[..^1]));
+        AssertInvalidSource(RgbLab("A2B0", valid8[..47]));
+        AssertInvalidSource(RgbLab("A2B0", valid8[..11]));
+        AssertInvalidSource(RgbLab("A2B0", valid16[..^1]));
+        AssertInvalidSource(RgbLab("A2B0", valid16[..51]));
+        AssertInvalidSource(RgbLab("A2B0", Modify(valid16, data => data[49] = 1)));
+        AssertInvalidSource(RgbLab("A2B0", Modify(valid16, data => (data[50], data[51]) = (0x10, 0x01))));
+        AssertInvalidSource(RgbLab("A2B0", Modify(valid16, data => (data[48], data[49]) = (0, 0))));
+
+        // 255 grid points for 4 inputs would need 4 * 255^4 entries: rejected from the sizes, nothing is allocated
+        var huge = IccTestProfiles.Lut16(4, 3, 2, cmyk => [cmyk[0], cmyk[1], cmyk[2]]);
+        AssertInvalidSource(IccTestProfiles.Lut("CMYK", "Lab ", ("A2B0", Modify(huge, data => data[10] = 255))));
+
+        // A tag of another type, an 8-bit table with the CIEXYZ connection space (it has no 8-bit encoding)
+        AssertInvalidSource(RgbLab("A2B0", IccTestProfiles.Curve()));
+        AssertInvalidSource(RgbLab("A2B0", IccTestProfiles.Xyz(1, 1, 1)));
+        AssertInvalidSource(IccTestProfiles.Lut("RGB ", "XYZ ", ("A2B0", valid8)));
+        Assert.Throws<InvalidImageContentException>(() => IccColorTransform.Create(Lightness, IccTestProfiles.Lut("RGB ", "XYZ ", ("B2A0", valid8))));
+
+        // A CMYK profile needs lookup tables: none to the connection space is invalid, none from it cannot be a destination
+        AssertInvalidSource(IccTestProfiles.Lut("CMYK", "Lab "));
+        var sourceOnly = IccTestProfiles.Lut("CMYK", "Lab ", ("A2B0", huge));
+        _ = IccColorTransform.Create(sourceOnly, Lightness);
+        Assert.Throws<UnsupportedImageFeatureException>(() => IccColorTransform.Create(Lightness, sourceOnly));
+
+        static IccProfile RgbLab(string signature, byte[] tag) => IccTestProfiles.Lut("RGB ", "Lab ", (signature, tag));
+
+        static byte[] Modify(byte[] data, Action<byte[]> change)
+        {
+            var copy = (byte[])data.Clone();
+            change(copy);
+            return copy;
+        }
+
+        static void AssertInvalidSource(IccProfile profile)
+            => Assert.Throws<InvalidImageContentException>(() => IccColorTransform.Create(profile, Lightness));
+    }
+
+    [Fact]
+    public void MalformedLutAToBTablesAreInvalid()
+    {
+        byte[][] curves = [IccTestProfiles.Curve(), IccTestProfiles.Curve(), IccTestProfiles.Curve()];
+        (int[], int, Func<double[], double[]>) clut = ([2, 2, 2], 1, values => values);
+        var valid = IccTestProfiles.LutAToB("mAB ", 3, 3, curvesA: curves, clut: clut, curvesM: curves, matrix: [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0], curvesB: curves);
+        _ = IccColorTransform.Create(RgbLab("A2B0", valid), Lightness);
+
+        // Every element is optional: B curves only, or nothing at all, is the identity of three channels
+        _ = IccColorTransform.Create(RgbLab("A2B0", IccTestProfiles.LutAToB("mAB ", 3, 3, curvesB: curves)), Lightness);
+        _ = IccColorTransform.Create(RgbLab("A2B0", IccTestProfiles.LutAToB("mAB ", 3, 3)), Lightness);
+
+        // The wrong type for the direction
+        AssertInvalidSource(RgbLab("A2B0", IccTestProfiles.LutAToB("mBA ", 3, 3, curvesB: curves)));
+        Assert.Throws<InvalidImageContentException>(() => IccColorTransform.Create(Lightness, RgbLab("B2A0", valid)));
+
+        // Element offsets outside the tag (B curves at 12, matrix at 16, M curves at 20, lookup table at 24, A curves at 28)
+        foreach (var position in new[] { 12, 16, 20, 24, 28 })
+        {
+            AssertInvalidSource(RgbLab("A2B0", Modify(valid, data => (data[position], data[position + 1]) = (0x7F, 0xFF))));
+            AssertInvalidSource(RgbLab("A2B0", Modify(valid, data => (data[position + 2], data[position + 3]) = ((byte)(data.Length >> 8), (byte)(data.Length - 1)))));
+        }
+
+        // Lookup table: entry size, grid points, truncated entries
+        var clutOffset = valid[27];
+        AssertInvalidSource(RgbLab("A2B0", Modify(valid, data => data[clutOffset + 16] = 0)));
+        AssertInvalidSource(RgbLab("A2B0", Modify(valid, data => data[clutOffset + 16] = 3)));
+        AssertInvalidSource(RgbLab("A2B0", Modify(valid, data => data[clutOffset + 1] = 1)));
+        AssertInvalidSource(RgbLab("A2B0", Modify(valid, data => data[clutOffset] = 200)));
+
+        // Channel counts: the header, and a missing lookup table when the counts differ
+        AssertInvalidSource(RgbLab("A2B0", Modify(valid, data => data[8] = 4)));
+        AssertInvalidSource(RgbLab("A2B0", valid[..31]));
+        AssertInvalidSource(IccTestProfiles.Lut("CMYK", "Lab ", ("A2B0", IccTestProfiles.LutAToB("mAB ", 4, 3, curvesB: curves))));
+
+        // A curve that is not a curve, or is truncated
+        AssertInvalidSource(RgbLab("A2B0", IccTestProfiles.LutAToB("mAB ", 3, 3, curvesB: [IccTestProfiles.Curve(), IccTestProfiles.Xyz(0, 0, 0), IccTestProfiles.Curve()])));
+        AssertInvalidSource(RgbLab("A2B0", IccTestProfiles.LutAToB("mAB ", 3, 3, curvesB: [IccTestProfiles.Curve(), IccTestProfiles.Curve()])));
+
+        static IccProfile RgbLab(string signature, byte[] tag) => IccTestProfiles.Lut("RGB ", "Lab ", (signature, tag));
+
+        static byte[] Modify(byte[] data, Action<byte[]> change)
+        {
+            var copy = (byte[])data.Clone();
+            change(copy);
+            return copy;
+        }
+
+        static void AssertInvalidSource(IccProfile profile)
+            => Assert.Throws<InvalidImageContentException>(() => IccColorTransform.Create(profile, Lightness));
+    }
+
+    [Fact]
+    public void DegenerateCurvesNeverProduceInvalidSamples()
+    {
+        // A zero slope makes the breakpoint -b / a of a parametric curve infinite or undefined, a negative base makes the
+        // power undefined: samples stay in range, and a destination is either usable or reported as unsupported
+        byte[][] curves =
+        [
+            IccTestProfiles.Parametric(1, 2.0, 0.0, 0.5),
+            IccTestProfiles.Parametric(1, 2.0, 0.0, 0.0),
+            IccTestProfiles.Parametric(2, 0.5, 0.0, -0.5, 0.25),
+            IccTestProfiles.Parametric(3, 0.5, -1.0, 0.25, 2.0, 0.5),
+            IccTestProfiles.Parametric(4, 2.0, -1.0, 2.0, -1.0, 0.5, 0.5, 0.75),
+            IccTestProfiles.Parametric(0, 0.0),
+            IccTestProfiles.Parametric(0, -1.0),
+            IccTestProfiles.Gamma(0),
+            IccTestProfiles.Curve(65535, 0, 65535, 0),
+        ];
+
+        float[] samples = [0f, 0.001f, 0.25f, 0.5f, 0.75f, 0.999f, 1f];
+        foreach (var curve in curves)
+        {
+            var profile = IccTestProfiles.Gray(curve);
+            var converted = new float[samples.Length];
+            IccColorTransform.Create(profile, IccProfile.SrgbGray).Convert(samples, converted);
+            Assert.All(converted, value => Assert.True(value is >= 0f and <= 1f));
+
+            try
+            {
+                IccColorTransform.Create(IccProfile.SrgbGray, profile).Convert(samples, converted);
+                Assert.All(converted, value => Assert.True(value is >= 0f and <= 1f));
+            }
+            catch (UnsupportedImageFeatureException)
+            {
+                // A constant curve has no inverse
+            }
+        }
+    }
+
     private static ReadOnlySpan<byte> GetTag(IccProfile profile, string signature)
     {
         var data = profile.Data.Span;

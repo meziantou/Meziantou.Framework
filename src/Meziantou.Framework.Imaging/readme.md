@@ -614,16 +614,32 @@ public static byte[] ConvertSamplesToSrgb(IccProfile sourceProfile, ReadOnlySpan
 }
 ```
 
-Supported profiles are ICC version 2 and version 4 input, display, output and color space profiles for grayscale and
-RGB data, based on a matrix and tone curves (`rXYZ`/`gXYZ`/`bXYZ` with `rTRC`/`gTRC`/`bTRC`, or `kTRC`; sampled, gamma
-and parametric curves). A malformed profile is an `InvalidImageContentException`; a valid profile of another kind
-(version 5, device link, abstract, named color, other data color spaces), or one that cannot be a destination
-(a constant tone curve, colorants that do not span a color space), is an `UnsupportedImageFeatureException`.
+Supported profiles are ICC version 2 and version 4 input, display, output and color space profiles for grayscale, RGB
+and CMYK data, with a CIEXYZ or CIELAB connection space:
+
+- **Matrix-based profiles**: `rXYZ`/`gXYZ`/`bXYZ` with `rTRC`/`gTRC`/`bTRC`, or `kTRC` for grayscale; sampled, gamma
+  and parametric curves.
+- **Table-based profiles**: `A2B0`/`A2B1`/`A2B2` and `B2A0`/`B2A1`/`B2A2` tags of type `lut8Type`, `lut16Type`,
+  `lutAToBType` or `lutBToAType`. They take precedence over the matrix and curves of the same profile.
+  `IccColorTransformOptions.Intent` selects the table: perceptual (0), colorimetric (1) or saturation (2); a profile
+  without the table of the intent uses its perceptual table, then its matrix and curves. A CMYK image cannot be
+  loaded, but CMYK samples can be converted with `IccColorTransform` (0 is no ink).
+
+A malformed profile is an `InvalidImageContentException`; a valid profile of another kind (version 5, device link,
+abstract, named color, other data color spaces), or one that cannot be a destination (no table from the connection
+space, a constant tone curve, colorants that do not span a color space), is an `UnsupportedImageFeatureException`.
+Table sizes are validated against the profile before anything is read, and tables are read in place: a transform
+allocates a small amount of memory that does not depend on the table sizes.
 
 The conversion is evaluated in double precision, one color at a time, from the formulas of the ICC specification:
-results are the same on every platform up to the last bit of `Math.Pow`, and integer samples are rounded to nearest
-with ties upward. A destination tone curve is inverted exactly (the smallest input reaching the value), so a round trip
-through a profile and back changes a 16-bit sample only where the curve itself is not invertible.
+results are the same on every platform up to the last bit of `Math.Pow` and `Math.Cbrt`, and integer samples are
+rounded to nearest with ties upward. A destination tone curve is inverted exactly (the smallest input reaching the
+value), so a round trip through a matrix-based profile and back changes a 16-bit sample only where the curve itself is
+not invertible. The ICC specification does not define how tables are interpolated between grid points; the library
+uses simplex interpolation along the main diagonal of the grid cell (tetrahedral interpolation for three inputs) when
+the inputs are device channels or CIEXYZ, and multilinear interpolation when they are CIELAB, whose neutral axis is
+not the diagonal. Other color management systems may differ by a fraction of a level between grid points, in
+particular for four-channel tables.
 
 ### Loading, identification and limits
 
@@ -1087,7 +1103,7 @@ Everything below is rejected explicitly (never decoded or encoded approximately)
 | ICO/CUR | Decoding: a top-down DIB payload, a DIB whose stored height is not doubled, an animated PNG payload, a representation larger than 256 pixels per side and the DIB variants the BMP decoder rejects (RLE, embedded codecs, OS/2 headers) are rejected. `.ani` animated cursors are a different container and are not supported. Encoding: 32-bit DIB or still PNG payloads only, at most 256 pixels per side, no metadata; an icon cannot store a hotspot |
 | PNG/APNG | No palette output (paletted inputs are re-encoded as RGB/RGBA), no RGB 16-bit or gray+alpha output layouts (16-bit color is written as RGBA 16), no APNG delta-rectangle optimization, unknown critical chunks rejected, unknown ancillary chunks not round-tripped |
 | Metadata | Profiles are preserved and labeled, never applied implicitly (colors are converted only by `ConvertColorProfile` and `IccColorTransform`); EXIF orientation is reported, applied only by `AutoOrient`; extended XMP in JPEG is not supported; per-format storage limits are listed in [Metadata, color profiles and orientation](#metadata-color-profiles-and-orientation); unsupported items follow `MetadataHandling` (`Strict` throws by default) |
-| Color management | ICC version 2 and 4 matrix-based grayscale and RGB profiles only: no version 5 (iccMAX), device-link, abstract or named-color profile; `ConvertColorProfile` keeps the pixel format (an RGB image cannot become grayscale or CMYK this way); CMYK images cannot be decoded; no gamut mapping beyond per-channel clipping |
+| Color management | ICC version 2 and 4 grayscale, RGB and CMYK profiles (matrix-based and table-based): no version 5 (iccMAX), device-link, abstract or named-color profile, no multi-process-element (`D2Bx`/`B2Dx`) tag, no other data color space; `ConvertColorProfile` keeps the pixel format (an RGB image cannot become grayscale or CMYK this way); CMYK images cannot be decoded; no gamut mapping beyond per-channel clipping |
 | Processing | No HDR, drawing, text rendering or custom processors; `LinearSrgb` resizing and convolution accept untagged or recognized sRGB/sGray profiles only; convolution matrices have odd dimensions, no bias or divisor, no ready-made matrices and no separable fast path |
 | Formats | JPEG XL and AVIF are not supported |
 | API | No public allocator, custom pixel type, codec plug-in or image-processor interface; implementation types are internal |

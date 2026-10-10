@@ -71,7 +71,15 @@ internal sealed class IccProfileModel
     /// <param name="intent">The rendering intent selecting the tag (ICC.1:2022 section 8.10.2).</param>
     public void AppendToConnectionSpace(IccStageList stages, IccRenderingIntent intent)
     {
-        _ = intent;
+        if (TryFindLookupTable(deviceToConnection: true, intent, out var tag, out var signature))
+        {
+            if (IccLutParser.Append(tag, ChannelCount, 3, deviceToConnection: true, !IsLabConnectionSpace, stages) is { } error)
+                throw Invalid($"in the {IccReader.FormatSignature(signature)} tag, {error}");
+
+            AppendDecoding(stages, IccReader.ReadUInt32(tag.Span), signature);
+            return;
+        }
+
         if (ChannelCount == 1)
         {
             // Monochrome profile (ICC.1:2022 annex F.2): the curve gives the fraction of the media white, as Y of a
@@ -100,7 +108,7 @@ internal sealed class IccProfileModel
             return;
         }
 
-        throw Invalid("the profile has no 'A2B0' tag to convert its device values to the profile connection space.");
+        throw Invalid("the profile has no lookup table ('A2B0') to convert its device values to the profile connection space.");
     }
 
     /// <summary>Appends the stages converting CIEXYZ of the connection space to normalized device values.</summary>
@@ -108,7 +116,15 @@ internal sealed class IccProfileModel
     /// <param name="intent">The rendering intent selecting the tag (ICC.1:2022 section 8.10.2).</param>
     public void AppendFromConnectionSpace(IccStageList stages, IccRenderingIntent intent)
     {
-        _ = intent;
+        if (TryFindLookupTable(deviceToConnection: false, intent, out var tag, out var signature))
+        {
+            AppendEncoding(stages, IccReader.ReadUInt32(tag.Span), signature);
+            if (IccLutParser.Append(tag, 3, ChannelCount, deviceToConnection: false, !IsLabConnectionSpace, stages) is { } error)
+                throw Invalid($"in the {IccReader.FormatSignature(signature)} tag, {error}");
+
+            return;
+        }
+
         if (ChannelCount == 1)
         {
             var curve = ReadCurve(IccReader.TagGrayCurve);
@@ -142,7 +158,86 @@ internal sealed class IccProfileModel
             return;
         }
 
-        throw Unsupported("has no 'B2A0' tag, so it cannot be a destination.", "ICC profile without a conversion from the profile connection space");
+        throw Unsupported("has no lookup table ('B2A0') from the profile connection space, so it cannot be a destination.", "ICC profile without a conversion from the profile connection space");
+    }
+
+    /// <summary>
+    /// Finds the lookup table of a rendering intent (ICC.1:2022 section 8.10.2): the tag of the intent when present, else
+    /// the tag of the perceptual intent (AToB0 or BToA0). The ICC-absolute colorimetric intent uses the tag of the
+    /// media-relative colorimetric intent. Without any of them, the profile is used through its matrix and tone curves.
+    /// </summary>
+    private bool TryFindLookupTable(bool deviceToConnection, IccRenderingIntent intent, out ReadOnlyMemory<byte> tag, out uint signature)
+    {
+        signature = (intent, deviceToConnection) switch
+        {
+            (IccRenderingIntent.Perceptual, true) => IccReader.TagAToB0,
+            (IccRenderingIntent.Perceptual, false) => IccReader.TagBToA0,
+            (IccRenderingIntent.Saturation, true) => IccReader.TagAToB2,
+            (IccRenderingIntent.Saturation, false) => IccReader.TagBToA2,
+            (_, true) => IccReader.TagAToB1,
+            (_, false) => IccReader.TagBToA1,
+        };
+
+        var data = _data.Span;
+        if (!IccReader.TryFindTag(data, signature, out var offset, out var length))
+        {
+            signature = deviceToConnection ? IccReader.TagAToB0 : IccReader.TagBToA0;
+            if (!IccReader.TryFindTag(data, signature, out offset, out length))
+            {
+                tag = default;
+                return false;
+            }
+        }
+
+        tag = _data.Slice(offset, length);
+        return true;
+    }
+
+    /// <summary>
+    /// Appends the conversion of the normalized output of a lookup table to CIEXYZ (ICC.1:2022 section 6.3.4): CIEXYZ is
+    /// encoded as u1Fixed15 (1.0 is 32768 / 65535); CIELAB as L* / 100 and (a* + 128) / 255, except in a <c>lut16Type</c>,
+    /// which keeps the encoding of version 2 where 100 and 255 correspond to 65280 / 65535 (ICC.1:2001-04 annex A).
+    /// </summary>
+    private void AppendDecoding(IccStageList stages, uint type, uint signature)
+    {
+        if (!IsLabConnectionSpace)
+        {
+            EnsureXyzEncoding(type, signature);
+            stages.Add(IccMatrixStage.CreateScale(XyzEncodingScale, XyzEncodingScale, XyzEncodingScale));
+            return;
+        }
+
+        var (lightness, chroma) = GetLabEncodingScales(type);
+        stages.Add(IccMatrixStage.CreateScale(lightness, chroma, chroma, 0, -128, -128));
+        stages.Add(IccLabToXyzStage.Instance);
+    }
+
+    /// <summary>Appends the conversion of CIEXYZ to the normalized input of a lookup table (see <see cref="AppendDecoding"/>).</summary>
+    private void AppendEncoding(IccStageList stages, uint type, uint signature)
+    {
+        if (!IsLabConnectionSpace)
+        {
+            EnsureXyzEncoding(type, signature);
+            stages.Add(IccMatrixStage.CreateScale(1 / XyzEncodingScale, 1 / XyzEncodingScale, 1 / XyzEncodingScale));
+            return;
+        }
+
+        var (lightness, chroma) = GetLabEncodingScales(type);
+        stages.Add(IccXyzToLabStage.Instance);
+        stages.Add(IccMatrixStage.CreateScale(1 / lightness, 1 / chroma, 1 / chroma, 0, 128 / chroma, 128 / chroma));
+    }
+
+    /// <summary>The value of the largest normalized CIEXYZ component: 65535 / 32768.</summary>
+    private const double XyzEncodingScale = 65535.0 / 32768;
+
+    private static (double Lightness, double Chroma) GetLabEncodingScales(uint type)
+        => type == IccReader.TypeLut16 ? (100 * 65535.0 / 65280, 255 * 65535.0 / 65280) : (100, 255);
+
+    private void EnsureXyzEncoding(uint type, uint signature)
+    {
+        // There is no 8-bit encoding of CIEXYZ (ICC.1:2022 section 6.3.4.1)
+        if (type == IccReader.TypeLut8)
+            throw Invalid($"the {IccReader.FormatSignature(signature)} tag is a lut8Type, which cannot be used with the 'XYZ ' profile connection space.");
     }
 
     /// <summary>Reads the colorant tags of a matrix-based profile as the columns of the matrix converting linear RGB to CIEXYZ.</summary>

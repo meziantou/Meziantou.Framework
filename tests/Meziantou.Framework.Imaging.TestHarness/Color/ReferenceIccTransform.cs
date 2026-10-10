@@ -22,12 +22,14 @@ public sealed class ReferenceIccTransform
     private readonly ReferenceIccProfile _source;
     private readonly ReferenceIccProfile _destination;
     private readonly bool _identical;
+    private readonly int _intent;
 
-    private ReferenceIccTransform(ReferenceIccProfile source, ReferenceIccProfile destination, bool identical)
+    private ReferenceIccTransform(ReferenceIccProfile source, ReferenceIccProfile destination, bool identical, int intent)
     {
         _source = source;
         _destination = destination;
         _identical = identical;
+        _intent = intent;
     }
 
     /// <summary>Gets the number of source device channels.</summary>
@@ -39,9 +41,14 @@ public sealed class ReferenceIccTransform
     /// <summary>Creates the reference conversion between two profiles.</summary>
     /// <param name="source">The bytes of the source profile.</param>
     /// <param name="destination">The bytes of the destination profile.</param>
+    /// <param name="intent">The rendering intent, as in the profile header: 0 perceptual, 1 media-relative colorimetric, 2 saturation, 3 ICC-absolute colorimetric.</param>
     /// <returns>The reference.</returns>
-    public static ReferenceIccTransform Create(ReadOnlySpan<byte> source, ReadOnlySpan<byte> destination)
-        => new(new ReferenceIccProfile(source), new ReferenceIccProfile(destination), source.SequenceEqual(destination));
+    public static ReferenceIccTransform Create(ReadOnlySpan<byte> source, ReadOnlySpan<byte> destination, int intent = 1)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(intent);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(intent, 3);
+        return new(new ReferenceIccProfile(source), new ReferenceIccProfile(destination), source.SequenceEqual(destination), intent);
+    }
 
     /// <summary>Converts one color.</summary>
     /// <param name="device">The normalized source device values.</param>
@@ -57,7 +64,7 @@ public sealed class ReferenceIccTransform
             values[i] = ReferenceIccMath.Clip(values[i]);
         }
 
-        var result = _destination.FromConnectionSpace(_source.ToConnectionSpace(values));
+        var result = _destination.FromConnectionSpace(_source.ToConnectionSpace(values, _intent), _intent);
         for (var i = 0; i < result.Length; i++)
         {
             result[i] = ReferenceIccMath.Clip(result[i]);

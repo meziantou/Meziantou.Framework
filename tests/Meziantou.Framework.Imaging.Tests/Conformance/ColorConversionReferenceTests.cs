@@ -31,6 +31,13 @@ public sealed class ColorConversionReferenceTests
         ("gray-gamma", () => IccTestProfiles.Gray(IccTestProfiles.Gamma(461))),
         ("gray-sampled", () => IccTestProfiles.Gray(SampledPower(17, 2.4))),
         ("gray-lab", () => IccTestProfiles.Gray(IccTestProfiles.Parametric(2, 1.25, 0.875, 0.125, 0.03125), "Lab ")),
+        ("rgb-lab-lut8", IccTestProfiles.RgbLabLut8),
+        ("rgb-xyz-lut16", IccTestProfiles.RgbXyzLut16),
+        ("cmyk-lab-lut16", () => IccTestProfiles.CmykLabLut16()),
+        ("gray-lab-lut8", IccTestProfiles.GrayLabLut8),
+        ("rgb-lab-mab", IccTestProfiles.RgbLabLutAToB),
+        ("rgb-xyz-mab", IccTestProfiles.RgbXyzMatrixLutAToB),
+        ("cmyk-lab-mab", IccTestProfiles.CmykLabLutAToB),
     ];
 
     public static TheoryData<string, string> Cases()
@@ -56,7 +63,7 @@ public sealed class ColorConversionReferenceTests
     {
         var source = Profiles.Single(profile => profile.Name == sourceName).Create();
         var destination = Profiles.Single(profile => profile.Name == destinationName).Create();
-        var transform = IccColorTransform.Create(source, destination);
+        var transform = IccColorTransform.Create(source, destination, new IccColorTransformOptions { BlackPointCompensation = false });
         var reference = ReferenceIccTransform.Create(source.Data.Span, destination.Data.Span);
         Assert.Equal(reference.SourceChannelCount, transform.SourceChannelCount);
         Assert.Equal(reference.DestinationChannelCount, transform.DestinationChannelCount);
@@ -75,6 +82,40 @@ public sealed class ColorConversionReferenceTests
         var convertedFloats = new float[floats.Length / transform.SourceChannelCount * transform.DestinationChannelCount];
         transform.Convert(floats, convertedFloats);
         Assert.Empty(reference.Compare(floats, convertedFloats));
+    }
+
+    [Theory]
+    [InlineData(IccRenderingIntent.Perceptual, true, true)]
+    [InlineData(IccRenderingIntent.RelativeColorimetric, true, true)]
+    [InlineData(IccRenderingIntent.Saturation, true, true)]
+    [InlineData(IccRenderingIntent.RelativeColorimetric, false, true)]
+    [InlineData(IccRenderingIntent.Saturation, true, false)]
+    public void RenderingIntentSelectsTheLookupTables(IccRenderingIntent intent, bool withColorimetricTables, bool withSaturationTables)
+    {
+        // The CMYK profile has different tables per intent; a missing table falls back to the perceptual one
+        var cmyk = IccTestProfiles.CmykLabLut16(withColorimetricTables, withSaturationTables);
+        var options = new IccColorTransformOptions { Intent = intent, BlackPointCompensation = false };
+        foreach (var (source, destination) in new[] { (cmyk, IccProfile.Srgb), (IccProfile.Srgb, cmyk), (cmyk, IccTestProfiles.RgbLabLut8()) })
+        {
+            var transform = IccColorTransform.Create(source, destination, options);
+            var reference = ReferenceIccTransform.Create(source.Data.Span, destination.Data.Span, (int)intent);
+            var words = CreateSamples(transform.SourceChannelCount, steps: 3, randomColors: 40, ushort.MaxValue).Select(value => (ushort)value).ToArray();
+            var converted = new ushort[words.Length / transform.SourceChannelCount * transform.DestinationChannelCount];
+            transform.Convert(words, converted);
+            Assert.Empty(reference.Compare(words, converted));
+
+            // The intents really differ when their tables exist: the comparison is not vacuous
+            var perceptual = new ushort[converted.Length];
+            IccColorTransform.Create(source, destination, new IccColorTransformOptions { Intent = IccRenderingIntent.Perceptual, BlackPointCompensation = false }).Convert(words, perceptual);
+            var hasOwnTables = intent switch
+            {
+                IccRenderingIntent.RelativeColorimetric => withColorimetricTables,
+                IccRenderingIntent.Saturation => withSaturationTables,
+                _ => false,
+            };
+
+            Assert.Equal(!hasOwnTables, perceptual.AsSpan().SequenceEqual(converted));
+        }
     }
 
     [Fact]

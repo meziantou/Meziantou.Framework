@@ -18,6 +18,8 @@
   <ItemGroup>
     <!-- The buffer-lifetime audit shared with the hardening conformance tests (FuzzOracle runs every case under it) -->
     <Compile Include="..\..\tests\Meziantou.Framework.Imaging.Tests\Conformance\Hardening\PoolAudit.cs" Link="Shared\PoolAudit.cs" />
+    <!-- The synthetic ICC profiles of the unit tests are fuzz seeds for the tag types the corpus profiles do not use (ColorProfileFuzzTests) -->
+    <Compile Include="..\..\tests\Meziantou.Framework.Imaging.Tests\IccTestProfiles.cs" Link="Shared\IccTestProfiles.cs" />
   </ItemGroup>
 
   <ItemGroup>

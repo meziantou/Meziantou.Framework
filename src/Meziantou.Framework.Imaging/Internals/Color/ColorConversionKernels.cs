@@ -4,8 +4,9 @@ using System.Runtime.InteropServices;
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
-/// The scalar kernels of ICC color conversion: they evaluate the stages of an <see cref="IccPipeline"/> for each color of
-/// a row, in <see cref="double"/>, and are the numerical reference of the conversion.
+/// The kernels of ICC color conversion: they evaluate the stages of an <see cref="IccPipeline"/> for each color of a row,
+/// in <see cref="double"/>. <see cref="ConvertScalar"/> is the numerical reference; <see cref="Convert"/> reads the first
+/// stage of 8-bit conversions from precomputed tables, with bit-identical results.
 /// </summary>
 internal static class ColorConversionKernels
 {
@@ -67,6 +68,55 @@ internal static class ColorConversionKernels
     /// <param name="destinationStride">The samples per destination color: the destination channels, then the copied samples.</param>
     /// <param name="reverseColorOrder">Whether three-channel colors are stored blue first on both sides.</param>
     public static void Convert<T, TSample>(IccPipeline pipeline, ReadOnlySpan<T> source, Span<T> destination, int sourceStride, int destinationStride, bool reverseColorOrder = false)
+        where T : unmanaged
+        where TSample : struct, IIccSample<T>
+    {
+        if (typeof(T) == typeof(byte) && pipeline.ByteInputTables is { } tables)
+        {
+            ConvertBytes(pipeline, tables, unsafe(MemoryMarshal.Cast<T, byte>(source)), unsafe(MemoryMarshal.Cast<T, byte>(destination)), sourceStride, destinationStride, reverseColorOrder);
+            return;
+        }
+
+        ConvertScalar<T, TSample>(pipeline, source, destination, sourceStride, destinationStride, reverseColorOrder);
+    }
+
+    /// <summary>
+    /// Converts interleaved 8-bit colors like <see cref="ConvertScalar"/>, reading the first stage (one curve per source
+    /// channel) from the tables of the pipeline instead of evaluating the curves for each sample.
+    /// </summary>
+    private static void ConvertBytes(IccPipeline pipeline, double[][] tables, ReadOnlySpan<byte> source, Span<byte> destination, int sourceStride, int destinationStride, bool reverseColorOrder)
+    {
+        var sourceChannels = pipeline.SourceChannelCount;
+        var destinationChannels = pipeline.DestinationChannelCount;
+        var copied = sourceStride - sourceChannels;
+        Span<double> values = stackalloc double[IccPipeline.MaxChannels];
+        Span<byte> kept = stackalloc byte[IccPipeline.MaxChannels];
+        kept = kept[..copied];
+        var count = source.Length / sourceStride;
+        for (var i = 0; i < count; i++)
+        {
+            // The whole source color is read before the destination is written: the spans may be the same
+            var input = source.Slice(i * sourceStride, sourceStride);
+            for (var channel = 0; channel < sourceChannels; channel++)
+            {
+                values[channel] = tables[channel][input[reverseColorOrder ? 2 - channel : channel]];
+            }
+
+            input[sourceChannels..].CopyTo(kept);
+            pipeline.ApplyAfterInputCurves(values);
+
+            var output = destination.Slice(i * destinationStride, destinationStride);
+            for (var channel = 0; channel < destinationChannels; channel++)
+            {
+                output[reverseColorOrder ? 2 - channel : channel] = IccByteSample.Store(values[channel]);
+            }
+
+            kept.CopyTo(output[destinationChannels..]);
+        }
+    }
+
+    /// <summary>Converts interleaved colors by evaluating every stage for each color: the numerical reference of <see cref="Convert"/>.</summary>
+    internal static void ConvertScalar<T, TSample>(IccPipeline pipeline, ReadOnlySpan<T> source, Span<T> destination, int sourceStride, int destinationStride, bool reverseColorOrder = false)
         where T : unmanaged
         where TSample : struct, IIccSample<T>
     {

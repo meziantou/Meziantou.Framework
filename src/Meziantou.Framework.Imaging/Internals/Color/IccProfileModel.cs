@@ -254,6 +254,10 @@ internal sealed class IccProfileModel
             }
         }
 
+        // The type signature of the tag selects the encoding of the connection space before the tag is parsed
+        if (length < 4)
+            throw Invalid($"the {IccReader.FormatSignature(signature)} tag is too short to have a type.");
+
         tag = _data.Slice(offset, length);
         return true;
     }

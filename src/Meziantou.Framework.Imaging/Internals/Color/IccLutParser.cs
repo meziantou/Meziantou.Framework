@@ -9,7 +9,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// Every size is validated against the tag before a stage is created: the number of channels (at most
 /// <see cref="IccPipeline.MaxChannels"/>), the grid points (at least two per input) and the table lengths, computed
 /// without overflow. A stage reads the color lookup table in place, so a parsed tag allocates only its one-dimensional
-/// tables. Tags may overlap or share data with other tags.
+/// tables and curves (at most a few times the size of the tag). Tags may overlap or share data with other tags.
 /// </remarks>
 internal static class IccLutParser
 {

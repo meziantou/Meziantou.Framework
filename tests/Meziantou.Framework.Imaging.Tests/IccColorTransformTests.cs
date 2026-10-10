@@ -553,7 +553,12 @@ public sealed class IccColorTransformTests
         var huge = IccTestProfiles.Lut16(4, 3, 2, cmyk => [cmyk[0], cmyk[1], cmyk[2]]);
         AssertInvalidSource(IccTestProfiles.Lut("CMYK", "Lab ", ("A2B0", Modify(huge, data => data[10] = 255))));
 
-        // A tag of another type, an 8-bit table with the CIEXYZ connection space (it has no 8-bit encoding)
+        // A tag too short to have a type (found by fuzzing: the type selects the encoding before the tag is parsed), a tag
+        // of another type, an 8-bit table with the CIEXYZ connection space (it has no 8-bit encoding)
+        AssertInvalidSource(RgbLab("A2B0", []));
+        AssertInvalidSource(RgbLab("A2B0", [0x6D, 0x66, 0x74]));
+        Assert.Throws<InvalidImageContentException>(() => IccColorTransform.Create(Lightness, RgbLab("B2A0", [])));
+        Assert.Throws<InvalidImageContentException>(() => IccColorTransform.Create(Lightness, RgbLab("B2A0", [0x6D, 0x66, 0x74])));
         AssertInvalidSource(RgbLab("A2B0", IccTestProfiles.Curve()));
         AssertInvalidSource(RgbLab("A2B0", IccTestProfiles.Xyz(1, 1, 1)));
         AssertInvalidSource(IccTestProfiles.Lut("RGB ", "XYZ ", ("A2B0", valid8)));

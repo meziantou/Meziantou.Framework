@@ -2,7 +2,7 @@
 
 A fully managed, performance-oriented image library for .NET 10 and .NET 11: PNG, animated PNG (APNG), GIF, JPEG, WebP
 (still and animated, lossless and lossy), QOI, BMP, TGA, Netpbm (PBM/PGM/PPM/PAM), TIFF/BigTIFF and ICO/CUR decoding and
-encoding, animation-aware processing, and bounded-memory streaming.
+encoding, animation-aware processing, ICC color conversion, and bounded-memory streaming.
 
 - Static PNG, animated PNG (APNG), GIF, baseline/progressive JPEG, WebP (still and animated, lossless and lossy), QOI,
   BMP, TGA, Netpbm (PBM/PGM/PPM/PAM), TIFF/BigTIFF and ICO/CUR decoding; PNG, APNG, GIF, baseline JPEG, WebP (lossless
@@ -15,7 +15,8 @@ encoding, animation-aware processing, and bounded-memory streaming.
 - Crop, resize (alpha-aware, Contain/Cover/Stretch), rotate, auto-orient, flip, grayscale and convolution matrices
   (sharpen, blur, edge detection) applied to all frames
 - ICC color management on request: convert an image to another color profile, or convert sample buffers between two
-  profiles (profiles are never applied implicitly)
+  profiles: matrix- and table-based grayscale, RGB and CMYK profiles of versions 2 and 4, the four rendering intents
+  and black point compensation (profiles are never applied implicitly)
 - Bounded-memory sequential readers and writers for long animations
 - Explicit policies for alpha, precision, metadata and color-profile losses; configurable resource limits
 
@@ -644,8 +645,10 @@ and CMYK data, with a CIEXYZ or CIELAB connection space:
 A malformed profile is an `InvalidImageContentException`; a valid profile of another kind (version 5, device link,
 abstract, named color, other data color spaces), or one that cannot be a destination (no table from the connection
 space, a constant tone curve, colorants that do not span a color space), is an `UnsupportedImageFeatureException`.
-Table sizes are validated against the profile before anything is read, and tables are read in place: a transform
-allocates a small amount of memory that does not depend on the table sizes.
+Table sizes are validated against the profile before anything is read. Color lookup tables are read in place from the
+profile; a transform only copies the one-dimensional curves, so its memory is bounded by a small multiple of the
+profile size, and converting samples allocates nothing. The first curve of an 8-bit conversion is read from a
+256-entry table per channel, with results identical to the evaluation of the curve.
 
 The conversion is evaluated in double precision, one color at a time, from the formulas of the ICC specification:
 results are the same on every platform up to the last bit of `Math.Pow` and `Math.Cbrt`, and integer samples are

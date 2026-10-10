@@ -1,7 +1,7 @@
 # Meziantou.Framework.Imaging
 
 A fully managed image library: PNG/APNG, GIF, JPEG, WebP, QOI, BMP, TGA, Netpbm, TIFF and ICO/CUR decoding and encoding,
-animation-aware processing, and bounded-memory streaming readers and writers.
+animation-aware processing, ICC color conversion, and bounded-memory streaming readers and writers.
 
 These instructions complete the repository-level `AGENTS.md`. The user guide is [readme.md](readme.md): it states what
 the library guarantees to its callers (support matrix, limitations, defaults). Keep the code, the XML documentation and
@@ -87,6 +87,31 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   `ImageEncoderRegistry` and a public `ImageEncoder` in `Formats/`, then a row in the support matrix of `readme.md`.
 - `ZLibStream` reports truncation as a clean end: check that the expected number of bytes was produced.
 
+## Color management
+
+`IccColorTransform` (sample buffers) and `ConvertColorProfile` (images) are the only code that applies an ICC profile;
+everything is under `Internals/Color`.
+
+- Written from ICC.1:2001-04 (version 2 profiles), ICC.1:2022 (version 4 profiles) and Adobe's published black point
+  compensation algorithm. Never port code from another color management system; cite the clause in the code.
+- A profile is untrusted input. Validate every size against the tag before reading (64-bit arithmetic for table
+  sizes), read color lookup tables in place (`ReadOnlyMemory<byte>`, no copy) so that a transform only copies
+  one-dimensional curves, and allocate nothing per conversion (`PerformanceContractTests`). A malformed profile is `InvalidImageContentException`; a valid profile that is not
+  supported or cannot be a destination is `UnsupportedImageFeatureException`. Nothing else may escape
+  (`ColorProfileFuzzTests`).
+- A conversion is a list of `IccStage` evaluated in `double`, one color at a time (`ColorConversionKernels.ConvertScalar`
+  is the numerical reference). Both profiles meet in CIEXYZ relative to D50. A faster kernel must be bit-identical and
+  proven so in `VectorizedKernelTests`.
+- The interpolation of color lookup tables (simplex along the main diagonal for gray, RGB and CIEXYZ inputs,
+  multilinear for CIELAB and CMYK inputs), the generalized inverse of tone curves and the black point estimates are
+  part of the documented numerical contract: change them only with `readme.md` and the tests.
+- Tests have three independent sources: literals computed outside the library (`IccColorTransformTests`), the decimal
+  reference of the harness (`ReferenceIccTransform`, `ColorConversionReferenceTests`), and colors converted by LittleCMS
+  (`colorTransforms` of the corpus, `ColorConversionGoldenTests`). The reference shares the reading of the
+  specification with the library: only the LittleCMS vectors and the literals catch an error of interpretation, so a
+  new tag type or encoding needs one of them.
+- Pixels and their profile change together: `ConvertColorProfile` is transactional. No other operation converts colors.
+
 ## Performance work
 
 - Remove unnecessary decodes, conversions and copies before micro-optimizing. Profile first and keep the evidence.
@@ -153,6 +178,9 @@ dotnet publish tests/Meziantou.Framework.Imaging.AotSmoke -c Release -f net11.0 
   dotnet run --project tools/Meziantou.Framework.Imaging.CorpusGenerator -- <generator> --write    # replace the fixtures
   dotnet run --project tools/Meziantou.Framework.Imaging.CorpusGenerator -- verify                 # re-decode with the pinned tools
   ```
+
+  The `icc` generator (color profiles and LittleCMS vectors) also needs `--icc-profiles <directory>`: see the fixtures
+  README.
 
   The coverage tables of the fixtures README are checked against the manifest (`FixtureCoverageMatrixTests`): update them
   when fixtures or feature tags change.

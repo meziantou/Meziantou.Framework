@@ -19,7 +19,33 @@ internal sealed class IccPipeline
         SourceChannelCount = sourceChannelCount;
         DestinationChannelCount = destinationChannelCount;
         IsIdentity = isIdentity;
+
+        // The first stage of most conversions is one curve per source channel (tone curves, or the input tables of a
+        // lookup table): its values for the 256 possible 8-bit samples are computed once, by the same evaluation as
+        // IccCurvesStage on the same normalized sample, so that using the table gives bit-identical results
+        if (stages.Length > 0 && stages[0] is IccCurvesStage { Curves: var curves } && curves.Length == sourceChannelCount)
+        {
+            var tables = new double[sourceChannelCount][];
+            for (var channel = 0; channel < tables.Length; channel++)
+            {
+                var table = new double[256];
+                for (var sample = 0; sample < table.Length; sample++)
+                {
+                    table[sample] = curves[channel].Evaluate(IccByteSample.Load((byte)sample));
+                }
+
+                tables[channel] = table;
+            }
+
+            ByteInputTables = tables;
+        }
     }
+
+    /// <summary>
+    /// Gets, when the first stage is one curve per source channel, the value of that stage for each 8-bit sample of each
+    /// channel; <see langword="null"/> otherwise. See <see cref="ApplyAfterInputCurves"/>.
+    /// </summary>
+    public double[][]? ByteInputTables { get; }
 
     /// <summary>Gets the number of device channels of the source profile.</summary>
     public int SourceChannelCount { get; }
@@ -69,6 +95,16 @@ internal sealed class IccPipeline
         foreach (var stage in _stages)
         {
             stage.Apply(values);
+        }
+    }
+
+    /// <summary>Converts one color in place, starting after the first stage: the values come from <see cref="ByteInputTables"/>.</summary>
+    /// <param name="values">At least <see cref="MaxChannels"/> elements: the output of the first stage on input, the normalized destination device values on output.</param>
+    public void ApplyAfterInputCurves(Span<double> values)
+    {
+        for (var i = 1; i < _stages.Length; i++)
+        {
+            _stages[i].Apply(values);
         }
     }
 }

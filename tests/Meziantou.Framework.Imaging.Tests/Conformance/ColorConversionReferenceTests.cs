@@ -38,7 +38,53 @@ public sealed class ColorConversionReferenceTests
         ("rgb-lab-mab", IccTestProfiles.RgbLabLutAToB),
         ("rgb-xyz-mab", IccTestProfiles.RgbXyzMatrixLutAToB),
         ("cmyk-lab-mab", IccTestProfiles.CmykLabLutAToB),
+        ("gray-paper", IccTestProfiles.GrayPaper),
+        ("rgb-scanner", IccTestProfiles.RgbScanner),
     ];
+
+    /// <summary>The profiles whose black point or media white point makes the intents and black point compensation differ.</summary>
+    private static readonly string[] IntentProfiles = ["srgb", "gray-paper", "rgb-scanner", "rgb-lab-lut8", "cmyk-lab-lut16", "cmyk-lab-mab", "gray-lab-lut8", "rgb-lab-mab"];
+
+    public static TheoryData<string, string, IccRenderingIntent, bool> IntentCases()
+    {
+        var data = new TheoryData<string, string, IccRenderingIntent, bool>();
+        foreach (var source in IntentProfiles)
+        {
+            foreach (var destination in IntentProfiles)
+            {
+                if (source == destination)
+                    continue;
+
+                data.Add(source, destination, IccRenderingIntent.Perceptual, true);
+                data.Add(source, destination, IccRenderingIntent.RelativeColorimetric, true);
+                data.Add(source, destination, IccRenderingIntent.Saturation, true);
+                data.Add(source, destination, IccRenderingIntent.AbsoluteColorimetric, false);
+                data.Add(source, destination, IccRenderingIntent.AbsoluteColorimetric, true);
+            }
+        }
+
+        return data;
+    }
+
+    [Theory]
+    [MemberData(nameof(IntentCases))]
+    public void IntentsAndBlackPointCompensationMatchTheReference(string sourceName, string destinationName, IccRenderingIntent intent, bool blackPointCompensation)
+    {
+        var source = Profiles.Single(profile => profile.Name == sourceName).Create();
+        var destination = Profiles.Single(profile => profile.Name == destinationName).Create();
+        var transform = IccColorTransform.Create(source, destination, new IccColorTransformOptions { Intent = intent, BlackPointCompensation = blackPointCompensation });
+        var reference = ReferenceIccTransform.Create(source.Data.Span, destination.Data.Span, (int)intent, blackPointCompensation);
+
+        var words = CreateSamples(transform.SourceChannelCount, steps: 3, randomColors: 60, ushort.MaxValue).Select(value => (ushort)value).ToArray();
+        var converted = new ushort[words.Length / transform.SourceChannelCount * transform.DestinationChannelCount];
+        transform.Convert(words, converted);
+        Assert.Empty(reference.Compare(words, converted));
+
+        var bytes = CreateSamples(transform.SourceChannelCount, steps: 2, randomColors: 30, byte.MaxValue).Select(value => (byte)value).ToArray();
+        var convertedBytes = new byte[bytes.Length / transform.SourceChannelCount * transform.DestinationChannelCount];
+        transform.Convert(bytes, convertedBytes);
+        Assert.Empty(reference.Compare(bytes, convertedBytes));
+    }
 
     public static TheoryData<string, string> Cases()
     {

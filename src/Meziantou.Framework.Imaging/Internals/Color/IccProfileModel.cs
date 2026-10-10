@@ -66,6 +66,71 @@ internal sealed class IccProfileModel
         return new IccProfileModel(data, header, role, channelCount);
     }
 
+    /// <summary>Gets a value indicating whether the profile is a CMYK output (printer) profile.</summary>
+    public bool IsCmykOutputProfile => ChannelCount == 4 && Header.ProfileClass == IccReader.ClassOutput;
+
+    /// <summary>
+    /// Determines whether the conversion of an intent uses a lookup table of the profile, as opposed to its matrix and
+    /// tone curves.
+    /// </summary>
+    public bool UsesLookupTable(bool deviceToConnection, IccRenderingIntent intent)
+        => TryFindLookupTable(deviceToConnection, intent, out _, out _);
+
+    /// <summary>
+    /// Determines whether the profile has the tags of a conversion (a lookup table, or the tone curves of a matrix-based
+    /// or monochrome profile). The tags are not validated.
+    /// </summary>
+    public bool HasConversion(bool deviceToConnection, IccRenderingIntent intent)
+    {
+        if (UsesLookupTable(deviceToConnection, intent))
+            return true;
+
+        var data = _data.Span;
+        return ChannelCount switch
+        {
+            1 => IccReader.TryGetTag(data, IccReader.TagGrayCurve, out _),
+            3 => IccReader.TryGetTag(data, IccReader.TagRedCurve, out _) && IccReader.TryGetTag(data, IccReader.TagRedColorant, out _),
+            _ => false,
+        };
+    }
+
+    /// <summary>
+    /// Gets the media white point used by the ICC-absolute colorimetric intent (ICC.1:2022 section 6.3.2): the
+    /// <c>mediaWhitePointTag</c>, or the D50 illuminant of the connection space when the profile has none. A display is
+    /// assumed to be viewed fully adapted, so its media white is the illuminant whatever the tag says (version 4 requires
+    /// it; version 2 display profiles often store the unadapted white of the display).
+    /// </summary>
+    /// <exception cref="InvalidImageContentException">The tag is malformed or is not a positive color.</exception>
+    public (double X, double Y, double Z) GetMediaWhitePoint()
+    {
+        if (Header.ProfileClass == IccReader.ClassDisplay || !IccReader.TryGetTag(_data.Span, IccReader.TagMediaWhitePoint, out _))
+            return (IccColorimetry.D50X, IccColorimetry.D50Y, IccColorimetry.D50Z);
+
+        var white = ReadXyz(IccReader.TagMediaWhitePoint);
+        if (!(white.X > 0 && white.Y > 0 && white.Z > 0))
+            throw Invalid("the media white point ('wtpt') is not a positive color.");
+
+        return white;
+    }
+
+    /// <summary>Creates the conversion of normalized device values to CIELAB.</summary>
+    public IccStage[] CreateDeviceToLab(IccRenderingIntent intent)
+    {
+        var stages = new IccStageList();
+        AppendToConnectionSpace(stages, intent);
+        stages.Add(IccXyzToLabStage.Instance);
+        return stages.ToArray();
+    }
+
+    /// <summary>Creates the conversion of CIELAB to normalized device values.</summary>
+    public IccStage[] CreateLabToDevice(IccRenderingIntent intent)
+    {
+        var stages = new IccStageList();
+        stages.Add(IccLabToXyzStage.Instance);
+        AppendFromConnectionSpace(stages, intent);
+        return stages.ToArray();
+    }
+
     /// <summary>Appends the stages converting normalized device values to CIEXYZ of the connection space.</summary>
     /// <param name="stages">The stages of the conversion.</param>
     /// <param name="intent">The rendering intent selecting the tag (ICC.1:2022 section 8.10.2).</param>

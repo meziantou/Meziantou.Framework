@@ -24,12 +24,35 @@ public sealed class ReferenceIccTransform
     private readonly bool _identical;
     private readonly int _intent;
 
-    private ReferenceIccTransform(ReferenceIccProfile source, ReferenceIccProfile destination, bool identical, int intent)
+    // CIEXYZ between the two profiles: out = in * scale + offset, per component
+    private readonly decimal[] _scale = [1m, 1m, 1m];
+    private readonly decimal[] _offset = [0m, 0m, 0m];
+
+    private ReferenceIccTransform(ReferenceIccProfile source, ReferenceIccProfile destination, bool identical, int intent, bool blackPointCompensation)
     {
         _source = source;
         _destination = destination;
         _identical = identical;
         _intent = intent;
+        if (identical)
+            return;
+
+        if (intent == 3)
+        {
+            // ICC.1:2022 section 6.3.2: absolute = relative * media white / illuminant, on both sides
+            var sourceWhite = source.GetMediaWhitePoint();
+            var destinationWhite = destination.GetMediaWhitePoint();
+            _scale = [sourceWhite[0] / destinationWhite[0], sourceWhite[1] / destinationWhite[1], sourceWhite[2] / destinationWhite[2]];
+        }
+        else if (blackPointCompensation && ReferenceIccBlackPoint.GetDestinationLightness(destination, intent) is { } destinationLightness)
+        {
+            // Adobe black point compensation, section 7.3: in CIEXYZ divided by the white, out = in * scale + (1 - scale)
+            var sourceBlack = ReferenceIccBlackPoint.DecodeLightness(ReferenceIccBlackPoint.GetBlackPoint(source, intent)[0]);
+            var destinationBlack = ReferenceIccBlackPoint.DecodeLightness(destinationLightness);
+            var scale = (1 - destinationBlack) / (1 - sourceBlack);
+            _scale = [scale, scale, scale];
+            _offset = [(1 - scale) * ReferenceIccMath.D50[0], (1 - scale) * ReferenceIccMath.D50[1], (1 - scale) * ReferenceIccMath.D50[2]];
+        }
     }
 
     /// <summary>Gets the number of source device channels.</summary>
@@ -42,12 +65,13 @@ public sealed class ReferenceIccTransform
     /// <param name="source">The bytes of the source profile.</param>
     /// <param name="destination">The bytes of the destination profile.</param>
     /// <param name="intent">The rendering intent, as in the profile header: 0 perceptual, 1 media-relative colorimetric, 2 saturation, 3 ICC-absolute colorimetric.</param>
+    /// <param name="blackPointCompensation">Whether black point compensation is applied (never with the ICC-absolute colorimetric intent).</param>
     /// <returns>The reference.</returns>
-    public static ReferenceIccTransform Create(ReadOnlySpan<byte> source, ReadOnlySpan<byte> destination, int intent = 1)
+    public static ReferenceIccTransform Create(ReadOnlySpan<byte> source, ReadOnlySpan<byte> destination, int intent = 1, bool blackPointCompensation = false)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(intent);
         ArgumentOutOfRangeException.ThrowIfGreaterThan(intent, 3);
-        return new(new ReferenceIccProfile(source), new ReferenceIccProfile(destination), source.SequenceEqual(destination), intent);
+        return new(new ReferenceIccProfile(source), new ReferenceIccProfile(destination), source.SequenceEqual(destination), intent, blackPointCompensation);
     }
 
     /// <summary>Converts one color.</summary>
@@ -64,7 +88,13 @@ public sealed class ReferenceIccTransform
             values[i] = ReferenceIccMath.Clip(values[i]);
         }
 
-        var result = _destination.FromConnectionSpace(_source.ToConnectionSpace(values, _intent), _intent);
+        var xyz = _source.ToConnectionSpace(values, _intent);
+        for (var i = 0; i < 3; i++)
+        {
+            xyz[i] = (xyz[i] * _scale[i]) + _offset[i];
+        }
+
+        var result = _destination.FromConnectionSpace(xyz, _intent);
         for (var i = 0; i < result.Length; i++)
         {
             result[i] = ReferenceIccMath.Clip(result[i]);

@@ -30,6 +30,39 @@ internal sealed class ReferenceIccProfile
 
     public int ChannelCount { get; }
 
+    /// <summary>Gets a value indicating whether the profile is a CMYK output (printer) profile.</summary>
+    public bool IsCmykOutputProfile => ChannelCount == 4 && Encoding.ASCII.GetString(_data, 12, 4) == "prtr";
+
+    /// <summary>Whether the conversion of an intent goes through a lookup table of the profile.</summary>
+    public bool UsesLookupTable(bool deviceToConnection, int intent) => FindLookupTable(deviceToConnection, intent) is not null;
+
+    /// <summary>Whether the profile has the tags of a conversion: a lookup table, or tone curves (with colorants for RGB).</summary>
+    public bool HasConversion(bool deviceToConnection, int intent)
+        => UsesLookupTable(deviceToConnection, intent) || (ChannelCount == 1 && TryFindTag("kTRC", out _, out _)) || (ChannelCount == 3 && TryFindTag("rTRC", out _, out _) && TryFindTag("rXYZ", out _, out _));
+
+    /// <summary>
+    /// The media white point of the ICC-absolute colorimetric intent (ICC.1:2022 section 6.3.2): the <c>wtpt</c> tag, or
+    /// D50 without the tag and for display profiles (assumed to be viewed fully adapted).
+    /// </summary>
+    public decimal[] GetMediaWhitePoint()
+    {
+        if (Encoding.ASCII.GetString(_data, 12, 4) == "mntr" || !TryFindTag("wtpt", out var offset, out _))
+            return ReferenceIccMath.D50;
+
+        return
+        [
+            BinaryPrimitives.ReadInt32BigEndian(_data.AsSpan(offset + 8)) / 65536m,
+            BinaryPrimitives.ReadInt32BigEndian(_data.AsSpan(offset + 12)) / 65536m,
+            BinaryPrimitives.ReadInt32BigEndian(_data.AsSpan(offset + 16)) / 65536m,
+        ];
+    }
+
+    /// <summary>Converts normalized device values to CIELAB.</summary>
+    public decimal[] DeviceToLab(decimal[] device, int intent) => ReferenceIccMath.XyzToLab(ToConnectionSpace(device, intent));
+
+    /// <summary>Converts CIELAB to normalized device values.</summary>
+    public decimal[] LabToDevice(decimal[] lab, int intent) => FromConnectionSpace(ReferenceIccMath.LabToXyz(lab), intent);
+
     /// <summary>Converts normalized device values to CIEXYZ relative to D50.</summary>
     public decimal[] ToConnectionSpace(decimal[] device, int intent)
     {

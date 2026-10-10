@@ -18,6 +18,9 @@ public sealed class IccColorTransformTests
 
     private static IccProfile SampledGray => IccTestProfiles.Gray(IccTestProfiles.Curve(0, 4096, 16384, 36864, 65535));
 
+    /// <summary>For the tests of curves that do not start at black: their expected values are those of the curves alone.</summary>
+    private static IccColorTransformOptions NoCompensation { get; } = new() { BlackPointCompensation = false };
+
     [Fact]
     public void BuiltInProfilesAreValidVersion4DisplayProfiles()
     {
@@ -332,9 +335,9 @@ public sealed class IccColorTransformTests
         {
             var profile = IccTestProfiles.Gray(IccTestProfiles.Parametric((ushort)function, parameters));
             var actual = new ushort[1];
-            IccColorTransform.Create(profile, identity).Convert([32768], actual);
+            IccColorTransform.Create(profile, identity, NoCompensation).Convert([32768], actual);
             Assert.Equal(forward, actual[0]);
-            IccColorTransform.Create(identity, profile).Convert([32768], actual);
+            IccColorTransform.Create(identity, profile, NoCompensation).Convert([32768], actual);
             Assert.Equal(inverse, actual[0]);
         }
     }
@@ -345,14 +348,14 @@ public sealed class IccColorTransformTests
         // Type 3 with a jump: y = x/4 below 1/2 (up to 1/8), then x^2 from 1/2 (from 1/4): outputs in [1/8, 1/4] map to 1/2
         var identity = IccTestProfiles.Gray(IccTestProfiles.Curve());
         var jump = IccTestProfiles.Gray(IccTestProfiles.Parametric(3, 2.0, 1.0, 0.0, 0.25, 0.5));
-        var transform = IccColorTransform.Create(identity, jump);
+        var transform = IccColorTransform.Create(identity, jump, NoCompensation);
         var actual = new float[6];
         transform.Convert([0f, 0.0625f, 0.125f, 0.1875f, 0.25f, 0.5625f], actual);
         Assert.Equal([0f, 0.25f, 0.5f, 0.5f, 0.5f, 0.75f], actual);
 
         // Below the first output of the curve, and above its last one
         var offset = IccTestProfiles.Gray(IccTestProfiles.Parametric(2, 1.0, 0.5, 0.0, 0.25));
-        IccColorTransform.Create(identity, offset).Convert([0f, 0.25f, 0.5f, 0.75f, 1f, 0.125f], actual);
+        IccColorTransform.Create(identity, offset, NoCompensation).Convert([0f, 0.25f, 0.5f, 0.75f, 1f, 0.125f], actual);
         Assert.Equal([0f, 0f, 0.5f, 1f, 1f, 0f], actual);
     }
 
@@ -365,14 +368,14 @@ public sealed class IccColorTransformTests
         // the smallest input reaching the value on the running maximum 0, 0.5, 0.5, 0.5, 1
         var reversal = IccTestProfiles.Gray(IccTestProfiles.Curve(0, 32768, 32768, 16384, 65535));
         var actual = new ushort[4];
-        IccColorTransform.Create(identity, reversal).Convert([0, 16384, 32768, 49152], actual);
+        IccColorTransform.Create(identity, reversal, NoCompensation).Convert([0, 16384, 32768, 49152], actual);
         Assert.Equal([0, 8192, 16384, 57343], actual);
 
         // A decreasing curve (1 - x) as source and as destination
         var decreasing = IccTestProfiles.Gray(IccTestProfiles.Curve(65535, 0));
-        IccColorTransform.Create(decreasing, identity).Convert([0, 65535, 1000, 40000], actual);
+        IccColorTransform.Create(decreasing, identity, NoCompensation).Convert([0, 65535, 1000, 40000], actual);
         Assert.Equal([65535, 0, 64535, 25535], actual);
-        IccColorTransform.Create(identity, decreasing).Convert([0, 65535, 1000, 40000], actual);
+        IccColorTransform.Create(identity, decreasing, NoCompensation).Convert([0, 65535, 1000, 40000], actual);
         Assert.Equal([65535, 0, 64535, 25535], actual);
     }
 
@@ -643,6 +646,123 @@ public sealed class IccColorTransformTests
                 // A constant curve has no inverse
             }
         }
+    }
+
+    // -----------------------------------------------------------------------------------------------------------------
+    // Rendering intents and black point compensation. The test profile is a monochrome output profile whose darkest
+    // device value is L* = 20 (tone curve from 0.2 to 1 with the CIELAB connection space) and whose media white point has
+    // Y = 0.88 (57672 / 65536 as stored). Expected values: 50-digit decimal arithmetic outside the library.
+    // -----------------------------------------------------------------------------------------------------------------
+
+    [Fact]
+    public void BlackPointCompensationMapsTheSourceBlackToTheDestinationBlack()
+    {
+        var paper = IccTestProfiles.GrayPaper();
+        byte[] samples = [0, 1, 64, 128, 200, 255];
+
+        // Without compensation the black of the paper (L* = 20, luminance 0.02989) stays a dark gray in sGray
+        Assert.Equal([48, 49, 94, 145, 206, 255], Convert(paper, IccProfile.SrgbGray, IccRenderingIntent.RelativeColorimetric, compensation: false));
+
+        // With compensation, luminance is scaled toward white so that 0.02989 becomes 0: out = (in - 0.02989) / (1 - 0.02989)
+        Assert.Equal([0, 3, 83, 140, 204, 255], Convert(paper, IccProfile.SrgbGray, IccRenderingIntent.RelativeColorimetric, compensation: true));
+
+        // The reverse: sGray black is lifted to the black of the paper instead of being clipped with the darkest grays
+        Assert.Equal([0, 0, 23, 107, 193, 255], Convert(IccProfile.SrgbGray, paper, IccRenderingIntent.RelativeColorimetric, compensation: false));
+        Assert.Equal([0, 0, 44, 115, 195, 255], Convert(IccProfile.SrgbGray, paper, IccRenderingIntent.RelativeColorimetric, compensation: true));
+
+        // Compensation is the default, applies to the perceptual and saturation intents too (a matrix-based or monochrome
+        // profile gives the same result for the three), and never to the absolute colorimetric intent
+        var defaults = new byte[samples.Length];
+        IccColorTransform.Create(paper, IccProfile.SrgbGray).Convert(samples, defaults);
+        Assert.Equal([0, 3, 83, 140, 204, 255], defaults);
+        Assert.Equal([0, 3, 83, 140, 204, 255], Convert(paper, IccProfile.SrgbGray, IccRenderingIntent.Perceptual, compensation: true));
+        Assert.Equal([0, 3, 83, 140, 204, 255], Convert(paper, IccProfile.SrgbGray, IccRenderingIntent.Saturation, compensation: true));
+        Assert.Equal(
+            Convert(paper, IccProfile.SrgbGray, IccRenderingIntent.AbsoluteColorimetric, compensation: false),
+            Convert(paper, IccProfile.SrgbGray, IccRenderingIntent.AbsoluteColorimetric, compensation: true));
+
+        var words = new ushort[4];
+        IccColorTransform.Create(paper, IccProfile.SrgbGray).Convert([(ushort)0, 1000, 32768, 65535], words);
+        Assert.Equal([0, 2742, 35781, 65535], words);
+
+        // Profiles whose blacks are both black: nothing changes
+        var displayP3 = IccTestProfiles.Rgb(IccTestProfiles.DisplayP3Colorants, IccTestProfiles.SrgbCurve());
+        byte[] colors = [0, 0, 0, 200, 100, 50, 1, 2, 3];
+        var with = new byte[colors.Length];
+        var without = new byte[colors.Length];
+        IccColorTransform.Create(IccProfile.Srgb, displayP3, new IccColorTransformOptions { BlackPointCompensation = true }).Convert(colors, with);
+        IccColorTransform.Create(IccProfile.Srgb, displayP3, new IccColorTransformOptions { BlackPointCompensation = false }).Convert(colors, without);
+        Assert.Equal(without, with);
+
+        byte[] Convert(IccProfile source, IccProfile destination, IccRenderingIntent intent, bool compensation)
+        {
+            var result = new byte[samples.Length];
+            IccColorTransform.Create(source, destination, new IccColorTransformOptions { Intent = intent, BlackPointCompensation = compensation }).Convert(samples, result);
+            return result;
+        }
+    }
+
+    [Fact]
+    public void AbsoluteColorimetricIntentKeepsTheMediaWhitePoint()
+    {
+        // ICC.1:2022 section 6.3.2: the colors relative to the media white are scaled by the media white point. The white
+        // of the paper (Y = 0.88) is therefore a light gray on a display, whose media white is the illuminant
+        var paper = IccTestProfiles.GrayPaper();
+        byte[] samples = [0, 1, 64, 128, 200, 255];
+        var options = new IccColorTransformOptions { Intent = IccRenderingIntent.AbsoluteColorimetric };
+        var converted = new byte[samples.Length];
+        IccColorTransform.Create(paper, IccProfile.SrgbGray, options).Convert(samples, converted);
+        Assert.Equal([45, 46, 89, 137, 195, 241], converted);
+
+        // The reverse: display grays lighter than the paper are clipped to the paper white
+        IccColorTransform.Create(IccProfile.SrgbGray, paper, options).Convert(samples, converted);
+        Assert.Equal([0, 0, 29, 117, 207, 255], converted);
+
+        // A display profile is viewed fully adapted: its media white point tag is not used
+        var display = IccTestProfiles.Build("GRAY", "XYZ ", ("kTRC", IccTestProfiles.Curve()), ("wtpt", IccTestProfiles.Xyz(0.5, 0.5, 0.5)));
+        var plain = IccTestProfiles.Build("GRAY", "XYZ ", ("kTRC", IccTestProfiles.Curve()));
+        var expected = new byte[samples.Length];
+        IccColorTransform.Create(display, IccProfile.SrgbGray, options).Convert(samples, converted);
+        IccColorTransform.Create(plain, IccProfile.SrgbGray, options).Convert(samples, expected);
+        Assert.Equal(expected, converted);
+
+        // A media white point that is not a color is invalid, but only this intent reads it
+        foreach (var white in new[] { IccTestProfiles.Xyz(0, 1, 1), IccTestProfiles.Xyz(0.9, -0.5, 0.8), IccTestProfiles.Curve() })
+        {
+            var broken = new IccProfile(new MetadataBlob(IccTestProfiles.BuildBytes("GRAY", "XYZ ", [("kTRC", IccTestProfiles.Curve()), ("wtpt", white)], static data => "prtr"u8.CopyTo(data.AsSpan(12)))));
+            _ = IccColorTransform.Create(broken, IccProfile.SrgbGray);
+            Assert.Throws<InvalidImageContentException>(() => IccColorTransform.Create(broken, IccProfile.SrgbGray, options));
+            Assert.Throws<InvalidImageContentException>(() => IccColorTransform.Create(IccProfile.SrgbGray, broken, options));
+        }
+    }
+
+    [Fact]
+    public void BlackPointCompensationOfTableBasedDestinationsFollowsTheRoundTripOfALightnessRamp()
+    {
+        // A table-based monochrome destination whose device black is L* = 30: lightness = 30 + 70 * device (17 grid
+        // points), and the inverse table, which clips darker colors to the device black. The round trip of an L* ramp is
+        // constant up to 30 and the identity above, so the mid-range is straight and the black point is the device
+        // black: 30, luminance 0.0623. sGray black must become device 0, and a compensated mid gray is lighter than
+        // without compensation
+        var printer = IccTestProfiles.Lut(
+            "GRAY",
+            "Lab ",
+            ("A2B0", IccTestProfiles.Lut8(1, 3, 17, static gray => [0.3 + (0.7 * gray[0]), 128 / 255.0, 128 / 255.0])),
+            ("B2A0", IccTestProfiles.Lut8(3, 1, 21, static lab => [Math.Clamp((lab[0] - 0.3) / 0.7, 0, 1)])));
+
+        byte[] samples = [0, 30, 60, 128, 255];
+        var with = new byte[samples.Length];
+        var without = new byte[samples.Length];
+        IccColorTransform.Create(IccProfile.SrgbGray, printer, new IccColorTransformOptions { BlackPointCompensation = true }).Convert(samples, with);
+        IccColorTransform.Create(IccProfile.SrgbGray, printer, new IccColorTransformOptions { BlackPointCompensation = false }).Convert(samples, without);
+
+        // Without compensation every gray darker than L* = 30 (sGray 71) is the device black. With compensation black
+        // is the device black too (up to the 8-bit rounding of the table entries) and the dark grays are distinct
+        Assert.Equal([0, 0, 0], without[..3]);
+        Assert.True(with[0] <= 1);
+        Assert.True(with[1] > with[0] && with[2] > with[1] && with[3] > without[3]);
+        Assert.Equal(255, with[4]);
+        Assert.Equal(255, without[4]);
     }
 
     private static ReadOnlySpan<byte> GetTag(IccProfile profile, string signature)

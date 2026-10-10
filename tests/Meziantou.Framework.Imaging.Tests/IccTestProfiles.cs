@@ -230,8 +230,8 @@ internal static class IccTestProfiles
     {
         var tags = new List<(string Signature, byte[] Data)>
         {
-            ("A2B0", Lut16(4, 3, 5, static cmyk => EncodeLabLegacy(XyzToLab(RgbToXyz(CmykToRgb(cmyk)))))),
-            ("B2A0", Lut16(3, 4, 9, static lab => RgbToCmyk(XyzToRgb(LabToXyz(DecodeLabLegacy(lab)))))),
+            ("A2B0", Lut16(4, 3, 5, static cmyk => EncodeLabLegacy(XyzToLab(RgbToXyz(CmykToRgbOnPaper(cmyk)))))),
+            ("B2A0", Lut16(3, 4, 9, static lab => RgbOnPaperToCmyk(XyzToRgb(LabToXyz(DecodeLabLegacy(lab)))))),
         };
 
         if (withColorimetricTables)
@@ -250,6 +250,7 @@ internal static class IccTestProfiles
             })));
         }
 
+        tags.Add(("wtpt", Xyz(0.80, 0.84, 0.66)));
         return new IccProfile(new MetadataBlob(BuildBytes("CMYK", "Lab ", [.. tags], static data =>
         {
             data[8] = 2;
@@ -257,6 +258,33 @@ internal static class IccTestProfiles
             "prtr"u8.CopyTo(data.AsSpan(12));
         })));
     }
+
+    /// <summary>
+    /// A monochrome output profile (a paper and an ink): the media white point is not the illuminant, and the darkest
+    /// device value is L* = 20 instead of black (the tone curve goes from 0.2 to 1; the connection space is CIELAB).
+    /// </summary>
+    public static IccProfile GrayPaper()
+        => new(new MetadataBlob(BuildBytes(
+            "GRAY",
+            "Lab ",
+            [("kTRC", Curve(13107, 65535)), ("wtpt", Xyz(0.85, 0.88, 0.70))],
+            static data => "prtr"u8.CopyTo(data.AsSpan(12)))));
+
+    /// <summary>A matrix-based RGB input profile with a media white point that is not the illuminant.</summary>
+    public static IccProfile RgbScanner()
+        => new(new MetadataBlob(BuildBytes(
+            "RGB ",
+            "XYZ ",
+            [
+                ("rXYZ", Xyz(SrgbColorants[0][0], SrgbColorants[0][1], SrgbColorants[0][2])),
+                ("gXYZ", Xyz(SrgbColorants[1][0], SrgbColorants[1][1], SrgbColorants[1][2])),
+                ("bXYZ", Xyz(SrgbColorants[2][0], SrgbColorants[2][1], SrgbColorants[2][2])),
+                ("rTRC", Gamma(461)),
+                ("gTRC", Gamma(461)),
+                ("bTRC", Gamma(461)),
+                ("wtpt", Xyz(0.92, 0.95, 0.80)),
+            ],
+            static data => "scnr"u8.CopyTo(data.AsSpan(12)))));
 
     /// <summary>A monochrome profile with a <c>lut8Type</c> table (one input) and the CIELAB connection space.</summary>
     public static IccProfile GrayLabLut8()
@@ -406,6 +434,11 @@ internal static class IccTestProfiles
 
     /// <summary>A simple subtractive model: each ink removes its complementary light, black removes all.</summary>
     public static double[] CmykToRgb(double[] cmyk) => [(1 - cmyk[0]) * (1 - cmyk[3]), (1 - cmyk[1]) * (1 - cmyk[3]), (1 - cmyk[2]) * (1 - cmyk[3])];
+
+    /// <summary>The same model on paper: full ink still reflects 6% of the light, so the black point is not black.</summary>
+    public static double[] CmykToRgbOnPaper(double[] cmyk) => [.. CmykToRgb(cmyk).Select(static value => 0.06 + (0.94 * value))];
+
+    public static double[] RgbOnPaperToCmyk(double[] rgb) => RgbToCmyk([.. rgb.Select(static value => Math.Clamp((value - 0.06) / 0.94, 0, 1))]);
 
     public static double[] RgbToCmyk(double[] rgb)
     {

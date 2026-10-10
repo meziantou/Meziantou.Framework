@@ -625,6 +625,22 @@ and CMYK data, with a CIEXYZ or CIELAB connection space:
   without the table of the intent uses its perceptual table, then its matrix and curves. A CMYK image cannot be
   loaded, but CMYK samples can be converted with `IccColorTransform` (0 is no ink).
 
+`IccColorTransformOptions` selects how colors that differ between the two media are rendered:
+
+- `Intent` is the rendering intent. `RelativeColorimetric` (the default) reproduces in-gamut colors relative to the
+  white of each medium; `Perceptual` and `Saturation` use the tables the profile creator made for these purposes;
+  `AbsoluteColorimetric` uses the colorimetric conversion and then rescales the colors by the media white points of the
+  two profiles (`wtpt`; the illuminant for a display profile and for a profile without the tag), so that the white of
+  the source medium is reproduced instead of becoming the white of the destination. Matrix-based profiles give the
+  same result for the first three intents.
+- `BlackPointCompensation` (enabled by default) maps the darkest color of the source to the darkest color of the
+  destination by scaling the colors toward white, so that shadow detail is neither clipped nor lifted. It follows the
+  algorithm published by Adobe ("Adobe Systems' Implementation of Black Point Compensation", standardized as
+  ISO 18619): the black of the source is the color of its device black (for a CMYK output profile, of the inks its
+  perceptual table gives for black); the black of a table-based destination is read from the round trip of a
+  lightness ramp through the profile. It changes nothing when both blacks are black, as between two display
+  profiles, and never applies to the absolute colorimetric intent.
+
 A malformed profile is an `InvalidImageContentException`; a valid profile of another kind (version 5, device link,
 abstract, named color, other data color spaces), or one that cannot be a destination (no table from the connection
 space, a constant tone curve, colorants that do not span a color space), is an `UnsupportedImageFeatureException`.
@@ -639,7 +655,7 @@ not invertible. The ICC specification does not define how tables are interpolate
 uses simplex interpolation along the main diagonal of the grid cell (tetrahedral interpolation for three inputs) when
 the inputs are device channels or CIEXYZ, and multilinear interpolation when they are CIELAB, whose neutral axis is
 not the diagonal. Other color management systems may differ by a fraction of a level between grid points, in
-particular for four-channel tables.
+particular for four-channel tables, and may estimate black points differently.
 
 ### Loading, identification and limits
 

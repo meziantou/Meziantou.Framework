@@ -35,7 +35,6 @@ internal sealed class IccPipeline
     /// <exception cref="UnsupportedImageFeatureException">A profile is valid but not supported in its role.</exception>
     public static IccPipeline Create(IccProfile source, IccProfile destination, IccRenderingIntent intent, bool blackPointCompensation)
     {
-        _ = blackPointCompensation;
         var sourceModel = IccProfileModel.Create(source, "source");
         var destinationModel = IccProfileModel.Create(destination, "destination");
         if (source.Data.Equals(destination.Data))
@@ -43,6 +42,19 @@ internal sealed class IccPipeline
 
         var stages = new IccStageList();
         sourceModel.AppendToConnectionSpace(stages, intent);
+        if (intent == IccRenderingIntent.AbsoluteColorimetric)
+        {
+            // ICC.1:2022 section 6.3.2: the colorimetry relative to the media white of the source is rescaled to the media
+            // white of the destination, component by component (the illuminant of the connection space cancels out)
+            var sourceWhite = sourceModel.GetMediaWhitePoint();
+            var destinationWhite = destinationModel.GetMediaWhitePoint();
+            stages.Add(IccMatrixStage.CreateScale(sourceWhite.X / destinationWhite.X, sourceWhite.Y / destinationWhite.Y, sourceWhite.Z / destinationWhite.Z));
+        }
+        else if (blackPointCompensation && IccBlackPoint.CreateCompensation(sourceModel, destinationModel, intent) is { } compensation)
+        {
+            stages.Add(compensation);
+        }
+
         destinationModel.AppendFromConnectionSpace(stages, intent);
         return new IccPipeline(stages.ToArray(), sourceModel.ChannelCount, destinationModel.ChannelCount, isIdentity: false);
     }

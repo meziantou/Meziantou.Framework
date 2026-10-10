@@ -54,10 +54,9 @@ public sealed class FaultInjectionTests
         var data = fixture.ReadInput();
         var asynchronous = operation.EndsWith("-async", StringComparison.Ordinal);
 
-        // Only the bytes the decoder reads can fail: an input with unread trailing bytes (the TGA 2.0 trailer) stops earlier
+        // Every byte of the input is read, so a read can fail at every position
         var consumed = await MeasureBytesReadAsync(operation, data, asynchronous);
-        Assert.True(consumed == data.Length || FixtureTraits.HasUnreadTrailingBytes(fixture),
-            $"{operation} read {consumed} of {data.Length} bytes; only inputs with unread trailing bytes may stop early.");
+        Assert.Equal(data.Length, consumed);
         foreach (var position in Positions(consumed))
         {
             using var audit = new PoolAudit();

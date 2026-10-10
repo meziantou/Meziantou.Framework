@@ -13,16 +13,16 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <see cref="ImageCollection"/> always does.
 /// </para>
 /// <para>
-/// The parser never consumes partial input: it asks for a growing contiguous window until the driver reports the end of
-/// the input, so the bytes it finally sees are exactly the input, and the encoded-byte limit is enforced by the driver
-/// before the window grows past it.
+/// The parser never consumes partial input: it asks for one more contiguous byte, or the end of the input
+/// (<see cref="ParseStatus.NeedMoreDataOrEnd"/>), until the driver reports the end, so the bytes it finally sees are exactly
+/// the input. The driver reads as much as its buffer holds and doubles it when it is full, and it enforces the
+/// encoded-byte limit: an input as long as the limit is buffered whole, a longer one fails with the limit, from a span and
+/// from a stream alike.
 /// </para>
 /// </remarks>
 /// <typeparam name="TResult">The result type (<see cref="ImageInfo"/> or <see cref="Image"/>).</typeparam>
 internal sealed class WholeInputParser<TResult> : ImageParser<TResult>
 {
-    private const int InitialRequest = 16 * 1024;
-
     private readonly ImageCodecContext _context;
     private readonly Func<RandomAccessSource, TResult> _decode;
     private PooledBuffer? _buffer;
@@ -42,8 +42,12 @@ internal sealed class WholeInputParser<TResult> : ImageParser<TResult>
     {
         if (!isEndOfInput)
         {
+            // One more byte than the largest buffer cannot be buffered at all
+            if (buffer.Length >= CheckedSizes.MaxBufferLength)
+                throw CheckedSizes.CreateOverflowException(_context.Limits);
+
             consumed = 0;
-            return ParseStatus.NeedMoreData(buffer.Length + Math.Max(InitialRequest, buffer.Length));
+            return ParseStatus.NeedMoreDataOrEnd(buffer.Length + 1);
         }
 
         consumed = buffer.Length;

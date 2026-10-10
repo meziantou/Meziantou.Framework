@@ -580,6 +580,12 @@ encoded bytes, metadata bytes, live allocations) are safety bounds: exceeding on
 is deliberate prefix selection: decoding stops after that many displayed frames and the rest of the input is neither
 examined nor validated. Limits are inclusive and enforced before allocating or consuming.
 
+`MaxEncodedBytes` equal to the length of the input is always enough, and a smaller value fails the same way from a span,
+a path or a stream. A stream only reports its end by returning no byte, so when the format needs the end of the input (the
+TGA trailer, the last sample of a plain Netpbm raster, a TIFF or an icon buffered whole, an input shorter than the detection
+prefix) and every byte the limit allows was read, one more byte is read and discarded to tell an input that ends there from
+a longer one. It is the only byte ever read past the limit, and it is never decoded.
+
 TIFF, ICO and CUR are random-access containers: on a seekable source, only the bytes their structure points at are read
 (the stream position afterward is unspecified), and a non-seekable or asynchronous load buffers the input, bounded by
 `MaxEncodedBytes`.
@@ -927,10 +933,20 @@ public static void SaveAssetFormats(string inputPath, string bmpPath, string tga
 ### TGA
 
 TGA has no signature, so it is recognized from a strictly plausible 18-byte header
-and checked last; give `DetectFormat` 18 bytes (`Image.FormatDetectionPrefixLength`). The TGA 2.0 developer area,
-extension area and footer are located by offsets stored at the end of the file, which a forward-only decoder cannot
-follow: they are not read, so a TGA with a trailer leaves its trailing bytes unread, and a prefix that holds the whole
-raster is a valid TGA 1.0 file with the same pixels (truncation is only detected before the end of the image data).
+and checked last; give `DetectFormat` 18 bytes (`Image.FormatDetectionPrefixLength`).
+
+The TGA 2.0 footer is the last 26 bytes of the file and locates the extension area, so a TGA is read to the end of its
+input: a stream is consumed to its end (nothing can follow a TGA on the same stream), and the bytes after the image data
+are buffered until then, bounded by `MaxEncodedBytes` and `MaxLiveAllocationBytes`. When the file ends with a footer, the
+extension area it locates must lie between the image data and the footer and hold its 495 bytes
+(`InvalidImageContentException` otherwise), and its attributes type is read: premultiplied alpha (type 4) for an image
+with declared alpha bits is `UnsupportedImageFeatureException`, because pixels are stored with straight alpha and are never
+divided by it. No other attributes type changes anything: the image descriptor alone decides the alpha channel, before
+the first pixel is read. The developer area is application data and is not interpreted. `Identify` in `Header` mode stops
+after the header and never sees the trailer.
+
+A file without a footer is a TGA 1.0 file, whose trailing bytes mean nothing. A file cut anywhere after its image data
+is therefore a valid TGA 1.0 file with the same pixels: truncation is only detected before the end of the image data.
 
 | Feature | Decoding | Encoding |
 | --- | --- | --- |
@@ -939,8 +955,8 @@ raster is a valid TGA 1.0 file with the same pixels (truncation is only detected
 | Color map | The first-entry offset is honored; an index outside the stored map is `InvalidImageContentException` | Never written |
 | Run-length packets | Packets of 1 to 128 pixels, crossing scan lines accepted; a packet past the last pixel is `InvalidImageContentException` | `TgaCompression.RunLength`: runs of two or more identical neighbours, never crossing a scan line |
 | Orientation | Both origin bits are resolved to the displayed image | Origin at the bottom left |
-| Alpha | The descriptor's alpha-bit count is authoritative: a 32-bit payload with 0 alpha bits has an unspecified fourth byte, which is discarded | 8 declared alpha bits for pixel formats with alpha |
-| Identification field, TGA 2.0 trailer | Skipped / not read | No identification field, a TGA 2.0 footer with zero offsets; at most 65,535 pixels per side, no metadata |
+| Alpha | The descriptor's alpha-bit count is authoritative: a 32-bit payload with 0 alpha bits has an unspecified fourth byte, which is discarded; premultiplied alpha (attributes type 4 of the extension area) is rejected | 8 declared alpha bits for pixel formats with alpha, straight alpha, no extension area |
+| Identification field, TGA 2.0 trailer | Skipped / the footer and the extension area are validated, the developer area is not interpreted | No identification field, a TGA 2.0 footer with zero offsets; at most 65,535 pixels per side, no metadata |
 
 ### Netpbm: PBM, PGM, PPM and PAM
 
@@ -1011,7 +1027,7 @@ Everything below is rejected explicitly (never decoded or encoded approximately)
 | WebP encoding | 8-bit RGB(A) only (gray written as RGB, 16-bit after explicit reduction); lossy output is 4:2:0 and not pixel-exact; animations are full-canvas frames (no delta rectangles or blending) and need a seekable destination (no spooling to non-seekable streams); at most 16,383 (lossy) or 16,384 (lossless) pixels per side, 16,777,215 ms per frame, 65,535 plays and 4 GiB per file |
 | QOI | 8-bit RGB(A) only (gray written as RGB, 16-bit after explicit reduction); one still image; no metadata; the colorspace field is a label (no linear-to-sRGB conversion exists) |
 | BMP | Decoding: no RLE4/RLE8, no embedded JPEG/PNG payloads, no OS/2 headers, no 2-bit depth, no channel wider than 8 bits, no embedded ICC profile. Encoding: uncompressed 24-bit or 32-bit, bottom-up, one still image; no indexed, 16-bit or top-down output; resolution is the only metadata; the file must fit the 32-bit `bfSize` field |
-| TGA | Decoding: no 16-bit color-map indexes or 16-bit grayscale; the developer area, extension area and footer are not read (a forward-only decoder cannot follow offsets stored at the end of the file), so the attributes type never changes the decoded representation and trailing bytes are left unread; truncation is only detected before the end of the image data. Encoding: true-color and grayscale only, bottom-up, one still image, at most 65,535 pixels per side; no color map, no 15/16-bit output, no metadata |
+| TGA | Decoding: no 16-bit color-map indexes or 16-bit grayscale; premultiplied alpha (attributes type 4) is rejected and no other attributes type changes the decoded representation (an alpha channel the extension area calls absent or undefined is still decoded when the image descriptor declares it); the other fields of the extension area and the developer area are not interpreted; the input is read to its end and the bytes after the image data are buffered; truncation is only detected before the end of the image data. Encoding: true-color and grayscale only, bottom-up, one still image, at most 65,535 pixels per side; no color map, no 15/16-bit output, no metadata |
 | Netpbm | Decoding: only the first image of a concatenation is read; tuple types other than the standard grayscale, RGB and alpha forms are rejected; the header is bounded at 65,536 bytes; truncation of a plain raster is not detectable. Encoding: `P2`/`P3`/`P5`/`P6`/`P7` only (the variant follows the pixel format, not the extension), one image, no metadata; plain output has no alpha (PAM has no plain form) |
 | TIFF | Decoding: LZW, PackBits, CCITT fax and JPEG compression, palette, CMYK, YCbCr and L\*a\*b\* photometric interpretations, planar storage, reversed fill order, the floating-point predictor, signed and floating-point samples, sample widths other than 8 and 16 bits, more than one extra sample, and associated (premultiplied) or unspecified extra samples are all rejected with `UnsupportedImageFeatureException`. No EXIF block, no sub-IFD, no unknown-tag round trip. Encoding: one page per `Image.Save` (use `ImageCollection.Save`), strips only, no predictor, no tiles, a seekable destination required |
 | ICO/CUR | Decoding: a top-down DIB payload, a DIB whose stored height is not doubled, an animated PNG payload, a representation larger than 256 pixels per side and the DIB variants the BMP decoder rejects (RLE, embedded codecs, OS/2 headers) are rejected. `.ani` animated cursors are a different container and are not supported. Encoding: 32-bit DIB or still PNG payloads only, at most 256 pixels per side, no metadata; an icon cannot store a hotspot |

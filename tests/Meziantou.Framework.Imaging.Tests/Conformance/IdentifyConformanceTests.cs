@@ -177,20 +177,17 @@ public sealed class IdentifyConformanceTests
             Assert.Equal(ImageInfoSnapshots.Describe(info), ImageInfoSnapshots.Describe(Image.Identify(stream, exact)));
         }
 
-        if (FixtureTraits.HasUnreadTrailingBytes(fixture))
-        {
-            // The decoder stops at the end of the image data (the TGA 2.0 trailer is never read), so a limit one byte below
-            // the file length is still enough; the measured requirement is checked by ResourceLimitBoundaryTests
-            return;
-        }
-
         var tooSmall = CreateEncodedByteLimitOptions(data.Length - 1);
         var fromSpan = Assert.Throws<ImageResourceLimitException>(() => Image.Identify(data, tooSmall));
         using var shortReads = InputVariants.CreateStream(InputVariant.ShortReadStream, data);
         var fromStream = Assert.Throws<ImageResourceLimitException>(() => Image.Identify(shortReads, tooSmall));
         Assert.Equal(ImageResourceLimitKind.EncodedBytes, fromSpan.Kind);
         Assert.Equal(fromSpan.Requested, fromStream.Requested);
-        Assert.True(shortReads.BytesRead <= data.Length - 1, "No byte beyond the encoded-byte limit may be read.");
+
+        // Bytes that are only delimited by the end of the input cost one discarded byte past the limit, which tells an input
+        // that ends there from a longer one; nothing else is ever read past the limit
+        var probe = FixtureTraits.IsDelimitedByEndOfInput(fixture) ? 1 : 0;
+        Assert.True(shortReads.BytesRead <= data.Length - 1 + probe, $"{shortReads.BytesRead} bytes were read with an encoded-byte limit of {data.Length - 1}.");
     }
 
     [Theory]

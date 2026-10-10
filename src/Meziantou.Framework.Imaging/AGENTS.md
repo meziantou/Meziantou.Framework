@@ -75,10 +75,17 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
 `Internals/IO` and `Internals/Codecs`:
 
 - Identifiers and decoders are synchronous push-model parsers (`ImageParser<TResult>`): they consume what they can and
-  return `Complete` or `NeedMoreData(n)`. The driver (`ImageInputPump`) performs the I/O, so the same parser serves the
-  sync and async APIs and CPU work never runs in `Task.Run`. Parsers check cancellation between rows and frames.
-- Streams are read forward only, never rewound, and never read past `MaxEncodedBytes`. Spans and streams must fail
-  identically at the same boundary.
+  return `Complete`, `NeedMoreData(n)`, or `NeedMoreDataOrEnd(n)` when the end of the input satisfies the request too. The
+  driver (`ImageInputPump`) performs the I/O, so the same parser serves the sync and async APIs and CPU work never runs in
+  `Task.Run`. Parsers check cancellation between rows and frames.
+- Streams are read forward only and never rewound, and no byte past `MaxEncodedBytes` reaches a parser.
+  `MaxEncodedBytes` equal to the input length is always enough, and spans and streams fail identically at the same
+  boundary, with the same `Requested`.
+- A span knows where it ends; a stream only says so when it is read past its end. A parser that needs the end of the
+  input (a trailer located from the last bytes, an optional terminator, a container buffered whole) must ask with
+  `NeedMoreDataOrEnd`, never with `NeedMoreData`: at the limit, the driver then reads one discarded byte
+  (`ImageInputBuffer.ProbeEndOfInput`) to tell an input that ends there from a longer one. It is the only read past the
+  limit; do not add another.
 - Each format has a structure parser (container rules, written once and walked as header, full scan or decode), a pixel
   decoder that observes it, and an encoder codec. Decoders hand rows to a `DecodedFrameSink` in a lossless source layout;
   the sink converts to the requested pixel format and charges frames before allocating them.

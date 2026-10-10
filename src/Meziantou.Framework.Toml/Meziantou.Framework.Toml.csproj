@@ -1,7 +1,6 @@
 <Project Sdk="Meziantou.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
-    <IsAotCompatible>true</IsAotCompatible>
     <IsTrimmable>true</IsTrimmable>
     <Description>A high-performance .NET TOML 1.1 parser, round-trippable syntax tree, and System.Text.Json-style object serializer, NativeAOT ready.</Description>
     <PackageTags>toml, parser, serialization, deserialization, nativeaot</PackageTags>

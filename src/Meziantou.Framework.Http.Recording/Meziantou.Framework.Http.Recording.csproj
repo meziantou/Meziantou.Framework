@@ -4,7 +4,6 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <Version>3.0.2</Version>
     <IsTrimmable>true</IsTrimmable>
-    <IsAotCompatible>true</IsAotCompatible>
     <Description>HTTP record and replay for testing, using DelegatingHandler with HAR format support</Description>
     <PackageTags>http, record, replay, har, httpclient, testing</PackageTags>
   </PropertyGroup>

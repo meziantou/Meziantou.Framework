@@ -6,7 +6,6 @@
     <PackageTags>nodejs, node, javascript, interop, npm, esm, commonjs</PackageTags>
     <Version>1.0.1</Version>
     <IsTrimmable>true</IsTrimmable>
-    <IsAotCompatible>true</IsAotCompatible>
   </PropertyGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="Meziantou.Framework.NodeJs.Tests" />

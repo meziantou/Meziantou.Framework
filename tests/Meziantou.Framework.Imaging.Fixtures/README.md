@@ -114,9 +114,9 @@ The `colorProfiles` and `colorTransforms` sections of the manifest are the refer
   specification (encodings, table and element order, tag selection, rendering intents, media white points, black
   points), which change samples by whole levels and which the reference of the test harness (`ReferenceIccTransform`)
   would share with the library.
-- **Colors**: every 8-bit level for grayscale sources; a 4-level grid and 64 random 16-bit colors for RGB sources. For
-  CMYK sources, grid points of the color lookup table of the intent (the device values that its input tables map to
-  the grid; one point out of five when there are more than 300).
+- **Colors**: every 8-bit level and 64 random 16-bit values for grayscale sources; a 7-level grid and 157 random 16-bit
+  colors for RGB sources. For CMYK sources, every grid point of the color lookup table of the intent (the device
+  values that its input tables map to the grid).
 - **What the vectors do not cover**, because LittleCMS is not a valid judge there (`ReferenceIccTransform` and the
   hand-computed values of `IccColorTransformTests` cover these):
   - *Four-channel interpolation between grid points.* The ICC specification does not define the interpolation and

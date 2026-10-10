@@ -208,14 +208,14 @@ internal static class IccProfileBuilder
 
     /// <summary>
     /// An RGB profile with the CIELAB connection space and <c>lut8Type</c> tables: device values squared (input tables),
-    /// then linear RGB with the sRGB primaries to CIELAB (5 grid points); the reverse with 7 grid points.
+    /// then linear RGB with the sRGB primaries to CIELAB (5 grid points); the reverse with 9 grid points.
     /// </summary>
     public static byte[] RgbLabLut8()
         => Lut(
             "RGB ",
             "Lab ",
             ("A2B0", Lut8(3, 3, 5, static rgb => EncodeLab(XyzToLab(RgbToXyz(rgb))), inputTable: static (_, x) => x * x)),
-            ("B2A0", Lut8(3, 3, 7, static lab => XyzToRgb(LabToXyz(DecodeLab(lab))), outputTable: static (_, x) => Math.Sqrt(x))));
+            ("B2A0", Lut8(3, 3, 9, static lab => XyzToRgb(LabToXyz(DecodeLab(lab))), outputTable: static (_, x) => Math.Sqrt(x))));
 
     /// <summary>
     /// An RGB profile with the CIEXYZ connection space and <c>lut16Type</c> tables. The BToA table uses the matrix of the
@@ -226,7 +226,7 @@ internal static class IccProfileBuilder
             "RGB ",
             "XYZ ",
             ("A2B0", Lut16(3, 3, 3, static rgb => EncodeXyz(RgbToXyz(rgb)), inputEntries: 256, inputTable: static (_, x) => Math.Pow(x, 2.2))),
-            ("B2A0", Lut16(3, 3, 2, static halfRgb => [Math.Min(1, 2 * halfRgb[0]), Math.Min(1, 2 * halfRgb[1]), Math.Min(1, 2 * halfRgb[2])], outputEntries: 256, outputTable: static (_, x) => Math.Pow(x, 1 / 2.2), matrix: HalfXyzToRgbMatrix())));
+            ("B2A0", Lut16(3, 3, 2, static halfRgb => [Math.Min(1, 2 * halfRgb[0]), Math.Min(1, 2 * halfRgb[1]), Math.Min(1, 2 * halfRgb[2])], outputEntries: 1024, outputTable: static (_, x) => Math.Pow(x, 1 / 2.2), matrix: HalfXyzToRgbMatrix())));
 
     /// <summary>
     /// A CMYK output profile with the CIELAB connection space and <c>lut16Type</c> tables (legacy CIELAB encoding), with
@@ -238,13 +238,13 @@ internal static class IccProfileBuilder
         var tags = new List<(string Signature, byte[] Data)>
         {
             ("A2B0", Lut16(4, 3, 5, static cmyk => EncodeLabLegacy(XyzToLab(RgbToXyz(CmykToRgbOnPaper(cmyk)))))),
-            ("B2A0", Lut16(3, 4, 7, static lab => RgbOnPaperToCmyk(XyzToRgb(LabToXyz(DecodeLabLegacy(lab)))))),
+            ("B2A0", Lut16(3, 4, 9, static lab => RgbOnPaperToCmyk(XyzToRgb(LabToXyz(DecodeLabLegacy(lab)))))),
         };
 
         if (withColorimetricTables)
         {
             tags.Add(("A2B1", Lut16(4, 3, 4, static cmyk => EncodeLabLegacy(XyzToLab(RgbToXyz(CmykToRgb(cmyk).Select(static v => 0.8 * v).ToArray()))))));
-            tags.Add(("B2A1", Lut16(3, 4, 6, static lab => RgbToCmyk(XyzToRgb(LabToXyz(DecodeLabLegacy(lab))).Select(static v => Math.Min(1, v / 0.8)).ToArray()))));
+            tags.Add(("B2A1", Lut16(3, 4, 7, static lab => RgbToCmyk(XyzToRgb(LabToXyz(DecodeLabLegacy(lab))).Select(static v => Math.Min(1, v / 0.8)).ToArray()))));
         }
 
         if (withSaturationTables)

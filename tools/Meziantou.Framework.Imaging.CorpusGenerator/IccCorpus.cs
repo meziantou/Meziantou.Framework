@@ -58,7 +58,6 @@ internal static partial class IccCorpus
     private const string ProfilesRepository = "https://github.com/saucecontrol/Compact-ICC-Profiles";
     private const string ProfilesCommit = "bdd84663061bc4ae95ca70decff54f581e27f702";
     private const string PinnedLittleCms = "2.19";
-    private const int MaxGridPointSamples = 300;
 
     // The measured reasons of the tolerances, recorded in the manifest with each conversion
     private const string RoundingJustification = "Same matrix and tone curves in both systems: only the rounding of the printed samples and the single-precision arithmetic of LittleCMS differ.";
@@ -67,7 +66,7 @@ internal static partial class IccCorpus
 
     private const string GridPointJustification = "Grid points of the color lookup table: no interpolation is involved, only the rounding of the printed samples and of the grid point values differs.";
 
-    private const string TableJustification = "Same tables and interpolation in both systems; LittleCMS evaluates tables with 16-bit intermediate values, the library in double precision.";
+    private const string TableJustification = "Same tables and interpolation in both systems; LittleCMS evaluates tables with 16-bit intermediate values, the library in double precision, and a steep curve after a table amplifies that rounding near black.";
 
     private const string CurveBlackPointJustification = "Both systems take the black point from the tone curve and scale CIEXYZ toward white identically; only rounding differs.";
 
@@ -115,29 +114,29 @@ internal static partial class IccCorpus
 
         // Table-based profiles in both directions: lut8Type and lut16Type (CIELAB and CIEXYZ connection spaces, the matrix
         // of a lut16Type), lutAToBType and lutBToAType with every element, monochrome tables
-        new("icc/srgb-v4-to-synthetic-rgb-lab-lut8", "icc/srgb-v4", "icc/synthetic-rgb-lab-lut8", 1, false, 12, 1.0, TableJustification),
-        new("icc/synthetic-rgb-lab-lut8-to-srgb-v4", "icc/synthetic-rgb-lab-lut8", "icc/srgb-v4", 1, false, 14, 1.0, TableJustification),
-        new("icc/srgb-v4-to-synthetic-rgb-xyz-lut16", "icc/srgb-v4", "icc/synthetic-rgb-xyz-lut16", 1, false, 17, 2.0, TableJustification),
+        new("icc/srgb-v4-to-synthetic-rgb-lab-lut8", "icc/srgb-v4", "icc/synthetic-rgb-lab-lut8", 1, false, 22, 1.0, TableJustification),
+        new("icc/synthetic-rgb-lab-lut8-to-srgb-v4", "icc/synthetic-rgb-lab-lut8", "icc/srgb-v4", 1, false, 16, 1.0, TableJustification),
+        new("icc/srgb-v4-to-synthetic-rgb-xyz-lut16", "icc/srgb-v4", "icc/synthetic-rgb-xyz-lut16", 1, false, 32, 2.0, TableJustification),
         new("icc/synthetic-rgb-xyz-lut16-to-display-p3-v4", "icc/synthetic-rgb-xyz-lut16", "icc/display-p3-v4", 1, false, 46, 2.5, TableJustification),
-        new("icc/srgb-v4-to-synthetic-rgb-lab-mab", "icc/srgb-v4", "icc/synthetic-rgb-lab-mab", 1, false, 6, 1.0, TableJustification),
-        new("icc/synthetic-rgb-lab-mab-to-srgb-v4", "icc/synthetic-rgb-lab-mab", "icc/srgb-v4", 1, false, 9, 1.0, TableJustification),
-        new("icc/display-p3-v4-to-synthetic-rgb-xyz-mab", "icc/display-p3-v4", "icc/synthetic-rgb-xyz-mab", 1, false, 14, 0.5, TableJustification),
+        new("icc/srgb-v4-to-synthetic-rgb-lab-mab", "icc/srgb-v4", "icc/synthetic-rgb-lab-mab", 1, false, 58, 1.0, TableJustification),
+        new("icc/synthetic-rgb-lab-mab-to-srgb-v4", "icc/synthetic-rgb-lab-mab", "icc/srgb-v4", 1, false, 19, 1.0, TableJustification),
+        new("icc/display-p3-v4-to-synthetic-rgb-xyz-mab", "icc/display-p3-v4", "icc/synthetic-rgb-xyz-mab", 1, false, 16, 0.5, TableJustification),
         new("icc/synthetic-rgb-xyz-mab-to-srgb-v4", "icc/synthetic-rgb-xyz-mab", "icc/srgb-v4", 1, false, 3, 0.5, TableJustification),
         new("icc/synthetic-gray-lab-lut8-to-srgb-v4", "icc/synthetic-gray-lab-lut8", "icc/srgb-v4", 1, false, 3, 0.5, TableJustification),
         new("icc/srgb-v4-to-synthetic-gray-lab-lut8", "icc/srgb-v4", "icc/synthetic-gray-lab-lut8", 1, false, 3, 0.5, TableJustification),
 
         // To CMYK, with the table of each rendering intent, and from CMYK on the grid points of the table of the intent
-        new("icc/srgb-v4-to-synthetic-cmyk-lab-lut16-perceptual", "icc/srgb-v4", "icc/synthetic-cmyk-lab-lut16", 0, false, 6, 1.0, TableJustification),
+        new("icc/srgb-v4-to-synthetic-cmyk-lab-lut16-perceptual", "icc/srgb-v4", "icc/synthetic-cmyk-lab-lut16", 0, false, 8, 1.0, TableJustification),
         new("icc/srgb-v4-to-synthetic-cmyk-lab-lut16", "icc/srgb-v4", "icc/synthetic-cmyk-lab-lut16", 1, false, 5, 1.0, TableJustification),
-        new("icc/srgb-v4-to-synthetic-cmyk-lab-lut16-saturation", "icc/srgb-v4", "icc/synthetic-cmyk-lab-lut16", 2, false, 4, 1.0, TableJustification),
-        new("icc/srgb-v4-to-synthetic-cmyk-lab-mab", "icc/srgb-v4", "icc/synthetic-cmyk-lab-mab", 1, false, 6, 1.0, TableJustification),
+        new("icc/srgb-v4-to-synthetic-cmyk-lab-lut16-saturation", "icc/srgb-v4", "icc/synthetic-cmyk-lab-lut16", 2, false, 5, 1.0, TableJustification),
+        new("icc/srgb-v4-to-synthetic-cmyk-lab-mab", "icc/srgb-v4", "icc/synthetic-cmyk-lab-mab", 1, false, 5, 1.0, TableJustification),
         new("icc/synthetic-cmyk-lab-lut16-to-srgb-v4", "icc/synthetic-cmyk-lab-lut16", "icc/srgb-v4", 1, false, 3, 0.5, GridPointJustification),
         new("icc/synthetic-cmyk-lab-lut16-to-srgb-v4-saturation", "icc/synthetic-cmyk-lab-lut16", "icc/srgb-v4", 2, false, 6, 0.5, GridPointJustification),
 
         // The absolute colorimetric intent with media white points that are not the illuminant (source, destination)
         new("icc/synthetic-rgb-scanner-to-srgb-v4-absolute", "icc/synthetic-rgb-scanner", "icc/srgb-v4", 3, false, 5, 0.5, RoundingJustification),
         new("icc/srgb-v4-to-synthetic-gray-paper-absolute", "icc/srgb-v4", "icc/synthetic-gray-paper", 3, false, 3, 0.75, RoundingJustification),
-        new("icc/srgb-v4-to-synthetic-cmyk-lab-lut16-absolute", "icc/srgb-v4", "icc/synthetic-cmyk-lab-lut16", 3, false, 5, 1.0, TableJustification),
+        new("icc/srgb-v4-to-synthetic-cmyk-lab-lut16-absolute", "icc/srgb-v4", "icc/synthetic-cmyk-lab-lut16", 3, false, 6, 1.0, TableJustification),
 
         // Black point compensation: a black point from a tone curve (both directions), and from the tables of a profile
         // as a destination (round trip of a lightness ramp) and as a source. See the remarks of the class for the
@@ -310,8 +309,8 @@ internal static partial class IccCorpus
     }
 
     /// <summary>
-    /// The colors of a CMYK conversion: grid points of the color lookup table of the AToB tag of the intent (a lut16Type)
-    /// of the profile. The device value of a grid point is the one its input table maps to the grid position: the tables are
+    /// The colors of a CMYK conversion: every grid point of the color lookup table of the AToB tag of the intent (a
+    /// lut16Type) of the profile. The device value of a grid point is the one its input table maps to the grid position: the tables are
     /// increasing and interpolated linearly, so each is inverted exactly, then rounded to 16 bits.
     /// </summary>
     private static ushort[] CreateGridPointSamples(byte[] profile, int intent)
@@ -350,17 +349,12 @@ internal static partial class IccCorpus
             }
         }
 
-        var totalPoints = (int)Math.Pow(gridPoints, channels);
         var samples = new List<ushort>();
         var indexes = new int[channels];
-        for (var point = 0; ; point++)
+        while (true)
         {
-            // One grid point out of five when the table has more than 300: every level of every channel is still used
-            if (totalPoints <= MaxGridPointSamples || point % 5 == 0)
-            {
-                for (var channel = 0; channel < channels; channel++)
-                    samples.Add(levels[channel][indexes[channel]]);
-            }
+            for (var channel = 0; channel < channels; channel++)
+                samples.Add(levels[channel][indexes[channel]]);
 
             var last = 0;
             while (last < channels && ++indexes[last] == gridPoints)
@@ -373,13 +367,13 @@ internal static partial class IccCorpus
     }
 
     /// <summary>
-    /// The colors of a grayscale or RGB conversion: every 8-bit level for one channel; for three channels a 4-level grid
-    /// including both ends of each channel, then 64 reproducible pseudo-random colors (the grid points of the synthetic
-    /// tables are not multiples of one third, so nearly every color is interpolated).
+    /// The colors of a grayscale or RGB conversion: a regular grid including both ends of each channel (every 8-bit level
+    /// for one channel, 7 levels for three channels), then reproducible pseudo-random 16-bit colors (64 and 157), so that
+    /// most colors fall between the grid points of the tables.
     /// </summary>
     private static ushort[] CreateSamples(int channels)
     {
-        var (levels, random) = channels == 1 ? (256, 0) : (4, 64);
+        var (levels, random) = channels == 1 ? (256, 64) : (7, 157);
         var samples = new List<ushort>();
         var indexes = new int[channels];
         while (true)

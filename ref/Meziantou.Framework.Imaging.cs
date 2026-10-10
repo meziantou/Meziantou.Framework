@@ -942,7 +942,23 @@ namespace Meziantou.Framework.Imaging.Metadata
     {
         public Meziantou.Framework.Imaging.Metadata.MetadataBlob Data { get => throw null; }
         public Meziantou.Framework.Imaging.Metadata.IccProfileColorSpace ColorSpace { get => throw null; }
+        public Meziantou.Framework.Imaging.Metadata.IccProfileClass ProfileClass { get => throw null; }
+        public System.Version Version { get => throw null; }
+        public Meziantou.Framework.Imaging.Metadata.IccRenderingIntent? RenderingIntent { get => throw null; }
         public IccProfile(Meziantou.Framework.Imaging.Metadata.MetadataBlob data) { }
+    }
+
+    public enum IccProfileClass
+    {
+        Unknown = 0,
+        Input = 1,
+        Display = 2,
+        Output = 3,
+        DeviceLink = 4,
+        ColorSpace = 5,
+        Abstract = 6,
+        NamedColor = 7,
+        Other = 8,
     }
 
     public enum IccProfileColorSpace
@@ -952,6 +968,14 @@ namespace Meziantou.Framework.Imaging.Metadata
         Rgb = 2,
         Cmyk = 3,
         Other = 4,
+    }
+
+    public enum IccRenderingIntent
+    {
+        Perceptual = 0,
+        RelativeColorimetric = 1,
+        Saturation = 2,
+        AbsoluteColorimetric = 3,
     }
 
     public sealed class ImageMetadata

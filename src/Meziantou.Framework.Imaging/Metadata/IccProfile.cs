@@ -1,3 +1,5 @@
+using Meziantou.Framework.Imaging.Internals;
+
 namespace Meziantou.Framework.Imaging.Metadata;
 
 /// <summary>An immutable, uncompressed ICC color profile.</summary>
@@ -8,10 +10,15 @@ namespace Meziantou.Framework.Imaging.Metadata;
 /// for grayscale pixels, an RGB profile for color pixels); incompatible combinations are rejected unless the caller
 /// explicitly discards the profile.
 /// </para>
+/// <para>
+/// The properties expose the header fields as declared, without validating the profile: a profile shorter than an ICC
+/// header (128 bytes) reports <see cref="IccProfileColorSpace.Unknown"/>, <see cref="IccProfileClass.Unknown"/>, version
+/// 0.0.0 and no rendering intent.
+/// </para>
 /// </remarks>
 public sealed class IccProfile
 {
-    private const int HeaderSize = 128;
+    private static readonly Version UnknownVersion = new(0, 0, 0);
 
     /// <summary>Initializes a new instance of the <see cref="IccProfile"/> class.</summary>
     /// <param name="data">The uncompressed ICC profile bytes. The full structure is validated when serialized.</param>
@@ -20,7 +27,17 @@ public sealed class IccProfile
     {
         ArgumentNullException.ThrowIfNull(data);
         Data = data;
-        ColorSpace = ParseColorSpace(data.Span);
+        if (IccHeader.TryRead(data.Span, out var header))
+        {
+            ColorSpace = header.GetColorSpace();
+            ProfileClass = header.GetProfileClass();
+            Version = header.Version;
+            RenderingIntent = header.GetRenderingIntent();
+        }
+        else
+        {
+            Version = UnknownVersion;
+        }
     }
 
     /// <summary>Gets the raw profile bytes.</summary>
@@ -29,21 +46,16 @@ public sealed class IccProfile
     /// <summary>Gets the data color space declared in the profile header.</summary>
     public IccProfileColorSpace ColorSpace { get; }
 
-    private static IccProfileColorSpace ParseColorSpace(ReadOnlySpan<byte> data)
-    {
-        if (data.Length < HeaderSize)
-            return IccProfileColorSpace.Unknown;
+    /// <summary>Gets the profile/device class declared in the profile header.</summary>
+    public IccProfileClass ProfileClass { get; }
 
-        var signature = data.Slice(16, 4);
-        if (signature.SequenceEqual("GRAY"u8))
-            return IccProfileColorSpace.Gray;
+    /// <summary>Gets the profile version declared in the profile header (major, minor and bug fix numbers), such as 2.4.0 or 4.4.0.</summary>
+    public Version Version { get; }
 
-        if (signature.SequenceEqual("RGB "u8))
-            return IccProfileColorSpace.Rgb;
-
-        if (signature.SequenceEqual("CMYK"u8))
-            return IccProfileColorSpace.Cmyk;
-
-        return IccProfileColorSpace.Other;
-    }
+    /// <summary>
+    /// Gets the rendering intent declared in the profile header, or <see langword="null"/> when the header is missing or
+    /// declares an undefined value. This is the intent the profile creator suggests; it does not restrict the intents the
+    /// profile supports.
+    /// </summary>
+    public IccRenderingIntent? RenderingIntent { get; }
 }

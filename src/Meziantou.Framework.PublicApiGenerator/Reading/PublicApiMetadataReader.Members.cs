@@ -9,6 +9,7 @@ internal sealed partial class PublicApiMetadataReader
     private const string IsReadOnlyAttributeFullName = "System.Runtime.CompilerServices.IsReadOnlyAttribute";
     private const string RequiredMemberAttributeFullName = "System.Runtime.CompilerServices.RequiredMemberAttribute";
     private const string ExtensionAttributeFullName = "System.Runtime.CompilerServices.ExtensionAttribute";
+    internal const string PreserveBaseOverridesAttributeFullName = "System.Runtime.CompilerServices.PreserveBaseOverridesAttribute";
 
     private ImmutableArray<PublicApiMember> ReadMembers(TypeDefinitionHandle typeDefinitionHandle, TypeDefinition typeDefinition)
     {
@@ -174,12 +175,14 @@ internal sealed partial class PublicApiMetadataReader
             constantValue = decimalConstant;
         }
 
+        var name = _metadataReader.GetString(field.Name);
         var modifiers = new PublicApiMemberModifiers(
             IsStatic: field.Attributes.HasFlag(FieldAttributes.Static),
+            IsNew: _inheritedMemberResolver.GetInheritedMembers(declaringTypeHandle).IsHiddenBy(InheritedMemberKind.Field, name),
             RequiresUnsafe: IsRequiresUnsafeMember(customAttributes));
 
         return new PublicApiField(
-            _metadataReader.GetString(field.Name),
+            name,
             GetAccessibility(field.Attributes),
             ReadAttributes(customAttributes),
             CreateOrigin(fieldHandle),
@@ -218,9 +221,10 @@ internal sealed partial class PublicApiMetadataReader
                 return null;
         }
 
-        var representativeAttributes = includeGetter && includeSetter
-            ? GetAccessibilityRank(getAccessor!.Value.Attributes) >= GetAccessibilityRank(setAccessor!.Value.Attributes) ? getAccessor.Value.Attributes : setAccessor.Value.Attributes
-            : includeGetter ? getAccessor!.Value.Attributes : setAccessor!.Value.Attributes;
+        var representativeAccessor = includeGetter && includeSetter
+            ? GetAccessibilityRank(getAccessor!.Value.Attributes) >= GetAccessibilityRank(setAccessor!.Value.Attributes) ? getAccessor.Value : setAccessor.Value
+            : includeGetter ? getAccessor!.Value : setAccessor!.Value;
+        var representativeAttributes = representativeAccessor.Attributes;
 
         var propertyAttributes = property.GetCustomAttributes();
         NullableMetadataInfo nullableInfo;
@@ -274,7 +278,13 @@ internal sealed partial class PublicApiMetadataReader
 
         var getMethod = includeGetter ? ReadMethod(declaringTypeHandle, getAccessorHandle, PublicApiMethodKind.PropertyGet, explicitImplementations) : null;
         var setMethod = includeSetter ? ReadMethod(declaringTypeHandle, setAccessorHandle, PublicApiMethodKind.PropertySet, explicitImplementations) : null;
-        var modifiers = GetMethodModifiers(representativeAttributes, isExplicitInterfaceImplementation, IsRequiresUnsafeMember(propertyAttributes));
+        var modifiers = GetMethodModifiers(representativeAccessor, isExplicitInterfaceImplementation, IsRequiresUnsafeMember(propertyAttributes));
+        if (CanHideInheritedMember(modifiers))
+        {
+            var inheritedMembers = _inheritedMemberResolver.GetInheritedMembers(declaringTypeHandle);
+            modifiers = modifiers with { IsNew = inheritedMembers.ContainsName(name) && inheritedMembers.IsHiddenBy(InheritedMemberKind.Property, name, arity: 0, InheritedMemberResolver.GetParameterList(_metadataReader, property)) };
+        }
+
         var accessibility = isExplicitInterfaceImplementation ? PublicApiAccessibility.Private : GetAccessibility(representativeAttributes);
         var isReadOnly = (getMethod is null || getMethod.IsReadOnly) && (setMethod is null || setMethod.IsReadOnly);
 
@@ -373,12 +383,19 @@ internal sealed partial class PublicApiMetadataReader
             }
         }
 
+        var name = _metadataReader.GetString(eventDefinition.Name);
+        var modifiers = GetMethodModifiers(addMethodDefinition, isExplicitInterfaceImplementation, IsRequiresUnsafeMember(eventAttributes));
+        if (CanHideInheritedMember(modifiers))
+        {
+            modifiers = modifiers with { IsNew = _inheritedMemberResolver.GetInheritedMembers(declaringTypeHandle).IsHiddenBy(InheritedMemberKind.Event, name) };
+        }
+
         var result = new PublicApiEvent(
-            _metadataReader.GetString(eventDefinition.Name),
+            name,
             isExplicitInterfaceImplementation ? PublicApiAccessibility.Private : GetAccessibility(addMethodDefinition.Attributes),
             ReadAttributes(eventAttributes),
             CreateOrigin(eventHandle),
-            GetMethodModifiers(addMethodDefinition.Attributes, isExplicitInterfaceImplementation, IsRequiresUnsafeMember(eventAttributes)),
+            modifiers,
             explicitReferences.ToImmutable(),
             type,
             addMethod,
@@ -445,12 +462,20 @@ internal sealed partial class PublicApiMetadataReader
             explicitReferences = builder.ToImmutable();
         }
 
+        // Accessors, constructors, destructors and operators do not hide inherited members
+        var modifiers = GetMethodModifiers(method, isExplicitInterfaceImplementation, IsRequiresUnsafeMember(customAttributes));
+        if (kind == PublicApiMethodKind.Ordinary && CanHideInheritedMember(modifiers))
+        {
+            var inheritedMembers = _inheritedMemberResolver.GetInheritedMembers(declaringTypeHandle);
+            modifiers = modifiers with { IsNew = inheritedMembers.ContainsName(name) && inheritedMembers.IsHiddenBy(InheritedMemberKind.Method, name, genericParameters.Length, InheritedMemberResolver.GetParameterList(_metadataReader, method)) };
+        }
+
         return new PublicApiMethod(
             name,
             isExplicitInterfaceImplementation ? PublicApiAccessibility.Private : GetAccessibility(method.Attributes),
             ReadAttributes(customAttributes),
             CreateOrigin(methodHandle),
-            GetMethodModifiers(method.Attributes, isExplicitInterfaceImplementation, IsRequiresUnsafeMember(customAttributes)),
+            modifiers,
             explicitReferences,
             kind,
             returnType,
@@ -463,12 +488,15 @@ internal sealed partial class PublicApiMetadataReader
             isInitOnly: kind == PublicApiMethodKind.PropertySet && signature.ContainsIsExternalInitModifier);
     }
 
-    private static PublicApiMemberModifiers GetMethodModifiers(MethodAttributes attributes, bool isExplicitInterfaceImplementation, bool requiresUnsafe)
+    private PublicApiMemberModifiers GetMethodModifiers(MethodDefinition method, bool isExplicitInterfaceImplementation, bool requiresUnsafe)
     {
+        var attributes = method.Attributes;
         var isAbstract = attributes.HasFlag(MethodAttributes.Abstract);
         var isVirtual = attributes.HasFlag(MethodAttributes.Virtual);
         var isFinal = attributes.HasFlag(MethodAttributes.Final);
-        var isNewSlot = attributes.HasFlag(MethodAttributes.NewSlot);
+
+        // An override with a covariant return type has its own slot. The compiler marks it with PreserveBaseOverridesAttribute.
+        var isNewSlot = attributes.HasFlag(MethodAttributes.NewSlot) && !HasAttribute(method.GetCustomAttributes(), PreserveBaseOverridesAttributeFullName);
         return new PublicApiMemberModifiers(
             IsStatic: attributes.HasFlag(MethodAttributes.Static),
             IsAbstract: isAbstract,
@@ -478,6 +506,9 @@ internal sealed partial class PublicApiMetadataReader
             RequiresUnsafe: requiresUnsafe,
             IsExplicitInterfaceImplementation: isExplicitInterfaceImplementation);
     }
+
+    // An override or an explicit interface implementation cannot have the new modifier
+    private static bool CanHideInheritedMember(PublicApiMemberModifiers modifiers) => !modifiers.IsOverride && !modifiers.IsExplicitInterfaceImplementation;
 
     private ImmutableArray<PublicApiParameter> ReadParameters(TypeDefinitionHandle declaringTypeHandle, MethodDefinitionHandle methodHandle, MethodDefinition method, ImmutableArray<RawType> parameterTypes, bool isExtensionMethod)
     {

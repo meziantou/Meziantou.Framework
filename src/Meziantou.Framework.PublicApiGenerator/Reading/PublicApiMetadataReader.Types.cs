@@ -11,9 +11,13 @@ internal sealed partial class PublicApiMetadataReader
         var metadataName = _metadataReader.GetString(typeDefinition.Name);
         var genericContext = BuildGenericContext(typeDefinitionHandle);
         var typeKind = GetTypeKind(typeDefinition);
-        var flags = GetTypeFlags(typeDefinition, typeKind);
         var allGenericParameters = ReadGenericParameters(typeDefinition.GetGenericParameters(), genericContext, typeDefinitionHandle, methodHandle: default);
         var ownGenericParameterCount = Math.Max(0, allGenericParameters.Length - declaringTypeGenericParameterCount);
+        var declaringTypeHandle = typeDefinition.GetDeclaringType();
+        var flags = GetTypeFlags(typeDefinition, typeKind) with
+        {
+            IsNew = !declaringTypeHandle.IsNil && _inheritedMemberResolver.GetInheritedMembers(declaringTypeHandle).IsHiddenBy(InheritedMemberKind.Type, MetadataNameHelper.RemoveGenericArity(metadataName), ownGenericParameterCount),
+        };
 
         PublicApiTypeReference? baseType = null;
         if (!typeDefinition.BaseType.IsNil)

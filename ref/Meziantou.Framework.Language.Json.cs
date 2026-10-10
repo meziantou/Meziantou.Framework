@@ -137,7 +137,7 @@ namespace Meziantou.Framework.Language.Json
 
     public abstract class JsonSyntaxNode : Meziantou.Framework.Language.SyntaxNode
     {
-        public Meziantou.Framework.Language.Json.JsonSyntaxNode? Parent { get => throw null; }
+        public new Meziantou.Framework.Language.Json.JsonSyntaxNode? Parent { get => throw null; }
         public Meziantou.Framework.Language.Json.SyntaxKind Kind() => throw null;
         public abstract void Accept(Meziantou.Framework.Language.Json.JsonSyntaxVisitor visitor);
         public abstract TResult? Accept<TResult>(Meziantou.Framework.Language.Json.JsonSyntaxVisitor<TResult> visitor);
@@ -165,12 +165,12 @@ namespace Meziantou.Framework.Language.Json
     {
         public override string? FilePath { get => throw null; }
         public override Meziantou.Framework.Language.SourceText GetText() => throw null;
-        public Meziantou.Framework.Language.Json.JsonDocumentSyntax GetRoot() => throw null;
+        public new Meziantou.Framework.Language.Json.JsonDocumentSyntax GetRoot() => throw null;
         public static Meziantou.Framework.Language.Json.JsonSyntaxTree ParseText([System.Diagnostics.CodeAnalysis.StringSyntax("Json")] string text, string? path = null) => throw null;
         public static Meziantou.Framework.Language.Json.JsonSyntaxTree ParseText(Meziantou.Framework.Language.SourceText text, string? path = null) => throw null;
         public static Meziantou.Framework.Language.Json.JsonSyntaxTree Create(Meziantou.Framework.Language.Json.JsonDocumentSyntax root, string? path = null) => throw null;
         public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Diagnostic> GetDiagnostics() => throw null;
-        public Meziantou.Framework.Language.Json.JsonSyntaxTree WithChangedText(Meziantou.Framework.Language.SourceText newText) => throw null;
+        public new Meziantou.Framework.Language.Json.JsonSyntaxTree WithChangedText(Meziantou.Framework.Language.SourceText newText) => throw null;
         public Meziantou.Framework.Language.Json.JsonSyntaxTree WithChanges(params Meziantou.Framework.Language.TextChange[] changes) => throw null;
         public Meziantou.Framework.Language.Json.JsonSyntaxTree WithChanges(System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.TextChange> changes) => throw null;
         public Meziantou.Framework.Language.Json.JsonSyntaxTree WithRoot(Meziantou.Framework.Language.Json.JsonDocumentSyntax root) => throw null;

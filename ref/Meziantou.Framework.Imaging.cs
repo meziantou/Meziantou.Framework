@@ -16,7 +16,7 @@ namespace Meziantou.Framework.Imaging
 
     public sealed class AutoCropAnalysis<TPixel> : Meziantou.Framework.Imaging.AutoCropAnalysis where TPixel : unmanaged
     {
-        public TPixel BackgroundColor { get => throw null; }
+        public new TPixel BackgroundColor { get => throw null; }
     }
 
     public sealed class AutoCropOptions
@@ -336,11 +336,11 @@ namespace Meziantou.Framework.Imaging
     public sealed class ImageFrameCollection<TPixel> : Meziantou.Framework.Imaging.ImageFrameCollection, System.Collections.Generic.IEnumerable<Meziantou.Framework.Imaging.ImageFrame<TPixel>>, System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.Imaging.ImageFrame<TPixel>>, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Imaging.ImageFrame<TPixel>>, System.Collections.IEnumerable where TPixel : unmanaged
     {
         public override int Count { get => throw null; }
-        public virtual Meziantou.Framework.Imaging.ImageFrame<TPixel> this[int index] { get => throw null; }
-        public Meziantou.Framework.Imaging.ImageFrameCollection<TPixel>.Enumerator GetEnumerator() => throw null;
+        public override Meziantou.Framework.Imaging.ImageFrame<TPixel> this[int index] { get => throw null; }
+        public new Meziantou.Framework.Imaging.ImageFrameCollection<TPixel>.Enumerator GetEnumerator() => throw null;
         System.Collections.Generic.IEnumerator<Meziantou.Framework.Imaging.ImageFrame<TPixel>> System.Collections.Generic.IEnumerable<Meziantou.Framework.Imaging.ImageFrame<TPixel>>.GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
-        public struct Enumerator : System.Collections.Generic.IEnumerator<Meziantou.Framework.Imaging.ImageFrame<TPixel>>, System.Collections.IEnumerator, System.IDisposable
+        public new struct Enumerator : System.Collections.Generic.IEnumerator<Meziantou.Framework.Imaging.ImageFrame<TPixel>>, System.Collections.IEnumerator, System.IDisposable
         {
             public readonly Meziantou.Framework.Imaging.ImageFrame<TPixel> Current { get => throw null; }
             readonly object System.Collections.IEnumerator.Current { get => throw null; }
@@ -507,24 +507,17 @@ namespace Meziantou.Framework.Imaging
     public sealed class Image<TPixel> : Meziantou.Framework.Imaging.Image where TPixel : unmanaged
     {
         public override Meziantou.Framework.Imaging.PixelFormat PixelFormat { get => throw null; }
-        public virtual Meziantou.Framework.Imaging.ImageFrameCollection<TPixel> Frames { get => throw null; }
-        public virtual Meziantou.Framework.Imaging.ImageFrame<TPixel>? PosterFrame { get => throw null; }
+        public override Meziantou.Framework.Imaging.ImageFrameCollection<TPixel> Frames { get => throw null; }
+        public override Meziantou.Framework.Imaging.ImageFrame<TPixel>? PosterFrame { get => throw null; }
         public Image(int width, int height, Meziantou.Framework.Imaging.ImageConfiguration? configuration = null) { }
         public Image(int width, int height, TPixel fill, Meziantou.Framework.Imaging.ImageConfiguration? configuration = null) { }
-        [System.Runtime.CompilerServices.PreserveBaseOverrides]
-        public virtual Meziantou.Framework.Imaging.Image<TPixel> Clone() => throw null;
-        [System.Runtime.CompilerServices.PreserveBaseOverrides]
-        public virtual Meziantou.Framework.Imaging.Image<TPixel> CloneFrame(int index) => throw null;
-        [System.Runtime.CompilerServices.PreserveBaseOverrides]
-        public virtual Meziantou.Framework.Imaging.Image<TPixel> ClonePosterFrame() => throw null;
-        [System.Runtime.CompilerServices.PreserveBaseOverrides]
-        public virtual Meziantou.Framework.Imaging.ImageFrame<TPixel> AppendFrame() => throw null;
-        [System.Runtime.CompilerServices.PreserveBaseOverrides]
-        public virtual Meziantou.Framework.Imaging.ImageFrame<TPixel> AppendFrame(Meziantou.Framework.Imaging.ImageFrame source) => throw null;
-        [System.Runtime.CompilerServices.PreserveBaseOverrides]
-        public virtual Meziantou.Framework.Imaging.ImageFrame<TPixel> InsertFrame(int index, Meziantou.Framework.Imaging.ImageFrame source) => throw null;
-        [System.Runtime.CompilerServices.PreserveBaseOverrides]
-        public virtual Meziantou.Framework.Imaging.ImageFrame<TPixel> SetPosterFrame(Meziantou.Framework.Imaging.ImageFrame source) => throw null;
+        public override Meziantou.Framework.Imaging.Image<TPixel> Clone() => throw null;
+        public override Meziantou.Framework.Imaging.Image<TPixel> CloneFrame(int index) => throw null;
+        public override Meziantou.Framework.Imaging.Image<TPixel> ClonePosterFrame() => throw null;
+        public override Meziantou.Framework.Imaging.ImageFrame<TPixel> AppendFrame() => throw null;
+        public override Meziantou.Framework.Imaging.ImageFrame<TPixel> AppendFrame(Meziantou.Framework.Imaging.ImageFrame source) => throw null;
+        public override Meziantou.Framework.Imaging.ImageFrame<TPixel> InsertFrame(int index, Meziantou.Framework.Imaging.ImageFrame source) => throw null;
+        public override Meziantou.Framework.Imaging.ImageFrame<TPixel> SetPosterFrame(Meziantou.Framework.Imaging.ImageFrame source) => throw null;
     }
 
     public class InvalidImageContentException : Meziantou.Framework.Imaging.ImageException

@@ -112,9 +112,9 @@ namespace Meziantou.Framework.Assertions
         public static System.Threading.Tasks.Task HasCountLessThanOrEqual<T>(int expectedCount, [System.Diagnostics.CodeAnalysis.NotNull] System.Collections.Generic.IAsyncEnumerable<T>? actual, string? message = null, [System.Runtime.CompilerServices.CallerArgumentExpression("actual")] string? actualExpression = null) => throw null;
         public static System.IDisposable UseFormatterOptions(Meziantou.Framework.Assertions.FormatterOptions options) => throw null;
         [System.Obsolete("This is an override of Object.Equals(). Use Assert.Equal() instead.", true)]
-        public static bool Equals(object? a, object? b) => throw null;
+        public new static bool Equals(object? a, object? b) => throw null;
         [System.Obsolete("This is an override of Object.ReferenceEquals(). Use Assert.Same() instead.", true)]
-        public static bool ReferenceEquals(object? a, object? b) => throw null;
+        public new static bool ReferenceEquals(object? a, object? b) => throw null;
         [System.Diagnostics.CodeAnalysis.DoesNotReturn]
         public static void Fail(string? message = null) { }
         [System.Runtime.CompilerServices.OverloadResolutionPriority(1)]

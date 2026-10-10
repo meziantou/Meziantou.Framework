@@ -935,7 +935,7 @@ namespace Meziantou.Framework.CodeDom
     public class StatementCollection : Meziantou.Framework.CodeDom.CodeObjectCollection<Meziantou.Framework.CodeDom.Statement>
     {
         public StatementCollection(Meziantou.Framework.CodeDom.CodeObject parent) { }
-        public TCodeObject Add<TCodeObject>(TCodeObject item) where TCodeObject : Meziantou.Framework.CodeDom.Statement => throw null;
+        public new TCodeObject Add<TCodeObject>(TCodeObject item) where TCodeObject : Meziantou.Framework.CodeDom.Statement => throw null;
         public Meziantou.Framework.CodeDom.Expression Add(Meziantou.Framework.CodeDom.Expression expression) => throw null;
         public static implicit operator Meziantou.Framework.CodeDom.StatementCollection(Meziantou.Framework.CodeDom.Statement codeStatement) => throw null;
         public static implicit operator Meziantou.Framework.CodeDom.StatementCollection(Meziantou.Framework.CodeDom.Expression codeExpression) => throw null;

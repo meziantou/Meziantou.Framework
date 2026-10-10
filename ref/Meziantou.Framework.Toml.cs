@@ -1367,7 +1367,7 @@ namespace Meziantou.Framework.Toml.Syntax
     public sealed class SyntaxList<TSyntaxNode> : Meziantou.Framework.Toml.Syntax.SyntaxList, System.Collections.Generic.IEnumerable<TSyntaxNode>, System.Collections.IEnumerable where TSyntaxNode : Meziantou.Framework.Toml.Syntax.SyntaxNode
     {
         public void Add(TSyntaxNode node) { }
-        public TSyntaxNode? GetChild(int index) => throw null;
+        public new TSyntaxNode? GetChild(int index) => throw null;
         protected override Meziantou.Framework.Toml.Syntax.SyntaxNode GetChildImpl(int index) => throw null;
         public void RemoveChildAt(int index) { }
         public void RemoveChild(TSyntaxNode node) { }

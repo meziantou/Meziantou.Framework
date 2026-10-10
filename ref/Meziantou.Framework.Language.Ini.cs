@@ -114,7 +114,7 @@ namespace Meziantou.Framework.Language.Ini
 
     public abstract class IniSyntaxNode : Meziantou.Framework.Language.SyntaxNode
     {
-        public Meziantou.Framework.Language.Ini.IniSyntaxNode? Parent { get => throw null; }
+        public new Meziantou.Framework.Language.Ini.IniSyntaxNode? Parent { get => throw null; }
         public Meziantou.Framework.Language.Ini.SyntaxKind Kind() => throw null;
         public abstract void Accept(Meziantou.Framework.Language.Ini.IniSyntaxVisitor visitor);
         public abstract TResult? Accept<TResult>(Meziantou.Framework.Language.Ini.IniSyntaxVisitor<TResult> visitor);
@@ -138,7 +138,7 @@ namespace Meziantou.Framework.Language.Ini
         public override string? FilePath { get => throw null; }
         public Meziantou.Framework.Language.Ini.IniParseOptions Options { get => throw null; }
         public override Meziantou.Framework.Language.SourceText GetText() => throw null;
-        public Meziantou.Framework.Language.Ini.IniDocumentSyntax GetRoot() => throw null;
+        public new Meziantou.Framework.Language.Ini.IniDocumentSyntax GetRoot() => throw null;
         public static Meziantou.Framework.Language.Ini.IniSyntaxTree ParseText(string text, string? path = null) => throw null;
         public static Meziantou.Framework.Language.Ini.IniSyntaxTree ParseText(string text, Meziantou.Framework.Language.Ini.IniParseOptions? options, string? path = null) => throw null;
         public static Meziantou.Framework.Language.Ini.IniSyntaxTree ParseText(Meziantou.Framework.Language.SourceText text, string? path = null) => throw null;
@@ -146,7 +146,7 @@ namespace Meziantou.Framework.Language.Ini
         public static Meziantou.Framework.Language.Ini.IniSyntaxTree Create(Meziantou.Framework.Language.Ini.IniDocumentSyntax root, string? path = null) => throw null;
         public static Meziantou.Framework.Language.Ini.IniSyntaxTree Create(Meziantou.Framework.Language.Ini.IniDocumentSyntax root, Meziantou.Framework.Language.Ini.IniParseOptions? options, string? path = null) => throw null;
         public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Diagnostic> GetDiagnostics() => throw null;
-        public Meziantou.Framework.Language.Ini.IniSyntaxTree WithChangedText(Meziantou.Framework.Language.SourceText newText) => throw null;
+        public new Meziantou.Framework.Language.Ini.IniSyntaxTree WithChangedText(Meziantou.Framework.Language.SourceText newText) => throw null;
         public Meziantou.Framework.Language.Ini.IniSyntaxTree WithChanges(params Meziantou.Framework.Language.TextChange[] changes) => throw null;
         public Meziantou.Framework.Language.Ini.IniSyntaxTree WithChanges(System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.TextChange> changes) => throw null;
         public Meziantou.Framework.Language.Ini.IniSyntaxTree WithRoot(Meziantou.Framework.Language.Ini.IniDocumentSyntax root) => throw null;

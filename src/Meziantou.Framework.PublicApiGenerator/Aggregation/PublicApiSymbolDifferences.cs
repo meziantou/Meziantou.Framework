@@ -10,7 +10,7 @@ public enum PublicApiSymbolDifferences
     Kind = 1 << 0,
     Accessibility = 1 << 1,
 
-    /// <summary>Modifiers such as <c>static</c>, <c>abstract</c>, <c>virtual</c>, <c>sealed</c>, <c>readonly</c>, <c>required</c> or <c>unsafe</c> differ.</summary>
+    /// <summary>Modifiers such as <c>static</c>, <c>abstract</c>, <c>virtual</c>, <c>sealed</c>, <c>new</c>, <c>readonly</c>, <c>required</c> or <c>unsafe</c> differ.</summary>
     Modifiers = 1 << 2,
 
     /// <summary>Types, ref kinds, parameter modifiers, accessors or generic parameters differ, ignoring nullable annotations.</summary>

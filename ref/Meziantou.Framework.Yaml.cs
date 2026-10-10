@@ -131,7 +131,7 @@ namespace Meziantou.Framework.Yaml
     {
         public TagDirectiveCollection(System.Collections.Generic.IEnumerable<Meziantou.Framework.Yaml.Tokens.TagDirective> tagDirectives) { }
         protected override string GetKeyForItem(Meziantou.Framework.Yaml.Tokens.TagDirective item) => throw null;
-        public bool Contains(Meziantou.Framework.Yaml.Tokens.TagDirective directive) => throw null;
+        public new bool Contains(Meziantou.Framework.Yaml.Tokens.TagDirective directive) => throw null;
     }
 
     public class Version

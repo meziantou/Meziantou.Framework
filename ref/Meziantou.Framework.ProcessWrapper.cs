@@ -6,9 +6,9 @@ namespace Meziantou.Framework
 {
     public sealed class BufferedProcessInstance : Meziantou.Framework.ProcessInstance
     {
-        public System.Runtime.CompilerServices.TaskAwaiter<Meziantou.Framework.BufferedProcessResult> GetAwaiter() => throw null;
-        public System.Runtime.CompilerServices.ConfiguredTaskAwaitable<Meziantou.Framework.BufferedProcessResult> ConfigureAwait(bool continueOnCapturedContext) => throw null;
-        public System.Runtime.CompilerServices.ConfiguredTaskAwaitable<Meziantou.Framework.BufferedProcessResult> ConfigureAwait(System.Threading.Tasks.ConfigureAwaitOptions options) => throw null;
+        public new System.Runtime.CompilerServices.TaskAwaiter<Meziantou.Framework.BufferedProcessResult> GetAwaiter() => throw null;
+        public new System.Runtime.CompilerServices.ConfiguredTaskAwaitable<Meziantou.Framework.BufferedProcessResult> ConfigureAwait(bool continueOnCapturedContext) => throw null;
+        public new System.Runtime.CompilerServices.ConfiguredTaskAwaitable<Meziantou.Framework.BufferedProcessResult> ConfigureAwait(System.Threading.Tasks.ConfigureAwaitOptions options) => throw null;
     }
 
     public sealed class BufferedProcessResult : Meziantou.Framework.ProcessResult

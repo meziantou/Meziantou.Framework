@@ -851,7 +851,7 @@ namespace Meziantou.Framework.Language.Css
 
     public abstract class CssSyntaxNode : Meziantou.Framework.Language.SyntaxNode
     {
-        public Meziantou.Framework.Language.Css.CssSyntaxNode? Parent { get => throw null; }
+        public new Meziantou.Framework.Language.Css.CssSyntaxNode? Parent { get => throw null; }
         public Meziantou.Framework.Language.Css.SyntaxKind Kind() => throw null;
         public System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.SyntaxTrivia> DescendantComments() => throw null;
         public abstract void Accept(Meziantou.Framework.Language.Css.CssSyntaxVisitor visitor);
@@ -940,7 +940,7 @@ namespace Meziantou.Framework.Language.Css
         public override string? FilePath { get => throw null; }
         public Meziantou.Framework.Language.Css.CssParseOptions Options { get => throw null; }
         public override Meziantou.Framework.Language.SourceText GetText() => throw null;
-        public Meziantou.Framework.Language.Css.CssStyleSheetSyntax GetRoot() => throw null;
+        public new Meziantou.Framework.Language.Css.CssStyleSheetSyntax GetRoot() => throw null;
         public static Meziantou.Framework.Language.Css.CssSyntaxTree ParseText(string text, string? path = null) => throw null;
         public static Meziantou.Framework.Language.Css.CssSyntaxTree ParseText(string text, Meziantou.Framework.Language.Css.CssParseOptions? options, string? path = null) => throw null;
         public static Meziantou.Framework.Language.Css.CssSyntaxTree ParseText(Meziantou.Framework.Language.SourceText text, string? path = null) => throw null;
@@ -951,7 +951,7 @@ namespace Meziantou.Framework.Language.Css
         public override System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.Diagnostic> GetDiagnostics(Meziantou.Framework.Language.SyntaxNode node) => throw null;
         public override System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.Diagnostic> GetDiagnostics(Meziantou.Framework.Language.SyntaxToken token) => throw null;
         public override System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.Diagnostic> GetDiagnostics(Meziantou.Framework.Language.SyntaxTrivia trivia) => throw null;
-        public Meziantou.Framework.Language.Css.CssSyntaxTree WithChangedText(Meziantou.Framework.Language.SourceText newText) => throw null;
+        public new Meziantou.Framework.Language.Css.CssSyntaxTree WithChangedText(Meziantou.Framework.Language.SourceText newText) => throw null;
         public Meziantou.Framework.Language.Css.CssSyntaxTree WithChanges(params Meziantou.Framework.Language.TextChange[] changes) => throw null;
         public Meziantou.Framework.Language.Css.CssSyntaxTree WithChanges(System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.TextChange> changes) => throw null;
         public Meziantou.Framework.Language.Css.CssSyntaxTree WithRoot(Meziantou.Framework.Language.Css.CssStyleSheetSyntax root) => throw null;

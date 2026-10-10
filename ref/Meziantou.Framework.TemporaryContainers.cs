@@ -351,8 +351,7 @@ namespace Meziantou.Framework.TemporaryContainers
     {
         public string RootUsername { get => throw null; set { } }
         public string RootPassword { get => throw null; set { } }
-        [System.Runtime.CompilerServices.PreserveBaseOverrides]
-        public virtual Meziantou.Framework.TemporaryContainers.MongoDbContainer CreateContainer() => throw null;
+        public override Meziantou.Framework.TemporaryContainers.MongoDbContainer CreateContainer() => throw null;
     }
 
     public sealed class PostgreSqlContainer : Meziantou.Framework.TemporaryContainers.TemporaryContainer
@@ -363,8 +362,7 @@ namespace Meziantou.Framework.TemporaryContainers
     public sealed class PostgreSqlContainerDefinition : Meziantou.Framework.TemporaryContainers.ContainerDefinition
     {
         public string Password { get => throw null; set { } }
-        [System.Runtime.CompilerServices.PreserveBaseOverrides]
-        public virtual Meziantou.Framework.TemporaryContainers.PostgreSqlContainer CreateContainer() => throw null;
+        public override Meziantou.Framework.TemporaryContainers.PostgreSqlContainer CreateContainer() => throw null;
     }
 
     public enum PullPolicy
@@ -381,8 +379,7 @@ namespace Meziantou.Framework.TemporaryContainers
 
     public sealed class RedisContainerDefinition : Meziantou.Framework.TemporaryContainers.ContainerDefinition
     {
-        [System.Runtime.CompilerServices.PreserveBaseOverrides]
-        public virtual Meziantou.Framework.TemporaryContainers.RedisContainer CreateContainer() => throw null;
+        public override Meziantou.Framework.TemporaryContainers.RedisContainer CreateContainer() => throw null;
     }
 
     public sealed class SqlServerContainer : Meziantou.Framework.TemporaryContainers.TemporaryContainer
@@ -393,8 +390,7 @@ namespace Meziantou.Framework.TemporaryContainers
     public sealed class SqlServerContainerDefinition : Meziantou.Framework.TemporaryContainers.ContainerDefinition
     {
         public string SaPassword { get => throw null; set { } }
-        [System.Runtime.CompilerServices.PreserveBaseOverrides]
-        public virtual Meziantou.Framework.TemporaryContainers.SqlServerContainer CreateContainer() => throw null;
+        public override Meziantou.Framework.TemporaryContainers.SqlServerContainer CreateContainer() => throw null;
     }
 
     public class TemporaryContainer : System.IAsyncDisposable

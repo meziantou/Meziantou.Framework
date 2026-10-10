@@ -61,6 +61,11 @@ internal sealed class CSharpDeclarationFormatter
     {
         WriteAttributes(writer, type.Attributes, target: null, type.IsUnion ? IsUnionAttribute : null);
         WriteKeyword(writer, CSharpSyntaxFacts.GetAccessibilityText(type.Accessibility));
+        if (type.IsNew)
+        {
+            WriteKeyword(writer, "new");
+        }
+
         switch (type.TypeKind)
         {
             case PublicApiTypeKind.Class:
@@ -167,6 +172,11 @@ internal sealed class CSharpDeclarationFormatter
     {
         WriteAttributes(writer, field.Attributes, target: null);
         WriteKeyword(writer, CSharpSyntaxFacts.GetAccessibilityText(field.Accessibility));
+        if (field.IsNew)
+        {
+            WriteKeyword(writer, "new");
+        }
+
         if (field.IsConst)
         {
             WriteKeyword(writer, "const");
@@ -392,6 +402,11 @@ internal sealed class CSharpDeclarationFormatter
         if (!(isInterface && member.IsAbstract && !member.IsStatic))
         {
             WriteKeyword(writer, CSharpSyntaxFacts.GetAccessibilityText(member.Accessibility));
+        }
+
+        if (member.IsNew)
+        {
+            WriteKeyword(writer, "new");
         }
 
         if (member.IsStatic)

@@ -7,6 +7,7 @@ namespace Meziantou.Framework.PublicApiGenerator;
 internal static class PublicApiModelBuilder
 {
     private static readonly ConditionalWeakTable<Module, StrongBox<bool>> UpdatedMemorySafetyRulesCache = new();
+    private static readonly ConditionalWeakTable<Type, InheritedMemberSet> InheritedMembersCache = new();
     private const string CompilerGeneratedRefStructObsoleteMessage = "Types with embedded references are not supported in this version of your compiler.";
     private const string RequiresPreviewFeaturesAttributeFullName = "System.Runtime.Versioning.RequiresPreviewFeaturesAttribute";
     private const string ClosedAttributeFullName = "System.Runtime.CompilerServices.ClosedAttribute";
@@ -35,6 +36,7 @@ internal static class PublicApiModelBuilder
         "System.Runtime.CompilerServices.NullableAttribute",
         "System.Runtime.CompilerServices.NullableContextAttribute",
         "System.Runtime.CompilerServices.IsUnmanagedAttribute",
+        PublicApiMetadataReader.PreserveBaseOverridesAttributeFullName,
         "System.Reflection.DefaultMemberAttribute",
         "System.Diagnostics.DebuggableAttribute",
         "System.Diagnostics.DebuggerNonUserCodeAttribute",
@@ -280,7 +282,7 @@ internal static class PublicApiModelBuilder
         var sb = new StringBuilder();
         AppendAttributes(sb, type.CustomAttributes, indentationLevel);
 
-        var modifiers = GetTypeAccessibility(type);
+        var modifiers = GetTypeAccessibility(type) + (HidesInheritedMember(type) ? " new" : string.Empty);
         // The unsafe modifier is not allowed on type declarations under the updated memory safety rules
         var unsafeModifier = !HasUpdatedMemorySafetyRules(type.Module) && RequiresUnsafeContext(invokeMethod) ? " unsafe" : string.Empty;
         var genericArguments = BuildGenericArguments(type);
@@ -300,7 +302,7 @@ internal static class PublicApiModelBuilder
 
         var baseType = Enum.GetUnderlyingType(type);
         var baseTypeSuffix = baseType == typeof(int) ? string.Empty : " : " + FormatType(baseType);
-        AppendIndentedLine(sb, indentationLevel, $"{GetTypeAccessibility(type)} enum {EscapeIdentifier(type.Name)}{baseTypeSuffix}");
+        AppendIndentedLine(sb, indentationLevel, $"{GetTypeAccessibility(type)}{(HidesInheritedMember(type) ? " new" : string.Empty)} enum {EscapeIdentifier(type.Name)}{baseTypeSuffix}");
         AppendIndentedLine(sb, indentationLevel, "{");
 
         var fields = type.GetFields(BindingFlags.Public | BindingFlags.Static)
@@ -323,6 +325,10 @@ internal static class PublicApiModelBuilder
 
         var modifiers = new List<string> { GetFieldAccessibility(field) };
         var isByRefField = field.FieldType.IsByRef;
+        if (GetInheritedMembers(field.DeclaringType!).IsHiddenBy(InheritedMemberKind.Field, field.Name))
+        {
+            modifiers.Add("new");
+        }
 
         // A decimal constant is compiled to a static readonly field, and its value is stored in a DecimalConstantAttribute
         var decimalConstant = field is { IsStatic: true, IsInitOnly: true } && field.FieldType == typeof(decimal) ? GetDecimalConstant(field.GetCustomAttributesData()) : null;
@@ -395,6 +401,12 @@ internal static class PublicApiModelBuilder
             if (shouldEmitAccessibility && !string.IsNullOrEmpty(propertyAccessibility))
             {
                 modifiers.Add(propertyAccessibility);
+            }
+
+            if (CanHideInheritedMember(representativeAccessor) &&
+                GetInheritedMembers(property.DeclaringType!).IsHiddenBy(InheritedMemberKind.Property, property.Name, arity: 0, GetHidingParameterList(property.GetIndexParameters())))
+            {
+                modifiers.Add("new");
             }
 
             if (representativeAccessor.IsStatic)
@@ -499,6 +511,11 @@ internal static class PublicApiModelBuilder
         if (!string.IsNullOrEmpty(accessibility))
         {
             modifiers.Add(accessibility);
+        }
+
+        if (CanHideInheritedMember(addMethod) && GetInheritedMembers(@event.DeclaringType!).IsHiddenBy(InheritedMemberKind.Event, @event.Name))
+        {
+            modifiers.Add("new");
         }
 
         if (addMethod.IsStatic)
@@ -729,6 +746,11 @@ internal static class PublicApiModelBuilder
             }
         }
 
+        if (HidesInheritedMember(method))
+        {
+            modifiers.Add("new");
+        }
+
         if (method.IsStatic)
         {
             modifiers.Add("static");
@@ -756,16 +778,165 @@ internal static class PublicApiModelBuilder
             return;
         }
 
+        var isOverride = method.GetBaseDefinition() != method || IsCovariantOverride(method);
         if (method.IsVirtual && !method.IsFinal)
         {
             // A method that is its own base definition introduces the member, otherwise it overrides an inherited one
-            modifiers.Add(method.GetBaseDefinition() == method ? "virtual" : "override");
+            modifiers.Add(isOverride ? "override" : "virtual");
         }
-        else if (method.IsVirtual && method.IsFinal && method.GetBaseDefinition() != method)
+        else if (method.IsVirtual && method.IsFinal && isOverride)
         {
             modifiers.Add("sealed");
             modifiers.Add("override");
         }
+    }
+
+    // The new modifier is not stored in metadata. A member hides the inherited members with the same name, or the same signature for methods and indexers.
+    private static bool HidesInheritedMember(MethodInfo method)
+    {
+        // Accessors and operators do not hide inherited members
+        if (method.IsSpecialName || !CanHideInheritedMember(method))
+            return false;
+
+        var inheritedMembers = GetInheritedMembers(method.DeclaringType!);
+        return inheritedMembers.ContainsName(method.Name) &&
+               inheritedMembers.IsHiddenBy(InheritedMemberKind.Method, method.Name, method.GetGenericArguments().Length, GetHidingParameterList(method.GetParameters()));
+    }
+
+    private static bool HidesInheritedMember(Type nestedType)
+    {
+        var declaringType = nestedType.DeclaringType;
+        if (declaringType is null)
+            return false;
+
+        var arity = nestedType.GetGenericArguments().Length - declaringType.GetGenericArguments().Length;
+        return GetInheritedMembers(declaringType).IsHiddenBy(InheritedMemberKind.Type, RemoveGenericArity(nestedType.Name), arity);
+    }
+
+    // An override or an explicit interface implementation cannot have the new modifier
+    private static bool CanHideInheritedMember(MethodInfo method)
+    {
+        var isOverride = method.IsVirtual && (!method.Attributes.HasFlag(MethodAttributes.NewSlot) || IsCovariantOverride(method));
+        return !isOverride && !IsExplicitInterfaceImplementation(method);
+    }
+
+    // An override with a covariant return type has its own slot. The compiler marks it with PreserveBaseOverridesAttribute.
+    private static bool IsCovariantOverride(MethodInfo method)
+    {
+        return method.CustomAttributes.Any(attribute => attribute.AttributeType.FullName == PublicApiMetadataReader.PreserveBaseOverridesAttributeFullName);
+    }
+
+    private static InheritedMemberSet GetInheritedMembers(Type type) => InheritedMembersCache.GetValue(type, BuildInheritedMembers);
+
+    private static InheritedMemberSet BuildInheritedMembers(Type type)
+    {
+        var result = new InheritedMemberSet();
+        if (type.IsInterface)
+        {
+            foreach (var baseInterface in type.GetInterfaces())
+            {
+                AddInheritedMembers(result, baseInterface);
+            }
+        }
+        else
+        {
+            for (var baseType = type.BaseType; baseType is not null; baseType = baseType.BaseType)
+            {
+                AddInheritedMembers(result, baseType);
+            }
+        }
+
+        return result;
+    }
+
+    // Only the members that are visible outside the assembly are part of the public API, so the others are not considered as hidden
+    private static void AddInheritedMembers(InheritedMemberSet result, Type type)
+    {
+        const BindingFlags DeclaredMembers = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly;
+        foreach (var field in type.GetFields(DeclaredMembers))
+        {
+            if (IsExternallyVisible(field) && !field.IsSpecialName)
+            {
+                result.Add(InheritedMemberKind.Field, field.Name);
+            }
+        }
+
+        foreach (var property in type.GetProperties(DeclaredMembers))
+        {
+            if (IsInheritedMemberVisible(property.GetMethod) || IsInheritedMemberVisible(property.SetMethod))
+            {
+                result.Add(InheritedMemberKind.Property, property.Name, arity: 0, GetHidingParameterList(property.GetIndexParameters()));
+            }
+        }
+
+        foreach (var @event in type.GetEvents(DeclaredMembers))
+        {
+            if (IsInheritedMemberVisible(@event.AddMethod) || IsInheritedMemberVisible(@event.RemoveMethod))
+            {
+                result.Add(InheritedMemberKind.Event, @event.Name);
+            }
+        }
+
+        foreach (var method in type.GetMethods(DeclaredMembers))
+        {
+            if (!IsInheritedMemberVisible(method) || method.IsSpecialName)
+                continue;
+
+            var parameters = method.GetParameters();
+            if (InheritedMemberSet.IsDestructor(method.Name, method.IsStatic, parameters.Length))
+                continue;
+
+            result.Add(InheritedMemberKind.Method, method.Name, method.GetGenericArguments().Length, GetHidingParameterList(parameters));
+        }
+
+        var genericParameterCount = type.GetGenericArguments().Length;
+        foreach (var nestedType in type.GetNestedTypes(BindingFlags.Public | BindingFlags.NonPublic))
+        {
+            if (nestedType.IsNestedPublic || nestedType.IsNestedFamily || nestedType.IsNestedFamORAssem)
+            {
+                result.Add(InheritedMemberKind.Type, RemoveGenericArity(nestedType.Name), nestedType.GetGenericArguments().Length - genericParameterCount);
+            }
+        }
+    }
+
+    private static bool IsInheritedMemberVisible(MethodInfo? method)
+    {
+        return method is not null && (method.IsPublic || method.IsFamily || method.IsFamilyOrAssembly);
+    }
+
+    private static string GetHidingParameterList(ParameterInfo[] parameters)
+    {
+        return InheritedMemberSet.GetParameterList(parameters.Select(parameter => InheritedMemberSet.GetParameterName(
+            GetHidingTypeName(parameter.ParameterType),
+            parameter.ParameterType.IsByRef,
+            parameter.IsOut,
+            isReadOnly: parameter.ParameterType.IsByRef && parameter.CustomAttributes.Any(attribute => InheritedMemberSet.IsReadOnlyReferenceAttribute(attribute.AttributeType.FullName)))));
+    }
+
+    private static string GetHidingTypeName(Type type)
+    {
+        if (type.IsGenericMethodParameter)
+            return InheritedMemberSet.GetGenericMethodParameterName(type.GenericParameterPosition);
+
+        if (type.IsGenericTypeParameter)
+            return InheritedMemberSet.GetGenericTypeParameterName(type.GenericParameterPosition);
+
+        if (type.IsByRef)
+            return InheritedMemberSet.GetByReferenceName(GetHidingTypeName(type.GetElementType()!));
+
+        if (type.IsPointer)
+            return InheritedMemberSet.GetPointerName(GetHidingTypeName(type.GetElementType()!));
+
+        if (type.IsArray)
+            return InheritedMemberSet.GetArrayName(GetHidingTypeName(type.GetElementType()!), type.GetArrayRank(), type.IsSZArray);
+
+        if (type.IsFunctionPointer)
+            return InheritedMemberSet.GetFunctionPointerName(GetHidingTypeName(type.GetFunctionPointerReturnType()), type.GetFunctionPointerParameterTypes().Select(GetHidingTypeName), type.IsUnmanagedFunctionPointer);
+
+        if (type.IsConstructedGenericType)
+            return InheritedMemberSet.GetGenericInstantiationName(type.GetGenericTypeDefinition().FullName ?? type.Name, type.GetGenericArguments().Select(GetHidingTypeName));
+
+        return type.FullName ?? type.Name;
     }
 
     private static ParameterDeclaration BuildParameterDeclaration(ParameterInfo parameter, bool isExtensionReceiver)
@@ -1402,6 +1573,11 @@ internal static class PublicApiModelBuilder
     private static (string Declaration, IReadOnlyList<string> Constraints) BuildTypeHeader(Type type, bool isUnionDeclaration)
     {
         var modifiers = new List<string> { GetTypeAccessibility(type) };
+        if (HidesInheritedMember(type))
+        {
+            modifiers.Add("new");
+        }
+
         var isClosedType = IsClosedType(type);
         if (type.IsAbstract && type.IsSealed)
         {

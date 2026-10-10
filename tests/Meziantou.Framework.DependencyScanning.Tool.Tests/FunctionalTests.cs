@@ -164,6 +164,25 @@ public sealed class FunctionalTests
     }
 
     [Fact]
+    public async Task Update_DockerImage_RegistryRedirectsToAnotherHost()
+    {
+        await using var tempDir = TemporaryDirectory.Create();
+
+        // registry.k8s.io answers the tags request with a redirection to a regional registry
+        await File.WriteAllTextAsync(tempDir.CreateEmptyFile("Dockerfile"), """
+            FROM registry.k8s.io/pause:3.1
+            """, XunitCancellationToken);
+
+        var console = new ConsoleHelper(_testOutputHelper);
+        var result = await Program.MainImpl(["update", "--directory", tempDir.FullPath, "--dependency-type", "DockerImage"], console.ConfigureConsole);
+        Assert.Equal(0, result);
+
+        var dependencies = await DependencyScanner.ScanDirectoryAsync(tempDir.FullPath, options: null, XunitCancellationToken);
+        var dockerDependency = Assert.Single(dependencies, dep => dep.Type is DependencyType.DockerImage);
+        Assert.NotEqual("3.1", dockerDependency.Version);
+    }
+
+    [Fact]
     public async Task FilterDependencyType_GitHubActions()
     {
         await using var tempDir = TemporaryDirectory.Create();

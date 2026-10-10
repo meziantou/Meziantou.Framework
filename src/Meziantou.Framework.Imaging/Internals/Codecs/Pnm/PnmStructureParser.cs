@@ -186,8 +186,9 @@ internal sealed class PnmStructureParser : ImageParser<ImageInfo>
                     // whatever the input is.
                     if (consumed >= buffer.Length)
                     {
+                        // The terminator is optional: the end of the input ends the raster as well
                         if (!isEndOfInput)
-                            return ParseStatus.NeedMoreData(1);
+                            return ParseStatus.NeedMoreDataOrEnd(1);
                     }
                     else if (PnmFormat.IsWhiteSpace(buffer[consumed]))
                     {
@@ -555,7 +556,8 @@ internal sealed class PnmStructureParser : ImageParser<ImageInfo>
                             break;
                         }
 
-                        return ParseStatus.NeedMoreData(1);
+                        // The end of the input ends a number, so it satisfies the request; anywhere else it is truncation
+                        return _plainInNumber && !isEndOfInput ? ParseStatus.NeedMoreDataOrEnd(1) : ParseStatus.NeedMoreData(1);
                     }
 
                     var value = buffer[consumed++];

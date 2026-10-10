@@ -3,6 +3,7 @@ using System.Text;
 using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.Internals;
 using Meziantou.Framework.Imaging.Metadata;
+using Meziantou.Framework.Imaging.TestHarness.Adapters;
 using Meziantou.Framework.Imaging.TestHarness.Pnm;
 using Meziantou.Framework.Imaging.TestHarness.Streams;
 
@@ -156,6 +157,30 @@ public sealed class PnmCodecTests
         Assert.Equal(1, info.FrameCount);
         Assert.False(info.IsAnimated);
         Assert.Equal([new(10, 10, 10), new(20, 20, 20)], Decode(data));
+    }
+
+    public static TheoryData<InputVariant> Variants => [.. InputVariants.All];
+
+    [Theory]
+    [MemberData(nameof(Variants))]
+    public async Task APlainRasterEndsAtTheEndOfTheInputWhateverTheInput(InputVariant variant)
+    {
+        // The last sample of a plain raster is ended by one white-space byte or by the end of the input: a stream only
+        // reports its end once it is read past, which must not cost more encoded bytes than the file holds
+        string[] files =
+        [
+            "P1\n2 1\n10", "P1\n2 1\n1 0", "P1\n2 1\n1 0\n",
+            "P2\n2 1\n255\n7 200", "P2\n2 1\n255\n7 200 ",
+            "P3\n1 1\n255\n1 2 3", "P3\n1 1\n255\n1 2 3\n",
+            "P2\n3 1\n65535\n0 1000 65535",
+        ];
+        foreach (var file in files)
+        {
+            await InputVariants.AssertEncodedByteLimitBoundaryAsync(variant, Bytes(file, []), ImageFormat.Pnm, XunitCancellationToken);
+        }
+
+        Assert.Equal([new(255, 255, 255), new(0, 0, 0)], Decode(Bytes("P1\n2 1\n01", [])));
+        Assert.Equal([new(7, 7, 7), new(200, 200, 200)], Decode(Bytes("P2\n2 1\n255\n7 200", [])));
     }
 
     [Fact]

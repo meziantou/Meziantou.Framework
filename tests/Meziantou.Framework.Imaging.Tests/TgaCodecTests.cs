@@ -3,6 +3,7 @@ using System.Diagnostics.CodeAnalysis;
 using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.Internals;
 using Meziantou.Framework.Imaging.Metadata;
+using Meziantou.Framework.Imaging.TestHarness.Adapters;
 using Meziantou.Framework.Imaging.TestHarness.Streams;
 using Meziantou.Framework.Imaging.TestHarness.Tga;
 
@@ -11,8 +12,9 @@ namespace Meziantou.Framework.Imaging.Tests;
 /// <summary>
 /// TGA decoding and encoding through the public APIs, on files assembled byte by byte with literal expected pixels:
 /// the supported image types and depths, both origin bits, BGR ordering, the descriptor alpha bits, color maps with a
-/// first-entry offset, run-length packets across scan lines and at the end of the image, the unread TGA 2.0 trailer,
-/// truncation, limits, bounded streaming memory, and the encoder's compression, precision and metadata policies.
+/// first-entry offset, run-length packets across scan lines and at the end of the image, the TGA 2.0 trailer (footer,
+/// extension area and its attributes type, developer area), truncation, limits, bounded streaming memory, and the
+/// encoder's compression, precision and metadata policies.
 /// </summary>
 public sealed class TgaCodecTests
 {
@@ -132,18 +134,164 @@ public sealed class TgaCodecTests
     }
 
     [Fact]
-    public void TheIdentificationFieldIsSkippedAndTheTrailerIsNotRead()
+    public void TheIdentificationFieldIsSkipped()
     {
         var data = Tga(2, 1, 24, 2, [3, 2, 1, 6, 5, 4], identification: "hello"u8.ToArray());
         Assert.Equal([new(1, 2, 3), new(4, 5, 6)], Decode(data));
+    }
 
-        // Bytes after the image data (a TGA 2.0 extension area and footer) are never read and change nothing
-        var trailer = new byte[495 + 26];
-        BinaryPrimitives.WriteUInt16LittleEndian(trailer, 495);
-        trailer[494] = 3; // attributes type
-        BinaryPrimitives.WriteUInt32LittleEndian(trailer.AsSpan(495), (uint)data.Length);
-        FooterSignature.CopyTo(trailer, 495 + 8);
-        Assert.Equal([new(1, 2, 3), new(4, 5, 6)], Decode([.. data, .. trailer]));
+    [Fact]
+    public void TheTrailerIsReadAndTheImageDescriptorStaysAuthoritative()
+    {
+        var opaque = Tga(2, 1, 24, 2, [3, 2, 1, 6, 5, 4], identification: "hello"u8.ToArray());
+        Rgba32[] opaquePixels = [new(1, 2, 3), new(4, 5, 6)];
+        var alpha = Tga(2, 1, 32, 2, [0x30, 0x20, 0x10, 0x40, 0x33, 0x22, 0x11, 0x00], descriptor: 0x08);
+        Rgba32[] alphaPixels = [new(0x10, 0x20, 0x30, 0x40), new(0x11, 0x22, 0x33, 0x00)];
+
+        // A footer without an extension area, and a developer area nothing but the footer points at
+        Assert.Equal(opaquePixels, Decode([.. opaque, .. Trailer(opaque.Length)]));
+        Assert.Equal(alphaPixels, Decode([.. alpha, .. Trailer(alpha.Length, developerAreaLength: 40)]));
+
+        // The attributes type says whether the alpha data is meaningful (0: none, 1 and 2: undefined, 3: useful); the
+        // representation was fixed by the image descriptor before the first pixel, so no value changes the pixels, and
+        // the reserved and unassigned values do not either
+        foreach (var attributesType in new[] { 0, 1, 2, 3, 5, 127, 128, 255 })
+        {
+            Assert.Equal(alphaPixels, Decode([.. alpha, .. Trailer(alpha.Length, attributesType)]));
+            Assert.Equal(opaquePixels, Decode([.. opaque, .. Trailer(opaque.Length, attributesType)]));
+        }
+
+        // The extension area is where the footer says, not where the image data ends
+        Assert.Equal(alphaPixels, Decode([.. alpha, .. Trailer(alpha.Length, attributesType: 3, developerAreaLength: 40)]));
+        Assert.Equal(alphaPixels, Decode([.. alpha, .. Trailer(alpha.Length, attributesType: 3, developerAreaLength: 40_000)]));
+
+        // A future, longer extension area keeps the attributes type at the same offset
+        Assert.Equal(alphaPixels, Decode([.. alpha, .. Trailer(alpha.Length, attributesType: 3, extensionSize: 600)]));
+
+        // Without the signature in the last 18 bytes there is no footer: a TGA 1.0 file, whose trailing bytes mean nothing
+        var notAFooter = Trailer(alpha.Length, attributesType: 4);
+        notAFooter[^1] = (byte)'!';
+        Assert.Equal(alphaPixels, Decode([.. alpha, .. notAFooter]));
+        Assert.Equal(alphaPixels, Decode([.. alpha, .. Trailer(alpha.Length, attributesType: 4), 0]));
+        for (var length = 1; length < 26; length++)
+        {
+            Assert.Equal(alphaPixels, Decode([.. alpha, .. FooterSignature.AsSpan(0, Math.Min(length, FooterSignature.Length)), .. new byte[Math.Max(0, length - FooterSignature.Length)]]));
+        }
+    }
+
+    [Fact]
+    public void PremultipliedAlphaIsRejectedOnceTheTrailerIsRead()
+    {
+        // 32-bit pixels, a 16-bit pixel with its alpha bit, and a color map with 32-bit entries
+        byte[][] withAlpha =
+        [
+            Tga(2, 1, 32, 2, [0x30, 0x20, 0x10, 0x40, 0x33, 0x22, 0x11, 0x00], descriptor: 0x08),
+            Tga(1, 1, 16, 2, [0xFF, 0xFF], descriptor: 0x01),
+            Tga(1, 1, 8, 1, [0], descriptor: 0x08, colorMap: (0, 1, 32), colorMapData: [1, 2, 3, 4]),
+        ];
+        foreach (var image in withAlpha)
+        {
+            byte[] data = [.. image, .. Trailer(image.Length, attributesType: 4, developerAreaLength: 7)];
+            var exception = Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(data));
+            Assert.Equal(ImageFormat.Tga, exception.Format);
+            Assert.Equal("Attributes type: premultiplied alpha", exception.Feature);
+            Assert.Equal(exception.Feature, Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(data, new ImageIdentifyOptions { Mode = ImageIdentifyMode.FullScan })).Feature);
+
+            // The header alone cannot tell: the trailer is the last thing in the file
+            Assert.True(Image.Identify(data).MayHaveTransparency);
+
+            // A reader reports the header, then fails instead of returning the frame
+            using var stream = new MemoryStream(data);
+            using var reader = Image.OpenReader<Rgba32>(stream);
+            Assert.Equal(ImageFormat.Tga, reader.Info.Format);
+            Assert.Equal(exception.Feature, Assert.Throws<UnsupportedImageFeatureException>(() => reader.ReadFrame()?.Dispose()).Feature);
+        }
+
+        // Without an alpha channel nothing is premultiplied: the fourth byte of a 32-bit pixel is not decoded at all
+        var opaque = Tga(2, 1, 24, 2, [3, 2, 1, 6, 5, 4]);
+        Assert.Equal([new(1, 2, 3), new(4, 5, 6)], Decode([.. opaque, .. Trailer(opaque.Length, attributesType: 4)]));
+        var undeclared = Tga(2, 1, 32, 2, [0x30, 0x20, 0x10, 0x40, 0x33, 0x22, 0x11, 0x00]);
+        Assert.Equal([new(0x10, 0x20, 0x30), new(0x11, 0x22, 0x33)], Decode([.. undeclared, .. Trailer(undeclared.Length, attributesType: 4)]));
+    }
+
+    [Fact]
+    public void AFooterThatMislocatesTheExtensionAreaIsMalformed()
+    {
+        var image = Tga(2, 1, 32, 2, [0x30, 0x20, 0x10, 0x40, 0x33, 0x22, 0x11, 0x00], descriptor: 0x08);
+        var end = image.Length;
+        var footer = end + 495;
+
+        // Inside the header or the image data, overlapping the footer, at the footer, and past the end of the file
+        foreach (var offset in new long[] { 1, 18, end - 1, end + 1, footer, footer + 26, uint.MaxValue })
+        {
+            var exception = Assert.Throws<InvalidImageContentException>(() => Image.Load([.. image, .. Trailer(end, attributesType: 3, extensionOffset: offset)]));
+            Assert.Equal(ImageFormat.Tga, exception.Format);
+            Assert.Throws<InvalidImageContentException>(() => Image.Identify([.. image, .. Trailer(end, attributesType: 3, extensionOffset: offset)], new ImageIdentifyOptions { Mode = ImageIdentifyMode.FullScan }));
+        }
+
+        // An extension area too short to hold an attributes type
+        foreach (var size in new[] { 0, 494 })
+        {
+            Assert.Throws<InvalidImageContentException>(() => Image.Load([.. image, .. Trailer(end, attributesType: 3, extensionSize: size)]));
+        }
+
+        // A malformed trailer is reported before the attributes type it does not locate
+        Assert.Throws<InvalidImageContentException>(() => Image.Load([.. image, .. Trailer(end, attributesType: 4, extensionSize: 494)]));
+    }
+
+    public static TheoryData<InputVariant> Variants => [.. InputVariants.All];
+
+    [Theory]
+    [MemberData(nameof(Variants))]
+    public async Task TheTrailerIsReadTheSameWayFromEveryInput(InputVariant variant)
+    {
+        // The footer is found from the end of the input, which a stream only reports once it is read past: that must cost
+        // neither more encoded bytes than the file holds nor a different failure than from a span
+        var image = Tga(2, 1, 32, 10, [0x81, 0x30, 0x20, 0x10, 0x40], descriptor: 0x08);
+        var end = image.Length;
+        byte[][] files =
+        [
+            image,
+            [.. image, 1, 2, 3],
+            [.. image, .. Trailer(end)],
+            [.. image, .. Trailer(end, attributesType: 3)],
+            [.. image, .. Trailer(end, attributesType: 3, developerAreaLength: 40_000)],
+            [.. image, .. Trailer(end, attributesType: 4)],
+            [.. image, .. Trailer(end, attributesType: 3, extensionOffset: 1)],
+        ];
+        foreach (var file in files)
+        {
+            await InputVariants.AssertEncodedByteLimitBoundaryAsync(variant, file, ImageFormat.Tga, XunitCancellationToken);
+
+            // A limit before the end of the image data, at it, and inside the trailer
+            foreach (var limit in new[] { end - 1, end, end + 1, end + ((file.Length - end) / 2) })
+            {
+                var configuration = new ImageConfiguration { Limits = new ImageResourceLimits { MaxEncodedBytes = limit } };
+                var expected = await InputVariants.DescribeOutcomeAsync(InputVariant.Span, file, ImageFormat.Tga, configuration, XunitCancellationToken);
+                Assert.Equal(expected, await InputVariants.DescribeOutcomeAsync(variant, file, ImageFormat.Tga, configuration, XunitCancellationToken));
+                if (limit < file.Length)
+                {
+                    Assert.Contains(string.Create(CultureInfo.InvariantCulture, $"load: ImageResourceLimitException(EncodedBytes, limit {limit}, requested {limit + 1})"), expected);
+                }
+            }
+        }
+    }
+
+    [Fact]
+    public async Task TheTrailerIsTheOnlyPartOfTheFileThatIsBuffered()
+    {
+        using var source = CreateImage(512, 256, seed: 4);
+        var image = Save(source, new TgaEncoder { Compression = TgaCompression.RunLength });
+        var end = image.Length - 26;
+        byte[] data = [.. image.AsSpan(0, end), .. Trailer(end, attributesType: 3, developerAreaLength: 100_000)];
+        await using var stream = new TestInputStream(data) { Seekable = false, MaxBytesPerRead = 1024 };
+        using var loaded = await Image.LoadAsync<Rgba32>(stream, cancellationToken: XunitCancellationToken);
+        Assert.Equal(data.Length, stream.BytesRead);
+        var scope = loaded.Owner.Scope;
+        Assert.Equal(0, scope.GetLiveBytes(AllocationKind.DecoderState));
+        var state = scope.GetDiagnostics().PeakLiveBytes - scope.GetLiveBytes(AllocationKind.ImagePixels);
+        Assert.True(state >= 100_000 + 495 + 26, $"Peak decoder state and input buffer {state} bytes for a {data.Length - end}-byte trailer.");
+        Assert.True(state < 3 * (data.Length - end), $"Peak decoder state and input buffer {state} bytes for a {data.Length - end}-byte trailer of a {data.Length}-byte input.");
     }
 
     [Fact]
@@ -300,6 +448,33 @@ public sealed class TgaCodecTests
         }
 
         return Image.ImportPixelData<Rgba32>(pixels, width, height);
+    }
+
+    /// <summary>
+    /// Assembles the bytes that follow the image data of a TGA 2.0 file: an optional developer area (a directory without
+    /// tags and filler), an optional 495-byte extension area, and the 26-byte footer that locates them.
+    /// </summary>
+    /// <param name="imageDataEnd">The offset of the first byte after the image data.</param>
+    /// <param name="attributesType">The attributes type of the extension area, or <see langword="null"/> for no extension area.</param>
+    /// <param name="developerAreaLength">The length of the developer area, stored before the extension area.</param>
+    /// <param name="extensionSize">The size the extension area declares.</param>
+    /// <param name="extensionOffset">The extension offset of the footer, or <see langword="null"/> for the actual one.</param>
+    private static byte[] Trailer(int imageDataEnd, int? attributesType = null, int developerAreaLength = 0, int extensionSize = 495, long? extensionOffset = null)
+    {
+        var developerArea = new byte[developerAreaLength];
+        developerArea.AsSpan(Math.Min(2, developerAreaLength)).Fill(0xD0);
+        var extensionArea = new byte[attributesType is null ? 0 : 495];
+        if (attributesType is { } type)
+        {
+            BinaryPrimitives.WriteUInt16LittleEndian(extensionArea, (ushort)extensionSize);
+            extensionArea[494] = (byte)type;
+        }
+
+        var footer = new byte[26];
+        BinaryPrimitives.WriteUInt32LittleEndian(footer, (uint)(extensionOffset ?? (attributesType is null ? 0 : imageDataEnd + developerAreaLength)));
+        BinaryPrimitives.WriteUInt32LittleEndian(footer.AsSpan(4), developerAreaLength == 0 ? 0u : (uint)imageDataEnd);
+        FooterSignature.CopyTo(footer, 8);
+        return [.. developerArea, .. extensionArea, .. footer];
     }
 
     /// <summary>Assembles a TGA file; <paramref name="body"/> is the stored pixel data or packet stream.</summary>

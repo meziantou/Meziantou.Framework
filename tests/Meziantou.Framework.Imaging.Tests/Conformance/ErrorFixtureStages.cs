@@ -150,6 +150,9 @@ internal static class ErrorFixtureStages
         "invalid/tga/packet-past-end",
         "invalid/tga/truncated-packet",
         "invalid/tga/truncated-pixels",
+        "invalid/tga/extension-premultiplied-alpha",
+        "invalid/tga/extension-offset-past-footer",
+        "invalid/tga/extension-size-too-small",
         "limit/tga/encoded-bytes-over-limit",
 
         // PNM: the raster; the plain reader parses every sample (and validates it against MAXVAL) to find the end of the image

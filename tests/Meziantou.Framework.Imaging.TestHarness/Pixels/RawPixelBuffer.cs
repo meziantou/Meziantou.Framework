@@ -258,6 +258,44 @@ public sealed class RawPixelBuffer
         return Transform(width, height, (dx, dy) => (x + dx, y + dy));
     }
 
+    /// <summary>
+    /// Returns a copy of a rectangle that may reach outside this buffer: the pixels of the rectangle inside the buffer are
+    /// copied, the others get <paramref name="fill"/>.
+    /// </summary>
+    /// <param name="x">The left column of the rectangle (may be negative).</param>
+    /// <param name="y">The top row of the rectangle (may be negative).</param>
+    /// <param name="width">The width of the rectangle.</param>
+    /// <param name="height">The height of the rectangle.</param>
+    /// <param name="fill">The samples of the pixels outside this buffer, one per channel of the layout.</param>
+    /// <returns>The extended copy.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">The rectangle is empty.</exception>
+    /// <exception cref="ArgumentException"><paramref name="fill"/> does not have one sample per channel.</exception>
+    public RawPixelBuffer Extend(int x, int y, int width, int height, ReadOnlySpan<int> fill)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(width);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(height);
+        var channels = Layout.ChannelCount;
+        if (fill.Length != channels)
+            throw new ArgumentException($"The fill must have {channels} samples.", nameof(fill));
+
+        var result = new byte[Layout.GetByteLength(width, height)];
+        for (var dy = 0; dy < height; dy++)
+        {
+            for (var dx = 0; dx < width; dx++)
+            {
+                var sx = (long)x + dx;
+                var sy = (long)y + dy;
+                var inside = sx >= 0 && sx < Width && sy >= 0 && sy < Height;
+                for (var c = 0; c < channels; c++)
+                {
+                    SetSampleAt(result, Layout, (((dy * width) + dx) * channels) + c, inside ? GetSample((int)sx, (int)sy, c) : fill[c]);
+                }
+            }
+        }
+
+        return new RawPixelBuffer(width, height, Layout, result);
+    }
+
     internal int GetSampleAt(int sampleIndex)
         => Layout.BytesPerSample == 1 ? _data[sampleIndex] : BinaryPrimitives.ReadUInt16LittleEndian(_data.AsSpan(sampleIndex * 2));
 

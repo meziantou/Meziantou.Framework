@@ -151,6 +151,16 @@ public abstract class ImageFrame
     /// <summary>Convolves the leased pixels in place with the kernel of the frame pixel type.</summary>
     internal abstract void ConvolvePixels(scoped in PixelLease lease, ConvolutionPlan plan, CancellationToken cancellationToken);
 
+    /// <summary>Runs the current pass of an auto-crop analysis over the leased pixels, which are only read.</summary>
+    internal abstract void AutoCropAnalyzePixels(scoped in PixelLease lease, AutoCropAnalyzer analyzer, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Writes the rectangle of the leased source located at <paramref name="origin"/> to the leased destination, filling
+    /// what lies outside the source with <paramref name="fill"/> (geometry transactions). The color must be exactly
+    /// representable in the frame pixel format.
+    /// </summary>
+    internal abstract void ExtendPixels(scoped in PixelLease source, scoped in PixelLease destination, Point origin, Rgba64 fill, CancellationToken cancellationToken);
+
     /// <summary>Replaces the storage after a committed geometry transaction; the frame keeps its identity.</summary>
     /// <param name="storage">The replacement storage, owned by the same image.</param>
     internal void ReplaceStorage(PixelStorage storage) => _storage = storage;

@@ -304,6 +304,26 @@ internal static class SmokeTests
         Check(image.Width == 8 && image.Height == 8 && image.Frames.Count == 2, "processing geometry");
         using var clone = image.CloneAs<Rgba64>();
         Check(clone.Frames.Count == 2, "CloneAs");
+
+        // A 4x3 block at (5, 2) of a white 12x10 canvas, right of and above the center
+        using var bordered = new Image<Rgba32>(12, 10, new Rgba32(255, 255, 255));
+        for (var y = 2; y < 5; y++)
+        {
+            for (var x = 5; x < 9; x++)
+            {
+                bordered.Frames[0][x, y] = new Rgba32(10, 20, 30);
+            }
+        }
+
+        var analysis = bordered.AnalyzeAutoCrop(new AutoCropOptions { AnalyzeWeights = true });
+        Check(analysis.Success && analysis.Bounds == new Rectangle(5, 2, 4, 3) && analysis.WeightX > 0 && analysis.WeightY < 0, "auto-crop analysis");
+        Check(analysis.BackgroundColor == new Rgba32(255, 255, 255) && ((Image)bordered).AnalyzeAutoCrop().BackgroundColor == new Rgba64(65535, 65535, 65535), "auto-crop background");
+        using var known = bordered.Clone();
+        Check(known.AutoCrop(analysis, new AutoCropOptions { PaddingMode = AutoCropPaddingMode.Contain }) && known.Size == new Size(4, 3), "auto-crop with a known analysis");
+
+        // (5 - 6, 2 - 1, 4 + 12, 3 + 2): the canvas is enlarged on the left and on the right
+        Check(bordered.AutoCrop(new AutoCropOptions { PaddingX = 6, PaddingY = 1 }) && bordered.Size == new Size(16, 5), "auto-crop");
+        Check(bordered.Frames[0][0, 0] == new Rgba32(255, 255, 255) && bordered.Frames[0][6, 1] == new Rgba32(10, 20, 30), "auto-crop pixels");
     }
 
     public static void Streaming()

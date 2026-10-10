@@ -58,17 +58,7 @@ public sealed class ResourceLimitBoundaryTests
         if (full)
         {
             AssertExactBoundary(context, data, ImageResourceLimitKind.Frames, displayed + poster);
-            if (FixtureTraits.HasUnreadTrailingBytes(fixture))
-            {
-                // The decoder stops at the end of the image data; the bytes of the TGA 2.0 trailer are never read, so the
-                // requirement is the measured prefix, not the file length
-                var consumed = Measure(context, data, ImageResourceLimitKind.EncodedBytes, data.Length);
-                Assert.True(consumed < data.Length, $"{context}: the input has unread trailing bytes but {consumed} of {data.Length} bytes were required.");
-            }
-            else
-            {
-                AssertExactBoundary(context, data, ImageResourceLimitKind.EncodedBytes, data.Length);
-            }
+            AssertExactBoundary(context, data, ImageResourceLimitKind.EncodedBytes, data.Length);
         }
         else
         {

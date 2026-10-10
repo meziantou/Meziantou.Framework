@@ -13,8 +13,8 @@ cursor (ANI) decoding and encoding, animation-aware processing, and bounded-memo
 - Animation-aware model: every frame is a full-canvas displayed image with exact rational timing and, for cursors, a
   hotspot that follows its pixel through geometry operations
 - Six working pixel formats (`Rgba32`, `Bgra32`, `Rgb24`, `Rgba64`, `Gray8`, `Gray16`) with 16-bit precision preserved
-- Crop, resize (alpha-aware, Contain/Cover/Stretch), rotate, auto-orient, flip, grayscale and convolution matrices
-  (sharpen, blur, edge detection) applied to all frames
+- Crop, auto-crop (background detection), resize (alpha-aware, Contain/Cover/Stretch), rotate, auto-orient, flip,
+  grayscale and convolution matrices (sharpen, blur, edge detection) applied to all frames
 - Bounded-memory sequential readers and writers for long animations
 - Explicit policies for alpha, precision, metadata and color-profile losses; configurable resource limits
 
@@ -95,7 +95,8 @@ frame.Save("first.jpg", new JpegEncoder { Quality = 85, BackgroundColor = new Rg
 - **Precision and alpha.** Six working pixel formats (`Rgba32`, `Bgra32`, `Rgb24`, `Rgba64`, `Gray8`, `Gray16`), 16-bit
   precision preserved, straight alpha, alpha-aware resampling, and no silent alpha/precision/metadata/animation loss.
 - **Exact timing.** Rational `FrameDuration` preserves GIF, APNG, WebP and ANI delays exactly; `TotalPlays` counts total plays.
-- **Atomic geometry.** Crop, resize, rotate and auto-orient apply to every frame (and the poster) transactionally.
+- **Atomic geometry.** Crop, auto-crop, resize, rotate and auto-orient apply to every frame (and the poster)
+  transactionally.
 - **Bounded streaming.** Sequential readers and writers process long animations with memory bounded by one frame.
 - **Safety.** Configurable resource limits, distinct exceptions for malformed data, unsupported features, limits,
   cancellation and I/O failures, and atomic file publication.
@@ -401,8 +402,8 @@ split into row bands, with results identical to the sequential ones.
 
 
 
-- **Geometry is atomic.** `Crop`, `Resize`, `Rotate` and `AutoOrient` apply to every frame and the poster in one
-  transaction: replacements are allocated (and charged) while the originals are live, and any failure before the commit
+- **Geometry is atomic.** `Crop`, `AutoCrop`, `Resize`, `Rotate` and `AutoOrient` apply to every frame and the poster in
+  one transaction: replacements are allocated (and charged) while the originals are live, and any failure before the commit
   (limit, allocation failure, cancellation) leaves dimensions, pixels, frame identities and order, cursor hotspots and
   metadata unchanged.
 - **Pixel mutations may be partial.** `Flip`, `Grayscale`, `Convolve`, row callbacks and `ReadFrameInto` write in place: a
@@ -470,18 +471,71 @@ public static void ExportFrameAsJpeg(string animatedPath, int frameIndex, string
 ### Processing
 
 In-place extension methods (`ImageProcessingExtensions`), applied to every frame and the poster:
-`Crop` (an in-canvas rectangle, never clamped), `Resize`, `Rotate` (exact 90/180/270 permutations), `Flip`, `AutoOrient`
-(all eight EXIF orientations), `Grayscale` (Rec. 709 at storage precision, ties upward; keeps the storage format and
+`Crop` (an in-canvas rectangle, never clamped), `AutoCrop` (the detected content), `Resize`, `Rotate` (exact 90/180/270
+permutations), `Flip`, `AutoOrient` (all eight EXIF orientations), `Grayscale` (Rec. 709 at storage precision, ties upward; keeps the storage format and
 alpha, and rejects incompatible ICC profiles; use `CloneAs<Gray8>` to change the storage) and `Convolve` (a convolution
 matrix). `Flip`, `Grayscale` and `Convolve` also exist for one frame. Geometry changes preserve 16-bit precision and alpha, and reconcile the EXIF dimensions,
 orientation and thumbnail.
 
 **Cursor hotspots**. A hotspot (`Frames[i].Metadata.Hotspot`) follows the pixel it designates:
-`Crop` translates it, `Rotate`, `Flip` and `AutoOrient` permute it exactly, and `Resize` moves it to
+`Crop` and `AutoCrop` translate it, `Rotate`, `Flip` and `AutoOrient` permute it exactly, and `Resize` moves it to
 `floor(x * newWidth / width)` (and likewise vertically, through the kept region for `Cover`), which is how Windows
-scales a cursor: a hotspot in the top-left corner stays there. When that pixel is not part of the result (a crop or a
-`Cover` resize that removes it), the operation throws `UnsupportedImageFeatureException` and leaves the image unchanged;
+scales a cursor: a hotspot in the top-left corner stays there. When that pixel is not part of the result (a crop, an auto-crop or
+a `Cover` resize that removes it), the operation throws `UnsupportedImageFeatureException` and leaves the image unchanged;
 set the hotspot to `null` or to a pixel that is kept first. Pixel-only operations keep it.
+
+**Auto-cropping**. `AutoCrop` removes the uniform background around the content of an image, such as the margin of a
+product picture or of a scan, and returns whether the image changed. `AnalyzeAutoCrop` does the detection alone: it
+returns an `AutoCropAnalysis` (`Success`, `Bounds`, `BackgroundColor`, `WeightX`, `WeightY`) and never changes the image.
+On an `Image<TPixel>` the result is an `AutoCropAnalysis<TPixel>`, whose `BackgroundColor` is a `TPixel` as stored in the
+image; on an untyped `Image`, `BackgroundColor` is the same color widened to `Rgba64`. An analysis can be applied later,
+or to another image of the same size, with `AutoCrop(analysis, options)`.
+
+- **Background.** The most frequent color of the one-pixel outer border, over every frame and the poster. The border is
+  accepted when it has fewer than `ColorThreshold` (default 35) distinct colors, or, for noisy and JPEG backgrounds, when
+  at least `BucketThreshold` (unset by default; 0.945 is a good start) of its pixels fall in the same of 11 luma buckets
+  as the background. Otherwise the detection is retried once with half the threshold, without the outer 5% of the image
+  on each side.
+- **Content.** The bounding box of the pixels that are not background, over every frame and the poster, so that an
+  animation is cropped consistently. A pixel is background when its luma-weighted color difference from the background
+  (`0.2126 |dR| + 0.7152 |dG| + 0.0722 |dB|`) is at most `ColorThreshold` and its alpha difference is below it. Thresholds
+  are on the 8-bit scale and comparisons are made at the storage precision. Fully transparent pixels are all equal,
+  whatever their hidden color. The box must be at least 3x3 pixels.
+- **Padding.** `PaddingX` and `PaddingY` keep a margin, in pixels, made of the original pixels. Where the margin reaches
+  outside the canvas, `AutoCropPaddingMode.Expand` (default) enlarges the canvas and fills the new area with the
+  background color, and `Contain` clamps the margin to the canvas.
+- **Weights.** `AnalyzeWeights` also measures on which side of the canvas the content is heavier (from -1 to 1 on each
+  axis) and moves the padded rectangle that way by `padding * weight` pixels.
+
+When no border or no content is found (a uniform image, for instance), `AutoCrop` returns `false` and leaves the image
+untouched. It works in stored-pixel coordinates: call `AutoOrient` first. The options follow those of
+[ImageSharp.Processing.AutoCrop](https://github.com/Geta/ImageSharp.Processing.AutoCrop), with these differences: the
+padding is in pixels instead of percents, the color difference uses the Rec. 709 weights of the library, the six pixel
+formats and every frame are analyzed, the retry removes the 5% on all four sides, `ColorThreshold` is always set, and a
+uniform image reports the whole canvas as its box.
+
+<!-- snippet: auto-crop -->
+```csharp
+public static bool TrimBackground(string inputPath, string outputPath)
+{
+    using var image = Image.Load(inputPath);
+
+    // The detection works on the stored pixels: apply the EXIF orientation first
+    image.AutoOrient();
+
+    // Read-only: the background color and the bounding box of everything else, in every frame
+    var options = new AutoCropOptions { PaddingX = 8, PaddingY = 8, BucketThreshold = 0.945 };
+    var analysis = image.AnalyzeAutoCrop(options);
+    if (!analysis.Success)
+        return false; // no uniform border, or no content of at least 3x3 pixels
+
+    // Keeps 8 pixels around the content. Where the canvas is too small for the margin, it is enlarged and filled with
+    // the background color (AutoCropPaddingMode.Contain clamps the margin instead)
+    var changed = image.AutoCrop(analysis, options);
+    image.Save(outputPath);
+    return changed;
+}
+```
 
 **Resizing**. `ResizeOptions` sets the target box and `Mode`: `Contain` (default: fit inside,
 never padded), `Cover` (fill exactly, cropped around `Anchor`, one of nine positions) or `Stretch`;
@@ -632,6 +686,12 @@ encoded bytes, metadata bytes, live allocations) are safety bounds: exceeding on
 (`Kind`, `Limit`, `Requested`) and is never turned into a successful truncation. `FrameLimit` (decode and reader options)
 is deliberate prefix selection: decoding stops after that many displayed frames and the rest of the input is neither
 examined nor validated. Limits are inclusive and enforced before allocating or consuming.
+
+`MaxEncodedBytes` equal to the length of the input is always enough, and a smaller value fails the same way from a span,
+a path or a stream. A stream only reports its end by returning no byte, so when the format needs the end of the input (the
+TGA trailer, the last sample of a plain Netpbm raster, a TIFF, an icon or an animated cursor buffered whole, an input shorter than the detection
+prefix) and every byte the limit allows was read, one more byte is read and discarded to tell an input that ends there from
+a longer one. It is the only byte ever read past the limit, and it is never decoded.
 
 TIFF, ICO, CUR and ANI are random-access containers: on a seekable source, only the bytes their structure points at are read
 (the stream position afterward is unspecified), and a non-seekable or asynchronous load buffers the input, bounded by
@@ -982,10 +1042,20 @@ public static void SaveAssetFormats(string inputPath, string bmpPath, string tga
 ### TGA
 
 TGA has no signature, so it is recognized from a strictly plausible 18-byte header
-and checked last; give `DetectFormat` 18 bytes (`Image.FormatDetectionPrefixLength`). The TGA 2.0 developer area,
-extension area and footer are located by offsets stored at the end of the file, which a forward-only decoder cannot
-follow: they are not read, so a TGA with a trailer leaves its trailing bytes unread, and a prefix that holds the whole
-raster is a valid TGA 1.0 file with the same pixels (truncation is only detected before the end of the image data).
+and checked last; give `DetectFormat` 18 bytes (`Image.FormatDetectionPrefixLength`).
+
+The TGA 2.0 footer is the last 26 bytes of the file and locates the extension area, so a TGA is read to the end of its
+input: a stream is consumed to its end (nothing can follow a TGA on the same stream), and the bytes after the image data
+are buffered until then, bounded by `MaxEncodedBytes` and `MaxLiveAllocationBytes`. When the file ends with a footer, the
+extension area it locates must lie between the image data and the footer and hold its 495 bytes
+(`InvalidImageContentException` otherwise), and its attributes type is read: premultiplied alpha (type 4) for an image
+with declared alpha bits is `UnsupportedImageFeatureException`, because pixels are stored with straight alpha and are never
+divided by it. No other attributes type changes anything: the image descriptor alone decides the alpha channel, before
+the first pixel is read. The developer area is application data and is not interpreted. `Identify` in `Header` mode stops
+after the header and never sees the trailer.
+
+A file without a footer is a TGA 1.0 file, whose trailing bytes mean nothing. A file cut anywhere after its image data
+is therefore a valid TGA 1.0 file with the same pixels: truncation is only detected before the end of the image data.
 
 | Feature | Decoding | Encoding |
 | --- | --- | --- |
@@ -994,8 +1064,8 @@ raster is a valid TGA 1.0 file with the same pixels (truncation is only detected
 | Color map | The first-entry offset is honored; an index outside the stored map is `InvalidImageContentException` | Never written |
 | Run-length packets | Packets of 1 to 128 pixels, crossing scan lines accepted; a packet past the last pixel is `InvalidImageContentException` | `TgaCompression.RunLength`: runs of two or more identical neighbours, never crossing a scan line |
 | Orientation | Both origin bits are resolved to the displayed image | Origin at the bottom left |
-| Alpha | The descriptor's alpha-bit count is authoritative: a 32-bit payload with 0 alpha bits has an unspecified fourth byte, which is discarded | 8 declared alpha bits for pixel formats with alpha |
-| Identification field, TGA 2.0 trailer | Skipped / not read | No identification field, a TGA 2.0 footer with zero offsets; at most 65,535 pixels per side, no metadata |
+| Alpha | The descriptor's alpha-bit count is authoritative: a 32-bit payload with 0 alpha bits has an unspecified fourth byte, which is discarded; premultiplied alpha (attributes type 4 of the extension area) is rejected | 8 declared alpha bits for pixel formats with alpha, straight alpha, no extension area |
+| Identification field, TGA 2.0 trailer | Skipped / the footer and the extension area are validated, the developer area is not interpreted | No identification field, a TGA 2.0 footer with zero offsets; at most 65,535 pixels per side, no metadata |
 
 ### Netpbm: PBM, PGM, PPM and PAM
 
@@ -1087,7 +1157,7 @@ Everything below is rejected explicitly (never decoded or encoded approximately)
 | WebP encoding | 8-bit RGB(A) only (gray written as RGB, 16-bit after explicit reduction); lossy output is 4:2:0 and not pixel-exact; animations are full-canvas frames (no delta rectangles or blending) and need a seekable destination (no spooling to non-seekable streams); at most 16,383 (lossy) or 16,384 (lossless) pixels per side, 16,777,215 ms per frame, 65,535 plays and 4 GiB per file |
 | QOI | 8-bit RGB(A) only (gray written as RGB, 16-bit after explicit reduction); one still image; no metadata; the colorspace field is a label (no linear-to-sRGB conversion exists) |
 | BMP | Decoding: no RLE4/RLE8, no embedded JPEG/PNG payloads, no OS/2 headers, no 2-bit depth, no channel wider than 8 bits, no embedded ICC profile. Encoding: uncompressed 24-bit or 32-bit, bottom-up, one still image; no indexed, 16-bit or top-down output; resolution is the only metadata; the file must fit the 32-bit `bfSize` field |
-| TGA | Decoding: no 16-bit color-map indexes or 16-bit grayscale; the developer area, extension area and footer are not read (a forward-only decoder cannot follow offsets stored at the end of the file), so the attributes type never changes the decoded representation and trailing bytes are left unread; truncation is only detected before the end of the image data. Encoding: true-color and grayscale only, bottom-up, one still image, at most 65,535 pixels per side; no color map, no 15/16-bit output, no metadata |
+| TGA | Decoding: no 16-bit color-map indexes or 16-bit grayscale; premultiplied alpha (attributes type 4) is rejected and no other attributes type changes the decoded representation (an alpha channel the extension area calls absent or undefined is still decoded when the image descriptor declares it); the other fields of the extension area and the developer area are not interpreted; the input is read to its end and the bytes after the image data are buffered; truncation is only detected before the end of the image data. Encoding: true-color and grayscale only, bottom-up, one still image, at most 65,535 pixels per side; no color map, no 15/16-bit output, no metadata |
 | Netpbm | Decoding: only the first image of a concatenation is read; tuple types other than the standard grayscale, RGB and alpha forms are rejected; the header is bounded at 65,536 bytes; truncation of a plain raster is not detectable. Encoding: `P2`/`P3`/`P5`/`P6`/`P7` only (the variant follows the pixel format, not the extension), one image, no metadata; plain output has no alpha (PAM has no plain form) |
 | TIFF | Decoding: LZW, PackBits, CCITT fax and JPEG compression, palette, CMYK, YCbCr and L\*a\*b\* photometric interpretations, planar storage, reversed fill order, the floating-point predictor, signed and floating-point samples, sample widths other than 8 and 16 bits, more than one extra sample, and associated (premultiplied) or unspecified extra samples are all rejected with `UnsupportedImageFeatureException`. No EXIF block, no sub-IFD, no unknown-tag round trip. Encoding: one page per `Image.Save` (use `ImageCollection.Save`), strips only, no predictor, no tiles, a seekable destination required |
 | ICO/CUR | Decoding: a top-down DIB payload, a DIB whose stored height is not doubled, an animated PNG payload, a representation larger than 256 pixels per side and the DIB variants the BMP decoder rejects (RLE, embedded codecs, OS/2 headers) are rejected. Encoding: 32-bit DIB or still PNG payloads only (16-bit pixels need a PNG payload: `IconPayloadFormat.Dib` is rejected for them), at most 256 pixels per side, no metadata; an icon cannot store a hotspot |

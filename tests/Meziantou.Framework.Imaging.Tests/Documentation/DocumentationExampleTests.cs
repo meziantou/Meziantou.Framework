@@ -70,6 +70,53 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void TrimBackgroundCropsToTheContentAndKeepsTheMargin()
+    {
+        // A 40x30 white image with a 10x6 red block at (2, 12)
+        var white = new Rgba32(255, 255, 255);
+        var input = GetPath("bordered.png");
+        using (var source = new Image<Rgba32>(40, 30, white))
+        {
+            for (var y = 12; y < 18; y++)
+            {
+                for (var x = 2; x < 12; x++)
+                {
+                    source.Frames[0][x, y] = Red;
+                }
+            }
+
+            source.Save(input);
+        }
+
+        var output = GetPath("trimmed.png");
+        Assert.True(Examples.TrimBackground(input, output));
+
+        // 8 pixels on each side of the block: (2 - 8, 12 - 8, 10 + 16, 6 + 16). The 6 columns left of the original canvas
+        // are new and get the background color
+        using var trimmed = Image.Load<Rgba32>(output);
+        Assert.Equal(new Size(26, 22), trimmed.Size);
+        Assert.Equal(Red, trimmed.Frames[0][8, 8]);
+        Assert.Equal(Red, trimmed.Frames[0][17, 13]);
+        Assert.Equal(white, trimmed.Frames[0][7, 8]);
+        Assert.Equal(white, trimmed.Frames[0][18, 13]);
+        Assert.Equal(white, trimmed.Frames[0][8, 7]);
+        Assert.Equal(white, trimmed.Frames[0][17, 14]);
+        Assert.Equal(white, trimmed.Frames[0][0, 0]);
+        Assert.Equal(white, trimmed.Frames[0][25, 21]);
+
+        // A uniform image has no content: nothing is written
+        var blank = GetPath("blank.png");
+        using (var source = new Image<Rgba32>(8, 8, white))
+        {
+            source.Save(blank);
+        }
+
+        var unused = GetPath("unused.png");
+        Assert.False(Examples.TrimBackground(blank, unused));
+        Assert.False(File.Exists(unused));
+    }
+
+    [Fact]
     public void SharpenAndDetectEdgesApplyTheMatricesAsWritten()
     {
         // A 5x5 opaque gray image (100) with a brighter pixel (200) in the middle

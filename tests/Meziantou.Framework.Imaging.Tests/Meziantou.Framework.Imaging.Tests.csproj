@@ -1,0 +1,36 @@
+<Project Sdk="Meziantou.NET.Sdk.Test">
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <RootNamespace>Meziantou.Framework.Imaging.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Imaging\Meziantou.Framework.Imaging.csproj" />
+    <ProjectReference Include="..\Meziantou.Framework.Imaging.TestHarness\Meziantou.Framework.Imaging.TestHarness.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      Published documentation (Documentation/DocumentationSnippetTests, DocumentationExampleTests): the usage examples are
+      compiled and run here (the README snippets, which use relative paths, are only compiled by the samples project), and
+      the sample sources are copied with the published Markdown files so that every C# block is compared with its snippet.
+    -->
+    <Compile Include="..\..\samples\Meziantou.Framework.Imaging.Samples\Examples.cs" Link="Documentation\Samples\Examples.cs" />
+    <None Include="..\..\samples\Meziantou.Framework.Imaging.Samples\*.cs" LinkBase="Documentation\samples\Meziantou.Framework.Imaging.Samples" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\src\Meziantou.Framework.Imaging\readme.md" Link="Documentation\src\Meziantou.Framework.Imaging\readme.md" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      Benchmark workload validation (Conformance/Benchmarks/BenchmarkWorkloadTests): the benchmarked operations and input
+      generators are compiled here (they have no BenchmarkDotNet dependency).
+    -->
+    <Compile Include="..\..\benchmarks\ImagingBenchmarks\Workloads\*.cs" LinkBase="Conformance\Benchmarks\Workloads" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Copy the corpus next to the test assembly (FixtureRoot.GetDirectory); its README.md holds the fixture-to-feature
+         coverage matrix verified against the manifest (FixtureCoverageMatrixTests) -->
+    <None Include="..\Meziantou.Framework.Imaging.Fixtures\**\*" LinkBase="Fixtures" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

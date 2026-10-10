@@ -1,0 +1,20 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <RootNamespace>Meziantou.Framework.Imaging.Benchmarks</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Meziantou.Framework.FullPath\Meziantou.Framework.FullPath.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Imaging\Meziantou.Framework.Imaging.csproj" />
+    <PackageReference Include="BenchmarkDotNet" Version="0.15.8" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\tests\Meziantou.Framework.Imaging.Tests\Codecs\JpegTestImage.cs" Link="Workloads\TestEncoders\JpegTestImage.cs" />
+    <Compile Include="..\..\tests\Meziantou.Framework.Imaging.Tests\Codecs\JpegTestEncodeOptions.cs" Link="Workloads\TestEncoders\JpegTestEncodeOptions.cs" />
+    <Compile Include="..\..\tests\Meziantou.Framework.Imaging.Tests\Codecs\JpegTestHuffmanStyle.cs" Link="Workloads\TestEncoders\JpegTestHuffmanStyle.cs" />
+    <Compile Include="..\..\tests\Meziantou.Framework.Imaging.Tests\Codecs\JpegTestProgressiveScan.cs" Link="Workloads\TestEncoders\JpegTestProgressiveScan.cs" />
+  </ItemGroup>
+</Project>

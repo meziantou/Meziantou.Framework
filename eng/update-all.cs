@@ -327,6 +327,7 @@ void RunUpdateProjectSlnxStep(FullPath rootPath, string outputPath)
 
     var srcProjects = GetProjectFiles(srcRootPath);
     var testsProjects = GetProjectFiles(testsRootPath);
+    testsProjects.AddRange(GetProjectFiles(rootPath / "fuzz"));
     var toolsProjects = GetProjectFiles(toolsRootPath);
 
     var solutionFolderByProjectPath = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -562,6 +563,7 @@ void RunUpdateProjectSlnxStep(FullPath rootPath, string outputPath)
             _ when relativePathFromRoot.StartsWith("src/", StringComparison.Ordinal) => "/src/",
             _ when relativePathFromRoot.StartsWith("tests/SourceGenerators/", StringComparison.Ordinal) => "/tests/SourceGenerators/",
             _ when relativePathFromRoot.StartsWith("tests/", StringComparison.Ordinal) => "/tests/",
+            _ when relativePathFromRoot.StartsWith("fuzz/", StringComparison.Ordinal) => "/fuzz/",
             _ when relativePathFromRoot.StartsWith("tools/", StringComparison.Ordinal) => "/tools/",
             _ when relativePathFromRoot.StartsWith("samples/", StringComparison.Ordinal) => "/samples/",
             _ when relativePathFromRoot.StartsWith("benchmarks/", StringComparison.Ordinal) => "/benchmarks/",
@@ -630,7 +632,7 @@ void RunUpdateProjectSlnxStep(FullPath rootPath, string outputPath)
     void UpdateMainSolution()
     {
         var allDiskProjects = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var dir in new[] { "src", "tests", "tools", "samples", "benchmarks" })
+        foreach (var dir in new[] { "src", "tests", "fuzz", "tools", "samples", "benchmarks" })
         {
             allDiskProjects.UnionWith(GetProjectFiles(rootPath / dir));
         }
@@ -760,6 +762,9 @@ void RunUpdateProjectSlnxStep(FullPath rootPath, string outputPath)
 
             return "/tests/";
         }
+
+        if (relativePath.StartsWith("fuzz/", StringComparison.Ordinal))
+            return "/fuzz/";
 
         if (relativePath.StartsWith("tools/", StringComparison.Ordinal))
             return "/tools/";

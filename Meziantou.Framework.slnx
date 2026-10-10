@@ -5,6 +5,7 @@
     <Project Path="benchmarks/DependencyScanningBenchmarks/DependencyScanningBenchmarks.csproj" />
     <Project Path="benchmarks/FastEnumGeneratorBenchmarks/FastEnumGeneratorBenchmarks.csproj" />
     <Project Path="benchmarks/GlobbingBenchmarks/GlobbingBenchmarks.csproj" />
+    <Project Path="benchmarks/ImagingBenchmarks/ImagingBenchmarks.csproj" />
     <Project Path="benchmarks/SnapshotTestingBenchmarks/SnapshotTestingBenchmarks.csproj" />
     <Project Path="benchmarks/ThreadingBenchmarks/ThreadingBenchmarks.csproj" />
     <Project Path="benchmarks/YamlBenchmarks/YamlBenchmarks.csproj" />
@@ -13,6 +14,7 @@
     <Project Path="samples/BlazorAppSample/BlazorAppSample.csproj" />
     <Project Path="samples/DependencyScannerSample/DependencyScannerSample.csproj" />
     <Project Path="samples/Meziantou.Framework.Http.HstsSample/Meziantou.Framework.Http.HstsSample.csproj" />
+    <Project Path="samples/Meziantou.Framework.Imaging.Samples/Meziantou.Framework.Imaging.Samples.csproj" />
     <Project Path="samples/Meziantou.Framework.Scheduling.RecurrenceRuleSample/Meziantou.Framework.Scheduling.RecurrenceRuleSample.csproj" />
     <Project Path="samples/Meziantou.Framework.Win32.AccessTokenConsole/Meziantou.Framework.Win32.AccessTokenConsole.csproj" />
     <Project Path="samples/Meziantou.Framework.Win32.ChangeJournal.Sample/Meziantou.Framework.Win32.ChangeJournal.Sample.csproj" />
@@ -87,6 +89,7 @@
     <Project Path="src/Meziantou.Framework.HttpArchive/Meziantou.Framework.HttpArchive.csproj" />
     <Project Path="src/Meziantou.Framework.HttpClientMock/Meziantou.Framework.HttpClientMock.csproj" />
     <Project Path="src/Meziantou.Framework.HumanReadableSerializer/Meziantou.Framework.HumanReadableSerializer.csproj" />
+    <Project Path="src/Meziantou.Framework.Imaging/Meziantou.Framework.Imaging.csproj" />
     <Project Path="src/Meziantou.Framework.InlineSnapshotTesting/Meziantou.Framework.InlineSnapshotTesting.csproj" />
     <Project Path="src/Meziantou.Framework.JsonPath/Meziantou.Framework.JsonPath.csproj" />
     <Project Path="src/Meziantou.Framework.Language.Css/Meziantou.Framework.Language.Css.csproj" />
@@ -233,6 +236,10 @@
     <Project Path="tests/Meziantou.Framework.HttpClientMock.Tests/Meziantou.Framework.HttpClientMock.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.HumanReadableSerializer.FSharp.Tests/Meziantou.Framework.HumanReadableSerializer.FSharp.Tests.fsproj" />
     <Project Path="tests/Meziantou.Framework.HumanReadableSerializer.Tests/Meziantou.Framework.HumanReadableSerializer.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.Imaging.AotSmoke/Meziantou.Framework.Imaging.AotSmoke.csproj" />
+    <Project Path="tests/Meziantou.Framework.Imaging.InteropTests/Meziantou.Framework.Imaging.InteropTests.csproj" />
+    <Project Path="tests/Meziantou.Framework.Imaging.TestHarness/Meziantou.Framework.Imaging.TestHarness.csproj" />
+    <Project Path="tests/Meziantou.Framework.Imaging.Tests/Meziantou.Framework.Imaging.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.InlineSnapshotTesting.Tests/Meziantou.Framework.InlineSnapshotTesting.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.JsonPath.Tests/Meziantou.Framework.JsonPath.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Language.Css.Tests/Meziantou.Framework.Language.Css.Tests.csproj" />
@@ -327,9 +334,13 @@
   <Folder Name="/tools/">
     <Project Path="tools/Meziantou.Framework.HtmlToMarkdown.Emoji.Generator/Meziantou.Framework.HtmlToMarkdown.Emoji.Generator.csproj" />
     <Project Path="tools/Meziantou.Framework.Http.Hsts.Generator/Meziantou.Framework.Http.Hsts.Generator.csproj" />
+    <Project Path="tools/Meziantou.Framework.Imaging.CorpusGenerator/Meziantou.Framework.Imaging.CorpusGenerator.csproj" />
     <Project Path="tools/Meziantou.Framework.Markdown.Specs.Generator/Meziantou.Framework.Markdown.Specs.Generator.csproj" />
     <Project Path="tools/Meziantou.Framework.Unicode.Generator/Meziantou.Framework.Unicode.Generator.csproj" />
     <Project Path="tools/Meziantou.Framework.Uri.PublicSuffix.Generator/Meziantou.Framework.Uri.PublicSuffix.Generator.csproj" />
     <Project Path="tools/Meziantou.Framework.Uri.UrlTestData.Generator/Meziantou.Framework.Uri.UrlTestData.Generator.csproj" />
+  </Folder>
+  <Folder Name="/fuzz/">
+    <Project Path="fuzz/Meziantou.Framework.Imaging.FuzzTests/Meziantou.Framework.Imaging.FuzzTests.csproj" />
   </Folder>
 </Solution>

@@ -7,6 +7,7 @@ namespace Meziantou.Framework
     public static class AssemblyUtilities
     {
         public static string? GetInformationalVersion(this System.Reflection.Assembly assembly) => throw null;
+        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("SingleFile", "IL3000:Avoid accessing Assembly file path when publishing as a single file", Justification = "An empty location, as returned for an assembly embedded in a single-file or NativeAOT application, is handled by returning null")]
         public static System.DateTime? GetLinkerTimestampUtc(this System.Reflection.Assembly assembly) => throw null;
         public static System.DateTime? GetLinkerTimestampUtc(string filePath) => throw null;
         public static System.IO.Stream GetRequiredManifestResourceStream(this System.Reflection.Assembly assembly, string name) => throw null;
@@ -455,10 +456,13 @@ namespace Meziantou.Framework
     public sealed class ReflectionDynamicObject : System.Dynamic.DynamicObject
     {
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Use reflection")]
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Dynamic objects are bound at runtime, which may require generating code")]
         public ReflectionDynamicObject(object obj) { }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Use reflection")]
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Dynamic objects are bound at runtime, which may require generating code")]
         public ReflectionDynamicObject(System.Type type) { }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Use reflection")]
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Dynamic objects are bound at runtime, which may require generating code")]
         public Meziantou.Framework.ReflectionDynamicObject CreateInstance(params object[] parameters) => throw null;
         public override bool TryGetMember(System.Dynamic.GetMemberBinder binder, out object? result) => throw null;
         public override bool TrySetMember(System.Dynamic.SetMemberBinder binder, object? value) => throw null;
@@ -477,7 +481,9 @@ namespace Meziantou.Framework
         public static bool IsFlagsEnum(this System.Type type) => throw null;
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Use reflection to find static methods")]
         public static System.Reflection.MethodInfo? GetImplicitConversion(object? value, System.Type targetType) => throw null;
+        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("SingleFile", "IL3000:Avoid accessing Assembly file path when publishing as a single file", Justification = "An empty location, as returned for an assembly embedded in a single-file or NativeAOT application, is handled by returning null")]
         public static System.ValueTuple<string, System.Reflection.Metadata.SequencePoint>? GetMethodLocation(this System.Reflection.MethodInfo methodInfo) => throw null;
+        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("SingleFile", "IL3000:Avoid accessing Assembly file path when publishing as a single file", Justification = "An empty location, as returned for an assembly embedded in a single-file or NativeAOT application, is handled by returning null")]
         public static System.Threading.Tasks.Task<System.ValueTuple<string, System.Reflection.Metadata.SequencePoint>?> GetMethodLocationAsync(this System.Reflection.MethodInfo methodInfo) => throw null;
     }
 

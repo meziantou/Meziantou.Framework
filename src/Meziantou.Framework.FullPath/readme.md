@@ -47,6 +47,21 @@ if (filePath.TryGetCanonicalPath(out var canonicalPath))
 System.IO.File.WriteAllText(filePath, content);
 ````
 
+## Native AOT and trimming
+
+The package is annotated `IsAotCompatible` and `IsTrimmable`. It does not use reflection, and the native interop is
+resolved at compile time.
+
+`FullPath` is serialized to JSON as a string by `FullPathJsonConverter`, which also works with the `System.Text.Json`
+source generator:
+
+````c#
+[JsonSerializable(typeof(Configuration))]
+internal sealed partial class AppJsonContext : JsonSerializerContext;
+
+internal sealed record Configuration(FullPath OutputPath);
+````
+
 ## Analyzer rules
 
 <!-- analyzer-rules -->

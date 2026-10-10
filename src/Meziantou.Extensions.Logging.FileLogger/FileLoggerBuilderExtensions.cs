@@ -25,6 +25,7 @@ public static class FileLoggerBuilderExtensions
     /// <returns>The <see cref="ILoggingBuilder"/> so that additional calls can be chained.</returns>
     [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicParameterlessConstructor, typeof(FileLoggerOptions))]
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access", Justification = "The members of FileLoggerOptions used by the configuration binder are preserved by the DynamicDependency attribute")]
+    [UnconditionalSuppressMessage("AOT", "IL3050:Calling members annotated with 'RequiresDynamicCodeAttribute' may break functionality when AOT compiling", Justification = "The configuration binder only generates code at runtime to create collections, and FileLoggerOptions has no collection property")]
     public static ILoggingBuilder AddFile(this ILoggingBuilder builder)
     {
         ArgumentNullException.ThrowIfNull(builder);

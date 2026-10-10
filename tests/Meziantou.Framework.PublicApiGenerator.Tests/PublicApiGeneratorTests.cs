@@ -885,13 +885,13 @@ public sealed class PublicApiGeneratorTests
 
             public class GenericBase<T> : System.IEquatable<T>
             {
-                public bool Equals(T other) => throw null;
+                public bool Equals(T? other) => throw null;
             }
 
 
             public class GenericDerived<T> : GenericBase<T>, System.IComparable<T>, System.IEquatable<T>
             {
-                public int CompareTo(T other) => throw null;
+                public int CompareTo(T? other) => throw null;
             }
 
 

@@ -1,5 +1,7 @@
 using System.Collections.Immutable;
 using System.Reflection;
+using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework.PublicApiGenerator;
@@ -1282,7 +1284,7 @@ internal static class PublicApiModelBuilder
 
         // The interface list is sorted using the formatted names, so the generated API does not depend on the order reported by the runtime.
         // The base type stays first as C# requires it to precede the interfaces.
-        var interfaces = type.GetInterfaces()
+        var interfaces = GetDeclaredInterfaces(type)
             .Where(@interface => IsExternallyVisible(@interface) || @interface.IsPublic)
             .Where(@interface => !isUnionDeclaration || @interface.FullName != IUnionInterfaceFullName)
             .Select(static @interface => FormatType(@interface))
@@ -1293,6 +1295,43 @@ internal static class PublicApiModelBuilder
             return string.Empty;
 
         return " : " + string.Join(", ", baseTypes.Distinct(StringComparer.Ordinal));
+    }
+
+    // Type.GetInterfaces also returns the interfaces implemented by the base types, which are not part of the declaration of the type.
+    // The declaration lists the interfaces of the InterfaceImpl metadata table, including the ones a base type already implements when the type declares them again.
+    private static IEnumerable<Type> GetDeclaredInterfaces(Type type)
+    {
+        var declaredInterfaces = GetInterfacesFromMetadata(type);
+        if (declaredInterfaces is not null)
+            return declaredInterfaces;
+
+        // The runtime does not expose the metadata of the assembly (e.g. Native AOT), so an interface a base type already implements cannot be detected when the type declares it again
+        var interfaces = type.GetInterfaces();
+        if (type.IsInterface || type.BaseType is null)
+            return interfaces;
+
+        return interfaces.Except(type.BaseType.GetInterfaces());
+    }
+
+    private static List<Type>? GetInterfacesFromMetadata(Type type)
+    {
+        unsafe
+        {
+            if (!type.Assembly.TryGetRawMetadata(out var blob, out var length))
+                return null;
+
+            var metadataReader = new MetadataReader(blob, length);
+            var typeDefinition = metadataReader.GetTypeDefinition((TypeDefinitionHandle)MetadataTokens.EntityHandle(type.MetadataToken));
+            var genericTypeArguments = type.GetGenericArguments();
+            var result = new List<Type>();
+            foreach (var interfaceImplementationHandle in typeDefinition.GetInterfaceImplementations())
+            {
+                var interfaceImplementation = metadataReader.GetInterfaceImplementation(interfaceImplementationHandle);
+                result.Add(type.Module.ResolveType(MetadataTokens.GetToken(interfaceImplementation.Interface), genericTypeArguments, genericMethodArguments: null));
+            }
+
+            return result;
+        }
     }
 
     private static string GetTypeKeyword(Type type)

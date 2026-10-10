@@ -443,6 +443,26 @@ public sealed class IccColorTransformTests
     }
 
     [Fact]
+    public void CmykLookupTablesAreInterpolatedMultilinearly()
+    {
+        // lut8Type, CMYK to CIELAB, 2 grid points per input: the L* entry of each of the 16 vertices, cyan varying least
+        // rapidly and black most rapidly. The neutral axis of CMYK is not the diagonal of the cell: every vertex
+        // contributes, with the product of the fractions as weight (simplex interpolation would give 127 for the
+        // third color, 148 for the fourth)
+        byte[] lightness = [255, 40, 200, 30, 180, 25, 150, 20, 160, 22, 130, 18, 110, 15, 90, 0];
+        var profile = IccTestProfiles.Lut("CMYK", "Lab ", ("A2B0", IccTestProfiles.Lut8(4, 3, 2, cmyk => [lightness[(int)((8 * cmyk[0]) + (4 * cmyk[1]) + (2 * cmyk[2]) + cmyk[3])] / 255.0, 128 / 255.0, 128 / 255.0])));
+        var transform = IccColorTransform.Create(profile, Lightness, new IccColorTransformOptions { BlackPointCompensation = false });
+        byte[] samples = [0, 0, 0, 0, 255, 255, 255, 255, 128, 128, 128, 128, 200, 100, 50, 25, 25, 50, 100, 200, 64, 0, 255, 128, 0, 0, 0, 128];
+        var actual8 = new byte[7];
+        transform.Convert(samples, actual8);
+        Assert.Equal([255, 0, 90, 140, 71, 104, 147], actual8);
+
+        var actual16 = new ushort[7];
+        transform.Convert(samples.Select(static value => (ushort)(value * 257)).ToArray(), actual16);
+        Assert.Equal([65535, 0, 23091, 35955, 18243, 26832, 37799], actual16);
+    }
+
+    [Fact]
     public void RenderingIntentSelectsTheLookupTableThenThePerceptualTableThenTheToneCurve()
     {
         // Constant tables: L* / 100 is 51 / 255 (perceptual, AToB0), 102 / 255 (colorimetric, AToB1), 153 / 255 (saturation, AToB2)

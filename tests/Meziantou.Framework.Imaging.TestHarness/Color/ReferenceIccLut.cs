@@ -9,10 +9,11 @@ namespace Meziantou.Framework.Imaging.TestHarness.Color;
 /// </summary>
 /// <remarks>
 /// The specification does not define the interpolation of the color lookup table; the reference follows the rules
-/// documented by the library. Device and CIEXYZ inputs: the simplex of the grid cell containing the input, for the
-/// subdivision of the cell along its main diagonal; the simplex is found here by trying every ordering of the inputs and
-/// keeping the one whose barycentric coordinates are all non-negative, instead of sorting. CIELAB inputs: multilinear
-/// interpolation, written here as successive linear interpolations along each input.
+/// documented by the library. One or three device channels and CIEXYZ inputs: the simplex of the grid cell containing
+/// the input, for the subdivision of the cell along its main diagonal; the simplex is found here by trying every ordering
+/// of the inputs and keeping the one whose barycentric coordinates are all non-negative, instead of sorting. CIELAB
+/// inputs and four device channels: multilinear interpolation, written here as successive linear interpolations along
+/// each input.
 /// </remarks>
 internal static class ReferenceIccLut
 {
@@ -25,12 +26,15 @@ internal static class ReferenceIccLut
     public static decimal[] Evaluate(ReadOnlySpan<byte> tag, decimal[] input, bool deviceToConnection, bool connectionIsXyz)
     {
         var type = Encoding.ASCII.GetString(tag[..4]);
+
+        // Multilinear when the table input is CIELAB (a BToA table of a CIELAB profile) or has four channels (CMYK)
+        var multilinear = (!deviceToConnection && !connectionIsXyz) || input.Length == 4;
         return type switch
         {
-            "mft1" => EvaluateLut(tag, input, bytesPerEntry: 1, useMatrix: !deviceToConnection && connectionIsXyz, multilinear: !deviceToConnection && !connectionIsXyz),
-            "mft2" => EvaluateLut(tag, input, bytesPerEntry: 2, useMatrix: !deviceToConnection && connectionIsXyz, multilinear: !deviceToConnection && !connectionIsXyz),
-            "mAB " when deviceToConnection => EvaluateLutAToB(tag, input, deviceToConnection: true, multilinear: false),
-            "mBA " when !deviceToConnection => EvaluateLutAToB(tag, input, deviceToConnection: false, multilinear: !connectionIsXyz),
+            "mft1" => EvaluateLut(tag, input, bytesPerEntry: 1, useMatrix: !deviceToConnection && connectionIsXyz, multilinear),
+            "mft2" => EvaluateLut(tag, input, bytesPerEntry: 2, useMatrix: !deviceToConnection && connectionIsXyz, multilinear),
+            "mAB " when deviceToConnection => EvaluateLutAToB(tag, input, deviceToConnection: true, multilinear),
+            "mBA " when !deviceToConnection => EvaluateLutAToB(tag, input, deviceToConnection: false, multilinear),
             _ => throw new NotSupportedException($"Lookup table type '{type}' is not supported in this direction."),
         };
     }

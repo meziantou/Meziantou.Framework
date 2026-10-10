@@ -1,6 +1,6 @@
 {
   "$schema": "./manifest.schema.json",
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "generator": {
     "script": "tools/Meziantou.Framework.Imaging.CorpusGenerator/GoldenCorpus.cs",
     "command": "dotnet run --project tools/Meziantou.Framework.Imaging.CorpusGenerator -- golden --write",
@@ -33784,6 +33784,491 @@
         "justification": "Lossy VP8 compared with an independent decoding of the same encoded input (libwebp dwebp: RFC 6386 reconstruction, fancy chroma upsampling, 14-bit fixed-point BT.601 YUV->RGB). The library decoder (the same exact VP8 reconstruction, centered bilinear 9-3-3-1 chroma upsampling, 16-bit fixed-point BT.601 conversion rounded to nearest) differs from it only by the rounding of the color conversion; measured: max 0, mean 0.0000. Allowed: the measured max (at least 1) and the measured mean + 0.01 (rounded up to 0.01), tighter than the disagreement between independent decoders (see reference.crossChecks: max 1, mean 0.0556, which would justify max 2 / mean 0.50). Alpha is compared exactly, and the policy is verified to reject channel swaps and flips of this reference."
       },
       "notes": "A 3x2 image: one partial macroblock, 2x1 chroma planes."
+    }
+  ],
+  "colorProfiles": [
+    {
+      "id": "icc/srgb-v4",
+      "file": {
+        "path": "icc/profiles/sRGB-v4.icc",
+        "sha256": "c56e1685d888f5edb92fe07f2750f387f8fe8e91b32ff8fb0b56bfbbb9458353",
+        "role": "profile"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "CC0-1.0",
+        "author": "Clinton Ingram",
+        "source": "https://github.com/saucecontrol/Compact-ICC-Profiles/blob/bdd84663061bc4ae95ca70decff54f581e27f702/profiles/sRGB-v4.icc"
+      },
+      "features": [
+        "icc.version=4",
+        "icc.model=matrix",
+        "icc.curve=parametric",
+        "icc.space=rgb"
+      ]
+    },
+    {
+      "id": "icc/srgb-v2-micro",
+      "file": {
+        "path": "icc/profiles/sRGB-v2-micro.icc",
+        "sha256": "0a8a33aea66a6f154a5642ebe168ef287e73265d9f7b51c42a45e6eedbacda7a",
+        "role": "profile"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "CC0-1.0",
+        "author": "Clinton Ingram",
+        "source": "https://github.com/saucecontrol/Compact-ICC-Profiles/blob/bdd84663061bc4ae95ca70decff54f581e27f702/profiles/sRGB-v2-micro.icc"
+      },
+      "features": [
+        "icc.version=2",
+        "icc.model=matrix",
+        "icc.curve=sampled",
+        "icc.space=rgb"
+      ]
+    },
+    {
+      "id": "icc/display-p3-v4",
+      "file": {
+        "path": "icc/profiles/DisplayP3-v4.icc",
+        "sha256": "cb51de38e482ee974c0c76b9689e16aad04bad16e226fed2f30c842d15ff3a3d",
+        "role": "profile"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "CC0-1.0",
+        "author": "Clinton Ingram",
+        "source": "https://github.com/saucecontrol/Compact-ICC-Profiles/blob/bdd84663061bc4ae95ca70decff54f581e27f702/profiles/DisplayP3-v4.icc"
+      },
+      "features": [
+        "icc.version=4",
+        "icc.model=matrix",
+        "icc.curve=parametric",
+        "icc.space=rgb"
+      ]
+    },
+    {
+      "id": "icc/adobe-compat-v2",
+      "file": {
+        "path": "icc/profiles/AdobeCompat-v2.icc",
+        "sha256": "60fb2adecacf82132db0b1c09b303316f3bbd9e2823e7ba096d01627d12d57c9",
+        "role": "profile"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "CC0-1.0",
+        "author": "Clinton Ingram",
+        "source": "https://github.com/saucecontrol/Compact-ICC-Profiles/blob/bdd84663061bc4ae95ca70decff54f581e27f702/profiles/AdobeCompat-v2.icc"
+      },
+      "features": [
+        "icc.version=2",
+        "icc.model=matrix",
+        "icc.curve=gamma",
+        "icc.space=rgb"
+      ]
+    },
+    {
+      "id": "icc/prophoto-v4",
+      "file": {
+        "path": "icc/profiles/ProPhoto-v4.icc",
+        "sha256": "090daf740c136b4a63bf979d64f034b4a65aa5abbb04a0917729222afe2bb5c2",
+        "role": "profile"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "CC0-1.0",
+        "author": "Clinton Ingram",
+        "source": "https://github.com/saucecontrol/Compact-ICC-Profiles/blob/bdd84663061bc4ae95ca70decff54f581e27f702/profiles/ProPhoto-v4.icc"
+      },
+      "features": [
+        "icc.version=4",
+        "icc.model=matrix",
+        "icc.curve=parametric",
+        "icc.space=rgb"
+      ]
+    },
+    {
+      "id": "icc/rec2020-v4",
+      "file": {
+        "path": "icc/profiles/Rec2020-v4.icc",
+        "sha256": "135ebd418b668c0ca56a8dea6d262c4deccae8166e0ca8264b7d7f35863ccb4b",
+        "role": "profile"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "CC0-1.0",
+        "author": "Clinton Ingram",
+        "source": "https://github.com/saucecontrol/Compact-ICC-Profiles/blob/bdd84663061bc4ae95ca70decff54f581e27f702/profiles/Rec2020-v4.icc"
+      },
+      "features": [
+        "icc.version=4",
+        "icc.model=matrix",
+        "icc.curve=parametric",
+        "icc.space=rgb"
+      ]
+    },
+    {
+      "id": "icc/sgrey-v4",
+      "file": {
+        "path": "icc/profiles/sGrey-v4.icc",
+        "sha256": "00c0f94e09127520a17dc0e1d9264b5702081d96dbdb1549ee88e3631ce42a9d",
+        "role": "profile"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "CC0-1.0",
+        "author": "Clinton Ingram",
+        "source": "https://github.com/saucecontrol/Compact-ICC-Profiles/blob/bdd84663061bc4ae95ca70decff54f581e27f702/profiles/sGrey-v4.icc"
+      },
+      "features": [
+        "icc.version=4",
+        "icc.model=monochrome",
+        "icc.curve=parametric",
+        "icc.space=gray"
+      ]
+    },
+    {
+      "id": "icc/sgrey-v2-nano",
+      "file": {
+        "path": "icc/profiles/sGrey-v2-nano.icc",
+        "sha256": "ac2805b9e07b6fa3ba7406aa48e84d87041097da66220cc2a385e17bb2893cc1",
+        "role": "profile"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "CC0-1.0",
+        "author": "Clinton Ingram",
+        "source": "https://github.com/saucecontrol/Compact-ICC-Profiles/blob/bdd84663061bc4ae95ca70decff54f581e27f702/profiles/sGrey-v2-nano.icc"
+      },
+      "features": [
+        "icc.version=2",
+        "icc.model=monochrome",
+        "icc.curve=sampled",
+        "icc.space=gray"
+      ]
+    },
+    {
+      "id": "icc/cgats001-compat-v2-micro",
+      "file": {
+        "path": "icc/profiles/CGATS001Compat-v2-micro.icc",
+        "sha256": "73e1ba37d2bad5bab2a964f40a9eed96209666efc067c3322626214bbef234a0",
+        "role": "profile"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "CC0-1.0",
+        "author": "Clinton Ingram",
+        "source": "https://github.com/saucecontrol/Compact-ICC-Profiles/blob/bdd84663061bc4ae95ca70decff54f581e27f702/profiles/CGATS001Compat-v2-micro.icc"
+      },
+      "features": [
+        "icc.version=2",
+        "icc.model=lut16",
+        "icc.pcs=lab",
+        "icc.space=cmyk",
+        "icc.class=input"
+      ]
+    }
+  ],
+  "colorTransforms": [
+    {
+      "id": "icc/srgb-v4-to-display-p3-v4",
+      "source": "icc/srgb-v4",
+      "destination": "icc/display-p3-v4",
+      "intent": "relative-colorimetric",
+      "blackPointCompensation": false,
+      "sourceChannels": 3,
+      "destinationChannels": 3,
+      "sampleCount": 500,
+      "vectors": {
+        "path": "icc/vectors/srgb-v4-to-display-p3-v4.u16le",
+        "sha256": "10b7279dfcc414e65fa277536f2f02585cf9fd77db2810a86c65a3d17b1c2dbd",
+        "role": "vectors"
+      },
+      "reference": {
+        "tool": "transicc (LittleCMS 2.19)",
+        "command": "transicc -n -c0 -t1 -i icc/profiles/sRGB-v4.icc -o icc/profiles/DisplayP3-v4.icc",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/IccCorpus.cs (Generate)"
+      },
+      "comparison": {
+        "maxAbsoluteError": 2,
+        "maxMeanAbsoluteError": 0.5,
+        "justification": "Both systems evaluate the same matrix and tone curves; the difference is the rounding of the four decimals printed by transicc, of the 16-bit vectors, and of the single-precision arithmetic of LittleCMS."
+      }
+    },
+    {
+      "id": "icc/display-p3-v4-to-srgb-v4",
+      "source": "icc/display-p3-v4",
+      "destination": "icc/srgb-v4",
+      "intent": "relative-colorimetric",
+      "blackPointCompensation": false,
+      "sourceChannels": 3,
+      "destinationChannels": 3,
+      "sampleCount": 500,
+      "vectors": {
+        "path": "icc/vectors/display-p3-v4-to-srgb-v4.u16le",
+        "sha256": "bcd810914363153746b90f17622509a3bf94f81c43c707e5dd5328c1136ea2d8",
+        "role": "vectors"
+      },
+      "reference": {
+        "tool": "transicc (LittleCMS 2.19)",
+        "command": "transicc -n -c0 -t1 -i icc/profiles/DisplayP3-v4.icc -o icc/profiles/sRGB-v4.icc",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/IccCorpus.cs (Generate)"
+      },
+      "comparison": {
+        "maxAbsoluteError": 2,
+        "maxMeanAbsoluteError": 0.5,
+        "justification": "Both systems evaluate the same matrix and tone curves; the difference is the rounding of the four decimals printed by transicc, of the 16-bit vectors, and of the single-precision arithmetic of LittleCMS."
+      }
+    },
+    {
+      "id": "icc/srgb-v2-micro-to-rec2020-v4",
+      "source": "icc/srgb-v2-micro",
+      "destination": "icc/rec2020-v4",
+      "intent": "relative-colorimetric",
+      "blackPointCompensation": false,
+      "sourceChannels": 3,
+      "destinationChannels": 3,
+      "sampleCount": 500,
+      "vectors": {
+        "path": "icc/vectors/srgb-v2-micro-to-rec2020-v4.u16le",
+        "sha256": "e962d43f831bb39d58ea99dae9633e07ec1737cba7e46aa4800b627bcda402a1",
+        "role": "vectors"
+      },
+      "reference": {
+        "tool": "transicc (LittleCMS 2.19)",
+        "command": "transicc -n -c0 -t1 -i icc/profiles/sRGB-v2-micro.icc -o icc/profiles/Rec2020-v4.icc",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/IccCorpus.cs (Generate)"
+      },
+      "comparison": {
+        "maxAbsoluteError": 4,
+        "maxMeanAbsoluteError": 0.5,
+        "justification": "Both systems evaluate the same matrix and tone curves, but LittleCMS evaluates a sampled curve in single precision and inverts it through a 4096-entry table, while the library inverts the piecewise-linear curve exactly; the difference stays below a tenth of a level of 255."
+      }
+    },
+    {
+      "id": "icc/adobe-compat-v2-to-srgb-v2-micro",
+      "source": "icc/adobe-compat-v2",
+      "destination": "icc/srgb-v2-micro",
+      "intent": "relative-colorimetric",
+      "blackPointCompensation": false,
+      "sourceChannels": 3,
+      "destinationChannels": 3,
+      "sampleCount": 500,
+      "vectors": {
+        "path": "icc/vectors/adobe-compat-v2-to-srgb-v2-micro.u16le",
+        "sha256": "def8685b3ddde1aaa54f910a97b27c9256431a6edf675de918a5321cfe5a1370",
+        "role": "vectors"
+      },
+      "reference": {
+        "tool": "transicc (LittleCMS 2.19)",
+        "command": "transicc -n -c0 -t1 -i icc/profiles/AdobeCompat-v2.icc -o icc/profiles/sRGB-v2-micro.icc",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/IccCorpus.cs (Generate)"
+      },
+      "comparison": {
+        "maxAbsoluteError": 10,
+        "maxMeanAbsoluteError": 0.75,
+        "justification": "Both systems evaluate the same matrix and tone curves, but LittleCMS evaluates a sampled curve in single precision and inverts it through a 4096-entry table, while the library inverts the piecewise-linear curve exactly; the difference stays below a tenth of a level of 255."
+      }
+    },
+    {
+      "id": "icc/prophoto-v4-to-adobe-compat-v2",
+      "source": "icc/prophoto-v4",
+      "destination": "icc/adobe-compat-v2",
+      "intent": "perceptual",
+      "blackPointCompensation": false,
+      "sourceChannels": 3,
+      "destinationChannels": 3,
+      "sampleCount": 500,
+      "vectors": {
+        "path": "icc/vectors/prophoto-v4-to-adobe-compat-v2.u16le",
+        "sha256": "7d9a3c3b1e84d5794f3155e3c9abb3f252293b12b166f7bf7872814568c9aadd",
+        "role": "vectors"
+      },
+      "reference": {
+        "tool": "transicc (LittleCMS 2.19)",
+        "command": "transicc -n -c0 -t0 -i icc/profiles/ProPhoto-v4.icc -o icc/profiles/AdobeCompat-v2.icc",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/IccCorpus.cs (Generate)"
+      },
+      "comparison": {
+        "maxAbsoluteError": 2,
+        "maxMeanAbsoluteError": 0.5,
+        "justification": "Both systems evaluate the same matrix and tone curves; the difference is the rounding of the four decimals printed by transicc, of the 16-bit vectors, and of the single-precision arithmetic of LittleCMS."
+      }
+    },
+    {
+      "id": "icc/rec2020-v4-to-srgb-v4-absolute",
+      "source": "icc/rec2020-v4",
+      "destination": "icc/srgb-v4",
+      "intent": "absolute-colorimetric",
+      "blackPointCompensation": false,
+      "sourceChannels": 3,
+      "destinationChannels": 3,
+      "sampleCount": 500,
+      "vectors": {
+        "path": "icc/vectors/rec2020-v4-to-srgb-v4-absolute.u16le",
+        "sha256": "834dc66fa2b284a20260f77066a017a6100a4a72d5b735dd5b038f1ed25fd297",
+        "role": "vectors"
+      },
+      "reference": {
+        "tool": "transicc (LittleCMS 2.19)",
+        "command": "transicc -n -c0 -t3 -i icc/profiles/Rec2020-v4.icc -o icc/profiles/sRGB-v4.icc",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/IccCorpus.cs (Generate)"
+      },
+      "comparison": {
+        "maxAbsoluteError": 2,
+        "maxMeanAbsoluteError": 0.5,
+        "justification": "Both systems evaluate the same matrix and tone curves; the difference is the rounding of the four decimals printed by transicc, of the 16-bit vectors, and of the single-precision arithmetic of LittleCMS."
+      }
+    },
+    {
+      "id": "icc/sgrey-v4-to-sgrey-v2-nano",
+      "source": "icc/sgrey-v4",
+      "destination": "icc/sgrey-v2-nano",
+      "intent": "relative-colorimetric",
+      "blackPointCompensation": false,
+      "sourceChannels": 1,
+      "destinationChannels": 1,
+      "sampleCount": 320,
+      "vectors": {
+        "path": "icc/vectors/sgrey-v4-to-sgrey-v2-nano.u16le",
+        "sha256": "2ef6c8192d8ab66921814a1dceaa6e51ee0c4cc2659b3c2df2aae0af3f620b79",
+        "role": "vectors"
+      },
+      "reference": {
+        "tool": "transicc (LittleCMS 2.19)",
+        "command": "transicc -n -c0 -t1 -i icc/profiles/sGrey-v4.icc -o icc/profiles/sGrey-v2-nano.icc",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/IccCorpus.cs (Generate)"
+      },
+      "comparison": {
+        "maxAbsoluteError": 24,
+        "maxMeanAbsoluteError": 1.0,
+        "justification": "Both systems evaluate the same matrix and tone curves, but LittleCMS evaluates a sampled curve in single precision and inverts it through a 4096-entry table, while the library inverts the piecewise-linear curve exactly; the difference stays below a tenth of a level of 255."
+      }
+    },
+    {
+      "id": "icc/sgrey-v2-nano-to-srgb-v4",
+      "source": "icc/sgrey-v2-nano",
+      "destination": "icc/srgb-v4",
+      "intent": "relative-colorimetric",
+      "blackPointCompensation": false,
+      "sourceChannels": 1,
+      "destinationChannels": 3,
+      "sampleCount": 320,
+      "vectors": {
+        "path": "icc/vectors/sgrey-v2-nano-to-srgb-v4.u16le",
+        "sha256": "1d96d364977c7a4bf3295606fca516cd04c62f27a3765f34887775fad40061cf",
+        "role": "vectors"
+      },
+      "reference": {
+        "tool": "transicc (LittleCMS 2.19)",
+        "command": "transicc -n -c0 -t1 -i icc/profiles/sGrey-v2-nano.icc -o icc/profiles/sRGB-v4.icc",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/IccCorpus.cs (Generate)"
+      },
+      "comparison": {
+        "maxAbsoluteError": 8,
+        "maxMeanAbsoluteError": 1.0,
+        "justification": "Both systems evaluate the same matrix and tone curves, but LittleCMS evaluates a sampled curve in single precision and inverts it through a 4096-entry table, while the library inverts the piecewise-linear curve exactly; the difference stays below a tenth of a level of 255."
+      }
+    },
+    {
+      "id": "icc/srgb-v4-to-sgrey-v4",
+      "source": "icc/srgb-v4",
+      "destination": "icc/sgrey-v4",
+      "intent": "saturation",
+      "blackPointCompensation": false,
+      "sourceChannels": 3,
+      "destinationChannels": 1,
+      "sampleCount": 500,
+      "vectors": {
+        "path": "icc/vectors/srgb-v4-to-sgrey-v4.u16le",
+        "sha256": "10bd4646bdcb27bfead6a8d55bea4e9d5dd5d853c88c13fb43e81a2eb89005bd",
+        "role": "vectors"
+      },
+      "reference": {
+        "tool": "transicc (LittleCMS 2.19)",
+        "command": "transicc -n -c0 -t2 -i icc/profiles/sRGB-v4.icc -o icc/profiles/sGrey-v4.icc",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/IccCorpus.cs (Generate)"
+      },
+      "comparison": {
+        "maxAbsoluteError": 2,
+        "maxMeanAbsoluteError": 0.5,
+        "justification": "Both systems evaluate the same matrix and tone curves; the difference is the rounding of the four decimals printed by transicc, of the 16-bit vectors, and of the single-precision arithmetic of LittleCMS."
+      }
+    },
+    {
+      "id": "icc/cgats001-to-srgb-v4",
+      "source": "icc/cgats001-compat-v2-micro",
+      "destination": "icc/srgb-v4",
+      "intent": "relative-colorimetric",
+      "blackPointCompensation": false,
+      "sourceChannels": 4,
+      "destinationChannels": 3,
+      "sampleCount": 1296,
+      "vectors": {
+        "path": "icc/vectors/cgats001-to-srgb-v4.u16le",
+        "sha256": "1557aef6d06350ed98a2cbf71d406111905f9b0713cde5308de402e229b3c66e",
+        "role": "vectors"
+      },
+      "reference": {
+        "tool": "transicc (LittleCMS 2.19)",
+        "command": "transicc -n -c0 -t1 -i icc/profiles/CGATS001Compat-v2-micro.icc -o icc/profiles/sRGB-v4.icc",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/IccCorpus.cs (Generate)"
+      },
+      "comparison": {
+        "maxAbsoluteError": 3,
+        "maxMeanAbsoluteError": 0.5,
+        "justification": "The colors are the grid points of the color lookup table, where no interpolation is involved and the two systems must agree; the difference is the rounding of the four decimals printed by transicc, of the 16-bit vectors and of the device values of the grid points."
+      }
+    },
+    {
+      "id": "icc/cgats001-to-display-p3-v4-perceptual",
+      "source": "icc/cgats001-compat-v2-micro",
+      "destination": "icc/display-p3-v4",
+      "intent": "perceptual",
+      "blackPointCompensation": false,
+      "sourceChannels": 4,
+      "destinationChannels": 3,
+      "sampleCount": 1296,
+      "vectors": {
+        "path": "icc/vectors/cgats001-to-display-p3-v4-perceptual.u16le",
+        "sha256": "297de6a520d31149f573abe04a3d0bd363047f8546a934551ab67aeb90581d43",
+        "role": "vectors"
+      },
+      "reference": {
+        "tool": "transicc (LittleCMS 2.19)",
+        "command": "transicc -n -c0 -t0 -i icc/profiles/CGATS001Compat-v2-micro.icc -o icc/profiles/DisplayP3-v4.icc",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/IccCorpus.cs (Generate)"
+      },
+      "comparison": {
+        "maxAbsoluteError": 3,
+        "maxMeanAbsoluteError": 0.5,
+        "justification": "The colors are the grid points of the color lookup table, where no interpolation is involved and the two systems must agree; the difference is the rounding of the four decimals printed by transicc, of the 16-bit vectors and of the device values of the grid points."
+      }
+    },
+    {
+      "id": "icc/cgats001-to-sgrey-v4",
+      "source": "icc/cgats001-compat-v2-micro",
+      "destination": "icc/sgrey-v4",
+      "intent": "relative-colorimetric",
+      "blackPointCompensation": false,
+      "sourceChannels": 4,
+      "destinationChannels": 1,
+      "sampleCount": 1296,
+      "vectors": {
+        "path": "icc/vectors/cgats001-to-sgrey-v4.u16le",
+        "sha256": "7ccbfae9f1879fa08b07d780f182f91d44647baae4f5f8a95cc8a14f23252336",
+        "role": "vectors"
+      },
+      "reference": {
+        "tool": "transicc (LittleCMS 2.19)",
+        "command": "transicc -n -c0 -t1 -i icc/profiles/CGATS001Compat-v2-micro.icc -o icc/profiles/sGrey-v4.icc",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/IccCorpus.cs (Generate)"
+      },
+      "comparison": {
+        "maxAbsoluteError": 3,
+        "maxMeanAbsoluteError": 0.5,
+        "justification": "The colors are the grid points of the color lookup table, where no interpolation is involved and the two systems must agree; the difference is the rounding of the four decimals printed by transicc, of the 16-bit vectors and of the device values of the grid points."
+      }
     }
   ]
 }

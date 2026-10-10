@@ -652,10 +652,10 @@ results are the same on every platform up to the last bit of `Math.Pow` and `Mat
 rounded to nearest with ties upward. A destination tone curve is inverted exactly (the smallest input reaching the
 value), so a round trip through a matrix-based profile and back changes a 16-bit sample only where the curve itself is
 not invertible. The ICC specification does not define how tables are interpolated between grid points; the library
-uses simplex interpolation along the main diagonal of the grid cell (tetrahedral interpolation for three inputs) when
-the inputs are device channels or CIEXYZ, and multilinear interpolation when they are CIELAB, whose neutral axis is
-not the diagonal. Other color management systems may differ by a fraction of a level between grid points, in
-particular for four-channel tables, and may estimate black points differently.
+uses simplex interpolation along the main diagonal of the grid cell (tetrahedral interpolation) when the inputs are
+RGB, gray or CIEXYZ, whose neutral axis is that diagonal, and multilinear interpolation when they are CIELAB or CMYK,
+where it is not. Color management systems differ here: between the grid points of a coarse CMYK table they can
+disagree by several levels, and they may also estimate black points differently.
 
 ### Loading, identification and limits
 

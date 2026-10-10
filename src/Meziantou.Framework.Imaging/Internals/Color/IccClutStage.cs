@@ -13,17 +13,18 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// contract of the conversion:
 /// </para>
 /// <para>
-/// Simplex interpolation, when the inputs are device channels or CIEXYZ: the grid cell containing the input is
-/// subdivided along its main diagonal (tetrahedral interpolation for three inputs). The inputs are visited from the
-/// largest fractional position to the smallest, each step moving to the next vertex of the cell along that input, and
-/// the result is the sum of the vertex entries weighted by the differences between consecutive fractions (at most five
-/// entries for four inputs). Colors of equal inputs, the neutral axis of a device, are interpolated between entries of
-/// equal inputs only.
+/// Simplex interpolation, when the inputs are one or three device channels (gray, RGB) or CIEXYZ: the grid cell
+/// containing the input is subdivided along its main diagonal (tetrahedral interpolation for three inputs). The inputs
+/// are visited from the largest fractional position to the smallest, each step moving to the next vertex of the cell
+/// along that input, and the result is the sum of the vertex entries weighted by the differences between consecutive
+/// fractions. Colors of equal inputs, the neutral axis of such a space, are interpolated between entries of equal
+/// inputs only.
 /// </para>
 /// <para>
-/// Multilinear interpolation, when the inputs are CIELAB: the neutral axis of CIELAB is parallel to the lightness axis,
-/// not to the diagonal of the cell, so no diagonal is favored and the eight vertices of the cell are weighted by the
-/// products of the fractional positions.
+/// Multilinear interpolation, when the inputs are CIELAB or four device channels (CMYK): the neutral axis of these
+/// spaces is not the diagonal of the cell (it is parallel to the lightness axis in CIELAB, and depends on the black
+/// generation in CMYK), so no diagonal is favored and every vertex of the cell is weighted by the product of the
+/// fractional positions (8 vertices for three inputs, 16 for four).
 /// </para>
 /// </remarks>
 internal sealed class IccClutStage : IccStage
@@ -43,7 +44,7 @@ internal sealed class IccClutStage : IccStage
     /// <param name="gridPoints">The number of grid points of each input (at least two).</param>
     /// <param name="outputs">The number of outputs.</param>
     /// <param name="bytesPerEntry">1 for 8-bit entries, 2 for big-endian 16-bit entries.</param>
-    /// <param name="multilinear">Whether the table is interpolated multilinearly (CIELAB inputs) instead of on a simplex.</param>
+    /// <param name="multilinear">Whether the table is interpolated multilinearly (CIELAB or CMYK inputs) instead of on a simplex.</param>
     public IccClutStage(ReadOnlyMemory<byte> data, ReadOnlySpan<int> gridPoints, int outputs, int bytesPerEntry, bool multilinear)
     {
         _data = data;

@@ -57,6 +57,12 @@ internal static class IccLutParser
         => deviceToConnection ? InputSpace.Device : connectionIsXyz ? InputSpace.Xyz : InputSpace.Lab;
 
     /// <summary>
+    /// Determines the interpolation of a color lookup table (see <see cref="IccClutStage"/>): multilinear when the neutral
+    /// axis of the input space is not the diagonal of a grid cell, that is for CIELAB and for four device channels.
+    /// </summary>
+    private static bool IsMultilinear(InputSpace inputSpace, int inputs) => inputSpace == InputSpace.Lab || inputs == 4;
+
+    /// <summary>
     /// Appends a <c>lut8Type</c> or <c>lut16Type</c>: matrix (CIEXYZ input only), one input table per input channel, the
     /// color lookup table, one output table per output channel.
     /// </summary>
@@ -115,7 +121,7 @@ internal static class IccLutParser
 
         Span<int> grid = stackalloc int[inputs];
         grid.Fill(gridPoints);
-        stages.Add(new IccClutStage(tag.Slice(position, (int)clutLength), grid, outputs, bytesPerEntry, multilinear: inputSpace == InputSpace.Lab));
+        stages.Add(new IccClutStage(tag.Slice(position, (int)clutLength), grid, outputs, bytesPerEntry, IsMultilinear(inputSpace, inputs)));
         position += (int)clutLength;
 
         stages.Add(new IccCurvesStage(ReadTables(data.Slice(position, (int)outputLength), outputs, outputEntries, bytesPerEntry)));
@@ -172,7 +178,7 @@ internal static class IccLutParser
 
         if (error is null && offsetClut != 0)
         {
-            error = ReadClut(tag, offsetClut, inputs, outputs, multilinear: inputSpace == InputSpace.Lab, out clut);
+            error = ReadClut(tag, offsetClut, inputs, outputs, IsMultilinear(inputSpace, inputs), out clut);
         }
         else if (error is null && inputs != outputs)
         {

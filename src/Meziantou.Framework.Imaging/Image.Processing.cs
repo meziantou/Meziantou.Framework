@@ -47,7 +47,7 @@ public abstract partial class Image
 
         // Large frames are resized by up to MaxDegreeOfParallelism workers (row bands, bit-identical results)
         using var plan = new ResizePlan(geometry, options.Filter, workingSpace, PixelFormat, _configuration.MaxDegreeOfParallelism);
-        ReplaceGeometry(geometry.OutputSize, normalizeOrientation: false, Operation, new ResizeFiller(plan), cancellationToken);
+        ReplaceGeometry(geometry.OutputSize, normalizeOrientation: false, Operation, new ResizeFiller(plan, geometry), cancellationToken);
     }
 
     /// <summary>
@@ -103,7 +103,7 @@ public abstract partial class Image
     /// <param name="options">The options.</param>
     /// <param name="cancellationToken">The token checked during the analysis, between frames and row bands, and once more right before the commit.</param>
     /// <returns><see langword="true"/> if the image changed; <see langword="false"/> if the analysis failed or the rectangle is the whole canvas.</returns>
-    /// <exception cref="UnsupportedImageFeatureException">The canvas must be enlarged but the background of the analysis is not exactly representable in the pixel format.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">The canvas must be enlarged but the background of the analysis is not exactly representable in the pixel format, or the pixel a cursor hotspot designates is not part of the result.</exception>
     internal bool AutoCropCore(AutoCropAnalysis? analysis, AutoCropOptions options, CancellationToken cancellationToken)
     {
         const string Operation = "auto-crop the image";
@@ -132,7 +132,8 @@ public abstract partial class Image
 
         // The limits bound both dimensions to 32 bits, and the origin is at most one padded canvas away
         _configuration.Limits.EnsureCanvasWithinLimits(geometry.Width, geometry.Height);
-        ReplaceGeometry(new Size((int)geometry.Width, (int)geometry.Height), normalizeOrientation: false, Operation, new ExtendFiller(new Point((int)geometry.X, (int)geometry.Y), fill), cancellationToken);
+        var size = new Size((int)geometry.Width, (int)geometry.Height);
+        ReplaceGeometry(size, normalizeOrientation: false, Operation, new ExtendFiller(new Point((int)geometry.X, (int)geometry.Y), size, fill), cancellationToken);
         return true;
     }
 
@@ -160,13 +161,17 @@ public abstract partial class Image
     /// published. Any failure before the commit (limit, allocation, cancellation) releases the replacements and leaves
     /// dimensions, pixels, frame identities and order, and metadata unchanged. After the commit, the frame objects keep
     /// designating the same logical frames over their new storage, and the EXIF profile is reconciled with the new canvas.
+    /// A cursor hotspot follows the pixel it designates: the new hotspots are computed before anything is allocated (a
+    /// hotspot whose pixel is not kept fails the operation) and published with the storages.
     /// </summary>
+    /// <exception cref="UnsupportedImageFeatureException">The pixel a frame hotspot designates is not part of the result.</exception>
     private void ReplaceGeometry<TFiller>(Size newSize, bool normalizeOrientation, string operation, TFiller filler, CancellationToken cancellationToken)
         where TFiller : IGeometryFiller
     {
         _configuration.Limits.EnsureCanvasWithinLimits(newSize.Width, newSize.Height);
 
         var sources = GetAllFrames();
+        var hotspots = MapHotspots(sources, filler, operation);
         var bytesPerPixel = PixelFormats.GetBytesPerPixel(PixelFormat);
         var replacements = new PixelStorage[sources.Length];
         ExifProfile? exifProfile;
@@ -196,6 +201,11 @@ public abstract partial class Image
         {
             var original = sources[i].Storage;
             sources[i].ReplaceStorage(replacements[i]);
+            if (hotspots is not null)
+            {
+                sources[i].MetadataCore.SetHotspotUnchecked(hotspots[i]);
+            }
+
             original.Dispose();
         }
 
@@ -215,8 +225,25 @@ public abstract partial class Image
         _metadata.RemoveStaleThumbnail();
         foreach (var frame in GetAllFrames())
         {
-            using var lease = frame.GetStorage().AcquireLease();
-            frame.FlipPixels(lease, mode, cancellationToken);
+            using (var lease = frame.GetStorage().AcquireLease())
+            {
+                frame.FlipPixels(lease, mode, cancellationToken);
+            }
+
+            FlipHotspot(frame, mode);
+        }
+    }
+
+    /// <summary>
+    /// Moves the cursor hotspot of a frame that was just mirrored to the pixel it designated. It is called once the whole
+    /// frame is mirrored, so a canceled flip leaves the hotspot of the interrupted frame where it was.
+    /// </summary>
+    internal static void FlipHotspot(ImageFrame frame, FlipMode mode)
+    {
+        if (frame.MetadataCore.Hotspot is { } hotspot)
+        {
+            var storage = frame.Storage;
+            frame.MetadataCore.SetHotspotUnchecked(OrientationTransform.ForFlip(mode).MapPoint(new Size(storage.Width, storage.Height), hotspot));
         }
     }
 
@@ -381,9 +408,43 @@ public abstract partial class Image
         return result;
     }
 
+    /// <summary>
+    /// Computes where the cursor hotspot of every frame lands after a geometry operation, before anything is allocated.
+    /// </summary>
+    /// <returns>The new hotspot of each frame, or <see langword="null"/> when no frame has one.</returns>
+    /// <exception cref="UnsupportedImageFeatureException">The pixel a hotspot designates is not part of the result: the hotspot is never dropped or moved to another pixel silently.</exception>
+    private Point?[]? MapHotspots<TFiller>(ImageFrame[] sources, TFiller filler, string operation)
+        where TFiller : IGeometryFiller
+    {
+        Point?[]? result = null;
+        for (var i = 0; i < sources.Length; i++)
+        {
+            if (sources[i].MetadataCore.Hotspot is not { } hotspot)
+                continue;
+
+            if (!filler.TryMapPoint(hotspot, out var mapped))
+            {
+                var frame = i < _frames.Count ? string.Create(CultureInfo.InvariantCulture, $"frame {i}") : "the poster frame";
+                throw new UnsupportedImageFeatureException(
+                    string.Create(CultureInfo.InvariantCulture, $"Cannot {operation}: the cursor hotspot ({hotspot.X}, {hotspot.Y}) of {frame} designates a pixel that is not part of the result. Set FrameMetadata.Hotspot to null or to a pixel that is kept first."),
+                    ImageFormat.Unknown,
+                    "Cursor hotspot outside the kept region");
+            }
+
+            result ??= new Point?[sources.Length];
+            result[i] = mapped;
+        }
+
+        return result;
+    }
+
     /// <summary>Fills the replacement storages of a <see cref="ReplaceGeometry{TFiller}"/> transaction (typed dispatch through the frames).</summary>
     private interface IGeometryFiller
     {
+        /// <summary>Gets where a pixel of a source frame lands in its replacement (the new position of a cursor hotspot).</summary>
+        /// <returns><see langword="false"/> when the pixel is not part of the result.</returns>
+        bool TryMapPoint(Point source, out Point destination);
+
         /// <summary>Rents the scratch storage of the operation, after the replacements are reserved.</summary>
         void Prepare(AllocationScope scope);
 
@@ -393,6 +454,20 @@ public abstract partial class Image
 
     private readonly struct TransformFiller(Rectangle region, OrientationTransform transform) : IGeometryFiller
     {
+        public bool TryMapPoint(Point source, out Point destination)
+        {
+            var x = source.X - region.X;
+            var y = source.Y - region.Y;
+            if (x < 0 || y < 0 || x >= region.Width || y >= region.Height)
+            {
+                destination = default;
+                return false;
+            }
+
+            destination = transform.MapPoint(region.Size, new Point(x, y));
+            return true;
+        }
+
         public void Prepare(AllocationScope scope)
         {
         }
@@ -403,6 +478,13 @@ public abstract partial class Image
 
     private readonly struct ColorConversionFiller(IccPipeline pipeline) : IGeometryFiller
     {
+        // Colors change, pixels do not move: a cursor hotspot stays where it is
+        public bool TryMapPoint(Point source, out Point destination)
+        {
+            destination = source;
+            return true;
+        }
+
         public void Prepare(AllocationScope scope)
         {
         }
@@ -412,8 +494,23 @@ public abstract partial class Image
     }
 
     [StructLayout(LayoutKind.Auto)]
-    private readonly struct ExtendFiller(Point origin, Rgba64 fill) : IGeometryFiller
+    private readonly struct ExtendFiller(Point origin, Size size, Rgba64 fill) : IGeometryFiller
     {
+        public bool TryMapPoint(Point source, out Point destination)
+        {
+            // The new canvas is the rectangle of that size at the origin, which may lie outside the old canvas on any side
+            var x = (long)source.X - origin.X;
+            var y = (long)source.Y - origin.Y;
+            if (x < 0 || y < 0 || x >= size.Width || y >= size.Height)
+            {
+                destination = default;
+                return false;
+            }
+
+            destination = new Point((int)x, (int)y);
+            return true;
+        }
+
         public void Prepare(AllocationScope scope)
         {
         }
@@ -422,8 +519,10 @@ public abstract partial class Image
             => frame.ExtendPixels(source, destination, origin, fill, cancellationToken);
     }
 
-    private readonly struct ResizeFiller(ResizePlan plan) : IGeometryFiller
+    private readonly struct ResizeFiller(ResizePlan plan, ResizeGeometry geometry) : IGeometryFiller
     {
+        public bool TryMapPoint(Point source, out Point destination) => geometry.TryMapPoint(source, out destination);
+
         public void Prepare(AllocationScope scope) => plan.Prepare(scope);
 
         public void Fill(ImageFrame frame, scoped in PixelLease source, scoped in PixelLease destination, CancellationToken cancellationToken)

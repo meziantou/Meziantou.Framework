@@ -49,4 +49,10 @@ public enum ImageFormat
 
     /// <summary>Windows cursor container: an icon directory whose entries also carry a hotspot.</summary>
     Cur = 11,
+
+    /// <summary>
+    /// Windows animated cursor (RIFF <c>ACON</c> container): an animation whose frames are icon or cursor images, each
+    /// with its own hotspot (<see cref="Metadata.FrameMetadata.Hotspot"/>).
+    /// </summary>
+    Ani = 12,
 }

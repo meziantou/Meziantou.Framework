@@ -181,7 +181,7 @@ internal sealed class MetadataWritePlan
         var text = new List<ImageTextEntry>(metadata.TextEntries.Count);
         foreach (var entry in metadata.TextEntries)
         {
-            if (capabilities.IsTextEntrySupported(entry))
+            if (capabilities.IsTextEntrySupported(entry) && !(capabilities.HasUniqueTextKeywords && ContainsKeyword(text, entry.Keyword)))
             {
                 text.Add(entry);
             }
@@ -252,6 +252,34 @@ internal sealed class MetadataWritePlan
         return new MetadataWritePlan(icc, exif, xmp, text, resolution, transferFunction, orientation);
     }
 
+    private static bool ContainsKeyword(List<ImageTextEntry> entries, string keyword)
+    {
+        foreach (var entry in entries)
+        {
+            if (string.Equals(entry.Keyword, keyword, StringComparison.Ordinal))
+                return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Applies the metadata policy to the settings of one frame: a cursor hotspot is stored by cursor outputs only, so for
+    /// any other output it is metadata the format cannot represent.
+    /// </summary>
+    /// <param name="metadata">The frame settings.</param>
+    /// <param name="format">The output format.</param>
+    /// <param name="handling">The encoder's metadata policy.</param>
+    /// <exception cref="UnsupportedImageFeatureException">The frame has a hotspot the output cannot store and <paramref name="handling"/> is <see cref="MetadataHandling.Strict"/>.</exception>
+    public static void ValidateFrameMetadata(FrameMetadata metadata, ImageFormat format, MetadataHandling handling)
+    {
+        ArgumentNullException.ThrowIfNull(metadata);
+        if (metadata.Hotspot is not null && !ImageOutputCapabilities.StoresFrameHotspot(format))
+        {
+            new PlanContext(format, handling).Unsupported("cursor hotspot");
+        }
+    }
+
     [StructLayout(LayoutKind.Auto)]
     private readonly struct PlanContext(ImageFormat format, MetadataHandling handling)
     {
@@ -273,6 +301,8 @@ internal sealed class MetadataWritePlan
         private static readonly FormatCapabilities WebP = new(icc: true, exif: true, xmp: true, resolution: false, TextSupport.None);
         private static readonly FormatCapabilities Bmp = new(icc: false, exif: false, xmp: false, resolution: true, TextSupport.None);
 
+        private static readonly FormatCapabilities Ani = new(icc: false, exif: false, xmp: false, resolution: false, TextSupport.AniInfo);
+
         // TIFF stores the orientation in its own tag, so no EXIF block has to be synthesized for it
         private static readonly FormatCapabilities Tiff = new(icc: true, exif: false, xmp: true, resolution: true, TextSupport.None, nativeOrientation: true);
 
@@ -293,6 +323,7 @@ internal sealed class MetadataWritePlan
             CommentsOnly,
             JpegComments,
             PngKeywords,
+            AniInfo,
         }
 
         public bool Icc { get; }
@@ -309,6 +340,12 @@ internal sealed class MetadataWritePlan
         /// <summary>Gets a value indicating whether the format stores the orientation in a field of its own (the TIFF <c>Orientation</c> tag).</summary>
         public bool NativeOrientation { get; }
 
+        /// <summary>
+        /// Gets a value indicating whether the format stores at most one text entry per keyword (the ANI <c>INFO</c> list has
+        /// one title and one author): a second entry with the same keyword cannot be represented.
+        /// </summary>
+        public bool HasUniqueTextKeywords => Text == TextSupport.AniInfo;
+
         private TextSupport Text { get; }
 
         public static FormatCapabilities Get(ImageFormat format) => format switch
@@ -320,6 +357,7 @@ internal sealed class MetadataWritePlan
             ImageFormat.Qoi => Qoi,
             ImageFormat.Bmp => Bmp,
             ImageFormat.Tiff => Tiff,
+            ImageFormat.Ani => Ani,
             _ => None,
         };
 
@@ -333,8 +371,13 @@ internal sealed class MetadataWritePlan
             // Latin-1 and fit one segment (a longer comment would come back as several entries)
             TextSupport.JpegComments => IsBareComment(entry) && entry.Value.Length <= MaxJpegCommentLength && !entry.Value.AsSpan().ContainsAnyExceptInRange('\0', 'ÿ'),
             TextSupport.PngKeywords => IsValidPngTextEntry(entry),
+
+            // The ANI INFO list stores a title (INAM) and an author (IART) as NUL-terminated strings read as Latin-1
+            TextSupport.AniInfo => IsAniInfoKeyword(entry.Keyword) && entry.LanguageTag is null && entry.TranslatedKeyword is null && !entry.Value.AsSpan().ContainsAnyExceptInRange('\u0001', 'ÿ'),
             _ => false,
         };
+
+        private static bool IsAniInfoKeyword(string keyword) => keyword is AniFormat.TitleKeyword or AniFormat.AuthorKeyword;
 
         private static bool IsBareComment(ImageTextEntry entry) => string.Equals(entry.Keyword, ImageTextEntry.CommentKeyword, StringComparison.Ordinal) && entry.LanguageTag is null && entry.TranslatedKeyword is null;
 

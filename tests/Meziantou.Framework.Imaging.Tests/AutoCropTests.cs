@@ -487,6 +487,67 @@ public sealed class AutoCropTests
     }
 
     [Fact]
+    public void ACursorHotspotFollowsItsPixelOrFailsTheAutoCrop()
+    {
+        // Content (2, 1, 4, 4): the hotspot on its pixel (3, 2) is translated like the pixel
+        using (var cropped = Draw<Rgba32>(Framed))
+        {
+            cropped.Frames[0].Metadata.Hotspot = new Point(3, 2);
+            Assert.True(cropped.AutoCrop(cancellationToken: Ct));
+            Assert.Equal(new Point(1, 1), cropped.Frames[0].Metadata.Hotspot);
+        }
+
+        // Kept rectangle (-1, -1, 7, 7): enlarging the canvas moves every pixel, and its hotspot, by the new margin
+        using (var enlarged = Draw<Rgba32>(NearCorner))
+        {
+            enlarged.Frames[0].Metadata.Hotspot = new Point(5, 4);
+            Assert.True(enlarged.AutoCrop(new AutoCropOptions { PaddingX = 2, PaddingY = 2 }, Ct));
+            Assert.Equal(new Point(6, 5), enlarged.Frames[0].Metadata.Hotspot);
+        }
+
+        // A hotspot on a removed pixel is never dropped silently, whether the canvas only shrinks...
+        using (var removed = Draw<Rgba32>(Framed))
+        {
+            removed.Frames[0].Metadata.Hotspot = new Point(0, 0);
+            var exception = Assert.Throws<UnsupportedImageFeatureException>(() => removed.AutoCrop(cancellationToken: Ct));
+            Assert.Equal("Cursor hotspot outside the kept region", exception.Feature);
+            Assert.Equal(new Point(0, 0), removed.Frames[0].Metadata.Hotspot);
+            AssertRows(removed.Frames[0], Framed);
+        }
+
+        // ... or grows on one side while it shrinks on the others: content (1, 3, 3, 3), kept rectangle (-1, 3, 7, 3)
+        string[] rows =
+        [
+            "......,,..",
+            "..........",
+            "..........",
+            ".XXX......",
+            ".XXX......",
+            ".XXX......",
+            "..........",
+            "..........",
+        ];
+
+        var options = new AutoCropOptions { PaddingX = 2 };
+        using (var kept = Draw<Rgba32>(rows))
+        {
+            kept.Frames[0].Metadata.Hotspot = new Point(5, 5); // the last kept column and row
+            Assert.True(kept.AutoCrop(options, Ct));
+            Assert.Equal(new Size(7, 3), kept.Size);
+            Assert.Equal(new Point(6, 2), kept.Frames[0].Metadata.Hotspot);
+        }
+
+        foreach (var hotspot in (Point[])[new Point(6, 3), new Point(1, 2), new Point(1, 6)])
+        {
+            using var image = Draw<Rgba32>(rows);
+            image.Frames[0].Metadata.Hotspot = hotspot;
+            Assert.Throws<UnsupportedImageFeatureException>(() => image.AutoCrop(options, Ct));
+            Assert.Equal(new Size(10, 8), image.Size);
+            Assert.Equal(hotspot, image.Frames[0].Metadata.Hotspot);
+        }
+    }
+
+    [Fact]
     public void ContainClampsThePaddedRectangleToTheCanvas()
     {
         using var image = Draw<Rgba32>(

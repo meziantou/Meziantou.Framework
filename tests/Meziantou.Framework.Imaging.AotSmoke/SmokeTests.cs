@@ -255,6 +255,39 @@ internal static class SmokeTests
         CheckEqual(still, selected, "CUR representation");
     }
 
+    public static void Ani()
+    {
+        using var animation = CreateAnimation(frames: 3);
+        for (var i = 0; i < animation.Frames.Count; i++)
+        {
+            animation.Frames[i].Metadata.Duration = new FrameDuration(i + 1, 60);
+            animation.Frames[i].Metadata.Hotspot = new Point(i, 1);
+        }
+
+        // The last frame repeats the first one: it is stored once and replayed through the sequence table
+        var repeated = animation.AppendFrame(animation.Frames[0]);
+        repeated.Metadata.Duration = new FrameDuration(7, 60);
+        animation.Animation = new AnimationMetadata();
+        animation.Metadata.TextEntries.Clear();
+        animation.Metadata.TextEntries.Add(new ImageTextEntry("Title", "smoke"));
+        foreach (var payloadFormat in new[] { IconPayloadFormat.Dib, IconPayloadFormat.Png })
+        {
+            var data = Encode(animation, new AniEncoder { PayloadFormat = payloadFormat });
+            Check(Image.DetectFormat(data) == ImageFormat.Ani, "ANI detection");
+            using var decoded = Image.Load(data);
+            CheckEqual(animation, decoded, string.Create(CultureInfo.InvariantCulture, $"ANI {payloadFormat}"));
+            Check(decoded.Animation is { TotalPlays: null }, "ANI always loops");
+            for (var i = 0; i < animation.Frames.Count; i++)
+            {
+                Check(decoded.Frames[i].Metadata.Hotspot == animation.Frames[i].Metadata.Hotspot, "ANI hotspot");
+            }
+
+            Check(decoded.Metadata.TextEntries is [{ Keyword: "Title", Value: "smoke" }], "ANI title");
+            var info = Image.Identify(data, new ImageIdentifyOptions { Mode = ImageIdentifyMode.FullScan });
+            Check(info.Format == ImageFormat.Ani && info.FrameCount == 4 && info.IsAnimated == true, "ANI identification");
+        }
+    }
+
     public static void Processing()
     {
         using var image = CreateAnimation(frames: 2);

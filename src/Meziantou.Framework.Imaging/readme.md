@@ -1,16 +1,17 @@
 # Meziantou.Framework.Imaging
 
 A fully managed, performance-oriented image library for .NET 10 and .NET 11: PNG, animated PNG (APNG), GIF, JPEG, WebP
-(still and animated, lossless and lossy), QOI, BMP, TGA, Netpbm (PBM/PGM/PPM/PAM), TIFF/BigTIFF and ICO/CUR decoding and
-encoding, animation-aware processing, ICC color conversion, and bounded-memory streaming.
+(still and animated, lossless and lossy), QOI, BMP, TGA, Netpbm (PBM/PGM/PPM/PAM), TIFF/BigTIFF, ICO/CUR and animated
+cursor (ANI) decoding and encoding, animation-aware processing, ICC color conversion, and bounded-memory streaming.
 
 - Static PNG, animated PNG (APNG), GIF, baseline/progressive JPEG, WebP (still and animated, lossless and lossy), QOI,
-  BMP, TGA, Netpbm (PBM/PGM/PPM/PAM), TIFF/BigTIFF and ICO/CUR decoding; PNG, APNG, GIF, baseline JPEG, WebP (lossless
-  and lossy, still and animated), QOI, BMP, TGA, Netpbm, TIFF/BigTIFF and ICO/CUR encoding (unsupported modes, such as
-  arithmetic or CMYK JPEG, RLE BMP, 16-bit TGA color maps or LZW TIFF, are rejected explicitly)
+  BMP, TGA, Netpbm (PBM/PGM/PPM/PAM), TIFF/BigTIFF, ICO/CUR and ANI decoding; PNG, APNG, GIF, baseline JPEG, WebP
+  (lossless and lossy, still and animated), QOI, BMP, TGA, Netpbm, TIFF/BigTIFF, ICO/CUR and ANI encoding (unsupported
+  modes, such as arithmetic or CMYK JPEG, RLE BMP, 16-bit TGA color maps or LZW TIFF, are rejected explicitly)
 - `ImageCollection` for the images that are not animation frames: TIFF document pages and icon/cursor representations,
   read and written one entry at a time
-- Animation-aware model: every frame is a full-canvas displayed image with exact rational timing
+- Animation-aware model: every frame is a full-canvas displayed image with exact rational timing and, for cursors, a
+  hotspot that follows its pixel through geometry operations
 - Six working pixel formats (`Rgba32`, `Bgra32`, `Rgb24`, `Rgba64`, `Gray8`, `Gray16`) with 16-bit precision preserved
 - Crop, auto-crop (background detection), resize (alpha-aware, Contain/Cover/Stretch), rotate, auto-orient, flip,
   grayscale and convolution matrices (sharpen, blur, edge detection) applied to all frames
@@ -54,6 +55,7 @@ compiled and run by the test suite.
   - [Netpbm: PBM, PGM, PPM and PAM](#netpbm-pbm-pgm-ppm-and-pam)
   - [TIFF and BigTIFF](#tiff-and-bigtiff)
   - [ICO and CUR](#ico-and-cur)
+  - [ANI](#ani)
 - [Limitations](#limitations)
 
 ## Quick start
@@ -96,7 +98,7 @@ frame.Save("first.jpg", new JpegEncoder { Quality = 85, BackgroundColor = new Rg
   frames and reader results are independent owned images. Eager loads never retain their input.
 - **Precision and alpha.** Six working pixel formats (`Rgba32`, `Bgra32`, `Rgb24`, `Rgba64`, `Gray8`, `Gray16`), 16-bit
   precision preserved, straight alpha, alpha-aware resampling, and no silent alpha/precision/metadata/animation loss.
-- **Exact timing.** Rational `FrameDuration` preserves GIF, APNG and WebP delays exactly; `TotalPlays` counts total plays.
+- **Exact timing.** Rational `FrameDuration` preserves GIF, APNG, WebP and ANI delays exactly; `TotalPlays` counts total plays.
 - **Atomic geometry.** Crop, auto-crop, resize, rotate and auto-orient apply to every frame (and the poster)
   transactionally.
 - **Bounded streaming.** Sequential readers and writers process long animations with memory bounded by one frame.
@@ -130,6 +132,7 @@ decoded or encoded approximately; see [Format reference](#format-reference) and 
 | Netpbm | `P1` to `P7` (PBM, PGM, PPM, PAM), 8 and 16 bits | `P2`/`P3`/`P5`/`P6`/`P7`, lossless | `.pnm`, `.pam`, `.ppm`, `.pgm` |
 | TIFF / BigTIFF | Both byte orders and offset sizes, 8/16-bit gray, gray+alpha, RGB, RGBA, strips and tiles, Deflate, predictor; multi-page documents | Strips, uncompressed or Deflate, classic or BigTIFF; multi-page documents (seekable destination) | `.tif`, `.tiff` |
 | ICO / CUR | PNG and DIB representations, cursor hotspots | PNG or 32-bit DIB representations, cursor hotspots | `.ico`, `.cur` |
+| ANI | Animated cursors: icon and cursor frames (PNG and DIB), rate and sequence tables, hotspots, title and author | One cursor image per frame (PNG or 32-bit DIB), hotspots, identical frames stored once, title and author (seekable destination) | `.ani` |
 
 JPEG XL and AVIF are not supported.
 
@@ -145,6 +148,11 @@ public state: editing, removing or reordering frames can never leave stale encod
 
 - `Frames[i].Metadata.Duration` is the frame's exact `FrameDuration`; `Image.Animation` (`TotalPlays`) holds the
   animation-wide settings. Animation settings are structural data, never removed by metadata policies.
+- `Frames[i].Metadata.Hotspot` is the cursor hotspot of the frame: the pixel that designates the pointer position, or
+  `null` for a frame that is not a cursor image. It is read from CUR and ANI files and written back to them, it is always
+  inside its frame (setting it elsewhere throws `ArgumentOutOfRangeException`), and geometry operations move it with its
+  pixel (see [Processing](#processing)). Outputs that cannot store it reject it by default (see
+  [Metadata, color profiles and orientation](#metadata-color-profiles-and-orientation)).
 - `IsAnimated` is true with several frames, a poster frame, or non-null `Animation`. Adding a second frame or a poster
   creates default settings (infinite loop); removing frames down to one keeps them, so the image stays animated until
   `Animation` is set to `null` (allowed only with one frame and no poster).
@@ -158,13 +166,15 @@ decoders that do not support APNG show it, APNG players skip it. It is exposed a
 Only animated PNG output can store a poster; other outputs reject an image that has one (remove it with
 `RemovePosterFrame`).
 
-**Exact timing**. `FrameDuration` is a normalized rational number of seconds: GIF delays (`d/100`)
-and APNG delays (`num/den`, `den = 0` meaning `/100`) are kept exactly, zero durations included; no player minimum-delay
-heuristic is applied. `TotalPlays` counts the total number of plays including the first (`null` = infinite): a GIF
+**Exact timing**. `FrameDuration` is a normalized rational number of seconds: GIF delays (`d/100`),
+APNG delays (`num/den`, `den = 0` meaning `/100`) and ANI rates (`j/60`, jiffies) are kept exactly, zero durations
+included; no player minimum-delay heuristic is applied. `TotalPlays` counts the total number of plays including the first (`null` = infinite): a GIF
 NETSCAPE2.0 loop count `L` stores repetitions, so it maps to `L + 1` plays (`L = 0` is infinite, no loop extension is one
-play); APNG `num_plays` maps directly (`0` is infinite). On export, `FrameDurationRounding` decides what happens when a
+play); APNG `num_plays` maps directly (`0` is infinite); an animated cursor has no play count and always loops, so it
+decodes to `null` and `AniEncoder` rejects any other value. On export, `FrameDurationRounding` decides what happens when a
 duration is not representable: `RequireExact` throws, `RoundToNearest` picks the nearest representable value (APNG
-default: `RequireExact`; GIF default: `RoundToNearest`, to the nearest hundredth with ties up). Values beyond the format's
+default: `RequireExact`; GIF default: `RoundToNearest`, to the nearest hundredth with ties up; ANI default:
+`RoundToNearest`, to the nearest sixtieth with ties up). Values beyond the format's
 range are always rejected, never clamped. `ToTimeSpan` rounds to the nearest 100 ns tick (ties up); `TotalSeconds` and
 `TotalMilliseconds` are floating-point approximations for display.
 
@@ -192,6 +202,31 @@ public static void BuildAnimation(string apngPath, string gifPath)
 }
 ```
 
+**Animated cursors**. An ANI file is an animation whose frames are cursor images: each frame has
+its own hotspot, durations are whole sixtieths of a second, and the animation always loops.
+
+<!-- snippet: animated-cursor -->
+```csharp
+public static Point WriteAndReadAnimatedCursor(string animationPath, string cursorPath)
+{
+    using var animation = Image.Load(animationPath);
+    animation.Resize(new ResizeOptions(32, 32) { Mode = ResizeMode.Stretch });
+    foreach (var frame in animation.Frames)
+    {
+        frame.Metadata.Hotspot = new Point(4, 2); // the pixel that designates the pointer position
+    }
+
+    // An animated cursor always loops: a finite play count is rejected instead of being dropped
+    animation.Animation = new AnimationMetadata();
+    animation.Save(cursorPath); // ".ani" selects AniEncoder; durations are rounded to sixtieths of a second
+
+    // A hotspot follows its pixel through geometry operations: (4, 2) at 32x32 is (8, 4) at 64x64
+    using var cursor = Image.Load(cursorPath);
+    cursor.Resize(new ResizeOptions(64, 64) { Mode = ResizeMode.Stretch, AllowUpscaling = true });
+    return cursor.Frames[0].Metadata.Hotspot!.Value;
+}
+```
+
 ### Pages and representations
 
 **Pages and representations are not frames**. A TIFF document and an icon file hold images that
@@ -206,13 +241,15 @@ or icon sizes by accident.
   `PixelFormat`, `ColorModel`, `BitsPerComponent`, `MayHaveTransparency`, `PayloadFormat`, `Hotspot` and `Metadata`;
   nothing is resized or converted implicitly.
 - `ImageCollectionEntry.Decode` (or `Decode<TPixel>`) reads and decodes exactly one entry, with its own limits and
-  allocation scope, and returns a normal independently owned `Image`.
+  allocation scope, and returns a normal independently owned `Image`. A cursor representation carries its hotspot on
+  the frame of that image.
 - A loaded collection keeps its input open until it is disposed: a path stays open, a stream must be seekable and is
   seeked freely (its position afterward is unspecified), and a span is copied once. Loading is synchronous by design (a
   random-access decoder issues many small dependent reads); `Image.LoadAsync` and `Image.IdentifyAsync` do work on these
   formats, by buffering the input under `MaxEncodedBytes`.
 - Entries are borrowed from their collection and are valid until it is disposed or they are removed. `Add` and `Insert`
-  copy the image, so the caller keeps and disposes its own; `RemoveAt` and `Move` edit the order, and removed owned
+  copy the image, so the caller keeps and disposes its own (without an explicit hotspot, the entry takes the hotspot of
+  the image's frame); `RemoveAt` and `Move` edit the order, and removed owned
   entries are released.
 - `Image.Load` and `Image.Identify` use the first page of a document, or the largest (then deepest) representation of an
   icon, and report the number of entries in `ImageInfo.CollectionEntryCount`. `ImageCollection.SelectBySize` chooses a
@@ -222,6 +259,8 @@ or icon sizes by accident.
   one at a time, and path destinations are published atomically.
 - An icon or cursor representation stores at most 256 pixels per side. A cursor hotspot
   (`ImageCollectionEntry.Hotspot`) is metadata validated against its own representation, never a pixel offset.
+  `Image.Load` of a cursor exposes the hotspot of the representation it decodes as `Frames[0].Metadata.Hotspot`, and
+  `Image.Save` with `IcoEncoder { Kind = IconKind.Cursor }` writes it.
 
 <!-- snippet: tiff-pages -->
 ```csharp
@@ -369,10 +408,12 @@ split into row bands, with results identical to the sequential ones.
 
 - **Geometry is atomic.** `Crop`, `AutoCrop`, `Resize`, `Rotate` and `AutoOrient` apply to every frame and the poster in
   one transaction: replacements are allocated (and charged) while the originals are live, and any failure before the commit
-  (limit, allocation failure, cancellation) leaves dimensions, pixels, frame identities and order, and metadata unchanged.
+  (limit, allocation failure, cancellation) leaves dimensions, pixels, frame identities and order, cursor hotspots and
+  metadata unchanged.
 - **Pixel mutations may be partial.** `Flip`, `Grayscale`, `Convolve`, row callbacks and `ReadFrameInto` write in place: a
   failure or a cancellation can leave some rows or frames updated, but the image stays structurally valid and
-  disposable. `Convolve` rents its scratch rows first: exceeding the allocation limit leaves the image unchanged.
+  disposable. `Convolve` rents its scratch rows first: exceeding the allocation limit leaves the image unchanged. `Flip`
+  moves the hotspot of a frame once that frame is completely mirrored.
 - Failed operations release every resource they acquired; nothing is leaked or returned to a pool while still visible.
 
 ### Pixel formats, precision and alpha
@@ -440,6 +481,13 @@ alpha, and rejects incompatible ICC profiles; use `CloneAs<Gray8>` to change the
 matrix). `Flip`, `Grayscale` and `Convolve` also exist for one frame. Geometry changes preserve 16-bit precision and alpha, and reconcile the EXIF dimensions,
 orientation and thumbnail. `ConvertColorProfile` converts the colors to another ICC profile
 (see [Color management](#color-management)).
+
+**Cursor hotspots**. A hotspot (`Frames[i].Metadata.Hotspot`) follows the pixel it designates:
+`Crop` and `AutoCrop` translate it, `Rotate`, `Flip` and `AutoOrient` permute it exactly, and `Resize` moves it to
+`floor(x * newWidth / width)` (and likewise vertically, through the kept region for `Cover`), which is how Windows
+scales a cursor: a hotspot in the top-left corner stays there. When that pixel is not part of the result (a crop, an auto-crop or
+a `Cover` resize that removes it), the operation throws `UnsupportedImageFeatureException` and leaves the image unchanged;
+set the hotspot to `null` or to a pixel that is kept first. Pixel-only operations keep it.
 
 **Auto-cropping**. `AutoCrop` removes the uniform background around the content of an image, such as the margin of a
 product picture or of a scan, and returns whether the image changed. `AnalyzeAutoCrop` does the detection alone: it
@@ -590,6 +638,10 @@ resolution, ICC/EXIF/XMP profiles (byte-for-byte payloads) and text entries.
 - **Saving follows `ImageEncoder.MetadataHandling`**: `Strict` (default) throws `UnsupportedImageFeatureException` for
   metadata the format cannot store, `DiscardUnsupported` drops it, `Strip` writes no optional metadata. Animation timing
   is never affected. A malformed caller-supplied EXIF, ICC or XMP payload is rejected at save time.
+- **A cursor hotspot is per-frame metadata** (`FrameMetadata.Hotspot`). CUR and ANI always store one per image (the
+  top-left corner when the frame has none), whatever the policy. For every other output a frame hotspot is metadata the
+  format cannot store: it follows `MetadataHandling` like the rest, so a cursor is never saved as a plain picture
+  without an explicit choice.
 - Decoded metadata is bounded: payloads, decompressed text included, are charged to `MaxMetadataBytes`.
 
 | Metadata | PNG | GIF | JPEG | WebP | QOI | BMP | TGA | PNM |
@@ -601,8 +653,9 @@ resolution, ICC/EXIF/XMP profiles (byte-for-byte payloads) and text entries.
 | Resolution | `pHYs` (pixels per meter) | not stored | JFIF density | not stored | not stored | `biXPelsPerMeter`/`biYPelsPerMeter` | not stored | not stored |
 | Linear transfer function | not stored | not stored | not stored | not stored | header colorspace 1 | not stored | not stored | not stored |
 
-TIFF stores the resolution, the orientation, an ICC profile and XMP (no EXIF block, no text entries); ICO and CUR store no
-metadata. Unknown chunks, segments and extensions are skipped on decode and not round-tripped.
+TIFF stores the resolution, the orientation, an ICC profile and XMP (no EXIF block, no text entries); ICO stores no
+metadata, CUR only the hotspot of each representation, and ANI the hotspot of each frame plus one `Title` and one `Author`
+text entry (Latin-1). Unknown chunks, segments and extensions are skipped on decode and not round-tripped.
 
 <!-- snippet: edit-metadata -->
 ```csharp
@@ -741,11 +794,11 @@ examined nor validated. Limits are inclusive and enforced before allocating or c
 
 `MaxEncodedBytes` equal to the length of the input is always enough, and a smaller value fails the same way from a span,
 a path or a stream. A stream only reports its end by returning no byte, so when the format needs the end of the input (the
-TGA trailer, the last sample of a plain Netpbm raster, a TIFF or an icon buffered whole, an input shorter than the detection
+TGA trailer, the last sample of a plain Netpbm raster, a TIFF, an icon or an animated cursor buffered whole, an input shorter than the detection
 prefix) and every byte the limit allows was read, one more byte is read and discarded to tell an input that ends there from
 a longer one. It is the only byte ever read past the limit, and it is never decoded.
 
-TIFF, ICO and CUR are random-access containers: on a seekable source, only the bytes their structure points at are read
+TIFF, ICO, CUR and ANI are random-access containers: on a seekable source, only the bytes their structure points at are read
 (the stream position afterward is unspecified), and a non-seekable or asynchronous load buffers the input, bounded by
 `MaxEncodedBytes`.
 
@@ -756,7 +809,7 @@ of decoder or encoder state, plus the images the caller keeps.
 
 **Streams.** Every stream API starts at the stream's current position and consumes what it reads (no rewinding).
 Non-seekable streams are supported for input (bounded prefix replay) and output (no seeking, except for the WebP
-animations and TIFF files described below). Caller streams are left open: eager APIs never close them, and
+animations, animated cursors and TIFF files described below). Caller streams are left open: eager APIs never close them, and
 readers/writers close them only with `LeaveOpen = false` (for a reader, ownership then transfers even when opening fails).
 Path overloads own and close their files. Asynchronous methods use asynchronous I/O and accept a `CancellationToken`;
 argument errors are thrown synchronously.
@@ -770,13 +823,14 @@ argument errors are thrown synchronously.
 - `ReadFrame` returns an owned single-frame still image (with its duration and image metadata; animation-wide settings are
   in `Info`), or `null` at the clean end of the animation or when `FrameLimit` is reached.
 - `ReadFrameInto(destination)` overwrites a caller-owned image instead of allocating one. The destination must have the
-  canvas size, exactly one frame, no poster and no animation settings; its duration and metadata are refreshed. It returns
+  canvas size, exactly one frame, no poster and no animation settings; its duration, hotspot and metadata are refreshed. It returns
   `false` at the clean end (destination unchanged); after a failure the destination may be partially updated but stays
   valid, and it stays charged to its own owner.
 - `null`/`false` always means a clean end. Malformed data, limits, I/O errors and cancellation throw and fault the reader
   (later calls throw `InvalidOperationException`); argument errors leave it usable.
 - TIFF, ICO and CUR are rejected explicitly: their entries are pages or representations, not a frame sequence (use
-  `ImageCollection`).
+  `ImageCollection`). ANI is rejected too: its steps show stored frames in an order that is only known once the whole
+  file is read (use `Image.Load`).
 
 **Writers** (`Image.CreateWriter<TPixel>`): an optional `WritePosterFrame` (animated PNG only, before the first frame),
 then `WriteFrame` for each frame, then **`Complete`, which is mandatory**: disposing a writer without a successful
@@ -790,6 +844,7 @@ output.
 | APNG | Required (the count precedes the image data and seeking is never used) |
 | GIF | Optional: unknown counts are supported with fixed memory (local palettes, no global prepass) |
 | WebP | Optional; an animation (any count other than 1) needs a seekable destination |
+| ANI | Optional; any count, with a seekable destination (the counts and sizes are patched at completion) |
 | JPEG, QOI, BMP, TGA, Netpbm, TIFF, ICO/CUR | Optional; exactly one frame |
 
 `Complete` checks that at least one frame was written and that the count matches. Errors detected before any work
@@ -862,7 +917,7 @@ public static void StreamingWithReusedBuffer(string inputPath, string outputPath
 
 `Save(stream, encoder)` requires an encoder. `Save(path)` infers it from the extension: `.png`
 (APNG when the image is animated), `.apng` (always APNG), `.gif`, `.jpg`/`.jpeg`, `.webp` (lossless by default), `.qoi`,
-`.bmp`/`.dib`, `.tga`/`.icb`/`.vda`/`.vst`, `.pnm`/`.pam`/`.ppm`/`.pgm`, `.tif`/`.tiff`, `.ico` and `.cur`; anything
+`.bmp`/`.dib`, `.tga`/`.icb`/`.vda`/`.vst`, `.pnm`/`.pam`/`.ppm`/`.pgm`, `.tif`/`.tiff`, `.ico`, `.cur` and `.ani`; anything
 else throws `ArgumentException`. An eager save validates the whole image against the output (animation, poster,
 durations, alpha, precision, metadata) before writing anything.
 
@@ -879,7 +934,7 @@ Content errors derive from `ImageException`:
 | --- | --- |
 | `UnknownImageFormatException` | The signature is not recognized. |
 | `InvalidImageContentException` (`Format`) | Malformed, inconsistent or truncated data; also a malformed caller-supplied EXIF/ICC/XMP payload at save time. |
-| `UnsupportedImageFeatureException` (`Format`, `Feature`) | A valid but unsupported feature (arithmetic JPEG, CMYK, GIF plain text...), or an operation that would lose animation, alpha, precision, metadata, a poster or a profile without an explicit setting, or a duration/play count the output cannot represent. |
+| `UnsupportedImageFeatureException` (`Format`, `Feature`) | A valid but unsupported feature (arithmetic JPEG, CMYK, GIF plain text...), or an operation that would lose animation, alpha, precision, metadata, a cursor hotspot, a poster or a profile without an explicit setting, or a duration/play count the output cannot represent. |
 | `ImageResourceLimitException` (`Kind`, `Limit`, `Requested`) | A configured limit was exceeded. |
 
 Other failures use the standard exceptions: `ArgumentException` (invalid arguments, mismatched frames),
@@ -1159,18 +1214,39 @@ premultiplied or unspecified extra samples are recognized and rejected with `Uns
 ### ICO and CUR
 
 Use `ImageCollection` to read and write every representation (see
-[Pages and representations](#pages-and-representations)); `Image.Load` reads the largest (then deepest) one.
+[Pages and representations](#pages-and-representations)); `Image.Load` reads the largest (then deepest) one, with the
+hotspot of a cursor on its frame.
 
 | Feature | Decoding | Encoding |
 | --- | --- | --- |
 | Directory | Checked payload offsets and lengths, reserved fields validated, count bounded by `MaxFrames` | One entry per representation; payloads are encoded in memory first, so no seeking is needed |
 | Geometry | The payload is authoritative (a directory byte cannot express more than 256, and 0 means 256); a contradicting non-zero directory dimension is rejected | At most 256 pixels per side |
-| PNG payloads | Decoded by the PNG codec; an animated PNG payload is rejected | A still PNG without metadata (`IconPayloadFormat.Png`, or `Auto` above 64 pixels per side) |
-| DIB payloads | The icon rules, not the BMP ones: the stored height is doubled (color rows plus the 1-bit AND mask), bottom-up rows, 1/4/8/16/24/32-bit layouts, palettes, bit-field masks; every DIB-backed representation decodes to `Rgba32` | 32-bit `BI_RGB` with straight alpha and an all-zero AND mask (`IconPayloadFormat.Dib`, or `Auto` up to 64 pixels per side) |
+| PNG payloads | Decoded by the PNG codec; an animated PNG payload is rejected | A still PNG without metadata (`IconPayloadFormat.Png`, or `Auto` above 64 pixels per side or for 16-bit pixels) |
+| DIB payloads | The icon rules, not the BMP ones: the stored height is doubled (color rows plus the 1-bit AND mask), bottom-up rows, 1/4/8/16/24/32-bit layouts, palettes, bit-field masks; every DIB-backed representation decodes to `Rgba32` | 32-bit `BI_RGB` with straight alpha and an all-zero AND mask (`IconPayloadFormat.Dib`, or `Auto` up to 64 pixels per side); 8-bit samples only, so `Dib` rejects `Rgba64` and `Gray16` pixels instead of narrowing them |
 | AND mask and alpha | A 32-bit `BI_RGB` payload stores alpha in its fourth byte, unless that channel is entirely zero, in which case the AND mask decides transparency | The alpha channel carries the transparency |
-| Cursor hotspots | Read from a `CUR` entry and validated against its own representation | `IcoEncoder.Kind = Cursor` writes the hotspot of every entry (top-left when it has none); an icon cannot store one and follows `MetadataHandling` |
+| Cursor hotspots | Read from a `CUR` entry and validated against its own representation; exposed by `ImageCollectionEntry.Hotspot` and on the frame of the decoded image | `IcoEncoder.Kind = Cursor` writes the hotspot of every entry, or of the frame for `Image.Save` (top-left when there is none); an icon cannot store one and follows `MetadataHandling` |
 
-`.ani` animated cursors are a different container and are not supported.
+Animated cursors are a different container: see [ANI](#ani).
+
+### ANI
+
+An animated cursor is an animation: `Image.Load` returns one frame per step, in playback order, each with the duration
+of its step and the hotspot of its cursor image, and `Image.Save` writes one step per frame. The container is read by
+offset, like the icon files it embeds, so it is neither streamed by `Image.OpenReader` nor an `ImageCollection`.
+**`AniEncoder` needs a seekable destination**, because the counts and sizes stored at the start of the file are only
+known once the last frame is written.
+
+| Feature | Decoding | Encoding |
+| --- | --- | --- |
+| Container | RIFF `ACON`: chunks in any order (tables before or after the frames), unknown chunks skipped, word alignment, every size checked against its container, counts bounded by `MaxFrames`; bytes after the RIFF container are ignored | `anih`, the frame list, then `rate` and `seq ` when they are needed; the counts and sizes are patched at completion |
+| Steps and sequence | The `seq ` chunk is expanded: a frame shown by several steps is read and decoded once and becomes as many independent frames, each counted against `MaxFrames` and `MaxTotalPixels`; frames that no step shows are not decoded | Frames whose encoded cursor image and hotspot are identical are stored once and replayed through `seq ` |
+| Timing | Jiffies (`j/60` s) from `rate`, else the default rate of the header; kept exactly, zero included | `AniEncoder.DurationRounding` (default `RoundToNearest`, ties up); at most 2^32 - 1 jiffies; a `rate` chunk only when the durations differ |
+| Play count | Always infinite (`TotalPlays = null`); a file is always an animation, even with a single step | A finite `TotalPlays` is rejected; a still image is written as one step |
+| Frames | Icon or cursor files with PNG or DIB payloads (see [ICO and CUR](#ico-and-cur)). The first step fixes the canvas with the largest (then deepest) representation; every other frame shows its deepest representation of that size, and a frame without one is rejected | One representation per frame, written as a cursor file: `IconPayloadFormat.Dib`, `Png`, or `Auto` (a PNG above 64 pixels per side or for 16-bit pixels); at most 256 pixels per side |
+| Pixel format | `Rgba32`, or `Rgba64` for the whole animation when a displayed PNG frame has 16-bit samples: nothing is narrowed | Any; 16-bit pixels need a PNG payload (`Dib` is rejected) |
+| Hotspots | The hotspot of the displayed cursor representation, per frame (`null` for an icon-typed frame), validated against it | `Frames[i].Metadata.Hotspot`, per frame (top-left when there is none) |
+| Metadata | `INFO` list: `INAM` as a `Title` text entry and `IART` as an `Author` one (Latin-1) | One `Title` and one `Author` text entry (Latin-1, no NUL), following `MetadataHandling` |
+| Memory | The structure is validated without decoding a pixel; one embedded frame is decoded at a time | One encoded frame at a time, plus 8 bytes per step and a digest per distinct frame |
 
 ## Limitations
 
@@ -1189,7 +1265,8 @@ Everything below is rejected explicitly (never decoded or encoded approximately)
 | TGA | Decoding: no 16-bit color-map indexes or 16-bit grayscale; premultiplied alpha (attributes type 4) is rejected and no other attributes type changes the decoded representation (an alpha channel the extension area calls absent or undefined is still decoded when the image descriptor declares it); the other fields of the extension area and the developer area are not interpreted; the input is read to its end and the bytes after the image data are buffered; truncation is only detected before the end of the image data. Encoding: true-color and grayscale only, bottom-up, one still image, at most 65,535 pixels per side; no color map, no 15/16-bit output, no metadata |
 | Netpbm | Decoding: only the first image of a concatenation is read; tuple types other than the standard grayscale, RGB and alpha forms are rejected; the header is bounded at 65,536 bytes; truncation of a plain raster is not detectable. Encoding: `P2`/`P3`/`P5`/`P6`/`P7` only (the variant follows the pixel format, not the extension), one image, no metadata; plain output has no alpha (PAM has no plain form) |
 | TIFF | Decoding: LZW, PackBits, CCITT fax and JPEG compression, palette, CMYK, YCbCr and L\*a\*b\* photometric interpretations, planar storage, reversed fill order, the floating-point predictor, signed and floating-point samples, sample widths other than 8 and 16 bits, more than one extra sample, and associated (premultiplied) or unspecified extra samples are all rejected with `UnsupportedImageFeatureException`. No EXIF block, no sub-IFD, no unknown-tag round trip. Encoding: one page per `Image.Save` (use `ImageCollection.Save`), strips only, no predictor, no tiles, a seekable destination required |
-| ICO/CUR | Decoding: a top-down DIB payload, a DIB whose stored height is not doubled, an animated PNG payload, a representation larger than 256 pixels per side and the DIB variants the BMP decoder rejects (RLE, embedded codecs, OS/2 headers) are rejected. `.ani` animated cursors are a different container and are not supported. Encoding: 32-bit DIB or still PNG payloads only, at most 256 pixels per side, no metadata; an icon cannot store a hotspot |
+| ICO/CUR | Decoding: a top-down DIB payload, a DIB whose stored height is not doubled, an animated PNG payload, a representation larger than 256 pixels per side and the DIB variants the BMP decoder rejects (RLE, embedded codecs, OS/2 headers) are rejected. Encoding: 32-bit DIB or still PNG payloads only (16-bit pixels need a PNG payload: `IconPayloadFormat.Dib` is rejected for them), at most 256 pixels per side, no metadata; an icon cannot store a hotspot |
+| ANI | Decoding: raw bitmap frames (no icon flag), a frame without a representation of the canvas size and everything the ICO/CUR decoder rejects are `UnsupportedImageFeatureException`; the geometry fields and the sequence flag of the header are not used (the payloads and the `seq ` chunk are authoritative); an ICC profile or text inside a PNG frame is not retained; `Image.OpenReader` does not read it. Encoding: one representation per frame, at most 256 pixels per side, whole jiffies, an infinite play count only, a title and an author as the only metadata, a seekable destination, at most 4 GiB per file |
 | PNG/APNG | No palette output (paletted inputs are re-encoded as RGB/RGBA), no RGB 16-bit or gray+alpha output layouts (16-bit color is written as RGBA 16), no APNG delta-rectangle optimization, unknown critical chunks rejected, unknown ancillary chunks not round-tripped |
 | Metadata | Profiles are preserved and labeled, never applied implicitly (colors are converted only by `ConvertColorProfile` and `IccColorTransform`); EXIF orientation is reported, applied only by `AutoOrient`; extended XMP in JPEG is not supported; per-format storage limits are listed in [Metadata, color profiles and orientation](#metadata-color-profiles-and-orientation); unsupported items follow `MetadataHandling` (`Strict` throws by default) |
 | Color management | ICC version 2 and 4 grayscale, RGB and CMYK profiles (matrix-based and table-based): no version 5 (iccMAX), device-link, abstract or named-color profile, no multi-process-element (`D2Bx`/`B2Dx`) tag, no other data color space; `ConvertColorProfile` keeps the pixel format (an RGB image cannot become grayscale or CMYK this way); CMYK images cannot be decoded; no gamut mapping beyond per-channel clipping |

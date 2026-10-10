@@ -288,6 +288,131 @@ public sealed class ProcessingTests
         AssertFrame(image.Frames[0], [[15, 12]]);
     }
 
+    // -----------------------------------------------------------------------------------------------------------------
+    // Cursor hotspots
+    // -----------------------------------------------------------------------------------------------------------------
+
+    public static TheoryData<string, int, int> HotspotPermutations => new()
+    {
+        // The hotspot designates C, the top-right pixel of [[A, B, C], [D, E, F]]: where C is in each result
+        { "Rotate90", 1, 2 },
+        { "Rotate180", 0, 1 },
+        { "Rotate270", 0, 0 },
+        { "FlipHorizontal", 0, 0 },
+        { "FlipVertical", 2, 1 },
+        { "AutoOrient1", 2, 0 },
+        { "AutoOrient2", 0, 0 },
+        { "AutoOrient3", 0, 1 },
+        { "AutoOrient4", 2, 1 },
+        { "AutoOrient5", 0, 2 },
+        { "AutoOrient6", 1, 2 },
+        { "AutoOrient7", 1, 0 },
+        { "AutoOrient8", 0, 0 },
+    };
+
+    [Theory]
+    [MemberData(nameof(HotspotPermutations))]
+    public void AHotspotFollowsItsPixelThroughRotationsMirrorsAndAutoOrient(string operation, int expectedX, int expectedY)
+    {
+        using var image = Build<Rgba32>(Source3X2);
+        image.Frames[0].Metadata.Hotspot = new Point(2, 0);
+        switch (operation)
+        {
+            case "Rotate90":
+                image.Rotate(RotateMode.Rotate90, Ct);
+                break;
+            case "Rotate180":
+                image.Rotate(RotateMode.Rotate180, Ct);
+                break;
+            case "Rotate270":
+                image.Rotate(RotateMode.Rotate270, Ct);
+                break;
+            case "FlipHorizontal":
+                image.Flip(FlipMode.Horizontal, Ct);
+                break;
+            case "FlipVertical":
+                image.Flip(FlipMode.Vertical, Ct);
+                break;
+            default:
+                image.Metadata.Orientation = (ExifOrientation)(operation[^1] - '0');
+                image.AutoOrient(Ct);
+                break;
+        }
+
+        Assert.Equal(new Point(expectedX, expectedY), image.Frames[0].Metadata.Hotspot);
+        Assert.Equal(Pixel<Rgba32>(3), image.Frames[0][expectedX, expectedY]); // it still designates C
+    }
+
+    [Fact]
+    public void ACropTranslatesTheHotspotAndNeverRemovesItSilently()
+    {
+        using (var image = Build<Rgba32>(Source3X2))
+        {
+            image.Frames[0].Metadata.Hotspot = new Point(2, 1);
+            image.Crop(new Rectangle(1, 1, 2, 1), Ct);
+            Assert.Equal(new Point(1, 0), image.Frames[0].Metadata.Hotspot); // the last kept column, the only kept row
+            AssertFrame(image.Frames[0], [[5, 6]]);
+        }
+
+        using var removed = Build<Rgba32>(Source3X2, Offset(Source3X2, 10));
+        removed.Frames[1].Metadata.Hotspot = new Point(2, 0);
+        var exception = Assert.Throws<UnsupportedImageFeatureException>(() => removed.Crop(new Rectangle(0, 0, 2, 2), Ct));
+        Assert.Equal("Cursor hotspot outside the kept region", exception.Feature);
+        Assert.Contains("frame 1", exception.Message, StringComparison.Ordinal);
+        Assert.Equal(new Size(3, 2), removed.Size);
+        Assert.Equal(new Point(2, 0), removed.Frames[1].Metadata.Hotspot);
+        AssertFrame(removed.Frames[1], Source3X2, idOffset: 10);
+
+        // Removing the pixel a hotspot designates is the caller's explicit choice
+        removed.Frames[1].Metadata.Hotspot = null;
+        removed.Crop(new Rectangle(0, 0, 2, 2), Ct);
+        Assert.Equal(new Size(2, 2), removed.Size);
+    }
+
+    [Fact]
+    public void EveryFrameAndThePosterKeepTheirOwnHotspot()
+    {
+        using var image = Build<Rgba32>(Source3X2, Offset(Source3X2, 10), Offset(Source3X2, 20));
+        image.SetPosterFrame(image.Frames[0]);
+        image.Frames[0].Metadata.Hotspot = new Point(0, 0);
+        image.Frames[2].Metadata.Hotspot = new Point(2, 1);
+        image.PosterFrame!.Metadata.Hotspot = new Point(1, 0);
+
+        image.Rotate(RotateMode.Rotate90, Ct);
+        Assert.Equal(new Point(1, 0), image.Frames[0].Metadata.Hotspot); // A is now the top-right pixel
+        Assert.Null(image.Frames[1].Metadata.Hotspot);
+        Assert.Equal(new Point(0, 2), image.Frames[2].Metadata.Hotspot); // F is now the bottom-left pixel
+        Assert.Equal(new Point(1, 1), image.PosterFrame.Metadata.Hotspot); // B
+
+        var exception = Assert.Throws<UnsupportedImageFeatureException>(() => image.Crop(new Rectangle(0, 0, 2, 1), Ct));
+        Assert.Contains("frame 2", exception.Message, StringComparison.Ordinal);
+        image.Frames[2].Metadata.Hotspot = null;
+        Assert.Contains("poster", Assert.Throws<UnsupportedImageFeatureException>(() => image.Crop(new Rectangle(0, 0, 2, 1), Ct)).Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void FlippingOneFrameMovesOnlyItsHotspotAndPixelOperationsKeepIt()
+    {
+        using var image = Build<Rgba32>(Source3X2, Offset(Source3X2, 10));
+        image.Frames[0].Metadata.Hotspot = new Point(2, 0);
+        image.Frames[1].Metadata.Hotspot = new Point(2, 0);
+        image.Frames[1].Flip(FlipMode.Horizontal, Ct);
+        Assert.Equal(new Point(2, 0), image.Frames[0].Metadata.Hotspot);
+        Assert.Equal(new Point(0, 0), image.Frames[1].Metadata.Hotspot);
+
+        image.Grayscale(Ct);
+        image.Convolve(Sharpen, Ct);
+        image.Frames[0].Grayscale(Ct);
+        Assert.Equal(new Point(2, 0), image.Frames[0].Metadata.Hotspot);
+        Assert.Equal(new Point(0, 0), image.Frames[1].Metadata.Hotspot);
+
+        // The identity operations do nothing to it either
+        image.Rotate(RotateMode.None, Ct);
+        image.AutoOrient(Ct);
+        image.Crop(new Rectangle(0, 0, 3, 2), Ct);
+        Assert.Equal(new Point(2, 0), image.Frames[0].Metadata.Hotspot);
+    }
+
     [Fact]
     public void GeometryReleasesTheOriginalStorageAndChargesOldAndNewBuffersTogether()
     {
@@ -812,6 +937,23 @@ public sealed class ProcessingTests
     }
 
     [Fact]
+    public void ConvertColorProfileKeepsCursorHotspots()
+    {
+        // Colors change, pixels do not move: the hotspot of every frame and of the poster stays where it is
+        var displayP3 = IccTestProfiles.Rgb(IccTestProfiles.DisplayP3Colorants, IccTestProfiles.SrgbCurve());
+        using var image = Build<Rgba32>(Source3X2, Offset(Source3X2, 10));
+        image.SetPosterFrame(image.Frames[1]);
+        image.Frames[0].Metadata.Hotspot = new Point(2, 1);
+        image.Frames[1].Metadata.Hotspot = new Point(0, 0);
+        image.PosterFrame!.Metadata.Hotspot = new Point(1, 1);
+        image.ConvertColorProfile(displayP3, cancellationToken: Ct);
+        Assert.Same(displayP3, image.Metadata.IccProfile);
+        Assert.Equal(new Point(2, 1), image.Frames[0].Metadata.Hotspot);
+        Assert.Equal(new Point(0, 0), image.Frames[1].Metadata.Hotspot);
+        Assert.Equal(new Point(1, 1), image.PosterFrame.Metadata.Hotspot);
+    }
+
+    [Fact]
     public void ConvertColorProfileConvertsLinearLightSamplesAndResetsTheLabel()
     {
         // Linear light with the sRGB primaries: only the sRGB encoding is applied (32768 / 65535 encodes to 48192 / 65535)
@@ -1219,6 +1361,9 @@ public sealed class ProcessingTests
         var image = Build<Rgba32>(configuration, new AllocationScope(configuration.Limits, pool), layout: null, Source3X2, Offset(Source3X2, 10));
         image.SetPosterFrame(image.Frames[1]);
         image.Frames[0].Metadata.Duration = new FrameDuration(1, 3);
+        image.Frames[0].Metadata.Hotspot = new Point(2, 1);
+        image.Frames[1].Metadata.Hotspot = new Point(1, 0);
+        image.PosterFrame!.Metadata.Hotspot = new Point(1, 1);
         image.Metadata.ExifProfile = CreateExif(orientation: 7, width: 3, height: 2);
         image.Metadata.Orientation = ExifOrientation.RightBottom;
         return image;
@@ -1277,6 +1422,8 @@ public sealed class ProcessingTests
         private PixelStorage[] _storages = [];
         private Rgba32[][] _pixels = [];
         private FrameDuration[] _durations = [];
+        private Point?[] _hotspots = [];
+        private Point? _posterHotspot;
         private ImageFrame? _poster;
         private PixelStorage? _posterStorage;
         private Rgba32[] _posterPixels = [];
@@ -1295,6 +1442,8 @@ public sealed class ProcessingTests
                 _storages = [.. frames.Select(frame => frame.Storage)],
                 _pixels = [.. frames.Select(CopyPixels)],
                 _durations = [.. frames.Select(frame => frame.Metadata.Duration)],
+                _hotspots = [.. frames.Select(frame => frame.Metadata.Hotspot)],
+                _posterHotspot = image.PosterFrame?.Metadata.Hotspot,
                 _poster = image.PosterFrame,
                 _posterStorage = image.PosterFrame?.Storage,
                 _posterPixels = image.PosterFrame is null ? [] : CopyPixels(image.PosterFrame),
@@ -1315,6 +1464,7 @@ public sealed class ProcessingTests
                 Assert.Same(_storages[i], image.Frames[i].Storage);
                 Assert.Equal(_pixels[i], CopyPixels(image.Frames[i]));
                 Assert.Equal(_durations[i], image.Frames[i].Metadata.Duration);
+                Assert.Equal(_hotspots[i], image.Frames[i].Metadata.Hotspot);
             }
 
             Assert.Same(_poster, image.PosterFrame);
@@ -1322,6 +1472,7 @@ public sealed class ProcessingTests
             {
                 Assert.Same(_posterStorage, image.PosterFrame!.Storage);
                 Assert.Equal(_posterPixels, CopyPixels(image.PosterFrame));
+                Assert.Equal(_posterHotspot, image.PosterFrame.Metadata.Hotspot);
             }
 
             Assert.Same(_exif, image.Metadata.ExifProfile);

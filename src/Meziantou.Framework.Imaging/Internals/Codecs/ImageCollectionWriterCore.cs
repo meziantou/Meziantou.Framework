@@ -104,6 +104,7 @@ internal static class ImageCollectionWriterCore
             var image = page.Image;
             var frame = image.Frames[0];
             var metadata = MetadataWritePlan.Create(image.Metadata, ImageFormat.Tiff, encoder.MetadataHandling, image.Size, image.PixelFormat);
+            MetadataWritePlan.ValidateFrameMetadata(frame.MetadataCore, ImageFormat.Tiff, encoder.MetadataHandling);
             writer.BeginPage(image.Size, image.PixelFormat, metadata);
             while (!writer.EncodeStrip(output, frame, CancellationToken.None))
             {
@@ -131,10 +132,12 @@ internal static class ImageCollectionWriterCore
 
                 // An icon directory stores no metadata: the policy decides whether unstorable metadata is an error
                 _ = MetadataWritePlan.Create(image.Metadata, encoder.Format, encoder.MetadataHandling, image.Size, image.PixelFormat);
-                if (encoder.Kind == IconKind.Icon && entry.Hotspot is not null && encoder.MetadataHandling == MetadataHandling.Strict)
-                    throw new UnsupportedImageFeatureException("An icon directory cannot store a hotspot. Set IcoEncoder.Kind to Cursor, remove the hotspot, or set MetadataHandling to DiscardUnsupported.", encoder.Format, "Metadata: cursor hotspot");
+                var frame = image.Frames[0];
 
-                encoded.Add(IcoDocumentWriter.EncodeEntry(encoder, new IcoDocumentWriter.Entry(image.Frames[0], image.PixelFormat, entry.Hotspot), scope, configuration));
+                // The materialized frame carries the hotspot of its entry; only a cursor directory stores it
+                MetadataWritePlan.ValidateFrameMetadata(frame.MetadataCore, encoder.Format, encoder.MetadataHandling);
+                var hotspot = ImageOutputCapabilities.StoresFrameHotspot(encoder.Format) ? frame.MetadataCore.Hotspot : null;
+                encoded.Add(IcoDocumentWriter.EncodeEntry(encoder, new IcoDocumentWriter.Entry(frame, image.PixelFormat, hotspot), scope, configuration));
             }
 
             IcoDocumentWriter.WriteEncoded(encoder, encoded, output);

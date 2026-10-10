@@ -1,7 +1,7 @@
 # Meziantou.Framework.Imaging
 
-A fully managed image library: PNG/APNG, GIF, JPEG, WebP, QOI, BMP, TGA, Netpbm, TIFF and ICO/CUR decoding and encoding,
-animation-aware processing, ICC color conversion, and bounded-memory streaming readers and writers.
+A fully managed image library: PNG/APNG, GIF, JPEG, WebP, QOI, BMP, TGA, Netpbm, TIFF, ICO/CUR and ANI decoding and
+encoding, animation-aware processing, ICC color conversion, and bounded-memory streaming readers and writers.
 
 These instructions complete the repository-level `AGENTS.md`. The user guide is [readme.md](readme.md): it states what
 the library guarantees to its callers (support matrix, limitations, defaults). Keep the code, the XML documentation and

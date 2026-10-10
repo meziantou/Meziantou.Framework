@@ -310,6 +310,25 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void WriteAndReadAnimatedCursorKeepsTheStepsTheirTimingAndTheirHotspots()
+    {
+        var (apngPath, _) = BuildAnimation();
+        var cursorPath = GetPath("busy.ani");
+        var hotspot = Examples.WriteAndReadAnimatedCursor(apngPath, cursorPath);
+        Assert.Equal(new Point(8, 4), hotspot); // (4, 2) on the 32x32 cursor, after doubling its size
+
+        using var cursor = Image.Load(cursorPath);
+        Assert.Equal(ImageFormat.Ani, cursor.Metadata.SourceFormat);
+        Assert.Equal(new Size(32, 32), cursor.Size);
+        Assert.Equal(2, cursor.Frames.Count);
+
+        // 100 ms is 6 jiffies and 1/30 s is 2: both are stored exactly
+        Assert.Equal([new FrameDuration(1, 10), new FrameDuration(1, 30)], cursor.Frames.Select(frame => frame.Metadata.Duration));
+        Assert.All(cursor.Frames, frame => Assert.Equal(new Point(4, 2), frame.Metadata.Hotspot));
+        Assert.Null(cursor.Animation!.TotalPlays);
+    }
+
+    [Fact]
     public async Task StreamingResizeAsyncProcessesOneFrameAtATime()
     {
         var (_, gifPath) = BuildAnimation();

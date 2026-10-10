@@ -55,7 +55,20 @@ internal sealed class DecodedImageBuilder : DecodedFrameSink
         return _image;
     }
 
-    private protected override void OnBeginFrame(FrameDuration duration)
+    public override void CopyFromFrame(int frameIndex)
+    {
+        var current = GetCurrentFrame();
+
+        // The count includes the current frame, which is the last one
+        if ((uint)frameIndex >= (uint)(FrameCount - 1))
+            throw new ArgumentOutOfRangeException(nameof(frameIndex), frameIndex, "Only an earlier displayed frame can be copied.");
+
+        var source = Image.GetFrameForDecoder(_image!, frameIndex);
+        using var leases = PixelLeasePair.Acquire(source.GetStorage(), current.GetStorage());
+        leases.First.CopyTo(leases.Second);
+    }
+
+    private protected override void OnBeginFrame(FrameDuration duration, Point? hotspot)
     {
         var image = EnsureImage();
         ImageFrame frame;
@@ -70,6 +83,7 @@ internal sealed class DecodedImageBuilder : DecodedFrameSink
         }
 
         frame.MetadataCore.Duration = duration;
+        frame.MetadataCore.SetHotspotUnchecked(hotspot);
         _current = frame;
     }
 

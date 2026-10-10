@@ -3,7 +3,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <summary>
 /// A bounded, read-only, random-access input: the bytes of one encoded file, addressable by offset. It is the I/O half of
 /// the container formats whose structure is a graph of file offsets instead of a byte stream: TIFF/BigTIFF image file
-/// directories and ICO/CUR directories. The forward-only <see cref="ImageParser{TResult}"/> contract
+/// directories, ICO/CUR directories and the chunks of an animated cursor. The forward-only <see cref="ImageParser{TResult}"/> contract
 /// cannot express them, because an offset may point anywhere in the file, including before the current position.
 /// </summary>
 /// <remarks>

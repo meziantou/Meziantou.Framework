@@ -64,4 +64,18 @@ internal readonly record struct OrientationTransform(bool Transpose, bool FlipX,
 
     /// <summary>Gets the size of the result for a source of <paramref name="source"/> size.</summary>
     public Size GetOutputSize(Size source) => Transpose ? new Size(source.Height, source.Width) : source;
+
+    /// <summary>
+    /// Gets where a source pixel lands in the result: the inverse of the destination-to-source mapping, so the returned
+    /// point designates the same pixel value after the permutation (a cursor hotspot follows its pixel).
+    /// </summary>
+    /// <param name="source">The size of the transformed source region.</param>
+    /// <param name="point">A pixel inside that region, relative to its top-left corner.</param>
+    /// <returns>The position of the pixel in the result.</returns>
+    public Point MapPoint(Size source, Point point)
+    {
+        var u = FlipX ? source.Width - 1 - point.X : point.X;
+        var v = FlipY ? source.Height - 1 - point.Y : point.Y;
+        return Transpose ? new Point(v, u) : new Point(u, v);
+    }
 }

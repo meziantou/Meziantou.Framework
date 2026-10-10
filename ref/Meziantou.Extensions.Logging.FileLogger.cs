@@ -22,6 +22,7 @@ namespace Meziantou.Extensions.Logging
     {
         [System.Diagnostics.CodeAnalysis.DynamicDependency(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties, typeof(Meziantou.Extensions.Logging.FileLoggerOptions))]
         [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access", Justification = "The members of FileLoggerOptions used by the configuration binder are preserved by the DynamicDependency attribute")]
+        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("AOT", "IL3050:Calling members annotated with 'RequiresDynamicCodeAttribute' may break functionality when AOT compiling", Justification = "The configuration binder only generates code at runtime to create collections, and FileLoggerOptions has no collection property")]
         public static Microsoft.Extensions.Logging.ILoggingBuilder AddFile(this Microsoft.Extensions.Logging.ILoggingBuilder builder) => throw null;
         public static Microsoft.Extensions.Logging.ILoggingBuilder AddFile(this Microsoft.Extensions.Logging.ILoggingBuilder builder, string logsDirectory) => throw null;
         public static Microsoft.Extensions.Logging.ILoggingBuilder AddFile(this Microsoft.Extensions.Logging.ILoggingBuilder builder, System.Action<Meziantou.Extensions.Logging.FileLoggerOptions> configure) => throw null;

@@ -9,6 +9,11 @@
     <IsTrimmable>false</IsTrimmable>
   </PropertyGroup>
 
+  <!-- The trimming validation (eng/Trimmable) does not report the AOT-specific warnings (IL3xxx), so a trimmable project also runs the AOT analyzers unless it opts out -->
+  <PropertyGroup Condition="'$(IsTrimmable)' == 'true' AND '$(IsAotCompatible)' == ''">
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
+
   <ItemGroup Condition="'$(MSBuildProjectExtension)' == '.csproj'">
     <Compile Include="$(MSBuildThisFileDirectory)/common/AssemblyInfo.cs"
              Link="Properties/AssemblyInfo.common.cs"

@@ -138,6 +138,23 @@ namespace Meziantou.Framework.Imaging
         public static bool operator !=(Meziantou.Framework.Imaging.Gray8 left, Meziantou.Framework.Imaging.Gray8 right) => throw null;
     }
 
+    public sealed class IccColorTransform
+    {
+        public int SourceChannelCount { get => throw null; }
+        public int DestinationChannelCount { get => throw null; }
+        public static Meziantou.Framework.Imaging.IccColorTransform Create(Meziantou.Framework.Imaging.Metadata.IccProfile source, Meziantou.Framework.Imaging.Metadata.IccProfile destination, Meziantou.Framework.Imaging.IccColorTransformOptions? options = null) => throw null;
+        public void Convert(System.ReadOnlySpan<byte> source, System.Span<byte> destination) { }
+        public void Convert(System.ReadOnlySpan<ushort> source, System.Span<ushort> destination) { }
+        public void Convert(System.ReadOnlySpan<float> source, System.Span<float> destination) { }
+    }
+
+    public sealed class IccColorTransformOptions
+    {
+        public static Meziantou.Framework.Imaging.IccColorTransformOptions Default { get => throw null; }
+        public Meziantou.Framework.Imaging.Metadata.IccRenderingIntent Intent { get => throw null; init { } }
+        public bool BlackPointCompensation { get => throw null; init { } }
+    }
+
     public abstract class Image : System.IDisposable
     {
         public const int FormatDetectionPrefixLength = 18;
@@ -384,6 +401,7 @@ namespace Meziantou.Framework.Imaging
         public static void Flip(this Meziantou.Framework.Imaging.ImageFrame frame, Meziantou.Framework.Imaging.FlipMode mode, System.Threading.CancellationToken cancellationToken = null) { }
         public static void Grayscale(this Meziantou.Framework.Imaging.Image image, System.Threading.CancellationToken cancellationToken = null) { }
         public static void Grayscale(this Meziantou.Framework.Imaging.ImageFrame frame, System.Threading.CancellationToken cancellationToken = null) { }
+        public static void ConvertColorProfile(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.Metadata.IccProfile destinationProfile, Meziantou.Framework.Imaging.IccColorTransformOptions? options = null, System.Threading.CancellationToken cancellationToken = null) { }
         public static void Convolve(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.ConvolutionOptions options, System.Threading.CancellationToken cancellationToken = null) { }
         public static void Convolve(this Meziantou.Framework.Imaging.ImageFrame frame, Meziantou.Framework.Imaging.ConvolutionOptions options, System.Threading.CancellationToken cancellationToken = null) { }
     }
@@ -986,9 +1004,27 @@ namespace Meziantou.Framework.Imaging.Metadata
 
     public sealed class IccProfile
     {
+        public static Meziantou.Framework.Imaging.Metadata.IccProfile Srgb { get => throw null; }
+        public static Meziantou.Framework.Imaging.Metadata.IccProfile SrgbGray { get => throw null; }
         public Meziantou.Framework.Imaging.Metadata.MetadataBlob Data { get => throw null; }
         public Meziantou.Framework.Imaging.Metadata.IccProfileColorSpace ColorSpace { get => throw null; }
+        public Meziantou.Framework.Imaging.Metadata.IccProfileClass ProfileClass { get => throw null; }
+        public System.Version Version { get => throw null; }
+        public Meziantou.Framework.Imaging.Metadata.IccRenderingIntent? RenderingIntent { get => throw null; }
         public IccProfile(Meziantou.Framework.Imaging.Metadata.MetadataBlob data) { }
+    }
+
+    public enum IccProfileClass
+    {
+        Unknown = 0,
+        Input = 1,
+        Display = 2,
+        Output = 3,
+        DeviceLink = 4,
+        ColorSpace = 5,
+        Abstract = 6,
+        NamedColor = 7,
+        Other = 8,
     }
 
     public enum IccProfileColorSpace
@@ -998,6 +1034,14 @@ namespace Meziantou.Framework.Imaging.Metadata
         Rgb = 2,
         Cmyk = 3,
         Other = 4,
+    }
+
+    public enum IccRenderingIntent
+    {
+        Perceptual = 0,
+        RelativeColorimetric = 1,
+        Saturation = 2,
+        AbsoluteColorimetric = 3,
     }
 
     public sealed class ImageMetadata

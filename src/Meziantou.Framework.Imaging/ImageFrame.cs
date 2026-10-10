@@ -151,6 +151,9 @@ public abstract class ImageFrame
     /// <summary>Convolves the leased pixels in place with the kernel of the frame pixel type.</summary>
     internal abstract void ConvolvePixels(scoped in PixelLease lease, ConvolutionPlan plan, CancellationToken cancellationToken);
 
+    /// <summary>Converts the colors of the leased source to the leased destination with an ICC conversion (color profile transactions).</summary>
+    internal abstract void ConvertColorPixels(scoped in PixelLease source, scoped in PixelLease destination, IccPipeline pipeline, CancellationToken cancellationToken);
+
     /// <summary>Runs the current pass of an auto-crop analysis over the leased pixels, which are only read.</summary>
     internal abstract void AutoCropAnalyzePixels(scoped in PixelLease lease, AutoCropAnalyzer analyzer, CancellationToken cancellationToken);
 

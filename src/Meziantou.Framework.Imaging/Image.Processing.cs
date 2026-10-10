@@ -304,12 +304,74 @@ public abstract partial class Image
     }
 
     /// <summary>
+    /// Converts the colors of every displayed frame and the poster from the color space of the image to
+    /// <paramref name="destination"/>, transactionally (see <see cref="ReplaceGeometry{TFiller}"/>): the converted pixels
+    /// and the new profile are published together, so a failure never leaves converted pixels labeled with the previous
+    /// profile, nor the reverse.
+    /// </summary>
+    /// <param name="destination">The profile of the converted pixels.</param>
+    /// <param name="options">The conversion options.</param>
+    /// <param name="cancellationToken">The token checked between frames and row bands, and once more right before the commit.</param>
+    /// <exception cref="UnsupportedImageFeatureException">A profile cannot label the pixel format, the color space of the image is ambiguous, or a profile is not supported.</exception>
+    /// <exception cref="InvalidImageContentException">A profile is malformed.</exception>
+    internal void ConvertAllFramesToColorProfile(IccProfile destination, IccColorTransformOptions options, CancellationToken cancellationToken)
+    {
+        const string Operation = "convert the color profile of the image";
+        Owner.EnsureCanModify(Operation);
+        EnsureColorProfileCompatible();
+        if (!ColorProfileCompatibility.IsCompatible(destination, PixelFormat))
+        {
+            var kind = PixelFormats.IsGrayscale(PixelFormat) ? "grayscale" : "color";
+            throw new UnsupportedImageFeatureException(
+                $"The destination ICC profile declares the {destination.ColorSpace} color space, which cannot label {kind} {PixelFormat} pixels. Convert the image to a compatible pixel format first, or convert sample buffers with IccColorTransform.",
+                ImageFormat.Unknown,
+                "Incompatible color profile");
+        }
+
+        var transform = IccColorTransform.Create(GetSourceColorProfile(), destination, options);
+        cancellationToken.ThrowIfCancellationRequested();
+        if (!transform.Pipeline.IsIdentity)
+        {
+            ReplaceGeometry(_size, normalizeOrientation: false, Operation, new ColorConversionFiller(transform.Pipeline), cancellationToken);
+        }
+
+        // Committed (or nothing to convert): the pixels are now described by the destination profile
+        _metadata.IccProfile = destination;
+        _metadata.TransferFunction = ColorTransferFunction.Srgb;
+    }
+
+    /// <summary>
+    /// Gets the profile describing the stored pixels: the ICC profile of the image, else sRGB (sGray for grayscale
+    /// formats), or their linear-light counterparts when the samples are labeled linear.
+    /// </summary>
+    /// <exception cref="UnsupportedImageFeatureException">The image has both an ICC profile and the linear transfer function label.</exception>
+    private IccProfile GetSourceColorProfile()
+    {
+        var linear = _metadata.TransferFunction == ColorTransferFunction.Linear;
+        if (_metadata.IccProfile is { } profile)
+        {
+            if (linear)
+                throw new UnsupportedImageFeatureException(
+                    "The image has an ICC profile and is also labeled as linear light (ImageMetadata.TransferFunction), so its color space is ambiguous. Remove the profile if the samples are linear sRGB, or reset the transfer function if the profile describes them.",
+                    ImageFormat.Unknown,
+                    "ICC profile on linear-light samples");
+
+            return profile;
+        }
+
+        if (PixelFormats.IsGrayscale(PixelFormat))
+            return linear ? BuiltInIccProfiles.LinearGray : BuiltInIccProfiles.SrgbGray;
+
+        return linear ? BuiltInIccProfiles.LinearSrgb : BuiltInIccProfiles.Srgb;
+    }
+
+    /// <summary>
     /// Gets a value indicating whether a filter requested in linear light decodes the samples as sRGB: linear-light samples
     /// (QOI colorspace 1) are filtered as stored, since decoding them as sRGB would apply the curve twice.
     /// </summary>
     /// <param name="operation">The operation, as a noun ("resizing").</param>
     /// <param name="verb">The operation, as a verb ("resize").</param>
-    /// <exception cref="UnsupportedImageFeatureException">The ICC profile is not recognized as sRGB for the pixel format. No ICC transform is ever applied.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">The ICC profile is not recognized as sRGB for the pixel format. No ICC transform is applied implicitly.</exception>
     private bool UseLinearLight(string operation, string verb)
     {
         if (_metadata.TransferFunction == ColorTransferFunction.Linear)
@@ -317,7 +379,7 @@ public abstract partial class Image
 
         if (_metadata.IccProfile is { } profile && !SrgbProfileRecognition.IsSrgb(profile, PixelFormat))
             throw new UnsupportedImageFeatureException(
-                $"Linear-light {operation} assumes sRGB pixels, but the ICC profile ({profile.ColorSpace} color space) is not recognized as sRGB for {PixelFormat} pixels. No ICC transform is applied: {verb} in the encoded working space, or remove the profile if the pixels are sRGB.",
+                $"Linear-light {operation} assumes sRGB pixels, but the ICC profile ({profile.ColorSpace} color space) is not recognized as sRGB for {PixelFormat} pixels. No ICC transform is applied implicitly: convert the image to sRGB with ConvertColorProfile first, {verb} in the encoded working space, or remove the profile if the pixels are sRGB.",
                 ImageFormat.Unknown,
                 $"Linear sRGB {operation} of a non-sRGB color profile");
 
@@ -412,6 +474,23 @@ public abstract partial class Image
 
         public void Fill(ImageFrame frame, scoped in PixelLease source, scoped in PixelLease destination, CancellationToken cancellationToken)
             => frame.TransformPixels(source, destination, region, transform, cancellationToken);
+    }
+
+    private readonly struct ColorConversionFiller(IccPipeline pipeline) : IGeometryFiller
+    {
+        // Colors change, pixels do not move: a cursor hotspot stays where it is
+        public bool TryMapPoint(Point source, out Point destination)
+        {
+            destination = source;
+            return true;
+        }
+
+        public void Prepare(AllocationScope scope)
+        {
+        }
+
+        public void Fill(ImageFrame frame, scoped in PixelLease source, scoped in PixelLease destination, CancellationToken cancellationToken)
+            => frame.ConvertColorPixels(source, destination, pipeline, cancellationToken);
     }
 
     [StructLayout(LayoutKind.Auto)]

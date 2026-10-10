@@ -164,6 +164,17 @@ public sealed class DefaultsTests
     }
 
     [Fact]
+    public void ColorConversionDefaults()
+    {
+        var options = new IccColorTransformOptions();
+        Assert.Equal(IccRenderingIntent.RelativeColorimetric, options.Intent);
+        Assert.True(options.BlackPointCompensation);
+        Assert.Equal(IccRenderingIntent.RelativeColorimetric, IccColorTransformOptions.Default.Intent);
+        Assert.True(IccColorTransformOptions.Default.BlackPointCompensation);
+        Assert.Same(IccColorTransformOptions.Default, IccColorTransformOptions.Default);
+    }
+
+    [Fact]
     public void IoOptionDefaults()
     {
         Assert.Null(ImageDecodeOptions.Default.FrameLimit);

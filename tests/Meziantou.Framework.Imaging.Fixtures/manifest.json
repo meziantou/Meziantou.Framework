@@ -1,6 +1,6 @@
 {
   "$schema": "./manifest.schema.json",
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "generator": {
     "script": "tools/Meziantou.Framework.Imaging.CorpusGenerator/GoldenCorpus.cs",
     "command": "dotnet run --project tools/Meziantou.Framework.Imaging.CorpusGenerator -- golden --write",
@@ -33952,6 +33952,1314 @@
         "justification": "Lossy VP8 compared with an independent decoding of the same encoded input (libwebp dwebp: RFC 6386 reconstruction, fancy chroma upsampling, 14-bit fixed-point BT.601 YUV->RGB). The library decoder (the same exact VP8 reconstruction, centered bilinear 9-3-3-1 chroma upsampling, 16-bit fixed-point BT.601 conversion rounded to nearest) differs from it only by the rounding of the color conversion; measured: max 0, mean 0.0000. Allowed: the measured max (at least 1) and the measured mean + 0.01 (rounded up to 0.01), tighter than the disagreement between independent decoders (see reference.crossChecks: max 1, mean 0.0556, which would justify max 2 / mean 0.50). Alpha is compared exactly, and the policy is verified to reject channel swaps and flips of this reference."
       },
       "notes": "A 3x2 image: one partial macroblock, 2x1 chroma planes."
+    }
+  ],
+  "colorProfiles": [
+    {
+      "id": "icc/srgb-v4",
+      "file": {
+        "path": "icc/profiles/sRGB-v4.icc",
+        "sha256": "c56e1685d888f5edb92fe07f2750f387f8fe8e91b32ff8fb0b56bfbbb9458353",
+        "role": "profile"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "CC0-1.0",
+        "author": "Clinton Ingram",
+        "source": "https://github.com/saucecontrol/Compact-ICC-Profiles/blob/bdd84663061bc4ae95ca70decff54f581e27f702/profiles/sRGB-v4.icc"
+      },
+      "features": [
+        "icc.version=4",
+        "icc.model=matrix",
+        "icc.curve=parametric",
+        "icc.space=rgb"
+      ]
+    },
+    {
+      "id": "icc/srgb-v2-micro",
+      "file": {
+        "path": "icc/profiles/sRGB-v2-micro.icc",
+        "sha256": "0a8a33aea66a6f154a5642ebe168ef287e73265d9f7b51c42a45e6eedbacda7a",
+        "role": "profile"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "CC0-1.0",
+        "author": "Clinton Ingram",
+        "source": "https://github.com/saucecontrol/Compact-ICC-Profiles/blob/bdd84663061bc4ae95ca70decff54f581e27f702/profiles/sRGB-v2-micro.icc"
+      },
+      "features": [
+        "icc.version=2",
+        "icc.model=matrix",
+        "icc.curve=sampled",
+        "icc.space=rgb"
+      ]
+    },
+    {
+      "id": "icc/display-p3-v4",
+      "file": {
+        "path": "icc/profiles/DisplayP3-v4.icc",
+        "sha256": "cb51de38e482ee974c0c76b9689e16aad04bad16e226fed2f30c842d15ff3a3d",
+        "role": "profile"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "CC0-1.0",
+        "author": "Clinton Ingram",
+        "source": "https://github.com/saucecontrol/Compact-ICC-Profiles/blob/bdd84663061bc4ae95ca70decff54f581e27f702/profiles/DisplayP3-v4.icc"
+      },
+      "features": [
+        "icc.version=4",
+        "icc.model=matrix",
+        "icc.curve=parametric",
+        "icc.space=rgb"
+      ]
+    },
+    {
+      "id": "icc/adobe-compat-v2",
+      "file": {
+        "path": "icc/profiles/AdobeCompat-v2.icc",
+        "sha256": "60fb2adecacf82132db0b1c09b303316f3bbd9e2823e7ba096d01627d12d57c9",
+        "role": "profile"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "CC0-1.0",
+        "author": "Clinton Ingram",
+        "source": "https://github.com/saucecontrol/Compact-ICC-Profiles/blob/bdd84663061bc4ae95ca70decff54f581e27f702/profiles/AdobeCompat-v2.icc"
+      },
+      "features": [
+        "icc.version=2",
+        "icc.model=matrix",
+        "icc.curve=gamma",
+        "icc.space=rgb"
+      ]
+    },
+    {
+      "id": "icc/prophoto-v4",
+      "file": {
+        "path": "icc/profiles/ProPhoto-v4.icc",
+        "sha256": "090daf740c136b4a63bf979d64f034b4a65aa5abbb04a0917729222afe2bb5c2",
+        "role": "profile"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "CC0-1.0",
+        "author": "Clinton Ingram",
+        "source": "https://github.com/saucecontrol/Compact-ICC-Profiles/blob/bdd84663061bc4ae95ca70decff54f581e27f702/profiles/ProPhoto-v4.icc"
+      },
+      "features": [
+        "icc.version=4",
+        "icc.model=matrix",
+        "icc.curve=parametric",
+        "icc.space=rgb"
+      ]
+    },
+    {
+      "id": "icc/rec2020-v4",
+      "file": {
+        "path": "icc/profiles/Rec2020-v4.icc",
+        "sha256": "135ebd418b668c0ca56a8dea6d262c4deccae8166e0ca8264b7d7f35863ccb4b",
+        "role": "profile"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "CC0-1.0",
+        "author": "Clinton Ingram",
+        "source": "https://github.com/saucecontrol/Compact-ICC-Profiles/blob/bdd84663061bc4ae95ca70decff54f581e27f702/profiles/Rec2020-v4.icc"
+      },
+      "features": [
+        "icc.version=4",
+        "icc.model=matrix",
+        "icc.curve=parametric",
+        "icc.space=rgb"
+      ]
+    },
+    {
+      "id": "icc/sgrey-v4",
+      "file": {
+        "path": "icc/profiles/sGrey-v4.icc",
+        "sha256": "00c0f94e09127520a17dc0e1d9264b5702081d96dbdb1549ee88e3631ce42a9d",
+        "role": "profile"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "CC0-1.0",
+        "author": "Clinton Ingram",
+        "source": "https://github.com/saucecontrol/Compact-ICC-Profiles/blob/bdd84663061bc4ae95ca70decff54f581e27f702/profiles/sGrey-v4.icc"
+      },
+      "features": [
+        "icc.version=4",
+        "icc.model=monochrome",
+        "icc.curve=parametric",
+        "icc.space=gray"
+      ]
+    },
+    {
+      "id": "icc/sgrey-v2-nano",
+      "file": {
+        "path": "icc/profiles/sGrey-v2-nano.icc",
+        "sha256": "ac2805b9e07b6fa3ba7406aa48e84d87041097da66220cc2a385e17bb2893cc1",
+        "role": "profile"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "CC0-1.0",
+        "author": "Clinton Ingram",
+        "source": "https://github.com/saucecontrol/Compact-ICC-Profiles/blob/bdd84663061bc4ae95ca70decff54f581e27f702/profiles/sGrey-v2-nano.icc"
+      },
+      "features": [
+        "icc.version=2",
+        "icc.model=monochrome",
+        "icc.curve=sampled",
+        "icc.space=gray"
+      ]
+    },
+    {
+      "id": "icc/cgats001-compat-v2-micro",
+      "file": {
+        "path": "icc/profiles/CGATS001Compat-v2-micro.icc",
+        "sha256": "73e1ba37d2bad5bab2a964f40a9eed96209666efc067c3322626214bbef234a0",
+        "role": "profile"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "CC0-1.0",
+        "author": "Clinton Ingram",
+        "source": "https://github.com/saucecontrol/Compact-ICC-Profiles/blob/bdd84663061bc4ae95ca70decff54f581e27f702/profiles/CGATS001Compat-v2-micro.icc"
+      },
+      "features": [
+        "icc.version=2",
+        "icc.model=lut16",
+        "icc.pcs=lab",
+        "icc.space=cmyk",
+        "icc.class=input"
+      ]
+    },
+    {
+      "id": "icc/synthetic-rgb-lab-lut8",
+      "file": {
+        "path": "icc/profiles/synthetic-rgb-lab-lut8.icc",
+        "sha256": "746d14d703e2d34021ac1bf049317742609442f84dea381a8c197c23f05517c9",
+        "role": "profile"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/Common/IccProfileBuilder.cs (RgbLabLut8)",
+        "tools": [
+          ".NET 10.0"
+        ]
+      },
+      "features": [
+        "icc.version=4",
+        "icc.model=lut8",
+        "icc.pcs=lab",
+        "icc.space=rgb",
+        "icc.direction=both"
+      ]
+    },
+    {
+      "id": "icc/synthetic-rgb-xyz-lut16",
+      "file": {
+        "path": "icc/profiles/synthetic-rgb-xyz-lut16.icc",
+        "sha256": "029d9f10915b582c778cd2d566a71abf51e0fcb658fa75b3259c10a568f6404f",
+        "role": "profile"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/Common/IccProfileBuilder.cs (RgbXyzLut16)",
+        "tools": [
+          ".NET 10.0"
+        ]
+      },
+      "features": [
+        "icc.version=4",
+        "icc.model=lut16",
+        "icc.pcs=xyz",
+        "icc.space=rgb",
+        "icc.direction=both"
+      ]
+    },
+    {
+      "id": "icc/synthetic-rgb-lab-mab",
+      "file": {
+        "path": "icc/profiles/synthetic-rgb-lab-mab.icc",
+        "sha256": "93cb3086c515cf13edab78909c0e5d64da639d7ca504103bdecbd196b1b9d66d",
+        "role": "profile"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/Common/IccProfileBuilder.cs (RgbLabLutAToB)",
+        "tools": [
+          ".NET 10.0"
+        ]
+      },
+      "features": [
+        "icc.version=4",
+        "icc.model=lutAToB",
+        "icc.pcs=lab",
+        "icc.space=rgb",
+        "icc.direction=both"
+      ]
+    },
+    {
+      "id": "icc/synthetic-rgb-xyz-mab",
+      "file": {
+        "path": "icc/profiles/synthetic-rgb-xyz-mab.icc",
+        "sha256": "f45da3713a12515261b8098d176346497eddae12aba12f56f4b4fc7ffc908b7e",
+        "role": "profile"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/Common/IccProfileBuilder.cs (RgbXyzMatrixLutAToB)",
+        "tools": [
+          ".NET 10.0"
+        ]
+      },
+      "features": [
+        "icc.version=4",
+        "icc.model=lutAToB",
+        "icc.pcs=xyz",
+        "icc.space=rgb",
+        "icc.direction=both"
+      ]
+    },
+    {
+      "id": "icc/synthetic-cmyk-lab-lut16",
+      "file": {
+        "path": "icc/profiles/synthetic-cmyk-lab-lut16.icc",
+        "sha256": "09ab842252a54e857574e5d033374a462b456e3483f0f2808c2954d8acd60248",
+        "role": "profile"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/Common/IccProfileBuilder.cs (CmykLabLut16)",
+        "tools": [
+          ".NET 10.0"
+        ]
+      },
+      "features": [
+        "icc.version=2",
+        "icc.model=lut16",
+        "icc.pcs=lab",
+        "icc.space=cmyk",
+        "icc.direction=both",
+        "icc.class=output",
+        "icc.media-white"
+      ]
+    },
+    {
+      "id": "icc/synthetic-cmyk-lab-mab",
+      "file": {
+        "path": "icc/profiles/synthetic-cmyk-lab-mab.icc",
+        "sha256": "ac9bb38559d755e674764e8776eda62d95932b21d36c260eca294f6e7da10e1f",
+        "role": "profile"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/Common/IccProfileBuilder.cs (CmykLabLutAToB)",
+        "tools": [
+          ".NET 10.0"
+        ]
+      },
+      "features": [
+        "icc.version=4",
+        "icc.model=lutAToB",
+        "icc.pcs=lab",
+        "icc.space=cmyk",
+        "icc.direction=both",
+        "icc.class=output"
+      ]
+    },
+    {
+      "id": "icc/synthetic-gray-lab-lut8",
+      "file": {
+        "path": "icc/profiles/synthetic-gray-lab-lut8.icc",
+        "sha256": "47a1694a9017d6bcb7b6374b79ac110a4436db00ac901567c8d032541d0acdac",
+        "role": "profile"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/Common/IccProfileBuilder.cs (GrayLabLut8)",
+        "tools": [
+          ".NET 10.0"
+        ]
+      },
+      "features": [
+        "icc.version=4",
+        "icc.model=lut8",
+        "icc.pcs=lab",
+        "icc.space=gray",
+        "icc.direction=both"
+      ]
+    },
+    {
+      "id": "icc/synthetic-gray-paper",
+      "file": {
+        "path": "icc/profiles/synthetic-gray-paper.icc",
+        "sha256": "87f9b4f7ce1bfda19ec03eeaeefaa95d30c456e3868b9571a3aba08abcca1c09",
+        "role": "profile"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/Common/IccProfileBuilder.cs (GrayPaper)",
+        "tools": [
+          ".NET 10.0"
+        ]
+      },
+      "features": [
+        "icc.version=4",
+        "icc.model=monochrome",
+        "icc.pcs=lab",
+        "icc.space=gray",
+        "icc.class=output",
+        "icc.media-white",
+        "icc.black-point"
+      ]
+    },
+    {
+      "id": "icc/synthetic-rgb-scanner",
+      "file": {
+        "path": "icc/profiles/synthetic-rgb-scanner.icc",
+        "sha256": "e93371b658e2a3917f6265f04d7a3b4758ebbd38a4179ba2b76560e72d89a38f",
+        "role": "profile"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/Common/IccProfileBuilder.cs (RgbScanner)",
+        "tools": [
+          ".NET 10.0"
+        ]
+      },
+      "features": [
+        "icc.version=4",
+        "icc.model=matrix",
+        "icc.curve=gamma",
+        "icc.space=rgb",
+        "icc.class=input",
+        "icc.media-white"
+      ]
+    },
+    {
+      "id": "icc/synthetic-gray-printer-lut8",
+      "file": {
+        "path": "icc/profiles/synthetic-gray-printer-lut8.icc",
+        "sha256": "f13a6dbd99b0271556db0fe20a7121a9cacd1eaaa9f651d7dd801b99cf9831d4",
+        "role": "profile"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/Common/IccProfileBuilder.cs (GrayPrinterLut8)",
+        "tools": [
+          ".NET 10.0"
+        ]
+      },
+      "features": [
+        "icc.version=2",
+        "icc.model=lut8",
+        "icc.pcs=lab",
+        "icc.space=gray",
+        "icc.direction=both",
+        "icc.class=output",
+        "icc.black-point"
+      ]
+    }
+  ],
+  "colorTransforms": [
+    {
+      "id": "icc/srgb-v4-to-display-p3-v4",
+      "source": "icc/srgb-v4",
+      "destination": "icc/display-p3-v4",
+      "intent": "relative-colorimetric",
+      "blackPointCompensation": false,
+      "sourceChannels": 3,
+      "destinationChannels": 3,
+      "sampleCount": 500,
+      "vectors": {
+        "path": "icc/vectors/srgb-v4-to-display-p3-v4.u16le",
+        "sha256": "10b7279dfcc414e65fa277536f2f02585cf9fd77db2810a86c65a3d17b1c2dbd",
+        "role": "vectors"
+      },
+      "reference": {
+        "tool": "transicc (LittleCMS 2.19)",
+        "command": "transicc -n -c0 -t1 -i icc/profiles/sRGB-v4.icc -o icc/profiles/DisplayP3-v4.icc",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/IccCorpus.cs (Generate)"
+      },
+      "comparison": {
+        "maxAbsoluteError": 2,
+        "maxMeanAbsoluteError": 0.5,
+        "justification": "Same matrix and tone curves in both systems: only the rounding of the printed samples and the single-precision arithmetic of LittleCMS differ."
+      }
+    },
+    {
+      "id": "icc/display-p3-v4-to-srgb-v4",
+      "source": "icc/display-p3-v4",
+      "destination": "icc/srgb-v4",
+      "intent": "relative-colorimetric",
+      "blackPointCompensation": false,
+      "sourceChannels": 3,
+      "destinationChannels": 3,
+      "sampleCount": 500,
+      "vectors": {
+        "path": "icc/vectors/display-p3-v4-to-srgb-v4.u16le",
+        "sha256": "bcd810914363153746b90f17622509a3bf94f81c43c707e5dd5328c1136ea2d8",
+        "role": "vectors"
+      },
+      "reference": {
+        "tool": "transicc (LittleCMS 2.19)",
+        "command": "transicc -n -c0 -t1 -i icc/profiles/DisplayP3-v4.icc -o icc/profiles/sRGB-v4.icc",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/IccCorpus.cs (Generate)"
+      },
+      "comparison": {
+        "maxAbsoluteError": 2,
+        "maxMeanAbsoluteError": 0.5,
+        "justification": "Same matrix and tone curves in both systems: only the rounding of the printed samples and the single-precision arithmetic of LittleCMS differ."
+      }
+    },
+    {
+      "id": "icc/srgb-v2-micro-to-rec2020-v4",
+      "source": "icc/srgb-v2-micro",
+      "destination": "icc/rec2020-v4",
+      "intent": "relative-colorimetric",
+      "blackPointCompensation": false,
+      "sourceChannels": 3,
+      "destinationChannels": 3,
+      "sampleCount": 500,
+      "vectors": {
+        "path": "icc/vectors/srgb-v2-micro-to-rec2020-v4.u16le",
+        "sha256": "e962d43f831bb39d58ea99dae9633e07ec1737cba7e46aa4800b627bcda402a1",
+        "role": "vectors"
+      },
+      "reference": {
+        "tool": "transicc (LittleCMS 2.19)",
+        "command": "transicc -n -c0 -t1 -i icc/profiles/sRGB-v2-micro.icc -o icc/profiles/Rec2020-v4.icc",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/IccCorpus.cs (Generate)"
+      },
+      "comparison": {
+        "maxAbsoluteError": 4,
+        "maxMeanAbsoluteError": 0.5,
+        "justification": "LittleCMS evaluates a sampled curve in single precision and inverts it through a 4096-entry table; the library inverts it exactly."
+      }
+    },
+    {
+      "id": "icc/adobe-compat-v2-to-srgb-v2-micro",
+      "source": "icc/adobe-compat-v2",
+      "destination": "icc/srgb-v2-micro",
+      "intent": "relative-colorimetric",
+      "blackPointCompensation": false,
+      "sourceChannels": 3,
+      "destinationChannels": 3,
+      "sampleCount": 500,
+      "vectors": {
+        "path": "icc/vectors/adobe-compat-v2-to-srgb-v2-micro.u16le",
+        "sha256": "def8685b3ddde1aaa54f910a97b27c9256431a6edf675de918a5321cfe5a1370",
+        "role": "vectors"
+      },
+      "reference": {
+        "tool": "transicc (LittleCMS 2.19)",
+        "command": "transicc -n -c0 -t1 -i icc/profiles/AdobeCompat-v2.icc -o icc/profiles/sRGB-v2-micro.icc",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/IccCorpus.cs (Generate)"
+      },
+      "comparison": {
+        "maxAbsoluteError": 10,
+        "maxMeanAbsoluteError": 0.75,
+        "justification": "LittleCMS evaluates a sampled curve in single precision and inverts it through a 4096-entry table; the library inverts it exactly."
+      }
+    },
+    {
+      "id": "icc/prophoto-v4-to-adobe-compat-v2",
+      "source": "icc/prophoto-v4",
+      "destination": "icc/adobe-compat-v2",
+      "intent": "perceptual",
+      "blackPointCompensation": false,
+      "sourceChannels": 3,
+      "destinationChannels": 3,
+      "sampleCount": 500,
+      "vectors": {
+        "path": "icc/vectors/prophoto-v4-to-adobe-compat-v2.u16le",
+        "sha256": "7d9a3c3b1e84d5794f3155e3c9abb3f252293b12b166f7bf7872814568c9aadd",
+        "role": "vectors"
+      },
+      "reference": {
+        "tool": "transicc (LittleCMS 2.19)",
+        "command": "transicc -n -c0 -t0 -i icc/profiles/ProPhoto-v4.icc -o icc/profiles/AdobeCompat-v2.icc",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/IccCorpus.cs (Generate)"
+      },
+      "comparison": {
+        "maxAbsoluteError": 2,
+        "maxMeanAbsoluteError": 0.5,
+        "justification": "Same matrix and tone curves in both systems: only the rounding of the printed samples and the single-precision arithmetic of LittleCMS differ."
+      }
+    },
+    {
+      "id": "icc/rec2020-v4-to-srgb-v4-absolute",
+      "source": "icc/rec2020-v4",
+      "destination": "icc/srgb-v4",
+      "intent": "absolute-colorimetric",
+      "blackPointCompensation": false,
+      "sourceChannels": 3,
+      "destinationChannels": 3,
+      "sampleCount": 500,
+      "vectors": {
+        "path": "icc/vectors/rec2020-v4-to-srgb-v4-absolute.u16le",
+        "sha256": "834dc66fa2b284a20260f77066a017a6100a4a72d5b735dd5b038f1ed25fd297",
+        "role": "vectors"
+      },
+      "reference": {
+        "tool": "transicc (LittleCMS 2.19)",
+        "command": "transicc -n -c0 -t3 -i icc/profiles/Rec2020-v4.icc -o icc/profiles/sRGB-v4.icc",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/IccCorpus.cs (Generate)"
+      },
+      "comparison": {
+        "maxAbsoluteError": 2,
+        "maxMeanAbsoluteError": 0.5,
+        "justification": "Same matrix and tone curves in both systems: only the rounding of the printed samples and the single-precision arithmetic of LittleCMS differ."
+      }
+    },
+    {
+      "id": "icc/sgrey-v4-to-sgrey-v2-nano",
+      "source": "icc/sgrey-v4",
+      "destination": "icc/sgrey-v2-nano",
+      "intent": "relative-colorimetric",
+      "blackPointCompensation": false,
+      "sourceChannels": 1,
+      "destinationChannels": 1,
+      "sampleCount": 320,
+      "vectors": {
+        "path": "icc/vectors/sgrey-v4-to-sgrey-v2-nano.u16le",
+        "sha256": "2ef6c8192d8ab66921814a1dceaa6e51ee0c4cc2659b3c2df2aae0af3f620b79",
+        "role": "vectors"
+      },
+      "reference": {
+        "tool": "transicc (LittleCMS 2.19)",
+        "command": "transicc -n -c0 -t1 -i icc/profiles/sGrey-v4.icc -o icc/profiles/sGrey-v2-nano.icc",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/IccCorpus.cs (Generate)"
+      },
+      "comparison": {
+        "maxAbsoluteError": 24,
+        "maxMeanAbsoluteError": 1.0,
+        "justification": "LittleCMS evaluates a sampled curve in single precision and inverts it through a 4096-entry table; the library inverts it exactly."
+      }
+    },
+    {
+      "id": "icc/sgrey-v2-nano-to-srgb-v4",
+      "source": "icc/sgrey-v2-nano",
+      "destination": "icc/srgb-v4",
+      "intent": "relative-colorimetric",
+      "blackPointCompensation": false,
+      "sourceChannels": 1,
+      "destinationChannels": 3,
+      "sampleCount": 320,
+      "vectors": {
+        "path": "icc/vectors/sgrey-v2-nano-to-srgb-v4.u16le",
+        "sha256": "1d96d364977c7a4bf3295606fca516cd04c62f27a3765f34887775fad40061cf",
+        "role": "vectors"
+      },
+      "reference": {
+        "tool": "transicc (LittleCMS 2.19)",
+        "command": "transicc -n -c0 -t1 -i icc/profiles/sGrey-v2-nano.icc -o icc/profiles/sRGB-v4.icc",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/IccCorpus.cs (Generate)"
+      },
+      "comparison": {
+        "maxAbsoluteError": 8,
+        "maxMeanAbsoluteError": 1.0,
+        "justification": "LittleCMS evaluates a sampled curve in single precision and inverts it through a 4096-entry table; the library inverts it exactly."
+      }
+    },
+    {
+      "id": "icc/srgb-v4-to-sgrey-v4",
+      "source": "icc/srgb-v4",
+      "destination": "icc/sgrey-v4",
+      "intent": "saturation",
+      "blackPointCompensation": false,
+      "sourceChannels": 3,
+      "destinationChannels": 1,
+      "sampleCount": 500,
+      "vectors": {
+        "path": "icc/vectors/srgb-v4-to-sgrey-v4.u16le",
+        "sha256": "10bd4646bdcb27bfead6a8d55bea4e9d5dd5d853c88c13fb43e81a2eb89005bd",
+        "role": "vectors"
+      },
+      "reference": {
+        "tool": "transicc (LittleCMS 2.19)",
+        "command": "transicc -n -c0 -t2 -i icc/profiles/sRGB-v4.icc -o icc/profiles/sGrey-v4.icc",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/IccCorpus.cs (Generate)"
+      },
+      "comparison": {
+        "maxAbsoluteError": 2,
+        "maxMeanAbsoluteError": 0.5,
+        "justification": "Same matrix and tone curves in both systems: only the rounding of the printed samples and the single-precision arithmetic of LittleCMS differ."
+      }
+    },
+    {
+      "id": "icc/cgats001-to-srgb-v4",
+      "source": "icc/cgats001-compat-v2-micro",
+      "destination": "icc/srgb-v4",
+      "intent": "relative-colorimetric",
+      "blackPointCompensation": false,
+      "sourceChannels": 4,
+      "destinationChannels": 3,
+      "sampleCount": 1296,
+      "vectors": {
+        "path": "icc/vectors/cgats001-to-srgb-v4.u16le",
+        "sha256": "1557aef6d06350ed98a2cbf71d406111905f9b0713cde5308de402e229b3c66e",
+        "role": "vectors"
+      },
+      "reference": {
+        "tool": "transicc (LittleCMS 2.19)",
+        "command": "transicc -n -c0 -t1 -i icc/profiles/CGATS001Compat-v2-micro.icc -o icc/profiles/sRGB-v4.icc",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/IccCorpus.cs (Generate)"
+      },
+      "comparison": {
+        "maxAbsoluteError": 3,
+        "maxMeanAbsoluteError": 0.5,
+        "justification": "Grid points of the color lookup table: no interpolation is involved, only the rounding of the printed samples and of the grid point values differs."
+      }
+    },
+    {
+      "id": "icc/cgats001-to-display-p3-v4-perceptual",
+      "source": "icc/cgats001-compat-v2-micro",
+      "destination": "icc/display-p3-v4",
+      "intent": "perceptual",
+      "blackPointCompensation": false,
+      "sourceChannels": 4,
+      "destinationChannels": 3,
+      "sampleCount": 1296,
+      "vectors": {
+        "path": "icc/vectors/cgats001-to-display-p3-v4-perceptual.u16le",
+        "sha256": "297de6a520d31149f573abe04a3d0bd363047f8546a934551ab67aeb90581d43",
+        "role": "vectors"
+      },
+      "reference": {
+        "tool": "transicc (LittleCMS 2.19)",
+        "command": "transicc -n -c0 -t0 -i icc/profiles/CGATS001Compat-v2-micro.icc -o icc/profiles/DisplayP3-v4.icc",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/IccCorpus.cs (Generate)"
+      },
+      "comparison": {
+        "maxAbsoluteError": 3,
+        "maxMeanAbsoluteError": 0.5,
+        "justification": "Grid points of the color lookup table: no interpolation is involved, only the rounding of the printed samples and of the grid point values differs."
+      }
+    },
+    {
+      "id": "icc/cgats001-to-sgrey-v4",
+      "source": "icc/cgats001-compat-v2-micro",
+      "destination": "icc/sgrey-v4",
+      "intent": "relative-colorimetric",
+      "blackPointCompensation": false,
+      "sourceChannels": 4,
+      "destinationChannels": 1,
+      "sampleCount": 1296,
+      "vectors": {
+        "path": "icc/vectors/cgats001-to-sgrey-v4.u16le",
+        "sha256": "7ccbfae9f1879fa08b07d780f182f91d44647baae4f5f8a95cc8a14f23252336",
+        "role": "vectors"
+      },
+      "reference": {
+        "tool": "transicc (LittleCMS 2.19)",
+        "command": "transicc -n -c0 -t1 -i icc/profiles/CGATS001Compat-v2-micro.icc -o icc/profiles/sGrey-v4.icc",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/IccCorpus.cs (Generate)"
+      },
+      "comparison": {
+        "maxAbsoluteError": 3,
+        "maxMeanAbsoluteError": 0.5,
+        "justification": "Grid points of the color lookup table: no interpolation is involved, only the rounding of the printed samples and of the grid point values differs."
+      }
+    },
+    {
+      "id": "icc/srgb-v4-to-synthetic-rgb-lab-lut8",
+      "source": "icc/srgb-v4",
+      "destination": "icc/synthetic-rgb-lab-lut8",
+      "intent": "relative-colorimetric",
+      "blackPointCompensation": false,
+      "sourceChannels": 3,
+      "destinationChannels": 3,
+      "sampleCount": 500,
+      "vectors": {
+        "path": "icc/vectors/srgb-v4-to-synthetic-rgb-lab-lut8.u16le",
+        "sha256": "21b92ced71f292869ee92d99f9b638209d1f8ae8e36723d20d1882832e891ac7",
+        "role": "vectors"
+      },
+      "reference": {
+        "tool": "transicc (LittleCMS 2.19)",
+        "command": "transicc -n -c0 -t1 -i icc/profiles/sRGB-v4.icc -o icc/profiles/synthetic-rgb-lab-lut8.icc",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/IccCorpus.cs (Generate)"
+      },
+      "comparison": {
+        "maxAbsoluteError": 22,
+        "maxMeanAbsoluteError": 1.0,
+        "justification": "Same tables and interpolation in both systems; LittleCMS evaluates tables with 16-bit intermediate values, the library in double precision, and a steep curve after a table amplifies that rounding near black."
+      }
+    },
+    {
+      "id": "icc/synthetic-rgb-lab-lut8-to-srgb-v4",
+      "source": "icc/synthetic-rgb-lab-lut8",
+      "destination": "icc/srgb-v4",
+      "intent": "relative-colorimetric",
+      "blackPointCompensation": false,
+      "sourceChannels": 3,
+      "destinationChannels": 3,
+      "sampleCount": 500,
+      "vectors": {
+        "path": "icc/vectors/synthetic-rgb-lab-lut8-to-srgb-v4.u16le",
+        "sha256": "973cbbf134226de27af79d16ad49d1a15fbc03979cf466c10fb9f784bc880b7a",
+        "role": "vectors"
+      },
+      "reference": {
+        "tool": "transicc (LittleCMS 2.19)",
+        "command": "transicc -n -c0 -t1 -i icc/profiles/synthetic-rgb-lab-lut8.icc -o icc/profiles/sRGB-v4.icc",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/IccCorpus.cs (Generate)"
+      },
+      "comparison": {
+        "maxAbsoluteError": 16,
+        "maxMeanAbsoluteError": 1.0,
+        "justification": "Same tables and interpolation in both systems; LittleCMS evaluates tables with 16-bit intermediate values, the library in double precision, and a steep curve after a table amplifies that rounding near black."
+      }
+    },
+    {
+      "id": "icc/srgb-v4-to-synthetic-rgb-xyz-lut16",
+      "source": "icc/srgb-v4",
+      "destination": "icc/synthetic-rgb-xyz-lut16",
+      "intent": "relative-colorimetric",
+      "blackPointCompensation": false,
+      "sourceChannels": 3,
+      "destinationChannels": 3,
+      "sampleCount": 500,
+      "vectors": {
+        "path": "icc/vectors/srgb-v4-to-synthetic-rgb-xyz-lut16.u16le",
+        "sha256": "a4fbcc6de346921192c676ae2f84a24a6fa3cec11bfa04b895740d4d6e82b875",
+        "role": "vectors"
+      },
+      "reference": {
+        "tool": "transicc (LittleCMS 2.19)",
+        "command": "transicc -n -c0 -t1 -i icc/profiles/sRGB-v4.icc -o icc/profiles/synthetic-rgb-xyz-lut16.icc",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/IccCorpus.cs (Generate)"
+      },
+      "comparison": {
+        "maxAbsoluteError": 32,
+        "maxMeanAbsoluteError": 2.0,
+        "justification": "Same tables and interpolation in both systems; LittleCMS evaluates tables with 16-bit intermediate values, the library in double precision, and a steep curve after a table amplifies that rounding near black."
+      }
+    },
+    {
+      "id": "icc/synthetic-rgb-xyz-lut16-to-display-p3-v4",
+      "source": "icc/synthetic-rgb-xyz-lut16",
+      "destination": "icc/display-p3-v4",
+      "intent": "relative-colorimetric",
+      "blackPointCompensation": false,
+      "sourceChannels": 3,
+      "destinationChannels": 3,
+      "sampleCount": 500,
+      "vectors": {
+        "path": "icc/vectors/synthetic-rgb-xyz-lut16-to-display-p3-v4.u16le",
+        "sha256": "5c8dec33133b10add76eaeb263fb319830929392cf1dc2af7ac2137af2481b6a",
+        "role": "vectors"
+      },
+      "reference": {
+        "tool": "transicc (LittleCMS 2.19)",
+        "command": "transicc -n -c0 -t1 -i icc/profiles/synthetic-rgb-xyz-lut16.icc -o icc/profiles/DisplayP3-v4.icc",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/IccCorpus.cs (Generate)"
+      },
+      "comparison": {
+        "maxAbsoluteError": 46,
+        "maxMeanAbsoluteError": 2.5,
+        "justification": "Same tables and interpolation in both systems; LittleCMS evaluates tables with 16-bit intermediate values, the library in double precision, and a steep curve after a table amplifies that rounding near black."
+      }
+    },
+    {
+      "id": "icc/srgb-v4-to-synthetic-rgb-lab-mab",
+      "source": "icc/srgb-v4",
+      "destination": "icc/synthetic-rgb-lab-mab",
+      "intent": "relative-colorimetric",
+      "blackPointCompensation": false,
+      "sourceChannels": 3,
+      "destinationChannels": 3,
+      "sampleCount": 500,
+      "vectors": {
+        "path": "icc/vectors/srgb-v4-to-synthetic-rgb-lab-mab.u16le",
+        "sha256": "1693431148dc0840f15afd0fc34c7c40b53853682240b67776296f303d73beb8",
+        "role": "vectors"
+      },
+      "reference": {
+        "tool": "transicc (LittleCMS 2.19)",
+        "command": "transicc -n -c0 -t1 -i icc/profiles/sRGB-v4.icc -o icc/profiles/synthetic-rgb-lab-mab.icc",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/IccCorpus.cs (Generate)"
+      },
+      "comparison": {
+        "maxAbsoluteError": 58,
+        "maxMeanAbsoluteError": 1.0,
+        "justification": "Same tables and interpolation in both systems; LittleCMS evaluates tables with 16-bit intermediate values, the library in double precision, and a steep curve after a table amplifies that rounding near black."
+      }
+    },
+    {
+      "id": "icc/synthetic-rgb-lab-mab-to-srgb-v4",
+      "source": "icc/synthetic-rgb-lab-mab",
+      "destination": "icc/srgb-v4",
+      "intent": "relative-colorimetric",
+      "blackPointCompensation": false,
+      "sourceChannels": 3,
+      "destinationChannels": 3,
+      "sampleCount": 500,
+      "vectors": {
+        "path": "icc/vectors/synthetic-rgb-lab-mab-to-srgb-v4.u16le",
+        "sha256": "e1ab5656337519201f98effa32ea690d1c87a3b848e1f0fee0c05663acee642c",
+        "role": "vectors"
+      },
+      "reference": {
+        "tool": "transicc (LittleCMS 2.19)",
+        "command": "transicc -n -c0 -t1 -i icc/profiles/synthetic-rgb-lab-mab.icc -o icc/profiles/sRGB-v4.icc",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/IccCorpus.cs (Generate)"
+      },
+      "comparison": {
+        "maxAbsoluteError": 19,
+        "maxMeanAbsoluteError": 1.0,
+        "justification": "Same tables and interpolation in both systems; LittleCMS evaluates tables with 16-bit intermediate values, the library in double precision, and a steep curve after a table amplifies that rounding near black."
+      }
+    },
+    {
+      "id": "icc/display-p3-v4-to-synthetic-rgb-xyz-mab",
+      "source": "icc/display-p3-v4",
+      "destination": "icc/synthetic-rgb-xyz-mab",
+      "intent": "relative-colorimetric",
+      "blackPointCompensation": false,
+      "sourceChannels": 3,
+      "destinationChannels": 3,
+      "sampleCount": 500,
+      "vectors": {
+        "path": "icc/vectors/display-p3-v4-to-synthetic-rgb-xyz-mab.u16le",
+        "sha256": "4c65b92f2ebc17b244ad90da553d1d7da93cb377c857d4ae95b9d44f91bfa601",
+        "role": "vectors"
+      },
+      "reference": {
+        "tool": "transicc (LittleCMS 2.19)",
+        "command": "transicc -n -c0 -t1 -i icc/profiles/DisplayP3-v4.icc -o icc/profiles/synthetic-rgb-xyz-mab.icc",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/IccCorpus.cs (Generate)"
+      },
+      "comparison": {
+        "maxAbsoluteError": 16,
+        "maxMeanAbsoluteError": 0.5,
+        "justification": "Same tables and interpolation in both systems; LittleCMS evaluates tables with 16-bit intermediate values, the library in double precision, and a steep curve after a table amplifies that rounding near black."
+      }
+    },
+    {
+      "id": "icc/synthetic-rgb-xyz-mab-to-srgb-v4",
+      "source": "icc/synthetic-rgb-xyz-mab",
+      "destination": "icc/srgb-v4",
+      "intent": "relative-colorimetric",
+      "blackPointCompensation": false,
+      "sourceChannels": 3,
+      "destinationChannels": 3,
+      "sampleCount": 500,
+      "vectors": {
+        "path": "icc/vectors/synthetic-rgb-xyz-mab-to-srgb-v4.u16le",
+        "sha256": "3ad9567ef9dc9e559048759b87da276cb73ce521a89ec28cb83638e4cdc617db",
+        "role": "vectors"
+      },
+      "reference": {
+        "tool": "transicc (LittleCMS 2.19)",
+        "command": "transicc -n -c0 -t1 -i icc/profiles/synthetic-rgb-xyz-mab.icc -o icc/profiles/sRGB-v4.icc",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/IccCorpus.cs (Generate)"
+      },
+      "comparison": {
+        "maxAbsoluteError": 3,
+        "maxMeanAbsoluteError": 0.5,
+        "justification": "Same tables and interpolation in both systems; LittleCMS evaluates tables with 16-bit intermediate values, the library in double precision, and a steep curve after a table amplifies that rounding near black."
+      }
+    },
+    {
+      "id": "icc/synthetic-gray-lab-lut8-to-srgb-v4",
+      "source": "icc/synthetic-gray-lab-lut8",
+      "destination": "icc/srgb-v4",
+      "intent": "relative-colorimetric",
+      "blackPointCompensation": false,
+      "sourceChannels": 1,
+      "destinationChannels": 3,
+      "sampleCount": 320,
+      "vectors": {
+        "path": "icc/vectors/synthetic-gray-lab-lut8-to-srgb-v4.u16le",
+        "sha256": "0e0bbecb77b588e87d362fea72a0666732069a92a9a1d87784d369cca7c23046",
+        "role": "vectors"
+      },
+      "reference": {
+        "tool": "transicc (LittleCMS 2.19)",
+        "command": "transicc -n -c0 -t1 -i icc/profiles/synthetic-gray-lab-lut8.icc -o icc/profiles/sRGB-v4.icc",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/IccCorpus.cs (Generate)"
+      },
+      "comparison": {
+        "maxAbsoluteError": 3,
+        "maxMeanAbsoluteError": 0.5,
+        "justification": "Same tables and interpolation in both systems; LittleCMS evaluates tables with 16-bit intermediate values, the library in double precision, and a steep curve after a table amplifies that rounding near black."
+      }
+    },
+    {
+      "id": "icc/srgb-v4-to-synthetic-gray-lab-lut8",
+      "source": "icc/srgb-v4",
+      "destination": "icc/synthetic-gray-lab-lut8",
+      "intent": "relative-colorimetric",
+      "blackPointCompensation": false,
+      "sourceChannels": 3,
+      "destinationChannels": 1,
+      "sampleCount": 500,
+      "vectors": {
+        "path": "icc/vectors/srgb-v4-to-synthetic-gray-lab-lut8.u16le",
+        "sha256": "b8b076829d5a03d34ec4717c36a2afdf5cf3fc54cfa5f2088e34b515814a35ea",
+        "role": "vectors"
+      },
+      "reference": {
+        "tool": "transicc (LittleCMS 2.19)",
+        "command": "transicc -n -c0 -t1 -i icc/profiles/sRGB-v4.icc -o icc/profiles/synthetic-gray-lab-lut8.icc",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/IccCorpus.cs (Generate)"
+      },
+      "comparison": {
+        "maxAbsoluteError": 3,
+        "maxMeanAbsoluteError": 0.5,
+        "justification": "Same tables and interpolation in both systems; LittleCMS evaluates tables with 16-bit intermediate values, the library in double precision, and a steep curve after a table amplifies that rounding near black."
+      }
+    },
+    {
+      "id": "icc/srgb-v4-to-synthetic-cmyk-lab-lut16-perceptual",
+      "source": "icc/srgb-v4",
+      "destination": "icc/synthetic-cmyk-lab-lut16",
+      "intent": "perceptual",
+      "blackPointCompensation": false,
+      "sourceChannels": 3,
+      "destinationChannels": 4,
+      "sampleCount": 500,
+      "vectors": {
+        "path": "icc/vectors/srgb-v4-to-synthetic-cmyk-lab-lut16-perceptual.u16le",
+        "sha256": "364cf5d9d1a1cb96de9e8e3d4e5a89f2757e767f34664f6bf5e2e6940e079500",
+        "role": "vectors"
+      },
+      "reference": {
+        "tool": "transicc (LittleCMS 2.19)",
+        "command": "transicc -n -c0 -t0 -i icc/profiles/sRGB-v4.icc -o icc/profiles/synthetic-cmyk-lab-lut16.icc",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/IccCorpus.cs (Generate)"
+      },
+      "comparison": {
+        "maxAbsoluteError": 8,
+        "maxMeanAbsoluteError": 1.0,
+        "justification": "Same tables and interpolation in both systems; LittleCMS evaluates tables with 16-bit intermediate values, the library in double precision, and a steep curve after a table amplifies that rounding near black."
+      }
+    },
+    {
+      "id": "icc/srgb-v4-to-synthetic-cmyk-lab-lut16",
+      "source": "icc/srgb-v4",
+      "destination": "icc/synthetic-cmyk-lab-lut16",
+      "intent": "relative-colorimetric",
+      "blackPointCompensation": false,
+      "sourceChannels": 3,
+      "destinationChannels": 4,
+      "sampleCount": 500,
+      "vectors": {
+        "path": "icc/vectors/srgb-v4-to-synthetic-cmyk-lab-lut16.u16le",
+        "sha256": "2484848415b8aa053238c79806189fa8323f4d10df1e29f7afda45bb736edf78",
+        "role": "vectors"
+      },
+      "reference": {
+        "tool": "transicc (LittleCMS 2.19)",
+        "command": "transicc -n -c0 -t1 -i icc/profiles/sRGB-v4.icc -o icc/profiles/synthetic-cmyk-lab-lut16.icc",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/IccCorpus.cs (Generate)"
+      },
+      "comparison": {
+        "maxAbsoluteError": 5,
+        "maxMeanAbsoluteError": 1.0,
+        "justification": "Same tables and interpolation in both systems; LittleCMS evaluates tables with 16-bit intermediate values, the library in double precision, and a steep curve after a table amplifies that rounding near black."
+      }
+    },
+    {
+      "id": "icc/srgb-v4-to-synthetic-cmyk-lab-lut16-saturation",
+      "source": "icc/srgb-v4",
+      "destination": "icc/synthetic-cmyk-lab-lut16",
+      "intent": "saturation",
+      "blackPointCompensation": false,
+      "sourceChannels": 3,
+      "destinationChannels": 4,
+      "sampleCount": 500,
+      "vectors": {
+        "path": "icc/vectors/srgb-v4-to-synthetic-cmyk-lab-lut16-saturation.u16le",
+        "sha256": "852ad4cf8448d864972c4535018db691dcd41cb420b7eee104761cbc03dc4a89",
+        "role": "vectors"
+      },
+      "reference": {
+        "tool": "transicc (LittleCMS 2.19)",
+        "command": "transicc -n -c0 -t2 -i icc/profiles/sRGB-v4.icc -o icc/profiles/synthetic-cmyk-lab-lut16.icc",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/IccCorpus.cs (Generate)"
+      },
+      "comparison": {
+        "maxAbsoluteError": 5,
+        "maxMeanAbsoluteError": 1.0,
+        "justification": "Same tables and interpolation in both systems; LittleCMS evaluates tables with 16-bit intermediate values, the library in double precision, and a steep curve after a table amplifies that rounding near black."
+      }
+    },
+    {
+      "id": "icc/srgb-v4-to-synthetic-cmyk-lab-mab",
+      "source": "icc/srgb-v4",
+      "destination": "icc/synthetic-cmyk-lab-mab",
+      "intent": "relative-colorimetric",
+      "blackPointCompensation": false,
+      "sourceChannels": 3,
+      "destinationChannels": 4,
+      "sampleCount": 500,
+      "vectors": {
+        "path": "icc/vectors/srgb-v4-to-synthetic-cmyk-lab-mab.u16le",
+        "sha256": "7f765c42117e2761fbc1b263a57ea1b4622abca6a5ab123a1d5eb4d33deb263d",
+        "role": "vectors"
+      },
+      "reference": {
+        "tool": "transicc (LittleCMS 2.19)",
+        "command": "transicc -n -c0 -t1 -i icc/profiles/sRGB-v4.icc -o icc/profiles/synthetic-cmyk-lab-mab.icc",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/IccCorpus.cs (Generate)"
+      },
+      "comparison": {
+        "maxAbsoluteError": 5,
+        "maxMeanAbsoluteError": 1.0,
+        "justification": "Same tables and interpolation in both systems; LittleCMS evaluates tables with 16-bit intermediate values, the library in double precision, and a steep curve after a table amplifies that rounding near black."
+      }
+    },
+    {
+      "id": "icc/synthetic-cmyk-lab-lut16-to-srgb-v4",
+      "source": "icc/synthetic-cmyk-lab-lut16",
+      "destination": "icc/srgb-v4",
+      "intent": "relative-colorimetric",
+      "blackPointCompensation": false,
+      "sourceChannels": 4,
+      "destinationChannels": 3,
+      "sampleCount": 256,
+      "vectors": {
+        "path": "icc/vectors/synthetic-cmyk-lab-lut16-to-srgb-v4.u16le",
+        "sha256": "a72d2991cb501b0c3c0cda9d43199fb824702709634a88b8891ada85d7b05bd5",
+        "role": "vectors"
+      },
+      "reference": {
+        "tool": "transicc (LittleCMS 2.19)",
+        "command": "transicc -n -c0 -t1 -i icc/profiles/synthetic-cmyk-lab-lut16.icc -o icc/profiles/sRGB-v4.icc",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/IccCorpus.cs (Generate)"
+      },
+      "comparison": {
+        "maxAbsoluteError": 3,
+        "maxMeanAbsoluteError": 0.5,
+        "justification": "Grid points of the color lookup table: no interpolation is involved, only the rounding of the printed samples and of the grid point values differs."
+      }
+    },
+    {
+      "id": "icc/synthetic-cmyk-lab-lut16-to-srgb-v4-saturation",
+      "source": "icc/synthetic-cmyk-lab-lut16",
+      "destination": "icc/srgb-v4",
+      "intent": "saturation",
+      "blackPointCompensation": false,
+      "sourceChannels": 4,
+      "destinationChannels": 3,
+      "sampleCount": 81,
+      "vectors": {
+        "path": "icc/vectors/synthetic-cmyk-lab-lut16-to-srgb-v4-saturation.u16le",
+        "sha256": "053c5f5b18f8d67a9fa790344c0ba10a601c7d75d927b62f1e75e8378d449538",
+        "role": "vectors"
+      },
+      "reference": {
+        "tool": "transicc (LittleCMS 2.19)",
+        "command": "transicc -n -c0 -t2 -i icc/profiles/synthetic-cmyk-lab-lut16.icc -o icc/profiles/sRGB-v4.icc",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/IccCorpus.cs (Generate)"
+      },
+      "comparison": {
+        "maxAbsoluteError": 6,
+        "maxMeanAbsoluteError": 0.5,
+        "justification": "Grid points of the color lookup table: no interpolation is involved, only the rounding of the printed samples and of the grid point values differs."
+      }
+    },
+    {
+      "id": "icc/synthetic-rgb-scanner-to-srgb-v4-absolute",
+      "source": "icc/synthetic-rgb-scanner",
+      "destination": "icc/srgb-v4",
+      "intent": "absolute-colorimetric",
+      "blackPointCompensation": false,
+      "sourceChannels": 3,
+      "destinationChannels": 3,
+      "sampleCount": 500,
+      "vectors": {
+        "path": "icc/vectors/synthetic-rgb-scanner-to-srgb-v4-absolute.u16le",
+        "sha256": "91885fb06e912295918c27f1e6c9ffaebc86081c63d214731de1b0e2e95b93f5",
+        "role": "vectors"
+      },
+      "reference": {
+        "tool": "transicc (LittleCMS 2.19)",
+        "command": "transicc -n -c0 -t3 -i icc/profiles/synthetic-rgb-scanner.icc -o icc/profiles/sRGB-v4.icc",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/IccCorpus.cs (Generate)"
+      },
+      "comparison": {
+        "maxAbsoluteError": 5,
+        "maxMeanAbsoluteError": 0.5,
+        "justification": "Same matrix and tone curves in both systems: only the rounding of the printed samples and the single-precision arithmetic of LittleCMS differ."
+      }
+    },
+    {
+      "id": "icc/srgb-v4-to-synthetic-gray-paper-absolute",
+      "source": "icc/srgb-v4",
+      "destination": "icc/synthetic-gray-paper",
+      "intent": "absolute-colorimetric",
+      "blackPointCompensation": false,
+      "sourceChannels": 3,
+      "destinationChannels": 1,
+      "sampleCount": 500,
+      "vectors": {
+        "path": "icc/vectors/srgb-v4-to-synthetic-gray-paper-absolute.u16le",
+        "sha256": "46ee5ab9233d865b0d52f882341a055ca095cc4cd6eb0f174280f3b0ae8efd8d",
+        "role": "vectors"
+      },
+      "reference": {
+        "tool": "transicc (LittleCMS 2.19)",
+        "command": "transicc -n -c0 -t3 -i icc/profiles/sRGB-v4.icc -o icc/profiles/synthetic-gray-paper.icc",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/IccCorpus.cs (Generate)"
+      },
+      "comparison": {
+        "maxAbsoluteError": 3,
+        "maxMeanAbsoluteError": 0.75,
+        "justification": "Same matrix and tone curves in both systems: only the rounding of the printed samples and the single-precision arithmetic of LittleCMS differ."
+      }
+    },
+    {
+      "id": "icc/srgb-v4-to-synthetic-cmyk-lab-lut16-absolute",
+      "source": "icc/srgb-v4",
+      "destination": "icc/synthetic-cmyk-lab-lut16",
+      "intent": "absolute-colorimetric",
+      "blackPointCompensation": false,
+      "sourceChannels": 3,
+      "destinationChannels": 4,
+      "sampleCount": 500,
+      "vectors": {
+        "path": "icc/vectors/srgb-v4-to-synthetic-cmyk-lab-lut16-absolute.u16le",
+        "sha256": "d933426aa5014e973a74a3724c3be93aa79d3fd33d787132e136cd4d5b73d230",
+        "role": "vectors"
+      },
+      "reference": {
+        "tool": "transicc (LittleCMS 2.19)",
+        "command": "transicc -n -c0 -t3 -i icc/profiles/sRGB-v4.icc -o icc/profiles/synthetic-cmyk-lab-lut16.icc",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/IccCorpus.cs (Generate)"
+      },
+      "comparison": {
+        "maxAbsoluteError": 6,
+        "maxMeanAbsoluteError": 1.0,
+        "justification": "Same tables and interpolation in both systems; LittleCMS evaluates tables with 16-bit intermediate values, the library in double precision, and a steep curve after a table amplifies that rounding near black."
+      }
+    },
+    {
+      "id": "icc/synthetic-gray-paper-to-sgrey-v4-compensated",
+      "source": "icc/synthetic-gray-paper",
+      "destination": "icc/sgrey-v4",
+      "intent": "relative-colorimetric",
+      "blackPointCompensation": true,
+      "sourceChannels": 1,
+      "destinationChannels": 1,
+      "sampleCount": 320,
+      "vectors": {
+        "path": "icc/vectors/synthetic-gray-paper-to-sgrey-v4-compensated.u16le",
+        "sha256": "a1b8368d13a4f0ae488b76e41585ca625a772c5f06ffcc2ee99c73774a57befd",
+        "role": "vectors"
+      },
+      "reference": {
+        "tool": "transicc (LittleCMS 2.19)",
+        "command": "transicc -n -c0 -t1 -b -i icc/profiles/synthetic-gray-paper.icc -o icc/profiles/sGrey-v4.icc",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/IccCorpus.cs (Generate)"
+      },
+      "comparison": {
+        "maxAbsoluteError": 3,
+        "maxMeanAbsoluteError": 0.75,
+        "justification": "Both systems take the black point from the tone curve and scale CIEXYZ toward white identically; only rounding differs."
+      }
+    },
+    {
+      "id": "icc/sgrey-v4-to-synthetic-gray-paper-compensated",
+      "source": "icc/sgrey-v4",
+      "destination": "icc/synthetic-gray-paper",
+      "intent": "relative-colorimetric",
+      "blackPointCompensation": true,
+      "sourceChannels": 1,
+      "destinationChannels": 1,
+      "sampleCount": 320,
+      "vectors": {
+        "path": "icc/vectors/sgrey-v4-to-synthetic-gray-paper-compensated.u16le",
+        "sha256": "4026d5b640524bf05d0637115e73df2c1cb2aa9c8ee1cc701df723bed176c5df",
+        "role": "vectors"
+      },
+      "reference": {
+        "tool": "transicc (LittleCMS 2.19)",
+        "command": "transicc -n -c0 -t1 -b -i icc/profiles/sGrey-v4.icc -o icc/profiles/synthetic-gray-paper.icc",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/IccCorpus.cs (Generate)"
+      },
+      "comparison": {
+        "maxAbsoluteError": 3,
+        "maxMeanAbsoluteError": 0.75,
+        "justification": "Both systems take the black point from the tone curve and scale CIEXYZ toward white identically; only rounding differs."
+      }
+    },
+    {
+      "id": "icc/sgrey-v4-to-synthetic-gray-printer-lut8-perceptual-compensated",
+      "source": "icc/sgrey-v4",
+      "destination": "icc/synthetic-gray-printer-lut8",
+      "intent": "perceptual",
+      "blackPointCompensation": true,
+      "sourceChannels": 1,
+      "destinationChannels": 1,
+      "sampleCount": 320,
+      "vectors": {
+        "path": "icc/vectors/sgrey-v4-to-synthetic-gray-printer-lut8-perceptual-compensated.u16le",
+        "sha256": "b57a953f1ab69389678a0609fb502520edc568238563cd7c6c26c0dc7029dff8",
+        "role": "vectors"
+      },
+      "reference": {
+        "tool": "transicc (LittleCMS 2.19)",
+        "command": "transicc -n -c0 -t0 -b -i icc/profiles/sGrey-v4.icc -o icc/profiles/synthetic-gray-printer-lut8.icc",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/IccCorpus.cs (Generate)"
+      },
+      "comparison": {
+        "maxAbsoluteError": 15,
+        "maxMeanAbsoluteError": 5.0,
+        "justification": "Both systems estimate the black point from the round trip of a lightness ramp, sampled at 256 points by LittleCMS and at 101 by the library."
+      }
+    },
+    {
+      "id": "icc/synthetic-gray-printer-lut8-to-srgb-v4-perceptual-compensated",
+      "source": "icc/synthetic-gray-printer-lut8",
+      "destination": "icc/srgb-v4",
+      "intent": "perceptual",
+      "blackPointCompensation": true,
+      "sourceChannels": 1,
+      "destinationChannels": 3,
+      "sampleCount": 320,
+      "vectors": {
+        "path": "icc/vectors/synthetic-gray-printer-lut8-to-srgb-v4-perceptual-compensated.u16le",
+        "sha256": "8c952ec4605e009c9857873d2ce7e40423ad3094cd9b15c0435e73e637b06c8a",
+        "role": "vectors"
+      },
+      "reference": {
+        "tool": "transicc (LittleCMS 2.19)",
+        "command": "transicc -n -c0 -t0 -b -i icc/profiles/synthetic-gray-printer-lut8.icc -o icc/profiles/sRGB-v4.icc",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/IccCorpus.cs (Generate)"
+      },
+      "comparison": {
+        "maxAbsoluteError": 4,
+        "maxMeanAbsoluteError": 0.75,
+        "justification": "Both systems estimate the black point from the round trip of a lightness ramp, sampled at 256 points by LittleCMS and at 101 by the library."
+      }
     }
   ]
 }

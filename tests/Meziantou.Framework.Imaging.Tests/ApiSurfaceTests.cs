@@ -24,6 +24,7 @@ public sealed class ApiSurfaceTests
         typeof(ConvolutionOptions),
         typeof(ConvolutionKernel),
         typeof(AutoCropOptions),
+        typeof(IccColorTransformOptions),
         typeof(PngEncoder),
         typeof(GifEncoder),
         typeof(JpegEncoder),
@@ -62,6 +63,8 @@ public sealed class ApiSurfaceTests
     [InlineData(typeof(FrameMetadata))]
     [InlineData(typeof(AnimationMetadata))]
     [InlineData(typeof(MetadataBlob))]
+    [InlineData(typeof(IccProfile))]
+    [InlineData(typeof(IccColorTransform))]
     public void ConcreteTypesAreSealed(Type type) => Assert.True(type.IsSealed, $"{type} must be sealed");
 
     [Fact]

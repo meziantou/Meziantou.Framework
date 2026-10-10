@@ -15,6 +15,8 @@ namespace Meziantou.Framework.Imaging;
 /// derived outside the library.
 /// </para>
 /// </remarks>
+// Not "closed": a closed base requires the type parameters of a derived type to appear in the base type (CS9383), which
+// AutoCropAnalysis<TPixel> cannot do. As for Image, the private protected constructor closes the hierarchy instead.
 public abstract class AutoCropAnalysis
 {
     private protected AutoCropAnalysis(bool success, Size canvasSize, Rectangle bounds, Rgba64 backgroundColor, double weightX, double weightY)

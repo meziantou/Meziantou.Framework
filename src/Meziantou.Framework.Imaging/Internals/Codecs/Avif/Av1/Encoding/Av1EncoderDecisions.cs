@@ -31,10 +31,28 @@ internal struct Av1EncoderDecisions
     public bool FilterIntra;
 
     /// <summary>
+    /// The largest step of the motion search of a block of an inter frame, in samples: the search moves the motion vector
+    /// by this step while the prediction improves, then by half of it, down to one sample.
+    /// </summary>
+    public int MotionStep;
+
+    /// <summary>Whether the motion search refines a motion vector to a half then to a quarter of a sample.</summary>
+    public bool SubpelMotion;
+
+    /// <summary>The number of motion vectors of the stack that the NEARMV mode is evaluated with: 1 to 3.</summary>
+    public int NearMvCandidates;
+
+    /// <summary>
     /// The Lagrange multiplier of the rate: the squared error that a bit is worth, with 10 fractional bits; 0 for a lossless
     /// frame, which has no distortion.
     /// </summary>
     public long Lambda;
+
+    /// <summary>
+    /// The Lagrange multiplier of the motion search: the sum of absolute differences that a bit of a motion vector is worth,
+    /// with 8 fractional bits.
+    /// </summary>
+    public long MotionLambda;
 
     /// <summary>The rounding offset of the quantizer, in units of 1/256 of a quantizer step (128 rounds to nearest).</summary>
     public int QuantizerRounding;
@@ -50,16 +68,16 @@ internal struct Av1EncoderDecisions
     {
         return effort switch
         {
-            <= 0 => new() { MaxBlockLevel = 2, MinBlockLevel = 2, LumaModeCandidates = 1, ChromaModeCandidates = 1 },
-            1 => new() { MaxBlockLevel = 3, MinBlockLevel = 1, LumaModeCandidates = 1, ChromaModeCandidates = 1 },
-            2 => new() { MaxBlockLevel = 3, MinBlockLevel = 1, LumaModeCandidates = 2, ChromaModeCandidates = 1 },
-            3 => new() { MaxBlockLevel = 4, MinBlockLevel = 1, LumaModeCandidates = 2, ChromaModeCandidates = 2, AngleDeltas = true },
-            4 => new() { MaxBlockLevel = 4, MinBlockLevel = 1, LumaModeCandidates = 2, ChromaModeCandidates = 2, AngleDeltas = true, RectangularPartitions = true },
-            5 => new() { MaxBlockLevel = 4, MinBlockLevel = 0, LumaModeCandidates = 3, ChromaModeCandidates = 2, AngleDeltas = true, RectangularPartitions = true, FilterIntra = true },
-            6 => new() { MaxBlockLevel = 4, MinBlockLevel = 0, LumaModeCandidates = 4, ChromaModeCandidates = 3, AngleDeltas = true, RectangularPartitions = true, FilterIntra = true },
-            7 => new() { MaxBlockLevel = 5, MinBlockLevel = 0, LumaModeCandidates = 6, ChromaModeCandidates = 4, AngleDeltas = true, RectangularPartitions = true, FilterIntra = true },
-            8 => new() { MaxBlockLevel = 5, MinBlockLevel = 0, LumaModeCandidates = 13, ChromaModeCandidates = 6, AngleDeltas = true, RectangularPartitions = true, FilterIntra = true },
-            _ => new() { MaxBlockLevel = 5, MinBlockLevel = 0, LumaModeCandidates = 13, ChromaModeCandidates = 13, AngleDeltas = true, RectangularPartitions = true, FilterIntra = true },
+            <= 0 => new() { MaxBlockLevel = 2, MinBlockLevel = 2, LumaModeCandidates = 1, ChromaModeCandidates = 1, MotionStep = 4, NearMvCandidates = 1 },
+            1 => new() { MaxBlockLevel = 3, MinBlockLevel = 1, LumaModeCandidates = 1, ChromaModeCandidates = 1, MotionStep = 8, NearMvCandidates = 1 },
+            2 => new() { MaxBlockLevel = 3, MinBlockLevel = 1, LumaModeCandidates = 2, ChromaModeCandidates = 1, MotionStep = 8, SubpelMotion = true, NearMvCandidates = 1 },
+            3 => new() { MaxBlockLevel = 4, MinBlockLevel = 1, LumaModeCandidates = 2, ChromaModeCandidates = 2, AngleDeltas = true, MotionStep = 8, SubpelMotion = true, NearMvCandidates = 1 },
+            4 => new() { MaxBlockLevel = 4, MinBlockLevel = 1, LumaModeCandidates = 2, ChromaModeCandidates = 2, AngleDeltas = true, RectangularPartitions = true, MotionStep = 8, SubpelMotion = true, NearMvCandidates = 1 },
+            5 => new() { MaxBlockLevel = 4, MinBlockLevel = 0, LumaModeCandidates = 3, ChromaModeCandidates = 2, AngleDeltas = true, RectangularPartitions = true, FilterIntra = true, MotionStep = 16, SubpelMotion = true, NearMvCandidates = 2 },
+            6 => new() { MaxBlockLevel = 4, MinBlockLevel = 0, LumaModeCandidates = 4, ChromaModeCandidates = 3, AngleDeltas = true, RectangularPartitions = true, FilterIntra = true, MotionStep = 16, SubpelMotion = true, NearMvCandidates = 2 },
+            7 => new() { MaxBlockLevel = 5, MinBlockLevel = 0, LumaModeCandidates = 6, ChromaModeCandidates = 4, AngleDeltas = true, RectangularPartitions = true, FilterIntra = true, MotionStep = 16, SubpelMotion = true, NearMvCandidates = 3 },
+            8 => new() { MaxBlockLevel = 5, MinBlockLevel = 0, LumaModeCandidates = 13, ChromaModeCandidates = 6, AngleDeltas = true, RectangularPartitions = true, FilterIntra = true, MotionStep = 32, SubpelMotion = true, NearMvCandidates = 3 },
+            _ => new() { MaxBlockLevel = 5, MinBlockLevel = 0, LumaModeCandidates = 13, ChromaModeCandidates = 13, AngleDeltas = true, RectangularPartitions = true, FilterIntra = true, MotionStep = 32, SubpelMotion = true, NearMvCandidates = 3 },
         };
     }
 }

@@ -220,6 +220,175 @@ public sealed class Av1EncoderRoundTripTests
         }
     }
 
+    public static TheoryData<int, int, int, string, string, int, int> SequenceCases()
+    {
+        var data = new TheoryData<int, int, int, string, string, int, int>();
+        (int Width, int Height)[] sizes = [(8, 8), (33, 47), (64, 64), (130, 70)];
+        string[] formats = ["400", "420", "422", "444"];
+        string[] motions = ["static", "pan", "object", "cut", "noise", "fade"];
+        int[] qualities = [-1, 30, 60, 85, 100];
+        var index = 0;
+        foreach (var (width, height) in sizes)
+        {
+            foreach (var format in formats)
+            {
+                // Every size and format, with a bit depth, a motion, a quality (-1 is lossless) and an effort that rotate
+                data.Add(width, height, 8 + (2 * (index % 3)), format, motions[index % motions.Length], qualities[index % qualities.Length], index % 10);
+                index++;
+            }
+        }
+
+        // Every motion, lossless and lossy, and the effort ladder on a frame of several superblocks
+        foreach (var motion in motions)
+        {
+            data.Add(96, 80, 8, "420", motion, -1, 4);
+            data.Add(96, 80, 8, "420", motion, 60, 5);
+            data.Add(70, 50, 10, "444", motion, 20, 2);
+        }
+
+        for (var effort = 0; effort <= 9; effort++)
+        {
+            data.Add(144, 100, 8, "420", "pan", 70, effort);
+        }
+
+        return data;
+    }
+
+    [Theory]
+    [MemberData(nameof(SequenceCases))]
+    public void FramesOfASequenceDecodeToTheReconstructionOfTheEncoder(int width, int height, int bitDepth, string format, string motion, int quality, int effort)
+    {
+        const int FrameCount = 5;
+        var lossless = quality < 0;
+        var name = $"sequence-{width}x{height}-{bitDepth}-{format}-{motion}-q{quality}-e{effort}";
+        var scope = AllocationScope.Create(ImageConfiguration.Default, name);
+        var monochrome = format is "400";
+        var subsamplingX = format is "420" or "422" ? 1 : 0;
+        var subsamplingY = format is "420" ? 1 : 0;
+        var settings = new Av1EncoderSettings(width, height, bitDepth, monochrome, subsamplingX, subsamplingY, ColorPrimaries: 1, TransferCharacteristics: 13, MatrixCoefficients: lossless && format is "444" ? 0 : 6, FullRange: true, ChromaSamplePosition: 0, StillPicture: false, lossless, Math.Max(quality, 0), effort);
+        using var encoder = new Av1Encoder(scope, settings);
+        using var decoder = new Av1Decoder(scope);
+        var planeCount = monochrome ? 1 : 3;
+        var sizes = new int[FrameCount];
+        var tools = Av1Tools.None;
+        for (var index = 0; index < FrameCount; index++)
+        {
+            var source = new ushort[planeCount][];
+            for (var plane = 0; plane < planeCount; plane++)
+            {
+                var buffer = encoder.GetSourcePlane(plane);
+                source[plane] = CreateFrame(motion, index, buffer.Width, buffer.Height, plane > 0 ? subsamplingX : 0, plane > 0 ? subsamplingY : 0, bitDepth, seed: (plane * 7919) + width + (31 * height));
+                for (var y = 0; y < buffer.Height; y++)
+                {
+                    source[plane].AsSpan(y * buffer.Width, buffer.Width).CopyTo(buffer.GetRow(y));
+                }
+            }
+
+            encoder.BeginFrame();
+            while (!encoder.Encode(XunitCancellationToken))
+            {
+            }
+
+            // The first frame is the only key frame: a decoder starts from it
+            Assert.Equal(index is 0, encoder.IsKeyFrame);
+            var payload = encoder.Payload.ToArray();
+            sizes[index] = payload.Length;
+            decoder.SetInput(payload, 0, payload.Length);
+            var frame = decoder.DecodeNextOutputFrame(XunitCancellationToken);
+            Assert.NotNull(frame);
+            try
+            {
+                Assert.Equal(index is 0 ? Av1Constants.KeyFrame : Av1Constants.InterFrame, frame.Header.FrameType);
+                Assert.Equal(lossless, frame.Header.CodedLossless);
+                for (var plane = 0; plane < planeCount; plane++)
+                {
+                    var decoded = frame.GetPlane(plane);
+                    var reconstructed = encoder.Reconstruction.GetPlane(plane);
+                    for (var y = 0; y < decoded.Height; y++)
+                    {
+                        Assert.True(reconstructed.GetRow(y).SequenceEqual(decoded.GetRow(y)), $"{name}: row {y} of plane {plane} of frame {index} is not the row that the encoder reconstructed");
+                        if (lossless)
+                            Assert.True(source[plane].AsSpan(y * decoded.Width, decoded.Width).SequenceEqual(decoded.GetRow(y)), $"{name}: row {y} of plane {plane} of frame {index} is not the encoded row");
+                    }
+                }
+
+                Assert.Null(decoder.DecodeNextOutputFrame(XunitCancellationToken));
+            }
+            finally
+            {
+                frame.Release();
+            }
+
+            if (index > 0)
+                tools |= decoder.Tools;
+        }
+
+        TestContext.Current.TestOutputHelper?.WriteLine($"{name}: {string.Join(", ", sizes)} bytes, {tools}");
+
+        // A frame that the previous one predicts is a fraction of a key frame: the frames of "static" are the same frame,
+        // the ones of "pan" the same scene moved by whole samples, with new samples along two edges
+        if (motion is "static" or "pan" && width >= 64)
+        {
+            Assert.True(tools.HasFlag(Av1Tools.InterBlock), $"{name}: no block is predicted from the previous frame");
+            for (var index = 1; index < FrameCount; index++)
+            {
+                Assert.True(sizes[index] * 2 <= sizes[0], $"{name}: frame {index} has {sizes[index]} bytes, the key frame {sizes[0]} bytes");
+            }
+        }
+
+        if (motion is "pan" && width >= 64)
+            Assert.True(tools.HasFlag(Av1Tools.NewMotionVector), $"{name}: no motion vector is coded");
+    }
+
+    [Fact]
+    public void KeyFramesFollowTheInterval()
+    {
+        var scope = AllocationScope.Create(ImageConfiguration.Default, nameof(KeyFramesFollowTheInterval));
+        foreach (var (interval, expected) in new[] { (0, "KPPPPPP"), (1, "KKKKKKK"), (3, "KPPKPPK") })
+        {
+            var settings = new Av1EncoderSettings(24, 16, 8, Monochrome: true, 1, 1, 1, 13, 6, FullRange: true, ChromaSamplePosition: 0, StillPicture: false, Lossless: true, Quality: 100, Effort: 0, interval);
+            using var encoder = new Av1Encoder(scope, settings);
+            using var decoder = new Av1Decoder(scope);
+            var actual = "";
+            for (var index = 0; index < expected.Length; index++)
+            {
+                var buffer = encoder.GetSourcePlane(0);
+                var samples = CreateFrame("pan", index, buffer.Width, buffer.Height, 0, 0, 8, seed: 11);
+                for (var y = 0; y < buffer.Height; y++)
+                {
+                    samples.AsSpan(y * buffer.Width, buffer.Width).CopyTo(buffer.GetRow(y));
+                }
+
+                encoder.BeginFrame();
+                while (!encoder.Encode(TestContext.Current.CancellationToken))
+                {
+                }
+
+                actual += encoder.IsKeyFrame ? "K" : "P";
+
+                // A key frame carries the sequence header: a decoder can start from it
+                var payload = encoder.Payload.ToArray();
+                Assert.Equal(encoder.IsKeyFrame, (payload[0] >> 3) is Av1Constants.ObuSequenceHeader);
+                decoder.SetInput(payload, 0, payload.Length);
+                var frame = decoder.DecodeNextOutputFrame(TestContext.Current.CancellationToken);
+                Assert.NotNull(frame);
+                try
+                {
+                    for (var y = 0; y < buffer.Height; y++)
+                    {
+                        Assert.True(samples.AsSpan(y * buffer.Width, buffer.Width).SequenceEqual(frame.GetPlane(0).GetRow(y)), $"interval {interval}: row {y} of frame {index} is not the encoded row");
+                    }
+                }
+                finally
+                {
+                    frame.Release();
+                }
+            }
+
+            Assert.Equal(expected, actual);
+        }
+    }
+
     [Fact]
     public void EncodingIsDeterministic()
     {
@@ -257,6 +426,49 @@ public sealed class Av1EncoderRoundTripTests
         }
 
         return encoder.Payload.ToArray();
+    }
+
+    // The plane of a frame of a sequence: a scene that does not change ("static"), that moves by whole samples ("pan"), that
+    // a square moves across ("object"), that another scene replaces ("cut"), that is noise, or that gets brighter ("fade")
+    private static ushort[] CreateFrame(string motion, int index, int width, int height, int subsamplingX, int subsamplingY, int bitDepth, int seed)
+    {
+        const int Margin = 64;
+        var max = (1 << bitDepth) - 1;
+        if (motion is "noise")
+            return CreateSamples("noise", width, height, bitDepth, seed + index);
+
+        if (motion is "cut" && index >= 2)
+            return CreateSamples("blocks", width, height, bitDepth, seed);
+
+        // The motion of the luma plane is a multiple of the subsampling, so that the chroma planes move by whole samples
+        var scene = CreateSamples("photo", width + (2 * Margin), height + (2 * Margin), bitDepth, seed);
+        var offsetX = motion is "pan" ? (6 * index) >> subsamplingX : 0;
+        var offsetY = motion is "pan" ? (-4 * index) >> subsamplingY : 0;
+        var samples = new ushort[width * height];
+        for (var y = 0; y < height; y++)
+        {
+            for (var x = 0; x < width; x++)
+            {
+                int value = scene[((y + Margin + offsetY) * (width + (2 * Margin))) + x + Margin + offsetX];
+                if (motion is "fade")
+                    value = Math.Min(max, value + (index * max / 32));
+
+                samples[(y * width) + x] = (ushort)value;
+            }
+        }
+
+        if (motion is "object")
+        {
+            var size = Math.Max(2, Math.Min(width, height) / 3);
+            var left = Math.Min(width - 1, ((10 * index) >> subsamplingX) % width);
+            var top = Math.Min(height - 1, (4 * index) >> subsamplingY);
+            for (var y = top; y < Math.Min(height, top + size); y++)
+            {
+                samples.AsSpan((y * width) + left, Math.Min(size, width - left)).Fill((ushort)(max * 3 / 4));
+            }
+        }
+
+        return samples;
     }
 
     private static ushort[] CreateSamples(string content, int width, int height, int bitDepth, int seed)

@@ -59,6 +59,7 @@ internal sealed class Av1Encoder : IDisposable
         ArgumentOutOfRangeException.ThrowIfGreaterThan(settings.Height, 65536);
         ArgumentOutOfRangeException.ThrowIfLessThan(settings.Quality, 0);
         ArgumentOutOfRangeException.ThrowIfGreaterThan(settings.Quality, 100);
+        ArgumentOutOfRangeException.ThrowIfNegative(settings.KeyFrameInterval);
         _scope = scope;
         _settings = settings;
         _decisions = Av1EncoderDecisions.Create(settings.Effort);
@@ -70,6 +71,15 @@ internal sealed class Av1Encoder : IDisposable
             long quantizer = Av1Reconstruction.GetAcQuantizer(_quantizerIndex, settings.BitDepth);
             _decisions.Lambda = Math.Max(1, (123 * quantizer * quantizer) / 64);
             _decisions.QuantizerRounding = 96;
+
+            // The multiplier of a sum of absolute differences is the square root of the one of a squared error: 0.35 times
+            // the quantizer step
+            _decisions.MotionLambda = Math.Max(1, 11 * quantizer);
+        }
+        else
+        {
+            // A lossless frame has no distortion: the motion search finds the prediction with the smallest residual
+            _decisions.MotionLambda = 1 << 8;
         }
 
         var parameters = new Av1SequenceParameters(
@@ -221,11 +231,16 @@ internal sealed class Av1Encoder : IDisposable
     private void StartFrame()
     {
         var limits = Av1FrameHeaderParser.ComputeTileLimits(_sequence.Use128x128Superblock, 2 * ((_settings.Width + 7) >> 3), 2 * ((_settings.Height + 7) >> 3));
+        // A frame that is not a key frame is predicted from the frame that precedes it, which every reference slot holds:
+        // the distributions it starts with are the ones that the previous frame ended with
+        var isKeyFrame = _frameIndex is 0 || (_settings.KeyFrameInterval > 0 && _frameIndex % _settings.KeyFrameInterval is 0);
         var syntax = new Av1FrameHeader
         {
-            // Every frame is a key frame until the inter prediction of the following frames exists
-            FrameType = Av1Constants.KeyFrame,
+            FrameType = isKeyFrame ? Av1Constants.KeyFrame : Av1Constants.InterFrame,
             ShowFrame = true,
+            PrimaryRefFrame = isKeyFrame ? Av1Constants.PrimaryRefNone : 0,
+            RefreshFrameFlags = (1 << Av1Constants.NumRefFrames) - 1,
+            InterpolationFilter = Av1Constants.Eighttap,
             OrderHint = _sequence.EnableOrderHint ? _frameIndex & ((1 << _sequence.OrderHintBits) - 1) : 0,
             TileColsLog2 = limits.MinLog2TileCols,
             TileRowsLog2 = Math.Max(limits.MinLog2Tiles - limits.MinLog2TileCols, 0),

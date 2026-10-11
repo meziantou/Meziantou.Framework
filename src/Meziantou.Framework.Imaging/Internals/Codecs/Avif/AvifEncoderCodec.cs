@@ -137,12 +137,13 @@ internal sealed class AvifEncoderCodec : ImageEncoderCodec
             try
             {
                 var scope = options.Scope;
-                var settings = new Av1EncoderSettings(_width, _height, bitDepth, monochrome, subsamplingX, subsamplingY, primaries, transfer, matrix, fullRange, ChromaSamplePosition: 0, StillPicture: !_isSequence, lossless, _encoder.Quality, _encoder.Effort);
+                var settings = new Av1EncoderSettings(_width, _height, bitDepth, monochrome, subsamplingX, subsamplingY, primaries, transfer, matrix, fullRange, ChromaSamplePosition: 0, StillPicture: !_isSequence, lossless, _encoder.Quality, _encoder.Effort, _encoder.KeyFrameInterval);
                 _color = new Av1Encoder(scope, settings);
                 if (PixelFormats.HasAlpha(_sourceFormat))
                 {
-                    // The alpha plane: a monochrome image in full range, always lossless
-                    var alphaSettings = new Av1EncoderSettings(_width, _height, bitDepth, Monochrome: true, SubsamplingX: 1, SubsamplingY: 1, Av1Constants.CpUnspecified, Av1Constants.TcUnspecified, Av1Constants.McUnspecified, FullRange: true, ChromaSamplePosition: 0, StillPicture: !_isSequence, Lossless: true, Quality: 100, _encoder.Effort);
+                    // The alpha plane: a monochrome image in full range, always lossless. Its key frames are the ones of
+                    // the color planes
+                    var alphaSettings = new Av1EncoderSettings(_width, _height, bitDepth, Monochrome: true, SubsamplingX: 1, SubsamplingY: 1, Av1Constants.CpUnspecified, Av1Constants.TcUnspecified, Av1Constants.McUnspecified, FullRange: true, ChromaSamplePosition: 0, StillPicture: !_isSequence, Lossless: true, Quality: 100, _encoder.Effort, _encoder.KeyFrameInterval);
                     _alpha = new Av1Encoder(scope, alphaSettings);
                 }
 

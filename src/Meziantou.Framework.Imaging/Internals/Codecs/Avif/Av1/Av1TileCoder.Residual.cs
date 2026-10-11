@@ -42,12 +42,9 @@ internal ref partial struct Av1TileCoder
                     var subY = plane > 0 ? _subY : 0;
                     if (_isInter && !_lossless && plane is 0)
                     {
-                        if (operation is not ResidualOperation.Decode)
-                            throw new NotSupportedException("The transform tree of an inter block is not encoded yet.");
-
                         var miRowChunk = _miRow + (chunkY << 4);
                         var miColChunk = _miCol + (chunkX << 4);
-                        TransformTree(miColChunk * Av1Constants.MiSize, miRowChunk * Av1Constants.MiSize, num4x4W * 4, num4x4H * 4);
+                        TransformTree(operation, miColChunk * Av1Constants.MiSize, miRowChunk * Av1Constants.MiSize, num4x4W * 4, num4x4H * 4);
                         continue;
                     }
 

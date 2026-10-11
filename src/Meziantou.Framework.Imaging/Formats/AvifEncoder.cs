@@ -16,7 +16,9 @@ namespace Meziantou.Framework.Imaging.Formats;
 /// </para>
 /// <para>
 /// An image with several frames is written as an image sequence: every frame is a full image, with its exact duration, and
-/// the play count of the animation. A sequence needs a seekable destination and the number of its frames
+/// the play count of the animation. The first frame is a key frame; the others are predicted from the frame that precedes
+/// them, unless <see cref="KeyFrameInterval"/> asks for more key frames. A sequence needs a seekable destination and the
+/// number of its frames
 /// (<see cref="ImageWriterOptions.ExpectedFrameCount"/> for a writer), because the box that describes the frames precedes
 /// them and is written last. A still image goes to any stream. An image sequence of one image cannot store animation
 /// settings: it is read back as a still image.
@@ -125,6 +127,23 @@ public sealed class AvifEncoder : ImageEncoder
     /// </summary>
     /// <remarks>Setting it usually makes the output smaller; the visible pixels and every alpha value are unchanged.</remarks>
     public bool ClearTransparentColors { get; init; }
+
+    /// <summary>
+    /// Gets the number of images from a key frame to the next one in an image sequence. Defaults to 0: the first image is
+    /// the only key frame. 1 makes every image a key frame. An image that is not a key frame is predicted from the image
+    /// that precedes it, which makes it smaller; a reader that seeks decodes from the last key frame. Ignored by a still
+    /// image, and never changes the decoded pixels of lossless output.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">The value is negative.</exception>
+    public int KeyFrameInterval
+    {
+        get;
+        init
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(value);
+            field = value;
+        }
+    }
 
     /// <summary>
     /// Gets how the durations of the images of a sequence are stored. Defaults to

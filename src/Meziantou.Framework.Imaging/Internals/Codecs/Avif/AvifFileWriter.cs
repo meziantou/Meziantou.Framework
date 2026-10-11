@@ -358,15 +358,20 @@ internal static class AvifFileWriter
             writer.EndBox(box);
         }
 
-        // ISO/IEC 14496-12, section 8.6.6 "Edit List Box": one edit that plays the whole media, repeated or not
-        box = writer.BeginBox(AvifFormat.Edts);
-        var elst = writer.BeginFullBox(AvifFormat.Elst, version: 1, flags: repeats ? 1 : 0);
-        writer.WriteUInt32(1);
-        writer.WriteUInt64(mediaDuration);
-        writer.WriteUInt64(0); // media_time
-        writer.WriteUInt32(0x00010000); // media_rate
-        writer.EndBox(elst);
-        writer.EndBox(box);
+        // ISO/IEC 14496-12, section 8.6.6 "Edit List Box": one edit that plays the whole media, repeated or not. An edit
+        // without duration cannot be repeated (libavif rejects the file): a sequence of images without duration that
+        // repeats forever has no edit list, which readers play forever or an unknown number of times
+        if (worstCase || !repeats || mediaDuration is not 0)
+        {
+            box = writer.BeginBox(AvifFormat.Edts);
+            var elst = writer.BeginFullBox(AvifFormat.Elst, version: 1, flags: repeats ? 1 : 0);
+            writer.WriteUInt32(1);
+            writer.WriteUInt64(mediaDuration);
+            writer.WriteUInt64(0); // media_time
+            writer.WriteUInt32(0x00010000); // media_rate
+            writer.EndBox(elst);
+            writer.EndBox(box);
+        }
 
         var mdia = writer.BeginBox(AvifFormat.Mdia);
         box = writer.BeginFullBox(AvifFormat.Mdhd, version: 1, flags: 0);

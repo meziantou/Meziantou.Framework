@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -38,11 +39,27 @@ internal ref partial struct Av1TileCoder
     private const int RecordCflAlphaU = 10;
     private const int RecordCflAlphaV = 11;
     private const int RecordTxSize = 12;
-    private const int RecordHeaderLength = 13;
+    private const int RecordRefMvIdx = 13;
+    private const int RecordMvRow = 14;
+    private const int RecordMvCol = 15;
+    private const int RecordHeaderLength = 16;
     private const int RecordSkipFlag = 1;
     private const int RecordFilterIntraFlag = 2;
+    private const int RecordInterFlag = 4;
 
     private const int IntraModeCount = Av1Constants.PaethPred + 1;
+
+    // The largest RefMvIdx of the NEARMV mode
+    private const int MaxNearMvIndex = 3;
+
+    // The largest difference that the MV syntax codes, in eighths of a sample
+    private const int MaxMvDifference = Av1Constants.Class0Size << (Av1Constants.MvClasses + 2);
+
+    // The limits of the motion search: the samples beyond an edge of the reference frame that a prediction may start at,
+    // the largest motion vector, and the number of moves at a step
+    private const int MotionMargin = 8;
+    private const int MaxMotionSamples = 1023;
+    private const int MaxMotionIterations = 8;
     private const long MaxCost = long.MaxValue / 4;
 
     /// <summary>Sets the limits of the search.</summary>
@@ -182,7 +199,12 @@ internal ref partial struct Av1TileCoder
             workspace.Records[_recordPosition++] = partition;
             _rate = 0;
             WritePartition(r, c, bSize, partition);
+            _isPredictedExactly = false;
             var cost = _decisions.GetCost(0, _rate) + VisitPartition(r, c, bSize, partition, search: true);
+
+            // A block that the previous frame predicts without residual is not split: its parts would be predicted the same
+            var isFinal = partition is Av1Constants.PartitionNone && _isPredictedExactly;
+            _isPredictedExactly = false;
             if (cost < best)
             {
                 best = cost;
@@ -191,13 +213,16 @@ internal ref partial struct Av1TileCoder
                     workspace.Records.Slice(candidateStart, bestLength).CopyTo(workspace.Records[start..]);
 
                 lastIsBest = true;
-                if (i < count - 1)
+                if (i < count - 1 && !isFinal)
                     CopyPixels(pixels, r, c, num4x4, num4x4, planeMask: 0b111, save: true);
             }
             else
             {
                 lastIsBest = false;
             }
+
+            if (isFinal)
+                break;
         }
 
         if (!lastIsBest)
@@ -329,9 +354,278 @@ internal ref partial struct Av1TileCoder
         return 0;
     }
 
-    // The search of section 5.11.5 "Decode block syntax" for a block of an intra frame: its luma mode, then its chroma mode.
-    // On return the frame holds the block, whose record ends at _recordPosition
+    // The search of section 5.11.5 "Decode block syntax". On return the frame holds the block, whose record ends at
+    // _recordPosition. A block of an inter frame is predicted from the previous frame, unless the intra prediction costs less
     private long SearchBlock(int r, int c, int subSize, int level)
+    {
+        if (_header.FrameIsIntra)
+            return SearchIntraBlock(r, c, subSize, level);
+
+        var workspace = _workspace!;
+        var bw4 = Av1Tables.Num4x4BlocksWide[subSize];
+        var bh4 = Av1Tables.Num4x4BlocksHigh[subSize];
+        var start = _recordPosition;
+        var contexts = workspace.GetContextSnapshot(level, block: true);
+        BeginBlock(r, c, subSize);
+        CopyContexts(contexts, r, c, bw4, bh4, save: true);
+        var search = new InterSearch { R = r, C = c, SubSize = subSize, Bw4 = bw4, Bh4 = bh4, Level = level, Start = start, BestCost = MaxCost };
+        SearchInterModes(ref search);
+        _isPredictedExactly = search.BestHasNoResidual;
+
+        // A block that the previous frame predicts without coefficient is not compared with the intra prediction
+        if (!search.BestIsSkipped)
+        {
+            CopyContexts(contexts, r, c, bw4, bh4, save: false);
+            var intraStart = start + search.BestLength;
+            _recordPosition = intraStart;
+            var intraCost = SearchIntraBlock(r, c, subSize, level);
+            if (intraCost < search.BestCost)
+            {
+                var length = _recordPosition - intraStart;
+                workspace.Records.Slice(intraStart, length).CopyTo(workspace.Records[start..]);
+                _recordPosition = start + length;
+                return intraCost;
+            }
+
+            search.LastIsBest = false;
+        }
+
+        if (!search.LastIsBest)
+        {
+            // The frame holds another candidate: put the best one back
+            CopyContexts(contexts, r, c, bw4, bh4, save: false);
+            var sink = _sink;
+            _sink = SymbolSink.None;
+            _recordPosition = start;
+            ReplayBlock(r, c, subSize);
+            _sink = sink;
+            CopyPixels(workspace.GetCandidatePixels(level), r, c, bw4, bh4, planeMask: 0b111, save: false);
+        }
+
+        _recordPosition = start + search.BestLength;
+        return search.BestCost;
+    }
+
+    [StructLayout(LayoutKind.Auto)]
+    private struct InterSearch
+    {
+        public int R;
+        public int C;
+        public int SubSize;
+        public int Bw4;
+        public int Bh4;
+        public int Level;
+        public int Start;
+        public long BestCost;
+        public int BestLength;
+        public bool BestIsSkipped;
+        public bool BestHasNoResidual;
+        public bool LastIsBest;
+    }
+
+    // The search of the inter modes of a block: the motion vectors of the stack that a decoder builds for the block, then
+    // the motion vector of a motion search. The contexts of the start of the block are in the block snapshot of the level
+    private void SearchInterModes(ref InterSearch search)
+    {
+        SetInterBlockDefaults();
+        FindMvStack(isCompound: false);
+        var numMvFound = _numMvFound;
+        Span<int> stack = stackalloc int[2 * (MaxNearMvIndex + 1)];
+        for (var i = 0; i <= MaxNearMvIndex; i++)
+        {
+            stack[2 * i] = _refStackMv[i][0];
+            stack[(2 * i) + 1] = _refStackMv[i][1];
+        }
+
+        // A motion vector is encoded once, with the first mode that has it: GLOBALMV, NEARESTMV, NEARMV with each
+        // RefMvIdx, then NEWMV. The search stops at a motion vector whose prediction leaves no residual: no other one
+        // predicts the block better
+        Span<int> tried = stackalloc int[2 * (MaxNearMvIndex + 3)];
+        var triedCount = 0;
+        TryInterMode(ref search, Av1Constants.Globalmv, refMvIdx: 0, _globalMvs[0], _globalMvs[1], tried, ref triedCount);
+        if (!search.BestHasNoResidual)
+            TryInterMode(ref search, Av1Constants.Nearestmv, refMvIdx: 0, stack[0], stack[1], tried, ref triedCount);
+
+        for (var idx = 1; idx <= Math.Min(_decisions.NearMvCandidates, MaxNearMvIndex) && !search.BestHasNoResidual; idx++)
+        {
+            // RefMvIdx is 1 unless the stack has more motion vectors
+            if (idx > 1 && numMvFound <= idx)
+                break;
+
+            TryInterMode(ref search, Av1Constants.Nearmv, idx, stack[2 * idx], stack[(2 * idx) + 1], tried, ref triedCount);
+        }
+
+        if (_decisions.MotionStep is 0 || search.BestHasNoResidual)
+            return;
+
+        // The motion search predicts the block with motion vectors that are not the ones of the best candidate
+        SearchMotion(search.Bw4, search.Bh4, stack, tried[..(2 * triedCount)], out var mvRow, out var mvCol);
+        search.LastIsBest = false;
+
+        // NEWMV codes the difference with the motion vector of the stack that RefMvIdx selects: the nearest one
+        var refMvIdx = -1;
+        var smallest = int.MaxValue;
+        for (var idx = 0; idx < 3; idx++)
+        {
+            if (idx > 0 && numMvFound <= idx)
+                break;
+
+            var diffRow = Math.Abs(mvRow - stack[2 * idx]);
+            var diffCol = Math.Abs(mvCol - stack[(2 * idx) + 1]);
+            if (Math.Max(diffRow, diffCol) > MaxMvDifference || diffRow + diffCol >= smallest)
+                continue;
+
+            smallest = diffRow + diffCol;
+            refMvIdx = idx;
+        }
+
+        if (refMvIdx >= 0)
+            TryInterMode(ref search, Av1Constants.Newmv, refMvIdx, mvRow, mvCol, tried, ref triedCount);
+    }
+
+    // Encodes the block with an inter mode, and keeps its record and its samples when it is the best candidate so far
+    private void TryInterMode(ref InterSearch search, int mode, int refMvIdx, int mvRow, int mvCol, scoped Span<int> tried, ref int triedCount)
+    {
+        for (var i = 0; i < triedCount; i++)
+        {
+            if (tried[2 * i] == mvRow && tried[(2 * i) + 1] == mvCol)
+                return;
+        }
+
+        tried[2 * triedCount] = mvRow;
+        tried[(2 * triedCount) + 1] = mvCol;
+        triedCount++;
+
+        var workspace = _workspace!;
+        var (r, c, bw4, bh4) = (search.R, search.C, search.Bw4, search.Bh4);
+        var contexts = workspace.GetContextSnapshot(search.Level, block: true);
+        var candidateStart = search.Start + search.BestLength;
+        workspace.EnsureRecords(candidateStart, RecordHeaderLength);
+        CopyContexts(contexts, r, c, bw4, bh4, save: false);
+        SetInterBlockDefaults();
+        _yMode = mode;
+        _refMvIdx = refMvIdx;
+        _mv[0] = mvRow;
+        _mv[1] = mvCol;
+        Debug.Assert(IsMvValid(isCompound: false));
+        _recordPosition = candidateStart + RecordHeaderLength;
+        WriteBlockTxSize();
+        StoreBlock(bw4, bh4);
+        ComputePrediction();
+        var predictionError = _lossless ? 0 : GetBlockError();
+        _rate = 0;
+        _distortion = 0;
+        _hasCoefficients = false;
+        Residual(ResidualOperation.Search, planeMask: 0b001);
+        var uOffset = _recordPosition - candidateStart;
+        Residual(ResidualOperation.Search, planeMask: 0b010);
+        var vOffset = _recordPosition - candidateStart;
+        Residual(ResidualOperation.Search, planeMask: 0b100);
+        var coefficientRate = _rate;
+        var distortion = _distortion;
+        var isSkipped = !_hasCoefficients;
+        var hasNoResidual = isSkipped;
+
+        // A block without coefficient is a skipped block, which codes no transform block
+        var length = isSkipped ? RecordHeaderLength : _recordPosition - candidateStart;
+        var record = workspace.Records.Slice(candidateStart, RecordHeaderLength);
+        record.Clear();
+        record[RecordLength] = length;
+        record[RecordLumaOffset] = RecordHeaderLength;
+        record[RecordUOffset] = uOffset;
+        record[RecordVOffset] = vOffset;
+        record[RecordFlags] = RecordInterFlag | (isSkipped ? RecordSkipFlag : 0);
+        record[RecordYMode] = mode;
+        record[RecordTxSize] = _txSize;
+        record[RecordRefMvIdx] = refMvIdx;
+        record[RecordMvRow] = mvRow;
+        record[RecordMvCol] = mvCol;
+
+        // The cost of the block, and the state that a decoder has after it
+        CopyContexts(contexts, r, c, bw4, bh4, save: false);
+        _recordPosition = candidateStart;
+        var sink = _sink;
+        _sink = SymbolSink.Cost;
+        _rate = 0;
+        ReplayBlock(r, c, search.SubSize);
+        var cost = _decisions.GetCost(distortion, _rate);
+        if (!isSkipped && !_lossless)
+        {
+            // The same block without its coefficients: the syntax elements of its mode info are the same, apart from skip
+            var skipCdf = _cdf.Slice(Av1CdfLayout.Skip + (GetSkipContext() * Av1CdfLayout.SkipSize), Av1CdfLayout.SkipSize);
+            var skipRate = _rate - coefficientRate - Av1Cost.GetSymbolCost(skipCdf, 0) + Av1Cost.GetSymbolCost(skipCdf, 1);
+            var skipCost = _decisions.GetCost(predictionError, skipRate);
+            if (skipCost < cost)
+            {
+                isSkipped = true;
+                cost = skipCost;
+                length = RecordHeaderLength;
+                record[RecordLength] = length;
+                record[RecordFlags] = RecordInterFlag | RecordSkipFlag;
+                CopyContexts(contexts, r, c, bw4, bh4, save: false);
+                _recordPosition = candidateStart;
+                _sink = SymbolSink.None;
+                ReplayBlock(r, c, search.SubSize);
+                ComputePrediction();
+            }
+        }
+
+        _sink = sink;
+        if (cost >= search.BestCost)
+        {
+            search.LastIsBest = false;
+            return;
+        }
+
+        search.BestCost = cost;
+        search.BestLength = length;
+        search.BestIsSkipped = isSkipped;
+        search.BestHasNoResidual = hasNoResidual;
+        search.LastIsBest = true;
+        if (candidateStart != search.Start)
+            workspace.Records.Slice(candidateStart, length).CopyTo(workspace.Records[search.Start..]);
+
+        CopyPixels(workspace.GetCandidatePixels(search.Level), r, c, bw4, bh4, planeMask: 0b111, save: true);
+    }
+
+    // The squared error of the samples of the block that are part of the frame, for the planes that the block codes
+    private readonly long GetBlockError()
+    {
+        var workspace = _workspace!;
+        long error = 0;
+        for (var plane = 0; plane < 1 + (_hasChroma ? 2 : 0); plane++)
+        {
+            var subX = plane > 0 ? _subX : 0;
+            var subY = plane > 0 ? _subY : 0;
+            var planeSz = GetPlaneResidualSize(_miSize, plane);
+            var planeBuffer = _frame.GetPlane(plane);
+            var samples = planeBuffer.Samples;
+            var stride = planeBuffer.Stride;
+            var sourcePlane = workspace.GetSource(plane);
+            var source = sourcePlane.Samples;
+            var sourceStride = sourcePlane.Stride;
+            var x0 = (_miCol >> subX) * Av1Constants.MiSize;
+            var y0 = (_miRow >> subY) * Av1Constants.MiSize;
+            var width = Math.Max(0, Math.Min(Av1Tables.Num4x4BlocksWide[planeSz] * Av1Constants.MiSize, planeBuffer.Width - x0));
+            var height = Math.Max(0, Math.Min(Av1Tables.Num4x4BlocksHigh[planeSz] * Av1Constants.MiSize, planeBuffer.Height - y0));
+            for (var i = 0; i < height; i++)
+            {
+                var predicted = samples.Slice(((y0 + i) * stride) + x0, width);
+                var original = source.Slice(((y0 + i) * sourceStride) + x0, width);
+                for (var j = 0; j < width; j++)
+                {
+                    var difference = original[j] - predicted[j];
+                    error += difference * difference;
+                }
+            }
+        }
+
+        return error;
+    }
+
+    // The search of section 5.11.5 "Decode block syntax" for a block that is not inter: its luma mode, then its chroma
+    // mode. On return the frame holds the block, whose record ends at _recordPosition
+    private long SearchIntraBlock(int r, int c, int subSize, int level)
     {
         var workspace = _workspace!;
         BeginBlock(r, c, subSize);
@@ -463,6 +757,9 @@ internal ref partial struct Av1TileCoder
         record[RecordCflAlphaU] = _cflAlphaU;
         record[RecordCflAlphaV] = _cflAlphaV;
         record[RecordTxSize] = _txSize;
+        record[RecordRefMvIdx] = 0;
+        record[RecordMvRow] = 0;
+        record[RecordMvCol] = 0;
 
         // The cost of the block, and the state that a decoder has after it
         CopyContexts(contexts, r, c, bw4, bh4, save: false);
@@ -510,7 +807,7 @@ internal ref partial struct Av1TileCoder
         _rate = 0;
         _distortion = 0;
         _hasCoefficients = false;
-        WriteSymbol(GetIntraFrameYModeCdf(), Av1CdfLayout.IntraFrameYModeSize, _yMode);
+        WriteYMode();
         WriteIntraAngleInfoY();
         WriteFilterIntraModeInfo();
         Residual(ResidualOperation.Search, planeMask: 0b001);
@@ -595,8 +892,19 @@ internal ref partial struct Av1TileCoder
         var start = _recordPosition;
         var record = _workspace!.Records.Slice(start, RecordHeaderLength);
         BeginBlock(r, c, subSize);
-        SetIntraBlockDefaults();
         var flags = record[RecordFlags];
+        if ((flags & RecordInterFlag) is not 0)
+        {
+            SetInterBlockDefaults();
+            _refMvIdx = record[RecordRefMvIdx];
+            _mv[0] = record[RecordMvRow];
+            _mv[1] = record[RecordMvCol];
+        }
+        else
+        {
+            SetIntraBlockDefaults();
+        }
+
         _skip = (flags & RecordSkipFlag) is not 0;
         _useFilterIntra = (flags & RecordFilterIntraFlag) is not 0;
         _yMode = record[RecordYMode];
@@ -614,7 +922,7 @@ internal ref partial struct Av1TileCoder
 
         var bw4 = Av1Tables.Num4x4BlocksWide[subSize];
         var bh4 = Av1Tables.Num4x4BlocksHigh[subSize];
-        WriteIntraFrameModeInfo();
+        WriteModeInfo();
         WriteBlockTxSize();
         if (_skip)
             ResetBlockContext(bw4, bh4);
@@ -622,6 +930,197 @@ internal ref partial struct Av1TileCoder
         StoreBlock(bw4, bh4);
         Residual(ResidualOperation.Replay, planeMask: 0b111);
         _recordPosition = start + length;
+    }
+
+    // The motion search of the block: the motion vector, in eighths of a sample, whose prediction from LAST_FRAME is the
+    // closest to the luma samples of the block, with a penalty for the bits of its difference with the first motion vector
+    // of the stack. The search starts from the best motion vector of the stack and of the modes that are already encoded
+    private void SearchMotion(int bw4, int bh4, scoped ReadOnlySpan<int> stack, scoped ReadOnlySpan<int> seeds, out int mvRow, out int mvCol)
+    {
+        var workspace = _workspace!;
+        var sourcePlane = workspace.GetSource(0);
+        var referenceFrame = _references.Get(Av1Constants.LastFrame);
+        var reference = referenceFrame.GetPlane(0);
+        var x0 = _miCol * Av1Constants.MiSize;
+        var y0 = _miRow * Av1Constants.MiSize;
+        var motion = new MotionSearch
+        {
+            Source = sourcePlane.Samples,
+            SourceStride = sourcePlane.Stride,
+            Reference = reference.Samples,
+            ReferenceStride = reference.Stride,
+            LastX = referenceFrame.Header.UpscaledWidth - 1,
+            LastY = referenceFrame.Header.FrameHeight - 1,
+            X = x0,
+            Y = y0,
+
+            // The samples of the block that are part of the frame: none for a block that only holds the samples that
+            // round the size of the frame up to 8
+            Width = Math.Max(0, Math.Min(bw4 * Av1Constants.MiSize, sourcePlane.Width - x0)),
+            Height = Math.Max(0, Math.Min(bh4 * Av1Constants.MiSize, sourcePlane.Height - y0)),
+            PredictedRow = stack[0],
+            PredictedCol = stack[1],
+            Lambda = _decisions.MotionLambda,
+        };
+
+        // Whole samples first. A prediction that is entirely beyond an edge of the reference frame repeats the edge
+        var minX = Math.Max(-MaxMotionSamples, -(x0 + motion.Width + MotionMargin));
+        var maxX = Math.Min(MaxMotionSamples, motion.LastX + MotionMargin - x0);
+        var minY = Math.Max(-MaxMotionSamples, -(y0 + motion.Height + MotionMargin));
+        var maxY = Math.Min(MaxMotionSamples, motion.LastY + MotionMargin - y0);
+        var bestX = 0;
+        var bestY = 0;
+        var best = motion.GetCost(0, 0, MaxCost);
+        for (var i = 0; i < seeds.Length; i += 2)
+        {
+            var seedY = Math.Clamp(RoundToSample(seeds[i]), minY, maxY);
+            var seedX = Math.Clamp(RoundToSample(seeds[i + 1]), minX, maxX);
+            var cost = motion.GetCost(seedX, seedY, best);
+            if (cost < best)
+                (best, bestX, bestY) = (cost, seedX, seedY);
+        }
+
+        ReadOnlySpan<sbyte> pattern = [0, -1, -1, 0, 1, 0, 0, 1, -1, -1, 1, -1, -1, 1, 1, 1];
+        for (var step = _decisions.MotionStep; step >= 1; step >>= 1)
+        {
+            for (var iteration = 0; iteration < MaxMotionIterations; iteration++)
+            {
+                var (centerX, centerY) = (bestX, bestY);
+                for (var i = 0; i < pattern.Length; i += 2)
+                {
+                    var x = centerX + (pattern[i] * step);
+                    var y = centerY + (pattern[i + 1] * step);
+                    if (x < minX || x > maxX || y < minY || y > maxY)
+                        continue;
+
+                    var cost = motion.GetCost(x, y, best);
+                    if (cost < best)
+                        (best, bestX, bestY) = (cost, x, y);
+                }
+
+                if (bestX == centerX && bestY == centerY)
+                    break;
+            }
+        }
+
+        mvRow = bestY * 8;
+        mvCol = bestX * 8;
+        if (!_decisions.SubpelMotion || _lossless)
+            return;
+
+        // Then half samples and quarter samples, with the prediction process of the decoder
+        var candIndex = MiIndex(_miRow, _miCol);
+        var planeBuffer = _frame.GetPlane(0);
+        _refFrames[candIndex * 2] = Av1Constants.LastFrame;
+        _refFrames[(candIndex * 2) + 1] = NoReference;
+        _interInfo[candIndex] = (byte)(_interpFilter0 | (_interpFilter1 << 2));
+        _yMode = Av1Constants.Newmv;
+        var bw = bw4 * Av1Constants.MiSize;
+        var bh = bh4 * Av1Constants.MiSize;
+        for (var step = 4; step >= 2; step >>= 1)
+        {
+            var (centerRow, centerCol) = (mvRow, mvCol);
+            for (var i = 0; i < pattern.Length; i += 2)
+            {
+                var row = centerRow + (pattern[i + 1] * step);
+                var col = centerCol + (pattern[i] * step);
+                _mvs[candIndex * 4] = (short)row;
+                _mvs[(candIndex * 4) + 1] = (short)col;
+                PredictInter(plane: 0, x0, y0, bw, bh, _miRow, _miCol);
+                var cost = (MotionSearch.GetDifference(motion.Source, motion.SourceStride, planeBuffer.Samples, planeBuffer.Stride, x0, y0, motion.Width, motion.Height) << 8) + motion.GetRate(row, col);
+                if (cost < best)
+                    (best, mvRow, mvCol) = (cost, row, col);
+            }
+        }
+
+        // The block is not written yet
+        _refFrames[candIndex * 2] = Av1FrameState.RefFrameNotWritten;
+
+        static int RoundToSample(int value) => value >= 0 ? (value + 4) >> 3 : -((-value + 4) >> 3);
+    }
+
+    // The state of the motion search of a block: the luma samples to predict and the reference plane
+    [StructLayout(LayoutKind.Auto)]
+    private ref struct MotionSearch
+    {
+        public ReadOnlySpan<ushort> Source;
+        public int SourceStride;
+        public ReadOnlySpan<ushort> Reference;
+        public int ReferenceStride;
+        public int LastX;
+        public int LastY;
+        public int X;
+        public int Y;
+        public int Width;
+        public int Height;
+        public int PredictedRow;
+        public int PredictedCol;
+        public long Lambda;
+
+        // The cost of a motion vector of whole samples: the sum of the absolute differences of the samples, with 8
+        // fractional bits, plus the cost of its bits; a value that is not less than limit when the cost reaches limit
+        public readonly long GetCost(int mvX, int mvY, long limit)
+        {
+            var cost = GetRate(mvY * 8, mvX * 8);
+            if (cost >= limit)
+                return cost;
+
+            var refX = X + mvX;
+            var refY = Y + mvY;
+            long difference = 0;
+            var inside = refX >= 0 && refY >= 0 && refX + Width - 1 <= LastX && refY + Height - 1 <= LastY;
+            for (var i = 0; i < Height; i++)
+            {
+                var original = Source.Slice(((Y + i) * SourceStride) + X, Width);
+                if (inside)
+                {
+                    var predicted = Reference.Slice(((refY + i) * ReferenceStride) + refX, Width);
+                    for (var j = 0; j < original.Length; j++)
+                    {
+                        difference += Math.Abs(original[j] - predicted[j]);
+                    }
+                }
+                else
+                {
+                    // The samples beyond the edges of the reference frame are the ones of its edges
+                    var row = Reference.Slice(Math.Clamp(refY + i, 0, LastY) * ReferenceStride, LastX + 1);
+                    for (var j = 0; j < original.Length; j++)
+                    {
+                        difference += Math.Abs(original[j] - row[Math.Clamp(refX + j, 0, LastX)]);
+                    }
+                }
+
+                if (cost + (difference << 8) >= limit)
+                    break;
+            }
+
+            return cost + (difference << 8);
+        }
+
+        // An estimate of the cost of the bits of a motion vector: two bits for each doubling of its difference with the
+        // predicted motion vector
+        public readonly long GetRate(int mvRow, int mvCol)
+        {
+            return Lambda * (GetBits(mvRow - PredictedRow) + GetBits(mvCol - PredictedCol));
+
+            static int GetBits(int difference) => difference is 0 ? 1 : (2 * BitOperations.Log2((uint)Math.Abs(difference))) + 3;
+        }
+
+        public static long GetDifference(ReadOnlySpan<ushort> source, int sourceStride, ReadOnlySpan<ushort> predicted, int predictedStride, int x, int y, int width, int height)
+        {
+            long difference = 0;
+            for (var i = 0; i < height; i++)
+            {
+                var original = source.Slice(((y + i) * sourceStride) + x, width);
+                var prediction = predicted.Slice(((y + i) * predictedStride) + x, width);
+                for (var j = 0; j < original.Length; j++)
+                {
+                    difference += Math.Abs(original[j] - prediction[j]);
+                }
+            }
+
+            return difference;
+        }
     }
 
     // The counterpart of section 5.11.35 "Transform block syntax" in the search: predicts the transform block, transforms
@@ -759,9 +1258,22 @@ internal ref partial struct Av1TileCoder
 
     // Saves or restores the contexts that the blocks of a region overwrite: the level and DC contexts above and to the left
     // of the transform blocks, and the flags of the blocks that the intra prediction may read. The region is bw4 x bh4
-    // blocks of 4x4 luma samples at (r, c); the chroma blocks that share a 4x4 chroma block with it are included
+    // blocks of 4x4 luma samples at (r, c); the chroma blocks that share a 4x4 chroma block with it are included. The
+    // reference frames of the blocks of the region are not saved: no block of the region is written when its search starts
     private readonly void CopyContexts(Span<byte> snapshot, int r, int c, int bw4, int bh4, bool save)
     {
+        if (!save && !_refFrames.IsEmpty)
+        {
+            // A decoder builds the motion vector stack of a block from the blocks that are decoded before it: the blocks of
+            // the region are not written any more
+            var width = Math.Min(bw4, _miCols - c);
+            var height = Math.Min(bh4, _miRows - r);
+            for (var y = 0; y < height; y++)
+            {
+                _refFrames.Slice(MiIndex(r + y, c) * 2, width * 2).Fill(Av1FrameState.RefFrameNotWritten);
+            }
+        }
+
         var position = 0;
         for (var plane = 0; plane < _planeCount; plane++)
         {

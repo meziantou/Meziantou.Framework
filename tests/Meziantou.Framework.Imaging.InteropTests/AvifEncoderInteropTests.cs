@@ -118,6 +118,91 @@ public sealed class AvifEncoderInteropTests
     }
 
     [Theory]
+    [InlineData("lossless", 8, "444", 2, 0)]
+    [InlineData("lossless", 10, "400", 5, 0)]
+    [InlineData("lossless", 12, "444", 0, 3)]
+    [InlineData("lossy", 8, "420", 0, 0)]
+    [InlineData("lossy", 8, "420", 5, 0)]
+    [InlineData("lossy", 8, "420", 9, 0)]
+    [InlineData("lossy", 10, "420", 3, 4)]
+    [InlineData("lossy", 12, "422", 4, 0)]
+    [InlineData("lossy", 8, "444", 6, 0)]
+    [InlineData("lossy", 10, "444", 2, 0)]
+    [InlineData("lossy", 8, "400", 7, 2)]
+    [InlineData("lossy", 12, "400", 1, 0)]
+    public async Task TheReferenceDecodersReconstructTheFramesOfAnImageSequence(string compression, int bitDepth, string format, int effort, int keyFrameInterval)
+    {
+        const int FrameCount = 6;
+        var ffmpeg = await RequiredTools.FFmpegAsync();
+        var dav1d = new Av1ReferenceDecoder(ffmpeg, Av1ReferenceDecoder.Dav1d);
+        var libaom = new Av1ReferenceDecoder(ffmpeg, Av1ReferenceDecoder.Libaom);
+        var directory = InteropSettings.GetArtifactsDirectory(nameof(AvifEncoderInteropTests));
+        foreach (var (width, height, quality) in new[] { (9, 5, 50), (64, 64, 20), (150, 77, 60), (97, 130, 95) })
+        {
+            // The images of a sequence are predicted from the image before them: a scene that moves, with a part that changes
+            var name = string.Create(CultureInfo.InvariantCulture, $"frames-{compression}-{bitDepth}-{format}-e{effort}-k{keyFrameInterval}-{width}x{height}-q{quality}");
+            using var image = CreateMovingImage(width, height, format is "400", bitDepth, seed: width + quality, frame: 0);
+            for (var i = 1; i < FrameCount; i++)
+            {
+                using var next = CreateMovingImage(width, height, format is "400", bitDepth, seed: width + quality, frame: i);
+                image.AppendFrame(next.Frames[0]);
+            }
+
+            var encoder = new AvifEncoder
+            {
+                Compression = compression is "lossy" ? AvifCompression.Lossy : AvifCompression.Lossless,
+                Quality = quality,
+                Effort = effort,
+                BitDepth = bitDepth,
+                KeyFrameInterval = keyFrameInterval,
+                ChromaSubsampling = format switch
+                {
+                    "444" => AvifChromaSubsampling.Ratio444,
+                    "422" => AvifChromaSubsampling.Ratio422,
+                    _ => AvifChromaSubsampling.Ratio420,
+                },
+            };
+
+            var path = await SaveAsync(image, encoder, name);
+            var data = await File.ReadAllBytesAsync(path, XunitCancellationToken);
+            var reader = ReferenceAvif.Parse(data);
+            foreach (var (track, kind) in new[] { (reader.ColorTrack, "color"), (reader.AlphaTrack, "alpha") })
+            {
+                if (track is null)
+                    continue;
+
+                // The key frames are the ones of the interval, and the only samples with a sequence header
+                Assert.HasCount(FrameCount, track.Samples);
+                var samples = track.Samples.Select(sample => data.AsSpan(checked((int)sample.Offset), sample.Size).ToArray()).ToList();
+                for (var i = 0; i < FrameCount; i++)
+                {
+                    var isKeyFrame = i is 0 || (keyFrameInterval > 0 && i % keyFrameInterval is 0);
+                    Assert.Equal(isKeyFrame, track.SyncSamples is null || track.SyncSamples.Contains((uint)(i + 1)));
+                    Assert.Equal(isKeyFrame, (samples[i][0] >> 3) is 1);
+                }
+
+                // The track as a raw stream: each sample is a temporal unit, which starts with a temporal delimiter
+                var stream = directory / $"{name}-{kind}.obu";
+                await File.WriteAllBytesAsync(stream, [.. samples.SelectMany(sample => (byte[])[0x12, 0x00, .. sample])], XunitCancellationToken);
+                var frames = await dav1d.ProbeAsync(stream, XunitCancellationToken);
+                Assert.HasCount(FrameCount, frames);
+                Assert.Equal((width, height), (frames[0].Width, frames[0].Height));
+                var first = await dav1d.DecodeAsync(stream, frames[0].PixelFormat, directory / $"{name}-{kind}-dav1d", XunitCancellationToken);
+                var second = await libaom.DecodeAsync(stream, frames[0].PixelFormat, directory / $"{name}-{kind}-libaom", XunitCancellationToken);
+                var library = DecodeFramesWithLibrary(samples, name);
+                Assert.HasCount(FrameCount, first);
+                Assert.HasCount(FrameCount, second);
+                Assert.HasCount(FrameCount, library);
+                for (var i = 0; i < FrameCount; i++)
+                {
+                    Assert.True(first[i].AsSpan().SequenceEqual(second[i]), $"{name} {kind}: dav1d and libaom reconstruct different planes for frame {i} ({frames[0].PixelFormat}).");
+                    Assert.True(first[i].AsSpan().SequenceEqual(library[i]), $"{name} {kind}: the reference decoders and the library reconstruct different planes for frame {i} ({frames[0].PixelFormat}; first difference at byte {first[i].AsSpan().CommonPrefixLength(library[i])} of {first[i].Length} and {library[i].Length}).");
+                }
+            }
+        }
+    }
+
+    [Theory]
     [InlineData(AvifCompression.Lossless, null)]
     [InlineData(AvifCompression.Lossless, 4)]
     [InlineData(AvifCompression.Lossy, 1)]
@@ -167,6 +252,37 @@ public sealed class AvifEncoderInteropTests
                     }
                 }
             }
+        }
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData(1)]
+    public async Task ImageSequencesWithoutDurationAreReadByAvifDec(int? totalPlays)
+    {
+        // libavif rejects an edit that is repeated and has no duration: such a sequence has no edit list
+        var libavif = await RequiredTools.LibAvifAsync();
+        using var image = CreateImage(20, 12, monochrome: false, bitDepth: 8, seed: 40, transparent: false);
+        for (var i = 1; i < 3; i++)
+        {
+            using var frame = CreateImage(20, 12, monochrome: false, bitDepth: 8, seed: 40 + i, transparent: false);
+            image.AppendFrame(frame.Frames[0]);
+        }
+
+        image.Animation = new AnimationMetadata { TotalPlays = totalPlays };
+        var path = await SaveAsync(image, new AvifEncoder(), $"sequence-without-duration-{totalPlays?.ToString(CultureInfo.InvariantCulture) ?? "forever"}");
+        var info = await libavif.GetInfoAsync(path, XunitCancellationToken);
+        Assert.Equal((20, 12, 3), (info.Width, info.Height, info.FrameCount));
+        Assert.Equal([0L, 0L, 0L], info.Frames.Select(frame => frame.Duration));
+        Assert.True(info.HasRepetitionCount);
+        Assert.Equal(totalPlays is null, info.IsRepetitionCountUnknown);
+        Assert.Equal(totalPlays is null ? null : 0, info.RepetitionCount);
+
+        var decoded = await libavif.DecodeAllFramesAsync(path, XunitCancellationToken);
+        Assert.HasCount(3, decoded);
+        for (var i = 0; i < 3; i++)
+        {
+            AssertSamples(ImageSnapshots.CaptureFrame(image.Frames[i]), decoded[i].Pixels, $"frame {i} decoded by avifdec {libavif.Version}");
         }
     }
 
@@ -240,38 +356,99 @@ public sealed class AvifEncoderInteropTests
         }
     }
 
-    // The planes of the frame that the library decodes from the units of an item, in the layout of FFmpeg's raw video:
-    // plane after plane, one byte per sample for 8-bit streams and two little-endian bytes otherwise
-    private static byte[] DecodeWithLibrary(byte[] payload, string name)
+    [Theory]
+    [InlineData(AvifCompression.Lossless, 0)]
+    [InlineData(AvifCompression.Lossless, 2)]
+    [InlineData(AvifCompression.Lossy, 0)]
+    public async Task ImageSequencesDecodeWithAppleImageIO(AvifCompression compression, int keyFrameInterval)
     {
-        var scope = AllocationScope.Create(ImageConfiguration.Default, name);
-        using var decoder = new Av1Decoder(scope);
-        decoder.SetInput(payload, 0, payload.Length);
-        var frame = decoder.DecodeNextOutputFrame(XunitCancellationToken);
-        Assert.NotNull(frame);
-        try
+        // Apple ImageIO exists only on macOS: skipped elsewhere locally; required (never skipped) in the CI interop job (macOS)
+        const int FrameCount = 5;
+        var (swift, script) = RequiredTools.AppleImageIO();
+        using var image = CreateMovingImage(72, 40, monochrome: false, bitDepth: 8, seed: 9, frame: 0);
+        for (var i = 1; i < FrameCount; i++)
         {
-            using var output = new MemoryStream();
-            for (var plane = 0; plane < frame.PlaneCount; plane++)
+            using var next = CreateMovingImage(72, 40, monochrome: false, bitDepth: 8, seed: 9, frame: i);
+            image.AppendFrame(next.Frames[0]);
+        }
+
+        for (var i = 0; i < FrameCount; i++)
+        {
+            image.Frames[i].Metadata.Duration = new FrameDuration(1, 10);
+        }
+
+        var path = await SaveAsync(image, new AvifEncoder { Compression = compression, Quality = 95, ChromaSubsampling = AvifChromaSubsampling.Ratio444, KeyFrameInterval = keyFrameInterval }, $"imageio-sequence-{compression}-k{keyFrameInterval}");
+        var result = await ProcessRunner.RunAsync(swift, [script, path], XunitCancellationToken);
+        if (result.ExitCode != 0)
+            Assert.Fail($"ImageIO failed (exit code {result.ExitCode}): {result.StandardError}");
+
+        // The images that are predicted from the image before them are decoded like the key frames
+        var header = result.StandardError.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)[^1].Split(' ');
+        Assert.Equal(["frames", "5", "72", "40", "8"], header);
+        var frameLength = 72 * 40 * 4;
+        Assert.Equal(FrameCount * frameLength, result.StandardOutput.Length);
+        var bound = compression is AvifCompression.Lossless ? 0 : 12;
+        for (var i = 0; i < FrameCount; i++)
+        {
+            var actual = RawPixelBuffer.Create(72, 40, RawPixelLayout.Rgba8, result.StandardOutput.Span.Slice(i * frameLength, frameLength));
+            var expected = ImageSnapshots.CaptureFrame(image.Frames[i]);
+            for (var y = 0; y < expected.Height; y++)
             {
-                var buffer = frame.GetPlane(plane);
-                for (var y = 0; y < buffer.Height; y++)
+                for (var x = 0; x < expected.Width; x++)
                 {
-                    foreach (var sample in buffer.GetRow(y))
+                    var alpha = expected.GetSample(x, y, 3);
+                    Assert.Equal(alpha, actual.GetSample(x, y, 3));
+                    for (var channel = 0; alpha is not 0 && channel < 3; channel++)
                     {
-                        output.WriteByte((byte)sample);
-                        if (frame.Sequence.BitDepth > 8)
-                            output.WriteByte((byte)(sample >> 8));
+                        var difference = Math.Abs(expected.GetSample(x, y, channel) - actual.GetSample(x, y, channel));
+                        Assert.True(difference <= bound, $"frame {i}, pixel ({x}, {y}), channel {channel}: {expected.GetSample(x, y, channel)} was decoded as {actual.GetSample(x, y, channel)} by Apple ImageIO");
                     }
                 }
             }
+        }
+    }
 
-            return output.ToArray();
-        }
-        finally
+    // The planes of the frame that the library decodes from the units of an item, in the layout of FFmpeg's raw video:
+    // plane after plane, one byte per sample for 8-bit streams and two little-endian bytes otherwise
+    private static byte[] DecodeWithLibrary(byte[] payload, string name) => Assert.Single(DecodeFramesWithLibrary([payload], name));
+
+    // The same for the samples of a track, which the same decoder decodes one after the other
+    private static List<byte[]> DecodeFramesWithLibrary(IReadOnlyList<byte[]> payloads, string name)
+    {
+        var scope = AllocationScope.Create(ImageConfiguration.Default, name);
+        using var decoder = new Av1Decoder(scope);
+        var frames = new List<byte[]>();
+        foreach (var payload in payloads)
         {
-            frame.Release();
+            decoder.SetInput(payload, 0, payload.Length);
+            var frame = decoder.DecodeNextOutputFrame(XunitCancellationToken);
+            Assert.NotNull(frame);
+            try
+            {
+                using var output = new MemoryStream();
+                for (var plane = 0; plane < frame.PlaneCount; plane++)
+                {
+                    var buffer = frame.GetPlane(plane);
+                    for (var y = 0; y < buffer.Height; y++)
+                    {
+                        foreach (var sample in buffer.GetRow(y))
+                        {
+                            output.WriteByte((byte)sample);
+                            if (frame.Sequence.BitDepth > 8)
+                                output.WriteByte((byte)(sample >> 8));
+                        }
+                    }
+                }
+
+                frames.Add(output.ToArray());
+            }
+            finally
+            {
+                frame.Release();
+            }
         }
+
+        return frames;
     }
 
     // The samples of an 8-bit RGBA reference against the 16-bit samples that avifdec writes (gray, with or without alpha)
@@ -308,11 +485,60 @@ public sealed class AvifEncoderInteropTests
         return path;
     }
 
+    // An image of a sequence: the content of CreateImage, which moves by (3, -2) pixels and a half from an image to the
+    // next one (the scene is two times larger), under a square that moves faster and a corner of noise that changes
+    private static Image CreateMovingImage(int width, int height, bool monochrome, int bitDepth, int seed, int frame)
+    {
+        const int Margin = 24;
+        var deep = bitDepth > 8;
+        var max = deep ? 65535 : 255;
+        var sceneWidth = 2 * (width + (2 * Margin));
+        var sceneHeight = 2 * (height + (2 * Margin));
+        var scene = CreateSamples(sceneWidth, sceneHeight, deep, seed, transparent: true);
+        var random = new Random(seed + (1000 * frame));
+        var samples = new int[width * height * 4];
+        var offsetX = (2 * Margin) + (7 * frame);
+        var offsetY = (2 * Margin) - (5 * frame);
+        var size = Math.Max(2, Math.Min(width, height) / 4);
+        for (var y = 0; y < height; y++)
+        {
+            for (var x = 0; x < width; x++)
+            {
+                for (var channel = 0; channel < 4; channel++)
+                {
+                    // The average of 2x2 samples of the scene: a motion of half a pixel is a motion of one sample of the scene
+                    var sum = 0;
+                    for (var i = 0; i < 4; i++)
+                    {
+                        sum += scene[(((((2 * y) + offsetY + (i >> 1)) * sceneWidth) + (2 * x) + offsetX + (i & 1)) * 4) + channel];
+                    }
+
+                    var value = (sum + 2) / 4;
+                    var inSquare = x >= (11 * frame) % width && x < ((11 * frame) % width) + size && y >= 2 * frame && y < (2 * frame) + size;
+                    if (inSquare)
+                        value = channel is 3 ? max : max * (channel + 1) / 4;
+
+                    if (x < width / 5 && y >= height - (height / 5))
+                        value = channel is 3 ? max : random.Next(max + 1);
+
+                    samples[(((y * width) + x) * 4) + channel] = value;
+                }
+            }
+        }
+
+        return CreateImage(samples, width, height, monochrome, deep);
+    }
+
     // Smooth content with a few edges and some noise, in 8-bit or 16-bit pixels
     private static Image CreateImage(int width, int height, bool monochrome, int bitDepth, int seed, bool transparent)
     {
-        var random = new Random(seed);
         var deep = bitDepth > 8;
+        return CreateImage(CreateSamples(width, height, deep, seed, transparent), width, height, monochrome, deep);
+    }
+
+    private static int[] CreateSamples(int width, int height, bool deep, int seed, bool transparent)
+    {
+        var random = new Random(seed);
         var max = deep ? 65535 : 255;
         var samples = new int[width * height * 4];
         for (var y = 0; y < height; y++)
@@ -328,6 +554,11 @@ public sealed class AvifEncoderInteropTests
             }
         }
 
+        return samples;
+    }
+
+    private static Image CreateImage(int[] samples, int width, int height, bool monochrome, bool deep)
+    {
         if (monochrome)
         {
             if (deep)

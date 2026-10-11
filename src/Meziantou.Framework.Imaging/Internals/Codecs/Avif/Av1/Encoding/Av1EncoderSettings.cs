@@ -18,6 +18,10 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <param name="Lossless">Whether the decoded samples are the samples that were encoded.</param>
 /// <param name="Quality">The quality of a lossy sequence, 0 (smallest) to 100 (best).</param>
 /// <param name="Effort">The effort of the search, 0 (fastest) to 9 (smallest).</param>
+/// <param name="KeyFrameInterval">
+/// The number of frames from a key frame to the next one: 1 when every frame is a key frame, 0 when the first frame is the
+/// only one. The other frames are predicted from the frame that precedes them.
+/// </param>
 [StructLayout(LayoutKind.Auto)]
 internal readonly record struct Av1EncoderSettings(
     int Width,
@@ -34,4 +38,5 @@ internal readonly record struct Av1EncoderSettings(
     bool StillPicture,
     bool Lossless,
     int Quality,
-    int Effort);
+    int Effort,
+    int KeyFrameInterval = 0);

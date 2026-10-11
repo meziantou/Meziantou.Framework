@@ -29,6 +29,7 @@ public sealed class AvifEncoderTests
         Assert.Null(encoder.BitDepth);
         Assert.False(encoder.AllowBitDepthReduction);
         Assert.False(encoder.ClearTransparentColors);
+        Assert.Equal(0, encoder.KeyFrameInterval);
         Assert.Equal(FrameDurationRounding.RequireExact, encoder.DurationRounding);
         Assert.Equal(MetadataHandling.Strict, encoder.MetadataHandling);
 
@@ -40,6 +41,8 @@ public sealed class AvifEncoderTests
         Assert.Throws<ArgumentOutOfRangeException>(() => new AvifEncoder { ChromaSubsampling = (AvifChromaSubsampling)4 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new AvifEncoder { BitDepth = 9 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new AvifEncoder { BitDepth = 16 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new AvifEncoder { KeyFrameInterval = -1 });
+        Assert.Equal(12, new AvifEncoder { KeyFrameInterval = 12 }.KeyFrameInterval);
         foreach (var bitDepth in new int?[] { null, 8, 10, 12 })
         {
             Assert.Equal(bitDepth, new AvifEncoder { BitDepth = bitDepth }.BitDepth);
@@ -431,7 +434,11 @@ public sealed class AvifEncoderTests
         Assert.Equal((40, 26), (track.Width, track.Height));
         Assert.Equal(totalPlays, track.TotalPlays);
         Assert.Equal("co64", track.ChunkOffsetBox);
+
+        // The first image is the only key frame of both tracks: the others are predicted from the image before them
+        Assert.Equal([1u], track.SyncSamples);
         var alpha = reader.AlphaTrack;
+        Assert.Equal([1u], alpha?.SyncSamples);
         if (transparent)
         {
             Assert.NotNull(alpha);
@@ -482,6 +489,130 @@ public sealed class AvifEncoderTests
                 }
             }
         }
+    }
+
+    [Theory]
+    [InlineData(AvifCompression.Lossless)]
+    [InlineData(AvifCompression.Lossy)]
+    public void TheKeyFrameIntervalSelectsTheSyncSamples(AvifCompression compression)
+    {
+        // The same scene with a square that moves: most of an image is the image before it
+        const int FrameCount = 5;
+        using var image = CreateSmoothImage(48, 40, transparent: true);
+        for (var i = 1; i < FrameCount; i++)
+        {
+            using var frame = CreateSmoothImage(48, 40, transparent: true);
+            image.AppendFrame(frame.Frames[0]);
+        }
+
+        for (var i = 0; i < FrameCount; i++)
+        {
+            var left = 4 + (6 * i);
+            image.Frames[i].ProcessPixelBytes(accessor =>
+            {
+                for (var y = 4; y < 14; y++)
+                {
+                    var row = accessor.GetRowSpan(y).Slice(4 * left, 4 * 10);
+                    for (var x = 0; x < row.Length; x += 4)
+                    {
+                        row[x] = 250;
+                        row[x + 1] = 20;
+                        row[x + 2] = 40;
+                        row[x + 3] = 255;
+                    }
+                }
+            });
+        }
+
+        var sizes = new Dictionary<int, int>();
+        foreach (var (interval, expected) in new (int, uint[]?)[] { (0, [1]), (1, null), (2, [1, 3, 5]), (4, [1, 5]), (100, [1]) })
+        {
+            var data = Encode(image, new AvifEncoder { Compression = compression, Quality = 90, KeyFrameInterval = interval });
+            sizes[interval] = data.Length;
+            var reader = ReferenceAvif.Parse(data);
+            Assert.True(reader.IsSequence);
+
+            // A track without sync sample box has only sync samples
+            Assert.Equal(expected, reader.ColorTrack!.SyncSamples);
+            Assert.Equal(expected, reader.AlphaTrack!.SyncSamples);
+
+            using var decoded = Image.Load<Rgba32>(data);
+            Assert.HasCount(FrameCount, decoded.Frames);
+            for (var i = 0; i < FrameCount; i++)
+            {
+                var expectedBytes = GetBytes(image, i);
+                var actual = GetBytes(decoded, i);
+                if (compression is AvifCompression.Lossless)
+                {
+                    Assert.Equal(expectedBytes, actual);
+                    continue;
+                }
+
+                // Alpha is lossless, and the error of the color samples does not grow from an image to the next one
+                double squaredError = 0;
+                for (var j = 0; j < expectedBytes.Length; j++)
+                {
+                    if ((j & 3) is 3)
+                    {
+                        Assert.Equal(expectedBytes[j], actual[j]);
+                        continue;
+                    }
+
+                    double difference = expectedBytes[j] - actual[j];
+                    squaredError += difference * difference;
+                }
+
+                var psnr = 10 * Math.Log10(255.0 * 255.0 * expectedBytes.Length * 3 / 4 / Math.Max(squaredError, 1));
+                TestContext.Current.TestOutputHelper?.WriteLine(string.Create(CultureInfo.InvariantCulture, $"interval {interval}, frame {i}: {psnr:F2} dB"));
+                Assert.True(psnr >= 30, string.Create(CultureInfo.InvariantCulture, $"interval {interval}: the PSNR of frame {i} is {psnr:F2} dB"));
+            }
+        }
+
+        // The fewer key frames, the smaller the file
+        Assert.True(sizes[0] < sizes[4] && sizes[4] < sizes[2] && sizes[2] < sizes[1], string.Join(", ", sizes.Select(pair => $"{pair.Key}: {pair.Value}")));
+        Assert.Equal(sizes[0], sizes[100]);
+    }
+
+    [Fact]
+    public void AnImageSequenceWithoutDurationPlaysOnceOrForever()
+    {
+        using var image = CreateSmoothImage(8, 8, transparent: false);
+        using (var second = CreateSmoothImage(8, 8, transparent: false, phase: 3))
+        {
+            image.AppendFrame(second.Frames[0]);
+        }
+
+        // An edit list gives the duration of one play: an edit without duration is not repeated, so a sequence that repeats
+        // forever has no edit list, which is what a reader plays forever
+        foreach (var totalPlays in new int?[] { null, 1 })
+        {
+            image.Animation = new AnimationMetadata { TotalPlays = totalPlays };
+            var data = Encode(image, new AvifEncoder());
+            var reader = ReferenceAvif.Parse(data);
+            foreach (var track in new[] { reader.ColorTrack!, reader.AlphaTrack! })
+            {
+                Assert.Equal([0u, 0u], track.Samples.Select(sample => sample.Duration));
+                if (totalPlays is null)
+                {
+                    Assert.Null(track.EditList);
+                }
+                else
+                {
+                    Assert.NotNull(track.EditList);
+                    Assert.False(track.EditList.IsRepeating);
+                    Assert.Equal(0ul, Assert.Single(track.EditList.Entries).SegmentDuration);
+                }
+            }
+
+            using var decoded = Image.Load<Rgba32>(data);
+            Assert.HasCount(2, decoded.Frames);
+            Assert.Equal(totalPlays, decoded.Animation?.TotalPlays);
+            Assert.Equal(GetBytes(image, 1), GetBytes(decoded, 1));
+        }
+
+        // A number of plays is the ratio of two durations
+        image.Animation = new AnimationMetadata { TotalPlays = 3 };
+        Assert.Throws<UnsupportedImageFeatureException>(() => Encode(image, new AvifEncoder()));
     }
 
     [Fact]

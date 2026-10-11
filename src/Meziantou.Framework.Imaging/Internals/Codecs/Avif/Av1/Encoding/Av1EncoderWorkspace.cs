@@ -15,7 +15,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <para>
 /// <b>Saved state.</b> A level is the size of a square of the partition tree, from 4x4 (0) to 128x128 (5). For each level,
 /// the search of a partition node and the search of a block each have a snapshot of the contexts that candidates
-/// overwrite, and a copy of the reconstructed samples of their best candidate.
+/// overwrite, and a copy of the reconstructed samples of their best candidate. The search of a block of an inter frame has
+/// one more copy of samples: the best block so far, while the search of the intra modes uses the other one.
 /// </para>
 /// </remarks>
 internal sealed class Av1EncoderWorkspace : IDisposable
@@ -27,6 +28,7 @@ internal sealed class Av1EncoderWorkspace : IDisposable
     public const int ContextSnapshotLength = 3 * ((4 * 33) + (33 * 33));
 
     private const int InitialRecordCapacity = 1 << 16;
+    private const int PixelSnapshotKinds = 3;
 
     private readonly AllocationScope _scope;
     private readonly Av1Plane?[] _source = new Av1Plane?[3];
@@ -62,7 +64,7 @@ internal sealed class Av1EncoderWorkspace : IDisposable
 
             // The superblock entry snapshot, then a partition and a block snapshot per level
             _contexts = Av1PooledArray<byte>.Rent(scope, (1 + (2 * Levels)) * ContextSnapshotLength, clear: false, AllocationKind.Temporary);
-            _pixels = Av1PooledArray<ushort>.Rent(scope, 2 * GetPixelOffset(Levels), clear: false, AllocationKind.Temporary);
+            _pixels = Av1PooledArray<ushort>.Rent(scope, PixelSnapshotKinds * GetPixelOffset(Levels), clear: false, AllocationKind.Temporary);
             _coefficients = Av1PooledArray<int>.Rent(scope, 2 * 64 * 64, clear: false, AllocationKind.Temporary);
             _records = Av1PooledArray<int>.Rent(scope, InitialRecordCapacity, clear: false, AllocationKind.Temporary);
         }
@@ -104,11 +106,19 @@ internal sealed class Av1EncoderWorkspace : IDisposable
     /// Gets the samples saved by the search of a partition node (<paramref name="block"/> false) or of a block of a level:
     /// 3 planes of the size of the level.
     /// </summary>
-    public Span<ushort> GetPixelSnapshot(int level, bool block)
+    public Span<ushort> GetPixelSnapshot(int level, bool block) => GetPixelSnapshot(level, block ? 1 : 0);
+
+    /// <summary>
+    /// Gets the samples of the best candidate of the search of a block of a level of an inter frame: 3 planes of the size
+    /// of the level.
+    /// </summary>
+    public Span<ushort> GetCandidatePixels(int level) => GetPixelSnapshot(level, kind: 2);
+
+    private Span<ushort> GetPixelSnapshot(int level, int kind)
     {
         var offset = GetPixelOffset(level);
         var length = GetPixelOffset(level + 1) - offset;
-        return _pixels.Span.Slice((2 * offset) + (block ? length : 0), length);
+        return _pixels.Span.Slice((PixelSnapshotKinds * offset) + (kind * length), length);
     }
 
     /// <summary>Makes room for <paramref name="count"/> values from <paramref name="position"/> in <see cref="Records"/>.</summary>

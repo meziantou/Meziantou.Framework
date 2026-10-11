@@ -123,6 +123,217 @@ internal ref partial struct Av1TileCoder
         _uvMode = Av1Constants.DcPred;
     }
 
+    // The variables of a block predicted from LAST_FRAME alone that the mode info sets without reading a syntax element
+    // (sections 5.11.23 to 5.11.30), for a frame without switchable interpolation filter or motion mode
+    private void SetInterBlockDefaults()
+    {
+        SetIntraBlockDefaults();
+        _isInter = true;
+        _refFrame0 = Av1Constants.LastFrame;
+        _refMvIdx = 0;
+        _compoundIdx = 1;
+        _interpFilter0 = _header.InterpolationFilter;
+        _interpFilter1 = _header.InterpolationFilter;
+    }
+
+    // Section 5.11.6 "Mode info syntax"
+    private void WriteModeInfo()
+    {
+        if (_header.FrameIsIntra)
+        {
+            WriteIntraFrameModeInfo();
+        }
+        else
+        {
+            WriteInterFrameModeInfo();
+        }
+    }
+
+    // Section 5.11.18 "Inter frame mode info syntax", for a frame without segmentation, skip mode or loop filter delta
+    private void WriteInterFrameModeInfo()
+    {
+        Debug.Assert(!_header.SkipModePresent && !_header.DeltaLfPresent && !_useIntrabc);
+        SetNeighborReferences();
+        WriteSkip();
+        WriteCdef();
+        WriteDeltaQIndex();
+        _readDeltas = false;
+        WriteSymbol(Av1CdfLayout.IsInter + (GetIsInterContext() * Av1CdfLayout.IsInterSize), Av1CdfLayout.IsInterSize, _isInter ? 1 : 0);
+        if (_isInter)
+        {
+            WriteInterBlockModeInfo();
+        }
+        else
+        {
+            // Section 5.11.22 "Intra block mode info syntax"
+            WriteYMode();
+            WriteIntraModeDetails();
+        }
+    }
+
+    // intra_frame_y_mode in an intra frame, y_mode in an inter frame
+    private void WriteYMode()
+    {
+        if (_header.FrameIsIntra)
+        {
+            WriteSymbol(GetIntraFrameYModeCdf(), Av1CdfLayout.IntraFrameYModeSize, _yMode);
+        }
+        else
+        {
+            WriteSymbol(Av1CdfLayout.YMode + (Av1Tables.SizeGroup[_miSize] * Av1CdfLayout.YModeSize), Av1CdfLayout.YModeSize, _yMode);
+        }
+    }
+
+    // Section 5.11.23 "Inter block mode info syntax", for a block predicted from LAST_FRAME alone. Like the decoder, builds
+    // the motion vector stack of the block; the motion vector of a mode that codes none is the one of the stack
+    private void WriteInterBlockModeInfo()
+    {
+        Debug.Assert(_refFrame0 is Av1Constants.LastFrame && _refFrame1 is NoReference && !_header.ReferenceSelect);
+        Debug.Assert(_header.InterpolationFilter is not Av1Constants.Switchable && !_header.IsMotionModeSwitchable && !_sequence.EnableInterIntraCompound);
+
+        // Section 5.11.25 "Ref frames syntax": single_ref_p1, single_ref_p3 and single_ref_p4 select LAST_FRAME
+        WriteSingleRef(0, GetSingleRefP1Context());
+        WriteSingleRef(2, GetCompRefContext());
+        WriteSingleRef(3, GetCompRefP1Context());
+        FindMvStack(isCompound: false);
+        WriteSymbol(Av1CdfLayout.NewMv + (_newMvContext * Av1CdfLayout.NewMvSize), Av1CdfLayout.NewMvSize, _yMode is Av1Constants.Newmv ? 0 : 1);
+        if (_yMode is not Av1Constants.Newmv)
+        {
+            WriteSymbol(Av1CdfLayout.ZeroMv + (_zeroMvContext * Av1CdfLayout.ZeroMvSize), Av1CdfLayout.ZeroMvSize, _yMode is Av1Constants.Globalmv ? 0 : 1);
+            if (_yMode is not Av1Constants.Globalmv)
+                WriteSymbol(Av1CdfLayout.RefMv + (_refMvContext * Av1CdfLayout.RefMvSize), Av1CdfLayout.RefMvSize, _yMode is Av1Constants.Nearestmv ? 0 : 1);
+        }
+
+        if (_yMode is Av1Constants.Newmv)
+        {
+            WriteDrlMode(firstIndex: 0);
+        }
+        else if (_yMode is Av1Constants.Nearmv)
+        {
+            WriteDrlMode(firstIndex: 1);
+        }
+        else
+        {
+            Debug.Assert(_refMvIdx is 0);
+        }
+
+        // Section 5.11.26 "Assign MV syntax"
+        SetPredMv(refList: 0, _yMode);
+        if (_yMode is Av1Constants.Newmv)
+        {
+            WriteMv();
+        }
+        else
+        {
+            _mv[0] = _predMv[0];
+            _mv[1] = _predMv[1];
+        }
+
+        Debug.Assert(IsMvValid(isCompound: false));
+    }
+
+    // A single_ref_p* syntax element that selects the group of reference frames that holds LAST_FRAME
+    private void WriteSingleRef(int index, int ctx) => WriteSymbol(Av1CdfLayout.SingleRef + (((ctx * (Av1Constants.SingleRefs - 1)) + index) * Av1CdfLayout.SingleRefSize), Av1CdfLayout.SingleRefSize, 0);
+
+    // The drl_mode syntax elements, which select RefMvIdx among two candidates from firstIndex
+    private void WriteDrlMode(int firstIndex)
+    {
+        var coded = firstIndex;
+        for (var idx = firstIndex; idx < firstIndex + 2; idx++)
+        {
+            if (_numMvFound <= idx + 1)
+                continue;
+
+            var drlMode = _refMvIdx > idx ? 1 : 0;
+            WriteSymbol(Av1CdfLayout.DrlMode + (_drlCtxStack[idx] * Av1CdfLayout.DrlModeSize), Av1CdfLayout.DrlModeSize, drlMode);
+            if (drlMode is 0)
+            {
+                coded = idx;
+                break;
+            }
+
+            coded = idx + 1;
+        }
+
+        Debug.Assert(coded == _refMvIdx);
+    }
+
+    // Section 5.11.31 "MV syntax", for the first reference list of a block that is not coded with intra block copy
+    private void WriteMv()
+    {
+        var diffRow = _mv[0] - _predMv[0];
+        var diffCol = _mv[1] - _predMv[1];
+        var mvJoint = (diffRow is not 0 ? Av1Constants.MvJointHzvnz : Av1Constants.MvJointZero) | (diffCol is not 0 ? Av1Constants.MvJointHnzvz : Av1Constants.MvJointZero);
+        WriteSymbol(Av1CdfLayout.MvJoint, Av1CdfLayout.MvJointSize, mvJoint);
+        if (diffRow is not 0)
+            WriteMvComponent(comp: 0, diffRow);
+
+        if (diffCol is not 0)
+            WriteMvComponent(comp: 1, diffCol);
+    }
+
+    // Section 5.11.32 "MV component syntax": the difference is mag = offset + 1 eighths of a sample, where the class of
+    // offset is the position of its most significant bit, and its 3 least significant bits are the fraction
+    private void WriteMvComponent(int comp, int diff)
+    {
+        var context = comp;
+        var offset = Math.Abs(diff) - 1;
+        Debug.Assert(offset >= 0 && offset < Av1Constants.Class0Size << (Av1Constants.MvClasses + 2));
+        var mvClass = offset < Av1Constants.Class0Size << 3 ? Av1Constants.MvClass0 : BitOperations.Log2((uint)(offset >> 3));
+        WriteSymbol(Av1CdfLayout.MvSign + (context * Av1CdfLayout.MvSignSize), Av1CdfLayout.MvSignSize, diff < 0 ? 1 : 0);
+        WriteSymbol(Av1CdfLayout.MvClass + (context * Av1CdfLayout.MvClassSize), Av1CdfLayout.MvClassSize, mvClass);
+        var fraction = (offset >> 1) & 3;
+        var highPrecision = offset & 1;
+        if (mvClass is Av1Constants.MvClass0)
+        {
+            var mvClass0Bit = offset >> 3;
+            WriteSymbol(Av1CdfLayout.MvClass0Bit + (context * Av1CdfLayout.MvClass0BitSize), Av1CdfLayout.MvClass0BitSize, mvClass0Bit);
+            if (!_header.ForceIntegerMv)
+            {
+                WriteSymbol(Av1CdfLayout.MvClass0Fr + (((context * Av1Constants.Class0Size) + mvClass0Bit) * Av1CdfLayout.MvClass0FrSize), Av1CdfLayout.MvClass0FrSize, fraction);
+            }
+            else
+            {
+                Debug.Assert(fraction is 3);
+            }
+
+            if (_header.AllowHighPrecisionMv)
+            {
+                WriteSymbol(Av1CdfLayout.MvClass0Hp + (context * Av1CdfLayout.MvClass0HpSize), Av1CdfLayout.MvClass0HpSize, highPrecision);
+            }
+            else
+            {
+                Debug.Assert(highPrecision is 1);
+            }
+        }
+        else
+        {
+            var d = (offset - (Av1Constants.Class0Size << (mvClass + 2))) >> 3;
+            for (var i = 0; i < mvClass; i++)
+            {
+                WriteSymbol(Av1CdfLayout.MvBit + (((context * Av1Constants.MvOffsetBits) + i) * Av1CdfLayout.MvBitSize), Av1CdfLayout.MvBitSize, (d >> i) & 1);
+            }
+
+            if (!_header.ForceIntegerMv)
+            {
+                WriteSymbol(Av1CdfLayout.MvFr + (context * Av1CdfLayout.MvFrSize), Av1CdfLayout.MvFrSize, fraction);
+            }
+            else
+            {
+                Debug.Assert(fraction is 3);
+            }
+
+            if (_header.AllowHighPrecisionMv)
+            {
+                WriteSymbol(Av1CdfLayout.MvHp + (context * Av1CdfLayout.MvHpSize), Av1CdfLayout.MvHpSize, highPrecision);
+            }
+            else
+            {
+                Debug.Assert(highPrecision is 1);
+            }
+        }
+    }
+
     // Section 5.11.7 "Intra frame mode info syntax"
     private void WriteIntraFrameModeInfo()
     {
@@ -136,7 +347,7 @@ internal ref partial struct Av1TileCoder
         if (_useIntrabc)
             throw new NotSupportedException("Intra block copy is not encoded yet.");
 
-        WriteSymbol(GetIntraFrameYModeCdf(), Av1CdfLayout.IntraFrameYModeSize, _yMode);
+        WriteYMode();
         WriteIntraModeDetails();
     }
 

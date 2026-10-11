@@ -75,6 +75,7 @@ public sealed class DefaultsTests
         Assert.Null(avif.BitDepth);
         Assert.False(avif.AllowBitDepthReduction);
         Assert.False(avif.ClearTransparentColors);
+        Assert.Equal(0, avif.KeyFrameInterval);
         Assert.Equal(FrameDurationRounding.RequireExact, avif.DurationRounding);
         Assert.Equal(MetadataHandling.Strict, avif.MetadataHandling);
     }
@@ -93,6 +94,7 @@ public sealed class DefaultsTests
         Assert.Throws<ArgumentOutOfRangeException>(() => new AvifEncoder { Effort = 10 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new AvifEncoder { BitDepth = 9 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new AvifEncoder { DurationRounding = (FrameDurationRounding)2 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new AvifEncoder { KeyFrameInterval = -1 });
         Assert.Equal(new Rgba64(65535, 0, 0), new JpegEncoder { BackgroundColor = new Rgba32(255, 0, 0) }.BackgroundColor);
     }
 

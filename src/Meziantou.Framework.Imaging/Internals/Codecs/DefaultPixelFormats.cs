@@ -82,8 +82,12 @@ internal static class DefaultPixelFormats
     /// <summary>Selects the default pixel format of a TGA image.</summary>
     /// <param name="isGrayscale">Whether the image type is grayscale (3 or 11).</param>
     /// <param name="hasAlpha">Whether the image descriptor declares a non-zero alpha-bit count.</param>
-    /// <returns><see cref="PixelFormat.Gray8"/> for grayscale images, <see cref="PixelFormat.Rgba32"/> when alpha is declared, otherwise <see cref="PixelFormat.Rgb24"/>.</returns>
-    public static PixelFormat ForTga(bool isGrayscale, bool hasAlpha) => isGrayscale ? PixelFormat.Gray8 : (hasAlpha ? PixelFormat.Rgba32 : PixelFormat.Rgb24);
+    /// <returns>
+    /// <see cref="PixelFormat.Rgba32"/> when alpha is declared (the library has no gray-with-alpha pixel format, so a
+    /// grayscale image with alpha is widened), otherwise <see cref="PixelFormat.Gray8"/> for grayscale images and
+    /// <see cref="PixelFormat.Rgb24"/> for the others.
+    /// </returns>
+    public static PixelFormat ForTga(bool isGrayscale, bool hasAlpha) => hasAlpha ? PixelFormat.Rgba32 : (isGrayscale ? PixelFormat.Gray8 : PixelFormat.Rgb24);
 
     /// <summary>Selects the default pixel format of a Netpbm image.</summary>
     /// <param name="isGrayscale">Whether the tuple is grayscale (PBM, PGM, PAM <c>BLACKANDWHITE</c>/<c>GRAYSCALE</c> and their alpha forms).</param>

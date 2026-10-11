@@ -249,8 +249,8 @@ inputs are byte edits of valid streams confirmed by the strict transcription (qo
 truncation).
 
 BMP, TGA and Netpbm fixtures (`BmpCorpus.cs`, `TgaCorpus.cs` and `PnmCorpus.cs`): files assembled byte by byte from literal pixel grids (every supported
-Windows and OS/2 DIB header, bit depth, mask layout, palette, row order, padding and run-length command; every TGA image type, depth, origin bit, color-map
-offset and packet kind; every Netpbm magic number, tuple type, `MAXVAL` and comment placement), plus files produced by
+Windows and OS/2 DIB header, bit depth, mask layout, palette, row order, padding and run-length command; every TGA image type, depth, index
+width, origin bit, color-map offset and packet kind; every Netpbm magic number, tuple type, `MAXVAL` and comment placement), plus files produced by
 FFmpeg's independent BMP, TGA, PPM and PAM encoders from hand-defined patterns (the three formats are lossless, so the
 pattern is the reference). Every input is decoded by a strict transcription of its specification in the generator and
 cross-checked with FFmpeg; the comparison policy stays `exact`, and the disagreements FFmpeg has with the
@@ -263,7 +263,11 @@ specifications are recorded as cross-checks with their measured error or notes i
 - FFmpeg does not decode two OS/2 2.x variants: a `BITMAPCOREHEADER2` shorter than 40 bytes and `BCA_RLE24`. Their
   references are the literal pixels of the generator, confirmed by its strict transcription and by the independent reader
   of the test harness. FFmpeg agrees exactly with every other run-length and OS/2 fixture, including the pixels a
-  run-length stream skips (palette index 0).
+  run-length stream skips (palette index 0);
+- FFmpeg decodes every two-byte TGA pixel as 5-5-5 true color, whatever the image type: it implements neither 16-bit
+  grayscale (a gray byte and an attribute byte) nor 16-bit color-map indexes, so the literal grids are the only reference
+  of these fixtures. Pillow and Apple ImageIO, run by hand when the fixtures were authored, read 16-bit grayscale as gray
+  and alpha and reject 16-bit indexes.
 
 AVIF fixtures (`AvifCorpus.Container.cs`, recipes in `AvifCorpus.ContainerFixtures.cs` and `AvifCorpus.ContainerErrors.cs`):
 inputs are written by libavif `avifenc` from hand-defined patterns (two sequences by the FFmpeg `avif` muxer, around
@@ -352,8 +356,8 @@ header (65,536 bytes) rejects.
 | WebP | lossless (VP8L): 1x1, odd width, RGBA corner markers, hidden colors under alpha 0 (`-exact`), a detailed pattern with the transforms `cwebp -z 9` chooses (`lossless-detail-transforms`), a small palette with pixel bundling and a 256-color palette, extended layout with ICC/EXIF/XMP, an opaque extended file with an unknown chunk; lossy (VP8): normal and simple loop filters with segmentation, no filter at high quality, odd and tiny (3x2) sizes, raw `ALPH` and lossless-compressed `ALPH` with horizontal filtering, metadata; animations: blend/dispose combinations with partial frames and a finite loop, a partial first frame with infinite loop, mixed lossy and lossless frames, a single-frame animation |
 | BMP | 24-bit bottom-up and top-down with row padding, 32-bit `BITMAPV4HEADER` with an alpha mask and the same bytes as 32-bit `BI_RGB` (unspecified fourth byte), 16-bit implicit 5-5-5 and explicit 5-6-5 masks after a 40-byte header, 16-bit 1-5-5-5 with a `BITMAPV3INFOHEADER` alpha mask, 8-bit palette with five entries and a gap before the pixel data, 4-bit and 1-bit palettes with odd widths, `biXPelsPerMeter`/`biYPelsPerMeter`, FFmpeg-encoded 24-bit and 32-bit files; run-length streams: `BI_RLE8` and `BI_RLE4` with encoded runs (alternating indexes for 4 bits), absolute runs with and without a padding byte, and every way of skipping pixels (delta to the right, delta to a later row, early end of line, early end of bitmap) over a palette whose first entry is not black; OS/2: `BITMAPCOREHEADER` with 24-bit rows and with 1-, 4- and 8-bit `RGBTRIPLE` palettes (one shorter than its bit count allows, ended by `bfOffBits`), `BITMAPCOREHEADER2` complete (64 bytes, with a resolution) and cut after its bit count (16 bytes), and `BCA_RLE24` |
 | BMP errors | invalid: zero width/height, two planes, bit count 7, undefined compression, pixel offset inside the header, truncated header and pixel data, palette index out of range, overlapping/non-contiguous/zero masks; run-length: `BI_RLE8` with top-down rows or 4 bits per pixel, a run past the end of its row, a delta outside the canvas, data after the last row, a missing end-of-bitmap marker, a palette index out of range; OS/2: `BITMAPCOREHEADER` with 16 bits per pixel or a pixel offset that leaves no palette entry; unsupported: OS/2 Huffman 1D, `BI_PNG`, 2 bits per pixel, a 10-bit channel mask; limits: width, frame pixels |
-| TGA | uncompressed 24-bit bottom-left and top-left, 32-bit with and without declared alpha bits, 32-bit right-to-left, 16-bit 1-5-5-5 and 15-bit, 8-bit grayscale, color maps with a first-entry offset (24-bit entries) and with 32-bit RGBA entries, run-length true color with runs of 7/130/20/30 crossing scan lines (128-pixel packets) and raw packets, run-length grayscale, an 11-byte identification field with a footer, a file whose extension area (attributes type 3) and footer follow the raster, a file with a developer area between the raster and the extension area, FFmpeg-encoded run-length files |
-| TGA errors | invalid: a packet past the last pixel, a truncated packet, truncated pixel data, a color-map index below the first stored entry, a footer that locates the extension area over the footer, an extension area too short for its attributes type; unsupported: 16-bit color-map indexes, 16-bit grayscale, premultiplied alpha (attributes type 4); limits: width, encoded bytes |
+| TGA | uncompressed 24-bit bottom-left and top-left, 32-bit with and without declared alpha bits, 32-bit right-to-left, 16-bit 1-5-5-5 and 15-bit, 8-bit grayscale, 16-bit grayscale with eight declared alpha bits (gray and alpha) and with none (the attribute byte is discarded), color maps with a first-entry offset (24-bit entries) and with 32-bit RGBA entries, 16-bit little-endian color-map indexes on both sides of 255 (300 entries from index 250), run-length true color with runs of 7/130/20/30 crossing scan lines (128-pixel packets) and raw packets, run-length grayscale, run-length 16-bit grayscale with alpha and run-length color-mapped data with 16-bit indexes (two-byte pixels in packets), an 11-byte identification field with a footer, a file whose extension area (attributes type 3) and footer follow the raster, a file with a developer area between the raster and the extension area, FFmpeg-encoded run-length files |
+| TGA errors | invalid: a packet past the last pixel, a truncated packet, truncated pixel data, a color-map index below the first stored entry, a 16-bit color-map index one past the last stored entry, a footer that locates the extension area over the footer, an extension area too short for its attributes type; unsupported: premultiplied alpha (attributes type 4); limits: width, encoded bytes |
 | Netpbm | binary PBM with padding bits and a header comment, the same pixels as plain PBM, binary PGM 8-bit (with a comment) and 16-bit, plain PGM with `MAXVAL` 15, binary PPM 8-bit and 16-bit, plain PPM with `MAXVAL` 1000, PAM `RGB_ALPHA` 8-bit and 16-bit, PAM `GRAYSCALE_ALPHA`, PAM `BLACKANDWHITE`, FFmpeg-encoded PPM and PAM files |
 | Netpbm errors | invalid: zero width, `MAXVAL` 0 and 65536, a plain sample above `MAXVAL`, a truncated raster, a 70,000-byte comment (the bounded header), a comment interrupting the last header token, the digit 2 in a plain PBM raster, a PAM header without `ENDHDR`, duplicated `WIDTH`, a `DEPTH` contradicting the tuple type, an undefined PAM keyword; unsupported: `TUPLTYPE CMYK`; limits: width, total pixels |
 | WebP errors | invalid: RIFF/chunk sizes past the data, `VP8X` canvas mismatch, extended file without image, VP8L bad signature/version/corrupt prefix code/truncation, VP8 bad start code/first partition overflow/truncated partition, `ALPH` bad compression method, `ANIM` missing, frame outside the canvas, truncated animation; unsupported: a VP8 interframe; limits: width, frame pixels, metadata bytes, animation frames and total pixels |
@@ -399,7 +403,7 @@ follows it, so keep both headings unique in this file.
 | png | 109 | 31 | 1 | 6 |
 | pnm | 15 | 12 | 1 | 2 |
 | qoi | 10 | 12 | 0 | 4 |
-| tga | 18 | 6 | 3 | 2 |
+| tga | 23 | 7 | 1 | 2 |
 | webp | 21 | 15 | 1 | 5 |
 
 ## Features
@@ -596,37 +600,40 @@ follows it, so keep both headings unique in this file.
 | BMP embedded JPEG/PNG payload (rejected) | `bmp.unsupported=embedded-codec` | 0 | 0 | 1 | 0 |
 | BMP 2 bits per pixel (rejected) | `bmp.unsupported=bit-count-2` | 0 | 0 | 1 | 0 |
 | BMP channel mask wider than 8 bits (rejected) | `bmp.unsupported=wide-mask` | 0 | 0 | 1 | 0 |
-| TGA color-mapped (type 1) | `tga.imageType=1` | 2 | 0 | 0 | 0 |
+| TGA color-mapped (type 1) | `tga.imageType=1` | 3 | 0 | 0 | 0 |
 | TGA uncompressed true color (type 2) | `tga.imageType=2` | 10 | 0 | 0 | 1 |
-| TGA uncompressed grayscale (type 3) | `tga.imageType=3` | 1 | 0 | 0 | 0 |
+| TGA uncompressed grayscale (type 3) | `tga.imageType=3` | 3 | 0 | 0 | 0 |
+| TGA run-length color-mapped (type 9) | `tga.imageType=9` | 1 | 0 | 0 | 0 |
 | TGA run-length true color (type 10) | `tga.imageType=10` | 3 | 0 | 0 | 1 |
-| TGA run-length grayscale (type 11) | `tga.imageType=11` | 2 | 0 | 0 | 0 |
+| TGA run-length grayscale (type 11) | `tga.imageType=11` | 3 | 0 | 0 | 0 |
 | TGA 8-bit samples or indexes | `tga.depth=8` | 5 | 0 | 0 | 0 |
 | TGA 15-bit samples | `tga.depth=15` | 1 | 0 | 0 | 0 |
-| TGA 16-bit samples | `tga.depth=16` | 1 | 0 | 0 | 0 |
+| TGA 16-bit samples, gray pixels or indexes | `tga.depth=16` | 6 | 0 | 0 | 0 |
 | TGA 24-bit samples | `tga.depth=24` | 5 | 0 | 0 | 2 |
 | TGA 32-bit samples | `tga.depth=32` | 6 | 0 | 0 | 0 |
-| TGA no declared alpha bit | `tga.alphaBits=0` | 11 | 0 | 0 | 2 |
+| TGA no declared alpha bit | `tga.alphaBits=0` | 13 | 0 | 0 | 2 |
 | TGA one declared alpha bit | `tga.alphaBits=1` | 1 | 0 | 0 | 0 |
-| TGA eight declared alpha bits | `tga.alphaBits=8` | 6 | 0 | 0 | 0 |
-| TGA bottom-up rows | `tga.rowOrder=bottom-up` | 12 | 0 | 0 | 1 |
-| TGA top-down rows | `tga.rowOrder=top-down` | 6 | 0 | 0 | 1 |
-| TGA left-to-right columns | `tga.columnOrder=left-to-right` | 17 | 0 | 0 | 2 |
+| TGA eight declared alpha bits | `tga.alphaBits=8` | 9 | 0 | 0 | 0 |
+| TGA 16-bit grayscale, the attribute byte is alpha | `tga.grayAttribute=alpha` | 2 | 0 | 0 | 0 |
+| TGA 16-bit grayscale, the attribute byte is unspecified (discarded) | `tga.grayAttribute=unspecified` | 1 | 0 | 0 | 0 |
+| TGA bottom-up rows | `tga.rowOrder=bottom-up` | 15 | 0 | 0 | 1 |
+| TGA top-down rows | `tga.rowOrder=top-down` | 8 | 0 | 0 | 1 |
+| TGA left-to-right columns | `tga.columnOrder=left-to-right` | 22 | 0 | 0 | 2 |
 | TGA right-to-left columns | `tga.columnOrder=right-to-left` | 1 | 0 | 0 | 0 |
-| TGA color map | `tga.colorMap` | 2 | 0 | 0 | 0 |
-| TGA color-map first-entry offset | `tga.colorMap.offset` | 1 | 0 | 0 | 0 |
-| TGA run-length packet | `tga.rle.run` | 5 | 0 | 0 | 1 |
-| TGA raw packet | `tga.rle.raw` | 5 | 0 | 0 | 1 |
+| TGA color map | `tga.colorMap` | 4 | 0 | 0 | 0 |
+| TGA color-map first-entry offset | `tga.colorMap.offset` | 2 | 0 | 0 | 0 |
+| TGA 8-bit color-map indexes | `tga.indexBits=8` | 2 | 0 | 0 | 0 |
+| TGA 16-bit color-map indexes | `tga.indexBits=16` | 2 | 0 | 0 | 0 |
+| TGA run-length packet | `tga.rle.run` | 7 | 0 | 0 | 1 |
+| TGA raw packet | `tga.rle.raw` | 7 | 0 | 0 | 1 |
 | TGA 128-pixel packet (longest) | `tga.rle.packet=128` | 1 | 0 | 0 | 1 |
-| TGA packet across scan lines | `tga.rle.crossesRow` | 2 | 0 | 0 | 1 |
+| TGA packet across scan lines | `tga.rle.crossesRow` | 4 | 0 | 0 | 1 |
 | TGA image identification field | `tga.idField` | 1 | 0 | 0 | 0 |
 | TGA 2.0 footer | `tga.footer` | 6 | 0 | 0 | 0 |
 | TGA 2.0 extension area (attributes type) | `tga.attributesType` | 2 | 0 | 0 | 0 |
 | TGA 2.0 developer area (not interpreted) | `tga.developerArea` | 1 | 0 | 0 | 0 |
 | TGA bytes after the image data | `tga.trailingData` | 6 | 0 | 0 | 0 |
-| TGA odd width | `tga.width=odd` | 16 | 0 | 0 | 1 |
-| TGA 16-bit color-map indexes (rejected) | `tga.unsupported=colormap-16bit` | 0 | 0 | 1 | 0 |
-| TGA 16-bit grayscale (rejected) | `tga.unsupported=grayscale-16bit` | 0 | 0 | 1 | 0 |
+| TGA odd width | `tga.width=odd` | 19 | 0 | 0 | 1 |
 | TGA premultiplied alpha (rejected) | `tga.unsupported=premultiplied-alpha` | 0 | 0 | 1 | 0 |
 | Netpbm plain PBM (`P1`) | `pnm.magic=P1` | 1 | 0 | 0 | 0 |
 | Netpbm plain PGM (`P2`) | `pnm.magic=P2` | 1 | 0 | 0 | 0 |

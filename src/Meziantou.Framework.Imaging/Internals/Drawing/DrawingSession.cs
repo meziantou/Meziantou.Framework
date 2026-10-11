@@ -34,6 +34,7 @@ internal sealed class DrawingSession : IDisposable
     private GradientEvaluator? _gradient;
     private GlyphPathSink? _glyphSink;
     private GlyphScratch? _glyphScratch;
+    private PathMeasure? _pathMeasure;
     private bool _thumbnailRemoved;
 
     private DrawingSession(Image image, ImageFrame[] frames, PixelStorage[] storages, CancellationToken cancellationToken)
@@ -238,9 +239,61 @@ internal sealed class DrawingSession : IDisposable
         RenderStroke(pen);
     }
 
+    public void FillText(Brush brush, TextLayout layout, VectorPath path, TextPathOptions? options)
+    {
+        ArgumentNullException.ThrowIfNull(brush);
+        ArgumentNullException.ThrowIfNull(layout);
+        ArgumentNullException.ThrowIfNull(path);
+        options ??= TextPathOptions.Default;
+        var measure = Measure(path);
+        var glyphSink = _glyphSink ??= new GlyphPathSink();
+        var scratch = _glyphScratch ??= new GlyphScratch(_image.Owner.Scope);
+        if (layout.BrushCount <= 1)
+        {
+            layout.EmitOnPath(BeginFill(), glyphSink, scratch, measure, options, _edges, brush: -1);
+            Render(layout.BrushCount == 0 ? brush : layout.GetBrush(0) ?? brush, FillRule.NonZero);
+            return;
+        }
+
+        // As for a text at a point: every shape is prepared before the first one is painted.
+        for (var i = 0; i < layout.BrushCount; i++)
+        {
+            layout.EmitOnPath(BeginFill(), glyphSink, scratch, measure, options, _edges, i);
+            Prepare(layout.GetBrush(i) ?? brush, FillRule.NonZero, out _, out _);
+        }
+
+        for (var i = 0; i < layout.BrushCount; i++)
+        {
+            layout.EmitOnPath(BeginFill(), glyphSink, scratch, measure, options, _edges, i);
+            Render(layout.GetBrush(i) ?? brush, FillRule.NonZero);
+        }
+    }
+
+    public void StrokeText(Pen pen, TextLayout layout, VectorPath path, TextPathOptions? options)
+    {
+        ArgumentNullException.ThrowIfNull(pen);
+        ArgumentNullException.ThrowIfNull(layout);
+        ArgumentNullException.ThrowIfNull(path);
+        var measure = Measure(path);
+        var sink = BeginStroke(pen);
+        layout.EmitOnPath(sink, _glyphSink ??= new GlyphPathSink(), _glyphScratch ??= new GlyphScratch(_image.Owner.Scope), measure, options ?? TextPathOptions.Default, edges: null, brush: -1);
+        RenderStroke(pen);
+    }
+
+    /// <summary>Flattens a path and measures its chords.</summary>
+    private PathMeasure Measure(VectorPath path)
+    {
+        var measure = _pathMeasure ??= new PathMeasure(_image.Owner.Scope);
+        measure.Reset();
+        PathFlattener.Flatten(path, measure);
+        return measure;
+    }
+
     public void Dispose()
     {
         IsActive = false;
+        _pathMeasure?.Dispose();
+        _pathMeasure = null;
         _glyphScratch?.Dispose();
         _glyphScratch = null;
         _gradient?.Dispose();

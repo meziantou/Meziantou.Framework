@@ -24,6 +24,63 @@ public sealed class TextLayoutFuzzTests
         "\u65E5", "\u672C", "\u306E", "\u30C6", "\u3002", "\u300C", "\uFF21", "\U0001F600", "\uD83D", "\uDE00", "\u0E01", "\u0915\u094D\u0937",
     ];
 
+    /// <summary>Creates a path for a text to follow.</summary>
+    private static VectorPath CreateGuide(FuzzRandom random)
+    {
+        var builder = new VectorPathBuilder();
+        var contours = random.Chance(80) ? 1 : random.Next(0, 4);
+        for (var contour = 0; contour < contours; contour++)
+        {
+            var current = CreatePoint(random);
+            builder.MoveTo(current.X, current.Y);
+            var segments = random.Next(0, 6);
+            for (var segment = 0; segment < segments; segment++)
+            {
+                // A segment without length, now and then: it has no direction.
+                var next = random.Chance(10) ? current : CreatePoint(random);
+                switch (random.Next(4))
+                {
+                    case 0:
+                        var control = CreatePoint(random);
+                        builder.QuadraticBezierTo(control.X, control.Y, next.X, next.Y);
+                        break;
+
+                    case 1:
+                        var first = CreatePoint(random);
+                        var second = CreatePoint(random);
+                        builder.CubicBezierTo(first.X, first.Y, second.X, second.Y, next.X, next.Y);
+                        break;
+
+                    default:
+                        builder.LineTo(next.X, next.Y);
+                        break;
+                }
+
+                current = next;
+            }
+
+            if (random.Chance(30))
+            {
+                builder.Close();
+            }
+        }
+
+        if (random.Chance(10))
+        {
+            builder.AddCircle(CreatePoint(random), random.Next(0, 200) / 4.0);
+        }
+
+        return builder.Build();
+
+        static PointD CreatePoint(FuzzRandom random) => random.Next(40) switch
+        {
+            0 => new PointD(random.Chance(50) ? 16777216 : -16777216, random.Chance(50) ? 16777216 : -16777216),
+            1 => new PointD(random.Next(-100000, 100000), random.Next(-100000, 100000)),
+            2 => new PointD(random.Next(0, 96) + (1 / 1048576.0), random.Next(0, 64)),
+            _ => new PointD(random.Next(-40, 540) / 4.0, random.Next(-40, 400) / 4.0),
+        };
+    }
+
     [Fact]
     public void RandomTextsAreLaidOutAndDrawnWithoutError()
     {
@@ -119,6 +176,28 @@ public sealed class TextLayoutFuzzTests
                         }
                     },
                     TestContext.Current.CancellationToken);
+                // Along a path: lines and curves, several contours, closed or not, points on each other and far away.
+                var guide = CreateGuide(random);
+                var pathOptions = new TextPathOptions
+                {
+                    StartOffset = random.Chance(50) ? random.Next(-300, 300) / 4.0 : 0,
+                    Alignment = (TextPathAlignment)random.Next(3),
+                    BaselineOffset = random.Chance(30) ? random.Next(-40, 40) / 4.0 : 0,
+                    Side = (TextPathSide)random.Next(2),
+                    Overflow = (TextPathOverflow)random.Next(2),
+                };
+                image.Draw(
+                    (layout, pen, guide, pathOptions, withStroke: random.Chance(10)),
+                    static (canvas, state) =>
+                    {
+                        canvas.FillText(new Rgba32(200, 20, 30, 128), state.layout, state.guide, state.pathOptions);
+                        if (state.withStroke)
+                        {
+                            canvas.StrokeText(state.pen, state.layout, state.guide, state.pathOptions);
+                        }
+                    },
+                    TestContext.Current.CancellationToken);
+
                 var path = layout.ToPath(origin);
                 if (path.IsEmpty != layout.InkBounds.IsEmpty)
                 {

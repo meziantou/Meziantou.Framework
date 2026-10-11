@@ -634,6 +634,17 @@ internal static class SmokeTests
             Check(Pixels(wrapped.Frames[0]).Any(static value => value == 0) && wrapped.Frames[0][36, 31] == new Rgba32(255, 0, 0), "text: paragraph pixels");
         }
 
+        // Along a path that goes down: the letters are turned, their top on the right. A is 12 by 12 pixels, 2 pixels
+        // after the start of the path and from the path to 12 pixels on its left
+        using (var turned = new Image<Gray8>(24, 24, new Gray8(0)))
+        {
+            var down = new VectorPathBuilder().MoveTo(4, 2).LineTo(4, 22).Build();
+            turned.Draw((Layout: TextLayout.Create("A", boxes, 16), Path: down), static (canvas, state) => canvas.FillText(new Rgba32(255, 255, 255), state.Layout, state.Path, new TextPathOptions { Overflow = TextPathOverflow.Clip }));
+            using var expected = new Image<Gray8>(24, 24, new Gray8(0));
+            expected.Draw(canvas => canvas.FillRectangle(new Rgba32(255, 255, 255), new RectangleD(4, 4, 12, 12)));
+            CheckEqual(turned, expected, "text: path of the text");
+        }
+
         var hebrew = TextLayout.Create("\u05D0\u05D1 AB", new TextStyle(boxes, 16), new TextLayoutOptions { Direction = TextDirection.RightToLeft });
         Check(hebrew.Lines[0].IsRightToLeft && hebrew.HasMissingGlyphs, "text: direction");
 

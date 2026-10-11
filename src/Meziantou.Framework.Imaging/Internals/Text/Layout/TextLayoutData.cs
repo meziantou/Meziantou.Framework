@@ -18,6 +18,12 @@ internal sealed class TextLayoutData
     /// <summary>Gets the origin of each glyph, on its baseline: x then y, from the top-left corner of the layout.</summary>
     public required double[] Positions { get; init; }
 
+    /// <summary>
+    /// Gets, for each glyph, the horizontal middle of what it is placed with on a path: its cluster (a character and its
+    /// marks, a ligature), from the left of the layout.
+    /// </summary>
+    public required double[] Anchors { get; init; }
+
     public required DecorationRectangle[] Decorations { get; init; }
 
     public required TextLine[] Lines { get; init; }

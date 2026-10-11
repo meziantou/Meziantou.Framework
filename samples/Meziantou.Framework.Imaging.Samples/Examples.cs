@@ -674,4 +674,26 @@ internal static class Examples
         image.Save(outputPath);
     }
     // end-snippet
+
+    /// <summary>Text: a line of text that follows a curve.</summary>
+    // begin-snippet: draw-text-on-path
+    public static void DrawTextOnPath(string fontPath, string outputPath)
+    {
+        var font = Font.Load(fontPath);
+        var layout = TextLayout.Create("Text follows the path it is given", font, size: 20);
+
+        // An arch: the text is centered on it, its baseline 4 pixels above the path
+        var arch = new VectorPathBuilder().MoveTo(20, 150).CubicBezierTo(100, 10, 300, 10, 380, 150).Build();
+        var options = new TextPathOptions { Alignment = TextPathAlignment.Center, BaselineOffset = 4 };
+
+        using var image = new Image<Rgba32>(400, 170, new Rgba32(255, 255, 255));
+        image.Draw(canvas =>
+        {
+            canvas.Stroke(new Pen(new Rgba32(200, 200, 200), 1), arch);
+            canvas.FillText(new Rgba32(30, 60, 160), layout, arch, options);
+        });
+
+        image.Save(outputPath);
+    }
+    // end-snippet
 }

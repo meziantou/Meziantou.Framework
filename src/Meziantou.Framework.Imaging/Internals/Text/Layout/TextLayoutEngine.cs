@@ -911,6 +911,7 @@ internal sealed class TextLayoutEngine
         var box = double.IsPositiveInfinity(_options.MaxWidth) ? naturalWidth : _options.MaxWidth;
         var glyphs = new List<int>();
         var positions = new List<double>();
+        var anchors = new List<double>();
         var runs = new List<GlyphRun>();
         var brushes = new List<Brush?>();
         var decorations = new List<DecorationRectangle>();
@@ -963,10 +964,25 @@ internal sealed class TextLayoutEngine
             var fullEnd = line.IsLastOfParagraph ? line.Paragraph.FullEnd : line.To;
             textLines[lineIndex] = new TextLine(line.From, fullEnd - line.From, x, line.Y, line.Width, line.Height, line.Baseline, line.IsRightToLeft);
 
-            // The glyphs, in display order, and the decorations of the spans they belong to.
+            // The glyphs, in display order, and the decorations of the spans they belong to. The glyphs of a cluster
+            // follow each other: the middle of their advances is where the cluster is placed when a text follows a path.
             var decoration = default(DecorationSegment);
-            foreach (ref readonly var glyph in placed)
+            var clusterEnd = 0;
+            var anchor = 0.0;
+            for (var placedIndex = 0; placedIndex < placed.Length; placedIndex++)
             {
+                ref readonly var glyph = ref placed[placedIndex];
+                if (placedIndex == clusterEnd)
+                {
+                    clusterEnd = placedIndex + 1;
+                    while (clusterEnd < placed.Length && placed[clusterEnd].Cluster == glyph.Cluster && placed[clusterEnd].Font == glyph.Font && placed[clusterEnd].Glyph >= 0 && glyph.Glyph >= 0)
+                    {
+                        clusterEnd++;
+                    }
+
+                    anchor = x + ((glyph.PenX + placed[clusterEnd - 1].PenX + placed[clusterEnd - 1].Advance) / 2);
+                }
+
                 var style = _spans[glyph.Span].Style;
                 if (glyph.Glyph >= 0 && !glyph.IsInvisible)
                 {
@@ -980,6 +996,7 @@ internal sealed class TextLayoutEngine
                     glyphs.Add(glyph.Glyph);
                     positions.Add(x + glyph.PenX + glyph.XOffset);
                     positions.Add(baseline - glyph.YOffset);
+                    anchors.Add(anchor);
                 }
 
                 // A decoration is one rectangle as long as the same style continues on the line.
@@ -1007,6 +1024,7 @@ internal sealed class TextLayoutEngine
             Runs = [.. runs],
             Glyphs = [.. glyphs],
             Positions = [.. positions],
+            Anchors = [.. anchors],
             Decorations = [.. decorations],
             Lines = textLines,
             Width = naturalWidth,

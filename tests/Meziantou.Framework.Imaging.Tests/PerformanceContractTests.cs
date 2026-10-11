@@ -81,6 +81,7 @@ public sealed class PerformanceContractTests
             TextLayout.Create("ABCDEFG", FontTestSupport.Load(FontSamples.Charstrings()), 9.25),
             TextLayout.Create("AB\u00C1H", FontTestSupport.Load(FontSamples.Boxes()), 12),
             CreateRichLayout(),
+            new TextPathOptions { Side = TextPathSide.Right, Alignment = TextPathAlignment.Center, StartOffset = -7.5, BaselineOffset = 2.25, Overflow = TextPathOverflow.Clip },
             new StrongBox<long>(long.MaxValue));
 
         // Tiered compilation running concurrently can attribute a few bytes to this thread, and the many methods behind a
@@ -129,6 +130,11 @@ public sealed class PerformanceContractTests
             // A wrapped and justified paragraph of several paints, a gradient among them, with decorations and two fonts
             canvas.FillText(state.Solid, state.RichText, new PointD(1.25, 0.5));
             canvas.StrokeText(state.Pen, state.RichText, new PointD(3, 2));
+
+            // Along a path of curves and of two contours, on both sides: the path is measured in the scratch of the session
+            canvas.FillText(state.Solid, state.Text, state.Path);
+            canvas.FillText(state.Gradient, state.RichText, state.Path, state.PathOptions);
+            canvas.StrokeText(state.Pen, state.CffText, state.Path, state.PathOptions);
         }
 
         static TextLayout CreateRichLayout()
@@ -306,5 +312,5 @@ public sealed class PerformanceContractTests
         return stream.ToArray();
     }
 
-    private sealed record DrawingState(SolidBrush Solid, GradientBrush Gradient, Pen Pen, VectorPath Path, TextLayout Text, TextLayout CffText, TextLayout CompositeText, TextLayout RichText, StrongBox<long> Allocated);
+    private sealed record DrawingState(SolidBrush Solid, GradientBrush Gradient, Pen Pen, VectorPath Path, TextLayout Text, TextLayout CffText, TextLayout CompositeText, TextLayout RichText, TextPathOptions PathOptions, StrongBox<long> Allocated);
 }

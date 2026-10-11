@@ -867,6 +867,8 @@ namespace Meziantou.Framework.Imaging.Drawing
         public void FillText(Meziantou.Framework.Imaging.Drawing.Brush brush, Meziantou.Framework.Imaging.Typography.TextLayout layout, Meziantou.Framework.Imaging.PointD origin) { }
         public void FillText(Meziantou.Framework.Imaging.Drawing.Brush brush, string text, Meziantou.Framework.Imaging.Typography.Font font, double size, Meziantou.Framework.Imaging.PointD origin) { }
         public void StrokeText(Meziantou.Framework.Imaging.Drawing.Pen pen, Meziantou.Framework.Imaging.Typography.TextLayout layout, Meziantou.Framework.Imaging.PointD origin) { }
+        public void FillText(Meziantou.Framework.Imaging.Drawing.Brush brush, Meziantou.Framework.Imaging.Typography.TextLayout layout, Meziantou.Framework.Imaging.Drawing.VectorPath path, Meziantou.Framework.Imaging.Drawing.TextPathOptions? options = null) { }
+        public void StrokeText(Meziantou.Framework.Imaging.Drawing.Pen pen, Meziantou.Framework.Imaging.Typography.TextLayout layout, Meziantou.Framework.Imaging.Drawing.VectorPath path, Meziantou.Framework.Imaging.Drawing.TextPathOptions? options = null) { }
     }
 
     public enum FillRule
@@ -943,6 +945,35 @@ namespace Meziantou.Framework.Imaging.Drawing
     {
         public Meziantou.Framework.Imaging.Rgba64 Color { get => throw null; }
         public SolidBrush(Meziantou.Framework.Imaging.Rgba64 color) { }
+    }
+
+    public enum TextPathAlignment
+    {
+        Start = 0,
+        Center = 1,
+        End = 2,
+    }
+
+    public sealed class TextPathOptions
+    {
+        public static Meziantou.Framework.Imaging.Drawing.TextPathOptions Default { get => throw null; }
+        public double StartOffset { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Drawing.TextPathAlignment Alignment { get => throw null; init { } }
+        public double BaselineOffset { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Drawing.TextPathSide Side { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Drawing.TextPathOverflow Overflow { get => throw null; init { } }
+    }
+
+    public enum TextPathOverflow
+    {
+        Extend = 0,
+        Clip = 1,
+    }
+
+    public enum TextPathSide
+    {
+        Left = 0,
+        Right = 1,
     }
 
     public sealed class VectorPath

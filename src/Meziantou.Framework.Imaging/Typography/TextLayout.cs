@@ -58,6 +58,7 @@ public sealed class TextLayout
 
     // The origin of each glyph, on its baseline: x then y, from the top-left corner of the layout.
     private readonly double[] _positions;
+    private readonly double[] _anchors;
     private readonly DecorationRectangle[] _decorations;
     private readonly TextLine[] _lines;
 
@@ -68,6 +69,7 @@ public sealed class TextLayout
         _runs = data.Runs;
         _glyphs = data.Glyphs;
         _positions = data.Positions;
+        _anchors = data.Anchors;
         _decorations = data.Decorations;
         _lines = data.Lines;
         Lines = new ReadOnlyCollection<TextLine>(_lines);
@@ -274,6 +276,181 @@ public sealed class TextLayout
         }
 
         target.End();
+    }
+
+    /// <summary>
+    /// Sends the outlines of the glyphs and of the decorations, placed along a path, to the sink of a draw call.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The horizontal axis of the layout is the path and its first baseline is on it. Each cluster (a character with
+    /// its marks, a ligature) is placed as a whole, without being bent: the middle of its advance is on the path, and it
+    /// is turned to the direction of the path there. A decoration is cut where the direction of the path changes, and
+    /// each part is turned as the clusters are.
+    /// </para>
+    /// <para>
+    /// The rotation is the unit vector of a chord of the path: no trigonometric function is involved, and a text on a
+    /// horizontal path has the points of the same text drawn at a point.
+    /// </para>
+    /// </remarks>
+    internal void EmitOnPath(PathSink target, GlyphPathSink glyphSink, GlyphScratch scratch, PathMeasure measure, TextPathOptions options, EdgeBuilder? edges, int brush)
+    {
+        var length = measure.Length;
+        if (!(length > 0))
+        {
+            target.End();
+            return;
+        }
+
+        var shift = options.StartOffset + options.Alignment switch
+        {
+            TextPathAlignment.Center => (length - Width) / 2,
+            TextPathAlignment.End => length - Width,
+            _ => 0,
+        };
+        var baseline = _lines[0].Y + _lines[0].Baseline + options.BaselineOffset;
+        var isReversed = options.Side == TextPathSide.Right;
+        var isClipped = options.Overflow == TextPathOverflow.Clip;
+        foreach (var run in _runs)
+        {
+            if (brush >= 0 && run.Brush != brush)
+                continue;
+
+            var face = _fonts[run.Font].Face;
+            var scale = run.Size / face.UnitsPerEm;
+            var limits = face.Data.Limits;
+            for (var i = run.Start; i < run.Start + run.Count; i++)
+            {
+                if (!TryLocate(measure, shift + _anchors[i], isReversed, isClipped, out var x, out var y, out var directionX, out var directionY))
+                    continue;
+
+                // The origin of the glyph from the point of its cluster: along the path, then across it. The side the
+                // layout grows down to is on the right of the direction of the path.
+                var along = _positions[i * 2] - _anchors[i];
+                var across = _positions[(i * 2) + 1] - baseline;
+                var originX = (x + (along * directionX)) - (across * directionY);
+                var originY = (y + (along * directionY)) + (across * directionX);
+                var first = edges?.Count ?? 0;
+                glyphSink.Begin(target, new Affine2D(scale * directionX, scale * directionY, scale * directionY, -(scale * directionX), originX, originY));
+                var budget = new GlyphBudget(limits);
+                face.DecodeOutline(_glyphs[i], glyphSink, scratch, ref budget);
+                if (edges is not null && glyphSink.SignedArea < 0)
+                {
+                    edges.NegateDirections(first);
+                }
+            }
+        }
+
+        foreach (var decoration in _decorations)
+        {
+            if (brush >= 0 && decoration.Brush != brush)
+                continue;
+
+            // One quadrilateral per chord of the path the decoration runs along.
+            var start = shift + decoration.X;
+            var end = start + decoration.Width;
+            var top = decoration.Y - baseline;
+            var bottom = top + decoration.Height;
+            if (measure.IsClosed)
+            {
+                // More than one turn covers the same pixels again: one turn is the whole decoration.
+                var turns = Math.Floor(start / length) * length;
+                start -= turns;
+                end = Math.Min(end - turns, start + length);
+            }
+            else if (isClipped)
+            {
+                start = Math.Max(start, 0);
+                end = Math.Min(end, length);
+            }
+
+            while (start < end)
+            {
+                // The path is followed backward on its right side: a distance from its end.
+                var position = isReversed ? length - start : start;
+                var pieceEnd = end;
+                if (measure.IsClosed || (position >= 0 && position <= length))
+                {
+                    // Around a closed path, forward from the start of a chord or backward from its end.
+                    var wrapped = position;
+                    if (measure.IsClosed)
+                    {
+                        wrapped = isReversed
+                            ? position - ((Math.Ceiling(position / length) - 1) * length)
+                            : position - (Math.Floor(position / length) * length);
+                    }
+
+                    var room = isReversed ? wrapped - measure.GetChordStartBefore(wrapped) : measure.GetChordEnd(wrapped) - wrapped;
+                    if (room > 0 && !double.IsInfinity(room))
+                    {
+                        pieceEnd = Math.Min(end, start + room);
+                    }
+                }
+                else if (position < 0 && !isReversed)
+                {
+                    pieceEnd = Math.Min(end, start - position);
+                }
+                else if (position > length && isReversed)
+                {
+                    pieceEnd = Math.Min(end, start + (position - length));
+                }
+
+                // The direction is the one of the chord the piece is on: taken at its middle.
+                if (TryLocate(measure, (start + pieceEnd) / 2, isReversed, isClipped: false, out var x, out var y, out var directionX, out var directionY))
+                {
+                    var half = (pieceEnd - start) / 2;
+                    AddCorner(target, x, y, directionX, directionY, -half, top, isFirst: true);
+                    AddCorner(target, x, y, directionX, directionY, half, top, isFirst: false);
+                    AddCorner(target, x, y, directionX, directionY, half, bottom, isFirst: false);
+                    AddCorner(target, x, y, directionX, directionY, -half, bottom, isFirst: false);
+                    target.Close(smooth: false);
+                }
+
+                // A piece shorter than the precision of its position still moves forward.
+                start = pieceEnd > start ? pieceEnd : Math.BitIncrement(start);
+            }
+        }
+
+        target.End();
+
+        static void AddCorner(PathSink target, double x, double y, double directionX, double directionY, double along, double across, bool isFirst)
+        {
+            var cornerX = (x + (along * directionX)) - (across * directionY);
+            var cornerY = (y + (along * directionY)) + (across * directionX);
+            if (isFirst)
+            {
+                target.MoveTo(cornerX, cornerY);
+            }
+            else
+            {
+                target.LineTo(cornerX, cornerY, smooth: false);
+            }
+        }
+    }
+
+    /// <summary>Finds the point of a path at a distance, on the side and with the overflow the options ask for.</summary>
+    private static bool TryLocate(PathMeasure measure, double distance, bool isReversed, bool isClipped, out double x, out double y, out double directionX, out double directionY)
+    {
+        var length = measure.Length;
+        if (measure.IsClosed)
+        {
+            // A closed path has no end: the text goes around it.
+            distance -= Math.Floor(distance / length) * length;
+        }
+        else if (isClipped && (distance < 0 || distance > length))
+        {
+            x = y = directionX = directionY = 0;
+            return false;
+        }
+
+        if (!isReversed)
+            return measure.TryGetPoint(distance, out x, out y, out directionX, out directionY);
+
+        // The other side: the path from its end to its start, with the opposite direction.
+        var found = measure.TryGetPoint(length - distance, out x, out y, out directionX, out directionY);
+        directionX = -directionX;
+        directionY = -directionY;
+        return found;
     }
 
     /// <summary>Decodes each glyph of the layout once, which validates it, and measures what the layout draws.</summary>

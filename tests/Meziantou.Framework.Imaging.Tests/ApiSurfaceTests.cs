@@ -40,6 +40,7 @@ public sealed class ApiSurfaceTests
         typeof(FontLoadOptions),
         typeof(TextStyle),
         typeof(TextLayoutOptions),
+        typeof(TextPathOptions),
     ];
 
     [Fact]

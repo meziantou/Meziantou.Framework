@@ -249,6 +249,41 @@ public readonly ref struct DrawingCanvas
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
     public void StrokeText(Pen pen, TextLayout layout, PointD origin) => GetSession().StrokeText(pen, layout, origin);
 
+    /// <summary>Paints the glyphs of a text layout along a path.</summary>
+    /// <param name="brush">The paint of the spans that have none.</param>
+    /// <param name="layout">The text, laid out.</param>
+    /// <param name="path">The path the text follows: the horizontal axis of the layout, with its first baseline on it.</param>
+    /// <param name="options">Where the text is on the path, or <see langword="null"/> for <see cref="TextPathOptions.Default"/>.</param>
+    /// <remarks>
+    /// <para>
+    /// The contours of the path are followed one after the other, in their direction; a path of one closed contour is
+    /// followed around as many times as the text needs. Each cluster of the text (a character with its marks, a
+    /// ligature) is placed as a whole: the middle of its advance is on the path, and it is turned to the direction of
+    /// the path there. Glyphs are not bent, so they spread on the outside of a bend and overlap on the inside.
+    /// </para>
+    /// <para>
+    /// A path is measured as it is drawn: by its chords, within 1/16 of a pixel. A text on a path that draws nothing
+    /// (no segment) is not drawn.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="brush"/>, <paramref name="layout"/> or <paramref name="path"/> is <see langword="null"/>.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. No pixel is changed by this call.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void FillText(Brush brush, TextLayout layout, VectorPath path, TextPathOptions? options = null) => GetSession().FillText(brush, layout, path, options);
+
+    /// <summary>Paints the outlines of the glyphs of a text layout along a path, with a pen.</summary>
+    /// <param name="pen">The stroke.</param>
+    /// <param name="layout">The text, laid out.</param>
+    /// <param name="path">The path the text follows: the horizontal axis of the layout, with its first baseline on it.</param>
+    /// <param name="options">Where the text is on the path, or <see langword="null"/> for <see cref="TextPathOptions.Default"/>.</param>
+    /// <remarks>The text is placed as by <see cref="FillText(Brush, TextLayout, VectorPath, TextPathOptions?)"/>.</remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="pen"/>, <paramref name="layout"/> or <paramref name="path"/> is <see langword="null"/>.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. No pixel is changed by this call.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void StrokeText(Pen pen, TextLayout layout, VectorPath path, TextPathOptions? options = null) => GetSession().StrokeText(pen, layout, path, options);
+
     private DrawingSession GetSession()
     {
         var session = _session;

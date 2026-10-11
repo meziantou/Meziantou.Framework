@@ -655,6 +655,46 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void DrawTextOnPathFollowsTheArch()
+    {
+        var fontPath = FixtureRoot.GetDirectory() / "fonts" / "noto-sans" / "NotoSans-Regular.subset.ttf";
+        var output = GetPath("arch.png");
+        Examples.DrawTextOnPath(fontPath, output);
+
+        using var image = Image.Load<Rgba32>(output);
+        Assert.Equal((400, 170), (image.Width, image.Height));
+
+        // The arch is symmetric around x = 200 and its top is at y = 45; its ends are at y = 150. The text is centered
+        // on it and stands above it: nothing of it is under the ends, and it is as much on the left as on the right.
+        // Only the pixels the turned letters cover entirely have the color of the text.
+        var blue = 0;
+        var sumX = 0L;
+        var lowest = 0;
+        var highest = int.MaxValue;
+        image.Frames[0].ProcessPixelRows(pixels =>
+        {
+            for (var y = 0; y < pixels.Height; y++)
+            {
+                var row = pixels.GetRowSpan(y);
+                for (var x = 0; x < row.Length; x++)
+                {
+                    if (row[x] == new Rgba32(30, 60, 160))
+                    {
+                        blue++;
+                        sumX += x;
+                        lowest = Math.Max(lowest, y);
+                        highest = Math.Min(highest, y);
+                    }
+                }
+            }
+        });
+        Assert.True(blue > 200, $"Only {blue} pixels have the color of the text");
+        Assert.True(lowest < 150, $"The text goes down to {lowest}");
+        Assert.True(highest is > 15 and < 45, $"The text goes up to {highest}");
+        Assert.Equal(200, (double)sumX / blue, 20.0);
+    }
+
+    [Fact]
     public void ConvertToGray16FlattensAlphaOntoTheBackground()
     {
         var input = GetPath("translucent.png");

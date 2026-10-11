@@ -1,5 +1,6 @@
 using Meziantou.Framework.Imaging.CorpusGenerator.Common;
 using Meziantou.Framework.Imaging.Drawing;
+using Meziantou.Framework.Imaging.Internals;
 using Meziantou.Framework.Imaging.TestHarness.Fixtures;
 using Meziantou.Framework.Imaging.Typography;
 
@@ -466,6 +467,320 @@ public sealed class DrawingTextTests
             if (!expected.AsSpan().SequenceEqual(DrawingTestSupport.ReadSamples(image.Frames[0])))
                 throw new InvalidOperationException("A layout was drawn differently by another thread.");
         });
+    }
+
+    [Fact]
+    public void ATextFollowsAStraightPathAsItIsDrawnAtAPoint()
+    {
+        // A horizontal path from (10, 30): the baseline is on the path, 13 pixels under the top of the layout.
+        var layout = TextLayout.Create("AB C", Boxes, 16);
+        var path = new VectorPathBuilder().MoveTo(10, 30).LineTo(110, 30).Build();
+        var expected = Render(PixelFormat.Rgba32, 120, 60, canvas => canvas.FillText(Translucent, layout, new PointD(10, 17)));
+        Assert.Equal(expected, Render(PixelFormat.Rgba32, 120, 60, canvas => canvas.FillText(Translucent, layout, path)));
+
+        var pen = new Pen(White, 1.5);
+        expected = Render(PixelFormat.Gray8, 120, 60, canvas => canvas.StrokeText(pen, layout, new PointD(10, 17)));
+        Assert.Equal(expected, Render(PixelFormat.Gray8, 120, 60, canvas => canvas.StrokeText(pen, layout, path, TextPathOptions.Default)));
+
+        // The lines of a layout are stacked across the path, and a decoration follows it.
+        var rich = TextLayout.Create("A\nB", new TextStyle(Boxes, 16) { Decorations = TextDecorations.Underline });
+        expected = Render(PixelFormat.Gray8, 120, 60, canvas => canvas.FillText(White, rich, new PointD(10, 17)));
+        Assert.Equal(expected, Render(PixelFormat.Gray8, 120, 60, canvas => canvas.FillText(White, rich, path)));
+    }
+
+    [Fact]
+    public void ATextIsTurnedToTheDirectionOfItsPath()
+    {
+        // A is 12 by 12 pixels, 2 pixels after the pen and on the baseline; it advances by 16 pixels.
+        var layout = TextLayout.Create("A", Boxes, 16);
+
+        // Downward: the top of the text is on the right. The letter goes from 2 to 14 along the path, and from the path
+        // to 12 pixels on its left, which is the right of the image.
+        var down = new VectorPathBuilder().MoveTo(50, 5).LineTo(50, 100).Build();
+        AssertPathRectangles(layout, down, null, new RectangleD(50, 7, 12, 12));
+
+        // From right to left: the text is upside down, under the path.
+        var back = new VectorPathBuilder().MoveTo(100, 30).LineTo(0, 30).Build();
+        AssertPathRectangles(layout, back, null, new RectangleD(86, 30, 12, 12));
+
+        // Upward: the top of the text is on the left.
+        var up = new VectorPathBuilder().MoveTo(50, 100).LineTo(50, 5).Build();
+        AssertPathRectangles(layout, up, null, new RectangleD(38, 86, 12, 12));
+
+        // The other side of a path is the path followed from its end.
+        var forward = new VectorPathBuilder().MoveTo(0, 30).LineTo(100, 30).Build();
+        AssertPathRectangles(layout, forward, new TextPathOptions { Side = TextPathSide.Right }, new RectangleD(86, 30, 12, 12));
+        AssertPathRectangles(layout, down, new TextPathOptions { Side = TextPathSide.Right }, new RectangleD(38, 86, 12, 12));
+    }
+
+    [Fact]
+    public void ATextIsPlacedAlongItsPathByTheOptions()
+    {
+        // "AA" is 32 pixels on a path of 100 pixels at y = 30: the letters are drawn from 18 to 30.
+        var layout = TextLayout.Create("AA", Boxes, 16);
+        var path = new VectorPathBuilder().MoveTo(0, 30).LineTo(100, 30).Build();
+        AssertPathRectangles(layout, path, null, new RectangleD(2, 18, 12, 12), new RectangleD(18, 18, 12, 12));
+        AssertPathRectangles(layout, path, new TextPathOptions { StartOffset = 10 }, new RectangleD(12, 18, 12, 12), new RectangleD(28, 18, 12, 12));
+        AssertPathRectangles(layout, path, new TextPathOptions { Alignment = TextPathAlignment.Center }, new RectangleD(36, 18, 12, 12), new RectangleD(52, 18, 12, 12));
+        AssertPathRectangles(layout, path, new TextPathOptions { Alignment = TextPathAlignment.End }, new RectangleD(70, 18, 12, 12), new RectangleD(86, 18, 12, 12));
+        AssertPathRectangles(layout, path, new TextPathOptions { Alignment = TextPathAlignment.End, StartOffset = -8 }, new RectangleD(62, 18, 12, 12), new RectangleD(78, 18, 12, 12));
+
+        // Away from the path, on the side of the text, or across it.
+        AssertPathRectangles(layout, path, new TextPathOptions { BaselineOffset = 5 }, new RectangleD(2, 13, 12, 12), new RectangleD(18, 13, 12, 12));
+        AssertPathRectangles(layout, path, new TextPathOptions { BaselineOffset = -4 }, new RectangleD(2, 22, 12, 12), new RectangleD(18, 22, 12, 12));
+        AssertPathRectangles(layout, path, new TextPathOptions { BaselineOffset = 5, Side = TextPathSide.Right }, new RectangleD(86, 35, 12, 12), new RectangleD(70, 35, 12, 12));
+
+        // Beyond the ends of the path, the text continues straight, or is not drawn: a letter is drawn when the middle of
+        // its advance is on the path. The path is 20 pixels long; the middles are at 8 and 24.
+        var small = new VectorPathBuilder().MoveTo(40, 30).LineTo(60, 30).Build();
+        AssertPathRectangles(layout, small, null, new RectangleD(42, 18, 12, 12), new RectangleD(58, 18, 12, 12));
+        AssertPathRectangles(layout, small, new TextPathOptions { Overflow = TextPathOverflow.Clip }, new RectangleD(42, 18, 12, 12));
+        AssertPathRectangles(layout, small, new TextPathOptions { StartOffset = -10 }, new RectangleD(32, 18, 12, 12), new RectangleD(48, 18, 12, 12));
+        AssertPathRectangles(layout, small, new TextPathOptions { StartOffset = -10, Overflow = TextPathOverflow.Clip }, new RectangleD(48, 18, 12, 12));
+        AssertPathRectangles(layout, small, new TextPathOptions { StartOffset = 30, Overflow = TextPathOverflow.Clip });
+    }
+
+    [Fact]
+    public void ATextTurnsWithItsPath()
+    {
+        // A path that goes right for 20 pixels, then down. The middle of the first A is at 8, on the first segment; the
+        // middle of the second one is at 24: 4 pixels down the second segment, where the letter is turned.
+        var layout = TextLayout.Create("AA", Boxes, 16);
+        var corner = new VectorPathBuilder().MoveTo(10, 40).LineTo(30, 40).LineTo(30, 110).Build();
+        AssertPathRectangles(layout, corner, null, new RectangleD(12, 28, 12, 12), new RectangleD(30, 38, 12, 12));
+
+        // The contours of a path follow each other: the second letter is 4 pixels along the second contour.
+        var contours = new VectorPathBuilder().MoveTo(10, 40).LineTo(30, 40).MoveTo(60, 20).LineTo(60, 90).Build();
+        AssertPathRectangles(layout, contours, null, new RectangleD(12, 28, 12, 12), new RectangleD(60, 18, 12, 12));
+
+        // A closed contour has no end: a square of 16 pixels, clockwise from its top-left corner. The middles of four A
+        // are at 8, 24, 40 and 56 of its 64 pixels: one letter per side; a fifth one is where the first one is.
+        var square = new VectorPathBuilder().MoveTo(40, 40).LineTo(56, 40).LineTo(56, 56).LineTo(40, 56).Close().Build();
+        RectangleD[] around = [new RectangleD(42, 28, 12, 12), new RectangleD(56, 42, 12, 12), new RectangleD(42, 56, 12, 12), new RectangleD(28, 42, 12, 12)];
+        AssertPathRectangles(TextLayout.Create("AAAA", Boxes, 16), square, null, around);
+        AssertPathRectangles(TextLayout.Create("AAAAA", Boxes, 16), square, new TextPathOptions { Overflow = TextPathOverflow.Clip }, around);
+        AssertPathRectangles(TextLayout.Create("A", Boxes, 16), square, new TextPathOptions { StartOffset = -48 }, around[1]);
+        AssertPathRectangles(TextLayout.Create("A", Boxes, 16), square, new TextPathOptions { Side = TextPathSide.Right }, new RectangleD(40, 42, 12, 12));
+
+        // A decoration is cut at the corner: 1 pixel thick, 2 pixels on the right of the direction of the path, from the
+        // start of the text to its end, 32 pixels further.
+        var underlined = TextLayout.Create("AA", new TextStyle(Boxes, 16) { Decorations = TextDecorations.Underline });
+        AssertPathRectangles(underlined, corner, null, new RectangleD(12, 28, 12, 12), new RectangleD(30, 38, 12, 12), new RectangleD(10, 42, 20, 1), new RectangleD(27, 40, 1, 12));
+    }
+
+    [Fact]
+    public void ADecorationGoesAroundAClosedPath()
+    {
+        // The square of 16 pixels of four letters: the underline is 1 pixel thick, 2 pixels on the right of the direction
+        // of the path, which is inside the square. A text longer than the path covers its first letter again.
+        var style = new TextStyle(Boxes, 16) { Decorations = TextDecorations.Underline };
+        var square = new VectorPathBuilder().MoveTo(40, 40).LineTo(56, 40).LineTo(56, 56).LineTo(40, 56).Close().Build();
+        RectangleD[] expected =
+        [
+            new RectangleD(42, 28, 12, 12), new RectangleD(56, 42, 12, 12), new RectangleD(42, 56, 12, 12), new RectangleD(28, 42, 12, 12),
+            new RectangleD(40, 42, 16, 1), new RectangleD(53, 40, 1, 16), new RectangleD(40, 53, 16, 1), new RectangleD(42, 40, 1, 16),
+        ];
+        AssertPathRectangles(TextLayout.Create("AAAA", style), square, null, expected);
+        AssertPathRectangles(TextLayout.Create("AAAAA", style), square, null, expected);
+        AssertPathRectangles(TextLayout.Create("AAAAAAAAAAAAA", style), square, new TextPathOptions { StartOffset = -192 }, expected);
+
+        // A part of a turn: one letter that starts 8 pixels before the first corner, where its middle is: it is turned to
+        // the direction of the path after the corner, and its underline is on both sides.
+        AssertPathRectangles(TextLayout.Create("A", style), square, new TextPathOptions { StartOffset = 8 }, new RectangleD(56, 34, 12, 12), new RectangleD(48, 42, 8, 1), new RectangleD(53, 40, 1, 8));
+
+        // On the other side, the path is followed from its end: the letters are inside the square, where they overlap,
+        // and the underline is outside.
+        AssertPathRectangles(
+            TextLayout.Create("AAAA", style),
+            square,
+            new TextPathOptions { Side = TextPathSide.Right },
+            new RectangleD(40, 42, 12, 12),
+            new RectangleD(42, 44, 12, 12),
+            new RectangleD(44, 42, 12, 12),
+            new RectangleD(42, 40, 12, 12),
+            new RectangleD(37, 40, 1, 16),
+            new RectangleD(40, 58, 16, 1),
+            new RectangleD(58, 40, 1, 16),
+            new RectangleD(40, 37, 16, 1));
+
+        // An open path: the underline continues straight beyond its ends, or stops there.
+        var open = new VectorPathBuilder().MoveTo(40, 30).LineTo(60, 30).Build();
+        var layout = TextLayout.Create("AA", style);
+        AssertPathRectangles(layout, open, new TextPathOptions { StartOffset = -8 }, new RectangleD(34, 18, 12, 12), new RectangleD(50, 18, 12, 12), new RectangleD(32, 32, 32, 1));
+        AssertPathRectangles(layout, open, new TextPathOptions { StartOffset = -8, Overflow = TextPathOverflow.Clip }, new RectangleD(34, 18, 12, 12), new RectangleD(50, 18, 12, 12), new RectangleD(40, 32, 20, 1));
+        AssertPathRectangles(layout, open, new TextPathOptions { StartOffset = -8, Side = TextPathSide.Right }, new RectangleD(54, 30, 12, 12), new RectangleD(38, 30, 12, 12), new RectangleD(36, 27, 32, 1));
+        AssertPathRectangles(layout, open, new TextPathOptions { StartOffset = -8, Side = TextPathSide.Right, Overflow = TextPathOverflow.Clip }, new RectangleD(54, 30, 12, 12), new RectangleD(38, 30, 12, 12), new RectangleD(40, 27, 20, 1));
+    }
+
+    [Fact]
+    public void APathIsMeasuredAlongItsChords()
+    {
+        using var measure = new PathMeasure(new AllocationScope(ImageResourceLimits.Default));
+        Assert.False(measure.TryGetPoint(0, out _, out _, out _, out _));
+        Assert.Equal(0, measure.Length);
+
+        // A 3-4-5 triangle left open, then another contour: the distance continues from one to the other.
+        var path = new VectorPathBuilder().MoveTo(0, 0).LineTo(3, 4).LineTo(3, 4).LineTo(3, 14).MoveTo(100, 100).LineTo(90, 100).Build();
+        PathFlattener.Flatten(path, measure);
+        Assert.Equal(25, measure.Length);
+        Assert.False(measure.IsClosed);
+        AssertPoint(measure, 0, 0, 0, 0.6, 0.8);
+        AssertPoint(measure, 2.5, 1.5, 2, 0.6, 0.8);
+        AssertPoint(measure, 5, 3, 4, 0, 1);
+        AssertPoint(measure, 9, 3, 8, 0, 1);
+        AssertPoint(measure, 15, 100, 100, -1, 0);
+        AssertPoint(measure, 25, 90, 100, -1, 0);
+
+        // Beyond the ends, the first and the last chords continue.
+        AssertPoint(measure, -5, -3, -4, 0.6, 0.8);
+        AssertPoint(measure, 30, 85, 100, -1, 0);
+
+        Assert.Equal(5, measure.GetChordEnd(0));
+        Assert.Equal(15, measure.GetChordEnd(5));
+        Assert.Equal(25, measure.GetChordEnd(20));
+        Assert.Equal(double.PositiveInfinity, measure.GetChordEnd(25));
+        Assert.Equal(0, measure.GetChordEnd(-1));
+        Assert.Equal(0, measure.GetChordStartBefore(5));
+        Assert.Equal(5, measure.GetChordStartBefore(5.5));
+        Assert.Equal(15, measure.GetChordStartBefore(25));
+        Assert.Equal(25, measure.GetChordStartBefore(26));
+        Assert.Equal(double.NegativeInfinity, measure.GetChordStartBefore(0));
+
+        // A closed contour includes its closing segment; it is the only one of its path.
+        measure.Reset();
+        PathFlattener.Flatten(new VectorPathBuilder().MoveTo(0, 0).LineTo(3, 0).LineTo(3, 4).Close().Build(), measure);
+        Assert.Equal(12, measure.Length);
+        Assert.True(measure.IsClosed);
+        AssertPoint(measure, 9.5, 1.5, 2, -0.6, -0.8);
+
+        measure.Reset();
+        PathFlattener.Flatten(new VectorPathBuilder().MoveTo(0, 0).LineTo(3, 0).LineTo(3, 4).Close().MoveTo(10, 10).LineTo(20, 10).Build(), measure);
+        Assert.Equal(22, measure.Length);
+        Assert.False(measure.IsClosed);
+
+        // A curve is the chords of its flattening: a circle of radius 100 is 2 pi r long, within the tolerance of the
+        // flattening, and its direction is the tangent of the circle.
+        measure.Reset();
+        PathFlattener.Flatten(new VectorPathBuilder().AddCircle(new PointD(0, 0), 100).Build(), measure);
+        Assert.True(measure.IsClosed);
+        Assert.Equal(2 * Math.PI * 100, measure.Length, 0.5);
+        for (var i = 0; i < 64; i++)
+        {
+            Assert.True(measure.TryGetPoint(measure.Length * i / 64, out var x, out var y, out var directionX, out var directionY));
+            Assert.Equal(100, Math.Sqrt((x * x) + (y * y)), 0.1);
+            Assert.Equal(1, (directionX * directionX) + (directionY * directionY), 1e-12);
+            Assert.Equal(0, ((x * directionX) + (y * directionY)) / 100, 0.05);
+        }
+
+        static void AssertPoint(PathMeasure measure, double distance, double expectedX, double expectedY, double expectedDirectionX, double expectedDirectionY)
+        {
+            Assert.True(measure.TryGetPoint(distance, out var x, out var y, out var directionX, out var directionY));
+            Assert.Equal(expectedX, x, 1e-12);
+            Assert.Equal(expectedY, y, 1e-12);
+            Assert.Equal(expectedDirectionX, directionX, 1e-12);
+            Assert.Equal(expectedDirectionY, directionY, 1e-12);
+        }
+    }
+
+    [Fact]
+    public void ATextOnASlantedPathIsTheRotatedText()
+    {
+        // A path along the vector (3, 4): its direction is (0.6, 0.8), without any trigonometric function. The first A
+        // has the middle of its advance 8 pixels from the start, at (14.8, 16.4); its corners are 6 pixels on each side
+        // along the path, and 0 to 12 pixels on its left, which is the direction (0.8, -0.6).
+        var layout = TextLayout.Create("A", Boxes, 16);
+        var path = new VectorPathBuilder().MoveTo(10, 10).LineTo(70, 90).Build();
+        var polygon = new VectorPathBuilder()
+            .AddPolygon([new PointD(11.2, 11.6), new PointD(18.4, 21.2), new PointD(28, 14), new PointD(20.8, 4.4)])
+            .Build();
+
+        var expected = Render(PixelFormat.Gray16, 60, 60, canvas => canvas.Fill(White, polygon));
+        var actual = Render(PixelFormat.Gray16, 60, 60, canvas => canvas.FillText(White, layout, path));
+        Assert.Contains(actual, sample => sample is > 20000 and < 45000);
+        for (var i = 0; i < expected.Length; i++)
+        {
+            // The same shape, to the rounding of its corners: a few steps out of 65535.
+            if (Math.Abs(expected[i] - actual[i]) > 8)
+            {
+                Assert.Fail($"The pixel {i % 60},{i / 60} is {actual[i]}, expected {expected[i]}");
+            }
+        }
+    }
+
+    [Fact]
+    public void ATextFollowsACurveAndAPathWithoutSegmentDrawsNothing()
+    {
+        // Around a circle: every letter is drawn, turned, outside the circle; the image has the symmetry of the text.
+        var layout = TextLayout.Create("AAAAAAAA", Boxes, 16);
+        var circle = new VectorPathBuilder().AddCircle(new PointD(60, 60), 128 / (2 * Math.PI)).Build();
+        var samples = Render(PixelFormat.Gray8, 120, 120, canvas => canvas.FillText(White, layout, circle));
+        Assert.True(samples.Count(sample => sample == 255) > 8 * 100, "The letters around the circle are not drawn");
+        Assert.Equal(0, samples[(60 * 120) + 60]);
+
+        // The area of eight squares of 12 pixels, whatever their rotation.
+        Assert.Equal(8 * 144, samples.Sum(sample => (long)sample) / 255.0, 2.0);
+
+        // Nothing to follow: a path without segment, an empty path.
+        Assert.Equal(new int[120 * 120], Render(PixelFormat.Gray8, 120, 120, canvas => canvas.FillText(White, layout, new VectorPathBuilder().Build())));
+        Assert.Equal(new int[120 * 120], Render(PixelFormat.Gray8, 120, 120, canvas => canvas.FillText(White, layout, new VectorPathBuilder().MoveTo(5, 5).Build())));
+        Assert.Equal(new int[120 * 120], Render(PixelFormat.Gray8, 120, 120, canvas => canvas.StrokeText(new Pen(White, 1), layout, new VectorPathBuilder().MoveTo(5, 5).LineTo(5, 5).Build())));
+
+        var path = new VectorPathBuilder().MoveTo(0, 0).LineTo(10, 0).Build();
+        using var image = new Image<Gray8>(4, 4, new Gray8(0));
+        image.Draw(
+            canvas =>
+            {
+                try
+                {
+                    canvas.FillText(White, layout, (VectorPath)null!);
+                    Assert.Fail("A null path was accepted");
+                }
+                catch (ArgumentNullException exception)
+                {
+                    Assert.Equal("path", exception.ParamName);
+                }
+
+                try
+                {
+                    canvas.StrokeText(new Pen(White, 1), null!, path);
+                    Assert.Fail("A null layout was accepted");
+                }
+                catch (ArgumentNullException exception)
+                {
+                    Assert.Equal("layout", exception.ParamName);
+                }
+
+                try
+                {
+                    canvas.FillText(null!, layout, path);
+                    Assert.Fail("A null brush was accepted");
+                }
+                catch (ArgumentNullException exception)
+                {
+                    Assert.Equal("brush", exception.ParamName);
+                }
+            },
+            Ct);
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => new TextPathOptions { StartOffset = double.NaN });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new TextPathOptions { BaselineOffset = double.PositiveInfinity });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new TextPathOptions { Alignment = (TextPathAlignment)3 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new TextPathOptions { Side = (TextPathSide)2 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new TextPathOptions { Overflow = (TextPathOverflow)2 });
+        Assert.Equal((0, TextPathAlignment.Start, 0, TextPathSide.Left, TextPathOverflow.Extend), (TextPathOptions.Default.StartOffset, TextPathOptions.Default.Alignment, TextPathOptions.Default.BaselineOffset, TextPathOptions.Default.Side, TextPathOptions.Default.Overflow));
+    }
+
+    /// <summary>Asserts that a layout drawn along a path paints exactly the given rectangles of whole pixels.</summary>
+    private static void AssertPathRectangles(TextLayout layout, VectorPath path, TextPathOptions? options, params RectangleD[] rectangles)
+    {
+        var expected = Render(PixelFormat.Gray8, 130, 130, canvas =>
+        {
+            foreach (var rectangle in rectangles)
+            {
+                canvas.FillRectangle(White, rectangle);
+            }
+        });
+        Assert.Equal(expected, Render(PixelFormat.Gray8, 130, 130, canvas => canvas.FillText(White, layout, path, options)));
     }
 
     /// <summary>Asserts that a text of the boxes font at 16 pixels per em paints exactly the given rectangles of whole pixels.</summary>

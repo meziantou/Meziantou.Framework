@@ -291,6 +291,16 @@ directory and the fixed-size tables, `CmapTable` maps characters, `GlyfOutlineRe
   conventions would cancel under the nonzero rule; decorations are emitted in the same orientation. A layout of several
   paints prepares every shape before painting the first one (`DrawingSession.Prepare`), which keeps "every rental
   happens before the first pixel write".
+- **Text on a path** (`TextLayout.EmitOnPath`, `PathMeasure`). The path is flattened by `PathFlattener` into chords;
+  `PathMeasure` keeps each chord with its unit direction and the distance of its start. A glyph is placed rigidly at the
+  anchor of its cluster (`TextLayoutData.Anchors`: the middle of the advance of the cluster, so a base and its marks,
+  or the glyphs of a ligature, turn together) with the rotation `(dx, dy, -dy, dx)` of the chord under the anchor: only
+  `+ - * /` and `Math.Sqrt`, never a trigonometric function. The text is on the left of the direction; `Side.Right` is
+  the reversed path, not a mirror. A single closed contour wraps; several contours are concatenated; beyond the ends
+  the first and last chords continue (`Extend`) or the cluster is dropped (`Clip`). Decorations are cut into one
+  quadrilateral per chord, and more than one turn around a closed path is one turn (the work is bounded by the number
+  of chords, not by the length of the text). The literals are whole-pixel rectangles on axis-aligned paths and a 3-4-5
+  slope (`DrawingTextTests`).
 - **The layout overloads allocate nothing** once the scratch of the session has grown (`PerformanceContractTests`). The
   overload that takes a string creates a layout and is the documented exception.
 - Tests: literals on the boxes font (rectangles on whole pixels at 16 pixels per em, compared with `FillRectangle`;

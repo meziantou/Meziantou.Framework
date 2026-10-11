@@ -33,6 +33,13 @@ public sealed class FixtureManifest
     [JsonPropertyName("fixtures")]
     public required IReadOnlyList<FixtureEntry> Fixtures { get; init; }
 
+    /// <summary>
+    /// Gets the AV1 conformance vectors: raw OBU streams with plane digests. They are not fixtures (no pixel reference), so
+    /// the generic conformance suites never enumerate them.
+    /// </summary>
+    [JsonPropertyName("av1Vectors")]
+    public Av1VectorSet? Av1Vectors { get; init; }
+
     /// <summary>Gets the ICC profiles used by <see cref="ColorTransforms"/>.</summary>
     [JsonPropertyName("colorProfiles")]
     public IReadOnlyList<ColorProfileEntry>? ColorProfiles { get; init; }

@@ -267,6 +267,11 @@ public static class GoldenAssert
             failures.Add($"Transfer function: expected {expected.EffectiveTransferFunction}, actual {actual.TransferFunction} (a label: samples are never converted).");
         }
 
+        if (!string.Equals(expected.Cicp?.ToString(), actual.Cicp, StringComparison.Ordinal))
+        {
+            failures.Add($"CICP color description: expected {expected.Cicp?.ToString() ?? "none"}, actual {actual.Cicp ?? "none"} (a label: the primaries and the transfer characteristics are never applied).");
+        }
+
         CompareProfile("ICC profile", expected.Profiles.Icc, actual.IccProfile, failures);
         CompareProfile("EXIF profile", expected.Profiles.Exif, actual.ExifProfile, failures);
         CompareProfile("XMP packet", expected.Profiles.Xmp, actual.XmpProfile, failures);

@@ -9,7 +9,8 @@ namespace Meziantou.Framework.Imaging.TestHarness.Fixtures;
 /// provenance and licenses, file existence (inside the corpus root only), SHA-256 hashes, orphan files, expected
 /// frame/metadata consistency (frame counts, rational durations, loop-count conventions, posters), raw-buffer layouts and
 /// exact lengths (with bounded decompression), comparison policies (including proof that each tolerance rejects channel
-/// swaps and flips of its reference), reference provenance and expected errors.
+/// swaps and flips of its reference), reference provenance and expected errors; and the AV1 conformance vectors (files,
+/// hashes, provenance, two decoders, plane digests).
 /// </summary>
 public static partial class FixtureManifestValidator
 {
@@ -31,7 +32,7 @@ public static partial class FixtureManifestValidator
     public static IReadOnlySet<string> AllowedKinds => FixtureKinds.All;
 
     /// <summary>The accepted values of <see cref="FixtureEntry.Format"/> (container formats; APNG is <c>png</c>).</summary>
-    public static IReadOnlySet<string> AllowedFormats { get; } = new HashSet<string>(StringComparer.Ordinal) { "png", "gif", "jpeg", "webp", "qoi", "bmp", "tga", "pnm" };
+    public static IReadOnlySet<string> AllowedFormats { get; } = new HashSet<string>(StringComparer.Ordinal) { "png", "gif", "jpeg", "webp", "qoi", "bmp", "tga", "pnm", "avif" };
 
     /// <summary>The accepted values of <see cref="FixtureExpectation.PixelFormat"/> (library <c>PixelFormat</c> names).</summary>
     public static IReadOnlySet<string> AllowedPixelFormats { get; } = new HashSet<string>(StringComparer.Ordinal) { "Rgba32", "Bgra32", "Rgb24", "Rgba64", "Gray8", "Gray16" };
@@ -59,6 +60,15 @@ public static partial class FixtureManifestValidator
     {
         FixtureCrossCheck.Exact, FixtureCrossCheck.Equivalent, FixtureCrossCheck.WithinTolerance, FixtureCrossCheck.Differs,
     };
+
+    /// <summary>The accepted values of <see cref="Av1VectorEntry.BitDepth"/>.</summary>
+    public static IReadOnlySet<int> AllowedAv1BitDepths { get; } = new HashSet<int> { 8, 10, 12 };
+
+    /// <summary>The accepted values of <see cref="Av1VectorEntry.Subsampling"/>.</summary>
+    public static IReadOnlySet<string> AllowedAv1Subsamplings { get; } = new HashSet<string>(StringComparer.Ordinal) { "4:0:0", "4:2:0", "4:2:2", "4:4:4" };
+
+    /// <summary>The directory of the AV1 conformance vectors, and the prefix of their identifiers.</summary>
+    public const string Av1VectorPrefix = "av1/";
 
     /// <summary>Files of the corpus root that are not fixtures and need not be referenced by the manifest.</summary>
     public static IReadOnlySet<string> InfrastructureFiles { get; } = new HashSet<string>(StringComparer.Ordinal)
@@ -99,6 +109,11 @@ public static partial class FixtureManifestValidator
                 errors.Add($"{name}: duplicate id.");
             }
 
+            if (entry.Id.StartsWith(Av1VectorPrefix, StringComparison.Ordinal) || entry.Input.Path.StartsWith(Av1VectorPrefix, StringComparison.Ordinal))
+            {
+                errors.Add($"{name}: AV1 conformance vectors belong to 'av1Vectors', not to 'fixtures' (they have no pixel reference).");
+            }
+
             if (!AllowedFormats.Contains(entry.Format))
             {
                 errors.Add($"{name}: invalid format '{entry.Format}' (allowed: {string.Join(", ", AllowedFormats)}).");
@@ -128,6 +143,11 @@ public static partial class FixtureManifestValidator
             {
                 ValidateErrorEntry(name, entry, errors);
             }
+        }
+
+        if (manifest.Av1Vectors is { } vectors)
+        {
+            ValidateAv1Vectors(vectors, root, ids, referencedFiles, errors);
         }
 
         ValidateColorSections(manifest, root, ids, referencedFiles, errors);
@@ -395,9 +415,23 @@ public static partial class FixtureManifestValidator
             errors.Add($"{name}: invalid colorModel '{expected.ColorModel}' (allowed: {string.Join(", ", AllowedColorModels)}).");
         }
 
-        if (expected.BitsPerComponent is not null and not (1 or 2 or 4 or 8 or 16))
+        // AV1 samples are 8, 10 or 12 bits wide
+        if (expected.BitsPerComponent is not null and not (1 or 2 or 4 or 8 or 16) && !(entry.Format == "avif" && expected.BitsPerComponent is 10 or 12))
         {
             errors.Add($"{name}: invalid bitsPerComponent {expected.BitsPerComponent}.");
+        }
+
+        if (expected.Cicp is { } cicp)
+        {
+            if (entry.Format != "avif")
+            {
+                errors.Add($"{name}: only AVIF inputs declare a CICP color description.");
+            }
+
+            if (cicp.ColorPrimaries is < 0 or > 255 || cicp.TransferCharacteristics is < 0 or > 255 || cicp.MatrixCoefficients is < 0 or > 255)
+            {
+                errors.Add($"{name}: the CICP code points are 8-bit values.");
+            }
         }
 
         if (expected.Orientation is < 1 or > 8)
@@ -484,7 +518,7 @@ public static partial class FixtureManifestValidator
     {
         if (frame.EncodedDelay is not { } delay)
         {
-            if (expected.Animation is not null && (entry.Format is "png" or "webp" || duration != RationalDuration.Zero))
+            if (expected.Animation is not null && (entry.Format is "png" or "webp" or "avif" || duration != RationalDuration.Zero))
             {
                 errors.Add($"{frameName}: frames of animated inputs must record the encoded delay field (encodedDelay).");
             }
@@ -523,9 +557,20 @@ public static partial class FixtureManifestValidator
 
             expectedDuration = RationalDuration.Create(delay.Milliseconds!.Value, 1000);
         }
+        else if (delay.IsAvif && entry.Format == "avif")
+        {
+            // The duration of a sample over the time scale of its media, both 32-bit fields
+            if (delay.SampleDelta is < 0 or > uint.MaxValue || delay.Timescale is <= 0 or > uint.MaxValue)
+            {
+                errors.Add($"{frameName}: the sample delta and the time scale of an AVIF image sequence are 32-bit values, and the time scale is not zero.");
+                return;
+            }
+
+            expectedDuration = RationalDuration.Create(delay.SampleDelta!.Value, delay.Timescale!.Value);
+        }
         else
         {
-            errors.Add($"{frameName}: encodedDelay must be {{numerator, denominator}} for APNG, {{hundredths}} for GIF or {{milliseconds}} for WebP, matching the fixture format '{entry.Format}'.");
+            errors.Add($"{frameName}: encodedDelay must be {{numerator, denominator}} for APNG, {{hundredths}} for GIF, {{milliseconds}} for WebP or {{sampleDelta, timescale}} for AVIF, matching the fixture format '{entry.Format}'.");
             return;
         }
 
@@ -592,7 +637,8 @@ public static partial class FixtureManifestValidator
             errors.Add($"{name}: iccProfile '{expected.IccProfile}' is inconsistent with profiles.icc ({(profiles.Icc is null ? "absent" : "present")}).");
         }
 
-        if (expected.Orientation != 1 && profiles.Exif is null)
+        // The orientation of an AVIF input comes from its irot and imir properties, never from its EXIF payload
+        if (expected.Orientation != 1 && profiles.Exif is null && entry.Format != "avif")
         {
             errors.Add($"{name}: orientation {expected.Orientation} can only come from an EXIF payload (profiles.exif).");
         }
@@ -610,6 +656,10 @@ public static partial class FixtureManifestValidator
             else if (entry.Format == "webp")
             {
                 errors.Add($"{name}: WebP has no text chunk.");
+            }
+            else if (entry.Format == "avif")
+            {
+                errors.Add($"{name}: no text of an AVIF file is read.");
             }
             else if (entry.Format == "qoi")
             {
@@ -634,6 +684,11 @@ public static partial class FixtureManifestValidator
         if (animation.TotalPlays is <= 0)
         {
             errors.Add($"{name}: totalPlays counts all plays (>= 1) or is null for infinite.");
+        }
+
+        if (animation.EditList is not null && entry.Format != "avif")
+        {
+            errors.Add($"{name}: only AVIF image sequences have an edit list.");
         }
 
         if (expected.Poster is not null && !entry.HasFeature("apng"))
@@ -677,6 +732,21 @@ public static partial class FixtureManifestValidator
             else if (animation.TotalPlays != (loops == 0 ? null : loops))
             {
                 errors.Add($"{name}: WebP loop count {loops} means totalPlays {(loops == 0 ? "null (infinite)" : loops.ToString(CultureInfo.InvariantCulture))}, not {Format(animation.TotalPlays)}.");
+            }
+        }
+
+        else if (entry.Format == "avif")
+        {
+            // The plays of an image sequence come from the edit list of its track and the duration of its track header
+            if (animation.EncodedLoopValue is not null)
+            {
+                errors.Add($"{name}: an AVIF image sequence has no loop field; record its edit list (editList).");
+            }
+
+            var expectedPlays = EditListExpectation.GetTotalPlays(animation.EditList);
+            if (animation.TotalPlays != expectedPlays)
+            {
+                errors.Add($"{name}: the edit list of the sequence means totalPlays {Format(expectedPlays)} (none: forever; not repeating: once; repeating: the track duration over the edit duration, rounded up, forever when indefinite), not {Format(animation.TotalPlays)}.");
             }
         }
 
@@ -728,6 +798,117 @@ public static partial class FixtureManifestValidator
         else if (!layouts.SetEquals(frameLayouts))
         {
             errors.Add($"{frameName}: layouts [{string.Join(", ", frameLayouts.Order(StringComparer.Ordinal))}] differ from the other frames [{string.Join(", ", layouts.Order(StringComparer.Ordinal))}]; every frame and the poster provide the same layouts.");
+        }
+    }
+
+    private static void ValidateAv1Vectors(Av1VectorSet vectors, FullPath root, HashSet<string> ids, HashSet<string> referencedFiles, List<string> errors)
+    {
+        const string Section = "av1Vectors";
+        if (string.IsNullOrWhiteSpace(vectors.Generator.Script) || string.IsNullOrWhiteSpace(vectors.Generator.Command) || vectors.Generator.Tools.Count == 0)
+        {
+            errors.Add($"{Section}: the generator must record its script, its command and its pinned tools.");
+        }
+
+        if (string.IsNullOrWhiteSpace(vectors.PlaneDigest))
+        {
+            errors.Add($"{Section}: planeDigest must define the byte layout of a plane digest.");
+        }
+
+        if (string.IsNullOrWhiteSpace(vectors.HeaderParser.Name) || string.IsNullOrWhiteSpace(vectors.HeaderParser.Command))
+        {
+            errors.Add($"{Section}: the header parser must be named with its command.");
+        }
+
+        if (vectors.Decoders.Any(decoder => string.IsNullOrWhiteSpace(decoder.Name) || string.IsNullOrWhiteSpace(decoder.Command)))
+        {
+            errors.Add($"{Section}: every decoder must be named with its command.");
+        }
+
+        if (vectors.Decoders.Select(decoder => decoder.Name).Distinct(StringComparer.Ordinal).Count() < 2)
+        {
+            errors.Add($"{Section}: plane digests need at least two distinct independent decoders; a digest from a single decoder is not a reference.");
+        }
+
+        foreach (var entry in vectors.Entries)
+        {
+            var name = $"AV1 vector '{entry.Id}'";
+            if (!IdRegex().IsMatch(entry.Id) || !entry.Id.StartsWith(Av1VectorPrefix, StringComparison.Ordinal))
+            {
+                errors.Add($"{name}: invalid id (allowed: '{Av1VectorPrefix}' followed by lowercase letters, digits, '-', '_', '.', '/').");
+            }
+
+            if (!ids.Add(entry.Id))
+            {
+                errors.Add($"{name}: duplicate id.");
+            }
+
+            if (entry.Features.Count == 0 || entry.Features.Any(string.IsNullOrWhiteSpace) || entry.Features.Distinct(StringComparer.Ordinal).Count() != entry.Features.Count)
+            {
+                errors.Add($"{name}: features must be present, non-empty and unique.");
+            }
+
+            ValidateProvenance(name, entry.Provenance, errors);
+            if (entry.Provenance.Commands is not { Count: > 0 })
+            {
+                errors.Add($"{name}: the encoder command must be recorded ('commands').");
+            }
+
+            if (!entry.Input.Path.StartsWith(Av1VectorPrefix, StringComparison.Ordinal) || !entry.Input.Path.EndsWith(".obu", StringComparison.Ordinal))
+            {
+                errors.Add($"{name}: the input '{entry.Input.Path}' must be a raw OBU stream '{Av1VectorPrefix}*.obu'.");
+            }
+
+            if (referencedFiles.Contains(entry.Input.Path))
+            {
+                errors.Add($"{name}: the input '{entry.Input.Path}' is already used by another entry.");
+            }
+
+            ValidateFile(name, entry.Input, root, referencedFiles, errors);
+
+            if (!AllowedAv1BitDepths.Contains(entry.BitDepth))
+            {
+                errors.Add($"{name}: invalid bitDepth {entry.BitDepth.ToString(CultureInfo.InvariantCulture)} (allowed: {string.Join(", ", AllowedAv1BitDepths.Order())}).");
+            }
+
+            if (!AllowedAv1Subsamplings.Contains(entry.Subsampling))
+            {
+                errors.Add($"{name}: invalid subsampling '{entry.Subsampling}' (allowed: {string.Join(", ", AllowedAv1Subsamplings.Order(StringComparer.Ordinal))}).");
+            }
+
+            if (string.IsNullOrWhiteSpace(entry.PixelFormat))
+            {
+                errors.Add($"{name}: pixelFormat is required.");
+            }
+
+            if (entry.Frames.Count == 0)
+            {
+                errors.Add($"{name}: a vector has at least one output frame.");
+            }
+
+            if (entry.FrameCount != entry.Frames.Count)
+            {
+                errors.Add($"{name}: frameCount {entry.FrameCount.ToString(CultureInfo.InvariantCulture)} does not match the {entry.Frames.Count.ToString(CultureInfo.InvariantCulture)} frames.");
+            }
+
+            for (var i = 0; i < entry.Frames.Count; i++)
+            {
+                var frame = entry.Frames[i];
+                var frameName = $"{name} frame {i.ToString(CultureInfo.InvariantCulture)}";
+                if (frame.Width <= 0 || frame.Height <= 0)
+                {
+                    errors.Add($"{frameName}: dimensions must be positive.");
+                }
+
+                if (frame.Planes.Count != entry.PlaneCount)
+                {
+                    errors.Add($"{frameName}: {frame.Planes.Count.ToString(CultureInfo.InvariantCulture)} plane digests, {entry.PlaneCount.ToString(CultureInfo.InvariantCulture)} expected for {entry.Subsampling}.");
+                }
+
+                if (frame.Planes.Any(digest => !Sha256Regex().IsMatch(digest)))
+                {
+                    errors.Add($"{frameName}: plane digests are SHA-256 hashes (64 lowercase hexadecimal characters).");
+                }
+            }
         }
     }
 

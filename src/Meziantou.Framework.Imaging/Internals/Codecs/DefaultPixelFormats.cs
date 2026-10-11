@@ -6,6 +6,22 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </summary>
 internal static class DefaultPixelFormats
 {
+    /// <summary>Selects the default pixel format of an AVIF image.</summary>
+    /// <param name="isMonochrome">Whether the color image has a single plane.</param>
+    /// <param name="hasAlpha">Whether the image has an alpha plane.</param>
+    /// <param name="bitDepth">The largest bit depth of the color and alpha planes (8, 10 or 12).</param>
+    /// <returns>The pixel format: there is no 16-bit RGB format, so that deep color images without alpha are opaque <see cref="PixelFormat.Rgba64"/>.</returns>
+    public static PixelFormat ForAvif(bool isMonochrome, bool hasAlpha, int bitDepth)
+    {
+        if (bitDepth > 8)
+            return isMonochrome && !hasAlpha ? PixelFormat.Gray16 : PixelFormat.Rgba64;
+
+        if (hasAlpha)
+            return PixelFormat.Rgba32;
+
+        return isMonochrome ? PixelFormat.Gray8 : PixelFormat.Rgb24;
+    }
+
     /// <summary>Selects the default pixel format of a PNG or APNG image.</summary>
     /// <param name="colorType">The IHDR color type (0, 2, 3, 4 or 6).</param>
     /// <param name="bitDepth">The IHDR bit depth.</param>

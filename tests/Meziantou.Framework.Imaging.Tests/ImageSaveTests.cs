@@ -241,6 +241,38 @@ public sealed class ImageSaveTests
         }
     }
 
+    [Theory]
+    [InlineData("image.avif")]
+    [InlineData("IMAGE.AVIF")]
+    [InlineData("sequence.avifs")]
+    public async Task AvifExtensionsSelectNoEncoderBecauseTheFormatIsOnlyRead(string name)
+    {
+        using var codecs = TestCodecs.UseAll(out _, out _, out _, out _);
+        var directory = ImageWriterTests.CreateDirectory();
+        try
+        {
+            // AVIF is decoded and never encoded: the path is rejected before anything is written, synchronously
+            using var image = StreamImages.CreateAnimation(Width, Height, 1);
+            var path = directory / name;
+            Assert.Equal("path", Assert.Throws<ArgumentException>(() => image.Save(path)).ParamName);
+            Task? task = null;
+            var exception = Assert.IsType<ArgumentException>(Record.Exception(() => { task = image.SaveAsync(path, cancellationToken: XunitCancellationToken); }));
+            Assert.Equal("path", exception.ParamName);
+            Assert.Null(task);
+            Assert.Empty(Directory.GetFileSystemEntries(directory));
+
+            // The extension only selects the default encoder: an explicit encoder writes its own format under that name
+            await image.SaveAsync(path, new PngEncoder(), XunitCancellationToken);
+            using var decoded = StreamImages.Decode(await File.ReadAllBytesAsync(path, XunitCancellationToken));
+            Assert.Equal(ImageFormat.Png, decoded.Metadata.SourceFormat);
+            Assert.Equal([path], Directory.GetFiles(directory));
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
     [Fact]
     public void EveryBuiltInFormatCanBeSaved()
     {

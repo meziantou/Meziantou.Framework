@@ -65,6 +65,7 @@ public sealed class ApiSurfaceTests
     [InlineData(typeof(MetadataBlob))]
     [InlineData(typeof(IccProfile))]
     [InlineData(typeof(IccColorTransform))]
+    [InlineData(typeof(CicpColorDescription))]
     public void ConcreteTypesAreSealed(Type type) => Assert.True(type.IsSealed, $"{type} must be sealed");
 
     [Fact]
@@ -83,6 +84,30 @@ public sealed class ApiSurfaceTests
                 Assert.True(isInitOnly, $"{type.Name}.{property.Name} must be get-only or init-only");
             }
         }
+    }
+
+    [Fact]
+    public void AvifAdditionsHaveTheirPublicShape()
+    {
+        // A new format is appended: the values of the existing members never change
+        Assert.Equal(13, (int)ImageFormat.Avif);
+        Assert.Equal(nameof(ImageFormat.Avif), Enum.GetName((ImageFormat)13));
+
+        // The CICP color description is an immutable value: a public constructor, get-only properties, value equality
+        var type = typeof(CicpColorDescription);
+        Assert.Equal("Meziantou.Framework.Imaging.Metadata", type.Namespace);
+        Assert.True(type.IsPublic && type.IsSealed && type.IsClass);
+        Assert.True(typeof(IEquatable<CicpColorDescription>).IsAssignableFrom(type));
+        Assert.NotNull(type.GetConstructor([typeof(byte), typeof(byte), typeof(byte), typeof(bool)]));
+        Assert.All(type.GetProperties(BindingFlags.Instance | BindingFlags.Public), property => Assert.Null(property.GetSetMethod(nonPublic: false)));
+        Assert.Empty(type.GetFields(BindingFlags.Instance | BindingFlags.Public));
+
+        // ...attached to the mutable metadata container by a nullable read-write property
+        var property = GetDeclaredProperty(typeof(ImageMetadata), nameof(ImageMetadata.Cicp));
+        Assert.Equal(type, property.PropertyType);
+        Assert.NotNull(property.GetGetMethod());
+        Assert.NotNull(property.GetSetMethod());
+        Assert.Equal(NullabilityState.Nullable, new NullabilityInfoContext().Create(property).ReadState);
     }
 
     [Theory]

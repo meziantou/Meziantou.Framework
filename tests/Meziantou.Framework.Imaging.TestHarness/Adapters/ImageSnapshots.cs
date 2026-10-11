@@ -166,6 +166,7 @@ public static class ImageSnapshots
             HorizontalDpi = metadata.Resolution?.HorizontalDpi,
             VerticalDpi = metadata.Resolution?.VerticalDpi,
             TransferFunction = metadata.TransferFunction == ColorTransferFunction.Linear ? "linear" : "srgb",
+            Cicp = metadata.Cicp is { } cicp ? string.Create(CultureInfo.InvariantCulture, $"{cicp.ColorPrimaries}/{cicp.TransferCharacteristics}/{cicp.MatrixCoefficients} {(cicp.FullRange ? "full" : "limited")}") : null,
             IccProfile = metadata.IccProfile?.Data.Memory,
             ExifProfile = metadata.ExifProfile?.Data.Memory,
             XmpProfile = metadata.XmpProfile?.Data.Memory,

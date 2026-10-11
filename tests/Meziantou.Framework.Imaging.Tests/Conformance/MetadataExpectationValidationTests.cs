@@ -69,6 +69,67 @@ public sealed class MetadataExpectationValidationTests
     }
 
     [Fact]
+    public void AvifTimingPlaysAndColorDescriptionInconsistenciesAreReported()
+    {
+        using var corpus = new CorpusCopy();
+        corpus.EditFixture("avif/sequence-alpha-repeat-2", fixture =>
+        {
+            Frame(fixture, 0)["encodedDelay"]!["timescale"] = 500; // 40/500 s is not the 40/1000 s of the duration
+            fixture["expected"]!["animation"]!["totalPlays"] = 2; // a track of 3120 units and an edit of 1040: three plays
+        });
+        corpus.EditFixture("avif/sequence-no-edit-list", fixture => fixture["expected"]!["animation"]!["totalPlays"] = 1);
+        corpus.EditFixture("avif/sequence-10bit-once", fixture =>
+        {
+            Frame(fixture, 1).Remove("encodedDelay");
+            fixture["expected"]!["animation"]!["editList"]!["repeating"] = true; // 2002 / 2002 is still one play
+        });
+        corpus.EditFixture("avif/sequence-lossless-infinite", fixture => fixture["expected"]!["animation"]!["encodedLoopValue"] = 0);
+        corpus.EditFixture("avif/lossless-rgb8", fixture => fixture["expected"]!["cicp"]!["matrixCoefficients"] = 256);
+        corpus.EditFixture("avif/irot-1", fixture => fixture["expected"]!["bitsPerComponent"] = 9);
+        corpus.EditFixture("png/single-pixel", fixture =>
+        {
+            fixture["expected"]!["cicp"] = new JsonObject { ["colorPrimaries"] = 1, ["transferCharacteristics"] = 13, ["matrixCoefficients"] = 0, ["fullRange"] = true };
+            fixture["expected"]!["bitsPerComponent"] = 10;
+        });
+        corpus.EditFixture("gif/ffmpeg-animated", fixture => fixture["expected"]!["animation"]!["editList"] = new JsonObject { ["repeating"] = true, ["segmentDuration"] = 1, ["trackDuration"] = 2 });
+        corpus.EditFixture("apng/blend-source-over", fixture => Frame(fixture, 0)["encodedDelay"] = new JsonObject { ["sampleDelta"] = 1, ["timescale"] = 10 });
+
+        var errors = corpus.Validate();
+        Assert.Contains(errors, error => error.Contains("avif/sequence-alpha-repeat-2' frame 0: encoded delay 40/500 (stts/mdhd) means 2/25 s, not 1/25 s", StringComparison.Ordinal));
+        Assert.Contains(errors, error => error.Contains("avif/sequence-alpha-repeat-2': the edit list of the sequence means totalPlays 3 ", StringComparison.Ordinal));
+        Assert.Contains(errors, error => error.Contains("avif/sequence-no-edit-list': the edit list of the sequence means totalPlays null ", StringComparison.Ordinal));
+        Assert.Contains(errors, error => error.Contains("avif/sequence-10bit-once' frame 1: frames of animated inputs must record the encoded delay field", StringComparison.Ordinal));
+        Assert.DoesNotContain(errors, error => error.Contains("avif/sequence-10bit-once': the edit list", StringComparison.Ordinal));
+        Assert.Contains(errors, error => error.Contains("avif/sequence-lossless-infinite': an AVIF image sequence has no loop field", StringComparison.Ordinal));
+        Assert.Contains(errors, error => error.Contains("avif/lossless-rgb8': the CICP code points are 8-bit values", StringComparison.Ordinal));
+        Assert.Contains(errors, error => error.Contains("avif/irot-1': invalid bitsPerComponent 9", StringComparison.Ordinal));
+        Assert.Contains(errors, error => error.Contains("png/single-pixel': only AVIF inputs declare a CICP color description", StringComparison.Ordinal));
+        Assert.Contains(errors, error => error.Contains("png/single-pixel': invalid bitsPerComponent 10", StringComparison.Ordinal));
+        Assert.Contains(errors, error => error.Contains("gif/ffmpeg-animated': only AVIF image sequences have an edit list", StringComparison.Ordinal));
+        Assert.Contains(errors, error => error.Contains("apng/blend-source-over' frame 0: encodedDelay must be", StringComparison.Ordinal));
+
+        // The orientation of an AVIF image needs no EXIF payload (irot and imir); any other format still needs one
+        Assert.DoesNotContain(errors, error => error.Contains("avif/irot-1': orientation", StringComparison.Ordinal));
+        Assert.Equal(8, GoldenCorpus.Default.Get("avif/irot-1").Expected.Orientation);
+        Assert.Null(GoldenCorpus.Default.Get("avif/irot-1").Expected.Profiles.Exif);
+    }
+
+    [Fact]
+    public void ColorDescriptionMismatchIsReported()
+    {
+        var fixture = GoldenCorpus.Default.Get("avif/lossless-rgba8");
+        var good = GoldenCorpusTests.SnapshotFromReferences(fixture, RawPixelLayout.Rgba8);
+        GoldenAssert.ImageMatches(fixture, good, NoPreviews);
+        Assert.Equal("1/13/0 full", good.Metadata!.Cicp);
+        AssertFailure(fixture, good, With(good.Metadata), "CICP color description: expected 1/13/0 full, actual none");
+
+        // A color description on an image whose format has none
+        var png = GoldenCorpus.Default.Get("png/single-pixel");
+        var snapshot = GoldenCorpusTests.SnapshotFromReferences(png, RawPixelLayout.Rgba8);
+        AssertFailure(png, snapshot, new DecodedMetadataSnapshot { Cicp = "1/13/6 full" }, "CICP color description: expected none, actual 1/13/6 full");
+    }
+
+    [Fact]
     public void DecodedMetadataMismatchesAreReported()
     {
         var fixture = GoldenCorpus.Default.Get("png/metadata-rgb8-profiles");

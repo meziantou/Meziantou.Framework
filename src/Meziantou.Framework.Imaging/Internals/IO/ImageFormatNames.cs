@@ -17,6 +17,7 @@ internal static class ImageFormatNames
         ImageFormat.Ico => "ICO",
         ImageFormat.Cur => "CUR",
         ImageFormat.Ani => "ANI",
+        ImageFormat.Avif => "AVIF",
         _ => "image",
     };
 }

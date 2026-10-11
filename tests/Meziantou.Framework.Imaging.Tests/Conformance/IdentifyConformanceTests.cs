@@ -177,6 +177,14 @@ public sealed class IdentifyConformanceTests
             Assert.Equal(ImageInfoSnapshots.Describe(info), ImageInfoSnapshots.Describe(Image.Identify(stream, exact)));
         }
 
+        if (FixtureTraits.HasUnreadTrailingBytes(fixture))
+        {
+            // The decoder stops at the end of the image data (the boxes that follow the items of an AVIF image are never
+            // read), so a limit one byte below the file length is still enough; the measured requirement is checked by
+            // ResourceLimitBoundaryTests
+            return;
+        }
+
         var tooSmall = CreateEncodedByteLimitOptions(data.Length - 1);
         var fromSpan = Assert.Throws<ImageResourceLimitException>(() => Image.Identify(data, tooSmall));
         using var shortReads = InputVariants.CreateStream(InputVariant.ShortReadStream, data);
@@ -219,7 +227,9 @@ public sealed class IdentifyConformanceTests
         Assert.Equal(expected.Width, info.Width);
         Assert.Equal(expected.Height, info.Height);
         Assert.Equal(Enum.Parse<PixelFormat>(expected.PixelFormat), info.PixelFormat);
-        Assert.Equal(Enum.Parse<ImageColorModel>(expected.ColorModel!), info.ColorModel);
+        // A header identification of an AVIF file without color box whose bitstream came first cannot tell the color model
+        var colorModel = mode == ImageIdentifyMode.Header && FixtureTraits.HeaderCannotTellTheColorModel(fixture) ? ImageColorModel.Unknown : Enum.Parse<ImageColorModel>(expected.ColorModel!);
+        Assert.Equal(colorModel, info.ColorModel);
         Assert.Equal(expected.BitsPerComponent, info.BitsPerComponent);
         Assert.Equal(FixtureOptions.GetFormat(fixture), info.Metadata.SourceFormat);
     }

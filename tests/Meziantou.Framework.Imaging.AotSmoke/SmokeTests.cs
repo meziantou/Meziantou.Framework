@@ -309,6 +309,20 @@ internal static class SmokeTests
         plain.Frames[0].CopyPixelDataTo(plainPixels);
         binary.Frames[0].CopyPixelDataTo(binaryPixels);
         Check(plainPixels.AsSpan().SequenceEqual(binaryPixels), "PNM plain and binary agree");
+
+        // A portable bitmap is written on request, from black and white pixels only
+        Gray8[] bits = [new(0), new(255), new(255), new(0), new(0), new(255)];
+        using var bitmap = Image.ImportPixelData<Gray8>(bits, 3, 2);
+        foreach (var encoding in (PnmEncoding[])[PnmEncoding.Binary, PnmEncoding.Plain])
+        {
+            var encoded = Encode(bitmap, new PnmEncoder { PixelLayout = PnmPixelLayout.Bitmap, Encoding = encoding });
+            using var decoded = Image.Load<Gray8>(encoded);
+            var decodedBits = new Gray8[bits.Length];
+            decoded.Frames[0].CopyPixelDataTo(decodedBits);
+            Check(Image.Identify(encoded).BitsPerComponent == 1 && decodedBits.AsSpan().SequenceEqual(bits), $"PBM {encoding}");
+        }
+
+        Check(Expect<UnsupportedImageFeatureException>(() => Encode(opaque, new PnmEncoder { PixelLayout = PnmPixelLayout.Bitmap })).Format == ImageFormat.Pnm, "PBM rejects colors");
     }
 
     public static void Tiff()

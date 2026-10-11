@@ -912,6 +912,7 @@ namespace Meziantou.Framework.Imaging.Formats
     {
         public override Meziantou.Framework.Imaging.ImageFormat Format { get => throw null; }
         public Meziantou.Framework.Imaging.Formats.PnmEncoding Encoding { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Formats.PnmPixelLayout PixelLayout { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Rgba64? BackgroundColor { get => throw null; init { } }
     }
 
@@ -919,6 +920,12 @@ namespace Meziantou.Framework.Imaging.Formats
     {
         Binary = 0,
         Plain = 1,
+    }
+
+    public enum PnmPixelLayout
+    {
+        Auto = 0,
+        Bitmap = 1,
     }
 
     public sealed class QoiEncoder : Meziantou.Framework.Imaging.Formats.ImageEncoder

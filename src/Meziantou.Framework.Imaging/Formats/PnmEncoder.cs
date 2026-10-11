@@ -1,17 +1,28 @@
 namespace Meziantou.Framework.Imaging.Formats;
 
-/// <summary>Immutable settings for Netpbm encoding (PGM, PPM and PAM).</summary>
+/// <summary>Immutable settings for Netpbm encoding (PBM, PGM, PPM and PAM).</summary>
 /// <remarks>
 /// <para>
-/// The variant follows the pixel format, never the file extension: gray pixel formats are written as a portable graymap
-/// (<c>P5</c>, or <c>P2</c> with <see cref="PnmEncoding.Plain"/>), pixel formats without alpha as a portable pixmap
-/// (<c>P6</c>, or <c>P3</c>), and pixel formats with alpha as a portable arbitrary map (<c>P7</c>, tuple type
-/// <c>GRAYSCALE_ALPHA</c> or <c>RGB_ALPHA</c>). <c>MAXVAL</c> is 255 for 8-bit pixel formats and 65,535 for 16-bit ones, so
-/// the output is always lossless. Portable bitmap (<c>P1</c>/<c>P4</c>) output is never written.
+/// With <see cref="PnmPixelLayout.Auto"/> the variant follows the pixel format: gray pixel formats are written as a
+/// portable graymap (<c>P5</c>, or <c>P2</c> with <see cref="PnmEncoding.Plain"/>), pixel formats without alpha as a
+/// portable pixmap (<c>P6</c>, or <c>P3</c>), and pixel formats with alpha as a portable arbitrary map (<c>P7</c>, tuple
+/// type <c>RGB_ALPHA</c>). <c>MAXVAL</c> is 255 for 8-bit pixel formats and 65,535 for 16-bit ones, so the output is always
+/// lossless.
 /// </para>
 /// <para>
-/// PAM has no plain form: <see cref="PnmEncoding.Plain"/> with a pixel format that has alpha discards alpha and therefore
-/// requires <see cref="BackgroundColor"/>.
+/// A portable bitmap (<c>P4</c>, or <c>P1</c> with <see cref="PnmEncoding.Plain"/>) is only written on request, with
+/// <see cref="PnmPixelLayout.Bitmap"/>. It is lossless too: every pixel must be exactly black or exactly white, and any
+/// other pixel is rejected with an <see cref="UnsupportedImageFeatureException"/> before anything is written. A portable
+/// bitmap is read back as <see cref="PixelFormat.Gray8"/> with one bit per component.
+/// </para>
+/// <para>
+/// An encoder never looks at the file extension. Only the save and writer overloads that take a path and no encoder do:
+/// they map <c>.pbm</c> to <see cref="PnmPixelLayout.Bitmap"/> and the other Netpbm extensions to the default settings.
+/// </para>
+/// <para>
+/// Neither the plain forms nor a portable bitmap store alpha (PAM has no plain form): <see cref="PnmEncoding.Plain"/> or
+/// <see cref="PnmPixelLayout.Bitmap"/> with a pixel format that has alpha discards alpha and therefore requires
+/// <see cref="BackgroundColor"/>.
 /// </para>
 /// <para>
 /// PNM stores exactly one frame: animated images and images with a poster frame are rejected with an
@@ -43,10 +54,26 @@ public sealed class PnmEncoder : ImageEncoder
         }
     }
 
+    /// <summary>Gets the pixel layout. Defaults to <see cref="PnmPixelLayout.Auto"/>.</summary>
+    /// <exception cref="ArgumentOutOfRangeException">The value is not a defined <see cref="PnmPixelLayout"/>.</exception>
+    public PnmPixelLayout PixelLayout
+    {
+        get;
+        init
+        {
+            if (!Enum.IsDefined(value))
+                throw new ArgumentOutOfRangeException(nameof(value), value, "The pixel layout is not valid.");
+
+            field = value;
+        }
+    }
+
     /// <summary>
-    /// Gets the opaque background color non-opaque pixels are composited over when <see cref="PnmEncoding.Plain"/> discards
-    /// alpha, interpreted in the encoded color space of the image (sRGB when untagged), or <see langword="null"/> to reject
-    /// non-opaque pixels. Fully opaque images never need it, and <see cref="PnmEncoding.Binary"/> ignores it.
+    /// Gets the opaque background color non-opaque pixels are composited over when <see cref="PnmEncoding.Plain"/> or
+    /// <see cref="PnmPixelLayout.Bitmap"/> discards alpha, interpreted in the encoded color space of the image (sRGB when
+    /// untagged), or <see langword="null"/> to reject non-opaque pixels. Fully opaque images never need it, and a portable
+    /// arbitrary map (<see cref="PnmEncoding.Binary"/> with <see cref="PnmPixelLayout.Auto"/>) ignores it because it stores
+    /// alpha.
     /// </summary>
     /// <exception cref="ArgumentException">The color is not fully opaque.</exception>
     public Rgba64? BackgroundColor

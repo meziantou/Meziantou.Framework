@@ -298,7 +298,7 @@
     <Project Path="tests/Meziantou.Framework.TextDiff.Tests/Meziantou.Framework.TextDiff.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Threading.Tests/Meziantou.Framework.Threading.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Threading.Windows.Tests/Meziantou.Framework.Threading.Windows.Tests.csproj" />
-    <Project Path="tests/Meziantou.Framework.Toml.AotSmoke/Meziantou.Framework.Toml.AotSmoke.csproj" />
+    <Project Path="tests/Meziantou.Framework.Toml.AotTests/Meziantou.Framework.Toml.AotTests.csproj" />
     <Project Path="tests/Meziantou.Framework.Toml.Tests/Meziantou.Framework.Toml.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.TypeConverter.Tests/Meziantou.Framework.TypeConverter.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.UndoRedo.Tests/Meziantou.Framework.UndoRedo.Tests.csproj" />
@@ -321,7 +321,7 @@
     <Project Path="tests/Meziantou.Framework.Win32.RecentDocuments.Tests/Meziantou.Framework.Win32.RecentDocuments.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Win32.RestartManager.Tests/Meziantou.Framework.Win32.RestartManager.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.WPF.Tests/Meziantou.Framework.WPF.Tests.csproj" />
-    <Project Path="tests/Meziantou.Framework.Yaml.AotSmoke/Meziantou.Framework.Yaml.AotSmoke.csproj" />
+    <Project Path="tests/Meziantou.Framework.Yaml.AotTests/Meziantou.Framework.Yaml.AotTests.csproj" />
     <Project Path="tests/Meziantou.Framework.Yaml.FeatureSwitchSmoke/Meziantou.Framework.Yaml.FeatureSwitchSmoke.csproj" />
     <Project Path="tests/Meziantou.Framework.Yaml.Tests/Meziantou.Framework.Yaml.Tests.csproj" />
   </Folder>

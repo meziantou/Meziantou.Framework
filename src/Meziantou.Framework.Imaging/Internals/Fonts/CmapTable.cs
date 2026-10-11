@@ -68,12 +68,12 @@ internal sealed class CmapTable
                 continue;
             }
 
-            var isSupported = format is 0 or 4 or 6 or 12 or 13;
+            var isSupported = format is 0 or 4 or 6 or 10 or 12 or 13;
             var score = !isSupported ? 0 : (platform, encoding) switch
             {
-                (3, 10) when format is 12 or 13 => 60,
-                (0, 4 or 6) when format is 12 or 13 => 55,
-                (0, _) when format is 12 or 13 => 50,
+                (3, 10) when format is 10 or 12 or 13 => 60,
+                (0, 4 or 6) when format is 10 or 12 or 13 => 55,
+                (0, _) when format is 10 or 12 or 13 => 50,
                 (3, 1) => 40,
                 (0, _) => 35,
                 (3, 0) => 20,
@@ -91,7 +91,7 @@ internal sealed class CmapTable
         }
 
         if (bestScore == 0)
-            throw FontErrors.Unsupported("The font has no character map in a supported format and encoding.", "cmap without a Unicode, symbol or Macintosh Roman subtable in format 0, 4, 6, 12 or 13");
+            throw FontErrors.Unsupported("The font has no character map in a supported format and encoding.", "cmap without a Unicode, symbol or Macintosh Roman subtable in format 0, 4, 6, 10, 12 or 13");
 
         var count = Validate(data, bestOffset, bestFormat);
         var variationCount = 0;
@@ -188,6 +188,13 @@ internal sealed class CmapTable
                 {
                     var index = codePoint - FontBinary.UInt16(data, 6);
                     return (uint)index < (uint)_count ? FontBinary.UInt16(data, 10 + (index * 2)) : 0;
+                }
+
+            // A range of characters with 32-bit codes, and one glyph for each.
+            case 10:
+                {
+                    var index = (long)codePoint - FontBinary.UInt32(data, 12);
+                    return index >= 0 && index < _count ? FontBinary.UInt16(data, 20 + ((int)index * 2)) : 0;
                 }
 
             default:
@@ -357,6 +364,13 @@ internal sealed class CmapTable
                 {
                     var count = FontBinary.UInt16(data, 8);
                     FontBinary.EnsureRange(data, 10, (long)count * 2);
+                    return count;
+                }
+
+            case 10:
+                {
+                    var count = FontBinary.Offset32(data, 16);
+                    FontBinary.EnsureRange(data, 20, (long)count * 2);
                     return count;
                 }
 

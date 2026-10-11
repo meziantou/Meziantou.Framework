@@ -13,7 +13,9 @@ the library guarantees to its callers (support matrix, limitations, defaults). K
 
 - Target frameworks are exactly `net10.0;net11.0` for the library and every test, sample and benchmark project. Do not
   add older targets or compatibility shims.
-- Fully managed, no package dependency and no native dependency. The library is trimmable and NativeAOT-compatible
+- Fully managed, no native dependency, and one package dependency: `Meziantou.Framework.Unicode`, the Unicode
+  algorithms text layout needs (properties, normalization, scripts, segmentation, bidi), which is itself fully managed
+  and independent of ICU. Nothing else (`ApiSurfaceTests`). The library is trimmable and NativeAOT-compatible
   (`IsTrimmable`, `IsAotCompatible`): no reflection-based code.
 - Write implementations from the format specifications. Never copy or port code from other image libraries
   (System.Drawing, libpng, libjpeg, giflib, libwebp, libavif, libaom, dav1d, stb, ...) or from font libraries (FreeType,
@@ -279,6 +281,33 @@ through `GlyphPathSink` into the sinks of the drawing pipeline.
   overload that takes a string creates a layout and is the documented exception.
 - Tests: literals on the boxes font (rectangles on whole pixels at 16 pixels per em, compared with `FillRectangle`),
   layout against path on the fonts of the corpus, and `FontFuzzTests`, which lays out and draws with every mutated font.
+
+### Shaping
+
+`TextShaper` (`Internals/Text/Shaping`) turns the characters of a run (one font, script, language and direction) into
+glyphs and positions in a `GlyphBuffer`; `LayoutApplier` (`Internals/Text/OpenType`) applies the lookups of `GSUB` and
+`GPOS`, with `GdefTable`, `LayoutTable` and `LayoutCommon` for the tables they share.
+
+- Written from the OpenType specification (GSUB, GPOS, GDEF and the common table formats) and, for what a script
+  needs, from the script development specifications of Microsoft. HarfBuzz is the oracle and is never the source: where
+  the specification leaves a behavior to the client (what a lookup sees through, how marks follow a ligature, the
+  default features), write the rule in the terms of the specification and of Unicode, and let the corpus decide.
+- **Everything is an integer in font units** until `TextLayout` scales it. Positions are an advance and an offset per
+  glyph; an attached glyph records what it is attached to, and `FinishPositions` resolves the chains once.
+- **Clusters are the contract with the rest of the layout**: every glyph has the index of the first character of its
+  cluster, a cluster never splits what shaping tied together (a ligature, a character and its marks), and clusters never
+  decrease along a run. Merge clusters whenever glyphs are merged, reordered or removed.
+- **Bounds.** The buffer refuses to grow beyond `MaxTextGlyphs`; every lookup application is charged to the operation
+  budget of the buffer; nested lookups are limited in depth; sequences are limited in length. A layout table is read
+  through `FontBinary` like any other: a reference outside the table is `InvalidImageContentException`, raised when the
+  layout is created.
+- A feature value lives in bits of the mask of each glyph, so a feature can differ along a run without splitting it.
+- Tests have three sources: the Annotated OpenType Specification tests of Adobe (`Conformance/ShapingSuiteTests`, the
+  `font-suites/aots` directory of the corpus: every format of every lookup, with the results the specification
+  gives), the glyphs and positions `hb-shape` gives for texts set in the fonts of the corpus
+  (`Conformance/ShapingConformanceTests`: glyphs, clusters, the place each glyph is drawn at, the advance of the text),
+  and literals computed by hand (`TextShaperTests`). A deliberate difference with a reference is an entry of the
+  `KnownDivergences` map of the test, with its reason; an entry that no longer differs fails the test.
 
 ## Performance work
 

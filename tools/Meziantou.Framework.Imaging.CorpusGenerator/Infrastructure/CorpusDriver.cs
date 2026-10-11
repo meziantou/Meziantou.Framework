@@ -18,11 +18,14 @@ internal static class CorpusDriver
     public const string Av1VectorsKey = "av1Vectors";
 
     /// <summary>The version of the manifest schema every generator writes.</summary>
-    public const int SchemaVersion = 4;
+    public const int SchemaVersion = 5;
 
     /// <summary>The manifest section of the fonts (FontCorpus): font files and the values independent font readers give
     /// for them, kept apart from the fixtures because they are not images.</summary>
     public const string FontsKey = "fonts";
+
+    /// <summary>The manifest section of the third-party suites of test fonts (FontCorpus), each a directory stored as published.</summary>
+    public const string FontSuitesKey = "fontSuites";
 
     public static FullPath RepoRoot { get; } = FindRepositoryRoot();
 
@@ -165,6 +168,21 @@ internal static class CorpusDriver
                 paths.Add((string)((Obj)font["file"]!)["path"]!);
                 if (font.TryGetValue("vectors", out var vectors) && vectors is Obj vectorsFile)
                     paths.Add((string)vectorsFile["path"]!);
+
+                if (font.TryGetValue("shaping", out var shaping) && shaping is Obj shapingFile)
+                    paths.Add((string)shapingFile["path"]!);
+            }
+        }
+
+        if (manifest.TryGetValue(FontSuitesKey, out var suites) && suites is List<object?> suiteList)
+        {
+            foreach (var suite in suiteList.Cast<Obj>())
+            {
+                var directory = CorpusDir / (string)suite["directory"]!;
+                foreach (var file in Directory.EnumerateFiles(directory, "*", SearchOption.AllDirectories))
+                {
+                    paths.Add(FullPath.FromPath(file).MakePathRelativeTo(CorpusDir).Replace('\\', '/'));
+                }
             }
         }
 
@@ -178,6 +196,9 @@ internal static class CorpusDriver
         var committed = LoadCommittedManifest();
         if (committed.TryGetValue(FontsKey, out var value))
             manifest[FontsKey] = value;
+
+        if (committed.TryGetValue(FontSuitesKey, out var suites))
+            manifest[FontSuitesKey] = suites;
 
         foreach (var path in FontFiles(committed))
         {

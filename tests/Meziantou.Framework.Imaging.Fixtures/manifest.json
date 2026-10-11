@@ -1,6 +1,6 @@
 {
   "$schema": "./manifest.schema.json",
-  "schemaVersion": 4,
+  "schemaVersion": 5,
   "generator": {
     "script": "tools/Meziantou.Framework.Imaging.CorpusGenerator/GoldenCorpus.cs",
     "command": "dotnet run --project tools/Meziantou.Framework.Imaging.CorpusGenerator -- golden --write",
@@ -81056,6 +81056,11 @@
         "path": "fonts/vectors/noto-sans-cjk-jp-regular.json",
         "sha256": "f58fee2969146a072f86975a6e5037d5aae317edc9f8e6e51e4416a78313ea80",
         "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-sans-cjk-jp-regular.json",
+        "sha256": "775826ff2161f54a6a9c7fdfda82f0fae6dfd4dbe37486bdf7431aaa002e3bad",
+        "role": "shaping-vectors"
       }
     },
     {
@@ -81113,6 +81118,11 @@
         "path": "fonts/vectors/noto-sans-regular.json",
         "sha256": "bf1324e1618e8327994c5e9dd832d2bf12ab62451367f1710587901683f64c07",
         "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-sans-regular.json",
+        "sha256": "a10422eed2a32385b0cecc735d41ca07bd9227b483bd4f3c20a26e4cdca52e95",
+        "role": "shaping-vectors"
       }
     },
     {
@@ -81148,6 +81158,11 @@
         "path": "fonts/vectors/noto-sans-regular-cff.json",
         "sha256": "731f6e6ea1222dd4cc132ea6ae1c8980d51802fb4b5622cfac3d1c2ebe34d7ba",
         "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-sans-regular-cff.json",
+        "sha256": "d341c1d3dc2a5beea067646a461161703862e2488e879996f6063383ec5cce73",
+        "role": "shaping-vectors"
       }
     },
     {
@@ -81249,6 +81264,11 @@
         "path": "fonts/vectors/synthetic-boxes.json",
         "sha256": "4b735daf41fdb25f23c782119f5d6987348c61d097a1eb21c83cc2aaf3363b77",
         "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/synthetic-boxes.json",
+        "sha256": "5fb5bfde448f39063cb959edac52101b026eeb3ac6c844fc952a588469b68525",
+        "role": "shaping-vectors"
       }
     },
     {
@@ -81627,6 +81647,21 @@
       "faceCount": 1,
       "modification": "container",
       "original": "fonts/synthetic-deltas"
+    }
+  ],
+  "fontSuites": [
+    {
+      "id": "font-suites/aots",
+      "directory": "font-suites/aots",
+      "provenance": {
+        "origin": "external",
+        "license": "Apache-2.0",
+        "author": "Adobe Systems Incorporated (Annotated OpenType Specification), as distributed by the HarfBuzz project",
+        "source": "https://github.com/harfbuzz/harfbuzz/tree/c7a7457b7385f33178e8cf87615ca077a810bbe7/test/shape/data/aots"
+      },
+      "fileCount": 334,
+      "sha256": "934e916b1b32a88c673b0307865aff1ad22052f6d74619c5e2ca14ea545e92c3",
+      "description": "Fonts that each exercise one format of the cmap, class definition, coverage, GSUB or GPOS tables, and tests: a font, the options of hb-shape, characters, and the expected glyphs and positions."
     }
   ]
 }

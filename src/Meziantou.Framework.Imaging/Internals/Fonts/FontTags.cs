@@ -24,6 +24,9 @@ internal static class FontTags
     public const uint Os2 = ((uint)'O' << 24) | ((uint)'S' << 16) | ((uint)'/' << 8) | '2';
     public const uint Post = ((uint)'p' << 24) | ((uint)'o' << 16) | ((uint)'s' << 8) | 't';
     public const uint Kern = ((uint)'k' << 24) | ((uint)'e' << 16) | ((uint)'r' << 8) | 'n';
+    public const uint Gdef = ((uint)'G' << 24) | ((uint)'D' << 16) | ((uint)'E' << 8) | 'F';
+    public const uint Gsub = ((uint)'G' << 24) | ((uint)'S' << 16) | ((uint)'U' << 8) | 'B';
+    public const uint Gpos = ((uint)'G' << 24) | ((uint)'P' << 16) | ((uint)'O' << 8) | 'S';
     public const uint Cff = ((uint)'C' << 24) | ((uint)'F' << 16) | ((uint)'F' << 8) | ' ';
     public const uint Cff2 = ((uint)'C' << 24) | ((uint)'F' << 16) | ((uint)'F' << 8) | '2';
 

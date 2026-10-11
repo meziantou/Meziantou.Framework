@@ -16,7 +16,7 @@ namespace Meziantou.Framework.Imaging.TestHarness.Fixtures;
 public sealed class FixtureManifest
 {
     /// <summary>The schema version understood by this harness.</summary>
-    public const int CurrentSchemaVersion = 4;
+    public const int CurrentSchemaVersion = 5;
 
     /// <summary>Gets the optional reference to the JSON schema, for editors.</summary>
     [JsonPropertyName("$schema")]
@@ -52,4 +52,8 @@ public sealed class FixtureManifest
     /// <summary>Gets the font files of the text rendering tests, with the reference values recorded from independent font readers.</summary>
     [JsonPropertyName("fonts")]
     public IReadOnlyList<FontEntry>? Fonts { get; init; }
+
+    /// <summary>The third-party suites of test fonts, each a directory stored as published.</summary>
+    [JsonPropertyName("fontSuites")]
+    public IReadOnlyList<FontSuiteEntry>? FontSuites { get; init; }
 }

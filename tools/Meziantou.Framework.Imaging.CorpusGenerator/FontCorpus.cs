@@ -1,6 +1,7 @@
 using System.Buffers.Binary;
 using System.Globalization;
 using System.Text;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using Meziantou.Framework.Imaging.CorpusGenerator.Common;
 using Meziantou.Framework.Imaging.CorpusGenerator.Infrastructure;
@@ -101,6 +102,69 @@ internal static partial class FontCorpus
     ];
 
     // The fonts that are also stored in the other containers.
+    // The Annotated OpenType Specification tests of Adobe, as the HarfBuzz project distributes them: small fonts and, for
+    // each one, texts with the glyphs and the positions the specification gives. The directory 'aots' of the fonts
+    // directory is test/shape/data/aots of a checkout of HarfBuzz at this commit; only the fonts, the tests and the
+    // license are stored.
+    private const string AotsCommit = "c7a7457b7385f33178e8cf87615ca077a810bbe7";
+    private const string AotsSha256 = "934e916b1b32a88c673b0307865aff1ad22052f6d74619c5e2ca14ea545e92c3";
+
+    // The texts shaped with each font by the reference shaper, as (text, features). The texts are chosen for what
+    // shaping does to them: kerning, ligatures, marks that compose or are attached, characters without visible form,
+    // spaces and hyphens the font does not have, fractions, features turned on and off.
+    private static readonly (string Text, string? Features)[] LatinShapingCases =
+    [
+        ("Hello, World!", null),
+        ("AVATAR To Ty. V, W; LT Yo r, f.", null),
+        ("AVATAR To Ty. V, W; LT Yo r, f.", "-kern"),
+        ("office fi fl ffi \uFB01 \uFB02", null),
+        ("office fi fl ffi", "-liga"),
+        ("e\u0301 a\u0308\u0304 o\u0327\u0301 A\u030A \u00E9 \u00C5", null),
+        ("x\u0301\u0327 q\u0308 q\u0327\u0308 i\u0301 j\u0302", null),
+        ("e\u0301\u0302\u0303 e\u0303\u0302\u0301", null),
+        ("\u0301abc \u0308", null),
+        ("a\u200Db a\u200Cb f\u200Ci f\u200Di f\u200Bi a\u00ADb \uFEFFa", null),
+        ("1\u20442 12\u204434 a\u2044b 3\u2044", null),
+        ("1\u20442 12\u204434", "-frac"),
+        ("a\u00A0b\u2002c\u2003d\u2009e\u202Ff\u2007g\u2008h\u200Ai\u205Fj\u3000k", null),
+        ("non\u2011breaking \u2010 - \u2013 \u2014", null),
+        ("A\uFE00B\uFE0F \u2122\uFE0E", null),
+        ("\u4E00x\u4E01 \uFFFD \U0001F600z", null),
+        ("\u00C0 \u00C9 \u00D1 \u00FC \u0160 \u017E \u0152 \u0131 \u20AC", null),
+        ("The quick brown fox jumps over the lazy dog. 0123456789", null),
+        ("T\u0308o V\u0301A A\u0327V", null),
+        ("ffi", "liga=0,kern=0"),
+        ("H\u2060e\u034Fl\u061Clo", null),
+    ];
+
+    private static readonly (string Text, string? Features)[] CjkShapingCases =
+    [
+        ("\u65E5\u672C\u8A9E\u306E\u30C6\u30AD\u30B9\u30C8\u3002", null),
+        ("\u304B\u3099\u304D\u309A \u30AB\u3099\u30CF\u309A \u304C\u3071", null),
+        ("ABC abc 123 To AV", null),
+        ("\u300C\u65E5\u672C\u300D\u3001\u6771\u4EAC\u3002\uFF21\uFF22\uFF11", null),
+        ("\u4E00\uFE00\u4E01\U000E0100", null),
+        ("ABC abc 123 To AV", "-kern,palt"),
+    ];
+
+    private static readonly (string Text, string? Features)[] BoxesShapingCases =
+    [
+        ("ABA BA AAB", null),
+        ("ABA BA AAB", "-kern"),
+        ("A\u200BB A\u00ADB", null),
+        ("A\u00A0B\u2003C\u2009D", null),
+        ("\u00C1 H-\u2010\u2011", null),
+        ("AZB", null),
+    ];
+
+    private static readonly Dictionary<string, (string Text, string? Features)[]> ShapingCases = new(StringComparer.Ordinal)
+    {
+        ["fonts/noto-sans-regular"] = LatinShapingCases,
+        ["fonts/noto-sans-regular-cff"] = LatinShapingCases,
+        ["fonts/noto-sans-cjk-jp-regular"] = CjkShapingCases,
+        ["fonts/synthetic-boxes"] = BoxesShapingCases,
+    };
+
     // The WOFF2 files are written by the reference encoder, except the variants: it does not transform the horizontal
     // metrics of these fonts, and it chooses how each point is encoded.
     private static readonly Container[] Containers =
@@ -255,6 +319,7 @@ internal static partial class FontCorpus
             if (duplicate is not null)
                 throw new FatalException($"Two fonts of the corpus are written to {duplicate.Key}.");
 
+            manifest[CorpusDriver.FontSuitesKey] = new List<object?> { CopyAots(outDir, fontsDirectory / "aots") };
             manifest["schemaVersion"] = CorpusDriver.SchemaVersion;
             manifest[CorpusDriver.FontsKey] = entries.OrderBy(entry => (string)entry["id"]!, StringComparer.Ordinal).Cast<object?>().ToList();
             CorpusDriver.WriteManifest(outDir, manifest);
@@ -264,6 +329,62 @@ internal static partial class FontCorpus
         {
             Directory.Delete(work, recursive: true);
         }
+    }
+
+    /// <summary>Copies the fonts, the tests and the license of the AOTS suite, and describes them.</summary>
+    private static Obj CopyAots(FullPath outDir, FullPath source)
+    {
+        const string Directory = "font-suites/aots";
+        if (!System.IO.Directory.Exists(source / "fonts") || !System.IO.Directory.Exists(source / "tests"))
+            throw new FatalException($"The directory {source} is not test/shape/data/aots of a checkout of HarfBuzz at the commit {AotsCommit}.");
+
+        var target = outDir / Directory;
+        foreach (var file in System.IO.Directory.EnumerateFiles(source / "fonts", "*.otf").Concat(System.IO.Directory.EnumerateFiles(source / "tests", "*.tests")).Append(source / "COPYING"))
+        {
+            var destination = target / FullPath.FromPath(file).MakePathRelativeTo(source);
+            destination.CreateParentDirectory();
+            File.Copy(file, destination);
+        }
+
+        var hash = ComputeDirectoryHash(target, out var fileCount);
+        if (hash != AotsSha256)
+            throw new FatalException($"The AOTS suite has the hash {hash} ({fileCount} files) but {AotsSha256} is pinned for the commit {AotsCommit}.");
+
+        return new Obj
+        {
+            ["id"] = Directory,
+            ["directory"] = Directory,
+            ["provenance"] = new Obj
+            {
+                ["origin"] = "external",
+                ["license"] = "Apache-2.0",
+                ["author"] = "Adobe Systems Incorporated (Annotated OpenType Specification), as distributed by the HarfBuzz project",
+                ["source"] = $"https://github.com/harfbuzz/harfbuzz/tree/{AotsCommit}/test/shape/data/aots",
+            },
+            ["fileCount"] = fileCount,
+            ["sha256"] = hash,
+            ["description"] = "Fonts that each exercise one format of the cmap, class definition, coverage, GSUB or GPOS tables, and tests: a font, the options of hb-shape, characters, and the expected glyphs and positions.",
+        };
+    }
+
+    /// <summary>
+    /// Computes the hash that identifies the files of a suite: the SHA-256 of, for each file by ordinal order of its
+    /// relative path, the path, a line feed, the hexadecimal SHA-256 of its content, a line feed.
+    /// </summary>
+    private static string ComputeDirectoryHash(FullPath directory, out int fileCount)
+    {
+        var files = Directory.EnumerateFiles(directory, "*", SearchOption.AllDirectories)
+            .Select(file => FullPath.FromPath(file).MakePathRelativeTo(directory).Replace('\\', '/'))
+            .Order(StringComparer.Ordinal)
+            .ToList();
+        fileCount = files.Count;
+        var listing = new StringBuilder();
+        foreach (var file in files)
+        {
+            listing.Append(file).Append('\n').Append(Bytes.Sha256Hex(File.ReadAllBytes(directory / file))).Append('\n');
+        }
+
+        return Bytes.Sha256Hex(Encoding.UTF8.GetBytes(listing.ToString()));
     }
 
     private static Obj CreateEntry(FullPath outDir, FullPath work, Tools tools, string id, string path, byte[] data, Obj provenance, string flavor, int faceCount, string modification, string? reservedFontName, string? original, bool withVectors)
@@ -311,6 +432,16 @@ internal static partial class FontCorpus
             vectorsTarget.CreateParentDirectory();
             File.WriteAllBytes(vectorsTarget, vectorsData);
             entry["vectors"] = new Obj { ["path"] = vectorsPath, ["sha256"] = Bytes.Sha256Hex(vectorsData), ["role"] = "font-vectors" };
+        }
+
+        if (ShapingCases.TryGetValue(id, out var shapingCases))
+        {
+            var shapingPath = "fonts/shaping/" + id["fonts/".Length..] + ".json";
+            var shapingData = Encoding.UTF8.GetBytes(PyJson.Dumps(RecordShaping(work, tools, data, shapingCases)) + "\n");
+            var shapingTarget = outDir / shapingPath;
+            shapingTarget.CreateParentDirectory();
+            File.WriteAllBytes(shapingTarget, shapingData);
+            entry["shaping"] = new Obj { ["path"] = shapingPath, ["sha256"] = Bytes.Sha256Hex(shapingData), ["role"] = "shaping-vectors" };
         }
 
         return entry;
@@ -413,6 +544,49 @@ internal static partial class FontCorpus
         result["advances"] = advances.Cast<object?>().ToList();
         result["outlines"] = outlines.Cast<object?>().ToList();
         return result;
+    }
+
+    /// <summary>Shapes texts with the OpenType shaper of HarfBuzz and its own font functions, and records the glyphs.</summary>
+    private static Obj RecordShaping(FullPath work, Tools tools, byte[] font, (string Text, string? Features)[] cases)
+    {
+        var fontFile = work / "shaping.font";
+        File.WriteAllBytes(fontFile, font);
+        var results = new List<object?>();
+        foreach (var (text, features) in cases)
+        {
+            var codePoints = text.EnumerateRunes().Select(rune => rune.Value.ToString("X4", CultureInfo.InvariantCulture)).ToList();
+            List<string> arguments = ["--shapers=ot", "--font-funcs=ot", "--output-format=json", "--no-glyph-names"];
+            if (features is not null)
+            {
+                arguments.Add("--features=" + features);
+            }
+
+            arguments.Add("--unicodes=" + string.Join(',', codePoints.Select(codePoint => "U+" + codePoint)));
+            var output = Proc.RunText([tools.HbShape, .. arguments, fontFile]);
+            var glyphs = new List<object?>();
+            using (var document = JsonDocument.Parse(output))
+            {
+                foreach (var glyph in document.RootElement.EnumerateArray())
+                {
+                    glyphs.Add(new List<object?> { glyph.GetProperty("g").GetInt32(), glyph.GetProperty("cl").GetInt32(), glyph.GetProperty("dx").GetInt32(), glyph.GetProperty("dy").GetInt32(), glyph.GetProperty("ax").GetInt32(), glyph.GetProperty("ay").GetInt32() });
+                }
+            }
+
+            var result = new Obj { ["text"] = string.Join(' ', codePoints) };
+            if (features is not null)
+            {
+                result["features"] = features;
+            }
+
+            result["glyphs"] = glyphs;
+            results.Add(result);
+        }
+
+        return new Obj
+        {
+            ["tool"] = tools.HarfBuzzLabel("hb-shape") + " --shapers=ot --font-funcs=ot",
+            ["cases"] = results,
+        };
     }
 
     /// <summary>Checks that a container gives, through FreeType, the advances and the outlines of the font it wraps.</summary>

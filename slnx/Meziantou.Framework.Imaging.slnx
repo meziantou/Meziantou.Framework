@@ -7,6 +7,7 @@
     <Project Path="../src/Meziantou.Framework.FullPath.CodeFix/Meziantou.Framework.FullPath.CodeFix.csproj" />
     <Project Path="../src/Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj" />
     <Project Path="../src/Meziantou.Framework.Imaging/Meziantou.Framework.Imaging.csproj" />
+    <Project Path="../src/Meziantou.Framework.Unicode/Meziantou.Framework.Unicode.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="../tests/Meziantou.Framework.Imaging.AotSmoke/Meziantou.Framework.Imaging.AotSmoke.csproj" />

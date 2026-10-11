@@ -2,7 +2,7 @@
 
 Independent reference data for the conformance and interop tests, extended with each codec.
 
-- `manifest.json` — the versioned manifest (schema version 3: `manifest.schema.json`), **written by the reviewed generator**
+- `manifest.json` — the versioned manifest (schema version 5: `manifest.schema.json`), **written by the reviewed generator**
   `tools/Meziantou.Framework.Imaging.CorpusGenerator` (a .NET console app: the `golden` generator, `GoldenCorpus.cs`, writes
   the PNG, APNG, GIF and JPEG entries; WebP entries: `webp`, `WebPCorpus.cs`; QOI entries: `qoi`, `QoiCorpus.cs`; BMP entries:
   `bmp`, `BmpCorpus.cs`; TGA entries: `tga`, `TgaCorpus.cs`; Netpbm entries: `pnm`, `PnmCorpus.cs`; ICC profiles and
@@ -27,6 +27,8 @@ tests/Meziantou.Framework.Imaging.Fixtures/
   av1/                                raw AV1 OBU streams (*.obu): conformance vectors with plane digests, no raw references
   icc/profiles/   icc/vectors/        ICC profiles and colors converted between them (see Color management)
   fonts/<family>/   fonts/vectors/    font files and the values independent font readers give for them (see Fonts)
+  fonts/shaping/                      glyphs and positions the reference shaper gives for texts set in the fonts
+  font-suites/<suite>/                third-party suites of test fonts and expectations, stored as published
   LICENSES/                           full texts of the licenses of third-party files (OFL-1.1, Apache-2.0, Unicode-3.0)
 ```
 
@@ -136,6 +138,7 @@ written by the `fonts` generator (`FontCorpus.cs`).
 | `original` | For a `container`: the id of the font it wraps |
 | `features` | Tags read from the file by the generator: `font.table=<tag>` for the tables that matter to a feature, `font.cmap=<format>`, `font.loca=short|long`, `font.container=ttc` |
 | `vectors` | The reference values of the font, a JSON file of `fonts/vectors/` |
+| `shaping` | The glyphs and positions the reference shaper gives for texts set in the font, a JSON file of `fonts/shaping/` |
 
 Three kinds of fonts are stored:
 
@@ -184,6 +187,33 @@ its first point, even a line without length: the library does the same, so that 
 | `fonts/noto-sans-cjk-jp-regular` | otf | 1 | OFL-1.1 | Noto Sans CJK JP Regular 2.004, subset to 408 characters (Basic Latin, kana, a few ideographs, fullwidth forms): 1,099 glyphs, a CID-keyed CFF table with several font DICTs, hints kept |
 | `fonts/*-woff`, `fonts/*-woff2` | woff, woff2 | as the original | as the original | WOFF of the boxes, deltas, charstrings, Noto Sans and Noto Sans CJK fonts; WOFF2 of the boxes, curves, deltas, charstrings, collection and both Noto Sans fonts |
 | `fonts/synthetic-boxes-woff2-metrics`, `fonts/synthetic-deltas-woff2-boxes` | woff2 | 1 | CC0-1.0 | Written by `FontWoff2Writer`: transformed horizontal metrics (both flags, then one), every bounding box stored |
+
+### Shaping vectors
+
+The `shaping` file of a font (`ShapingVectors` in the test harness) holds texts and what the OpenType shaper of
+HarfBuzz gives for them: `hb-shape --shapers=ot --font-funcs=ot --no-glyph-names`, with the features of the case. A text
+is stored as the hexadecimal code points of its characters, so that no invisible character is lost in an editor; a
+glyph is six numbers: the glyph identifier, the cluster (an index of character), the two offsets and the two advances,
+in font units. The texts are listed in `FontCorpus.cs`, chosen for what shaping does to them: kerning, ligatures, marks
+that compose or are attached, invisible characters, spaces and hyphens a font lacks, fractions, features turned on
+and off. `ShapingConformanceTests` compares the glyphs, the clusters, the place each glyph is drawn at and the
+advance of the text; how an adjustment is split between an advance and an offset is not compared.
+
+There is one reference shaper: the pinned tools have no other one. A difference with it is settled by the
+specifications, and a deliberate one is listed in the test with its reason.
+
+### Font suites
+
+The `fontSuites` section lists third-party suites of test fonts, each a directory stored as published and identified
+as a whole: the number of its files and the SHA-256 of their list (for each file, by ordinal order of its path, the
+path, a line feed, the SHA-256 of its content, a line feed).
+
+| Suite | License | Content |
+| --- | --- | --- |
+| `font-suites/aots` | Apache-2.0 | The Annotated OpenType Specification tests of Adobe, as the HarfBuzz project distributes them (`test/shape/data/aots` at the commit the manifest records): 205 fonts that each exercise one format of the `cmap`, class definition, coverage, `GSUB` or `GPOS` tables, and 128 files of tests (a font, the options of `hb-shape`, characters, the expected glyphs and positions). `ShapingSuiteTests` runs every test that is not commented out; the commented ones are the cases HarfBuzz itself does not pass |
+
+The generator copies a suite from a directory of the fonts directory (`aots`) and refuses a content whose hash is not
+the pinned one. The tools HarfBuzz keeps next to the suite (its test driver and build files) are not copied.
 
 ## Color management
 
@@ -1504,7 +1534,8 @@ tool version to see what changes; the interop CI job runs it on every build to d
   woff2 tools of the pinned meziantou/prebuilt release) writes the `fonts` section and the `fonts/` directory, and
   keeps the rest of the corpus unchanged. It needs the third-party font files listed in `FontCorpus.cs`, downloaded
   from their pinned sources into one directory given by `--fonts <directory>`; each file is checked against its pinned
-  SHA-256 before it is used. The WOFF files are compressed by the zlib of the runtime that runs the generator, which
+  SHA-256 before it is used. The same directory holds the font suites: `aots` is `test/shape/data/aots` of a checkout of
+  HarfBuzz at the commit pinned in the generator. The generator also records the shaping vectors. The WOFF files are compressed by the zlib of the runtime that runs the generator, which
   the manifest records: they are reproducible with that runtime.
 
   ```shell

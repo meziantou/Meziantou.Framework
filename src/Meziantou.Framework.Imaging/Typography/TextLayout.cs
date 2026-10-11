@@ -24,10 +24,16 @@ namespace Meziantou.Framework.Imaging.Typography;
 /// a pixel: nothing is rounded to the pixel grid and there is no hinting.
 /// </para>
 /// <para>
-/// <b>Glyphs.</b> Each character has the glyph the character map of the font gives it, with the glyph of a variation
-/// sequence when the font has one, and pairs of glyphs are moved by the kerning table of the font. A character the
-/// font has no glyph for is drawn with the missing glyph of the font and reported by <see cref="HasMissingGlyphs"/>.
-/// Control and format characters are not drawn; a tabulation moves to the next multiple of eight spaces.
+/// <b>Shaping.</b> The text is shaped with the OpenType Layout tables of the font, one run per script: characters are
+/// put in the form the font has glyphs for (composed or decomposed), the <c>GSUB</c> table substitutes glyphs
+/// (ligatures, contextual forms) and the <c>GPOS</c> table positions them (kerning, marks), with the features a client
+/// applies by default to horizontal text; a font without <c>GPOS</c> kerning is kerned by its <c>kern</c> table. Text
+/// is laid out from left to right.
+/// </para>
+/// <para>
+/// A character the font has no glyph for is drawn with the missing glyph of the font and reported by
+/// <see cref="HasMissingGlyphs"/>. Control characters are not drawn, format characters are invisible, and a tabulation
+/// moves to the next multiple of eight spaces.
 /// </para>
 /// <para>
 /// A layout is validated when it is created: the outline of every glyph is decoded once, so drawing a layout only fails
@@ -93,7 +99,7 @@ public sealed class TextLayout
     /// <returns>The layout.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="text"/> or <paramref name="font"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="size"/> is not a positive number up to 65536.</exception>
-    /// <exception cref="InvalidImageContentException">The data of a glyph of the text is malformed.</exception>
+    /// <exception cref="InvalidImageContentException">The data of a glyph of the text, or a layout table of the font, is malformed.</exception>
     /// <exception cref="UnsupportedImageFeatureException">The outlines of the font use a feature that is not supported.</exception>
     /// <exception cref="ImageResourceLimitException">
     /// The text, its glyphs or one of its glyphs exceed <see cref="ImageResourceLimits.MaxTextLength"/>,
@@ -111,23 +117,26 @@ public sealed class TextLayout
         if (text.Length > limits.MaxTextLength)
             throw new ImageResourceLimitException(ImageResourceLimitKind.TextLength, limits.MaxTextLength, text.Length);
 
-        // The glyphs and their horizontal positions, in font units: whole numbers, which add up without error.
-        var glyphs = new List<int>(text.Length);
-        var units = new List<long>(text.Length);
-        var lines = new List<int>(text.Length);
-        var spaceAdvance = GetSpaceAdvance(face);
-        long pen = 0;
-        long widest = 0;
-        var line = 0;
-        var previous = -1;
-        var hasMissingGlyphs = false;
+        // The glyphs and their positions, in font units: whole numbers, which add up without error. The text is cut
+        // into lines at its line breaks, and each line at its tabulations; what is between is shaped, one run per script.
+        var layout = new Builder(face, limits);
+        var segmentStart = 0;
         var index = 0;
         while (index < text.Length)
         {
+            var start = index;
             Rune.DecodeFromUtf16(text.AsSpan(index), out var rune, out var consumed);
             index += consumed;
             var codePoint = rune.Value;
-            if (IsLineBreak(codePoint))
+            if (codePoint != '\t' && !IsLineBreak(codePoint))
+                continue;
+
+            layout.AddSegment(text.AsSpan(segmentStart, start - segmentStart));
+            if (codePoint == '\t')
+            {
+                layout.AddTabulation();
+            }
+            else
             {
                 // A carriage return and the line feed that follows it are one line break.
                 if (codePoint == '\r' && index < text.Length && text[index] == '\n')
@@ -135,70 +144,30 @@ public sealed class TextLayout
                     index++;
                 }
 
-                widest = Math.Max(widest, pen);
-                pen = 0;
-                line++;
-                previous = -1;
-                continue;
+                layout.AddLineBreak();
             }
 
-            if (codePoint == '\t')
-            {
-                var tab = (long)TabSize * spaceAdvance;
-                if (tab > 0)
-                {
-                    pen = ((pen / tab) + 1) * tab;
-                }
-
-                previous = -1;
-                continue;
-            }
-
-            if (IsNotDrawn(codePoint))
-                continue;
-
-            // The glyph of the character, or the one of the variation sequence it starts when the font has it.
-            var glyph = face.MapCodePoint(codePoint);
-            if (index < text.Length && Rune.DecodeFromUtf16(text.AsSpan(index), out var next, out var nextConsumed) == System.Buffers.OperationStatus.Done && IsVariationSelector(next.Value))
-            {
-                index += nextConsumed;
-                if (face.MapVariation(codePoint, next.Value, out var variation) == CmapVariation.Glyph)
-                {
-                    glyph = variation;
-                }
-            }
-
-            hasMissingGlyphs |= glyph == 0;
-            if (glyphs.Count >= limits.MaxTextGlyphs)
-                throw new ImageResourceLimitException(ImageResourceLimitKind.TextGlyphs, limits.MaxTextGlyphs, (long)glyphs.Count + 1);
-
-            if (previous >= 0)
-            {
-                pen += face.GetLegacyKerning(previous, glyph);
-            }
-
-            glyphs.Add(glyph);
-            units.Add(pen);
-            lines.Add(line);
-            pen += face.GetAdvanceWidth(glyph);
-            previous = glyph;
+            segmentStart = index;
         }
 
-        widest = Math.Max(widest, pen);
+        layout.AddSegment(text.AsSpan(segmentStart));
+        layout.AddLineBreak();
 
         var metrics = font.GetMetrics(size);
         var scale = size / face.UnitsPerEm;
         var baseline = (metrics.LineGap / 2) + metrics.Ascent;
-        var positions = new double[glyphs.Count * 2];
-        for (var i = 0; i < glyphs.Count; i++)
+        var count = layout.Glyphs.Count;
+        var positions = new double[count * 2];
+        for (var i = 0; i < count; i++)
         {
-            positions[i * 2] = units[i] * scale;
-            positions[(i * 2) + 1] = baseline + (lines[i] * metrics.LineHeight);
+            // The y axis of a font goes up, the one of the layout goes down.
+            positions[i * 2] = layout.X[i] * scale;
+            positions[(i * 2) + 1] = (baseline + (layout.Lines[i] * metrics.LineHeight)) - (layout.Y[i] * scale);
         }
 
-        var glyphArray = glyphs.ToArray();
+        var glyphArray = layout.Glyphs.ToArray();
         var inkBounds = Measure(face, scale, glyphArray, positions);
-        return new TextLayout(font, size, glyphArray, positions, widest * scale, line + 1, inkBounds, hasMissingGlyphs);
+        return new TextLayout(font, size, glyphArray, positions, layout.Widest * scale, layout.Line, inkBounds, layout.HasMissingGlyphs);
     }
 
     /// <summary>Creates a path with the outlines of the glyphs: what filling the layout at a point draws.</summary>
@@ -308,25 +277,103 @@ public sealed class TextLayout
 
     private static bool IsLineBreak(int codePoint) => codePoint is '\n' or '\r' or 0x0B or 0x0C or 0x85 or 0x2028 or 0x2029;
 
-    private static bool IsVariationSelector(int codePoint) => codePoint is (>= 0xFE00 and <= 0xFE0F) or (>= 0xE0100 and <= 0xE01EF);
+    /// <summary>Determines whether a character is a control character, which has no glyph and takes no space.</summary>
+    private static bool IsControl(int codePoint) => codePoint is < 0x20 or (>= 0x7F and <= 0x9F);
 
-    /// <summary>
-    /// Determines whether a character has no visible form: the control characters, and the format characters that only
-    /// change how the characters around them behave.
-    /// </summary>
-    private static bool IsNotDrawn(int codePoint)
+    /// <summary>The glyphs of a layout while it is created.</summary>
+    private sealed class Builder
     {
-        return codePoint is < 0x20
-            or (>= 0x7F and <= 0x9F)
-            or 0xAD
-            or 0x034F
-            or 0x061C
-            or (>= 0x180B and <= 0x180F)
-            or (>= 0x200B and <= 0x200F)
-            or (>= 0x202A and <= 0x202E)
-            or (>= 0x2060 and <= 0x206F)
-            or (>= 0xFE00 and <= 0xFE0F)
-            or 0xFEFF
-            or (>= 0xE0000 and <= 0xE0FFF);
+        private readonly FontFace _face;
+        private readonly ImageResourceLimits _limits;
+        private readonly GlyphBuffer _buffer;
+        private readonly int _tabulation;
+        private long _pen;
+
+        public Builder(FontFace face, ImageResourceLimits limits)
+        {
+            _face = face;
+            _limits = limits;
+            _buffer = new GlyphBuffer(limits);
+            _tabulation = TabSize * GetSpaceAdvance(face);
+        }
+
+        public List<int> Glyphs { get; } = [];
+
+        /// <summary>Gets the horizontal position of each glyph from the start of its line, in font units.</summary>
+        public List<long> X { get; } = [];
+
+        /// <summary>Gets the vertical position of each glyph above its baseline, in font units.</summary>
+        public List<long> Y { get; } = [];
+
+        /// <summary>Gets the line of each glyph.</summary>
+        public List<int> Lines { get; } = [];
+
+        /// <summary>Gets the number of lines that are complete.</summary>
+        public int Line { get; private set; }
+
+        /// <summary>Gets the advance of the widest line, in font units.</summary>
+        public long Widest { get; private set; }
+
+        public bool HasMissingGlyphs { get; private set; }
+
+        public void AddLineBreak()
+        {
+            Widest = Math.Max(Widest, _pen);
+            _pen = 0;
+            Line++;
+        }
+
+        public void AddTabulation()
+        {
+            if (_tabulation > 0)
+            {
+                _pen = ((_pen / _tabulation) + 1) * _tabulation;
+            }
+        }
+
+        /// <summary>Shapes a part of a line that has no line break and no tabulation, and adds its glyphs at the pen.</summary>
+        public void AddSegment(ReadOnlySpan<char> text)
+        {
+            foreach (var run in Unicode.EnumerateScriptRuns(text))
+            {
+                _buffer.Clear();
+                var characters = text.Slice(run.Index, run.Length);
+                var index = 0;
+                while (index < characters.Length)
+                {
+                    Rune.DecodeFromUtf16(characters[index..], out var rune, out var consumed);
+                    if (!IsControl(rune.Value))
+                    {
+                        _buffer.Add(rune.Value, run.Index + index);
+                    }
+
+                    index += consumed;
+                }
+
+                if (_buffer.Length == 0)
+                    continue;
+
+                TextShaper.Shape(_buffer, _face, run.Script, language: 0, isRightToLeft: false, features: default);
+                var info = _buffer.Info;
+                var positions = _buffer.Positions;
+                for (var i = 0; i < info.Length; i++)
+                {
+                    // The glyph of a character without visible form draws nothing and moves nothing.
+                    if (!info[i].IsIgnorable)
+                    {
+                        if (Glyphs.Count >= _limits.MaxTextGlyphs)
+                            throw new ImageResourceLimitException(ImageResourceLimitKind.TextGlyphs, _limits.MaxTextGlyphs, (long)Glyphs.Count + 1);
+
+                        HasMissingGlyphs |= info[i].Glyph == 0;
+                        Glyphs.Add(info[i].Glyph);
+                        X.Add(_pen + positions[i].XOffset);
+                        Y.Add(positions[i].YOffset);
+                        Lines.Add(Line);
+                    }
+
+                    _pen += positions[i].XAdvance;
+                }
+            }
+        }
     }
 }

@@ -56,6 +56,10 @@ public sealed class FontEntry
     public FixtureFile? Vectors { get; init; }
 
     /// <summary>Gets free-form notes.</summary>
+    /// <summary>The glyphs and positions a reference shaper gives for texts set in the font (JSON, <see cref="ShapingVectors"/>).</summary>
+    [JsonPropertyName("shaping")]
+    public FixtureFile? Shaping { get; init; }
+
     [JsonPropertyName("notes")]
     public string? Notes { get; init; }
 }

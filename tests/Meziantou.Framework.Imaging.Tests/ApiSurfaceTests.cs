@@ -233,10 +233,11 @@ public sealed class ApiSurfaceTests
     [Fact]
     public void LibraryOnlyReferencesFrameworkAssemblies()
     {
-        // The package is fully managed: no native or third-party runtime dependency.
+        // The package is fully managed: no native or third-party runtime dependency. Its one dependency is the Unicode
+        // package of this repository, for the text algorithms of text layout.
         // 'netstandard' is a framework facade that code-coverage instrumentation (CI) may add to the instrumented assembly.
         Assert.All(LibraryAssembly.GetReferencedAssemblies(), name => Assert.True(
-            name.Name!.StartsWith("System", StringComparison.Ordinal) || name.Name.StartsWith("Microsoft.", StringComparison.Ordinal) || name.Name == "netstandard",
+            name.Name!.StartsWith("System", StringComparison.Ordinal) || name.Name.StartsWith("Microsoft.", StringComparison.Ordinal) || name.Name is "netstandard" or "Meziantou.Framework.Unicode",
             $"Unexpected dependency: {name}"));
     }
 

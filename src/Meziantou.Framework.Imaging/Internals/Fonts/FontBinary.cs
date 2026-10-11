@@ -62,6 +62,16 @@ internal static class FontBinary
         return (int)value;
     }
 
+    /// <summary>Adds a 32-bit offset to a position of a table: a sum that is not a position of any table is an error of the font.</summary>
+    public static int AddOffset(int position, int offset)
+    {
+        var sum = (long)position + offset;
+        if (sum > int.MaxValue)
+            throw FontErrors.Truncated();
+
+        return (int)sum;
+    }
+
     /// <summary>Gets a part of a table, checked with 64-bit arithmetic.</summary>
     public static ReadOnlySpan<byte> Slice(ReadOnlySpan<byte> data, long offset, long length)
     {

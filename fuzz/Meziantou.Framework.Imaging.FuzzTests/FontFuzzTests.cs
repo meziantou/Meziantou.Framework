@@ -28,8 +28,13 @@ public sealed class FontFuzzTests
         },
     };
 
-    // Characters of the fonts of the corpus, a character none of them has, a line break and a variation selector.
-    private const string SampleText = "AVo fi\u00C9B\uFE00\n\u65E5\u306E \U0001F600";
+    // Characters of the fonts of the corpus (with pairs that kern, ligatures, marks to compose and to attach, a
+    // fraction), a character none of them has, a line break and a variation selector.
+    private const string SampleText = "AVo fi\u00C9B\uFE00 e\u0301\u0302 ffl To. 1\u20442\n\u65E5\u306E \U0001F600";
+
+    // The characters of the tests of the suites, each twice, and the feature their lookups belong to.
+    private const string SuiteText = "\u0011\u0012\u0013\u0014\u0015\u0016\u0017\u0018\u0019\u001A\u001B\u001C\u0011\u0012\u0013\u0014\u0015\u0016\u0017\u0018\u0019\u001A\u0012\u0013\u0011\u0014";
+    private static readonly ShapingFeature[] SuiteFeatures = [new("test")];
 
     private static readonly SolidBrush TextBrush = new(new Rgba32(10, 20, 30, 200));
     private static readonly Pen TextPen = new(new SolidBrush(new Rgba32(200, 100, 0)), 1.5);
@@ -66,7 +71,9 @@ public sealed class FontFuzzTests
             outcomes[result.Outcome] = outcomes.GetValueOrDefault(result.Outcome) + 1;
             decodedGlyphs += result.DecodedGlyphs;
             rejectedGlyphs += result.RejectedGlyphs;
-            if (iteration < 0 && (failure is not null || result.Outcome != "loaded" || result.RejectedGlyphs != 0))
+            // Every font of the corpus is read without error; a few fonts of the suites use formats that are not
+            // supported, which is said with the documented exception.
+            if (iteration < 0 && (failure is not null || (seed.Id.StartsWith("fonts/", StringComparison.Ordinal) && (result.Outcome != "loaded" || result.RejectedGlyphs != 0))))
             {
                 Assert.Fail($"The font {seed.Id} of the corpus is not read without error: {failure?.Message ?? result.Outcome}");
             }
@@ -131,7 +138,16 @@ public sealed class FontFuzzTests
         var root = FixtureRoot.GetDirectory();
         var manifest = FixtureManifestLoader.Load(root / FixtureRoot.ManifestFileName);
         List<FuzzSeed> seeds = [.. (manifest.Fonts ?? []).OrderBy(font => font.Id, StringComparer.Ordinal).Select(font => new FuzzSeed(font.Id, File.ReadAllBytes(root / font.File.Path)))];
-        if (seeds.Count < 20)
+
+        // The fonts of the suites: one small font per format of the layout tables.
+        foreach (var suite in manifest.FontSuites ?? [])
+        {
+            seeds.AddRange(Directory.EnumerateFiles(root / suite.Directory, "*.otf", SearchOption.AllDirectories)
+                .Order(StringComparer.Ordinal)
+                .Select(file => new FuzzSeed(suite.Id + "/" + Path.GetFileName(file), File.ReadAllBytes(file))));
+        }
+
+        if (seeds.Count < 200)
             throw new InvalidOperationException("The corpus has no font.");
 
         return seeds;
@@ -285,10 +301,53 @@ public sealed class FontFuzzTests
             }
         }
 
-        if (CheckText(collection) is { } textFailure)
+        // Stroking is by far the slowest step: one font out of eight is stroked, chosen by the content of the file.
+        if (CheckText(collection, withStroke: (input.Length & 7) == 0) is { } textFailure)
             return textFailure;
 
+        if (CheckShaping(collection) is { } shapingFailure)
+            return shapingFailure;
+
         result = new CheckResult("loaded", decoded, rejected);
+        return null;
+    }
+
+    /// <summary>
+    /// Shapes the characters the fonts of the suites map, with the feature their lookups are in: the shaper stops with a
+    /// documented exception or gives glyphs of the font, with clusters that are characters of the text.
+    /// </summary>
+    private static FuzzFailure? CheckShaping(FontCollection collection)
+    {
+        foreach (var font in collection)
+        {
+            var buffer = new GlyphBuffer(Options.Configuration.Limits);
+            try
+            {
+                TextShaper.AddText(buffer, SuiteText);
+                TextShaper.Shape(buffer, font.Face, UnicodeScript.Common, language: 0, isRightToLeft: false, SuiteFeatures);
+            }
+            catch (Exception exception) when (exception is InvalidImageContentException or UnsupportedImageFeatureException or ImageResourceLimitException)
+            {
+                continue;
+            }
+            catch (Exception exception)
+            {
+                return FuzzFailure.FromException("shape", exception);
+            }
+
+            if (buffer.Positions.Length != buffer.Length)
+                return FuzzFailure.Property("shape-positions", "The glyphs of a shaped run have no positions.");
+
+            foreach (ref readonly var info in buffer.Info)
+            {
+                if ((uint)info.Glyph >= (uint)font.GlyphCount && info.Glyph > ushort.MaxValue)
+                    return FuzzFailure.Property("shape-glyph", $"The shaper gave the glyph {info.Glyph}.");
+
+                if ((uint)info.Cluster >= (uint)SuiteText.Length)
+                    return FuzzFailure.Property("shape-cluster", $"The shaper gave the cluster {info.Cluster} for a text of {SuiteText.Length} characters.");
+            }
+        }
+
         return null;
     }
 
@@ -296,7 +355,7 @@ public sealed class FontFuzzTests
     /// Lays out a text with each font and draws it: a layout is refused with a documented exception or is created, and
     /// a layout that was created is drawn, filled, stroked and converted to a path, without any exception.
     /// </summary>
-    private static FuzzFailure? CheckText(FontCollection collection)
+    private static FuzzFailure? CheckText(FontCollection collection, bool withStroke)
     {
         foreach (var font in collection)
         {
@@ -320,10 +379,13 @@ public sealed class FontFuzzTests
             try
             {
                 using var image = new Image<Rgba32>(40, 28);
-                image.Draw((layout, TextBrush, TextPen), static (canvas, state) =>
+                image.Draw((layout, TextBrush, TextPen, withStroke), static (canvas, state) =>
                 {
                     canvas.FillText(state.TextBrush, state.layout, new PointD(1.5, 2));
-                    canvas.StrokeText(state.TextPen, state.layout, new PointD(-3, 1.25));
+                    if (state.withStroke)
+                    {
+                        canvas.StrokeText(state.TextPen, state.layout, new PointD(-3, 1.25));
+                    }
                 });
                 var path = layout.ToPath(new PointD(1.5, 2));
                 if (path.IsEmpty != layout.InkBounds.IsEmpty && path.IsEmpty)

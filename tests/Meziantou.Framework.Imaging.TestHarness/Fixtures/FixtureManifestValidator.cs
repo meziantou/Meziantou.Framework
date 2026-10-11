@@ -1202,6 +1202,50 @@ public static partial class FixtureManifestValidator
             {
                 ValidateFile(name, vectors, root, referencedFiles, errors);
             }
+
+            if (font.Shaping is { } shaping)
+            {
+                ValidateFile(name, shaping, root, referencedFiles, errors);
+            }
+        }
+
+        // A suite is one entry for a whole directory: its files are identified together.
+        foreach (var suite in manifest.FontSuites ?? [])
+        {
+            var name = $"Font suite '{suite.Id}'";
+            if (!IdRegex().IsMatch(suite.Id) || !ids.Add(suite.Id))
+            {
+                errors.Add($"{name}: invalid or duplicate id.");
+            }
+
+            ValidateProvenance(name, suite.Provenance, errors, isFont: true);
+            if (suite.Provenance.Origin != "external")
+            {
+                errors.Add($"{name}: a font suite is a third-party directory ('origin' must be 'external').");
+            }
+
+            if (string.IsNullOrWhiteSpace(suite.Description))
+            {
+                errors.Add($"{name}: 'description' is required.");
+            }
+
+            var directory = root / suite.Directory;
+            if (suite.Directory.Contains("..", StringComparison.Ordinal) || Path.IsPathRooted(suite.Directory) || !Directory.Exists(directory))
+            {
+                errors.Add($"{name}: the directory '{suite.Directory}' does not exist in the corpus.");
+                continue;
+            }
+
+            var hash = FontSuiteEntry.ComputeHash(directory, out var fileCount);
+            if (fileCount != suite.FileCount || !string.Equals(hash, suite.Sha256, StringComparison.Ordinal))
+            {
+                errors.Add($"{name}: the directory has {fileCount} files with the hash {hash}; the manifest declares {suite.FileCount} files with the hash {suite.Sha256}.");
+            }
+
+            foreach (var file in Directory.EnumerateFiles(directory, "*", SearchOption.AllDirectories))
+            {
+                referencedFiles.Add(FullPath.FromPath(file).MakePathRelativeTo(root).Replace('\\', '/'));
+            }
         }
     }
 

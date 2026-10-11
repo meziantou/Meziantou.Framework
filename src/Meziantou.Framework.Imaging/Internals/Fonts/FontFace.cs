@@ -27,6 +27,12 @@ internal sealed class FontFace
     private readonly KernTable? _kern;
     private readonly int _kernOffset;
     private readonly int _kernLength;
+    private readonly int _gdefOffset;
+    private readonly int _gdefLength;
+    private readonly int _gsubOffset;
+    private readonly int _gsubLength;
+    private readonly int _gposOffset;
+    private readonly int _gposLength;
     private readonly CffTable? _cff;
     private readonly int _cffOffset;
     private readonly int _cffLength;
@@ -133,6 +139,22 @@ internal sealed class FontFace
             _kern = kern.IsEmpty ? null : kern;
         }
 
+        // The layout tables. A table whose header is not understood is left out: the font is used without it.
+        if (_directory.TryFind(FontTags.Gdef, out _gdefOffset, out _gdefLength))
+        {
+            Gdef = GdefTable.Read(file.Slice(_gdefOffset, _gdefLength));
+        }
+
+        if (_directory.TryFind(FontTags.Gsub, out _gsubOffset, out _gsubLength))
+        {
+            Gsub = LayoutTable.Read(file.Slice(_gsubOffset, _gsubLength));
+        }
+
+        if (_directory.TryFind(FontTags.Gpos, out _gposOffset, out _gposLength))
+        {
+            Gpos = LayoutTable.Read(file.Slice(_gposOffset, _gposLength));
+        }
+
         // The outlines: TrueType (glyf and loca), or CFF.
         if (_directory.TryFind(FontTags.Glyf, out _glyfOffset, out _glyfLength))
         {
@@ -210,6 +232,21 @@ internal sealed class FontFace
     public int UnderlinePosition { get; }
 
     public int UnderlineThickness { get; }
+
+    /// <summary>Gets the glyph definition table, or <see langword="null"/>.</summary>
+    public GdefTable? Gdef { get; }
+
+    public ReadOnlyMemory<byte> GdefData => Gdef is null ? default : Data.Bytes.AsMemory(_gdefOffset, _gdefLength);
+
+    /// <summary>Gets the glyph substitution table, or <see langword="null"/>.</summary>
+    public LayoutTable? Gsub { get; }
+
+    public ReadOnlyMemory<byte> GsubData => Gsub is null ? default : Data.Bytes.AsMemory(_gsubOffset, _gsubLength);
+
+    /// <summary>Gets the glyph positioning table, or <see langword="null"/>.</summary>
+    public LayoutTable? Gpos { get; }
+
+    public ReadOnlyMemory<byte> GposData => Gpos is null ? default : Data.Bytes.AsMemory(_gposOffset, _gposLength);
 
     /// <summary>Gets the tags of the tables of the face, in increasing order.</summary>
     public ReadOnlySpan<uint> TableTags => _directory.Tags;

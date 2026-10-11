@@ -8,7 +8,7 @@
   "required": ["schemaVersion", "fixtures"],
   "properties": {
     "$schema": { "type": "string" },
-    "schemaVersion": { "const": 4 },
+    "schemaVersion": { "const": 5 },
     "generator": {
       "type": "object",
       "additionalProperties": false,
@@ -59,9 +59,27 @@
       "type": "array",
       "description": "Font files of the text rendering tests. They are not image fixtures.",
       "items": { "$ref": "#/$defs/font" }
+    },
+    "fontSuites": {
+      "type": "array",
+      "description": "Third-party suites of test fonts and expectations, each a directory stored as published.",
+      "items": { "$ref": "#/$defs/fontSuite" }
     }
   },
   "$defs": {
+    "fontSuite": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "directory", "provenance", "fileCount", "sha256", "description"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._/-]*$" },
+        "directory": { "type": "string", "description": "The directory of the suite, relative to the corpus root." },
+        "provenance": { "$ref": "#/$defs/provenance" },
+        "fileCount": { "type": "integer", "minimum": 1 },
+        "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$", "description": "SHA-256 of the list of the files: for each file, by ordinal order of its path relative to the directory, the path, a line feed, the hexadecimal SHA-256 of its content, a line feed." },
+        "description": { "type": "string" }
+      }
+    },
     "font": {
       "type": "object",
       "additionalProperties": false,
@@ -77,6 +95,7 @@
         "original": { "type": "string", "description": "The id of the font this file is another container of." },
         "features": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
         "vectors": { "$ref": "#/$defs/file", "description": "Reference values recorded from independent font readers (JSON): names, metrics, character map, advances and outlines of each face." },
+        "shaping": { "$ref": "#/$defs/file", "description": "The glyphs and positions the reference shaper gives for texts set in the font (JSON)." },
         "notes": { "type": "string" }
       }
     },

@@ -71,6 +71,41 @@ internal static class SmokeTests
         Check(flattened.PixelFormat == PixelFormat.Rgb24, "JPEG default pixel format");
     }
 
+    // A 17x9 JPEG file with four components (CMYK inks, no Adobe APP14 segment, no profile, restart intervals): the
+    // fixture invalid/jpeg/cmyk-without-adobe-restart of the test corpus
+    // (tools/Meziantou.Framework.Imaging.CorpusGenerator, BuildInkJpeg). The library has no encoder for inks.
+    private const string CmykJpeg =
+        "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoHBwYIDAoMDAsKCwsNDhIQDQ4RDgsLEBYQERMUFRUVDA8XGBYUGBIUFRT/" +
+        "2wBDAQMEBAUEBQkFBQkUDQsNFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBT/wAAUCAAJABEEAREAAhEBAxEBBBEA" +
+        "/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2Jy" +
+        "ggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLD" +
+        "xMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3" +
+        "AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6" +
+        "goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/90ABAAB/9oADgQBAAIRAxEE" +
+        "AAA/APKvDfgTV/FvijT7jTTbxwjTRe3DysSiwvs2yGVcp1kIwCejgH5Hx93mXF+F8PMGs8xV6lbGzdqfNeWkb6a2UVKLt7rfLOOsrWP3Wfipl2Y14cQ4NP6l" +
+        "QdSlOMtK0pxajeNP4VFOcLOpOFRqcn7NR5ebyrwl+0N4j8S+I49PtrttP1m5j+1tLLK1zesSFO5psLsPnxuM5WQJPgvIAa//0PGPC/wi1LWfGvizTrW5jXW4" +
+        "ry2tbqC4HlhEnLeQ4OeVZXI527gqsAA2a/R58XYPDYT/AF2jO/s4884Rte2/Lf3tVHmi01D342lGElzH0+M8S8Nl8sTgsX77zdf7O6UruEXzfxpq8YyjGrGP" +
+        "7qNW0qc04v3JVOA8I/GLUr3xDeaVo98+nSaNdRreQ2NyHu5Ig5wBcbeN8MssZVVALRKZIlZiR//Rxf8Ahly5/wCgof8Awn9T/wDia9j/AImkwf8A0CS/8Dof" +
+        "/LD4H/V7in/n5hv/AAOl/wDKCT/hL/EP/PWb/vxJ/wDHK//S9F8Sf8lNsP8Adj/9J9Tr8p46/wB2wX/YLD/0/QPxjw6/5NtxP/jl/wCnsEfGfw8/5KHb/wDY" +
+        "NX+b1//T6X4ff8nS+N/+uOi/+k1vX5xT/wCTdZz6z/8AT2JP5nzP4uGv8UP/AEmmfMHwY/5Cfxd/6/LX/wBGXFf/1PtWv8zDxzyyv//Z";
+
+    public static void CmykJpegConversion()
+    {
+        var data = Convert.FromBase64String(CmykJpeg);
+        var info = Image.Identify(data);
+        Check(info.ColorModel == ImageColorModel.Cmyk && info.PixelFormat == PixelFormat.Rgb24 && info.Width == 17 && info.Height == 9, "CMYK JPEG identification");
+
+        // No pixel format holds inks: a load without color conversion is rejected
+        Expect<UnsupportedImageFeatureException>(() => Image.Load(data));
+
+        // The profile the library assumes for inks without profile, converted to sRGB (pixels of the same load on the
+        // just-in-time runtime: the corpus compares them with independent references)
+        using var image = Image.Load<Rgb24>(data, new ImageDecodeOptions { CmykConversion = new CmykConversionOptions() });
+        Check(image.Size == new Size(17, 9) && ReferenceEquals(image.Metadata.IccProfile, IccProfile.Srgb), "CMYK JPEG conversion label");
+        Check(image.Frames[0][0, 0] == new Rgb24(88, 160, 195) && image.Frames[0][8, 4] == new Rgb24(24, 24, 49) && image.Frames[0][16, 8] == new Rgb24(101, 2, 37), "CMYK JPEG converted pixels");
+        Check(IccProfile.Cgats001CompatibleCmyk is { ColorSpace: IccProfileColorSpace.Cmyk, ProfileClass: IccProfileClass.Input } && IccProfile.Cgats001CompatibleCmyk.Data.Length == 8464, "CMYK profile of the library");
+    }
+
     public static void WebP()
     {
         using var still = CreatePattern(seed: 7);

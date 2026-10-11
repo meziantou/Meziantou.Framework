@@ -25,6 +25,8 @@ const string Usage = """
                       malformed and over-limit files (libavif avifenc/avifdec and the ffmpeg of the pinned
                       meziantou/prebuilt release)
         icc           ICC profiles and color conversion vectors (transicc of LittleCMS; any OS)
+        icc-builtin   the source of the CMYK profile provided by the library, transcribed from the committed corpus
+                      (no tool; any OS)
 
     Verification (read-only, any tool versions):
         verify        re-decode the committed corpus with the ffmpeg, dwebp and anim_dump of the pinned meziantou/prebuilt release and
@@ -114,6 +116,8 @@ try
             }
 
             return IccCorpus.Run(options);
+        case "icc-builtin":
+            return IccCorpus.RunBuiltInProfile(options);
         case "verify":
             return CorpusVerifier.Run();
         default:

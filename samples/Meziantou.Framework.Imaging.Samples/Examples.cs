@@ -475,6 +475,22 @@ internal static class Examples
     }
     // end-snippet
 
+    /// <summary>A CMYK JPEG is only loaded with a color conversion.</summary>
+    // begin-snippet: load-cmyk-jpeg
+    public static Image LoadCmykJpeg(string path)
+    {
+        // Default options: converted to sRGB from the CMYK profile of the file, or from
+        // IccProfile.Cgats001CompatibleCmyk when it has none. Images that are not CMYK are loaded as usual.
+        var conversion = new CmykConversionOptions
+        {
+            Transform = new IccColorTransformOptions { Intent = IccRenderingIntent.Perceptual },
+        };
+
+        // The pixels are RGB, labeled with the destination profile (image.Metadata.IccProfile)
+        return Image.Load(path, new ImageDecodeOptions { CmykConversion = conversion });
+    }
+    // end-snippet
+
     /// <summary>Color conversion of sample buffers between two ICC profiles.</summary>
     // begin-snippet: convert-samples
     public static byte[] ConvertSamplesToSrgb(IccProfile sourceProfile, ReadOnlySpan<byte> samples)

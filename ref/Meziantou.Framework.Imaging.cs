@@ -51,6 +51,14 @@ namespace Meziantou.Framework.Imaging
         public static bool operator !=(Meziantou.Framework.Imaging.Bgra32 left, Meziantou.Framework.Imaging.Bgra32 right) => throw null;
     }
 
+    public sealed class CmykConversionOptions
+    {
+        public static Meziantou.Framework.Imaging.CmykConversionOptions Default { get => throw null; }
+        public Meziantou.Framework.Imaging.Metadata.IccProfile DestinationProfile { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Metadata.IccProfile? AssumedSourceProfile { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.IccColorTransformOptions Transform { get => throw null; init { } }
+    }
+
     public enum ConvolutionEdgeMode
     {
         Clamp = 0,
@@ -262,6 +270,8 @@ namespace Meziantou.Framework.Imaging
         Rgba = 4,
         Indexed = 5,
         YCbCr = 6,
+        Cmyk = 7,
+        Ycck = 8,
     }
 
     public sealed class ImageConfiguration
@@ -277,6 +287,7 @@ namespace Meziantou.Framework.Imaging
         public Meziantou.Framework.Imaging.ImageConfiguration Configuration { get => throw null; init { } }
         public int? FrameLimit { get => throw null; init { } }
         public Meziantou.Framework.Imaging.PixelConversionOptions Conversion { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.CmykConversionOptions? CmykConversion { get => throw null; init { } }
     }
 
     public class ImageException : System.Exception
@@ -417,6 +428,7 @@ namespace Meziantou.Framework.Imaging
         public Meziantou.Framework.Imaging.ImageConfiguration Configuration { get => throw null; init { } }
         public int? FrameLimit { get => throw null; init { } }
         public Meziantou.Framework.Imaging.PixelConversionOptions Conversion { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.CmykConversionOptions? CmykConversion { get => throw null; init { } }
         public bool LeaveOpen { get => throw null; init { } }
     }
 
@@ -1045,6 +1057,7 @@ namespace Meziantou.Framework.Imaging.Metadata
     {
         public static Meziantou.Framework.Imaging.Metadata.IccProfile Srgb { get => throw null; }
         public static Meziantou.Framework.Imaging.Metadata.IccProfile SrgbGray { get => throw null; }
+        public static Meziantou.Framework.Imaging.Metadata.IccProfile Cgats001CompatibleCmyk { get => throw null; }
         public Meziantou.Framework.Imaging.Metadata.MetadataBlob Data { get => throw null; }
         public Meziantou.Framework.Imaging.Metadata.IccProfileColorSpace ColorSpace { get => throw null; }
         public Meziantou.Framework.Imaging.Metadata.IccProfileClass ProfileClass { get => throw null; }

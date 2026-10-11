@@ -8,6 +8,8 @@
       "ffmpeg 9.0.2",
       "libjpeg-turbo 3.2.0 cjpeg",
       "libjpeg-turbo 3.2.0 djpeg",
+      "libjpeg-turbo 3.2.0 jpegtran",
+      "LittleCMS 2.19 (jpgicc/transicc)",
       "Apple ImageIO macOS 27.0.1 sips-316",
       ".NET 10.0"
     ]
@@ -30160,21 +30162,35 @@
       "notes": "Arithmetic-coded JPEG (SOF9) is out of scope."
     },
     {
-      "id": "invalid/jpeg/cmyk-four-components",
+      "id": "invalid/jpeg/cmyk-adobe-progressive",
       "kind": "unsupported",
       "format": "jpeg",
       "input": {
-        "path": "invalid/jpeg/cmyk-four-components.jpg",
-        "sha256": "be3e6c32dbf7db6a20a6c86d9cdc554ac3adf62e86e4e05f332ebafa06111ee8",
+        "path": "invalid/jpeg/cmyk-adobe-progressive.jpg",
+        "sha256": "c2c7a0ee9a6154ada224ac7e0d65b1fbb3cb80e0952538c04b57869dc9effa22",
         "role": "encoded"
       },
       "provenance": {
-        "origin": "hand-authored",
+        "origin": "generated",
         "license": "CC0-1.0",
         "author": "Meziantou.Framework.Imaging contributors",
-        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/GoldenCorpus.cs (BuildUnsupportedJpeg)",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/GoldenCorpus.cs (BuildInkJpeg PatternDetailColor)",
         "tools": [
+          "libjpeg-turbo 3.2.0 (cjpeg/djpeg)",
+          "libjpeg-turbo 3.2.0 jpegtran",
+          "LittleCMS 2.19 (jpgicc/transicc)",
+          "Apple ImageIO macOS 27.0.1 sips-316 (cross-check only)",
           ".NET 10.0"
+        ],
+        "parameters": {
+          "width": 19,
+          "height": 13
+        },
+        "commands": [
+          "cjpeg -dct int -quality 90 -sample 1x1 -baseline -outfile {rgb}.jpg {source}.pnm",
+          "jpgicc -oicc/profiles/synthetic-cmyk-lab-lut16.icc -q90 {rgb}.jpg {inks}.jpg",
+          "jpegtran -copy all -progressive -outfile {input} {inks}.jpg",
+          "set the color transform of the Adobe APP14 segment to 0: the four components are CMYK samples"
         ]
       },
       "expectedError": {
@@ -30183,12 +30199,243 @@
         "feature": "JPEG CMYK/YCCK"
       },
       "features": [
+        "jpeg.app0=JFIF",
         "jpeg.app14=Adobe",
+        "jpeg.components=4",
+        "jpeg.process=progressive",
+        "jpeg.progressive=ac-refinement",
+        "jpeg.progressive=dc-refinement",
+        "jpeg.progressive=spectral-selection",
+        "jpeg.progressive=successive-approximation",
+        "jpeg.scans=18"
+      ],
+      "inkConversion": {
+        "sourceProfile": "assumed",
+        "destinationProfile": "icc/srgb-v4",
+        "intent": "relative-colorimetric",
+        "blackPointCompensation": true,
+        "colorModel": "Cmyk",
+        "buffer": {
+          "path": "invalid/jpeg/cmyk-adobe-progressive.converted.rgb8.raw",
+          "sha256": "b1a0e02e34d250c7e91c6cc33a8742c93692cf837979bb415efbb6b764f5ba7d",
+          "layout": "rgb8",
+          "width": 19,
+          "height": 13,
+          "rowBytes": 57,
+          "byteLength": 741,
+          "alpha": "none",
+          "rowOrder": "top-down",
+          "compression": "none"
+        },
+        "reference": {
+          "method": "decoded",
+          "description": "The samples of each component decoded by libjpeg-turbo djpeg (accurate integer IDCT) from a grayscale JPEG file made of the scan of the component, after jpegtran coded each component in its own scan without changing a coefficient; ink amounts as the complement of the stored samples; inks converted from icc/cgats001-compat-v2-micro to icc/srgb-v4 by the decimal reference of the test harness.",
+          "decoder": "libjpeg-turbo 3.2.0 djpeg, then ReferenceIccTransform",
+          "backend": "libjpeg-turbo 3.2.0 (jidctint islow IDCT); tests/Meziantou.Framework.Imaging.TestHarness/Color (its own profile reader, decimal arithmetic, multilinear interpolation of four-dimensional tables)",
+          "command": "jpegtran -copy none -scans {scans} (0; 1; 2; 3;) -outfile {separated}.jpg {input}; write one grayscale JPEG file per component from {separated}.jpg ({component}.jpg): the quantization tables, a frame header with the component alone (sampling factors 1x1), the Huffman tables and the restart interval defined before its scan, the scan; djpeg -dct int -pnm {component}.jpg",
+          "crossChecks": [
+            {
+              "decoder": "transicc (LittleCMS 2.19) on the inks of the reference",
+              "command": "transicc -n -c0 -t1 -b -i icc/profiles/CGATS001Compat-v2-micro.icc -o icc/profiles/sRGB-v4.icc",
+              "result": "differs",
+              "maxAbsoluteError": 5,
+              "meanAbsoluteError": 0.3765,
+              "notes": "Another color management system on the same inks. The ICC specification does not define the interpolation of a lookup table between its grid points: LittleCMS interpolates a four-dimensional table linearly along its first input and tetrahedrally on the others, the reference multilinearly, so they are several levels apart for some colors: more than the library tolerance of this fixture. The difference bounds an error of table order, encoding or rendering intent, and the tolerance that independent color management systems justify."
+            }
+          ]
+        },
+        "comparison": {
+          "mode": "tolerance",
+          "maxAbsoluteError": 1,
+          "maxMeanAbsoluteError": 0.05,
+          "justification": "Lossy JPEG compared with an independent decoding of the same encoded input (libjpeg-turbo djpeg: islow integer IDCT), converted by the decimal reference of ICC color conversion. The library decoder (double-precision IDCT rounded to nearest) differs from djpeg by one unit on some ink samples, which the color conversion amplifies where its lookup table is steep; its own conversion is exact with respect to the reference. Measured: max 1, mean 0.0310. Allowed: the measured max and the measured mean + 0.01 (rounded up to 0.01). The policy is verified to reject channel swaps and flips of this reference."
+        }
+      },
+      "notes": "CMYK inks (Adobe APP14 transform 0) without profile, progressive: the default progression of libjpeg-turbo for four components. No pixel format holds inks: the file is identified, and loaded only with a color conversion (inkConversion)."
+    },
+    {
+      "id": "invalid/jpeg/cmyk-without-adobe-restart",
+      "kind": "unsupported",
+      "format": "jpeg",
+      "input": {
+        "path": "invalid/jpeg/cmyk-without-adobe-restart.jpg",
+        "sha256": "f628ce5ab36e839a3726a93a1e932ea6a3a43f0e65787e04b2ca6aa6d772b0f5",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/GoldenCorpus.cs (BuildInkJpeg PatternDetailColor)",
+        "tools": [
+          "libjpeg-turbo 3.2.0 (cjpeg/djpeg)",
+          "libjpeg-turbo 3.2.0 jpegtran",
+          "LittleCMS 2.19 (jpgicc/transicc)",
+          "Apple ImageIO macOS 27.0.1 sips-316 (cross-check only)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "width": 17,
+          "height": 9
+        },
+        "commands": [
+          "cjpeg -dct int -quality 90 -sample 1x1 -baseline -outfile {rgb}.jpg {source}.pnm",
+          "jpgicc -oicc/profiles/synthetic-cmyk-lab-lut16.icc -q90 {rgb}.jpg {inks}.jpg",
+          "jpegtran -copy all -restart 1B -outfile {input} {inks}.jpg",
+          "remove the Adobe APP14 segment: the four components are CMYK samples"
+        ]
+      },
+      "expectedError": {
+        "exception": "UnsupportedImageFeatureException",
+        "format": "Jpeg",
+        "feature": "JPEG CMYK/YCCK"
+      },
+      "features": [
+        "jpeg.app0=JFIF",
+        "jpeg.components=4",
+        "jpeg.process=baseline",
+        "jpeg.restartInterval=1",
+        "jpeg.scans=1"
+      ],
+      "inkConversion": {
+        "sourceProfile": "assumed",
+        "destinationProfile": "icc/adobe-compat-v2",
+        "intent": "perceptual",
+        "blackPointCompensation": false,
+        "colorModel": "Cmyk",
+        "buffer": {
+          "path": "invalid/jpeg/cmyk-without-adobe-restart.converted.rgb8.raw",
+          "sha256": "2494357e4af6185df9c6ca93f529cabfa31ba4b6cbd14b1e0d93c89954abf34a",
+          "layout": "rgb8",
+          "width": 17,
+          "height": 9,
+          "rowBytes": 51,
+          "byteLength": 459,
+          "alpha": "none",
+          "rowOrder": "top-down",
+          "compression": "none"
+        },
+        "reference": {
+          "method": "decoded",
+          "description": "The samples of each component decoded by libjpeg-turbo djpeg (accurate integer IDCT) from a grayscale JPEG file made of the scan of the component, after jpegtran coded each component in its own scan without changing a coefficient; ink amounts as the complement of the stored samples; inks converted from icc/cgats001-compat-v2-micro to icc/adobe-compat-v2 by the decimal reference of the test harness.",
+          "decoder": "libjpeg-turbo 3.2.0 djpeg, then ReferenceIccTransform",
+          "backend": "libjpeg-turbo 3.2.0 (jidctint islow IDCT); tests/Meziantou.Framework.Imaging.TestHarness/Color (its own profile reader, decimal arithmetic, multilinear interpolation of four-dimensional tables)",
+          "command": "jpegtran -copy none -scans {scans} (0; 1; 2; 3;) -outfile {separated}.jpg {input}; write one grayscale JPEG file per component from {separated}.jpg ({component}.jpg): the quantization tables, a frame header with the component alone (sampling factors 1x1), the Huffman tables and the restart interval defined before its scan, the scan; djpeg -dct int -pnm {component}.jpg",
+          "crossChecks": [
+            {
+              "decoder": "transicc (LittleCMS 2.19) on the inks of the reference",
+              "command": "transicc -n -c0 -t0 -i icc/profiles/CGATS001Compat-v2-micro.icc -o icc/profiles/AdobeCompat-v2.icc",
+              "result": "differs",
+              "maxAbsoluteError": 9,
+              "meanAbsoluteError": 0.4161,
+              "notes": "Another color management system on the same inks. The ICC specification does not define the interpolation of a lookup table between its grid points: LittleCMS interpolates a four-dimensional table linearly along its first input and tetrahedrally on the others, the reference multilinearly, so they are several levels apart for some colors: more than the library tolerance of this fixture. The difference bounds an error of table order, encoding or rendering intent, and the tolerance that independent color management systems justify."
+            }
+          ]
+        },
+        "comparison": {
+          "mode": "tolerance",
+          "maxAbsoluteError": 1,
+          "maxMeanAbsoluteError": 0.03,
+          "justification": "Lossy JPEG compared with an independent decoding of the same encoded input (libjpeg-turbo djpeg: islow integer IDCT), converted by the decimal reference of ICC color conversion. The library decoder (double-precision IDCT rounded to nearest) differs from djpeg by one unit on some ink samples, which the color conversion amplifies where its lookup table is steep; its own conversion is exact with respect to the reference. Measured: max 1, mean 0.0109. Allowed: the measured max and the measured mean + 0.01 (rounded up to 0.01). The policy is verified to reject channel swaps and flips of this reference."
+        }
+      },
+      "notes": "Four components without Adobe APP14 segment (JFIF only): CMYK inks stored as complements like every four-component file, without profile, with a restart interval of one MCU. No pixel format holds inks: the file is identified, and loaded only with a color conversion (inkConversion)."
+    },
+    {
+      "id": "invalid/jpeg/cmyk-ycck-embedded-profile",
+      "kind": "unsupported",
+      "format": "jpeg",
+      "input": {
+        "path": "invalid/jpeg/cmyk-ycck-embedded-profile.jpg",
+        "sha256": "be4bd1bc4ae5d459e95bc48b9e5dcb6d9c64489632092b0a73beaeb22dbd2659",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/GoldenCorpus.cs (BuildInkJpeg PatternDetailColor)",
+        "tools": [
+          "libjpeg-turbo 3.2.0 (cjpeg/djpeg)",
+          "libjpeg-turbo 3.2.0 jpegtran",
+          "LittleCMS 2.19 (jpgicc/transicc)",
+          "Apple ImageIO macOS 27.0.1 sips-316 (cross-check only)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "width": 24,
+          "height": 16
+        },
+        "commands": [
+          "cjpeg -dct int -quality 90 -sample 1x1 -baseline -outfile {rgb}.jpg {source}.pnm",
+          "jpgicc -oicc/profiles/synthetic-cmyk-lab-lut16.icc -q90 -e {rgb}.jpg {inks}.jpg",
+          "jpegtran -copy all -outfile {input} {inks}.jpg"
+        ]
+      },
+      "expectedError": {
+        "exception": "UnsupportedImageFeatureException",
+        "format": "Jpeg",
+        "feature": "JPEG CMYK/YCCK"
+      },
+      "features": [
+        "jpeg.app0=JFIF",
+        "jpeg.app14=Adobe",
+        "jpeg.app2=ICC_PROFILE",
         "jpeg.components=4",
         "jpeg.process=baseline",
         "jpeg.scans=1"
       ],
-      "notes": "Adobe APP14 (transform 0) and a four-component (CMYK) frame header: CMYK/YCCK are out of scope."
+      "inkConversion": {
+        "sourceProfile": "embedded",
+        "destinationProfile": "icc/srgb-v2-micro",
+        "intent": "perceptual",
+        "blackPointCompensation": false,
+        "colorModel": "Ycck",
+        "buffer": {
+          "path": "invalid/jpeg/cmyk-ycck-embedded-profile.converted.rgb8.raw",
+          "sha256": "bc35b0b095215a36aa0ea8edf82d2d41ebfc796fb9beb30721f37bfe148ab9c8",
+          "layout": "rgb8",
+          "width": 24,
+          "height": 16,
+          "rowBytes": 72,
+          "byteLength": 1152,
+          "alpha": "none",
+          "rowOrder": "top-down",
+          "compression": "none"
+        },
+        "reference": {
+          "method": "decoded",
+          "description": "The samples of each component decoded by libjpeg-turbo djpeg (accurate integer IDCT) from a grayscale JPEG file made of the scan of the component, after jpegtran coded each component in its own scan without changing a coefficient; ink amounts as the complement of the stored samples (cyan, magenta and yellow are the RGB samples djpeg decodes from the first three components as a YCbCr file: the complements of the YCCK transform cancel out); inks converted from icc/synthetic-cmyk-lab-lut16 to icc/srgb-v2-micro by the decimal reference of the test harness.",
+          "decoder": "libjpeg-turbo 3.2.0 djpeg, then ReferenceIccTransform",
+          "backend": "libjpeg-turbo 3.2.0 (jidctint islow IDCT, jdcolor YCbCr->RGB); tests/Meziantou.Framework.Imaging.TestHarness/Color (its own profile reader, decimal arithmetic, multilinear interpolation of four-dimensional tables)",
+          "command": "jpegtran -copy none -scans {scans} (0; 1; 2; 3;) -outfile {separated}.jpg {input}; write two JPEG files from {separated}.jpg, each with the quantization tables, a frame header listing its components (sampling factors 1x1) and, for each of its scans, the Huffman tables and the restart interval defined before it: {components}.jpg with the first three components (no APP segment: YCbCr), {component}.jpg with the fourth alone; djpeg -dct int -pnm {component}.jpg; djpeg -dct int -pnm {components}.jpg",
+          "crossChecks": [
+            {
+              "decoder": "transicc (LittleCMS 2.19) on the inks of the reference",
+              "command": "transicc -n -c0 -t0 -i icc/profiles/synthetic-cmyk-lab-lut16.icc -o icc/profiles/sRGB-v2-micro.icc",
+              "result": "differs",
+              "maxAbsoluteError": 6,
+              "meanAbsoluteError": 0.5339,
+              "notes": "Another color management system on the same inks. The ICC specification does not define the interpolation of a lookup table between its grid points: LittleCMS interpolates a four-dimensional table linearly along its first input and tetrahedrally on the others, the reference multilinearly, so they are several levels apart for some colors: more than the library tolerance of this fixture. The difference bounds an error of table order, encoding or rendering intent, and the tolerance that independent color management systems justify."
+            },
+            {
+              "decoder": "Apple ImageIO and ColorSync (macOS 27.0.1, sips-316)",
+              "command": "sips -m icc/profiles/sRGB-v2-micro.icc -s format bmp {input} --out {output}.bmp",
+              "result": "differs",
+              "maxAbsoluteError": 2,
+              "meanAbsoluteError": 0.5694,
+              "notes": "An independent decoding and color conversion of the whole file (its own JPEG decoder, ink polarity and YCCK transform, embedded profile, perceptual intent). ColorSync rounds and interpolates differently, so it is a few levels apart: more than the library tolerance of this fixture. The difference bounds an error of interpretation of the file, and the tolerance that independent implementations justify."
+            }
+          ]
+        },
+        "comparison": {
+          "mode": "tolerance",
+          "maxAbsoluteError": 1,
+          "maxMeanAbsoluteError": 0.03,
+          "justification": "Lossy JPEG compared with an independent decoding of the same encoded input (libjpeg-turbo djpeg: islow integer IDCT), converted by the decimal reference of ICC color conversion. The library decoder (double-precision IDCT rounded to nearest) differs from djpeg by one unit on some ink samples, which the color conversion amplifies where its lookup table is steep; its own conversion is exact with respect to the reference. Measured: max 1, mean 0.0182. Allowed: the measured max and the measured mean + 0.01 (rounded up to 0.01). The policy is verified to reject channel swaps and flips of this reference."
+        }
+      },
+      "notes": "YCCK inks (Adobe APP14 transform 2) with their CMYK profile in one APP2 segment, baseline, one interleaved scan. No pixel format holds inks: the file is identified, and loaded only with a color conversion (inkConversion)."
     },
     {
       "id": "invalid/jpeg/interleaved-scan-too-many-blocks",

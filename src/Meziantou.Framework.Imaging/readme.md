@@ -8,8 +8,8 @@ conversion, and bounded-memory streaming.
 - Static PNG, animated PNG (APNG), GIF, baseline/progressive JPEG, WebP (still and animated, lossless and lossy), QOI,
   BMP, TGA, Netpbm (PBM/PGM/PPM/PAM), TIFF/BigTIFF, ICO/CUR and ANI decoding; PNG, APNG, GIF, baseline JPEG, WebP
   (lossless and lossy, still and animated), QOI, BMP, TGA, Netpbm, TIFF/BigTIFF, ICO/CUR and ANI encoding (unsupported
-  modes, such as arithmetic or CMYK JPEG, embedded JPEG or PNG in BMP, premultiplied-alpha TGA or LZW TIFF, are rejected
-  explicitly)
+  modes, such as arithmetic JPEG, embedded JPEG or PNG in BMP, premultiplied-alpha TGA or LZW TIFF, are rejected
+  explicitly; a CMYK JPEG is loaded with an explicit color conversion)
 - AVIF decoding with a fully managed AV1 decoder: still images and animations, 8, 10 and 12 bits, alpha, grids, film
   grain (there is no AVIF encoder)
 - `ImageCollection` for the images that are not animation frames: TIFF document pages and icon/cursor representations,
@@ -129,7 +129,7 @@ decoded or encoded approximately; see [Format reference](#format-reference) and 
 | --- | --- | --- | --- |
 | PNG / APNG | Every color type and bit depth, palettes, Adam7, APNG animations and poster frames | Gray, RGB and RGBA at 8/16 bits, Adam7, APNG with full-canvas frames and posters | `.png` (APNG when animated), `.apng` |
 | GIF | GIF87a/89a, animations, interlacing, transparency, comments | GIF89a, deterministic quantization per frame, optional dithering, animations with unknown frame counts | `.gif` |
-| JPEG | Baseline, extended sequential and progressive Huffman, 8-bit; gray, YCbCr, RGB; any integral sampling | Baseline 8-bit Huffman, gray or YCbCr, 4:4:4/4:2:2/4:2:0 | `.jpg`, `.jpeg` |
+| JPEG | Baseline, extended sequential and progressive Huffman, 8-bit; gray, YCbCr, RGB, and CMYK/YCCK with a color conversion; any integral sampling | Baseline 8-bit Huffman, gray or YCbCr, 4:4:4/4:2:2/4:2:0 | `.jpg`, `.jpeg` |
 | WebP | Lossless, lossy, alpha, animations, ICC/EXIF/XMP | Lossless and lossy, alpha, animations (seekable destination) | `.webp` (lossless by default) |
 | QOI | Every chunk form, 3 or 4 channels, colorspace label | Lossless 8-bit RGB/RGBA | `.qoi` |
 | BMP | Windows headers up to V5 and OS/2 1.x/2.x headers, 1/4/8/16/24/32-bit, bit fields, RLE4/RLE8/RLE24 | 24-bit or 32-bit with an alpha mask by default; 1/4/8-bit indexed, RLE4/RLE8, 16-bit and top-down on request | `.bmp`, `.dib` |
@@ -633,7 +633,9 @@ resolution, ICC/EXIF/XMP profiles (byte-for-byte payloads) and text entries.
 - **Color profiles are preserved, never applied implicitly.** A profile labels the pixels; untagged pixels are assumed
   sRGB. Decoders keep it, encoders write it (for example PNG `iCCP`, JPEG APP2), conversions keep it only when it can
   still label the converted pixels (gray profile for gray formats, RGB profile for color formats). Colors are converted
-  only on request (see [Color management](#color-management)).
+  only on request (see [Color management](#color-management)). A CMYK JPEG is the one image that cannot be loaded as
+  it is, since no pixel format holds inks: it is rejected unless the load asks for its conversion
+  (`CmykConversionOptions`).
 - **Transfer functions are labels too.** `Metadata.TransferFunction` is `Srgb` (the default: sRGB samples, or as described
   by the ICC profile) or `Linear` (linear-light samples, declared by a QOI colorspace of 1). Only `ConvertColorProfile`
   converts the pixels (and resets the label); linear-light resizing filters `Linear` samples directly. Only QOI stores
@@ -744,8 +746,51 @@ and CMYK data, with a CIEXYZ or CIELAB connection space:
 - **Table-based profiles**: `A2B0`/`A2B1`/`A2B2` and `B2A0`/`B2A1`/`B2A2` tags of type `lut8Type`, `lut16Type`,
   `lutAToBType` or `lutBToAType`. They take precedence over the matrix and curves of the same profile.
   `IccColorTransformOptions.Intent` selects the table: perceptual (0), colorimetric (1) or saturation (2); a profile
-  without the table of the intent uses its perceptual table, then its matrix and curves. A CMYK image cannot be
-  loaded, but CMYK samples can be converted with `IccColorTransform` (0 is no ink).
+  without the table of the intent uses its perceptual table, then its matrix and curves. CMYK samples are ink
+  amounts: 0 is no ink.
+
+**CMYK images.** No pixel format holds CMYK samples, so a JPEG file with four components (CMYK or YCCK inks) is only
+loaded by converting its colors, and like every color conversion this one is explicit: set
+`ImageDecodeOptions.CmykConversion` (or `ImageReaderOptions.CmykConversion`). Without it the load throws an
+`UnsupportedImageFeatureException`; `Identify` always works and reports `ImageColorModel.Cmyk` or `Ycck` with the
+embedded CMYK profile, so a caller can decide first. Other images are not affected by the setting.
+
+<!-- snippet: load-cmyk-jpeg -->
+```csharp
+public static Image LoadCmykJpeg(string path)
+{
+    // Default options: converted to sRGB from the CMYK profile of the file, or from
+    // IccProfile.Cgats001CompatibleCmyk when it has none. Images that are not CMYK are loaded as usual.
+    var conversion = new CmykConversionOptions
+    {
+        Transform = new IccColorTransformOptions { Intent = IccRenderingIntent.Perceptual },
+    };
+
+    // The pixels are RGB, labeled with the destination profile (image.Metadata.IccProfile)
+    return Image.Load(path, new ImageDecodeOptions { CmykConversion = conversion });
+}
+```
+
+- `DestinationProfile` (default `IccProfile.Srgb`) is an RGB profile. The loaded image has `Rgb24` pixels labeled with
+  it: the pixels and their profile change together, and the CMYK profile is not kept. A typed load then converts the
+  layout as for any RGB image.
+- The source is the CMYK profile embedded in the file. A file without one (or with a profile of another color space,
+  which cannot describe inks) uses `AssumedSourceProfile`, by default `IccProfile.Cgats001CompatibleCmyk`; set it to
+  another CMYK profile, or to `null` to reject such files. An embedded CMYK profile that is malformed or not supported
+  is an error: it is never replaced by the assumed profile.
+- `Transform` is the rendering intent and the black point compensation, as for `IccColorTransform`.
+- `IccProfile.Cgats001CompatibleCmyk` is `CGATS001Compat-v2-micro.icc` of the
+  [Compact ICC Profiles](https://github.com/saucecontrol/Compact-ICC-Profiles) collection by Clinton Ingram, released
+  to the public domain (CC0-1.0) and stored unmodified: web offset printing on coated paper, from the CGATS TR 001
+  characterization data. Its single table of 6 points per ink reproduces the overall appearance of the printing
+  condition, not the exact colors of a full-size press profile, and it only converts from CMYK: it can be a source
+  with any intent, never a destination.
+- JPEG files store ink samples as complements (255 is no ink), as Adobe Photoshop writes them, and decoders read every
+  four-component file that way, with or without the Adobe APP14 segment: so does the library. The segment says whether
+  the first three components are coded as luma and chroma (transform 2, YCCK) or not (transform 0, or no segment:
+  CMYK).
+- Every pixel goes through the ICC conversion, which is evaluated exactly, one color at a time: decoding a CMYK image
+  is much slower than decoding an RGB image of the same size.
 
 `IccColorTransformOptions` selects how colors that differ between the two media are rendered:
 
@@ -952,7 +997,7 @@ Content errors derive from `ImageException`:
 | --- | --- |
 | `UnknownImageFormatException` | The signature is not recognized. |
 | `InvalidImageContentException` (`Format`) | Malformed, inconsistent or truncated data; also a malformed caller-supplied EXIF/ICC/XMP payload at save time. |
-| `UnsupportedImageFeatureException` (`Format`, `Feature`) | A valid but unsupported feature (arithmetic JPEG, CMYK, GIF plain text...), or an operation that would lose animation, alpha, precision, metadata, a cursor hotspot, a poster or a profile without an explicit setting, or a duration/play count the output cannot represent. |
+| `UnsupportedImageFeatureException` (`Format`, `Feature`) | A valid but unsupported feature (arithmetic JPEG, a CMYK JPEG loaded without `CmykConversion`, GIF plain text...), or an operation that would lose animation, alpha, precision, metadata, a cursor hotspot, a poster or a profile without an explicit setting, or a duration/play count the output cannot represent. |
 | `ImageResourceLimitException` (`Kind`, `Limit`, `Requested`) | A configured limit was exceeded. |
 
 Other failures use the standard exceptions: `ArgumentException` (invalid arguments, mismatched frames),
@@ -1039,12 +1084,13 @@ a poster or animation settings), `Animated` and the `.apng` extension always do;
 | --- | --- | --- |
 | Sequential Huffman, 8-bit | Baseline (SOF0) and extended sequential (SOF1): 8/16-bit DQT, DHT identifiers 0-3, tables redefined between scans, interleaved or non-interleaved scans, double-precision IDCT with documented rounding; streamed with three MCU rows of decoder state (full planes for multi-scan frames) | Baseline (SOF0) only: one interleaved scan, Annex K typical Huffman tables (no optimized tables), Annex K quantization tables scaled by `Quality` 1-100 (default 90), double-precision forward DCT with documented rounding, no restart markers; streamed by MCU rows |
 | Progressive Huffman (SOF2), 8-bit | DC and AC first and refinement scans, spectral selection, EOB runs, successive approximation, restart intervals, partial progressions, every sampling layout and color model of the sequential decoder; scan parameters validated from the scan headers (also by a full `Identify`). Not row-streamed: the 16-bit coefficients of the whole image (about 2 bytes per sample and component) are kept until the end of the image | Not supported |
-| Color models | Grayscale (`Gray8`), JFIF full-range YCbCr and RGB (Adobe transform 0 or `R`,`G`,`B` identifiers) to `Rgb24` | The layout follows the pixel format, never the data: gray formats → one grayscale component, color formats → JFIF full-range YCbCr (BT.601); JFIF APP0 always written, no Adobe APP14. Non-opaque pixels require `BackgroundColor`; `Rgba64`/`Gray16` require `AllowBitDepthReduction` |
+| Color models | Grayscale (`Gray8`), JFIF full-range YCbCr and RGB (Adobe transform 0 or `R`,`G`,`B` identifiers) to `Rgb24`; CMYK and YCCK (four components) to `Rgb24` through the ICC conversion of `CmykConversionOptions`, see [Color management](#color-management) | The layout follows the pixel format, never the data: gray formats → one grayscale component, color formats → JFIF full-range YCbCr (BT.601); JFIF APP0 always written, no Adobe APP14. Non-opaque pixels require `BackgroundColor`; `Rgba64`/`Gray16` require `AllowBitDepthReduction` |
 | Chroma subsampling | 4:4:4, 4:2:2, 4:2:0, 4:4:0, 4:1:1 and any integral sampling ratio (libjpeg-turbo-compatible triangle filters for factor 2, replication otherwise) | `Auto` (= 4:2:0 for color), 4:4:4, 4:2:2, 4:2:0; box-filter downsampling, canvas padded to whole MCUs by edge replication; ignored for gray formats |
 | Restart markers | Sequential and progressive scans, sequence checked | Not written |
 | Metadata (EXIF, XMP, ICC, JFIF density, COM) | Bounded; ICC reassembled from APP2 chunks; segments after the scans included | APP1 EXIF (orientation and dimensions reconciled; at most 65,527 bytes), APP1 standard XMP (at most 65,504 bytes), APP2 ICC in up to 255 chunks, JFIF density, COM for `Comment` entries; anything else follows `MetadataHandling` (`Strip` writes only the JFIF segment) |
 | Animated images, posters | — | Rejected with `UnsupportedImageFeatureException` before any output; export a frame with `CloneFrame` |
-| Arithmetic, lossless, hierarchical, 12/16-bit, CMYK/YCCK, non-integral sampling | Not supported (`UnsupportedImageFeatureException`, also from `Identify`) | Not supported |
+| CMYK/YCCK (four components) | Identified; loaded only with `CmykConversion`, otherwise `UnsupportedImageFeatureException` | Not supported |
+| Arithmetic, lossless, hierarchical, 12/16-bit, non-integral sampling | Not supported (`UnsupportedImageFeatureException`, also from `Identify`) | Not supported |
 
 ### WebP
 
@@ -1341,7 +1387,7 @@ Everything below is rejected explicitly (never decoded or encoded approximately)
 
 | Area | Behavior |
 | --- | --- |
-| JPEG decoding | Lossless (SOF3), hierarchical (SOF5–7, SOF13–15, DHP, EXP), arithmetic coding (SOF9–11, DAC), JPEG-LS, 12/16-bit precision, heights defined by DNL, CMYK/YCCK (four components) and other component counts than 1 or 3, non-integral sampling ratios: `UnsupportedImageFeatureException` (also from `Identify`). Scaled and region decoding: not available |
+| JPEG decoding | Lossless (SOF3), hierarchical (SOF5–7, SOF13–15, DHP, EXP), arithmetic coding (SOF9–11, DAC), JPEG-LS, 12/16-bit precision, heights defined by DNL, other component counts than 1, 3 or 4, non-integral sampling ratios: `UnsupportedImageFeatureException` (also from `Identify`). CMYK/YCCK (four components): identified, but loaded only with `CmykConversion` (an ICC conversion to RGB; `UnsupportedImageFeatureException` otherwise, and for a file without CMYK profile when no profile is assumed). Scaled and region decoding: not available |
 | JPEG encoding | Baseline 8-bit Huffman only: no progressive, arithmetic, lossless, 12-bit, RGB, CMYK, restart markers or optimized Huffman tables. One frame: animated images and posters are rejected (export one with `CloneFrame`); alpha requires `BackgroundColor`; `Rgba64`/`Gray16` require `AllowBitDepthReduction` |
 | GIF decoding | Plain-text extensions (they require text rendering) are `UnsupportedImageFeatureException`; other unknown extensions (XMP and ICC application extensions included) are skipped; the background color index is never painted (cleared areas are transparent black) |
 | GIF encoding | Lossy by design: at most 256 colors per frame (deterministic quantization, optional dithering), one transparent index (alpha thresholded or flattened, never partial); full-canvas frames (no delta rectangles); comments only (no ICC, EXIF, XMP or resolution); at most 65,535 pixels per side, 655.35 s per frame and 65,536 plays |
@@ -1356,7 +1402,7 @@ Everything below is rejected explicitly (never decoded or encoded approximately)
 | ANI | Decoding: raw bitmap frames (no icon flag), a frame without a representation of the canvas size and everything the ICO/CUR decoder rejects are `UnsupportedImageFeatureException`; the geometry fields and the sequence flag of the header are not used (the payloads and the `seq ` chunk are authoritative); an ICC profile or text inside a PNG frame is not retained; `Image.OpenReader` does not read it. Encoding: one representation per frame, at most 256 pixels per side, whole jiffies, an infinite play count only, a title and an author as the only metadata, a seekable destination, at most 4 GiB per file |
 | PNG/APNG | No palette output (paletted inputs are re-encoded as RGB/RGBA), no RGB 16-bit or gray+alpha output layouts (16-bit color is written as RGBA 16), no APNG delta-rectangle optimization, unknown critical chunks rejected, unknown ancillary chunks not round-tripped |
 | Metadata | Profiles are preserved and labeled, never applied implicitly (colors are converted only by `ConvertColorProfile` and `IccColorTransform`); EXIF orientation is reported, applied only by `AutoOrient`; extended XMP in JPEG is not supported; per-format storage limits are listed in [Metadata, color profiles and orientation](#metadata-color-profiles-and-orientation); unsupported items follow `MetadataHandling` (`Strict` throws by default) |
-| Color management | ICC version 2 and 4 grayscale, RGB and CMYK profiles (matrix-based and table-based): no version 5 (iccMAX), device-link, abstract or named-color profile, no multi-process-element (`D2Bx`/`B2Dx`) tag, no other data color space; `ConvertColorProfile` keeps the pixel format (an RGB image cannot become grayscale or CMYK this way); CMYK images cannot be decoded; no gamut mapping beyond per-channel clipping |
+| Color management | ICC version 2 and 4 grayscale, RGB and CMYK profiles (matrix-based and table-based): no version 5 (iccMAX), device-link, abstract or named-color profile, no multi-process-element (`D2Bx`/`B2Dx`) tag, no other data color space; `ConvertColorProfile` keeps the pixel format (an RGB image cannot become grayscale or CMYK this way); no CMYK pixel format: a CMYK JPEG is converted to RGB when it is loaded (`CmykConversionOptions`, RGB destination only) and CMYK cannot be written; no gamut mapping beyond per-channel clipping |
 | Processing | No HDR, drawing, text rendering or custom processors; `LinearSrgb` resizing and convolution accept untagged or recognized sRGB/sGray profiles only; convolution matrices have odd dimensions, no bias or divisor, no ready-made matrices and no separable fast path |
 | AVIF | Decoding only. Rejected with `UnsupportedImageFeatureException`: premultiplied alpha, `iden`/`iovl` derived images, fragmented files, edit lists that do not play the whole track, image sequences whose images change size, clean apertures that do not select whole samples or that follow a rotation, grid tiles that declare other transformations than their grid, large scale tile streams, and the other matrix coefficients (constant luminance, ICtCp, SMPTE 2085, chromaticity-derived). Not read: gain maps, depth maps, thumbnails, the images that are not the primary item, the `tkhd` matrix and the other transformations of an image sequence (its images are returned as stored), mastering display and content light level boxes. A layered image is returned at its full quality only: its lower layers are not exposed as a progressive rendering. HDR samples are returned as stored: no tone mapping |
 | Formats | JPEG XL is not supported |

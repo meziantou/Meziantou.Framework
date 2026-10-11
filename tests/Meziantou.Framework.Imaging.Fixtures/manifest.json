@@ -22725,6 +22725,725 @@
       }
     },
     {
+      "id": "bmp/os2-core-bgr24",
+      "kind": "valid",
+      "format": "bmp",
+      "input": {
+        "path": "bmp/os2-core-bgr24.bmp",
+        "sha256": "a402351fd7bb0f9b15662b7822713585e6ccae22ae6f1c7cb41b7727052c4cbe",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/BmpCorpus.cs (BuildOs2)",
+        "tools": [
+          "ffmpeg 9.0.2 (cross-check only)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "width": 3,
+          "height": 2,
+          "header": 12
+        }
+      },
+      "features": [
+        "bmp.bpp=24",
+        "bmp.compression=rgb",
+        "bmp.header=12",
+        "bmp.rowOrder=bottom-up",
+        "bmp.rowPadding",
+        "bmp.width=odd"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "OS/2 1.x BITMAPCOREHEADER (12 bytes): 16-bit unsigned width and height, planes and bit count, nothing else. The rows are those of bmp/bgr24-bottom-up-padding, always bottom-up.",
+        "crossChecks": [
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec bmp decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt rgba -",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "result": "exact"
+          }
+        ]
+      },
+      "expected": {
+        "width": 3,
+        "height": 2,
+        "pixelFormat": "Rgb24",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "bmp/os2-core-bgr24.frame-0.rgba8.raw",
+                "sha256": "656e20f0824af71d0df5f53254946081c48cd48943d83dad5998784f34357e1d",
+                "layout": "rgba8",
+                "width": 3,
+                "height": 2,
+                "rowBytes": 12,
+                "byteLength": 24,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "bmp/os2-core-bgr24.frame-0.rgb8.raw",
+                "sha256": "3a794b736abffd0bf272835fed611e72b91e6eb4c75485da93387acd32625be5",
+                "layout": "rgb8",
+                "width": 3,
+                "height": 2,
+                "rowBytes": 9,
+                "byteLength": 18,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "bmp/os2-core-palette1",
+      "kind": "valid",
+      "format": "bmp",
+      "input": {
+        "path": "bmp/os2-core-palette1.bmp",
+        "sha256": "f73e5af6b08d0e2038b085d83ed215c35d921cc18689a0599a5c809404249da6",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/BmpCorpus.cs (BuildOs2)",
+        "tools": [
+          "ffmpeg 9.0.2 (cross-check only)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "width": 9,
+          "height": 2,
+          "bitsPerPixel": 1
+        }
+      },
+      "features": [
+        "bmp.bpp=1",
+        "bmp.compression=rgb",
+        "bmp.header=12",
+        "bmp.palette=2",
+        "bmp.paletteEntry=rgbtriple",
+        "bmp.rowOrder=bottom-up",
+        "bmp.rowPadding",
+        "bmp.width=odd"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "OS/2 1.x with 1-bit indexes and two RGBTRIPLE entries that are not black and white.",
+        "crossChecks": [
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec bmp decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt rgba -",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "result": "exact"
+          }
+        ]
+      },
+      "expected": {
+        "width": 9,
+        "height": 2,
+        "pixelFormat": "Rgb24",
+        "colorModel": "Indexed",
+        "bitsPerComponent": 1,
+        "orientation": 1,
+        "iccProfile": "none",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "bmp/os2-core-palette1.frame-0.rgba8.raw",
+                "sha256": "c2d69cdf9202178b1795dd94fcccb13eca9c0342073c2e9b1699140a24f35b6f",
+                "layout": "rgba8",
+                "width": 9,
+                "height": 2,
+                "rowBytes": 36,
+                "byteLength": 72,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "bmp/os2-core-palette1.frame-0.rgb8.raw",
+                "sha256": "92ec81abc004d7b534f5e9ae57d9093449935f211fa66fc90c749e950b42d9cc",
+                "layout": "rgb8",
+                "width": 9,
+                "height": 2,
+                "rowBytes": 27,
+                "byteLength": 54,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "bmp/os2-core-palette4",
+      "kind": "valid",
+      "format": "bmp",
+      "input": {
+        "path": "bmp/os2-core-palette4.bmp",
+        "sha256": "8c6b03dc7533f2e2e8d2896804ce2dc324fce0952131cc685663ddb582ef239e",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/BmpCorpus.cs (BuildOs2)",
+        "tools": [
+          "ffmpeg 9.0.2 (cross-check only)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "width": 5,
+          "height": 3,
+          "bitsPerPixel": 4,
+          "paletteEntries": 16
+        }
+      },
+      "features": [
+        "bmp.bpp=4",
+        "bmp.compression=rgb",
+        "bmp.header=12",
+        "bmp.palette=16",
+        "bmp.paletteEntry=rgbtriple",
+        "bmp.rowOrder=bottom-up",
+        "bmp.rowPadding",
+        "bmp.width=odd"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "OS/2 1.x with 4-bit indexes: the 16 palette entries are RGBTRIPLE (blue, green, red, three bytes each, no reserved byte), so the pixel data starts at 14 + 12 + 48. Reading four bytes per entry shifts every color.",
+        "crossChecks": [
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec bmp decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt rgba -",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "result": "exact"
+          }
+        ]
+      },
+      "expected": {
+        "width": 5,
+        "height": 3,
+        "pixelFormat": "Rgb24",
+        "colorModel": "Indexed",
+        "bitsPerComponent": 4,
+        "orientation": 1,
+        "iccProfile": "none",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "bmp/os2-core-palette4.frame-0.rgba8.raw",
+                "sha256": "b05ee5d44e63afa76212383c3d67a35f5be5c5d5e0c1739fd8a57d19571b4178",
+                "layout": "rgba8",
+                "width": 5,
+                "height": 3,
+                "rowBytes": 20,
+                "byteLength": 60,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "bmp/os2-core-palette4.frame-0.rgb8.raw",
+                "sha256": "6af793297c297828649c95e095132d5079c95cbae9f56a7bbf860bd61ff04533",
+                "layout": "rgb8",
+                "width": 5,
+                "height": 3,
+                "rowBytes": 15,
+                "byteLength": 45,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "bmp/os2-core-palette8-short",
+      "kind": "valid",
+      "format": "bmp",
+      "input": {
+        "path": "bmp/os2-core-palette8-short.bmp",
+        "sha256": "f28968abd1b685bdbe4b872694fe7a5d88ee550aa72cc83d4cbad9a77c85b965",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/BmpCorpus.cs (BuildOs2)",
+        "tools": [
+          "ffmpeg 9.0.2 (cross-check only)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "width": 7,
+          "height": 3,
+          "paletteEntries": 5,
+          "gap": 1
+        }
+      },
+      "features": [
+        "bmp.bpp=8",
+        "bmp.compression=rgb",
+        "bmp.gapBeforePixels",
+        "bmp.header=12",
+        "bmp.palette=5",
+        "bmp.paletteEntry=rgbtriple",
+        "bmp.paletteFromOffset",
+        "bmp.rowOrder=bottom-up",
+        "bmp.rowPadding",
+        "bmp.width=odd"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "OS/2 1.x with 8-bit indexes and five palette entries instead of 256, as some files in the wild store: the header has no color count, so the number of entries is what fits before bfOffBits ((42 - 26) / 3 = 5, with one unused byte before the pixel data). An index outside these five entries would be malformed.",
+        "crossChecks": [
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec bmp decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt rgba -",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "result": "exact"
+          }
+        ]
+      },
+      "expected": {
+        "width": 7,
+        "height": 3,
+        "pixelFormat": "Rgb24",
+        "colorModel": "Indexed",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "bmp/os2-core-palette8-short.frame-0.rgba8.raw",
+                "sha256": "81d28a0a54665c8314a420b4c9735217bf79192b228157816ffe72137fdde745",
+                "layout": "rgba8",
+                "width": 7,
+                "height": 3,
+                "rowBytes": 28,
+                "byteLength": 84,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "bmp/os2-core-palette8-short.frame-0.rgb8.raw",
+                "sha256": "7c94f1ab9bba59bf2e841415455cba8e50129cb54a6ed244a7de9c6692f7378d",
+                "layout": "rgb8",
+                "width": 7,
+                "height": 3,
+                "rowBytes": 21,
+                "byteLength": 63,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "bmp/os2-v2-header16-palette4",
+      "kind": "valid",
+      "format": "bmp",
+      "input": {
+        "path": "bmp/os2-v2-header16-palette4.bmp",
+        "sha256": "e74ad76610422a3d0fa95a8b8bc6ad20071c1da6dc0508ab822797cb86f32d34",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/BmpCorpus.cs (BuildOs2)",
+        "tools": [
+          "ffmpeg 9.0.2 (cross-check only)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "width": 5,
+          "height": 3,
+          "header": 16,
+          "paletteEntries": 16
+        }
+      },
+      "features": [
+        "bmp.bpp=4",
+        "bmp.compression=rgb",
+        "bmp.header=16",
+        "bmp.palette=16",
+        "bmp.rowOrder=bottom-up",
+        "bmp.rowPadding",
+        "bmp.width=odd"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "The shortest BITMAPCOREHEADER2: 16 bytes, cut after the bit count. Every field it leaves out is zero (uncompressed, a full 16-entry palette, no resolution), and its palette entries are RGBQUAD (four bytes), unlike those of the 12-byte header.",
+        "crossChecks": [
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec bmp decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt rgba -",
+            "result": "differs",
+            "notes": "FFmpeg does not decode a BITMAPCOREHEADER2 shorter than 40 bytes."
+          }
+        ]
+      },
+      "expected": {
+        "width": 5,
+        "height": 3,
+        "pixelFormat": "Rgb24",
+        "colorModel": "Indexed",
+        "bitsPerComponent": 4,
+        "orientation": 1,
+        "iccProfile": "none",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "bmp/os2-v2-header16-palette4.frame-0.rgba8.raw",
+                "sha256": "b05ee5d44e63afa76212383c3d67a35f5be5c5d5e0c1739fd8a57d19571b4178",
+                "layout": "rgba8",
+                "width": 5,
+                "height": 3,
+                "rowBytes": 20,
+                "byteLength": 60,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "bmp/os2-v2-header16-palette4.frame-0.rgb8.raw",
+                "sha256": "6af793297c297828649c95e095132d5079c95cbae9f56a7bbf860bd61ff04533",
+                "layout": "rgb8",
+                "width": 5,
+                "height": 3,
+                "rowBytes": 15,
+                "byteLength": 45,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "bmp/os2-v2-header64-bgr24",
+      "kind": "valid",
+      "format": "bmp",
+      "input": {
+        "path": "bmp/os2-v2-header64-bgr24.bmp",
+        "sha256": "336f2ba4d844189e36c30587afd2c5f0c5d71715b7aaf1021cc0f86a3981d380",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/BmpCorpus.cs (BuildOs2)",
+        "tools": [
+          "ffmpeg 9.0.2 (cross-check only)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "width": 2,
+          "height": 2,
+          "header": 64,
+          "pixelsPerMeter": [
+            2835,
+            5670
+          ]
+        }
+      },
+      "features": [
+        "bmp.bpp=24",
+        "bmp.compression=rgb",
+        "bmp.header=64",
+        "bmp.resolution",
+        "bmp.rowOrder=bottom-up",
+        "bmp.rowPadding"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "OS/2 2.x BITMAPCOREHEADER2, all 64 bytes: its first 40 bytes are laid out like BITMAPINFOHEADER, and the resolution is in pixels per meter because usUnits is 0 (metric), so it decodes like bmp/bgr24-resolution.",
+        "crossChecks": [
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec bmp decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt rgba -",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "result": "exact"
+          }
+        ]
+      },
+      "expected": {
+        "width": 2,
+        "height": 2,
+        "pixelFormat": "Rgb24",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "animation": null,
+        "resolution": {
+          "horizontalDpi": 72.009,
+          "verticalDpi": 144.018,
+          "encoded": {
+            "unit": "meter",
+            "x": 2835,
+            "y": 5670
+          }
+        },
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "bmp/os2-v2-header64-bgr24.frame-0.rgba8.raw",
+                "sha256": "6044c0f6e2821f784a1606db9318595f9bb6ba7d0d6a960bb1ee44999932f613",
+                "layout": "rgba8",
+                "width": 2,
+                "height": 2,
+                "rowBytes": 8,
+                "byteLength": 16,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "bmp/os2-v2-header64-bgr24.frame-0.rgb8.raw",
+                "sha256": "3ea22337ad078bd84adabf279bc7cad8f22185fc2cbf8e50455425e150235411",
+                "layout": "rgb8",
+                "width": 2,
+                "height": 2,
+                "rowBytes": 6,
+                "byteLength": 12,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "bmp/os2-v2-rle24",
+      "kind": "valid",
+      "format": "bmp",
+      "input": {
+        "path": "bmp/os2-v2-rle24.bmp",
+        "sha256": "57079020abe03b029149192d5175e21e6ec812ec2006706a2aefaebfc0a721c7",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/BmpCorpus.cs (BuildOs2)",
+        "tools": [
+          "ffmpeg 9.0.2 (cross-check only)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "width": 5,
+          "height": 3,
+          "header": 64,
+          "compression": "BCA_RLE24"
+        }
+      },
+      "features": [
+        "bmp.bpp=24",
+        "bmp.compression=rle24",
+        "bmp.header=64",
+        "bmp.rle=absolute",
+        "bmp.rle=absolutePadding",
+        "bmp.rle=delta",
+        "bmp.rle=earlyEndOfLine",
+        "bmp.rowOrder=bottom-up",
+        "bmp.width=odd"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "OS/2 2.x 24-bit run-length encoding (compression 4, which a Windows header would read as BI_JPEG): runs of one blue, green, red triplet, an absolute run of three triplets (nine bytes and a padding byte), an absolute run of four triplets (no padding), a delta and an early end of line. There is no palette, so the two skipped pixels are black.",
+        "crossChecks": [
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec bmp decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt rgba -",
+            "result": "differs",
+            "notes": "FFmpeg does not decode BCA_RLE24."
+          }
+        ]
+      },
+      "expected": {
+        "width": 5,
+        "height": 3,
+        "pixelFormat": "Rgb24",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "bmp/os2-v2-rle24.frame-0.rgba8.raw",
+                "sha256": "a44fdb033aae722efad3dfb836d996aca49b37d8f3df630d418376d6f4072367",
+                "layout": "rgba8",
+                "width": 5,
+                "height": 3,
+                "rowBytes": 20,
+                "byteLength": 60,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "bmp/os2-v2-rle24.frame-0.rgb8.raw",
+                "sha256": "288607394c2794f65e8e3ef45f05b6171e32bf8550d1818857ef27edec9484e2",
+                "layout": "rgb8",
+                "width": 5,
+                "height": 3,
+                "rowBytes": 15,
+                "byteLength": 45,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
       "id": "bmp/palette1-two-colors",
       "kind": "valid",
       "format": "bmp",
@@ -23114,6 +23833,412 @@
                 "height": 3,
                 "rowBytes": 15,
                 "byteLength": 45,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "bmp/rle4-delta-skips",
+      "kind": "valid",
+      "format": "bmp",
+      "input": {
+        "path": "bmp/rle4-delta-skips.bmp",
+        "sha256": "48197dfcc8ce69fe09c9203fe3a8ee5d3bd0644bfd8a1c42d8bc0e6947415715",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/BmpCorpus.cs (BuildRunLength)",
+        "tools": [
+          "ffmpeg 9.0.2 (cross-check only)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "width": 7,
+          "height": 4,
+          "compression": "BI_RLE4"
+        }
+      },
+      "features": [
+        "bmp.bpp=4",
+        "bmp.compression=rle4",
+        "bmp.header=40",
+        "bmp.palette=4",
+        "bmp.rle=absolute",
+        "bmp.rle=delta",
+        "bmp.rle=earlyEndOfBitmap",
+        "bmp.rle=earlyEndOfLine",
+        "bmp.rowOrder=bottom-up",
+        "bmp.width=odd"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "BI_RLE4 with skipped pixels: a delta that starts a row at its second pixel (an absolute run of three indexes then starts on an odd column and needs no padding byte), an early end of line, a delta that moves three pixels right and one row up, and an end of bitmap that leaves the last stored row unwritten. The skipped pixels are palette index 0, whose color is (200, 100, 50).",
+        "crossChecks": [
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec bmp decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt rgba -",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "result": "exact"
+          }
+        ]
+      },
+      "expected": {
+        "width": 7,
+        "height": 4,
+        "pixelFormat": "Rgb24",
+        "colorModel": "Indexed",
+        "bitsPerComponent": 4,
+        "orientation": 1,
+        "iccProfile": "none",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "bmp/rle4-delta-skips.frame-0.rgba8.raw",
+                "sha256": "2b31e209560b2dcdab6fbd3cce35951bf78585cf5e8b9e4fb1f53e7a864c9f18",
+                "layout": "rgba8",
+                "width": 7,
+                "height": 4,
+                "rowBytes": 28,
+                "byteLength": 112,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "bmp/rle4-delta-skips.frame-0.rgb8.raw",
+                "sha256": "02cc6fa015f01512d96a58c0b2efbea90b02976f8bcb53717fe0d241f359eac0",
+                "layout": "rgb8",
+                "width": 7,
+                "height": 4,
+                "rowBytes": 21,
+                "byteLength": 84,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "bmp/rle4-runs-absolute",
+      "kind": "valid",
+      "format": "bmp",
+      "input": {
+        "path": "bmp/rle4-runs-absolute.bmp",
+        "sha256": "ee926db84708b2212e3e39ab8b4d62cd504aee2a4b08f15b40b3531f68c4733a",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/BmpCorpus.cs (BuildRunLength)",
+        "tools": [
+          "ffmpeg 9.0.2 (cross-check only)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "width": 5,
+          "height": 3,
+          "compression": "BI_RLE4"
+        }
+      },
+      "features": [
+        "bmp.bpp=4",
+        "bmp.compression=rle4",
+        "bmp.header=40",
+        "bmp.palette=5",
+        "bmp.rle=absolute",
+        "bmp.rle=absolutePadding",
+        "bmp.rowOrder=bottom-up",
+        "bmp.width=odd"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "BI_RLE4, odd width: a run of four pixels of one index, a run of one pixel (only the high-order index of its byte is used), a run of five pixels alternating two indexes (4, 3, 4, 3, 4), and an absolute run of five indexes stored in three bytes (the last low-order half is unused) followed by its padding byte.",
+        "crossChecks": [
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec bmp decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt rgba -",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "result": "exact"
+          }
+        ]
+      },
+      "expected": {
+        "width": 5,
+        "height": 3,
+        "pixelFormat": "Rgb24",
+        "colorModel": "Indexed",
+        "bitsPerComponent": 4,
+        "orientation": 1,
+        "iccProfile": "none",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "bmp/rle4-runs-absolute.frame-0.rgba8.raw",
+                "sha256": "6c2cf9edc785c460446e78fb29aa798943e6b6577f9c508e9004a9c803730e3a",
+                "layout": "rgba8",
+                "width": 5,
+                "height": 3,
+                "rowBytes": 20,
+                "byteLength": 60,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "bmp/rle4-runs-absolute.frame-0.rgb8.raw",
+                "sha256": "13b61cc7100278fed201fac3142385a62221489ecddabff36aae878d4310b851",
+                "layout": "rgb8",
+                "width": 5,
+                "height": 3,
+                "rowBytes": 15,
+                "byteLength": 45,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "bmp/rle8-delta-skips",
+      "kind": "valid",
+      "format": "bmp",
+      "input": {
+        "path": "bmp/rle8-delta-skips.bmp",
+        "sha256": "5450d9822ac405250cbe74917871d7302701ea80b46d17bd98072f282c71c252",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/BmpCorpus.cs (BuildRunLength)",
+        "tools": [
+          "ffmpeg 9.0.2 (cross-check only)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "width": 6,
+          "height": 6,
+          "compression": "BI_RLE8"
+        }
+      },
+      "features": [
+        "bmp.bpp=8",
+        "bmp.compression=rle8",
+        "bmp.header=40",
+        "bmp.palette=4",
+        "bmp.rle=delta",
+        "bmp.rle=earlyEndOfBitmap",
+        "bmp.rle=earlyEndOfLine",
+        "bmp.rowOrder=bottom-up"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "BI_RLE8 with skipped pixels: an end of line after two of six pixels, a delta that moves three pixels right, a delta that moves two pixels right and two rows up (one row is skipped entirely), and an end of bitmap before the end of the fifth stored row, with the sixth never started. The pixels the stream does not store are palette index 0, whose color is (200, 100, 50) here: they are neither black nor transparent.",
+        "crossChecks": [
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec bmp decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt rgba -",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "result": "exact"
+          }
+        ]
+      },
+      "expected": {
+        "width": 6,
+        "height": 6,
+        "pixelFormat": "Rgb24",
+        "colorModel": "Indexed",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "bmp/rle8-delta-skips.frame-0.rgba8.raw",
+                "sha256": "ec8e02de4a59d273521436456cdb5c40f356321153691fa79b36f25a3c20b48c",
+                "layout": "rgba8",
+                "width": 6,
+                "height": 6,
+                "rowBytes": 24,
+                "byteLength": 144,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "bmp/rle8-delta-skips.frame-0.rgb8.raw",
+                "sha256": "166e5e627f775153624927b7fc2b15fff357db556d3ec8c828d99edd191e5dd3",
+                "layout": "rgb8",
+                "width": 6,
+                "height": 6,
+                "rowBytes": 18,
+                "byteLength": 108,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "bmp/rle8-runs-absolute",
+      "kind": "valid",
+      "format": "bmp",
+      "input": {
+        "path": "bmp/rle8-runs-absolute.bmp",
+        "sha256": "8b411d3d94e6de19d2616816b98cc8682bc6cd413381e1682a04e8d2c19aa0ca",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/BmpCorpus.cs (BuildRunLength)",
+        "tools": [
+          "ffmpeg 9.0.2 (cross-check only)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "width": 7,
+          "height": 3,
+          "compression": "BI_RLE8"
+        }
+      },
+      "features": [
+        "bmp.bpp=8",
+        "bmp.compression=rle8",
+        "bmp.header=40",
+        "bmp.palette=5",
+        "bmp.rle=absolute",
+        "bmp.rle=absolutePadding",
+        "bmp.rowOrder=bottom-up",
+        "bmp.width=odd"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "BI_RLE8, every row complete: encoded runs (a count and one index), an absolute run of four indexes, an absolute run of five indexes followed by its padding byte (absolute runs end on a 16-bit boundary), single pixels stored as runs of one, an end-of-line escape after each row and the end-of-bitmap escape. The stream stores the rows bottom-up.",
+        "crossChecks": [
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec bmp decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt rgba -",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "result": "exact"
+          }
+        ]
+      },
+      "expected": {
+        "width": 7,
+        "height": 3,
+        "pixelFormat": "Rgb24",
+        "colorModel": "Indexed",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "bmp/rle8-runs-absolute.frame-0.rgba8.raw",
+                "sha256": "16fd4871f1e0ead2b0cc589617851a31a0a60c99222eacb43348176feb56c4e7",
+                "layout": "rgba8",
+                "width": 7,
+                "height": 3,
+                "rowBytes": 28,
+                "byteLength": 84,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "bmp/rle8-runs-absolute.frame-0.rgb8.raw",
+                "sha256": "996cc235d888673d5a630014527810d7077f449ccc8e48ff0914affbee507840",
+                "layout": "rgb8",
+                "width": 7,
+                "height": 3,
+                "rowBytes": 21,
+                "byteLength": 63,
                 "alpha": "none",
                 "rowOrder": "top-down",
                 "compression": "none"
@@ -28039,34 +29164,6 @@
       "notes": "biBitCount is 7; 1, 4, 8, 16, 24 and 32 are the defined values."
     },
     {
-      "id": "invalid/bmp/core-header",
-      "kind": "unsupported",
-      "format": "bmp",
-      "input": {
-        "path": "invalid/bmp/core-header.bmp",
-        "sha256": "8c9123dd92622a021d74708ade25201b2e20b655d32df13cc8ecf73d9c5043e6",
-        "role": "encoded"
-      },
-      "provenance": {
-        "origin": "hand-authored",
-        "license": "CC0-1.0",
-        "author": "Meziantou.Framework.Imaging contributors",
-        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/BmpCorpus.cs (BuildErrors)",
-        "tools": [
-          ".NET 10.0"
-        ]
-      },
-      "expectedError": {
-        "exception": "UnsupportedImageFeatureException",
-        "format": "Bmp",
-        "feature": "Header: BITMAPCOREHEADER"
-      },
-      "features": [
-        "bmp.unsupported=core-header"
-      ],
-      "notes": "The 12-byte OS/2 BITMAPCOREHEADER is recognized and rejected; it is a documented follow-up, not a silently mis-parsed header."
-    },
-    {
       "id": "invalid/bmp/embedded-png",
       "kind": "unsupported",
       "format": "bmp",
@@ -28147,12 +29244,60 @@
       "notes": "The red mask 0x0000F810 is not a contiguous run of bits."
     },
     {
-      "id": "invalid/bmp/os2-v2-header",
+      "id": "invalid/bmp/os2-core-bit-count-16",
+      "kind": "invalid",
+      "format": "bmp",
+      "input": {
+        "path": "invalid/bmp/os2-core-bit-count-16.bmp",
+        "sha256": "27cb2565bb37d3d805dd43d27821a43ab1c09c539fcf6ef4c405f1459f218d84",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/BmpCorpus.cs (BuildErrors)",
+        "tools": [
+          ".NET 10.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "InvalidImageContentException",
+        "format": "Bmp"
+      },
+      "notes": "A BITMAPCOREHEADER with bcBitCount 16: OS/2 bitmaps store 1, 4, 8 or 24 bits per pixel."
+    },
+    {
+      "id": "invalid/bmp/os2-core-offset-inside-palette",
+      "kind": "invalid",
+      "format": "bmp",
+      "input": {
+        "path": "invalid/bmp/os2-core-offset-inside-palette.bmp",
+        "sha256": "0229f754513992eb185c5ee4866cfa2e03450883cc82ba2245b15f8bdcc17265",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/BmpCorpus.cs (BuildErrors)",
+        "tools": [
+          ".NET 10.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "InvalidImageContentException",
+        "format": "Bmp"
+      },
+      "notes": "A 4-bit BITMAPCOREHEADER file whose bfOffBits is 28: two bytes after the 26 bytes of the headers, less than one three-byte palette entry."
+    },
+    {
+      "id": "invalid/bmp/os2-huffman-1d",
       "kind": "unsupported",
       "format": "bmp",
       "input": {
-        "path": "invalid/bmp/os2-v2-header.bmp",
-        "sha256": "72529e220ceb5b99f4b31dfe1aae8edcb85137d9fff5051d688ba52fa2ad675d",
+        "path": "invalid/bmp/os2-huffman-1d.bmp",
+        "sha256": "3e6a8b8709523faedd4709ad954eca22d623a8cd8ba85889a03aff9daba39808",
         "role": "encoded"
       },
       "provenance": {
@@ -28167,12 +29312,12 @@
       "expectedError": {
         "exception": "UnsupportedImageFeatureException",
         "format": "Bmp",
-        "feature": "Header: BITMAPCOREHEADER2"
+        "feature": "Compression: Huffman 1D"
       },
       "features": [
-        "bmp.unsupported=os2-v2-header"
+        "bmp.unsupported=huffman1d"
       ],
-      "notes": "The 64-byte OS/2 BITMAPCOREHEADER2 is recognized and rejected."
+      "notes": "An OS/2 2.x header with compression 3, which is CCITT Group 3 one-dimensional (Huffman 1D) coding there, not BI_BITFIELDS: recognized and rejected."
     },
     {
       "id": "invalid/bmp/overlapping-masks",
@@ -28271,12 +29416,12 @@
       "notes": "biPlanes is 2; 1 is the only legal value."
     },
     {
-      "id": "invalid/bmp/rle8",
-      "kind": "unsupported",
+      "id": "invalid/bmp/rle4-delta-outside-canvas",
+      "kind": "invalid",
       "format": "bmp",
       "input": {
-        "path": "invalid/bmp/rle8.bmp",
-        "sha256": "11b59dd9d18c47d61909b39540e350ccb3f60b75910a47f3714c3642e63cba5d",
+        "path": "invalid/bmp/rle4-delta-outside-canvas.bmp",
+        "sha256": "b627caa827ae99efa1d364670573d5140cfaa95cc7070fd416d905333f905c35",
         "role": "encoded"
       },
       "provenance": {
@@ -28289,14 +29434,154 @@
         ]
       },
       "expectedError": {
-        "exception": "UnsupportedImageFeatureException",
-        "format": "Bmp",
-        "feature": "Compression: RLE"
+        "exception": "InvalidImageContentException",
+        "format": "Bmp"
       },
-      "features": [
-        "bmp.unsupported=rle"
-      ],
-      "notes": "BI_RLE8 is recognized and rejected: run-length encoded BMP is a documented follow-up."
+      "notes": "A delta moves three rows up from the first of three rows: the current position may not leave the canvas."
+    },
+    {
+      "id": "invalid/bmp/rle8-bit-count-4",
+      "kind": "invalid",
+      "format": "bmp",
+      "input": {
+        "path": "invalid/bmp/rle8-bit-count-4.bmp",
+        "sha256": "02f04b9b2f132a70cede87702da8d63664f1226607b75b94d44f07a764012c66",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/BmpCorpus.cs (BuildErrors)",
+        "tools": [
+          ".NET 10.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "InvalidImageContentException",
+        "format": "Bmp"
+      },
+      "notes": "BI_RLE8 with biBitCount 4: BI_RLE8 only stores 8-bit indexes (BI_RLE4 stores the 4-bit ones)."
+    },
+    {
+      "id": "invalid/bmp/rle8-data-after-last-row",
+      "kind": "invalid",
+      "format": "bmp",
+      "input": {
+        "path": "invalid/bmp/rle8-data-after-last-row.bmp",
+        "sha256": "48026abc9cc42a7c84988fe7c8a76108dcc2893b3121c1f6395611005a6f5dda",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/BmpCorpus.cs (BuildErrors)",
+        "tools": [
+          ".NET 10.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "InvalidImageContentException",
+        "format": "Bmp"
+      },
+      "notes": "A run follows the end of line of the third and last row: only the end-of-bitmap escape may follow the last row."
+    },
+    {
+      "id": "invalid/bmp/rle8-missing-end-of-bitmap",
+      "kind": "invalid",
+      "format": "bmp",
+      "input": {
+        "path": "invalid/bmp/rle8-missing-end-of-bitmap.bmp",
+        "sha256": "b8a57f98f18f1aae112c820fb62eeafcc819ab9bb2571049276ff6dda7830dc9",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/BmpCorpus.cs (BuildErrors)",
+        "tools": [
+          ".NET 10.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "InvalidImageContentException",
+        "format": "Bmp"
+      },
+      "notes": "bmp/rle8-runs-absolute without its last two bytes: every row is complete, but the input ends before the end-of-bitmap escape, so it is truncated."
+    },
+    {
+      "id": "invalid/bmp/rle8-palette-index-out-of-range",
+      "kind": "invalid",
+      "format": "bmp",
+      "input": {
+        "path": "invalid/bmp/rle8-palette-index-out-of-range.bmp",
+        "sha256": "8696deb28ac9a03be40aba1c9518a616713f58e3029e34c4bc46be1ed5e60103",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/BmpCorpus.cs (BuildErrors)",
+        "tools": [
+          ".NET 10.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "InvalidImageContentException",
+        "format": "Bmp"
+      },
+      "notes": "A run uses the palette index 5, outside the five-entry palette (0 to 4)."
+    },
+    {
+      "id": "invalid/bmp/rle8-run-past-row-end",
+      "kind": "invalid",
+      "format": "bmp",
+      "input": {
+        "path": "invalid/bmp/rle8-run-past-row-end.bmp",
+        "sha256": "8b1f084e4a5b09ecad113679dcc1608a176d2ed62579b6a5a20ef0e829326c43",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/BmpCorpus.cs (BuildErrors)",
+        "tools": [
+          ".NET 10.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "InvalidImageContentException",
+        "format": "Bmp"
+      },
+      "notes": "A run of three pixels starts at the sixth pixel of a seven-pixel row: a run never wraps to the next row and is never clamped."
+    },
+    {
+      "id": "invalid/bmp/rle8-top-down",
+      "kind": "invalid",
+      "format": "bmp",
+      "input": {
+        "path": "invalid/bmp/rle8-top-down.bmp",
+        "sha256": "e94e6f73ed5bdcb7c0e9ef8d0f075aa3a165e084c2f1c24b3ceb81f7d7de2984",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/BmpCorpus.cs (BuildErrors)",
+        "tools": [
+          ".NET 10.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "InvalidImageContentException",
+        "format": "Bmp"
+      },
+      "notes": "BI_RLE8 with a negative biHeight: a run-length encoded bitmap is always bottom-up."
     },
     {
       "id": "invalid/bmp/truncated-header",

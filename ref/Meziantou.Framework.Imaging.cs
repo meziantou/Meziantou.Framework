@@ -771,12 +771,29 @@ namespace Meziantou.Framework.Imaging.Formats
         public Meziantou.Framework.Imaging.Formats.FrameDurationRounding DurationRounding { get => throw null; init { } }
     }
 
+    public enum BmpCompression
+    {
+        None = 0,
+        RunLength = 1,
+    }
+
+    public enum BmpDithering
+    {
+        None = 0,
+        FloydSteinberg = 1,
+    }
+
     public sealed class BmpEncoder : Meziantou.Framework.Imaging.Formats.ImageEncoder
     {
         public override Meziantou.Framework.Imaging.ImageFormat Format { get => throw null; }
         public Meziantou.Framework.Imaging.Formats.BmpPixelLayout PixelLayout { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Formats.BmpCompression Compression { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Formats.BmpRowOrder RowOrder { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Rgba64? BackgroundColor { get => throw null; init { } }
         public bool AllowBitDepthReduction { get => throw null; init { } }
+        public bool AllowColorReduction { get => throw null; init { } }
+        public int MaxColors { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Formats.BmpDithering Dithering { get => throw null; init { } }
     }
 
     public enum BmpPixelLayout
@@ -784,6 +801,17 @@ namespace Meziantou.Framework.Imaging.Formats
         Auto = 0,
         Bgr24 = 1,
         Bgra32 = 2,
+        Indexed1 = 3,
+        Indexed4 = 4,
+        Indexed8 = 5,
+        Bgr565 = 6,
+        Bgr555 = 7,
+    }
+
+    public enum BmpRowOrder
+    {
+        BottomUp = 0,
+        TopDown = 1,
     }
 
     public enum FrameDurationRounding

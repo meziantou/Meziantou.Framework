@@ -4,14 +4,15 @@ using System.Numerics;
 namespace Meziantou.Framework.Imaging.TestHarness.Bmp;
 
 /// <summary>
-/// An independent, deliberately simple reading of the Windows BMP subset the library supports, used to verify the library's
-/// encoder output without the library's decoder. It keeps the whole input in memory, expands every pixel to straight RGBA8,
-/// and is strict: an unsupported DIB header, an illegal field, a malformed mask, a palette index outside the palette, a
-/// pixel-data offset inside the header and truncation throw <see cref="InvalidDataException"/>.
+/// An independent, deliberately simple reading of the BMP subset the library supports (the Windows headers, the OS/2 1.x and
+/// 2.x headers, uncompressed rows and run-length streams), used to verify the library's encoder output without the
+/// library's decoder. It keeps the whole input in memory, expands every pixel to straight RGBA8, and is strict: an
+/// unsupported DIB header, an illegal field, a malformed mask, a palette index outside the palette, a pixel-data offset
+/// inside the header, a run-length command that leaves the canvas and truncation throw <see cref="InvalidDataException"/>.
 /// </summary>
 public sealed class ReferenceBmp
 {
-    private ReferenceBmp(int width, int height, int bitsPerPixel, uint compression, bool topDown, bool hasAlphaMask, int paletteEntries, int headerLength, (int X, int Y) pixelsPerMeter, byte[] rgba)
+    private ReferenceBmp(int width, int height, int bitsPerPixel, uint compression, bool topDown, bool hasAlphaMask, byte[] palette, int headerLength, (int X, int Y) pixelsPerMeter, int pixelDataLength, byte[] rgba)
     {
         Width = width;
         Height = height;
@@ -19,9 +20,10 @@ public sealed class ReferenceBmp
         Compression = compression;
         IsTopDown = topDown;
         HasAlphaMask = hasAlphaMask;
-        PaletteEntries = paletteEntries;
+        Palette = palette;
         HeaderLength = headerLength;
         PixelsPerMeter = pixelsPerMeter;
+        PixelDataLength = pixelDataLength;
         Rgba = rgba;
     }
 
@@ -34,8 +36,14 @@ public sealed class ReferenceBmp
     /// <summary>Gets the number of bits per pixel.</summary>
     public int BitsPerPixel { get; }
 
-    /// <summary>Gets <c>biCompression</c>.</summary>
+    /// <summary>
+    /// Gets the stored compression value: <c>biCompression</c>, or <c>ulCompression</c> of an OS/2 2.x header, where 4 is
+    /// 24-bit run-length encoding.
+    /// </summary>
     public uint Compression { get; }
+
+    /// <summary>Gets a value indicating whether the pixel data is a run-length stream.</summary>
+    public bool IsRunLength => Compression is 1 or 2 or 4;
 
     /// <summary>Gets a value indicating whether the first stored row is the top row.</summary>
     public bool IsTopDown { get; }
@@ -44,12 +52,21 @@ public sealed class ReferenceBmp
     public bool HasAlphaMask { get; }
 
     /// <summary>Gets the number of palette entries.</summary>
-    public int PaletteEntries { get; }
+    public int PaletteEntries => Palette.Length / 3;
+
+    /// <summary>Gets the palette as red, green, blue triplets (empty for layouts without a palette).</summary>
+    public ReadOnlyMemory<byte> Palette { get; }
+
+    /// <summary>
+    /// Gets the number of bytes the pixel data occupies from <c>bfOffBits</c>: the padded rows, or the run-length stream up
+    /// to and including its end-of-bitmap marker.
+    /// </summary>
+    public int PixelDataLength { get; }
 
     /// <summary>Gets the length of the DIB header.</summary>
     public int HeaderLength { get; }
 
-    /// <summary>Gets <c>biXPelsPerMeter</c> and <c>biYPelsPerMeter</c>.</summary>
+    /// <summary>Gets <c>biXPelsPerMeter</c> and <c>biYPelsPerMeter</c> (zero when the header stores no resolution in pixels per meter).</summary>
     public (int X, int Y) PixelsPerMeter { get; }
 
     /// <summary>Gets the decoded pixels as straight RGBA8, row-major, top-down.</summary>
@@ -66,29 +83,80 @@ public sealed class ReferenceBmp
 
         var offsetBits = BinaryPrimitives.ReadUInt32LittleEndian(data[10..]);
         var headerLength = (int)BinaryPrimitives.ReadUInt32LittleEndian(data[14..]);
-        if (headerLength is not (40 or 52 or 56 or 108 or 124))
+        var isCore = headerLength == 12;
+        var isWindows = headerLength is 40 or 52 or 56 or 108 or 124;
+        var isOs2 = !isWindows && headerLength is >= 16 and <= 64;
+        if (!isCore && !isWindows && !isOs2)
             throw new InvalidDataException($"Unsupported DIB header of {headerLength} bytes.");
 
         Require(data, 14 + headerLength);
-        var dib = data.Slice(14, headerLength);
-        var width = BinaryPrimitives.ReadInt32LittleEndian(dib[4..]);
-        var storedHeight = BinaryPrimitives.ReadInt32LittleEndian(dib[8..]);
-        var planes = BinaryPrimitives.ReadUInt16LittleEndian(dib[12..]);
-        var bitsPerPixel = BinaryPrimitives.ReadUInt16LittleEndian(dib[14..]);
-        var compression = BinaryPrimitives.ReadUInt32LittleEndian(dib[16..]);
-        var pixelsPerMeter = (BinaryPrimitives.ReadInt32LittleEndian(dib[24..]), BinaryPrimitives.ReadInt32LittleEndian(dib[28..]));
-        var colorsUsed = BinaryPrimitives.ReadUInt32LittleEndian(dib[32..]);
+
+        // A short OS/2 2.x header leaves its last fields out: they are zero
+        Span<byte> dib = stackalloc byte[124];
+        dib.Clear();
+        data.Slice(14, headerLength).CopyTo(dib);
+        int width, storedHeight, planes, bitsPerPixel;
+        uint compression = 0, colorsUsed = 0;
+        (int X, int Y) pixelsPerMeter = (0, 0);
+        if (isCore)
+        {
+            width = BinaryPrimitives.ReadUInt16LittleEndian(dib[4..]);
+            storedHeight = BinaryPrimitives.ReadUInt16LittleEndian(dib[6..]);
+            planes = BinaryPrimitives.ReadUInt16LittleEndian(dib[8..]);
+            bitsPerPixel = BinaryPrimitives.ReadUInt16LittleEndian(dib[10..]);
+        }
+        else
+        {
+            width = BinaryPrimitives.ReadInt32LittleEndian(dib[4..]);
+            storedHeight = BinaryPrimitives.ReadInt32LittleEndian(dib[8..]);
+            planes = BinaryPrimitives.ReadUInt16LittleEndian(dib[12..]);
+            bitsPerPixel = BinaryPrimitives.ReadUInt16LittleEndian(dib[14..]);
+            compression = BinaryPrimitives.ReadUInt32LittleEndian(dib[16..]);
+            pixelsPerMeter = (BinaryPrimitives.ReadInt32LittleEndian(dib[24..]), BinaryPrimitives.ReadInt32LittleEndian(dib[28..]));
+            colorsUsed = BinaryPrimitives.ReadUInt32LittleEndian(dib[32..]);
+        }
+
         if (width <= 0 || storedHeight is 0 or int.MinValue || planes != 1)
             throw new InvalidDataException("Illegal BMP dimensions or plane count.");
 
-        if (compression is not (0 or 3 or 6))
+        // Run-length encoding: 8-bit (1) and 4-bit (2) in every header, 24-bit (4) in an OS/2 2.x header only, where 3 is
+        // Huffman 1D instead of explicit masks
+        var hasMasks = isWindows && compression is 3 or 6;
+        var runLengthBits = compression switch
+        {
+            1 => 8,
+            2 => 4,
+            4 when isOs2 => 24,
+            _ => 0,
+        };
+
+        if (compression != 0 && !hasMasks && runLengthBits == 0)
             throw new InvalidDataException($"Unsupported BMP compression {compression}.");
 
-        if (bitsPerPixel is not (1 or 4 or 8 or 16 or 24 or 32))
+        if (isWindows ? bitsPerPixel is not (1 or 4 or 8 or 16 or 24 or 32) : bitsPerPixel is not (1 or 4 or 8 or 24))
             throw new InvalidDataException($"Unsupported BMP bit count {bitsPerPixel}.");
 
-        if (compression is 3 or 6 && bitsPerPixel is not (16 or 32))
+        if (hasMasks && bitsPerPixel is not (16 or 32))
             throw new InvalidDataException("Explicit masks are only defined for 16 and 32 bits per pixel.");
+
+        if (runLengthBits != 0 && (bitsPerPixel != runLengthBits || storedHeight < 0))
+            throw new InvalidDataException("A run-length stream stores bottom-up pixels of its own bit count.");
+
+        if (isOs2)
+        {
+            if (storedHeight < 0)
+                throw new InvalidDataException("The height of an OS/2 header is unsigned.");
+
+            // usRecording (offset 44) and ulColorEncoding (offset 56) only define the value 0
+            if (BinaryPrimitives.ReadUInt16LittleEndian(dib[44..]) != 0 || BinaryPrimitives.ReadUInt32LittleEndian(dib[56..]) != 0)
+                throw new InvalidDataException("Unsupported OS/2 recording algorithm or color encoding.");
+
+            // usUnits (offset 40): the resolution is in pixels per meter for the metric unit only
+            if (BinaryPrimitives.ReadUInt16LittleEndian(dib[40..]) != 0)
+            {
+                pixelsPerMeter = (0, 0);
+            }
+        }
 
         var height = Math.Abs(storedHeight);
         var indexed = bitsPerPixel <= 8;
@@ -97,9 +165,20 @@ public sealed class ReferenceBmp
             throw new InvalidDataException($"The BMP declares {colorsUsed} palette entries.");
 
         var entries = colorsUsed != 0 ? (int)colorsUsed : (indexed ? 1 << bitsPerPixel : 0);
+        var entryLength = isCore ? 3 : 4;
+        if (isCore && indexed)
+        {
+            // A BITMAPCOREHEADER has no color count: a short palette ends where the pixel data starts
+            var available = ((long)offsetBits - 26) / entryLength;
+            if (available < 1)
+                throw new InvalidDataException($"The BMP pixel data offset {offsetBits} leaves no palette entry.");
+
+            entries = (int)Math.Min(entries, available);
+        }
+
         Span<uint> masks = [0, 0, 0, 0];
         var position = 14 + headerLength;
-        if (headerLength >= 52)
+        if (isWindows && headerLength >= 52)
         {
             masks[0] = BinaryPrimitives.ReadUInt32LittleEndian(dib[40..]);
             masks[1] = BinaryPrimitives.ReadUInt32LittleEndian(dib[44..]);
@@ -109,12 +188,12 @@ public sealed class ReferenceBmp
                 masks[3] = BinaryPrimitives.ReadUInt32LittleEndian(dib[52..]);
             }
 
-            if (compression is not (3 or 6))
+            if (!hasMasks)
             {
                 masks.Clear();
             }
         }
-        else if (compression is 3 or 6)
+        else if (hasMasks)
         {
             var count = compression == 6 ? 4 : 3;
             Require(data, position + (4 * count));
@@ -126,7 +205,7 @@ public sealed class ReferenceBmp
             position += 4 * count;
         }
 
-        if (compression is 3 or 6)
+        if (hasMasks)
         {
             if (masks[0] == 0 || masks[1] == 0 || masks[2] == 0)
                 throw new InvalidDataException("A color mask is zero.");
@@ -167,21 +246,24 @@ public sealed class ReferenceBmp
         var palette = new byte[entries * 3];
         if (entries > 0)
         {
-            Require(data, position + (4 * entries));
+            Require(data, position + (entryLength * entries));
             for (var i = 0; i < entries; i++)
             {
-                palette[(i * 3) + 0] = data[position + (4 * i) + 2];
-                palette[(i * 3) + 1] = data[position + (4 * i) + 1];
-                palette[(i * 3) + 2] = data[position + (4 * i)];
+                palette[(i * 3) + 0] = data[position + (entryLength * i) + 2];
+                palette[(i * 3) + 1] = data[position + (entryLength * i) + 1];
+                palette[(i * 3) + 2] = data[position + (entryLength * i)];
             }
 
-            position += 4 * entries;
+            position += entryLength * entries;
         }
 
         if (offsetBits < (uint)position)
             throw new InvalidDataException($"The BMP pixel data offset {offsetBits} is inside the header or palette.");
 
         position = (int)offsetBits;
+        if (runLengthBits != 0)
+            return ReadRunLength(data, position, width, height, runLengthBits, compression, palette, headerLength, pixelsPerMeter);
+
         var rowLength = ((width * bitsPerPixel) + 31) / 32 * 4;
         Require(data, position + (rowLength * height));
 
@@ -229,7 +311,103 @@ public sealed class ReferenceBmp
             }
         }
 
-        return new ReferenceBmp(width, height, bitsPerPixel, compression, storedHeight < 0, masks[3] != 0, entries, headerLength, pixelsPerMeter, rgba);
+        return new ReferenceBmp(width, height, bitsPerPixel, compression, storedHeight < 0, masks[3] != 0, palette, headerLength, pixelsPerMeter, rowLength * height, rgba);
+    }
+
+    /// <summary>
+    /// Reads a run-length stream command by command. The image starts filled with the pixels the stream never writes:
+    /// palette index 0, or black for 24-bit pixels.
+    /// </summary>
+    private static ReferenceBmp ReadRunLength(ReadOnlySpan<byte> data, int start, int width, int height, int bits, uint compression, byte[] palette, int headerLength, (int X, int Y) pixelsPerMeter)
+    {
+        var entries = palette.Length / 3;
+        var rgba = new byte[width * height * 4];
+        for (var offset = 0; offset < rgba.Length; offset += 4)
+        {
+            if (bits != 24)
+            {
+                palette.AsSpan(0, 3).CopyTo(rgba.AsSpan(offset));
+            }
+
+            rgba[offset + 3] = byte.MaxValue;
+        }
+
+        var unit = bits == 24 ? 3 : 1;
+        var position = start;
+        var x = 0;
+        var storedRow = 0;
+        while (true)
+        {
+            Require(data, position + 2);
+            int first = data[position];
+            int second = data[position + 1];
+            if (first == 0 && second == 1)
+                return new ReferenceBmp(width, height, bits, compression, topDown: false, hasAlphaMask: false, palette, headerLength, pixelsPerMeter, position + 2 - start, rgba);
+
+            if (storedRow >= height)
+                throw new InvalidDataException("The BMP run-length data continues after the last row.");
+
+            if (first == 0 && second == 0)
+            {
+                storedRow++;
+                x = 0;
+                position += 2;
+                continue;
+            }
+
+            if (first == 0 && second == 2)
+            {
+                Require(data, position + 4);
+                x += data[position + 2];
+                storedRow += data[position + 3];
+                if (x > width || storedRow >= height)
+                    throw new InvalidDataException("A BMP run-length delta leaves the canvas.");
+
+                position += 4;
+                continue;
+            }
+
+            // An encoded run repeats the pixel that follows its count; an absolute run stores literal pixels, word-aligned
+            var isAbsolute = first == 0;
+            var count = isAbsolute ? second : first;
+            if (count > width - x)
+                throw new InvalidDataException($"A BMP run of {count} pixels leaves its row.");
+
+            var dataStart = isAbsolute ? position + 2 : position + 1;
+            var dataLength = !isAbsolute ? unit : bits == 4 ? (count + 1) / 2 : count * unit;
+            Require(data, dataStart + dataLength + (isAbsolute ? dataLength & 1 : 0));
+            for (var i = 0; i < count; i++)
+            {
+                var target = rgba.AsSpan(((((height - 1 - storedRow) * width) + x + i) * 4), 3);
+                if (bits == 24)
+                {
+                    var source = data.Slice(isAbsolute ? dataStart + (i * 3) : dataStart, 3);
+                    target[0] = source[2];
+                    target[1] = source[1];
+                    target[2] = source[0];
+                    continue;
+                }
+
+                int index;
+                if (bits == 8)
+                {
+                    index = data[isAbsolute ? dataStart + i : dataStart];
+                }
+                else
+                {
+                    var packed = data[isAbsolute ? dataStart + (i / 2) : dataStart];
+                    index = (i & 1) == 0 ? packed >> 4 : packed & 0x0F;
+                }
+
+                if (index >= entries)
+                    throw new InvalidDataException($"The BMP palette index {index} is outside the {entries}-entry palette.");
+
+                palette.AsSpan(index * 3, 3).CopyTo(target);
+            }
+
+            x += count;
+            position = dataStart + dataLength + (isAbsolute ? dataLength & 1 : 0);
+        }
     }
 
     private static byte Scale(uint pixel, (uint Mask, int Shift, int Bits) channel)

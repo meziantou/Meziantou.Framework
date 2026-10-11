@@ -4,8 +4,9 @@ using Meziantou.Framework.Imaging.Metadata;
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
-/// Incremental reader of a standalone Windows BMP file: <c>BITMAPFILEHEADER</c>, the DIB header and its masks, the palette,
-/// the gap before the pixel data and the padded rows, in the three walks of the codec infrastructure.
+/// Incremental reader of a standalone BMP file: <c>BITMAPFILEHEADER</c>, the Windows or OS/2 DIB header and its masks, the
+/// palette, the gap before the pixel data and the padded rows or the run-length stream, in the three walks of the codec
+/// infrastructure.
 /// </summary>
 /// <remarks>
 /// <list type="bullet">
@@ -16,6 +17,14 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <para>
 /// Rows are accumulated byte by byte into one private row buffer, so the parser never asks the driver for more than a few
 /// contiguous bytes and its memory never depends on the input length. Bytes after the last row are not read.
+/// </para>
+/// <para>
+/// A run-length stream (<c>BI_RLE8</c>, <c>BI_RLE4</c>, and <c>BCA_RLE24</c> of an OS/2 2.x header) is decompressed into the
+/// same row buffer, in the stored layout of the matching uncompressed bitmap, so the rows are expanded by the same code.
+/// The buffer starts every row cleared: the pixels a stream skips (a delta, an early end of line or an early end of bitmap)
+/// are palette index 0, or black for 24-bit pixels. The stream is read strictly: a run that leaves its row, a delta that
+/// leaves the canvas, data after the last row and a missing end-of-bitmap marker are malformed, never clamped. Bytes after
+/// the end-of-bitmap marker are not read.
 /// </para>
 /// </remarks>
 internal sealed class BmpStructureParser : ImageParser<ImageInfo>
@@ -30,9 +39,15 @@ internal sealed class BmpStructureParser : ImageParser<ImageInfo>
     private long _position;
     private uint _pixelDataOffset;
     private int _headerLength;
+    private BmpHeaderKind _headerKind;
     private long _rowLength;
     private int _rowFilled;
     private int _rowIndex;
+    private int _column;
+    private int _absoluteBytes;
+    private int _absolutePixels;
+    private int _absoluteCursor;
+    private bool _absolutePadding;
     private PooledBuffer? _rowBuffer;
     private PooledBuffer? _expandedRow;
     private ImageInfo? _result;
@@ -104,8 +119,8 @@ internal sealed class BmpStructureParser : ImageParser<ImageInfo>
                         return ParseStatus.NeedMoreData(BmpFormat.HeaderSizeFieldLength);
 
                     var headerLength = BinaryPrimitives.ReadUInt32LittleEndian(remaining);
-                    if (!BmpInfoHeader.IsSupportedHeaderLength(headerLength))
-                        throw CreateUnsupportedHeaderException(headerLength);
+                    if (!BmpInfoHeader.TryGetKind(headerLength, out _headerKind))
+                        throw BmpFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The BMP DIB header size is {headerLength}; 12 (OS/2 BITMAPCOREHEADER), 16 to 64 (OS/2 BITMAPCOREHEADER2), 40 (BITMAPINFOHEADER), 52, 56, 108 (BITMAPV4HEADER) or 124 (BITMAPV5HEADER) is expected."));
 
                     _headerLength = (int)headerLength;
                     _state = State.DibHeader;
@@ -118,7 +133,7 @@ internal sealed class BmpStructureParser : ImageParser<ImageInfo>
                     if (remaining.Length < _headerLength)
                         return ParseStatus.NeedMoreData(_headerLength);
 
-                    var header = BmpInfoHeader.Parse(remaining[.._headerLength], _headerLength);
+                    var header = BmpInfoHeader.Parse(remaining[.._headerLength], _headerLength, _headerKind);
                     Advance(ref consumed, _headerLength);
                     if (header.TrailingMaskLength == 0)
                     {
@@ -197,7 +212,7 @@ internal sealed class BmpStructureParser : ImageParser<ImageInfo>
 
                 case State.Rows:
                 {
-                    var status = ReadRows(buffer, ref consumed);
+                    var status = Layout.Header.IsRunLength ? ReadRunLengthRows(buffer, ref consumed) : ReadRows(buffer, ref consumed);
                     if (!status.IsComplete)
                         return status;
 
@@ -245,6 +260,19 @@ internal sealed class BmpStructureParser : ImageParser<ImageInfo>
     {
         var limits = _context.Limits;
         limits.EnsureCanvasWithinLimits(header.Width, header.Height);
+        if (header.Kind == BmpHeaderKind.Os2V1 && header.IsIndexed)
+        {
+            // BITMAPCOREHEADER has no color count: a file with a short palette only says so by starting its pixel data early
+            var available = ((long)_pixelDataOffset - BmpFormat.FileHeaderLength - header.HeaderLength) / header.PaletteEntryLength;
+            if (available < header.PaletteEntries)
+            {
+                if (available < 1)
+                    throw BmpFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The BMP pixel data offset is {_pixelDataOffset}, which leaves no room for a palette entry after the {header.HeaderLength}-byte header."));
+
+                header = header.WithPaletteEntries((int)available);
+            }
+        }
+
         Layout = BmpDibLayout.Create(header);
         _rowLength = header.RowLength;
         if (_rowLength > CheckedSizes.MaxBufferLength || CheckedSizes.GetRowLength(header.Width, PixelFormats.GetBytesPerPixel(Layout.SourcePixelFormat)) > CheckedSizes.MaxBufferLength)
@@ -270,7 +298,9 @@ internal sealed class BmpStructureParser : ImageParser<ImageInfo>
 
         _context.Sequential?.OnHeader(CreateInfo(ImageIdentifyMode.Header));
         _decoder!.OnHeaderComplete(this);
-        _rowBuffer = _context.Scope.Rent((int)_rowLength, AllocationKind.DecoderState, clear: false);
+
+        // A run-length stream only writes the pixels it encodes: the others must read as zero
+        _rowBuffer = _context.Scope.Rent((int)_rowLength, AllocationKind.DecoderState, clear: Layout.Header.IsRunLength);
         _expandedRow = _context.Scope.Rent(Layout.Header.Width * PixelFormats.GetBytesPerPixel(Layout.SourcePixelFormat), AllocationKind.DecoderState, clear: false);
         return !_context.TryConsumeYield();
     }
@@ -297,18 +327,222 @@ internal sealed class BmpStructureParser : ImageParser<ImageInfo>
                 continue;
 
             _rowFilled = 0;
-            if (_walk == StructureWalk.Decode)
-            {
-                var expanded = _expandedRow!.Span[..(header.Width * PixelFormats.GetBytesPerPixel(Layout.SourcePixelFormat))];
-                Layout.ExpandRow(_rowBuffer!.Span[..rowLength], expanded);
-                _decoder!.WriteRow(header.IsTopDown ? _rowIndex : header.Height - 1 - _rowIndex, expanded);
-            }
-
-            _rowIndex++;
-            _context.CancellationToken.ThrowIfCancellationRequested();
+            EmitRow();
         }
 
         return ParseStatus.Complete;
+    }
+
+    /// <summary>Walks the commands of a run-length stream up to its end-of-bitmap marker.</summary>
+    private ParseStatus ReadRunLengthRows(ReadOnlySpan<byte> buffer, ref int consumed)
+    {
+        var header = Layout.Header;
+        var fourBit = header.Compression == BmpDibCompression.Rle4;
+        var bytesPerPixel = header.Compression == BmpDibCompression.Rle24 ? 3 : 1;
+        while (true)
+        {
+            var remaining = buffer[consumed..];
+            if (_absoluteBytes > 0)
+            {
+                if (remaining.IsEmpty)
+                    return ParseStatus.NeedMoreData(1);
+
+                var take = Math.Min(remaining.Length, _absoluteBytes);
+                if (_walk == StructureWalk.Decode)
+                {
+                    CopyAbsolutePixels(remaining[..take], fourBit);
+                }
+
+                _absoluteBytes -= take;
+                Advance(ref consumed, take);
+                continue;
+            }
+
+            if (_absolutePadding)
+            {
+                // An absolute run is padded to a 16-bit boundary
+                if (remaining.IsEmpty)
+                    return ParseStatus.NeedMoreData(1);
+
+                _absolutePadding = false;
+                Advance(ref consumed, 1);
+                continue;
+            }
+
+            if (remaining.Length < 2)
+                return ParseStatus.NeedMoreData(2);
+
+            int count = remaining[0];
+            if (count != 0)
+            {
+                // Encoded mode: a pixel count, then one pixel (two alternating 4-bit pixels for RLE4)
+                if (remaining.Length < 1 + bytesPerPixel)
+                    return ParseStatus.NeedMoreData(1 + bytesPerPixel);
+
+                EnsureRunFits(count, "run");
+                if (_walk == StructureWalk.Decode)
+                {
+                    FillRun(count, remaining.Slice(1, bytesPerPixel), fourBit);
+                }
+
+                _column += count;
+                Advance(ref consumed, 1 + bytesPerPixel);
+                continue;
+            }
+
+            int escape = remaining[1];
+            switch (escape)
+            {
+                case BmpFormat.RunLengthEndOfLine:
+                    EnsureRowAvailable();
+                    Advance(ref consumed, 2);
+                    EmitRunLengthRow();
+                    break;
+
+                case BmpFormat.RunLengthEndOfBitmap:
+                    Advance(ref consumed, 2);
+
+                    // Every row the stream did not reach is a row of skipped pixels
+                    while (_rowIndex < header.Height)
+                    {
+                        EmitRunLengthRow();
+                    }
+
+                    return ParseStatus.Complete;
+
+                case BmpFormat.RunLengthDelta:
+                {
+                    if (remaining.Length < 4)
+                        return ParseStatus.NeedMoreData(4);
+
+                    EnsureRowAvailable();
+                    int right = remaining[2];
+                    int up = remaining[3];
+                    if (right > header.Width - _column || up >= header.Height - _rowIndex)
+                        throw BmpFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The BMP run-length delta ({right}, {up}) at offset {_position} moves from column {_column} of stored row {_rowIndex} to outside the {header.Width}x{header.Height} canvas."));
+
+                    Advance(ref consumed, 4);
+                    var column = _column + right;
+                    for (var i = 0; i < up; i++)
+                    {
+                        EmitRunLengthRow();
+                    }
+
+                    _column = column;
+                    break;
+                }
+
+                default:
+                {
+                    // Absolute mode: the escape is a pixel count (3 to 255), followed by that many literal pixels
+                    EnsureRunFits(escape, "absolute run");
+                    Advance(ref consumed, 2);
+                    _absoluteBytes = fourBit ? (escape + 1) / 2 : escape * bytesPerPixel;
+                    _absolutePixels = escape;
+                    _absoluteCursor = fourBit ? _column : _column * bytesPerPixel;
+                    _absolutePadding = (_absoluteBytes & 1) != 0;
+                    _column += escape;
+                    break;
+                }
+            }
+        }
+    }
+
+    private void EnsureRowAvailable()
+    {
+        if (_rowIndex >= Layout.Header.Height)
+            throw BmpFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The BMP run-length data continues at offset {_position}, after the last of the {Layout.Header.Height} rows; only the end-of-bitmap marker is expected."));
+    }
+
+    private void EnsureRunFits(int count, string name)
+    {
+        EnsureRowAvailable();
+        var left = Layout.Header.Width - _column;
+        if (count > left)
+            throw BmpFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The BMP {name} of {count} pixels at offset {_position} extends past the end of stored row {_rowIndex} ({left} pixels are left)."));
+    }
+
+    /// <summary>Writes an encoded run at the current column of the row buffer.</summary>
+    private void FillRun(int count, ReadOnlySpan<byte> pixel, bool fourBit)
+    {
+        var row = _rowBuffer!.Span;
+        if (fourBit)
+        {
+            // The run alternates the two 4-bit pixels of its byte, starting with the high-order one
+            for (var i = 0; i < count; i++)
+            {
+                WriteNibble(row, _column + i, (i & 1) == 0 ? pixel[0] >> 4 : pixel[0] & 0x0F);
+            }
+
+            return;
+        }
+
+        if (pixel.Length == 1)
+        {
+            row.Slice(_column, count).Fill(pixel[0]);
+            return;
+        }
+
+        var destination = row.Slice(_column * pixel.Length, count * pixel.Length);
+        for (var offset = 0; offset < destination.Length; offset += pixel.Length)
+        {
+            pixel.CopyTo(destination[offset..]);
+        }
+    }
+
+    /// <summary>Writes the next bytes of an absolute run, which may arrive split at any byte.</summary>
+    private void CopyAbsolutePixels(ReadOnlySpan<byte> data, bool fourBit)
+    {
+        var row = _rowBuffer!.Span;
+        if (!fourBit)
+        {
+            data.CopyTo(row[_absoluteCursor..]);
+            _absoluteCursor += data.Length;
+            return;
+        }
+
+        // Each byte stores two 4-bit pixels, high-order first; the low-order half of the last byte is unused for odd counts
+        foreach (var value in data)
+        {
+            WriteNibble(row, _absoluteCursor++, value >> 4);
+            _absolutePixels--;
+            if (_absolutePixels > 0)
+            {
+                WriteNibble(row, _absoluteCursor++, value & 0x0F);
+                _absolutePixels--;
+            }
+        }
+    }
+
+    private static void WriteNibble(Span<byte> row, int column, int value)
+    {
+        ref var target = ref row[column >> 1];
+        target = (column & 1) == 0 ? (byte)((target & 0x0F) | (value << 4)) : (byte)((target & 0xF0) | value);
+    }
+
+    /// <summary>Emits the current row of a run-length stream and starts the next one with every pixel skipped.</summary>
+    private void EmitRunLengthRow()
+    {
+        EmitRow();
+        _column = 0;
+        if (_walk == StructureWalk.Decode)
+        {
+            _rowBuffer!.Span[..(int)_rowLength].Clear();
+        }
+    }
+
+    private void EmitRow()
+    {
+        var header = Layout.Header;
+        if (_walk == StructureWalk.Decode)
+        {
+            var expanded = _expandedRow!.Span[..(header.Width * PixelFormats.GetBytesPerPixel(Layout.SourcePixelFormat))];
+            Layout.ExpandRow(_rowBuffer!.Span[..(int)_rowLength], expanded);
+            _decoder!.WriteRow(header.IsTopDown ? _rowIndex : header.Height - 1 - _rowIndex, expanded);
+        }
+
+        _rowIndex++;
+        _context.CancellationToken.ThrowIfCancellationRequested();
     }
 
     private ImageInfo CreateInfo(ImageIdentifyMode mode)
@@ -325,12 +559,4 @@ internal sealed class BmpStructureParser : ImageParser<ImageInfo>
             animation: null,
             _metadata.Metadata,
             mode);
-
-    private static Exception CreateUnsupportedHeaderException(uint headerLength) => headerLength switch
-    {
-        BmpFormat.CoreHeaderLength => BmpFormat.Unsupported("The BMP uses the 12-byte OS/2 BITMAPCOREHEADER, which this version does not decode.", "Header: BITMAPCOREHEADER"),
-        BmpFormat.Os2V2HeaderLength => BmpFormat.Unsupported("The BMP uses the 64-byte OS/2 BITMAPCOREHEADER2, which this version does not decode.", "Header: BITMAPCOREHEADER2"),
-        >= 16 and <= 64 => BmpFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The BMP uses an OS/2 DIB header of {headerLength} bytes, which this version does not decode."), "Header: OS/2 DIB header"),
-        _ => BmpFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The BMP DIB header size is {headerLength}; 40 (BITMAPINFOHEADER), 52, 56, 108 (BITMAPV4HEADER) or 124 (BITMAPV5HEADER) is expected.")),
-    };
 }

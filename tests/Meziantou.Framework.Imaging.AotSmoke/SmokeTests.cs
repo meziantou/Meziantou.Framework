@@ -224,6 +224,23 @@ internal static class SmokeTests
             Check(info.Format == ImageFormat.Bmp && info.FrameCount == 1, "BMP identification");
         }
 
+        // The indexed layouts (histogram, palette, index plane) and the run-length reader and writer: whatever the row
+        // order and the compression, the decoded pixels are the same
+        var flatten = new Rgba64(0, 0, 0);
+        using var indexed = Image.Load(Encode(still, new BmpEncoder { PixelLayout = BmpPixelLayout.Indexed8, AllowColorReduction = true, BackgroundColor = flatten }));
+        foreach (var encoder in new[]
+        {
+            new BmpEncoder { PixelLayout = BmpPixelLayout.Indexed8, AllowColorReduction = true, BackgroundColor = flatten, Compression = BmpCompression.RunLength },
+            new BmpEncoder { PixelLayout = BmpPixelLayout.Indexed8, AllowColorReduction = true, BackgroundColor = flatten, RowOrder = BmpRowOrder.TopDown },
+        })
+        {
+            using var decoded = Image.Load(Encode(still, encoder));
+            CheckEqual(indexed, decoded, "BMP indexed " + encoder.Compression + " " + encoder.RowOrder);
+        }
+
+        using var highColor = Image.Load(Encode(still, new BmpEncoder { PixelLayout = BmpPixelLayout.Bgr565, AllowBitDepthReduction = true, BackgroundColor = flatten }));
+        Check(highColor.PixelFormat == PixelFormat.Rgb24 && highColor.Size == still.Size, "BMP 5-6-5");
+
         using var reader = Image.OpenReader<Rgba32>(new MemoryStream(Encode(still, new BmpEncoder())));
         using (var frame = reader.ReadFrame())
         {

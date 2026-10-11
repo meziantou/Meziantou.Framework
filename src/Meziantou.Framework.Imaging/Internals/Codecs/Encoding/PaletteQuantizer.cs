@@ -4,8 +4,9 @@ using System.Runtime.InteropServices;
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
-/// The deterministic color reduction of one GIF frame: a histogram pass over the frame's opaque
-/// colors, a palette of at most the requested number of colors, and the mapping of colors to palette indices.
+/// The deterministic color reduction of one frame, shared by the encoders that write palettes (GIF, indexed BMP): a
+/// histogram pass over the frame's opaque colors, a palette of at most the requested number of colors, and the mapping of
+/// colors to palette indices.
 /// </summary>
 /// <remarks>
 /// <list type="bullet">
@@ -35,7 +36,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </list>
 /// Working memory (about 1.2 MiB, fixed) is rented once from the writer scope as <see cref="AllocationKind.Temporary"/>.
 /// </remarks>
-internal sealed class GifQuantizer : IDisposable
+internal sealed class PaletteQuantizer : IDisposable
 {
     /// <summary>The key of a transparent pixel.</summary>
     public const int TransparentKey = -1;
@@ -77,7 +78,7 @@ internal sealed class GifQuantizer : IDisposable
     /// <summary>Allocates the working memory.</summary>
     /// <param name="scope">The scope charged for it.</param>
     /// <exception cref="ImageResourceLimitException">The memory exceeds the live-allocation limit.</exception>
-    public GifQuantizer(AllocationScope scope)
+    public PaletteQuantizer(AllocationScope scope)
     {
         ArgumentNullException.ThrowIfNull(scope);
         _state = scope.Rent(StateLength, AllocationKind.Temporary, clear: false);
@@ -519,5 +520,5 @@ internal sealed class GifQuantizer : IDisposable
 
     private Span<int> GetVectorPalette() => unsafe(MemoryMarshal.Cast<byte, int>(GetState().Slice(VectorPaletteOffset, 3 * VectorPlaneLength * sizeof(int))));
 
-    private Span<byte> GetState() => (_state ?? throw new ObjectDisposedException(nameof(GifQuantizer))).RawBuffer.AsSpan(0, StateLength);
+    private Span<byte> GetState() => (_state ?? throw new ObjectDisposedException(nameof(PaletteQuantizer))).RawBuffer.AsSpan(0, StateLength);
 }

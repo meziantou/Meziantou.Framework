@@ -231,6 +231,28 @@ internal static class Examples
     }
     // end-snippet
 
+    /// <summary>A compact BMP for graphics: 8-bit palette indexes, run-length encoded, with an explicit color-reduction policy.</summary>
+    // begin-snippet: save-bmp-indexed
+    public static void SaveIndexedBmp(string inputPath, string outputPath)
+    {
+        using var image = Image.Load(inputPath);
+        using var frame = image.CloneFrame(0);
+
+        // 8-bit indexes, run-length encoded (BI_RLE8). The palette holds the colors of the frame exactly when there are at
+        // most 256 of them; AllowColorReduction accepts a deterministic palette for the other frames, here with dithering.
+        // A BMP palette has no alpha, so non-opaque pixels need a background color.
+        frame.Save(outputPath, new BmpEncoder
+        {
+            PixelLayout = BmpPixelLayout.Indexed8,
+            Compression = BmpCompression.RunLength,
+            AllowColorReduction = true,
+            Dithering = BmpDithering.FloydSteinberg,
+            BackgroundColor = new Rgba64(65535, 65535, 65535),
+            AllowBitDepthReduction = true,
+        });
+    }
+    // end-snippet
+
     /// <summary>A multi-page TIFF document: pages may differ in size and pixel format, and are read one at a time.</summary>
     // begin-snippet: tiff-pages
     public static Size WriteAndReadTiffDocument(string inputPath, string documentPath)

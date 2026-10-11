@@ -249,17 +249,21 @@ inputs are byte edits of valid streams confirmed by the strict transcription (qo
 truncation).
 
 BMP, TGA and Netpbm fixtures (`BmpCorpus.cs`, `TgaCorpus.cs` and `PnmCorpus.cs`): files assembled byte by byte from literal pixel grids (every supported
-DIB header, bit depth, mask layout, palette, row order and padding; every TGA image type, depth, origin bit, color-map
+Windows and OS/2 DIB header, bit depth, mask layout, palette, row order, padding and run-length command; every TGA image type, depth, origin bit, color-map
 offset and packet kind; every Netpbm magic number, tuple type, `MAXVAL` and comment placement), plus files produced by
 FFmpeg's independent BMP, TGA, PPM and PAM encoders from hand-defined patterns (the three formats are lossless, so the
 pattern is the reference). Every input is decoded by a strict transcription of its specification in the generator and
-cross-checked with FFmpeg; the comparison policy stays `exact`, and the two disagreements FFmpeg has with the
-specifications are recorded as cross-checks with their measured error instead of being hidden:
+cross-checked with FFmpeg; the comparison policy stays `exact`, and the disagreements FFmpeg has with the
+specifications are recorded as cross-checks with their measured error or notes instead of being hidden:
 
 - FFmpeg expands 5-bit channels of 16-bit BMP and TGA samples by replicating their high bits, where the references use the
   exact ratio `round(value * 255 / 31)` (at most one unit per sample);
 - FFmpeg reads the fourth byte of a 32-bit BMP `BI_RGB` payload and of a 32-bit TGA whose descriptor declares no alpha bit
-  as alpha, where the specifications leave it unspecified (every color sample agrees exactly).
+  as alpha, where the specifications leave it unspecified (every color sample agrees exactly);
+- FFmpeg does not decode two OS/2 2.x variants: a `BITMAPCOREHEADER2` shorter than 40 bytes and `BCA_RLE24`. Their
+  references are the literal pixels of the generator, confirmed by its strict transcription and by the independent reader
+  of the test harness. FFmpeg agrees exactly with every other run-length and OS/2 fixture, including the pixels a
+  run-length stream skips (palette index 0).
 
 AVIF fixtures (`AvifCorpus.Container.cs`, recipes in `AvifCorpus.ContainerFixtures.cs` and `AvifCorpus.ContainerErrors.cs`):
 inputs are written by libavif `avifenc` from hand-defined patterns (two sequences by the FFmpeg `avif` muxer, around
@@ -346,8 +350,8 @@ header (65,536 bytes) rejects.
 | JPEG | baseline 4:2:0 / 4:2:2 (odd width, restart markers) / 4:4:4, progressive 4:2:0 with partial MCUs, grayscale odd size, EXIF orientation 6 (metadata only), JFIF density 300x150 dpi + XMP + COM; for the sequential decoder: high-frequency content (`pattern_detail_*`) with odd 4:2:0 and one restart interval per MCU row and optimized Huffman tables, 4:4:0 (vertical triangle filter), 4:1:1 (replication), 4:4:4 detail, grayscale with 3-block restart intervals, optimized tables and a gray ICC profile, extended sequential SOF1 with 16-bit DQT (quality 3), Adobe RGB (transform 0, `R`/`G`/`B` identifiers), multi-scan sequential frames (Cb/Y/Cr in separate non-interleaved scans with restarts; Y then interleaved CbCr), RGB ICC in three out-of-order APP2 chunks + big-endian EXIF orientation 3 + JFIF dots per centimeter; tiny frames whose chroma planes are at most 2 samples wide (4:2:0 4x9 and 2x13, 4:2:2 3x5, progressive 4:2:0 4x6: replicated like libjpeg-turbo); for the progressive decoder: the default libjpeg-turbo progression (DC/AC successive approximation, luma band split) at 4:4:4 detail, odd 4:2:2 with 2-MCU restarts, gray smaller than two blocks and Adobe RGB, and `-scans` scripts (`PROGRESSIVE_*_SCRIPT`): DC refined from bit 3 and a luma band refined from bit 4 at odd 4:2:0 with per-row restarts, spectral selection only at 4:4:0, separate DC scans with different point transforms at 4:1:1 with 3-block restarts, a gray refinement script with 3-block restarts, and a partial progression (high frequencies never refined to bit 0 or never sent) — encoded by libjpeg-turbo `cjpeg`. Every color JPEG also has an `rgb8` reference for `Rgb24` decoding |
 | JPEG errors | Unsupported (header): arithmetic coding, lossless (SOF3), 12-bit precision, CMYK (four components), non-integral sampling ratios; structure: interleaved scan with 18 blocks per MCU; decoding only (valid containers): truncated entropy-coded data, an unassigned Huffman code, a zero quantization value, a truncated DQT, an undefined Huffman table, an oversubscribed Huffman table, a restart marker out of sequence, a missing last restart marker, a frame whose third component has no scan; progressive: structure (scan headers, found by a full identification): an AC scan with Ss > Se, a refinement scan moved before the first scan of its band; decoding only: a truncated scan followed by the remaining scans, an invalid code at the start of an AC refinement, a frame whose Cr component has no scan; limit: a frame header declaring 20000x20000 pixels (`MaxFramePixels`, before any allocation) |
 | WebP | lossless (VP8L): 1x1, odd width, RGBA corner markers, hidden colors under alpha 0 (`-exact`), a detailed pattern with the transforms `cwebp -z 9` chooses (`lossless-detail-transforms`), a small palette with pixel bundling and a 256-color palette, extended layout with ICC/EXIF/XMP, an opaque extended file with an unknown chunk; lossy (VP8): normal and simple loop filters with segmentation, no filter at high quality, odd and tiny (3x2) sizes, raw `ALPH` and lossless-compressed `ALPH` with horizontal filtering, metadata; animations: blend/dispose combinations with partial frames and a finite loop, a partial first frame with infinite loop, mixed lossy and lossless frames, a single-frame animation |
-| BMP | 24-bit bottom-up and top-down with row padding, 32-bit `BITMAPV4HEADER` with an alpha mask and the same bytes as 32-bit `BI_RGB` (unspecified fourth byte), 16-bit implicit 5-5-5 and explicit 5-6-5 masks after a 40-byte header, 16-bit 1-5-5-5 with a `BITMAPV3INFOHEADER` alpha mask, 8-bit palette with five entries and a gap before the pixel data, 4-bit and 1-bit palettes with odd widths, `biXPelsPerMeter`/`biYPelsPerMeter`, FFmpeg-encoded 24-bit and 32-bit files |
-| BMP errors | invalid: zero width/height, two planes, bit count 7, undefined compression, pixel offset inside the header, truncated header and pixel data, palette index out of range, overlapping/non-contiguous/zero masks; unsupported: OS/2 `BITMAPCOREHEADER` and `BITMAPCOREHEADER2`, `BI_RLE8`, `BI_PNG`, 2 bits per pixel, a 10-bit channel mask; limits: width, frame pixels |
+| BMP | 24-bit bottom-up and top-down with row padding, 32-bit `BITMAPV4HEADER` with an alpha mask and the same bytes as 32-bit `BI_RGB` (unspecified fourth byte), 16-bit implicit 5-5-5 and explicit 5-6-5 masks after a 40-byte header, 16-bit 1-5-5-5 with a `BITMAPV3INFOHEADER` alpha mask, 8-bit palette with five entries and a gap before the pixel data, 4-bit and 1-bit palettes with odd widths, `biXPelsPerMeter`/`biYPelsPerMeter`, FFmpeg-encoded 24-bit and 32-bit files; run-length streams: `BI_RLE8` and `BI_RLE4` with encoded runs (alternating indexes for 4 bits), absolute runs with and without a padding byte, and every way of skipping pixels (delta to the right, delta to a later row, early end of line, early end of bitmap) over a palette whose first entry is not black; OS/2: `BITMAPCOREHEADER` with 24-bit rows and with 1-, 4- and 8-bit `RGBTRIPLE` palettes (one shorter than its bit count allows, ended by `bfOffBits`), `BITMAPCOREHEADER2` complete (64 bytes, with a resolution) and cut after its bit count (16 bytes), and `BCA_RLE24` |
+| BMP errors | invalid: zero width/height, two planes, bit count 7, undefined compression, pixel offset inside the header, truncated header and pixel data, palette index out of range, overlapping/non-contiguous/zero masks; run-length: `BI_RLE8` with top-down rows or 4 bits per pixel, a run past the end of its row, a delta outside the canvas, data after the last row, a missing end-of-bitmap marker, a palette index out of range; OS/2: `BITMAPCOREHEADER` with 16 bits per pixel or a pixel offset that leaves no palette entry; unsupported: OS/2 Huffman 1D, `BI_PNG`, 2 bits per pixel, a 10-bit channel mask; limits: width, frame pixels |
 | TGA | uncompressed 24-bit bottom-left and top-left, 32-bit with and without declared alpha bits, 32-bit right-to-left, 16-bit 1-5-5-5 and 15-bit, 8-bit grayscale, color maps with a first-entry offset (24-bit entries) and with 32-bit RGBA entries, run-length true color with runs of 7/130/20/30 crossing scan lines (128-pixel packets) and raw packets, run-length grayscale, an 11-byte identification field with a footer, a file whose extension area (attributes type 3) and footer follow the raster, a file with a developer area between the raster and the extension area, FFmpeg-encoded run-length files |
 | TGA errors | invalid: a packet past the last pixel, a truncated packet, truncated pixel data, a color-map index below the first stored entry, a footer that locates the extension area over the footer, an extension area too short for its attributes type; unsupported: 16-bit color-map indexes, 16-bit grayscale, premultiplied alpha (attributes type 4); limits: width, encoded bytes |
 | Netpbm | binary PBM with padding bits and a header comment, the same pixels as plain PBM, binary PGM 8-bit (with a comment) and 16-bit, plain PGM with `MAXVAL` 15, binary PPM 8-bit and 16-bit, plain PPM with `MAXVAL` 1000, PAM `RGB_ALPHA` 8-bit and 16-bit, PAM `GRAYSCALE_ALPHA`, PAM `BLACKANDWHITE`, FFmpeg-encoded PPM and PAM files |
@@ -389,7 +393,7 @@ follows it, so keep both headings unique in this file.
 | Format | Valid | Invalid | Unsupported | Limit |
 | --- | --- | --- | --- | --- |
 | avif | 139 | 33 | 14 | 12 |
-| bmp | 13 | 12 | 6 | 2 |
+| bmp | 24 | 21 | 4 | 2 |
 | gif | 24 | 15 | 1 | 2 |
 | jpeg | 42 | 15 | 5 | 1 |
 | png | 109 | 31 | 1 | 6 |
@@ -555,29 +559,40 @@ follows it, so keep both headings unique in this file.
 | QOI alpha kept by RGB/DIFF/LUMA chunks | `qoi.alpha.kept` | 3 | 0 | 0 | 1 |
 | QOI RGBA chunks in an RGB stream | `qoi.rgbStream.alphaChunks` | 1 | 0 | 0 | 0 |
 | QOI odd width | `qoi.width=odd` | 7 | 0 | 0 | 3 |
-| BMP 1-bit indexed | `bmp.bpp=1` | 1 | 0 | 0 | 0 |
-| BMP 4-bit indexed | `bmp.bpp=4` | 1 | 0 | 0 | 0 |
-| BMP 8-bit indexed | `bmp.bpp=8` | 1 | 0 | 0 | 1 |
+| BMP 1-bit indexed | `bmp.bpp=1` | 2 | 0 | 0 | 0 |
+| BMP 4-bit indexed | `bmp.bpp=4` | 5 | 0 | 0 | 0 |
+| BMP 8-bit indexed | `bmp.bpp=8` | 4 | 0 | 0 | 1 |
 | BMP 16-bit samples | `bmp.bpp=16` | 3 | 0 | 0 | 0 |
-| BMP 24-bit BGR | `bmp.bpp=24` | 4 | 0 | 0 | 1 |
+| BMP 24-bit BGR | `bmp.bpp=24` | 7 | 0 | 0 | 1 |
 | BMP 32-bit samples | `bmp.bpp=32` | 3 | 0 | 0 | 0 |
-| BMP partial palette | `bmp.palette` | 3 | 0 | 0 | 1 |
-| BMP `BITMAPINFOHEADER` (40 bytes) | `bmp.header=40` | 11 | 0 | 0 | 2 |
+| BMP palette | `bmp.palette` | 11 | 0 | 0 | 1 |
+| BMP `RGBTRIPLE` palette entries (OS/2 1.x) | `bmp.paletteEntry=rgbtriple` | 3 | 0 | 0 | 0 |
+| BMP palette length taken from `bfOffBits` (OS/2 1.x) | `bmp.paletteFromOffset` | 1 | 0 | 0 | 0 |
+| BMP OS/2 `BITMAPCOREHEADER` (12 bytes) | `bmp.header=12` | 4 | 0 | 0 | 0 |
+| BMP OS/2 `BITMAPCOREHEADER2` cut after its bit count (16 bytes) | `bmp.header=16` | 1 | 0 | 0 | 0 |
+| BMP `BITMAPINFOHEADER` (40 bytes) | `bmp.header=40` | 15 | 0 | 0 | 2 |
 | BMP `BITMAPV3INFOHEADER` (56 bytes) | `bmp.header=56` | 1 | 0 | 0 | 0 |
+| BMP OS/2 `BITMAPCOREHEADER2` (64 bytes) | `bmp.header=64` | 2 | 0 | 0 | 0 |
 | BMP `BITMAPV4HEADER` (108 bytes) | `bmp.header=108` | 1 | 0 | 0 | 0 |
-| BMP `BI_RGB` (implicit masks) | `bmp.compression=rgb` | 10 | 0 | 0 | 2 |
+| BMP `BI_RGB` (implicit masks) | `bmp.compression=rgb` | 16 | 0 | 0 | 2 |
 | BMP `BI_BITFIELDS` (explicit masks) | `bmp.compression=bitfields` | 3 | 0 | 0 | 0 |
+| BMP `BI_RLE8` | `bmp.compression=rle8` | 2 | 0 | 0 | 0 |
+| BMP `BI_RLE4` | `bmp.compression=rle4` | 2 | 0 | 0 | 0 |
+| BMP OS/2 `BCA_RLE24` | `bmp.compression=rle24` | 1 | 0 | 0 | 0 |
+| BMP run-length absolute run | `bmp.rle=absolute` | 4 | 0 | 0 | 0 |
+| BMP run-length absolute run with a padding byte | `bmp.rle=absolutePadding` | 3 | 0 | 0 | 0 |
+| BMP run-length delta | `bmp.rle=delta` | 3 | 0 | 0 | 0 |
+| BMP run-length end of line before the end of the row | `bmp.rle=earlyEndOfLine` | 3 | 0 | 0 | 0 |
+| BMP run-length end of bitmap before the last pixel | `bmp.rle=earlyEndOfBitmap` | 2 | 0 | 0 | 0 |
 | BMP real alpha mask | `bmp.alphaMask=yes` | 2 | 0 | 0 | 0 |
 | BMP unspecified fourth byte (no alpha mask) | `bmp.alphaMask=no` | 4 | 0 | 0 | 0 |
-| BMP bottom-up rows | `bmp.rowOrder=bottom-up` | 12 | 0 | 0 | 2 |
+| BMP bottom-up rows | `bmp.rowOrder=bottom-up` | 23 | 0 | 0 | 2 |
 | BMP top-down rows (negative `biHeight`) | `bmp.rowOrder=top-down` | 1 | 0 | 0 | 0 |
-| BMP row padding to four bytes | `bmp.rowPadding` | 10 | 0 | 0 | 2 |
-| BMP gap between the palette and the pixel data | `bmp.gapBeforePixels` | 1 | 0 | 0 | 1 |
-| BMP resolution (`biXPelsPerMeter`) | `bmp.resolution` | 1 | 0 | 0 | 0 |
-| BMP odd width | `bmp.width=odd` | 11 | 0 | 0 | 2 |
-| BMP OS/2 `BITMAPCOREHEADER` (rejected) | `bmp.unsupported=core-header` | 0 | 0 | 1 | 0 |
-| BMP OS/2 `BITMAPCOREHEADER2` (rejected) | `bmp.unsupported=os2-v2-header` | 0 | 0 | 1 | 0 |
-| BMP run-length encoding (rejected) | `bmp.unsupported=rle` | 0 | 0 | 1 | 0 |
+| BMP row padding to four bytes | `bmp.rowPadding` | 16 | 0 | 0 | 2 |
+| BMP gap between the palette and the pixel data | `bmp.gapBeforePixels` | 2 | 0 | 0 | 1 |
+| BMP resolution (`biXPelsPerMeter`) | `bmp.resolution` | 2 | 0 | 0 | 0 |
+| BMP odd width | `bmp.width=odd` | 20 | 0 | 0 | 2 |
+| BMP OS/2 Huffman 1D (rejected) | `bmp.unsupported=huffman1d` | 0 | 0 | 1 | 0 |
 | BMP embedded JPEG/PNG payload (rejected) | `bmp.unsupported=embedded-codec` | 0 | 0 | 1 | 0 |
 | BMP 2 bits per pixel (rejected) | `bmp.unsupported=bit-count-2` | 0 | 0 | 1 | 0 |
 | BMP channel mask wider than 8 bits (rejected) | `bmp.unsupported=wide-mask` | 0 | 0 | 1 | 0 |
@@ -1319,7 +1334,8 @@ this section.
 - All code is original work written from the format specifications (PNG/APNG: W3C PNG specification; GIF: GIF89a
   specification; JPEG: ITU-T T.81 and JFIF; WebP: RFC 9649 (container, VP8L lossless bitstream, alpha) and RFC 6386 (VP8);
   QOI: the QOI specification 1.0 (qoiformat.org); BMP: the Microsoft Windows GDI `BITMAPFILEHEADER`/`BITMAPINFOHEADER`
-  documentation; TGA: the Truevision TGA File Format Specification 2.0; PBM/PGM/PPM/PAM: the Netpbm format
+  documentation (including its description of `BI_RLE8` and `BI_RLE4`) and the OS/2 Presentation Manager
+  `BITMAPCOREHEADER`/`BITMAPINFOHEADER2` documentation; TGA: the Truevision TGA File Format Specification 2.0; PBM/PGM/PPM/PAM: the Netpbm format
   specifications; AVIF: ISO/IEC 14496-12 (boxes), ISO/IEC 23008-12 (image items), the AV1 Image File Format, the AV1
   Codec ISO Media File Format Binding, the AV1 Bitstream & Decoding Process Specification and ITU-T H.273 (color
   conversion); EXIF/TIFF; ICC; future formats: their official specifications).

@@ -27,8 +27,13 @@ internal sealed class PackageIdAvailableOnNuGetOrgValidationRule : NuGetPackageV
                 context.ReportError(ErrorCodes.CannotCheckPackageIdExistsOnNuGetOrg, $"Cannot check if the package '{packageId}' exists on nuget.org (HTTP status code = {(int)response.StatusCode})");
             }
         }
-        catch (HttpRequestException ex)
+        catch (OperationCanceledException) when (context.CancellationToken.IsCancellationRequested)
         {
+            throw;
+        }
+        catch (Exception ex) when (ex is HttpRequestException or OperationCanceledException)
+        {
+            // HttpClient reports its own timeout with an OperationCanceledException
             context.ReportError(ErrorCodes.CannotCheckPackageIdExistsOnNuGetOrg, $"Cannot check if the package '{packageId}' exists on nuget.org: {ex.Message}");
         }
     }

@@ -10,8 +10,23 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="../tests/Meziantou.Framework.Imaging.AotSmoke/Meziantou.Framework.Imaging.AotSmoke.csproj" />
+    <Project Path="../tests/Meziantou.Framework.Imaging.Av1.Tests/Meziantou.Framework.Imaging.Av1.Tests.csproj" />
+    <Project Path="../tests/Meziantou.Framework.Imaging.Avif.Tests/Meziantou.Framework.Imaging.Avif.Tests.csproj" />
+    <Project Path="../tests/Meziantou.Framework.Imaging.AvifEncoder.Tests/Meziantou.Framework.Imaging.AvifEncoder.Tests.csproj" />
+    <Project Path="../tests/Meziantou.Framework.Imaging.Bmp.Tests/Meziantou.Framework.Imaging.Bmp.Tests.csproj" />
+    <Project Path="../tests/Meziantou.Framework.Imaging.Gif.Tests/Meziantou.Framework.Imaging.Gif.Tests.csproj" />
+    <Project Path="../tests/Meziantou.Framework.Imaging.Ico.Tests/Meziantou.Framework.Imaging.Ico.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.Imaging.InteropTests/Meziantou.Framework.Imaging.InteropTests.csproj" />
+    <Project Path="../tests/Meziantou.Framework.Imaging.Jpeg.Tests/Meziantou.Framework.Imaging.Jpeg.Tests.csproj" />
+    <Project Path="../tests/Meziantou.Framework.Imaging.JpegXl.Tests/Meziantou.Framework.Imaging.JpegXl.Tests.csproj" />
+    <Project Path="../tests/Meziantou.Framework.Imaging.Png.Tests/Meziantou.Framework.Imaging.Png.Tests.csproj" />
+    <Project Path="../tests/Meziantou.Framework.Imaging.Pnm.Tests/Meziantou.Framework.Imaging.Pnm.Tests.csproj" />
+    <Project Path="../tests/Meziantou.Framework.Imaging.Processing.Tests/Meziantou.Framework.Imaging.Processing.Tests.csproj" />
+    <Project Path="../tests/Meziantou.Framework.Imaging.Qoi.Tests/Meziantou.Framework.Imaging.Qoi.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.Imaging.TestHarness/Meziantou.Framework.Imaging.TestHarness.csproj" />
     <Project Path="../tests/Meziantou.Framework.Imaging.Tests/Meziantou.Framework.Imaging.Tests.csproj" />
+    <Project Path="../tests/Meziantou.Framework.Imaging.Tga.Tests/Meziantou.Framework.Imaging.Tga.Tests.csproj" />
+    <Project Path="../tests/Meziantou.Framework.Imaging.Tiff.Tests/Meziantou.Framework.Imaging.Tiff.Tests.csproj" />
+    <Project Path="../tests/Meziantou.Framework.Imaging.WebP.Tests/Meziantou.Framework.Imaging.WebP.Tests.csproj" />
   </Folder>
 </Solution>

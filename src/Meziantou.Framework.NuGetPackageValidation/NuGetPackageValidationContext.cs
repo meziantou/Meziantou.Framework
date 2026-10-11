@@ -114,7 +114,8 @@ public sealed class NuGetPackageValidationContext : IDisposable
     internal Task<HttpResponseMessage> SendHttpRequestAsync(HttpRequestMessage httpRequestMessage, CancellationToken cancellationToken)
     {
         _options.ConfigureRequest?.Invoke(httpRequestMessage);
-        return SharedHttpClient.InstanceWithAutoRedirect.SendAsync(httpRequestMessage, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+        var httpClient = _options.HttpClient ?? SharedHttpClient.InstanceWithAutoRedirect;
+        return httpClient.SendAsync(httpRequestMessage, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
     }
 
     /// <summary>Checks if a URL is accessible by sending an HTTP GET request.</summary>

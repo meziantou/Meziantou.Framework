@@ -110,7 +110,7 @@ public sealed class ImageSaveTests
     public async Task SaveToPathInfersTheEncoderFromTheExtension(string name, ImageFormat format, bool animated)
     {
         using var codecs = TestCodecs.UseAll(out _, out var png, out var gif, out var jpeg);
-        var directory = ImageWriterTests.CreateDirectory();
+        var directory = TestFiles.CreateDirectory();
         try
         {
             using var image = StreamImages.CreateAnimation(Width, Height, 1);
@@ -142,7 +142,7 @@ public sealed class ImageSaveTests
     public async Task UnknownExtensionsRequireAnExplicitEncoder()
     {
         using var codecs = TestCodecs.UseAll(out _, out _, out _, out _);
-        var directory = ImageWriterTests.CreateDirectory();
+        var directory = TestFiles.CreateDirectory();
         try
         {
             using var image = StreamImages.CreateAnimation(Width, Height, 1);
@@ -167,7 +167,7 @@ public sealed class ImageSaveTests
     public async Task FailedPathSavesPreserveTheExistingFile(bool asynchronous, bool cancel)
     {
         using var codecs = TestCodecs.UseAll(out _, out _, out var gif, out _);
-        var directory = ImageWriterTests.CreateDirectory();
+        var directory = TestFiles.CreateDirectory();
         try
         {
             var path = directory / "animation.gif";
@@ -222,7 +222,7 @@ public sealed class ImageSaveTests
     public async Task PreCanceledSavesCreateNoOutput()
     {
         using var codecs = TestCodecs.UseAll(out _, out var png, out _, out _);
-        var directory = ImageWriterTests.CreateDirectory();
+        var directory = TestFiles.CreateDirectory();
         try
         {
             using var image = StreamImages.CreateAnimation(Width, Height, 1);
@@ -248,7 +248,7 @@ public sealed class ImageSaveTests
     public async Task AvifExtensionsOnlySelectTheDefaultEncoder(string name)
     {
         using var codecs = TestCodecs.UseAll(out _, out _, out _, out _);
-        var directory = ImageWriterTests.CreateDirectory();
+        var directory = TestFiles.CreateDirectory();
         try
         {
             using var image = StreamImages.CreateAnimation(Width, Height, 1);

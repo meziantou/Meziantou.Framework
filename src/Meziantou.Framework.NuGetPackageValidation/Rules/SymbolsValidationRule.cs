@@ -52,6 +52,7 @@ internal sealed partial class SymbolsValidationRule : NuGetPackageValidationRule
                 Stream? pdbStreamSeekable = null;
                 PEReader? peReader = null;
                 MetadataReaderProvider? metadataReaderProvider = null;
+                List<string>? symbolServerErrors = null;
                 try
                 {
                     dllStream = await context.Package.GetStreamAsync(item, context.CancellationToken).ConfigureAwait(false);
@@ -118,32 +119,47 @@ internal sealed partial class SymbolsValidationRule : NuGetPackageValidationRule
                                 foreach (var checksumHeader in checksumHeaders)
                                 {
                                     var url = symbolServer + pdbFileName + "/" + symbolId + "/" + pdbFileName;
-                                    using var request = new HttpRequestMessage(HttpMethod.Get, url);
-                                    if (checksumHeader is not null)
+                                    try
                                     {
-                                        request.Headers.Add("SymbolChecksum", checksumHeader);
-                                    }
-
-                                    using var response = await context.SendHttpRequestAsync(request, context.CancellationToken).ConfigureAwait(false);
-                                    if (response.IsSuccessStatusCode)
-                                    {
-                                        var pdbData = await response.Content.ReadAsStreamAsync(context.CancellationToken).ConfigureAwait(false);
-                                        await using (pdbData.ConfigureAwait(false))
+                                        using var request = new HttpRequestMessage(HttpMethod.Get, url);
+                                        if (checksumHeader is not null)
                                         {
-                                            if (pdbData.CanSeek)
-                                            {
-                                                metadataReaderProvider = MetadataReaderProvider.FromPortablePdbStream(pdbData, MetadataStreamOptions.PrefetchMetadata);
-                                            }
-                                            else
-                                            {
-                                                using var ms = new MemoryStream();
-                                                await pdbData.CopyToAsync(ms, context.CancellationToken).ConfigureAwait(false);
-                                                ms.Seek(0, SeekOrigin.Begin);
-                                                metadataReaderProvider = MetadataReaderProvider.FromPortablePdbStream(ms, MetadataStreamOptions.PrefetchMetadata);
-                                            }
-
-                                            break;
+                                            request.Headers.Add("SymbolChecksum", checksumHeader);
                                         }
+
+                                        using var response = await context.SendHttpRequestAsync(request, context.CancellationToken).ConfigureAwait(false);
+                                        if (response.IsSuccessStatusCode)
+                                        {
+                                            var pdbData = await response.Content.ReadAsStreamAsync(context.CancellationToken).ConfigureAwait(false);
+                                            await using (pdbData.ConfigureAwait(false))
+                                            {
+                                                if (pdbData.CanSeek)
+                                                {
+                                                    metadataReaderProvider = MetadataReaderProvider.FromPortablePdbStream(pdbData, MetadataStreamOptions.PrefetchMetadata);
+                                                }
+                                                else
+                                                {
+                                                    using var ms = new MemoryStream();
+                                                    await pdbData.CopyToAsync(ms, context.CancellationToken).ConfigureAwait(false);
+                                                    ms.Seek(0, SeekOrigin.Begin);
+                                                    metadataReaderProvider = MetadataReaderProvider.FromPortablePdbStream(ms, MetadataStreamOptions.PrefetchMetadata);
+                                                }
+
+                                                break;
+                                            }
+                                        }
+                                    }
+                                    catch (OperationCanceledException) when (context.CancellationToken.IsCancellationRequested)
+                                    {
+                                        throw;
+                                    }
+                                    catch (Exception ex) when (ex is HttpRequestException or IOException or OperationCanceledException)
+                                    {
+                                        // HttpClient reports its own timeout with an OperationCanceledException.
+                                        // The symbols may be on the next server, and this server would fail the same way with another checksum.
+                                        symbolServerErrors ??= [];
+                                        symbolServerErrors.Add($"'{url}': {ex.Message}");
+                                        break;
                                     }
                                 }
 
@@ -184,7 +200,10 @@ internal sealed partial class SymbolsValidationRule : NuGetPackageValidationRule
                             continue;
                         }
 
-                        context.ReportError(ErrorCodes.SymbolsNotFound, "Symbol file not found", fileName: item);
+                        var symbolsNotFoundMessage = symbolServerErrors is null
+                            ? "Symbol file not found"
+                            : "Symbol file not found (cannot query the symbol server " + string.Join(", ", symbolServerErrors) + ")";
+                        context.ReportError(ErrorCodes.SymbolsNotFound, symbolsNotFoundMessage, fileName: item);
                         continue;
                     }
 

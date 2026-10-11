@@ -12,9 +12,20 @@ public sealed class NuGetPackageValidatorTests
         return ValidateAsync(path, excludedRuleIds, rules);
     }
 
-    private static async Task<NuGetPackageValidationResult> ValidateAsync(FullPath packagePath, int[]? excludedRuleIds, params NuGetPackageValidationRule[] rules)
+    private static Task<NuGetPackageValidationResult> ValidateAsync(FullPath packagePath, int[]? excludedRuleIds, params NuGetPackageValidationRule[] rules)
     {
-        var options = new NuGetPackageValidationOptions();
+        return ValidateAsync(packagePath, excludedRuleIds, httpClient: null, rules);
+    }
+
+    private static Task<NuGetPackageValidationResult> ValidateAsync(string packageName, HttpClient httpClient, params NuGetPackageValidationRule[] rules)
+    {
+        var path = FullPath.FromPath(typeof(NuGetPackageValidatorTests).Assembly.Location).Parent / "Packages" / packageName;
+        return ValidateAsync(path, excludedRuleIds: null, httpClient, rules);
+    }
+
+    private static async Task<NuGetPackageValidationResult> ValidateAsync(FullPath packagePath, int[]? excludedRuleIds, HttpClient? httpClient, params NuGetPackageValidationRule[] rules)
+    {
+        var options = new NuGetPackageValidationOptions { HttpClient = httpClient };
         options.Rules.AddRange(rules);
 
         if (excludedRuleIds is not null)
@@ -73,6 +84,34 @@ public sealed class NuGetPackageValidatorTests
         }
 
         return await ValidateAsync(packagePath, excludedRuleIds: null, rules);
+    }
+
+    /// <summary>Creates a client whose requests never get a response, so they fail with the timeout of <see cref="HttpClient"/>.</summary>
+    private static HttpClient CreateTimingOutHttpClient()
+    {
+        var httpClient = CreateHttpClient(async (_, cancellationToken) =>
+        {
+            await Task.Delay(Timeout.Infinite, cancellationToken);
+            throw new InvalidOperationException("The request must time out");
+        });
+
+        httpClient.Timeout = TimeSpan.FromMilliseconds(50);
+        return httpClient;
+    }
+
+    private static HttpClient CreateHttpClient(Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> send)
+    {
+#pragma warning disable CA2000 // The client disposes the handler
+        return new HttpClient(new StubHttpMessageHandler(send), disposeHandler: true);
+#pragma warning restore CA2000
+    }
+
+    private sealed class StubHttpMessageHandler(Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> send) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            return send(request, cancellationToken);
+        }
     }
 
     private static void AssertNoErrors(NuGetPackageValidationResult result)
@@ -562,6 +601,109 @@ public sealed class NuGetPackageValidatorTests
         var options = new NuGetPackageValidationOptions();
         options.Rules.Add(NuGetPackageValidationRules.ProjectUrlMustBeSet);
 
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => NuGetPackageValidator.ValidateAsync(path, options, cts.Token));
+    }
+
+    [Fact]
+    public async Task Validate_PackageIdAvailableOnNuGetOrg_RequestTimeout()
+    {
+        using var httpClient = CreateTimingOutHttpClient();
+        var result = await ValidateAsync("Release_Author.1.0.0.nupkg", httpClient, NuGetPackageValidationRules.PackageIdAvailableOnNuGetOrg);
+        Assert.Equal([ErrorCodes.CannotCheckPackageIdExistsOnNuGetOrg], result.Errors.Select(item => item.ErrorCode));
+    }
+
+    [Fact]
+    public async Task Validate_Symbols_SymbolServerTimeout()
+    {
+        // The assembly has no symbols in the package, so the rule queries the symbol servers
+        using var httpClient = CreateTimingOutHttpClient();
+        var result = await ValidateAsync("Release.1.0.0.nupkg", httpClient, NuGetPackageValidationRules.Symbols);
+        var error = Assert.Single(result.Errors);
+        Assert.Equal(ErrorCodes.SymbolsNotFound, error.ErrorCode);
+        Assert.Contains("https://msdl.microsoft.com/download/symbols/samplelib.pdb/", error.Message, StringComparison.Ordinal);
+        Assert.Contains("https://symbols.nuget.org/download/symbols/samplelib.pdb/", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Validate_Symbols_SymbolServerNotReachable()
+    {
+        var requests = new List<Uri>();
+        using var httpClient = CreateHttpClient((request, _) =>
+        {
+            lock (requests)
+            {
+                requests.Add(request.RequestUri!);
+            }
+
+            throw new HttpRequestException("Connection refused");
+        });
+
+        var result = await ValidateAsync("Release.1.0.0.nupkg", httpClient, NuGetPackageValidationRules.Symbols);
+        var error = Assert.Single(result.Errors);
+        Assert.Equal(ErrorCodes.SymbolsNotFound, error.ErrorCode);
+        Assert.Contains("Connection refused", error.Message, StringComparison.Ordinal);
+
+        // Each server is queried once: a server that cannot be reached is not asked again with another checksum
+        Assert.Equal(["msdl.microsoft.com", "symbols.nuget.org"], requests.Select(uri => uri.Host));
+    }
+
+    [Fact]
+    public async Task Validate_Symbols_NextSymbolServerIsQueriedWhenOneFails()
+    {
+        // Copy the package without its symbol package, and serve the pdb from the second symbol server only
+        var packagesDirectory = FullPath.FromPath(typeof(NuGetPackageValidatorTests).Assembly.Location).Parent / "Packages";
+        using var temporaryDirectory = TemporaryDirectory.Create();
+        var packagePath = temporaryDirectory / "package.nupkg";
+        File.Copy(packagesDirectory / "Release_Deterministic_Snupkg.1.0.0.nupkg", packagePath);
+
+        byte[] pdb;
+        await using (var symbolPackage = await ZipFile.OpenReadAsync(packagesDirectory / "Release_Deterministic_Snupkg.1.0.0.snupkg", XunitCancellationToken))
+        {
+            await using var entry = await symbolPackage.GetEntry("lib/net6.0/samplelib.pdb")!.OpenAsync(XunitCancellationToken);
+            using var buffer = new MemoryStream();
+            await entry.CopyToAsync(buffer, XunitCancellationToken);
+            pdb = buffer.ToArray();
+        }
+
+        using var httpClient = CreateHttpClient((request, _) =>
+        {
+            if (request.RequestUri!.Host is "msdl.microsoft.com")
+                throw new HttpRequestException("Connection refused");
+
+            return Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.OK) { Content = new ByteArrayContent(pdb) });
+        });
+
+        var result = await ValidateAsync(packagePath, excludedRuleIds: null, httpClient, NuGetPackageValidationRules.Symbols);
+        AssertNoErrors(result);
+    }
+
+    [Fact]
+    public async Task Validate_CancellationIsNotReportedAsAValidationError_PackageIdRequestInProgress()
+    {
+        await AssertCancellationDuringHttpRequestIsNotReported("Release_Author.1.0.0.nupkg", NuGetPackageValidationRules.PackageIdAvailableOnNuGetOrg);
+    }
+
+    [Fact]
+    public async Task Validate_CancellationIsNotReportedAsAValidationError_SymbolServerRequestInProgress()
+    {
+        await AssertCancellationDuringHttpRequestIsNotReported("Release.1.0.0.nupkg", NuGetPackageValidationRules.Symbols);
+    }
+
+    private static async Task AssertCancellationDuringHttpRequestIsNotReported(string packageName, NuGetPackageValidationRule rule)
+    {
+        // Cancel the validation once the rule is waiting for the response
+        using var cts = new CancellationTokenSource();
+        using var httpClient = CreateHttpClient(async (_, cancellationToken) =>
+        {
+            await cts.CancelAsync();
+            await Task.Delay(Timeout.Infinite, cancellationToken);
+            throw new InvalidOperationException("The request must be canceled");
+        });
+
+        var options = new NuGetPackageValidationOptions { HttpClient = httpClient };
+        options.Rules.Add(rule);
+
+        var path = FullPath.FromPath(typeof(NuGetPackageValidatorTests).Assembly.Location).Parent / "Packages" / packageName;
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => NuGetPackageValidator.ValidateAsync(path, options, cts.Token));
     }
 

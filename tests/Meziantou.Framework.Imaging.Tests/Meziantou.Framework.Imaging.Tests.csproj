@@ -26,13 +26,17 @@
       generators are compiled here (they have no BenchmarkDotNet dependency).
     -->
     <Compile Include="..\..\benchmarks\ImagingBenchmarks\Workloads\*.cs" LinkBase="Conformance\Benchmarks\Workloads" />
-    <!-- The synthetic ICC profile builders are shared with the corpus generator, which writes some of these profiles to the corpus (IccTestProfiles wraps them) -->
-    <Compile Include="..\..\tools\Meziantou.Framework.Imaging.CorpusGenerator\Common\IccProfileBuilder.cs" Link="Shared\IccProfileBuilder.cs" />
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Copy the corpus next to the test assembly (FixtureRoot.GetDirectory); its README.md holds the fixture-to-feature
-         coverage matrix verified against the manifest (FixtureCoverageMatrixTests) -->
-    <None Include="..\Meziantou.Framework.Imaging.Fixtures\**\*" LinkBase="Fixtures" CopyToOutputDirectory="PreserveNewest" />
+    <!--
+      The project files of the Imaging test projects, for the scope each one declares (Conformance/CorpusScopeTests). They
+      are copied with another extension: the build traversals of the repository take every project file they find.
+    -->
+    <None Include="..\Meziantou.Framework.Imaging.*Tests\*.csproj" Link="TestProjects\%(Filename).xml" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
+
+  <!-- Shared helpers and the copy of the corpus; the README.md of the corpus holds the fixture-to-feature coverage matrix
+       verified against the manifest (FixtureCoverageMatrixTests) -->
+  <Import Project="..\Meziantou.Framework.Imaging.Tests.Shared\Imaging.Tests.Shared.props" />
 </Project>

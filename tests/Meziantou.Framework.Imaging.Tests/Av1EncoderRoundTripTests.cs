@@ -410,8 +410,9 @@ public sealed class Av1EncoderRoundTripTests
     [InlineData(7, true)]
     public void TheSearchUsesTheToolsOfItsEffort(int effort, bool expected)
     {
-        // A few luma samples that stand out of a flat area, which the identity transform codes with fewer coefficients than
-        // a DCT, and chroma samples that follow the luma samples, which only they predict
+        // A few luma samples that stand out of an area that is almost flat, which the identity transform codes with fewer
+        // coefficients than a DCT (the area has too many values to be the content of a screen, which has palettes), and
+        // chroma samples that follow the luma samples, which only they predict
         const int Width = 96;
         const int Height = 64;
         var scope = AllocationScope.Create(ImageConfiguration.Default, nameof(TheSearchUsesTheToolsOfItsEffort));
@@ -424,7 +425,7 @@ public sealed class Av1EncoderRoundTripTests
             var row = luma.GetRow(y);
             for (var x = 0; x < Width; x++)
             {
-                row[x] = (ushort)(x < Width / 2 ? (random.Next(12) is 0 ? 230 : 40) : 60 + (random.Next(4) * 45));
+                row[x] = (ushort)(x < Width / 2 ? (random.Next(12) is 0 ? 150 + random.Next(100) : 38 + random.Next(5)) : 60 + random.Next(180));
             }
         }
 
@@ -475,6 +476,162 @@ public sealed class Av1EncoderRoundTripTests
         Assert.Equal(expected, decoder.Tools.HasFlag(Av1Tools.ChromaFromLuma));
         Assert.Equal(expected, decoder.Tools.HasFlag(Av1Tools.IdentityTransform));
         Assert.Equal(expected, decoder.Tools.HasFlag(Av1Tools.FilterIntra));
+        Assert.False(decoder.Tools.HasFlag(Av1Tools.Palette));
+    }
+
+    public static TheoryData<int, int, int, string, int, int> PaletteCases()
+    {
+        var data = new TheoryData<int, int, int, string, int, int>();
+        (int Width, int Height)[] sizes = [(40, 24), (64, 64), (70, 50), (130, 71)];
+        string[] formats = ["400", "420", "422", "444"];
+        int[] qualities = [-1, 40, -1, 90];
+        var index = 0;
+        foreach (var (width, height) in sizes)
+        {
+            foreach (var format in formats)
+            {
+                // Every size and format, with a bit depth, a quality (-1 is lossless) and an effort that rotate
+                data.Add(width, height, 8 + (2 * (index % 3)), format, qualities[index % qualities.Length], (index * 3) % 10);
+                index++;
+            }
+        }
+
+        return data;
+    }
+
+    [Theory]
+    [MemberData(nameof(PaletteCases))]
+    public void FramesOfFewColorsAreCodedWithPalettes(int width, int height, int bitDepth, string format, int quality, int effort)
+    {
+        var lossless = quality < 0;
+        var name = $"palette-{width}x{height}-{bitDepth}-{format}-q{quality}-e{effort}";
+        var scope = AllocationScope.Create(ImageConfiguration.Default, name);
+        var monochrome = format is "400";
+        var subsamplingX = format is "420" or "422" ? 1 : 0;
+        var subsamplingY = format is "420" ? 1 : 0;
+        var settings = new Av1EncoderSettings(width, height, bitDepth, monochrome, subsamplingX, subsamplingY, ColorPrimaries: 1, TransferCharacteristics: 13, MatrixCoefficients: lossless && format is "444" ? 0 : 6, FullRange: true, ChromaSamplePosition: 0, StillPicture: false, lossless, Math.Max(quality, 0), effort);
+        using var encoder = new Av1Encoder(scope, settings);
+        using var decoder = new Av1Decoder(scope);
+        var planeCount = monochrome ? 1 : 3;
+        var max = (1 << bitDepth) - 1;
+        var sizes = new int[3];
+        var tools = Av1Tools.None;
+        for (var index = 0; index < sizes.Length; index++)
+        {
+            // The content of a screen: areas of a few colors, with marks of one sample, which the next frame changes in
+            // part. The chroma planes have their own areas: the same U value goes with several V values, and two V
+            // values are far apart, across the values that wrap around
+            var random = new Random(width + (31 * index));
+            var source = new ushort[planeCount][];
+            for (var plane = 0; plane < planeCount; plane++)
+            {
+                var buffer = encoder.GetSourcePlane(plane);
+                ReadOnlySpan<int> levels = plane switch
+                {
+                    0 => [max / 16, max, max / 2, max / 3, 0, max - 3, max / 5, max - (max / 7), max / 9, 7],
+                    1 => [max / 4, max / 4, max / 2, max / 2, 3, max - 1],
+                    _ => [5, max - 5, max / 2, 2, max / 3, max / 3],
+                };
+
+                source[plane] = new ushort[buffer.Width * buffer.Height];
+                for (var y = 0; y < buffer.Height; y++)
+                {
+                    for (var x = 0; x < buffer.Width; x++)
+                    {
+                        // An area has 2 to 4 of the levels, and the frames differ in a band of the plane. One area out of
+                        // five has more values than a palette holds: a few steps around its levels
+                        var area = (x / 23) + ((y / 13) * 3) + (index is 0 || y < buffer.Height / 2 ? 0 : index);
+                        var mark = ((x * 7) + (y * 13) + (x * y)) % (5 + (area % 4));
+                        var level = levels[(area + (mark is 0 ? 1 : 0) + (mark is 1 ? 2 : 0) + (plane > 0 && mark is 2 ? 3 : 0)) % levels.Length];
+                        if ((area % 5) is 4 && plane is 0)
+                            level = Math.Clamp(level + ((x + (3 * y)) % 7) - 3, 0, max);
+
+                        source[plane][(y * buffer.Width) + x] = (ushort)level;
+                    }
+
+                    source[plane].AsSpan(y * buffer.Width, buffer.Width).CopyTo(buffer.GetRow(y));
+                }
+
+                // A block of many values, which no palette holds
+                for (var y = 0; y < Math.Min(8, buffer.Height); y++)
+                {
+                    for (var x = 0; x < Math.Min(8, buffer.Width); x++)
+                    {
+                        source[plane][(y * buffer.Width) + x] = (ushort)random.Next(max + 1);
+                    }
+
+                    source[plane].AsSpan(y * buffer.Width, buffer.Width).CopyTo(buffer.GetRow(y));
+                }
+            }
+
+            encoder.BeginFrame();
+            while (!encoder.Encode(XunitCancellationToken))
+            {
+            }
+
+            var payload = encoder.Payload.ToArray();
+            sizes[index] = payload.Length;
+            decoder.SetInput(payload, 0, payload.Length);
+            var frame = decoder.DecodeNextOutputFrame(XunitCancellationToken);
+            Assert.NotNull(frame);
+            try
+            {
+                Assert.True(frame.Header.AllowScreenContentTools, $"{name}: frame {index} is not coded with the tools of screen content");
+                for (var plane = 0; plane < planeCount; plane++)
+                {
+                    var decoded = frame.GetPlane(plane);
+                    var reconstructed = encoder.Reconstruction.GetPlane(plane);
+                    for (var y = 0; y < decoded.Height; y++)
+                    {
+                        Assert.True(reconstructed.GetRow(y).SequenceEqual(decoded.GetRow(y)), $"{name}: row {y} of plane {plane} of frame {index} is not the row that the encoder reconstructed");
+                        if (lossless)
+                            Assert.True(source[plane].AsSpan(y * decoded.Width, decoded.Width).SequenceEqual(decoded.GetRow(y)), $"{name}: row {y} of plane {plane} of frame {index} is not the encoded row");
+                    }
+                }
+            }
+            finally
+            {
+                frame.Release();
+            }
+
+            tools |= decoder.Tools;
+        }
+
+        TestContext.Current.TestOutputHelper?.WriteLine($"{name}: {string.Join(", ", sizes)} bytes, {tools}");
+        Assert.True(tools.HasFlag(Av1Tools.Palette), $"{name}: no block has a palette");
+    }
+
+    [Fact]
+    public void APhotographIsNotCodedWithTheToolsOfScreenContent()
+    {
+        var scope = AllocationScope.Create(ImageConfiguration.Default, nameof(APhotographIsNotCodedWithTheToolsOfScreenContent));
+        var settings = new Av1EncoderSettings(96, 80, 8, Monochrome: true, 1, 1, 1, 13, 6, FullRange: true, ChromaSamplePosition: 0, StillPicture: true, Lossless: true, Quality: 100, Effort: 1);
+        using var encoder = new Av1Encoder(scope, settings);
+        var buffer = encoder.GetSourcePlane(0);
+        var samples = CreateSamples("photo", buffer.Width, buffer.Height, 8, seed: 4);
+        for (var y = 0; y < buffer.Height; y++)
+        {
+            samples.AsSpan(y * buffer.Width, buffer.Width).CopyTo(buffer.GetRow(y));
+        }
+
+        encoder.BeginFrame();
+        while (!encoder.Encode(TestContext.Current.CancellationToken))
+        {
+        }
+
+        var payload = encoder.Payload.ToArray();
+        using var decoder = new Av1Decoder(scope);
+        decoder.SetInput(payload, 0, payload.Length);
+        var frame = decoder.DecodeNextOutputFrame(TestContext.Current.CancellationToken);
+        Assert.NotNull(frame);
+        try
+        {
+            Assert.False(frame.Header.AllowScreenContentTools);
+        }
+        finally
+        {
+            frame.Release();
+        }
     }
 
     private static byte[] EncodeLossless(int width, int height, int bitDepth, int effort, int seed)

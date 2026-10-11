@@ -209,6 +209,89 @@ internal sealed class Av1Encoder : IDisposable
     /// </summary>
     public static int GetQuantizerIndex(int quality) => Math.Clamp(((100 - quality) * 255 + 50) / 100, 1, 255);
 
+    // Whether the frame looks like the content of a screen rather than like a photograph: such a frame is coded with
+    // palettes (allow_screen_content_tools), which cost a flag in every block that could have one. The luma plane is
+    // divided into blocks of 16x16 samples: the frame qualifies when a tenth of the blocks that are not flat have at most
+    // 8 values, or two values that three quarters of their samples have (the edges of text blend two colors), and these
+    // values are not close to one another (a smooth area of a photograph has few values too, but close ones)
+    private static bool HasFewColors(Av1Plane plane, int bitDepth)
+    {
+        const int BlockSize = 16;
+        const int MaxValues = 64;
+        var samples = plane.Samples;
+        var stride = plane.Stride;
+        var contrast = 1 << (bitDepth - 3);
+        Span<ushort> values = stackalloc ushort[MaxValues];
+        Span<int> counts = stackalloc int[MaxValues];
+        var blocks = 0;
+        var qualified = 0;
+        for (var y0 = 0; y0 < plane.Height; y0 += BlockSize)
+        {
+            var height = Math.Min(BlockSize, plane.Height - y0);
+            for (var x0 = 0; x0 < plane.Width; x0 += BlockSize)
+            {
+                var width = Math.Min(BlockSize, plane.Width - x0);
+                var count = 0;
+                var tooMany = false;
+                for (var y = 0; y < height && !tooMany; y++)
+                {
+                    foreach (var sample in samples.Slice(((y0 + y) * stride) + x0, width))
+                    {
+                        var index = values[..count].IndexOf(sample);
+                        if (index < 0)
+                        {
+                            if (count is MaxValues)
+                            {
+                                tooMany = true;
+                                break;
+                            }
+
+                            index = count++;
+                            values[index] = sample;
+                            counts[index] = 0;
+                        }
+
+                        counts[index]++;
+                    }
+                }
+
+                if (count < 2)
+                    continue;
+
+                blocks++;
+                if (tooMany)
+                    continue;
+
+                // The two most frequent values, and the range of the values
+                var first = 0;
+                var second = -1;
+                var min = values[0];
+                var max = values[0];
+                for (var i = 1; i < count; i++)
+                {
+                    min = Math.Min(min, values[i]);
+                    max = Math.Max(max, values[i]);
+                    if (counts[i] > counts[first])
+                    {
+                        second = first;
+                        first = i;
+                    }
+                    else if (second < 0 || counts[i] > counts[second])
+                    {
+                        second = i;
+                    }
+                }
+
+                var hasFewValues = count <= Av1Constants.PaletteColors && max - min >= contrast;
+                var hasTwoMainValues = (counts[first] + counts[second]) * 4 >= width * height * 3 && Math.Abs(values[first] - values[second]) >= contrast;
+                if (hasFewValues || hasTwoMainValues)
+                    qualified++;
+            }
+        }
+
+        return qualified > 0 && qualified * 10 >= blocks;
+    }
+
     // The samples beyond the frame, which the blocks that cross its right and bottom edges predict and code: they repeat
     // the last column and the last row, which costs the fewest bits
     private static void ExtendPlane(Av1Plane plane)
@@ -241,6 +324,7 @@ internal sealed class Av1Encoder : IDisposable
             PrimaryRefFrame = isKeyFrame ? Av1Constants.PrimaryRefNone : 0,
             RefreshFrameFlags = (1 << Av1Constants.NumRefFrames) - 1,
             InterpolationFilter = Av1Constants.Eighttap,
+            AllowScreenContentTools = HasFewColors(_workspace.GetSource(0), _sequence.BitDepth),
             OrderHint = _sequence.EnableOrderHint ? _frameIndex & ((1 << _sequence.OrderHintBits) - 1) : 0,
             TileColsLog2 = limits.MinLog2TileCols,
             TileRowsLog2 = Math.Max(limits.MinLog2Tiles - limits.MinLog2TileCols, 0),

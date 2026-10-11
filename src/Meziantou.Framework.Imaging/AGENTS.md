@@ -125,6 +125,9 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
     the same planes) are the tests to run after any change.
   - Every decision is made with integers (rates, distortions, the forward transforms): the output must not depend on
     the platform. The forward transforms are measured on the inverse kernels of the decoder, not written out.
+  - The palettes of the block being coded live where the decoder has them (the scratch of the tile), and those of the
+    blocks above and to the left are contexts: a candidate with a palette changes them, so they are in the context
+    snapshots of a frame that has palettes, and the palettes of a block are in its record.
   - A frame of a sequence that is not a key frame is an inter frame whose only reference is the previous frame
     (`LAST_FRAME`; every slot is refreshed by every frame). An inter block is written from the motion vector stack that
     `FindMvStack` builds, like a decoder: the stack reads which blocks of the frame are written, so the search marks

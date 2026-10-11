@@ -362,7 +362,10 @@ internal ref partial struct Av1TileCoder
             WriteUvModeInfo();
 
         if (IsPaletteAllowed())
-            throw new NotSupportedException("Palettes are not encoded yet.");
+        {
+            WritePaletteModeInfoY();
+            WritePaletteModeInfoUv();
+        }
 
         WriteFilterIntraModeInfo();
     }

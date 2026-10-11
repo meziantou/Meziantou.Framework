@@ -203,6 +203,95 @@ public sealed class AvifEncoderInteropTests
     }
 
     [Theory]
+    [InlineData("lossless", 8, "444", 0)]
+    [InlineData("lossless", 8, "444", 5)]
+    [InlineData("lossless", 12, "444", 3)]
+    [InlineData("lossless", 10, "400", 7)]
+    [InlineData("lossy", 8, "420", 2)]
+    [InlineData("lossy", 10, "420", 6)]
+    [InlineData("lossy", 8, "422", 4)]
+    [InlineData("lossy", 12, "444", 9)]
+    [InlineData("lossy", 8, "400", 1)]
+    public async Task TheReferenceDecodersReconstructScreenContent(string compression, int bitDepth, string format, int effort)
+    {
+        // Images of few colors are coded with palettes, in the key frame and in the frames that follow it
+        const int FrameCount = 3;
+        var ffmpeg = await RequiredTools.FFmpegAsync();
+        var libavif = await RequiredTools.LibAvifAsync();
+        var dav1d = new Av1ReferenceDecoder(ffmpeg, Av1ReferenceDecoder.Dav1d);
+        var libaom = new Av1ReferenceDecoder(ffmpeg, Av1ReferenceDecoder.Libaom);
+        var directory = InteropSettings.GetArtifactsDirectory(nameof(AvifEncoderInteropTests));
+        foreach (var (width, height, quality) in new[] { (24, 17, 50), (64, 64, 80), (150, 77, 30), (90, 131, 95) })
+        {
+            var name = string.Create(CultureInfo.InvariantCulture, $"screen-{compression}-{bitDepth}-{format}-e{effort}-{width}x{height}-q{quality}");
+            using var image = CreateScreenImage(width, height, format is "400", bitDepth, seed: width + quality, frame: 0);
+            for (var i = 1; i < FrameCount; i++)
+            {
+                using var next = CreateScreenImage(width, height, format is "400", bitDepth, seed: width + quality, frame: i);
+                image.AppendFrame(next.Frames[0]);
+            }
+
+            for (var i = 0; i < FrameCount; i++)
+            {
+                image.Frames[i].Metadata.Duration = new FrameDuration(1, 5);
+            }
+
+            var encoder = new AvifEncoder
+            {
+                Compression = compression is "lossy" ? AvifCompression.Lossy : AvifCompression.Lossless,
+                Quality = quality,
+                Effort = effort,
+                BitDepth = bitDepth,
+                ChromaSubsampling = format switch
+                {
+                    "444" => AvifChromaSubsampling.Ratio444,
+                    "422" => AvifChromaSubsampling.Ratio422,
+                    _ => AvifChromaSubsampling.Ratio420,
+                },
+            };
+
+            var path = await SaveAsync(image, encoder, name);
+            var data = await File.ReadAllBytesAsync(path, XunitCancellationToken);
+            var reader = ReferenceAvif.Parse(data);
+            foreach (var (track, kind) in new[] { (reader.ColorTrack, "color"), (reader.AlphaTrack, "alpha") })
+            {
+                if (track is null)
+                    continue;
+
+                var samples = track.Samples.Select(sample => data.AsSpan(checked((int)sample.Offset), sample.Size).ToArray()).ToList();
+                var stream = directory / $"{name}-{kind}.obu";
+                await File.WriteAllBytesAsync(stream, [.. samples.SelectMany(sample => (byte[])[0x12, 0x00, .. sample])], XunitCancellationToken);
+                var frames = await dav1d.ProbeAsync(stream, XunitCancellationToken);
+                Assert.HasCount(FrameCount, frames);
+                var first = await dav1d.DecodeAsync(stream, frames[0].PixelFormat, directory / $"{name}-{kind}-dav1d", XunitCancellationToken);
+                var second = await libaom.DecodeAsync(stream, frames[0].PixelFormat, directory / $"{name}-{kind}-libaom", XunitCancellationToken);
+                var library = DecodeFramesWithLibrary(samples, name, out var tools);
+                Assert.HasCount(FrameCount, first);
+                Assert.HasCount(FrameCount, second);
+                for (var i = 0; i < FrameCount; i++)
+                {
+                    Assert.True(first[i].AsSpan().SequenceEqual(second[i]), $"{name} {kind}: dav1d and libaom reconstruct different planes for frame {i} ({frames[0].PixelFormat}).");
+                    Assert.True(first[i].AsSpan().SequenceEqual(library[i]), $"{name} {kind}: the reference decoders and the library reconstruct different planes for frame {i} ({frames[0].PixelFormat}; first difference at byte {first[i].AsSpan().CommonPrefixLength(library[i])} of {first[i].Length} and {library[i].Length}).");
+                }
+
+                // The color planes of an image that is large enough for the detection of screen content have palettes
+                if (kind is "color" && width >= 90)
+                    Assert.True(tools.HasFlag(Av1Tools.Palette), $"{name}: no block of the color planes has a palette ({tools}).");
+            }
+
+            if (compression is "lossless" && bitDepth is 8)
+            {
+                var decoded = await libavif.DecodeAllFramesAsync(path, XunitCancellationToken);
+                Assert.HasCount(FrameCount, decoded);
+                for (var i = 0; i < FrameCount; i++)
+                {
+                    AssertSamples(ImageSnapshots.CaptureFrame(image.Frames[i]), decoded[i].Pixels, $"{name}: frame {i} decoded by avifdec {libavif.Version}");
+                }
+            }
+        }
+    }
+
+    [Theory]
     [InlineData(AvifCompression.Lossless, null)]
     [InlineData(AvifCompression.Lossless, 4)]
     [InlineData(AvifCompression.Lossy, 1)]
@@ -412,12 +501,16 @@ public sealed class AvifEncoderInteropTests
     // plane after plane, one byte per sample for 8-bit streams and two little-endian bytes otherwise
     private static byte[] DecodeWithLibrary(byte[] payload, string name) => Assert.Single(DecodeFramesWithLibrary([payload], name));
 
-    // The same for the samples of a track, which the same decoder decodes one after the other
-    private static List<byte[]> DecodeFramesWithLibrary(IReadOnlyList<byte[]> payloads, string name)
+    private static List<byte[]> DecodeFramesWithLibrary(IReadOnlyList<byte[]> payloads, string name) => DecodeFramesWithLibrary(payloads, name, out _);
+
+    // The same for the samples of a track, which the same decoder decodes one after the other; tools receives the coding
+    // tools of the frames
+    private static List<byte[]> DecodeFramesWithLibrary(IReadOnlyList<byte[]> payloads, string name, out Av1Tools tools)
     {
         var scope = AllocationScope.Create(ImageConfiguration.Default, name);
         using var decoder = new Av1Decoder(scope);
         var frames = new List<byte[]>();
+        tools = Av1Tools.None;
         foreach (var payload in payloads)
         {
             decoder.SetInput(payload, 0, payload.Length);
@@ -446,6 +539,8 @@ public sealed class AvifEncoderInteropTests
             {
                 frame.Release();
             }
+
+            tools |= decoder.Tools;
         }
 
         return frames;
@@ -523,6 +618,45 @@ public sealed class AvifEncoderInteropTests
 
                     samples[(((y * width) + x) * 4) + channel] = value;
                 }
+            }
+        }
+
+        return CreateImage(samples, width, height, monochrome, deep);
+    }
+
+    // The content of a screen: areas of a few colors with marks of one pixel, edges that blend two colors in a few steps
+    // (more colors than a palette holds), a band that changes from an image to the next one, a corner of noise, and
+    // pixels that are transparent or not
+    private static Image CreateScreenImage(int width, int height, bool monochrome, int bitDepth, int seed, int frame)
+    {
+        var deep = bitDepth > 8;
+        var max = deep ? 65535 : 255;
+        var random = new Random(seed);
+        var palette = new int[12][];
+        for (var i = 0; i < palette.Length; i++)
+        {
+            // Colors that survive the reduction of 16-bit samples to the bit depth of the file
+            palette[i] = [random.Next(256) * (max / 255), random.Next(256) * (max / 255), random.Next(256) * (max / 255)];
+        }
+
+        var samples = new int[width * height * 4];
+        for (var y = 0; y < height; y++)
+        {
+            for (var x = 0; x < width; x++)
+            {
+                var area = (x / 19) + ((y / 11) * 5) + (y >= height / 2 ? frame : 0);
+                var mark = ((x * 5) + (y * 11) + (x * y)) % (4 + (area % 5));
+                var color = palette[(area + (mark is 0 ? 3 : 0) + (mark is 1 ? 7 : 0)) % palette.Length];
+                var other = palette[(area + 1) % palette.Length];
+                var blend = (area % 3) is 2 && mark is 2 ? ((x + (2 * y)) % 11) + 1 : 0;
+                var index = ((y * width) + x) * 4;
+                for (var channel = 0; channel < 3; channel++)
+                {
+                    var value = ((color[channel] / (max / 255) * (12 - blend)) + (other[channel] / (max / 255) * blend)) / 12 * (max / 255);
+                    samples[index + channel] = x >= width - 6 && y < 6 ? random.Next(256) * (max / 255) : value;
+                }
+
+                samples[index + 3] = (area % 7) is 0 && mark is not 0 ? 0 : max;
             }
         }
 

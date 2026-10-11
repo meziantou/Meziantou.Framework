@@ -24,8 +24,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </remarks>
 internal ref partial struct Av1TileCoder
 {
-    // A block record: the header, then the records of the transform blocks of each plane. A transform block record is its
-    // luma transform type, its end of block and as many levels in scan order
+    // A block record: the header, then the records of the transform blocks of each plane, then the palettes of the block.
+    // A transform block record is its luma transform type, its end of block and as many levels in scan order
     private const int RecordLength = 0;
     private const int RecordLumaOffset = 1;
     private const int RecordUOffset = 2;
@@ -42,7 +42,10 @@ internal ref partial struct Av1TileCoder
     private const int RecordRefMvIdx = 13;
     private const int RecordMvRow = 14;
     private const int RecordMvCol = 15;
-    private const int RecordHeaderLength = 16;
+    private const int RecordPaletteSizeY = 16;
+    private const int RecordPaletteSizeUv = 17;
+    private const int RecordPaletteOffset = 18;
+    private const int RecordHeaderLength = 19;
     private const int RecordSkipFlag = 1;
     private const int RecordFilterIntraFlag = 2;
     private const int RecordInterFlag = 4;
@@ -699,6 +702,14 @@ internal ref partial struct Av1TileCoder
             TryLumaMode(ref luma, modes[i], angleDelta: 0, filterIntraMode: -1, maxTxSize);
         }
 
+        if (IsPaletteAllowed())
+        {
+            // The palette of a block of few colors predicts it exactly
+            var paletteSize = FindLumaPalette();
+            if (paletteSize > 0)
+                TryLumaMode(ref luma, Av1Constants.DcPred, angleDelta: 0, filterIntraMode: -1, maxTxSize, paletteSize);
+        }
+
         if (_decisions.AngleDeltas && subSize >= Av1Constants.Block8x8 && IsDirectionalMode(luma.BestMode))
         {
             var mode = luma.BestMode;
@@ -765,13 +776,13 @@ internal ref partial struct Av1TileCoder
         {
             // The best mode with smaller transform blocks, as long as they cost less: each one is predicted from the
             // samples of the ones before it
-            var (mode, angleDelta, filterIntraMode) = (luma.BestMode, luma.BestAngle, luma.BestFilterIntra);
+            var (mode, angleDelta, filterIntraMode, paletteSize) = (luma.BestMode, luma.BestAngle, luma.BestFilterIntra, luma.BestPaletteSize);
             var maxDepth = Math.Min(_decisions.TransformSizeDepth, Math.Min(MaxCodedTxDepth, (int)Av1Tables.MaxTxDepth[subSize]));
             var txSize = maxTxSize;
             for (var depth = 1; depth <= maxDepth; depth++)
             {
                 txSize = Av1Tables.SplitTxSize[txSize];
-                TryLumaMode(ref luma, mode, angleDelta, filterIntraMode, txSize);
+                TryLumaMode(ref luma, mode, angleDelta, filterIntraMode, txSize, paletteSize);
                 if (!luma.LastIsBest)
                     break;
             }
@@ -781,7 +792,7 @@ internal ref partial struct Av1TileCoder
         {
             // The transform types of the transform blocks of the best mode
             _searchesTransformTypes = true;
-            TryLumaMode(ref luma, luma.BestMode, luma.BestAngle, luma.BestFilterIntra, luma.BestTxSize);
+            TryLumaMode(ref luma, luma.BestMode, luma.BestAngle, luma.BestFilterIntra, luma.BestTxSize, luma.BestPaletteSize);
             _searchesTransformTypes = false;
         }
 
@@ -790,6 +801,7 @@ internal ref partial struct Av1TileCoder
         _useFilterIntra = luma.BestFilterIntra >= 0;
         _filterIntraMode = Math.Max(luma.BestFilterIntra, 0);
         _txSize = luma.BestTxSize;
+        _paletteSizeY = luma.BestPaletteSize;
         var hasCoefficients = luma.BestHasCoefficients;
         if (!luma.LastIsBest)
             CopyPixels(pixels, r, c, bw4, bh4, planeMask: 0b001, save: false);
@@ -810,20 +822,32 @@ internal ref partial struct Av1TileCoder
             var bestUvMode = Av1Constants.DcPred;
             var bestAlphaU = 0;
             var bestAlphaV = 0;
+            var bestPaletteSize = 0;
             long bestDistortion = 0;
             bestHasCoefficients = false;
             lastIsBest = false;
             _uvMode = Av1Constants.DcPred;
 
-            // The prediction from the luma samples of the block, which are the ones of its best luma mode, is one more mode
-            var candidateCount = chromaCount + (_decisions.ChromaFromLuma && IsCflAllowed() ? 1 : 0);
+            // Two more modes: the palette of a block of few colors, and the prediction from the luma samples of the block,
+            // which are the ones of its best luma mode
+            var chromaPaletteSize = IsPaletteAllowed() ? FindChromaPalette() : 0;
+            var paletteIndex = chromaPaletteSize > 0 ? chromaCount : -1;
+            var candidateCount = chromaCount + (chromaPaletteSize > 0 ? 1 : 0) + (_decisions.ChromaFromLuma && IsCflAllowed() ? 1 : 0);
             for (var i = 0; i < candidateCount; i++)
             {
+                _paletteSizeUv = 0;
                 if (i < chromaCount)
                 {
                     _uvMode = modes[i];
                     _cflAlphaU = 0;
                     _cflAlphaV = 0;
+                }
+                else if (i == paletteIndex)
+                {
+                    _uvMode = Av1Constants.DcPred;
+                    _cflAlphaU = 0;
+                    _cflAlphaV = 0;
+                    _paletteSizeUv = chromaPaletteSize;
                 }
                 else if (!SearchCflAlphas(contexts, r, c, bw4, bh4))
                 {
@@ -840,6 +864,12 @@ internal ref partial struct Av1TileCoder
                 _distortion = 0;
                 _hasCoefficients = false;
                 WriteUvModeInfo();
+                if (IsPaletteAllowed())
+                {
+                    WritePaletteModeInfoUv();
+                    WritePaletteTokens(ChromaPalette);
+                }
+
                 Residual(ResidualOperation.Search, planeMask: 0b010);
                 var candidateULength = _recordPosition - candidateStart;
                 Residual(ResidualOperation.Search, planeMask: 0b100);
@@ -850,6 +880,7 @@ internal ref partial struct Av1TileCoder
                     bestUvMode = _uvMode;
                     bestAlphaU = _cflAlphaU;
                     bestAlphaV = _cflAlphaV;
+                    bestPaletteSize = _paletteSizeUv;
                     bestDistortion = _distortion;
                     bestHasCoefficients = _hasCoefficients;
                     uLength = candidateULength;
@@ -870,6 +901,7 @@ internal ref partial struct Av1TileCoder
             _uvMode = bestUvMode;
             _cflAlphaU = bestAlphaU;
             _cflAlphaV = bestAlphaV;
+            _paletteSizeUv = bestPaletteSize;
             distortion += bestDistortion;
             hasCoefficients |= bestHasCoefficients;
             if (!lastIsBest)
@@ -878,9 +910,13 @@ internal ref partial struct Av1TileCoder
 
         // A block without coefficient is a skipped block, which codes no transform block
         _skip = !hasCoefficients;
-        var end = chromaStart + chromaLength;
+        var paletteStart = chromaStart + chromaLength;
+        var end = paletteStart + RecordPalettes(paletteStart);
         var record = workspace.Records.Slice(start, RecordHeaderLength);
         record[RecordLength] = end - start;
+        record[RecordPaletteSizeY] = _paletteSizeY;
+        record[RecordPaletteSizeUv] = _paletteSizeUv;
+        record[RecordPaletteOffset] = paletteStart - start;
         record[RecordLumaOffset] = RecordHeaderLength;
         record[RecordUOffset] = chromaStart - start;
         record[RecordVOffset] = chromaStart + uLength - start;
@@ -927,6 +963,7 @@ internal ref partial struct Av1TileCoder
         public int BestAngle;
         public int BestFilterIntra;
         public int BestTxSize;
+        public int BestPaletteSize;
         public int BestLength;
         public long BestDistortion;
         public bool BestHasCoefficients;
@@ -935,7 +972,7 @@ internal ref partial struct Av1TileCoder
 
     // Encodes the luma transform blocks of the block with a mode, and keeps their records and their samples when the mode
     // is the best one so far
-    private void TryLumaMode(ref LumaSearch search, int mode, int angleDelta, int filterIntraMode, int txSize)
+    private void TryLumaMode(ref LumaSearch search, int mode, int angleDelta, int filterIntraMode, int txSize, int paletteSize = 0)
     {
         var workspace = _workspace!;
         CopyContexts(workspace.GetContextSnapshot(search.Level, block: true), search.R, search.C, search.Bw4, search.Bh4, save: false);
@@ -946,11 +983,18 @@ internal ref partial struct Av1TileCoder
         _useFilterIntra = filterIntraMode >= 0;
         _filterIntraMode = Math.Max(filterIntraMode, 0);
         _txSize = txSize;
+        _paletteSizeY = paletteSize;
         _rate = 0;
         _distortion = 0;
         _hasCoefficients = false;
         WriteYMode();
         WriteIntraAngleInfoY();
+        if (IsPaletteAllowed())
+        {
+            WritePaletteModeInfoY();
+            WritePaletteTokens(LumaPalette);
+        }
+
         WriteFilterIntraModeInfo();
         WriteBlockTxSize();
         Residual(ResidualOperation.Search, planeMask: 0b001);
@@ -967,6 +1011,7 @@ internal ref partial struct Av1TileCoder
         search.BestDistortion = _distortion;
         search.BestFilterIntra = filterIntraMode;
         search.BestTxSize = txSize;
+        search.BestPaletteSize = paletteSize;
         search.BestHasCoefficients = _hasCoefficients;
         search.BestLength = _recordPosition - candidateStart;
         if (candidateStart != search.Start)
@@ -1045,6 +1090,7 @@ internal ref partial struct Av1TileCoder
         _angleDeltaY = angleDelta;
         _useFilterIntra = filterIntraMode >= 0;
         _filterIntraMode = Math.Max(filterIntraMode, 0);
+        _paletteSizeY = 0;
         _estimating = true;
         _estimate = 0;
         Residual(ResidualOperation.Search, planeMask: 0b001);
@@ -1135,6 +1181,11 @@ internal ref partial struct Av1TileCoder
         _cflAlphaU = record[RecordCflAlphaU];
         _cflAlphaV = record[RecordCflAlphaV];
         _txSize = record[RecordTxSize];
+        _paletteSizeY = record[RecordPaletteSizeY];
+        _paletteSizeUv = record[RecordPaletteSizeUv];
+        if (_paletteSizeY is not 0 || _paletteSizeUv is not 0)
+            LoadPalettes(start + record[RecordPaletteOffset]);
+
         _transformBlockCursor[0] = start + record[RecordLumaOffset];
         _transformBlockCursor[1] = start + record[RecordUOffset];
         _transformBlockCursor[2] = start + record[RecordVOffset];
@@ -1143,6 +1194,7 @@ internal ref partial struct Av1TileCoder
         var bw4 = Av1Tables.Num4x4BlocksWide[subSize];
         var bh4 = Av1Tables.Num4x4BlocksHigh[subSize];
         WriteModeInfo();
+        WritePaletteTokens(LumaPalette | ChromaPalette);
         var rate = _rate;
         WriteBlockTxSize();
         _transformSizeRate = _rate - rate;
@@ -1601,7 +1653,8 @@ internal ref partial struct Av1TileCoder
     // Saves or restores the contexts that the blocks of a region overwrite: the level and DC contexts above and to the left
     // of the transform blocks, and the flags of the blocks that the intra prediction may read. The region is bw4 x bh4
     // blocks of 4x4 luma samples at (r, c); the chroma blocks that share a 4x4 chroma block with it are included. The
-    // reference frames of the blocks of the region are not saved: no block of the region is written when its search starts
+    // reference frames of the blocks of the region are not saved: no block of the region is written when its search starts.
+    // A frame that may have palettes also saves the palettes above and to the left of the region
     private readonly void CopyContexts(Span<byte> snapshot, int r, int c, int bw4, int bh4, bool save)
     {
         if (!save && !_refFrames.IsEmpty)
@@ -1651,6 +1704,37 @@ internal ref partial struct Av1TileCoder
                 position += 2;
                 Copy(blockDecoded.Slice(BlockDecodedIndex(flagRow + i, flagColumn), nx), snapshot.Slice(position, nx), save);
                 position += nx;
+            }
+        }
+
+        if (_header.AllowScreenContentTools)
+        {
+            // The palettes of the blocks above and to the left, which predict the colors of the palette of a block
+            var width = Math.Min(bw4, _miCols - c) * Av1Constants.PaletteColors;
+            var height = bh4 * Av1Constants.PaletteColors;
+            var abovePlaneLength = Av1Constants.PaletteColors * (_miCols + Av1FrameState.AboveContextMargin);
+            for (var plane = 0; plane < 2; plane++)
+            {
+                CopyColors(_state.AbovePaletteColors.Slice((plane * abovePlaneLength) + (c * Av1Constants.PaletteColors), width), snapshot.Slice(position, width * sizeof(ushort)), save);
+                position += width * sizeof(ushort);
+                CopyColors(_scratch.GetLeftPaletteColors(plane).Slice((r & 31) * Av1Constants.PaletteColors, height), snapshot.Slice(position, height * sizeof(ushort)), save);
+                position += height * sizeof(ushort);
+            }
+        }
+
+        static void CopyColors(Span<ushort> state, Span<byte> saved, bool save)
+        {
+            for (var i = 0; i < state.Length; i++)
+            {
+                if (save)
+                {
+                    saved[2 * i] = (byte)state[i];
+                    saved[(2 * i) + 1] = (byte)(state[i] >> 8);
+                }
+                else
+                {
+                    state[i] = (ushort)(saved[2 * i] | (saved[(2 * i) + 1] << 8));
+                }
             }
         }
 

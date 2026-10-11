@@ -24,8 +24,11 @@ internal sealed class Av1EncoderWorkspace : IDisposable
     /// <summary>The number of sizes of a square of the partition tree.</summary>
     public const int Levels = 6;
 
-    /// <summary>The number of bytes of a context snapshot: for each plane, 4 lines of 33 contexts and 33 x 33 block flags.</summary>
-    public const int ContextSnapshotLength = 3 * ((4 * 33) + (33 * 33));
+    /// <summary>
+    /// The number of bytes of a context snapshot: for each plane, 4 lines of 33 contexts and 33 x 33 block flags; then the
+    /// palettes (8 colors of 2 bytes) of the luma plane and of the U plane above and to the left of 32 blocks.
+    /// </summary>
+    public const int ContextSnapshotLength = (3 * ((4 * 33) + (33 * 33))) + (2 * 2 * 32 * Av1Constants.PaletteColors * sizeof(ushort));
 
     private const int InitialRecordCapacity = 1 << 16;
     private const int PixelSnapshotKinds = 3;

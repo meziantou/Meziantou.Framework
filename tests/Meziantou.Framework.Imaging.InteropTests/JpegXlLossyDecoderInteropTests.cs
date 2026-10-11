@@ -155,7 +155,7 @@ public sealed class JpegXlLossyDecoderInteropTests
         var jxl = await RequiredTools.LibJxlAsync();
         var pattern = JpegXlPattern.Get(patternName);
         var directory = InteropSettings.GetArtifactsDirectory(nameof(EncodedFilesDecodeLikeTheReferenceDecoders));
-        var name = $"{patternName}{options.Replace(' ', '_').Replace('=', '_')}";
+        var name = JpegXlPattern.GetFileName(patternName, options);
         var inputPath = directory / (name + ".pam");
         var jxlPath = directory / (name + ".jxl");
         await File.WriteAllBytesAsync(inputPath, pattern.ToPam(), XunitCancellationToken);

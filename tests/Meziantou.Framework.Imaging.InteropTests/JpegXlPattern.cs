@@ -33,6 +33,20 @@ internal sealed class JpegXlPattern
     public bool HasAlpha => Channels is 2 or 4;
 
     /// <summary>Gets a pattern by name.</summary>
+    /// <summary>
+    /// Gets the name of the files of a pattern encoded with some options. A long list of options is cut and completed with
+    /// a digest: the reference tools do not open paths of more than 260 characters on Windows.
+    /// </summary>
+    public static string GetFileName(string patternName, string options)
+    {
+        var name = patternName + options.Replace(' ', '_').Replace('=', '_').Replace(';', '_');
+        if (name.Length <= 48)
+            return name;
+
+        var digest = Convert.ToHexStringLower(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(options)));
+        return name[..40] + "-" + digest[..8];
+    }
+
     public static JpegXlPattern Get(string name) => name switch
     {
         // Smooth gradients with a texture: every predictor has something to predict

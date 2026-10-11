@@ -85,7 +85,7 @@ public sealed class JpegXlDecoderDifferentialTests
         var oxide = await RequiredTools.JxlOxideAsync();
         var pattern = JpegXlPattern.Get(patternName);
         var directory = InteropSettings.GetArtifactsDirectory(nameof(LosslessFilesDecodeToTheImageGivenToTheEncoder));
-        var name = $"{patternName}{options.Replace(' ', '_').Replace('=', '_')}";
+        var name = JpegXlPattern.GetFileName(patternName, options);
         var inputPath = directory / (name + ".pam");
         var jxlPath = directory / (name + ".jxl");
         await File.WriteAllBytesAsync(inputPath, pattern.ToPam(), XunitCancellationToken);

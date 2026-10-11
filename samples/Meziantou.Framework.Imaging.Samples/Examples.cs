@@ -1,4 +1,5 @@
 using System.Runtime.CompilerServices;
+using Meziantou.Framework.Imaging.Drawing;
 using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.Metadata;
 
@@ -63,6 +64,57 @@ internal static class Examples
         var laplacian = new ConvolutionKernel(3, 3, [0, 1, 0, 1, -4, 1, 0, 1, 0]);
         image.Convolve(new ConvolutionOptions(laplacian) { PreserveAlpha = true, EdgeMode = ConvolutionEdgeMode.Mirror });
         image.Save(edgesPath);
+    }
+    // end-snippet
+
+    /// <summary>Drawing: gradients, a disk, a filled and stroked curve and a frame on a new image.</summary>
+    // begin-snippet: draw-shapes
+    public static void DrawLandscape(string outputPath)
+    {
+        using var image = new Image<Rgba32>(256, 160);
+
+        // Brushes, pens and paths are immutable: create them once and reuse them
+        var sky = new LinearGradientBrush(new PointD(0, 0), new PointD(0, 160), [new GradientStop(0, new Rgba32(30, 60, 160)), new GradientStop(1, new Rgba32(200, 220, 255))]);
+        var sun = new RadialGradientBrush(new PointD(200, 50), 30, [new GradientStop(0, new Rgba32(255, 255, 200)), new GradientStop(1, new Rgba32(255, 180, 0, 0))]);
+        var hill = new VectorPathBuilder()
+            .MoveTo(0, 160).LineTo(0, 120)
+            .CubicBezierTo(60, 70, 120, 150, 256, 100)
+            .LineTo(256, 160).Close()
+            .Build();
+        var outline = new Pen(new Rgba32(20, 60, 20), 3) { LineJoin = LineJoin.Round };
+        var frame = new Pen(new Rgba32(0, 0, 0, 128), 2);
+
+        image.Frames[0].Draw(canvas =>
+        {
+            canvas.Fill(sky); // the whole canvas
+            canvas.FillCircle(sun, new PointD(200, 50), 30); // fades to transparent at its edge
+            canvas.Fill(new Rgba32(60, 140, 60), hill); // a color converts to a solid brush
+            canvas.Stroke(outline, hill);
+            canvas.StrokeRectangle(frame, new RectangleD(1, 1, 254, 158)); // centered on its path: from 0 to 2
+        });
+
+        image.Save(outputPath);
+    }
+    // end-snippet
+
+    /// <summary>Drawing on every frame of an animation, with a static callback (no closure allocation).</summary>
+    // begin-snippet: draw-on-animation
+    public static void MarkAnimation(string inputPath, string outputPath)
+    {
+        using var image = Image.Load(inputPath);
+        var marker = new Pen(new Rgba32(255, 255, 0, 200), 4) { LineCap = LineCap.Round };
+
+        // Image.Draw paints every frame and the poster identically; the callback runs once
+        image.Draw(marker, static (canvas, pen) =>
+        {
+            // Coordinates are in pixels, with sub-pixel precision; shapes are clipped to the canvas
+            var center = new PointD(canvas.Width / 2.0, canvas.Height / 2.0);
+            var radius = Math.Min(canvas.Width, canvas.Height) / 4.0;
+            canvas.StrokeCircle(pen, center, radius);
+            canvas.StrokeLine(pen, new PointD(center.X - radius, center.Y), new PointD(center.X + radius, center.Y));
+        });
+
+        image.Save(outputPath);
     }
     // end-snippet
 

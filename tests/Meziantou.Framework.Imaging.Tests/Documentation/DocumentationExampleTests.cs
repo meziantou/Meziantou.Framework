@@ -70,6 +70,74 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void DrawLandscapePaintsShapesOverEachOther()
+    {
+        var output = GetPath("landscape.png");
+        Examples.DrawLandscape(output);
+
+        using var image = Image.Load<Rgba32>(output);
+        Assert.Equal(new Size(256, 160), image.Size);
+        var frame = image.Frames[0];
+
+        // The sky gradient made every pixel opaque
+        frame.ProcessPixelRows(static pixels =>
+        {
+            for (var y = 0; y < pixels.Height; y++)
+            {
+                foreach (var pixel in pixels.GetRowSpan(y))
+                {
+                    Assert.Equal(255, pixel.A);
+                }
+            }
+        });
+
+        // Inside the hill, away from its outline: the solid color exactly
+        Assert.Equal(new Rgba32(60, 140, 60), frame[10, 150]);
+        Assert.Equal(new Rgba32(60, 140, 60), frame[200, 140]);
+
+        // The sky gets lighter toward the bottom, and is the same along a row
+        Assert.True(frame[100, 10].B < frame[100, 60].B);
+        Assert.Equal(frame[40, 30], frame[120, 30]);
+
+        // The sun is nearly opaque at its center and fades into the sky; outside its radius the sky is untouched
+        Assert.True(frame[200, 50].R > 240 && frame[200, 50].G > 240);
+        Assert.True(frame[215, 50].R > frame[120, 50].R && frame[215, 50].R < frame[200, 50].R);
+        Assert.Equal(frame[120, 50], frame[240, 50]);
+
+        // The frame is a translucent black line from 0 to 2 around the canvas: darker than the pixels next to it
+        Assert.True(frame[0, 60].B < frame[3, 60].B);
+        Assert.Equal(frame[0, 60], frame[1, 60]);
+        Assert.True(frame[100, 159].G < frame[100, 157].G);
+    }
+
+    [Fact]
+    public void MarkAnimationDrawsOnEveryFrame()
+    {
+        var (apngPath, _) = BuildAnimation();
+        var output = GetPath("marked.png");
+        Examples.MarkAnimation(apngPath, output);
+
+        using var marked = Image.Load<Rgba32>(output);
+        Assert.Equal(2, marked.Frames.Count);
+        Assert.Equal(new FrameDuration(1, 30), marked.Frames[1].Metadata.Duration);
+
+        // The horizontal line, 4 pixels wide across the center: yellow at 200/255 over red, then over blue.
+        //   over red: green = 255 * 200 / 255 = 200 | over blue: red = green = 200, blue = 255 * 55 / 255 = 55
+        Assert.Equal(new Rgba32(255, 200, 0), marked.Frames[0][32, 32]);
+        Assert.Equal(new Rgba32(200, 200, 55), marked.Frames[1][32, 32]);
+        Assert.Equal(new Rgba32(200, 200, 55), marked.Frames[1][20, 30]);
+
+        // Away from the circle and the line, the frames are untouched
+        Assert.Equal(Red, marked.Frames[0][2, 2]);
+        Assert.Equal(Blue, marked.Frames[1][32, 24]);
+        Assert.Equal(Blue, marked.Frames[1][63, 63]);
+
+        // The circle of radius 16 crosses the vertical through the center at 16 and 48
+        Assert.Equal(new Rgba32(200, 200, 55), marked.Frames[1][32, 16]);
+        Assert.Equal(new Rgba32(200, 200, 55), marked.Frames[1][31, 47]);
+    }
+
+    [Fact]
     public void TrimBackgroundCropsToTheContentAndKeepsTheMargin()
     {
         // A 40x30 white image with a 10x6 red block at (2, 12)

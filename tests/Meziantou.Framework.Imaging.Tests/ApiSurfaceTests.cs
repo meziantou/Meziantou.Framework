@@ -1,6 +1,7 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
+using Meziantou.Framework.Imaging.Drawing;
 using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.Metadata;
 
@@ -28,12 +29,17 @@ public sealed class ApiSurfaceTests
         typeof(PngEncoder),
         typeof(GifEncoder),
         typeof(JpegEncoder),
+        typeof(Pen),
+        typeof(SolidBrush),
+        typeof(LinearGradientBrush),
+        typeof(RadialGradientBrush),
+        typeof(VectorPath),
     ];
 
     [Fact]
     public void PublicTypesAreInDocumentedNamespaces()
     {
-        string[] allowed = ["Meziantou.Framework.Imaging", "Meziantou.Framework.Imaging.Metadata", "Meziantou.Framework.Imaging.Formats"];
+        string[] allowed = ["Meziantou.Framework.Imaging", "Meziantou.Framework.Imaging.Metadata", "Meziantou.Framework.Imaging.Formats", "Meziantou.Framework.Imaging.Drawing"];
         Assert.All(LibraryAssembly.GetExportedTypes(), type => Assert.Contains(type.Namespace, allowed));
     }
 
@@ -43,6 +49,8 @@ public sealed class ApiSurfaceTests
     [InlineData(typeof(ImageFrameCollection))]
     [InlineData(typeof(ImageEncoder))]
     [InlineData(typeof(AutoCropAnalysis))]
+    [InlineData(typeof(Brush))]
+    [InlineData(typeof(GradientBrush))]
     public void ExtensibilityIsClosed(Type type)
     {
         // No codec plug-in, custom pixel or custom frame contract in v1: base types cannot be derived outside the library
@@ -65,6 +73,7 @@ public sealed class ApiSurfaceTests
     [InlineData(typeof(MetadataBlob))]
     [InlineData(typeof(IccProfile))]
     [InlineData(typeof(IccColorTransform))]
+    [InlineData(typeof(VectorPathBuilder))]
     public void ConcreteTypesAreSealed(Type type) => Assert.True(type.IsSealed, $"{type} must be sealed");
 
     [Fact]

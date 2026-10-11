@@ -1,7 +1,8 @@
 # Meziantou.Framework.Imaging
 
 A fully managed image library: PNG/APNG, GIF, JPEG, WebP, QOI, BMP, TGA, Netpbm, TIFF, ICO/CUR and ANI decoding and
-encoding, animation-aware processing, ICC color conversion, and bounded-memory streaming readers and writers.
+encoding, animation-aware processing, vector drawing, ICC color conversion, and bounded-memory streaming readers and
+writers.
 
 These instructions complete the repository-level `AGENTS.md`. The user guide is [readme.md](readme.md): it states what
 the library guarantees to its callers (support matrix, limitations, defaults). Keep the code, the XML documentation and
@@ -17,9 +18,9 @@ the library guarantees to its callers (support matrix, limitations, defaults). K
   (System.Drawing, libpng, libjpeg, giflib, libwebp, stb, ...).
 - No public allocator, custom pixel type, codec plug-in or image-processor interface. Implementation types are `internal`
   and live under `Internals/`.
-- Public namespaces: `Meziantou.Framework.Imaging`, `.Metadata` and `.Formats` (encoder settings). The base types of the
-  model (`Image`, `ImageFrame`, `ImageFrameCollection`, `ImageEncoder`, `AutoCropAnalysis`) cannot be derived outside the
-  library.
+- Public namespaces: `Meziantou.Framework.Imaging`, `.Metadata`, `.Formats` (encoder settings) and `.Drawing` (brushes,
+  pens, paths, the canvas). The base types of the model (`Image`, `ImageFrame`, `ImageFrameCollection`, `ImageEncoder`,
+  `AutoCropAnalysis`, `Brush`, `GradientBrush`) cannot be derived outside the library.
 - Every public member has XML documentation (`DisableDocumentationWarnings` is `false`).
 - `Meziantou.Framework.FullPath` is used by the tests, benchmarks and tools, never by the library.
 
@@ -50,8 +51,8 @@ the library guarantees to its callers (support matrix, limitations, defaults). K
   inclusive and always positive (no zero-as-unlimited). A limit failure is never turned into a truncation error or a
   success. Test each limit at the boundary and one over.
 - **Atomicity.** Geometry-changing operations (crop, auto-crop, resize, rotate, auto-orient) are transactional across all frames and
-  the poster. Pixel-only edits may be partially applied on failure but leave the image valid and disposable. A failed
-  operation releases every resource it acquired.
+  the poster. Pixel-only edits (flip, grayscale, convolve, draw) may be partially applied on failure but leave the image
+  valid and disposable. A failed operation releases every resource it acquired.
 - **Ownership.** Images are owned and disposed by their creator. Frames are borrowed views: they are not disposable and
   throw `ObjectDisposedException` once removed, replaced or disposed with their image. Eager loads never retain or close
   the caller's stream.
@@ -123,13 +124,44 @@ everything is under `Internals/Color`.
   interpolation between grid points, three black point compensation cases).
 - Pixels and their profile change together: `ConvertColorProfile` is transactional. No other operation converts colors.
 
+## Drawing
+
+`ImageFrame.Draw` / `Image.Draw` open a `DrawingSession` (leases, scratch, the validity of the `DrawingCanvas`); everything
+is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `PathFlattener` (curves to chords) ->
+`FillSink` or `Stroker` -> `EdgeBuilder` (clipped edges) -> `CoverageRasterizer` (one row of coverage at a time) ->
+`GradientEvaluator` for gradients -> `DrawingKernels` (compositing on each frame).
+
+- Written from first principles: never port code from another rasterizer or stroker (FreeType, Skia, AGG, stb, ...).
+- The numerical contract is documented in `readme.md` ("Rendering") and in the XML documentation of
+  `CoverageRasterizer`, `DrawingKernels` and `GradientEvaluator`: change it only with them and the tests.
+  - Coverage is the exact area of the pixel inside the shape (the union of overlapping contours), in 1/65536 steps,
+    ties upward. The rasterizer is a sweep line with lazily recorded boundaries; its row scratch is sized up front from
+    the largest number of edges on one row.
+  - Compositing is exact integer source-over (`ulong`), the generalization of `AnimationCompositor.BlendOver8/16` to a
+    fractional source alpha. Colors are converted to the pixel format first (`PixelConverter` rules).
+  - Gradients interpolate premultiplied values of the converted stops, evaluated per pixel at its center.
+- Only `+ - * /` and `Math.Sqrt` in the geometry (no trigonometry, no fused multiply-add), and every order that
+  influences a sum is total (events and crossings are sorted with a tie-break): results must not depend on the
+  platform, the framework version or a sorting algorithm.
+- A stroke is a union of convex pieces with one orientation (`Stroker`): overlaps are harmless because the coverage is
+  the area of the union. The 1/16 pixel flattening tolerance is public; the positions of the chord vertices are not.
+- Every rental of a draw call happens before its first pixel write (edges, then the sweep and gradient scratch in
+  `Render`). Draw calls allocate nothing once the scratch of the session has grown (`PerformanceContractTests`).
+- The cost of a shape follows its edges and their crossings. Keep the events of the sweep logarithmic: no pass over
+  every edge of a row per event.
+- Tests have three independent sources: hand-computed literals (`Drawing*Tests`), the exact rational references of the
+  harness (`TestHarness/Drawing`: `ReferenceCoverage`, `ReferenceCompositor`, `ReferenceGradient`, and the
+  `ReferenceStroke` membership predicate; `Conformance/DrawingReferenceTests`), and invariants over random drawings
+  (`DrawingFuzzTests`). The references never reuse the flattening or stroking of the library: curves are checked
+  against the true curve, strokes against the predicate, and the pieces the library emits are then filled exactly.
+
 ## Performance work
 
 - Remove unnecessary decodes, conversions and copies before micro-optimizing. Profile first and keep the evidence.
 - Scalar kernels are the numerical reference. A vectorized kernel keeps its scalar version (`...Scalar`) and needs a
   test proving identical results (`VectorizedKernelTests`). No fused multiply-add in the DCTs.
 - Default parallelism is one worker (`ImageConfiguration.MaxDegreeOfParallelism`). Only `Resize` and `Convolve` are
-  parallel, and their result must not depend on the worker count. Decoding and encoding stay sequential.
+  parallel, and their result must not depend on the worker count. Decoding, encoding and drawing stay sequential.
 - Static row callbacks allocate nothing per row (`PerformanceContractTests`).
 - This repository builds with the updated memory-safety rules: wrap `MemoryMarshal`, `Unsafe` and `Vector*.LoadUnsafe` /
   `StoreUnsafe` calls in `unsafe(...)`, or in an `unsafe { }` block for a statement.

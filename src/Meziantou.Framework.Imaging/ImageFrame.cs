@@ -1,3 +1,4 @@
+using Meziantou.Framework.Imaging.Drawing;
 using Meziantou.Framework.Imaging.Internals;
 using Meziantou.Framework.Imaging.Metadata;
 
@@ -136,6 +137,53 @@ public abstract class ImageFrame
         }
     }
 
+    /// <summary>Draws on this frame only.</summary>
+    /// <remarks>
+    /// The callback runs once, while the pixels of the frame are leased. See <see cref="DrawingCanvas"/> for the
+    /// coordinates and the rendering rules, and <see cref="Image.Draw(DrawingAction, CancellationToken)"/> to draw on every
+    /// frame of an image.
+    /// </remarks>
+    /// <param name="action">The callback that draws. It must not be asynchronous and must not retain the canvas.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests. It is checked by every drawing call.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
+    /// <exception cref="InvalidOperationException">A conflicting lease is active.</exception>
+    /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled. The shapes already drawn stay, and some rows of the one being drawn may be painted.</exception>
+    /// <exception cref="ObjectDisposedException">The frame is no longer attached to a live image.</exception>
+    public void Draw(DrawingAction action, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        using var session = BeginDrawing(cancellationToken);
+        action(new DrawingCanvas(session));
+    }
+
+    /// <summary>Draws on this frame only, passing caller state to avoid closure allocations.</summary>
+    /// <typeparam name="TState">The type of the state.</typeparam>
+    /// <param name="state">The state passed to <paramref name="action"/>.</param>
+    /// <param name="action">The callback that draws. Use a static lambda to avoid allocations. It must not retain the canvas.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests. It is checked by every drawing call.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
+    /// <exception cref="InvalidOperationException">A conflicting lease is active.</exception>
+    /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled. The shapes already drawn stay, and some rows of the one being drawn may be painted.</exception>
+    /// <exception cref="ObjectDisposedException">The frame is no longer attached to a live image.</exception>
+    public void Draw<TState>(TState state, DrawingAction<TState> action, CancellationToken cancellationToken = default)
+        where TState : allows ref struct
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        using var session = BeginDrawing(cancellationToken);
+        action(new DrawingCanvas(session), state);
+    }
+
+    /// <summary>Converts a paint color to the pixel type of the frame (see <see cref="DrawingKernels.ConvertColor{TPixel}"/>).</summary>
+    internal abstract DrawingColor ConvertDrawingColor(Rgba64 color);
+
+    /// <summary>
+    /// Composites a paint over a run of pixels, weighted by their coverage, with the kernel of the frame pixel type. The
+    /// drawing session holds the lease of the storage for its whole duration.
+    /// </summary>
+    internal abstract void CompositePixels(PixelStorage storage, int y, int x, ReadOnlySpan<uint> coverage, scoped in DrawingSource source);
+
     /// <summary>Mirrors the leased pixels in place with the kernel of the frame pixel type.</summary>
     internal abstract void FlipPixels(scoped in PixelLease lease, FlipMode mode, CancellationToken cancellationToken);
 
@@ -177,6 +225,13 @@ public abstract class ImageFrame
             ThrowDetached();
 
         return storage;
+    }
+
+    private DrawingSession BeginDrawing(CancellationToken cancellationToken)
+    {
+        var storage = GetStorage();
+        cancellationToken.ThrowIfCancellationRequested();
+        return DrawingSession.Begin(OwnerImage, [this], [storage], cancellationToken);
     }
 
     [DoesNotReturn]

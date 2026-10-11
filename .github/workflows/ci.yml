@@ -193,6 +193,16 @@ jobs:
             "tests/Meziantou.Framework.DnsServer.Tests/Meziantou.Framework.DnsServer.Tests.csproj"
           )
 
+          # The Imaging suites run tens of thousands of decoding and encoding tests and keep every core
+          # busy for about 20 minutes in Debug. In a shard, they starve the suites that start processes:
+          # Meziantou.Framework.SnapshotTesting.PackageTests completed no test before the hang dump
+          # timeout on Windows. They run in their own job instead.
+          $ImagingProjects = @(
+            "fuzz/Meziantou.Framework.Imaging.FuzzTests/Meziantou.Framework.Imaging.FuzzTests.csproj"
+            "tests/Meziantou.Framework.Imaging.InteropTests/Meziantou.Framework.Imaging.InteropTests.csproj"
+            "tests/Meziantou.Framework.Imaging.Tests/Meziantou.Framework.Imaging.Tests.csproj"
+          )
+
           # Remaining expensive suites, ordered from slowest to fastest. They are dealt out before
           # everything else, so this order is what keeps the shards balanced: see the assignment
           # loop below. The durations come from the .trx files of a full-rebuild run, taking the
@@ -213,7 +223,7 @@ jobs:
 
           # Fail explicitly when a configured project is renamed or removed instead of silently
           # ignoring it and unbalancing the shards.
-          foreach ($project in @($IsolatedProjects) + @($DnsProjects) + @($HeavyProjects)) {
+          foreach ($project in @($IsolatedProjects) + @($DnsProjects) + @($ImagingProjects) + @($HeavyProjects)) {
             if (-not (Test-Path -LiteralPath $project)) {
               throw "Configured project does not exist: $project"
             }
@@ -243,7 +253,12 @@ jobs:
             $groups += [pscustomobject]@{ id = "Dns"; projects = ($dns -join "`n") }
           }
 
-          $rest = @($affected | Where-Object { $isolated -notcontains $_ -and $dns -notcontains $_ } | Sort-Object)
+          $imaging = @($ImagingProjects | Where-Object { $affected -contains $_ })
+          if ($imaging.Count -gt 0) {
+            $groups += [pscustomobject]@{ id = "Imaging"; projects = ($imaging -join "`n") }
+          }
+
+          $rest = @($affected | Where-Object { $isolated -notcontains $_ -and $dns -notcontains $_ -and $imaging -notcontains $_ } | Sort-Object)
           if ($rest.Count -gt 0) {
             $shardCount = [int][Math]::Min($MaxShards, [Math]::Max(1, [Math]::Ceiling($rest.Count / $ProjectsPerShard)))
             $shards = @(1..$shardCount | ForEach-Object { ,[System.Collections.Generic.List[string]]::new() })

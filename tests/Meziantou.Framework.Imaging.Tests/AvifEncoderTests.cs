@@ -547,17 +547,6 @@ public sealed class AvifEncoderTests
         using var stream = new MemoryStream();
         image.Save(stream, encoder);
 
-        // TEMPORARY-DUMP
-        if (Environment.GetEnvironmentVariable("AV1_ENC_DUMP") is { Length: > 0 } dump)
-        {
-            Directory.CreateDirectory(dump);
-            var name = Path.Combine(dump, $"{TestContext.Current.Test?.TestDisplayName.GetHashCode(StringComparison.Ordinal):x8}-{Directory.GetFiles(dump).Length}");
-            File.WriteAllBytes(name + ".avif", stream.ToArray());
-            using var png = new MemoryStream();
-            image.Save(png, new PngEncoder());
-            File.WriteAllBytes(name + ".png", png.ToArray());
-        }
-
         return stream.ToArray();
     }
 

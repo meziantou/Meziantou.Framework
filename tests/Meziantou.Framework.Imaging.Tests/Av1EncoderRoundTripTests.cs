@@ -86,23 +86,6 @@ public sealed class Av1EncoderRoundTripTests
         var payload = encoder.Payload.ToArray();
         TestContext.Current.TestOutputHelper?.WriteLine($"{name}: {payload.Length} bytes for {source.Sum(plane => plane.Length)} samples");
 
-        // TEMPORARY-DUMP
-        if (Environment.GetEnvironmentVariable("AV1_ENC_DUMP") is { Length: > 0 } dump)
-        {
-            Directory.CreateDirectory(dump);
-            File.WriteAllBytes(Path.Combine(dump, name + ".obu"), [0x12, 0x00, .. payload]);
-            using var raw = File.Create(Path.Combine(dump, name + ".yuv"));
-            foreach (var plane in source)
-            {
-                foreach (var sample in plane)
-                {
-                    raw.WriteByte((byte)sample);
-                    if (bitDepth > 8)
-                        raw.WriteByte((byte)(sample >> 8));
-                }
-            }
-        }
-
         using var decoder = new Av1Decoder(scope);
         decoder.SetInput(payload, 0, payload.Length);
         var frame = decoder.DecodeNextOutputFrame(XunitCancellationToken);
@@ -186,27 +169,6 @@ public sealed class Av1EncoderRoundTripTests
         }
 
         var payload = encoder.Payload.ToArray();
-
-        // TEMPORARY-DUMP
-        if (Environment.GetEnvironmentVariable("AV1_ENC_DUMP") is { Length: > 0 } dump)
-        {
-            Directory.CreateDirectory(dump);
-            File.WriteAllBytes(Path.Combine(dump, name + ".obu"), [0x12, 0x00, .. payload]);
-            using var raw = File.Create(Path.Combine(dump, name + ".yuv"));
-            for (var plane = 0; plane < planeCount; plane++)
-            {
-                var reconstructed = encoder.Reconstruction.GetPlane(plane);
-                for (var y = 0; y < reconstructed.Height; y++)
-                {
-                    foreach (var sample in reconstructed.GetRow(y))
-                    {
-                        raw.WriteByte((byte)sample);
-                        if (bitDepth > 8)
-                            raw.WriteByte((byte)(sample >> 8));
-                    }
-                }
-            }
-        }
 
         using var decoder = new Av1Decoder(scope);
         decoder.SetInput(payload, 0, payload.Length);

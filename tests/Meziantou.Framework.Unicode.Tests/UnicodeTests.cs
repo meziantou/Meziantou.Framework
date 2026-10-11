@@ -650,4 +650,460 @@ public sealed class UnicodeTests
         Assert.True(Unicode.IsSingleScript("a\uD800b"));
         Assert.False(Unicode.IsSingleScript("a\uD800\u0431"));
     }
+
+    [Fact]
+    public void UnicodeVersion_IsThePinnedVersion()
+    {
+        Assert.Equal(new Version(18, 0, 0), UnicodeProperties.UnicodeVersion);
+    }
+
+    [Theory]
+    [InlineData(0x0041, UnicodeCategory.UppercaseLetter)]
+    [InlineData(0x0061, UnicodeCategory.LowercaseLetter)]
+    [InlineData(0x0030, UnicodeCategory.DecimalDigitNumber)]
+    [InlineData(0x0020, UnicodeCategory.SpaceSeparator)]
+    [InlineData(0x0300, UnicodeCategory.NonSpacingMark)]
+    [InlineData(0x200D, UnicodeCategory.Format)]
+    [InlineData(0x2028, UnicodeCategory.LineSeparator)]
+    [InlineData(0xD800, UnicodeCategory.Surrogate)]
+    [InlineData(0xE000, UnicodeCategory.PrivateUse)]
+    [InlineData(0x0378, UnicodeCategory.OtherNotAssigned)]
+    [InlineData(-1, UnicodeCategory.OtherNotAssigned)]
+    [InlineData(0x110000, UnicodeCategory.OtherNotAssigned)]
+    public void GetGeneralCategory_ReturnsTheCategory(int codePoint, UnicodeCategory expected)
+    {
+        Assert.Equal(expected, UnicodeProperties.GetGeneralCategory(codePoint));
+    }
+
+    [Theory]
+    [InlineData(0x00AD, true)]
+    [InlineData(0x200B, true)]
+    [InlineData(0x200D, true)]
+    [InlineData(0xFE0F, true)]
+    [InlineData(0xE0001, true)]
+    // Unassigned, but reserved for default-ignorable characters.
+    [InlineData(0xE0080, true)]
+    [InlineData(0x0041, false)]
+    [InlineData(0x0020, false)]
+    [InlineData(-1, false)]
+    public void IsDefaultIgnorable_ReturnsTheProperty(int codePoint, bool expected)
+    {
+        Assert.Equal(expected, UnicodeProperties.IsDefaultIgnorable(codePoint));
+    }
+
+    [Theory]
+    [InlineData(0x0041, 0)]
+    [InlineData(0x0300, 230)]
+    [InlineData(0x0316, 220)]
+    [InlineData(0x0334, 1)]
+    [InlineData(0x05B0, 10)]
+    [InlineData(0x094D, 9)]
+    [InlineData(0x3099, 8)]
+    [InlineData(0x110000, 0)]
+    public void GetCanonicalCombiningClass_ReturnsTheClass(int codePoint, int expected)
+    {
+        Assert.Equal(expected, UnicodeProperties.GetCanonicalCombiningClass(codePoint));
+    }
+
+    [Theory]
+    [InlineData(0x0041, UnicodeBidirectionalCategory.LeftToRight)]
+    [InlineData(0x05D0, UnicodeBidirectionalCategory.RightToLeft)]
+    [InlineData(0x0627, UnicodeBidirectionalCategory.RightToLeftArabic)]
+    [InlineData(0x0030, UnicodeBidirectionalCategory.EuropeanNumber)]
+    [InlineData(0x002B, UnicodeBidirectionalCategory.EuropeanSeparator)]
+    [InlineData(0x0024, UnicodeBidirectionalCategory.EuropeanTerminator)]
+    [InlineData(0x0660, UnicodeBidirectionalCategory.ArabicNumber)]
+    [InlineData(0x002C, UnicodeBidirectionalCategory.CommonSeparator)]
+    [InlineData(0x000A, UnicodeBidirectionalCategory.ParagraphSeparator)]
+    [InlineData(0x0009, UnicodeBidirectionalCategory.SegmentSeparator)]
+    [InlineData(0x0020, UnicodeBidirectionalCategory.WhiteSpace)]
+    [InlineData(0x0021, UnicodeBidirectionalCategory.OtherNeutral)]
+    [InlineData(0x0300, UnicodeBidirectionalCategory.NonspacingMark)]
+    [InlineData(0x202A, UnicodeBidirectionalCategory.LeftToRightEmbedding)]
+    [InlineData(0x202D, UnicodeBidirectionalCategory.LeftToRightOverride)]
+    [InlineData(0x202B, UnicodeBidirectionalCategory.RightToLeftEmbedding)]
+    [InlineData(0x202E, UnicodeBidirectionalCategory.RightToLeftOverride)]
+    [InlineData(0x202C, UnicodeBidirectionalCategory.PopDirectionalFormat)]
+    [InlineData(0x2066, UnicodeBidirectionalCategory.LeftToRightIsolate)]
+    [InlineData(0x2067, UnicodeBidirectionalCategory.RightToLeftIsolate)]
+    [InlineData(0x2068, UnicodeBidirectionalCategory.FirstStrongIsolate)]
+    [InlineData(0x2069, UnicodeBidirectionalCategory.PopDirectionalIsolate)]
+    [InlineData(0x200B, UnicodeBidirectionalCategory.BoundaryNeutral)]
+    // Noncharacters are boundary neutral.
+    [InlineData(0xFFFF, UnicodeBidirectionalCategory.BoundaryNeutral)]
+    [InlineData(0x0378, UnicodeBidirectionalCategory.LeftToRight)]
+    [InlineData(-1, UnicodeBidirectionalCategory.LeftToRight)]
+    public void GetBidiClass_ReturnsTheClass(int codePoint, UnicodeBidirectionalCategory expected)
+    {
+        Assert.Equal(expected, UnicodeProperties.GetBidiClass(codePoint));
+    }
+
+    [Theory]
+    // Thaana block: Arabic_Letter by default.
+    [InlineData(0x07B2, UnicodeBidirectionalCategory.RightToLeftArabic)]
+    // Currency Symbols block: European_Terminator by default.
+    [InlineData(0x20CF, UnicodeBidirectionalCategory.EuropeanTerminator)]
+    // An unallocated part of the right-to-left planes.
+    [InlineData(0x10FFE, UnicodeBidirectionalCategory.RightToLeft)]
+    public void GetBidiClass_UnassignedCodePointsHaveTheDefaultOfTheirRange(int codePoint, UnicodeBidirectionalCategory expected)
+    {
+        Assert.Equal(UnicodeCategory.OtherNotAssigned, UnicodeProperties.GetGeneralCategory(codePoint));
+        Assert.False(Unicode.TryGetCharacterInfo(new Rune(codePoint), out _));
+        Assert.Equal(expected, UnicodeProperties.GetBidiClass(codePoint));
+    }
+
+    [Theory]
+    [InlineData(0x0028, true, 0x0029)]
+    [InlineData(0x0029, true, 0x0028)]
+    [InlineData(0x003C, true, 0x003E)]
+    [InlineData(0x2208, true, 0x220B)]
+    // The integral sign is mirrored, but no other character has the mirrored glyph.
+    [InlineData(0x222B, true, -1)]
+    [InlineData(0x0041, false, -1)]
+    [InlineData(-1, false, -1)]
+    public void BidiMirroring_ReturnsThePropertyAndTheGlyph(int codePoint, bool mirrored, int expectedGlyph)
+    {
+        Assert.Equal(mirrored, UnicodeProperties.IsBidiMirrored(codePoint));
+        Assert.Equal(expectedGlyph >= 0, UnicodeProperties.TryGetBidiMirroringGlyph(codePoint, out var glyph));
+        Assert.Equal(expectedGlyph >= 0 ? expectedGlyph : codePoint, glyph);
+    }
+
+    [Theory]
+    [InlineData(0x0028, UnicodeBidiPairedBracketType.Open, 0x0029)]
+    [InlineData(0x0029, UnicodeBidiPairedBracketType.Close, 0x0028)]
+    [InlineData(0x005B, UnicodeBidiPairedBracketType.Open, 0x005D)]
+    [InlineData(0x2329, UnicodeBidiPairedBracketType.Open, 0x232A)]
+    [InlineData(0x300D, UnicodeBidiPairedBracketType.Close, 0x300C)]
+    // Mirrored, but not a bracket.
+    [InlineData(0x003C, UnicodeBidiPairedBracketType.None, -1)]
+    [InlineData(0x0041, UnicodeBidiPairedBracketType.None, -1)]
+    public void BidiPairedBracket_ReturnsTheTypeAndThePair(int codePoint, UnicodeBidiPairedBracketType type, int expectedPair)
+    {
+        Assert.Equal(type, UnicodeProperties.GetBidiPairedBracketType(codePoint));
+        Assert.Equal(expectedPair >= 0, UnicodeProperties.TryGetBidiPairedBracket(codePoint, out var pair));
+        Assert.Equal(expectedPair >= 0 ? expectedPair : codePoint, pair);
+    }
+
+    [Theory]
+    [InlineData(0x0041, UnicodeLineBreakClass.Alphabetic)]
+    [InlineData(0x0020, UnicodeLineBreakClass.Space)]
+    [InlineData(0x000A, UnicodeLineBreakClass.LineFeed)]
+    [InlineData(0x000D, UnicodeLineBreakClass.CarriageReturn)]
+    [InlineData(0x000C, UnicodeLineBreakClass.MandatoryBreak)]
+    [InlineData(0x0085, UnicodeLineBreakClass.NextLine)]
+    [InlineData(0x0028, UnicodeLineBreakClass.OpenPunctuation)]
+    [InlineData(0x0029, UnicodeLineBreakClass.CloseParenthesis)]
+    [InlineData(0x0021, UnicodeLineBreakClass.Exclamation)]
+    [InlineData(0x002D, UnicodeLineBreakClass.Hyphen)]
+    [InlineData(0x2010, UnicodeLineBreakClass.UnambiguousHyphen)]
+    [InlineData(0x00A0, UnicodeLineBreakClass.Glue)]
+    [InlineData(0x200B, UnicodeLineBreakClass.ZWSpace)]
+    [InlineData(0x200D, UnicodeLineBreakClass.ZWJ)]
+    [InlineData(0x2060, UnicodeLineBreakClass.WordJoiner)]
+    [InlineData(0x0030, UnicodeLineBreakClass.Numeric)]
+    [InlineData(0x4E00, UnicodeLineBreakClass.Ideographic)]
+    [InlineData(0x3041, UnicodeLineBreakClass.ConditionalJapaneseStarter)]
+    [InlineData(0x0E01, UnicodeLineBreakClass.ComplexContext)]
+    [InlineData(0x1F1E6, UnicodeLineBreakClass.RegionalIndicator)]
+    [InlineData(0x1F600, UnicodeLineBreakClass.Ideographic)]
+    [InlineData(0x261D, UnicodeLineBreakClass.EBase)]
+    [InlineData(0x1F3FB, UnicodeLineBreakClass.EModifier)]
+    [InlineData(0x05D0, UnicodeLineBreakClass.HebrewLetter)]
+    [InlineData(0xAC00, UnicodeLineBreakClass.H2)]
+    [InlineData(0xAC01, UnicodeLineBreakClass.H3)]
+    [InlineData(0x1100, UnicodeLineBreakClass.JL)]
+    [InlineData(0x1160, UnicodeLineBreakClass.JV)]
+    [InlineData(0x11A8, UnicodeLineBreakClass.JT)]
+    [InlineData(0x2014, UnicodeLineBreakClass.BreakBoth)]
+    [InlineData(0x00B4, UnicodeLineBreakClass.BreakBefore)]
+    [InlineData(0x002F, UnicodeLineBreakClass.BreakSymbols)]
+    [InlineData(0x002C, UnicodeLineBreakClass.InfixNumeric)]
+    [InlineData(0x0025, UnicodeLineBreakClass.PostfixNumeric)]
+    [InlineData(0x0024, UnicodeLineBreakClass.PrefixNumeric)]
+    [InlineData(0x0022, UnicodeLineBreakClass.Quotation)]
+    [InlineData(0x0300, UnicodeLineBreakClass.CombiningMark)]
+    [InlineData(0x2024, UnicodeLineBreakClass.Inseparable)]
+    [InlineData(0xFFFC, UnicodeLineBreakClass.ContingentBreak)]
+    [InlineData(0x00A7, UnicodeLineBreakClass.Ambiguous)]
+    [InlineData(0xD800, UnicodeLineBreakClass.Surrogate)]
+    [InlineData(0x1B05, UnicodeLineBreakClass.Aksara)]
+    [InlineData(0x11003, UnicodeLineBreakClass.AksaraPrebase)]
+    [InlineData(0x1B50, UnicodeLineBreakClass.AksaraStart)]
+    [InlineData(0x1B44, UnicodeLineBreakClass.Virama)]
+    [InlineData(0x1BF2, UnicodeLineBreakClass.ViramaFinal)]
+    [InlineData(0x0378, UnicodeLineBreakClass.Unknown)]
+    // Unassigned code points of the Currency Symbols block and of the ideographic areas have a default.
+    [InlineData(0x20CF, UnicodeLineBreakClass.PrefixNumeric)]
+    [InlineData(0x3FFFD, UnicodeLineBreakClass.Ideographic)]
+    [InlineData(-1, UnicodeLineBreakClass.Unknown)]
+    public void GetLineBreakClass_ReturnsTheClass(int codePoint, UnicodeLineBreakClass expected)
+    {
+        Assert.Equal(expected, UnicodeProperties.GetLineBreakClass(codePoint));
+    }
+
+    [Theory]
+    [InlineData(0x0041, UnicodeEastAsianWidth.Narrow)]
+    [InlineData(0x00A1, UnicodeEastAsianWidth.Ambiguous)]
+    [InlineData(0xFF21, UnicodeEastAsianWidth.Fullwidth)]
+    [InlineData(0xFF61, UnicodeEastAsianWidth.Halfwidth)]
+    [InlineData(0x20A9, UnicodeEastAsianWidth.Halfwidth)]
+    [InlineData(0x4E00, UnicodeEastAsianWidth.Wide)]
+    [InlineData(0x0378, UnicodeEastAsianWidth.Neutral)]
+    // Unassigned code points of the ideographic areas are wide.
+    [InlineData(0x3FFFD, UnicodeEastAsianWidth.Wide)]
+    public void GetEastAsianWidth_ReturnsTheWidth(int codePoint, UnicodeEastAsianWidth expected)
+    {
+        Assert.Equal(expected, UnicodeProperties.GetEastAsianWidth(codePoint));
+    }
+
+    [Theory]
+    [InlineData(0x0041, UnicodeGraphemeClusterBreak.Other, UnicodeIndicConjunctBreak.None)]
+    [InlineData(0x000D, UnicodeGraphemeClusterBreak.CR, UnicodeIndicConjunctBreak.None)]
+    [InlineData(0x000A, UnicodeGraphemeClusterBreak.LF, UnicodeIndicConjunctBreak.None)]
+    [InlineData(0x0000, UnicodeGraphemeClusterBreak.Control, UnicodeIndicConjunctBreak.None)]
+    [InlineData(0x0300, UnicodeGraphemeClusterBreak.Extend, UnicodeIndicConjunctBreak.Extend)]
+    [InlineData(0x200D, UnicodeGraphemeClusterBreak.ZWJ, UnicodeIndicConjunctBreak.Extend)]
+    [InlineData(0x1F1E6, UnicodeGraphemeClusterBreak.RegionalIndicator, UnicodeIndicConjunctBreak.None)]
+    [InlineData(0x0600, UnicodeGraphemeClusterBreak.Prepend, UnicodeIndicConjunctBreak.None)]
+    [InlineData(0x0903, UnicodeGraphemeClusterBreak.SpacingMark, UnicodeIndicConjunctBreak.None)]
+    [InlineData(0x1100, UnicodeGraphemeClusterBreak.L, UnicodeIndicConjunctBreak.None)]
+    [InlineData(0x1160, UnicodeGraphemeClusterBreak.V, UnicodeIndicConjunctBreak.None)]
+    [InlineData(0x11A8, UnicodeGraphemeClusterBreak.T, UnicodeIndicConjunctBreak.None)]
+    [InlineData(0xAC00, UnicodeGraphemeClusterBreak.LV, UnicodeIndicConjunctBreak.None)]
+    [InlineData(0xAC01, UnicodeGraphemeClusterBreak.LVT, UnicodeIndicConjunctBreak.None)]
+    [InlineData(0x094D, UnicodeGraphemeClusterBreak.Extend, UnicodeIndicConjunctBreak.Linker)]
+    [InlineData(0x0915, UnicodeGraphemeClusterBreak.Other, UnicodeIndicConjunctBreak.Consonant)]
+    public void GetGraphemeClusterBreak_ReturnsTheClasses(int codePoint, UnicodeGraphemeClusterBreak expected, UnicodeIndicConjunctBreak expectedConjunct)
+    {
+        Assert.Equal(expected, UnicodeProperties.GetGraphemeClusterBreak(codePoint));
+        Assert.Equal(expectedConjunct, UnicodeProperties.GetIndicConjunctBreak(codePoint));
+    }
+
+    [Theory]
+    [InlineData(0x0041, UnicodeWordBreak.ALetter)]
+    [InlineData(0x0030, UnicodeWordBreak.Numeric)]
+    [InlineData(0x0027, UnicodeWordBreak.SingleQuote)]
+    [InlineData(0x0022, UnicodeWordBreak.DoubleQuote)]
+    [InlineData(0x003A, UnicodeWordBreak.MidLetter)]
+    [InlineData(0x002E, UnicodeWordBreak.MidNumLet)]
+    [InlineData(0x002C, UnicodeWordBreak.MidNum)]
+    [InlineData(0x005F, UnicodeWordBreak.ExtendNumLet)]
+    [InlineData(0x30A1, UnicodeWordBreak.Katakana)]
+    [InlineData(0x05D0, UnicodeWordBreak.HebrewLetter)]
+    [InlineData(0x000D, UnicodeWordBreak.CR)]
+    [InlineData(0x000A, UnicodeWordBreak.LF)]
+    [InlineData(0x000B, UnicodeWordBreak.Newline)]
+    [InlineData(0x0020, UnicodeWordBreak.WSegSpace)]
+    [InlineData(0x00AD, UnicodeWordBreak.Format)]
+    [InlineData(0x0300, UnicodeWordBreak.Extend)]
+    [InlineData(0x200D, UnicodeWordBreak.ZWJ)]
+    [InlineData(0x1F1E6, UnicodeWordBreak.RegionalIndicator)]
+    [InlineData(0x4E00, UnicodeWordBreak.Other)]
+    public void GetWordBreak_ReturnsTheClass(int codePoint, UnicodeWordBreak expected)
+    {
+        Assert.Equal(expected, UnicodeProperties.GetWordBreak(codePoint));
+    }
+
+    [Theory]
+    [InlineData(0x0628, UnicodeJoiningType.DualJoining, UnicodeJoiningGroup.Beh)]
+    [InlineData(0x0627, UnicodeJoiningType.RightJoining, UnicodeJoiningGroup.Alef)]
+    [InlineData(0x0644, UnicodeJoiningType.DualJoining, UnicodeJoiningGroup.Lam)]
+    [InlineData(0x0647, UnicodeJoiningType.DualJoining, UnicodeJoiningGroup.Heh)]
+    [InlineData(0x0710, UnicodeJoiningType.RightJoining, UnicodeJoiningGroup.Alaph)]
+    [InlineData(0x0640, UnicodeJoiningType.JoinCausing, UnicodeJoiningGroup.NoJoiningGroup)]
+    [InlineData(0x200D, UnicodeJoiningType.JoinCausing, UnicodeJoiningGroup.NoJoiningGroup)]
+    [InlineData(0x064B, UnicodeJoiningType.Transparent, UnicodeJoiningGroup.NoJoiningGroup)]
+    [InlineData(0xA872, UnicodeJoiningType.LeftJoining, UnicodeJoiningGroup.NoJoiningGroup)]
+    [InlineData(0x0041, UnicodeJoiningType.NonJoining, UnicodeJoiningGroup.NoJoiningGroup)]
+    public void GetJoiningType_ReturnsTheTypeAndTheGroup(int codePoint, UnicodeJoiningType expectedType, UnicodeJoiningGroup expectedGroup)
+    {
+        Assert.Equal(expectedType, UnicodeProperties.GetJoiningType(codePoint));
+        Assert.Equal(expectedGroup, UnicodeProperties.GetJoiningGroup(codePoint));
+    }
+
+    [Theory]
+    [InlineData(0x0915, UnicodeIndicSyllabicCategory.Consonant, UnicodeIndicPositionalCategory.NotApplicable)]
+    [InlineData(0x094D, UnicodeIndicSyllabicCategory.Virama, UnicodeIndicPositionalCategory.Bottom)]
+    [InlineData(0x0902, UnicodeIndicSyllabicCategory.Bindu, UnicodeIndicPositionalCategory.Top)]
+    [InlineData(0x093F, UnicodeIndicSyllabicCategory.VowelDependent, UnicodeIndicPositionalCategory.Left)]
+    [InlineData(0x0940, UnicodeIndicSyllabicCategory.VowelDependent, UnicodeIndicPositionalCategory.Right)]
+    [InlineData(0x0941, UnicodeIndicSyllabicCategory.VowelDependent, UnicodeIndicPositionalCategory.Bottom)]
+    [InlineData(0x0947, UnicodeIndicSyllabicCategory.VowelDependent, UnicodeIndicPositionalCategory.Top)]
+    [InlineData(0x09CB, UnicodeIndicSyllabicCategory.VowelDependent, UnicodeIndicPositionalCategory.LeftAndRight)]
+    [InlineData(0x0E40, UnicodeIndicSyllabicCategory.VowelDependent, UnicodeIndicPositionalCategory.VisualOrderLeft)]
+    [InlineData(0x0905, UnicodeIndicSyllabicCategory.VowelIndependent, UnicodeIndicPositionalCategory.NotApplicable)]
+    [InlineData(0x0966, UnicodeIndicSyllabicCategory.Number, UnicodeIndicPositionalCategory.NotApplicable)]
+    [InlineData(0x093C, UnicodeIndicSyllabicCategory.Nukta, UnicodeIndicPositionalCategory.Bottom)]
+    [InlineData(0x200D, UnicodeIndicSyllabicCategory.Joiner, UnicodeIndicPositionalCategory.NotApplicable)]
+    [InlineData(0x200C, UnicodeIndicSyllabicCategory.NonJoiner, UnicodeIndicPositionalCategory.NotApplicable)]
+    [InlineData(0x0041, UnicodeIndicSyllabicCategory.Other, UnicodeIndicPositionalCategory.NotApplicable)]
+    public void GetIndicCategories_ReturnsTheCategories(int codePoint, UnicodeIndicSyllabicCategory expectedSyllabic, UnicodeIndicPositionalCategory expectedPositional)
+    {
+        Assert.Equal(expectedSyllabic, UnicodeProperties.GetIndicSyllabicCategory(codePoint));
+        Assert.Equal(expectedPositional, UnicodeProperties.GetIndicPositionalCategory(codePoint));
+    }
+
+    [Theory]
+    [InlineData(0x0041, 0x0061, 0x0041)]
+    [InlineData(0x0061, 0x0061, 0x0041)]
+    [InlineData(0x00E9, 0x00E9, 0x00C9)]
+    [InlineData(0x0130, 0x0069, 0x0130)]
+    [InlineData(0x0131, 0x0131, 0x0049)]
+    // A titlecase letter has both mappings.
+    [InlineData(0x01C5, 0x01C6, 0x01C4)]
+    [InlineData(0x10400, 0x10428, 0x10400)]
+    // The uppercase of the sharp s is two letters: it has no simple mapping.
+    [InlineData(0x00DF, 0x00DF, 0x00DF)]
+    [InlineData(0x0031, 0x0031, 0x0031)]
+    [InlineData(-1, -1, -1)]
+    [InlineData(0x110000, 0x110000, 0x110000)]
+    public void SimpleCaseMappings_ReturnTheMappedCodePoint(int codePoint, int expectedLower, int expectedUpper)
+    {
+        Assert.Equal(expectedLower, UnicodeProperties.ToSimpleLowercase(codePoint));
+        Assert.Equal(expectedUpper, UnicodeProperties.ToSimpleUppercase(codePoint));
+    }
+
+    [Fact]
+    public void Properties_AgreeWithTheCharacterInfoOfEveryCharacter()
+    {
+        // UnicodeCharacterInfo is decoded from UnicodeData.txt; the tables of UnicodeProperties come from the derived
+        // property files, through another reader.
+        var count = 0;
+        foreach (var info in Unicode.AllCharacters)
+        {
+            var codePoint = info.Rune.Value;
+            if (UnicodeProperties.GetGeneralCategory(codePoint) != info.Category
+                || UnicodeProperties.GetCanonicalCombiningClass(codePoint) != info.CanonicalCombiningClass
+                || UnicodeProperties.GetBidiClass(codePoint) != info.BidiCategory
+                || UnicodeProperties.IsBidiMirrored(codePoint) != info.IsMirrored
+                || UnicodeProperties.ToSimpleLowercase(codePoint) != (info.SimpleLowercaseMapping?.Value ?? codePoint)
+                || UnicodeProperties.ToSimpleUppercase(codePoint) != (info.SimpleUppercaseMapping?.Value ?? codePoint)
+                || UnicodeEmoji.IsEmoji(info.Rune) != info.IsEmoji
+                || UnicodeEmoji.HasEmojiPresentation(info.Rune) != info.HasEmojiPresentation
+                || UnicodeEmoji.IsEmojiModifier(info.Rune) != info.IsEmojiModifier
+                || UnicodeEmoji.IsEmojiModifierBase(info.Rune) != info.IsEmojiModifierBase
+                || UnicodeEmoji.IsEmojiComponent(info.Rune) != info.IsEmojiComponent
+                || UnicodeEmoji.IsExtendedPictographic(info.Rune) != info.IsExtendedPictographic)
+            {
+                Assert.Fail($"The properties of U+{codePoint:X4} disagree with its character information");
+            }
+
+            count++;
+        }
+
+        Assert.Equal(UnicodeCharacterInfos.GeneratedCharacterCount, count);
+    }
+
+    [Fact]
+    public void Properties_UnassignedCodePointsHaveNoCategoryAndNoMapping()
+    {
+        var count = 0;
+        for (var codePoint = 0; codePoint <= 0x10FFFF; codePoint++)
+        {
+            if (codePoint is >= 0xD800 and <= 0xDFFF || Unicode.TryGetCharacterInfo(new Rune(codePoint), out _))
+                continue;
+
+            if (UnicodeProperties.GetGeneralCategory(codePoint) != UnicodeCategory.OtherNotAssigned
+                || UnicodeProperties.GetCanonicalCombiningClass(codePoint) != 0
+                || UnicodeProperties.ToSimpleLowercase(codePoint) != codePoint
+                || UnicodeProperties.ToSimpleUppercase(codePoint) != codePoint)
+            {
+                Assert.Fail($"U+{codePoint:X4} is not assigned but has properties");
+            }
+
+            count++;
+        }
+
+        Assert.Equal(0x110000 - 0x800 - UnicodeCharacterInfos.GeneratedCharacterCount, count);
+    }
+
+    [Theory]
+    [InlineData(0x0041, new[] { UnicodeScript.Latin })]
+    [InlineData(0x30FC, new[] { UnicodeScript.Hiragana, UnicodeScript.Katakana })]
+    [InlineData(0x1CD0, new[] { UnicodeScript.Bengali, UnicodeScript.Devanagari, UnicodeScript.Grantha, UnicodeScript.Kannada })]
+    // No explicit value: the script itself, even when it is Unknown.
+    [InlineData(0x0378, new[] { UnicodeScript.Unknown })]
+    [InlineData(-1, new[] { UnicodeScript.Unknown })]
+    public void GetScriptExtensions_ReturnsTheScripts(int codePoint, UnicodeScript[] expected)
+    {
+        Span<UnicodeScript> buffer = stackalloc UnicodeScript[UnicodeScripts.MaxScriptExtensionCount];
+        var count = UnicodeScripts.GetScriptExtensions(codePoint, buffer);
+
+        Assert.Equal(expected.OrderBy(script => (int)script).ToArray(), buffer[..count].ToArray());
+        foreach (var script in expected)
+        {
+            Assert.True(UnicodeScripts.HasScriptExtension(codePoint, script));
+        }
+
+        Assert.False(UnicodeScripts.HasScriptExtension(codePoint, UnicodeScript.Cherokee));
+    }
+
+    [Fact]
+    public void GetScriptExtensions_MaxScriptExtensionCountIsEnoughForEveryCodePoint()
+    {
+        var buffer = new UnicodeScript[UnicodeScripts.MaxScriptExtensionCount];
+        var max = 0;
+        for (var codePoint = 0; codePoint <= 0x10FFFF; codePoint++)
+        {
+            max = Math.Max(max, UnicodeScripts.GetScriptExtensions(codePoint, buffer));
+        }
+
+        Assert.Equal(UnicodeScripts.MaxScriptExtensionCount, max);
+    }
+
+    [Fact]
+    public void GetScriptExtensions_ThrowsWhenTheDestinationIsTooSmall()
+    {
+        Assert.Throws<ArgumentException>("destination", () => UnicodeScripts.GetScriptExtensions(0x0041, []));
+        Assert.Throws<ArgumentException>("destination", () => UnicodeScripts.GetScriptExtensions(0x30FC, new UnicodeScript[1]));
+    }
+
+    [Theory]
+    [InlineData(UnicodeScript.Latin, "Latn")]
+    [InlineData(UnicodeScript.Han, "Hani")]
+    [InlineData(UnicodeScript.Arabic, "Arab")]
+    [InlineData(UnicodeScript.Common, "Zyyy")]
+    [InlineData(UnicodeScript.Inherited, "Zinh")]
+    [InlineData(UnicodeScript.Unknown, "Zzzz")]
+    [InlineData((UnicodeScript)60000, "Zzzz")]
+    public void GetIso15924Code_ReturnsTheCode(UnicodeScript script, string expected)
+    {
+        Assert.Equal(expected, UnicodeScripts.GetIso15924Code(script));
+    }
+
+    [Fact]
+    public void GetIso15924Code_EveryScriptHasADistinctCode()
+    {
+        var codes = Enum.GetValues<UnicodeScript>().Select(UnicodeScripts.GetIso15924Code).ToArray();
+
+        Assert.HasCount(codes.Length, codes.Distinct(StringComparer.Ordinal).ToArray());
+        foreach (var code in codes)
+        {
+            if (code.Length != 4 || !code.All(char.IsAsciiLetter))
+            {
+                Assert.Fail($"'{code}' is not an ISO 15924 code");
+            }
+        }
+    }
+
+    [Fact]
+    public void PropertyEnumerations_KeepTheirPublishedValues()
+    {
+        // The values are compiled into the assemblies that use them: they must never change. A new version of the
+        // Unicode Standard only appends.
+        Assert.Equal(0, (int)UnicodeScript.Unknown);
+        Assert.Equal(26, (int)UnicodeScript.Common);
+        Assert.Equal(59, (int)UnicodeScript.Inherited);
+        Assert.Equal(0, (int)UnicodeLineBreakClass.Unknown);
+        Assert.Equal(9, (int)UnicodeLineBreakClass.MandatoryBreak);
+        Assert.Equal(0, (int)UnicodeGraphemeClusterBreak.Other);
+        Assert.Equal(0, (int)UnicodeIndicConjunctBreak.None);
+        Assert.Equal(0, (int)UnicodeWordBreak.Other);
+        Assert.Equal(0, (int)UnicodeEastAsianWidth.Neutral);
+        Assert.Equal(0, (int)UnicodeBidiPairedBracketType.None);
+        Assert.Equal(0, (int)UnicodeJoiningType.NonJoining);
+        Assert.Equal(0, (int)UnicodeJoiningGroup.NoJoiningGroup);
+        Assert.Equal(0, (int)UnicodeIndicSyllabicCategory.Other);
+        Assert.Equal(0, (int)UnicodeIndicPositionalCategory.NotApplicable);
+    }
 }

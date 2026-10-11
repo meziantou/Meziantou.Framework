@@ -21,6 +21,13 @@ namespace Meziantou.Framework
         public static bool IsMixedScript(string value) => throw null;
     }
 
+    public enum UnicodeBidiPairedBracketType : byte
+    {
+        None = 0,
+        Close = 1,
+        Open = 2,
+    }
+
     public enum UnicodeBidirectionalCategory : byte
     {
         LeftToRight = 0,
@@ -451,6 +458,16 @@ namespace Meziantou.Framework
         public static bool operator !=(Meziantou.Framework.UnicodeCharacterInfo left, Meziantou.Framework.UnicodeCharacterInfo right) => throw null;
     }
 
+    public enum UnicodeEastAsianWidth : byte
+    {
+        Neutral = 0,
+        Ambiguous = 1,
+        Fullwidth = 2,
+        Halfwidth = 3,
+        Narrow = 4,
+        Wide = 5,
+    }
+
     public static class UnicodeEmoji
     {
         public static bool IsEmoji(System.Text.Rune rune) => throw null;
@@ -460,6 +477,304 @@ namespace Meziantou.Framework
         public static bool IsEmojiModifierBase(System.Text.Rune rune) => throw null;
         public static bool IsEmojiComponent(System.Text.Rune rune) => throw null;
         public static bool IsExtendedPictographic(System.Text.Rune rune) => throw null;
+    }
+
+    public enum UnicodeGraphemeClusterBreak : byte
+    {
+        Other = 0,
+        Control = 1,
+        CR = 2,
+        EBase = 3,
+        EBaseGAZ = 4,
+        EModifier = 5,
+        Extend = 6,
+        GlueAfterZwj = 7,
+        L = 8,
+        LF = 9,
+        LV = 10,
+        LVT = 11,
+        Prepend = 12,
+        RegionalIndicator = 13,
+        SpacingMark = 14,
+        T = 15,
+        V = 16,
+        ZWJ = 17,
+    }
+
+    public enum UnicodeIndicConjunctBreak : byte
+    {
+        None = 0,
+        Consonant = 1,
+        Extend = 2,
+        Linker = 3,
+    }
+
+    public enum UnicodeIndicPositionalCategory : byte
+    {
+        NotApplicable = 0,
+        Bottom = 1,
+        BottomAndLeft = 2,
+        BottomAndRight = 3,
+        Left = 4,
+        LeftAndRight = 5,
+        Overstruck = 6,
+        Right = 7,
+        Top = 8,
+        TopAndBottom = 9,
+        TopAndBottomAndLeft = 10,
+        TopAndBottomAndRight = 11,
+        TopAndLeft = 12,
+        TopAndLeftAndRight = 13,
+        TopAndRight = 14,
+        VisualOrderLeft = 15,
+    }
+
+    public enum UnicodeIndicSyllabicCategory : byte
+    {
+        Other = 0,
+        Avagraha = 1,
+        Bindu = 2,
+        BrahmiJoiningNumber = 3,
+        CantillationMark = 4,
+        Consonant = 5,
+        ConsonantDead = 6,
+        ConsonantFinal = 7,
+        ConsonantHeadLetter = 8,
+        ConsonantInitialPostfixed = 9,
+        ConsonantKiller = 10,
+        ConsonantMedial = 11,
+        ConsonantPlaceholder = 12,
+        ConsonantPrecedingRepha = 13,
+        ConsonantPrefixed = 14,
+        ConsonantSubjoined = 15,
+        ConsonantSucceedingRepha = 16,
+        ConsonantWithStacker = 17,
+        GeminationMark = 18,
+        InvisibleStacker = 19,
+        Joiner = 20,
+        ModifyingLetter = 21,
+        NonJoiner = 22,
+        Nukta = 23,
+        Number = 24,
+        NumberJoiner = 25,
+        PureKiller = 26,
+        RegisterShifter = 27,
+        ReorderingKiller = 28,
+        SyllableModifier = 29,
+        ToneLetter = 30,
+        ToneMark = 31,
+        Virama = 32,
+        Visarga = 33,
+        Vowel = 34,
+        VowelDependent = 35,
+        VowelIndependent = 36,
+    }
+
+    public enum UnicodeJoiningGroup : byte
+    {
+        NoJoiningGroup = 0,
+        AfricanFeh = 1,
+        AfricanNoon = 2,
+        AfricanQaf = 3,
+        Ain = 4,
+        Alaph = 5,
+        Alef = 6,
+        Beh = 7,
+        Beth = 8,
+        BurushaskiYehBarree = 9,
+        CrownAin = 10,
+        CrownBeh = 11,
+        CrownFeh = 12,
+        CrownHah = 13,
+        CrownHeh = 14,
+        CrownKaf = 15,
+        CrownMeem = 16,
+        CrownSad = 17,
+        CrownSeen = 18,
+        CrownTah = 19,
+        Dal = 20,
+        DalathRish = 21,
+        E = 22,
+        FarsiYeh = 23,
+        Fe = 24,
+        Feh = 25,
+        FinalSemkath = 26,
+        Gaf = 27,
+        Gamal = 28,
+        Hah = 29,
+        HanifiRohingyaKinnaYa = 30,
+        HanifiRohingyaPa = 31,
+        He = 32,
+        Heh = 33,
+        HehGoal = 34,
+        Heth = 35,
+        Kaf = 36,
+        Kaph = 37,
+        KashmiriYeh = 38,
+        Khaph = 39,
+        KnottedHeh = 40,
+        Lam = 41,
+        Lamadh = 42,
+        MalayalamBha = 43,
+        MalayalamJa = 44,
+        MalayalamLla = 45,
+        MalayalamLlla = 46,
+        MalayalamNga = 47,
+        MalayalamNna = 48,
+        MalayalamNnna = 49,
+        MalayalamNya = 50,
+        MalayalamRa = 51,
+        MalayalamSsa = 52,
+        MalayalamTta = 53,
+        ManichaeanAleph = 54,
+        ManichaeanAyin = 55,
+        ManichaeanBeth = 56,
+        ManichaeanDaleth = 57,
+        ManichaeanDhamedh = 58,
+        ManichaeanFive = 59,
+        ManichaeanGimel = 60,
+        ManichaeanHeth = 61,
+        ManichaeanHundred = 62,
+        ManichaeanKaph = 63,
+        ManichaeanLamedh = 64,
+        ManichaeanMem = 65,
+        ManichaeanNun = 66,
+        ManichaeanOne = 67,
+        ManichaeanPe = 68,
+        ManichaeanQoph = 69,
+        ManichaeanResh = 70,
+        ManichaeanSadhe = 71,
+        ManichaeanSamekh = 72,
+        ManichaeanTaw = 73,
+        ManichaeanTen = 74,
+        ManichaeanTeth = 75,
+        ManichaeanThamedh = 76,
+        ManichaeanTwenty = 77,
+        ManichaeanWaw = 78,
+        ManichaeanYodh = 79,
+        ManichaeanZayin = 80,
+        Meem = 81,
+        Mim = 82,
+        Noon = 83,
+        Nun = 84,
+        Nya = 85,
+        Pe = 86,
+        Qaf = 87,
+        Qaph = 88,
+        Reh = 89,
+        ReversedPe = 90,
+        RohingyaYeh = 91,
+        Sad = 92,
+        Sadhe = 93,
+        Seen = 94,
+        Semkath = 95,
+        Shin = 96,
+        StraightWaw = 97,
+        SwashKaf = 98,
+        SyriacWaw = 99,
+        Tah = 100,
+        Taw = 101,
+        TehMarbuta = 102,
+        TehMarbutaGoal = 103,
+        Teth = 104,
+        ThinNoon = 105,
+        ThinYeh = 106,
+        VerticalTail = 107,
+        Waw = 108,
+        Yeh = 109,
+        YehBarree = 110,
+        YehWithTail = 111,
+        Yudh = 112,
+        YudhHe = 113,
+        Zain = 114,
+        Zhain = 115,
+    }
+
+    public enum UnicodeJoiningType : byte
+    {
+        NonJoining = 0,
+        JoinCausing = 1,
+        DualJoining = 2,
+        LeftJoining = 3,
+        RightJoining = 4,
+        Transparent = 5,
+    }
+
+    public enum UnicodeLineBreakClass : byte
+    {
+        Unknown = 0,
+        Ambiguous = 1,
+        Aksara = 2,
+        Alphabetic = 3,
+        AksaraPrebase = 4,
+        AksaraStart = 5,
+        BreakBoth = 6,
+        BreakAfter = 7,
+        BreakBefore = 8,
+        MandatoryBreak = 9,
+        ContingentBreak = 10,
+        ConditionalJapaneseStarter = 11,
+        ClosePunctuation = 12,
+        CombiningMark = 13,
+        CloseParenthesis = 14,
+        CarriageReturn = 15,
+        EBase = 16,
+        EModifier = 17,
+        Exclamation = 18,
+        Glue = 19,
+        H2 = 20,
+        H3 = 21,
+        UnambiguousHyphen = 22,
+        HebrewLetter = 23,
+        Hyphen = 24,
+        Ideographic = 25,
+        Inseparable = 26,
+        InfixNumeric = 27,
+        JL = 28,
+        JT = 29,
+        JV = 30,
+        LineFeed = 31,
+        NextLine = 32,
+        Nonstarter = 33,
+        Numeric = 34,
+        OpenPunctuation = 35,
+        PostfixNumeric = 36,
+        PrefixNumeric = 37,
+        Quotation = 38,
+        RegionalIndicator = 39,
+        ComplexContext = 40,
+        Surrogate = 41,
+        Space = 42,
+        BreakSymbols = 43,
+        ViramaFinal = 44,
+        Virama = 45,
+        WordJoiner = 46,
+        ZWSpace = 47,
+        ZWJ = 48,
+    }
+
+    public static class UnicodeProperties
+    {
+        public static System.Version UnicodeVersion { get => throw null; }
+        public static System.Globalization.UnicodeCategory GetGeneralCategory(int codePoint) => throw null;
+        public static bool IsDefaultIgnorable(int codePoint) => throw null;
+        public static byte GetCanonicalCombiningClass(int codePoint) => throw null;
+        public static Meziantou.Framework.UnicodeBidirectionalCategory GetBidiClass(int codePoint) => throw null;
+        public static bool IsBidiMirrored(int codePoint) => throw null;
+        public static bool TryGetBidiMirroringGlyph(int codePoint, out int mirrored) => throw null;
+        public static Meziantou.Framework.UnicodeBidiPairedBracketType GetBidiPairedBracketType(int codePoint) => throw null;
+        public static bool TryGetBidiPairedBracket(int codePoint, out int paired) => throw null;
+        public static Meziantou.Framework.UnicodeLineBreakClass GetLineBreakClass(int codePoint) => throw null;
+        public static Meziantou.Framework.UnicodeEastAsianWidth GetEastAsianWidth(int codePoint) => throw null;
+        public static Meziantou.Framework.UnicodeGraphemeClusterBreak GetGraphemeClusterBreak(int codePoint) => throw null;
+        public static Meziantou.Framework.UnicodeIndicConjunctBreak GetIndicConjunctBreak(int codePoint) => throw null;
+        public static Meziantou.Framework.UnicodeWordBreak GetWordBreak(int codePoint) => throw null;
+        public static Meziantou.Framework.UnicodeJoiningType GetJoiningType(int codePoint) => throw null;
+        public static Meziantou.Framework.UnicodeJoiningGroup GetJoiningGroup(int codePoint) => throw null;
+        public static Meziantou.Framework.UnicodeIndicSyllabicCategory GetIndicSyllabicCategory(int codePoint) => throw null;
+        public static Meziantou.Framework.UnicodeIndicPositionalCategory GetIndicPositionalCategory(int codePoint) => throw null;
+        public static int ToSimpleLowercase(int codePoint) => throw null;
+        public static int ToSimpleUppercase(int codePoint) => throw null;
     }
 
     public readonly struct UnicodeRange : System.IEquatable<Meziantou.Framework.UnicodeRange>
@@ -663,7 +978,38 @@ namespace Meziantou.Framework
 
     public static class UnicodeScripts
     {
+        public static int MaxScriptExtensionCount { get => throw null; }
         public static Meziantou.Framework.UnicodeScript GetScript(int codePoint) => throw null;
         public static Meziantou.Framework.UnicodeScript GetScript(System.Text.Rune rune) => throw null;
+        public static int GetScriptExtensions(int codePoint, System.Span<Meziantou.Framework.UnicodeScript> destination) => throw null;
+        public static bool HasScriptExtension(int codePoint, Meziantou.Framework.UnicodeScript script) => throw null;
+        public static string GetIso15924Code(Meziantou.Framework.UnicodeScript script) => throw null;
+    }
+
+    public enum UnicodeWordBreak : byte
+    {
+        Other = 0,
+        CR = 1,
+        DoubleQuote = 2,
+        EBase = 3,
+        EBaseGAZ = 4,
+        EModifier = 5,
+        ExtendNumLet = 6,
+        Extend = 7,
+        Format = 8,
+        GlueAfterZwj = 9,
+        HebrewLetter = 10,
+        Katakana = 11,
+        ALetter = 12,
+        LF = 13,
+        MidNumLet = 14,
+        MidLetter = 15,
+        MidNum = 16,
+        Newline = 17,
+        Numeric = 18,
+        RegionalIndicator = 19,
+        SingleQuote = 20,
+        WSegSpace = 21,
+        ZWJ = 22,
     }
 }

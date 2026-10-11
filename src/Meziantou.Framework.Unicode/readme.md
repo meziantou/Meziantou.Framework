@@ -54,9 +54,47 @@ Script data is also exposed directly:
 ```csharp
 UnicodeScripts.GetScript(new Rune('A'));      // UnicodeScript.Latin
 UnicodeScripts.GetScript(new Rune(0x0410));   // UnicodeScript.Cyrillic
+UnicodeScripts.GetIso15924Code(UnicodeScript.Latin); // "Latn"
+
+// Script_Extensions: the scripts a shared character is used with
+Span<UnicodeScript> scripts = stackalloc UnicodeScript[UnicodeScripts.MaxScriptExtensionCount];
+var count = UnicodeScripts.GetScriptExtensions(0x30FC, scripts); // Hiragana, Katakana
+UnicodeScripts.HasScriptExtension(0x30FC, UnicodeScript.Katakana); // true
 ```
 
-This package also exposes Unicode character metadata from the Unicode data table:
+## Character properties
+
+`UnicodeProperties` gives the properties of a code point that text processing needs: segmentation, bidirectional
+ordering, shaping and case. Every method takes an `int`, never throws and never allocates: the value is read from a
+table indexed by the code point.
+
+```csharp
+UnicodeProperties.GetGeneralCategory('A');           // UppercaseLetter
+UnicodeProperties.GetCanonicalCombiningClass(0x0301); // 230
+UnicodeProperties.GetBidiClass(0x05D0);              // RightToLeft
+UnicodeProperties.TryGetBidiMirroringGlyph('(', out var mirrored); // true, ')'
+UnicodeProperties.GetLineBreakClass(0x00A0);         // Glue
+UnicodeProperties.GetGraphemeClusterBreak(0x200D);   // ZWJ
+UnicodeProperties.GetWordBreak('_');                 // ExtendNumLet
+UnicodeProperties.GetEastAsianWidth(0x4E00);         // Wide
+UnicodeProperties.GetJoiningType(0x0628);            // DualJoining
+UnicodeProperties.GetIndicSyllabicCategory(0x094D);  // Virama
+UnicodeProperties.IsDefaultIgnorable(0x00AD);        // true
+UnicodeProperties.ToSimpleLowercase('A');            // 'a'
+```
+
+- The values are those of one version of the Unicode Standard, `UnicodeProperties.UnicodeVersion` (18.0.0), whatever
+  the version the runtime implements. The results are the same on every platform and every framework version, and
+  do not need ICU.
+- An unassigned code point has the default value the standard gives to its range, for instance `RightToLeft` in the
+  Hebrew block. An integer that is not a code point has the default value of the property.
+- The numeric values of the enumerations (`UnicodeScript`, `UnicodeLineBreakClass`, ...) never change: a later
+  version of the standard only appends values.
+
+## Character information
+
+`Unicode.GetCharacterInfo` gives the full record of a character, including its name. It is meant for inspection
+tools: prefer `UnicodeProperties` to read a property of many code points.
 
 ```csharp
 var info = Unicode.GetCharacterInfo(new Rune('A'));

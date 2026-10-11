@@ -7,27 +7,43 @@ using System.Xml;
 using System.Xml.Linq;
 using Meziantou.Framework;
 using Meziantou.Framework.Versioning;
-
-const string ConfusablesUrl = "https://www.unicode.org/Public/UCD/latest/security/confusables.txt";
-const string UnicodeDataUrl = "https://www.unicode.org/Public/UCD/latest/ucd/UnicodeData.txt";
-const string BlocksUrl = "https://www.unicode.org/Public/UCD/latest/ucd/Blocks.txt";
-const string EmojiDataUrl = "https://www.unicode.org/Public/UCD/latest/ucd/emoji/emoji-data.txt";
-const string ScriptsUrl = "https://www.unicode.org/Public/UCD/latest/ucd/Scripts.txt";
-const string PropertyValueAliasesUrl = "https://www.unicode.org/Public/UCD/latest/ucd/PropertyValueAliases.txt";
-const string ScriptExtensionsUrl = "https://www.unicode.org/Public/UCD/latest/ucd/ScriptExtensions.txt";
-
-// start (3 bytes) + end (3 bytes) + script id (2 bytes)
-const int ScriptRecordSize = 8;
+using static GeneratorFiles;
+using static UcdParsers;
 
 var outputUpdated = false;
 if (!FullPath.CurrentDirectory().TryFindGitRepositoryRoot(out var root))
     throw new InvalidOperationException("Cannot find git root from " + FullPath.CurrentDirectory());
 
+// The version of the Unicode Character Database is pinned (tools/Meziantou.Framework.Unicode.Generator/unicode-version.txt):
+// the algorithms of the library implement the rules of that version. --check-latest moves the pin to the version
+// published as the latest one before generating, so that the data, the conformance files and the rules are
+// reviewed together.
+Ucd.LoadVersion(root);
+foreach (var arg in args)
+{
+    if (arg is not "--check-latest")
+    {
+        await Console.Error.WriteLineAsync("Unexpected argument: " + arg);
+        await Console.Error.WriteLineAsync("Usage: Meziantou.Framework.Unicode.Generator [--check-latest]");
+        return 2;
+    }
+
+    var latestVersion = await Ucd.GetLatestVersionAsync();
+    if (Version.Parse(latestVersion) > Version.Parse(Ucd.Version))
+    {
+        Console.WriteLine($"Moving from Unicode {Ucd.Version} to {latestVersion}");
+        await File.WriteAllTextAsync(Ucd.GetVersionFilePath(root), latestVersion + "\n");
+        Ucd.LoadVersion(root);
+        outputUpdated = true;
+    }
+}
+
+Console.WriteLine($"Unicode {Ucd.Version}");
+
 var outputPath = root / "src" / "Meziantou.Framework.Unicode";
 var confusableOutputFilePath = outputPath / "Unicode.Confusables.g.cs";
 var unicodeCharacterInfosFilePath = outputPath / "UnicodeCharacterInfos.g.cs";
 var unicodeBlocksFilePath = outputPath / "UnicodeBlocks.g.cs";
-var emojiDataFilePath = outputPath / "UnicodeEmoji.g.cs";
 var unicodeScriptsFilePath = outputPath / "UnicodeScripts.g.cs";
 var unicodeDataPath = outputPath / "Resources" / "UnicodeData.bin";
 var csprojPath = root / "src" / "Meziantou.Framework.Unicode" / "Meziantou.Framework.Unicode.csproj";
@@ -37,8 +53,9 @@ await WriteConfusableCharactersFile(confusableEntries, confusablesLastModified);
 var blockRanges = await LoadBlocksRanges();
 await WriteUnicodeBlocksFile(blockRanges);
 await WriteUnicodeCharacterInfosFile(blockRanges);
-await WriteEmojiDataFile();
 await WriteUnicodeScriptsFile();
+if (await PropertyTablesWriter.WriteAsync(outputPath))
+    outputUpdated = true;
 
 // Update project version
 if (outputUpdated)
@@ -105,8 +122,8 @@ return 0;
 
 static async Task<(List<Entry> entries, string lastModified)> LoadConfusablesEntries()
 {
-    Console.WriteLine($"  Downloading from: {ConfusablesUrl}");
-    using var response = await SharedHttpClient.Instance.GetAsync(ConfusablesUrl);
+    Console.WriteLine($"  Downloading from: {UcdUrls.Confusables}");
+    using var response = await SharedHttpClient.Instance.GetAsync(UcdUrls.Confusables);
     response.EnsureSuccessStatusCode();
 
     var lastModified = response.Content.Headers.LastModified?.ToString("O", CultureInfo.InvariantCulture) ?? "unknown";
@@ -152,8 +169,8 @@ static async Task<(List<Entry> entries, string lastModified)> LoadConfusablesEnt
 static async Task<List<UnicodeDataEntry>> LoadUnicodeDataEntries(Dictionary<int, EmojiProperties> emojiPropertiesMap)
 {
     Console.WriteLine($"Loading Unicode character data...");
-    Console.WriteLine($"  Downloading from: {UnicodeDataUrl}");
-    using var response = await SharedHttpClient.Instance.GetAsync(UnicodeDataUrl);
+    Console.WriteLine($"  Downloading from: {UcdUrls.UnicodeData}");
+    using var response = await SharedHttpClient.Instance.GetAsync(UcdUrls.UnicodeData);
     response.EnsureSuccessStatusCode();
 
     var content = await response.Content.ReadAsStringAsync();
@@ -264,8 +281,8 @@ static async Task<List<UnicodeDataEntry>> LoadUnicodeDataEntries(Dictionary<int,
 static async Task<List<(int Start, int End, string Name)>> LoadBlocksRanges()
 {
     Console.WriteLine($"Loading Unicode blocks...");
-    Console.WriteLine($"  Downloading from: {BlocksUrl}");
-    using var response = await SharedHttpClient.Instance.GetAsync(BlocksUrl);
+    Console.WriteLine($"  Downloading from: {UcdUrls.Blocks}");
+    using var response = await SharedHttpClient.Instance.GetAsync(UcdUrls.Blocks);
     response.EnsureSuccessStatusCode();
 
     var content = await response.Content.ReadAsStringAsync();
@@ -308,8 +325,8 @@ static async Task<List<(int Start, int End, string Name)>> LoadBlocksRanges()
 static async Task<Dictionary<int, EmojiProperties>> LoadEmojiProperties()
 {
     Console.WriteLine($"Loading emoji properties...");
-    Console.WriteLine($"  Downloading from: {EmojiDataUrl}");
-    using var response = await SharedHttpClient.Instance.GetAsync(EmojiDataUrl);
+    Console.WriteLine($"  Downloading from: {UcdUrls.EmojiData}");
+    using var response = await SharedHttpClient.Instance.GetAsync(UcdUrls.EmojiData);
     response.EnsureSuccessStatusCode();
 
     var content = await response.Content.ReadAsStringAsync();
@@ -423,7 +440,7 @@ async Task WriteUnicodeCharacterInfosFile(List<(int Start, int End, string Name)
     var content = string.Create(CultureInfo.InvariantCulture, $$"""
         // <auto-generated />
         // Generated from Unicode Character Database
-        // Data source: {{UnicodeDataUrl}}
+        // Data source: {{UcdUrls.UnicodeData}}
         // Binary resource: UnicodeData.bin (uncompressed, see UnicodeDataFormat for the layout)
         // Statistics:
         //   - Total characters: {{unicodeDataEntries.Count}}
@@ -483,9 +500,6 @@ async Task WriteUnicodeScriptsFile()
     var longNames = await LoadScriptLongNames();
     var ranges = await LoadScriptRanges(longNames);
 
-    // Script identifiers are emitted in alphabetical order so the numeric values stay stable
-    // when a new script is added anywhere but the end. They are not persisted anywhere, so a
-    // renumbering only affects this assembly.
     var scriptNames = ranges.Select(r => r.Script).Concat(longNames.Values)
         .Where(name => !string.Equals(name, "Unknown", StringComparison.Ordinal))
         .Distinct(StringComparer.Ordinal).ToList();
@@ -494,14 +508,25 @@ async Task WriteUnicodeScriptsFile()
     // Unknown is first so that default(UnicodeScript) is the "no script" value rather than
     // whichever real script happens to sort first.
     scriptNames.Insert(0, "Unknown");
+
+    // The numeric values are compiled into the assemblies that use the enumeration, so a script keeps the value it
+    // has in the committed file and a new script takes the next free one, wherever it sorts.
+    var identifierIds = StableEnum.Resolve(unicodeScriptsFilePath, "UnicodeScript", scriptNames.Select(ToScriptIdentifier));
+    if (identifierIds.Count != scriptNames.Count)
+        throw new InvalidOperationException("The committed UnicodeScript enumeration has members that are no longer scripts: decide what to do with them");
+
+    if (identifierIds["Unknown"] != 0)
+        throw new InvalidOperationException("UnicodeScript.Unknown must be 0");
+
     var scriptIds = new Dictionary<string, int>(StringComparer.Ordinal);
     foreach (var name in scriptNames)
     {
-        scriptIds[name] = scriptIds.Count;
+        scriptIds[name] = identifierIds[ToScriptIdentifier(name)];
     }
 
-    if (scriptIds.Count > ushort.MaxValue)
-        throw new InvalidOperationException("Too many scripts: " + scriptIds.Count);
+    var scriptCount = scriptIds.Values.Max() + 1;
+    if (scriptCount > byte.MaxValue + 1)
+        throw new InvalidOperationException("Too many scripts for a one-byte table: " + scriptCount);
 
     ranges.Sort((a, b) => a.Start.CompareTo(b.Start));
     for (var i = 1; i < ranges.Count; i++)
@@ -510,28 +535,46 @@ async Task WriteUnicodeScriptsFile()
             throw new InvalidOperationException($"Overlapping script ranges at U+{ranges[i].Start:X4}");
     }
 
-    var bytes = new List<byte>(ranges.Count * ScriptRecordSize);
+    var scriptValues = new byte[Trie.CodePointCount];
     foreach (var range in ranges)
     {
-        WriteUInt24(bytes, range.Start);
-        WriteUInt24(bytes, range.End);
-        WriteUInt16(bytes, scriptIds[range.Script]);
+        scriptValues.AsSpan(range.Start, range.End - range.Start + 1).Fill((byte)scriptIds[range.Script]);
     }
 
     var enumMembers = new StringBuilder();
-    foreach (var name in scriptNames)
+    foreach (var name in scriptNames.OrderBy(name => scriptIds[name]))
     {
         enumMembers.AppendLine(CultureInfo.InvariantCulture, $"    /// <summary>The {EscapeXmlText(name.Replace('_', ' '))} script.</summary>");
         enumMembers.AppendLine(CultureInfo.InvariantCulture, $"    {ToScriptIdentifier(name)} = {scriptIds[name]},");
         enumMembers.AppendLine();
     }
 
-    var blob = FormatBlob(bytes);
+    // ISO 15924 codes: the short names of the values of the Script property.
+    var codes = new Dictionary<string, string>(StringComparer.Ordinal);
+    foreach (var (alias, longName) in longNames)
+    {
+        if (alias.Length != 4)
+            throw new InvalidOperationException("The short name of a script is not an ISO 15924 code: " + alias);
+
+        codes.TryAdd(longName, alias);
+    }
+
+    var codeArms = new StringBuilder();
+    foreach (var name in scriptNames.OrderBy(name => scriptIds[name]))
+    {
+        if (string.Equals(name, "Unknown", StringComparison.Ordinal))
+            continue;
+
+        if (!codes.TryGetValue(name, out var code))
+            throw new InvalidOperationException("The script has no ISO 15924 code: " + name);
+
+        codeArms.Append(CultureInfo.InvariantCulture, $"            UnicodeScript.{ToScriptIdentifier(name)} => \"{EscapeStringLiteral(code)}\",\n");
+    }
 
     var extensionRanges = await LoadScriptExtensionRanges(longNames, scriptIds);
     var extensionSets = new List<List<int>>();
     var extensionSetIndex = new Dictionary<string, int>(StringComparer.Ordinal);
-    var extensionBytes = new List<byte>();
+    var extensionValues = new byte[Trie.CodePointCount];
     foreach (var range in extensionRanges.OrderBy(r => r.Start))
     {
         var key = string.Join(',', range.Scripts);
@@ -542,21 +585,25 @@ async Task WriteUnicodeScriptsFile()
             extensionSets.Add(range.Scripts);
         }
 
-        WriteUInt24(extensionBytes, range.Start);
-        WriteUInt24(extensionBytes, range.End);
-        WriteUInt16(extensionBytes, setIndex);
+        // 0 means that the code point has no explicit Script_Extensions value.
+        if (setIndex + 1 > byte.MaxValue)
+            throw new InvalidOperationException("Too many script extension sets for a one-byte table");
+
+        extensionValues.AsSpan(range.Start, range.End - range.Start + 1).Fill((byte)(setIndex + 1));
     }
 
-    // Sets are stored as: count (1 byte) then that many script ids (2 bytes each). The range
-    // record holds an index into a side table of offsets so lookup stays O(1) after the search.
+    // Sets are stored as: count (1 byte) then that many script ids (2 bytes each). The table
+    // holds an index into a side table of offsets.
     var setOffsets = new List<int>();
     var setBytes = new List<byte>();
+    var maxSetCount = 1;
     foreach (var set in extensionSets)
     {
         setOffsets.Add(setBytes.Count);
         if (set.Count > byte.MaxValue)
             throw new InvalidOperationException("Script extension set is too large: " + set.Count);
 
+        maxSetCount = Math.Max(maxSetCount, set.Count);
         setBytes.Add((byte)set.Count);
         foreach (var id in set)
         {
@@ -572,18 +619,22 @@ async Task WriteUnicodeScriptsFile()
 
     Console.WriteLine($"  Loaded {extensionRanges.Count} script extension ranges ({extensionSets.Count} distinct sets)");
 
-    var extensionBlob = FormatBlob(extensionBytes);
     var extensionOffsetBlob = FormatBlob(setOffsetBytes);
     var extensionSetBlob = FormatBlob(setBytes);
+
+    var sizes = new List<(string Name, int Bytes)>();
+    var tries = new StringBuilder();
+    PropertyTablesWriter.AppendTrie(tries, sizes, "ScriptValue", scriptValues, "Script: the numeric value of a UnicodeScript.");
+    PropertyTablesWriter.AppendTrie(tries, sizes, "ScriptExtensionSet", extensionValues, "Script_Extensions: 0 when the code point has no explicit value, else 1 + the index of its set in ExtensionSetOffsets.");
 
     var content = string.Create(CultureInfo.InvariantCulture, $$"""
         // <auto-generated />
         // Generated from Unicode script data
-        // Data source: {{ScriptsUrl}}
+        // Data source: {{UcdUrls.Scripts}}
         // Statistics:
         //   - Scripts: {{scriptNames.Count}}
         //   - Ranges: {{ranges.Count}}
-        //   - Encoded size: {{bytes.Count:N0}} bytes
+        //   - Encoded size: {{sizes.Sum(size => size.Bytes) + setOffsetBytes.Count + setBytes.Count:N0}} bytes
         //   - Script extension ranges: {{extensionRanges.Count}} ({{extensionSets.Count}} distinct sets)
         //
         // Specification: https://www.unicode.org/reports/tr24/
@@ -591,72 +642,29 @@ async Task WriteUnicodeScriptsFile()
 
         #nullable enable
 
+        using System.Runtime.CompilerServices;
         using System.Text;
 
         namespace Meziantou.Framework;
 
         /// <summary>Represents a Unicode script, as defined by the Script character property.</summary>
+        /// <remarks>The numeric values are stable across the versions of this package.</remarks>
         /// <seealso href="https://www.unicode.org/reports/tr24/" />
         public enum UnicodeScript : ushort
         {
         {{enumMembers.ToString().TrimEnd()}}
         }
 
-        /// <summary>Provides access to the Unicode Script character property.</summary>
+        /// <summary>Provides access to the Unicode Script and Script_Extensions character properties.</summary>
         /// <seealso href="https://www.unicode.org/reports/tr24/" />
-        public static class UnicodeScripts
+        public static partial class UnicodeScripts
         {
-            // Sorted, non-overlapping ranges. Each record is {{ScriptRecordSize}} bytes:
-            // start (3), end (3), script id (2), little-endian. Stored as a blob rather than a
-            // switch so the table costs data instead of IL.
-            private static ReadOnlySpan<byte> Ranges =>
-            [{{blob.ToString().TrimEnd().TrimEnd(',')}}
-            ];
+            /// <summary>One more than the greatest numeric value of <see cref="UnicodeScript"/>.</summary>
+            internal const int ScriptCount = {{scriptCount}};
 
-            /// <summary>Gets the script of a code point.</summary>
-            /// <param name="codePoint">The code point.</param>
-            /// <returns>The script, or <see cref="UnicodeScript.Unknown"/> when the code point has no assigned script.</returns>
-            public static UnicodeScript GetScript(int codePoint)
-            {
-                var ranges = Ranges;
-                var low = 0;
-                var high = (ranges.Length / {{ScriptRecordSize}}) - 1;
-                while (low <= high)
-                {
-                    var middle = (int)(((uint)low + (uint)high) / 2);
-                    var offset = middle * {{ScriptRecordSize}};
-                    var start = ReadUInt24(ranges, offset);
-                    if (codePoint < start)
-                    {
-                        high = middle - 1;
-                        continue;
-                    }
-
-                    if (codePoint > ReadUInt24(ranges, offset + 3))
-                    {
-                        low = middle + 1;
-                        continue;
-                    }
-
-                    return (UnicodeScript)(ranges[offset + 6] | (ranges[offset + 7] << 8));
-                }
-
-                return UnicodeScript.Unknown;
-            }
-
-            /// <summary>Gets the script of a rune.</summary>
-            /// <param name="rune">The rune.</param>
-            /// <returns>The script, or <see cref="UnicodeScript.Unknown"/> when the rune has no assigned script.</returns>
-            public static UnicodeScript GetScript(Rune rune) => GetScript(rune.Value);
-
-            /// <summary>The number of distinct <see cref="UnicodeScript"/> values.</summary>
-            internal const int ScriptCount = {{scriptNames.Count}};
-
-            // Script_Extensions ranges, same {{ScriptRecordSize}}-byte layout, but the trailing 2 bytes
-            // are an index into ExtensionSetOffsets instead of a script id.
-            private static ReadOnlySpan<byte> ExtensionRanges =>
-            [{{extensionBlob.ToString().TrimEnd().TrimEnd(',')}}
-            ];
+            /// <summary>The number of scripts of the largest Script_Extensions set.</summary>
+            internal const int MaxExtensionCount = {{maxSetCount}};
+        {{tries.ToString().TrimEnd()}}
 
             // 3-byte offsets into ExtensionSets.
             private static ReadOnlySpan<byte> ExtensionSetOffsets =>
@@ -668,41 +676,29 @@ async Task WriteUnicodeScriptsFile()
             [{{extensionSetBlob.ToString().TrimEnd().TrimEnd(',')}}
             ];
 
-            /// <summary>Gets the Script_Extensions of a code point, or an empty span when it has none.</summary>
+            /// <summary>Gets the explicit Script_Extensions of a code point as 2-byte script ids, or an empty span when it has none.</summary>
             internal static ReadOnlySpan<byte> GetScriptExtensionsRaw(int codePoint)
             {
-                var ranges = ExtensionRanges;
-                var low = 0;
-                var high = (ranges.Length / {{ScriptRecordSize}}) - 1;
-                while (low <= high)
-                {
-                    var middle = (int)(((uint)low + (uint)high) / 2);
-                    var offset = middle * {{ScriptRecordSize}};
-                    var start = ReadUInt24(ranges, offset);
-                    if (codePoint < start)
-                    {
-                        high = middle - 1;
-                        continue;
-                    }
+                var set = GetScriptExtensionSet(codePoint);
+                if (set == 0)
+                    return default;
 
-                    if (codePoint > ReadUInt24(ranges, offset + 3))
-                    {
-                        low = middle + 1;
-                        continue;
-                    }
-
-                    var setIndex = ranges[offset + 6] | (ranges[offset + 7] << 8);
-                    var setOffset = ReadUInt24(ExtensionSetOffsets, setIndex * 3);
-                    var sets = ExtensionSets;
-                    var count = sets[setOffset];
-                    return sets.Slice(setOffset + 1, count * 2);
-                }
-
-                return default;
+                var offsets = ExtensionSetOffsets;
+                var offsetIndex = (set - 1) * 3;
+                var setOffset = offsets[offsetIndex] | (offsets[offsetIndex + 1] << 8) | (offsets[offsetIndex + 2] << 16);
+                var sets = ExtensionSets;
+                var count = sets[setOffset];
+                return sets.Slice(setOffset + 1, count * 2);
             }
 
-            private static int ReadUInt24(ReadOnlySpan<byte> value, int offset)
-                => value[offset] | (value[offset + 1] << 8) | (value[offset + 2] << 16);
+            private static string? GetIso15924CodeCore(UnicodeScript script)
+            {
+                return script switch
+                {
+        {{codeArms.ToString().TrimEnd()}}
+                    _ => null,
+                };
+            }
         }
         """);
 
@@ -712,8 +708,8 @@ async Task WriteUnicodeScriptsFile()
 
 async Task<Dictionary<string, string>> LoadScriptLongNames()
 {
-    Console.WriteLine($"  Downloading from: {PropertyValueAliasesUrl}");
-    using var response = await SharedHttpClient.Instance.GetAsync(PropertyValueAliasesUrl);
+    Console.WriteLine($"  Downloading from: {UcdUrls.PropertyValueAliases}");
+    using var response = await SharedHttpClient.Instance.GetAsync(UcdUrls.PropertyValueAliases);
     response.EnsureSuccessStatusCode();
     var content = await response.Content.ReadAsStringAsync();
 
@@ -737,8 +733,8 @@ async Task<Dictionary<string, string>> LoadScriptLongNames()
 
 async Task<List<ScriptRange>> LoadScriptRanges(Dictionary<string, string> longNames)
 {
-    Console.WriteLine($"  Downloading from: {ScriptsUrl}");
-    using var response = await SharedHttpClient.Instance.GetAsync(ScriptsUrl);
+    Console.WriteLine($"  Downloading from: {UcdUrls.Scripts}");
+    using var response = await SharedHttpClient.Instance.GetAsync(UcdUrls.Scripts);
     response.EnsureSuccessStatusCode();
     var content = await response.Content.ReadAsStringAsync();
 
@@ -820,8 +816,8 @@ static StringBuilder FormatBlob(List<byte> bytes)
 
 async Task<List<ScriptExtensionRange>> LoadScriptExtensionRanges(Dictionary<string, string> longNames, Dictionary<string, int> scriptIds)
 {
-    Console.WriteLine($"  Downloading from: {ScriptExtensionsUrl}");
-    using var response = await SharedHttpClient.Instance.GetAsync(ScriptExtensionsUrl);
+    Console.WriteLine($"  Downloading from: {UcdUrls.ScriptExtensions}");
+    using var response = await SharedHttpClient.Instance.GetAsync(UcdUrls.ScriptExtensions);
     response.EnsureSuccessStatusCode();
     var content = await response.Content.ReadAsStringAsync();
 
@@ -1631,17 +1627,6 @@ static string FormatValue<T>(T value)
     return Convert.ToString(value, CultureInfo.InvariantCulture) ?? "<null>";
 }
 
-static async Task<bool> WriteTextIfChanged(FullPath filePath, string content)
-{
-    if (File.Exists(filePath) && (await File.ReadAllTextAsync(filePath)).ReplaceLineEndings("\n") == content.ReplaceLineEndings("\n"))
-        return false;
-
-    filePath.CreateParentDirectory();
-    var encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
-    await File.WriteAllTextAsync(filePath, content, encoding);
-    return true;
-}
-
 static string NormalizeRangeName(string name)
 {
     return name.Replace(", First>", ">", StringComparison.Ordinal)
@@ -1665,75 +1650,6 @@ static sbyte ParseSByteOrDefault(string value)
     return string.IsNullOrEmpty(value)
         ? (sbyte)-1
         : sbyte.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
-}
-
-static UnicodeCategory ParseUnicodeCategory(string value)
-{
-    return value switch
-    {
-        "Lu" => UnicodeCategory.UppercaseLetter,
-        "Ll" => UnicodeCategory.LowercaseLetter,
-        "Lt" => UnicodeCategory.TitlecaseLetter,
-        "Lm" => UnicodeCategory.ModifierLetter,
-        "Lo" => UnicodeCategory.OtherLetter,
-        "Mn" => UnicodeCategory.NonSpacingMark,
-        "Mc" => UnicodeCategory.SpacingCombiningMark,
-        "Me" => UnicodeCategory.EnclosingMark,
-        "Nd" => UnicodeCategory.DecimalDigitNumber,
-        "Nl" => UnicodeCategory.LetterNumber,
-        "No" => UnicodeCategory.OtherNumber,
-        "Pc" => UnicodeCategory.ConnectorPunctuation,
-        "Pd" => UnicodeCategory.DashPunctuation,
-        "Ps" => UnicodeCategory.OpenPunctuation,
-        "Pe" => UnicodeCategory.ClosePunctuation,
-        "Pi" => UnicodeCategory.InitialQuotePunctuation,
-        "Pf" => UnicodeCategory.FinalQuotePunctuation,
-        "Po" => UnicodeCategory.OtherPunctuation,
-        "Sm" => UnicodeCategory.MathSymbol,
-        "Sc" => UnicodeCategory.CurrencySymbol,
-        "Sk" => UnicodeCategory.ModifierSymbol,
-        "So" => UnicodeCategory.OtherSymbol,
-        "Zs" => UnicodeCategory.SpaceSeparator,
-        "Zl" => UnicodeCategory.LineSeparator,
-        "Zp" => UnicodeCategory.ParagraphSeparator,
-        "Cc" => UnicodeCategory.Control,
-        "Cf" => UnicodeCategory.Format,
-        "Cs" => UnicodeCategory.Surrogate,
-        "Co" => UnicodeCategory.PrivateUse,
-        "Cn" => UnicodeCategory.OtherNotAssigned,
-        _ => throw new InvalidOperationException("Unknown Unicode category: " + value),
-    };
-}
-
-static UnicodeBidirectionalCategory ParseBidirectionalCategory(string value)
-{
-    return value switch
-    {
-        "L" => UnicodeBidirectionalCategory.LeftToRight,
-        "R" => UnicodeBidirectionalCategory.RightToLeft,
-        "AL" => UnicodeBidirectionalCategory.RightToLeftArabic,
-        "EN" => UnicodeBidirectionalCategory.EuropeanNumber,
-        "ES" => UnicodeBidirectionalCategory.EuropeanSeparator,
-        "ET" => UnicodeBidirectionalCategory.EuropeanTerminator,
-        "AN" => UnicodeBidirectionalCategory.ArabicNumber,
-        "CS" => UnicodeBidirectionalCategory.CommonSeparator,
-        "B" => UnicodeBidirectionalCategory.ParagraphSeparator,
-        "S" => UnicodeBidirectionalCategory.SegmentSeparator,
-        "WS" => UnicodeBidirectionalCategory.WhiteSpace,
-        "ON" => UnicodeBidirectionalCategory.OtherNeutral,
-        "NSM" => UnicodeBidirectionalCategory.NonspacingMark,
-        "LRE" => UnicodeBidirectionalCategory.LeftToRightEmbedding,
-        "LRO" => UnicodeBidirectionalCategory.LeftToRightOverride,
-        "RLE" => UnicodeBidirectionalCategory.RightToLeftEmbedding,
-        "RLO" => UnicodeBidirectionalCategory.RightToLeftOverride,
-        "PDF" => UnicodeBidirectionalCategory.PopDirectionalFormat,
-        "LRI" => UnicodeBidirectionalCategory.LeftToRightIsolate,
-        "RLI" => UnicodeBidirectionalCategory.RightToLeftIsolate,
-        "FSI" => UnicodeBidirectionalCategory.FirstStrongIsolate,
-        "PDI" => UnicodeBidirectionalCategory.PopDirectionalIsolate,
-        "BN" => UnicodeBidirectionalCategory.BoundaryNeutral,
-        _ => throw new InvalidOperationException("Unknown bidirectional category: " + value),
-    };
 }
 
 static void WriteUtf8StringMax255Length(List<byte> destination, string value)
@@ -1789,124 +1705,6 @@ static void WriteZigZagVarInt(List<byte> destination, int value)
     WriteVarInt(destination, (int)(((uint)value << 1) ^ (uint)(value >> 31)));
 }
 
-async Task WriteEmojiDataFile()
-{
-    var emojiProperties = await LoadEmojiProperties();
-    var emojiCount = emojiProperties.Count(kvp => kvp.Value.HasFlag(EmojiProperties.Emoji));
-    var emojiPresentationCount = emojiProperties.Count(kvp => kvp.Value.HasFlag(EmojiProperties.EmojiPresentation));
-    var modifierCount = emojiProperties.Count(kvp => kvp.Value.HasFlag(EmojiProperties.EmojiModifier));
-    var modifierBaseCount = emojiProperties.Count(kvp => kvp.Value.HasFlag(EmojiProperties.EmojiModifierBase));
-    var componentCount = emojiProperties.Count(kvp => kvp.Value.HasFlag(EmojiProperties.EmojiComponent));
-    var pictographicCount = emojiProperties.Count(kvp => kvp.Value.HasFlag(EmojiProperties.ExtendedPictographic));
-
-    var result = $$"""
-    // <auto-generated />
-    // Generated from Unicode Emoji data
-    // Data source: {{EmojiDataUrl}}
-    // Statistics:
-    //   - Emoji: {{emojiCount}} code points
-    //   - Emoji_Presentation: {{emojiPresentationCount}} code points
-    //   - Emoji_Modifier: {{modifierCount}} code points
-    //   - Emoji_Modifier_Base: {{modifierBaseCount}} code points
-    //   - Emoji_Component: {{componentCount}} code points
-    //   - Extended_Pictographic: {{pictographicCount}} code points
-    //
-    // Specification: https://www.unicode.org/reports/tr51/
-    // DO NOT MODIFY THIS FILE MANUALLY - regenerate using the Unicode generator tool
-
-    #nullable enable
-
-    using System.Text;
-
-    namespace Meziantou.Framework;
-
-    /// <summary>Provides emoji-related query methods for Unicode characters.</summary>
-    /// <remarks>
-    /// This class provides methods to check various emoji properties defined in Unicode Technical Standard #51.
-    /// For more information, see: https://www.unicode.org/reports/tr51/
-    /// </remarks>
-    public static class UnicodeEmoji
-    {
-        /// <summary>Determines whether the specified rune has the Emoji property.</summary>
-        /// <param name="rune">The rune to check.</param>
-        /// <returns><see langword="true"/> if the rune has the Emoji property; otherwise, <see langword="false"/>.</returns>
-        public static bool IsEmoji(Rune rune)
-        {
-            if (!UnicodeCharacterInfos.TryGetInfo(rune, out var info))
-                return false;
-
-            return info.IsEmoji;
-        }
-
-        /// <summary>Determines whether the specified code point has the Emoji property.</summary>
-        /// <param name="codePoint">The code point to check.</param>
-        /// <returns><see langword="true"/> if the code point has the Emoji property; otherwise, <see langword="false"/>.</returns>
-        public static bool IsEmoji(int codePoint)
-        {
-            return Rune.TryCreate(codePoint, out var rune) && IsEmoji(rune);
-        }
-
-        /// <summary>Determines whether the specified rune has the Emoji_Presentation property.</summary>
-        /// <param name="rune">The rune to check.</param>
-        /// <returns><see langword="true"/> if the rune has the Emoji_Presentation property; otherwise, <see langword="false"/>.</returns>
-        public static bool HasEmojiPresentation(Rune rune)
-        {
-            if (!UnicodeCharacterInfos.TryGetInfo(rune, out var info))
-                return false;
-
-            return info.HasEmojiPresentation;
-        }
-
-        /// <summary>Determines whether the specified rune has the Emoji_Modifier property.</summary>
-        /// <param name="rune">The rune to check.</param>
-        /// <returns><see langword="true"/> if the rune has the Emoji_Modifier property; otherwise, <see langword="false"/>.</returns>
-        public static bool IsEmojiModifier(Rune rune)
-        {
-            if (!UnicodeCharacterInfos.TryGetInfo(rune, out var info))
-                return false;
-
-            return info.IsEmojiModifier;
-        }
-
-        /// <summary>Determines whether the specified rune has the Emoji_Modifier_Base property.</summary>
-        /// <param name="rune">The rune to check.</param>
-        /// <returns><see langword="true"/> if the rune has the Emoji_Modifier_Base property; otherwise, <see langword="false"/>.</returns>
-        public static bool IsEmojiModifierBase(Rune rune)
-        {
-            if (!UnicodeCharacterInfos.TryGetInfo(rune, out var info))
-                return false;
-
-            return info.IsEmojiModifierBase;
-        }
-
-        /// <summary>Determines whether the specified rune has the Emoji_Component property.</summary>
-        /// <param name="rune">The rune to check.</param>
-        /// <returns><see langword="true"/> if the rune has the Emoji_Component property; otherwise, <see langword="false"/>.</returns>
-        public static bool IsEmojiComponent(Rune rune)
-        {
-            if (!UnicodeCharacterInfos.TryGetInfo(rune, out var info))
-                return false;
-
-            return info.IsEmojiComponent;
-        }
-
-        /// <summary>Determines whether the specified rune has the Extended_Pictographic property.</summary>
-        /// <param name="rune">The rune to check.</param>
-        /// <returns><see langword="true"/> if the rune has the Extended_Pictographic property; otherwise, <see langword="false"/>.</returns>
-        public static bool IsExtendedPictographic(Rune rune)
-        {
-            if (!UnicodeCharacterInfos.TryGetInfo(rune, out var info))
-                return false;
-
-            return info.IsExtendedPictographic;
-        }
-    }
-    """.ReplaceLineEndings("\n");
-
-    if (await WriteTextIfChanged(emojiDataFilePath, result))
-        outputUpdated = true;
-}
-
 async Task WriteConfusableCharactersFile(List<Entry> confusableEntries, string confusablesLastModified)
 {
     var sb = new StringBuilder();
@@ -1925,7 +1723,7 @@ async Task WriteConfusableCharactersFile(List<Entry> confusableEntries, string c
     var result = $$"""
     // <auto-generated />
     // Generated from Unicode Security Confusables data
-    // Data source: {{ConfusablesUrl}}
+    // Data source: {{UcdUrls.Confusables}}
     // Last modified: {{confusablesLastModified}}
     // Statistics:
     //   - Total confusable mappings: {{confusableEntries.Count.ToString(CultureInfo.InvariantCulture)}}
@@ -2012,7 +1810,7 @@ async Task WriteUnicodeBlocksFile(List<(int Start, int End, string Name)> blockR
     var result = $$"""
     // <auto-generated />
     // Generated from Unicode Block data
-    // Data source: {{BlocksUrl}}
+    // Data source: {{UcdUrls.Blocks}}
     // Statistics:
     //   - Total blocks: {{blockRanges.Count.ToString(CultureInfo.InvariantCulture)}}
     //   - Total code points in blocks: {{totalCodePoints.ToString("N0", CultureInfo.InvariantCulture)}}

@@ -63,6 +63,9 @@ public abstract class ImageEncoder
             || extension.Equals(".ppm", StringComparison.OrdinalIgnoreCase) || extension.Equals(".pgm", StringComparison.OrdinalIgnoreCase))
             return new PnmEncoder();
 
+        if (extension.Equals(".pbm", StringComparison.OrdinalIgnoreCase))
+            return new PnmEncoder { PixelLayout = PnmPixelLayout.Bitmap };
+
         if (extension.Equals(".tif", StringComparison.OrdinalIgnoreCase) || extension.Equals(".tiff", StringComparison.OrdinalIgnoreCase))
             return new TiffEncoder();
 

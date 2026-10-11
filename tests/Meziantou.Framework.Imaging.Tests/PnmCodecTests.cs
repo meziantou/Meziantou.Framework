@@ -13,7 +13,8 @@ namespace Meziantou.Framework.Imaging.Tests;
 /// Netpbm decoding and encoding through the public APIs, on files assembled byte by byte with literal expected
 /// samples: the plain and binary forms of PBM, PGM and PPM, PAM headers and tuple types, comments and the single
 /// white-space byte that ends a header, <c>MAXVAL</c> normalization, 16-bit precision, concatenated images, bounded header
-/// parsing, truncation, limits, bounded streaming memory, and the encoder's variant selection and alpha policy.
+/// parsing, truncation, limits, bounded streaming memory, and the encoder's variant selection, alpha policy and portable
+/// bitmap output.
 /// </summary>
 public sealed class PnmCodecTests
 {
@@ -23,9 +24,11 @@ public sealed class PnmCodecTests
         var encoder = new PnmEncoder();
         Assert.Equal(ImageFormat.Pnm, encoder.Format);
         Assert.Equal(PnmEncoding.Binary, encoder.Encoding);
+        Assert.Equal(PnmPixelLayout.Auto, encoder.PixelLayout);
         Assert.Null(encoder.BackgroundColor);
         Assert.Equal(MetadataHandling.Strict, encoder.MetadataHandling);
         Assert.Throws<ArgumentOutOfRangeException>(() => new PnmEncoder { Encoding = (PnmEncoding)5 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new PnmEncoder { PixelLayout = (PnmPixelLayout)5 });
         Assert.Throws<ArgumentException>(() => new PnmEncoder { BackgroundColor = new Rgba64(0, 0, 0, 7) });
     }
 
@@ -254,6 +257,159 @@ public sealed class PnmCodecTests
         Assert.Equal(GetPixels(plain.Frames[0]), GetPixels(binary.Frames[0]));
     }
 
+    [Theory]
+    [InlineData(PixelFormat.Gray8)]
+    [InlineData(PixelFormat.Gray16)]
+    [InlineData(PixelFormat.Rgb24)]
+    [InlineData(PixelFormat.Rgba32)]
+    [InlineData(PixelFormat.Bgra32)]
+    [InlineData(PixelFormat.Rgba64)]
+    public void APortableBitmapIsWrittenOnRequestFromEveryPixelFormat(PixelFormat format)
+    {
+        using var source = CreateBlackAndWhiteImage(11, "01101001101" + "11001101000" + "00010111011");
+        using var image = ConvertTo(source, format);
+
+        // One bit per pixel, most significant bit first, a set bit is black, and the padding bits of a row are clear
+        Assert.Equal(Bytes("P4\n11 3\n", [0x69, 0xA0, 0xCD, 0x00, 0x17, 0x60]), Save(image, new PnmEncoder { PixelLayout = PnmPixelLayout.Bitmap }));
+        Assert.Equal(Bytes("P1\n11 3\n01101001101\n11001101000\n00010111011\n", []), Save(image, new PnmEncoder { PixelLayout = PnmPixelLayout.Bitmap, Encoding = PnmEncoding.Plain }));
+
+        // Black and white pixels alone never select it: the default layout still follows the pixel format
+        Assert.NotEqual(4, ReferencePnm.Parse(Save(image, new PnmEncoder())).Magic);
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(7)]
+    [InlineData(8)]
+    [InlineData(9)]
+    [InlineData(16)]
+    [InlineData(70)]
+    [InlineData(71)]
+    [InlineData(140)]
+    [InlineData(141)]
+    public void BitmapRowsEndOnAByteAndPlainBitmapLinesWithinSeventyCharacters(int width)
+    {
+        using var image = Image.ImportPixelData<Gray8>(new Gray8[width * 2], width, 2);
+
+        // Every row starts on a new byte: the last byte of a row keeps its unused low bits clear
+        var row = Enumerable.Repeat((byte)0xFF, (width + 7) / 8).ToArray();
+        row[^1] = (byte)(0xFF << ((8 - (width % 8)) % 8));
+        Assert.Equal(Bytes(string.Create(CultureInfo.InvariantCulture, $"P4\n{width} 2\n"), [.. row, .. row]), Save(image, new PnmEncoder { PixelLayout = PnmPixelLayout.Bitmap }));
+
+        // Every row starts on a new line too, and a row that fills its last line exactly is not followed by an empty one
+        var lines = string.Concat(Enumerable.Range(0, width).Chunk(70).Select(line => new string('1', line.Length) + "\n"));
+        var plain = Encoding.ASCII.GetString(Save(image, new PnmEncoder { PixelLayout = PnmPixelLayout.Bitmap, Encoding = PnmEncoding.Plain }));
+        Assert.Equal(string.Create(CultureInfo.InvariantCulture, $"P1\n{width} 2\n{lines}{lines}"), plain);
+    }
+
+    [Fact]
+    public void APortableBitmapRejectsEveryPixelThatIsNotBlackOrWhite()
+    {
+        // The pixels are compared at their own precision, never as a luma: Rec. 709 rounds (0, 0, 6) to 0 and
+        // (255, 255, 249) to 255, and both are colors
+        Image[] images =
+        [
+            Image.ImportPixelData<Rgb24>([new(0, 0, 0), new(0, 0, 6)], 2, 1),
+            Image.ImportPixelData<Rgb24>([new(255, 255, 255), new(255, 255, 249)], 2, 1),
+            Image.ImportPixelData<Rgb24>([new(255, 0, 0)], 1, 1),
+            Image.ImportPixelData<Gray8>([new(255), new(1)], 2, 1),
+            Image.ImportPixelData<Gray8>([new(128)], 1, 1),
+            Image.ImportPixelData<Gray8>([new(0), new(254)], 2, 1),
+            Image.ImportPixelData<Gray16>([new(0), new(1)], 2, 1),
+            Image.ImportPixelData<Gray16>([new(65535), new(65534)], 2, 1),
+            Image.ImportPixelData<Rgba32>([new(255, 0, 0)], 1, 1),
+            Image.ImportPixelData<Bgra32>([new(0, 0, 255)], 1, 1),
+            Image.ImportPixelData<Rgba64>([new(65535, 65535, 65534)], 1, 1),
+            Image.ImportPixelData<Rgba64>([new(0, 255, 0)], 1, 1),
+        ];
+
+        foreach (var image in images)
+        {
+            using (image)
+            {
+                foreach (var encoding in Enum.GetValues<PnmEncoding>())
+                {
+                    using var stream = new MemoryStream();
+                    var exception = Assert.Throws<UnsupportedImageFeatureException>(() => image.Save(stream, new PnmEncoder { PixelLayout = PnmPixelLayout.Bitmap, Encoding = encoding }));
+                    Assert.Equal("Bilevel reduction", exception.Feature);
+                    Assert.Equal(ImageFormat.Pnm, exception.Format);
+                    Assert.Equal(0, stream.Length);
+                }
+            }
+        }
+    }
+
+    [Fact]
+    public void APortableBitmapHasNoAlphaAndChecksTheCompositedPixels()
+    {
+        var white = new Rgba64(65535, 65535, 65535);
+        var black = new Rgba64(0, 0, 0);
+        using var transparent = Image.ImportPixelData<Rgba32>([new(0, 0, 0), new(255, 255, 255, 0)], 2, 1);
+        Assert.Equal("Alpha removal", Assert.Throws<UnsupportedImageFeatureException>(() => Save(transparent, new PnmEncoder { PixelLayout = PnmPixelLayout.Bitmap })).Feature);
+        Assert.Equal(Bytes("P4\n2 1\n", [0b1000_0000]), Save(transparent, new PnmEncoder { PixelLayout = PnmPixelLayout.Bitmap, BackgroundColor = white }));
+        Assert.Equal(Bytes("P4\n2 1\n", [0b1100_0000]), Save(transparent, new PnmEncoder { PixelLayout = PnmPixelLayout.Bitmap, BackgroundColor = black }));
+
+        // A nearly opaque white pixel is white over white, and a gray level over black
+        using var nearlyOpaque = Image.ImportPixelData<Rgba32>([new(255, 255, 255, 254)], 1, 1);
+        Assert.Equal(Bytes("P1\n1 1\n0\n", []), Save(nearlyOpaque, new PnmEncoder { PixelLayout = PnmPixelLayout.Bitmap, Encoding = PnmEncoding.Plain, BackgroundColor = white }));
+        Assert.Equal("Bilevel reduction", Assert.Throws<UnsupportedImageFeatureException>(() => Save(nearlyOpaque, new PnmEncoder { PixelLayout = PnmPixelLayout.Bitmap, BackgroundColor = black })).Feature);
+
+        using var nearlyOpaqueWide = Image.ImportPixelData<Rgba64>([new(65535, 65535, 65535, 65534), new(0, 0, 0, 0)], 2, 1);
+        Assert.Equal("Alpha removal", Assert.Throws<UnsupportedImageFeatureException>(() => Save(nearlyOpaqueWide, new PnmEncoder { PixelLayout = PnmPixelLayout.Bitmap })).Feature);
+        Assert.Equal(Bytes("P4\n2 1\n", [0b0000_0000]), Save(nearlyOpaqueWide, new PnmEncoder { PixelLayout = PnmPixelLayout.Bitmap, BackgroundColor = white }));
+        Assert.Equal("Bilevel reduction", Assert.Throws<UnsupportedImageFeatureException>(() => Save(nearlyOpaqueWide, new PnmEncoder { PixelLayout = PnmPixelLayout.Bitmap, BackgroundColor = black })).Feature);
+
+        // The background itself may be any color as long as nothing is composited over it
+        using var opaque = Image.ImportPixelData<Rgba64>([new(65535, 65535, 65535), new(0, 0, 0)], 2, 1);
+        Assert.Equal(Bytes("P4\n2 1\n", [0b0100_0000]), Save(opaque, new PnmEncoder { PixelLayout = PnmPixelLayout.Bitmap, BackgroundColor = new Rgba64(65535, 0, 0) }));
+    }
+
+    [Fact]
+    public void ARejectedBitmapFrameWritesNothingAndLeavesTheWriterUsable()
+    {
+        using var gray = Image.ImportPixelData<Gray8>([new(0), new(128)], 2, 1);
+        using var bitmap = Image.ImportPixelData<Gray8>([new(0), new(255)], 2, 1);
+        using var stream = new MemoryStream();
+        using (var writer = Image.CreateWriter<Gray8>(stream, new ImageWriterOptions(2, 1) { Encoder = new PnmEncoder { PixelLayout = PnmPixelLayout.Bitmap }, LeaveOpen = true }))
+        {
+            Assert.Equal("Bilevel reduction", Assert.Throws<UnsupportedImageFeatureException>(() => writer.WriteFrame(gray.Frames[0])).Feature);
+            Assert.Equal(0, stream.Length);
+            writer.WriteFrame(bitmap.Frames[0]);
+            writer.Complete();
+        }
+
+        Assert.Equal(Bytes("P4\n2 1\n", [0b1000_0000]), stream.ToArray());
+    }
+
+    [Fact]
+    public async Task OnlyThePbmExtensionSelectsThePortableBitmap()
+    {
+        using var bitmap = Image.ImportPixelData<Gray8>([new(0), new(255)], 2, 1);
+        using var gray = Image.ImportPixelData<Gray8>([new(0), new(128)], 2, 1);
+        var directory = ImageWriterTests.CreateDirectory();
+        try
+        {
+            var path = directory / "image.PBM";
+            bitmap.Save(path);
+            Assert.Equal(Bytes("P4\n2 1\n", [0b1000_0000]), await File.ReadAllBytesAsync(path, XunitCancellationToken));
+
+            // A rejected image leaves the existing file as it was, and nothing else behind
+            Assert.Equal("Bilevel reduction", Assert.Throws<UnsupportedImageFeatureException>(() => gray.Save(path)).Feature);
+            Assert.Equal(Bytes("P4\n2 1\n", [0b1000_0000]), await File.ReadAllBytesAsync(path, XunitCancellationToken));
+            Assert.Equal([path], Directory.GetFiles(directory));
+
+            // An explicit encoder never looks at the extension, and the other Netpbm extensions keep the default layout
+            await gray.SaveAsync(path, new PnmEncoder(), XunitCancellationToken);
+            Assert.Equal(Bytes("P5\n2 1\n255\n", [0, 128]), await File.ReadAllBytesAsync(path, XunitCancellationToken));
+            await bitmap.SaveAsync(directory / "image.pgm", cancellationToken: XunitCancellationToken);
+            Assert.Equal(Bytes("P5\n2 1\n255\n", [0, 255]), await File.ReadAllBytesAsync(directory / "image.pgm", XunitCancellationToken));
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
     [Fact]
     public void AnimationsAndMetadataAreRejected()
     {
@@ -318,6 +474,13 @@ public sealed class PnmCodecTests
             PixelFormat.Gray8 => source.CloneAs<Gray8>(flatten),
             _ => source.CloneAs<Gray16>(flatten),
         };
+    }
+
+    /// <summary>Creates an opaque image from the digits of a plain portable bitmap: 1 is black and 0 is white.</summary>
+    private static Image<Rgba32> CreateBlackAndWhiteImage(int width, string bits)
+    {
+        var pixels = bits.Select(bit => bit == '1' ? new Rgba32(0, 0, 0) : new Rgba32(255, 255, 255)).ToArray();
+        return Image.ImportPixelData<Rgba32>(pixels, width, pixels.Length / width);
     }
 
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]

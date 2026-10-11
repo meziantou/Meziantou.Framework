@@ -23,7 +23,7 @@ public sealed class FaultInjectionTests
 
     public static TheoryData<string, string> DecodeCases => Combine(ValidIds, ["load", "load-async", "reader", "reader-async", "reader-into", "identify-full"]);
 
-    public static TheoryData<string, string> SaveCases => Combine(ValidIds, ["png", "gif", "jpeg", "webp", "qoi", "bmp", "tga", "pnm", "avif"]);
+    public static TheoryData<string, string> SaveCases => Combine(ValidIds, ["png", "gif", "jpeg", "webp", "qoi", "bmp", "bmp-indexed", "tga", "pnm", "avif"]);
 
     public static TheoryData<string, string> GeometryCases => Combine(ValidIds, ["crop", "auto-crop", "resize", "rotate", "auto-orient"]);
 
@@ -420,12 +420,16 @@ public sealed class FaultInjectionTests
                 return image;
             case "qoi":
             case "bmp":
+            case "bmp-indexed":
             case "tga":
             case "pnm":
                 encoder = encoderName switch
                 {
                     "qoi" => new QoiEncoder { MetadataHandling = MetadataHandling.Strip, AllowBitDepthReduction = true },
                     "bmp" => new BmpEncoder { MetadataHandling = MetadataHandling.Strip, AllowBitDepthReduction = true },
+
+                    // Every pass of the indexed layouts: histogram, dithered mapping, run-length measurement, headers and rows
+                    "bmp-indexed" => new BmpEncoder { MetadataHandling = MetadataHandling.Strip, AllowBitDepthReduction = true, PixelLayout = BmpPixelLayout.Indexed8, Compression = BmpCompression.RunLength, AllowColorReduction = true, Dithering = BmpDithering.FloydSteinberg, BackgroundColor = new Rgba64(0, 0, 0) },
                     "tga" => new TgaEncoder { MetadataHandling = MetadataHandling.Strip, AllowBitDepthReduction = true, Compression = TgaCompression.RunLength },
                     _ => new PnmEncoder { MetadataHandling = MetadataHandling.Strip },
                 };

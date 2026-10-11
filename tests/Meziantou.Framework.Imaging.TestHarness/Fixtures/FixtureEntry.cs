@@ -52,6 +52,13 @@ public sealed class FixtureEntry
     [JsonPropertyName("decodeOptions")]
     public DecodeOptionsDefinition? DecodeOptions { get; init; }
 
+    /// <summary>
+    /// Gets, for a four-component JPEG file (inks), the color conversion it is loaded with and the converted pixels. The
+    /// fixture is then an <see cref="FixtureKinds.Unsupported"/> one: a load without conversion is rejected.
+    /// </summary>
+    [JsonPropertyName("inkConversion")]
+    public InkConversionDefinition? InkConversion { get; init; }
+
     /// <summary>Gets free-form notes for reviewers.</summary>
     [JsonPropertyName("notes")]
     public string? Notes { get; init; }

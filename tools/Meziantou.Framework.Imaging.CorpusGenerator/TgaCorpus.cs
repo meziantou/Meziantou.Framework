@@ -19,8 +19,10 @@ namespace Meziantou.Framework.Imaging.CorpusGenerator;
 /// <para>
 /// Every input is then decoded by the strict transcription of the specification in this generator (headers, color maps and run-length packets
 /// are all validated) and by FFmpeg/libavcodec, and the decodings must agree.
-/// The only recorded disagreement is FFmpeg's 5-bit-to-8-bit expansion of 16-bit samples, which replicates bits instead of
-/// rounding the exact ratio (at most one unit per sample); it is recorded as a crossCheck with its measured error, never hidden.
+/// The recorded disagreements are FFmpeg's 5-bit-to-8-bit expansion of 16-bit samples, which replicates bits instead of
+/// rounding the exact ratio (at most one unit per sample), its reading of an undeclared fourth byte as alpha, and the
+/// 16-bit grayscale pixels and 16-bit color-map indexes it decodes as 5-5-5 true color; each is recorded as a crossCheck
+/// with its measured error, never hidden.
 /// </para>
 /// <para>
 /// Malformed, unsupported and over-limit inputs are byte edits of valid inputs; each defect is confirmed by the strict
@@ -52,6 +54,18 @@ internal static class TgaCorpus
     // ---------------------------------------------------------------------------------------------------------------------
     // Truevision TGA: the TGA File Format Specification 2.0, transcribed as a strict reader and as writers
     // ---------------------------------------------------------------------------------------------------------------------
+
+    // FFmpeg's TGA decoder selects the layout of a two-byte pixel from the pixel depth alone: 16-bit grayscale pixels and
+    // 16-bit color-map indexes are both decoded as 5-5-5 true color, so it cannot confirm these fixtures
+    private const string FfmpegGray16Notes =
+        "FFmpeg decodes every 16-bit TGA pixel as 5-5-5 true color, whatever the image type: it does not implement " +
+        "16-bit grayscale. The reference is the literal grid. Pillow 11.3.0 and Apple ImageIO, run by hand when the " +
+        "fixture was authored, both read the pixel as a gray byte followed by an alpha byte.";
+
+    private const string FfmpegIndex16Notes =
+        "FFmpeg decodes every 16-bit TGA pixel as 5-5-5 true color, whatever the image type: it does not implement " +
+        "16-bit color-map indexes (Pillow 11.3.0 and Apple ImageIO reject the file). The reference is the literal " +
+        "grid and the color map, read as the specification defines them.";
 
     private static readonly byte[] TgaFooterSignature = Bytes.Ascii("TRUEVISION-XFILE.\0");
     private const int TgaExtensionLength = 495;
@@ -140,8 +154,8 @@ internal static class TgaCorpus
         {
             if (mapLength == 0 || mapEntryBits is not (15 or 16 or 24 or 32))
                 throw new FormatError("color map");
-            if (pixelDepth != 8)
-                throw new FormatError(Inv($"unsupported {pixelDepth}-bit color-map indexes"));
+            if (pixelDepth is not (8 or 16))
+                throw new FormatError(Inv($"{pixelDepth}-bit color-map indexes"));
         }
         else if (mapFirst != 0 || mapLength != 0 || mapEntryBits != 0)
         {
@@ -149,13 +163,16 @@ internal static class TgaCorpus
         }
 
         var grayscale = imageType is 3 or 11;
-        if (grayscale && pixelDepth != 8)
-            throw new FormatError(Inv($"unsupported {pixelDepth}-bit grayscale"));
+        if (grayscale && pixelDepth is not (8 or 16))
+            throw new FormatError(Inv($"{pixelDepth}-bit grayscale"));
         if (!colorMapped && !grayscale && pixelDepth is not (15 or 16 or 24 or 32))
             throw new FormatError(Inv($"pixel depth {pixelDepth}"));
         var alphaBits = descriptor & 0x0F;
         var sampleBits = colorMapped ? mapEntryBits : pixelDepth;
-        int[] legalAlpha = sampleBits switch { 32 => [0, 8], 16 => [0, 1], _ => [0] };
+
+        // A 16-bit grayscale pixel is an 8-bit gray sample and an 8-bit attribute: the attribute is the alpha channel (8
+        // alpha bits) or unspecified (0 alpha bits). A 16-bit true-color sample or map entry has one attribute bit.
+        int[] legalAlpha = (grayscale, sampleBits) switch { (true, 16) => [0, 8], (false, 32) => [0, 8], (false, 16) => [0, 1], _ => [0] };
         if (!legalAlpha.Contains(alphaBits))
             throw new FormatError(Inv($"{alphaBits} alpha bits for {sampleBits}-bit samples"));
 
@@ -280,14 +297,15 @@ internal static class TgaCorpus
                 var raw = stored[y * width + x];
                 if (colorMapped)
                 {
-                    int index = raw[0];
+                    // A 16-bit index is stored least significant byte first, like every 16-bit field of the format
+                    var index = pixelDepth == 16 ? raw[0] | (raw[1] << 8) : raw[0];
                     if (!palette.TryGetValue(index, out var entry))
                         throw new FormatError(Inv($"color-map index {index} outside the stored map"));
                     row.Add(entry);
                 }
                 else if (grayscale)
                 {
-                    row.Add(new Px(raw[0], raw[0], raw[0], 255));
+                    row.Add(new Px(raw[0], raw[0], raw[0], pixelDepth == 16 && alphaBits == 8 ? raw[1] : 255));
                 }
                 else
                 {
@@ -315,10 +333,13 @@ internal static class TgaCorpus
         if (colorMapped)
         {
             features.Add(Inv($"tga.colorMap={mapFirst}/{mapLength}/{mapEntryBits}"));
+            features.Add(Inv($"tga.indexBits={pixelDepth}"));
             if (mapFirst != 0)
                 features.Add("tga.colorMap.offset");
         }
 
+        if (grayscale && pixelDepth == 16)
+            features.Add("tga.grayAttribute=" + (alphaBits == 8 ? "alpha" : "unspecified"));
         if (idLength != 0)
             features.Add("tga.idField");
         if (trailer.Length > 0)
@@ -508,6 +529,48 @@ internal static class TgaCorpus
             "real transparency.",
             required: ["tga.imageType=1", "tga.alphaBits=8"]);
 
+        // 16-bit grayscale: an 8-bit gray sample followed by an 8-bit attribute, which the image descriptor defines
+        int[] grayAlphas = [255, 128, 0, 1, 254, 64, 255, 0, 192, 32, 255, 7, 250, 128, 0];
+        var grayAlphaStored = TgaStoreOrder([.. grays.Zip(grayAlphas, (g, a) => new[] { (byte)g, (byte)a })], 5, 3, false, false);
+        var grayAlphaImg = new Img(5, 3, "rgba", 8, grays.Zip(grayAlphas, (g, a) => new Px(g, g, g, a)));
+        data = Bytes.Concat([TgaHeader(3, 5, 3, 16, descriptor: 0x08), .. grayAlphaStored]);
+        AddFixture(c, Format, "tga/grayscale16-alpha", "tga/grayscale16-alpha.tga", data, grayAlphaImg, "Rgba32", "GrayscaleAlpha", 8,
+            "BuildTga", new Obj { ["width"] = 5, ["height"] = 3, ["pixelDepth"] = 16, ["alphaBits"] = 8 },
+            "16-bit grayscale with eight declared alpha bits: each pixel is an 8-bit gray sample followed by an 8-bit " +
+            "alpha sample. The library has no gray-with-alpha pixel format, so the gray sample is replicated into Rgba32; " +
+            "fully transparent pixels keep their gray value.",
+            required: ["tga.imageType=3", "tga.depth=16", "tga.alphaBits=8", "tga.grayAttribute=alpha"],
+            crossCheck: "differs", crossCheckNotes: FfmpegGray16Notes);
+
+        data = Bytes.Concat([TgaHeader(3, 5, 3, 16, descriptor: 0x00), .. grayAlphaStored]);
+        AddFixture(c, Format, "tga/grayscale16-unspecified-attribute", "tga/grayscale16-unspecified-attribute.tga", data, grayImg, "Gray8", "Grayscale", 8,
+            "BuildTga", new Obj { ["width"] = 5, ["height"] = 3, ["pixelDepth"] = 16, ["alphaBits"] = 0 },
+            "The same 16-bit payload with zero declared alpha bits: the second byte of each pixel is an unspecified " +
+            "attribute and is discarded, so the image is the opaque 8-bit gray samples. The two bytes are never read as " +
+            "a 16-bit luminance.",
+            required: ["tga.imageType=3", "tga.depth=16", "tga.alphaBits=0", "tga.grayAttribute=unspecified"],
+            crossCheck: "differs",
+            crossCheckNotes: FfmpegGray16Notes + " Both read it whatever the image descriptor declares; the " +
+                             "specification makes the second byte an attribute whose meaning the descriptor defines, " +
+                             "so the reference is opaque, as for a 32-bit payload without declared alpha bits.");
+
+        // 16-bit color-map indexes, least significant byte first: the map starts at index 250 and holds 300 entries, so
+        // most indexes do not fit one byte
+        var wideMap = Enumerable.Range(0, 300).Select(i => new Px((i * 7 + 3) % 256, (i * 13 + 5) % 256, (i * 29 + 11) % 256)).ToList();
+        int[] wideIndexes = [250, 255, 256, 257, 549, 511, 512, 300, 400, 500, 549, 250, 256, 256, 513];
+        var wideMapImg = new Img(5, 3, "rgb", 8, wideIndexes.Select(i => wideMap[i - 250]));
+        data = Bytes.Concat(
+            TgaHeader(1, 5, 3, 16, colorMap: (250, 300, 24)),
+            [.. wideMap.SelectMany(p => new[] { (byte)p[2], (byte)p[1], (byte)p[0] })],
+            [.. TgaStoreOrder(wideIndexes, 5, 3, false, false).SelectMany(U16)]);
+        AddFixture(c, Format, "tga/colormap16-indexes", "tga/colormap16-indexes.tga", data, wideMapImg, "Rgb24", "Indexed", 8,
+            "BuildTga", new Obj { ["width"] = 5, ["height"] = 3, ["pixelDepth"] = 16, ["colorMapFirstEntry"] = 250, ["colorMapLength"] = 300, ["colorMapEntry"] = "(i * 7 + 3, i * 13 + 5, i * 29 + 11) % 256" },
+            "Color-mapped image with 16-bit little-endian indexes: the map starts at index 250 and holds 300 24-bit BGR " +
+            "entries (indexes 250 to 549), so the image uses indexes on both sides of 255, the first and the last entry " +
+            "included.",
+            required: ["tga.imageType=1", "tga.depth=16", "tga.indexBits=16", "tga.colorMap.offset"],
+            crossCheck: "differs", crossCheckNotes: FfmpegIndex16Notes);
+
         // Run-length packets: a run crossing rows, a 128-pixel packet and raw packets
         List<Px> rlePixels =
         [
@@ -534,6 +597,40 @@ internal static class TgaCorpus
             "BuildTga", new Obj { ["width"] = 8, ["height"] = 6, ["imageType"] = 11 },
             "Run-length encoded 8-bit grayscale (image type 11) with runs crossing scan lines and raw packets.",
             required: ["tga.imageType=11", "tga.rle.run", "tga.rle.raw"]);
+
+        // Two-byte pixels in packets: the pixel of a run-length packet is the gray sample and its alpha, so two
+        // neighbours with the same gray and different alphas are not a run
+        (int Gray, int Alpha)[] rleGrayAlphas =
+        [
+            .. Enumerable.Repeat((0, 255), 9), .. Enumerable.Repeat((200, 128), 20), (1, 10), (1, 11), (3, 30), (4, 40), .. Enumerable.Repeat((255, 0), 15),
+        ];
+        Py.Assert(rleGrayAlphas.Length == 48);
+        var rleGrayAlphaImg = new Img(8, 6, "rgba", 8, rleGrayAlphas.Select(v => new Px(v.Gray, v.Gray, v.Gray, v.Alpha)));
+        data = Bytes.Concat(TgaHeader(11, 8, 6, 16, descriptor: 0x28), TgaRle([.. rleGrayAlphas.Select(v => new[] { (byte)v.Gray, (byte)v.Alpha })], 2));
+        AddFixture(c, Format, "tga/rle-grayscale16-alpha", "tga/rle-grayscale16-alpha.tga", data, rleGrayAlphaImg, "Rgba32", "GrayscaleAlpha", 8,
+            "BuildTga", new Obj { ["width"] = 8, ["height"] = 6, ["imageType"] = 11, ["pixelDepth"] = 16, ["alphaBits"] = 8 },
+            "Run-length encoded 16-bit grayscale with eight declared alpha bits (image type 11): the packets repeat or " +
+            "list two-byte pixels, runs cross scan lines, and two neighbours with the same gray and different alphas " +
+            "are stored in a raw packet.",
+            required: ["tga.imageType=11", "tga.depth=16", "tga.grayAttribute=alpha", "tga.rle.run", "tga.rle.raw", "tga.rle.crossesRow"],
+            crossCheck: "differs", crossCheckNotes: FfmpegGray16Notes);
+
+        // Run-length color-mapped image with 16-bit indexes: 256 and 1 are the same two bytes in opposite orders
+        var wideMapRgba = Enumerable.Range(0, 260).Select(i => new Px((i * 5) % 256, (i * 11 + 1) % 256, (i * 17 + 2) % 256, (i * 3 + 7) % 256)).ToList();
+        int[] rleIndexes = [.. Enumerable.Repeat(259, 9), .. Enumerable.Repeat(3, 20), 256, 1, 257, 258, .. Enumerable.Repeat(255, 15)];
+        Py.Assert(rleIndexes.Length == 48);
+        var rleMapImg = new Img(8, 6, "rgba", 8, rleIndexes.Select(i => wideMapRgba[i]));
+        data = Bytes.Concat(
+            TgaHeader(9, 8, 6, 16, descriptor: 0x28, colorMap: (0, 260, 32)),
+            [.. wideMapRgba.SelectMany(p => new[] { (byte)p[2], (byte)p[1], (byte)p[0], (byte)p[3] })],
+            TgaRle([.. rleIndexes.Select(U16)], 2));
+        AddFixture(c, Format, "tga/rle-colormap16-indexes", "tga/rle-colormap16-indexes.tga", data, rleMapImg, "Rgba32", "Indexed", 8,
+            "BuildTga", new Obj { ["width"] = 8, ["height"] = 6, ["imageType"] = 9, ["pixelDepth"] = 16, ["colorMapLength"] = 260, ["colorMapEntry"] = "(i * 5, i * 11 + 1, i * 17 + 2, i * 3 + 7) % 256" },
+            "Run-length encoded color-mapped image (image type 9) with 16-bit little-endian indexes into 260 32-bit BGRA " +
+            "entries and eight declared alpha bits: the packets repeat or list two-byte indexes, and the indexes 256 and " +
+            "1 (the same two bytes in opposite orders) select different entries.",
+            required: ["tga.imageType=9", "tga.depth=16", "tga.indexBits=16", "tga.alphaBits=8", "tga.rle.run", "tga.rle.raw", "tga.rle.crossesRow"],
+            crossCheck: "differs", crossCheckNotes: FfmpegIndex16Notes);
 
         body = Bytes.Concat(TgaPixels32(TgaStoreOrder(TgaRgba5X3, 5, 3, false, false)));
         data = Bytes.Concat(TgaHeader(2, 5, 3, 32, descriptor: 0x08), body, TgaExtensionArea(3), TgaFooter(extensionOffset: 18 + body.Length));
@@ -619,14 +716,13 @@ internal static class TgaCorpus
             "InvalidImageContentException", "A pixel uses the color-map index 1, below the first stored entry (the map " +
             "starts at index 2 and holds five entries).");
 
-        AddError(c, Format, "invalid/tga/colormap-16bit-indexes", "invalid/tga/colormap-16bit-indexes.tga",
-            Bytes.Concat(Bytes.Slice(colorMap, null, 16), [16], Bytes.Slice(colorMap, 17)),
-            "UnsupportedImageFeatureException", "16-bit color-map indexes are recognized and rejected; this version " +
-            "decodes 8-bit indexes.", feature: "Color map: 16-bit indexes", features: ["tga.unsupported=colormap-16bit"]);
-        AddError(c, Format, "invalid/tga/grayscale-16bit", "invalid/tga/grayscale-16bit.tga",
-            Bytes.Concat(Bytes.Slice(read["tga/grayscale8"], null, 16), [16], Bytes.Slice(read["tga/grayscale8"], 17)),
-            "UnsupportedImageFeatureException", "16-bit grayscale samples are recognized and rejected; this version " +
-            "decodes 8-bit grayscale.", feature: "Grayscale: 16-bit samples", features: ["tga.unsupported=grayscale-16bit"]);
+        // The first stored index of tga/colormap16-indexes follows the 300 three-byte entries of its map
+        var wideColorMap = read["tga/colormap16-indexes"];
+        var wideMapStart = 18 + 300 * 3;
+        AddError(c, Format, "invalid/tga/colormap16-index-out-of-range", "invalid/tga/colormap16-index-out-of-range.tga",
+            Bytes.Concat(Bytes.Slice(wideColorMap, null, wideMapStart), U16(550), Bytes.Slice(wideColorMap, wideMapStart + 2)),
+            "InvalidImageContentException", "A pixel uses the 16-bit color-map index 550, one past the last stored entry " +
+            "(the map starts at index 250 and holds 300 entries).");
 
         // The trailer of tga/extension-useful-alpha: the 495-byte extension area starts at the end of the image data and
         // the 26-byte footer ends the file

@@ -1,4 +1,5 @@
 using System.Runtime.CompilerServices;
+using Meziantou.Framework.Imaging.Drawing;
 using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.Internals;
 
@@ -56,6 +57,61 @@ public sealed class PerformanceContractTests
                     state.Value += pixels.GetRowSpan(y)[1];
                 }
             });
+        }
+    }
+
+    [Theory]
+    [InlineData(PixelFormat.Rgba32)]
+    [InlineData(PixelFormat.Rgba64)]
+    [InlineData(PixelFormat.Gray8)]
+    public void DrawingCallsAllocateNothingOnceTheScratchOfTheSessionIsRented(PixelFormat format)
+    {
+        // A session allocates a bounded number of small objects (the session, its scratch handles); the shapes drawn in
+        // it allocate nothing once the scratch has grown to the largest of them, whatever their number
+        using var image = DrawingTestSupport.Create(format, 64, 48);
+        ((Image)image).AppendFrame();
+        var state = new DrawingState(
+            new SolidBrush(new Rgba32(10, 200, 30, 120)),
+            new LinearGradientBrush(new PointD(0, 0), new PointD(64, 48), [new GradientStop(0, new Rgba32(255, 0, 0)), new GradientStop(0.5, new Rgba32(0, 255, 0, 80)), new GradientStop(1, new Rgba32(0, 0, 255))]) { SpreadMode = GradientSpreadMode.Reflect },
+            new Pen(new RadialGradientBrush(new PointD(30, 20), 25, [new GradientStop(0, new Rgba32(0, 0, 0)), new GradientStop(1, new Rgba32(255, 255, 255))]), 3.5) { LineJoin = LineJoin.Round, LineCap = LineCap.Round },
+            new VectorPathBuilder().MoveTo(4, 40).CubicBezierTo(20, -10, 40, 60, 60, 6).QuadraticBezierTo(30, 30, 8, 8).AddCircle(new PointD(32, 24), 15).Build(),
+            new StrongBox<long>(long.MaxValue));
+
+        // Tiered compilation running concurrently can attribute a few bytes to this thread, and the many methods behind a
+        // drawing take a while to reach their final tier: best of many rounds
+        for (var round = 0; round < 40 && state.Allocated.Value != 0; round++)
+        {
+            image.Draw(state, static (canvas, state) =>
+            {
+                for (var i = 0; i < 3; i++)
+                {
+                    Paint(canvas, state);
+                }
+
+                var before = GC.GetAllocatedBytesForCurrentThread();
+                for (var i = 0; i < 20; i++)
+                {
+                    Paint(canvas, state);
+                }
+
+                state.Allocated.Value = Math.Min(state.Allocated.Value, GC.GetAllocatedBytesForCurrentThread() - before);
+            });
+        }
+
+        Assert.Equal(0, state.Allocated.Value);
+
+        static void Paint(DrawingCanvas canvas, DrawingState state)
+        {
+            canvas.Fill(state.Gradient);
+            canvas.Fill(state.Solid, state.Path, FillRule.EvenOdd);
+            canvas.Stroke(state.Pen, state.Path);
+            canvas.FillRectangle(state.Solid, new RectangleD(3.5, 2.25, 40, 30));
+            canvas.StrokeRectangle(state.Pen, new Rectangle(5, 5, 20, 20));
+            canvas.FillEllipse(state.Gradient, new PointD(20, 20), 18, 9);
+            canvas.StrokeCircle(state.Pen, new PointD(40, 30), 12);
+            canvas.StrokeLine(state.Pen, new PointD(1, 1), new PointD(60, 44));
+            canvas.StrokeBezier(state.Pen, new PointD(2, 2), new PointD(30, 46), new PointD(62, 3));
+            canvas.StrokeBezier(state.Pen, new PointD(2, 46), new PointD(20, 0), new PointD(40, 47), new PointD(62, 20));
         }
     }
 
@@ -219,4 +275,6 @@ public sealed class PerformanceContractTests
         image.Save(stream, new PngEncoder());
         return stream.ToArray();
     }
+
+    private sealed record DrawingState(SolidBrush Solid, GradientBrush Gradient, Pen Pen, VectorPath Path, StrongBox<long> Allocated);
 }

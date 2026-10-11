@@ -1,4 +1,5 @@
 using System.IO.Compression;
+using Meziantou.Framework.Imaging.Drawing;
 using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.Metadata;
 
@@ -111,10 +112,12 @@ public sealed class DefaultsTests
         Assert.IsType<BmpEncoder>(ImageEncoder.FromPath("a.BMP"));
         Assert.IsType<BmpEncoder>(ImageEncoder.FromPath("a.dib"));
         Assert.IsType<TgaEncoder>(ImageEncoder.FromPath("a.tga"));
-        Assert.IsType<PnmEncoder>(ImageEncoder.FromPath("a.pnm"));
-        Assert.IsType<PnmEncoder>(ImageEncoder.FromPath("a.pam"));
-        Assert.IsType<PnmEncoder>(ImageEncoder.FromPath("a.ppm"));
-        Assert.IsType<PnmEncoder>(ImageEncoder.FromPath("a.pgm"));
+        Assert.Equal(PnmPixelLayout.Auto, Assert.IsType<PnmEncoder>(ImageEncoder.FromPath("a.pnm")).PixelLayout);
+        Assert.Equal(PnmPixelLayout.Auto, Assert.IsType<PnmEncoder>(ImageEncoder.FromPath("a.pam")).PixelLayout);
+        Assert.Equal(PnmPixelLayout.Auto, Assert.IsType<PnmEncoder>(ImageEncoder.FromPath("a.ppm")).PixelLayout);
+        Assert.Equal(PnmPixelLayout.Auto, Assert.IsType<PnmEncoder>(ImageEncoder.FromPath("a.pgm")).PixelLayout);
+        Assert.Equal(PnmPixelLayout.Bitmap, Assert.IsType<PnmEncoder>(ImageEncoder.FromPath("a.pbm")).PixelLayout);
+        Assert.Equal(PnmPixelLayout.Bitmap, Assert.IsType<PnmEncoder>(ImageEncoder.FromPath("dir/a.PBM")).PixelLayout);
         Assert.IsType<TiffEncoder>(ImageEncoder.FromPath("a.tif"));
         Assert.IsType<TiffEncoder>(ImageEncoder.FromPath("a.TIFF"));
         Assert.IsType<IcoEncoder>(ImageEncoder.FromPath("a.ico"));
@@ -185,6 +188,33 @@ public sealed class DefaultsTests
     }
 
     [Fact]
+    public void DrawingDefaults()
+    {
+        var brush = new SolidBrush(new Rgba32(1, 2, 3));
+        var pen = new Pen(brush, 2.5);
+        Assert.Same(brush, pen.Brush);
+        Assert.Equal(2.5, pen.Width);
+        Assert.Equal(LineJoin.Miter, pen.LineJoin);
+        Assert.Equal(LineCap.Butt, pen.LineCap);
+        Assert.Equal(4, pen.MiterLimit);
+        Assert.Equal(default, pen.LineJoin);
+        Assert.Equal(default, pen.LineCap);
+
+        GradientStop[] stops = [new(0, new Rgba32(0, 0, 0)), new(1, new Rgba32(255, 255, 255))];
+        Assert.Equal(GradientSpreadMode.Pad, new LinearGradientBrush(default, new PointD(1, 0), stops).SpreadMode);
+        Assert.Equal(GradientSpreadMode.Pad, new RadialGradientBrush(default, 1, stops).SpreadMode);
+        Assert.Equal(default, new RadialGradientBrush(default, 1, stops).SpreadMode);
+        Assert.Equal(default, FillRule.NonZero);
+
+        // The fill rule of a path is non-zero unless told otherwise: the inner square, drawn in the same direction, is
+        // not a hole
+        var path = new VectorPathBuilder().AddRectangle(new Rectangle(0, 0, 3, 3)).AddRectangle(new Rectangle(1, 1, 1, 1)).Build();
+        using var image = new Image<Gray8>(3, 3, new Gray8(0));
+        image.Draw(canvas => canvas.Fill(new SolidBrush(new Rgba32(255, 255, 255)), path), TestContext.Current.CancellationToken);
+        Assert.Equal(new Gray8(255), image.Frames[0][1, 1]);
+    }
+
+    [Fact]
     public void ColorConversionDefaults()
     {
         var options = new IccColorTransformOptions();
@@ -193,6 +223,30 @@ public sealed class DefaultsTests
         Assert.Equal(IccRenderingIntent.RelativeColorimetric, IccColorTransformOptions.Default.Intent);
         Assert.True(IccColorTransformOptions.Default.BlackPointCompensation);
         Assert.Same(IccColorTransformOptions.Default, IccColorTransformOptions.Default);
+    }
+
+    [Fact]
+    public void CmykConversionDefaults()
+    {
+        // Inks are never converted implicitly: the conversion is absent by default
+        Assert.Null(ImageDecodeOptions.Default.CmykConversion);
+        Assert.Null(ImageReaderOptions.Default.CmykConversion);
+
+        var options = new CmykConversionOptions();
+        Assert.Same(IccProfile.Srgb, options.DestinationProfile);
+        Assert.Same(IccProfile.Cgats001CompatibleCmyk, options.AssumedSourceProfile);
+        Assert.Same(IccColorTransformOptions.Default, options.Transform);
+        Assert.Same(CmykConversionOptions.Default, CmykConversionOptions.Default);
+        Assert.Same(IccProfile.Srgb, CmykConversionOptions.Default.DestinationProfile);
+        Assert.Same(IccProfile.Cgats001CompatibleCmyk, CmykConversionOptions.Default.AssumedSourceProfile);
+
+        // The destination is an RGB profile, the assumed source a CMYK profile or none
+        Assert.Null(new CmykConversionOptions { AssumedSourceProfile = null }.AssumedSourceProfile);
+        Assert.Throws<ArgumentNullException>(() => new CmykConversionOptions { DestinationProfile = null! });
+        Assert.Throws<ArgumentException>(() => new CmykConversionOptions { DestinationProfile = IccProfile.SrgbGray });
+        Assert.Throws<ArgumentException>(() => new CmykConversionOptions { DestinationProfile = IccProfile.Cgats001CompatibleCmyk });
+        Assert.Throws<ArgumentException>(() => new CmykConversionOptions { AssumedSourceProfile = IccProfile.Srgb });
+        Assert.Throws<ArgumentNullException>(() => new CmykConversionOptions { Transform = null! });
     }
 
     [Fact]

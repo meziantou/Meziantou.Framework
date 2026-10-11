@@ -15,7 +15,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </list>
 /// <para>
 /// Pixels are accumulated into one private row, so the parser never asks the driver for more than a few contiguous bytes of
-/// image data and its memory never depends on the size of the image.
+/// image data and its memory never depends on the size of the image. The color map of a color-mapped image (at most 65,535
+/// entries) is the only other decoder state; it is only kept by the decode walk.
 /// </para>
 /// <para>
 /// The TGA 2.0 footer is the last 26 bytes of the file, and it holds the offset of the extension area: nothing after the
@@ -46,6 +47,7 @@ internal sealed class TgaStructureParser : ImageParser<ImageInfo>
     private int _rowIndex;
     private PooledBuffer? _storedRow;
     private PooledBuffer? _sourceRow;
+    private PooledBuffer? _colorMap;
     private ImageInfo? _result;
 
     public TgaStructureParser(ImageCodecContext context, StructureWalk walk, TgaDecoder? decoder = null)
@@ -120,6 +122,13 @@ internal sealed class TgaStructureParser : ImageParser<ImageInfo>
                         _decoder!.OnHeaderComplete(this);
                         _storedRow = _context.Scope.Rent(Layout.StoredRowLength, AllocationKind.DecoderState, clear: false);
                         _sourceRow = _context.Scope.Rent(Layout.SourceRowLength, AllocationKind.DecoderState, clear: false);
+                        if (Layout.ColorMapStorageLength > 0)
+                        {
+                            // Every entry is stored before the first pixel is expanded
+                            _colorMap = _context.Scope.Rent(Layout.ColorMapStorageLength, AllocationKind.DecoderState, clear: false);
+                            Layout.SetColorMapStorage(_colorMap.Memory);
+                        }
+
                         if (_context.TryConsumeYield())
                             return ParseStatus.Complete;
                     }
@@ -200,6 +209,8 @@ internal sealed class TgaStructureParser : ImageParser<ImageInfo>
             _storedRow = null;
             _sourceRow?.Dispose();
             _sourceRow = null;
+            _colorMap?.Dispose();
+            _colorMap = null;
         }
 
         base.Dispose(disposing);

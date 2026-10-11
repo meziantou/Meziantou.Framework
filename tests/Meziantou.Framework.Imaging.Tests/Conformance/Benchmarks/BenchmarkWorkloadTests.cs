@@ -53,6 +53,24 @@ public sealed class BenchmarkWorkloadTests
     }
 
     [Fact]
+    public void TheInkJpegInputIsLoadedWithItsColorConversion()
+    {
+        // Four components (YCCK inks) of the size of the other JPEG inputs: identified, rejected without conversion, and
+        // converted to sRGB pixels by the timed workload. The decoder tests compare such pixels with their references
+        var info = Image.Identify(BenchmarkInputs.InkJpeg);
+        Assert.Equal(ImageColorModel.Ycck, info.ColorModel);
+        Assert.Equal(new Size(BenchmarkInputs.LargeWidth, BenchmarkInputs.LargeHeight), info.Size);
+        Assert.Null(info.Metadata.IccProfile);
+        Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(BenchmarkInputs.InkJpeg));
+
+        using var image = Image.Load<Rgb24>(BenchmarkInputs.InkJpeg, BenchmarkInputs.InkJpegOptions);
+        Assert.Equal(info.Size, image.Size);
+        Assert.Same(Metadata.IccProfile.Srgb, image.Metadata.IccProfile);
+        var pixels = ImageSnapshots.CaptureFrame(image.Frames[0]);
+        Assert.True(pixels.Span.IndexOfAnyExcept(pixels.Span[0]) >= 0, "The converted image is uniform.");
+    }
+
+    [Fact]
     public void TheProgressiveJpegInputDecodesLikeTheSameCoefficientsCodedSequentially()
     {
         // Progressive and sequential codings of identical coefficients must decode to identical pixels

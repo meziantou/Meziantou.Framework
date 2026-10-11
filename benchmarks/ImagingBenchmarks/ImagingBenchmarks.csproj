@@ -15,6 +15,7 @@
     <Compile Include="..\..\tests\Meziantou.Framework.Imaging.Tests\Codecs\JpegTestImage.cs" Link="Workloads\TestEncoders\JpegTestImage.cs" />
     <Compile Include="..\..\tests\Meziantou.Framework.Imaging.Tests\Codecs\JpegTestEncodeOptions.cs" Link="Workloads\TestEncoders\JpegTestEncodeOptions.cs" />
     <Compile Include="..\..\tests\Meziantou.Framework.Imaging.Tests\Codecs\JpegTestHuffmanStyle.cs" Link="Workloads\TestEncoders\JpegTestHuffmanStyle.cs" />
+    <Compile Include="..\..\tests\Meziantou.Framework.Imaging.Tests\Codecs\JpegTestInkCoding.cs" Link="Workloads\TestEncoders\JpegTestInkCoding.cs" />
     <Compile Include="..\..\tests\Meziantou.Framework.Imaging.Tests\Codecs\JpegTestProgressiveScan.cs" Link="Workloads\TestEncoders\JpegTestProgressiveScan.cs" />
   </ItemGroup>
 

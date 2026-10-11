@@ -38,7 +38,7 @@ public static partial class FixtureManifestValidator
     public static IReadOnlySet<string> AllowedPixelFormats { get; } = new HashSet<string>(StringComparer.Ordinal) { "Rgba32", "Bgra32", "Rgb24", "Rgba64", "Gray8", "Gray16" };
 
     /// <summary>The accepted values of <see cref="FixtureExpectation.ColorModel"/> (library <c>ImageColorModel</c> names).</summary>
-    public static IReadOnlySet<string> AllowedColorModels { get; } = new HashSet<string>(StringComparer.Ordinal) { "Grayscale", "GrayscaleAlpha", "Rgb", "Rgba", "Indexed", "YCbCr" };
+    public static IReadOnlySet<string> AllowedColorModels { get; } = new HashSet<string>(StringComparer.Ordinal) { "Grayscale", "GrayscaleAlpha", "Rgb", "Rgba", "Indexed", "YCbCr", "Cmyk", "Ycck" };
 
     /// <summary>The accepted values of <see cref="FixtureExpectation.IccProfile"/>.</summary>
     public static IReadOnlySet<string> AllowedIccProfiles { get; } = new HashSet<string>(StringComparer.Ordinal) { "none", "rgb", "gray" };
@@ -130,6 +130,7 @@ public static partial class FixtureManifestValidator
             ValidateProvenance(name, entry.Provenance, errors);
             ValidateFile(name, entry.Input, root, referencedFiles, errors);
             ValidateDecodeOptions(name, entry.DecodeOptions, errors);
+            ValidateInkConversion(name, entry, manifest, root, referencedFiles, errors);
 
             if (!AllowedKinds.Contains(entry.Kind))
             {
@@ -328,6 +329,83 @@ public static partial class FixtureManifestValidator
         else if (entry.ExpectedError.LimitKind is not null)
         {
             errors.Add($"{name}: only limit fixtures may declare expectedError.limitKind.");
+        }
+    }
+
+    private static void ValidateInkConversion(string name, FixtureEntry entry, FixtureManifest manifest, FullPath root, HashSet<string> referencedFiles, List<string> errors)
+    {
+        if (entry.InkConversion is not { } conversion)
+            return;
+
+        name += " inkConversion";
+        referencedFiles.Add(conversion.Buffer.Path);
+        if (entry.Format != "jpeg" || entry.Kind != FixtureKinds.Unsupported)
+        {
+            errors.Add($"{name}: only unsupported JPEG fixtures (four components, rejected without a color conversion) declare a conversion.");
+        }
+
+        if (conversion.SourceProfile is not (InkConversionDefinition.Embedded or InkConversionDefinition.Assumed))
+        {
+            errors.Add($"{name}: invalid sourceProfile '{conversion.SourceProfile}' (allowed: {InkConversionDefinition.Embedded}, {InkConversionDefinition.Assumed}).");
+        }
+
+        var profiles = (manifest.ColorProfiles ?? []).Select(profile => profile.Id).ToHashSet(StringComparer.Ordinal);
+        if (!profiles.Contains(conversion.DestinationProfile))
+        {
+            errors.Add($"{name}: unknown destination profile '{conversion.DestinationProfile}'.");
+        }
+
+        if (conversion.SourceProfile == InkConversionDefinition.Assumed && !profiles.Contains(InkConversionDefinition.AssumedProfileId))
+        {
+            errors.Add($"{name}: the assumed profile '{InkConversionDefinition.AssumedProfileId}' is not a color profile of the corpus.");
+        }
+
+        if (!ColorTransformEntry.Intents.Contains(conversion.Intent, StringComparer.Ordinal))
+        {
+            errors.Add($"{name}: invalid intent '{conversion.Intent}' (allowed: {string.Join(", ", ColorTransformEntry.Intents)}).");
+        }
+
+        if (conversion.ColorModel is not ("Cmyk" or "Ycck"))
+        {
+            errors.Add($"{name}: invalid colorModel '{conversion.ColorModel}' (allowed: Cmyk, Ycck).");
+        }
+
+        ValidateReference(name, conversion.Reference, errors);
+        var policyErrors = ComparisonPolicy.Validate(conversion.Comparison);
+        errors.AddRange(policyErrors.Select(error => $"{name}: {error}"));
+        var policy = policyErrors.Count == 0 ? ComparisonPolicy.FromDefinition(conversion.Comparison) : null;
+        if (policy is { IsExact: false })
+        {
+            ValidateToleranceJustification(name, conversion.Reference, policy, errors);
+        }
+
+        if (conversion.Buffer.Layout != RawPixelLayout.Rgb8.Name)
+        {
+            errors.Add($"{name}: the converted pixels are '{RawPixelLayout.Rgb8.Name}', not '{conversion.Buffer.Layout}'.");
+        }
+
+        var descriptorErrors = RawBufferReader.ValidateDescriptor(conversion.Buffer);
+        errors.AddRange(descriptorErrors.Select(error => $"{name}: {error}"));
+        if (descriptorErrors.Count > 0)
+            return;
+
+        if (!Sha256Regex().IsMatch(conversion.Buffer.Sha256))
+        {
+            errors.Add($"{name}: '{conversion.Buffer.Path}' has an invalid sha256 (64 lowercase hexadecimal characters expected).");
+            return;
+        }
+
+        try
+        {
+            var buffer = RawBufferReader.Read(root, conversion.Buffer);
+            if (policy is { IsExact: false } && FindUndetectableDefects(buffer, policy) is { Count: > 0 } undetectable)
+            {
+                errors.Add($"{name}: the tolerance policy cannot detect {string.Join(", ", undetectable)} of this reference; tighten the policy or use a more discriminating pattern.");
+            }
+        }
+        catch (InvalidDataException ex)
+        {
+            errors.Add($"{name}: {ex.Message}");
         }
     }
 

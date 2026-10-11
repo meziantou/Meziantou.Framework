@@ -91,6 +91,12 @@ public sealed class ImageFrame<TPixel> : ImageFrame
         }
     }
 
+    internal override DrawingColor ConvertDrawingColor(Rgba64 color)
+        => DrawingKernels.ConvertColor<TPixel>(color);
+
+    internal override void CompositePixels(PixelStorage storage, int y, int x, ReadOnlySpan<uint> coverage, scoped in DrawingSource source)
+        => DrawingKernels.Composite<TPixel>(storage, y, x, coverage, source);
+
     internal override void FlipPixels(scoped in PixelLease lease, FlipMode mode, CancellationToken cancellationToken)
         => ProcessingKernels.Flip<TPixel>(lease, mode, cancellationToken);
 

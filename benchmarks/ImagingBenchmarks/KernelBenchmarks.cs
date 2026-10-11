@@ -19,7 +19,7 @@ public class KernelBenchmarks : IDisposable
     private readonly double[] _block = new double[64];
     private readonly byte[] _samples = new byte[8 * 64];
     private readonly AllocationScope _scope = new(new ImageResourceLimits());
-    private GifQuantizer _quantizer = null!;
+    private PaletteQuantizer _quantizer = null!;
     private int[] _colors = null!;
 
     [GlobalSetup]
@@ -39,7 +39,7 @@ public class KernelBenchmarks : IDisposable
             }
         }
 
-        _quantizer = new GifQuantizer(_scope);
+        _quantizer = new PaletteQuantizer(_scope);
         _quantizer.Begin(256);
         var palette = new int[256];
         for (var i = 0; i < palette.Length; i++)

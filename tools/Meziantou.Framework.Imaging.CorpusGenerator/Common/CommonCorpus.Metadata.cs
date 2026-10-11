@@ -375,14 +375,25 @@ internal static partial class CommonCorpus
         return new ParsedMetadata();
     }
 
-    /// <summary>BMP stores only the physical resolution (biXPelsPerMeter/biYPelsPerMeter, pixels per meter).</summary>
+    /// <summary>
+    /// BMP stores only the physical resolution (biXPelsPerMeter/biYPelsPerMeter, pixels per meter). The OS/2 1.x header
+    /// (12 bytes) has none, and an OS/2 2.x header (16 to 64 bytes) may stop before it and only stores pixels per meter
+    /// when its usUnits field is 0.
+    /// </summary>
     public static ParsedMetadata BmpMetadata(byte[] data)
     {
         Py.Assert(Bytes.StartsWith(data, "BM"u8));
         var headerLength = Bytes.U32LE(data, 14);
-        Py.Assert(headerLength >= 40);
-        long x = Bytes.I32LE(data, 38), y = Bytes.I32LE(data, 42);
+        Py.Assert(headerLength is 12 or (>= 16 and <= 64) or 108 or 124);
         var result = new ParsedMetadata();
+        if (headerLength < 32)
+            return result;
+
+        var windows = headerLength is 40 or 52 or 56 or 108 or 124;
+        if (!windows && headerLength >= 42 && Bytes.U16LE(data, 14 + 40) != 0)
+            return result;
+
+        long x = Bytes.I32LE(data, 38), y = Bytes.I32LE(data, 42);
         if (x > 0 && y > 0)
             result.Resolution = Resolution(x * 0.0254, y * 0.0254, "meter", x, y);
         return result;

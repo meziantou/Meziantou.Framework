@@ -23,4 +23,10 @@ public enum ImageColorModel
 
     /// <summary>Luma/chroma samples (JPEG YCbCr).</summary>
     YCbCr = 6,
+
+    /// <summary>Cyan, magenta, yellow and black ink samples (four-component JPEG).</summary>
+    Cmyk = 7,
+
+    /// <summary>Cyan, magenta and yellow coded as luma/chroma samples, with black ink samples (four-component JPEG with the Adobe YCCK transform).</summary>
+    Ycck = 8,
 }

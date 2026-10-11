@@ -432,7 +432,7 @@ internal sealed class WebPEncoderCodec : ImageEncoderCodec
         private Vp8LBitWriter? _alpha;
         private byte _alphaHeader;
         private Vp8LBitWriter? _lossless;
-        private WebPPayloadWriter? _lossy;
+        private PooledPayloadWriter? _lossy;
 
         public static EncodedFrame EncodeLossless(AllocationScope scope, Span<byte> rgba, int width, int height, int effort, CancellationToken cancellationToken)
         {

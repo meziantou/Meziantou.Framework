@@ -123,7 +123,7 @@ internal sealed class Vp8Encoder : IDisposable
     /// <param name="effort">The effort, 0 to 9.</param>
     /// <param name="cancellationToken">Checked between macroblock rows.</param>
     /// <returns>The VP8 chunk payload; the caller disposes it.</returns>
-    public static WebPPayloadWriter Encode(AllocationScope scope, ReadOnlySpan<byte> rgba, int width, int height, int quality, int effort, CancellationToken cancellationToken)
+    public static PooledPayloadWriter Encode(AllocationScope scope, ReadOnlySpan<byte> rgba, int width, int height, int quality, int effort, CancellationToken cancellationToken)
     {
         using var encoder = new Vp8Encoder(scope, width, height, quality, effort, cancellationToken);
         encoder.LoadSource(rgba);
@@ -1140,7 +1140,7 @@ internal sealed class Vp8Encoder : IDisposable
     }
 
     /// <summary>Transfers the payload written by <see cref="WriteFrame"/> to the caller.</summary>
-    private WebPPayloadWriter TakeOutput()
+    private PooledPayloadWriter TakeOutput()
     {
         var output = _output ?? throw new InvalidOperationException("No frame was written.");
         _output = null;
@@ -1231,7 +1231,7 @@ internal sealed class Vp8Encoder : IDisposable
             return false;
 
         _output?.Dispose();
-        _output = new WebPPayloadWriter(_scope);
+        _output = new PooledPayloadWriter(_scope);
         var payload = _output;
         {
             // Frame tag: key frame, version 0, shown, first partition size; then the start code and the dimensions
@@ -1255,7 +1255,7 @@ internal sealed class Vp8Encoder : IDisposable
     }
 
     private int _skipProbability = 255;
-    private WebPPayloadWriter? _output;
+    private PooledPayloadWriter? _output;
 
     private void WriteFrameHeader(Vp8BoolEncoder d)
     {

@@ -7,14 +7,14 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </summary>
 internal sealed class Vp8BoolEncoder : IDisposable
 {
-    private readonly WebPPayloadWriter _output;
+    private readonly PooledPayloadWriter _output;
     private uint _range = 255;
     private uint _bottom;
     private int _bitCount = 24;
 
     public Vp8BoolEncoder(AllocationScope scope)
     {
-        _output = new WebPPayloadWriter(scope);
+        _output = new PooledPayloadWriter(scope);
     }
 
     /// <summary>Gets the encoded bytes (after <see cref="Flush"/>).</summary>

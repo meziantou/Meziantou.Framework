@@ -29,6 +29,7 @@ public sealed class AvifEncoderTests
         Assert.Null(encoder.BitDepth);
         Assert.False(encoder.AllowBitDepthReduction);
         Assert.False(encoder.ClearTransparentColors);
+        Assert.Equal(FrameDurationRounding.RequireExact, encoder.DurationRounding);
         Assert.Equal(MetadataHandling.Strict, encoder.MetadataHandling);
 
         Assert.Throws<ArgumentOutOfRangeException>(() => new AvifEncoder { Compression = (AvifCompression)2 });

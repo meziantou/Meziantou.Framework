@@ -292,6 +292,7 @@ public sealed class ImageSaveTests
         new PnmEncoder(),
         new TiffEncoder(),
         new IcoEncoder(),
+        new AvifEncoder(),
     ];
 
     [Theory]
@@ -332,6 +333,7 @@ public sealed class ImageSaveTests
             TgaEncoder => new TgaEncoder { MetadataHandling = handling },
             PnmEncoder => new PnmEncoder { MetadataHandling = handling },
             TiffEncoder => new TiffEncoder { MetadataHandling = handling },
+            AvifEncoder => new AvifEncoder { MetadataHandling = handling },
             _ => new IcoEncoder { MetadataHandling = handling },
         };
     }

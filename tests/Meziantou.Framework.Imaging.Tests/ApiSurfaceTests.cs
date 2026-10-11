@@ -28,6 +28,7 @@ public sealed class ApiSurfaceTests
         typeof(PngEncoder),
         typeof(GifEncoder),
         typeof(JpegEncoder),
+        typeof(AvifEncoder),
     ];
 
     [Fact]

@@ -5,7 +5,8 @@ using Meziantou.Framework.Imaging.FuzzTests;
 namespace Meziantou.Framework.Imaging.Benchmarks;
 
 /// <summary>
-/// AVIF decoding. The library has no AVIF encoder, so the inputs are AV1 streams of the golden corpus, written by libaom,
+/// AVIF decoding. The inputs are not written by the encoder of the library, which does not use every tool that a
+/// decoder must be fast at: they are AV1 streams of the golden corpus, written by libaom,
 /// in a minimal AVIF container: two 384x216 lossy stills that use every post-processing filter (deblocking, CDEF and
 /// switchable loop restoration), 4:2:0 and 4:4:4, and a 176x144 animation of 5 images coded with inter frames, alternate
 /// reference frames included. These inputs are small: the workloads measure the decoder on its own corpus and say nothing

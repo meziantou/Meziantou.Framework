@@ -23,6 +23,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <item><term>TIFF</term><description>Exactly one page (<c>ImageCollection.Save</c> writes several); no animation settings; no poster; a seekable destination (a directory stores the offsets of its strips, so the pointer to it is patched once the page is written).</description></item>
 /// <item><term>ICO/CUR</term><description>Exactly one representation (<c>ImageCollection.Save</c> writes several); no animation settings; no poster; at most 256 pixels per side; no seeking (a representation payload is encoded in memory).</description></item>
 /// <item><term>ANI</term><description>Always an animation container; unknown frame count allowed; no poster; at most 256 pixels per side; infinite play count only; a seekable destination (the header counts and the RIFF and frame-list sizes are patched at completion).</description></item>
+/// <item><term>AVIF</term><description>Known frame count; a count of 1 is a still image, without animation settings, written to any destination; any other count is an image sequence, which needs a seekable destination (the <c>moov</c> box is written at completion, in the room reserved for it); no poster; at most 65,536 pixels per side (65,535 for an image sequence).</description></item>
 /// </list>
 /// <para>
 /// <see cref="PngAnimationMode.Auto"/> writes an APNG when more than one frame is expected or animation settings are given

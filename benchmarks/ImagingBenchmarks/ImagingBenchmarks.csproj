@@ -19,7 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- There is no AVIF encoder: the AVIF workloads wrap AV1 streams of the golden corpus into AVIF files -->
+    <!-- The AVIF decoding workloads wrap AV1 streams of the golden corpus, written by libaom, into AVIF files -->
     <Compile Include="..\..\fuzz\Meziantou.Framework.Imaging.FuzzTests\FuzzAvifContainer.cs" Link="Workloads\TestEncoders\FuzzAvifContainer.cs" />
     <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Imaging.Fixtures\av1\lr-switchable-luma-420-384x216.obu" LogicalName="av1/lr-switchable-luma-420-384x216.obu" />
     <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Imaging.Fixtures\av1\lr-switchable-chroma-444-384x216.obu" LogicalName="av1/lr-switchable-chroma-444-384x216.obu" />

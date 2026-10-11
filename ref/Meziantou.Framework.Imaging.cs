@@ -795,6 +795,7 @@ namespace Meziantou.Framework.Imaging.Formats
         public int? BitDepth { get => throw null; init { } }
         public bool AllowBitDepthReduction { get => throw null; init { } }
         public bool ClearTransparentColors { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Formats.FrameDurationRounding DurationRounding { get => throw null; init { } }
     }
 
     public sealed class BmpEncoder : Meziantou.Framework.Imaging.Formats.ImageEncoder

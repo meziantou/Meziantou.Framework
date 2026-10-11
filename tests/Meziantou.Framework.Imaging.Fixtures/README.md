@@ -378,7 +378,9 @@ follows it, so keep both headings unique in this file.
   have expected errors only. Rows marked *(rejected)* must have an `unsupported` fixture, every other row a `valid` one.
 - Every valid fixture is decoded by the eager, sequential and identify suites in every input variant, on `net10.0` and
   `net11.0`, without external tools. Encoders
-  are verified by independent readers and by the interop job; the corpus references are also used as encoder inputs
+  are verified by independent readers and by the interop job (the AV1 streams of the AVIF encoder have no reader in
+  the harness: they are decoded by dav1d and libaom in the interop job, and by the library elsewhere); the corpus
+  references are also used as encoder inputs
   (`TestHarness.Adapters.EncoderSources`), except the seeded-noise decoder inputs written by FFmpeg (the generator's
   `*FfmpegDecoding` builders: `png/ffmpeg-*`, `apng/ffmpeg-<format>`, `gif/ffmpeg-<rectangles>-<transparency>`,
   `jpeg/ffmpeg-mjpeg-*`). Those exist so decoders meet an independent encoder's own choices (filters, delta rectangles,

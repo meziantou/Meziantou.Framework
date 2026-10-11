@@ -58,7 +58,6 @@ public enum ImageFormat
 
     /// <summary>
     /// AV1 Image File Format: still images and image sequences coded with AV1 in an ISO base media (HEIF) container.
-    /// Decoding only: there is no AVIF encoder.
     /// </summary>
     Avif = 13,
 }

@@ -70,8 +70,9 @@ public sealed class ImageMetadata
     /// </summary>
     /// <remarks>
     /// This is a label: no operation converts the pixels. When an <see cref="IccProfile"/> is also present, the profile
-    /// describes the color primaries and the transfer function. Only AVIF stores a description; encoders treat a description
-    /// that is not equivalent to sRGB as metadata they cannot store (<see cref="Formats.ImageEncoder.MetadataHandling"/>).
+    /// describes the color primaries and the transfer function. Only AVIF stores a description; the other encoders treat a
+    /// description that is not equivalent to sRGB as metadata they cannot store
+    /// (<see cref="Formats.ImageEncoder.MetadataHandling"/>).
     /// </remarks>
     public CicpColorDescription? Cicp { get; set; }
 

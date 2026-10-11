@@ -1,8 +1,8 @@
 # Meziantou.Framework.Imaging
 
-A fully managed image library: PNG/APNG, GIF, JPEG, WebP, QOI, BMP, TGA, Netpbm, TIFF, ICO/CUR and ANI decoding and
-encoding, AVIF decoding (with its own AV1 decoder), animation-aware processing, ICC color conversion, and bounded-memory
-streaming readers and writers.
+A fully managed image library: PNG/APNG, GIF, JPEG, WebP, QOI, BMP, TGA, Netpbm, TIFF, ICO/CUR, ANI and AVIF (with its
+own AV1 decoder and encoder) decoding and encoding, animation-aware processing, ICC color conversion, and
+bounded-memory streaming readers and writers.
 
 These instructions complete the repository-level `AGENTS.md`. The user guide is [readme.md](readme.md): it states what
 the library guarantees to its callers (support matrix, limitations, defaults). Keep the code, the XML documentation and
@@ -96,8 +96,8 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
 - A new format always adds an `ImageFormat` member, its name in `ImageFormatNames`, an `ImageCodec` in
   `ImageCodecRegistry`, a default pixel format in `DefaultPixelFormats`, and a row in the support matrix and a section in
   the format reference of `readme.md`. A format that is also written adds an encoder codec in `ImageEncoderRegistry`, a
-  public `ImageEncoder` in `Formats/` and its extensions in `ImageEncoder.FromPath`. A format that is only read (AVIF)
-  makes `ImageEncoder.FromPath` reject its extensions with a message that says so.
+  public `ImageEncoder` in `Formats/` and its extensions in `ImageEncoder.FromPath`. A format that is only read (none
+  today) makes `ImageEncoder.FromPath` reject its extensions with a message that says so.
 - **AVIF and AV1** (`Internals/Codecs/Avif`). The container walker resolves the image (`AvifImagePlan`, from the `meta`
   box) or the image sequence (`AvifMovieBox`, from the `moov` box) before any data is read, then captures the items or
   samples as their bytes go by. The AV1 decoder (`Av1/`) follows the AV1 Bitstream & Decoding Process Specification
@@ -110,6 +110,22 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   Scalability only changes which frames are output, never how they are decoded: the units outside the operating point
   are dropped, and a temporal unit with several spatial layers outputs the frame of its highest layer (what a player
   shows, and what `lsel`-less layered AVIF images present). `OutputAllLayers` is for conformance tests only.
+- **AV1 encoder** (`Internals/Codecs/Avif/Av1/Encoding`, and the `Write` and `Encode` parts of `Av1TileCoder`). The
+  specification only describes decoding: the encoder is written from it, never from another encoder.
+  - The encoder shares the state and the processes of the decoder (`Av1FrameCodingState`, the prediction, the
+    reconstruction, the in-loop filters) and never duplicates them: the frame it keeps is the frame a decoder outputs.
+    A syntax element is written by a `Write` method that sits on the same context derivation as its `Read` method in
+    `Av1TileCoder`; extract the derivation when a `Read` method computes it inline.
+  - The headers are written (`Av1HeaderWriter`), then parsed back by the parsers of the decoder: the encoder never
+    derives a header variable itself.
+  - The search encodes its candidates for real, records its decisions (`Av1EncoderWorkspace`) and replays the records to
+    the symbol encoder. A candidate that changes a context that the search does not save, or a decision that is not in
+    the record of its block, is a stream that decodes to something else: `Av1EncoderRoundTripTests` (the decoder of the
+    library must output the reconstruction of the encoder) and `AvifEncoderInteropTests` (dav1d and libaom must output
+    the same planes) are the tests to run after any change.
+  - Every decision is made with integers (rates, distortions, the forward transforms): the output must not depend on
+    the platform. The forward transforms are measured on the inverse kernels of the decoder, not written out.
+  - The container writer (`AvifFileWriter`) shares no code with `AvifFileBuilder`, the builder of the test harness.
 - `ZLibStream` reports truncation as a clean end: check that the expected number of bytes was produced.
 
 ## Color management

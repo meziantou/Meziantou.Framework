@@ -4,7 +4,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <remarks>
 /// The public API always uses <see cref="Current"/>: <see cref="Default"/>, unless a test replaced it for the current
 /// asynchronous flow with <see cref="Override"/> to plug test-only encoders behind the real writer and save entry points.
-/// Every built-in format has its encoder: PNG and APNG, GIF, JPEG, WebP, QOI, BMP, TGA, PNM, TIFF/BigTIFF, ICO/CUR and ANI.
+/// Every built-in format has its encoder: PNG and APNG, GIF, JPEG, WebP, QOI, BMP, TGA, PNM, TIFF/BigTIFF, ICO/CUR, ANI
+/// and AVIF.
 /// </remarks>
 internal sealed class ImageEncoderRegistry
 {

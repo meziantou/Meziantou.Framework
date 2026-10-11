@@ -43,7 +43,7 @@ public sealed class ImageWriterOptions
 
     /// <summary>
     /// Gets the number of displayed frames that will be written (excluding a poster frame), or <see langword="null"/> if unknown.
-    /// PNG/APNG output requires a known count; GIF supports an unknown count; JPEG output requires exactly one frame.
+    /// PNG/APNG and AVIF output require a known count; GIF supports an unknown count; JPEG output requires exactly one frame.
     /// <see cref="ImageWriter{TPixel}.Complete"/> fails if the actual count differs.
     /// </summary>
     /// <exception cref="ArgumentOutOfRangeException">The value is not positive.</exception>

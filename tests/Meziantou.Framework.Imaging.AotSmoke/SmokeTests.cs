@@ -102,7 +102,7 @@ internal static class SmokeTests
         Check(count == 3, "WebP animation frame count");
     }
 
-    // AVIF is decoded and never encoded: the inputs are files written by avifenc 1.4.2 (lossless, 8x6, with alpha) from
+    // The inputs of the decoder are files written by another encoder, avifenc 1.4.2 (lossless, 8x6, with alpha), from
     // the pattern of GetAvifPixel:
     //   ffmpeg -f lavfi -i "color=black:size=8x6:rate=10,format=rgba,geq=r='X*36':g='Y*50':b='N*100+X+Y':a='255-X*Y*7'" -frames:v 3 f%d.png
     //   avifenc -l -s 6 f1.png still.avif
@@ -174,6 +174,32 @@ internal static class SmokeTests
         }
 
         Check(count == 3, "AVIF reader frame count");
+
+        // The encoder: a lossless still image, a lossy one and an image sequence, read back by the decoder
+        using var source = Image.Load<Rgba32>(animation);
+        using (var first = source.CloneFrame(0))
+        {
+            using var lossless = new MemoryStream();
+            first.Save(lossless, new AvifEncoder());
+            using (var decoded = Image.Load<Rgba32>(lossless.ToArray()))
+            {
+                CheckAvifFrame(decoded.Frames[0], index: 0, "AVIF lossless encoding");
+            }
+
+            using var lossy = new MemoryStream();
+            first.Save(lossy, new AvifEncoder { Compression = AvifCompression.Lossy, Quality = 60, Effort = 2 });
+            var lossyInfo = Image.Identify(lossy.ToArray());
+            Check(lossyInfo.Format == ImageFormat.Avif && lossyInfo.Width == 8 && lossyInfo.Height == 6 && lossyInfo.ColorModel == ImageColorModel.YCbCr, "AVIF lossy encoding");
+        }
+
+        using var sequence = new MemoryStream();
+        source.Save(sequence, new AvifEncoder { Effort = 0 });
+        using (var decoded = Image.Load<Rgba32>(sequence.ToArray()))
+        {
+            Check(decoded.Frames.Count == 3 && decoded.Animation?.TotalPlays == 5, "AVIF sequence encoding frames and plays");
+            Check(decoded.Frames[0].Metadata.Duration == new FrameDuration(2, 25) && decoded.Frames[2].Metadata.Duration == new FrameDuration(1, 5), "AVIF sequence encoding durations");
+            CheckAvifFrame(decoded.Frames[2], index: 2, "AVIF sequence encoding frame");
+        }
     }
 
     private static void CheckAvifFrame(ImageFrame<Rgba32> frame, int index, string context)

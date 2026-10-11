@@ -18,6 +18,8 @@
   <ItemGroup>
     <!-- Locates the tools that cannot be downloaded (swift) in the PATH -->
     <Compile Include="..\..\src\Meziantou.Framework\ExecutableFinder.cs" Link="Utils\ExecutableFinder.cs" />
+    <!-- Synthetic ICC profiles shared with the corpus generator -->
+    <Compile Include="..\..\tools\Meziantou.Framework.Imaging.CorpusGenerator\Common\IccProfileBuilder.cs" Link="Shared\IccProfileBuilder.cs" />
   </ItemGroup>
 
   <ItemGroup>

@@ -18,6 +18,7 @@ internal static class ImageFormatNames
         ImageFormat.Cur => "CUR",
         ImageFormat.Ani => "ANI",
         ImageFormat.Avif => "AVIF",
+        ImageFormat.JpegXl => "JPEG XL",
         _ => "image",
     };
 }

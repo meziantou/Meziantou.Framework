@@ -23,7 +23,7 @@ public sealed class FaultInjectionTests
 
     public static TheoryData<string, string> DecodeCases => Combine(ValidIds, ["load", "load-async", "reader", "reader-async", "reader-into", "identify-full"]);
 
-    public static TheoryData<string, string> SaveCases => Combine(ValidIds, ["png", "gif", "jpeg", "webp", "qoi", "bmp", "bmp-indexed", "tga", "pnm", "avif"]);
+    public static TheoryData<string, string> SaveCases => Combine(ValidIds, ["png", "gif", "jpeg", "webp", "qoi", "bmp", "bmp-indexed", "tga", "pnm", "avif", "jxl"]);
 
     public static TheoryData<string, string> GeometryCases => Combine(ValidIds, ["crop", "auto-crop", "resize", "rotate", "auto-orient"]);
 
@@ -418,6 +418,19 @@ public sealed class FaultInjectionTests
                 }
 
                 return image;
+            case "jxl":
+                encoder = new JpegXlEncoder { MetadataHandling = MetadataHandling.Strip };
+                image.RemovePosterFrame();
+                if (image.Frames.Count > 1)
+                {
+                    // A frame of a JPEG XL animation must have a duration, of at least half a millisecond
+                    foreach (var frame in image.Frames.Where(frame => frame.Metadata.Duration < new FrameDuration(1, 1000)))
+                    {
+                        frame.Metadata.Duration = new FrameDuration(1, 100);
+                    }
+                }
+
+                return image;
             case "qoi":
             case "bmp":
             case "bmp-indexed":
@@ -467,6 +480,12 @@ public sealed class FaultInjectionTests
         for (var i = 0; i < count; i++)
         {
             using var frame = image.Frames[i] is ImageFrame<Rgba32> ? null : Image.ImportPixelData<Rgba32>(new Rgba32[image.Width * image.Height], image.Width, image.Height);
+            if (frame is not null)
+            {
+                // The substitute keeps the timing of the frame: an encoder may reject a duration (JPEG XL frames without one)
+                frame.Frames[0].Metadata.Duration = image.Frames[i].Metadata.Duration;
+            }
+
             writer.WriteFrame(frame?.Frames[0] ?? (ImageFrame<Rgba32>)image.Frames[i]);
         }
     }

@@ -286,6 +286,49 @@ public sealed class MetadataWritePlanTests
     }
 
     [Fact]
+    public void JpegXlStoresTheOrientationTheLinearTransferFunctionAndEnumeratedCicpDescriptionsItself()
+    {
+        // The orientation is a field of the image header: no EXIF profile is created for it
+        var rotated = new ImageMetadata { Orientation = ExifOrientation.LeftBottom };
+        var plan = MetadataWritePlan.Create(rotated, ImageFormat.JpegXl, MetadataHandling.Strict, Canvas);
+        Assert.Equal(ExifOrientation.LeftBottom, plan.Orientation);
+        Assert.Null(plan.Exif);
+        Assert.Equal(ExifOrientation.TopLeft, MetadataWritePlan.Create(rotated, ImageFormat.Jpeg, MetadataHandling.Strict, Canvas).Orientation);
+
+        // An existing profile is kept, with the typed orientation
+        rotated.ExifProfile = new ExifProfile(new MetadataBlob(ExifTiff.CreateMinimal(ExifOrientation.TopLeft)));
+        plan = MetadataWritePlan.Create(rotated, ImageFormat.JpegXl, MetadataHandling.Strict, Canvas);
+        Assert.Equal(ExifOrientation.LeftBottom, ExifTiff.ReadOrientation(plan.Exif));
+        Assert.Equal(ExifOrientation.LeftBottom, plan.Orientation);
+
+        var linear = new ImageMetadata { TransferFunction = ColorTransferFunction.Linear };
+        Assert.Equal(ColorTransferFunction.Linear, MetadataWritePlan.Create(linear, ImageFormat.JpegXl, MetadataHandling.Strict, Canvas).TransferFunction);
+
+        // A description the format enumerates is stored; the matrix and the range describe an encoded source
+        var cicp = new CicpColorDescription(colorPrimaries: 9, transferCharacteristics: 16, matrixCoefficients: 9, fullRange: false);
+        Assert.Same(cicp, MetadataWritePlan.Create(new ImageMetadata { Cicp = cicp }, ImageFormat.JpegXl, MetadataHandling.Strict, Canvas).Cicp);
+        Assert.Null(MetadataWritePlan.Create(new ImageMetadata { Cicp = cicp }, ImageFormat.JpegXl, MetadataHandling.Strip, Canvas).Cicp);
+
+        // A description that is displayed like sRGB is the default encoding; an ICC profile describes the colors in its place
+        Assert.Null(MetadataWritePlan.Create(new ImageMetadata { Cicp = new CicpColorDescription(1, 13, 0, fullRange: true) }, ImageFormat.JpegXl, MetadataHandling.Strict, Canvas).Cicp);
+        var profiled = new ImageMetadata { Cicp = cicp, IccProfile = new IccProfile(new MetadataBlob(CreateIccProfile("RGB "))) };
+        plan = MetadataWritePlan.Create(profiled, ImageFormat.JpegXl, MetadataHandling.Strict, Canvas);
+        Assert.Null(plan.Cicp);
+        Assert.Same(profiled.IccProfile, plan.IccProfile);
+
+        // BT.601 primaries, and a transfer function without a JPEG XL value, cannot be enumerated
+        foreach (var other in new[] { new CicpColorDescription(5, 13, 0, fullRange: true), new CicpColorDescription(9, 14, 0, fullRange: true), new CicpColorDescription(2, 16, 0, fullRange: true) })
+        {
+            AssertUnsupported(new ImageMetadata { Cicp = other }, ImageFormat.JpegXl, "CICP color description (the samples would be read as sRGB)");
+            Assert.Null(MetadataWritePlan.Create(new ImageMetadata { Cicp = other }, ImageFormat.JpegXl, MetadataHandling.DiscardUnsupported, Canvas).Cicp);
+        }
+
+        // The format has no field for the resolution nor for text
+        AssertUnsupported(new ImageMetadata { Resolution = new ImageResolution(72, 72) }, ImageFormat.JpegXl, "resolution");
+        AssertUnsupported(WithText(new ImageTextEntry("Title", "t")), ImageFormat.JpegXl, "text entry 'Title'");
+    }
+
+    [Fact]
     public void SavingACicpDescriptionThatIsNotSrgbEquivalentNeedsAnExplicitSetting()
     {
         using var image = new Image<Rgb24>(2, 2);

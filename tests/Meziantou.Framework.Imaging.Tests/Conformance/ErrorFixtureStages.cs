@@ -12,6 +12,18 @@ internal static class ErrorFixtureStages
 {
     private static readonly HashSet<string> HeaderDefects = new(StringComparer.Ordinal)
     {
+        "invalid/jxl/codestream-signature",
+        "invalid/jxl/container-box-size",
+        "invalid/jxl/container-parts-out-of-order",
+        "invalid/jxl/container-without-codestream",
+        "invalid/jxl/float-samples",
+        "invalid/jxl/pq-white-point-e",
+        "invalid/jxl/premultiplied-alpha",
+        "invalid/jxl/xyb-icc",
+        "limit/jxl/width-over-limit",
+        "limit/jxl/height-over-limit",
+        "limit/jxl/frame-pixels-over-limit",
+        "limit/jxl/metadata-bytes-over-limit",
         "invalid/png/apng-default-fctl-partial",
         "invalid/png/apng-fdat-before-idat",
         "invalid/png/apng-invalid-dispose-op",
@@ -138,6 +150,9 @@ internal static class ErrorFixtureStages
 
     private static readonly HashSet<string> StructureDefects = new(StringComparer.Ordinal)
     {
+        "invalid/jxl/container-two-codestreams",
+        "invalid/jxl/frame-header-corrupt",
+        "limit/jxl/frames-over-limit",
         "invalid/png/apng-fctl-without-fdat",
         "invalid/png/apng-fdat-without-sequence",
         "invalid/png/apng-frame-count-excess",
@@ -226,6 +241,8 @@ internal static class ErrorFixtureStages
 
     private static readonly HashSet<string> PixelDefects = new(StringComparer.Ordinal)
     {
+        "invalid/jxl/frame-data-corrupt",
+        "limit/jxl/total-pixels-hidden-layer",
         "invalid/png/apng-fdat-extra-scanline",
 
         // GIF LZW datastreams and color tables are only interpreted by the decoder; full scans charge frames, not pixels

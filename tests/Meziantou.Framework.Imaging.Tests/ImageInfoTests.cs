@@ -64,6 +64,10 @@ public sealed class ImageInfoTests
     [InlineData(10)] // AVIF
     [InlineData(12)] // AVIF
     [InlineData(16)]
+    [InlineData(3)] // JPEG XL stores any precision from 1 to 16 bits
+    [InlineData(9)]
+    [InlineData(11)]
+    [InlineData(14)]
     public void EncodedSamplePrecisionsAreAccepted(int bitsPerComponent)
     {
         Assert.Equal(bitsPerComponent, Create(ImageFormat.Avif, bitsPerComponent: bitsPerComponent).BitsPerComponent);
@@ -71,10 +75,8 @@ public sealed class ImageInfoTests
 
     [Theory]
     [InlineData(0)]
-    [InlineData(3)]
-    [InlineData(9)]
-    [InlineData(11)]
-    [InlineData(14)]
+    [InlineData(17)]
+    [InlineData(24)]
     [InlineData(32)]
     [InlineData(-8)]
     public void OtherSamplePrecisionsAreRejected(int bitsPerComponent)
@@ -89,7 +91,7 @@ public sealed class ImageInfoTests
         Assert.Throws<ArgumentOutOfRangeException>(() => Create((ImageFormat)42));
         Assert.Throws<ArgumentOutOfRangeException>(() => Create(ImageFormat.Png, size: new Size(0, 2)));
         Assert.Throws<ArgumentOutOfRangeException>(() => Create(ImageFormat.Png, frameCount: 0));
-        Assert.Throws<ArgumentOutOfRangeException>(() => Create(ImageFormat.Png, bitsPerComponent: 3));
+        Assert.Throws<ArgumentOutOfRangeException>(() => Create(ImageFormat.Png, bitsPerComponent: 17));
         Assert.Throws<ArgumentOutOfRangeException>(() => Create(ImageFormat.Png, pixelFormat: (PixelFormat)99));
         Assert.Throws<ArgumentException>(() => Create(ImageFormat.Png, frameCount: 2, isAnimated: false));
         Assert.Throws<ArgumentException>(() => Create(ImageFormat.Png, isAnimated: false, hasPosterFrame: true));

@@ -461,6 +461,29 @@ internal static class Examples
     }
     // end-snippet
 
+    /// <summary>JPEG XL output: lossless files, 16-bit samples and animations included, and what a JPEG XL file declares.</summary>
+    // begin-snippet: save-jpegxl
+    public static string SaveJpegXl(string inputPath, string jxlPath, string animatedPath, string animatedJxlPath)
+    {
+        // Every pixel format is stored as it is: no bit depth reduction, no flattening, and the colors of fully
+        // transparent pixels are kept. The effort changes the size and the encoding time, never the pixels.
+        using (var image = Image.Load(inputPath))
+        {
+            image.Save(jxlPath, new JpegXlEncoder { Effort = 7 });
+        }
+
+        // Frames are written as they come: the destination does not need to be seekable, whatever the frame count.
+        using (var animation = Image.Load(animatedPath))
+        {
+            animation.Save(animatedJxlPath);
+        }
+
+        // Lossy (VarDCT) and lossless (Modular) files are decoded, whatever wrote them.
+        var info = Image.Identify(jxlPath);
+        return $"{info.Format} {info.Size.Width}x{info.Size.Height} {info.PixelFormat}, {info.BitsPerComponent} bits";
+    }
+    // end-snippet
+
     /// <summary>Identify without decoding pixels; unknown values stay null.</summary>
     // begin-snippet: identify
     public static string Describe(Stream stream)

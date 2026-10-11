@@ -43,6 +43,8 @@
     -->
     <Compile Include="..\..\tests\Meziantou.Framework.Imaging.TestHarness\Color\*.cs" LinkBase="TestHarness\Color" />
     <Compile Include="..\..\tests\Meziantou.Framework.Imaging.TestHarness\Resampling\DecimalMath.cs" LinkBase="TestHarness\Resampling" />
+    <!-- The independent reader of the structure of JPEG XL files: the generator reads the fields of its fixtures with it -->
+    <Compile Include="..\..\tests\Meziantou.Framework.Imaging.TestHarness\JpegXl\*.cs" LinkBase="TestHarness\JpegXl" />
   </ItemGroup>
 
   <ItemGroup>

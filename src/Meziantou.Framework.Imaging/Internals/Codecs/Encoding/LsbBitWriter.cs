@@ -3,10 +3,10 @@ using System.Runtime.CompilerServices;
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
-/// Writes the least-significant-bit-first bit stream of the WebP lossless format into a growable buffer rented from an
+/// Writes a least-significant-bit-first bit stream (WebP lossless, JPEG XL) into a growable buffer rented from an
 /// allocation scope (<see cref="AllocationKind.Temporary"/>): the inverse of <see cref="Vp8LBitReader"/>.
 /// </summary>
-internal sealed class Vp8LBitWriter : IDisposable
+internal sealed class LsbBitWriter : IDisposable
 {
     private const int InitialCapacity = 4096;
 
@@ -16,7 +16,7 @@ internal sealed class Vp8LBitWriter : IDisposable
     private ulong _bits;
     private int _bitCount;
 
-    public Vp8LBitWriter(AllocationScope scope)
+    public LsbBitWriter(AllocationScope scope)
     {
         ArgumentNullException.ThrowIfNull(scope);
         _scope = scope;

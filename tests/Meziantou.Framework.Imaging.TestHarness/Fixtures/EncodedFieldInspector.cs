@@ -31,8 +31,68 @@ public static class EncodedFieldInspector
         "tga" => InspectTga(data),
         "pnm" => InspectPnm(data),
         "avif" => InspectAvif(data),
+        "jxl" => InspectJpegXl(data),
         _ => throw new ArgumentException($"Unknown fixture format '{format}'.", nameof(format)),
     };
+
+    /// <summary>
+    /// JPEG XL: the fields come from <see cref="JpegXl.ReferenceJpegXl"/>. The <c>Exif</c> and <c>xml </c> boxes, the
+    /// orientation, the ticks and the loops of the image header, and the duration of each shown frame are read. The color
+    /// encoding of the header gives the linear transfer function and the equivalent CICP description. An ICC profile is
+    /// entropy coded in the codestream: it is reported as present (<see cref="EncodedFields.HasUnreadIccProfile"/>), not read.
+    /// </summary>
+    private static EncodedFields InspectJpegXl(ReadOnlySpan<byte> data)
+    {
+        var file = JpegXl.ReferenceJpegXl.Parse(data);
+        var result = new EncodedFields
+        {
+            Exif = file.Exif,
+            Xmp = file.Xmp,
+            TransformOrientation = file.Orientation,
+            HasUnreadIccProfile = file.HasIccProfile,
+        };
+
+        if (!file.HasIccProfile)
+        {
+            // The primaries of ITU-T H.273 include their white point; the transfer functions are numbered with its code points
+            var isSrgbSpace = file.WhitePoint == 1 && (file.ColorSpace == 1 || file.Primaries == 1);
+            if (isSrgbSpace && file.Gamma is null && file.TransferFunction == 8)
+            {
+                result.TransferFunction = "linear";
+            }
+            else if (!(isSrgbSpace && file.Gamma is null && file.TransferFunction == 13) && file.Gamma is null)
+            {
+                int? primaries = (file.ColorSpace, file.Primaries, file.WhitePoint) switch
+                {
+                    (1, _, 1) => 1,
+                    (0, 1, 1) => 1,
+                    (0, 9, 1) => 9,
+                    (0, 11, 11) => 11,
+                    (0, 11, 1) => 12,
+                    _ => null,
+                };
+                if (primaries is { } value)
+                {
+                    result.ContainerCicp = new CicpExpectation { ColorPrimaries = value, TransferCharacteristics = file.TransferFunction, MatrixCoefficients = 0, FullRange = true };
+                }
+            }
+        }
+
+        if (file.HasAnimation)
+        {
+            result.LoopValue = checked((int)file.LoopCount);
+            foreach (var frame in file.GetDisplayedFrames())
+            {
+                result.FrameDelays.Add(new EncodedDelayExpectation { Ticks = frame.Duration, TicksPerSecondNumerator = file.TicksPerSecondNumerator, TicksPerSecondDenominator = file.TicksPerSecondDenominator });
+            }
+        }
+        else
+        {
+            result.FrameDelays.Add(null);
+        }
+
+        return result;
+    }
 
     /// <summary>
     /// AVIF: the fields come from <see cref="Avif.ReferenceAvif"/>. A file with the brand of the image sequences presents

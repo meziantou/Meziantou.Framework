@@ -14,6 +14,10 @@ internal static class RequiredTools
 
     public static Task<LibAvifTool> LibAvifAsync() => LibAvifTool.LocateAsync(XunitCancellationToken);
 
+    public static Task<LibJxlTool> LibJxlAsync() => LibJxlTool.LocateAsync(XunitCancellationToken);
+
+    public static Task<JxlOxideTool> JxlOxideAsync() => JxlOxideTool.LocateAsync(XunitCancellationToken);
+
     /// <summary>
     /// Gets the <c>swift</c> executable and the Apple ImageIO helper script (<c>tools/Meziantou.Framework.Imaging.CorpusGenerator/imageio_frames.swift</c>).
     /// Apple ImageIO is part of macOS and cannot be downloaded: the cases are skipped on other systems, unless

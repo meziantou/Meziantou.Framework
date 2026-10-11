@@ -142,7 +142,7 @@ public sealed class VectorizedKernelTests
         // clusterBits > 0 packs the palette into a small cube (many candidates per cell, ties, and cells that cannot hold
         // their candidates); clusterBits 7 with few colors gives every entry the same red sample
         var random = new Random(colors + clusterBits);
-        using var quantizer = new GifQuantizer(new AllocationScope(new ImageResourceLimits())) { UseVectors = useVectors };
+        using var quantizer = new PaletteQuantizer(new AllocationScope(new ImageResourceLimits())) { UseVectors = useVectors };
         quantizer.Begin(256);
         var keys = new HashSet<int>();
         while (keys.Count < colors)
@@ -196,7 +196,7 @@ public sealed class VectorizedKernelTests
 
             keys = [.. keys.Distinct()];
             var expected = keys.Order().ToArray();
-            GifQuantizer.SortKeys(keys, new int[keys.Length]);
+            PaletteQuantizer.SortKeys(keys, new int[keys.Length]);
             Assert.Equal(expected, keys);
         }
     }

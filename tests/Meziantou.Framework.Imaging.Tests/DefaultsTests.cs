@@ -104,9 +104,8 @@ public sealed class DefaultsTests
         Assert.IsType<AniEncoder>(ImageEncoder.FromPath("a.ANI"));
         Assert.Throws<ArgumentException>(() => ImageEncoder.FromPath("a.heic"));
 
-        // AVIF is decoded but never encoded: its extensions select no encoder
-        Assert.Equal("path", Assert.Throws<ArgumentException>(() => ImageEncoder.FromPath("a.avif")).ParamName);
-        Assert.Equal("path", Assert.Throws<ArgumentException>(() => ImageEncoder.FromPath("dir/a.AVIFS")).ParamName);
+        Assert.Equal(AvifCompression.Lossless, Assert.IsType<AvifEncoder>(ImageEncoder.FromPath("a.avif")).Compression);
+        Assert.IsType<AvifEncoder>(ImageEncoder.FromPath("dir/a.AVIFS"));
         Assert.Throws<ArgumentException>(() => ImageEncoder.FromPath("noextension"));
     }
 

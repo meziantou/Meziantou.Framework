@@ -75,9 +75,8 @@ public abstract class ImageEncoder
         if (extension.Equals(".ani", StringComparison.OrdinalIgnoreCase))
             return new AniEncoder();
 
-        // AVIF is the only format that is decoded and not encoded
         if (extension.Equals(".avif", StringComparison.OrdinalIgnoreCase) || extension.Equals(".avifs", StringComparison.OrdinalIgnoreCase))
-            throw new ArgumentException($"AVIF files can be read but not written: there is no encoder for the file extension '{extension}'. Specify an encoder of another format explicitly.", nameof(path));
+            return new AvifEncoder();
 
         throw new ArgumentException($"Cannot select an encoder for the file extension '{extension}'. Specify an encoder explicitly.", nameof(path));
     }

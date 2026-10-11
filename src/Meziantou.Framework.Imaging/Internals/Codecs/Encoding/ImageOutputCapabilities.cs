@@ -152,9 +152,13 @@ internal sealed class ImageOutputCapabilities
         PnmEncoder => new ImageOutputCapabilities(ImageFormat.Pnm, isAnimated: false, requiresFrameCount: false, maxFrameCount: 1, supportsPosterFrame: false, maxDimension: int.MaxValue),
         TiffEncoder => new ImageOutputCapabilities(ImageFormat.Tiff, isAnimated: false, requiresFrameCount: false, maxFrameCount: 1, supportsPosterFrame: false, maxDimension: int.MaxValue, requiresSeekableOutput: true),
         IcoEncoder ico => new ImageOutputCapabilities(ico.Format, isAnimated: false, requiresFrameCount: false, maxFrameCount: 1, supportsPosterFrame: false, maxDimension: IcoEncoder.MaxDimension),
+        AvifEncoder => new ImageOutputCapabilities(ImageFormat.Avif, isAnimated: false, requiresFrameCount: false, maxFrameCount: 1, supportsPosterFrame: false, maxDimension: AvifMaxDimension),
         AniEncoder => new ImageOutputCapabilities(ImageFormat.Ani, isAnimated: true, requiresFrameCount: false, maxFrameCount: null, supportsPosterFrame: false, maxDimension: AniEncoder.MaxDimension, requiresSeekableOutput: true),
         _ => throw new ArgumentException($"The encoder {encoder.GetType().Name} is not supported.", nameof(encoder)),
     };
+
+    // The largest frame of AV1: frame_width_minus_1 and frame_height_minus_1 have 16 bits
+    private const int AvifMaxDimension = 65536;
 
     private static ImageOutputCapabilities WebP(WebPEncoder encoder, bool isAnimated)
     {

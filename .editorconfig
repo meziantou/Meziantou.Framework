@@ -164,7 +164,3 @@ dotnet_diagnostic.MFAS0050.severity = none
 dotnet_diagnostic.MFAS0054.severity = none
 # MFAS0055: Use Assert.DoesNotContain with the expected value instead of an equality predicate
 dotnet_diagnostic.MFAS0055.severity = none
-
-[src/Meziantou.Framework.Imaging/Internals/Codecs/Avif/Av1/Encoding/**.cs]
-# TEMPORARY-AVIF-ENCODER: the encoder is built bottom-up; remove this section once the public AvifEncoder reaches every type
-dotnet_diagnostic.MA0182.severity = none

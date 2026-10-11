@@ -1,0 +1,47 @@
+{
+  "tools": [
+    "hb-info 14.6.0",
+    "hb-shape 14.6.0 (--font-funcs=ot and ft)",
+    "hb-vector 14.6.0 (--font-funcs=ot and ft)"
+  ],
+  "faces": [
+    {
+      "family": "Meziantou Curves",
+      "subfamily": "Regular",
+      "postScriptName": "MeziantouCurves-Regular",
+      "unitsPerEm": 1024,
+      "glyphCount": 5,
+      "metrics": {
+        "hasc": 1024,
+        "hdsc": 0,
+        "hlgp": 0,
+        "xhgt": 512,
+        "cpht": 1024,
+        "strs": 50,
+        "stro": 250,
+        "unds": 50,
+        "undo": -100
+      },
+      "characterMap": {
+        "004F": 1,
+        "0050": 2,
+        "0051": 3,
+        "0052": 4
+      },
+      "advances": [
+        512,
+        1024,
+        1024,
+        1024,
+        1024
+      ],
+      "outlines": [
+        "M64,0L64,768L448,768L448,0L64,0ZM128,64L384,64L384,704L128,704L128,64Z",
+        "M768,256Q512,0 256,256Q0,512 256,768Q512,1024 768,768Q1024,512 768,256Z",
+        "M256,0Q0,512 256,768L768,768Q1024,512 768,0L256,0Z",
+        "M0,0Q0,512 256,768Q512,1024 1024,1024L1024,0L0,0Z",
+        "M0,0L0,1024L1024,1024L1024,0L0,0ZM384,384Q512,256 640,384Q768,512 640,640Q512,768 384,640Q256,512 384,384Z"
+      ]
+    }
+  ]
+}

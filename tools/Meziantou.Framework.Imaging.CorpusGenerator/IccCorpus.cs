@@ -170,6 +170,7 @@ internal static partial class IccCorpus
         var manifest = CorpusDriver.LoadCommittedManifest();
         CorpusDriver.CopyCommittedFiles(outDir, CorpusDriver.Fixtures(manifest));
         CorpusDriver.CopyCommittedAv1Vectors(outDir, manifest);
+        CorpusDriver.PreserveFonts(outDir, manifest);
 
         var profileEntries = new List<object?>();
         var paths = new Dictionary<string, string>(StringComparer.Ordinal);
@@ -265,7 +266,7 @@ internal static partial class IccCorpus
             });
         }
 
-        manifest["schemaVersion"] = 3;
+        manifest["schemaVersion"] = CorpusDriver.SchemaVersion;
         manifest["colorProfiles"] = profileEntries;
         manifest["colorTransforms"] = transformEntries;
         CorpusDriver.WriteManifest(outDir, manifest);

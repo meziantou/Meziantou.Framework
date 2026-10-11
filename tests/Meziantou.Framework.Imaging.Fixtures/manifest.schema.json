@@ -2,13 +2,13 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/meziantou/Meziantou.Framework/tests/Meziantou.Framework.Imaging.Fixtures/manifest.schema.json",
   "title": "Meziantou.Framework.Imaging golden corpus manifest",
-  "description": "Schema version 3 (adds colorProfiles and colorTransforms, the ICC color management references written by IccCorpus.cs): identity, files, hashes, provenance and licensing; expected full-canvas displayed frames and posters with exact raw-buffer layouts; rational timing, loop and metadata expectations; reference provenance and independent cross-checks; comparison policies; expected errors. An optional section holds the AV1 conformance vectors (raw OBU streams with plane digests, written by AvifCorpus.cs). Written by tools/Meziantou.Framework.Imaging.CorpusGenerator (GoldenCorpus.cs) and validated by Meziantou.Framework.Imaging.TestHarness.Fixtures.FixtureManifestValidator (which also checks hashes, lengths, conventions and policy discrimination).",
+  "description": "Schema version 4 (adds fonts, the font files of the text rendering tests and the reference values recorded from independent font readers, written by FontCorpus.cs; version 3 added colorProfiles and colorTransforms, the ICC color management references written by IccCorpus.cs): identity, files, hashes, provenance and licensing; expected full-canvas displayed frames and posters with exact raw-buffer layouts; rational timing, loop and metadata expectations; reference provenance and independent cross-checks; comparison policies; expected errors. An optional section holds the AV1 conformance vectors (raw OBU streams with plane digests, written by AvifCorpus.cs). Written by tools/Meziantou.Framework.Imaging.CorpusGenerator (GoldenCorpus.cs) and validated by Meziantou.Framework.Imaging.TestHarness.Fixtures.FixtureManifestValidator (which also checks hashes, lengths, conventions and policy discrimination).",
   "type": "object",
   "additionalProperties": false,
   "required": ["schemaVersion", "fixtures"],
   "properties": {
     "$schema": { "type": "string" },
-    "schemaVersion": { "const": 3 },
+    "schemaVersion": { "const": 4 },
     "generator": {
       "type": "object",
       "additionalProperties": false,
@@ -54,9 +54,32 @@
       "type": "array",
       "description": "Colors converted between two colorProfiles by an independent color management system.",
       "items": { "$ref": "#/$defs/colorTransform" }
+    },
+    "fonts": {
+      "type": "array",
+      "description": "Font files of the text rendering tests. They are not image fixtures.",
+      "items": { "$ref": "#/$defs/font" }
     }
   },
   "$defs": {
+    "font": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "file", "provenance", "flavor", "modification"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._/-]*$" },
+        "file": { "$ref": "#/$defs/file" },
+        "provenance": { "$ref": "#/$defs/provenance" },
+        "flavor": { "enum": ["ttf", "otf", "ttc", "woff", "woff2"], "description": "ttf: TrueType outlines; otf: CFF outlines; ttc: collection." },
+        "faceCount": { "type": "integer", "minimum": 1 },
+        "modification": { "enum": ["none", "subset", "container"], "description": "none: the original file or the output of the generator; subset: glyphs and tables removed by the pinned subsetter; container: the tables of 'original' in another container." },
+        "reservedFontName": { "type": "string", "description": "The Reserved Font Name the license of the font declares: such a font is only stored unmodified." },
+        "original": { "type": "string", "description": "The id of the font this file is another container of." },
+        "features": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "vectors": { "$ref": "#/$defs/file", "description": "Reference values recorded from independent font readers (JSON): names, metrics, character map, advances and outlines of each face." },
+        "notes": { "type": "string" }
+      }
+    },
     "colorProfile": {
       "type": "object",
       "additionalProperties": false,
@@ -178,7 +201,7 @@
       "required": ["origin", "license"],
       "properties": {
         "origin": { "enum": ["hand-authored", "generated", "external"] },
-        "license": { "enum": ["CC0-1.0", "MIT", "Unlicense", "CC-BY-4.0", "Libpng", "Zlib"] },
+        "license": { "enum": ["CC0-1.0", "MIT", "Unlicense", "CC-BY-4.0", "Libpng", "Zlib", "Apache-2.0", "Unicode-3.0", "OFL-1.1"], "description": "OFL-1.1 is only accepted for the entries of fonts." },
         "author": { "type": "string" },
         "source": { "type": "string", "description": "Required for external fixtures: URL or citation of the original." },
         "generator": { "type": "string", "description": "Required for generated fixtures: committed script path and function." },

@@ -28,6 +28,8 @@
     <Compile Include="..\..\benchmarks\ImagingBenchmarks\Workloads\*.cs" LinkBase="Conformance\Benchmarks\Workloads" />
     <!-- The synthetic ICC profile builders are shared with the corpus generator, which writes some of these profiles to the corpus (IccTestProfiles wraps them) -->
     <Compile Include="..\..\tools\Meziantou.Framework.Imaging.CorpusGenerator\Common\IccProfileBuilder.cs" Link="Shared\IccProfileBuilder.cs" />
+    <!-- The font builder and the synthetic fonts are shared with the corpus generator, which writes these fonts to the corpus -->
+    <Compile Include="..\..\tools\Meziantou.Framework.Imaging.CorpusGenerator\Common\Font*.cs" LinkBase="Shared" />
   </ItemGroup>
 
   <ItemGroup>

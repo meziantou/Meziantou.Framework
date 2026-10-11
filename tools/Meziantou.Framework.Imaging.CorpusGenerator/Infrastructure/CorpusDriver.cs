@@ -4,7 +4,8 @@ namespace Meziantou.Framework.Imaging.CorpusGenerator.Infrastructure;
 
 /// <param name="Output">Generates into this (new or empty) directory and keeps it, instead of a temporary directory.</param>
 /// <param name="IccProfiles">The directory of the pinned checkout of the external ICC profiles (icc generator).</param>
-internal sealed record GeneratorOptions(bool Write, bool AcceptToolVersions, string? QoiHeader, string? Output = null, string? IccProfiles = null);
+/// <param name="Fonts">The directory of the pinned third-party font files (fonts generator).</param>
+internal sealed record GeneratorOptions(bool Write, bool AcceptToolVersions, string? QoiHeader, string? Output = null, string? IccProfiles = null, string? Fonts = null);
 
 /// <summary>Regenerates (a part of) the corpus in a temporary directory, then reports the differences with the committed
 /// corpus (check) or replaces it (write).</summary>
@@ -15,6 +16,13 @@ internal static class CorpusDriver
     /// <summary>The manifest section of the AV1 conformance vectors (AvifCorpus): raw OBU streams with plane digests, kept
     /// apart from the fixtures because they have no pixel reference.</summary>
     public const string Av1VectorsKey = "av1Vectors";
+
+    /// <summary>The version of the manifest schema every generator writes.</summary>
+    public const int SchemaVersion = 4;
+
+    /// <summary>The manifest section of the fonts (FontCorpus): font files and the values independent font readers give
+    /// for them, kept apart from the fixtures because they are not images.</summary>
+    public const string FontsKey = "fonts";
 
     public static FullPath RepoRoot { get; } = FindRepositoryRoot();
 
@@ -146,6 +154,42 @@ internal static class CorpusDriver
         }
     }
 
+    /// <summary>Every file the font section of a manifest references (fonts and vectors).</summary>
+    public static SortedSet<string> FontFiles(Obj manifest)
+    {
+        var paths = new SortedSet<string>(StringComparer.Ordinal);
+        if (manifest.TryGetValue(FontsKey, out var fonts) && fonts is List<object?> fontList)
+        {
+            foreach (var font in fontList.Cast<Obj>())
+            {
+                paths.Add((string)((Obj)font["file"]!)["path"]!);
+                if (font.TryGetValue("vectors", out var vectors) && vectors is Obj vectorsFile)
+                    paths.Add((string)vectorsFile["path"]!);
+            }
+        }
+
+        return paths;
+    }
+
+    /// <summary>The other generators keep the font section of the committed manifest, and its files, unchanged (the fonts
+    /// generator owns them).</summary>
+    public static void PreserveFonts(FullPath outDir, Obj manifest)
+    {
+        var committed = LoadCommittedManifest();
+        if (committed.TryGetValue(FontsKey, out var value))
+            manifest[FontsKey] = value;
+
+        foreach (var path in FontFiles(committed))
+        {
+            var target = outDir / path;
+            if (!File.Exists(target))
+            {
+                target.CreateParentDirectory();
+                File.Copy(CorpusDir / path, target);
+            }
+        }
+    }
+
     /// <summary>The generators of one format family replace only their own entries: every other fixture and file of the
     /// committed corpus is kept unchanged (the other generators own them), and so are the AV1 conformance vectors.</summary>
     public static void MergeIntoCommittedManifest(FullPath outDir, IReadOnlyList<Obj> fixtures, Func<Obj, bool> owns)
@@ -155,6 +199,7 @@ internal static class CorpusDriver
         CopyCommittedFiles(outDir, others);
         CopyCommittedAv1Vectors(outDir, committed);
         PreserveColorSections(outDir, committed);
+        PreserveFonts(outDir, committed);
         committed["fixtures"] = others.Concat(fixtures).OrderBy(f => (string)f["id"]!, StringComparer.Ordinal).Cast<object?>().ToList();
         WriteManifest(outDir, committed);
     }

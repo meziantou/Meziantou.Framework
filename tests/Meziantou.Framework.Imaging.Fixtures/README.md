@@ -26,7 +26,8 @@ tests/Meziantou.Framework.Imaging.Fixtures/
   limit/avif/                         over-limit inputs that are not valid fixtures (an AVIF sequence with hidden frames)
   av1/                                raw AV1 OBU streams (*.obu): conformance vectors with plane digests, no raw references
   icc/profiles/   icc/vectors/        ICC profiles and colors converted between them (see Color management)
-  LICENSES/                           full texts of non-standard licenses (none yet)
+  fonts/<family>/   fonts/vectors/    font files and the values independent font readers give for them (see Fonts)
+  LICENSES/                           full texts of the licenses of third-party files (OFL-1.1, Apache-2.0, Unicode-3.0)
 ```
 
 - Fixture ids are lowercase paths without extension (`png/gray16-low-bit-gradient`); `format` is the container
@@ -118,6 +119,54 @@ Files are named `<input-name>.<role>.<layout>.raw` (`.raw.gz` when compressed) w
 AVIF fixtures that present the same pixels (one coded payload in several containers: the assembled layouts, the
 orientations) share their reference files, which are named after the first of them. 16-bit samples are always
 little-endian. Every frame and the poster provide the same layouts; 16-bit fixtures always include a 16-bit layout.
+
+## Fonts
+
+The `fonts` section of the manifest lists the font files of the text rendering tests. Fonts are not image fixtures:
+they have no expected pixels, and the generic conformance, hardening and fuzz suites never enumerate them. They are
+written by the `fonts` generator (`FontCorpus.cs`).
+
+| Field | Meaning |
+| --- | --- |
+| `file` | The font file and its SHA-256 |
+| `flavor` | `ttf` (TrueType outlines), `otf` (CFF outlines), `ttc` (collection), `woff`, `woff2` |
+| `faceCount` | The number of faces; more than one for a collection |
+| `modification` | `none` (the file as published, or the output of the generator), `subset` (glyphs and tables removed by the pinned `hb-subset`), `container` (the tables of `original` in another container) |
+| `reservedFontName` | The Reserved Font Name the license of the font declares, when there is one |
+| `original` | For a `container`: the id of the font it wraps |
+| `features` | Tags read from the file by the generator: `font.table=<tag>` for the tables that matter to a feature, `font.cmap=<format>`, `font.loca=short|long`, `font.container=ttc` |
+| `vectors` | The reference values of the font, a JSON file of `fonts/vectors/` |
+
+Three kinds of fonts are stored:
+
+- **Synthetic fonts** (`fonts/synthetic/`, `CC0-1.0`), built by `Common/FontBuilder.cs` from the descriptions of
+  `Common/FontSamples.cs`. Both files are compiled into the tests, which build the same fonts, and variants of them, in
+  memory: the geometry (1024 units per em, coordinates that are multiples of 64) makes the expected values of a test
+  computable by hand. `FontCorpusTests` checks that the committed files are what the builder writes.
+- **Third-party fonts**, from the sources `FontCorpus.cs` lists with their pinned SHA-256. A font whose license allows a
+  modified copy is subset to the characters the tests need, with every layout feature kept; a font with a Reserved Font
+  Name is stored as published.
+- **Other containers** of these fonts: WOFF (written by `FontBuilder.WriteWoff`, since no pinned tool writes WOFF 1.0)
+  and WOFF2 (written by `woff2_compress`).
+
+The vectors of a font (`FontVectors` in the test harness) hold, for each face: the names, the units per em, the glyph
+count, the metrics the font declares (by OpenType metric tag), the character map, the advance of each glyph and the
+outline of each glyph as SVG path data in font units. They are read by the HarfBuzz utilities of the pinned
+meziantou/prebuilt release with **two independent implementations**, HarfBuzz's own font functions (`--font-funcs=ot`)
+and FreeType (`--font-funcs=ft`): a value is recorded only when both agree, and a disagreement stops the generator. The
+character map is the join of `hb-info --list-unicodes` and `--list-glyphs`, so that it does not go through shaping.
+
+A container has no vectors of its own: the generator reads it back through FreeType (`--face-loader=ft`, the only
+reader of the pinned tools that opens WOFF and WOFF2) and requires the advances and the outlines of the font it wraps;
+`woff2_decompress` must accept a WOFF2 file.
+
+| Font | Flavor | Faces | License | Covers |
+| --- | --- | --- | --- | --- |
+| `fonts/synthetic-boxes` | ttf | 1 | CC0-1.0 | Straight-edged glyphs, composite glyphs (offset, scale, `USE_MY_METRICS`), `cmap` formats 4 and 12, `kern`, compact glyph encoding, short `loca` |
+| `fonts/synthetic-curves` | ttf | 1 | CC0-1.0 | Quadratic contours: no on-curve point, a contour that starts off-curve, consecutive off-curve points, a hole; 16-bit glyph encoding, long `loca`, `cmap` format 12 only |
+| `fonts/synthetic-collection` | ttc | 2 | CC0-1.0 | The two fonts above in a collection |
+| `fonts/noto-sans-regular` | ttf | 1 | OFL-1.1 | Noto Sans Regular 2.015, subset to 232 characters (Basic Latin, Latin-1, combining marks, punctuation): 425 glyphs, `GDEF`, `GSUB`, `GPOS` |
+| `fonts/*-woff`, `fonts/*-woff2` | woff, woff2 | 1 | as the original | The boxes and Noto Sans fonts in WOFF and WOFF2, the curves font in WOFF2 |
 
 ## Color management
 
@@ -1362,6 +1411,17 @@ tool version to see what changes; the interop CI job runs it on every build to d
   dotnet run --project tools/Meziantou.Framework.Imaging.CorpusGenerator -- icc-builtin          # check
   dotnet run --project tools/Meziantou.Framework.Imaging.CorpusGenerator -- icc-builtin --write  # replace, then review the diff
   ```
+- `fonts` (`FontCorpus.cs`; any OS; the HarfBuzz utilities `hb-info`, `hb-shape`, `hb-vector`, `hb-subset` and the
+  woff2 tools of the pinned meziantou/prebuilt release) writes the `fonts` section and the `fonts/` directory, and
+  keeps the rest of the corpus unchanged. It needs the third-party font files listed in `FontCorpus.cs`, downloaded
+  from their pinned sources into one directory given by `--fonts <directory>`; each file is checked against its pinned
+  SHA-256 before it is used. The WOFF files are compressed by the zlib of the runtime that runs the generator, which
+  the manifest records: they are reproducible with that runtime.
+
+  ```shell
+  dotnet run --project tools/Meziantou.Framework.Imaging.CorpusGenerator -- fonts --fonts <directory>          # check
+  dotnet run --project tools/Meziantou.Framework.Imaging.CorpusGenerator -- fonts --fonts <directory> --write  # replace, then review the diff
+  ```
 - To add fixtures for a feature: add a builder (or a case) to the generator, run it with `--write`, review the diff and
   the cross-check results in the manifest, update the [coverage matrix](#fixture-coverage-matrix), and reference the
   fixture ids from the feature's tests.
@@ -1418,7 +1478,21 @@ undiscriminating tolerances and error fixtures with expected pixels fail the bui
 
 ### Allowed fixture licenses
 
-`CC0-1.0`, `MIT`, `Unlicense`, `CC-BY-4.0`, `Libpng`, `Zlib`.
+`CC0-1.0`, `MIT`, `Unlicense`, `CC-BY-4.0`, `Libpng`, `Zlib`, `Apache-2.0`, `Unicode-3.0`, and `OFL-1.1` for font
+files only.
+
+The SIL Open Font License is accepted for the entries of the `fonts` section and for nothing else, because open fonts
+for most scripts exist under no other license. Its conditions are met as follows, and the validator enforces the ones
+it can check:
+
+- A font stays under the OFL, with its copyright notice (in its `name` table) and the license text
+  (`LICENSES/OFL-1.1.txt`). It is test data only: it is never embedded in a package or in a test assembly.
+- A font with a Reserved Font Name is stored exactly as published (`modification: none`): no subset, no other
+  container. A font without one may be subset by the pinned subsetter or stored in another container.
+- A third-party font always names its source, with the commit or the version it was taken from.
+
+`Apache-2.0` and `Unicode-3.0` are the licenses of the test suites and test fonts published for font implementations;
+their texts are in `LICENSES/`.
 
 Content created by contributors for this repository (hand-authored patterns, outputs of committed generators, and files
 produced by running third-party tools on such content) is contributed under `CC0-1.0` unless stated otherwise. Tool

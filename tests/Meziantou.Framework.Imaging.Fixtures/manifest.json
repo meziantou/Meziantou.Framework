@@ -1,6 +1,6 @@
 {
   "$schema": "./manifest.schema.json",
-  "schemaVersion": 3,
+  "schemaVersion": 4,
   "generator": {
     "script": "tools/Meziantou.Framework.Imaging.CorpusGenerator/GoldenCorpus.cs",
     "command": "dotnet run --project tools/Meziantou.Framework.Imaging.CorpusGenerator -- golden --write",
@@ -74382,6 +74382,254 @@
         "maxMeanAbsoluteError": 0.75,
         "justification": "Both systems estimate the black point from the round trip of a lightness ramp, sampled at 256 points by LittleCMS and at 101 by the library."
       }
+    }
+  ],
+  "fonts": [
+    {
+      "id": "fonts/noto-sans-regular",
+      "file": {
+        "path": "fonts/noto-sans/NotoSans-Regular.subset.ttf",
+        "sha256": "a1ad65bc06d8dea485be9235f88f251797c37f6917b77489c361f5db5cd0ee1d",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "The Noto Project Authors (https://github.com/notofonts/latin-greek-cyrillic)",
+        "source": "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSans/unhinted/ttf/NotoSans-Regular.ttf",
+        "tools": [
+          "hb-subset 14.6.0"
+        ],
+        "commands": [
+          "hb-subset --unicodes=20-7E,A0-FF,131,152,153,160,161,178,17D,17E,2C6,2DC,300-304,308,30A,327,2010-2014,2018-201E,2020-2022,2026,2030,2039,203A,20AC,2122,FB01,FB02 --layout-features=* --no-hinting --notdef-outline --output-file=NotoSans-Regular.subset.ttf NotoSans-Regular.ttf"
+        ]
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "subset",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB",
+        "font.table=glyf"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-sans-regular.json",
+        "sha256": "bf1324e1618e8327994c5e9dd832d2bf12ab62451367f1710587901683f64c07",
+        "role": "font-vectors"
+      }
+    },
+    {
+      "id": "fonts/noto-sans-regular-woff",
+      "file": {
+        "path": "fonts/noto-sans/NotoSans-Regular.subset.woff",
+        "sha256": "f37c0391af148357fcaa632daaae2d1aa2aeac0531cd1b7956aff4dc43c043c4",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "The Noto Project Authors (https://github.com/notofonts/latin-greek-cyrillic)",
+        "source": "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSans/unhinted/ttf/NotoSans-Regular.ttf",
+        "tools": [
+          ".NET 10.0"
+        ]
+      },
+      "flavor": "woff",
+      "faceCount": 1,
+      "modification": "container",
+      "original": "fonts/noto-sans-regular"
+    },
+    {
+      "id": "fonts/noto-sans-regular-woff2",
+      "file": {
+        "path": "fonts/noto-sans/NotoSans-Regular.subset.woff2",
+        "sha256": "57a36d3a8a73d027777aaf527b967aaea58f5ffcee45698b2f0cce44993cec30",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "The Noto Project Authors (https://github.com/notofonts/latin-greek-cyrillic)",
+        "source": "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSans/unhinted/ttf/NotoSans-Regular.ttf",
+        "tools": [
+          "woff2 1.0.2+fb9c337"
+        ],
+        "commands": [
+          "woff2_compress NotoSans-Regular.subset.ttf"
+        ]
+      },
+      "flavor": "woff2",
+      "faceCount": 1,
+      "modification": "container",
+      "original": "fonts/noto-sans-regular"
+    },
+    {
+      "id": "fonts/synthetic-boxes",
+      "file": {
+        "path": "fonts/synthetic/boxes.ttf",
+        "sha256": "552f9c23021f2140c6e4fb4b2748e23fb169205ecca4bc8841b3a0329eba39fe",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/Common/FontSamples.cs (Boxes)",
+        "tools": [
+          ".NET 10.0"
+        ]
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=12",
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=glyf",
+        "font.table=kern"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/synthetic-boxes.json",
+        "sha256": "4b735daf41fdb25f23c782119f5d6987348c61d097a1eb21c83cc2aaf3363b77",
+        "role": "font-vectors"
+      }
+    },
+    {
+      "id": "fonts/synthetic-boxes-woff",
+      "file": {
+        "path": "fonts/synthetic/boxes.woff",
+        "sha256": "18d031e1078e08f9d0e549ee63fc6e7fb1072bbfa9715cec6ae0503810fd88a3",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/FontCorpus.cs (FontBuilder.WriteWoff of fonts/synthetic/boxes.ttf)",
+        "tools": [
+          ".NET 10.0"
+        ]
+      },
+      "flavor": "woff",
+      "faceCount": 1,
+      "modification": "container",
+      "original": "fonts/synthetic-boxes"
+    },
+    {
+      "id": "fonts/synthetic-boxes-woff2",
+      "file": {
+        "path": "fonts/synthetic/boxes.woff2",
+        "sha256": "600f2f5f3b7874891ce501082062aa491c100f252c92d3766e60996c1b225ebb",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/FontCorpus.cs (woff2_compress of fonts/synthetic/boxes.ttf)",
+        "tools": [
+          "woff2 1.0.2+fb9c337"
+        ],
+        "commands": [
+          "woff2_compress boxes.ttf"
+        ]
+      },
+      "flavor": "woff2",
+      "faceCount": 1,
+      "modification": "container",
+      "original": "fonts/synthetic-boxes"
+    },
+    {
+      "id": "fonts/synthetic-collection",
+      "file": {
+        "path": "fonts/synthetic/collection.ttc",
+        "sha256": "ac3ea6b2d74bc98556d1967e8c1704af492bbe87ee631a245eb5531be0ff0e0d",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/Common/FontSamples.cs (Boxes and Curves)",
+        "tools": [
+          ".NET 10.0"
+        ]
+      },
+      "flavor": "ttc",
+      "faceCount": 2,
+      "modification": "none",
+      "features": [
+        "font.cmap=12",
+        "font.cmap=4",
+        "font.container=ttc",
+        "font.loca=long",
+        "font.loca=short",
+        "font.table=glyf",
+        "font.table=kern"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/synthetic-collection.json",
+        "sha256": "99dea85c98d6a518203c47d36d5a57a5e32316a9fcbb6705b46205568c3b539a",
+        "role": "font-vectors"
+      }
+    },
+    {
+      "id": "fonts/synthetic-curves",
+      "file": {
+        "path": "fonts/synthetic/curves.ttf",
+        "sha256": "0084fb5c39955162d45c2898ed6727546cd11fcea26e3a30437d1fe4309e88cd",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/Common/FontSamples.cs (Curves)",
+        "tools": [
+          ".NET 10.0"
+        ]
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=12",
+        "font.loca=long",
+        "font.table=glyf"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/synthetic-curves.json",
+        "sha256": "e1aa1f03741fa03a9f702f155bd9e10b27d72224354a582da14b632872766be8",
+        "role": "font-vectors"
+      }
+    },
+    {
+      "id": "fonts/synthetic-curves-woff2",
+      "file": {
+        "path": "fonts/synthetic/curves.woff2",
+        "sha256": "93bbf2a319a5c4146acdde31f36beb3403bc8aeb23d6425e8ed1e4083ee098da",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/FontCorpus.cs (woff2_compress of fonts/synthetic/curves.ttf)",
+        "tools": [
+          "woff2 1.0.2+fb9c337"
+        ],
+        "commands": [
+          "woff2_compress curves.ttf"
+        ]
+      },
+      "flavor": "woff2",
+      "faceCount": 1,
+      "modification": "container",
+      "original": "fonts/synthetic-curves"
     }
   ]
 }

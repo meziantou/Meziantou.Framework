@@ -5,7 +5,7 @@ using Meziantou.Framework.Imaging.TestHarness.Streams;
 namespace Meziantou.Framework.Imaging.InteropTests;
 
 /// <summary>
-/// Writer output decoded by the pinned independent tool (PNG, APNG, GIF, JPEG, QOI, BMP, TGA and PNM encoders): frames are
+/// Writer output decoded by the pinned independent tool (PNG, APNG, GIF, JPEG, QOI, BMP, TGA, PNM and PBM encoders): frames are
 /// written one by one to a non-seekable stream and through an atomically published path writer, completed explicitly, and
 /// ffmpeg must decode exactly the written frames in one pass.
 /// </summary>
@@ -31,9 +31,11 @@ public sealed class WriterInteropTests
     [InlineData("tga", true)]
     [InlineData("pnm", false)]
     [InlineData("pnm", true)]
+    [InlineData("pbm", false)]
+    [InlineData("pbm", true)]
     public async Task WriterOutputDecodesIndependently(string output, bool toPath)
     {
-        var frames = CreateFrames(output is "apng" or "gif" ? 3 : 1);
+        var frames = CreateFrames(output is "apng" or "gif" ? 3 : 1, blackAndWhite: output == "pbm");
         var directory = InteropSettings.GetArtifactsDirectory(nameof(WriterOutputDecodesIndependently));
         var path = directory / $"{output}-{(toPath ? "path" : "stream")}{GetExtension(output)}";
         File.Delete(path);
@@ -48,6 +50,7 @@ public sealed class WriterInteropTests
                 "bmp" => new BmpEncoder(),
                 "tga" => new TgaEncoder { Compression = TgaCompression.RunLength },
                 "pnm" => new PnmEncoder(),
+                "pbm" => new PnmEncoder { PixelLayout = PnmPixelLayout.Bitmap },
                 _ => new JpegEncoder(),
             },
             ExpectedFrameCount = output == "gif" ? null : frames.Length, // GIF: unknown count
@@ -112,12 +115,16 @@ public sealed class WriterInteropTests
         "bmp" => ".bmp",
         "tga" => ".tga",
         "pnm" => ".pam",
+        "pbm" => ".pbm",
         _ => ".png",
     };
 
-    private static Image<Rgba32>[] CreateFrames(int count)
+    private static Image<Rgba32>[] CreateFrames(int count, bool blackAndWhite)
     {
-        Rgba32[] palette = [new(255, 0, 0, 255), new(0, 255, 0, 255), new(0, 0, 255, 255), new(255, 255, 255, 255)];
+        // A portable bitmap stores black and white pixels only
+        Rgba32[] palette = blackAndWhite
+            ? [new(0, 0, 0, 255), new(255, 255, 255, 255), new(255, 255, 255, 255), new(0, 0, 0, 255), new(0, 0, 0, 255)]
+            : [new(255, 0, 0, 255), new(0, 255, 0, 255), new(0, 0, 255, 255), new(255, 255, 255, 255)];
         var frames = new Image<Rgba32>[count];
         for (var i = 0; i < count; i++)
         {

@@ -20,6 +20,21 @@ internal static class LosslessEncoderInterop
         return data;
     }
 
+    /// <summary>Gets the cases whose stills hold opaque black and white pixels only, which is all a portable bitmap can store.</summary>
+    public static TheoryData<string, string> BlackAndWhiteEncoderCases()
+    {
+        var data = new TheoryData<string, string>();
+        foreach (var (fixture, format) in EncoderSources.GetCases(GoldenCorpus.Default).Where(item => item.Format is PixelFormat.Rgba32 or PixelFormat.Rgb24 or PixelFormat.Gray8))
+        {
+            if (EncoderSources.GetStills(fixture, format).All(still => RawImport.IsOpaque(still.Pixels) && RawImport.IsBlackAndWhite(still.Pixels)))
+            {
+                data.Add(fixture.Id, format.ToString());
+            }
+        }
+
+        return data;
+    }
+
     /// <summary>Encodes every still of the fixture with each encoder and checks that FFmpeg decodes exactly the source samples.</summary>
     /// <param name="encoders">The encoders to check, with the file extension of their output and a suffix describing their options.</param>
     /// <param name="expected">The samples FFmpeg must decode from a source (the source itself by default).</param>

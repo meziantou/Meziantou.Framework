@@ -1,8 +1,8 @@
 # Meziantou.Framework.Imaging
 
 A fully managed image library: PNG/APNG, GIF, JPEG, WebP, QOI, BMP, TGA, Netpbm, TIFF, ICO/CUR and ANI decoding and
-encoding, animation-aware processing, vector drawing, ICC color conversion, and bounded-memory streaming readers and
-writers.
+encoding, AVIF decoding (with its own AV1 decoder), animation-aware processing, vector drawing, ICC color conversion, and
+bounded-memory streaming readers and writers.
 
 These instructions complete the repository-level `AGENTS.md`. The user guide is [readme.md](readme.md): it states what
 the library guarantees to its callers (support matrix, limitations, defaults). Keep the code, the XML documentation and
@@ -15,7 +15,8 @@ the library guarantees to its callers (support matrix, limitations, defaults). K
 - Fully managed, no package dependency and no native dependency. The library is trimmable and NativeAOT-compatible
   (`IsTrimmable`, `IsAotCompatible`): no reflection-based code.
 - Write implementations from the format specifications. Never copy or port code from other image libraries
-  (System.Drawing, libpng, libjpeg, giflib, libwebp, stb, ...).
+  (System.Drawing, libpng, libjpeg, giflib, libwebp, libavif, libaom, dav1d, stb, ...). Those libraries are test oracles
+  only: their output is compared with ours, their source is never read to write ours.
 - No public allocator, custom pixel type, codec plug-in or image-processor interface. Implementation types are `internal`
   and live under `Internals/`.
 - Public namespaces: `Meziantou.Framework.Imaging`, `.Metadata`, `.Formats` (encoder settings) and `.Drawing` (brushes,
@@ -92,8 +93,23 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
 - Each format has a structure parser (container rules, written once and walked as header, full scan or decode), a pixel
   decoder that observes it, and an encoder codec. Decoders hand rows to a `DecodedFrameSink` in a lossless source layout;
   the sink converts to the requested pixel format and charges frames before allocating them.
-- A new format adds an `ImageFormat` member, an `ImageCodec` in `ImageCodecRegistry`, an encoder codec in
-  `ImageEncoderRegistry` and a public `ImageEncoder` in `Formats/`, then a row in the support matrix of `readme.md`.
+- A new format always adds an `ImageFormat` member, its name in `ImageFormatNames`, an `ImageCodec` in
+  `ImageCodecRegistry`, a default pixel format in `DefaultPixelFormats`, and a row in the support matrix and a section in
+  the format reference of `readme.md`. A format that is also written adds an encoder codec in `ImageEncoderRegistry`, a
+  public `ImageEncoder` in `Formats/` and its extensions in `ImageEncoder.FromPath`. A format that is only read (AVIF)
+  makes `ImageEncoder.FromPath` reject its extensions with a message that says so.
+- **AVIF and AV1** (`Internals/Codecs/Avif`). The container walker resolves the image (`AvifImagePlan`, from the `meta`
+  box) or the image sequence (`AvifMovieBox`, from the `moov` box) before any data is read, then captures the items or
+  samples as their bytes go by. The AV1 decoder (`Av1/`) follows the AV1 Bitstream & Decoding Process Specification
+  section by section and keeps its names: a comment names the section a method implements. Its constant tables
+  (`Av1/Tables/*.g.cs`) are generated from the published specification by
+  `tools/Meziantou.Framework.Imaging.Av1TableExtractor` (the specification text is not committed; the tool pins its commit
+  and the hash of each file): never edit them by hand. Every plane the decoder produces must stay bit-exact with the
+  reference decoders: there is no tolerance in AV1 decoding. `Av1Decoder.Tools` reports the coding tools a bitstream used;
+  it is a diagnostic for the tests and never changes the decoding.
+  Scalability only changes which frames are output, never how they are decoded: the units outside the operating point
+  are dropped, and a temporal unit with several spatial layers outputs the frame of its highest layer (what a player
+  shows, and what `lsel`-less layered AVIF images present). `OutputAllLayers` is for conformance tests only.
 - `ZLibStream` reports truncation as a clean end: check that the expected number of bytes was produced.
 
 ## Color management
@@ -189,6 +205,7 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
 | `tests/Meziantou.Framework.Imaging.Fixtures` | Golden corpus, manifest, provenance and licenses ([README](../../tests/Meziantou.Framework.Imaging.Fixtures/README.md)) |
 | `fuzz/Meziantou.Framework.Imaging.FuzzTests` | Mutation fuzz tests over the corpus and the committed regressions (`FuzzRegressions/`) |
 | `tools/Meziantou.Framework.Imaging.CorpusGenerator` | The reviewed recipe of every fixture; never run by the tests |
+| `tools/Meziantou.Framework.Imaging.Av1TableExtractor` | Generates the constant tables of the AV1 decoder from the AV1 specification |
 | `samples/Meziantou.Framework.Imaging.Samples` | Usage examples: the source of every C# block of the documentation |
 | `benchmarks/ImagingBenchmarks` | BenchmarkDotNet workloads |
 
@@ -207,9 +224,26 @@ dotnet publish tests/Meziantou.Framework.Imaging.AotSmoke -c Release -f net11.0 
 - Lossless comparisons are exact, 16-bit low bits included. Lossy comparisons use an independent decoding of the same
   input with a narrow, justified, per-fixture tolerance. Alpha and structure are always exact.
 - Unit, conformance and fuzz tests must not need an external tool or network access.
-- Interop tests download ffmpeg and libwebp from the release pinned by the `Meziantou.Prebuilt` package (same version in
-  the test harness and the corpus generator). A download failure, an unexpected version or a missing capability fails the
-  test; it is never skipped. The Apple ImageIO cases need `swift` and only run on macOS.
+- **AV1 vectors.** `tests/Meziantou.Framework.Imaging.Fixtures/av1` holds raw AV1 streams with, in the manifest, the
+  SHA-256 of every plane of every output frame. A digest is recorded only when two independent decoders (dav1d and
+  libaom, through the pinned ffmpeg) agree byte for byte. `Av1DecoderConformanceTests` compares the planes of the
+  library with them, and `Av1ToolCoverageTests` checks that the vectors reach every coding tool. The tools that no
+  encoder of the pinned build produces (an interpolation filter per direction, a bilinear filter, predicted segment
+  ids, the reference, skip and global motion features of a segment) come from hand-authored streams:
+  `Av1HandAuthoredStream` in the generator writes inter frames bit by bit, from the specification, after a libaom key
+  frame. They are recorded like any vector, with the digests both decoders agree on.
+- **Third-party AV1 conformance streams** (the Argon suite, the libaom test vectors) have no license that allows
+  committing them. They are run as a campaign after a change to the AV1 decoder: download them, point
+  `MEZIANTOU_FRAMEWORK_IMAGING_AV1_DIFF_STREAMS` at the directory and run `Av1DifferentialInteropTests`, which compares
+  the library with dav1d and libaom on every stream (Annex B streams are converted). No stream may fail. A stream does
+  not count when a reference decoder rejects it, or when its sample format or color description changes (FFmpeg then
+  converts the frames, which are no longer the samples of the stream); for those, compare with the `dav1d` command-line
+  tool directly (`--alllayers 1`, its default, against `Av1Decoder.OutputAllLayers`: the reference digests of the Argon
+  suite hold every shown frame of every layer, where a player and this test only take the highest layer of a temporal
+  unit).
+- Interop tests download ffmpeg, libwebp and libavif from the release pinned by the `Meziantou.Prebuilt` package (same
+  version in the test harness and the corpus generator). A download failure, an unexpected version or a missing
+  capability fails the test; it is never skipped. The Apple ImageIO cases need `swift` and only run on macOS.
 - When implementing or changing a member, add unit tests, conformance tests with independent references, and interop
   tests for encoders.
 - **Fixtures.** Every file of the corpus is listed in `manifest.json` with its hash, provenance and license; the manifest

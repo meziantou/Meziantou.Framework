@@ -4,26 +4,34 @@ namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
 /// The decoded layout of one TGA image: the color map (when the image is color-mapped) and the expansion of one stored row
-/// to the lossless working representation (<see cref="PixelFormat.Gray8"/> for grayscale images,
-/// <see cref="PixelFormat.Rgba32"/> when the image descriptor declares alpha bits, otherwise <see cref="PixelFormat.Rgb24"/>).
+/// to the lossless working representation (<see cref="PixelFormat.Rgba32"/> when the image descriptor declares alpha bits,
+/// otherwise <see cref="PixelFormat.Gray8"/> for grayscale images and <see cref="PixelFormat.Rgb24"/> for the others).
 /// </summary>
 /// <remarks>
+/// <para>
 /// The image descriptor is authoritative for alpha: a 32-bit payload whose descriptor declares 0 alpha bits has an
-/// unspecified fourth byte, which is discarded instead of being read as transparency. Right-to-left storage (descriptor
-/// bit 4) is resolved here; the row order (bit 5) is resolved by the parser, which knows the displayed row index.
+/// unspecified fourth byte, which is discarded instead of being read as transparency. A 16-bit grayscale pixel is read the
+/// same way: an 8-bit gray sample followed by an 8-bit attribute, which is the alpha channel when the descriptor declares 8
+/// alpha bits and is discarded otherwise. Right-to-left storage (descriptor bit 4) is resolved here; the row order (bit 5)
+/// is resolved by the parser, which knows the displayed row index.
+/// </para>
+/// <para>
+/// The color map holds up to 65,535 entries, so its storage is not allocated here: the parser rents
+/// <see cref="ColorMapStorageLength"/> bytes from its allocation scope and lends them with <see cref="SetColorMapStorage"/>.
+/// Without storage (header and full-scan walks), the entries are not kept and <see cref="ExpandRow"/> is never called.
+/// </para>
 /// </remarks>
 internal sealed class TgaPixelLayout
 {
-    private readonly byte[]? _palette;
     private readonly int _paletteStride;
     private readonly int _paletteFirstIndex;
     private readonly int _paletteLastIndex;
+    private Memory<byte> _palette;
 
-    private TgaPixelLayout(TgaHeader header, PixelFormat sourcePixelFormat, byte[]? palette, int paletteStride, int paletteFirstIndex, int paletteLastIndex)
+    private TgaPixelLayout(TgaHeader header, PixelFormat sourcePixelFormat, int paletteStride, int paletteFirstIndex, int paletteLastIndex)
     {
         Header = header;
         SourcePixelFormat = sourcePixelFormat;
-        _palette = palette;
         _paletteStride = paletteStride;
         _paletteFirstIndex = paletteFirstIndex;
         _paletteLastIndex = paletteLastIndex;
@@ -40,7 +48,7 @@ internal sealed class TgaPixelLayout
 
     /// <summary>Gets the color model of the encoded samples.</summary>
     public ImageColorModel ColorModel => Header.IsGrayscale
-        ? ImageColorModel.Grayscale
+        ? (HasAlpha ? ImageColorModel.GrayscaleAlpha : ImageColorModel.Grayscale)
         : Header.IsColorMapped ? ImageColorModel.Indexed : (HasAlpha ? ImageColorModel.Rgba : ImageColorModel.Rgb);
 
     /// <summary>Gets the number of bytes of one expanded row.</summary>
@@ -49,28 +57,41 @@ internal sealed class TgaPixelLayout
     /// <summary>Gets the number of bytes of one stored row.</summary>
     public int StoredRowLength => Header.Width * Header.BytesPerStoredPixel;
 
+    /// <summary>
+    /// Gets the number of bytes that hold the expanded color map (every stored entry, in <see cref="SourcePixelFormat"/>),
+    /// or 0 when the image is not color-mapped. At most 65,535 entries of 4 bytes.
+    /// </summary>
+    public int ColorMapStorageLength => Header.IsColorMapped ? Header.ColorMapLength * _paletteStride : 0;
+
     /// <summary>Creates the layout of a parsed header.</summary>
     public static TgaPixelLayout Create(TgaHeader header)
     {
         var sourceFormat = DefaultPixelFormats.ForTga(header.IsGrayscale, header.AlphaBits > 0);
         if (!header.IsColorMapped)
-            return new TgaPixelLayout(header, sourceFormat, palette: null, 0, 0, -1);
+            return new TgaPixelLayout(header, sourceFormat, 0, 0, -1);
 
-        // Only 8-bit indexes are decoded, so entries addressing an index above 255 are consumed but never stored
-        var stride = PixelFormats.GetBytesPerPixel(sourceFormat);
-        var last = Math.Min(255, header.ColorMapFirstEntry + header.ColorMapLength - 1);
-        return new TgaPixelLayout(header, sourceFormat, new byte[256 * stride], stride, header.ColorMapFirstEntry, last);
+        return new TgaPixelLayout(header, sourceFormat, PixelFormats.GetBytesPerPixel(sourceFormat), header.ColorMapFirstEntry, header.ColorMapFirstEntry + header.ColorMapLength - 1);
     }
 
-    /// <summary>Stores one color-map entry.</summary>
+    /// <summary>Lends the storage of the expanded color map.</summary>
+    /// <param name="storage">Exactly <see cref="ColorMapStorageLength"/> bytes, owned by the caller for as long as rows are expanded.</param>
+    public void SetColorMapStorage(Memory<byte> storage)
+    {
+        if (storage.Length != ColorMapStorageLength)
+            throw new ArgumentException("The storage does not have the length of the expanded color map.", nameof(storage));
+
+        _palette = storage;
+    }
+
+    /// <summary>Stores one color-map entry; a no-op when no storage was lent.</summary>
     /// <param name="index">The index the entry defines (<see cref="TgaHeader.ColorMapFirstEntry"/> and up).</param>
     /// <param name="entry">The stored entry (<see cref="TgaHeader.BytesPerColorMapEntry"/> bytes).</param>
     public void SetColorMapEntry(int index, ReadOnlySpan<byte> entry)
     {
-        if (index > 255 || _palette is null)
+        if (_palette.IsEmpty)
             return;
 
-        var destination = _palette.AsSpan(index * _paletteStride, _paletteStride);
+        var destination = _palette.Span.Slice((index - _paletteFirstIndex) * _paletteStride, _paletteStride);
         if (Header.ColorMapEntryBits is 15 or 16)
         {
             var value = BinaryPrimitives.ReadUInt16LittleEndian(entry);
@@ -106,14 +127,14 @@ internal sealed class TgaPixelLayout
         {
             ExpandColorMapped(stored, destination, width);
         }
+        else if (Header.IsGrayscale)
+        {
+            ExpandGrayscale(stored, destination, width);
+        }
         else
         {
             switch (Header.PixelDepth)
             {
-                case 8:
-                    stored[..width].CopyTo(destination);
-                    break;
-
                 case 15:
                 case 16:
                     for (var x = 0; x < width; x++)
@@ -174,16 +195,48 @@ internal sealed class TgaPixelLayout
         }
     }
 
-    private void ExpandColorMapped(ReadOnlySpan<byte> stored, Span<byte> destination, int width)
+    private void ExpandGrayscale(ReadOnlySpan<byte> stored, Span<byte> destination, int width)
     {
-        var stride = _paletteStride;
+        if (Header.PixelDepth == 8)
+        {
+            stored[..width].CopyTo(destination);
+            return;
+        }
+
+        // 16-bit pixels: the gray sample, then the attribute byte
+        if (!HasAlpha)
+        {
+            for (var x = 0; x < width; x++)
+            {
+                destination[x] = stored[x * 2];
+            }
+
+            return;
+        }
+
         for (var x = 0; x < width; x++)
         {
-            var index = stored[x];
+            var gray = stored[x * 2];
+            var target = destination[(x * 4)..];
+            target[0] = gray;
+            target[1] = gray;
+            target[2] = gray;
+            target[3] = stored[(x * 2) + 1];
+        }
+    }
+
+    private void ExpandColorMapped(ReadOnlySpan<byte> stored, Span<byte> destination, int width)
+    {
+        var palette = _palette.Span;
+        var stride = _paletteStride;
+        var wideIndexes = Header.PixelDepth == 16;
+        for (var x = 0; x < width; x++)
+        {
+            int index = wideIndexes ? BinaryPrimitives.ReadUInt16LittleEndian(stored[(x * 2)..]) : stored[x];
             if (index < _paletteFirstIndex || index > _paletteLastIndex)
                 throw TgaFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The TGA color-map index {index} at column {x} is outside the stored color map (entries {_paletteFirstIndex} to {_paletteLastIndex})."));
 
-            _palette.AsSpan(index * stride, stride).CopyTo(destination[(x * stride)..]);
+            palette.Slice((index - _paletteFirstIndex) * stride, stride).CopyTo(destination[(x * stride)..]);
         }
     }
 

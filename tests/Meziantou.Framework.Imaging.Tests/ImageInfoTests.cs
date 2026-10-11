@@ -56,6 +56,32 @@ public sealed class ImageInfoTests
         Assert.Single(other.Metadata.TextEntries);
     }
 
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(4)]
+    [InlineData(8)]
+    [InlineData(10)] // AVIF
+    [InlineData(12)] // AVIF
+    [InlineData(16)]
+    public void EncodedSamplePrecisionsAreAccepted(int bitsPerComponent)
+    {
+        Assert.Equal(bitsPerComponent, Create(ImageFormat.Avif, bitsPerComponent: bitsPerComponent).BitsPerComponent);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(3)]
+    [InlineData(9)]
+    [InlineData(11)]
+    [InlineData(14)]
+    [InlineData(32)]
+    [InlineData(-8)]
+    public void OtherSamplePrecisionsAreRejected(int bitsPerComponent)
+    {
+        Assert.Equal("bitsPerComponent", Assert.Throws<ArgumentOutOfRangeException>(() => Create(ImageFormat.Avif, bitsPerComponent: bitsPerComponent)).ParamName);
+    }
+
     [Fact]
     public void InconsistentSnapshotsAreRejected()
     {

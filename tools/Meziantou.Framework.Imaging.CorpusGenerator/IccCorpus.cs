@@ -165,9 +165,11 @@ internal static partial class IccCorpus
 
     private static int Generate(FullPath outDir, FullPath profilesDirectory, string transicc, string version)
     {
-        // Every image fixture is kept as committed: this generator owns the color management sections only
+        // Every image fixture is kept as committed, and so are the AV1 conformance vectors: this generator owns the color
+        // management sections only
         var manifest = CorpusDriver.LoadCommittedManifest();
         CorpusDriver.CopyCommittedFiles(outDir, CorpusDriver.Fixtures(manifest));
+        CorpusDriver.CopyCommittedAv1Vectors(outDir, manifest);
 
         var profileEntries = new List<object?>();
         var paths = new Dictionary<string, string>(StringComparer.Ordinal);

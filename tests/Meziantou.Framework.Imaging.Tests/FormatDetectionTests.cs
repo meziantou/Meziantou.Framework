@@ -26,6 +26,16 @@ public sealed class FormatDetectionTests
     [InlineData(new byte[] { 0x50, 0x37, 0x0A, 0x57, 0x49, 0x44, 0x54, 0x48 }, ImageFormat.Pnm)] // "P7" (PAM)
     [InlineData(new byte[] { 0x50, 0x38, 0x0A, 0x31, 0x20, 0x31, 0x0A, 0x32 }, ImageFormat.Unknown)] // "P8"
     [InlineData(new byte[] { 0x50, 0x36, 0x31, 0x20, 0x31, 0x0A, 0x32, 0x35 }, ImageFormat.Unknown)] // no white space after the magic
+    [InlineData(new byte[] { 0x00, 0x00, 0x00, 0x1C, 0x66, 0x74, 0x79, 0x70, 0x61, 0x76, 0x69, 0x66 }, ImageFormat.Avif)] // box size, "ftyp", major brand "avif"
+    [InlineData(new byte[] { 0x00, 0x00, 0x00, 0x1C, 0x66, 0x74, 0x79, 0x70, 0x61, 0x76, 0x69, 0x73 }, ImageFormat.Avif)] // "avis" (image sequence)
+    [InlineData(new byte[] { 0x00, 0x00, 0x00, 0x1C, 0x66, 0x74, 0x79, 0x70, 0x6D, 0x69, 0x66, 0x31 }, ImageFormat.Avif)] // "mif1" (HEIF image)
+    [InlineData(new byte[] { 0x00, 0x00, 0x00, 0x1C, 0x66, 0x74, 0x79, 0x70, 0x6D, 0x73, 0x66, 0x31 }, ImageFormat.Avif)] // "msf1" (HEIF sequence)
+    [InlineData(new byte[] { 0x00, 0x00, 0x00, 0x1C, 0x66, 0x74, 0x79, 0x70, 0x6D, 0x69, 0x61, 0x66 }, ImageFormat.Avif)] // "miaf"
+    [InlineData(new byte[] { 0x00, 0x00, 0x00, 0x1C, 0x66, 0x74, 0x79, 0x70, 0x4D, 0x41, 0x31, 0x42 }, ImageFormat.Avif)] // "MA1B" (AVIF baseline profile)
+    [InlineData(new byte[] { 0x00, 0x00, 0x00, 0x1C, 0x66, 0x74, 0x79, 0x70, 0x4D, 0x41, 0x31, 0x41 }, ImageFormat.Avif)] // "MA1A" (AVIF advanced profile)
+    [InlineData(new byte[] { 0x00, 0x00, 0x00, 0x1C, 0x66, 0x74, 0x79, 0x70, 0x61, 0x76, 0x69 }, ImageFormat.Unknown)] // 11 bytes: the major brand is incomplete
+    [InlineData(new byte[] { 0x00, 0x00, 0x00, 0x1C, 0x66, 0x74, 0x79, 0x70, 0x68, 0x65, 0x69, 0x63 }, ImageFormat.Unknown)] // "heic" (HEVC-coded HEIF)
+    [InlineData(new byte[] { 0x00, 0x00, 0x00, 0x1C, 0x6D, 0x6F, 0x6F, 0x76, 0x61, 0x76, 0x69, 0x66 }, ImageFormat.Unknown)] // "moov" instead of "ftyp"
     public void DetectFormatUsesSignatures(byte[] prefix, ImageFormat expected)
         => Assert.Equal(expected, Image.DetectFormat(prefix));
 
@@ -38,12 +48,19 @@ public sealed class FormatDetectionTests
     [InlineData(10, 32, 8, 0, 0, 0, ImageFormat.Tga)] // run-length true color with alpha
     [InlineData(3, 8, 0, 0, 0, 0, ImageFormat.Tga)] // grayscale
     [InlineData(1, 8, 0, 1, 4, 24, ImageFormat.Tga)] // color-mapped
+    [InlineData(9, 16, 0, 1, 4, 24, ImageFormat.Tga)] // run-length color-mapped with 16-bit indexes
+    [InlineData(3, 16, 8, 0, 0, 0, ImageFormat.Tga)] // grayscale with an alpha attribute
+    [InlineData(11, 16, 0, 0, 0, 0, ImageFormat.Tga)] // run-length grayscale with an unspecified attribute
     [InlineData(0, 24, 0, 0, 0, 0, ImageFormat.Unknown)] // image type 0 (no image data)
     [InlineData(4, 24, 0, 0, 0, 0, ImageFormat.Unknown)] // undefined image type
     [InlineData(2, 24, 0, 1, 4, 24, ImageFormat.Unknown)] // a color map with a true-color image type
     [InlineData(1, 8, 0, 0, 0, 0, ImageFormat.Unknown)] // a color-mapped image without a color map
     [InlineData(2, 23, 0, 0, 0, 0, ImageFormat.Unknown)] // undefined pixel depth
     [InlineData(2, 24, 8, 0, 0, 0, ImageFormat.Unknown)] // alpha bits a 24-bit sample cannot hold
+    [InlineData(3, 8, 8, 0, 0, 0, ImageFormat.Unknown)] // alpha bits an 8-bit gray pixel cannot hold
+    [InlineData(3, 16, 1, 0, 0, 0, ImageFormat.Unknown)] // the attribute of a 16-bit gray pixel is a whole byte
+    [InlineData(3, 24, 0, 0, 0, 0, ImageFormat.Unknown)] // undefined grayscale depth
+    [InlineData(1, 24, 0, 1, 4, 24, ImageFormat.Unknown)] // color-map indexes wider than 16 bits
     public void TgaIsDetectedFromAPlausibleHeader(int imageType, int pixelDepth, int alphaBits, int colorMapType, int colorMapLength, int colorMapEntryBits, ImageFormat expected)
     {
         var header = new byte[18];

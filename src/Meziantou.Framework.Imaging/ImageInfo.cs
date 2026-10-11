@@ -46,8 +46,8 @@ public sealed class ImageInfo
         if (!Enum.IsDefined(colorModel))
             throw new ArgumentOutOfRangeException(nameof(colorModel), colorModel, "The color model is not valid.");
 
-        if (bitsPerComponent is not (1 or 2 or 4 or 8 or 16))
-            throw new ArgumentOutOfRangeException(nameof(bitsPerComponent), bitsPerComponent, "The bits per component must be 1, 2, 4, 8 or 16.");
+        if (bitsPerComponent is not (1 or 2 or 4 or 8 or 10 or 12 or 16))
+            throw new ArgumentOutOfRangeException(nameof(bitsPerComponent), bitsPerComponent, "The bits per component must be 1, 2, 4, 8, 10, 12 or 16.");
 
         if (frameCount is <= 0)
             throw new ArgumentOutOfRangeException(nameof(frameCount), frameCount, "The frame count must be positive or unknown (null).");
@@ -107,7 +107,7 @@ public sealed class ImageInfo
     /// <summary>Gets the color model of the encoded samples.</summary>
     public ImageColorModel ColorModel { get; }
 
-    /// <summary>Gets the precision of the encoded samples, in bits per component (for example 1, 2, 4, 8 or 16 for PNG).</summary>
+    /// <summary>Gets the precision of the encoded samples, in bits per component (for example 1, 2, 4, 8 or 16 for PNG; 8, 10 or 12 for AVIF).</summary>
     public int BitsPerComponent { get; }
 
     /// <summary>Gets the number of displayed animation frames (excluding a separate poster frame), or <see langword="null"/> when unknown.</summary>

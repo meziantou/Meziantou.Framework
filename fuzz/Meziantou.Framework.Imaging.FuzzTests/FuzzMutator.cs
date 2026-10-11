@@ -6,8 +6,9 @@ namespace Meziantou.Framework.Imaging.FuzzTests;
 /// Structure-agnostic mutations (bit flips, interesting values in 8/16/32-bit fields of either endianness, insertions,
 /// deletions, duplicated or swapped ranges, truncation, splicing with another seed) plus format-aware fix-ups: PNG chunk CRCs
 /// are recomputed after most mutations so that inputs reach the chunk payload parsers (IHDR fields, fcTL/acTL counts and
-/// offsets, zlib/deflate streams, text and ICC decompression) instead of stopping at the checksum, and JPEG/GIF mutations
-/// often target marker segments and block headers.
+/// offsets, zlib/deflate streams, text and ICC decompression) instead of stopping at the checksum, JPEG/GIF mutations
+/// often target marker segments and block headers, and AVIF mutations often change the media data in place, so that the
+/// container still locates them and they reach the AV1 decoder.
 /// </summary>
 internal static class FuzzMutator
 {
@@ -24,6 +25,11 @@ internal static class FuzzMutator
         if (IsPng(seed) && random.Chance(25) && TryMutatePngPayload(random, seed) is { } payloadMutation)
             return payloadMutation;
 
+        // AVIF: more than half of the cases change the media data in place, without moving anything, so that the offsets of
+        // the container stay valid and the mutated bytes reach the AV1 decoder (headers, symbol decoding, prediction)
+        if (FuzzAvifContainer.IsIsoBaseMedia(seed) && random.Chance(60) && TryMutateAvifMediaData(random, seed) is { } mediaMutation)
+            return mediaMutation;
+
         var data = new List<byte>(seed);
         var count = 1 + random.Next(random.Chance(70) ? 2 : 8);
         for (var i = 0; i < count; i++)
@@ -35,6 +41,44 @@ internal static class FuzzMutator
         if (IsPng(result) && random.Chance(85))
         {
             FixPngCrcs(result);
+        }
+
+        return result;
+    }
+
+    /// <summary>Overwrites bytes of the payload of an <c>mdat</c> box, often near its start, where the headers of the bitstream are.</summary>
+    private static byte[]? TryMutateAvifMediaData(FuzzRandom random, byte[] seed)
+    {
+        var ranges = FuzzAvifContainer.FindMediaData(seed);
+        if (ranges.Count == 0)
+            return null;
+
+        var result = (byte[])seed.Clone();
+        var count = 1 + random.Next(random.Chance(70) ? 2 : 6);
+        for (var i = 0; i < count; i++)
+        {
+            var (offset, length) = random.Pick(ranges);
+            var position = offset + random.Next(random.Chance(35) ? Math.Min(length, 48) : length);
+            switch (random.Next(5))
+            {
+                case 0:
+                case 1:
+                    result[position] ^= (byte)(1 << random.Next(8));
+                    break;
+                case 2:
+                    result[position] = random.NextByte();
+                    break;
+                case 3:
+                    result[position] = (byte)random.Pick(InterestingValues);
+                    break;
+                default:
+                {
+                    var run = Math.Min(offset + length - position, 1 + random.Next(8));
+                    var value = random.Chance(50) ? (byte)0 : random.Chance(50) ? (byte)0xFF : random.NextByte();
+                    result.AsSpan(position, run).Fill(value);
+                    break;
+                }
+            }
         }
 
         return result;

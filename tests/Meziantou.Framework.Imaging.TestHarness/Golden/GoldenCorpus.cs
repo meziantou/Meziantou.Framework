@@ -43,6 +43,22 @@ public sealed class GoldenCorpus
     /// <summary>Gets all the fixtures, ordered by id.</summary>
     public IEnumerable<GoldenFixture> Fixtures => _fixtures.Values.OrderBy(fixture => fixture.Id, StringComparer.Ordinal);
 
+    /// <summary>
+    /// Gets the AV1 conformance vectors (raw OBU streams with plane digests), ordered by id. They are not fixtures: they
+    /// have no pixel reference and are never returned by <see cref="Fixtures"/> or <see cref="GetIds"/>.
+    /// </summary>
+    public IEnumerable<Av1VectorEntry> Av1Vectors => (Manifest.Av1Vectors?.Entries ?? []).OrderBy(vector => vector.Id, StringComparer.Ordinal);
+
+    /// <summary>Gets an AV1 conformance vector.</summary>
+    /// <param name="id">The vector id, e.g. <c>av1/lossless-gbr-8bit-34x36</c>.</param>
+    /// <returns>The vector.</returns>
+    /// <exception cref="KeyNotFoundException">Unknown id.</exception>
+    public Av1VectorEntry GetAv1Vector(string id)
+    {
+        ArgumentNullException.ThrowIfNull(id);
+        return (Manifest.Av1Vectors?.Entries ?? []).FirstOrDefault(vector => vector.Id == id) ?? throw new KeyNotFoundException($"The golden corpus has no AV1 vector '{id}'.");
+    }
+
     /// <summary>Loads and validates a corpus.</summary>
     /// <param name="rootDirectory">The corpus root (containing manifest.json).</param>
     /// <returns>The corpus.</returns>

@@ -16,6 +16,12 @@ public sealed class DecodedMetadataSnapshot
     /// <summary>Gets the transfer function label: <c>srgb</c> or <c>linear</c>.</summary>
     public string TransferFunction { get; init; } = "srgb";
 
+    /// <summary>
+    /// Gets the CICP color description as <c>primaries/transfer/matrix full</c> (or <c>limited</c>), or <see langword="null"/>
+    /// when the image has none.
+    /// </summary>
+    public string? Cicp { get; init; }
+
     /// <summary>Gets the ICC profile bytes, or <see langword="null"/>.</summary>
     public ReadOnlyMemory<byte>? IccProfile { get; init; }
 

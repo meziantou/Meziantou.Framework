@@ -302,6 +302,7 @@ namespace Meziantou.Framework.Imaging
         Ico = 10,
         Cur = 11,
         Ani = 12,
+        Avif = 13,
     }
 
     public abstract class ImageFrame
@@ -1146,6 +1147,19 @@ namespace Meziantou.Framework.Imaging.Metadata
         public Meziantou.Framework.Imaging.Metadata.AnimationMetadata Clone() => throw null;
     }
 
+    public sealed class CicpColorDescription : System.IEquatable<Meziantou.Framework.Imaging.Metadata.CicpColorDescription>
+    {
+        public byte ColorPrimaries { get => throw null; }
+        public byte TransferCharacteristics { get => throw null; }
+        public byte MatrixCoefficients { get => throw null; }
+        public bool FullRange { get => throw null; }
+        public CicpColorDescription(byte colorPrimaries, byte transferCharacteristics, byte matrixCoefficients, bool fullRange) { }
+        public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] Meziantou.Framework.Imaging.Metadata.CicpColorDescription? other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+    }
+
     public enum ColorTransferFunction
     {
         Srgb = 0,
@@ -1226,6 +1240,7 @@ namespace Meziantou.Framework.Imaging.Metadata
         public Meziantou.Framework.Imaging.Metadata.ImageResolution? Resolution { get => throw null; set { } }
         public Meziantou.Framework.Imaging.Metadata.IccProfile? IccProfile { get => throw null; set { } }
         public Meziantou.Framework.Imaging.Metadata.ColorTransferFunction TransferFunction { get => throw null; set { } }
+        public Meziantou.Framework.Imaging.Metadata.CicpColorDescription? Cicp { get => throw null; set { } }
         public Meziantou.Framework.Imaging.Metadata.ExifProfile? ExifProfile { get => throw null; set { } }
         public Meziantou.Framework.Imaging.Metadata.XmpProfile? XmpProfile { get => throw null; set { } }
         public System.Collections.Generic.IList<Meziantou.Framework.Imaging.Metadata.ImageTextEntry> TextEntries { get => throw null; }

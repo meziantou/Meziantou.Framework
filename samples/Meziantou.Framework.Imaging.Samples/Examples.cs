@@ -394,6 +394,23 @@ internal static class Examples
     }
     // end-snippet
 
+    /// <summary>AVIF input: a still image or an animation is decoded, then saved in a format that has an encoder.</summary>
+    // begin-snippet: load-avif
+    public static string ConvertAvif(string avifPath, string pngPath)
+    {
+        using var image = Image.Load(avifPath);
+
+        // The color description of the file (primaries, transfer characteristics, matrix and range code points) is a
+        // label, as an ICC profile is: the matrix and the range were applied to produce RGB, nothing else was converted.
+        var description = $"{image.Width}x{image.Height} {image.PixelFormat}, frames: {image.Frames.Count}, color: {image.Metadata.Cicp}";
+
+        // There is no AVIF encoder. PNG keeps 16-bit samples, alpha and animations; it cannot store a color description
+        // that is not sRGB, so a strict save of an HDR image fails instead of relabeling its samples.
+        image.Save(pngPath, new PngEncoder { MetadataHandling = MetadataHandling.Strict });
+        return description;
+    }
+    // end-snippet
+
     /// <summary>Identify without decoding pixels; unknown values stay null.</summary>
     // begin-snippet: identify
     public static string Describe(Stream stream)

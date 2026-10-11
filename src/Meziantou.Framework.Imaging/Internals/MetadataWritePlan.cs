@@ -248,6 +248,11 @@ internal sealed class MetadataWritePlan
             }
         }
 
+        // No format stores a CICP color description. A written ICC profile describes the colors in its place; without one,
+        // dropping a description that is not equivalent to sRGB would relabel the samples as sRGB
+        if (metadata.Cicp is { } cicp && icc is null && !IsSrgbEquivalent(cicp) && !(metadata.TransferFunction == ColorTransferFunction.Linear && cicp.TransferCharacteristics is 8))
+            context.Unsupported("CICP color description (the samples would be read as sRGB)");
+
         var orientation = capabilities.NativeOrientation ? metadata.Orientation : ExifOrientation.TopLeft;
         return new MetadataWritePlan(icc, exif, xmp, text, resolution, transferFunction, orientation);
     }
@@ -279,6 +284,12 @@ internal sealed class MetadataWritePlan
             new PlanContext(format, handling).Unsupported("cursor hotspot");
         }
     }
+
+    /// <summary>
+    /// Returns whether a CICP color description labels samples that are displayed like untagged sRGB samples: BT.709 or
+    /// unspecified primaries (1, 2) with the sRGB or an unspecified transfer function (13, 2).
+    /// </summary>
+    internal static bool IsSrgbEquivalent(CicpColorDescription cicp) => cicp.ColorPrimaries is 1 or 2 && cicp.TransferCharacteristics is 13 or 2;
 
     [StructLayout(LayoutKind.Auto)]
     private readonly struct PlanContext(ImageFormat format, MetadataHandling handling)

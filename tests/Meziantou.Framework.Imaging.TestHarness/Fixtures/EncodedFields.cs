@@ -26,4 +26,23 @@ public sealed class EncodedFields
 
     /// <summary>Gets the text entries in file order.</summary>
     public IList<TextEntryExpectation> Text { get; } = [];
+
+    /// <summary>
+    /// Gets the edit list of the track of the color images of an AVIF image sequence with the duration of its track header,
+    /// or <see langword="null"/> when the track has none (and for every other format).
+    /// </summary>
+    public EditListExpectation? EditList { get; internal set; }
+
+    /// <summary>
+    /// Gets the <c>colr</c> box of type <c>nclx</c> of the primary item or of the track of an AVIF input, or
+    /// <see langword="null"/>. The color description of the AV1 bitstream, which applies without such a box, is not read:
+    /// the inspector never parses coded data.
+    /// </summary>
+    public CicpExpectation? ContainerCicp { get; internal set; }
+
+    /// <summary>
+    /// Gets the EXIF orientation that is equivalent to the <c>irot</c> and <c>imir</c> properties of the primary item of an
+    /// AVIF input, or <see langword="null"/> for every other format.
+    /// </summary>
+    public int? TransformOrientation { get; internal set; }
 }

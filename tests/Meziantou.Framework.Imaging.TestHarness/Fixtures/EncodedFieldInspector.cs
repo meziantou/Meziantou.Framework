@@ -6,7 +6,7 @@ namespace Meziantou.Framework.Imaging.TestHarness.Fixtures;
 
 /// <summary>
 /// A small, independent container walker that reads the raw timing, loop and metadata fields of PNG/APNG, GIF, JPEG, WebP,
-/// QOI, BMP, TGA and Netpbm fixture inputs. It never uses the library under test, so tests can check that (1) the manifest agrees with the encoded
+/// QOI, BMP, TGA, Netpbm and AVIF fixture inputs. It never uses the library under test, so tests can check that (1) the manifest agrees with the encoded
 /// bytes and (2) the library's conversions of these raw fields produce the expected exact values. It only parses
 /// container structure (chunks, blocks, marker segments, RIFF chunks); it never decodes pixels.
 /// </summary>
@@ -16,7 +16,7 @@ public static class EncodedFieldInspector
     private static readonly byte[] PngSignature = [0x89, (byte)'P', (byte)'N', (byte)'G', 0x0D, 0x0A, 0x1A, 0x0A];
 
     /// <summary>Inspects an encoded input.</summary>
-    /// <param name="format">The fixture format (<c>png</c>, <c>gif</c>, <c>jpeg</c>, <c>webp</c>, <c>qoi</c>, <c>bmp</c>, <c>tga</c> or <c>pnm</c>).</param>
+    /// <param name="format">The fixture format (<c>png</c>, <c>gif</c>, <c>jpeg</c>, <c>webp</c>, <c>qoi</c>, <c>bmp</c>, <c>tga</c>, <c>pnm</c> or <c>avif</c>).</param>
     /// <param name="data">The encoded bytes.</param>
     /// <returns>The raw fields.</returns>
     /// <exception cref="InvalidDataException">The container structure is malformed.</exception>
@@ -30,8 +30,77 @@ public static class EncodedFieldInspector
         "bmp" => InspectBmp(data),
         "tga" => InspectTga(data),
         "pnm" => InspectPnm(data),
+        "avif" => InspectAvif(data),
         _ => throw new ArgumentException($"Unknown fixture format '{format}'.", nameof(format)),
     };
+
+    /// <summary>
+    /// AVIF: the fields come from <see cref="Avif.ReferenceAvif"/>. A file with the brand of the image sequences presents
+    /// its track (sample deltas over the time scale of the media, edit list, <c>colr</c> boxes of the sample entry, and the
+    /// <c>Exif</c> and XMP items of <see cref="Avif.ReferenceAvif.FindSequenceMetadata"/>);
+    /// any other file its primary item (<c>colr</c> properties, <c>Exif</c> and XMP items, <c>irot</c> and <c>imir</c>).
+    /// </summary>
+    private static EncodedFields InspectAvif(ReadOnlySpan<byte> data)
+    {
+        var file = Avif.ReferenceAvif.Parse(data);
+        var result = new EncodedFields();
+        Avif.ReferenceAvif.ColorDescription? nclx;
+        if (file.IsSequence)
+        {
+            var track = file.ColorTrack ?? throw new InvalidDataException("The AVIF image sequence has no track of AV1 images.");
+            nclx = track.Nclx;
+            result.Icc = track.IccProfile;
+            result.TransformOrientation = 1;
+            var (exif, xmp) = file.FindSequenceMetadata();
+            if (exif is not null)
+                result.Exif = file.ReadExifPayload(exif);
+
+            if (xmp is not null)
+                result.Xmp = file.ReadItemData(xmp);
+            if (track.Samples.Count > 1)
+            {
+                foreach (var sample in track.Samples)
+                {
+                    result.FrameDelays.Add(new EncodedDelayExpectation { SampleDelta = sample.Duration, Timescale = track.Timescale });
+                }
+
+                if (track.EditList is { Entries.Count: > 0 } edits)
+                {
+                    result.EditList = new EditListExpectation
+                    {
+                        Repeating = edits.IsRepeating,
+                        SegmentDuration = edits.Entries[0].SegmentDuration is { } segment ? checked((long)segment) : null,
+                        TrackDuration = track.Duration is { } duration ? checked((long)duration) : null,
+                    };
+                }
+            }
+        }
+        else
+        {
+            var primary = file.PrimaryItem ?? throw new InvalidDataException("The AVIF file has no primary item.");
+            nclx = primary.Nclx;
+            result.Icc = primary.IccProfile;
+            result.TransformOrientation = primary.Orientation;
+            foreach (var item in file.FindDescriptions(primary.Id))
+            {
+                if (item.Type == "Exif")
+                {
+                    result.Exif ??= file.ReadExifPayload(item);
+                }
+                else if (item.ContentType == "application/rdf+xml")
+                {
+                    result.Xmp ??= file.ReadItemData(item);
+                }
+            }
+        }
+
+        if (nclx is not null)
+        {
+            result.ContainerCicp = new CicpExpectation { ColorPrimaries = nclx.ColorPrimaries, TransferCharacteristics = nclx.TransferCharacteristics, MatrixCoefficients = nclx.MatrixCoefficients, FullRange = nclx.FullRange };
+        }
+
+        return result;
+    }
 
     /// <summary>QOI has no metadata, timing or loop field: only the header colorspace (a transfer-function label) is read.</summary>
     private static EncodedFields InspectQoi(ReadOnlySpan<byte> data)

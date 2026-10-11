@@ -19,8 +19,8 @@ internal static class TiffReferenceCodecs
     {
         var bits = new StringBuilder();
         var table = new Dictionary<string, int>(StringComparer.Ordinal);
-        var nextCode = 258;
-        var codeSize = 9;
+        int nextCode;
+        int codeSize;
         void Initialize()
         {
             table.Clear();

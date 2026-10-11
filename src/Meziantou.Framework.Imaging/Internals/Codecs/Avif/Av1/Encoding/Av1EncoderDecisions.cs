@@ -18,6 +18,9 @@ internal struct Av1EncoderDecisions
     /// <summary>Whether the partitions into two rectangles are evaluated.</summary>
     public bool RectangularPartitions;
 
+    /// <summary>Whether the partitions into a half and two quarters, and into four strips, are evaluated.</summary>
+    public bool ExtendedPartitions;
+
     /// <summary>The number of luma modes that are encoded, after all of them are ranked by their prediction error.</summary>
     public int LumaModeCandidates;
 
@@ -106,7 +109,7 @@ internal struct Av1EncoderDecisions
             6 => new() { MaxBlockLevel = 4, MinBlockLevel = 0, LumaModeCandidates = 4, ChromaModeCandidates = 3, AngleDeltas = true, RectangularPartitions = true, FilterIntra = true, MotionStep = 16, SubpelMotion = true, NearMvCandidates = 2, TransformTypeCandidates = 4, ChromaFromLuma = true, TransformSizeDepth = 2, FilterSearch = 1 },
             7 => new() { MaxBlockLevel = 5, MinBlockLevel = 0, LumaModeCandidates = 6, ChromaModeCandidates = 4, AngleDeltas = true, RectangularPartitions = true, FilterIntra = true, MotionStep = 16, SubpelMotion = true, NearMvCandidates = 3, TransformTypeCandidates = 7, ChromaFromLuma = true, TransformSizeDepth = 2, FilterSearch = 1 },
             8 => new() { MaxBlockLevel = 5, MinBlockLevel = 0, LumaModeCandidates = 13, ChromaModeCandidates = 6, AngleDeltas = true, RectangularPartitions = true, FilterIntra = true, MotionStep = 32, SubpelMotion = true, NearMvCandidates = 3, TransformTypeCandidates = 16, ChromaFromLuma = true, TransformSizeDepth = 2, ExhaustiveSearch = true, FilterSearch = 2 },
-            _ => new() { MaxBlockLevel = 5, MinBlockLevel = 0, LumaModeCandidates = 13, ChromaModeCandidates = 13, AngleDeltas = true, RectangularPartitions = true, FilterIntra = true, MotionStep = 32, SubpelMotion = true, NearMvCandidates = 3, TransformTypeCandidates = 16, ChromaFromLuma = true, TransformSizeDepth = 2, ExhaustiveSearch = true, FilterSearch = 2 },
+            _ => new() { MaxBlockLevel = 5, MinBlockLevel = 0, LumaModeCandidates = 13, ChromaModeCandidates = 13, AngleDeltas = true, RectangularPartitions = true, FilterIntra = true, MotionStep = 32, SubpelMotion = true, NearMvCandidates = 3, TransformTypeCandidates = 16, ChromaFromLuma = true, TransformSizeDepth = 2, ExhaustiveSearch = true, FilterSearch = 2, ExtendedPartitions = true },
         };
     }
 }

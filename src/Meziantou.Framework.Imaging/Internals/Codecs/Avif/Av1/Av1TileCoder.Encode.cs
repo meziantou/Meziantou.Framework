@@ -152,6 +152,18 @@ internal ref partial struct Av1TileCoder
                     candidates[count++] = Av1Constants.PartitionHorz;
                     candidates[count++] = Av1Constants.PartitionVert;
                 }
+
+                if (_decisions.ExtendedPartitions && level <= _decisions.MaxBlockLevel && bSize > Av1Constants.Block8x8)
+                {
+                    // A half and two quarters, and four strips: a block of 8x8 samples has neither, and the block sizes
+                    // that have no strips are filtered below
+                    candidates[count++] = Av1Constants.PartitionHorzA;
+                    candidates[count++] = Av1Constants.PartitionHorzB;
+                    candidates[count++] = Av1Constants.PartitionVertA;
+                    candidates[count++] = Av1Constants.PartitionVertB;
+                    candidates[count++] = Av1Constants.PartitionHorz4;
+                    candidates[count++] = Av1Constants.PartitionVert4;
+                }
             }
         }
         else if (hasCols)

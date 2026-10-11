@@ -1,3 +1,4 @@
+#if !NET11_0_OR_GREATER
 using System.Collections;
 using System.ComponentModel;
 using System.IO.Pipes;
@@ -7,20 +8,11 @@ using Microsoft.Win32.SafeHandles;
 
 namespace Meziantou.Framework.Imaging.TestHarness.ExternalTools;
 
-/// <summary>Runs a process with <c>posix_spawn</c> on macOS, in place of <see cref="System.Diagnostics.Process"/>.</summary>
+/// <summary>Runs a process with <c>posix_spawn</c> on macOS, where <see cref="System.Diagnostics.Process"/> forks before .NET 11.</summary>
 /// <remarks>
-/// <para>
-/// Before .NET 11, <see cref="System.Diagnostics.Process"/> forks on macOS. A fork of a .NET process takes milliseconds and
-/// the forks of a process run one at a time: tests that start thousands of tools end up waiting on each other, whatever
-/// the number of tests running in parallel. .NET 11 starts processes with <c>posix_spawn</c> on macOS, and the other
-/// systems do not have this cost.
-/// </para>
-/// <para>
-/// On .NET 11 (11.0.0-rc.1), <c>Process.Kill(entireProcessTree: true)</c> never returns on macOS when another child
-/// process exits while it runs: it stops the process before killing it, and the <c>waitid</c> of macOS reports a stopped
-/// child to the loop that reaps exited children, which then spins with the lock the kill needs. Here, the child gets its
-/// own process group and a cancellation kills the group.
-/// </para>
+/// A fork of a .NET process takes milliseconds on macOS and the forks of a process run one at a time: tests that start
+/// thousands of tools end up waiting on each other, whatever the number of tests running in parallel. .NET 11 starts
+/// processes with <c>posix_spawn</c> on macOS, and the other systems do not have this cost.
 /// </remarks>
 [SupportedOSPlatform("macos")]
 internal static class PosixSpawnProcess
@@ -191,8 +183,8 @@ internal static class PosixSpawnProcess
         public int WaitForExit()
         {
             int result;
+            int error;
             var status = 0;
-            var error = 0;
             do
             {
                 result = unsafe(((delegate* unmanaged<int, int*, int, int>)Interop.WaitPid)(processId, &status, 0));
@@ -232,3 +224,4 @@ internal static class PosixSpawnProcess
         private static nint GetExport(string name) => NativeLibrary.GetExport(NativeLibrary.GetMainProgramHandle(), name);
     }
 }
+#endif

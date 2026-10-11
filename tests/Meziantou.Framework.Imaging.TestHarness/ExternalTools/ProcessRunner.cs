@@ -12,9 +12,11 @@ public static class ProcessRunner
     /// <returns>The result.</returns>
     public static Task<ProcessResult> RunAsync(string fileName, IEnumerable<string> arguments, CancellationToken cancellationToken)
     {
-        // Process is slow to start processes on macOS before .NET 11, and can hang when it kills a process tree there
+#if !NET11_0_OR_GREATER
+        // Process.Start forks on macOS before .NET 11: the starts of a process then run one at a time, at several milliseconds each
         if (OperatingSystem.IsMacOS())
             return PosixSpawnProcess.RunAsync(fileName, arguments, cancellationToken);
+#endif
 
         return RunWithProcessAsync(fileName, arguments, cancellationToken);
     }

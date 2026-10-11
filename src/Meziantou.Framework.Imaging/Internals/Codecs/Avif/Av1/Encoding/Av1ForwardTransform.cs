@@ -12,6 +12,15 @@ internal static class Av1ForwardTransform
 
     private static readonly int[]?[] DctBases = CreateBases(Av1InverseTransform.Kind.Dct, 6);
     private static readonly int[]?[] AdstBases = CreateBases(Av1InverseTransform.Kind.Adst, 4);
+    private static readonly int[] SquaredGains = MeasureSquaredGains();
+
+    /// <summary>
+    /// Returns the squared gain of the transforms of a size, with 8 fractional bits: the ratio between the sum of the
+    /// squares of the coefficients of a residual and the sum of the squares of its samples. The transforms of a size have
+    /// the same gain whatever their type, so a squared error of coefficients divided by the gain is the squared error of
+    /// the samples, which is how the transform types of a block are compared without reconstructing it.
+    /// </summary>
+    public static int GetSquaredGain(int txSz) => SquaredGains[txSz];
 
     /// <summary>
     /// Transforms the residual of a transform block into coefficients, in the scale of the dequantized coefficients: the
@@ -181,6 +190,40 @@ internal static class Av1ForwardTransform
         }
 
         return bases;
+    }
+
+    // The gains are measured like the bases: on the transform of a residual, here a fixed sequence of samples
+    private static int[] MeasureSquaredGains()
+    {
+        var gains = new int[Av1Constants.TxSizesAll];
+        Span<int> residual = stackalloc int[64 * 64];
+        Span<int> coefficients = stackalloc int[32 * 32];
+        for (var txSz = 0; txSz < gains.Length; txSz++)
+        {
+            int w = Av1Tables.TxWidth[txSz];
+            int h = Av1Tables.TxHeight[txSz];
+            var state = 12345u;
+            long samples = 0;
+            for (var i = 0; i < w * h; i++)
+            {
+                // A linear congruential generator: the same samples on every platform
+                state = (state * 1664525) + 1013904223;
+                residual[i] = (int)(state >> 24) - 128;
+                samples += (long)residual[i] * residual[i];
+            }
+
+            var count = Math.Min(32, w) * Math.Min(32, h);
+            Forward(residual[..(w * h)], coefficients[..count], txSz, Av1Constants.DctDct);
+            long energy = 0;
+            foreach (var coefficient in coefficients[..count])
+            {
+                energy += (long)coefficient * coefficient;
+            }
+
+            gains[txSz] = (int)Math.Max(1, ((energy << 8) + (samples / 2)) / samples);
+        }
+
+        return gains;
     }
 
     /// <summary>

@@ -694,16 +694,34 @@ internal ref partial struct Av1TileCoder
             var chromaCount = RankIntraModes(contexts, r, c, bw4, bh4, planeMask: 0b110, estimates, modes, _decisions.ChromaModeCandidates);
             bestCost = MaxCost;
             var bestUvMode = Av1Constants.DcPred;
+            var bestAlphaU = 0;
+            var bestAlphaV = 0;
             long bestDistortion = 0;
             bestHasCoefficients = false;
             lastIsBest = false;
             _uvMode = Av1Constants.DcPred;
-            for (var i = 0; i < chromaCount; i++)
+
+            // The prediction from the luma samples of the block, which are the ones of its best luma mode, is one more mode
+            var candidateCount = chromaCount + (_decisions.ChromaFromLuma && IsCflAllowed() ? 1 : 0);
+            for (var i = 0; i < candidateCount; i++)
             {
+                if (i < chromaCount)
+                {
+                    _uvMode = modes[i];
+                    _cflAlphaU = 0;
+                    _cflAlphaV = 0;
+                }
+                else if (!SearchCflAlphas(contexts, r, c, bw4, bh4))
+                {
+                    // The search of the alphas predicted the chroma samples of the block: the frame does not hold the
+                    // best mode any more
+                    lastIsBest = false;
+                    break;
+                }
+
                 CopyContexts(contexts, r, c, bw4, bh4, save: false);
                 var candidateStart = chromaStart + chromaLength;
                 _recordPosition = candidateStart;
-                _uvMode = modes[i];
                 _rate = 0;
                 _distortion = 0;
                 _hasCoefficients = false;
@@ -716,6 +734,8 @@ internal ref partial struct Av1TileCoder
                 {
                     bestCost = cost;
                     bestUvMode = _uvMode;
+                    bestAlphaU = _cflAlphaU;
+                    bestAlphaV = _cflAlphaV;
                     bestDistortion = _distortion;
                     bestHasCoefficients = _hasCoefficients;
                     uLength = candidateULength;
@@ -724,7 +744,7 @@ internal ref partial struct Av1TileCoder
                         workspace.Records.Slice(candidateStart, chromaLength).CopyTo(workspace.Records[chromaStart..]);
 
                     lastIsBest = true;
-                    if (i < chromaCount - 1)
+                    if (i < candidateCount - 1)
                         CopyPixels(pixels, r, c, bw4, bh4, planeMask: 0b110, save: true);
                 }
                 else
@@ -734,6 +754,8 @@ internal ref partial struct Av1TileCoder
             }
 
             _uvMode = bestUvMode;
+            _cflAlphaU = bestAlphaU;
+            _cflAlphaV = bestAlphaV;
             distortion += bestDistortion;
             hasCoefficients |= bestHasCoefficients;
             if (!lastIsBest)
@@ -830,6 +852,67 @@ internal ref partial struct Av1TileCoder
 
         search.LastIsBest = true;
         CopyPixels(workspace.GetPixelSnapshot(search.Level, block: true), search.R, search.C, search.Bw4, search.Bh4, planeMask: 0b001, save: true);
+    }
+
+    // The search of the alphas of the chroma from luma prediction (UV_CFL_PRED): for each chroma plane, the alpha whose
+    // prediction is the closest to the samples of the block, found by halving a step from 0. Returns whether an alpha is
+    // not zero: the prediction is DC_PRED otherwise
+    private bool SearchCflAlphas(Span<byte> contexts, int r, int c, int bw4, int bh4)
+    {
+        const int MaxAlpha = 16;
+        _uvMode = Av1Constants.UvCflPred;
+        _cflAlphaU = 0;
+        _cflAlphaV = 0;
+        _estimating = true;
+        for (var plane = 1; plane <= 2; plane++)
+        {
+            var best = 0;
+            var bestError = Estimate(contexts, r, c, bw4, bh4, plane, alpha: 0);
+            for (var step = MaxAlpha / 2; step >= 1; step >>= 1)
+            {
+                var center = best;
+                for (var sign = -1; sign <= 1; sign += 2)
+                {
+                    var alpha = center + (sign * step);
+                    if (Math.Abs(alpha) > MaxAlpha)
+                        continue;
+
+                    var error = Estimate(contexts, r, c, bw4, bh4, plane, alpha);
+                    if (error < bestError)
+                        (bestError, best) = (error, alpha);
+                }
+            }
+
+            if (plane is 1)
+            {
+                _cflAlphaU = best;
+            }
+            else
+            {
+                _cflAlphaV = best;
+            }
+        }
+
+        _estimating = false;
+        return _cflAlphaU is not 0 || _cflAlphaV is not 0;
+    }
+
+    // The error of the prediction of a chroma plane from the luma samples with an alpha
+    private long Estimate(Span<byte> contexts, int r, int c, int bw4, int bh4, int plane, int alpha)
+    {
+        CopyContexts(contexts, r, c, bw4, bh4, save: false);
+        if (plane is 1)
+        {
+            _cflAlphaU = alpha;
+        }
+        else
+        {
+            _cflAlphaV = alpha;
+        }
+
+        _estimate = 0;
+        Residual(ResidualOperation.Search, planeMask: 1 << plane);
+        return _estimate;
     }
 
     // Orders the intra modes of the planes of planeMask by the error of their prediction, and returns the number of modes
@@ -1173,12 +1256,12 @@ internal ref partial struct Av1TileCoder
             }
         }
 
-        // The transform type of a luma block is DCT in both directions until the search of the types exists; the type of a
-        // chroma block follows from its mode
-        const int LumaTxType = Av1Constants.DctDct;
-        var planeTxType = plane is 0 ? GetLumaPlaneTxType(txSz, LumaTxType) : ComputeTxType(plane, txSz, startX >> 2, startY >> 2);
+        // The transform type of a luma block is searched; the type of a chroma block follows from its mode, or from the
+        // type of the luma block for an inter block
         var count = txSz is Av1Constants.Tx16x64 or Av1Constants.Tx64x16 ? 512 : Math.Min(1024, w * h);
         var coefficients = workspace.Coefficients[..count];
+        var lumaTxType = plane is 0 ? SearchTransformType(residual, coefficients, txSz, startX, startY) : Av1Constants.DctDct;
+        var planeTxType = plane is 0 ? GetLumaPlaneTxType(txSz, lumaTxType) : ComputeTxType(plane, txSz, startX >> 2, startY >> 2);
         if (_lossless)
         {
             Av1ForwardTransform.ForwardWalshHadamard4x4(residual, coefficients);
@@ -1203,10 +1286,10 @@ internal ref partial struct Av1TileCoder
                 eob = i + 1;
         }
 
-        record[0] = LumaTxType;
+        record[0] = lumaTxType;
         record[1] = eob;
         _recordPosition += 2 + eob;
-        WriteCoeffs(plane, startX, startY, txSz, LumaTxType, record.Slice(2, eob), eob);
+        WriteCoeffs(plane, startX, startY, txSz, lumaTxType, record.Slice(2, eob), eob);
         if (eob > 0)
         {
             _hasCoefficients = true;
@@ -1234,6 +1317,125 @@ internal ref partial struct Av1TileCoder
         }
 
         FinishTransformBlock(plane, txSz, startX, startY);
+    }
+
+    // The transform types in the order they are tried: the search of a block tries the first ones that its transform set
+    // holds
+    private static ReadOnlySpan<byte> TransformTypeOrder =>
+    [
+        Av1Constants.DctDct, Av1Constants.AdstAdst, Av1Constants.AdstDct, Av1Constants.DctAdst, Av1Constants.Idtx, Av1Constants.VDct, Av1Constants.HDct,
+        Av1Constants.FlipadstDct, Av1Constants.DctFlipadst, Av1Constants.FlipadstFlipadst, Av1Constants.AdstFlipadst, Av1Constants.FlipadstAdst,
+        Av1Constants.VAdst, Av1Constants.HAdst, Av1Constants.VFlipadst, Av1Constants.HFlipadst,
+    ];
+
+    // The search of the transform type of a luma transform block (the value of intra_tx_type or inter_tx_type): each type
+    // is costed with its coefficients and with the error of their quantization, which is measured on the coefficients
+    // rather than on the samples that they are transformed back to. The contexts are left as they are found
+    private int SearchTransformType(scoped ReadOnlySpan<int> residual, scoped Span<int> coefficients, int txSz, int startX, int startY)
+    {
+        var set = GetTxSet(txSz);
+        if (_lossless || set is Av1Constants.TxSetDctonly || _decisions.TransformTypeCandidates <= 1)
+            return Av1Constants.DctDct;
+
+        var workspace = _workspace!;
+        var x4 = startX >> 2;
+        var y4 = startY >> 2;
+        var w4 = Av1Tables.TxWidth[txSz] >> 2;
+        var h4 = Av1Tables.TxHeight[txSz] >> 2;
+        Span<byte> contexts = stackalloc byte[4 * 16];
+        CopyTransformBlockContexts(contexts, plane: 0, x4, y4, w4, h4, save: true);
+        GetQuantizers(plane: 0, out var dcQuantizer, out var acQuantizer);
+        var denominator = Av1Reconstruction.GetDequantizationDenominator(txSz);
+        var gain = Av1ForwardTransform.GetSquaredGain(txSz);
+        var inSet = _isInter ? Av1Tables.TxTypeInSetInter : Av1Tables.TxTypeInSetIntra;
+        var count = coefficients.Length;
+
+        // The levels of a candidate, in the order of the coefficients then in scan order, after the records of the block
+        workspace.EnsureRecords(_recordPosition, 2 * count);
+        var rate = _rate;
+        var best = Av1Constants.DctDct;
+        var bestCost = MaxCost;
+        var tried = 0;
+        foreach (var txType in TransformTypeOrder)
+        {
+            if (inSet[(set * Av1Constants.TxTypes) + txType] is 0)
+                continue;
+
+            if (tried > 0)
+                CopyTransformBlockContexts(contexts, plane: 0, x4, y4, w4, h4, save: false);
+
+            var levels = workspace.Records.Slice(_recordPosition, count);
+            var ordered = workspace.Records.Slice(_recordPosition + count, count);
+            Av1ForwardTransform.Forward(residual, coefficients, txSz, txType);
+            Av1Quantizer.Quantize(coefficients, levels, dcQuantizer, acQuantizer, denominator, _bitDepth, _decisions.QuantizerRounding);
+            long error = 0;
+            for (var i = 0; i < count; i++)
+            {
+                long difference = coefficients[i] - Av1Quantizer.Dequantize(levels[i], i is 0 ? dcQuantizer : acQuantizer, denominator, _bitDepth);
+                error += difference * difference;
+            }
+
+            var scan = GetScan(txSz, txType);
+            var eob = 0;
+            for (var i = 0; i < count; i++)
+            {
+                var level = levels[scan[i]];
+                ordered[i] = level;
+                if (level is not 0)
+                    eob = i + 1;
+            }
+
+            _rate = 0;
+            WriteCoeffs(plane: 0, startX, startY, txSz, txType, ordered[..eob], eob);
+            var cost = _decisions.GetCost((error << 8) / gain, _rate);
+            if (cost < bestCost)
+            {
+                bestCost = cost;
+                best = txType;
+            }
+
+            // A block whose coefficients are all quantized to zero by the first type has nothing to gain from another one
+            if (eob is 0 || ++tried == _decisions.TransformTypeCandidates)
+                break;
+        }
+
+        CopyTransformBlockContexts(contexts, plane: 0, x4, y4, w4, h4, save: false);
+        _rate = rate;
+        return best;
+    }
+
+    // Saves or restores the level and DC contexts above and to the left of a transform block: 4 lines of 16 contexts at most
+    private readonly void CopyTransformBlockContexts(Span<byte> snapshot, int plane, int x4, int y4, int w4, int h4, bool save)
+    {
+        var aboveLevel = _state.GetAboveLevelContext(plane).Slice(x4, w4);
+        var aboveDc = _state.GetAboveDcContext(plane).Slice(x4, w4);
+        var leftLevel = _scratch.GetLeftLevelContext(plane);
+        var leftDc = _scratch.GetLeftDcContext(plane);
+        if (save)
+        {
+            aboveLevel.CopyTo(snapshot);
+            aboveDc.CopyTo(snapshot[16..]);
+        }
+        else
+        {
+            snapshot[..w4].CopyTo(aboveLevel);
+            snapshot.Slice(16, w4).CopyTo(aboveDc);
+        }
+
+        for (var i = 0; i < h4; i++)
+        {
+            var index = (y4 + i) & 31;
+            if (save)
+            {
+                snapshot[32 + i] = leftLevel[index];
+                snapshot[48 + i] = leftDc[index];
+            }
+            else
+            {
+                leftLevel[index] = snapshot[32 + i];
+                leftDc[index] = snapshot[48 + i];
+            }
+        }
     }
 
     // The counterpart of section 5.11.35 "Transform block syntax" for a recorded block: writes the coefficients

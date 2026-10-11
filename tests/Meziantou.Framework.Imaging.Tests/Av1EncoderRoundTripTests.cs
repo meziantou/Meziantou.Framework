@@ -405,6 +405,76 @@ public sealed class Av1EncoderRoundTripTests
         Assert.HasCountLessThanOrEqual(fast.Length, slow);
     }
 
+    [Theory]
+    [InlineData(0, false)]
+    [InlineData(7, true)]
+    public void TheSearchUsesTheToolsOfItsEffort(int effort, bool expected)
+    {
+        // A few luma samples that stand out of a flat area, which the identity transform codes with fewer coefficients than
+        // a DCT, and chroma samples that follow the luma samples, which only they predict
+        const int Width = 96;
+        const int Height = 64;
+        var scope = AllocationScope.Create(ImageConfiguration.Default, nameof(TheSearchUsesTheToolsOfItsEffort));
+        var settings = new Av1EncoderSettings(Width, Height, 8, Monochrome: false, 1, 1, 1, 13, 6, FullRange: true, ChromaSamplePosition: 0, StillPicture: true, Lossless: false, Quality: 80, effort);
+        using var encoder = new Av1Encoder(scope, settings);
+        var random = new Random(17);
+        var luma = encoder.GetSourcePlane(0);
+        for (var y = 0; y < Height; y++)
+        {
+            var row = luma.GetRow(y);
+            for (var x = 0; x < Width; x++)
+            {
+                row[x] = (ushort)(x < Width / 2 ? (random.Next(12) is 0 ? 230 : 40) : 60 + (random.Next(4) * 45));
+            }
+        }
+
+        for (var plane = 1; plane < 3; plane++)
+        {
+            var chroma = encoder.GetSourcePlane(plane);
+            for (var y = 0; y < chroma.Height; y++)
+            {
+                var row = chroma.GetRow(y);
+                for (var x = 0; x < chroma.Width; x++)
+                {
+                    var average = (luma.GetRow(2 * y)[2 * x] + luma.GetRow(2 * y)[(2 * x) + 1] + luma.GetRow((2 * y) + 1)[2 * x] + luma.GetRow((2 * y) + 1)[(2 * x) + 1]) / 4;
+                    row[x] = (ushort)(plane is 1 ? 64 + (average / 2) : 200 - (average / 2));
+                }
+            }
+        }
+
+        encoder.BeginFrame();
+        while (!encoder.Encode(TestContext.Current.CancellationToken))
+        {
+        }
+
+        var payload = encoder.Payload.ToArray();
+        using var decoder = new Av1Decoder(scope);
+        decoder.SetInput(payload, 0, payload.Length);
+        var frame = decoder.DecodeNextOutputFrame(TestContext.Current.CancellationToken);
+        Assert.NotNull(frame);
+        try
+        {
+            for (var plane = 0; plane < 3; plane++)
+            {
+                var decoded = frame.GetPlane(plane);
+                var reconstructed = encoder.Reconstruction.GetPlane(plane);
+                for (var y = 0; y < decoded.Height; y++)
+                {
+                    Assert.True(reconstructed.GetRow(y).SequenceEqual(decoded.GetRow(y)), $"effort {effort}: row {y} of plane {plane} is not the row that the encoder reconstructed");
+                }
+            }
+        }
+        finally
+        {
+            frame.Release();
+        }
+
+        TestContext.Current.TestOutputHelper?.WriteLine($"effort {effort}: {payload.Length} bytes, {decoder.Tools}");
+        Assert.Equal(expected, decoder.Tools.HasFlag(Av1Tools.ChromaFromLuma));
+        Assert.Equal(expected, decoder.Tools.HasFlag(Av1Tools.IdentityTransform));
+        Assert.Equal(expected, decoder.Tools.HasFlag(Av1Tools.FilterIntra));
+    }
+
     private static byte[] EncodeLossless(int width, int height, int bitDepth, int effort, int seed)
     {
         var scope = AllocationScope.Create(ImageConfiguration.Default, nameof(EncodeLossless));

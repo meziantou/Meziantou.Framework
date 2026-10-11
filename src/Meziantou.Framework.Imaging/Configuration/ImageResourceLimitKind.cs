@@ -29,4 +29,10 @@ public enum ImageResourceLimitKind
 
     /// <summary><see cref="ImageResourceLimits.MaxLiveAllocationBytes"/>.</summary>
     LiveAllocationBytes = 8,
+
+    /// <summary><see cref="ImageResourceLimits.MaxFontBytes"/>.</summary>
+    FontBytes = 9,
+
+    /// <summary><see cref="ImageResourceLimits.MaxGlyphComplexity"/>.</summary>
+    GlyphComplexity = 10,
 }

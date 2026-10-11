@@ -4,6 +4,7 @@ using Meziantou.Framework.Imaging.Metadata;
 using Meziantou.Framework.Imaging.Samples;
 using Meziantou.Framework.Imaging.TestHarness.Adapters;
 using Meziantou.Framework.Imaging.TestHarness.Golden;
+using Meziantou.Framework.Imaging.TestHarness.Fixtures;
 
 namespace Meziantou.Framework.Imaging.Tests.Documentation;
 
@@ -506,6 +507,18 @@ public sealed class DocumentationExampleTests : IDisposable
 
         using var gif = File.OpenRead(gifPath);
         Assert.Equal("Gif 64x64 Rgba32, frames: 2, orientation: TopLeft", Examples.Describe(gif));
+    }
+
+    [Fact]
+    public void DescribeFontReadsNamesAndMetrics()
+    {
+        // The same font in three containers: the values the corpus records for it (fonts/vectors/noto-sans-regular.json)
+        // are 1000 units per em, an ascent of 1069 and a descent of 293, so 17.104 and 4.688 at 16 pixels.
+        var root = FixtureRoot.GetDirectory() / "fonts" / "noto-sans";
+        foreach (var name in (string[])["NotoSans-Regular.subset.ttf", "NotoSans-Regular.subset.woff", "NotoSans-Regular.subset.woff2"])
+        {
+            Assert.Equal("Noto Sans Regular: 425 glyphs, ascent 17.1, descent 4.69, euro sign: True", Examples.DescribeFont(root / name));
+        }
     }
 
     [Fact]

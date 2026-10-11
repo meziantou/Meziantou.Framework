@@ -1,0 +1,211 @@
+using Meziantou.Framework.Imaging.Internals;
+
+namespace Meziantou.Framework.Imaging.Typography;
+
+/// <summary>
+/// A font face loaded from a TrueType or OpenType file (<c>.ttf</c>), or from a face of a font collection (<c>.ttc</c>).
+/// </summary>
+/// <remarks>
+/// <para>
+/// A font is immutable and can be used by several threads at the same time. It keeps the bytes of its file in memory
+/// for its whole lifetime, within <see cref="ImageResourceLimits.MaxFontBytes"/>, and reads its tables from them: it
+/// holds no other resource and needs no disposal. The faces of a collection share the bytes.
+/// </para>
+/// <para>
+/// A font file is untrusted input. What every use of the font needs is validated when it is loaded; the data of a
+/// glyph is validated when the glyph is first needed, and the work to produce one glyph is bounded by
+/// <see cref="ImageResourceLimits.MaxGlyphComplexity"/>.
+/// </para>
+/// </remarks>
+public sealed class Font
+{
+    /// <summary>The greatest font size, in pixels per em.</summary>
+    internal const double MaxSize = 65536;
+
+    internal Font(FontFace face)
+    {
+        Face = face;
+        Metrics = CreateMetrics(face);
+    }
+
+    internal FontFace Face { get; }
+
+    /// <summary>Gets the name of the family of the font, such as <c>Noto Sans</c>; empty when the font has no name.</summary>
+    /// <remarks>The typographic family name is used when the font has one: it groups every weight and style of the design.</remarks>
+    public string FamilyName => Face.FamilyName;
+
+    /// <summary>Gets the name of the style of the font within its family, such as <c>Bold Italic</c>; empty when the font has no name.</summary>
+    public string SubfamilyName => Face.SubfamilyName;
+
+    /// <summary>Gets the PostScript name of the font, such as <c>NotoSans-Bold</c>, or <see langword="null"/> when the font has none.</summary>
+    public string? PostScriptName => Face.PostScriptName;
+
+    /// <summary>Gets the weight of the font, from 1 to 1000: 400 is regular, 700 is bold.</summary>
+    public int Weight => Face.Weight;
+
+    /// <summary>Gets a value indicating whether the font is italic or oblique.</summary>
+    public bool IsItalic => Face.IsItalic;
+
+    /// <summary>Gets a value indicating whether the font declares that all its glyphs have the same advance.</summary>
+    public bool IsMonospaced => Face.IsMonospaced;
+
+    /// <summary>Gets the number of font units per em: the scale of the coordinates of the font.</summary>
+    public int UnitsPerEm => Face.UnitsPerEm;
+
+    /// <summary>Gets the number of glyphs of the font.</summary>
+    public int GlyphCount => Face.GlyphCount;
+
+    /// <summary>Gets the vertical metrics of the font, in font units.</summary>
+    /// <remarks>
+    /// <para>
+    /// The ascent, the descent and the line gap are the typographic values of the font when it asks for them to be
+    /// used (the <c>USE_TYPO_METRICS</c> flag); else the values of its horizontal header; else its typographic values;
+    /// else its Windows values.
+    /// </para>
+    /// <para>
+    /// When the font does not declare an underline, it is 1/16 em thick with its top 1/8 em below the baseline; when it
+    /// does not declare a strikethrough line, it is 1/16 em thick with its top 5/16 em above the baseline.
+    /// </para>
+    /// </remarks>
+    public FontMetrics Metrics { get; }
+
+    /// <summary>Loads a font from a file. For a font collection, the first face is loaded.</summary>
+    /// <param name="path">The path of the file. The file is closed before the method returns.</param>
+    /// <param name="options">The options, or <see langword="null"/> for <see cref="FontLoadOptions.Default"/>.</param>
+    /// <returns>The font.</returns>
+    /// <exception cref="ArgumentException"><paramref name="path"/> is empty.</exception>
+    /// <exception cref="UnknownImageFormatException">The file is not a font.</exception>
+    /// <exception cref="InvalidImageContentException">The font is malformed or truncated.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">The font uses a feature that is not supported.</exception>
+    /// <exception cref="ImageResourceLimitException">A configured limit is exceeded.</exception>
+    /// <exception cref="IOException">An I/O error occurred.</exception>
+    public static Font Load(string path, FontLoadOptions? options = null)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(path);
+        return new Font(FontLoader.Load(path, (options ?? FontLoadOptions.Default).Configuration)[0]);
+    }
+
+    /// <summary>Loads a font from a stream, read from its current position to its end. For a font collection, the first face is loaded.</summary>
+    /// <param name="stream">The readable source stream. It is left open and is not retained after the method returns.</param>
+    /// <param name="options">The options, or <see langword="null"/> for <see cref="FontLoadOptions.Default"/>.</param>
+    /// <returns>The font.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="stream"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="stream"/> is not readable.</exception>
+    /// <exception cref="UnknownImageFormatException">The data is not a font.</exception>
+    /// <exception cref="InvalidImageContentException">The font is malformed or truncated.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">The font uses a feature that is not supported.</exception>
+    /// <exception cref="ImageResourceLimitException">A configured limit is exceeded.</exception>
+    /// <exception cref="IOException">An I/O error occurred.</exception>
+    public static Font Load(Stream stream, FontLoadOptions? options = null)
+    {
+        ValidateReadableStream(stream);
+        return new Font(FontLoader.Load(stream, (options ?? FontLoadOptions.Default).Configuration)[0]);
+    }
+
+    /// <summary>Loads a font from the bytes of a font file. For a font collection, the first face is loaded.</summary>
+    /// <param name="data">The bytes of the file. They are copied: the font does not refer to the span after the method returns.</param>
+    /// <param name="options">The options, or <see langword="null"/> for <see cref="FontLoadOptions.Default"/>.</param>
+    /// <returns>The font.</returns>
+    /// <exception cref="UnknownImageFormatException">The data is not a font.</exception>
+    /// <exception cref="InvalidImageContentException">The font is malformed or truncated.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">The font uses a feature that is not supported.</exception>
+    /// <exception cref="ImageResourceLimitException">A configured limit is exceeded.</exception>
+    public static Font Load(ReadOnlySpan<byte> data, FontLoadOptions? options = null)
+        => new(FontLoader.Load(data, (options ?? FontLoadOptions.Default).Configuration)[0]);
+
+    /// <summary>Asynchronously loads a font from a file, using asynchronous file I/O. For a font collection, the first face is loaded.</summary>
+    /// <param name="path">The path of the file.</param>
+    /// <param name="options">The options, or <see langword="null"/> for <see cref="FontLoadOptions.Default"/>.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+    /// <returns>The font.</returns>
+    /// <exception cref="ArgumentException"><paramref name="path"/> is empty.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public static Task<Font> LoadAsync(string path, FontLoadOptions? options = null, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(path);
+        return LoadCoreAsync(FontLoader.LoadAsync(path, (options ?? FontLoadOptions.Default).Configuration, cancellationToken));
+    }
+
+    /// <summary>Asynchronously loads a font from a stream, read from its current position to its end. For a font collection, the first face is loaded.</summary>
+    /// <param name="stream">The readable source stream. It is left open.</param>
+    /// <param name="options">The options, or <see langword="null"/> for <see cref="FontLoadOptions.Default"/>.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+    /// <returns>The font.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="stream"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="stream"/> is not readable.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public static Task<Font> LoadAsync(Stream stream, FontLoadOptions? options = null, CancellationToken cancellationToken = default)
+    {
+        ValidateReadableStream(stream);
+        return LoadCoreAsync(FontLoader.LoadAsync(stream, (options ?? FontLoadOptions.Default).Configuration, cancellationToken));
+    }
+
+    /// <summary>Gets the vertical metrics of the font at a size, in pixels.</summary>
+    /// <param name="size">The size of the font, in pixels per em.</param>
+    /// <returns>The metrics of <see cref="Metrics"/> multiplied by <paramref name="size"/> / <see cref="UnitsPerEm"/>.</returns>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="size"/> is not a positive finite number, or is greater than 65536.</exception>
+    public FontMetrics GetMetrics(double size)
+    {
+        ValidateSize(size, nameof(size));
+        return Metrics.Scale(size / UnitsPerEm);
+    }
+
+    /// <summary>Determines whether the font has a glyph for a character.</summary>
+    /// <param name="codePoint">The character.</param>
+    /// <returns><see langword="true"/> when the character map of the font gives the character a glyph other than the missing glyph.</returns>
+    public bool ContainsGlyph(Rune codePoint) => Face.MapCodePoint(codePoint.Value) != 0;
+
+    internal static void ValidateSize(double size, string parameterName)
+    {
+        if (!(size > 0) || size > MaxSize)
+            throw new ArgumentOutOfRangeException(parameterName, size, "The size of a font is a positive number of pixels per em, up to 65536.");
+    }
+
+    internal static void ValidateReadableStream(Stream stream)
+    {
+        ArgumentNullException.ThrowIfNull(stream);
+        if (!stream.CanRead)
+            throw new ArgumentException("The stream is not readable.", nameof(stream));
+    }
+
+    private static async Task<Font> LoadCoreAsync(Task<FontFace[]> faces) => new((await faces.ConfigureAwait(false))[0]);
+
+    private static FontMetrics CreateMetrics(FontFace face)
+    {
+        int ascender;
+        int descender;
+        int lineGap;
+        if (face.HasOs2 && face.UseTypoMetrics)
+        {
+            (ascender, descender, lineGap) = (face.TypoAscender, face.TypoDescender, face.TypoLineGap);
+        }
+        else if (face.HorizontalAscender != 0 || face.HorizontalDescender != 0)
+        {
+            (ascender, descender, lineGap) = (face.HorizontalAscender, face.HorizontalDescender, face.HorizontalLineGap);
+        }
+        else if (face.HasOs2 && (face.TypoAscender != 0 || face.TypoDescender != 0))
+        {
+            (ascender, descender, lineGap) = (face.TypoAscender, face.TypoDescender, face.TypoLineGap);
+        }
+        else
+        {
+            // The Windows descent is a distance, the others are coordinates.
+            (ascender, descender, lineGap) = (face.WinAscent, -face.WinDescent, 0);
+        }
+
+        // The defaults of the lines a font does not declare are fractions of the em.
+        double unitsPerEm = face.UnitsPerEm;
+        var hasUnderline = face.HasPost && face.UnderlineThickness > 0;
+        var hasStrikethrough = face.HasOs2 && face.StrikeoutSize > 0;
+        return new FontMetrics(
+            ascent: ascender,
+            descent: -descender,
+            lineGap: lineGap,
+            capHeight: face.CapHeight,
+            xHeight: face.XHeight,
+            underlinePosition: hasUnderline ? -face.UnderlinePosition : unitsPerEm / 8,
+            underlineThickness: hasUnderline ? face.UnderlineThickness : unitsPerEm / 16,
+            strikethroughPosition: hasStrikethrough ? face.StrikeoutPosition : unitsPerEm * 5 / 16,
+            strikethroughThickness: hasStrikethrough ? face.StrikeoutSize : unitsPerEm / 16);
+    }
+}

@@ -1,8 +1,8 @@
 # Meziantou.Framework.Imaging
 
 A fully managed image library: PNG/APNG, GIF, JPEG, WebP, QOI, BMP, TGA, Netpbm, TIFF, ICO/CUR and ANI decoding and
-encoding, AVIF decoding (with its own AV1 decoder), animation-aware processing, vector drawing, ICC color conversion, and
-bounded-memory streaming readers and writers.
+encoding, AVIF decoding (with its own AV1 decoder), animation-aware processing, vector drawing, font files (TrueType,
+OpenType, WOFF, WOFF2), ICC color conversion, and bounded-memory streaming readers and writers.
 
 These instructions complete the repository-level `AGENTS.md`. The user guide is [readme.md](readme.md): it states what
 the library guarantees to its callers (support matrix, limitations, defaults). Keep the code, the XML documentation and
@@ -15,12 +15,13 @@ the library guarantees to its callers (support matrix, limitations, defaults). K
 - Fully managed, no package dependency and no native dependency. The library is trimmable and NativeAOT-compatible
   (`IsTrimmable`, `IsAotCompatible`): no reflection-based code.
 - Write implementations from the format specifications. Never copy or port code from other image libraries
-  (System.Drawing, libpng, libjpeg, giflib, libwebp, libavif, libaom, dav1d, stb, ...). Those libraries are test oracles
-  only: their output is compared with ours, their source is never read to write ours.
+  (System.Drawing, libpng, libjpeg, giflib, libwebp, libavif, libaom, dav1d, stb, ...) or from font libraries (FreeType,
+  HarfBuzz, the woff2 reference code, fontTools, ...). Those libraries are test oracles only: their output is compared
+  with ours, their source is never read to write ours.
 - No public allocator, custom pixel type, codec plug-in or image-processor interface. Implementation types are `internal`
   and live under `Internals/`.
-- Public namespaces: `Meziantou.Framework.Imaging`, `.Metadata`, `.Formats` (encoder settings) and `.Drawing` (brushes,
-  pens, paths, the canvas). The base types of the model (`Image`, `ImageFrame`, `ImageFrameCollection`, `ImageEncoder`,
+- Public namespaces: `Meziantou.Framework.Imaging`, `.Metadata`, `.Formats` (encoder settings), `.Drawing` (brushes,
+  pens, paths, the canvas) and `.Typography` (fonts). The base types of the model (`Image`, `ImageFrame`, `ImageFrameCollection`, `ImageEncoder`,
   `AutoCropAnalysis`, `Brush`, `GradientBrush`) cannot be derived outside the library.
 - Every public member has XML documentation (`DisableDocumentationWarnings` is `false`).
 - `Meziantou.Framework.FullPath` is used by the tests, benchmarks and tools, never by the library.
@@ -177,6 +178,42 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
   `ReferenceStroke` membership predicate; `Conformance/DrawingReferenceTests`), and invariants over random drawings
   (`DrawingFuzzTests`). The references never reuse the flattening or stroking of the library: curves are checked
   against the true curve, strokes against the predicate, and the pieces the library emits are then filled exactly.
+
+## Fonts
+
+`Font` and `FontCollection` (`Typography/`) are thin public types over `Internals/Fonts`: `FontLoader` reads the file
+and expands the containers (`WoffReader`, `Woff2Reader` and `Woff2GlyfTransform`), `FontFace` validates the table
+directory and the fixed-size tables, `CmapTable` maps characters, `GlyfOutlineReader` and `CffTable` with
+`CffCharstringInterpreter` decode outlines into an `OutlineSink`.
+
+- Written from the OpenType specification, the WOFF 1.0 and 2.0 recommendations and Adobe Technical Notes #5176 (CFF)
+  and #5177 (Type 2 charstrings); cite the section in the code.
+- **A font is not an image.** No `ImageFormat` member, no codec, no `Font*Exception`: the errors are the four content
+  exceptions with `ImageFormat.Unknown` (`FontErrors`), as for ICC profiles. An unsupported feature is named
+  `"Font: <feature>"`.
+- **A font is immutable, thread-safe and not disposable.** It keeps one exact garbage-collected `byte[]` (`FontData`,
+  like `MetadataBlob`), shared by the faces of a collection, bounded by `MaxFontBytes` before it is allocated; tables are
+  read in place, never copied. It has no cache and no state: the working storage of a glyph is a caller-owned
+  `GlyphScratch` charged to an allocation scope, and a `GlyphBudget` per glyph.
+- **Untrusted input.** Every read goes through `FontBinary` (bounds-checked, `InvalidImageContentException`), table sizes
+  use 64-bit arithmetic, and nothing is sized from a declared length before it is checked against a limit. Anything that
+  can expand (composite glyphs, subroutines, later paint graphs and lookups) charges `GlyphBudget` per elementary
+  operation: recursion depth alone does not bound the work. Outline coordinates are bounded (`FontErrors.MaxCoordinate`)
+  so that no value that is not a number leaves a reader. Only the documented exceptions may escape (`FontFuzzTests`).
+- **Validate eagerly what every use needs** (directory, required tables, headers, the structure of `cmap` and of the CFF
+  INDEX and DICT structures) and lazily what one glyph needs (its data, its charstring).
+- A compressed container is expanded to an sfnt in memory, then read as one. The temporary storage of the expansion is
+  rented from an allocation scope; the font itself is not (it outlives every scope). `ZLibStream` and `BrotliDecoder`
+  are given known-size destinations and must fill them exactly; a decompressor error of any type is malformed content.
+- **Outlines are what the reference readers emit.** A TrueType contour is always closed by a line to its first point and
+  a contour of one point is kept; a CFF contour is closed by a line only when its last point is another one, and a
+  contour that draws nothing is not emitted. The recorded outlines of the corpus compare as strings: keep that exact.
+- Tests have three sources: literals computed by hand on fonts built in memory (`FontTests`, with `Common/FontBuilder.cs`,
+  `FontCffWriter.cs`, `FontCharstring.cs` and `FontWoff2Writer.cs` of the corpus generator, linked into the tests), the
+  values HarfBuzz and FreeType both give for the fonts of the corpus (`Conformance/FontConformanceTests`: names,
+  metrics, the whole character map, every advance and outline; a container must give the tables of its original font),
+  and mutation fuzzing (`FontFuzzTests`). The test-side writers are not oracles: a file they write is a fixture only
+  after the corpus generator has read it back with the reference decoders.
 
 ## Performance work
 

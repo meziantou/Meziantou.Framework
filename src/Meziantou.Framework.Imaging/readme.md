@@ -21,6 +21,8 @@ color conversion, and bounded-memory streaming.
   grayscale and convolution matrices (sharpen, blur, edge detection) applied to all frames
 - Antialiased vector drawing on a frame or on every frame: filled and stroked rectangles, ellipses and paths with
   Bézier curves, solid colors, linear and radial gradients, with exact pixel coverage
+- Font files read without any system library: TrueType and OpenType (TrueType and CFF outlines), font collections,
+  WOFF and WOFF2, with their names, metrics, character map and glyph outlines
 - ICC color management on request: convert an image to another color profile, or convert sample buffers between two
   profiles: matrix- and table-based grayscale, RGB and CMYK profiles of versions 2 and 4, the four rendering intents
   and black point compensation (profiles are never applied implicitly)
@@ -45,6 +47,7 @@ compiled and run by the test suite.
   - [Pixel formats, precision and alpha](#pixel-formats-precision-and-alpha)
   - [Processing](#processing)
   - [Drawing](#drawing)
+  - [Fonts](#fonts)
   - [Metadata, color profiles and orientation](#metadata-color-profiles-and-orientation)
   - [Color management](#color-management)
   - [Loading, identification and limits](#loading-identification-and-limits)
@@ -746,6 +749,54 @@ of its edges and with the number of points where they cross each other, which th
 shapes has millions of crossings: a pen far wider than the bends of a long curve it follows. Pass a `CancellationToken`
 when shapes come from untrusted input; it is checked by every shape, every 64 rows and every few thousand crossings.
 
+### Fonts
+
+`Font` and `FontCollection` (namespace `Meziantou.Framework.Imaging.Typography`) read font files. Nothing comes from the
+operating system: no installed font is used, and a font is always a file, a stream or bytes given by the caller.
+
+<!-- snippet: load-font -->
+```csharp
+public static string DescribeFont(string path)
+{
+    // TrueType, OpenType, WOFF and WOFF2 are detected from the content of the file.
+    var font = Font.Load(path);
+    var metrics = font.GetMetrics(size: 16);
+    var hasEuro = font.ContainsGlyph(new Rune('€'));
+    return string.Create(
+        CultureInfo.InvariantCulture,
+        $"{font.FamilyName} {font.SubfamilyName}: {font.GlyphCount} glyphs, ascent {metrics.Ascent:0.##}, descent {metrics.Descent:0.##}, euro sign: {hasEuro}");
+}
+```
+
+| | Supported |
+| --- | --- |
+| Containers | TrueType and OpenType files (`.ttf`, `.otf`), font collections (`.ttc`, `.otc`), WOFF 1.0 and WOFF 2.0 (with the transformed glyph, location and horizontal metrics tables, and collections); detected from the content, never from the extension |
+| Outlines | TrueType (`glyf`: simple and composite glyphs, scaled, rotated and placed by matching points) and CFF version 1 (`CFF `: Type 2 charstrings, subroutines, CID-keyed fonts) |
+| Character maps | Unicode subtables of formats 0, 4, 6, 12 and 13, variation sequences (format 14), and the Macintosh Roman subtable for ASCII when a font has no Unicode one |
+| Names | The typographic family and subfamily when the font has them, the legacy ones otherwise; Windows and Unicode platform names, then Macintosh Roman |
+| Metrics | In font units (`Font.Metrics`) or scaled to a size in pixels (`Font.GetMetrics`): ascent, descent, line gap, cap height, x-height, underline and strikethrough. The ascent, descent and line gap come from the table the font designates (`hhea`, or the typographic values of `OS/2` when the font sets `USE_TYPO_METRICS` or has an empty `hhea`) |
+
+- **A font is immutable and thread-safe**, and is not disposable: it keeps the bytes of its file (the expanded font for
+  WOFF and WOFF2) in one array for its lifetime and has no cache. The fonts of a collection share that array.
+  `Font.Load` on a collection gives its first font; `FontCollection.Load` gives them all, and a file that holds one font
+  is a collection of one.
+- **Loading validates what every use needs**: the table directory, the required tables (`head`, `hhea`, `maxp`,
+  `hmtx`, `cmap`, and `loca` with `glyf`), the structure of the character map and of the CFF table. The data of a glyph
+  is validated when the glyph is used.
+- **A font is untrusted input.** The bytes read are bounded by `MaxEncodedBytes`, the bytes a font keeps by
+  `MaxFontBytes` (256 MiB by default; checked before a WOFF or WOFF2 file is expanded), and the work to produce one
+  glyph by `MaxGlyphComplexity` (1,000,000 points, components and charstring operators by default): glyphs made of
+  glyphs, or subroutines that call subroutines, can describe an outline that is exponentially larger than the file.
+  The limits are those of `FontLoadOptions.Configuration`.
+- **Errors** are the exceptions of the library with `ImageFormat.Unknown`: `UnknownImageFormatException` when the data
+  is not a font, `InvalidImageContentException` for a malformed font, `UnsupportedImageFeatureException` for the
+  features below, `ImageResourceLimitException` for a limit.
+- **Not supported**: CFF2 outlines and the variation tables (the font loads at its default instance, without its CFF2
+  outlines), bitmap and color glyph tables (`sbix`, `CBDT`, `COLR`, `SVG `), PostScript Type 1 fonts, Type 1
+  charstrings and the deprecated `seac` form of `endchar` in a CFF table, the font matrix of a CFF table (the units of
+  the `head` table are used), and hinting: instructions and hints are skipped. A WOFF or WOFF2 file is expanded in
+  memory; its metadata and private blocks are not read. Table checksums are not verified.
+
 ### Metadata, color profiles and orientation
 
 `Image.Metadata` holds the source format (informational only), the EXIF orientation, the
@@ -967,7 +1018,8 @@ public static string Describe(Stream stream)
 ```
 
 **Limits versus prefix selection.** `ImageResourceLimits` (canvas width/height, pixels per frame, frames, total pixels,
-encoded bytes, metadata bytes, live allocations) are safety bounds: exceeding one throws `ImageResourceLimitException`
+encoded bytes, metadata bytes, live allocations, and for fonts the bytes of a font and the complexity of a glyph) are
+safety bounds: exceeding one throws `ImageResourceLimitException`
 (`Kind`, `Limit`, `Requested`) and is never turned into a successful truncation. `FrameLimit` (decode and reader options)
 is deliberate prefix selection: decoding stops after that many displayed frames and the rest of the input is neither
 examined nor validated. Limits are inclusive and enforced before allocating or consuming.
@@ -1528,5 +1580,6 @@ Everything below is rejected explicitly (never decoded or encoded approximately)
 | Drawing | No text, no image or pattern brush, no transform, no clipping region other than the canvas, no dashed stroke, no elliptical-arc path element, no blend mode other than source-over; always antialiased; blended on the encoded sample values (no linear-light option); sequential; gradients have no focal point and no rotation of their own; coordinates are limited to ±16,777,216 |
 | Processing | No HDR, text rendering or custom processors; `LinearSrgb` resizing and convolution accept untagged or recognized sRGB/sGray profiles only; convolution matrices have odd dimensions, no bias or divisor, no ready-made matrices and no separable fast path |
 | AVIF | Decoding only. Rejected with `UnsupportedImageFeatureException`: premultiplied alpha, `iden`/`iovl` derived images, fragmented files, edit lists that do not play the whole track, image sequences whose images change size, clean apertures that do not select whole samples or that follow a rotation, grid tiles that declare other transformations than their grid, large scale tile streams, and the other matrix coefficients (constant luminance, ICtCp, SMPTE 2085, chromaticity-derived). Not read: gain maps, depth maps, thumbnails, the images that are not the primary item, the `tkhd` matrix and the other transformations of an image sequence (its images are returned as stored), mastering display and content light level boxes. A layered image is returned at its full quality only: its lower layers are not exposed as a progressive rendering. HDR samples are returned as stored: no tone mapping |
+| Fonts | No system font, no CFF2 outline, variation, bitmap or color glyph table, no Type 1 font, no hinting; see [Fonts](#fonts) |
 | Formats | JPEG XL is not supported |
 | API | No public allocator, custom pixel type, codec plug-in or image-processor interface; implementation types are internal |

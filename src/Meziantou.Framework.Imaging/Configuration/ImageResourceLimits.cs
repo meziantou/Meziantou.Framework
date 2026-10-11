@@ -38,6 +38,12 @@ public sealed class ImageResourceLimits
     /// <summary>The default maximum number of live library-controlled bytes per allocation scope (512 MiB).</summary>
     public const long DefaultMaxLiveAllocationBytes = 512L * 1024 * 1024;
 
+    /// <summary>The default maximum number of bytes a font keeps in memory (256 MiB).</summary>
+    public const long DefaultMaxFontBytes = 256L * 1024 * 1024;
+
+    /// <summary>The default maximum number of elementary operations to produce one glyph (1,000,000).</summary>
+    public const long DefaultMaxGlyphComplexity = 1_000_000;
+
     /// <summary>Gets the default limits.</summary>
     public static ImageResourceLimits Default { get; } = new();
 
@@ -136,6 +142,42 @@ public sealed class ImageResourceLimits
             field = value;
         }
     } = DefaultMaxLiveAllocationBytes;
+
+    /// <summary>
+    /// Gets the maximum number of bytes a font keeps in memory: the size of a font file, once decompressed when it is a
+    /// WOFF or WOFF2 file. Defaults to <see cref="DefaultMaxFontBytes"/>.
+    /// </summary>
+    /// <remarks>The bytes read from the input are bounded by <see cref="MaxEncodedBytes"/>, as for an image.</remarks>
+    /// <exception cref="ArgumentOutOfRangeException">The value is not positive.</exception>
+    public long MaxFontBytes
+    {
+        get;
+        init
+        {
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
+            field = value;
+        }
+    } = DefaultMaxFontBytes;
+
+    /// <summary>
+    /// Gets the maximum number of elementary operations spent to produce one glyph: the points of its outline, the
+    /// components of a composite glyph, the operators of a charstring, the nodes of a color glyph. Defaults to
+    /// <see cref="DefaultMaxGlyphComplexity"/>.
+    /// </summary>
+    /// <remarks>
+    /// A font can describe, in a few bytes, a glyph whose outline is exponentially large (glyphs made of glyphs made of
+    /// glyphs). This limit bounds the work and the memory a hostile font can ask for.
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException">The value is not positive.</exception>
+    public long MaxGlyphComplexity
+    {
+        get;
+        init
+        {
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
+            field = value;
+        }
+    } = DefaultMaxGlyphComplexity;
 
     /// <summary>
     /// Validates canvas dimensions against <see cref="MaxWidth"/>, <see cref="MaxHeight"/> and <see cref="MaxFramePixels"/>,

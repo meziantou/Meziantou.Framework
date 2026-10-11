@@ -22,6 +22,9 @@ namespace Meziantou.Framework.Imaging.CorpusGenerator.Common;
 internal sealed class FontBuilder
 {
     /// <summary>Gets or sets the number of font units per em (<c>head.unitsPerEm</c>).</summary>
+    /// <summary>Gets or sets the signature of the file: 0x00010000 for TrueType outlines, 'OTTO' for CFF outlines.</summary>
+    public uint SfntVersion { get; set; } = 0x00010000;
+
     public int UnitsPerEm { get; set; } = 1024;
 
     public string FamilyName { get; set; } = "Meziantou Test";
@@ -132,7 +135,7 @@ internal sealed class FontBuilder
     }
 
     /// <summary>Builds the font as a TrueType-flavored OpenType file.</summary>
-    public byte[] Build() => WriteSfnt(BuildTables());
+    public byte[] Build() => WriteSfnt(BuildTables(), SfntVersion);
 
     /// <summary>Builds the tables of the font, by tag.</summary>
     public SortedDictionary<string, byte[]> BuildTables()
@@ -419,9 +422,13 @@ internal sealed class FontBuilder
         }
     }
 
-    private FontBounds GetBounds(FontGlyph glyph, int depth)
+    internal FontBounds GetBounds(FontGlyph glyph, int depth = 0)
     {
-        if (depth > 8)
+        // A glyph that gives its bounds is not walked: it can then refer to itself, or to a glyph that does not exist.
+        if (glyph.BoundsOverride is { } declared)
+            return declared;
+
+        if (depth > 32)
             throw new InvalidOperationException("The composite glyphs of the builder are nested too deeply");
 
         var bounds = FontBounds.Empty;
@@ -450,7 +457,7 @@ internal sealed class FontBuilder
             }
         }
 
-        return glyph.BoundsOverride ?? bounds;
+        return bounds;
     }
 
     private byte[] WriteGlyph(FontGlyph glyph, FontBounds bounds)
@@ -561,7 +568,7 @@ internal sealed class FontBuilder
         return 0;
     }
 
-    private static void WriteComponent(FontWriter writer, FontComponent component, bool hasMore, bool hasInstructions)
+    internal static void WriteComponent(FontWriter writer, FontComponent component, bool hasMore, bool hasInstructions)
     {
         var argumentsAreWords = component.MatchesPoints
             ? component.Argument1 > 255 || component.Argument2 > 255

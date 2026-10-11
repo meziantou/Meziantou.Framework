@@ -141,13 +141,16 @@ Three kinds of fonts are stored:
 
 - **Synthetic fonts** (`fonts/synthetic/`, `CC0-1.0`), built by `Common/FontBuilder.cs` from the descriptions of
   `Common/FontSamples.cs`. Both files are compiled into the tests, which build the same fonts, and variants of them, in
-  memory: the geometry (1024 units per em, coordinates that are multiples of 64) makes the expected values of a test
-  computable by hand. `FontCorpusTests` checks that the committed files are what the builder writes.
+  memory: the geometry (coordinates that are multiples of 64 for the fonts drawn in text tests, charstrings of a few
+  operators for the CFF ones) makes the expected values of a test computable by hand. `FontCorpusTests` checks that the committed files are what the builder writes.
 - **Third-party fonts**, from the sources `FontCorpus.cs` lists with their pinned SHA-256. A font whose license allows a
   modified copy is subset to the characters the tests need, with every layout feature kept; a font with a Reserved Font
   Name is stored as published.
 - **Other containers** of these fonts: WOFF (written by `FontBuilder.WriteWoff`, since no pinned tool writes WOFF 1.0)
-  and WOFF2 (written by `woff2_compress`).
+  and WOFF2 (written by `woff2_compress`, the reference encoder). The reference encoder chooses what it transforms and
+  how it encodes each point, and it does not transform the horizontal metrics of these fonts: the WOFF2 files with a
+  variant in their name (`boxes.metrics.woff2`, `deltas.boxes.woff2`) are written by `Common/FontWoff2Writer.cs`
+  instead, with the transformations the reference encoder leaves out.
 
 The vectors of a font (`FontVectors` in the test harness) hold, for each face: the names, the units per em, the glyph
 count, the metrics the font declares (by OpenType metric tag), the character map, the advance of each glyph and the
@@ -158,15 +161,29 @@ character map is the join of `hb-info --list-unicodes` and `--list-glyphs`, so t
 
 A container has no vectors of its own: the generator reads it back through FreeType (`--face-loader=ft`, the only
 reader of the pinned tools that opens WOFF and WOFF2) and requires the advances and the outlines of the font it wraps;
-`woff2_decompress` must accept a WOFF2 file.
+`woff2_decompress`, the reference decoder, must accept a WOFF2 file. The files written by `FontWoff2Writer` are
+therefore known to mean, for two independent decoders, the font they were made from. FreeType rebuilds the glyphs of
+a WOFF2 file in a buffer of the length the file declares for the glyph table and drops what does not fit: the writer
+declares the length of the table with each glyph padded to four bytes, as the reference encoder does.
+
+Two properties of the pinned readers shape the synthetic fonts. FreeType rounds the coordinates of a CFF outline to
+whole units and HarfBuzz does not, so the charstrings of the corpus only use whole numbers (fractions are tested with
+literals in `FontTests`). Both readers keep a contour of one point and always close a TrueType contour with a line to
+its first point, even a line without length: the library does the same, so that the recorded outlines compare exactly.
 
 | Font | Flavor | Faces | License | Covers |
 | --- | --- | --- | --- | --- |
 | `fonts/synthetic-boxes` | ttf | 1 | CC0-1.0 | Straight-edged glyphs, composite glyphs (offset, scale, `USE_MY_METRICS`), `cmap` formats 4 and 12, `kern`, compact glyph encoding, short `loca` |
 | `fonts/synthetic-curves` | ttf | 1 | CC0-1.0 | Quadratic contours: no on-curve point, a contour that starts off-curve, consecutive off-curve points, a hole; 16-bit glyph encoding, long `loca`, `cmap` format 12 only |
-| `fonts/synthetic-collection` | ttc | 2 | CC0-1.0 | The two fonts above in a collection |
+| `fonts/synthetic-deltas` | ttf | 1 | CC0-1.0 | Points at every kind of distance from the previous one (each coordinate encoding of the glyph table and of WOFF2), instructions, the overlap flag, a composite with 16-bit offsets, contours of one and two points |
+| `fonts/synthetic-collection` | ttc | 2 | CC0-1.0 | The boxes and curves fonts in a collection |
+| `fonts/synthetic-charstrings` | otf | 1 | CC0-1.0 | CFF outlines: one glyph per group of Type 2 charstring operators (lines, curves, flex, hints and masks, widths, local and global subroutines, number encodings, empty and implicitly closed contours) |
+| `fonts/synthetic-cid` | otf | 1 | CC0-1.0 | A CID-keyed CFF font: two font DICTs whose local subroutines differ, a font DICT selector of format 3 |
 | `fonts/noto-sans-regular` | ttf | 1 | OFL-1.1 | Noto Sans Regular 2.015, subset to 232 characters (Basic Latin, Latin-1, combining marks, punctuation): 425 glyphs, `GDEF`, `GSUB`, `GPOS` |
-| `fonts/*-woff`, `fonts/*-woff2` | woff, woff2 | 1 | as the original | The boxes and Noto Sans fonts in WOFF and WOFF2, the curves font in WOFF2 |
+| `fonts/noto-sans-regular-cff` | otf | 1 | OFL-1.1 | The CFF flavor of the same font and the same characters: 421 glyphs, subroutines |
+| `fonts/noto-sans-cjk-jp-regular` | otf | 1 | OFL-1.1 | Noto Sans CJK JP Regular 2.004, subset to 408 characters (Basic Latin, kana, a few ideographs, fullwidth forms): 1,099 glyphs, a CID-keyed CFF table with several font DICTs, hints kept |
+| `fonts/*-woff`, `fonts/*-woff2` | woff, woff2 | as the original | as the original | WOFF of the boxes, deltas, charstrings, Noto Sans and Noto Sans CJK fonts; WOFF2 of the boxes, curves, deltas, charstrings, collection and both Noto Sans fonts |
+| `fonts/synthetic-boxes-woff2-metrics`, `fonts/synthetic-deltas-woff2-boxes` | woff2 | 1 | CC0-1.0 | Written by `FontWoff2Writer`: transformed horizontal metrics (both flags, then one), every bounding box stored |
 
 ## Color management
 

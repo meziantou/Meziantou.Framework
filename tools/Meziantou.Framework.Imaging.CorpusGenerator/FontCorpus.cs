@@ -34,6 +34,7 @@ namespace Meziantou.Framework.Imaging.CorpusGenerator;
 internal static partial class FontCorpus
 {
     public const string ScriptPath = "tools/Meziantou.Framework.Imaging.CorpusGenerator/FontCorpus.cs";
+    private const string WriterPath = "tools/Meziantou.Framework.Imaging.CorpusGenerator/Common/FontWoff2Writer.cs";
     private const string SamplesPath = "tools/Meziantou.Framework.Imaging.CorpusGenerator/Common/FontSamples.cs";
     private const string PinnedHarfBuzz = "14.6.0";
     private const string PinnedWoff2 = "1.0.2+fb9c337";
@@ -50,6 +51,9 @@ internal static partial class FontCorpus
     [
         new("fonts/synthetic-boxes", "fonts/synthetic/boxes.ttf", static () => FontSamples.Boxes().Build(), nameof(FontSamples.Boxes), "ttf", 1),
         new("fonts/synthetic-curves", "fonts/synthetic/curves.ttf", static () => FontSamples.Curves().Build(), nameof(FontSamples.Curves), "ttf", 1),
+        new("fonts/synthetic-deltas", "fonts/synthetic/deltas.ttf", static () => FontSamples.Deltas().Build(), nameof(FontSamples.Deltas), "ttf", 1),
+        new("fonts/synthetic-charstrings", "fonts/synthetic/charstrings.otf", static () => FontSamples.Charstrings().Build(), nameof(FontSamples.Charstrings), "otf", 1),
+        new("fonts/synthetic-cid", "fonts/synthetic/cid.otf", static () => FontSamples.CidKeyed().Build(), nameof(FontSamples.CidKeyed), "otf", 1),
         new("fonts/synthetic-collection", "fonts/synthetic/collection.ttc", static () => FontBuilder.WriteCollection([FontSamples.Boxes().BuildTables(), FontSamples.Curves().BuildTables()]), nameof(FontSamples.Boxes) + " and " + nameof(FontSamples.Curves), "ttc", 2),
     ];
 
@@ -68,16 +72,53 @@ internal static partial class FontCorpus
             // Basic Latin, Latin-1, a few Latin Extended letters, combining marks, punctuation, the euro sign and the
             // fi and fl ligatures.
             Unicodes: "20-7E,A0-FF,131,152,153,160,161,178,17D,17E,2C6,2DC,300-304,308,30A,327,2010-2014,2018-201E,2020-2022,2026,2030,2039,203A,20AC,2122,FB01,FB02"),
+        new(
+            "fonts/noto-sans-regular-cff",
+            "fonts/noto-sans-cff/NotoSans-Regular.subset.otf",
+            "NotoSans-Regular.otf",
+            "bfb44de2c2031c391ff856943fe8f105ebb5d725cb9a04d493d211d5bbd5c21b",
+            "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSans/unhinted/otf/NotoSans-Regular.otf",
+            "The Noto Project Authors (https://github.com/notofonts/latin-greek-cyrillic)",
+            "OFL-1.1",
+            ReservedFontName: null,
+
+            // The characters of the TrueType flavor of the same font.
+            Unicodes: "20-7E,A0-FF,131,152,153,160,161,178,17D,17E,2C6,2DC,300-304,308,30A,327,2010-2014,2018-201E,2020-2022,2026,2030,2039,203A,20AC,2122,FB01,FB02"),
+        new(
+            "fonts/noto-sans-cjk-jp-regular",
+            "fonts/noto-sans-cjk/NotoSansCJKjp-Regular.subset.otf",
+            "NotoSansCJKjp-Regular.otf",
+            "68a3fc98800b2a27b371f2fb79991daf3633bd89309d4ffaa6946fd587f375b5",
+            "https://github.com/notofonts/noto-cjk/blob/f8d157532fbfaeda587e826d4cd5b21a49186f7c/Sans/OTF/Japanese/NotoSansCJKjp-Regular.otf",
+            "Adobe (https://github.com/notofonts/noto-cjk)",
+            "OFL-1.1",
+            ReservedFontName: null,
+
+            // A CID-keyed font: Basic Latin, CJK punctuation, the kana, a few ideographs and fullwidth forms, which
+            // are in different font DICTs. The hints are kept: they are part of what a charstring reader must skip.
+            Unicodes: "20-7E,3001,3002,300C,300D,3041-3096,30A1-30FA,30FC,4E00-4E1F,4EAC,56FD,65E5,6771,672C,8A9E,FF01-FF5E",
+            KeepHinting: true),
     ];
 
     // The fonts that are also stored in the other containers.
-    private static readonly (string Original, string Flavor)[] Containers =
+    // The WOFF2 files are written by the reference encoder, except the variants: it does not transform the horizontal
+    // metrics of these fonts, and it chooses how each point is encoded.
+    private static readonly Container[] Containers =
     [
-        ("fonts/synthetic-boxes", "woff"),
-        ("fonts/synthetic-boxes", "woff2"),
-        ("fonts/synthetic-curves", "woff2"),
-        ("fonts/noto-sans-regular", "woff"),
-        ("fonts/noto-sans-regular", "woff2"),
+        new("fonts/synthetic-boxes", "woff"),
+        new("fonts/synthetic-boxes", "woff2"),
+        new("fonts/synthetic-boxes", "woff2", "metrics", static () => FontWoff2Writer.Write(FontSamples.Boxes(), new FontWoff2Options { HorizontalMetricsFlags = 3 }), "the glyphs and the horizontal metrics transformed"),
+        new("fonts/synthetic-curves", "woff2"),
+        new("fonts/synthetic-collection", "woff2"),
+        new("fonts/synthetic-deltas", "woff"),
+        new("fonts/synthetic-deltas", "woff2"),
+        new("fonts/synthetic-deltas", "woff2", "boxes", static () => FontWoff2Writer.Write(FontSamples.Deltas(), new FontWoff2Options { ExplicitBoundingBoxes = true, HorizontalMetricsFlags = 1 }), "every bounding box stored, the horizontal metrics transformed"),
+        new("fonts/synthetic-charstrings", "woff"),
+        new("fonts/synthetic-charstrings", "woff2"),
+        new("fonts/noto-sans-cjk-jp-regular", "woff"),
+        new("fonts/noto-sans-regular-cff", "woff2"),
+        new("fonts/noto-sans-regular", "woff"),
+        new("fonts/noto-sans-regular", "woff2"),
     ];
 
     public static int Run(GeneratorOptions options)
@@ -148,7 +189,9 @@ internal static partial class FontCorpus
                     var input = work / font.FileName;
                     var output = work / ("subset-" + font.FileName);
                     File.WriteAllBytes(input, source);
-                    string[] arguments = ["--unicodes=" + font.Unicodes, "--layout-features=*", "--no-hinting", "--notdef-outline"];
+                    string[] arguments = font.KeepHinting
+                        ? ["--unicodes=" + font.Unicodes, "--layout-features=*", "--notdef-outline"]
+                        : ["--unicodes=" + font.Unicodes, "--layout-features=*", "--no-hinting", "--notdef-outline"];
                     Proc.Run([tools.HbSubset, .. arguments, "--output-file=" + output, input]);
                     data = File.ReadAllBytes(output);
                     modification = "subset";
@@ -160,10 +203,11 @@ internal static partial class FontCorpus
                 entries.Add(CreateEntry(outDir, work, tools, font.Id, font.Path, data, provenance, GetFlavor(data), 1, modification, font.ReservedFontName, original: null, withVectors: true));
             }
 
-            foreach (var (originalId, flavor) in Containers)
+            foreach (var container in Containers)
             {
+                var (originalId, flavor) = (container.Original, container.Flavor);
                 var (originalPath, originalData, originalProvenance, faceCount) = files[originalId];
-                var path = Path.ChangeExtension(originalPath, "." + flavor);
+                var path = Path.ChangeExtension(originalPath, (container.Variant is null ? "." : "." + container.Variant + ".") + flavor);
                 var provenance = new Obj();
                 foreach (var (key, value) in originalProvenance)
                 {
@@ -174,7 +218,13 @@ internal static partial class FontCorpus
                 }
 
                 byte[] data;
-                if (flavor == "woff")
+                if (container.Build is not null)
+                {
+                    data = container.Build();
+                    provenance["generator"] = $"{WriterPath} ({container.Description})";
+                    provenance["tools"] = new List<string> { ToolSet.RuntimeLabel };
+                }
+                else if (flavor == "woff")
                 {
                     data = FontBuilder.WriteWoff(originalData);
                     provenance["generator"] = $"{ScriptPath} (FontBuilder.WriteWoff of {originalPath})";
@@ -198,8 +248,12 @@ internal static partial class FontCorpus
                 }
 
                 CheckContainer(work, tools, originalData, data, flavor, faceCount);
-                entries.Add(CreateEntry(outDir, work, tools, originalId + "-" + flavor, path, data, provenance, flavor, faceCount, "container", reservedFontName: null, originalId, withVectors: false));
+                entries.Add(CreateEntry(outDir, work, tools, originalId + "-" + flavor + (container.Variant is null ? "" : "-" + container.Variant), path, data, provenance, flavor, faceCount, "container", reservedFontName: null, originalId, withVectors: false));
             }
+
+            var duplicate = entries.GroupBy(entry => (string)((Obj)entry["file"]!)["path"]!, StringComparer.Ordinal).FirstOrDefault(group => group.Count() > 1);
+            if (duplicate is not null)
+                throw new FatalException($"Two fonts of the corpus are written to {duplicate.Key}.");
 
             manifest["schemaVersion"] = CorpusDriver.SchemaVersion;
             manifest[CorpusDriver.FontsKey] = entries.OrderBy(entry => (string)entry["id"]!, StringComparer.Ordinal).Cast<object?>().ToList();
@@ -390,7 +444,7 @@ internal static partial class FontCorpus
                 var expected = GetOutline(Proc.RunText([tools.HbVector, .. faceArguments, "--font-funcs=ft", "--glyphs", originalFile, text]));
                 var actual = GetOutline(Proc.RunText([tools.HbVector, .. faceArguments, "--face-loader=ft", "--font-funcs=ft", "--glyphs", containerFile, text]));
                 if (expected != actual)
-                    throw new FatalException($"The {flavor} form does not give the outline of the glyph {glyph} of the original font.");
+                    throw new FatalException($"The {flavor} form does not give the outline of the glyph {glyph} of the face {face} of the original font:\n  original: {expected}\n  {flavor}: {actual}");
             }
         }
     }
@@ -462,6 +516,14 @@ internal static partial class FontCorpus
         foreach (var faceOffset in faceOffsets)
         {
             var tableCount = BinaryPrimitives.ReadUInt16BigEndian(data[(faceOffset + 4)..]);
+
+            // The format of the glyph locations only means something for a font that has them.
+            var hasLocations = false;
+            for (var i = 0; i < tableCount; i++)
+            {
+                hasLocations |= data.Slice(faceOffset + 12 + (i * 16), 4).SequenceEqual("loca"u8);
+            }
+
             for (var i = 0; i < tableCount; i++)
             {
                 var record = data.Slice(faceOffset + 12 + (i * 16), 16);
@@ -482,7 +544,7 @@ internal static partial class FontCorpus
                         features.Add("font.cmap=" + BinaryPrimitives.ReadUInt16BigEndian(cmap[subtable..]).ToString(CultureInfo.InvariantCulture));
                     }
                 }
-                else if (tag == "head")
+                else if (tag == "head" && hasLocations)
                 {
                     features.Add("font.loca=" + (BinaryPrimitives.ReadInt16BigEndian(data[(offset + 50)..]) == 0 ? "short" : "long"));
                 }
@@ -504,9 +566,11 @@ internal static partial class FontCorpus
     [GeneratedRegex(@"\(HarfBuzz\) (?<version>\S+)", RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 10_000)]
     private static partial Regex HarfBuzzVersionRegex();
 
+    private sealed record Container(string Original, string Flavor, string? Variant = null, Func<byte[]>? Build = null, string? Description = null);
+
     private sealed record SyntheticFont(string Id, string Path, Func<byte[]> Build, string Function, string Flavor, int FaceCount);
 
-    private sealed record ExternalFont(string Id, string Path, string FileName, string Sha256, string Source, string Author, string License, string? ReservedFontName, string? Unicodes);
+    private sealed record ExternalFont(string Id, string Path, string FileName, string Sha256, string Source, string Author, string License, string? ReservedFontName, string? Unicodes, bool KeepHinting = false);
 
     private sealed class Tools
     {

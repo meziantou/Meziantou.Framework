@@ -2,6 +2,7 @@ using System.Runtime.CompilerServices;
 using Meziantou.Framework.Imaging.Drawing;
 using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.Metadata;
+using Meziantou.Framework.Imaging.Typography;
 
 namespace Meziantou.Framework.Imaging.Samples;
 
@@ -556,6 +557,20 @@ internal static class Examples
         var converted = new byte[samples.Length / transform.SourceChannelCount * transform.DestinationChannelCount];
         transform.Convert(samples, converted);
         return converted;
+    }
+    // end-snippet
+
+    /// <summary>Load a font file and read its names and its metrics at a size.</summary>
+    // begin-snippet: load-font
+    public static string DescribeFont(string path)
+    {
+        // TrueType, OpenType, WOFF and WOFF2 are detected from the content of the file.
+        var font = Font.Load(path);
+        var metrics = font.GetMetrics(size: 16);
+        var hasEuro = font.ContainsGlyph(new Rune('€'));
+        return string.Create(
+            CultureInfo.InvariantCulture,
+            $"{font.FamilyName} {font.SubfamilyName}: {font.GlyphCount} glyphs, ascent {metrics.Ascent:0.##}, descent {metrics.Descent:0.##}, euro sign: {hasEuro}");
     }
     // end-snippet
 }

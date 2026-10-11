@@ -389,7 +389,9 @@
             "MaxTotalPixels": { "type": "integer", "minimum": 1 },
             "MaxEncodedBytes": { "type": "integer", "minimum": 1 },
             "MaxMetadataBytes": { "type": "integer", "minimum": 1 },
-            "MaxLiveAllocationBytes": { "type": "integer", "minimum": 1 }
+            "MaxLiveAllocationBytes": { "type": "integer", "minimum": 1 },
+            "MaxFontBytes": { "type": "integer", "minimum": 1 },
+            "MaxGlyphComplexity": { "type": "integer", "minimum": 1 }
           }
         },
         "frameLimit": { "type": "integer", "minimum": 1 }

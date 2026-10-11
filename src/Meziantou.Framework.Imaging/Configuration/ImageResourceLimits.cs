@@ -44,6 +44,12 @@ public sealed class ImageResourceLimits
     /// <summary>The default maximum number of elementary operations to produce one glyph (1,000,000).</summary>
     public const long DefaultMaxGlyphComplexity = 1_000_000;
 
+    /// <summary>The default maximum length of a text that is laid out, in UTF-16 code units (1,000,000).</summary>
+    public const long DefaultMaxTextLength = 1_000_000;
+
+    /// <summary>The default maximum number of glyphs of a text layout (1,000,000).</summary>
+    public const long DefaultMaxTextGlyphs = 1_000_000;
+
     /// <summary>Gets the default limits.</summary>
     public static ImageResourceLimits Default { get; } = new();
 
@@ -178,6 +184,40 @@ public sealed class ImageResourceLimits
             field = value;
         }
     } = DefaultMaxGlyphComplexity;
+
+    /// <summary>
+    /// Gets the maximum length of a text that is laid out, in UTF-16 code units. Defaults to
+    /// <see cref="DefaultMaxTextLength"/>.
+    /// </summary>
+    /// <remarks>The limits of a text layout are those of the configuration its font was loaded with.</remarks>
+    /// <exception cref="ArgumentOutOfRangeException">The value is not positive.</exception>
+    public long MaxTextLength
+    {
+        get;
+        init
+        {
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
+            field = value;
+        }
+    } = DefaultMaxTextLength;
+
+    /// <summary>
+    /// Gets the maximum number of glyphs of a text layout. Defaults to <see cref="DefaultMaxTextGlyphs"/>.
+    /// </summary>
+    /// <remarks>
+    /// A layout keeps the identifier and the position of each of its glyphs: this limit bounds the memory of a layout
+    /// and the work of drawing it.
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException">The value is not positive.</exception>
+    public long MaxTextGlyphs
+    {
+        get;
+        init
+        {
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
+            field = value;
+        }
+    } = DefaultMaxTextGlyphs;
 
     /// <summary>
     /// Validates canvas dimensions against <see cref="MaxWidth"/>, <see cref="MaxHeight"/> and <see cref="MaxFramePixels"/>,

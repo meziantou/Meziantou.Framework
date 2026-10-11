@@ -1,4 +1,5 @@
 using Meziantou.Framework.Imaging.Internals;
+using Meziantou.Framework.Imaging.Typography;
 
 namespace Meziantou.Framework.Imaging.Drawing;
 
@@ -192,6 +193,61 @@ public readonly ref struct DrawingCanvas
     /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. No pixel is changed by this call.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
     public void StrokeBezier(Pen pen, PointD start, PointD control1, PointD control2, PointD end) => GetSession().StrokeBezier(pen, start, control1, control2, end);
+
+    /// <summary>Paints the glyphs of a text layout.</summary>
+    /// <param name="brush">The paint.</param>
+    /// <param name="layout">The text, laid out.</param>
+    /// <param name="origin">The position of the top-left corner of the layout; the first baseline is <see cref="TextLayout.Baseline"/> below it.</param>
+    /// <remarks>
+    /// The glyphs are one shape: where they overlap, the brush is applied once. The call allocates nothing once the
+    /// working storage of the canvas has grown to the largest glyph. Glyphs are not snapped to the pixel grid.
+    /// </remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="brush"/> or <paramref name="layout"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">A coordinate is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The magnitude of a coordinate exceeds 16777216.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. No pixel is changed by this call.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void FillText(Brush brush, TextLayout layout, PointD origin) => GetSession().FillText(brush, layout, origin);
+
+    /// <summary>Lays out a text on one line per line of the text and paints its glyphs.</summary>
+    /// <param name="brush">The paint.</param>
+    /// <param name="text">The text.</param>
+    /// <param name="font">The font.</param>
+    /// <param name="size">The size of the font, in pixels per em.</param>
+    /// <param name="origin">The position of the top-left corner of the text; the first baseline is half the line gap of the font plus its ascent below it.</param>
+    /// <remarks>
+    /// This overload creates a <see cref="TextLayout"/> each time it is called, which allocates. Create the layout once
+    /// with <see cref="TextLayout.Create(string, Font, double)"/> to measure a text, or to draw it several times.
+    /// </remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="brush"/>, <paramref name="text"/> or <paramref name="font"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">A coordinate is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The magnitude of a coordinate exceeds 16777216, or <paramref name="size"/> is not a positive number up to 65536.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="InvalidImageContentException">The data of a glyph of the text is malformed.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">The outlines of the font use a feature that is not supported.</exception>
+    /// <exception cref="ImageResourceLimitException">The text exceeds a limit of the configuration of the font, or the working storage would exceed the allocation limit. No pixel is changed by this call.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void FillText(Brush brush, string text, Font font, double size, PointD origin)
+    {
+        ArgumentNullException.ThrowIfNull(brush);
+        DrawingGuard.Point(origin, nameof(origin));
+        var session = GetSession();
+        session.FillText(brush, TextLayout.Create(text, font, size), origin);
+    }
+
+    /// <summary>Paints the outlines of the glyphs of a text layout with a pen.</summary>
+    /// <param name="pen">The stroke.</param>
+    /// <param name="layout">The text, laid out.</param>
+    /// <param name="origin">The position of the top-left corner of the layout; the first baseline is <see cref="TextLayout.Baseline"/> below it.</param>
+    /// <remarks>The strokes of all the outlines are one shape: where they overlap, the brush of the pen is applied once.</remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="pen"/> or <paramref name="layout"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">A coordinate is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The magnitude of a coordinate exceeds 16777216.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. No pixel is changed by this call.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void StrokeText(Pen pen, TextLayout layout, PointD origin) => GetSession().StrokeText(pen, layout, origin);
 
     private DrawingSession GetSession()
     {

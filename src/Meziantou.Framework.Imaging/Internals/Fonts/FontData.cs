@@ -10,14 +10,17 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </remarks>
 internal sealed class FontData
 {
-    public FontData(byte[] bytes, ImageResourceLimits limits)
+    public FontData(byte[] bytes, ImageConfiguration configuration)
     {
         Bytes = bytes;
-        Limits = limits;
+        Configuration = configuration;
     }
 
     public byte[] Bytes { get; }
 
-    /// <summary>Gets the limits of the configuration the font was loaded with: they bound the work of decoding a glyph.</summary>
-    public ImageResourceLimits Limits { get; }
+    /// <summary>Gets the configuration the font was loaded with.</summary>
+    public ImageConfiguration Configuration { get; }
+
+    /// <summary>Gets the limits of the configuration the font was loaded with: they bound the work of decoding a glyph and the size of a text.</summary>
+    public ImageResourceLimits Limits => Configuration.Limits;
 }

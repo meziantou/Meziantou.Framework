@@ -24,6 +24,9 @@ internal sealed class FontFace
     private readonly int _locaLength;
     private readonly int _glyfOffset;
     private readonly int _glyfLength;
+    private readonly KernTable? _kern;
+    private readonly int _kernOffset;
+    private readonly int _kernLength;
     private readonly CffTable? _cff;
     private readonly int _cffOffset;
     private readonly int _cffLength;
@@ -123,6 +126,12 @@ internal sealed class FontFace
             throw FontErrors.InvalidTable(FontTags.Cmap, "is missing.");
 
         _cmap = CmapTable.Read(cmap, GlyphCount);
+
+        if (_directory.TryFind(FontTags.Kern, out _kernOffset, out _kernLength))
+        {
+            var kern = KernTable.Read(file.Slice(_kernOffset, _kernLength));
+            _kern = kern.IsEmpty ? null : kern;
+        }
 
         // The outlines: TrueType (glyf and loca), or CFF.
         if (_directory.TryFind(FontTags.Glyf, out _glyfOffset, out _glyfLength))
@@ -234,6 +243,21 @@ internal sealed class FontFace
         // The glyphs after the last metric share its advance.
         var index = Math.Min(glyphId, _horizontalMetricCount - 1);
         return FontBinary.UInt16(Data.Bytes.AsSpan(_hmtxOffset, _hmtxLength), index * 4);
+    }
+
+    /// <summary>Gets a value indicating whether the font has pair adjustments in its legacy kerning table.</summary>
+    public bool HasLegacyKerning => _kern is not null;
+
+    /// <summary>
+    /// Gets the adjustment the legacy kerning table gives to the advance of a glyph when another glyph follows it, in
+    /// font units; 0 when the font has no such table or no adjustment for the pair.
+    /// </summary>
+    public int GetLegacyKerning(int left, int right)
+    {
+        if (_kern is null || (uint)left >= (uint)GlyphCount || (uint)right >= (uint)GlyphCount)
+            return 0;
+
+        return _kern.GetAdjustment(Data.Bytes.AsSpan(_kernOffset, _kernLength), left, right);
     }
 
     /// <summary>Decodes the outline of a glyph into a sink. A glyph without outline, such as a space, emits nothing.</summary>

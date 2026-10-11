@@ -394,7 +394,9 @@
             "MaxMetadataBytes": { "type": "integer", "minimum": 1 },
             "MaxLiveAllocationBytes": { "type": "integer", "minimum": 1 },
             "MaxFontBytes": { "type": "integer", "minimum": 1 },
-            "MaxGlyphComplexity": { "type": "integer", "minimum": 1 }
+            "MaxGlyphComplexity": { "type": "integer", "minimum": 1 },
+            "MaxTextLength": { "type": "integer", "minimum": 1 },
+            "MaxTextGlyphs": { "type": "integer", "minimum": 1 }
           }
         },
         "frameLimit": { "type": "integer", "minimum": 1 }

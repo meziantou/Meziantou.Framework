@@ -320,6 +320,120 @@ public sealed class FontTests
         Assert.Equal(CmapVariation.NotFound, plain.Face.MapVariation('A', 0xFE00, out _));
     }
 
+    [Fact]
+    public void TheLegacyKerningTableGivesPairAdjustments()
+    {
+        var builder = FontSamples.Boxes();
+        var font = FontTestSupport.Load(builder);
+        Assert.True(font.Face.HasLegacyKerning);
+        Assert.Equal(-128, font.Face.GetLegacyKerning(FontSamples.BoxA, FontSamples.BoxB));
+        Assert.Equal(64, font.Face.GetLegacyKerning(FontSamples.BoxB, FontSamples.BoxA));
+        Assert.Equal(0, font.Face.GetLegacyKerning(FontSamples.BoxA, FontSamples.BoxA));
+        Assert.Equal(0, font.Face.GetLegacyKerning(FontSamples.BoxA, 500));
+        Assert.Equal(0, font.Face.GetLegacyKerning(-1, FontSamples.BoxB));
+        Assert.False(FontTestSupport.Load(FontSamples.Curves()).Face.HasLegacyKerning);
+
+        // Many pairs: every one is found by the search.
+        builder = FontSamples.Boxes();
+        builder.KerningPairs.Clear();
+        for (var left = 0; left < 13; left++)
+        {
+            for (var right = 0; right < 13; right++)
+            {
+                builder.KerningPairs[(left, right)] = (left * 13) + right - 80;
+            }
+        }
+
+        font = FontTestSupport.Load(builder);
+        for (var left = 0; left < 13; left++)
+        {
+            for (var right = 0; right < 13; right++)
+            {
+                Assert.Equal((left * 13) + right - 80, font.Face.GetLegacyKerning(left, right));
+            }
+        }
+    }
+
+    [Fact]
+    public void OnlyTheHorizontalPairsOfTheKerningTableAreUsed()
+    {
+        // A subtable: version, length, coverage (format in the high byte), then for the format 0 the number of pairs,
+        // three search fields, and the pairs: left glyph, right glyph, value.
+        static byte[] Subtable(int coverage, params (int Left, int Right, int Value)[] pairs)
+        {
+            var writer = new FontWriter();
+            writer.UInt16(0);
+            writer.UInt16((14 + (pairs.Length * 6)) & 0xFFFF);
+            writer.UInt16(coverage);
+            writer.UInt16(pairs.Length);
+            writer.Zeros(6);
+            foreach (var (left, right, value) in pairs)
+            {
+                writer.UInt16(left);
+                writer.UInt16(right);
+                writer.Int16(value);
+            }
+
+            return writer.ToArray();
+        }
+
+        static Font Load(params byte[][] subtables)
+        {
+            var builder = FontSamples.Boxes();
+            builder.RawTables["kern"] = [0, 0, (byte)(subtables.Length >> 8), (byte)subtables.Length, .. subtables.SelectMany(subtable => subtable)];
+            return FontTestSupport.Load(builder);
+        }
+
+        const int Horizontal = 0x0001;
+        const int Minimum = 0x0002;
+        const int CrossStream = 0x0004;
+        const int Override = 0x0008;
+
+        // The values of several subtables add up; a subtable can replace what the previous ones gave.
+        var font = Load(Subtable(Horizontal, (2, 3, -100), (2, 4, 10)), Subtable(Horizontal, (2, 3, 30), (5, 6, 7)));
+        Assert.Equal(-70, font.Face.GetLegacyKerning(2, 3));
+        Assert.Equal(10, font.Face.GetLegacyKerning(2, 4));
+        Assert.Equal(7, font.Face.GetLegacyKerning(5, 6));
+        font = Load(Subtable(Horizontal, (2, 3, -100), (2, 4, 10)), Subtable(Horizontal | Override, (2, 3, 30)));
+        Assert.Equal(30, font.Face.GetLegacyKerning(2, 3));
+        Assert.Equal(10, font.Face.GetLegacyKerning(2, 4));
+
+        // Vertical kerning, minimum values, cross-stream values and the class-based format 2 are not applied.
+        font = Load(Subtable(0, (2, 3, 1)), Subtable(Horizontal | Minimum, (2, 3, 2)), Subtable(Horizontal | CrossStream, (2, 3, 4)), Subtable(Horizontal | 0x0200, (2, 3, 8)), Subtable(Horizontal, (2, 3, 16)));
+        Assert.Equal(16, font.Face.GetLegacyKerning(2, 3));
+        Assert.False(Load(Subtable(Horizontal | Minimum, (2, 3, 2))).Face.HasLegacyKerning);
+
+        // The version 1.0 of the table, which Apple defines, and a table too short for its header are not read.
+        var builder = FontSamples.Boxes();
+        builder.RawTables["kern"] = [0, 1, 0, 0, 0, 0, 0, 1, .. Subtable(Horizontal, (2, 3, 5))];
+        Assert.False(FontTestSupport.Load(builder).Face.HasLegacyKerning);
+        builder.RawTables["kern"] = [0, 0];
+        Assert.False(FontTestSupport.Load(builder).Face.HasLegacyKerning);
+
+        // A subtable that declares more pairs than the table holds is not used; the ones before it are.
+        var truncated = Subtable(Horizontal, (2, 3, 5), (2, 4, 6));
+        font = Load(Subtable(Horizontal, (2, 3, 1)), truncated[..^3]);
+        Assert.Equal(1, font.Face.GetLegacyKerning(2, 3));
+        Assert.Equal(0, font.Face.GetLegacyKerning(2, 4));
+
+        // A single subtable whose 16-bit length cannot hold its pairs: the number of pairs is what counts. The font has
+        // 113 glyphs, and the pairs are the first 11,000 of their combinations.
+        var pairs = Enumerable.Range(0, 11000).Select(index => (Left: index / 113, Right: index % 113, Value: (index % 200) - 100)).ToArray();
+        Assert.True(14 + (pairs.Length * 6) > ushort.MaxValue);
+        builder = FontSamples.Boxes();
+        for (var i = 0; i < 100; i++)
+        {
+            builder.AddGlyph(FontGlyph.Empty(500));
+        }
+
+        builder.RawTables["kern"] = [0, 0, 0, 1, .. Subtable(Horizontal, pairs)];
+        font = FontTestSupport.Load(builder);
+        Assert.Equal(-100, font.Face.GetLegacyKerning(0, 0));
+        Assert.Equal(-88, font.Face.GetLegacyKerning(0, 12));
+        Assert.Equal((10999 % 200) - 100, font.Face.GetLegacyKerning(97, 38));
+        Assert.Equal(0, font.Face.GetLegacyKerning(97, 39));
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]

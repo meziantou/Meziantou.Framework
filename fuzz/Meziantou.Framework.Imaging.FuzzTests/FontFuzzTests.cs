@@ -1,5 +1,6 @@
 using System.Buffers.Binary;
 using System.Diagnostics;
+using Meziantou.Framework.Imaging.Drawing;
 using Meziantou.Framework.Imaging.Internals;
 using Meziantou.Framework.Imaging.TestHarness.Fixtures;
 using Meziantou.Framework.Imaging.TestHarness.Pixels;
@@ -26,6 +27,12 @@ public sealed class FontFuzzTests
             Limits = new ImageResourceLimits { MaxFontBytes = 16 * 1024 * 1024, MaxGlyphComplexity = 50_000, MaxLiveAllocationBytes = 64 * 1024 * 1024 },
         },
     };
+
+    // Characters of the fonts of the corpus, a character none of them has, a line break and a variation selector.
+    private const string SampleText = "AVo fi\u00C9B\uFE00\n\u65E5\u306E \U0001F600";
+
+    private static readonly SolidBrush TextBrush = new(new Rgba32(10, 20, 30, 200));
+    private static readonly Pen TextPen = new(new SolidBrush(new Rgba32(200, 100, 0)), 1.5);
 
     [Fact]
     public void MutatedFontsFailOnlyWithDocumentedErrors()
@@ -278,7 +285,56 @@ public sealed class FontFuzzTests
             }
         }
 
+        if (CheckText(collection) is { } textFailure)
+            return textFailure;
+
         result = new CheckResult("loaded", decoded, rejected);
+        return null;
+    }
+
+    /// <summary>
+    /// Lays out a text with each font and draws it: a layout is refused with a documented exception or is created, and
+    /// a layout that was created is drawn, filled, stroked and converted to a path, without any exception.
+    /// </summary>
+    private static FuzzFailure? CheckText(FontCollection collection)
+    {
+        foreach (var font in collection)
+        {
+            TextLayout layout;
+            try
+            {
+                layout = TextLayout.Create(SampleText, font, 13.5);
+            }
+            catch (Exception exception) when (exception is InvalidImageContentException or UnsupportedImageFeatureException or ImageResourceLimitException)
+            {
+                continue;
+            }
+            catch (Exception exception)
+            {
+                return FuzzFailure.FromException("layout", exception);
+            }
+
+            if (!double.IsFinite(layout.Width) || layout.Width < 0 || layout.LineCount != 2 || !double.IsFinite(layout.InkBounds.Width) || !double.IsFinite(layout.InkBounds.Height))
+                return FuzzFailure.Property("layout-values", $"The layout is {layout.Width} wide, has {layout.LineCount} lines and the ink bounds {layout.InkBounds}.");
+
+            try
+            {
+                using var image = new Image<Rgba32>(40, 28);
+                image.Draw((layout, TextBrush, TextPen), static (canvas, state) =>
+                {
+                    canvas.FillText(state.TextBrush, state.layout, new PointD(1.5, 2));
+                    canvas.StrokeText(state.TextPen, state.layout, new PointD(-3, 1.25));
+                });
+                var path = layout.ToPath(new PointD(1.5, 2));
+                if (path.IsEmpty != layout.InkBounds.IsEmpty && path.IsEmpty)
+                    return FuzzFailure.Property("layout-path", "The layout has ink bounds and an empty path.");
+            }
+            catch (Exception exception)
+            {
+                return FuzzFailure.FromException("draw", exception);
+            }
+        }
+
         return null;
     }
 

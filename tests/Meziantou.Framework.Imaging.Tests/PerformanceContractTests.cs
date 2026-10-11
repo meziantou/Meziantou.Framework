@@ -1,7 +1,9 @@
 using System.Runtime.CompilerServices;
+using Meziantou.Framework.Imaging.CorpusGenerator.Common;
 using Meziantou.Framework.Imaging.Drawing;
 using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.Internals;
+using Meziantou.Framework.Imaging.Typography;
 
 namespace Meziantou.Framework.Imaging.Tests;
 
@@ -75,6 +77,9 @@ public sealed class PerformanceContractTests
             new LinearGradientBrush(new PointD(0, 0), new PointD(64, 48), [new GradientStop(0, new Rgba32(255, 0, 0)), new GradientStop(0.5, new Rgba32(0, 255, 0, 80)), new GradientStop(1, new Rgba32(0, 0, 255))]) { SpreadMode = GradientSpreadMode.Reflect },
             new Pen(new RadialGradientBrush(new PointD(30, 20), 25, [new GradientStop(0, new Rgba32(0, 0, 0)), new GradientStop(1, new Rgba32(255, 255, 255))]), 3.5) { LineJoin = LineJoin.Round, LineCap = LineCap.Round },
             new VectorPathBuilder().MoveTo(4, 40).CubicBezierTo(20, -10, 40, 60, 60, 6).QuadraticBezierTo(30, 30, 8, 8).AddCircle(new PointD(32, 24), 15).Build(),
+            TextLayout.Create("OPQ\nR O", FontTestSupport.Load(FontSamples.Curves()), 14.5),
+            TextLayout.Create("ABCDEFG", FontTestSupport.Load(FontSamples.Charstrings()), 9.25),
+            TextLayout.Create("AB\u00C1H", FontTestSupport.Load(FontSamples.Boxes()), 12),
             new StrongBox<long>(long.MaxValue));
 
         // Tiered compilation running concurrently can attribute a few bytes to this thread, and the many methods behind a
@@ -112,6 +117,13 @@ public sealed class PerformanceContractTests
             canvas.StrokeLine(state.Pen, new PointD(1, 1), new PointD(60, 44));
             canvas.StrokeBezier(state.Pen, new PointD(2, 2), new PointD(30, 46), new PointD(62, 3));
             canvas.StrokeBezier(state.Pen, new PointD(2, 46), new PointD(20, 0), new PointD(40, 47), new PointD(62, 20));
+
+            // Text: quadratic outlines, charstrings with subroutines, composite glyphs and kerning
+            canvas.FillText(state.Gradient, state.Text, new PointD(2.5, 3));
+            canvas.StrokeText(state.Pen, state.Text, new PointD(1, 10.5));
+            canvas.FillText(state.Solid, state.CffText, new PointD(4, 20));
+            canvas.StrokeText(state.Pen, state.CffText, new PointD(4, 30));
+            canvas.FillText(state.Solid, state.CompositeText, new PointD(0.5, 30.25));
         }
     }
 
@@ -276,5 +288,5 @@ public sealed class PerformanceContractTests
         return stream.ToArray();
     }
 
-    private sealed record DrawingState(SolidBrush Solid, GradientBrush Gradient, Pen Pen, VectorPath Path, StrongBox<long> Allocated);
+    private sealed record DrawingState(SolidBrush Solid, GradientBrush Gradient, Pen Pen, VectorPath Path, TextLayout Text, TextLayout CffText, TextLayout CompositeText, StrongBox<long> Allocated);
 }

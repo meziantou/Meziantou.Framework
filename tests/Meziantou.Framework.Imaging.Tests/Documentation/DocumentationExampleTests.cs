@@ -5,6 +5,7 @@ using Meziantou.Framework.Imaging.Samples;
 using Meziantou.Framework.Imaging.TestHarness.Adapters;
 using Meziantou.Framework.Imaging.TestHarness.Golden;
 using Meziantou.Framework.Imaging.TestHarness.Fixtures;
+using Meziantou.Framework.Imaging.Typography;
 
 namespace Meziantou.Framework.Imaging.Tests.Documentation;
 
@@ -587,6 +588,37 @@ public sealed class DocumentationExampleTests : IDisposable
         {
             Assert.Equal("Noto Sans Regular: 425 glyphs, ascent 17.1, descent 4.69, euro sign: True", Examples.DescribeFont(root / name));
         }
+    }
+
+    [Fact]
+    public void DrawLabelDrawsTheTextOnAnImageOfItsSize()
+    {
+        var fontPath = FixtureRoot.GetDirectory() / "fonts" / "noto-sans" / "NotoSans-Regular.subset.ttf";
+        var output = GetPath("label.png");
+        Examples.DrawLabel(fontPath, output);
+
+        // Two lines of Noto Sans at 32 pixels: 1000 units per em, an ascent of 1069 and a descent of 293.
+        var layout = TextLayout.Create("Hello, world!\nBonjour", Font.Load(fontPath), 32);
+        Assert.Equal(2, layout.LineCount);
+        Assert.Equal(2 * 32 * 1.362, layout.Height, 1e-9);
+        using var image = Image.Load<Rgba32>(output);
+        Assert.Equal((int)Math.Ceiling(layout.Width) + 16, image.Width);
+        Assert.Equal(104, image.Height);
+
+        // The margin is untouched, and the text is there: blue inside the stem of the H, which starts 8 pixels from the left.
+        Assert.Equal(new Rgba32(255, 255, 255), image.Frames[0][2, 2]);
+        var blue = 0;
+        image.Frames[0].ProcessPixelRows(pixels =>
+        {
+            for (var y = 0; y < pixels.Height; y++)
+            {
+                foreach (var pixel in pixels.GetRowSpan(y))
+                {
+                    blue += pixel == new Rgba32(30, 60, 160) ? 1 : 0;
+                }
+            }
+        });
+        Assert.True(blue > 200, $"Only {blue} pixels have the color of the text");
     }
 
     [Fact]

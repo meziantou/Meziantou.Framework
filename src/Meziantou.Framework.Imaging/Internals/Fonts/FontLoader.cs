@@ -150,10 +150,10 @@ internal static class FontLoader
         switch (bytes.Length < 4 ? 0 : FontBinary.UInt32(bytes, 0))
         {
             case FontTags.TrueType or FontTags.AppleTrueType or FontTags.OpenTypeCff or FontTags.PostScriptType1:
-                return [new FontFace(new FontData(bytes, limits), directoryOffset: 0)];
+                return [new FontFace(new FontData(bytes, configuration), directoryOffset: 0)];
 
             case FontTags.Collection:
-                return ParseCollection(new FontData(bytes, limits));
+                return ParseCollection(new FontData(bytes, configuration));
 
             case FontTags.Woff or FontTags.Woff2:
                 throw FontErrors.Invalid("a WOFF file contains another WOFF file.");

@@ -623,4 +623,31 @@ internal static class Examples
             $"{font.FamilyName} {font.SubfamilyName}: {font.GlyphCount} glyphs, ascent {metrics.Ascent:0.##}, descent {metrics.Descent:0.##}, euro sign: {hasEuro}");
     }
     // end-snippet
+
+    /// <summary>Text: measure a text with a layout, then fill and outline it on an image of its size.</summary>
+    // begin-snippet: draw-text
+    public static void DrawLabel(string fontPath, string outputPath)
+    {
+        var font = Font.Load(fontPath);
+
+        // A layout holds the glyphs of a text and their positions: it measures the text and is what is drawn
+        var layout = TextLayout.Create("Hello, world!\nBonjour", font, size: 32);
+
+        const int Margin = 8;
+        using var image = new Image<Rgba32>((int)Math.Ceiling(layout.Width) + (2 * Margin), (int)Math.Ceiling(layout.Height) + (2 * Margin), new Rgba32(255, 255, 255));
+        var outline = new Pen(new Rgba32(0, 0, 0), 1) { LineJoin = LineJoin.Round };
+        image.Draw(canvas =>
+        {
+            // The origin is the top-left corner of the layout; its first baseline is layout.Baseline below
+            var origin = new PointD(Margin, Margin);
+            canvas.FillText(new Rgba32(30, 60, 160), layout, origin);
+            canvas.StrokeText(outline, layout, origin);
+
+            // A line under the first line of text, at its baseline
+            canvas.StrokeLine(outline, new PointD(Margin, Margin + layout.Baseline + 3), new PointD(Margin + layout.Width, Margin + layout.Baseline + 3));
+        });
+
+        image.Save(outputPath);
+    }
+    // end-snippet
 }

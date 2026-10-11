@@ -81,6 +81,7 @@ public sealed class ApiSurfaceTests
     [InlineData(typeof(VectorPathBuilder))]
     [InlineData(typeof(Font))]
     [InlineData(typeof(FontCollection))]
+    [InlineData(typeof(TextLayout))]
     public void ConcreteTypesAreSealed(Type type) => Assert.True(type.IsSealed, $"{type} must be sealed");
 
     [Fact]

@@ -62,7 +62,7 @@ public static partial class FixtureManifestValidator
     /// <summary>The accepted keys of <see cref="DecodeOptionsDefinition.Limits"/> (library <c>ImageResourceLimits</c> properties).</summary>
     public static IReadOnlySet<string> AllowedLimits { get; } = new HashSet<string>(StringComparer.Ordinal)
     {
-        "MaxWidth", "MaxHeight", "MaxFramePixels", "MaxFrames", "MaxTotalPixels", "MaxEncodedBytes", "MaxMetadataBytes", "MaxLiveAllocationBytes", "MaxFontBytes", "MaxGlyphComplexity",
+        "MaxWidth", "MaxHeight", "MaxFramePixels", "MaxFrames", "MaxTotalPixels", "MaxEncodedBytes", "MaxMetadataBytes", "MaxLiveAllocationBytes", "MaxFontBytes", "MaxGlyphComplexity", "MaxTextLength", "MaxTextGlyphs",
     };
 
     /// <summary>The accepted values of <see cref="FixtureCrossCheck.Result"/>.</summary>

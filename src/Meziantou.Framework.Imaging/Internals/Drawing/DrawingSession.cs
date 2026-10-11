@@ -1,4 +1,5 @@
 using Meziantou.Framework.Imaging.Drawing;
+using Meziantou.Framework.Imaging.Typography;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -31,6 +32,8 @@ internal sealed class DrawingSession : IDisposable
     private FillSink? _fillSink;
     private Stroker? _stroker;
     private GradientEvaluator? _gradient;
+    private GlyphPathSink? _glyphSink;
+    private GlyphScratch? _glyphScratch;
     private bool _thumbnailRemoved;
 
     private DrawingSession(Image image, ImageFrame[] frames, PixelStorage[] storages, CancellationToken cancellationToken)
@@ -195,9 +198,31 @@ internal sealed class DrawingSession : IDisposable
         RenderStroke(pen);
     }
 
+    public void FillText(Brush brush, TextLayout layout, PointD origin)
+    {
+        ArgumentNullException.ThrowIfNull(brush);
+        ArgumentNullException.ThrowIfNull(layout);
+        DrawingGuard.Point(origin, nameof(origin));
+        var sink = BeginFill();
+        layout.Emit(sink, _glyphSink ??= new GlyphPathSink(), _glyphScratch ??= new GlyphScratch(_image.Owner.Scope), origin.X, origin.Y, _edges);
+        Render(brush, FillRule.NonZero);
+    }
+
+    public void StrokeText(Pen pen, TextLayout layout, PointD origin)
+    {
+        ArgumentNullException.ThrowIfNull(pen);
+        ArgumentNullException.ThrowIfNull(layout);
+        DrawingGuard.Point(origin, nameof(origin));
+        var sink = BeginStroke(pen);
+        layout.Emit(sink, _glyphSink ??= new GlyphPathSink(), _glyphScratch ??= new GlyphScratch(_image.Owner.Scope), origin.X, origin.Y, edges: null);
+        RenderStroke(pen);
+    }
+
     public void Dispose()
     {
         IsActive = false;
+        _glyphScratch?.Dispose();
+        _glyphScratch = null;
         _gradient?.Dispose();
         _rasterizer?.Dispose();
         _edges?.Dispose();

@@ -474,6 +474,8 @@ namespace Meziantou.Framework.Imaging
         LiveAllocationBytes = 8,
         FontBytes = 9,
         GlyphComplexity = 10,
+        TextLength = 11,
+        TextGlyphs = 12,
     }
 
     public sealed class ImageResourceLimits
@@ -487,6 +489,8 @@ namespace Meziantou.Framework.Imaging
         public const long DefaultMaxLiveAllocationBytes = 536870912L;
         public const long DefaultMaxFontBytes = 268435456L;
         public const long DefaultMaxGlyphComplexity = 1000000L;
+        public const long DefaultMaxTextLength = 1000000L;
+        public const long DefaultMaxTextGlyphs = 1000000L;
         public static Meziantou.Framework.Imaging.ImageResourceLimits Default { get => throw null; }
         public int MaxWidth { get => throw null; init { } }
         public int MaxHeight { get => throw null; init { } }
@@ -498,6 +502,8 @@ namespace Meziantou.Framework.Imaging
         public long MaxLiveAllocationBytes { get => throw null; init { } }
         public long MaxFontBytes { get => throw null; init { } }
         public long MaxGlyphComplexity { get => throw null; init { } }
+        public long MaxTextLength { get => throw null; init { } }
+        public long MaxTextGlyphs { get => throw null; init { } }
     }
 
     public sealed class ImageWriterOptions
@@ -855,6 +861,9 @@ namespace Meziantou.Framework.Imaging.Drawing
         public void StrokeLine(Meziantou.Framework.Imaging.Drawing.Pen pen, Meziantou.Framework.Imaging.PointD start, Meziantou.Framework.Imaging.PointD end) { }
         public void StrokeBezier(Meziantou.Framework.Imaging.Drawing.Pen pen, Meziantou.Framework.Imaging.PointD start, Meziantou.Framework.Imaging.PointD control, Meziantou.Framework.Imaging.PointD end) { }
         public void StrokeBezier(Meziantou.Framework.Imaging.Drawing.Pen pen, Meziantou.Framework.Imaging.PointD start, Meziantou.Framework.Imaging.PointD control1, Meziantou.Framework.Imaging.PointD control2, Meziantou.Framework.Imaging.PointD end) { }
+        public void FillText(Meziantou.Framework.Imaging.Drawing.Brush brush, Meziantou.Framework.Imaging.Typography.TextLayout layout, Meziantou.Framework.Imaging.PointD origin) { }
+        public void FillText(Meziantou.Framework.Imaging.Drawing.Brush brush, string text, Meziantou.Framework.Imaging.Typography.Font font, double size, Meziantou.Framework.Imaging.PointD origin) { }
+        public void StrokeText(Meziantou.Framework.Imaging.Drawing.Pen pen, Meziantou.Framework.Imaging.Typography.TextLayout layout, Meziantou.Framework.Imaging.PointD origin) { }
     }
 
     public enum FillRule
@@ -1438,5 +1447,17 @@ namespace Meziantou.Framework.Imaging.Typography
         public override int GetHashCode() => throw null;
         public static bool operator ==(Meziantou.Framework.Imaging.Typography.FontMetrics left, Meziantou.Framework.Imaging.Typography.FontMetrics right) => throw null;
         public static bool operator !=(Meziantou.Framework.Imaging.Typography.FontMetrics left, Meziantou.Framework.Imaging.Typography.FontMetrics right) => throw null;
+    }
+
+    public sealed class TextLayout
+    {
+        public double Width { get => throw null; }
+        public double Height { get => throw null; }
+        public double Baseline { get => throw null; }
+        public int LineCount { get => throw null; }
+        public Meziantou.Framework.Imaging.RectangleD InkBounds { get => throw null; }
+        public bool HasMissingGlyphs { get => throw null; }
+        public static Meziantou.Framework.Imaging.Typography.TextLayout Create(string text, Meziantou.Framework.Imaging.Typography.Font font, double size) => throw null;
+        public Meziantou.Framework.Imaging.Drawing.VectorPath ToPath(Meziantou.Framework.Imaging.PointD origin) => throw null;
     }
 }

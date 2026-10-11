@@ -22,6 +22,8 @@ public sealed class DefaultsTests
         Assert.Equal(512L * 1024 * 1024, limits.MaxLiveAllocationBytes);
         Assert.Equal(256L * 1024 * 1024, limits.MaxFontBytes);
         Assert.Equal(1_000_000, limits.MaxGlyphComplexity);
+        Assert.Equal(1_000_000, limits.MaxTextLength);
+        Assert.Equal(1_000_000, limits.MaxTextGlyphs);
         Assert.Same(limits, ImageConfiguration.Default.Limits);
         Assert.Equal(1, ImageConfiguration.Default.MaxDegreeOfParallelism);
     }
@@ -39,6 +41,8 @@ public sealed class DefaultsTests
         Assert.Throws<ArgumentOutOfRangeException>(() => new ImageResourceLimits { MaxLiveAllocationBytes = 0 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new ImageResourceLimits { MaxFontBytes = 0 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new ImageResourceLimits { MaxGlyphComplexity = 0 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new ImageResourceLimits { MaxTextLength = 0 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new ImageResourceLimits { MaxTextGlyphs = -1 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new ImageConfiguration { MaxDegreeOfParallelism = 0 });
         Assert.Throws<ArgumentNullException>(() => new ImageConfiguration { Limits = null! });
     }

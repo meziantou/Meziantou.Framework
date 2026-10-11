@@ -24,6 +24,7 @@ encoding, animation-aware processing, vector drawing, ICC color conversion, and 
   grayscale and convolution matrices (sharpen, blur, edge detection) applied to all frames
 - Antialiased vector drawing on a frame or on every frame: filled and stroked rectangles, ellipses and paths with
   Bézier curves, solid colors, linear and radial gradients, with exact pixel coverage
+- Text drawn from font files with the same rasterizer, measured by the layout that is drawn
 - Font files read without any system library: TrueType and OpenType (TrueType and CFF outlines), font collections,
   WOFF and WOFF2, with their names, metrics, character map and glyph outlines
 - ICC color management on request: convert an image to another color profile, or convert sample buffers between two
@@ -51,6 +52,7 @@ compiled and run by the test suite.
   - [Processing](#processing)
   - [Drawing](#drawing)
   - [Fonts](#fonts)
+  - [Text](#text)
   - [Metadata, color profiles and orientation](#metadata-color-profiles-and-orientation)
   - [Color management](#color-management)
   - [Loading, identification and limits](#loading-identification-and-limits)
@@ -641,7 +643,7 @@ public static void SharpenAndDetectEdges(string inputPath, string sharpenedPath,
 }
 ```
 
-There is no HDR processing, text rendering or custom processor.
+There is no HDR processing or custom processor.
 
 ### Drawing
 
@@ -800,6 +802,65 @@ public static string DescribeFont(string path)
   charstrings and the deprecated `seac` form of `endchar` in a CFF table, the font matrix of a CFF table (the units of
   the `head` table are used), and hinting: instructions and hints are skipped. A WOFF or WOFF2 file is expanded in
   memory; its metadata and private blocks are not read. Table checksums are not verified.
+
+### Text
+
+A `TextLayout` is a text laid out with a font at a size: its glyphs and their positions. It measures the text
+(`Width`, `Height`, `Baseline`, `LineCount`, `InkBounds`) and is what `DrawingCanvas.FillText` and `StrokeText` draw, so
+that what is measured is what is drawn.
+
+<!-- snippet: draw-text -->
+```csharp
+public static void DrawLabel(string fontPath, string outputPath)
+{
+    var font = Font.Load(fontPath);
+
+    // A layout holds the glyphs of a text and their positions: it measures the text and is what is drawn
+    var layout = TextLayout.Create("Hello, world!\nBonjour", font, size: 32);
+
+    const int Margin = 8;
+    using var image = new Image<Rgba32>((int)Math.Ceiling(layout.Width) + (2 * Margin), (int)Math.Ceiling(layout.Height) + (2 * Margin), new Rgba32(255, 255, 255));
+    var outline = new Pen(new Rgba32(0, 0, 0), 1) { LineJoin = LineJoin.Round };
+    image.Draw(canvas =>
+    {
+        // The origin is the top-left corner of the layout; its first baseline is layout.Baseline below
+        var origin = new PointD(Margin, Margin);
+        canvas.FillText(new Rgba32(30, 60, 160), layout, origin);
+        canvas.StrokeText(outline, layout, origin);
+
+        // A line under the first line of text, at its baseline
+        canvas.StrokeLine(outline, new PointD(Margin, Margin + layout.Baseline + 3), new PointD(Margin + layout.Width, Margin + layout.Baseline + 3));
+    });
+
+    image.Save(outputPath);
+}
+```
+
+- **Lines.** The text is one line, or several when it contains line breaks (line feed, carriage return with or without
+  a line feed, vertical tab, form feed, U+0085, U+2028, U+2029); a line break at the end starts an empty line. Lines
+  are not wrapped. A line is as tall as the line height of the font; the line gap is split above and below the glyphs,
+  so the first baseline is half the line gap plus the ascent under the top of the layout.
+- **Glyphs.** Each character has the glyph the character map of the font gives it, or the glyph of the variation
+  sequence it starts when the font has one. Pairs of glyphs are moved by the `kern` table of the font. Control and
+  format characters are not drawn, and a tabulation moves to the next multiple of eight spaces. A character the font
+  has no glyph for is drawn with the missing glyph of the font, and `HasMissingGlyphs` says so: nothing throws, and no
+  other font is used.
+- **Rendering.** The outlines are scaled to the size and placed at fractions of a pixel, then filled or stroked like any
+  path: exact coverage, the same compositing, the same flattening tolerance. Nothing is snapped to the pixel grid and
+  the hinting of the font is not applied, so the same text gives the same pixels on every platform. The glyphs of one
+  call are one shape: where glyphs overlap, the brush is applied once. `TextLayout.ToPath` gives the same outlines as
+  a `VectorPath`; filling or stroking it changes the same pixels to the same values.
+- **Cost.** Creating a layout allocates (its glyphs and positions) and decodes each distinct glyph once, which validates
+  the font data the text uses: drawing a layout then only fails on a limit of the image or on cancellation, and
+  allocates nothing. `FillText(brush, text, font, size, origin)` creates a layout on each call; create the layout
+  yourself to measure a text or to draw it more than once. A layout is immutable and thread-safe.
+- **Limits.** `MaxTextLength` (UTF-16 code units), `MaxTextGlyphs` and `MaxGlyphComplexity`, from the configuration the
+  font was loaded with.
+
+What text layout does not do yet: the `GSUB` and `GPOS` tables are not applied, so there is no ligature, no contextual
+form, no mark positioning and no kerning other than the `kern` table; text is laid out left to right, one glyph per
+character, which is wrong for scripts that need shaping or right-to-left order. There is no line wrapping, alignment,
+font fallback or decoration.
 
 ### Metadata, color profiles and orientation
 
@@ -1680,10 +1741,11 @@ Everything below is rejected explicitly (never decoded or encoded approximately)
 | PNG/APNG | No palette output (paletted inputs are re-encoded as RGB/RGBA), no RGB 16-bit or gray+alpha output layouts (16-bit color is written as RGBA 16), no APNG delta-rectangle optimization, unknown critical chunks rejected, unknown ancillary chunks not round-tripped |
 | Metadata | Profiles are preserved and labeled, never applied implicitly (colors are converted only by `ConvertColorProfile` and `IccColorTransform`); EXIF orientation is reported, applied only by `AutoOrient`; extended XMP in JPEG is not supported; per-format storage limits are listed in [Metadata, color profiles and orientation](#metadata-color-profiles-and-orientation); unsupported items follow `MetadataHandling` (`Strict` throws by default) |
 | Color management | ICC version 2 and 4 grayscale, RGB and CMYK profiles (matrix-based and table-based): no version 5 (iccMAX), device-link, abstract or named-color profile, no multi-process-element (`D2Bx`/`B2Dx`) tag, no other data color space; `ConvertColorProfile` keeps the pixel format (an RGB image cannot become grayscale or CMYK this way); no CMYK pixel format: a CMYK JPEG is converted to RGB when it is loaded (`CmykConversionOptions`, RGB destination only) and CMYK cannot be written; no gamut mapping beyond per-channel clipping |
-| Drawing | No text, no image or pattern brush, no transform, no clipping region other than the canvas, no dashed stroke, no elliptical-arc path element, no blend mode other than source-over; always antialiased; blended on the encoded sample values (no linear-light option); sequential; gradients have no focal point and no rotation of their own; coordinates are limited to ±16,777,216 |
-| Processing | No HDR, text rendering or custom processors; `LinearSrgb` resizing and convolution accept untagged or recognized sRGB/sGray profiles only; convolution matrices have odd dimensions, no bias or divisor, no ready-made matrices and no separable fast path |
+| Drawing | No image or pattern brush, no transform, no clipping region other than the canvas, no dashed stroke, no elliptical-arc path element, no blend mode other than source-over; always antialiased; blended on the encoded sample values (no linear-light option); sequential; gradients have no focal point and no rotation of their own; coordinates are limited to ±16,777,216 |
+| Processing | No HDR or custom processors; `LinearSrgb` resizing and convolution accept untagged or recognized sRGB/sGray profiles only; convolution matrices have odd dimensions, no bias or divisor, no ready-made matrices and no separable fast path |
 | AVIF encoding | An image of a sequence is predicted from the previous image only, with one motion vector per block and the regular interpolation filter: no compound prediction (two references), global, warped or overlapped motion, switchable interpolation filter, temporal motion vector prediction, or scene change detection (an image that differs from the previous one is coded with intra blocks, not as a key frame). Not used: intra block copy (content that repeats in an image, such as the characters of a text, is not predicted from the image itself: a lossless screenshot can be larger than its PNG), the split of the transform blocks of an inter block (it has the largest transform of its size), quantizer deltas, quantization matrices, loop restoration, CDEF strengths per block (one pair per frame), super-resolution and film grain. No grid, layered (progressive) or premultiplied-alpha output; no `clap`, `pasp`, mastering display or content light level box; no orientation for an image sequence. An image sequence of one image cannot store animation settings (it is read back as a still image): a single frame with animation settings is rejected. An image sequence needs a seekable destination and its frame count. The level of the stream is the lowest one whose picture size holds the image; the other limits of a level are not checked |
 | AVIF decoding | Rejected with `UnsupportedImageFeatureException`: premultiplied alpha, `iden`/`iovl` derived images, fragmented files, edit lists that do not play the whole track, image sequences whose images change size, clean apertures that do not select whole samples or that follow a rotation, grid tiles that declare other transformations than their grid, large scale tile streams, and the other matrix coefficients (constant luminance, ICtCp, SMPTE 2085, chromaticity-derived). Not read: gain maps, depth maps, thumbnails, the images that are not the primary item, the `tkhd` matrix and the other transformations of an image sequence (its images are returned as stored), mastering display and content light level boxes. A layered image is returned at its full quality only: its lower layers are not exposed as a progressive rendering. HDR samples are returned as stored: no tone mapping |
 | JPEG XL | Decoding, rejected with `UnsupportedImageFeatureException` (also from `Identify` when the image header tells): floating-point samples and samples of more than 16 bits, premultiplied alpha, CMYK (a black channel) and spot colors, an XYB image whose ICC profile is not sRGB (it needs a color conversion to that profile), the PQ or HLG transfer function with primaries or a white point that CICP cannot express, a Modular frame stored as YCbCr with subsampled channels, restoration filters on a grayscale Modular frame, an upsampled frame with patches or splines whose extra channels have another resolution. Ignored: the preview frame, frame names, the intrinsic size, the JPEG reconstruction data (`jbrd`: a recompressed JPEG file is decoded to pixels, the JPEG file is not rebuilt), `jumb` and unknown boxes; depth, selection mask, thermal and the other extra channels than alpha are decoded and dropped. Samples of 1 to 16 bits other than 8 and 16 are scaled exactly to 8 or 16 bits. A lossy frame is decoded in floating point: the result is within a few sixteen-bit units of the reference decoders, not bit-exact. Encoding: lossless only (no lossy output), full frames that replace the image (no layers, blending, patches or cropped frames), frame durations in whole milliseconds, no frame of an animation without duration; an EXIF orientation is written to the image header |
+| Text | One font and one size per layout, left to right, one glyph per character: no `GSUB`/`GPOS` shaping (ligatures, contextual forms, mark positioning; kerning comes from the `kern` table only), no right-to-left reordering, no line wrapping, alignment, font fallback or decoration; no hinting and no subpixel (LCD) rendering; see [Text](#text) |
 | Fonts | No system font, no CFF2 outline, variation, bitmap or color glyph table, no Type 1 font, no hinting; see [Fonts](#fonts) |
 | API | No public allocator, custom pixel type, codec plug-in or image-processor interface; implementation types are internal |

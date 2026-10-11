@@ -3,7 +3,8 @@ using Meziantou.Framework.Imaging.Internals;
 namespace Meziantou.Framework.Imaging.Typography;
 
 /// <summary>
-/// A font face loaded from a TrueType or OpenType file (<c>.ttf</c>), or from a face of a font collection (<c>.ttc</c>).
+/// A font face loaded from a TrueType or OpenType file (<c>.ttf</c>, <c>.otf</c>), from a WOFF or WOFF2 file, or from
+/// a font collection (<c>.ttc</c>, <c>.otc</c>).
 /// </summary>
 /// <remarks>
 /// <para>

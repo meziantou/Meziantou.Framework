@@ -2,6 +2,7 @@ using System.Globalization;
 using Meziantou.Framework.Imaging.Drawing;
 using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.Metadata;
+using Meziantou.Framework.Imaging.Typography;
 
 namespace Meziantou.Framework.Imaging.AotSmoke;
 
@@ -594,6 +595,40 @@ internal static class SmokeTests
 
         // The centers are at 1/8, 3/8, 5/8 and 7/8 of 65535 (ties upward); the last pixel is half covered
         Check(gray.Frames[0][0, 0] == new Gray16(8192) && gray.Frames[0][1, 0] == new Gray16(24576) && gray.Frames[0][2, 0] == new Gray16(40959) && gray.Frames[0][3, 0] == new Gray16(28672), "gradient samples");
+    }
+
+    public static void Text()
+    {
+        // The same font from two containers: A is 12 by 12 pixels at 16 pixels per em, 2 pixels from its origin and 1
+        // pixel under the top of the line; B follows it 2 pixels closer than its advance, by kerning
+        foreach (var data in (byte[][])[SmokeFonts.BoxesWoff2, SmokeFonts.BoxesWoff])
+        {
+            var font = Font.Load(data);
+            Check(font.FamilyName == "Meziantou Boxes" && font.GlyphCount == 13 && font.ContainsGlyph(new Rune('A')), "text: font");
+            var layout = TextLayout.Create("AB\nA", font, 16);
+            Check(layout.Width == 22 && layout.Height == 32 && layout.LineCount == 2 && layout.Baseline == 13 && !layout.HasMissingGlyphs, "text: layout");
+            Check(layout.InkBounds == RectangleD.FromLTRB(2, 1, 21, 29), "text: ink bounds");
+
+            using var image = new Image<Gray8>(24, 32, new Gray8(0));
+            image.Draw(layout, static (canvas, layout) => canvas.FillText(new Rgba32(255, 255, 255), layout, new PointD(0, 0)));
+            var frame = image.Frames[0];
+            Check(frame[2, 1] == new Gray8(255) && frame[13, 12] == new Gray8(255) && frame[14, 12] == new Gray8(0) && frame[15, 5] == new Gray8(255) && frame[2, 17] == new Gray8(255) && frame[0, 0] == new Gray8(0), "text: fill");
+
+            using var fromPath = new Image<Gray8>(24, 32, new Gray8(0));
+            fromPath.Draw(layout.ToPath(new PointD(0, 0)), static (canvas, path) => canvas.Fill(new Rgba32(255, 255, 255), path));
+            CheckEqual(fromPath, image, "text: path");
+        }
+
+        // CFF outlines, stroked, through the overload that lays out the text
+        var cff = Font.Load(SmokeFonts.CharstringsOtf);
+        using var stroked = new Image<Rgba32>(64, 16);
+        stroked.Draw(cff, static (canvas, font) =>
+        {
+            canvas.FillText(new Rgba32(255, 0, 0), "BCDE", font, 12, new PointD(1, 1));
+            canvas.StrokeText(new Pen(new Rgba32(0, 0, 255), 1), TextLayout.Create("BCDE", font, 12), new PointD(1, 1));
+        });
+        Check(Pixels(stroked.Frames[0]).Any(static value => value != 0), "text: CFF");
+        Check(Expect<UnknownImageFormatException>(() => Font.Load([1, 2, 3, 4])) is not null, "text: not a font");
     }
 
     public static void ColorConversion()

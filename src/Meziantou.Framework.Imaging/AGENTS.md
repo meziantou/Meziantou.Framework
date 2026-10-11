@@ -255,6 +255,31 @@ directory and the fixed-size tables, `CmapTable` maps characters, `GlyfOutlineRe
   and mutation fuzzing (`FontFuzzTests`). The test-side writers are not oracles: a file they write is a fixture only
   after the corpus generator has read it back with the reference decoders.
 
+## Text
+
+`TextLayout` (`Typography/`) turns a text into glyphs and positions; `DrawingSession.FillText` and `StrokeText` draw it
+through `GlyphPathSink` into the sinks of the drawing pipeline.
+
+- **A layout is the only thing that is measured and drawn.** There is no separate measuring code: `Width`, `Height` and
+  `InkBounds` come from the positions that are drawn. A layout is immutable and thread-safe, holds exact managed arrays
+  (like `VectorPath`) and no pooled storage.
+- **Validate at layout, not at draw.** Creating a layout decodes each distinct glyph once, so the errors of the font
+  data surface there; drawing a layout then only fails on a limit of the image or on cancellation. Do not add a failure
+  mode to `FillText` that `TextLayout.Create` could have reported.
+- **Transform, then flatten.** The control points of an outline are transformed to pixels with `Affine2D` (one fixed
+  order of operations), then flattened by the unchanged `PathFlattener` with the tolerance of every other curve. No
+  hinting, no snapping, no rounding of advances: positions are computed in whole font units, then scaled once.
+  `TextLayout.ToPath` uses the same transform, and filling or stroking that path must stay bit-identical to
+  `FillText` and `StrokeText` (`DrawingTextTests.DrawingALayoutIsDrawingItsPath`).
+- **One shape per call, one orientation per glyph.** All the glyphs of a call are rasterized in one sweep, so overlaps
+  are painted once. TrueType and CFF outlines turn in opposite directions: `Emit` reverses the edges of a glyph whose
+  signed area is negative (`EdgeBuilder.NegateDirections`), otherwise overlapping glyphs of two conventions would
+  cancel under the nonzero rule.
+- **The layout overloads allocate nothing** once the scratch of the session has grown (`PerformanceContractTests`). The
+  overload that takes a string creates a layout and is the documented exception.
+- Tests: literals on the boxes font (rectangles on whole pixels at 16 pixels per em, compared with `FillRectangle`),
+  layout against path on the fonts of the corpus, and `FontFuzzTests`, which lays out and draws with every mutated font.
+
 ## Performance work
 
 - Remove unnecessary decodes, conversions and copies before micro-optimizing. Profile first and keep the evidence.

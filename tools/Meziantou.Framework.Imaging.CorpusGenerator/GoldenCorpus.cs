@@ -10,10 +10,10 @@ namespace Meziantou.Framework.Imaging.CorpusGenerator;
 /// It does not use the library under test: expected pixels are either hand-defined (patterns and literal frame grids) or
 /// decoded by pinned, independent tools (libjpeg-turbo djpeg), and are cross-checked with a second independent decoder
 /// (FFmpeg/libavcodec) whenever possible.
-/// Requirements: macOS, ffmpeg, cjpeg and djpeg (libjpeg-turbo) and sips (Apple ImageIO: JPEG cross-checks, and PNG
-/// features FFmpeg does not implement) at the pinned versions below (override with --accept-tool-versions after reviewing
-/// the differences), and swift (Xcode command line tools) to run imageio_frames.swift, the Apple ImageIO APNG and GIF
-/// cross-check.
+/// Requirements: macOS, ffmpeg, cjpeg, djpeg and jpegtran (libjpeg-turbo), jpgicc and transicc (LittleCMS: the CMYK JPEG
+/// fixtures) and sips (Apple ImageIO: JPEG cross-checks, and PNG features FFmpeg does not implement) at the pinned
+/// versions below (override with --accept-tool-versions after reviewing the differences), and swift (Xcode command line
+/// tools) to run imageio_frames.swift, the Apple ImageIO APNG and GIF cross-check.
 /// </summary>
 internal static partial class GoldenCorpus
 {
@@ -51,6 +51,7 @@ internal static partial class GoldenCorpus
             BuildGifFfmpegDecoding(corpus);
             BuildGifDecoding(corpus);
             BuildJpeg(corpus);
+            BuildInkJpeg(corpus);
             BuildInvalidJpeg(corpus);
             BuildInvalidProgressiveJpeg(corpus);
             BuildLimits(corpus);
@@ -70,6 +71,8 @@ internal static partial class GoldenCorpus
                     tools.FfmpegLabel,
                     $"libjpeg-turbo {tools.CjpegVersion} cjpeg",
                     $"libjpeg-turbo {tools.DjpegVersion} djpeg",
+                    $"libjpeg-turbo {tools.JpegtranVersion} jpegtran",
+                    tools.LittleCmsLabel,
                     $"Apple ImageIO {tools.MacOS} {tools.SipsVersion}",
                     ToolSet.RuntimeLabel,
                 },
@@ -235,13 +238,31 @@ internal static partial class GoldenCorpus
 internal sealed partial class GoldenTools : ToolSet
 {
     public GoldenTools(bool acceptVersions)
-        : base(RequireAll("ffmpeg", "cjpeg", "djpeg"))
+        : base(RequireAll("ffmpeg", "cjpeg", "djpeg", "jpegtran", "jpgicc", "transicc"))
     {
         Cjpeg = ExecutableFinder.GetFullExecutablePath("cjpeg")!;
         Djpeg = ExecutableFinder.GetFullExecutablePath("djpeg")!;
+        Jpegtran = ExecutableFinder.GetFullExecutablePath("jpegtran")!;
+        Jpgicc = ExecutableFinder.GetFullExecutablePath("jpgicc")!;
+        Transicc = ExecutableFinder.GetFullExecutablePath("transicc")!;
         CjpegVersion = VersionRegex().Match(Proc.RunText([Cjpeg, "-version"], stderr: true)).Groups["version"].Value;
         DjpegVersion = VersionRegex().Match(Proc.RunText([Djpeg, "-version"], stderr: true)).Groups["version"].Value;
-        var actual = new Dictionary<string, string>(StringComparer.Ordinal) { ["ffmpeg"] = FfmpegVersion, ["cjpeg"] = CjpegVersion, ["djpeg"] = DjpegVersion };
+        JpegtranVersion = VersionRegex().Match(Proc.RunText([Jpegtran, "-version"], stderr: true)).Groups["version"].Value;
+
+        // Both tools print their banner (and their usage, with a failure exit code) when they have no argument
+        var jpgiccBanner = Proc.Exec([Jpgicc]);
+        var transiccBanner = Proc.Exec([Transicc]);
+        var jpgiccVersion = LittleCmsRegex().Match(Encoding.UTF8.GetString(jpgiccBanner.Stdout) + Encoding.UTF8.GetString(jpgiccBanner.Stderr)).Groups["version"].Value;
+        LittleCmsVersion = LittleCmsRegex().Match(Encoding.UTF8.GetString(transiccBanner.Stdout) + Encoding.UTF8.GetString(transiccBanner.Stderr)).Groups["version"].Value;
+        var actual = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["ffmpeg"] = FfmpegVersion,
+            ["cjpeg"] = CjpegVersion,
+            ["djpeg"] = DjpegVersion,
+            ["jpegtran"] = JpegtranVersion,
+            ["jpgicc"] = jpgiccVersion,
+            ["transicc"] = LittleCmsVersion,
+        };
         var mismatches = PinnedVersions.Where(p => actual.ContainsKey(p.Name) && actual[p.Name] != p.Version).Select(p => $"{p.Name} {actual[p.Name]} (pinned {p.Version})").ToList();
         if (mismatches.Count > 0 && !acceptVersions)
         {
@@ -257,11 +278,15 @@ internal sealed partial class GoldenTools : ToolSet
             throw new FatalException($"sips version {SipsVersion} differs from the pinned {pinnedSips}; rerun with --accept-tool-versions after review.");
         Swift = ExecutableFinder.GetFullExecutablePath("swift") ?? throw new FatalException("swift (Xcode command line tools) is required for the Apple ImageIO APNG and GIF cross-checks (imageio_frames.swift).");
         LibjpegLabel = $"libjpeg-turbo {CjpegVersion} (cjpeg/djpeg)";
+        LittleCmsLabel = $"LittleCMS {LittleCmsVersion} (jpgicc/transicc)";
         DisplayNames = new Dictionary<string, string>(StringComparer.Ordinal)
         {
             [Ffmpeg] = "ffmpeg",
             [Cjpeg] = "cjpeg",
             [Djpeg] = "djpeg",
+            [Jpegtran] = "jpegtran",
+            [Jpgicc] = "jpgicc",
+            [Transicc] = "transicc",
             [Sips] = "sips",
             [Swift] = "swift",
         };
@@ -274,6 +299,9 @@ internal sealed partial class GoldenTools : ToolSet
         ("ffmpeg", "9.0.2"),
         ("cjpeg", "3.2.0"),
         ("djpeg", "3.2.0"),
+        ("jpegtran", "3.2.0"),
+        ("jpgicc", "2.19"), // LittleCMS: writes the CMYK JPEG fixtures
+        ("transicc", "2.19"), // LittleCMS: cross-check of their color conversion
         ("sips", "sips-316"), // Apple ImageIO: independent JPEG cross-check, and arbiter when FFmpeg lacks a PNG feature
     ];
 
@@ -281,9 +309,21 @@ internal sealed partial class GoldenTools : ToolSet
 
     public string Djpeg { get; }
 
+    public string Jpegtran { get; }
+
+    public string Jpgicc { get; }
+
+    public string Transicc { get; }
+
     public string CjpegVersion { get; }
 
     public string DjpegVersion { get; }
+
+    public string JpegtranVersion { get; }
+
+    public string LittleCmsVersion { get; }
+
+    public string LittleCmsLabel { get; }
 
     public string Sips { get; }
 
@@ -308,4 +348,7 @@ internal sealed partial class GoldenTools : ToolSet
 
     [GeneratedRegex(@"version (?<version>\S+)", RegexOptions.ExplicitCapture)]
     private static partial Regex VersionRegex();
+
+    [GeneratedRegex(@"\[LittleCMS (?<version>[0-9.]+)\]", RegexOptions.ExplicitCapture)]
+    private static partial Regex LittleCmsRegex();
 }

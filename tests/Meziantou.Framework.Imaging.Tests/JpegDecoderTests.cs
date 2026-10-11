@@ -1,6 +1,7 @@
 using Meziantou.Framework.Imaging.Internals;
 using Meziantou.Framework.Imaging.Metadata;
 using Meziantou.Framework.Imaging.TestHarness.Adapters;
+using Meziantou.Framework.Imaging.TestHarness.Color;
 using Meziantou.Framework.Imaging.TestHarness.Streams;
 using Meziantou.Framework.Imaging.Tests.Codecs;
 
@@ -14,8 +15,25 @@ namespace Meziantou.Framework.Imaging.Tests;
 /// table, entropy and restart defects, truncation at every length, corruption, streaming memory bounds, input variants,
 /// typed loads, readers, cancellation, limits and metadata. The golden corpus compares the same decoder with libjpeg-turbo.
 /// </summary>
+/// <remarks>
+/// Four-component images (CMYK, YCCK) are inks, only loaded with a color conversion. Their expected pixels are the ink
+/// amounts computed by <see cref="JpegTestImage.GetExpectedInks"/>, converted by the independent decimal reference of the
+/// test harness (<see cref="ReferenceIccTransform"/>): every sample must be the correctly rounded exact value.
+/// </remarks>
 public sealed class JpegDecoderTests
 {
+    private static readonly ImageDecodeOptions InkOptions = new() { CmykConversion = CmykConversionOptions.Default };
+
+    // Interleaved scans have at most 10 blocks per MCU (T.81 B.2.3)
+    private static readonly Dictionary<string, (int H, int V)[]> InkLayouts = new(StringComparer.Ordinal)
+    {
+        ["full"] = [(1, 1), (1, 1), (1, 1), (1, 1)],
+        ["chroma-2x2"] = [(2, 2), (1, 1), (1, 1), (2, 2)],
+        ["chroma-2x1"] = [(2, 1), (1, 1), (1, 1), (2, 1)],
+        ["black-subsampled"] = [(2, 1), (2, 1), (2, 1), (1, 1)],
+        ["mixed"] = [(1, 2), (2, 1), (1, 1), (2, 2)],
+    };
+
     private static readonly Dictionary<string, (int H, int V)[]> Layouts = new(StringComparer.Ordinal)
     {
         ["gray"] = [(1, 1)],
@@ -499,6 +517,241 @@ public sealed class JpegDecoderTests
             Assert.Null(gray.Metadata.IccProfile);
             Assert.Equal(ExifOrientation.RightTop, gray.Metadata.Orientation);
         }
+    }
+
+    public static TheoryData<string, string> InkCases
+    {
+        get
+        {
+            var data = new TheoryData<string, string>();
+            foreach (var layout in InkLayouts.Keys)
+            {
+                foreach (var coding in new[] { JpegTestInkCoding.Cmyk, JpegTestInkCoding.Ycck, JpegTestInkCoding.CmykWithoutAdobe })
+                {
+                    data.Add(layout, coding.ToString());
+                }
+            }
+
+            return data;
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(InkCases))]
+    public void InksAreConvertedFromTheirExactAmounts(string layout, string coding)
+    {
+        var inkCoding = Enum.Parse<JpegTestInkCoding>(coding);
+        var sampling = InkLayouts[layout];
+        var reference = ReferenceIccTransform.Create(IccProfile.Cgats001CompatibleCmyk.Data.Span, IccProfile.Srgb.Data.Span, intent: 1, blackPointCompensation: true);
+        foreach (var (width, height) in new[] { (1, 1), (9, 7), (17, 9), (23, 18) })
+        {
+            var image = JpegTestImage.CreateRandom(width, height, sampling, seed: (width * 31) + height + layout.Length + coding.Length, inks: inkCoding);
+            var inks = image.GetExpectedInks();
+            var encodings = new (string Name, JpegTestEncodeOptions Options)[]
+            {
+                ("interleaved, fixed tables", new JpegTestEncodeOptions()),
+                ("interleaved, long codes, restart 1", new JpegTestEncodeOptions { Huffman = JpegTestHuffmanStyle.Skewed, RestartInterval = 1 }),
+                ("extended sequential, one scan per component (reversed), restart 2", new JpegTestEncodeOptions { FrameMarker = 0xC1, Scans = [[3], [2], [1], [0]], TablesBeforeEachScan = true, RestartInterval = 2 }),
+                ("black alone then the others interleaved", new JpegTestEncodeOptions { Scans = [[3], [0, 1, 2]], Huffman = JpegTestHuffmanStyle.Skewed }),
+            };
+
+            byte[]? first = null;
+            foreach (var (name, options) in encodings)
+            {
+                var data = image.Encode(options);
+                Assert.Equal(inkCoding == JpegTestInkCoding.Ycck ? ImageColorModel.Ycck : ImageColorModel.Cmyk, Image.Identify(data).ColorModel);
+                using var decoded = Image.Load(data, InkOptions);
+                Assert.Equal(PixelFormat.Rgb24, decoded.PixelFormat);
+                Assert.Equal(new Size(width, height), decoded.Size);
+                Assert.Equal(IccProfile.Srgb.Data.ToArray(), decoded.Metadata.IccProfile?.Data.ToArray());
+                if (first is null)
+                {
+                    first = GetBytes(decoded);
+                    Assert.Empty(reference.Compare(inks, first));
+                }
+                else
+                {
+                    AssertPixels(first, decoded, $"{layout} {coding} {width}x{height}, {name}");
+                }
+            }
+        }
+    }
+
+    [Fact]
+    public void InksUseTheEmbeddedProfileTheDestinationAndTheIntent()
+    {
+        var profile = IccTestProfiles.CmykLabLut16().Data.ToArray();
+        var half = profile.Length / 2;
+        var image = JpegTestImage.CreateRandom(19, 13, InkLayouts["chroma-2x2"], seed: 23, inks: JpegTestInkCoding.Ycck);
+        var data = image.Encode(new JpegTestEncodeOptions
+        {
+            SegmentsBeforeFrame =
+            [
+                JpegTestImage.Segment(0xE2, [.. "ICC_PROFILE\0"u8, 2, 2, .. profile.AsSpan(half)]),
+                JpegTestImage.Segment(0xE2, [.. "ICC_PROFILE\0"u8, 1, 2, .. profile.AsSpan(0, half)]),
+            ],
+        });
+
+        // Identification reports the profile of the inks; the loaded pixels are labeled with the destination
+        var info = Image.Identify(data);
+        Assert.Equal(ImageColorModel.Ycck, info.ColorModel);
+        Assert.Equal(IccProfileColorSpace.Cmyk, info.Metadata.IccProfile?.ColorSpace);
+        Assert.Equal(profile, info.Metadata.IccProfile?.Data.ToArray());
+
+        var inks = image.GetExpectedInks();
+        var destination = IccTestProfiles.Rgb(IccTestProfiles.DisplayP3Colorants, IccTestProfiles.SrgbCurve());
+        var cases = new (IccRenderingIntent Intent, bool BlackPointCompensation)[]
+        {
+            (IccRenderingIntent.Perceptual, false),
+            (IccRenderingIntent.RelativeColorimetric, true),
+            (IccRenderingIntent.Saturation, true),
+            (IccRenderingIntent.AbsoluteColorimetric, false),
+        };
+
+        var results = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var (intent, compensation) in cases)
+        {
+            var conversion = new CmykConversionOptions { DestinationProfile = destination, Transform = new IccColorTransformOptions { Intent = intent, BlackPointCompensation = compensation } };
+            using var decoded = Image.Load(data, new ImageDecodeOptions { CmykConversion = conversion });
+            Assert.Equal(destination.Data.ToArray(), decoded.Metadata.IccProfile?.Data.ToArray());
+            var actual = GetBytes(decoded);
+            var reference = ReferenceIccTransform.Create(profile, destination.Data.Span, (int)intent, compensation);
+            Assert.Empty(reference.Compare(inks, actual));
+            results.Add(Convert.ToHexString(actual));
+        }
+
+        // The profile has one table per intent and a media white point: every case gives other pixels
+        Assert.HasCount(cases.Length, results);
+    }
+
+    [Fact]
+    public void InksAreOnlyLoadedWithAConversion()
+    {
+        var image = JpegTestImage.CreateRandom(9, 7, InkLayouts["full"], seed: 29, inks: JpegTestInkCoding.Cmyk);
+        var data = image.Encode();
+        foreach (var mode in new[] { ImageIdentifyMode.Header, ImageIdentifyMode.FullScan })
+        {
+            var info = Image.Identify(data, new ImageIdentifyOptions { Mode = mode });
+            Assert.Equal(ImageColorModel.Cmyk, info.ColorModel);
+            Assert.Equal(PixelFormat.Rgb24, info.PixelFormat);
+            Assert.Equal(8, info.BitsPerComponent);
+            Assert.Null(info.Metadata.IccProfile);
+        }
+
+        // No pixel format holds inks, and a profile is never applied implicitly
+        AssertUnsupported("JPEG CMYK/YCCK", () => Image.Load(data));
+        AssertUnsupported("JPEG CMYK/YCCK", () => Image.Load<Rgba32>(data));
+        AssertUnsupported("JPEG CMYK/YCCK", () =>
+        {
+            using var reader = Image.OpenReader<Rgb24>(new MemoryStream(data));
+            using var frame = reader.ReadFrame();
+        });
+    }
+
+    [Fact]
+    public void InksWithoutProfileUseTheAssumedProfile()
+    {
+        var image = JpegTestImage.CreateRandom(14, 10, InkLayouts["chroma-2x1"], seed: 31, inks: JpegTestInkCoding.Cmyk);
+        var inks = image.GetExpectedInks();
+        var data = image.Encode();
+
+        var assumed = IccTestProfiles.CmykLabLutAToB();
+        using (var decoded = Image.Load(data, new ImageDecodeOptions { CmykConversion = new CmykConversionOptions { AssumedSourceProfile = assumed } }))
+        {
+            var reference = ReferenceIccTransform.Create(assumed.Data.Span, IccProfile.Srgb.Data.Span, intent: 1, blackPointCompensation: true);
+            Assert.Empty(reference.Compare(inks, GetBytes(decoded)));
+        }
+
+        var withoutAssumption = new ImageDecodeOptions { CmykConversion = new CmykConversionOptions { AssumedSourceProfile = null } };
+        AssertUnsupported("JPEG CMYK without color profile", () => Image.Load(data, withoutAssumption));
+
+        // An RGB profile cannot describe inks: it is not adopted, and the image is one without profile
+        var rgbProfile = JpegTestImage.Segment(0xE2, [.. "ICC_PROFILE\0"u8, 1, 1, .. IccProfile.Srgb.Data.Span]);
+        var mislabeled = image.Encode(new JpegTestEncodeOptions { SegmentsBeforeFrame = [rgbProfile] });
+        Assert.Null(Image.Identify(mislabeled).Metadata.IccProfile);
+        AssertUnsupported("JPEG CMYK without color profile", () => Image.Load(mislabeled, withoutAssumption));
+        using var untagged = Image.Load(data, InkOptions);
+        using var fromMislabeled = Image.Load(mislabeled, InkOptions);
+        AssertPixels(GetBytes(untagged), fromMislabeled, "RGB profile on inks");
+    }
+
+    [Fact]
+    public void AnUnusableEmbeddedInkProfileIsNeverReplacedByTheAssumedOne()
+    {
+        var image = JpegTestImage.CreateRandom(8, 8, InkLayouts["full"], seed: 37, inks: JpegTestInkCoding.Ycck);
+
+        // A CMYK profile needs a lookup table: without it the profile is malformed
+        var withoutTable = IccTestProfiles.BuildBytes("CMYK", "Lab ", [("wtpt", IccTestProfiles.Xyz(0.9642, 1, 0.8249))]);
+        var malformed = image.Encode(new JpegTestEncodeOptions { SegmentsBeforeFrame = [JpegTestImage.Segment(0xE2, [.. "ICC_PROFILE\0"u8, 1, 1, .. withoutTable])] });
+        Assert.Equal(IccProfileColorSpace.Cmyk, Image.Identify(malformed).Metadata.IccProfile?.ColorSpace);
+        Assert.Throws<InvalidImageContentException>(() => Image.Load(malformed, InkOptions));
+
+        // A device link is a valid profile of a class that is not supported
+        var deviceLink = IccTestProfiles.BuildBytes("CMYK", "Lab ", [("wtpt", IccTestProfiles.Xyz(0.9642, 1, 0.8249))], header => "link"u8.CopyTo(header.AsSpan(12)));
+        var unsupported = image.Encode(new JpegTestEncodeOptions { SegmentsBeforeFrame = [JpegTestImage.Segment(0xE2, [.. "ICC_PROFILE\0"u8, 1, 1, .. deviceLink])] });
+        AssertUnsupported("ICC profile class", () => Image.Load(unsupported, InkOptions), ImageFormat.Unknown);
+    }
+
+    [Fact]
+    public void InksLoadAsTypedPixelsAndThroughReaders()
+    {
+        var image = JpegTestImage.CreateRandom(21, 12, InkLayouts["chroma-2x2"], seed: 41, inks: JpegTestInkCoding.Ycck);
+        var data = image.Encode(new JpegTestEncodeOptions { RestartInterval = 2 });
+        using var eager = Image.Load(data, InkOptions);
+        var expected = GetBytes(eager);
+
+        using (var rgba = Image.Load<Rgba32>(data, InkOptions))
+        {
+            var actual = GetBytes(rgba);
+            for (var i = 0; i < expected.Length / 3; i++)
+            {
+                Assert.True(actual.AsSpan(4 * i, 3).SequenceEqual(expected.AsSpan(3 * i, 3)) && actual[(4 * i) + 3] == 255, $"Pixel {i} differs.");
+            }
+        }
+
+        // The destination profile labels color pixels only, like any RGB profile
+        AssertUnsupported("Incompatible color profile", () => Image.Load<Gray8>(data, InkOptions));
+        using (var gray = Image.Load<Gray8>(data, new ImageDecodeOptions { CmykConversion = CmykConversionOptions.Default, Conversion = new PixelConversionOptions { DiscardIncompatibleColorProfile = true } }))
+        {
+            Assert.Null(gray.Metadata.IccProfile);
+        }
+
+        var readerOptions = new ImageReaderOptions { CmykConversion = CmykConversionOptions.Default };
+        using (var reader = Image.OpenReader<Rgb24>(new MemoryStream(data), readerOptions))
+        {
+            Assert.Equal(ImageColorModel.Ycck, reader.Info.ColorModel);
+            using var frame = reader.ReadFrame();
+            Assert.NotNull(frame);
+            AssertPixels(expected, frame, "ReadFrame");
+            Assert.Equal(IccProfile.Srgb.Data.ToArray(), frame.Metadata.IccProfile?.Data.ToArray());
+            Assert.Null(reader.ReadFrame());
+        }
+
+        using var destination = new Image<Rgb24>(21, 12, new Rgb24(1, 2, 3));
+        using (var reader = Image.OpenReader<Rgb24>(new MemoryStream(data), readerOptions))
+        {
+            Assert.True(reader.ReadFrameInto(destination));
+        }
+
+        AssertPixels(expected, destination, "ReadFrameInto");
+    }
+
+    [Theory]
+    [MemberData(nameof(Variants))]
+    public async Task InksLoadThroughEveryInputVariant(InputVariant variant)
+    {
+        var image = JpegTestImage.CreateRandom(40, 33, InkLayouts["chroma-2x2"], seed: 43, inks: JpegTestInkCoding.Ycck);
+        var data = image.Encode(new JpegTestEncodeOptions { RestartInterval = 3 });
+        using var expected = Image.Load(data, InkOptions);
+        using var decoded = await InputVariants.LoadAsync<Rgb24>(variant, data, ImageFormat.Jpeg, InkOptions, XunitCancellationToken);
+        AssertPixels(GetBytes(expected), decoded, variant.ToString());
+    }
+
+    private static void AssertUnsupported(string feature, Action action, ImageFormat format = ImageFormat.Jpeg)
+    {
+        var exception = Assert.Throws<UnsupportedImageFeatureException>(action);
+        Assert.Equal(feature, exception.Feature);
+        Assert.Equal(format, exception.Format);
     }
 
     private static byte[] Gray(byte[][] tables, byte[] entropy, int width = 8, byte scanTables = 0x00)

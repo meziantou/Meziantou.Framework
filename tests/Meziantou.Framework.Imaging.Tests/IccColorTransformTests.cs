@@ -22,6 +22,39 @@ public sealed class IccColorTransformTests
     private static IccColorTransformOptions NoCompensation { get; } = new() { BlackPointCompensation = false };
 
     [Fact]
+    public void BuiltInCmykProfileIsASourceOnlyInputProfile()
+    {
+        // CGATS001Compat-v2-micro.icc of the Compact ICC Profiles collection (CC0-1.0), stored unmodified
+        var profile = IccProfile.Cgats001CompatibleCmyk;
+        Assert.Same(profile, IccProfile.Cgats001CompatibleCmyk);
+        Assert.Equal(8464, profile.Data.Length);
+        Assert.Equal("73e1ba37d2bad5bab2a964f40a9eed96209666efc067c3322626214bbef234a0", Convert.ToHexStringLower(System.Security.Cryptography.SHA256.HashData(profile.Data.Span)));
+        Assert.Equal(IccProfileColorSpace.Cmyk, profile.ColorSpace);
+        Assert.Equal(IccProfileClass.Input, profile.ProfileClass);
+        Assert.Equal(2, profile.Version.Major);
+        Assert.True(MetadataValidation.TryValidateIccProfile(profile.Data.Span, out _));
+
+        // Its only table converts from the inks: every intent uses it, and it cannot be a destination
+        var samples = new byte[] { 0, 0, 0, 0, 255, 255, 255, 255, 64, 0, 0, 0, 0, 128, 255, 32 };
+        var perceptual = new byte[12];
+        IccColorTransform.Create(profile, IccProfile.Srgb, new IccColorTransformOptions { Intent = IccRenderingIntent.Perceptual, BlackPointCompensation = false }).Convert(samples, perceptual);
+        foreach (var intent in new[] { IccRenderingIntent.RelativeColorimetric, IccRenderingIntent.Saturation })
+        {
+            var converted = new byte[12];
+            IccColorTransform.Create(profile, IccProfile.Srgb, new IccColorTransformOptions { Intent = intent, BlackPointCompensation = false }).Convert(samples, converted);
+            Assert.Equal(perceptual, converted);
+        }
+
+        // No ink is the white of the paper, every ink is close to black, cyan alone is a light cyan
+        Assert.True(perceptual.AsSpan(0, 3).IndexOfAnyExcept((byte)255) < 0, Convert.ToHexString(perceptual));
+        Assert.All(perceptual[3..6], value => Assert.True(value < 64));
+        Assert.True(perceptual[6] < perceptual[7] && perceptual[6] < perceptual[8]);
+
+        var exception = Assert.Throws<UnsupportedImageFeatureException>(() => IccColorTransform.Create(IccProfile.Srgb, profile));
+        Assert.Contains("cannot be a destination", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void BuiltInProfilesAreValidVersion4DisplayProfiles()
     {
         foreach (var (profile, colorSpace) in new[] { (IccProfile.Srgb, IccProfileColorSpace.Rgb), (IccProfile.SrgbGray, IccProfileColorSpace.Gray) })

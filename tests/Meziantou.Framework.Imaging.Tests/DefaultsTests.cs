@@ -207,6 +207,30 @@ public sealed class DefaultsTests
     }
 
     [Fact]
+    public void CmykConversionDefaults()
+    {
+        // Inks are never converted implicitly: the conversion is absent by default
+        Assert.Null(ImageDecodeOptions.Default.CmykConversion);
+        Assert.Null(ImageReaderOptions.Default.CmykConversion);
+
+        var options = new CmykConversionOptions();
+        Assert.Same(IccProfile.Srgb, options.DestinationProfile);
+        Assert.Same(IccProfile.Cgats001CompatibleCmyk, options.AssumedSourceProfile);
+        Assert.Same(IccColorTransformOptions.Default, options.Transform);
+        Assert.Same(CmykConversionOptions.Default, CmykConversionOptions.Default);
+        Assert.Same(IccProfile.Srgb, CmykConversionOptions.Default.DestinationProfile);
+        Assert.Same(IccProfile.Cgats001CompatibleCmyk, CmykConversionOptions.Default.AssumedSourceProfile);
+
+        // The destination is an RGB profile, the assumed source a CMYK profile or none
+        Assert.Null(new CmykConversionOptions { AssumedSourceProfile = null }.AssumedSourceProfile);
+        Assert.Throws<ArgumentNullException>(() => new CmykConversionOptions { DestinationProfile = null! });
+        Assert.Throws<ArgumentException>(() => new CmykConversionOptions { DestinationProfile = IccProfile.SrgbGray });
+        Assert.Throws<ArgumentException>(() => new CmykConversionOptions { DestinationProfile = IccProfile.Cgats001CompatibleCmyk });
+        Assert.Throws<ArgumentException>(() => new CmykConversionOptions { AssumedSourceProfile = IccProfile.Srgb });
+        Assert.Throws<ArgumentNullException>(() => new CmykConversionOptions { Transform = null! });
+    }
+
+    [Fact]
     public void IoOptionDefaults()
     {
         Assert.Null(ImageDecodeOptions.Default.FrameLimit);

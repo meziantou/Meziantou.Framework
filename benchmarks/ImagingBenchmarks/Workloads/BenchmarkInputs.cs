@@ -19,6 +19,7 @@ internal static class BenchmarkInputs
     private static readonly Lazy<byte[]> LargePng16Data = new(() => EncodeRgba64(LargeRgba64Source, Large16Width, Large16Height, new PngEncoder()));
     private static readonly Lazy<byte[]> BaselineJpegData = new(() => EncodeRgb24(LargeRgb24Source, LargeWidth, LargeHeight, JpegEncoder));
     private static readonly Lazy<byte[]> ProgressiveJpegData = new(() => ProgressiveJpegInput.Encode(LargeRgb24Bytes.Value, LargeWidth, LargeHeight, JpegQuality));
+    private static readonly Lazy<byte[]> InkJpegData = new(() => ProgressiveJpegInput.EncodeInks(LargeRgb24Bytes.Value, LargeWidth, LargeHeight, JpegQuality));
     private static readonly Lazy<byte[]> ServiceJpegData = new(() => EncodeRgb24(BenchmarkPixels.Rgb24(ServiceWidth, ServiceHeight, seed: 5), ServiceWidth, ServiceHeight, JpegEncoder));
     private static readonly Lazy<byte[]> GifData = new(() => EncodeAnimation(new GifEncoder()));
     private static readonly Lazy<byte[]> ApngData = new(() => EncodeAnimation(new PngEncoder { AnimationMode = PngAnimationMode.Animated }));
@@ -85,6 +86,12 @@ internal static class BenchmarkInputs
 
     /// <summary>Gets a 2048x1536 progressive JPEG of the same pixels (quality 85, 4:2:0, 10 scans with successive approximation).</summary>
     public static byte[] ProgressiveJpeg => ProgressiveJpegData.Value;
+
+    /// <summary>Gets a 2048x1536 baseline JPEG of four components (YCCK inks without profile, quality 85, 4:2:0, full-size black plane).</summary>
+    public static byte[] InkJpeg => InkJpegData.Value;
+
+    /// <summary>Gets the options that load <see cref="InkJpeg"/>: the conversion of its inks to sRGB from the CMYK profile the library assumes.</summary>
+    public static ImageDecodeOptions InkJpegOptions { get; } = new() { CmykConversion = CmykConversionOptions.Default };
 
     /// <summary>Gets a 1024x768 baseline JPEG (quality 85, 4:2:0): the request payload of the service-style workload.</summary>
     public static byte[] ServiceJpeg => ServiceJpegData.Value;

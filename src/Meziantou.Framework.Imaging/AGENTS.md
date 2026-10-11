@@ -29,8 +29,8 @@ the library guarantees to its callers (support matrix, limitations, defaults). K
 
 - **Never lose information silently.** Losing alpha, precision, animation, a poster, metadata or a color profile needs an
   explicit setting; otherwise throw `UnsupportedImageFeatureException`. Color profiles are preserved and labeled, never
-  applied implicitly: only `ConvertColorProfile` and `IccColorTransform` convert colors, and the pixels and their
-  profile always change together.
+  applied implicitly: only `ConvertColorProfile`, `IccColorTransform` and a load with `CmykConversionOptions` convert
+  colors, and the pixels and their profile always change together.
 - **An image holds full displayed frames**, not encoded deltas; decoders composite, encoders write what they are given.
   Timing is exact (`FrameDuration` is a rational number); a duration or play count the output format cannot represent is
   an error unless a rounding policy is set.
@@ -114,8 +114,15 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
 
 ## Color management
 
-`IccColorTransform` (sample buffers) and `ConvertColorProfile` (images) are the only code that applies an ICC profile;
-everything is under `Internals/Color`.
+`IccColorTransform` (sample buffers), `ConvertColorProfile` (images) and the decoding of CMYK samples
+(`CmykConversionOptions`) are the only code that applies an ICC profile; everything is under `Internals/Color`.
+
+- No pixel format holds CMYK samples. A decoder that meets them (four-component JPEG) converts its rows with the
+  pipeline of an `IccColorTransform`, only when the request carries `CmykConversionOptions`, and labels the image with
+  the destination profile; without the options it throws `UnsupportedImageFeatureException` before allocating. An
+  embedded profile that cannot be used is an error, never replaced by the assumed one.
+- `IccProfile.Cgats001CompatibleCmyk` is third-party data (CC0-1.0): `Internals/Color/BuiltInCmykProfile.g.cs` is
+  transcribed from the corpus by the `icc-builtin` command of the corpus generator. Never edit it by hand.
 
 - Written from ICC.1:2001-04 (version 2 profiles), ICC.1:2022 (version 4 profiles) and Adobe's published black point
   compensation algorithm. Never port code from another color management system; cite the clause in the code.
@@ -224,6 +231,11 @@ dotnet publish tests/Meziantou.Framework.Imaging.AotSmoke -c Release -f net11.0 
 - Lossless comparisons are exact, 16-bit low bits included. Lossy comparisons use an independent decoding of the same
   input with a narrow, justified, per-fixture tolerance. Alpha and structure are always exact.
 - Unit, conformance and fuzz tests must not need an external tool or network access.
+- **CMYK JPEG fixtures.** A four-component JPEG file is an `unsupported` fixture (identified, rejected by a load
+  without conversion) that declares one conversion and its pixels (`inkConversion`). The reference has two independent
+  stages: the samples decoded by `djpeg` from files the generator regroups scan by scan, then the decimal reference of
+  the harness for the colors, with LittleCMS and Apple ColorSync as cross-checks.
+  `JpegDecoderConformanceTests` pins each tolerance to the measured disagreement (`LibraryInkMeasurements`).
 - **AV1 vectors.** `tests/Meziantou.Framework.Imaging.Fixtures/av1` holds raw AV1 streams with, in the manifest, the
   SHA-256 of every plane of every output frame. A digest is recorded only when two independent decoders (dav1d and
   libaom, through the pinned ffmpeg) agree byte for byte. `Av1DecoderConformanceTests` compares the planes of the

@@ -523,19 +523,6 @@ internal static partial class GoldenCorpus
         Add("invalid/jpeg/non-integral-sampling", mutated, [encodeCommand, "set the sampling factors of the frame header to Y 3x1, Cb 2x1, Cr 2x1"],
             "JPEG non-integral sampling ratios", "Sampling factors that do not divide the largest factors need fractional upsampling, which is not supported (as in libjpeg-turbo).",
             parameters: new Obj { ["width"] = 12, ["height"] = 8 });
-
-        // CMYK: a frame with four components (the walker rejects it at the frame header; the scan is never decoded)
-        var dqt = JpegSegments(data).First(p => p.Kind == 0xDB);
-        var four = new ByteBuilder().Bytes(body.AsSpan(0, 5)).U8(4);
-        for (var i = 0; i < 4; i++)
-            four.U8(i + 1).U8(0x11).U8(0);
-        var header = Bytes.Concat([0xFF, 0xD8], JpegSegment(0xEE, Bytes.Concat(Bytes.Ascii("Adobe"), [0x00, 0x64, 0x00, 0x00, 0x00, 0x00, 0x00])), data[dqt.Start..dqt.End],
-            JpegSegment(0xC0, four.ToArray()), JpegSegment(0xDA, [0x04, 0x01, 0x00, 0x02, 0x00, 0x03, 0x00, 0x04, 0x00, 0x00, 0x3F, 0x00]), [0x00, 0xFF, 0xD9]);
-        c.AddError("invalid/jpeg/cmyk-four-components", "unsupported", "invalid/jpeg/cmyk-four-components.jpg", header, "jpeg",
-            c.Provenance("hand-authored", "BuildUnsupportedJpeg", null, [ToolSet.RuntimeLabel]),
-            new Obj { ["exception"] = "UnsupportedImageFeatureException", ["format"] = "Jpeg", ["feature"] = "JPEG CMYK/YCCK" },
-            features: CommonCorpus.JpegInspect(header).Features,
-            notes: "Adobe APP14 (transform 0) and a four-component (CMYK) frame header: CMYK/YCCK are out of scope.");
     }
 
     /// <summary>Malformed JPEG files derived from valid cjpeg outputs (InvalidImageContentException). Table and entropy-coded

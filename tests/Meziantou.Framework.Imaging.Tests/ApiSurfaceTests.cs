@@ -26,6 +26,7 @@ public sealed class ApiSurfaceTests
         typeof(ConvolutionKernel),
         typeof(AutoCropOptions),
         typeof(IccColorTransformOptions),
+        typeof(CmykConversionOptions),
         typeof(PngEncoder),
         typeof(GifEncoder),
         typeof(JpegEncoder),

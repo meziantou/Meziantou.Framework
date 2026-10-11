@@ -600,6 +600,28 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void LoadCmykJpegConvertsTheInks()
+    {
+        // A CMYK JPEG of the corpus without profile: rejected as it is, converted to sRGB by the example
+        var path = GoldenCorpus.Default.Get("invalid/jpeg/cmyk-without-adobe-restart").InputPath;
+        Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(path));
+        using var image = Examples.LoadCmykJpeg(path);
+        Assert.Equal(PixelFormat.Rgb24, image.PixelFormat);
+        Assert.Same(IccProfile.Srgb, image.Metadata.IccProfile);
+
+        // The example leaves the other images alone
+        var gray = GetPath("gray.png");
+        using (var source = new Image<Gray8>(2, 2, new Gray8(64)))
+        {
+            source.Save(gray);
+        }
+
+        using var unchanged = Examples.LoadCmykJpeg(gray);
+        Assert.Equal(PixelFormat.Gray8, unchanged.PixelFormat);
+        Assert.Null(unchanged.Metadata.IccProfile);
+    }
+
+    [Fact]
     public void ConvertSamplesToSrgbConvertsInterleavedSamples()
     {
         var displayP3 = IccTestProfiles.Rgb(IccTestProfiles.DisplayP3Colorants, IccTestProfiles.SrgbCurve());

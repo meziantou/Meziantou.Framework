@@ -133,6 +133,35 @@ public sealed class ColorConversionReferenceTests
     }
 
     [Theory]
+    [InlineData(IccRenderingIntent.Perceptual, false)]
+    [InlineData(IccRenderingIntent.Perceptual, true)]
+    [InlineData(IccRenderingIntent.RelativeColorimetric, false)]
+    [InlineData(IccRenderingIntent.RelativeColorimetric, true)]
+    [InlineData(IccRenderingIntent.Saturation, true)]
+    [InlineData(IccRenderingIntent.AbsoluteColorimetric, false)]
+    public void TheCmykProfileOfTheLibraryMatchesTheReference(IccRenderingIntent intent, bool blackPointCompensation)
+    {
+        // The profile assumed for CMYK samples without profile: an input profile with one table, used for every intent,
+        // whose 6-point grid exercises the multilinear interpolation between grid points
+        var source = IccProfile.Cgats001CompatibleCmyk;
+        var options = new IccColorTransformOptions { Intent = intent, BlackPointCompensation = blackPointCompensation };
+        foreach (var destination in new[] { IccProfile.Srgb, IccProfile.SrgbGray, IccTestProfiles.RgbLabLut8(), IccTestProfiles.CmykLabLut16() })
+        {
+            var transform = IccColorTransform.Create(source, destination, options);
+            var reference = ReferenceIccTransform.Create(source.Data.Span, destination.Data.Span, (int)intent, blackPointCompensation);
+            var bytes = CreateSamples(4, steps: 3, randomColors: 120, byte.MaxValue).Select(value => (byte)value).ToArray();
+            var convertedBytes = new byte[bytes.Length / 4 * transform.DestinationChannelCount];
+            transform.Convert(bytes, convertedBytes);
+            Assert.Empty(reference.Compare(bytes, convertedBytes));
+
+            var words = CreateSamples(4, steps: 3, randomColors: 60, ushort.MaxValue).Select(value => (ushort)value).ToArray();
+            var convertedWords = new ushort[words.Length / 4 * transform.DestinationChannelCount];
+            transform.Convert(words, convertedWords);
+            Assert.Empty(reference.Compare(words, convertedWords));
+        }
+    }
+
+    [Theory]
     [InlineData(IccRenderingIntent.Perceptual, true, true)]
     [InlineData(IccRenderingIntent.RelativeColorimetric, true, true)]
     [InlineData(IccRenderingIntent.Saturation, true, true)]

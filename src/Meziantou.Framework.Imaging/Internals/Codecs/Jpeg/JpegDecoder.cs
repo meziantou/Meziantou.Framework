@@ -31,6 +31,13 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// The image (one frame, duration zero) ends at EOI after <see cref="DecodedFrameSink.UpdateMetadata"/>, so reader frames
 /// carry the metadata found after the scans like eager loads. EXIF orientation is metadata only: pixels are never rotated.
 /// </description></item>
+/// <item><description>
+/// Four-component frames (CMYK, YCCK) are inks: no pixel format holds them, so they are decoded only when the request
+/// carries a <see cref="CmykConversionOptions"/>. The rows are converted to RGB by an ICC conversion from the CMYK profile
+/// of the file (or the assumed one) to the destination profile, which labels the image: the pixels and their profile
+/// change together, and the CMYK profile is not kept. Without the options, or without any source profile, the frame is
+/// an <see cref="UnsupportedImageFeatureException"/> raised before any allocation.
+/// </description></item>
 /// </list>
 /// </remarks>
 internal sealed class JpegDecoder : JpegDecodeObserver
@@ -51,6 +58,7 @@ internal sealed class JpegDecoder : JpegDecodeObserver
     private DecodedFrameSink? _sink;
     private JpegFrameComponent[] _components = [];
     private ImageColorModel _colorModel;
+    private IccPipeline? _inkConversion;
     private int _mcusX;
     private int _mcusY;
     private int _maxVertical;
@@ -124,7 +132,18 @@ internal sealed class JpegDecoder : JpegDecodeObserver
         _mcusX = (structure.Width + (8 * maxHorizontal) - 1) / (8 * maxHorizontal);
         _mcusY = (structure.Height + (8 * maxVertical) - 1) / (8 * maxVertical);
         var source = components.Length == 1 ? PixelFormat.Gray8 : PixelFormat.Rgb24;
-        _sink = DecodedFrameSink.Create(_context, _request, ImageFormat.Jpeg, structure.Size, structure.DefaultPixelFormat, source, structure.Metadata.IccProfile);
+        var profile = structure.Metadata.IccProfile;
+        if (components.Length == 4)
+        {
+            // The walker only adopts a CMYK profile for four components. The rows are converted to the destination
+            // profile, which is the one that labels the image
+            var conversion = _request.CmykConversion ?? throw Unsupported("CMYK and YCCK JPEG images are only loaded with a color conversion: set the CmykConversion property of the decode or reader options.", "JPEG CMYK/YCCK");
+            var transform = conversion.CreateTransform(profile) ?? throw Unsupported("The CMYK JPEG image has no CMYK color profile and CmykConversionOptions.AssumedSourceProfile is null.", "JPEG CMYK without color profile");
+            _inkConversion = transform.Pipeline;
+            profile = conversion.DestinationProfile;
+        }
+
+        _sink = DecodedFrameSink.Create(_context, _request, ImageFormat.Jpeg, structure.Size, structure.DefaultPixelFormat, source, profile);
         _sink.BeginFrame(FrameDuration.Zero);
     }
 
@@ -203,6 +222,8 @@ internal sealed class JpegDecoder : JpegDecodeObserver
     }
 
     private static InvalidImageContentException Invalid(string message) => new(message, ImageFormat.Jpeg);
+
+    private static UnsupportedImageFeatureException Unsupported(string message, string feature) => new(message, ImageFormat.Jpeg, feature);
 
     private void ReleaseDecoderState()
     {
@@ -414,7 +435,7 @@ internal sealed class JpegDecoder : JpegDecodeObserver
             component.AllocatePlane(scope, _mcusX, bandCount, _context.Limits);
         }
 
-        _writer = new JpegRowWriter(_components, _sink!, _colorModel, _structure!.Width, _structure.Height, _maxVertical, scope);
+        _writer = new JpegRowWriter(_components, _sink!, _colorModel, _inkConversion, _structure!.Width, _structure.Height, _maxVertical, scope);
         var block = new double[64];
         for (var row = 0; row < _mcusY; row++)
         {
@@ -473,7 +494,7 @@ internal sealed class JpegDecoder : JpegDecodeObserver
         }
 
         _reader = new JpegEntropyReader(scope, Math.Max(EntropyBufferCapacity, 2 * JpegScanDecoder.GetRequiredBufferCapacity(10)));
-        _writer = new JpegRowWriter(_components, _sink!, _colorModel, _structure!.Width, _structure.Height, _maxVertical, scope);
+        _writer = new JpegRowWriter(_components, _sink!, _colorModel, _inkConversion, _structure!.Width, _structure.Height, _maxVertical, scope);
     }
 
     /// <summary>Streaming: once MCU row <paramref name="row"/> is decoded, the previous one has its lower context row and is written.</summary>

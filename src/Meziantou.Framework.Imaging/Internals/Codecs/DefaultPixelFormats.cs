@@ -59,7 +59,7 @@ internal static class DefaultPixelFormats
     public static PixelFormat Gif => PixelFormat.Rgba32;
 
     /// <summary>Selects the default pixel format of a JPEG image.</summary>
-    /// <param name="componentCount">The number of frame components (1 for grayscale, 3 for color).</param>
+    /// <param name="componentCount">The number of frame components (1 for grayscale, 3 for color, 4 for inks, which are only loaded converted to color).</param>
     /// <returns><see cref="PixelFormat.Gray8"/> or <see cref="PixelFormat.Rgb24"/>.</returns>
     public static PixelFormat ForJpeg(int componentCount) => componentCount == 1 ? PixelFormat.Gray8 : PixelFormat.Rgb24;
 

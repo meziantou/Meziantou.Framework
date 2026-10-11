@@ -222,7 +222,7 @@
         "width": { "type": "integer", "minimum": 1 },
         "height": { "type": "integer", "minimum": 1 },
         "pixelFormat": { "enum": ["Rgba32", "Bgra32", "Rgb24", "Rgba64", "Gray8", "Gray16"] },
-        "colorModel": { "enum": ["Grayscale", "GrayscaleAlpha", "Rgb", "Rgba", "Indexed", "YCbCr"] },
+        "colorModel": { "enum": ["Grayscale", "GrayscaleAlpha", "Rgb", "Rgba", "Indexed", "YCbCr", "Cmyk", "Ycck"] },
         "bitsPerComponent": { "enum": [1, 2, 4, 8, 10, 12, 16], "description": "10 and 12 are the bit depths of AVIF inputs only." },
         "orientation": { "type": "integer", "minimum": 1, "maximum": 8 },
         "iccProfile": { "enum": ["none", "rgb", "gray"] },
@@ -372,6 +372,22 @@
         "frameLimit": { "type": "integer", "minimum": 1 }
       }
     },
+    "inkConversion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceProfile", "destinationProfile", "intent", "blackPointCompensation", "colorModel", "buffer", "reference", "comparison"],
+      "description": "Unsupported JPEG fixtures with four components (CMYK or YCCK inks) only: no pixel format holds inks, so the file is rejected by a load without conversion. This is the color conversion it is loaded with (CmykConversionOptions) and the converted pixels.",
+      "properties": {
+        "sourceProfile": { "enum": ["embedded", "assumed"], "description": "embedded: the CMYK profile of the file. assumed: the file has no profile and the CMYK profile provided by the library is assumed (the colorProfile icc/cgats001-compat-v2-micro)." },
+        "destinationProfile": { "type": "string", "description": "Id of the destination colorProfile (RGB)." },
+        "intent": { "enum": ["perceptual", "relative-colorimetric", "saturation", "absolute-colorimetric"] },
+        "blackPointCompensation": { "type": "boolean" },
+        "colorModel": { "enum": ["Cmyk", "Ycck"], "description": "Expected ImageColorModel of the identified file." },
+        "buffer": { "$ref": "#/$defs/buffer", "description": "The converted pixels (rgb8)." },
+        "reference": { "$ref": "#/$defs/reference" },
+        "comparison": { "$ref": "#/$defs/comparison" }
+      }
+    },
     "av1Tool": {
       "type": "object",
       "additionalProperties": false,
@@ -423,6 +439,7 @@
         "comparison": { "$ref": "#/$defs/comparison" },
         "expectedError": { "$ref": "#/$defs/expectedError" },
         "decodeOptions": { "$ref": "#/$defs/decodeOptions" },
+        "inkConversion": { "$ref": "#/$defs/inkConversion" },
         "notes": { "type": "string" }
       },
       "allOf": [

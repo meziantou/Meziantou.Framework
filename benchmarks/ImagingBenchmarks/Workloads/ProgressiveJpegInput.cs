@@ -22,6 +22,22 @@ internal static class ProgressiveJpegInput
     public static byte[] Encode(byte[] rgb, int width, int height, int quality)
         => CreateCoefficients(rgb, width, height, quality).Encode(new JpegTestEncodeOptions { Progression = JpegTestProgressiveScan.ParseScript(StandardScript) });
 
+    /// <summary>
+    /// Encodes 8-bit RGB samples as a baseline JPEG of four components (YCCK inks, Adobe APP14 transform 2), which the
+    /// library cannot write: the luma and chroma coefficients of <see cref="CreateCoefficients"/> code the cyan, magenta
+    /// and yellow inks (4:2:0), and the coefficients of the first chroma component are coded again as the black ink.
+    /// </summary>
+    public static byte[] EncodeInks(byte[] rgb, int width, int height, int quality)
+    {
+        var source = CreateCoefficients(rgb, width, height, quality);
+        var inks = JpegTestImage.FromCoefficients(width, height, [(2, 2), (1, 1), (1, 1), (1, 1)], source.QuantizationTables, (component, blockX, blockY) =>
+        {
+            var plane = source.Components[component == 3 ? 1 : component];
+            return plane.Blocks[(blockY * plane.BlocksX) + blockX];
+        }, JpegTestInkCoding.Ycck);
+        return inks.Encode();
+    }
+
     /// <summary>Gets the quantized coefficients of 8-bit RGB samples (4:2:0); encode them sequentially or progressively.</summary>
     public static JpegTestImage CreateCoefficients(byte[] rgb, int width, int height, int quality)
     {

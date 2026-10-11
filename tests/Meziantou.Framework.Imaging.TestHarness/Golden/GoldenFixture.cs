@@ -81,6 +81,16 @@ public sealed class GoldenFixture
     public RawPixelBuffer GetPoster(RawPixelLayout layout)
         => ReadBuffer(Expected.Poster ?? throw new InvalidOperationException($"Fixture '{Id}' has no separate poster."), layout, "poster");
 
+    /// <summary>Gets the color conversion a four-component JPEG fixture is loaded with.</summary>
+    public InkConversionDefinition InkConversion => Entry.InkConversion ?? throw new InvalidOperationException($"Fixture '{Id}' declares no ink conversion.");
+
+    /// <summary>Gets the comparison policy of the converted pixels of <see cref="InkConversion"/>.</summary>
+    public ComparisonPolicy InkConversionPolicy => ComparisonPolicy.FromDefinition(InkConversion.Comparison);
+
+    /// <summary>Reads the converted pixels of <see cref="InkConversion"/>.</summary>
+    /// <returns>The buffer (<c>rgb8</c>).</returns>
+    public RawPixelBuffer GetInkConversionReference() => RawBufferReader.Read(RootDirectory, InkConversion.Buffer);
+
     /// <inheritdoc/>
     public override string ToString() => Id;
 

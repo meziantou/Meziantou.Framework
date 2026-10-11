@@ -1,6 +1,7 @@
 using Meziantou.Framework.Imaging.Internals;
 using Meziantou.Framework.Imaging.Metadata;
 using Meziantou.Framework.Imaging.TestHarness.Adapters;
+using Meziantou.Framework.Imaging.TestHarness.Color;
 using Meziantou.Framework.Imaging.TestHarness.Streams;
 using Meziantou.Framework.Imaging.Tests.Codecs;
 
@@ -88,6 +89,29 @@ public sealed class JpegProgressiveDecoderTests
             using var decoded = Image.Load(data);
             Assert.Equal(image.PixelFormat, decoded.PixelFormat);
             AssertPixels(expected, decoded, $"{layout} {width}x{height}, {name}");
+        }
+    }
+
+    [Theory]
+    [InlineData("Cmyk", "0,1,2,3: 0 0 0 1; 3: 1 63 0 1; 0: 1 5 0 2; 2: 1 63 0 1; 1: 1 63 0 1; 0: 6 63 0 2; 0: 1 63 2 1; 0,1,2,3: 0 0 1 0; 3: 1 63 1 0; 2: 1 63 1 0; 1: 1 63 1 0; 0: 1 63 1 0")]
+    [InlineData("Ycck", "0,1,2,3: 0 0 0 1; 3: 1 63 0 1; 0: 1 5 0 2; 2: 1 63 0 1; 1: 1 63 0 1; 0: 6 63 0 2; 0: 1 63 2 1; 0,1,2,3: 0 0 1 0; 3: 1 63 1 0; 2: 1 63 1 0; 1: 1 63 1 0; 0: 1 63 1 0")]
+    [InlineData("Ycck", "3: 0 0 0 0; 0,1,2: 0 0 0 0; 0: 1 63 0 0; 1: 1 63 0 0; 2: 1 63 0 0; 3: 1 9 0 0; 3: 10 63 0 0")]
+    public void InksOfProgressiveFramesAreConvertedFromTheirExactAmounts(string coding, string script)
+    {
+        // Four components are inks, only loaded with a color conversion: the expected pixels are the exact ink amounts
+        // converted by the decimal reference of the test harness
+        var options = new ImageDecodeOptions { CmykConversion = CmykConversionOptions.Default };
+        var reference = ReferenceIccTransform.Create(IccProfile.Cgats001CompatibleCmyk.Data.Span, IccProfile.Srgb.Data.Span, intent: 1, blackPointCompensation: true);
+        foreach (var sampling in new (int H, int V)[][] { [(1, 1), (1, 1), (1, 1), (1, 1)], [(2, 2), (1, 1), (1, 1), (2, 2)] })
+        {
+            var image = JpegTestImage.CreateRandom(27, 19, sampling, seed: 47 + sampling[0].H, inks: Enum.Parse<JpegTestInkCoding>(coding));
+            var data = image.Encode(Progressive(script, restartInterval: 2, huffman: JpegTestHuffmanStyle.Skewed));
+            Assert.Equal(0xC2, data[FindSegment(data, 0xC2) + 1]);
+            Assert.Equal(coding, Image.Identify(data).ColorModel.ToString());
+            Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(data));
+            using var decoded = Image.Load(data, options);
+            Assert.Equal(PixelFormat.Rgb24, decoded.PixelFormat);
+            Assert.Empty(reference.Compare(image.GetExpectedInks(), GetBytes(decoded)));
         }
     }
 

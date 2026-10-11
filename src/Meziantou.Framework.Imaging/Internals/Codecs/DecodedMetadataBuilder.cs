@@ -75,13 +75,22 @@ internal sealed class DecodedMetadataBuilder
     /// <param name="grayscaleSamples">Whether the encoded samples are grayscale.</param>
     /// <returns><see langword="true"/> if the profile was adopted.</returns>
     public bool TryAdoptIccProfile(byte[] data, bool grayscaleSamples)
+        => TryAdoptIccProfile(data, grayscaleSamples ? IccProfileColorSpace.Gray : IccProfileColorSpace.Rgb);
+
+    /// <summary>
+    /// Adopts an uncompressed ICC profile whose bytes were already charged, unless one was already adopted, it is
+    /// malformed, or it does not declare the color space of the encoded samples.
+    /// </summary>
+    /// <param name="data">The profile bytes; ownership is transferred.</param>
+    /// <param name="expected">The color space of the encoded samples.</param>
+    /// <returns><see langword="true"/> if the profile was adopted.</returns>
+    public bool TryAdoptIccProfile(byte[] data, IccProfileColorSpace expected)
     {
         ArgumentNullException.ThrowIfNull(data);
         if (Metadata.IccProfile is not null || !MetadataValidation.TryValidateIccProfile(data, out _))
             return false;
 
         var profile = new IccProfile(MetadataBlob.FromOwnedArray(data));
-        var expected = grayscaleSamples ? IccProfileColorSpace.Gray : IccProfileColorSpace.Rgb;
         if (profile.ColorSpace != expected)
             return false;
 

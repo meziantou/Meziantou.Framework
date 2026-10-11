@@ -8,14 +8,22 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <remarks>
 /// <para>
 /// <see cref="ImageResourceLimits.MaxEncodedBytes"/> bounds the bytes a parser may <em>examine</em> from the start of the
-/// input: a span is exposed only up to the limit, and a stream is never read past it. When the parser needs bytes beyond
-/// the limit, the operation fails with <see cref="ImageResourceLimitException"/> (<see cref="ImageResourceLimitKind.EncodedBytes"/>,
+/// input: a span is exposed only up to the limit, and no byte of a stream past it is buffered. When the parser needs bytes
+/// beyond the limit, the operation fails with <see cref="ImageResourceLimitException"/> (<see cref="ImageResourceLimitKind.EncodedBytes"/>,
 /// requested = position + required bytes); a limit failure is never reported as truncation, and truncation is never
 /// reported as success.
 /// </para>
 /// <para>
 /// Order of checks when the parser needs more bytes: cancellation, the encoded-byte limit, then truncation
 /// (<see cref="ImageParser{TResult}.CreateTruncatedException"/>).
+/// </para>
+/// <para>
+/// A request the end of the input satisfies (<see cref="ParseStatus.NeedMoreDataOrEnd"/>, and the format detection prefix
+/// of an input shorter than the prefix) only fails with the limit when the input continues past it: an input that ends
+/// exactly at the limit is complete, whatever the source. A span knows its length; a stream is read up to the limit, then
+/// probed with a single discarded byte (<see cref="ImageInputBuffer.ProbeEndOfInput"/>), the only read past the limit.
+/// The stream is filled or probed once per parser call, so the request that fails is the one the parser made with every
+/// byte the limit allows in its buffer, exactly as with a span.
 /// </para>
 /// </remarks>
 internal static class ImageInputPump
@@ -64,17 +72,17 @@ internal static class ImageInputPump
             if (status.IsComplete)
                 return parser.GetResult();
 
-            if (status.RequiredBytes <= input.BufferedLength)
+            switch (GetInputAction(input, parser, context, status, consumed, out var minimum))
             {
-                EnsureProgress(parser, consumed);
-                continue;
+                case InputAction.Fill:
+                    input.Fill(minimum);
+                    break;
+
+                case InputAction.Probe:
+                    input.ProbeEndOfInput();
+                    EnsureInputEnded(input, context, status);
+                    break;
             }
-
-            EnsureRequestWithinLimit(context, input.Position, status.RequiredBytes);
-            if (input.IsEndOfInput)
-                throw parser.CreateTruncatedException(input.Position);
-
-            input.Fill(status.RequiredBytes);
         }
     }
 
@@ -87,17 +95,17 @@ internal static class ImageInputPump
             if (status.IsComplete)
                 return parser.GetResult();
 
-            if (status.RequiredBytes <= input.BufferedLength)
+            switch (GetInputAction(input, parser, context, status, consumed, out var minimum))
             {
-                EnsureProgress(parser, consumed);
-                continue;
+                case InputAction.Fill:
+                    await input.FillAsync(minimum, context.CancellationToken).ConfigureAwait(false);
+                    break;
+
+                case InputAction.Probe:
+                    await input.ProbeEndOfInputAsync(context.CancellationToken).ConfigureAwait(false);
+                    EnsureInputEnded(input, context, status);
+                    break;
             }
-
-            EnsureRequestWithinLimit(context, input.Position, status.RequiredBytes);
-            if (input.IsEndOfInput)
-                throw parser.CreateTruncatedException(input.Position);
-
-            await input.FillAsync(status.RequiredBytes, context.CancellationToken).ConfigureAwait(false);
         }
     }
 
@@ -107,6 +115,11 @@ internal static class ImageInputPump
     public static ImageCodec Detect(ImageCodecRegistry registry, ImageInputBuffer input, ImageCodecContext context)
     {
         input.Fill(GetDetectionRequest(context));
+        if (IsDetectionPrefixCutByLimit(input))
+        {
+            input.ProbeEndOfInput();
+        }
+
         return DetectBuffered(registry, input, context);
     }
 
@@ -116,6 +129,11 @@ internal static class ImageInputPump
     public static async ValueTask<ImageCodec> DetectAsync(ImageCodecRegistry registry, ImageInputBuffer input, ImageCodecContext context)
     {
         await input.FillAsync(GetDetectionRequest(context), context.CancellationToken).ConfigureAwait(false);
+        if (IsDetectionPrefixCutByLimit(input))
+        {
+            await input.ProbeEndOfInputAsync(context.CancellationToken).ConfigureAwait(false);
+        }
+
         return DetectBuffered(registry, input, context);
     }
 
@@ -124,15 +142,34 @@ internal static class ImageInputPump
     /// <exception cref="ImageResourceLimitException">The encoded-byte limit is smaller than the detection prefix.</exception>
     public static ImageCodec Detect(ImageCodecRegistry registry, ReadOnlySpan<byte> data, ImageCodecContext context)
     {
-        if (data.Length >= DetectionPrefixLength)
+        if (Math.Min(data.Length, DetectionPrefixLength) > context.Limits.MaxEncodedBytes)
         {
+            // The limit cuts the prefix (the whole input when it is shorter): the input is longer than the limit allows
             EnsureRequestWithinLimit(context, 0, DetectionPrefixLength);
         }
 
         return registry.Detect(data) ?? throw CreateUnknownFormatException(data.Length);
     }
 
+    private enum InputAction
+    {
+        /// <summary>The buffer already holds the request: call the parser again.</summary>
+        Parse,
+
+        /// <summary>Read from the stream until the buffer holds the reported number of bytes.</summary>
+        Fill,
+
+        /// <summary>Every byte the limit allows is buffered: find out whether the input ends there.</summary>
+        Probe,
+    }
+
     private static int GetDetectionRequest(ImageCodecContext context) => (int)Math.Min(DetectionPrefixLength, context.Limits.MaxEncodedBytes);
+
+    /// <summary>
+    /// Gets a value indicating whether the limit stopped the read of the detection prefix: an input that ends there is
+    /// detected from its bytes like a short span, so the end must be told from a longer input.
+    /// </summary>
+    private static bool IsDetectionPrefixCutByLimit(ImageInputBuffer input) => input.BufferedLength < DetectionPrefixLength && input.IsReadLimitReached;
 
     private static ImageCodec DetectBuffered(ImageCodecRegistry registry, ImageInputBuffer input, ImageCodecContext context)
     {
@@ -160,6 +197,46 @@ internal static class ImageInputPump
         ValidateConsumed(parser, consumed, buffered.Length);
         input.Consume(consumed);
         return status;
+    }
+
+    /// <summary>
+    /// Decides what a stream driver does with a request, so that the synchronous and asynchronous loops cannot diverge:
+    /// the checks and their order are those of the span driver.
+    /// </summary>
+    private static InputAction GetInputAction<TResult>(ImageInputBuffer input, ImageParser<TResult> parser, ImageCodecContext context, ParseStatus status, int consumed, out int minimum)
+    {
+        minimum = status.RequiredBytes;
+        if (status.RequiredBytes <= input.BufferedLength)
+        {
+            EnsureProgress(parser, consumed);
+            return InputAction.Parse;
+        }
+
+        if (!status.AcceptsEndOfInput || input.IsEndOfInput)
+        {
+            EnsureRequestWithinLimit(context, input.Position, status.RequiredBytes);
+            if (input.IsEndOfInput)
+                throw parser.CreateTruncatedException(input.Position);
+
+            return InputAction.Fill;
+        }
+
+        // The end of the input satisfies the request, so the limit only fails it when the input continues past the limit
+        if (input.IsReadLimitReached)
+            return InputAction.Probe;
+
+        // Never buffer more than the limit allows: the parser is called again with what was read, and repeats its request
+        minimum = (int)Math.Min(status.RequiredBytes, context.Limits.MaxEncodedBytes - input.Position);
+        return InputAction.Fill;
+    }
+
+    /// <summary>Reports the limit once a probe found that the input continues past it.</summary>
+    private static void EnsureInputEnded(ImageInputBuffer input, ImageCodecContext context, ParseStatus status)
+    {
+        if (input.ExceedsLimit)
+        {
+            EnsureRequestWithinLimit(context, input.Position, status.RequiredBytes);
+        }
     }
 
     private static void EnsureRequestWithinLimit(ImageCodecContext context, long position, int requiredBytes)

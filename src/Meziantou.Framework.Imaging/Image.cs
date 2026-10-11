@@ -25,7 +25,7 @@ namespace Meziantou.Framework.Imaging;
 /// </description></item>
 /// </list>
 /// <para>
-/// Geometry-changing operations (crop, resize, rotate, auto-orient) apply to every frame and to the poster frame
+/// Geometry-changing operations (crop, auto-crop, resize, rotate, auto-orient) apply to every frame and to the poster frame
 /// atomically: on failure before commit, the image is unchanged. Pixel-only operations (flip, grayscale, convolve, row
 /// callbacks) may leave the image partially modified on failure or cancellation, but always structurally valid.
 /// </para>

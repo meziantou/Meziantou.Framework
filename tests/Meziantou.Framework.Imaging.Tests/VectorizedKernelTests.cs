@@ -412,4 +412,64 @@ public sealed class VectorizedKernelTests
         PixelFormat.Gray16 => Image.ImportPixelBytes<Gray16>(bytes, width, height),
         _ => throw new ArgumentOutOfRangeException(nameof(format)),
     };
+
+    [Fact]
+    public void ColorConversionInputTablesMatchTheScalarReferenceExhaustively()
+    {
+        // The first stage of an 8-bit conversion is read from 256-entry tables: every sample value of every channel, with
+        // and without copied alpha and in both channel orders, gives exactly the samples of the stage-by-stage reference
+        var displayP3 = IccTestProfiles.Rgb(IccTestProfiles.DisplayP3Colorants, IccTestProfiles.SrgbCurve());
+        (Metadata.IccProfile Source, Metadata.IccProfile Destination)[] pairs =
+        [
+            (Metadata.IccProfile.Srgb, displayP3),
+            (displayP3, Metadata.IccProfile.Srgb),
+            (IccTestProfiles.Rgb(IccTestProfiles.SrgbColorants, IccTestProfiles.Curve(0, 4096, 16384, 36864, 65535)), Metadata.IccProfile.Srgb),
+            (IccTestProfiles.Gray(IccTestProfiles.Gamma(563)), Metadata.IccProfile.SrgbGray),
+            (IccTestProfiles.GrayPaper(), Metadata.IccProfile.Srgb),
+            (IccTestProfiles.RgbLabLut8(), Metadata.IccProfile.Srgb),
+            (IccTestProfiles.RgbLabLutAToB(), IccTestProfiles.RgbXyzLut16()),
+            (IccTestProfiles.CmykLabLut16(), Metadata.IccProfile.Srgb),
+            (IccTestProfiles.CmykLabLutAToB(), IccTestProfiles.CmykLabLut16()),
+        ];
+
+        foreach (var (source, destination) in pairs)
+        {
+            foreach (var compensation in new[] { false, true })
+            {
+                var pipeline = IccPipeline.Create(source, destination, Metadata.IccRenderingIntent.RelativeColorimetric, compensation);
+                Assert.NotNull(pipeline.ByteInputTables);
+                var sourceChannels = pipeline.SourceChannelCount;
+                var destinationChannels = pipeline.DestinationChannelCount;
+                foreach (var (extra, reverse) in new[] { (0, false), (1, false), (1, true) })
+                {
+                    if (reverse && (sourceChannels != 3 || destinationChannels != 3))
+                        continue;
+
+                    // Each channel takes every value while the others follow a different sequence
+                    var samples = new byte[256 * sourceChannels * (sourceChannels + extra)];
+                    var position = 0;
+                    for (var channel = 0; channel < sourceChannels; channel++)
+                    {
+                        for (var value = 0; value < 256; value++)
+                        {
+                            for (var other = 0; other < sourceChannels + extra; other++)
+                            {
+                                samples[position++] = other == channel ? (byte)value : (byte)((value * (37 + (60 * other))) + (91 * channel));
+                            }
+                        }
+                    }
+
+                    var colors = samples.Length / (sourceChannels + extra);
+                    var expected = new byte[colors * (destinationChannels + extra)];
+                    var actual = new byte[expected.Length];
+                    ColorConversionKernels.ConvertScalar<byte, IccByteSample>(pipeline, samples, expected, sourceChannels + extra, destinationChannels + extra, reverse);
+                    ColorConversionKernels.Convert<byte, IccByteSample>(pipeline, samples, actual, sourceChannels + extra, destinationChannels + extra, reverse);
+                    Assert.Equal(expected, actual);
+                }
+            }
+        }
+
+        // Identical profiles have no stage and no table: the samples are copied
+        Assert.Null(IccPipeline.Create(displayP3, displayP3, Metadata.IccRenderingIntent.Perceptual, blackPointCompensation: true).ByteInputTables);
+    }
 }

@@ -1,4 +1,5 @@
 using Meziantou.Framework.Imaging.TestHarness.Adapters;
+using Meziantou.Framework.Imaging.TestHarness.AutoCrop;
 using Meziantou.Framework.Imaging.TestHarness.Convolution;
 using Meziantou.Framework.Imaging.TestHarness.Fixtures;
 using Meziantou.Framework.Imaging.TestHarness.Golden;
@@ -9,10 +10,11 @@ namespace Meziantou.Framework.Imaging.Tests.Conformance;
 
 /// <summary>
 /// Whole-image operations on <em>decoded</em> APNGs: every corpus APNG is loaded with the library decoder, then
-/// cropped, rotated, resized, convolved and reordered. Each displayed frame and the separate poster must stay a full-canvas image of the
+/// cropped, auto-cropped, rotated, resized, convolved and reordered. Each displayed frame and the separate poster must stay a full-canvas image of the
 /// same size and pixel format, frame identities, durations, the poster and the animation settings are preserved (or follow
 /// the moved frame), and the pixels equal the corpus references transformed by the independent harness
-/// (<see cref="RawPixelBuffer"/> geometry, <see cref="ReferenceResampler"/>, <see cref="ReferenceConvolver"/>).
+/// (<see cref="RawPixelBuffer"/> geometry, <see cref="ReferenceAutoCrop"/>, <see cref="ReferenceResampler"/>,
+/// <see cref="ReferenceConvolver"/>).
 /// </summary>
 public sealed class ApngProcessingConformanceTests
 {
@@ -37,6 +39,18 @@ public sealed class ApngProcessingConformanceTests
         var crop = new Rectangle(width > 1 ? 1 : 0, 0, Math.Max(1, width - 1), Math.Max(1, height - (height > 2 ? 1 : 0)));
         Check(fixture, "crop", image => image.Crop(crop, XunitCancellationToken), buffer => buffer.Crop(crop.X, crop.Y, crop.Width, crop.Height));
         Check(fixture, "rotate90", image => image.Rotate(RotateMode.Rotate90, XunitCancellationToken), buffer => buffer.Rotate90Clockwise());
+
+        // The box is the union over the displayed frames and the poster; the reference decides whether there is one
+        var buffers = Enumerable.Range(0, expected.FrameCount).Select(i => fixture.GetFrame(i, fixture.CanonicalLayout)).ToList();
+        if (expected.Poster is not null)
+        {
+            buffers.Add(fixture.GetPoster(fixture.CanonicalLayout));
+        }
+
+        var autoCrop = new ReferenceAutoCropOptions(PaddingX: 2, PaddingY: 1);
+        var analysis = ReferenceAutoCrop.Analyze(buffers, autoCrop);
+        var changes = !ReferenceEquals(ReferenceAutoCrop.Apply(buffers[0], analysis, autoCrop), buffers[0]);
+        Check(fixture, "auto-crop", image => Assert.Equal(changes, image.AutoCrop(new AutoCropOptions { PaddingX = 2, PaddingY = 1 }, XunitCancellationToken)), buffer => ReferenceAutoCrop.Apply(buffer, analysis, autoCrop));
         Check(fixture, "flip", image => image.Flip(FlipMode.Vertical, XunitCancellationToken), buffer => buffer.FlipVertical());
 
         var resize = new ReferenceResizeOptions((width * 2) + 1, height + 2, ReferenceResizeMode.Stretch, ReferenceKernel.CatmullRom);

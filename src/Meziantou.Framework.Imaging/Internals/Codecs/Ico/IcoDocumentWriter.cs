@@ -21,6 +21,10 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// AND mask (the alpha channel already carries the transparency, and a decoder that reads a real alpha channel ignores
 /// the mask).
 /// </para>
+/// <para>
+/// A DIB stores 8-bit samples, a PNG up to 16: pixels with 16-bit samples are therefore written as a PNG, and asking for a
+/// DIB explicitly is an error instead of a silent loss of precision (<see cref="UsesPngPayload"/>).
+/// </para>
 /// </remarks>
 internal static class IcoDocumentWriter
 {
@@ -46,6 +50,36 @@ internal static class IcoDocumentWriter
     {
         if (size.Width > IcoFormat.MaxDimension || size.Height > IcoFormat.MaxDimension)
             throw IcoFormat.Unsupported(format, string.Create(CultureInfo.InvariantCulture, $"{ImageFormatNames.Get(format)} output stores at most {IcoFormat.MaxDimension} pixels per side; the representation is {size.Width}x{size.Height}."), "Canvas size");
+    }
+
+    /// <summary>
+    /// Selects the payload of a representation, shared by icon, cursor and animated cursor output: a PNG when it is
+    /// requested, and for <see cref="IconPayloadFormat.Auto"/> when a side exceeds
+    /// <see cref="IcoEncoder.AutoDibMaxDimension"/> or when the pixels have 16-bit samples, which a DIB cannot store.
+    /// </summary>
+    /// <param name="format">The output format, reported by the exception.</param>
+    /// <param name="payloadFormat">The requested payload.</param>
+    /// <param name="size">The size of the representation.</param>
+    /// <param name="pixelFormat">The pixel format of the representation.</param>
+    /// <returns><see langword="true"/> for a PNG payload; <see langword="false"/> for a 32-bit DIB.</returns>
+    /// <exception cref="UnsupportedImageFeatureException">A DIB is requested for pixels with 16-bit samples: nothing is narrowed silently.</exception>
+    public static bool UsesPngPayload(ImageFormat format, IconPayloadFormat payloadFormat, Size size, PixelFormat pixelFormat)
+    {
+        var isSixteenBit = PixelFormats.GetBitsPerComponent(pixelFormat) > 8;
+        switch (payloadFormat)
+        {
+            case IconPayloadFormat.Png:
+                return true;
+
+            case IconPayloadFormat.Dib:
+                if (isSixteenBit)
+                    throw IcoFormat.Unsupported(format, $"A DIB payload stores 8-bit samples, so encoding {pixelFormat} pixels would discard precision. Set the encoder's PayloadFormat to Png or Auto, or convert the image explicitly with CloneAs.", "Bit depth reduction");
+
+                return false;
+
+            default:
+                return isSixteenBit || size.Width > IcoEncoder.AutoDibMaxDimension || size.Height > IcoEncoder.AutoDibMaxDimension;
+        }
     }
 
     /// <summary>Writes the whole file.</summary>
@@ -96,7 +130,7 @@ internal static class IcoDocumentWriter
         ArgumentNullException.ThrowIfNull(scope);
         ArgumentNullException.ThrowIfNull(configuration);
         ValidateSize(encoder.Format, entry.Frame.Size);
-        var payload = UsePng(encoder, entry.Frame.Size)
+        var payload = UsesPngPayload(encoder.Format, encoder.PayloadFormat, entry.Frame.Size, entry.PixelFormat)
             ? EncodePngPayload(entry, scope, configuration)
             : EncodeDibPayload(entry, scope);
 
@@ -124,13 +158,6 @@ internal static class IcoDocumentWriter
         if (count > ushort.MaxValue)
             throw IcoFormat.Unsupported(encoder.Format, string.Create(CultureInfo.InvariantCulture, $"An icon directory stores at most {ushort.MaxValue} representations; {count} were given."), "Representation count");
     }
-
-    private static bool UsePng(IcoEncoder encoder, Size size) => encoder.PayloadFormat switch
-    {
-        IconPayloadFormat.Png => true,
-        IconPayloadFormat.Dib => false,
-        _ => size.Width > IcoEncoder.AutoDibMaxDimension || size.Height > IcoEncoder.AutoDibMaxDimension,
-    };
 
     private static void WriteDirectoryAndPayloads(IcoEncoder encoder, IReadOnlyList<EncodedEntry> entries, ImageOutputBuffer output)
     {

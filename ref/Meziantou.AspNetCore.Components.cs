@@ -17,8 +17,8 @@ namespace Meziantou.AspNetCore.Components
     public sealed class ClipboardService
     {
         public ClipboardService(Microsoft.JSInterop.IJSRuntime jsRuntime) { }
-        public System.Threading.Tasks.ValueTask<string> ReadTextAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public System.Threading.Tasks.ValueTask WriteTextAsync(string text, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public System.Threading.Tasks.ValueTask<string> ReadTextAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public System.Threading.Tasks.ValueTask WriteTextAsync(string text, System.Threading.CancellationToken cancellationToken = default) => throw null;
     }
 
     public static class ClipboardServiceExtensions
@@ -71,7 +71,7 @@ namespace Meziantou.AspNetCore.Components
 
     public class GenericForm<TModel> : Microsoft.AspNetCore.Components.ComponentBase
     {
-        public TModel Model { get => throw null; set { } }
+        public TModel? Model { get => throw null; set { } }
         public Microsoft.AspNetCore.Components.EventCallback<TModel> ModelChanged { get => throw null; set { } }
         public bool EnableFieldValidation { get => throw null; set { } }
         public string? EditorClass { get => throw null; set { } }
@@ -111,7 +111,7 @@ namespace Meziantou.AspNetCore.Components
     {
         public System.TimeSpan? Offset { get => throw null; set { } }
         protected override void BuildRenderTree(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder builder) { }
-        protected override string FormatValueAsString(TValue value) => throw null;
+        protected override string FormatValueAsString(TValue? value) => throw null;
         protected override bool TryParseValueFromString(string? value, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out TValue result, [System.Diagnostics.CodeAnalysis.NotNullWhen(false)] out string? validationErrorMessage) => throw null;
     }
 
@@ -125,18 +125,20 @@ namespace Meziantou.AspNetCore.Components
     public class InputGuid<TValue> : Microsoft.AspNetCore.Components.Forms.InputBase<TValue>
     {
         public string ParsingErrorMessage { get => throw null; set { } }
+        [System.Diagnostics.CodeAnalysis.DisallowNull]
         public Microsoft.AspNetCore.Components.ElementReference? Element { get => throw null; protected set { } }
         protected override void BuildRenderTree(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder builder) { }
-        protected override string FormatValueAsString(TValue value) => throw null;
+        protected override string FormatValueAsString(TValue? value) => throw null;
         protected override bool TryParseValueFromString(string? value, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out TValue result, [System.Diagnostics.CodeAnalysis.NotNullWhen(false)] out string? validationErrorMessage) => throw null;
     }
 
     public class InputUrl<TValue> : Microsoft.AspNetCore.Components.Forms.InputBase<TValue>
     {
         public string ParsingErrorMessage { get => throw null; set { } }
+        [System.Diagnostics.CodeAnalysis.DisallowNull]
         public Microsoft.AspNetCore.Components.ElementReference? Element { get => throw null; protected set { } }
         protected override void BuildRenderTree(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder builder) { }
-        protected override string FormatValueAsString(TValue value) => throw null;
+        protected override string FormatValueAsString(TValue? value) => throw null;
         protected override bool TryParseValueFromString(string? value, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out TValue result, [System.Diagnostics.CodeAnalysis.NotNullWhen(false)] out string? validationErrorMessage) => throw null;
     }
 
@@ -162,7 +164,7 @@ namespace Meziantou.AspNetCore.Components
     {
         public QueryStringService(Microsoft.AspNetCore.Components.NavigationManager navigationManager, Microsoft.JSInterop.IJSRuntime jsRuntime) { }
         public void SetParametersFromQueryString<T>(T component) where T : Microsoft.AspNetCore.Components.IComponent { }
-        public System.Threading.Tasks.ValueTask UpdateQueryString<T>(T component, bool reloadPage = true, System.Threading.CancellationToken cancellationToken = null) where T : Microsoft.AspNetCore.Components.IComponent => throw null;
+        public System.Threading.Tasks.ValueTask UpdateQueryString<T>(T component, bool reloadPage = true, System.Threading.CancellationToken cancellationToken = default) where T : Microsoft.AspNetCore.Components.IComponent => throw null;
     }
 
     public static class QueryStringServiceExtensions

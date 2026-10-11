@@ -13,6 +13,7 @@ namespace Meziantou.Framework.Sanitizers
         public System.Collections.Generic.ISet<string> UriAttributes { get => throw null; }
         public System.Collections.Generic.ISet<string> SrcsetAttributes { get => throw null; }
         public bool AllowComments { get => throw null; set { } }
+        [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNull("html")]
         public string? SanitizeHtmlFragment(string? html) => throw null;
     }
 

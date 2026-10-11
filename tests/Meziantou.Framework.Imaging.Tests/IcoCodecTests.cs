@@ -1,5 +1,6 @@
 using System.Buffers.Binary;
 using Meziantou.Framework.Imaging.Formats;
+using Meziantou.Framework.Imaging.TestHarness.Adapters;
 using Meziantou.Framework.Imaging.Tests.Codecs;
 
 namespace Meziantou.Framework.Imaging.Tests;
@@ -211,6 +212,43 @@ public sealed class IcoCodecTests
     }
 
     [Fact]
+    public void ALoadedCursorCarriesTheHotspotOfItsRepresentationOnItsFrame()
+    {
+        using (var cursor = Image.Load(SingleCursor(hotspotX: 1, hotspotY: 0)))
+        {
+            Assert.Equal(new Point(1, 0), cursor.Frames[0].Metadata.Hotspot);
+        }
+
+        using (var typed = Image.Load<Bgra32>(SingleCursor(hotspotX: 0, hotspotY: 1)))
+        {
+            Assert.Equal(new Point(0, 1), typed.Frames[0].Metadata.Hotspot);
+        }
+
+        // An icon has none
+        using (var icon = Image.Load(SingleIcon()))
+        {
+            Assert.Null(icon.Frames[0].Metadata.Hotspot);
+        }
+
+        // Image.Load decodes the largest representation: the hotspot is the one of that representation, PNG payload or not
+        var data = new IcoFileBuilder { Type = 2 }
+            .Add(new IcoEntrySpec { Width = 2, Height = 2, PlanesOrHotspotX = 1, BitCountOrHotspotY = 1, Payload = IcoFileBuilder.Dib32(2, 2, new Rgba32[4]) })
+            .Add(new IcoEntrySpec { Width = 4, Height = 4, PlanesOrHotspotX = 3, BitCountOrHotspotY = 2, Payload = SyntheticImages.Png(4, 4) })
+            .Build();
+
+        using var largest = Image.Load(data);
+        Assert.Equal(new Size(4, 4), largest.Size);
+        Assert.Equal(new Point(3, 2), largest.Frames[0].Metadata.Hotspot);
+
+        // A decoded entry is the same image as the one Image.Load returns for it
+        using var collection = ImageCollection.Load(data);
+        using var small = collection[0].Decode();
+        using var large = collection[1].Decode<Rgba32>();
+        Assert.Equal(new Point(1, 1), small.Frames[0].Metadata.Hotspot);
+        Assert.Equal(new Point(3, 2), large.Frames[0].Metadata.Hotspot);
+    }
+
+    [Fact]
     public void MalformedDirectoriesAreRejected()
     {
         // A payload that starts inside the directory
@@ -301,6 +339,20 @@ public sealed class IcoCodecTests
 
         using var image = Image.Load(tolerated);
         Assert.Equal(new Size(4, 4), image.Size);
+    }
+
+    /// <summary>The inputs an icon is buffered whole from: every one that is not a synchronous read of a seekable source.</summary>
+    public static TheoryData<InputVariant> BufferedVariants =>
+        [InputVariant.Span, InputVariant.NonSeekableStream, InputVariant.ShortReadStream, InputVariant.AsyncPath, InputVariant.AsyncStream, InputVariant.AsyncShortReadStream];
+
+    [Theory]
+    [MemberData(nameof(BufferedVariants))]
+    public async Task ABufferedInputNeedsExactlyItsLengthInEncodedBytes(InputVariant variant)
+    {
+        // The whole input is buffered up to its end, which a stream only reports once it is read past
+        await InputVariants.AssertEncodedByteLimitBoundaryAsync(variant, SingleIcon(), ImageFormat.Ico, XunitCancellationToken);
+        await InputVariants.AssertEncodedByteLimitBoundaryAsync(variant, SingleCursor(1, 1), ImageFormat.Cur, XunitCancellationToken);
+        await InputVariants.AssertEncodedByteLimitBoundaryAsync(variant, ThreeSizes(), ImageFormat.Ico, XunitCancellationToken);
     }
 
     [Fact]

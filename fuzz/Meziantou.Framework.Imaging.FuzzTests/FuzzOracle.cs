@@ -242,8 +242,25 @@ internal static class FuzzOracle
         image.Rotate(RotateMode.Rotate90);
         image.Flip(FlipMode.Horizontal);
         image.Crop(new Rectangle(0, 0, Math.Max(1, image.Width - 1), image.Height));
+
+        // Whatever the pixels, the detected box is a non-empty part of the canvas and a clamped auto-crop never enlarges it
+        var size = image.Size;
+        var analysis = image.AnalyzeAutoCrop(new AutoCropOptions { BucketThreshold = 0.9, AnalyzeWeights = true });
+        if (analysis.CanvasSize != size || analysis.Bounds.IsEmpty || !new Rectangle(0, 0, size.Width, size.Height).Contains(analysis.Bounds) || !(Math.Abs(analysis.WeightX) <= 1) || !(Math.Abs(analysis.WeightY) <= 1))
+            return $"auto-crop-analysis: the {size} canvas has the content box {analysis.Bounds} and the weights ({analysis.WeightX}, {analysis.WeightY})";
+
+        var cropped = image.AutoCrop(analysis, new AutoCropOptions { PaddingX = 1, PaddingY = 2, PaddingMode = AutoCropPaddingMode.Contain });
+        if ((cropped && !analysis.Success) || image.Width > size.Width || image.Height > size.Height || (!cropped && image.Size != size))
+            return $"auto-crop-contain: the {size} canvas became {image.Size} (success: {analysis.Success}, changed: {cropped})";
+
         image.Convolve(new ConvolutionOptions(new ConvolutionKernel(3, 3, [0, -1, 0, -1, 5, -1, 0, -1, 0])) { EdgeMode = ConvolutionEdgeMode.Mirror });
         image.Grayscale();
+
+        // Last, since enlarging the canvas may legitimately exceed the limits of the configuration
+        size = image.Size;
+        if (image.AutoCrop(new AutoCropOptions { PaddingX = 2, PaddingY = 1 }) && image.Size == size)
+            return $"auto-crop-expand: the {size} canvas is reported as changed but kept its size";
+
         return string.Empty;
     }
 

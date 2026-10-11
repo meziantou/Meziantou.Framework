@@ -63,14 +63,14 @@ namespace Meziantou.Framework.Win32
     }
 
     [System.Flags]
-    public enum ChangeJournalFlags
+    public enum ChangeJournalFlags : uint
     {
         None = 0U,
         TrackModifiedRangesEnable = 1U,
     }
 
     [System.Flags]
-    public enum ChangeReason
+    public enum ChangeReason : uint
     {
         BasicInfoChange = 32768U,
         Close = 2147483648U,

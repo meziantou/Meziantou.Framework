@@ -91,6 +91,10 @@ public sealed class ImageReader<TPixel> : IDisposable, IAsyncDisposable
     /// <exception cref="ArgumentException"><paramref name="destination"/> does not have the canvas size, has several frames, a poster frame, or animation settings.</exception>
     /// <exception cref="InvalidOperationException">Another operation is in progress, the reader is faulted, or a lease is active on the destination.</exception>
     /// <exception cref="InvalidImageContentException">The data is malformed or truncated. The destination may be partially updated but remains valid.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">
+    /// The frame uses an unsupported feature. A feature that is only declared after the pixels (premultiplied alpha in a TGA
+    /// trailer) is reported once the rows were written: the destination may be updated but remains valid.
+    /// </exception>
     /// <exception cref="ImageResourceLimitException">A configured limit is exceeded.</exception>
     /// <exception cref="ObjectDisposedException">The reader or the destination is disposed.</exception>
     public bool ReadFrameInto(Image<TPixel> destination)

@@ -1,6 +1,7 @@
 using System.Buffers.Binary;
 using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.Metadata;
+using Meziantou.Framework.Imaging.TestHarness.Adapters;
 
 namespace Meziantou.Framework.Imaging.Tests;
 
@@ -582,6 +583,20 @@ public sealed class TiffCodecTests
 
         var configuration = new ImageConfiguration { Limits = new ImageResourceLimits { MaxFrames = 2 } };
         Assert.Throws<ImageResourceLimitException>(() => ImageCollection.Load(builder.Build(), configuration));
+    }
+
+    /// <summary>The inputs a TIFF is buffered whole from: every one that is not a synchronous read of a seekable source.</summary>
+    public static TheoryData<InputVariant> BufferedVariants =>
+        [InputVariant.Span, InputVariant.NonSeekableStream, InputVariant.ShortReadStream, InputVariant.AsyncPath, InputVariant.AsyncStream, InputVariant.AsyncShortReadStream];
+
+    [Theory]
+    [MemberData(nameof(BufferedVariants))]
+    public async Task ABufferedInputNeedsExactlyItsLengthInEncodedBytes(InputVariant variant)
+    {
+        // The whole input is buffered up to its end, which a stream only reports once it is read past
+        await InputVariants.AssertEncodedByteLimitBoundaryAsync(variant, Gray(bigEndian: false, bigTiff: false), ImageFormat.Tiff, XunitCancellationToken);
+        await InputVariants.AssertEncodedByteLimitBoundaryAsync(variant, Gray(bigEndian: true, bigTiff: true), ImageFormat.Tiff, XunitCancellationToken);
+        await InputVariants.AssertEncodedByteLimitBoundaryAsync(variant, TwoPages(), ImageFormat.Tiff, XunitCancellationToken);
     }
 
     [Fact]

@@ -29,7 +29,7 @@ internal sealed class NpmPackageUpdater : PackageUpdater
     private static async IAsyncEnumerable<PackageVersion> GetVersionsFromRegistryWithMetadataAsync(Uri registryUri, string packageName, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         var packageUri = new Uri(registryUri, packageName);
-        using var packageResponse = await SharedHttpClient.Instance.GetAsync(packageUri, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+        using var packageResponse = await SharedHttpClient.InstanceWithAutoRedirect.GetAsync(packageUri, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
         if (packageResponse.StatusCode is System.Net.HttpStatusCode.NotFound or System.Net.HttpStatusCode.BadRequest)
             yield break;
 

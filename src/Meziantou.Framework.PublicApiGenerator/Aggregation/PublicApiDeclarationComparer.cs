@@ -67,7 +67,8 @@ internal static class PublicApiDeclarationComparer
             x.IsReadOnly != y.IsReadOnly ||
             x.IsRefLike != y.IsRefLike ||
             x.IsClosed != y.IsClosed ||
-            x.IsUnion != y.IsUnion)
+            x.IsUnion != y.IsUnion ||
+            x.IsNew != y.IsNew)
         {
             differences |= PublicApiSymbolDifferences.Modifiers;
         }
@@ -202,6 +203,7 @@ internal static class PublicApiDeclarationComparer
             x.IsVirtual != y.IsVirtual ||
             x.IsOverride != y.IsOverride ||
             x.IsSealed != y.IsSealed ||
+            x.IsNew != y.IsNew ||
             x.RequiresUnsafe != y.RequiresUnsafe)
         {
             differences |= PublicApiSymbolDifferences.Modifiers;

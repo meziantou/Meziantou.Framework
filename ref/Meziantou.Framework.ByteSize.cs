@@ -136,7 +136,7 @@ namespace Meziantou.Framework
         public static Meziantou.Framework.ByteSize FromExbiBytes(double value) => throw null;
     }
 
-    public enum ByteSizeUnit
+    public enum ByteSizeUnit : long
     {
         Byte = 1L,
         KiloByte = 1000L,

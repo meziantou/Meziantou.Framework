@@ -5,7 +5,7 @@
 namespace Meziantou.Framework.Win32.ProjectedFileSystem
 {
     [System.Runtime.Versioning.SupportedOSPlatform("windows10.0.17763")]
-    public sealed class FileNameComparer : System.Collections.Generic.IComparer<string>
+    public sealed class FileNameComparer : System.Collections.Generic.IComparer<string?>
     {
         public static System.Collections.Generic.IComparer<string> Instance { get => throw null; }
         public int Compare(string? x, string? y) => throw null;
@@ -30,7 +30,7 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
     }
 
     [System.Flags]
-    public enum PRJ_NOTIFY_TYPES
+    public enum PRJ_NOTIFY_TYPES : uint
     {
         NONE = 0U,
         SUPPRESS_NOTIFICATIONS = 1U,

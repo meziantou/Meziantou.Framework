@@ -37,7 +37,7 @@ public static class NuGetHelpers
                     try
                     {
                         TestContext.Current.TestOutputHelper?.WriteLine("Downloading NuGet package {0}@{1} to {2}", packageName, version, tempFolder);
-                        return await Retry(() => SharedHttpClient.Instance.GetStreamAsync(new Uri($"https://www.nuget.org/api/v2/package/{packageName}/{version}"), XunitCancellationToken)).ConfigureAwait(false);
+                        return await Retry(() => SharedHttpClient.InstanceWithAutoRedirect.GetStreamAsync(new Uri($"https://www.nuget.org/api/v2/package/{packageName}/{version}"), XunitCancellationToken)).ConfigureAwait(false);
                     }
                     catch (Exception ex)
                     {

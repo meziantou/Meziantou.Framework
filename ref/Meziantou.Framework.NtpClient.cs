@@ -8,7 +8,7 @@ namespace Meziantou.Framework.Ntp
     {
         public NtpClient(string server) { }
         public NtpClient(string server, Meziantou.Framework.Ntp.NtpClientOptions? options) { }
-        public System.Threading.Tasks.Task<Meziantou.Framework.Ntp.NtpResponse> QueryAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.Ntp.NtpResponse> QueryAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
     }
 
     public sealed class NtpClientOptions

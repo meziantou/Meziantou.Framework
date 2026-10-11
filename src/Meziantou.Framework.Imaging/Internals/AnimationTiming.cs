@@ -76,6 +76,51 @@ internal static class AnimationTiming
         return (ushort)totalPlays.Value;
     }
 
+    /// <summary>Converts an ANI display rate (jiffies, sixtieths of a second) to the exact duration <c>jiffies / 60</c>.</summary>
+    /// <param name="jiffies">The encoded rate. Zero is preserved (no player minimum-delay heuristic).</param>
+    /// <returns>The exact duration.</returns>
+    public static FrameDuration FromAniRate(uint jiffies) => new(jiffies, 60);
+
+    /// <summary>Converts a duration to an ANI display rate in jiffies (sixtieths of a second).</summary>
+    /// <param name="duration">The duration.</param>
+    /// <param name="rounding">
+    /// <see cref="FrameDurationRounding.RequireExact"/> throws unless <c>duration * 60</c> is an integer;
+    /// <see cref="FrameDurationRounding.RoundToNearest"/> rounds to the nearest jiffy (ties up).
+    /// </param>
+    /// <returns>The encoded rate.</returns>
+    /// <exception cref="UnsupportedImageFeatureException">The duration is not exactly representable (strict mode) or exceeds 2^32 - 1 jiffies after rounding.</exception>
+    public static uint ToAniRate(FrameDuration duration, FrameDurationRounding rounding)
+    {
+        var scaled = (UInt128)(ulong)duration.Numerator * 60;
+        var denominator = (UInt128)(ulong)duration.Denominator;
+        var (quotient, remainder) = UInt128.DivRem(scaled, denominator);
+        if (remainder != 0)
+        {
+            if (rounding == FrameDurationRounding.RequireExact)
+                throw new UnsupportedImageFeatureException(string.Create(CultureInfo.InvariantCulture, $"The frame duration {duration} is not a whole number of sixtieths of a second and cannot be stored exactly in an ANI file. Use FrameDurationRounding.RoundToNearest to round it."), ImageFormat.Ani, "ANI frame duration precision");
+
+            if (remainder * 2 >= denominator)
+            {
+                quotient++;
+            }
+        }
+
+        if (quotient > uint.MaxValue)
+            throw new UnsupportedImageFeatureException(string.Create(CultureInfo.InvariantCulture, $"The frame duration {duration} exceeds the maximum ANI rate of {uint.MaxValue} sixtieths of a second."), ImageFormat.Ani, "ANI frame duration range");
+
+        return (uint)quotient;
+    }
+
+    /// <summary>Validates that a play count can be stored by an animated cursor, which has no play count: it always loops.</summary>
+    /// <param name="totalPlays">The total number of plays (positive), or <see langword="null"/> for infinite.</param>
+    /// <exception cref="UnsupportedImageFeatureException">The play count is finite.</exception>
+    public static void EnsureAniPlayCount(int? totalPlays)
+    {
+        Debug.Assert(totalPlays is null or > 0);
+        if (totalPlays is { } plays)
+            throw new UnsupportedImageFeatureException(string.Create(CultureInfo.InvariantCulture, $"An animated cursor always loops: {plays} play(s) cannot be represented. Set AnimationMetadata.TotalPlays to null."), ImageFormat.Ani, "ANI play count");
+    }
+
     /// <summary>Converts a GIF Graphic Control Extension delay (hundredths of a second) to the exact duration <c>delay / 100</c>.</summary>
     /// <param name="hundredths">The encoded delay. Zero is preserved (no player minimum-delay heuristic).</param>
     /// <returns>The exact duration.</returns>

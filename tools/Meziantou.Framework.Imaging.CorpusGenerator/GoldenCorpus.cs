@@ -18,7 +18,7 @@ namespace Meziantou.Framework.Imaging.CorpusGenerator;
 internal static partial class GoldenCorpus
 {
     public const string ScriptPath = "tools/Meziantou.Framework.Imaging.CorpusGenerator/GoldenCorpus.cs";
-    private const int SchemaVersion = 2;
+    private const int SchemaVersion = 3;
 
     // Formats whose fixtures are produced by their own generators (any OS): WebPCorpus, QoiCorpus, BmpCorpus, TgaCorpus and
     // PnmCorpus
@@ -85,6 +85,7 @@ internal static partial class GoldenCorpus
             CorpusDriver.CopyCommittedAv1Vectors(outDir, committed);
         }
 
+        CorpusDriver.PreserveColorSections(outDir, manifest);
         CorpusDriver.WriteManifest(outDir, manifest);
         return fixtures.Count;
     }

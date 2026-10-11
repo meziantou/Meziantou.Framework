@@ -6,13 +6,17 @@ namespace Meziantou.Framework.Imaging.TestHarness.Tga;
 /// An independent, deliberately simple reading of the Truevision TGA 2.0 subset the library supports, used to verify the
 /// library's encoder output without the library's decoder. It keeps the whole input in memory, expands every pixel to
 /// straight RGBA8, and is strict: an implausible header, an unsupported depth, a packet past the last pixel, a color-map
-/// index outside the stored map and truncation throw <see cref="InvalidDataException"/>. The bytes after the image data are
-/// only reported (the trailer is never followed).
+/// index outside the stored map and truncation throw <see cref="InvalidDataException"/>. The TGA 2.0 footer is looked up in
+/// the last 26 bytes of the file and its extension offset is followed: an extension area that does not lie between the image
+/// data and the footer, one that is too short to hold an attributes type, and premultiplied alpha (attributes type 4 with
+/// declared alpha bits) throw <see cref="InvalidDataException"/> too.
 /// </summary>
 public sealed class ReferenceTga
 {
-    private ReferenceTga(int width, int height, int imageType, int pixelDepth, byte descriptor, int colorMapLength, int trailingBytes, int packets, byte[] rgba)
+    private ReferenceTga(int width, int height, int imageType, int pixelDepth, byte descriptor, int colorMapLength, int trailingBytes, int packets, byte[] rgba, bool hasFooter, int? attributesType)
     {
+        HasFooter = hasFooter;
+        AttributesType = attributesType;
         Width = width;
         Height = height;
         ImageType = imageType;
@@ -54,8 +58,11 @@ public sealed class ReferenceTga
     /// <summary>Gets the decoded pixels as straight RGBA8, row-major, top-down.</summary>
     public ReadOnlyMemory<byte> Rgba { get; }
 
-    /// <summary>Gets a value indicating whether a TGA 2.0 footer ends the file.</summary>
-    public bool HasFooter => TrailingBytes >= 26;
+    /// <summary>Gets a value indicating whether a TGA 2.0 footer (its signature) ends the file.</summary>
+    public bool HasFooter { get; }
+
+    /// <summary>Gets the attributes type of the extension area the footer points at, or <see langword="null"/> without one.</summary>
+    public int? AttributesType { get; }
 
     /// <summary>Reads a TGA file.</summary>
     /// <param name="data">The whole file.</param>
@@ -194,7 +201,36 @@ public sealed class ReferenceTga
             }
         }
 
-        return new ReferenceTga(width, height, imageType, pixelDepth, descriptor, mapLength, data.Length - offset, packets, rgba);
+        var hasFooter = data.Length - offset >= FooterLength && data[^FooterSignature.Length..].SequenceEqual(FooterSignature);
+        var attributesType = hasFooter ? ReadAttributesType(data, offset) : null;
+        if (attributesType == 4 && alphaBits > 0)
+            throw new InvalidDataException("Unsupported TGA premultiplied alpha (attributes type 4).");
+
+        return new ReferenceTga(width, height, imageType, pixelDepth, descriptor, mapLength, data.Length - offset, packets, rgba, hasFooter, attributesType);
+    }
+
+    private const int FooterLength = 26;
+    private const int ExtensionLength = 495;
+
+    private static ReadOnlySpan<byte> FooterSignature => "TRUEVISION-XFILE.\0"u8;
+
+    /// <summary>Follows the extension offset of the footer; <paramref name="imageDataEnd"/> is the first byte the extension area may use.</summary>
+    private static int? ReadAttributesType(ReadOnlySpan<byte> data, int imageDataEnd)
+    {
+        var footer = data.Length - FooterLength;
+        var extension = BinaryPrimitives.ReadUInt32LittleEndian(data[footer..]);
+        if (extension == 0)
+            return null;
+
+        if (extension < imageDataEnd || extension + (long)ExtensionLength > footer)
+            throw new InvalidDataException($"The TGA extension area at offset {extension} is not between the image data ({imageDataEnd}) and the footer ({footer}).");
+
+        var area = data.Slice((int)extension, ExtensionLength);
+        var size = BinaryPrimitives.ReadUInt16LittleEndian(area);
+        if (size < ExtensionLength)
+            throw new InvalidDataException($"The TGA extension area declares {size} bytes.");
+
+        return area[494];
     }
 
     private static void DecodeSample(ReadOnlySpan<byte> source, int bits, bool withAlpha, Span<byte> destination)

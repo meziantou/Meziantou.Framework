@@ -17,6 +17,12 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// consuming partial buffers. Consumed bytes are charged to <see cref="ImageResourceLimits.MaxEncodedBytes"/> by the driver.
 /// When the input ends while the parser still needs bytes, the driver throws <see cref="CreateTruncatedException"/>.
 /// </para>
+/// <para>
+/// A span reports the end of the input from the first call, a stream only once it was read past its end. A parser whose
+/// structure is delimited by the end of the input must therefore ask for it with <see cref="ParseStatus.NeedMoreDataOrEnd"/>:
+/// with <see cref="ParseStatus.NeedMoreData"/>, an input exactly as long as the encoded-byte limit would decode from a span
+/// and fail with the limit from a stream.
+/// </para>
 /// </remarks>
 /// <typeparam name="TResult">The result type (<see cref="ImageInfo"/> or <see cref="Image"/>).</typeparam>
 internal abstract class ImageParser<TResult> : IDisposable
@@ -28,7 +34,10 @@ internal abstract class ImageParser<TResult> : IDisposable
 
     /// <summary>Parses as much of <paramref name="buffer"/> as possible.</summary>
     /// <param name="buffer">The unconsumed input bytes, starting at the current position. Never retained after the call.</param>
-    /// <param name="isEndOfInput"><see langword="true"/> when no byte follows <paramref name="buffer"/>.</param>
+    /// <param name="isEndOfInput">
+    /// <see langword="true"/> when no byte follows <paramref name="buffer"/>. <see langword="false"/> does not mean that a
+    /// byte follows: a stream may not have reported its end yet.
+    /// </param>
     /// <param name="consumed">The number of bytes of <paramref name="buffer"/> consumed by this call.</param>
     /// <returns><see cref="ParseStatus.Complete"/>, or the number of contiguous bytes needed to make progress.</returns>
     public abstract ParseStatus Parse(ReadOnlySpan<byte> buffer, bool isEndOfInput, out int consumed);

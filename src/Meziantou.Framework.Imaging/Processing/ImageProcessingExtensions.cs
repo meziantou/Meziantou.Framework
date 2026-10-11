@@ -7,10 +7,13 @@ namespace Meziantou.Framework.Imaging;
 /// <remarks>
 /// <para>
 /// Image-level operations apply to every displayed frame and to the poster frame. Geometry-changing operations
-/// (<see cref="Crop"/>, <see cref="Resize"/>, <see cref="Rotate"/>, <see cref="AutoOrient"/>) build all replacement buffers
-/// and metadata before committing them together: on failure or cancellation before the commit, the image is left exactly
-/// as it was (dimensions, pixels, frame identities and order, metadata). The old and new buffers are budgeted together.
-/// After a successful commit, existing <see cref="ImageFrame"/> references designate the same logical frames.
+/// (<see cref="Crop"/>, <see cref="AutoCrop(Image, AutoCropOptions?, CancellationToken)"/>, <see cref="Resize"/>,
+/// <see cref="Rotate"/>, <see cref="AutoOrient"/>) build all replacement buffers and metadata before committing them
+/// together: on failure or cancellation before the commit, the image is left exactly as it was (dimensions, pixels, frame
+/// identities and order, metadata). The old and new buffers are budgeted together. After a successful commit, existing
+/// <see cref="ImageFrame"/> references designate the same logical frames.
+/// <see cref="ConvertColorProfile"/> is transactional in the same way, so that pixels and their color profile always
+/// change together.
 /// </para>
 /// <para>
 /// Pixel-only operations (<see cref="Flip(Image, FlipMode, CancellationToken)"/>, <see cref="Grayscale(Image, CancellationToken)"/>,
@@ -25,8 +28,17 @@ namespace Meziantou.Framework.Imaging;
 /// EXIF profile is left as is (serializing it fails).
 /// </para>
 /// <para>
-/// Crop, rotations, mirrors and auto-orient are exact pixel permutations: every sample, including 16-bit low bits and
-/// alpha, is copied unchanged. Operations run on the calling thread, except that <see cref="Resize"/> and
+/// A cursor hotspot (<see cref="FrameMetadata.Hotspot"/>) follows the pixel it designates: crops and auto-crops translate it, rotations,
+/// mirrors and auto-orient permute it exactly, and a resize moves it to <c>floor(x * newWidth / width)</c> (and likewise
+/// vertically, through the kept region for <see cref="ResizeMode.Cover"/>), so a hotspot in the top-left corner stays
+/// there. When the pixel it designates is not part of the result (a crop, an auto-crop or a cover resize that removes it), the operation
+/// throws an <see cref="UnsupportedImageFeatureException"/> and leaves the image unchanged: clear or move the hotspot
+/// first. Pixel-only operations keep it.
+/// </para>
+/// <para>
+/// Crop, auto-crop, rotations, mirrors and auto-orient are exact pixel permutations: every sample, including 16-bit low
+/// bits and alpha, is copied unchanged (an auto-crop that enlarges the canvas also writes the detected background color
+/// around the copied pixels). Operations run on the calling thread, except that <see cref="Resize"/> and
 /// <see cref="Convolve(Image, ConvolutionOptions, CancellationToken)"/> may also use up to
 /// <see cref="ImageConfiguration.MaxDegreeOfParallelism"/> workers for large frames (identical results).
 /// </para>
@@ -38,6 +50,7 @@ public static class ImageProcessingExtensions
     /// <param name="rectangle">The region to keep. It must be non-empty and entirely inside the canvas; it is never clamped.</param>
     /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="rectangle"/> is empty or not entirely inside the canvas.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">The cursor hotspot of a frame is outside <paramref name="rectangle"/>. The image is unchanged.</exception>
     /// <exception cref="ImageResourceLimitException">The replacement buffers would exceed the allocation limit. The image is unchanged.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled. The image is unchanged.</exception>
     /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
@@ -61,6 +74,138 @@ public static class ImageProcessingExtensions
         }
 
         image.TransformGeometry(rectangle, OrientationTransform.Identity, normalizeOrientation: false, "crop the image", cancellationToken);
+    }
+
+    /// <summary>Detects the background and the bounding box of the content of the image, without changing it.</summary>
+    /// <remarks>
+    /// <para>
+    /// The analysis reads every displayed frame and the poster frame, in stored-pixel coordinates (call
+    /// <see cref="AutoOrient"/> first to work on the displayed orientation), at the storage precision; thresholds are on
+    /// the 8-bit scale and are multiplied by 257 for 16-bit samples. A fully transparent pixel is read as transparent
+    /// black: hidden colors never count.
+    /// </para>
+    /// <list type="number">
+    /// <item>The pixels of the one-pixel outer border of every frame are tallied by color, after reduction to 8 bits, in
+    /// frame order and row by row. At most <see cref="AutoCropOptions.ColorThreshold"/> distinct colors are tracked; later
+    /// ones are ignored. The background is the first pixel seen of the most frequent tracked color (the first tracked
+    /// among equals).</item>
+    /// <item>A border is found when fewer than <see cref="AutoCropOptions.ColorThreshold"/> distinct colors were seen, or
+    /// when <see cref="AutoCropOptions.BucketThreshold"/> is set and at least that share of the border pixels falls in the
+    /// luma bucket of the background: <c>min(10, Y * 11 / 255)</c>, where <c>Y</c> is the 8-bit Rec. 709 luma of the color
+    /// flattened onto white.</item>
+    /// <item>Otherwise the first two steps are retried once with half the threshold (rounded up) and without the bucket
+    /// test, on the canvas without 1/20 of its width and height on each side (rounded down). When the retry finds a border,
+    /// the halved threshold and the smaller rectangle are used for the next step.</item>
+    /// <item>A pixel is background when <c>2126 |dR| + 7152 |dG| + 722 |dB| &lt;= threshold * 10000</c> and
+    /// <c>|dA| &lt; threshold</c>, where the differences are taken from the background color. The content box is the
+    /// bounding box, over all frames, of the other pixels of the rectangle. The analysis succeeds when the box is at least
+    /// 3 pixels wide and high.</item>
+    /// <item>With <see cref="AutoCropOptions.AnalyzeWeights"/>, the weights are the mean over all pixels of all frames of
+    /// <c>p * d</c>, where <c>p</c> is the position of the pixel center relative to the canvas center, from -1 to 1, and
+    /// <c>d</c> is the color difference above divided by its maximum and multiplied by alpha, from 0 to 1.</item>
+    /// </list>
+    /// <para>
+    /// A threshold of 1 cannot find a border without <see cref="AutoCropOptions.BucketThreshold"/>, since a border always
+    /// has at least one color. The paddings and <see cref="AutoCropOptions.PaddingMode"/> are not used by the analysis.
+    /// </para>
+    /// </remarks>
+    /// <param name="image">The image to analyze.</param>
+    /// <param name="options">The options, or <see langword="null"/> for <see cref="AutoCropOptions.Default"/>.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+    /// <returns>
+    /// The analysis, an <see cref="AutoCropAnalysis{TPixel}"/> of the pixel type of the image.
+    /// <see cref="AutoCropAnalysis.Success"/> is <see langword="false"/> when no border or no content of at least 3x3 pixels
+    /// is found, for example for a uniform image.
+    /// </returns>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    /// <exception cref="InvalidOperationException">A pixel lease is active on a frame.</exception>
+    /// <exception cref="ObjectDisposedException">The image is disposed.</exception>
+    public static AutoCropAnalysis AnalyzeAutoCrop(this Image image, AutoCropOptions? options = null, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(image);
+        return image.AnalyzeAutoCropCore(options ?? AutoCropOptions.Default, cancellationToken);
+    }
+
+    /// <summary>
+    /// Detects the background and the bounding box of the content of the image, without changing it. The background is
+    /// given as a pixel of the image. See <see cref="AnalyzeAutoCrop(Image, AutoCropOptions?, CancellationToken)"/>.
+    /// </summary>
+    /// <typeparam name="TPixel">The pixel type.</typeparam>
+    /// <param name="image">The image to analyze.</param>
+    /// <param name="options">The options, or <see langword="null"/> for <see cref="AutoCropOptions.Default"/>.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+    /// <returns>The analysis.</returns>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    /// <exception cref="InvalidOperationException">A pixel lease is active on a frame.</exception>
+    /// <exception cref="ObjectDisposedException">The image is disposed.</exception>
+    public static AutoCropAnalysis<TPixel> AnalyzeAutoCrop<TPixel>(this Image<TPixel> image, AutoCropOptions? options = null, CancellationToken cancellationToken = default)
+        where TPixel : unmanaged
+    {
+        ArgumentNullException.ThrowIfNull(image);
+        return (AutoCropAnalysis<TPixel>)image.AnalyzeAutoCropCore(options ?? AutoCropOptions.Default, cancellationToken);
+    }
+
+    /// <summary>
+    /// Crops every frame of the image to the bounding box of its content, detected by
+    /// <see cref="AnalyzeAutoCrop(Image, AutoCropOptions?, CancellationToken)"/>, plus the padding of the options.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The kept rectangle is the content box extended by <see cref="AutoCropOptions.PaddingX"/> pixels on the left and on
+    /// the right and by <see cref="AutoCropOptions.PaddingY"/> pixels above and below, then moved by
+    /// <c>padding * weight</c> pixels (truncated toward zero) on each axis when
+    /// <see cref="AutoCropOptions.AnalyzeWeights"/> is set. Padding inside the canvas keeps the original pixels.
+    /// </para>
+    /// <para>
+    /// When the rectangle reaches outside the canvas, <see cref="AutoCropPaddingMode.Contain"/> clamps it to the canvas,
+    /// and <see cref="AutoCropPaddingMode.Expand"/> enlarges the canvas: the pixels outside the original canvas get the
+    /// detected background color in every frame. The image is left unchanged when the analysis does not succeed or when
+    /// the rectangle is the whole canvas.
+    /// </para>
+    /// </remarks>
+    /// <param name="image">The image to modify.</param>
+    /// <param name="options">The options, or <see langword="null"/> for <see cref="AutoCropOptions.Default"/>.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+    /// <returns><see langword="true"/> if the image was cropped or enlarged; <see langword="false"/> if it is unchanged.</returns>
+    /// <exception cref="UnsupportedImageFeatureException">The cursor hotspot of a frame designates a pixel that the crop removes. The image is unchanged.</exception>
+    /// <exception cref="ImageResourceLimitException">The enlarged canvas exceeds <see cref="ImageResourceLimits.MaxWidth"/>, <see cref="ImageResourceLimits.MaxHeight"/> or <see cref="ImageResourceLimits.MaxFramePixels"/>, or the replacement buffers would exceed the allocation limit. The image is unchanged.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled. The image is unchanged.</exception>
+    /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
+    /// <exception cref="ObjectDisposedException">The image is disposed.</exception>
+    public static bool AutoCrop(this Image image, AutoCropOptions? options = null, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(image);
+        return image.AutoCropCore(analysis: null, options ?? AutoCropOptions.Default, cancellationToken);
+    }
+
+    /// <summary>
+    /// Crops every frame of the image to the content box of an existing analysis, plus the padding of the options, without
+    /// analyzing the image again. See <see cref="AutoCrop(Image, AutoCropOptions?, CancellationToken)"/>.
+    /// </summary>
+    /// <remarks>
+    /// The analysis may come from another image of the same canvas size, for example a clone processed differently. Only
+    /// the paddings and <see cref="AutoCropOptions.PaddingMode"/> of the options are used.
+    /// </remarks>
+    /// <param name="image">The image to modify.</param>
+    /// <param name="analysis">The analysis to apply. The image is left unchanged when <see cref="AutoCropAnalysis.Success"/> is <see langword="false"/>.</param>
+    /// <param name="options">The options, or <see langword="null"/> for <see cref="AutoCropOptions.Default"/>.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+    /// <returns><see langword="true"/> if the image was cropped or enlarged; <see langword="false"/> if it is unchanged.</returns>
+    /// <exception cref="ArgumentException"><see cref="AutoCropAnalysis.CanvasSize"/> is not the size of the image.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">The canvas must be enlarged but <see cref="AutoCropAnalysis.BackgroundColor"/> is not exactly representable in the pixel format of the image (it comes from an image of another pixel format), or the cursor hotspot of a frame designates a pixel that the crop removes. The image is unchanged.</exception>
+    /// <exception cref="ImageResourceLimitException">The enlarged canvas exceeds <see cref="ImageResourceLimits.MaxWidth"/>, <see cref="ImageResourceLimits.MaxHeight"/> or <see cref="ImageResourceLimits.MaxFramePixels"/>, or the replacement buffers would exceed the allocation limit. The image is unchanged.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled. The image is unchanged.</exception>
+    /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
+    /// <exception cref="ObjectDisposedException">The image is disposed.</exception>
+    public static bool AutoCrop(this Image image, AutoCropAnalysis analysis, AutoCropOptions? options = null, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(image);
+        ArgumentNullException.ThrowIfNull(analysis);
+        var size = image.Size;
+        if (analysis.CanvasSize != size)
+            throw new ArgumentException(string.Create(CultureInfo.InvariantCulture, $"The analysis was computed on a {analysis.CanvasSize.Width}x{analysis.CanvasSize.Height} canvas, but the image is {size.Width}x{size.Height}."), nameof(analysis));
+
+        return image.AutoCropCore(analysis, options ?? AutoCropOptions.Default, cancellationToken);
     }
 
     /// <summary>Resizes every frame of the image.</summary>
@@ -88,7 +233,7 @@ public static class ImageProcessingExtensions
     /// <param name="options">The resize options.</param>
     /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
     /// <exception cref="ArgumentException">Upscaling is required but <see cref="ResizeOptions.AllowUpscaling"/> is <see langword="false"/> (for <see cref="ResizeMode.Stretch"/> and <see cref="ResizeMode.Cover"/>).</exception>
-    /// <exception cref="UnsupportedImageFeatureException"><see cref="ResizeWorkingSpace.LinearSrgb"/> is requested for an image with an incompatible ICC profile.</exception>
+    /// <exception cref="UnsupportedImageFeatureException"><see cref="ResizeWorkingSpace.LinearSrgb"/> is requested for an image with an incompatible ICC profile, or the cursor hotspot of a frame designates a pixel that <see cref="ResizeMode.Cover"/> removes. The image is unchanged.</exception>
     /// <exception cref="ImageResourceLimitException">The replacement buffers would exceed the allocation limit. The image is unchanged.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled. The image is unchanged.</exception>
     /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
@@ -186,9 +331,13 @@ public static class ImageProcessingExtensions
 
         var storage = frame.GetStorage();
         cancellationToken.ThrowIfCancellationRequested();
-        using var lease = storage.AcquireLease();
-        frame.OwnerImage.Metadata.RemoveStaleThumbnail();
-        frame.FlipPixels(lease, mode, cancellationToken);
+        using (var lease = storage.AcquireLease())
+        {
+            frame.OwnerImage.Metadata.RemoveStaleThumbnail();
+            frame.FlipPixels(lease, mode, cancellationToken);
+        }
+
+        Image.FlipHotspot(frame, mode);
     }
 
     /// <summary>
@@ -225,6 +374,59 @@ public static class ImageProcessingExtensions
         using var lease = storage.AcquireLease();
         image.Metadata.RemoveStaleThumbnail();
         frame.GrayscalePixels(lease, cancellationToken);
+    }
+
+    /// <summary>
+    /// Converts the colors of every frame of the image (including the poster frame) to the color space described by an
+    /// ICC profile, and labels the image with that profile.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The source color space is the one of <see cref="ImageMetadata.IccProfile"/>. An image without profile is sRGB, or
+    /// sGray for grayscale pixel formats (<see cref="IccProfile.Srgb"/>, <see cref="IccProfile.SrgbGray"/>); when
+    /// <see cref="ImageMetadata.TransferFunction"/> is <see cref="ColorTransferFunction.Linear"/>, it is linear light with
+    /// the sRGB primaries and white point. This is the only operation that applies a color profile: loading, saving,
+    /// pixel format conversion and the other processing operations never do.
+    /// </para>
+    /// <para>
+    /// The pixel format is kept, so the destination profile must be able to label it: an RGB profile for color formats, a
+    /// grayscale profile for <see cref="Gray8"/> and <see cref="Gray16"/>. To change the color model, convert the pixel
+    /// format with <see cref="Image.CloneAs{TPixel}(PixelConversionOptions?)"/>, or convert sample buffers with
+    /// <see cref="IccColorTransform"/> (the only way to reach CMYK).
+    /// </para>
+    /// <para>
+    /// Colors are converted at the storage precision (16-bit formats are never reduced to 8 bits) by the scalar reference
+    /// conversion, on the calling thread. Alpha is copied unchanged and the color of transparent pixels is converted like
+    /// any other. Colors outside the destination gamut are clipped per channel.
+    /// </para>
+    /// <para>
+    /// The operation is transactional: the converted pixels are built in new buffers, budgeted together with the current
+    /// ones, and published with the new profile. On failure or cancellation the image is left exactly as it was. After a
+    /// successful conversion, <see cref="ImageMetadata.IccProfile"/> is <paramref name="destinationProfile"/>,
+    /// <see cref="ImageMetadata.TransferFunction"/> is <see cref="ColorTransferFunction.Srgb"/> (the samples are described
+    /// by the profile) and the EXIF thumbnail, which no longer matches the pixels, is removed. When the source and
+    /// destination profiles have identical bytes, the pixels are not touched and only the label is set.
+    /// </para>
+    /// </remarks>
+    /// <param name="image">The image to modify.</param>
+    /// <param name="destinationProfile">The profile of the converted pixels.</param>
+    /// <param name="options">The conversion options, or <see langword="null"/> for <see cref="IccColorTransformOptions.Default"/>.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="image"/> or <paramref name="destinationProfile"/> is <see langword="null"/>.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">
+    /// The current or the destination profile cannot label the pixel format, the image has both a profile and the linear
+    /// transfer function label, or a profile is of a kind that is not supported. The image is unchanged.
+    /// </exception>
+    /// <exception cref="InvalidImageContentException">The current or the destination profile is malformed. The image is unchanged.</exception>
+    /// <exception cref="ImageResourceLimitException">The replacement buffers would exceed the allocation limit. The image is unchanged.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled. The image is unchanged.</exception>
+    /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
+    /// <exception cref="ObjectDisposedException">The image is disposed.</exception>
+    public static void ConvertColorProfile(this Image image, IccProfile destinationProfile, IccColorTransformOptions? options = null, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(image);
+        ArgumentNullException.ThrowIfNull(destinationProfile);
+        image.ConvertAllFramesToColorProfile(destinationProfile, options ?? IccColorTransformOptions.Default, cancellationToken);
     }
 
     /// <summary>Applies a convolution matrix to every frame of the image (including the poster frame) in place.</summary>

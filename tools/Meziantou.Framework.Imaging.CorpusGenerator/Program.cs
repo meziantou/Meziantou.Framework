@@ -24,6 +24,7 @@ const string Usage = """
                       AVIF fixtures: stills, grids, alpha, transformations, metadata, image sequences, layered images,
                       malformed and over-limit files (libavif avifenc/avifdec and the ffmpeg of the pinned
                       meziantou/prebuilt release)
+        icc           ICC profiles and color conversion vectors (transicc of LittleCMS; any OS)
 
     Verification (read-only, any tool versions):
         verify        re-decode the committed corpus with the ffmpeg, dwebp and anim_dump of the pinned meziantou/prebuilt release and
@@ -35,6 +36,8 @@ const string Usage = """
                                   without it, regenerate in a temporary directory and diff
         --accept-tool-versions    allow tool versions other than the pinned ones
         --qoi-header <path>       path of the pinned qoi.h reference implementation (qoi only, required)
+        --icc-profiles <dir>      profiles directory of the pinned checkout of saucecontrol/Compact-ICC-Profiles
+                                  (icc only, required)
         --output <directory>      generate into this new or empty directory and keep it (to inspect the output)
     """;
 
@@ -42,6 +45,7 @@ string? generator = null;
 var write = false;
 var acceptToolVersions = false;
 string? qoiHeader = null;
+string? iccProfiles = null;
 string? output = null;
 for (var i = 0; i < args.Length; i++)
 {
@@ -59,6 +63,9 @@ for (var i = 0; i < args.Length; i++)
         case "--qoi-header" when i + 1 < args.Length:
             qoiHeader = args[++i];
             break;
+        case "--icc-profiles" when i + 1 < args.Length:
+            iccProfiles = args[++i];
+            break;
         case "--output" when i + 1 < args.Length:
             output = args[++i];
             break;
@@ -72,7 +79,7 @@ for (var i = 0; i < args.Length; i++)
     }
 }
 
-var options = new GeneratorOptions(write, acceptToolVersions, qoiHeader, output);
+var options = new GeneratorOptions(write, acceptToolVersions, qoiHeader, output, iccProfiles);
 try
 {
     switch (generator)
@@ -99,6 +106,14 @@ try
             return AvifCorpus.Run(options);
         case "avif-container":
             return AvifCorpus.RunContainer(options);
+        case "icc":
+            if (iccProfiles is null)
+            {
+                Console.Error.WriteLine("The icc generator requires --icc-profiles <profiles directory of Compact-ICC-Profiles>.");
+                return 2;
+            }
+
+            return IccCorpus.Run(options);
         case "verify":
             return CorpusVerifier.Run();
         default:

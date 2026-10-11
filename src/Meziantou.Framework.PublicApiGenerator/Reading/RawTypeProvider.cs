@@ -138,6 +138,7 @@ internal sealed class RawTypeProvider : ISignatureTypeProvider<RawType, RawGener
 
     public RawType GetModifiedType(RawType modifier, RawType unmodifiedType, bool isRequired)
     {
+        unmodifiedType = unmodifiedType with { CustomModifierCount = unmodifiedType.CustomModifierCount + 1 };
         if (modifier is not RawType.Named { ContainingType: null } modifierType)
             return unmodifiedType;
 

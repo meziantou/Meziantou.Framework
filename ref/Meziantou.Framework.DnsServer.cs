@@ -103,7 +103,7 @@ namespace Meziantou.Framework.DnsServer.Protocol
         public Meziantou.Framework.DnsServer.Protocol.DnsEdnsOptions? EdnsOptions { get => throw null; set { } }
     }
 
-    public enum DnsOpCode
+    public enum DnsOpCode : byte
     {
         Query = 0,
         IQuery = 1,
@@ -118,7 +118,7 @@ namespace Meziantou.Framework.DnsServer.Protocol
         public DnsProtocolException(string message, System.Exception innerException) { }
     }
 
-    public enum DnsQueryClass
+    public enum DnsQueryClass : ushort
     {
         IN = 1,
         CS = 2,
@@ -128,7 +128,7 @@ namespace Meziantou.Framework.DnsServer.Protocol
         ANY = 255,
     }
 
-    public enum DnsQueryType
+    public enum DnsQueryType : ushort
     {
         A = 1,
         NS = 2,
@@ -203,7 +203,7 @@ namespace Meziantou.Framework.DnsServer.Protocol
         public string Name { get => throw null; set { } }
         public Meziantou.Framework.DnsServer.Protocol.DnsQueryType Type { get => throw null; set { } }
         public Meziantou.Framework.DnsServer.Protocol.DnsQueryClass QueryClass { get => throw null; set { } }
-        public DnsQuestion(string name, Meziantou.Framework.DnsServer.Protocol.DnsQueryType type, Meziantou.Framework.DnsServer.Protocol.DnsQueryClass queryClass = 1) { }
+        public DnsQuestion(string name, Meziantou.Framework.DnsServer.Protocol.DnsQueryType type, Meziantou.Framework.DnsServer.Protocol.DnsQueryClass queryClass = Meziantou.Framework.DnsServer.Protocol.DnsQueryClass.IN) { }
     }
 
     public sealed class DnsResourceRecord
@@ -219,7 +219,7 @@ namespace Meziantou.Framework.DnsServer.Protocol
     {
     }
 
-    public enum DnsResponseCode
+    public enum DnsResponseCode : ushort
     {
         NoError = 0,
         FormError = 1,

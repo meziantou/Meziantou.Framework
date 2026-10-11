@@ -59,6 +59,6 @@ namespace Meziantou.Framework.Http.Caching
         System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.Http.Caching.HttpCachePersistenceEntry>> GetEntriesAsync(string primaryKey, System.Threading.CancellationToken cancellationToken);
         System.Threading.Tasks.ValueTask SetEntryAsync(string primaryKey, Meziantou.Framework.Http.Caching.HttpCachePersistenceEntry entry, System.Threading.CancellationToken cancellationToken);
         System.Threading.Tasks.ValueTask RemoveEntriesAsync(string primaryKey, System.Threading.CancellationToken cancellationToken);
-        public System.Threading.Tasks.ValueTask PruneObsoleteEntriesAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public System.Threading.Tasks.ValueTask PruneObsoleteEntriesAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
     }
 }

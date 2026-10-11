@@ -153,6 +153,24 @@ public sealed class ImageCollectionTests
     }
 
     [Fact]
+    public void APageCannotStoreAHotspot()
+    {
+        using var image = TiffEncoderTests.CreateRgba(4, 4);
+        using var pages = ImageCollection.Create(ImageCollectionKind.Pages);
+        pages.Add(image, new Point(1, 2));
+        using var stream = new MemoryStream();
+        var exception = Assert.Throws<UnsupportedImageFeatureException>(() => pages.Save(stream, new TiffEncoder()));
+        Assert.Equal(ImageFormat.Tiff, exception.Format);
+        Assert.Equal("Metadata: cursor hotspot", exception.Feature);
+
+        using var discarded = new MemoryStream();
+        pages.Save(discarded, new TiffEncoder { MetadataHandling = MetadataHandling.DiscardUnsupported });
+        discarded.Position = 0;
+        using var reloaded = ImageCollection.Load(discarded);
+        Assert.Null(reloaded[0].Hotspot);
+    }
+
+    [Fact]
     public void ADecodedEntryIsNeverAnAnimation()
     {
         using var collection = ImageCollection.Load(ThreePages());

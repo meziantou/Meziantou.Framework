@@ -15,7 +15,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </description></item>
 /// <item><description>
 /// <c>ReadFrameInto</c>: the caller's destination, whose pixel storage is reused (it stays charged to its own scope); its
-/// duration is set when the frame is bound and its metadata when the frame ends. On failure it may be partially updated
+/// duration and hotspot are set when the frame is bound and its metadata when the frame ends. On failure it may be partially updated
 /// but stays structurally valid. At the clean end of input it is never touched.
 /// </description></item>
 /// <item><description>A poster met while a displayed frame is requested is decoded into a scratch image and discarded.</description></item>
@@ -32,6 +32,7 @@ internal sealed class SequentialFrameSink : DecodedFrameSink
     private bool _bound;
     private bool _discard;
     private FrameDuration _duration;
+    private Point? _hotspot;
     private Image? _ownedImage;
     private Image? _destination;
     private ImageFrame? _target;
@@ -53,9 +54,9 @@ internal sealed class SequentialFrameSink : DecodedFrameSink
     public override Image Build(ImageMetadata metadata, AnimationMetadata? animation)
         => throw new InvalidOperationException("A sequential reader returns its frames one by one; there is no image to build.");
 
-    private protected override void OnBeginFrame(FrameDuration duration) => OpenImage(isPoster: false, duration);
+    private protected override void OnBeginFrame(FrameDuration duration, Point? hotspot) => OpenImage(isPoster: false, duration, hotspot);
 
-    private protected override void OnBeginPoster() => OpenImage(isPoster: true, FrameDuration.Zero);
+    private protected override void OnBeginPoster() => OpenImage(isPoster: true, FrameDuration.Zero, hotspot: null);
 
     private protected override ImageFrame GetCurrentFrame()
     {
@@ -103,7 +104,7 @@ internal sealed class SequentialFrameSink : DecodedFrameSink
         base.Dispose(disposing);
     }
 
-    private void OpenImage(bool isPoster, FrameDuration duration)
+    private void OpenImage(bool isPoster, FrameDuration duration, Point? hotspot)
     {
         _session.EnsureNoPendingEvent();
         if (_imageOpen)
@@ -118,6 +119,7 @@ internal sealed class SequentialFrameSink : DecodedFrameSink
         _imageOpen = true;
         _isPoster = isPoster;
         _duration = duration;
+        _hotspot = hotspot;
         _bound = false;
         _discard = false;
     }
@@ -150,7 +152,9 @@ internal sealed class SequentialFrameSink : DecodedFrameSink
                 break;
         }
 
+        // Always assigned: a destination reused by ReadFrameInto must not keep the hotspot of its previous content
         _target.MetadataCore.Duration = _duration;
+        _target.MetadataCore.SetHotspotUnchecked(_hotspot);
         _bound = true;
     }
 }

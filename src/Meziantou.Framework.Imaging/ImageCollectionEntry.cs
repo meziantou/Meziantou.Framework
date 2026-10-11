@@ -71,7 +71,8 @@ public sealed class ImageCollectionEntry
     /// </summary>
     /// <remarks>
     /// A hotspot is cursor metadata, not a pixel offset: it never moves the image inside a canvas and is validated against
-    /// the size of this entry only.
+    /// the size of this entry only. A decoded entry carries it as the hotspot of its frame
+    /// (<see cref="FrameMetadata.Hotspot"/>).
     /// </remarks>
     public Point? Hotspot { get; }
 

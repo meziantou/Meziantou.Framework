@@ -23,6 +23,8 @@ public sealed class ApiSurfaceTests
         typeof(ResizeOptions),
         typeof(ConvolutionOptions),
         typeof(ConvolutionKernel),
+        typeof(AutoCropOptions),
+        typeof(IccColorTransformOptions),
         typeof(PngEncoder),
         typeof(GifEncoder),
         typeof(JpegEncoder),
@@ -40,6 +42,7 @@ public sealed class ApiSurfaceTests
     [InlineData(typeof(ImageFrame))]
     [InlineData(typeof(ImageFrameCollection))]
     [InlineData(typeof(ImageEncoder))]
+    [InlineData(typeof(AutoCropAnalysis))]
     public void ExtensibilityIsClosed(Type type)
     {
         // No codec plug-in, custom pixel or custom frame contract in v1: base types cannot be derived outside the library
@@ -55,10 +58,13 @@ public sealed class ApiSurfaceTests
     [InlineData(typeof(ImageReader<>))]
     [InlineData(typeof(ImageWriter<>))]
     [InlineData(typeof(ImageInfo))]
+    [InlineData(typeof(AutoCropAnalysis<>))]
     [InlineData(typeof(ImageMetadata))]
     [InlineData(typeof(FrameMetadata))]
     [InlineData(typeof(AnimationMetadata))]
     [InlineData(typeof(MetadataBlob))]
+    [InlineData(typeof(IccProfile))]
+    [InlineData(typeof(IccColorTransform))]
     [InlineData(typeof(CicpColorDescription))]
     public void ConcreteTypesAreSealed(Type type) => Assert.True(type.IsSealed, $"{type} must be sealed");
 
@@ -84,8 +90,8 @@ public sealed class ApiSurfaceTests
     public void AvifAdditionsHaveTheirPublicShape()
     {
         // A new format is appended: the values of the existing members never change
-        Assert.Equal(12, (int)ImageFormat.Avif);
-        Assert.Equal(nameof(ImageFormat.Avif), Enum.GetName((ImageFormat)12));
+        Assert.Equal(13, (int)ImageFormat.Avif);
+        Assert.Equal(nameof(ImageFormat.Avif), Enum.GetName((ImageFormat)13));
 
         // The CICP color description is an immutable value: a public constructor, get-only properties, value equality
         var type = typeof(CicpColorDescription);

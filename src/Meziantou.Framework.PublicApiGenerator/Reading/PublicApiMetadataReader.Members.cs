@@ -9,6 +9,7 @@ internal sealed partial class PublicApiMetadataReader
     private const string IsReadOnlyAttributeFullName = "System.Runtime.CompilerServices.IsReadOnlyAttribute";
     private const string RequiredMemberAttributeFullName = "System.Runtime.CompilerServices.RequiredMemberAttribute";
     private const string ExtensionAttributeFullName = "System.Runtime.CompilerServices.ExtensionAttribute";
+    internal const string PreserveBaseOverridesAttributeFullName = "System.Runtime.CompilerServices.PreserveBaseOverridesAttribute";
 
     private ImmutableArray<PublicApiMember> ReadMembers(TypeDefinitionHandle typeDefinitionHandle, TypeDefinition typeDefinition)
     {
@@ -55,7 +56,7 @@ internal sealed partial class PublicApiMetadataReader
             }
 
             // Accessors and static constructors are special-name methods
-            var isExplicitInterfaceImplementation = IsExplicitInterfaceImplementation(method.Attributes, name);
+            var isExplicitInterfaceImplementation = IsExplicitInterfaceImplementation(method.Attributes, name) && ImplementsVisibleInterface(methodHandle, explicitImplementations);
             if ((!IsExternallyVisible(method.Attributes) && !isExplicitInterfaceImplementation) ||
                 (method.Attributes.HasFlag(MethodAttributes.SpecialName) && !IsOperatorName(name)) ||
                 IsUnspeakableName(name, isExplicitInterfaceImplementation))
@@ -79,6 +80,28 @@ internal sealed partial class PublicApiMetadataReader
             return name.StartsWith('<', StringComparison.Ordinal) || name[(name.LastIndexOf(".", StringComparison.Ordinal) + 1)..].Contains('<', StringComparison.Ordinal);
 
         return name.Contains('<', StringComparison.Ordinal);
+    }
+
+    // The explicit implementation of a member of an interface that is not visible outside the assembly is not part of the public API
+    private bool ImplementsVisibleInterface(MethodDefinitionHandle methodHandle, Dictionary<MethodDefinitionHandle, List<EntityHandle>> explicitImplementations)
+    {
+        if (!explicitImplementations.TryGetValue(methodHandle, out var declarations))
+            return true;
+
+        foreach (var declaration in declarations)
+        {
+            var interfaceHandle = declaration.Kind switch
+            {
+                HandleKind.MemberReference => _metadataReader.GetMemberReference((MemberReferenceHandle)declaration).Parent,
+                HandleKind.MethodDefinition => _metadataReader.GetMethodDefinition((MethodDefinitionHandle)declaration).GetDeclaringType(),
+                _ => default,
+            };
+
+            if (interfaceHandle.IsNil || IsInterfaceExternallyVisible(interfaceHandle))
+                return true;
+        }
+
+        return false;
     }
 
     private static bool IsExplicitInterfaceImplementation(MethodAttributes attributes, string name)
@@ -120,10 +143,11 @@ internal sealed partial class PublicApiMetadataReader
         return blobReader.ReadCompressedInteger();
     }
 
-    private PublicApiField ReadField(TypeDefinitionHandle declaringTypeHandle, FieldDefinitionHandle fieldHandle, FieldDefinition field)
+    private PublicApiField ReadField(TypeDefinitionHandle declaringTypeHandle, FieldDefinitionHandle fieldHandle, FieldDefinition field, bool isEnumMember = false)
     {
         var customAttributes = field.GetCustomAttributes();
         var rawType = field.DecodeSignature(_typeProvider, BuildGenericContext(declaringTypeHandle));
+        var signatureType = rawType;
         var isVolatile = rawType.HasIsVolatileModifier;
         var refKind = PublicApiRefKind.None;
         if (rawType is RawType.ByReference byReference)
@@ -135,26 +159,41 @@ internal sealed partial class PublicApiMetadataReader
             rawType = byReference.ElementType;
         }
 
-        var type = TypeReferenceBuilder.Build(rawType, GetNullableMetadataInfo(declaringTypeHandle, customAttributes), GetTupleElementNames(customAttributes));
+        var dynamicIndex = TypeReferenceBuilder.GetDynamicIndex(signatureType, rawType);
+        var type = TypeReferenceBuilder.Build(rawType, GetNullableMetadataInfo(declaringTypeHandle, customAttributes), GetTupleElementNames(customAttributes), GetDynamicFlags(customAttributes, dynamicIndex), dynamicIndex);
         var isConst = field.Attributes.HasFlag(FieldAttributes.Literal);
         var hasConstantValue = !field.GetDefaultValue().IsNil;
         var constantValue = hasConstantValue ? DecodeConstantValue(_metadataReader.GetConstant(field.GetDefaultValue())) : null;
+
+        // A decimal constant is compiled to a static readonly field
+        var isReadOnly = field.Attributes.HasFlag(FieldAttributes.InitOnly);
+        if (isReadOnly && field.Attributes.HasFlag(FieldAttributes.Static) && TryGetDecimalConstant(customAttributes, out var decimalConstant))
+        {
+            isConst = true;
+            isReadOnly = false;
+            hasConstantValue = true;
+            constantValue = decimalConstant;
+        }
+
+        var name = _metadataReader.GetString(field.Name);
         var modifiers = new PublicApiMemberModifiers(
             IsStatic: field.Attributes.HasFlag(FieldAttributes.Static),
+            IsNew: _inheritedMemberResolver.GetInheritedMembers(declaringTypeHandle).IsHiddenBy(InheritedMemberKind.Field, name),
             RequiresUnsafe: IsRequiresUnsafeMember(customAttributes));
 
         return new PublicApiField(
-            _metadataReader.GetString(field.Name),
+            name,
             GetAccessibility(field.Attributes),
             ReadAttributes(customAttributes),
             CreateOrigin(fieldHandle),
             modifiers,
             type,
             refKind,
-            isReadOnly: field.Attributes.HasFlag(FieldAttributes.InitOnly),
+            isReadOnly,
             isConst,
             hasConstantValue,
             constantValue,
+            isEnumMember ? [] : GetEnumConstantMemberNames(rawType, constantValue),
             isVolatile,
             isRequired: HasAttribute(customAttributes, RequiredMemberAttributeFullName));
     }
@@ -175,16 +214,17 @@ internal sealed partial class PublicApiMetadataReader
         if (!includeGetter && !includeSetter)
         {
             // Explicit interface implementations have private accessors
-            includeGetter = getAccessor is not null && IsExplicitInterfaceImplementation(getAccessor.Value.Attributes, _metadataReader.GetString(getAccessor.Value.Name));
-            includeSetter = setAccessor is not null && IsExplicitInterfaceImplementation(setAccessor.Value.Attributes, _metadataReader.GetString(setAccessor.Value.Name));
+            includeGetter = getAccessor is not null && IsExplicitInterfaceImplementation(getAccessor.Value.Attributes, _metadataReader.GetString(getAccessor.Value.Name)) && ImplementsVisibleInterface(getAccessorHandle, explicitImplementations);
+            includeSetter = setAccessor is not null && IsExplicitInterfaceImplementation(setAccessor.Value.Attributes, _metadataReader.GetString(setAccessor.Value.Name)) && ImplementsVisibleInterface(setAccessorHandle, explicitImplementations);
             isExplicitInterfaceImplementation = includeGetter || includeSetter;
             if (!isExplicitInterfaceImplementation)
                 return null;
         }
 
-        var representativeAttributes = includeGetter && includeSetter
-            ? GetAccessibilityRank(getAccessor!.Value.Attributes) >= GetAccessibilityRank(setAccessor!.Value.Attributes) ? getAccessor.Value.Attributes : setAccessor.Value.Attributes
-            : includeGetter ? getAccessor!.Value.Attributes : setAccessor!.Value.Attributes;
+        var representativeAccessor = includeGetter && includeSetter
+            ? GetAccessibilityRank(getAccessor!.Value.Attributes) >= GetAccessibilityRank(setAccessor!.Value.Attributes) ? getAccessor.Value : setAccessor.Value
+            : includeGetter ? getAccessor!.Value : setAccessor!.Value;
+        var representativeAttributes = representativeAccessor.Attributes;
 
         var propertyAttributes = property.GetCustomAttributes();
         NullableMetadataInfo nullableInfo;
@@ -202,6 +242,7 @@ internal sealed partial class PublicApiMetadataReader
 
         var signature = property.DecodeSignature(_typeProvider, BuildGenericContext(declaringTypeHandle));
         var rawType = signature.ReturnType;
+        var signatureType = rawType;
         var refKind = PublicApiRefKind.None;
         if (rawType is RawType.ByReference byReference)
         {
@@ -218,7 +259,14 @@ internal sealed partial class PublicApiMetadataReader
             tupleElementNames = GetTupleElementNames(typeAttributes);
         }
 
-        var type = TypeReferenceBuilder.Build(rawType, nullableInfo, tupleElementNames);
+        var dynamicIndex = TypeReferenceBuilder.GetDynamicIndex(signatureType, rawType);
+        var dynamicFlags = GetDynamicFlags(propertyAttributes, dynamicIndex);
+        if (dynamicFlags.IsDefault)
+        {
+            dynamicFlags = GetDynamicFlags(typeAttributes, dynamicIndex);
+        }
+
+        var type = TypeReferenceBuilder.Build(rawType, nullableInfo, tupleElementNames, dynamicFlags, dynamicIndex);
 
         // Indexer parameters are named by the accessors
         var parameters = ImmutableArray<PublicApiParameter>.Empty;
@@ -230,7 +278,13 @@ internal sealed partial class PublicApiMetadataReader
 
         var getMethod = includeGetter ? ReadMethod(declaringTypeHandle, getAccessorHandle, PublicApiMethodKind.PropertyGet, explicitImplementations) : null;
         var setMethod = includeSetter ? ReadMethod(declaringTypeHandle, setAccessorHandle, PublicApiMethodKind.PropertySet, explicitImplementations) : null;
-        var modifiers = GetMethodModifiers(representativeAttributes, isExplicitInterfaceImplementation, IsRequiresUnsafeMember(propertyAttributes));
+        var modifiers = GetMethodModifiers(representativeAccessor, isExplicitInterfaceImplementation, IsRequiresUnsafeMember(propertyAttributes));
+        if (CanHideInheritedMember(modifiers))
+        {
+            var inheritedMembers = _inheritedMemberResolver.GetInheritedMembers(declaringTypeHandle);
+            modifiers = modifiers with { IsNew = inheritedMembers.ContainsName(name) && inheritedMembers.IsHiddenBy(InheritedMemberKind.Property, name, arity: 0, InheritedMemberResolver.GetParameterList(_metadataReader, property)) };
+        }
+
         var accessibility = isExplicitInterfaceImplementation ? PublicApiAccessibility.Private : GetAccessibility(representativeAttributes);
         var isReadOnly = (getMethod is null || getMethod.IsReadOnly) && (setMethod is null || setMethod.IsReadOnly);
 
@@ -288,7 +342,7 @@ internal sealed partial class PublicApiMetadataReader
         var isExplicitInterfaceImplementation = false;
         if (!IsExternallyVisible(addMethodDefinition.Attributes))
         {
-            isExplicitInterfaceImplementation = IsExplicitInterfaceImplementation(addMethodDefinition.Attributes, _metadataReader.GetString(addMethodDefinition.Name));
+            isExplicitInterfaceImplementation = IsExplicitInterfaceImplementation(addMethodDefinition.Attributes, _metadataReader.GetString(addMethodDefinition.Name)) && ImplementsVisibleInterface(accessors.Adder, explicitImplementations);
             if (!isExplicitInterfaceImplementation)
                 return null;
         }
@@ -303,8 +357,14 @@ internal sealed partial class PublicApiMetadataReader
             tupleElementNames = GetTupleElementNames(addValueAttributes);
         }
 
+        var dynamicFlags = GetDynamicFlags(eventAttributes);
+        if (dynamicFlags.IsDefault)
+        {
+            dynamicFlags = GetDynamicFlags(addValueAttributes);
+        }
+
         var rawType = addSignature.Signature.ParameterTypes.Length > 0 ? addSignature.Signature.ParameterTypes[0] : _typeProvider.GetPrimitiveType(PrimitiveTypeCode.Object);
-        var type = TypeReferenceBuilder.Build(rawType, nullableInfo, tupleElementNames);
+        var type = TypeReferenceBuilder.Build(rawType, nullableInfo, tupleElementNames, dynamicFlags);
 
         var addMethod = ReadMethod(declaringTypeHandle, accessors.Adder, PublicApiMethodKind.EventAdd, explicitImplementations);
         var removeMethod = ReadEventAccessor(declaringTypeHandle, accessors.Remover, PublicApiMethodKind.EventRemove, explicitImplementations);
@@ -323,12 +383,19 @@ internal sealed partial class PublicApiMetadataReader
             }
         }
 
+        var name = _metadataReader.GetString(eventDefinition.Name);
+        var modifiers = GetMethodModifiers(addMethodDefinition, isExplicitInterfaceImplementation, IsRequiresUnsafeMember(eventAttributes));
+        if (CanHideInheritedMember(modifiers))
+        {
+            modifiers = modifiers with { IsNew = _inheritedMemberResolver.GetInheritedMembers(declaringTypeHandle).IsHiddenBy(InheritedMemberKind.Event, name) };
+        }
+
         var result = new PublicApiEvent(
-            _metadataReader.GetString(eventDefinition.Name),
+            name,
             isExplicitInterfaceImplementation ? PublicApiAccessibility.Private : GetAccessibility(addMethodDefinition.Attributes),
             ReadAttributes(eventAttributes),
             CreateOrigin(eventHandle),
-            GetMethodModifiers(addMethodDefinition.Attributes, isExplicitInterfaceImplementation, IsRequiresUnsafeMember(eventAttributes)),
+            modifiers,
             explicitReferences.ToImmutable(),
             type,
             addMethod,
@@ -362,6 +429,7 @@ internal sealed partial class PublicApiMetadataReader
         var returnAttributes = GetParameterCustomAttributes(method, sequenceNumber: 0);
         var returnNullableInfo = GetNullableMetadataInfo(declaringTypeHandle, returnAttributes, methodHandle);
         var rawReturnType = signature.Signature.ReturnType;
+        var returnSignatureType = rawReturnType;
         var returnRefKind = PublicApiRefKind.None;
         if (rawReturnType is RawType.ByReference byReference)
         {
@@ -371,7 +439,8 @@ internal sealed partial class PublicApiMetadataReader
             rawReturnType = byReference.ElementType;
         }
 
-        var returnType = TypeReferenceBuilder.Build(rawReturnType, returnNullableInfo, GetTupleElementNames(returnAttributes));
+        var returnDynamicIndex = TypeReferenceBuilder.GetDynamicIndex(returnSignatureType, rawReturnType);
+        var returnType = TypeReferenceBuilder.Build(rawReturnType, returnNullableInfo, GetTupleElementNames(returnAttributes), GetDynamicFlags(returnAttributes, returnDynamicIndex), returnDynamicIndex);
         var isExtensionMethod = method.Attributes.HasFlag(MethodAttributes.Static) && HasAttribute(customAttributes, ExtensionAttributeFullName);
         var parameters = ReadParameters(declaringTypeHandle, methodHandle, method, signature.Signature.ParameterTypes, isExtensionMethod);
         var genericParameters = ReadGenericParameters(method.GetGenericParameters(), BuildGenericContext(declaringTypeHandle, methodHandle), declaringTypeHandle, methodHandle);
@@ -393,12 +462,20 @@ internal sealed partial class PublicApiMetadataReader
             explicitReferences = builder.ToImmutable();
         }
 
+        // Accessors, constructors, destructors and operators do not hide inherited members
+        var modifiers = GetMethodModifiers(method, isExplicitInterfaceImplementation, IsRequiresUnsafeMember(customAttributes));
+        if (kind == PublicApiMethodKind.Ordinary && CanHideInheritedMember(modifiers))
+        {
+            var inheritedMembers = _inheritedMemberResolver.GetInheritedMembers(declaringTypeHandle);
+            modifiers = modifiers with { IsNew = inheritedMembers.ContainsName(name) && inheritedMembers.IsHiddenBy(InheritedMemberKind.Method, name, genericParameters.Length, InheritedMemberResolver.GetParameterList(_metadataReader, method)) };
+        }
+
         return new PublicApiMethod(
             name,
             isExplicitInterfaceImplementation ? PublicApiAccessibility.Private : GetAccessibility(method.Attributes),
             ReadAttributes(customAttributes),
             CreateOrigin(methodHandle),
-            GetMethodModifiers(method.Attributes, isExplicitInterfaceImplementation, IsRequiresUnsafeMember(customAttributes)),
+            modifiers,
             explicitReferences,
             kind,
             returnType,
@@ -411,12 +488,15 @@ internal sealed partial class PublicApiMetadataReader
             isInitOnly: kind == PublicApiMethodKind.PropertySet && signature.ContainsIsExternalInitModifier);
     }
 
-    private static PublicApiMemberModifiers GetMethodModifiers(MethodAttributes attributes, bool isExplicitInterfaceImplementation, bool requiresUnsafe)
+    private PublicApiMemberModifiers GetMethodModifiers(MethodDefinition method, bool isExplicitInterfaceImplementation, bool requiresUnsafe)
     {
+        var attributes = method.Attributes;
         var isAbstract = attributes.HasFlag(MethodAttributes.Abstract);
         var isVirtual = attributes.HasFlag(MethodAttributes.Virtual);
         var isFinal = attributes.HasFlag(MethodAttributes.Final);
-        var isNewSlot = attributes.HasFlag(MethodAttributes.NewSlot);
+
+        // An override with a covariant return type has its own slot. The compiler marks it with PreserveBaseOverridesAttribute.
+        var isNewSlot = attributes.HasFlag(MethodAttributes.NewSlot) && !HasAttribute(method.GetCustomAttributes(), PreserveBaseOverridesAttributeFullName);
         return new PublicApiMemberModifiers(
             IsStatic: attributes.HasFlag(MethodAttributes.Static),
             IsAbstract: isAbstract,
@@ -426,6 +506,9 @@ internal sealed partial class PublicApiMetadataReader
             RequiresUnsafe: requiresUnsafe,
             IsExplicitInterfaceImplementation: isExplicitInterfaceImplementation);
     }
+
+    // An override or an explicit interface implementation cannot have the new modifier
+    private static bool CanHideInheritedMember(PublicApiMemberModifiers modifiers) => !modifiers.IsOverride && !modifiers.IsExplicitInterfaceImplementation;
 
     private ImmutableArray<PublicApiParameter> ReadParameters(TypeDefinitionHandle declaringTypeHandle, MethodDefinitionHandle methodHandle, MethodDefinition method, ImmutableArray<RawType> parameterTypes, bool isExtensionMethod)
     {
@@ -457,14 +540,22 @@ internal sealed partial class PublicApiMetadataReader
                     hasDefaultValue = true;
                     defaultValue = DecodeConstantValue(_metadataReader.GetConstant(parameter.GetDefaultValue()));
                 }
+                else if (TryGetDecimalConstant(customAttributes, out var decimalConstant))
+                {
+                    hasDefaultValue = true;
+                    defaultValue = decimalConstant;
+                }
             }
 
             var rawType = parameterTypes[i];
+            var signatureType = rawType;
             var refKind = PublicApiRefKind.None;
             if (rawType is RawType.ByReference byReference)
             {
                 var elementType = byReference.ElementType;
-                if (parameterAttributes.HasFlag(ParameterAttributes.Out))
+
+                // [In, Out] can be set on a ref parameter in interop signatures
+                if (parameterAttributes.HasFlag(ParameterAttributes.Out) && !parameterAttributes.HasFlag(ParameterAttributes.In))
                 {
                     refKind = PublicApiRefKind.Out;
                 }
@@ -488,7 +579,8 @@ internal sealed partial class PublicApiMetadataReader
             }
 
             var nullableInfo = GetNullableMetadataInfo(declaringTypeHandle, customAttributes, methodHandle);
-            var type = TypeReferenceBuilder.Build(rawType, nullableInfo, GetTupleElementNames(customAttributes));
+            var dynamicIndex = TypeReferenceBuilder.GetDynamicIndex(signatureType, rawType);
+            var type = TypeReferenceBuilder.Build(rawType, nullableInfo, GetTupleElementNames(customAttributes), GetDynamicFlags(customAttributes, dynamicIndex), dynamicIndex);
             result.Add(new PublicApiParameter(
                 name,
                 i,
@@ -502,6 +594,7 @@ internal sealed partial class PublicApiMetadataReader
                 isOptional: parameterAttributes.HasFlag(ParameterAttributes.Optional),
                 hasDefaultValue,
                 defaultValue,
+                GetEnumConstantMemberNames(rawType, defaultValue),
                 hasOutAttribute: parameterAttributes.HasFlag(ParameterAttributes.Out)));
         }
 

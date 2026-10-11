@@ -117,9 +117,10 @@ internal sealed class ImageWriterCore : IDisposable, IAsyncDisposable
     }
 
     /// <summary>
-    /// Runs the codec preflight (<see cref="ImageEncoderSession.ValidateFrame"/>) on every image of an eager save before any
-    /// output, so that an unrepresentable frame (for example a duration that does not fit the format) fails before the first
-    /// byte instead of after the preceding frames were written.
+    /// Runs the frame preflight (the metadata policy of the frame settings, then <see cref="ImageEncoderSession.ValidateFrame"/>)
+    /// on every image of an eager save before any output, so that an unrepresentable frame (for example a duration that does
+    /// not fit the format, or a cursor hotspot the format cannot store) fails before the first byte instead of after the
+    /// preceding frames were written.
     /// </summary>
     /// <param name="poster">The separate poster, if any.</param>
     /// <param name="frames">The displayed frames.</param>
@@ -129,12 +130,12 @@ internal sealed class ImageWriterCore : IDisposable, IAsyncDisposable
         var session = _session ?? throw new InvalidOperationException("The writer has no active encoding session.");
         if (poster is not null)
         {
-            session.ValidateFrame(poster, isPoster: true);
+            Preflight(session, poster, isPoster: true);
         }
 
         foreach (var frame in frames)
         {
-            session.ValidateFrame(frame, isPoster: false);
+            Preflight(session, frame, isPoster: false);
         }
     }
 
@@ -312,6 +313,9 @@ internal sealed class ImageWriterCore : IDisposable, IAsyncDisposable
     {
         var encoder = snapshot.Encoder!;
         var capabilities = ImageOutputCapabilities.ForWriter(snapshot);
+        if (capabilities.RequiresSeekableOutput && capabilities.Format == ImageFormat.Ani && stream is { CanSeek: false })
+            throw new ArgumentException("ANI output requires a seekable stream: the frame and step counts and the sizes are written before the frames and patched once every frame is written. Write to a seekable stream or a path.", nameof(stream));
+
         if (capabilities.RequiresSeekableOutput && stream is { CanSeek: false })
             throw new ArgumentException($"{capabilities.Name} animation output requires a seekable stream: the file size is written before the frames and patched once every frame is written. Write to a seekable stream or a path, or write a still image (ImageWriterOptions.ExpectedFrameCount = 1, no animation settings).", nameof(stream));
 
@@ -439,7 +443,7 @@ internal sealed class ImageWriterCore : IDisposable, IAsyncDisposable
             throw new InvalidOperationException("The poster frame must be written before the first displayed frame.");
 
         ValidateFrameShape(frame);
-        _session!.ValidateFrame(frame, isPoster: true);
+        Preflight(_session!, frame, isPoster: true);
     }
 
     private void ValidateFrame(ImageFrame frame)
@@ -453,7 +457,17 @@ internal sealed class ImageWriterCore : IDisposable, IAsyncDisposable
         }
 
         ValidateFrameShape(frame);
-        _session!.ValidateFrame(frame, isPoster: false);
+        Preflight(_session!, frame, isPoster: false);
+    }
+
+    /// <summary>
+    /// The preflight of one frame, shared by eager saves and sequential writes: the metadata policy of the per-frame
+    /// settings (a cursor hotspot the output cannot store), then the codec's own checks.
+    /// </summary>
+    private void Preflight(ImageEncoderSession session, ImageFrame frame, bool isPoster)
+    {
+        MetadataWritePlan.ValidateFrameMetadata(frame.MetadataCore, Format, Options.Encoder!.MetadataHandling);
+        session.ValidateFrame(frame, isPoster);
     }
 
     private void ValidateFrameShape(ImageFrame frame)

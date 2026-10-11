@@ -51,8 +51,14 @@ public enum ImageFormat
     Cur = 11,
 
     /// <summary>
+    /// Windows animated cursor (RIFF <c>ACON</c> container): an animation whose frames are icon or cursor images, each
+    /// with its own hotspot (<see cref="Metadata.FrameMetadata.Hotspot"/>).
+    /// </summary>
+    Ani = 12,
+
+    /// <summary>
     /// AV1 Image File Format: still images and image sequences coded with AV1 in an ISO base media (HEIF) container.
     /// Decoding only: there is no AVIF encoder.
     /// </summary>
-    Avif = 12,
+    Avif = 13,
 }

@@ -9,7 +9,8 @@ public enum FrameDurationRounding
 
     /// <summary>
     /// Rounds each duration to the nearest representable value (ties round up): the nearest hundredth for GIF, the nearest
-    /// fraction with 16-bit numerator and denominator for APNG.
+    /// millisecond for WebP, the nearest sixtieth of a second for ANI, the nearest fraction with 16-bit numerator and
+    /// denominator for APNG.
     /// </summary>
     RoundToNearest = 1,
 }

@@ -11,16 +11,21 @@ internal sealed partial class PublicApiMetadataReader
         var metadataName = _metadataReader.GetString(typeDefinition.Name);
         var genericContext = BuildGenericContext(typeDefinitionHandle);
         var typeKind = GetTypeKind(typeDefinition);
-        var flags = GetTypeFlags(typeDefinition, typeKind);
         var allGenericParameters = ReadGenericParameters(typeDefinition.GetGenericParameters(), genericContext, typeDefinitionHandle, methodHandle: default);
         var ownGenericParameterCount = Math.Max(0, allGenericParameters.Length - declaringTypeGenericParameterCount);
+        var declaringTypeHandle = typeDefinition.GetDeclaringType();
+        var flags = GetTypeFlags(typeDefinition, typeKind) with
+        {
+            IsNew = !declaringTypeHandle.IsNil && _inheritedMemberResolver.GetInheritedMembers(declaringTypeHandle).IsHiddenBy(InheritedMemberKind.Type, MetadataNameHelper.RemoveGenericArity(metadataName), ownGenericParameterCount),
+        };
 
         PublicApiTypeReference? baseType = null;
         if (!typeDefinition.BaseType.IsNil)
         {
             // The NullableAttribute of a type definition describes its base type
             var nullableInfo = GetNullableMetadataInfo(typeDefinitionHandle, typeDefinition.GetCustomAttributes());
-            baseType = TypeReferenceBuilder.Build(DecodeTypeFromEntityHandle(typeDefinition.BaseType, genericContext), nullableInfo);
+            var typeAttributes = typeDefinition.GetCustomAttributes();
+            baseType = TypeReferenceBuilder.Build(DecodeTypeFromEntityHandle(typeDefinition.BaseType, genericContext), nullableInfo, GetTupleElementNames(typeAttributes), GetDynamicFlags(typeAttributes));
         }
 
         var interfaces = ReadInterfaces(typeDefinitionHandle, typeDefinition, genericContext);
@@ -210,7 +215,7 @@ internal sealed partial class PublicApiMetadataReader
             if (!field.Attributes.HasFlag(FieldAttributes.Literal) || field.Attributes.HasFlag(FieldAttributes.SpecialName))
                 continue;
 
-            result.Add(ReadField(typeDefinitionHandle, fieldHandle, field));
+            result.Add(ReadField(typeDefinitionHandle, fieldHandle, field, isEnumMember: true));
         }
 
         return result.ToImmutable();

@@ -44,8 +44,9 @@ public sealed class ImageMetadata
     /// (sRGB encoded, or described by <see cref="IccProfile"/>).
     /// </summary>
     /// <remarks>
-    /// This is a label: no operation converts the pixels. Linear-light resizing (<see cref="ResizeWorkingSpace.LinearSrgb"/>)
-    /// and convolution (<see cref="ConvolutionWorkingSpace.LinearSrgb"/>) filter
+    /// This is a label: setting it does not convert the pixels. <see cref="ImageProcessingExtensions.ConvertColorProfile"/>
+    /// converts <see cref="ColorTransferFunction.Linear"/> samples as linear light and resets the label. Linear-light
+    /// resizing (<see cref="ResizeWorkingSpace.LinearSrgb"/>) and convolution (<see cref="ConvolutionWorkingSpace.LinearSrgb"/>) filter
     /// <see cref="ColorTransferFunction.Linear"/> samples directly, as they already are linear light. Only QOI stores
     /// <see cref="ColorTransferFunction.Linear"/>; other encoders treat it as metadata they cannot store
     /// (<see cref="Formats.ImageEncoder.MetadataHandling"/>).
@@ -108,7 +109,7 @@ public sealed class ImageMetadata
     }
 
     /// <summary>
-    /// Reconciles the metadata after a geometry change (crop, resize, rotation) that produced a canvas of
+    /// Reconciles the metadata after a geometry change (crop, auto-crop, resize, rotation) that produced a canvas of
     /// <paramref name="newSize"/>: existing EXIF pixel-dimension tags are updated and the EXIF thumbnail, now stale, is
     /// removed (its bytes are zeroed, never re-emitted). The typed <see cref="Orientation"/> is kept; it is written to the
     /// EXIF data when the image is serialized. A malformed EXIF profile is left unchanged (serializing it fails).

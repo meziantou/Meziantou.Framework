@@ -1,7 +1,8 @@
 # Meziantou.Framework.Imaging
 
-A fully managed image library: PNG/APNG, GIF, JPEG, WebP, QOI, BMP, TGA, Netpbm, TIFF and ICO/CUR decoding and encoding,
-AVIF decoding (with its own AV1 decoder), animation-aware processing, and bounded-memory streaming readers and writers.
+A fully managed image library: PNG/APNG, GIF, JPEG, WebP, QOI, BMP, TGA, Netpbm, TIFF, ICO/CUR and ANI decoding and
+encoding, AVIF decoding (with its own AV1 decoder), animation-aware processing, ICC color conversion, and bounded-memory
+streaming readers and writers.
 
 These instructions complete the repository-level `AGENTS.md`. The user guide is [readme.md](readme.md): it states what
 the library guarantees to its callers (support matrix, limitations, defaults). Keep the code, the XML documentation and
@@ -19,7 +20,8 @@ the library guarantees to its callers (support matrix, limitations, defaults). K
 - No public allocator, custom pixel type, codec plug-in or image-processor interface. Implementation types are `internal`
   and live under `Internals/`.
 - Public namespaces: `Meziantou.Framework.Imaging`, `.Metadata` and `.Formats` (encoder settings). The base types of the
-  model (`Image`, `ImageFrame`, `ImageFrameCollection`, `ImageEncoder`) cannot be derived outside the library.
+  model (`Image`, `ImageFrame`, `ImageFrameCollection`, `ImageEncoder`, `AutoCropAnalysis`) cannot be derived outside the
+  library.
 - Every public member has XML documentation (`DisableDocumentationWarnings` is `false`).
 - `Meziantou.Framework.FullPath` is used by the tests, benchmarks and tools, never by the library.
 
@@ -27,7 +29,8 @@ the library guarantees to its callers (support matrix, limitations, defaults). K
 
 - **Never lose information silently.** Losing alpha, precision, animation, a poster, metadata or a color profile needs an
   explicit setting; otherwise throw `UnsupportedImageFeatureException`. Color profiles are preserved and labeled, never
-  applied.
+  applied implicitly: only `ConvertColorProfile` and `IccColorTransform` convert colors, and the pixels and their
+  profile always change together.
 - **An image holds full displayed frames**, not encoded deltas; decoders composite, encoders write what they are given.
   Timing is exact (`FrameDuration` is a rational number); a duration or play count the output format cannot represent is
   an error unless a rounding policy is set.
@@ -48,7 +51,7 @@ the library guarantees to its callers (support matrix, limitations, defaults). K
 - **Resource limits** (`ImageResourceLimits`) are enforced incrementally, before allocating or consuming. They are
   inclusive and always positive (no zero-as-unlimited). A limit failure is never turned into a truncation error or a
   success. Test each limit at the boundary and one over.
-- **Atomicity.** Geometry-changing operations (crop, resize, rotate, auto-orient) are transactional across all frames and
+- **Atomicity.** Geometry-changing operations (crop, auto-crop, resize, rotate, auto-orient) are transactional across all frames and
   the poster. Pixel-only edits may be partially applied on failure but leave the image valid and disposable. A failed
   operation releases every resource it acquired.
 - **Ownership.** Images are owned and disposed by their creator. Frames are borrowed views: they are not disposable and
@@ -76,10 +79,17 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
 `Internals/IO` and `Internals/Codecs`:
 
 - Identifiers and decoders are synchronous push-model parsers (`ImageParser<TResult>`): they consume what they can and
-  return `Complete` or `NeedMoreData(n)`. The driver (`ImageInputPump`) performs the I/O, so the same parser serves the
-  sync and async APIs and CPU work never runs in `Task.Run`. Parsers check cancellation between rows and frames.
-- Streams are read forward only, never rewound, and never read past `MaxEncodedBytes`. Spans and streams must fail
-  identically at the same boundary.
+  return `Complete`, `NeedMoreData(n)`, or `NeedMoreDataOrEnd(n)` when the end of the input satisfies the request too. The
+  driver (`ImageInputPump`) performs the I/O, so the same parser serves the sync and async APIs and CPU work never runs in
+  `Task.Run`. Parsers check cancellation between rows and frames.
+- Streams are read forward only and never rewound, and no byte past `MaxEncodedBytes` reaches a parser.
+  `MaxEncodedBytes` equal to the input length is always enough, and spans and streams fail identically at the same
+  boundary, with the same `Requested`.
+- A span knows where it ends; a stream only says so when it is read past its end. A parser that needs the end of the
+  input (a trailer located from the last bytes, an optional terminator, a container buffered whole) must ask with
+  `NeedMoreDataOrEnd`, never with `NeedMoreData`: at the limit, the driver then reads one discarded byte
+  (`ImageInputBuffer.ProbeEndOfInput`) to tell an input that ends there from a longer one. It is the only read past the
+  limit; do not add another.
 - Each format has a structure parser (container rules, written once and walked as header, full scan or decode), a pixel
   decoder that observes it, and an encoder codec. Decoders hand rows to a `DecodedFrameSink` in a lossless source layout;
   the sink converts to the requested pixel format and charges frames before allocating them.
@@ -101,6 +111,34 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   are dropped, and a temporal unit with several spatial layers outputs the frame of its highest layer (what a player
   shows, and what `lsel`-less layered AVIF images present). `OutputAllLayers` is for conformance tests only.
 - `ZLibStream` reports truncation as a clean end: check that the expected number of bytes was produced.
+
+## Color management
+
+`IccColorTransform` (sample buffers) and `ConvertColorProfile` (images) are the only code that applies an ICC profile;
+everything is under `Internals/Color`.
+
+- Written from ICC.1:2001-04 (version 2 profiles), ICC.1:2022 (version 4 profiles) and Adobe's published black point
+  compensation algorithm. Never port code from another color management system; cite the clause in the code.
+- A profile is untrusted input. Validate every size against the tag before reading (64-bit arithmetic for table
+  sizes), read color lookup tables in place (`ReadOnlyMemory<byte>`, no copy) so that a transform only copies
+  one-dimensional curves, and allocate nothing per conversion (`PerformanceContractTests`). A malformed profile is `InvalidImageContentException`; a valid profile that is not
+  supported or cannot be a destination is `UnsupportedImageFeatureException`. Nothing else may escape
+  (`ColorProfileFuzzTests`).
+- A conversion is a list of `IccStage` evaluated in `double`, one color at a time (`ColorConversionKernels.ConvertScalar`
+  is the numerical reference). Both profiles meet in CIEXYZ relative to D50. A faster kernel must be bit-identical and
+  proven so in `VectorizedKernelTests`.
+- The interpolation of color lookup tables (simplex along the main diagonal for gray, RGB and CIEXYZ inputs,
+  multilinear for CIELAB and CMYK inputs), the generalized inverse of tone curves and the black point estimates are
+  part of the documented numerical contract: change them only with `readme.md` and the tests.
+- Tests have three independent sources: literals computed outside the library (`IccColorTransformTests`), the decimal
+  reference of the harness (`ReferenceIccTransform`, `ColorConversionReferenceTests`), and colors converted by LittleCMS
+  (`colorTransforms` of the corpus, `ColorConversionGoldenTests`). The reference shares the reading of the
+  specification with the library: only the LittleCMS vectors and the literals catch an error of interpretation, so a
+  new tag type or encoding needs one of them. Synthetic profiles are built by `Common/IccProfileBuilder.cs` of the
+  corpus generator (no dependency on the library), shared with the tests through `IccTestProfiles`: add a profile
+  there, then a conversion to `IccCorpus.cs`. The fixtures README lists what LittleCMS cannot judge (CMYK
+  interpolation between grid points, three black point compensation cases).
+- Pixels and their profile change together: `ConvertColorProfile` is transactional. No other operation converts colors.
 
 ## Performance work
 
@@ -186,6 +224,9 @@ dotnet publish tests/Meziantou.Framework.Imaging.AotSmoke -c Release -f net11.0 
   dotnet run --project tools/Meziantou.Framework.Imaging.CorpusGenerator -- <generator> --write    # replace the fixtures
   dotnet run --project tools/Meziantou.Framework.Imaging.CorpusGenerator -- verify                 # re-decode with the pinned tools
   ```
+
+  The `icc` generator (color profiles and LittleCMS vectors) also needs `--icc-profiles <directory>`: see the fixtures
+  README.
 
   The coverage tables of the fixtures README are checked against the manifest (`FixtureCoverageMatrixTests`): update them
   when fixtures or feature tags change.

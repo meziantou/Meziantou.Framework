@@ -34,6 +34,9 @@ internal sealed class IcoEncoderCodec : ImageEncoderCodec
         {
             ArgumentNullException.ThrowIfNull(frame);
             IcoDocumentWriter.ValidateSize(Options.Capabilities.Format, frame.Size);
+
+            // Reported before any output: a DIB payload requested for 16-bit samples would discard precision
+            _ = IcoDocumentWriter.UsesPngPayload(Options.Capabilities.Format, ((IcoEncoder)Options.Encoder).PayloadFormat, frame.Size, Options.PixelFormat);
         }
 
         public override void BeginPosterFrame(ImageFrame frame) => throw new InvalidOperationException("Icon output has no poster frame.");
@@ -59,7 +62,7 @@ internal sealed class IcoEncoderCodec : ImageEncoderCodec
             var encoder = (IcoEncoder)Options.Encoder;
             IcoDocumentWriter.Write(
                 encoder,
-                [new IcoDocumentWriter.Entry(_frame!, Options.PixelFormat, Hotspot: null)],
+                [new IcoDocumentWriter.Entry(_frame!, Options.PixelFormat, Options.Capabilities.SupportsFrameHotspot ? _frame!.MetadataCore.Hotspot : null)],
                 output,
                 Options.Scope,
                 Options.Configuration,

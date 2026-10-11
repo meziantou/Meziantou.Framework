@@ -18,7 +18,7 @@ namespace Meziantou.Framework
 
     public readonly struct ObjectMethodExecutorAwaitable
     {
-        public Awaiter GetAwaiter() => throw null;
+        public Meziantou.Framework.ObjectMethodExecutorAwaitable.Awaiter GetAwaiter() => throw null;
         public readonly struct Awaiter : System.Runtime.CompilerServices.ICriticalNotifyCompletion, System.Runtime.CompilerServices.INotifyCompletion
         {
             public bool IsCompleted { get => throw null; }

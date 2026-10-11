@@ -25,13 +25,15 @@ namespace Meziantou.Extensions.Logging.InMemory
         public System.Collections.Generic.IEnumerable<Meziantou.Extensions.Logging.InMemory.InMemoryLogEntry> Criticals { get => throw null; }
         public void Clear() { }
         public override string ToString() => throw null;
-        public Enumerator GetEnumerator() => throw null;
+        public Meziantou.Extensions.Logging.InMemory.InMemoryLogCollection.Enumerator GetEnumerator() => throw null;
+        System.Collections.Generic.IEnumerator<Meziantou.Extensions.Logging.InMemory.InMemoryLogEntry> System.Collections.Generic.IEnumerable<Meziantou.Extensions.Logging.InMemory.InMemoryLogEntry>.GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
         public bool Contains(System.Func<Meziantou.Extensions.Logging.InMemory.InMemoryLogEntry, bool> predicate) => throw null;
         public Meziantou.Extensions.Logging.InMemory.InMemoryLogEntry? Find(System.Func<Meziantou.Extensions.Logging.InMemory.InMemoryLogEntry, bool> predicate) => throw null;
         public struct Enumerator : System.Collections.Generic.IEnumerator<Meziantou.Extensions.Logging.InMemory.InMemoryLogEntry>, System.Collections.IEnumerator, System.IDisposable
         {
             public readonly Meziantou.Extensions.Logging.InMemory.InMemoryLogEntry Current { get => throw null; }
+            readonly object System.Collections.IEnumerator.Current { get => throw null; }
             public Enumerator(Meziantou.Extensions.Logging.InMemory.InMemoryLogCollection collection) { }
             public bool MoveNext() => throw null;
             public readonly void Dispose() { }
@@ -59,7 +61,7 @@ namespace Meziantou.Extensions.Logging.InMemory
         public Meziantou.Extensions.Logging.InMemory.InMemoryLogCollection Logs { get => throw null; }
         public static Meziantou.Extensions.Logging.InMemory.IInMemoryLogger CreateLogger(string category, Meziantou.Extensions.Logging.InMemory.InMemoryLogCollection? logs = null, Microsoft.Extensions.Logging.IExternalScopeProvider? scopeProvider = null, System.TimeProvider? timeProvider = null) => throw null;
         public static Meziantou.Extensions.Logging.InMemory.IInMemoryLogger<T> CreateLogger<T>(Meziantou.Extensions.Logging.InMemory.InMemoryLogCollection? logs = null, Microsoft.Extensions.Logging.IExternalScopeProvider? scopeProvider = null, System.TimeProvider? timeProvider = null) => throw null;
-        public System.IDisposable? BeginScope<TState>(TState state) => throw null;
+        public System.IDisposable? BeginScope<TState>(TState state) where TState : notnull => throw null;
         public bool IsEnabled(Microsoft.Extensions.Logging.LogLevel logLevel) => throw null;
         public void Log<TState>(Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, TState state, System.Exception? exception, System.Func<TState, System.Exception?, string> formatter) { }
     }

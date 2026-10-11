@@ -17,7 +17,7 @@ namespace Meziantou.Extensions.Logging.Xunit.v3
         public XUnitLogger(Xunit.ITestOutputHelper? testOutputHelper, Microsoft.Extensions.Logging.LoggerExternalScopeProvider scopeProvider, string? categoryName, Meziantou.Extensions.Logging.Xunit.v3.XUnitLoggerOptions? options) { }
         public XUnitLogger(Xunit.ITestOutputHelper? testOutputHelper, Microsoft.Extensions.Logging.IExternalScopeProvider scopeProvider, string? categoryName, Meziantou.Extensions.Logging.Xunit.v3.XUnitLoggerOptions? options) { }
         public bool IsEnabled(Microsoft.Extensions.Logging.LogLevel logLevel) => throw null;
-        public System.IDisposable? BeginScope<TState>(TState state) => throw null;
+        public System.IDisposable? BeginScope<TState>(TState state) where TState : notnull => throw null;
         public void Log<TState>(Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, TState state, System.Exception? exception, System.Func<TState, System.Exception?, string> formatter) { }
     }
 

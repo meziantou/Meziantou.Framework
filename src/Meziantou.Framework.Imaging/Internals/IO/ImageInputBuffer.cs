@@ -11,9 +11,15 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <para>
 /// The buffer is rented from the operation's <see cref="AllocationScope"/> (decoder state). It grows only up to the largest
 /// contiguous request of a parser (bounded structures such as one metadata segment). No byte beyond
-/// <see cref="ImageResourceLimits.MaxEncodedBytes"/> is read from the stream, so the parser examines exactly the same bytes
-/// as with an in-memory span. Consumed bytes are charged to the per-input tracker. Bytes read ahead are consumed from the
-/// caller's stream: eager APIs do not rewind.
+/// <see cref="ImageResourceLimits.MaxEncodedBytes"/> is buffered, so the parser examines exactly the same bytes as with an
+/// in-memory span. Consumed bytes are charged to the per-input tracker. Bytes read ahead are consumed from the caller's
+/// stream: eager APIs do not rewind.
+/// </para>
+/// <para>
+/// A stream only reports its end by returning no byte, so telling an input that ends exactly at the limit from one that
+/// exceeds it takes one read past the limit: <see cref="ProbeEndOfInput"/> reads a single byte, which is never buffered
+/// and never handed to a parser. It is the only read past the limit, and the driver only issues it for a request the end
+/// of the input satisfies (<see cref="ParseStatus.NeedMoreDataOrEnd"/>, the format detection prefix).
 /// </para>
 /// <para>
 /// Synchronous fills use <see cref="Stream.Read(Span{byte})"/>; asynchronous fills use
@@ -32,6 +38,8 @@ internal sealed class ImageInputBuffer : IDisposable, IAsyncDisposable
     private int _start;
     private int _end;
     private bool _endOfInput;
+    private bool _exceedsLimit;
+    private byte[]? _probe;
 
     public ImageInputBuffer(Stream stream, bool ownsStream, ImageCodecContext context, int initialCapacity = DefaultCapacity)
     {
@@ -88,8 +96,14 @@ internal sealed class ImageInputBuffer : IDisposable, IAsyncDisposable
     public bool IsReadLimitReached => !_endOfInput && Position + BufferedLength >= _context.Limits.MaxEncodedBytes;
 
     /// <summary>
+    /// Gets a value indicating whether a probe found a byte past <see cref="ImageResourceLimits.MaxEncodedBytes"/>: the
+    /// input is longer than the limit allows.
+    /// </summary>
+    public bool ExceedsLimit => _exceedsLimit;
+
+    /// <summary>
     /// Reads until at least <paramref name="minimum"/> unconsumed bytes are buffered, the stream ends, or the encoded-byte
-    /// limit is reached: no byte beyond <see cref="ImageResourceLimits.MaxEncodedBytes"/> is ever read from the stream.
+    /// limit is reached: this method never reads a byte beyond <see cref="ImageResourceLimits.MaxEncodedBytes"/>.
     /// </summary>
     /// <param name="minimum">The minimum number of contiguous bytes.</param>
     /// <exception cref="ImageResourceLimitException">The buffer would exceed the allocation limit.</exception>
@@ -125,6 +139,34 @@ internal sealed class ImageInputBuffer : IDisposable, IAsyncDisposable
             var read = await _stream.ReadAsync(_buffer!.Memory.Slice(_end, free), cancellationToken).ConfigureAwait(false);
             OnRead(read);
         }
+    }
+
+    /// <summary>
+    /// Tells an input that ends exactly at the encoded-byte limit from one that exceeds it, once every byte the limit allows
+    /// is buffered or consumed (<see cref="IsReadLimitReached"/>): reads one byte, which is discarded. The outcome is
+    /// <see cref="IsEndOfInput"/> or <see cref="ExceedsLimit"/>, and it is final: the stream is never probed twice.
+    /// </summary>
+    /// <exception cref="IOException">The stream failed (propagated unchanged).</exception>
+    public void ProbeEndOfInput()
+    {
+        if (!CanProbe())
+            return;
+
+        Span<byte> probe = stackalloc byte[1];
+        OnProbed(_stream.Read(probe));
+    }
+
+    /// <summary>Asynchronously tells an input that ends exactly at the encoded-byte limit from one that exceeds it.</summary>
+    /// <param name="cancellationToken">The cancellation token, passed to the stream.</param>
+    /// <returns>A task completing when <see cref="IsEndOfInput"/> or <see cref="ExceedsLimit"/> is known.</returns>
+    public async ValueTask ProbeEndOfInputAsync(CancellationToken cancellationToken)
+    {
+        if (!CanProbe())
+            return;
+
+        cancellationToken.ThrowIfCancellationRequested();
+        _probe ??= new byte[1];
+        OnProbed(await _stream.ReadAsync(_probe, cancellationToken).ConfigureAwait(false));
     }
 
     public void Dispose()
@@ -180,6 +222,24 @@ internal sealed class ImageInputBuffer : IDisposable, IAsyncDisposable
     {
         var budget = _context.Limits.MaxEncodedBytes - (Position + BufferedLength);
         return (int)Math.Clamp(budget, 0, _buffer!.Length - _end);
+    }
+
+    private bool CanProbe()
+    {
+        Debug.Assert(_endOfInput || IsReadLimitReached);
+        return !_endOfInput && !_exceedsLimit;
+    }
+
+    private void OnProbed(int read)
+    {
+        if (read <= 0)
+        {
+            _endOfInput = true;
+        }
+        else
+        {
+            _exceedsLimit = true;
+        }
     }
 
     private void OnRead(int read)

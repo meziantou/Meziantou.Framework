@@ -13,7 +13,7 @@ namespace Meziantou.Framework
         public Meziantou.Framework.FullPath GetFullPath(string relativePath) => throw null;
         public Meziantou.Framework.FullPath CreateEmptyFile(string relativePath) => throw null;
         public Meziantou.Framework.FullPath CreateTextFile(string relativePath, string content) => throw null;
-        public System.Threading.Tasks.Task<Meziantou.Framework.FullPath> CreateTextFileAsync(string relativePath, string content, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.FullPath> CreateTextFileAsync(string relativePath, string content, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public Meziantou.Framework.FullPath CreateDirectory(string relativePath) => throw null;
         public void Dispose() { }
         public System.Threading.Tasks.ValueTask DisposeAsync() => throw null;

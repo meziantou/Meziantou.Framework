@@ -512,6 +512,58 @@ public sealed class ImageModelTests
         Assert.Equal(0, readerScope.LiveBytes);
     }
 
+    [Fact]
+    public void TheHotspotOfAFrameIsAlwaysInsideTheFrame()
+    {
+        using var image = new Image<Rgba32>(3, 2, Red);
+        var metadata = image.Frames[0].Metadata;
+        Assert.Null(metadata.Hotspot);
+        metadata.Hotspot = new Point(2, 1); // the bottom-right pixel
+        Assert.Equal(new Point(2, 1), metadata.Hotspot);
+        Assert.Throws<ArgumentOutOfRangeException>(() => metadata.Hotspot = new Point(3, 0));
+        Assert.Throws<ArgumentOutOfRangeException>(() => metadata.Hotspot = new Point(0, 2));
+        Assert.Throws<ArgumentOutOfRangeException>(() => metadata.Hotspot = new Point(-1, 0));
+        Assert.Equal(new Point(2, 1), metadata.Hotspot);
+        metadata.Hotspot = null;
+        Assert.Null(metadata.Hotspot);
+
+        // Once its frame is removed, the settings object is checked like one that belongs to no frame
+        var second = image.AppendFrame();
+        var detached = second.Metadata;
+        image.RemoveFrame(1);
+        detached.Hotspot = new Point(100, 100);
+        Assert.Throws<ArgumentOutOfRangeException>(() => detached.Hotspot = new Point(-1, 0));
+    }
+
+    [Fact]
+    public void CopiesOfAFrameKeepItsHotspot()
+    {
+        using var image = new Image<Rgba32>(3, 2, Red);
+        image.Frames[0].Metadata.Hotspot = new Point(2, 1);
+        Assert.Null(image.AppendFrame().Metadata.Hotspot);
+        Assert.Equal(new Point(2, 1), image.AppendFrame(image.Frames[0]).Metadata.Hotspot);
+        Assert.Equal(new Point(2, 1), image.InsertFrame(0, image.Frames[0]).Metadata.Hotspot);
+        Assert.Equal(new Point(2, 1), image.SetPosterFrame(image.Frames[0]).Metadata.Hotspot);
+
+        using var clone = image.Clone();
+        Assert.Equal([new Point(2, 1), new Point(2, 1), null, new Point(2, 1)], clone.Frames.Cast<ImageFrame>().Select(frame => frame.Metadata.Hotspot));
+        Assert.Equal(new Point(2, 1), clone.PosterFrame!.Metadata.Hotspot);
+
+        using var converted = image.CloneAs<Rgba64>();
+        Assert.Equal(new Point(2, 1), converted.Frames[0].Metadata.Hotspot);
+        Assert.Equal(new Point(2, 1), converted.PosterFrame!.Metadata.Hotspot);
+
+        using var still = image.CloneFrame(3);
+        Assert.Equal(new Point(2, 1), still.Frames[0].Metadata.Hotspot);
+        using var poster = image.ClonePosterFrame();
+        Assert.Equal(new Point(2, 1), poster.Frames[0].Metadata.Hotspot);
+
+        // A copy is independent, and the hotspot of a copy is checked against its own frame
+        clone.Frames[0].Metadata.Hotspot = new Point(0, 0);
+        Assert.Equal(new Point(2, 1), image.Frames[0].Metadata.Hotspot);
+        Assert.Throws<ArgumentOutOfRangeException>(() => clone.Frames[0].Metadata.Hotspot = new Point(3, 0));
+    }
+
     private static void AssertFrames(ImageFrameCollection actual, params ImageFrame[] expected)
     {
         Assert.Equal(expected.Length, actual.Count);

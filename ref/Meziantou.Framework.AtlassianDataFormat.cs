@@ -363,7 +363,7 @@ namespace Meziantou.Framework.AtlassianDataFormat
         public string? LocalId { get => throw null; init { } }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.AtlassianDataFormat.AdfNode> Content { get => throw null; init { } }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.AtlassianDataFormat.AdfMark> Marks { get => throw null; init { } }
-        public T GetMark<T>() where T : Meziantou.Framework.AtlassianDataFormat.AdfMark => throw null;
+        public T? GetMark<T>() where T : Meziantou.Framework.AtlassianDataFormat.AdfMark => throw null;
         public System.Collections.Generic.IEnumerable<Meziantou.Framework.AtlassianDataFormat.AdfNode> DescendantsAndSelf() => throw null;
     }
 

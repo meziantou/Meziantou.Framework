@@ -33,14 +33,7 @@ internal sealed class IcoCodec : ImageCodec
         ArgumentNullException.ThrowIfNull(source);
         ArgumentNullException.ThrowIfNull(context);
         var (format, representations) = IcoDirectory.Read(source, context);
-        var best = representations[0];
-        foreach (var representation in representations)
-        {
-            if (IsBetter(representation, best))
-            {
-                best = representation;
-            }
-        }
+        var best = IcoDirectory.SelectDefault(representations);
 
         if (mode == ImageIdentifyMode.FullScan)
         {
@@ -72,29 +65,8 @@ internal sealed class IcoCodec : ImageCodec
         ArgumentNullException.ThrowIfNull(request);
         ArgumentNullException.ThrowIfNull(context);
         var (format, representations) = IcoDirectory.Read(source, context);
-        var best = representations[0];
-        foreach (var representation in representations)
-        {
-            if (IsBetter(representation, best))
-            {
-                best = representation;
-            }
-        }
+        var best = IcoDirectory.SelectDefault(representations);
 
         return IcoEntryDecoder.Decode(source, format, best, request, context);
-    }
-
-    /// <summary>
-    /// The default representation rule, used by <c>Image.Load</c> and <c>Image.Identify</c>: the largest representation,
-    /// then the one with the most bits per stored pixel, then the first in directory order.
-    /// </summary>
-    private static bool IsBetter(IcoRepresentation candidate, IcoRepresentation best)
-    {
-        var candidateArea = (long)candidate.Size.Width * candidate.Size.Height;
-        var bestArea = (long)best.Size.Width * best.Size.Height;
-        if (candidateArea != bestArea)
-            return candidateArea > bestArea;
-
-        return candidate.BitsPerPixel > best.BitsPerPixel;
     }
 }

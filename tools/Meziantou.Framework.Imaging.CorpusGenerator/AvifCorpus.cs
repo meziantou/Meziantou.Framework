@@ -103,6 +103,7 @@ internal static partial class AvifCorpus
         var tools = fileTools.Av1;
         var manifest = CorpusDriver.LoadCommittedManifest();
         CorpusDriver.CopyCommittedFiles(outDir, CorpusDriver.Fixtures(manifest));
+        CorpusDriver.PreserveColorSections(outDir, manifest);
 
         var vectors = VectorsWithPatches();
         var layered = LayeredVectors();

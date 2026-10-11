@@ -4,21 +4,27 @@ using Meziantou.Framework.Imaging.Metadata;
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
-/// Incremental reader of a Truevision TGA file: the 18-byte header, the image identification field, the color map and the
-/// raw or run-length encoded pixels, in the three walks of the codec infrastructure.
+/// Incremental reader of a Truevision TGA file: the 18-byte header, the image identification field, the color map, the
+/// raw or run-length encoded pixels and the TGA 2.0 trailer, in the three walks of the codec infrastructure.
 /// </summary>
 /// <remarks>
 /// <list type="bullet">
 /// <item><description>Header walk: reads the header only.</description></item>
-/// <item><description>Full scan: also walks the identification field, the color map and every packet, and charges the image to <see cref="ImageResourceLimits.MaxFrames"/>.</description></item>
-/// <item><description>Decode: expands every packet into one stored row, converts it to <see cref="SourcePixelFormat"/> and writes it at its displayed position (bottom-up and right-to-left storage are resolved here).</description></item>
+/// <item><description>Full scan: also walks the identification field, the color map, every packet and the trailer, and charges the image to <see cref="ImageResourceLimits.MaxFrames"/>.</description></item>
+/// <item><description>Decode: expands every packet into one stored row, converts it to <see cref="SourcePixelFormat"/> and writes it at its displayed position (bottom-up and right-to-left storage are resolved here), then validates the trailer before the image is complete.</description></item>
 /// </list>
 /// <para>
-/// Pixels are accumulated into one private row, so the parser never asks the driver for more than a few contiguous bytes and
-/// its memory never depends on the input length. Parsing stops at the last pixel: the TGA 2.0 developer area, extension area
-/// and footer are located by offsets stored at the <em>end</em> of the file, which a forward-only decoder that never reads
-/// past the image data cannot follow. They are not read, so the image descriptor is the only
-/// source of the alpha semantics.
+/// Pixels are accumulated into one private row, so the parser never asks the driver for more than a few contiguous bytes of
+/// image data and its memory never depends on the size of the image.
+/// </para>
+/// <para>
+/// The TGA 2.0 footer is the last 26 bytes of the file, and it holds the offset of the extension area: nothing after the
+/// image data can be interpreted before the end of the input is known. The parser therefore asks the driver for every
+/// byte that follows the last pixel (<see cref="ParseStatus.NeedMoreDataOrEnd"/>), and reads the trailer once the input
+/// ended. A file without a footer is a TGA 1.0 file, whose trailing bytes mean nothing. The extension area can only
+/// <em>reject</em> the image (premultiplied alpha): the representation was fixed from the image descriptor before the first
+/// pixel, so the descriptor stays the only source of the alpha channel. The developer area is application data and is not
+/// interpreted.
 /// </para>
 /// </remarks>
 internal sealed class TgaStructureParser : ImageParser<ImageInfo>
@@ -63,6 +69,7 @@ internal sealed class TgaStructureParser : ImageParser<ImageInfo>
         ImageId,
         ColorMap,
         Pixels,
+        Trailer,
         Done,
     }
 
@@ -154,6 +161,23 @@ internal sealed class TgaStructureParser : ImageParser<ImageInfo>
                     if (!status.IsComplete)
                         return status;
 
+                    _state = State.Trailer;
+                    break;
+                }
+
+                case State.Trailer:
+                {
+                    // Every byte after the image data is needed at once, and one more byte than the largest buffer cannot
+                    // be held
+                    var trailer = buffer[consumed..];
+                    if (trailer.Length >= CheckedSizes.MaxBufferLength)
+                        throw CheckedSizes.CreateOverflowException(_context.Limits);
+
+                    if (!isEndOfInput)
+                        return ParseStatus.NeedMoreDataOrEnd(trailer.Length + 1);
+
+                    ValidateTrailer(trailer);
+                    Advance(ref consumed, trailer.Length);
                     _state = State.Done;
                     _result = CreateInfo(ImageIdentifyMode.FullScan);
                     _decoder?.OnEnd(this);
@@ -325,6 +349,34 @@ internal sealed class TgaStructureParser : ImageParser<ImageInfo>
         }
 
         return ParseStatus.Complete;
+    }
+
+    /// <summary>Reads the TGA 2.0 footer and the extension area it points at.</summary>
+    /// <param name="trailer">Every byte between the end of the image data (the current position) and the end of the input.</param>
+    private void ValidateTrailer(ReadOnlySpan<byte> trailer)
+    {
+        // Without the signature in its last bytes, the file is a TGA 1.0 file: what follows the image data is not a trailer
+        if (trailer.Length < TgaFormat.FooterLength || !trailer.EndsWith(TgaFormat.FooterSignature))
+            return;
+
+        var imageDataEnd = _position;
+        var footerOffset = imageDataEnd + trailer.Length - TgaFormat.FooterLength;
+        long extensionOffset = BinaryPrimitives.ReadUInt32LittleEndian(trailer[^TgaFormat.FooterLength..]);
+        if (extensionOffset == 0)
+            return;
+
+        if (extensionOffset < imageDataEnd || extensionOffset > footerOffset - TgaFormat.ExtensionAreaLength)
+            throw TgaFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The TGA footer locates the {TgaFormat.ExtensionAreaLength}-byte extension area at offset {extensionOffset}, outside the bytes between the end of the image data ({imageDataEnd}) and the footer ({footerOffset})."));
+
+        var extension = trailer.Slice((int)(extensionOffset - imageDataEnd), TgaFormat.ExtensionAreaLength);
+        var extensionSize = BinaryPrimitives.ReadUInt16LittleEndian(extension);
+        if (extensionSize < TgaFormat.ExtensionAreaLength)
+            throw TgaFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The TGA extension area at offset {extensionOffset} declares {extensionSize} bytes, fewer than the {TgaFormat.ExtensionAreaLength} bytes of a TGA 2.0 extension area."));
+
+        // The other attributes types say whether the alpha data is meaningful, which the image descriptor already decided
+        // before the first pixel was read
+        if (extension[TgaFormat.ExtensionAttributesTypeOffset] == TgaFormat.AttributesTypePremultipliedAlpha && HasAlpha)
+            throw TgaFormat.Unsupported("The TGA extension area declares premultiplied alpha (attributes type 4); the working pixel formats store straight alpha and this version never divides it out.", "Attributes type: premultiplied alpha");
     }
 
     private void EmitRow()

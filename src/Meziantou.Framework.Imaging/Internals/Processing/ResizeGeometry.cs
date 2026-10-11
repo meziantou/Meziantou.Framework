@@ -16,6 +16,22 @@ internal readonly record struct ResizeGeometry(Size OutputSize, ResampleAxis X, 
     /// <summary>Gets a value indicating whether the resize keeps every pixel in place (the output size equals the source size).</summary>
     public bool IsIdentity => X.IsIdentity && Y.IsIdentity;
 
+    /// <summary>Gets the output pixel that designates a source pixel after the resize (see <see cref="ResampleAxis.TryMapSourceIndex"/>).</summary>
+    /// <param name="source">A pixel of the source canvas.</param>
+    /// <param name="destination">The pixel of the result.</param>
+    /// <returns><see langword="false"/> when the source pixel lies entirely outside the region a Cover resize keeps.</returns>
+    public bool TryMapPoint(Point source, out Point destination)
+    {
+        if (X.TryMapSourceIndex(source.X, out var x) && Y.TryMapSourceIndex(source.Y, out var y))
+        {
+            destination = new Point(x, y);
+            return true;
+        }
+
+        destination = default;
+        return false;
+    }
+
     /// <summary>Computes the geometry of resizing a <paramref name="source"/> canvas with <paramref name="options"/>.</summary>
     /// <exception cref="ArgumentException">Enlargement is required by <see cref="ResizeMode.Stretch"/> or <see cref="ResizeMode.Cover"/> while <see cref="ResizeOptions.AllowUpscaling"/> is <see langword="false"/>.</exception>
     public static ResizeGeometry Compute(Size source, ResizeOptions options)

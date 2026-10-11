@@ -1,7 +1,7 @@
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
-/// Budgets and allocates the replacement storages of a transactional geometry operation (crop, resize, rotate,
+/// Budgets and allocates the replacement storages of a transactional geometry operation (crop, auto-crop, resize, rotate,
 /// auto-orient). The replacements are charged to the same scope while the original
 /// storages are still live, so the operation needs room for both at once. Any failure before <see cref="Commit"/> (limit,
 /// allocation, cancellation, callback exception) releases every replacement and leaves the original storages untouched.

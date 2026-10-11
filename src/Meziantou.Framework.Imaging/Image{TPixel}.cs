@@ -52,7 +52,7 @@ public sealed class Image<TPixel> : Image
     /// <summary>
     /// Initializes a new single-frame still image with a zeroed frame. This is the internal construction hook used by
     /// imports, clones and decoders: <paramref name="configuration"/> and <paramref name="size"/> must already be validated
-    /// (<see cref="ImageResourceLimits.EnsureCanvasWithinLimits(int, int)"/>).
+    /// (<see cref="ImageResourceLimits.EnsureCanvasWithinLimits(long, long)"/>).
     /// </summary>
     /// <param name="configuration">The configuration captured by the image.</param>
     /// <param name="size">The canvas size.</param>
@@ -178,6 +178,13 @@ public sealed class Image<TPixel> : Image
     internal ImageFrame<TPixel> AttachPosterFrameUnchecked(FrameMetadata? metadata = null) => (ImageFrame<TPixel>)AttachPosterFrameCore(metadata ?? new FrameMetadata());
 
     private protected override ImageFrame CreateFrame(PixelStorage storage, FrameMetadata metadata) => new ImageFrame<TPixel>(this, storage, metadata);
+
+    internal override AutoCropAnalysis<TPixel> CreateAutoCropAnalysis(bool success, Rectangle bounds, Rgba64 backgroundColor, double weightX, double weightY)
+    {
+        TPixel background = default;
+        PixelConverter.ConvertRow(new ReadOnlySpan<Rgba64>(in backgroundColor), new Span<TPixel>(ref background));
+        return new AutoCropAnalysis<TPixel>(success, Size, bounds, backgroundColor, background, weightX, weightY);
+    }
 
     private static ImageConfiguration ValidateCanvas(int width, int height, ImageConfiguration? configuration)
     {

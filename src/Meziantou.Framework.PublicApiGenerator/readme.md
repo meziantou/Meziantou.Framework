@@ -108,12 +108,34 @@ foreach (var type in assembly.GetAllTypes()) // Includes nested types
 
 The model contains:
 
-- The types and members that are visible outside the assembly (`public`, `protected`, `protected internal`), and explicit interface implementations. Members with names that cannot be written in C# (e.g. `<Clone>$`), static constructors and compiler-generated types are excluded. Other compiler-generated members, such as the members of records, are included and can be identified using `IsCompilerGenerated`.
+- The types and members that are visible outside the assembly (`public`, `protected`, `protected internal`), and explicit implementations of interfaces that are visible outside the assembly. Members with names that cannot be written in C# (e.g. `<Clone>$`), static constructors and compiler-generated types are excluded. Other compiler-generated members, such as the members of records, are included and can be identified using `IsCompilerGenerated`.
 - Accessors, available from `PublicApiProperty.GetMethod`, `SetMethod`, `PublicApiEvent.AddMethod`... Accessors that are not visible outside the assembly (e.g. a `private set`) are not exposed.
 - The signature of delegates through `PublicApiType.DelegateInvokeMethod`. The other members of delegates are not exposed.
 - C# 14 extension blocks through the static methods the compiler generates for them (e.g. `get_Length(string)`).
 - All the custom attributes of each symbol, parameter, return value and generic parameter, including the ones that are not written in the generated C# files (e.g. `EditorBrowsableAttribute` or `NullableAttribute`), with their decoded arguments.
 - Type references (`PublicApiTypeReference`) that preserve nested types, type arguments, arrays, pointers, function pointers, ref kinds, nullable annotations, tuple element names and the referenced assembly.
+- The `new` modifier of the members and nested types that hide an inherited member (`PublicApiMember.IsNew` and `PublicApiType.IsNew`). See [The `new` modifier](#the-new-modifier).
+
+## The `new` modifier
+
+The `new` modifier is not stored in metadata, so it is inferred using the rules of the C# compiler: a member is reported as `new` when a base class, or a base interface for the members of an interface, declares a member with the same name, or with the same signature for methods and indexers.
+
+```csharp
+public class Base
+{
+    public void Method() { }
+}
+
+public class Derived : Base
+{
+    public new int Method() => throw null; // Hides Base.Method()
+    public void Method(int value) { }      // Another overload, it does not hide anything
+}
+```
+
+Only the inherited members that are visible outside their assembly (`public`, `protected` and `protected internal`) are considered. A member that hides an `internal` member is not reported as `new`, as the hidden member is not part of the public API.
+
+When a base type is declared in another assembly, the metadata of that assembly is read to find the inherited members. The assembly is looked up in the directory of the assembly being read, then in the assemblies of the runtime that runs the generator. It is never loaded nor executed. When the assembly cannot be found, the members of that base type and of its own base types are ignored, so the members that hide them are not reported as `new`.
 
 ## Documentation IDs, identities and metadata tokens
 

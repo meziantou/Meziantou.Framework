@@ -1,5 +1,6 @@
 using System.IO.Compression;
 using Meziantou.Framework.Imaging.Internals;
+using Meziantou.Framework.Imaging.TestHarness.Adapters;
 using Meziantou.Framework.Imaging.TestHarness.Streams;
 
 namespace Meziantou.Framework.Imaging.Tests;
@@ -94,6 +95,118 @@ public sealed class InputLayerTests
         Assert.Equal(ImageFormat.Png, truncated.Format);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ARequestTheEndSatisfiesCompletesWhenTheInputEndsExactlyAtTheLimit(bool asynchronous)
+    {
+        var data = Enumerable.Range(0, 100).Select(value => (byte)value).ToArray();
+        foreach (var limit in new long[] { 100, 101, long.MaxValue })
+        {
+            Assert.Equal((90, null), RunOnSpan(data, limit, () => new TailParser(prefix: 10)));
+
+            var (result, exception, bytesRead) = await RunOnStreamAsync(data, limit, () => new TailParser(prefix: 10), asynchronous);
+            Assert.Null(exception);
+            Assert.Equal(90, result);
+            Assert.Equal(100, bytesRead);
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ARequestTheEndSatisfiesFailsWithTheLimitWhenTheInputContinuesPastIt(bool asynchronous)
+    {
+        // The limit falls on the first byte of the tail, inside it, and on its last byte
+        var data = new byte[100];
+        foreach (var limit in new long[] { 10, 60, 99 })
+        {
+            var (_, fromSpan) = RunOnSpan(data, limit, () => new TailParser(prefix: 10));
+            Assert.NotNull(fromSpan);
+            Assert.Equal(ImageResourceLimitKind.EncodedBytes, fromSpan.Kind);
+            Assert.Equal(limit, fromSpan.Limit);
+            Assert.Equal(limit + 1, fromSpan.Requested);
+
+            var (_, fromStream, bytesRead) = await RunOnStreamAsync(data, limit, () => new TailParser(prefix: 10), asynchronous);
+            Assert.NotNull(fromStream);
+            Assert.Equal(fromSpan.Kind, fromStream.Kind);
+            Assert.Equal(fromSpan.Limit, fromStream.Limit);
+            Assert.Equal(fromSpan.Requested, fromStream.Requested);
+
+            // One discarded byte tells the end of the input from a longer input: it is the only read past the limit
+            Assert.Equal(limit + 1, bytesRead);
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ARequestLargerThanTheLimitIsSatisfiedByTheEndOfTheInput(bool asynchronous)
+    {
+        var data = new byte[50];
+        foreach (var limit in new long[] { 50, 60 })
+        {
+            Assert.Equal((50, null), RunOnSpan(data, limit, () => new EndParser(request: 1000)));
+
+            var (result, exception, bytesRead) = await RunOnStreamAsync(data, limit, () => new EndParser(request: 1000), asynchronous);
+            Assert.Null(exception);
+            Assert.Equal(50, result);
+            Assert.Equal(50, bytesRead);
+        }
+
+        var (_, fromSpan) = RunOnSpan(data, 49, () => new EndParser(request: 1000));
+        var (_, fromStream, _) = await RunOnStreamAsync(data, 49, () => new EndParser(request: 1000), asynchronous);
+        Assert.NotNull(fromSpan);
+        Assert.Equal(1000, fromSpan.Requested);
+        Assert.NotNull(fromStream);
+        Assert.Equal(fromSpan.Requested, fromStream.Requested);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ARequestTheEndDoesNotSatisfyNeverReadsPastTheLimit(bool asynchronous)
+    {
+        var data = new byte[100];
+        var (_, fromSpan) = RunOnSpan(data, 40, () => new ConsumingParser());
+        var (_, fromStream, bytesRead) = await RunOnStreamAsync(data, 40, () => new ConsumingParser(), asynchronous);
+        Assert.NotNull(fromSpan);
+        Assert.Equal(41, fromSpan.Requested);
+        Assert.NotNull(fromStream);
+        Assert.Equal(fromSpan.Requested, fromStream.Requested);
+        Assert.Equal(40, bytesRead);
+    }
+
+    [Fact]
+    public async Task TheEndOfTheInputIsProbedOnce()
+    {
+        var context = CreateContext(40);
+        using var stream = new TestInputStream(new byte[100]) { Seekable = false };
+        using var input = new ImageInputBuffer(stream, ownsStream: false, context, initialCapacity: 16);
+        input.Fill(40);
+        Assert.True(input.IsReadLimitReached);
+        Assert.False(input.ExceedsLimit);
+
+        input.ProbeEndOfInput();
+        Assert.True(input.ExceedsLimit);
+        Assert.False(input.IsEndOfInput);
+        Assert.Equal(40, input.BufferedLength);
+        Assert.Equal(41, stream.BytesRead);
+
+        input.ProbeEndOfInput();
+        await input.ProbeEndOfInputAsync(XunitCancellationToken);
+        Assert.Equal(41, stream.BytesRead);
+
+        using var endingStream = new TestInputStream(new byte[40]) { Seekable = false };
+        using var endingInput = new ImageInputBuffer(endingStream, ownsStream: false, CreateContext(40), initialCapacity: 16);
+        endingInput.Fill(40);
+        Assert.False(endingInput.IsEndOfInput);
+        await endingInput.ProbeEndOfInputAsync(XunitCancellationToken);
+        Assert.True(endingInput.IsEndOfInput);
+        Assert.False(endingInput.ExceedsLimit);
+        Assert.Equal(40, endingInput.BufferedLength);
+    }
+
     [Fact]
     public void DetectionNeedsTheFullPrefixWithinTheLimit()
     {
@@ -102,6 +215,38 @@ public sealed class InputLayerTests
         Assert.Equal(ImageResourceLimitKind.EncodedBytes, Assert.Throws<ImageResourceLimitException>(() => Image.Identify(png, options)).Kind);
         using var stream = new MemoryStream(png);
         Assert.Equal(ImageResourceLimitKind.EncodedBytes, Assert.Throws<ImageResourceLimitException>(() => Image.Identify(stream, options)).Kind);
+    }
+
+    public static TheoryData<InputVariant> Variants => [.. InputVariants.All];
+
+    [Theory]
+    [MemberData(nameof(Variants))]
+    public async Task AnInputShorterThanTheDetectionPrefixIsDetectedWithinItsOwnLength(InputVariant variant)
+    {
+        // A complete image of 8 bytes: the 18-byte detection prefix is the whole input, whose end a stream only reports
+        // once it is read past
+        var image = "P1\n1 1\n0"u8.ToArray();
+        var unknown = "not an image"u8.ToArray();
+        foreach (var (data, expected) in new[] { (image, "Pnm 1x1"), (unknown, nameof(UnknownImageFormatException)) })
+        {
+            foreach (var limit in new[] { data.Length + 1, data.Length })
+            {
+                var outcome = await DescribeAsync(variant, data, limit);
+                Assert.StartsWith("identify: " + expected, outcome);
+                Assert.Equal(await DescribeAsync(InputVariant.Span, data, limit), outcome);
+            }
+
+            // A limit that cuts the input is a limit failure, never a format detected (or rejected) from a part of the input
+            foreach (var limit in new[] { data.Length - 1, 2, 1 })
+            {
+                var outcome = await DescribeAsync(variant, data, limit);
+                Assert.StartsWith(string.Create(CultureInfo.InvariantCulture, $"identify: ImageResourceLimitException(EncodedBytes, limit {limit}, requested 18)"), outcome);
+                Assert.Equal(await DescribeAsync(InputVariant.Span, data, limit), outcome);
+            }
+        }
+
+        static Task<string> DescribeAsync(InputVariant variant, byte[] data, long limit)
+            => InputVariants.DescribeOutcomeAsync(variant, data, ImageFormat.Pnm, new ImageConfiguration { Limits = new ImageResourceLimits { MaxEncodedBytes = limit } }, XunitCancellationToken);
     }
 
     [Theory]
@@ -165,6 +310,96 @@ public sealed class InputLayerTests
 
         Assert.Equal(payload, output.ToArray());
         Assert.True(feed.StarvedReads > 1);
+    }
+
+    private static ImageCodecContext CreateContext(long maxEncodedBytes)
+        => new(new ImageConfiguration { Limits = new ImageResourceLimits { MaxEncodedBytes = maxEncodedBytes } }, "test", CancellationToken.None);
+
+    /// <summary>Runs a parser over a non-seekable stream that returns one byte per read, through a buffer that has to grow.</summary>
+    private static async Task<(int Result, ImageResourceLimitException? Exception, long BytesRead)> RunOnStreamAsync(byte[] data, long maxEncodedBytes, Func<ImageParser<int>> createParser, bool asynchronous)
+    {
+        var context = CreateContext(maxEncodedBytes);
+        using var stream = new TestInputStream(data) { Seekable = false, MaxBytesPerRead = 1, ForbidSynchronousReads = asynchronous, ForbidAsynchronousReads = !asynchronous };
+        using var input = new ImageInputBuffer(stream, ownsStream: false, context, initialCapacity: 16);
+        using var parser = createParser();
+        try
+        {
+            var result = asynchronous ? await ImageInputPump.RunAsync(input, parser, context) : ImageInputPump.Run(input, parser, context);
+            return (result, null, stream.BytesRead);
+        }
+        catch (ImageResourceLimitException exception)
+        {
+            return (0, exception, stream.BytesRead);
+        }
+    }
+
+    private static (int Result, ImageResourceLimitException? Exception) RunOnSpan(byte[] data, long maxEncodedBytes, Func<ImageParser<int>> createParser)
+    {
+        using var parser = createParser();
+        try
+        {
+            return (ImageInputPump.Run(data, parser, CreateContext(maxEncodedBytes)), null);
+        }
+        catch (ImageResourceLimitException exception)
+        {
+            return (0, exception);
+        }
+    }
+
+    /// <summary>Consumes a prefix, then needs every remaining byte at once: a structure located from the end of the input.</summary>
+    private sealed class TailParser(int prefix) : ImageParser<int>(ImageFormat.Png)
+    {
+        private int _prefixLeft = prefix;
+        private int _tail;
+
+        public override ParseStatus Parse(ReadOnlySpan<byte> buffer, bool isEndOfInput, out int consumed)
+        {
+            consumed = Math.Min(_prefixLeft, buffer.Length);
+            _prefixLeft -= consumed;
+            if (_prefixLeft > 0)
+                return ParseStatus.NeedMoreData(1);
+
+            var tail = buffer[consumed..];
+            if (!isEndOfInput)
+                return ParseStatus.NeedMoreDataOrEnd(tail.Length + 1);
+
+            _tail = tail.Length;
+            consumed = buffer.Length;
+            return ParseStatus.Complete;
+        }
+
+        public override int GetResult() => _tail;
+    }
+
+    /// <summary>Needs the end of the input, and asks for it with a request the limit can never hold.</summary>
+    private sealed class EndParser(int request) : ImageParser<int>(ImageFormat.Png)
+    {
+        private int _length;
+
+        public override ParseStatus Parse(ReadOnlySpan<byte> buffer, bool isEndOfInput, out int consumed)
+        {
+            consumed = 0;
+            if (!isEndOfInput)
+                return ParseStatus.NeedMoreDataOrEnd(request);
+
+            _length = buffer.Length;
+            consumed = buffer.Length;
+            return ParseStatus.Complete;
+        }
+
+        public override int GetResult() => _length;
+    }
+
+    /// <summary>Consumes everything and always needs one more byte: the end of the input is truncation.</summary>
+    private sealed class ConsumingParser() : ImageParser<int>(ImageFormat.Png)
+    {
+        public override ParseStatus Parse(ReadOnlySpan<byte> buffer, bool isEndOfInput, out int consumed)
+        {
+            consumed = buffer.Length;
+            return ParseStatus.NeedMoreData(1);
+        }
+
+        public override int GetResult() => 0;
     }
 
     private sealed class YieldingParser() : ImageParser<int>(ImageFormat.Png)

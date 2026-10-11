@@ -10,8 +10,8 @@ namespace Meziantou.Framework
         public readonly int Capacity { get => throw null; }
         public ref char this[int index] { get => throw null; }
         public readonly System.Span<char> RawChars { get => throw null; }
-        public void Append([System.Runtime.CompilerServices.InterpolatedStringHandlerArgument("")] ref AppendInterpolatedStringHandler handler) { }
-        public void Append(System.IFormatProvider? provider, [System.Runtime.CompilerServices.InterpolatedStringHandlerArgument(new string[] { "", "provider" })] ref AppendInterpolatedStringHandler handler) { }
+        public void Append([System.Runtime.CompilerServices.InterpolatedStringHandlerArgument("")] ref Meziantou.Framework.ValueStringBuilder.AppendInterpolatedStringHandler handler) { }
+        public void Append(System.IFormatProvider? provider, [System.Runtime.CompilerServices.InterpolatedStringHandlerArgument(new string[] { "", "provider" })] ref Meziantou.Framework.ValueStringBuilder.AppendInterpolatedStringHandler handler) { }
         public void AppendSpanFormattable<T>(T value, string? format = null, System.IFormatProvider? provider = null) where T : System.ISpanFormattable { }
         public ValueStringBuilder(System.Span<char> initialBuffer) { }
         public ValueStringBuilder(int initialCapacity) { }

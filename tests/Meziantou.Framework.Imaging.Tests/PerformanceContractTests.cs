@@ -78,6 +78,33 @@ public sealed class PerformanceContractTests
         Assert.True(MeasureEagerPeak(CreateAnimation(format, frames: 40)) > 5 * MeasureEagerPeak(CreateAnimation(format, frames: 4)));
     }
 
+    [Fact]
+    public void ColorTransformsAllocateNothingPerConversion()
+    {
+        // A transform is built once; converting samples allocates nothing, whatever the sample type, the profile model
+        // (matrix-based with the 8-bit input tables, table-based with black point compensation) or the number of colors
+        var cmyk = IccTestProfiles.CmykLabLut16();
+        var toDisplayP3 = IccColorTransform.Create(Metadata.IccProfile.Srgb, IccTestProfiles.Rgb(IccTestProfiles.DisplayP3Colorants, IccTestProfiles.SrgbCurve()));
+        var toCmyk = IccColorTransform.Create(Metadata.IccProfile.Srgb, cmyk);
+        var fromCmyk = IccColorTransform.Create(cmyk, Metadata.IccProfile.SrgbGray);
+        foreach (var colors in new[] { 1, 5000 })
+        {
+            var bytes = new byte[colors * 3];
+            var words = new ushort[colors * 3];
+            var floats = new float[colors * 3];
+            var inks = new byte[colors * 4];
+            var gray = new byte[colors];
+            Assert.Equal(0, MeasureSteadyStateAllocations(() =>
+            {
+                toDisplayP3.Convert(bytes, bytes);
+                toDisplayP3.Convert(words, words);
+                toDisplayP3.Convert(floats, floats);
+                toCmyk.Convert(bytes, inks);
+                fromCmyk.Convert(inks, gray);
+            }));
+        }
+    }
+
     private static long MeasureSteadyStateAllocations(Action action)
     {
         for (var i = 0; i < 3; i++)

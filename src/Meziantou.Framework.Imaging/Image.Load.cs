@@ -55,7 +55,7 @@ public abstract partial class Image
     /// <exception cref="UnsupportedImageFeatureException">The data uses a recognized but unsupported feature.</exception>
     /// <exception cref="ImageResourceLimitException">A configured limit is exceeded.</exception>
     /// <remarks>
-    /// TIFF, BigTIFF, ICO and CUR are random-access containers: on a seekable stream only the bytes their structure
+    /// TIFF, BigTIFF, ICO, CUR and ANI are random-access containers: on a seekable stream only the bytes their structure
     /// points at are read, the stream is seeked freely and its position afterward is unspecified. A non-seekable stream
     /// is buffered instead, bounded by <see cref="ImageResourceLimits.MaxEncodedBytes"/>. Use
     /// <see cref="ImageCollection"/> to read a large document or to reach a page or representation other than the first
@@ -87,7 +87,7 @@ public abstract partial class Image
     /// <exception cref="ArgumentException"><paramref name="path"/> is empty.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
     /// <remarks>
-    /// Asynchronous loads of the random-access containers (TIFF, BigTIFF, ICO, CUR) read the whole input into memory
+    /// Asynchronous loads of the random-access containers (TIFF, BigTIFF, ICO, CUR, ANI) read the whole input into memory
     /// first, bounded by <see cref="ImageResourceLimits.MaxEncodedBytes"/>: their structure is a graph of file offsets,
     /// so awaiting every tag would gain nothing. Use the synchronous overloads or <see cref="ImageCollection"/> for a
     /// large document.
@@ -106,7 +106,7 @@ public abstract partial class Image
     /// <exception cref="ArgumentException"><paramref name="stream"/> is not readable.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
     /// <remarks>
-    /// Asynchronous loads of the random-access containers (TIFF, BigTIFF, ICO, CUR) read the whole input into memory
+    /// Asynchronous loads of the random-access containers (TIFF, BigTIFF, ICO, CUR, ANI) read the whole input into memory
     /// first, bounded by <see cref="ImageResourceLimits.MaxEncodedBytes"/>: their structure is a graph of file offsets,
     /// so awaiting every tag would gain nothing. Use the synchronous overloads or <see cref="ImageCollection"/> for a
     /// large document.
@@ -146,7 +146,7 @@ public abstract partial class Image
     /// <exception cref="UnsupportedImageFeatureException">The data uses a recognized but unsupported feature.</exception>
     /// <exception cref="ImageResourceLimitException">A configured limit is exceeded.</exception>
     /// <remarks>
-    /// TIFF, BigTIFF, ICO and CUR are random-access containers: on a seekable stream only the bytes their structure
+    /// TIFF, BigTIFF, ICO, CUR and ANI are random-access containers: on a seekable stream only the bytes their structure
     /// points at are read, the stream is seeked freely and its position afterward is unspecified. A non-seekable stream
     /// is buffered instead, bounded by <see cref="ImageResourceLimits.MaxEncodedBytes"/>. Use
     /// <see cref="ImageCollection"/> to read a large document or to reach a page or representation other than the first
@@ -202,7 +202,7 @@ public abstract partial class Image
     /// <exception cref="UnsupportedImageFeatureException">The data uses an unsupported feature, or the conversion would drop information without an explicit policy.</exception>
     /// <exception cref="ImageResourceLimitException">A configured limit is exceeded.</exception>
     /// <remarks>
-    /// TIFF, BigTIFF, ICO and CUR are random-access containers: on a seekable stream only the bytes their structure
+    /// TIFF, BigTIFF, ICO, CUR and ANI are random-access containers: on a seekable stream only the bytes their structure
     /// points at are read, the stream is seeked freely and its position afterward is unspecified. A non-seekable stream
     /// is buffered instead, bounded by <see cref="ImageResourceLimits.MaxEncodedBytes"/>. Use
     /// <see cref="ImageCollection"/> to read a large document or to reach a page or representation other than the first
@@ -255,7 +255,7 @@ public abstract partial class Image
     /// <exception cref="ArgumentException"><paramref name="stream"/> is not readable.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
     /// <remarks>
-    /// Asynchronous loads of the random-access containers (TIFF, BigTIFF, ICO, CUR) read the whole input into memory
+    /// Asynchronous loads of the random-access containers (TIFF, BigTIFF, ICO, CUR, ANI) read the whole input into memory
     /// first, bounded by <see cref="ImageResourceLimits.MaxEncodedBytes"/>: their structure is a graph of file offsets,
     /// so awaiting every tag would gain nothing. Use the synchronous overloads or <see cref="ImageCollection"/> for a
     /// large document.

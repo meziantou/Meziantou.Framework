@@ -8,7 +8,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </summary>
 /// <remarks>
 /// Call order: <see cref="OnHeaderComplete"/> once, <see cref="WriteRow"/> for every row, then <see cref="OnEnd"/> once the
-/// trailer is validated, so that readers and eager loads see the same complete, validated image.
+/// TGA 2.0 trailer is validated, so that readers and eager loads see the same complete, validated image.
 /// </remarks>
 internal sealed class TgaDecoder : IImageDecodeObserver
 {

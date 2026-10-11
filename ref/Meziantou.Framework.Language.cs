@@ -13,9 +13,10 @@ namespace Meziantou.Framework.Language
         public Meziantou.Framework.Language.SyntaxNodeOrToken Last() => throw null;
         public Meziantou.Framework.Language.SyntaxNodeOrToken FirstOrDefault() => throw null;
         public Meziantou.Framework.Language.SyntaxNodeOrToken LastOrDefault() => throw null;
-        public Enumerator GetEnumerator() => throw null;
+        public Meziantou.Framework.Language.ChildSyntaxList.Enumerator GetEnumerator() => throw null;
+        System.Collections.Generic.IEnumerator<Meziantou.Framework.Language.SyntaxNodeOrToken> System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.SyntaxNodeOrToken>.GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
-        public Reversed Reverse() => throw null;
+        public Meziantou.Framework.Language.ChildSyntaxList.Reversed Reverse() => throw null;
         public bool Equals(Meziantou.Framework.Language.ChildSyntaxList other) => throw null;
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
         public override int GetHashCode() => throw null;
@@ -24,22 +25,25 @@ namespace Meziantou.Framework.Language
         public struct Enumerator : System.Collections.Generic.IEnumerator<Meziantou.Framework.Language.SyntaxNodeOrToken>, System.Collections.IEnumerator, System.IDisposable
         {
             public readonly Meziantou.Framework.Language.SyntaxNodeOrToken Current { get => throw null; }
+            readonly object System.Collections.IEnumerator.Current { get => throw null; }
             public bool MoveNext() => throw null;
             public void Reset() { }
             public readonly void Dispose() { }
         }
-        public readonly struct Reversed : System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.SyntaxNodeOrToken>, System.Collections.IEnumerable, System.IEquatable<Reversed>
+        public readonly struct Reversed : System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.SyntaxNodeOrToken>, System.Collections.IEnumerable, System.IEquatable<Meziantou.Framework.Language.ChildSyntaxList.Reversed>
         {
-            public Enumerator GetEnumerator() => throw null;
+            public Meziantou.Framework.Language.ChildSyntaxList.Reversed.Enumerator GetEnumerator() => throw null;
+            System.Collections.Generic.IEnumerator<Meziantou.Framework.Language.SyntaxNodeOrToken> System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.SyntaxNodeOrToken>.GetEnumerator() => throw null;
             System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
-            public bool Equals(Reversed other) => throw null;
+            public bool Equals(Meziantou.Framework.Language.ChildSyntaxList.Reversed other) => throw null;
             public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
             public override int GetHashCode() => throw null;
-            public static bool operator ==(Reversed left, Reversed right) => throw null;
-            public static bool operator !=(Reversed left, Reversed right) => throw null;
+            public static bool operator ==(Meziantou.Framework.Language.ChildSyntaxList.Reversed left, Meziantou.Framework.Language.ChildSyntaxList.Reversed right) => throw null;
+            public static bool operator !=(Meziantou.Framework.Language.ChildSyntaxList.Reversed left, Meziantou.Framework.Language.ChildSyntaxList.Reversed right) => throw null;
             public struct Enumerator : System.Collections.Generic.IEnumerator<Meziantou.Framework.Language.SyntaxNodeOrToken>, System.Collections.IEnumerator, System.IDisposable
             {
                 public readonly Meziantou.Framework.Language.SyntaxNodeOrToken Current { get => throw null; }
+                readonly object System.Collections.IEnumerator.Current { get => throw null; }
                 public bool MoveNext() => throw null;
                 public void Reset() { }
                 public readonly void Dispose() { }
@@ -145,10 +149,10 @@ namespace Meziantou.Framework.Language
         public System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.SyntaxToken> GetSeparators() => throw null;
         public Meziantou.Framework.Language.SyntaxNodeOrTokenList GetWithSeparators() => throw null;
         public bool Any() => throw null;
-        public TNode First() => throw null;
-        public TNode Last() => throw null;
-        public TNode FirstOrDefault() => throw null;
-        public TNode LastOrDefault() => throw null;
+        public TNode? First() => throw null;
+        public TNode? Last() => throw null;
+        public TNode? FirstOrDefault() => throw null;
+        public TNode? LastOrDefault() => throw null;
         public int IndexOf(TNode node) => throw null;
         public int IndexOf(System.Func<TNode, bool> predicate) => throw null;
         public Meziantou.Framework.Language.SeparatedSyntaxList<TNode> Add(TNode node) => throw null;
@@ -158,7 +162,8 @@ namespace Meziantou.Framework.Language
         public Meziantou.Framework.Language.SeparatedSyntaxList<TNode> Remove(TNode node) => throw null;
         public Meziantou.Framework.Language.SeparatedSyntaxList<TNode> Replace(TNode nodeInList, TNode newNode) => throw null;
         public Meziantou.Framework.Language.SeparatedSyntaxList<TNode> ReplaceSeparator(Meziantou.Framework.Language.SyntaxToken separatorToken, Meziantou.Framework.Language.SyntaxToken newSeparator) => throw null;
-        public Enumerator<TNode> GetEnumerator() => throw null;
+        public Meziantou.Framework.Language.SeparatedSyntaxList<TNode>.Enumerator GetEnumerator() => throw null;
+        System.Collections.Generic.IEnumerator<TNode> System.Collections.Generic.IEnumerable<TNode>.GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
         public override string ToString() => throw null;
         public string ToFullString() => throw null;
@@ -168,9 +173,10 @@ namespace Meziantou.Framework.Language
         public static bool operator ==(Meziantou.Framework.Language.SeparatedSyntaxList<TNode> left, Meziantou.Framework.Language.SeparatedSyntaxList<TNode> right) => throw null;
         public static bool operator !=(Meziantou.Framework.Language.SeparatedSyntaxList<TNode> left, Meziantou.Framework.Language.SeparatedSyntaxList<TNode> right) => throw null;
         public static implicit operator Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.SyntaxNode>(Meziantou.Framework.Language.SeparatedSyntaxList<TNode> nodes) => throw null;
-        public struct Enumerator<TNode> : System.Collections.Generic.IEnumerator<TNode>, System.Collections.IEnumerator, System.IDisposable where TNode : Meziantou.Framework.Language.SyntaxNode
+        public struct Enumerator : System.Collections.Generic.IEnumerator<TNode>, System.Collections.IEnumerator, System.IDisposable
         {
             public readonly TNode Current { get => throw null; }
+            readonly object System.Collections.IEnumerator.Current { get => throw null; }
             public bool MoveNext() => throw null;
             public void Reset() { }
             public readonly void Dispose() { }
@@ -191,7 +197,7 @@ namespace Meziantou.Framework.Language
         public override string ToString() => throw null;
     }
 
-    public sealed class SyntaxAnnotation : System.IEquatable<Meziantou.Framework.Language.SyntaxAnnotation>
+    public sealed class SyntaxAnnotation : System.IEquatable<Meziantou.Framework.Language.SyntaxAnnotation?>
     {
         public string? Kind { get => throw null; }
         public string? Data { get => throw null; }
@@ -217,13 +223,13 @@ namespace Meziantou.Framework.Language
         public TNode this[int index] { get => throw null; }
         public Meziantou.Framework.Language.TextSpan FullSpan { get => throw null; }
         public Meziantou.Framework.Language.TextSpan Span { get => throw null; }
-        public SyntaxList(TNode node) { }
+        public SyntaxList(TNode? node) { }
         public SyntaxList(System.Collections.Generic.IEnumerable<TNode> nodes) { }
         public bool Any() => throw null;
-        public TNode First() => throw null;
-        public TNode Last() => throw null;
-        public TNode FirstOrDefault() => throw null;
-        public TNode LastOrDefault() => throw null;
+        public TNode? First() => throw null;
+        public TNode? Last() => throw null;
+        public TNode? FirstOrDefault() => throw null;
+        public TNode? LastOrDefault() => throw null;
         public int IndexOf(TNode node) => throw null;
         public int IndexOf(System.Func<TNode, bool> predicate) => throw null;
         public Meziantou.Framework.Language.SyntaxList<TNode> Add(TNode node) => throw null;
@@ -234,7 +240,8 @@ namespace Meziantou.Framework.Language
         public Meziantou.Framework.Language.SyntaxList<TNode> Remove(TNode node) => throw null;
         public Meziantou.Framework.Language.SyntaxList<TNode> Replace(TNode nodeInList, TNode newNode) => throw null;
         public Meziantou.Framework.Language.SyntaxList<TNode> ReplaceRange(TNode nodeInList, System.Collections.Generic.IEnumerable<TNode> newNodes) => throw null;
-        public Enumerator<TNode> GetEnumerator() => throw null;
+        public Meziantou.Framework.Language.SyntaxList<TNode>.Enumerator GetEnumerator() => throw null;
+        System.Collections.Generic.IEnumerator<TNode> System.Collections.Generic.IEnumerable<TNode>.GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
         public override string ToString() => throw null;
         public string ToFullString() => throw null;
@@ -244,9 +251,10 @@ namespace Meziantou.Framework.Language
         public static bool operator ==(Meziantou.Framework.Language.SyntaxList<TNode> left, Meziantou.Framework.Language.SyntaxList<TNode> right) => throw null;
         public static bool operator !=(Meziantou.Framework.Language.SyntaxList<TNode> left, Meziantou.Framework.Language.SyntaxList<TNode> right) => throw null;
         public static implicit operator Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.SyntaxNode>(Meziantou.Framework.Language.SyntaxList<TNode> nodes) => throw null;
-        public struct Enumerator<TNode> : System.Collections.Generic.IEnumerator<TNode>, System.Collections.IEnumerator, System.IDisposable where TNode : Meziantou.Framework.Language.SyntaxNode
+        public struct Enumerator : System.Collections.Generic.IEnumerator<TNode>, System.Collections.IEnumerator, System.IDisposable
         {
             public readonly TNode Current { get => throw null; }
+            readonly object System.Collections.IEnumerator.Current { get => throw null; }
             public bool MoveNext() => throw null;
             public void Reset() { }
             public readonly void Dispose() { }
@@ -267,8 +275,8 @@ namespace Meziantou.Framework.Language
         public bool ContainsSkippedText { get => throw null; }
         public bool IsMissing { get => throw null; }
         public System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.Diagnostic> GetDiagnostics() => throw null;
-        protected T GetRedAtZero<T>(ref T field) where T : Meziantou.Framework.Language.SyntaxNode => throw null;
-        protected T GetRed<T>(ref T field, int slot) where T : Meziantou.Framework.Language.SyntaxNode => throw null;
+        protected T? GetRedAtZero<T>(ref T? field) where T : Meziantou.Framework.Language.SyntaxNode => throw null;
+        protected T? GetRed<T>(ref T? field, int slot) where T : Meziantou.Framework.Language.SyntaxNode => throw null;
         public Meziantou.Framework.Language.ChildSyntaxList ChildNodesAndTokens() => throw null;
         public Meziantou.Framework.Language.SyntaxToken GetFirstToken() => throw null;
         public Meziantou.Framework.Language.SyntaxToken GetLastToken() => throw null;
@@ -288,7 +296,7 @@ namespace Meziantou.Framework.Language
         public System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.SyntaxTrivia> DescendantTrivia(Meziantou.Framework.Language.TextSpan span, System.Func<Meziantou.Framework.Language.SyntaxNode, bool>? descendIntoChildren = null) => throw null;
         public System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.SyntaxNode> Ancestors() => throw null;
         public System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.SyntaxNode> AncestorsAndSelf() => throw null;
-        public TNode FirstAncestorOrSelf<TNode>(System.Func<TNode, bool>? predicate = null) where TNode : Meziantou.Framework.Language.SyntaxNode => throw null;
+        public TNode? FirstAncestorOrSelf<TNode>(System.Func<TNode, bool>? predicate = null) where TNode : Meziantou.Framework.Language.SyntaxNode => throw null;
         public Meziantou.Framework.Language.SyntaxNodeOrToken ChildThatContainsPosition(int position) => throw null;
         public Meziantou.Framework.Language.SyntaxToken FindToken(int position) => throw null;
         public Meziantou.Framework.Language.SyntaxTrivia FindTrivia(int position) => throw null;
@@ -397,7 +405,8 @@ namespace Meziantou.Framework.Language
         public Meziantou.Framework.Language.SyntaxNodeOrTokenList RemoveAt(int index) => throw null;
         public Meziantou.Framework.Language.SyntaxNodeOrTokenList Remove(Meziantou.Framework.Language.SyntaxNodeOrToken nodeOrToken) => throw null;
         public Meziantou.Framework.Language.SyntaxNodeOrTokenList Replace(Meziantou.Framework.Language.SyntaxNodeOrToken nodeOrTokenInList, Meziantou.Framework.Language.SyntaxNodeOrToken newNodeOrToken) => throw null;
-        public Enumerator GetEnumerator() => throw null;
+        public Meziantou.Framework.Language.SyntaxNodeOrTokenList.Enumerator GetEnumerator() => throw null;
+        System.Collections.Generic.IEnumerator<Meziantou.Framework.Language.SyntaxNodeOrToken> System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.SyntaxNodeOrToken>.GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
         public override string ToString() => throw null;
         public string ToFullString() => throw null;
@@ -409,6 +418,7 @@ namespace Meziantou.Framework.Language
         public struct Enumerator : System.Collections.Generic.IEnumerator<Meziantou.Framework.Language.SyntaxNodeOrToken>, System.Collections.IEnumerator, System.IDisposable
         {
             public readonly Meziantou.Framework.Language.SyntaxNodeOrToken Current { get => throw null; }
+            readonly object System.Collections.IEnumerator.Current { get => throw null; }
             public bool MoveNext() => throw null;
             public void Reset() { }
             public readonly void Dispose() { }
@@ -494,7 +504,8 @@ namespace Meziantou.Framework.Language
         public Meziantou.Framework.Language.SyntaxTokenList RemoveAt(int index) => throw null;
         public Meziantou.Framework.Language.SyntaxTokenList Remove(Meziantou.Framework.Language.SyntaxToken token) => throw null;
         public Meziantou.Framework.Language.SyntaxTokenList Replace(Meziantou.Framework.Language.SyntaxToken tokenInList, Meziantou.Framework.Language.SyntaxToken newToken) => throw null;
-        public Enumerator GetEnumerator() => throw null;
+        public Meziantou.Framework.Language.SyntaxTokenList.Enumerator GetEnumerator() => throw null;
+        System.Collections.Generic.IEnumerator<Meziantou.Framework.Language.SyntaxToken> System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.SyntaxToken>.GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
         public override string ToString() => throw null;
         public string ToFullString() => throw null;
@@ -506,6 +517,7 @@ namespace Meziantou.Framework.Language
         public struct Enumerator : System.Collections.Generic.IEnumerator<Meziantou.Framework.Language.SyntaxToken>, System.Collections.IEnumerator, System.IDisposable
         {
             public readonly Meziantou.Framework.Language.SyntaxToken Current { get => throw null; }
+            readonly object System.Collections.IEnumerator.Current { get => throw null; }
             public bool MoveNext() => throw null;
             public void Reset() { }
             public readonly void Dispose() { }
@@ -585,7 +597,8 @@ namespace Meziantou.Framework.Language
         public Meziantou.Framework.Language.SyntaxTriviaList RemoveAt(int index) => throw null;
         public Meziantou.Framework.Language.SyntaxTriviaList Remove(Meziantou.Framework.Language.SyntaxTrivia trivia) => throw null;
         public Meziantou.Framework.Language.SyntaxTriviaList Replace(Meziantou.Framework.Language.SyntaxTrivia triviaInList, Meziantou.Framework.Language.SyntaxTrivia newTrivia) => throw null;
-        public Enumerator GetEnumerator() => throw null;
+        public Meziantou.Framework.Language.SyntaxTriviaList.Enumerator GetEnumerator() => throw null;
+        System.Collections.Generic.IEnumerator<Meziantou.Framework.Language.SyntaxTrivia> System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.SyntaxTrivia>.GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
         public override string ToString() => throw null;
         public string ToFullString() => throw null;
@@ -597,6 +610,7 @@ namespace Meziantou.Framework.Language
         public struct Enumerator : System.Collections.Generic.IEnumerator<Meziantou.Framework.Language.SyntaxTrivia>, System.Collections.IEnumerator, System.IDisposable
         {
             public readonly Meziantou.Framework.Language.SyntaxTrivia Current { get => throw null; }
+            readonly object System.Collections.IEnumerator.Current { get => throw null; }
             public bool MoveNext() => throw null;
             public void Reset() { }
             public readonly void Dispose() { }
@@ -606,7 +620,7 @@ namespace Meziantou.Framework.Language
     public abstract class SyntaxWalker
     {
         protected Meziantou.Framework.Language.SyntaxWalkerDepth Depth { get => throw null; }
-        protected SyntaxWalker(Meziantou.Framework.Language.SyntaxWalkerDepth depth = 0) { }
+        protected SyntaxWalker(Meziantou.Framework.Language.SyntaxWalkerDepth depth = Meziantou.Framework.Language.SyntaxWalkerDepth.Node) { }
         public virtual void Visit(Meziantou.Framework.Language.SyntaxNode node) { }
         protected virtual void VisitToken(Meziantou.Framework.Language.SyntaxToken token) { }
         protected virtual void VisitLeadingTrivia(Meziantou.Framework.Language.SyntaxToken token) { }

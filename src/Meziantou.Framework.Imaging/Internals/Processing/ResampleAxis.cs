@@ -58,6 +58,33 @@ internal readonly record struct ResampleAxis(int SourceLength, int OutputLength,
         return result >= SourceLength ? SourceLength - 1 : (int)result;
     }
 
+    /// <summary>
+    /// Gets the output pixel that designates source pixel <paramref name="sourceIndex"/> after the resize (a cursor hotspot
+    /// follows its pixel): the output pixel containing the start of the source pixel, <c>floor(t(i))</c> with
+    /// <c>t(u) = (u * Denominator - Offset) / (2 * Step)</c> the inverse of the axis mapping. For a full-extent axis this
+    /// is <c>floor(i * OutputLength / SourceLength)</c>, the rule Windows applies when it scales a cursor, which keeps
+    /// index 0 at index 0 whatever the scale.
+    /// </summary>
+    /// <param name="sourceIndex">A source pixel index, from 0 to <see cref="SourceLength"/> - 1.</param>
+    /// <param name="outputIndex">The output pixel index, clamped to the output for a source pixel that is only partly kept.</param>
+    /// <returns><see langword="false"/> when the source pixel lies entirely outside the region a Cover axis keeps.</returns>
+    public bool TryMapSourceIndex(int sourceIndex, out int outputIndex)
+    {
+        // The axis keeps the source interval [Offset, Offset + 2 * OutputLength * Step) / Denominator
+        var start = (Int128)sourceIndex * Denominator;
+        var end = start + Denominator;
+        if (end <= Offset || start >= Offset + (2 * (Int128)OutputLength * Step))
+        {
+            outputIndex = 0;
+            return false;
+        }
+
+        var numerator = start - Offset;
+        var result = numerator <= 0 ? 0 : numerator / (2 * (Int128)Step);
+        outputIndex = result >= OutputLength ? OutputLength - 1 : (int)result;
+        return true;
+    }
+
     /// <summary>Gets the center of output pixel <paramref name="index"/> in source index coordinates: <c>u(d) - 0.5</c> (exact integer part, rounded fraction).</summary>
     public double GetCenter(int index)
     {

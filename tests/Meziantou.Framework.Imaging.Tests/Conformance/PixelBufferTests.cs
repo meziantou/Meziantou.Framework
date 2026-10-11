@@ -69,6 +69,32 @@ public sealed class PixelBufferTests
     }
 
     [Fact]
+    public void ExtendCopiesTheInsideAndFillsTheOutside()
+    {
+        // 3x2 gray: 0 1 2 / 3 4 5
+        var buffer = RawPixelBuffer.Create(3, 2, RawPixelLayout.Gray8, [0, 1, 2, 3, 4, 5]);
+
+        // One column on the left and one row above: 9 9 9 / 9 0 1 / 9 3 4
+        var extended = buffer.Extend(-1, -1, 3, 3, [9]);
+        Assert.Equal((3, 3), (extended.Width, extended.Height));
+        Assert.Equal([9, 9, 9, 9, 0, 1, 9, 3, 4], extended.ToArray());
+
+        // Past the right and bottom edges: 4 5 9 / 9 9 9
+        Assert.Equal([4, 5, 9, 9, 9, 9], buffer.Extend(1, 1, 3, 2, [9]).ToArray());
+
+        // Inside: a crop. Entirely outside: only the fill
+        Assert.Equal(buffer.Crop(1, 0, 2, 2).ToArray(), buffer.Extend(1, 0, 2, 2, [9]).ToArray());
+        Assert.Equal([9, 9], buffer.Extend(5, 0, 2, 1, [9]).ToArray());
+
+        // 16-bit samples and several channels (little endian)
+        var rgba = RawPixelBuffer.Create(1, 1, RawPixelLayout.Rgba16Le, [1, 0, 2, 0, 3, 0, 4, 0]);
+        Assert.Equal([1, 0, 2, 0, 3, 0, 4, 0, 0x34, 0x12, 0, 0, 0xFF, 0xFF, 0x01, 0x80], rgba.Extend(0, 0, 2, 1, [0x1234, 0, 0xFFFF, 0x8001]).ToArray());
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => buffer.Extend(0, 0, 0, 1, [9]));
+        Assert.Throws<ArgumentException>(() => buffer.Extend(0, 0, 1, 1, [9, 9]));
+    }
+
+    [Fact]
     public void ChannelHelpersAreExact()
     {
         var buffer = RawPixelBuffer.Create(1, 1, RawPixelLayout.Rgba8, [10, 20, 30, 0]);

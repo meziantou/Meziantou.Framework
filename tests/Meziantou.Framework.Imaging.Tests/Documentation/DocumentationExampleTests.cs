@@ -73,6 +73,53 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void TrimBackgroundCropsToTheContentAndKeepsTheMargin()
+    {
+        // A 40x30 white image with a 10x6 red block at (2, 12)
+        var white = new Rgba32(255, 255, 255);
+        var input = GetPath("bordered.png");
+        using (var source = new Image<Rgba32>(40, 30, white))
+        {
+            for (var y = 12; y < 18; y++)
+            {
+                for (var x = 2; x < 12; x++)
+                {
+                    source.Frames[0][x, y] = Red;
+                }
+            }
+
+            source.Save(input);
+        }
+
+        var output = GetPath("trimmed.png");
+        Assert.True(Examples.TrimBackground(input, output));
+
+        // 8 pixels on each side of the block: (2 - 8, 12 - 8, 10 + 16, 6 + 16). The 6 columns left of the original canvas
+        // are new and get the background color
+        using var trimmed = Image.Load<Rgba32>(output);
+        Assert.Equal(new Size(26, 22), trimmed.Size);
+        Assert.Equal(Red, trimmed.Frames[0][8, 8]);
+        Assert.Equal(Red, trimmed.Frames[0][17, 13]);
+        Assert.Equal(white, trimmed.Frames[0][7, 8]);
+        Assert.Equal(white, trimmed.Frames[0][18, 13]);
+        Assert.Equal(white, trimmed.Frames[0][8, 7]);
+        Assert.Equal(white, trimmed.Frames[0][17, 14]);
+        Assert.Equal(white, trimmed.Frames[0][0, 0]);
+        Assert.Equal(white, trimmed.Frames[0][25, 21]);
+
+        // A uniform image has no content: nothing is written
+        var blank = GetPath("blank.png");
+        using (var source = new Image<Rgba32>(8, 8, white))
+        {
+            source.Save(blank);
+        }
+
+        var unused = GetPath("unused.png");
+        Assert.False(Examples.TrimBackground(blank, unused));
+        Assert.False(File.Exists(unused));
+    }
+
+    [Fact]
     public void SharpenAndDetectEdgesApplyTheMatricesAsWritten()
     {
         // A 5x5 opaque gray image (100) with a brighter pixel (200) in the middle
@@ -304,6 +351,25 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void WriteAndReadAnimatedCursorKeepsTheStepsTheirTimingAndTheirHotspots()
+    {
+        var (apngPath, _) = BuildAnimation();
+        var cursorPath = GetPath("busy.ani");
+        var hotspot = Examples.WriteAndReadAnimatedCursor(apngPath, cursorPath);
+        Assert.Equal(new Point(8, 4), hotspot); // (4, 2) on the 32x32 cursor, after doubling its size
+
+        using var cursor = Image.Load(cursorPath);
+        Assert.Equal(ImageFormat.Ani, cursor.Metadata.SourceFormat);
+        Assert.Equal(new Size(32, 32), cursor.Size);
+        Assert.Equal(2, cursor.Frames.Count);
+
+        // 100 ms is 6 jiffies and 1/30 s is 2: both are stored exactly
+        Assert.Equal([new FrameDuration(1, 10), new FrameDuration(1, 30)], cursor.Frames.Select(frame => frame.Metadata.Duration));
+        Assert.All(cursor.Frames, frame => Assert.Equal(new Point(4, 2), frame.Metadata.Hotspot));
+        Assert.Null(cursor.Animation!.TotalPlays);
+    }
+
+    [Fact]
     public async Task StreamingResizeAsyncProcessesOneFrameAtATime()
     {
         var (_, gifPath) = BuildAnimation();
@@ -423,5 +489,56 @@ public sealed class DocumentationExampleTests : IDisposable
         var entry = Assert.Single(edited.Metadata.TextEntries);
         Assert.Equal(new ImageTextEntry("Title", "Sunset"), entry);
         Assert.Equal(300, edited.Metadata.Resolution!.HorizontalDpi, precision: 1); // PNG stores pixels per meter
+    }
+
+    [Fact]
+    public void ConvertToSrgbConvertsTheColorsAndRemovesTheLabel()
+    {
+        // Display P3 (200, 100, 50) is sRGB (215, 93, 31); the result is saved to QOI, which stores no profile
+        var input = GetPath("display-p3.png");
+        var output = GetPath("srgb.qoi");
+        using (var image = new Image<Rgb24>(2, 2, new Rgb24(200, 100, 50)))
+        {
+            image.Metadata.IccProfile = IccTestProfiles.Rgb(IccTestProfiles.DisplayP3Colorants, IccTestProfiles.SrgbCurve());
+            image.Save(input);
+        }
+
+        Examples.ConvertToSrgb(input, output);
+        using (var converted = Image.Load<Rgb24>(output))
+        {
+            Assert.Null(converted.Metadata.IccProfile);
+            Assert.Equal(new Rgb24(215, 93, 31), converted.Frames[0][1, 1]);
+        }
+
+        // Grayscale pixels: gamma 563/256 gray 64 is sGray 62; an untagged image is left as it is
+        var grayInput = GetPath("gray-gamma.png");
+        var grayOutput = GetPath("sgray.png");
+        using (var image = new Image<Gray8>(2, 2, new Gray8(64)))
+        {
+            image.Metadata.IccProfile = IccTestProfiles.Gray(IccTestProfiles.Gamma(563));
+            image.Save(grayInput);
+        }
+
+        Examples.ConvertToSrgb(grayInput, grayOutput);
+        using (var converted = Image.Load<Gray8>(grayOutput))
+        {
+            Assert.Null(converted.Metadata.IccProfile);
+            Assert.Equal(new Gray8(62), converted.Frames[0][0, 0]);
+        }
+
+        Examples.ConvertToSrgb(grayOutput, grayInput);
+        using var unchanged = Image.Load<Gray8>(grayInput);
+        Assert.Equal(new Gray8(62), unchanged.Frames[0][0, 0]);
+    }
+
+    [Fact]
+    public void ConvertSamplesToSrgbConvertsInterleavedSamples()
+    {
+        var displayP3 = IccTestProfiles.Rgb(IccTestProfiles.DisplayP3Colorants, IccTestProfiles.SrgbCurve());
+        Assert.Equal([215, 93, 31, 128, 128, 128], Examples.ConvertSamplesToSrgb(displayP3, [200, 100, 50, 128, 128, 128]));
+
+        // One gray sample becomes three sRGB samples
+        var grayGamma = IccTestProfiles.Gray(IccTestProfiles.Gamma(563));
+        Assert.Equal([62, 62, 62, 255, 255, 255], Examples.ConvertSamplesToSrgb(grayGamma, [64, 255]));
     }
 }

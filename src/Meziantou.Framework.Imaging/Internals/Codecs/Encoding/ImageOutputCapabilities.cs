@@ -22,6 +22,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <item><term>PNM</term><description>Exactly one frame; no animation settings; no poster; at most 2^31 - 1 pixels per side.</description></item>
 /// <item><term>TIFF</term><description>Exactly one page (<c>ImageCollection.Save</c> writes several); no animation settings; no poster; a seekable destination (a directory stores the offsets of its strips, so the pointer to it is patched once the page is written).</description></item>
 /// <item><term>ICO/CUR</term><description>Exactly one representation (<c>ImageCollection.Save</c> writes several); no animation settings; no poster; at most 256 pixels per side; no seeking (a representation payload is encoded in memory).</description></item>
+/// <item><term>ANI</term><description>Always an animation container; unknown frame count allowed; no poster; at most 256 pixels per side; infinite play count only; a seekable destination (the header counts and the RIFF and frame-list sizes are patched at completion).</description></item>
 /// </list>
 /// <para>
 /// <see cref="PngAnimationMode.Auto"/> writes an APNG when more than one frame is expected or animation settings are given
@@ -68,12 +69,23 @@ internal sealed class ImageOutputCapabilities
     /// </summary>
     public bool RequiresSeekableOutput { get; }
 
+    /// <summary>
+    /// Gets a value indicating whether every frame of the output stores a cursor hotspot (<c>CUR</c>, <c>ANI</c>). For any
+    /// other output, a frame hotspot is metadata the format cannot store (see <see cref="MetadataWritePlan.ValidateFrameMetadata"/>).
+    /// </summary>
+    public bool SupportsFrameHotspot => StoresFrameHotspot(Format);
+
     /// <summary>Gets the output description used in messages (<c>static PNG</c>, <c>APNG</c>, <c>GIF</c>, <c>JPEG</c>).</summary>
     public string Name => Format switch
     {
         ImageFormat.Png => IsAnimated ? "APNG" : "static PNG",
         _ => ImageFormatNames.Get(Format),
     };
+
+    /// <summary>Determines whether a format stores a cursor hotspot with every image it holds.</summary>
+    /// <param name="format">The output format.</param>
+    /// <returns><see langword="true"/> for cursor files and animated cursors.</returns>
+    public static bool StoresFrameHotspot(ImageFormat format) => format is ImageFormat.Cur or ImageFormat.Ani;
 
     /// <summary>Resolves and validates the constraints of a writer.</summary>
     /// <param name="options">The writer options snapshot; <see cref="ImageWriterOptions.Encoder"/> is resolved.</param>
@@ -140,6 +152,7 @@ internal sealed class ImageOutputCapabilities
         PnmEncoder => new ImageOutputCapabilities(ImageFormat.Pnm, isAnimated: false, requiresFrameCount: false, maxFrameCount: 1, supportsPosterFrame: false, maxDimension: int.MaxValue),
         TiffEncoder => new ImageOutputCapabilities(ImageFormat.Tiff, isAnimated: false, requiresFrameCount: false, maxFrameCount: 1, supportsPosterFrame: false, maxDimension: int.MaxValue, requiresSeekableOutput: true),
         IcoEncoder ico => new ImageOutputCapabilities(ico.Format, isAnimated: false, requiresFrameCount: false, maxFrameCount: 1, supportsPosterFrame: false, maxDimension: IcoEncoder.MaxDimension),
+        AniEncoder => new ImageOutputCapabilities(ImageFormat.Ani, isAnimated: true, requiresFrameCount: false, maxFrameCount: null, supportsPosterFrame: false, maxDimension: AniEncoder.MaxDimension, requiresSeekableOutput: true),
         _ => throw new ArgumentException($"The encoder {encoder.GetType().Name} is not supported.", nameof(encoder)),
     };
 
@@ -169,6 +182,12 @@ internal sealed class ImageOutputCapabilities
         {
             // Throws UnsupportedImageFeatureException above 65,535 plays (never clamped)
             _ = AnimationTiming.ToWebPLoopCount(animation?.TotalPlays);
+        }
+
+        if (Format == ImageFormat.Ani)
+        {
+            // Throws UnsupportedImageFeatureException for any finite play count: an animated cursor always loops
+            AnimationTiming.EnsureAniPlayCount(animation?.TotalPlays);
         }
     }
 }

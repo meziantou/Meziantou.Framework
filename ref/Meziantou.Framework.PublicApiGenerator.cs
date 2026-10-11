@@ -285,6 +285,7 @@ namespace Meziantou.Framework.PublicApiGenerator
         public bool IsVirtual { get => throw null; }
         public bool IsOverride { get => throw null; }
         public bool IsSealed { get => throw null; }
+        public bool IsNew { get => throw null; }
         public bool RequiresUnsafe { get => throw null; }
         public bool IsExplicitInterfaceImplementation { get => throw null; }
         public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.PublicApiGenerator.PublicApiMemberReference> ExplicitInterfaceImplementations { get => throw null; }
@@ -532,6 +533,7 @@ namespace Meziantou.Framework.PublicApiGenerator
         public bool IsRefLike { get => throw null; }
         public bool IsClosed { get => throw null; }
         public bool IsUnion { get => throw null; }
+        public bool IsNew { get => throw null; }
         public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.PublicApiGenerator.PublicApiGenericParameter> GenericParameters { get => throw null; }
         public bool IsGenericType { get => throw null; }
         public Meziantou.Framework.PublicApiGenerator.PublicApiTypeReference? BaseType { get => throw null; }

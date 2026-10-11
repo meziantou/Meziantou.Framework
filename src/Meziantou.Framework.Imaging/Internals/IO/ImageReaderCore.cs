@@ -239,6 +239,11 @@ internal sealed class ImageReaderCore : IDisposable, IAsyncDisposable
 
     private void CreateParser(ImageCodec codec)
     {
+        // An animated cursor is an animation, but its steps show stored frames in any order and its tables may follow the
+        // frames, so the playback order is only known once the whole file is: it cannot be streamed either
+        if (codec.Format == ImageFormat.Ani)
+            throw new UnsupportedImageFeatureException("ANI cannot be read by a sequential ImageReader: its steps show stored frames located by a sequence table and file offsets, not frames stored in playback order. Use Image.Load.", codec.Format, "Sequential reading");
+
         // A random-access container (TIFF, ICO, CUR) has no frame sequence to stream: its entries are pages or alternative
         // representations located by file offsets, and they are never animation frames
         if (codec.RequiresRandomAccess)

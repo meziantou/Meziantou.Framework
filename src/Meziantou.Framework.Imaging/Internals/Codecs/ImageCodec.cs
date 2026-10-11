@@ -27,7 +27,7 @@ internal abstract class ImageCodec
 
     /// <summary>
     /// Gets a value indicating whether the format is addressed by file offsets instead of being a byte stream (TIFF,
-    /// BigTIFF, ICO and CUR). Such a codec implements <see cref="IdentifyRandomAccess"/> and
+    /// BigTIFF, ICO, CUR and ANI). Such a codec implements <see cref="IdentifyRandomAccess"/> and
     /// <see cref="DecodeRandomAccess"/>; its <see cref="CreateIdentifyParser"/> and <see cref="CreateDecodeParser"/>
     /// buffer the whole input first (<see cref="WholeInputParser{TResult}"/>), which the driver only uses when it cannot
     /// seek. Sequential readers (<see cref="ImageReader{TPixel}"/>) reject these formats explicitly.

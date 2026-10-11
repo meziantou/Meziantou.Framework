@@ -50,6 +50,40 @@ public sealed class LimitBoundaryTests
     }
 
     [Fact]
+    public void AutoCropExpandedCanvasesAreCheckedInclusively()
+    {
+        // 3x3 content at (2, 2) of a 7x7 canvas: a padding of 3 gives 9x9, a padding of 4 gives 11x11
+        Image<Gray8> Create(ImageResourceLimits limits)
+        {
+            var image = new Image<Gray8>(7, 7, new Gray8(255), Configuration(limits));
+            for (var y = 2; y < 5; y++)
+            {
+                for (var x = 2; x < 5; x++)
+                {
+                    image.Frames[0][x, y] = new Gray8(0);
+                }
+            }
+
+            return image;
+        }
+
+        using (var image = Create(new ImageResourceLimits { MaxWidth = 9, MaxHeight = 9, MaxFramePixels = 81 }))
+        {
+            Assert.True(image.AutoCrop(new AutoCropOptions { PaddingX = 3, PaddingY = 3 }, XunitCancellationToken)); // every limit reached
+            Assert.Equal(new Size(9, 9), image.Size);
+        }
+
+        using var limited = Create(new ImageResourceLimits { MaxWidth = 10, MaxHeight = 9, MaxFramePixels = 80 });
+        AssertLimit(ImageResourceLimitKind.Width, 10, 11, () => limited.AutoCrop(new AutoCropOptions { PaddingX = 4, PaddingY = 3 }, XunitCancellationToken));
+        AssertLimit(ImageResourceLimitKind.Height, 9, 11, () => limited.AutoCrop(new AutoCropOptions { PaddingX = 3, PaddingY = 4 }, XunitCancellationToken));
+        AssertLimit(ImageResourceLimitKind.FramePixels, 80, 81, () => limited.AutoCrop(new AutoCropOptions { PaddingX = 3, PaddingY = 3 }, XunitCancellationToken));
+        Assert.Equal(new Size(7, 7), limited.Size); // failures leave the image unchanged
+
+        // Clamping never enlarges the canvas
+        Assert.False(limited.AutoCrop(new AutoCropOptions { PaddingX = 4, PaddingY = 4, PaddingMode = AutoCropPaddingMode.Contain }, XunitCancellationToken));
+    }
+
+    [Fact]
     public void RotatedCanvasesAreCheckedInclusively()
     {
         using (var wide = new Image<Gray8>(5, 3, Configuration(new ImageResourceLimits { MaxWidth = 5, MaxHeight = 5 })))

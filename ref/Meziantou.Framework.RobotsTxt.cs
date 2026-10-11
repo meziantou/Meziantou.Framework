@@ -11,8 +11,8 @@ namespace Meziantou.Framework.RobotsTxt
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.RobotsTxt.RobotsParseError> ParseErrors { get => throw null; }
         public static Meziantou.Framework.RobotsTxt.RobotsFile Parse(string content) => throw null;
         public static Meziantou.Framework.RobotsTxt.RobotsFile Parse(System.ReadOnlySpan<char> content) => throw null;
-        public static System.Threading.Tasks.Task<Meziantou.Framework.RobotsTxt.RobotsFile> ParseAsync(System.IO.Stream stream, System.Text.Encoding? encoding = null, System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public static System.Threading.Tasks.Task<Meziantou.Framework.RobotsTxt.RobotsFile> ParseAsync(System.IO.TextReader reader, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public static System.Threading.Tasks.Task<Meziantou.Framework.RobotsTxt.RobotsFile> ParseAsync(System.IO.Stream stream, System.Text.Encoding? encoding = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static System.Threading.Tasks.Task<Meziantou.Framework.RobotsTxt.RobotsFile> ParseAsync(System.IO.TextReader reader, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public Meziantou.Framework.RobotsTxt.RobotsGroup? GetGroup(string userAgent) => throw null;
         public bool IsAllowed(string userAgent, string path) => throw null;
         public bool IsAllowed(string userAgent, System.Uri uri) => throw null;

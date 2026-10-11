@@ -21,7 +21,7 @@ namespace Meziantou.Framework
         public static bool IsMixedScript(string value) => throw null;
     }
 
-    public enum UnicodeBidirectionalCategory
+    public enum UnicodeBidirectionalCategory : byte
     {
         LeftToRight = 0,
         RightToLeft = 1,
@@ -478,7 +478,7 @@ namespace Meziantou.Framework
         public override string ToString() => throw null;
     }
 
-    public enum UnicodeScript
+    public enum UnicodeScript : ushort
     {
         Unknown = 0,
         Adlam = 1,

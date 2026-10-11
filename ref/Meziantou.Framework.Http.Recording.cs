@@ -54,8 +54,8 @@ namespace Meziantou.Framework.Http.Recording
     {
         public HttpRecordingHandler(Meziantou.Framework.Http.Recording.IHttpRecordingStore store, Meziantou.Framework.Http.Recording.HttpRecordingOptions? options = null) { }
         public HttpRecordingHandler(System.Net.Http.HttpMessageHandler innerHandler, Meziantou.Framework.Http.Recording.IHttpRecordingStore store, Meziantou.Framework.Http.Recording.HttpRecordingOptions? options = null) { }
-        public System.Threading.Tasks.Task InitializeAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public System.Threading.Tasks.Task SaveAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public System.Threading.Tasks.Task InitializeAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public System.Threading.Tasks.Task SaveAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
         protected override System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> SendAsync(System.Net.Http.HttpRequestMessage request, System.Threading.CancellationToken cancellationToken) => throw null;
         public System.Threading.Tasks.ValueTask DisposeAsync() => throw null;
         protected override void Dispose(bool disposing) { }

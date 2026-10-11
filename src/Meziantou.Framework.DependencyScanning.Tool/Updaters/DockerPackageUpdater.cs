@@ -121,7 +121,7 @@ internal sealed class DockerPackageUpdater : PackageUpdater
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
         }
 
-        return await SharedHttpClient.Instance.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+        return await SharedHttpClient.InstanceWithAutoRedirect.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
     }
 
     private static async Task<List<string>> ReadTagsAsync(HttpResponseMessage response, CancellationToken cancellationToken)
@@ -161,7 +161,7 @@ internal sealed class DockerPackageUpdater : PackageUpdater
         }
 
         var tokenUri = BuildTokenUri(realm, service, scope);
-        using var tokenResponse = await SharedHttpClient.Instance.GetAsync(tokenUri, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+        using var tokenResponse = await SharedHttpClient.InstanceWithAutoRedirect.GetAsync(tokenUri, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
         tokenResponse.EnsureSuccessStatusCode();
 
         await using var tokenStream = await tokenResponse.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);

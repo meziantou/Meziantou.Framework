@@ -13,6 +13,7 @@ public abstract class PublicApiMember : PublicApiSymbol
         IsVirtual = modifiers.IsVirtual;
         IsOverride = modifiers.IsOverride;
         IsSealed = modifiers.IsSealed;
+        IsNew = modifiers.IsNew;
         RequiresUnsafe = modifiers.RequiresUnsafe;
         IsExplicitInterfaceImplementation = modifiers.IsExplicitInterfaceImplementation;
         ExplicitInterfaceImplementations = explicitInterfaceImplementations.IsDefault ? [] : explicitInterfaceImplementations;
@@ -30,6 +31,12 @@ public abstract class PublicApiMember : PublicApiSymbol
 
     /// <summary>Gets a value indicating whether the member is a sealed override (<c>sealed override</c> in C#).</summary>
     public bool IsSealed { get; }
+
+    /// <summary>
+    /// Gets a value indicating whether the member hides a member inherited from a base type that is visible outside its assembly (<c>new</c> in C#).
+    /// The modifier is not stored in metadata, so it is inferred from the members of the base types. The base types that cannot be found are ignored.
+    /// </summary>
+    public bool IsNew { get; }
 
     /// <summary>
     /// Gets a value indicating whether the compiler marked the member as requiring an unsafe context.

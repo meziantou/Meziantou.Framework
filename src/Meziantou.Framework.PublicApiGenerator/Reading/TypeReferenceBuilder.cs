@@ -5,7 +5,8 @@ namespace Meziantou.Framework.PublicApiGenerator;
 
 /// <summary>
 /// Converts a <see cref="RawType"/> to a <see cref="PublicApiTypeReference"/>, applying the nullable annotations
-/// (<c>NullableAttribute</c> / <c>NullableContextAttribute</c>) and the tuple element names (<c>TupleElementNamesAttribute</c>).
+/// (<c>NullableAttribute</c> / <c>NullableContextAttribute</c>), the tuple element names (<c>TupleElementNamesAttribute</c>)
+/// and the dynamic flags (<c>DynamicAttribute</c>).
 /// </summary>
 /// <remarks>
 /// The nullable annotations are stored in a pre-order traversal of the type, as described in
@@ -13,24 +14,42 @@ namespace Meziantou.Framework.PublicApiGenerator;
 /// non-generic value types have no entry, generic value types and function pointers have an entry that is always 0,
 /// <see cref="Nullable{T}"/> only contributes its type argument, and type arguments include the ones of the containing types.
 /// When the attribute contains a single value, it applies to every entry.
+/// The tuple element names and the dynamic flags are stored in a pre-order traversal too. Every type, by-ref type and custom modifier has a dynamic flag.
+/// A tuple has one name per element, including the elements stored in the nested tuple of its last type argument, which has (unused) names of its own.
 /// </remarks>
 internal struct TypeReferenceBuilder
 {
     private readonly NullableMetadataInfo _nullableInfo;
     private readonly ImmutableArray<string?> _tupleElementNames;
+    private readonly ImmutableArray<bool> _dynamicFlags;
     private int _nullableIndex;
     private int _tupleElementNameIndex;
+    private int _dynamicIndex;
 
-    private TypeReferenceBuilder(NullableMetadataInfo nullableInfo, ImmutableArray<string?> tupleElementNames)
+    // The names of the elements that a tuple of more than 7 elements stores in its last type argument
+    private ImmutableArray<string?> _restTupleElementNames;
+    private bool _hasRestTupleElementNames;
+
+    private TypeReferenceBuilder(NullableMetadataInfo nullableInfo, ImmutableArray<string?> tupleElementNames, ImmutableArray<bool> dynamicFlags, int dynamicIndex)
     {
         _nullableInfo = nullableInfo;
         _tupleElementNames = tupleElementNames;
+        _dynamicFlags = dynamicFlags;
+        _dynamicIndex = dynamicIndex;
     }
 
-    public static PublicApiTypeReference Build(RawType type, NullableMetadataInfo nullableInfo, ImmutableArray<string?> tupleElementNames = default)
+    public static PublicApiTypeReference Build(RawType type, NullableMetadataInfo nullableInfo, ImmutableArray<string?> tupleElementNames = default, ImmutableArray<bool> dynamicFlags = default, int dynamicIndex = 0)
     {
-        var builder = new TypeReferenceBuilder(nullableInfo, tupleElementNames);
+        var builder = new TypeReferenceBuilder(nullableInfo, tupleElementNames, dynamicFlags, dynamicIndex);
         return builder.Convert(type);
+    }
+
+    // The callers convert a top-level by-ref type to a PublicApiRefKind, and only build its element type
+    public static int GetDynamicIndex(RawType signatureType, RawType type)
+    {
+        return signatureType is RawType.ByReference byReference && ReferenceEquals(byReference.ElementType, type)
+            ? byReference.CustomModifierCount + 1
+            : 0;
     }
 
     public static PublicApiTypeReference Build(RawType type) => Build(type, default);
@@ -39,6 +58,7 @@ internal struct TypeReferenceBuilder
 
     private PublicApiTypeReference Convert(RawType type)
     {
+        var isDynamic = ReadDynamicFlag(type);
         switch (type)
         {
             case RawType.ByReference byReference:
@@ -79,7 +99,7 @@ internal struct TypeReferenceBuilder
             case RawType.Named named:
                 {
                     var annotation = named.IsValueType ? PublicApiNullableAnnotation.NotAnnotated : ReadAnnotation();
-                    return CreateNamed(named, [], annotation, tupleElementNames: default);
+                    return CreateNamed(named, [], annotation, tupleElementNames: default, isDynamic && named.IsSystemType("Object"));
                 }
 
             default:
@@ -103,34 +123,67 @@ internal struct TypeReferenceBuilder
             annotation = PublicApiNullableAnnotation.NotAnnotated;
         }
 
-        var tupleElementNames = ReadTupleElementNames(definition, genericInstance.TypeArguments.Length);
+        var (tupleElementNames, restTupleElementNames) = ReadTupleElementNames(genericInstance);
         var typeArguments = ImmutableArray.CreateBuilder<PublicApiTypeReference>(genericInstance.TypeArguments.Length);
-        foreach (var typeArgument in genericInstance.TypeArguments)
+        for (var i = 0; i < genericInstance.TypeArguments.Length; i++)
         {
-            typeArguments.Add(Convert(typeArgument));
+            if (IsValueTupleRest(genericInstance, i))
+            {
+                _restTupleElementNames = restTupleElementNames;
+                _hasRestTupleElementNames = true;
+            }
+
+            typeArguments.Add(Convert(genericInstance.TypeArguments[i]));
         }
 
         return CreateNamed(definition, typeArguments.MoveToImmutable(), annotation, tupleElementNames);
     }
 
-    private ImmutableArray<string?> ReadTupleElementNames(RawType.Named definition, int typeArgumentCount)
+    // Returns the names of the elements stored in the type, and the names of the elements stored in its last type argument
+    private (ImmutableArray<string?> Names, ImmutableArray<string?> RestNames) ReadTupleElementNames(RawType.GenericInstance genericInstance)
     {
-        if (_tupleElementNames.IsDefaultOrEmpty || !IsValueTupleDefinition(definition))
+        if (!IsValueTupleDefinition(genericInstance.Definition))
             return default;
 
-        // ValueTuple`8 stores the 8th and following elements in its TRest type argument, which is a tuple itself
-        var count = Math.Min(typeArgumentCount, 7);
-        var builder = ImmutableArray.CreateBuilder<string?>(count);
-        var hasName = false;
-        for (var i = 0; i < count; i++)
+        var hasInheritedNames = _hasRestTupleElementNames;
+        var inheritedNames = _restTupleElementNames;
+        _hasRestTupleElementNames = false;
+        _restTupleElementNames = default;
+        if (_tupleElementNames.IsDefaultOrEmpty)
+            return default;
+
+        var cardinality = GetValueTupleCardinality(genericInstance);
+        var allNames = ImmutableArray.CreateBuilder<string?>(cardinality);
+        for (var i = 0; i < cardinality; i++)
         {
-            var name = _tupleElementNameIndex < _tupleElementNames.Length ? _tupleElementNames[_tupleElementNameIndex] : null;
+            allNames.Add(_tupleElementNameIndex < _tupleElementNames.Length ? _tupleElementNames[_tupleElementNameIndex] : null);
             _tupleElementNameIndex++;
-            hasName |= name is not null;
-            builder.Add(name);
         }
 
-        return hasName ? builder.MoveToImmutable() : default;
+        // The names of the nested tuple of a long tuple are the ones of the outer tuple
+        var names = hasInheritedNames ? inheritedNames : allNames.MoveToImmutable();
+        if (names.IsDefaultOrEmpty)
+            return default;
+
+        var count = Math.Min(names.Length, 7);
+        var ownNames = names[..count];
+        return (ownNames.Any(static name => name is not null) ? ownNames : default, names[count..]);
+    }
+
+    private static bool IsValueTupleRest(RawType.GenericInstance genericInstance, int index)
+    {
+        return index == 7 &&
+               genericInstance.TypeArguments.Length == 8 &&
+               IsValueTupleDefinition(genericInstance.Definition) &&
+               genericInstance.TypeArguments[index] is RawType.GenericInstance rest &&
+               IsValueTupleDefinition(rest.Definition);
+    }
+
+    private static int GetValueTupleCardinality(RawType.GenericInstance genericInstance)
+    {
+        return IsValueTupleRest(genericInstance, 7)
+            ? 7 + GetValueTupleCardinality((RawType.GenericInstance)genericInstance.TypeArguments[7])
+            : genericInstance.TypeArguments.Length;
     }
 
     private static bool IsValueTupleDefinition(RawType.Named definition)
@@ -140,7 +193,7 @@ internal struct TypeReferenceBuilder
                definition.MetadataName.StartsWith("ValueTuple`", StringComparison.Ordinal);
     }
 
-    private static PublicApiNamedTypeReference CreateNamed(RawType.Named definition, ImmutableArray<PublicApiTypeReference> typeArguments, PublicApiNullableAnnotation annotation, ImmutableArray<string?> tupleElementNames)
+    private static PublicApiNamedTypeReference CreateNamed(RawType.Named definition, ImmutableArray<PublicApiTypeReference> typeArguments, PublicApiNullableAnnotation annotation, ImmutableArray<string?> tupleElementNames, bool isDynamic = false)
     {
         // Metadata stores the type arguments of all the nesting levels in a single list.
         // They are distributed using the arity of each level, from the outermost type.
@@ -177,10 +230,18 @@ internal struct TypeReferenceBuilder
                 isInnermost ? annotation : PublicApiNullableAnnotation.NotAnnotated,
                 isInnermost ? tupleElementNames : default,
                 isPrimitive: level.IsPrimitive,
-                isFromSerializedName: level.IsFromSerializedName);
+                isFromSerializedName: level.IsFromSerializedName,
+                isDynamic: isInnermost && isDynamic);
         }
 
         return containingType!;
+    }
+
+    private bool ReadDynamicFlag(RawType type)
+    {
+        _dynamicIndex += type.CustomModifierCount;
+        var index = _dynamicIndex++;
+        return !_dynamicFlags.IsDefaultOrEmpty && index < _dynamicFlags.Length && _dynamicFlags[index];
     }
 
     private PublicApiNullableAnnotation ReadAnnotation()

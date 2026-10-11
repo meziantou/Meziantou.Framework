@@ -1,0 +1,38 @@
+{
+  "description": "Minimized inputs that made the fuzz tests (fuzz/Meziantou.Framework.Imaging.FuzzTests/MutationFuzzTests.cs) fail, and hand-authored variants of the same defects. Malformed-input regressions only: never valid-image pixel references. Validated and replayed by FuzzRegressionTests. See tests/Meziantou.Framework.Imaging.Fixtures/README.md.",
+  "regressions": [
+    {
+      "id": "png/idat-zlib-preset-dictionary-min",
+      "file": "png-idat-zlib-preset-dictionary.min.png",
+      "sha256": "45b88b4dac40379c7c58b4e01d7804b1cd79dd46a3066819966ac0820b56637e",
+      "origin": "fuzz-minimized",
+      "license": "CC0-1.0",
+      "foundBy": "FuzzTests group png, base seed 5576998306593010799 (default), 20000 iterations, mutation 7146 of png/gray1-odd-width; minimized by FuzzMinimizer from 101 to 47 bytes",
+      "defect": "The zlib header of IDAT sets FDICT (0x78 0x3F): the BCL inflater reports Z_NEED_DICT with its internal ZLibException (an IOException), which escaped Load and readers instead of InvalidImageContentException. Fixed in PngImageDataDecoder.Inflate.",
+      "expectedIdentify": "InvalidImageContentException",
+      "expectedLoad": "InvalidImageContentException"
+    },
+    {
+      "id": "png/idat-zlib-preset-dictionary",
+      "file": "png-idat-zlib-preset-dictionary.png",
+      "sha256": "bfa4aaa70221ea6d505706d08e77d2ce6189ecf210387d2e2cb918217936336f",
+      "origin": "hand-authored",
+      "license": "CC0-1.0",
+      "foundBy": "Hand-written well-formed variant of png/idat-zlib-preset-dictionary-min (1x1 gray 8-bit; IDAT zlib header 0x78 0x20 with FDICT and a DICTID, valid chunk CRCs)",
+      "defect": "Same defect as png/idat-zlib-preset-dictionary-min; PNG forbids preset dictionaries (PNG specification, 10.1).",
+      "expectedIdentify": "success",
+      "expectedLoad": "InvalidImageContentException"
+    },
+    {
+      "id": "png/iccp-zlib-preset-dictionary",
+      "file": "png-iccp-zlib-preset-dictionary.png",
+      "sha256": "7d5e8ce15d20d5eaaa6255d0ca85c6a8d8e57388f8c37bf3c47d7728fd5bcca7",
+      "origin": "hand-authored",
+      "license": "CC0-1.0",
+      "foundBy": "Hand-written while fixing png/idat-zlib-preset-dictionary-min: the same inflater error in the metadata decompressor (BoundedInflater) used for iCCP, zTXt and compressed iTXt",
+      "defect": "An iCCP profile whose zlib header sets FDICT made identification and loads throw the BCL's internal ZLibException; a malformed ancillary payload must be ignored. Fixed in BoundedInflater.TryInflateZlib.",
+      "expectedIdentify": "success",
+      "expectedLoad": "success"
+    }
+  ]
+}

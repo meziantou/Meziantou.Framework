@@ -61,6 +61,11 @@ internal sealed class CSharpDeclarationFormatter
     {
         WriteAttributes(writer, type.Attributes, target: null, type.IsUnion ? IsUnionAttribute : null);
         WriteKeyword(writer, CSharpSyntaxFacts.GetAccessibilityText(type.Accessibility));
+        if (type.IsNew)
+        {
+            WriteKeyword(writer, "new");
+        }
+
         switch (type.TypeKind)
         {
             case PublicApiTypeKind.Class:
@@ -167,6 +172,11 @@ internal sealed class CSharpDeclarationFormatter
     {
         WriteAttributes(writer, field.Attributes, target: null);
         WriteKeyword(writer, CSharpSyntaxFacts.GetAccessibilityText(field.Accessibility));
+        if (field.IsNew)
+        {
+            WriteKeyword(writer, "new");
+        }
+
         if (field.IsConst)
         {
             WriteKeyword(writer, "const");
@@ -392,6 +402,11 @@ internal sealed class CSharpDeclarationFormatter
         if (!(isInterface && member.IsAbstract && !member.IsStatic))
         {
             WriteKeyword(writer, CSharpSyntaxFacts.GetAccessibilityText(member.Accessibility));
+        }
+
+        if (member.IsNew)
+        {
+            WriteKeyword(writer, "new");
         }
 
         if (member.IsStatic)
@@ -690,7 +705,7 @@ internal sealed class CSharpDeclarationFormatter
             return;
         }
 
-        if (TryGetTupleElements(type, out var elements))
+        if (CSharpSyntaxFacts.TryGetTupleElements(type, out var elements))
         {
             writer.Punctuation("(");
             WriteList(writer, elements, element =>
@@ -727,39 +742,6 @@ internal sealed class CSharpDeclarationFormatter
         }
 
         WriteNullableAnnotation(writer, type);
-    }
-
-    private static bool TryGetTupleElements(PublicApiNamedTypeReference type, out List<(PublicApiTypeReference Type, string? Name)> elements)
-    {
-        elements = [];
-        var current = type;
-        while (true)
-        {
-            if (!current.IsTupleType)
-                return false;
-
-            var arity = current.TypeArguments.Length;
-            if (arity < 8)
-            {
-                for (var i = 0; i < arity; i++)
-                {
-                    elements.Add((current.TypeArguments[i], i < current.TupleElementNames.Length ? current.TupleElementNames[i] : null));
-                }
-
-                // A tuple has at least two elements
-                return elements.Count >= 2;
-            }
-
-            for (var i = 0; i < 7; i++)
-            {
-                elements.Add((current.TypeArguments[i], i < current.TupleElementNames.Length ? current.TupleElementNames[i] : null));
-            }
-
-            if (current.TypeArguments[7] is not PublicApiNamedTypeReference rest)
-                return false;
-
-            current = rest;
-        }
     }
 
     private static void WriteNullableAnnotation(DeclarationWriter writer, PublicApiTypeReference type)

@@ -26,8 +26,8 @@ namespace Meziantou.Framework.DependencyScanning
         public System.Collections.Generic.ISet<string> Tags { get => throw null; }
         public System.Collections.Generic.IDictionary<string, object?> Metadata { get => throw null; }
         public Dependency(string? name, string? version, Meziantou.Framework.DependencyScanning.DependencyType type, Meziantou.Framework.DependencyScanning.Location? nameLocation, Meziantou.Framework.DependencyScanning.Location? versionLocation) { }
-        public System.Threading.Tasks.Task UpdateNameAsync(string newValue, System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public System.Threading.Tasks.Task UpdateVersionAsync(string newValue, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public System.Threading.Tasks.Task UpdateNameAsync(string newValue, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public System.Threading.Tasks.Task UpdateVersionAsync(string newValue, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public override string ToString() => throw null;
     }
 
@@ -36,13 +36,13 @@ namespace Meziantou.Framework.DependencyScanning
     public abstract class DependencyScanner
     {
         protected internal abstract System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.DependencyScanning.DependencyType> SupportedDependencyTypes { get; }
-        public static System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.DependencyScanning.Dependency>> ScanDirectoryAsync(string path, Meziantou.Framework.DependencyScanning.ScannerOptions? options, System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public static System.Threading.Tasks.Task ScanDirectoryAsync(string path, Meziantou.Framework.DependencyScanning.ScannerOptions? options, Meziantou.Framework.DependencyScanning.DependencyFound onDependencyFound, System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public static System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.DependencyScanning.Dependency>> ScanFileAsync(string rootDirectory, string filePath, byte[] content, System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public static System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.DependencyScanning.Dependency>> ScanFileAsync(string rootDirectory, string filePath, byte[] content, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.DependencyScanning.DependencyScanner>? scanners, System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public static System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.DependencyScanning.Dependency>> ScanFileAsync(string rootDirectory, string filePath, Meziantou.Framework.DependencyScanning.ScannerOptions? options, System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public static System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.DependencyScanning.Dependency>> ScanFilesAsync(string rootDirectory, System.Collections.Generic.IEnumerable<string> filePaths, Meziantou.Framework.DependencyScanning.ScannerOptions? options, System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public static System.Threading.Tasks.Task ScanFilesAsync(string rootDirectory, System.Collections.Generic.IEnumerable<string> filePaths, Meziantou.Framework.DependencyScanning.ScannerOptions? options, Meziantou.Framework.DependencyScanning.DependencyFound onDependencyFound, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public static System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.DependencyScanning.Dependency>> ScanDirectoryAsync(string path, Meziantou.Framework.DependencyScanning.ScannerOptions? options, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static System.Threading.Tasks.Task ScanDirectoryAsync(string path, Meziantou.Framework.DependencyScanning.ScannerOptions? options, Meziantou.Framework.DependencyScanning.DependencyFound onDependencyFound, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.DependencyScanning.Dependency>> ScanFileAsync(string rootDirectory, string filePath, byte[] content, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.DependencyScanning.Dependency>> ScanFileAsync(string rootDirectory, string filePath, byte[] content, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.DependencyScanning.DependencyScanner>? scanners, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.DependencyScanning.Dependency>> ScanFileAsync(string rootDirectory, string filePath, Meziantou.Framework.DependencyScanning.ScannerOptions? options, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.DependencyScanning.Dependency>> ScanFilesAsync(string rootDirectory, System.Collections.Generic.IEnumerable<string> filePaths, Meziantou.Framework.DependencyScanning.ScannerOptions? options, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static System.Threading.Tasks.Task ScanFilesAsync(string rootDirectory, System.Collections.Generic.IEnumerable<string> filePaths, Meziantou.Framework.DependencyScanning.ScannerOptions? options, Meziantou.Framework.DependencyScanning.DependencyFound onDependencyFound, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public bool ShouldScanFile(System.ReadOnlySpan<char> rootDirectory, System.ReadOnlySpan<char> fullPath) => throw null;
         public bool ShouldScanFile(Meziantou.Framework.DependencyScanning.CandidateFileContext context) => throw null;
         protected abstract bool ShouldScanFileCore(Meziantou.Framework.DependencyScanning.CandidateFileContext context);
@@ -106,8 +106,8 @@ namespace Meziantou.Framework.DependencyScanning
         public string FilePath { get => throw null; }
         public abstract bool IsUpdatable { get; }
         protected Location(Meziantou.Framework.DependencyScanning.IFileSystem fileSystem, string filePath) { }
-        public System.Threading.Tasks.Task UpdateAsync(string? oldValue, string newValue, System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public System.Threading.Tasks.Task UpdateAsync(string newValue, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public System.Threading.Tasks.Task UpdateAsync(string? oldValue, string newValue, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public System.Threading.Tasks.Task UpdateAsync(string newValue, System.Threading.CancellationToken cancellationToken = default) => throw null;
         protected internal abstract System.Threading.Tasks.Task UpdateCoreAsync(string? oldValue, string newValue, System.Threading.CancellationToken cancellationToken);
     }
 

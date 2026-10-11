@@ -6,5 +6,6 @@ internal readonly record struct PublicApiMemberModifiers(
     bool IsVirtual = false,
     bool IsOverride = false,
     bool IsSealed = false,
+    bool IsNew = false,
     bool RequiresUnsafe = false,
     bool IsExplicitInterfaceImplementation = false);

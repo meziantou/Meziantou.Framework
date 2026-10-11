@@ -6,8 +6,10 @@ namespace Meziantou.Framework
 {
     public static class CommandLineBuilder
     {
+        [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNull("value")]
         public static string? WindowsQuotedArgument(string? value) => throw null;
         public static string WindowsQuotedArguments(params string[] values) => throw null;
+        [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNull("value")]
         public static string? WindowsCmdArgument(string? value) => throw null;
         public static string WindowsCmdArguments(params string[] values) => throw null;
     }

@@ -17,6 +17,7 @@ public sealed class PublicApiField : PublicApiMember
         bool isConst,
         bool hasConstantValue,
         object? constantValue,
+        ImmutableArray<string> constantValueEnumMemberNames,
         bool isVolatile,
         bool isRequired)
         : base(name, accessibility, attributes, origin, modifiers, explicitInterfaceImplementations: [])
@@ -27,6 +28,7 @@ public sealed class PublicApiField : PublicApiMember
         IsConst = isConst;
         HasConstantValue = hasConstantValue;
         ConstantValue = constantValue;
+        ConstantValueEnumMemberNames = constantValueEnumMemberNames;
         IsVolatile = isVolatile;
         IsRequired = isRequired;
     }
@@ -45,8 +47,14 @@ public sealed class PublicApiField : PublicApiMember
 
     public bool HasConstantValue { get; }
 
-    /// <summary>Gets the value of a constant, as stored in metadata. Enum members and constants of an enum type store the underlying integral value.</summary>
+    /// <summary>
+    /// Gets the value of a constant, as stored in metadata. Enum members and constants of an enum type store the underlying integral value.
+    /// A <see cref="decimal"/> constant is read from the <c>DecimalConstantAttribute</c> of the field.
+    /// </summary>
     public object? ConstantValue { get; }
+
+    // The names of the enum members that make the value, when the constant is of an enum type and the value can be named
+    internal ImmutableArray<string> ConstantValueEnumMemberNames { get; }
 
     public bool IsVolatile { get; }
 

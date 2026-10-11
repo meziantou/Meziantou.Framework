@@ -27,11 +27,11 @@ namespace Meziantou.Framework.WPF
 
     public static class DispatcherExtensions
     {
-        public static SwitchToUiAwaitable SwitchToDispatcherThread(this System.Windows.Threading.Dispatcher dispatcher) => throw null;
+        public static Meziantou.Framework.WPF.DispatcherExtensions.SwitchToUiAwaitable SwitchToDispatcherThread(this System.Windows.Threading.Dispatcher dispatcher) => throw null;
         public readonly struct SwitchToUiAwaitable : System.Runtime.CompilerServices.INotifyCompletion
         {
             public bool IsCompleted { get => throw null; }
-            public SwitchToUiAwaitable GetAwaiter() => throw null;
+            public Meziantou.Framework.WPF.DispatcherExtensions.SwitchToUiAwaitable GetAwaiter() => throw null;
             public void GetResult() { }
             public void OnCompleted(System.Action continuation) { }
         }

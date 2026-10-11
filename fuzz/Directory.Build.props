@@ -1,0 +1,4 @@
+<Project>
+  <!-- The fuzz projects are test projects that live apart from tests/ because their campaigns run at a different cadence -->
+  <Import Project="$(MSBuildThisFileDirectory)../tests/Directory.Build.props" />
+</Project>

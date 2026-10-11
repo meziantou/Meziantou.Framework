@@ -7,6 +7,7 @@ namespace Meziantou.Framework.Templating
     public class HtmlEmailCodeBlock : Meziantou.Framework.Templating.CodeBlock
     {
         public HtmlEmailCodeBlock(Meziantou.Framework.Templating.Template template, string text, int index) { }
+        [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNull("html")]
         protected virtual string? HtmlDecode(string? html) => throw null;
         public override string BuildCode() => throw null;
     }

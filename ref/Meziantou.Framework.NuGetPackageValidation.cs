@@ -67,8 +67,8 @@ namespace Meziantou.Framework.NuGetPackageValidation
 
     public static class NuGetPackageValidator
     {
-        public static System.Threading.Tasks.Task<Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationResult> ValidateAsync(Meziantou.Framework.FullPath packagePath, System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public static System.Threading.Tasks.Task<Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationResult> ValidateAsync(Meziantou.Framework.FullPath packagePath, System.Collections.Generic.IEnumerable<Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationRule> rules, System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public static System.Threading.Tasks.Task<Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationResult> ValidateAsync(Meziantou.Framework.FullPath packagePath, Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationOptions options, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public static System.Threading.Tasks.Task<Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationResult> ValidateAsync(Meziantou.Framework.FullPath packagePath, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static System.Threading.Tasks.Task<Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationResult> ValidateAsync(Meziantou.Framework.FullPath packagePath, System.Collections.Generic.IEnumerable<Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationRule> rules, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static System.Threading.Tasks.Task<Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationResult> ValidateAsync(Meziantou.Framework.FullPath packagePath, Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationOptions options, System.Threading.CancellationToken cancellationToken = default) => throw null;
     }
 }

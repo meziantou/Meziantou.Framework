@@ -1,0 +1,27 @@
+<Project Sdk="Meziantou.NET.Sdk.Test">
+  <!--
+    External-tool interoperability tests: decode files produced by our encoders with pinned independent tools (ffmpeg, libwebp,
+    Apple ImageIO). ffmpeg and libwebp are downloaded from the meziantou/prebuilt release pinned by the Meziantou.Prebuilt package (TestHarness):
+    a download failure, a version mismatch or a missing capability fails the tests.
+  -->
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <RootNamespace>Meziantou.Framework.Imaging.InteropTests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Imaging\Meziantou.Framework.Imaging.csproj" />
+    <ProjectReference Include="..\Meziantou.Framework.Imaging.TestHarness\Meziantou.Framework.Imaging.TestHarness.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Locates the tools that cannot be downloaded (swift) in the PATH -->
+    <Compile Include="..\..\src\Meziantou.Framework\ExecutableFinder.cs" Link="Utils\ExecutableFinder.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\Meziantou.Framework.Imaging.Fixtures\**\*" LinkBase="Fixtures" CopyToOutputDirectory="PreserveNewest" />
+    <!-- Apple ImageIO frame dumper shared with the corpus generator -->
+    <None Include="..\..\tools\Meziantou.Framework.Imaging.CorpusGenerator\imageio_frames.swift" Link="imageio_frames.swift" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

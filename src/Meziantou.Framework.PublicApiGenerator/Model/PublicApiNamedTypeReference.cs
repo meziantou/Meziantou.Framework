@@ -25,7 +25,8 @@ public sealed class PublicApiNamedTypeReference : PublicApiTypeReference
         PublicApiNullableAnnotation nullableAnnotation,
         ImmutableArray<string?> tupleElementNames = default,
         bool isPrimitive = false,
-        bool isFromSerializedName = false)
+        bool isFromSerializedName = false,
+        bool isDynamic = false)
         : base(nullableAnnotation)
     {
         Namespace = containingType is null ? @namespace : string.Empty;
@@ -38,6 +39,7 @@ public sealed class PublicApiNamedTypeReference : PublicApiTypeReference
         TupleElementNames = tupleElementNames.IsDefault ? [] : tupleElementNames;
         IsPrimitive = isPrimitive;
         IsFromSerializedName = isFromSerializedName;
+        IsDynamic = isDynamic;
     }
 
     public override PublicApiTypeReferenceKind Kind => PublicApiTypeReferenceKind.NamedType;
@@ -89,6 +91,9 @@ public sealed class PublicApiNamedTypeReference : PublicApiTypeReference
 
     // The type comes from a type name serialized in a custom attribute blob
     internal bool IsFromSerializedName { get; }
+
+    // The type is System.Object, written as dynamic in C#
+    internal bool IsDynamic { get; }
 
     internal bool IsSystemType(string metadataName) => ContainingType is null && Namespace is "System" && string.Equals(MetadataName, metadataName, StringComparison.Ordinal);
 

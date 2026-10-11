@@ -13,7 +13,9 @@ namespace Meziantou.Framework
 
     public static class Slug
     {
+        [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNull("text")]
         public static string? Create(string? text) => throw null;
+        [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNull("text")]
         public static string? Create(string? text, Meziantou.Framework.SlugOptions? options) => throw null;
     }
 

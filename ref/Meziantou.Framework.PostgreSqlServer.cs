@@ -9,8 +9,8 @@ namespace Meziantou.Framework.PostgreSql
         public System.Collections.Generic.IReadOnlyList<int> Ports { get => throw null; }
         public PostgreSqlServer(Meziantou.Framework.PostgreSql.PostgreSqlServerOptions? options, Meziantou.Framework.PostgreSql.Handler.PostgreSqlAuthenticationDelegate authenticationHandler, Meziantou.Framework.PostgreSql.Handler.PostgreSqlQueryDelegate queryHandler) { }
         public PostgreSqlServer(Meziantou.Framework.PostgreSql.PostgreSqlServerOptions? options, Meziantou.Framework.PostgreSql.Handler.PostgreSqlAuthenticationDelegate authenticationHandler, Meziantou.Framework.PostgreSql.Handler.PostgreSqlQueryDelegate queryHandler, Microsoft.Extensions.Logging.ILogger? logger) { }
-        public System.Threading.Tasks.Task StartAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public System.Threading.Tasks.Task StopAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public System.Threading.Tasks.Task StartAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public System.Threading.Tasks.Task StopAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
         public void Dispose() { }
         public System.Threading.Tasks.ValueTask DisposeAsync() => throw null;
     }

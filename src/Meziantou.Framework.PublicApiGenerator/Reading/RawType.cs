@@ -12,6 +12,9 @@ internal abstract record RawType
     public bool HasIsVolatileModifier { get; init; }
     public bool HasOutModifier { get; init; }
 
+    // Each custom modifier has an entry in the flags of the DynamicAttribute
+    public int CustomModifierCount { get; init; }
+
     // A type definition, possibly nested. Generic types are wrapped in a GenericInstance.
     public sealed record Named(
         string Namespace,

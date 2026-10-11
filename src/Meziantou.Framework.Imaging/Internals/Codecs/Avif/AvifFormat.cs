@@ -228,6 +228,27 @@ internal static class AvifFormat
     /// <summary>The <c>auxv</c> code.</summary>
     public const uint Auxv = 0x61757876;
 
+    /// <summary>The <c>iso8</c> brand.</summary>
+    public const uint Iso8 = 0x69736F38;
+
+    /// <summary>The <c>vmhd</c> code.</summary>
+    public const uint Vmhd = 0x766D6864;
+
+    /// <summary>The <c>dinf</c> code.</summary>
+    public const uint Dinf = 0x64696E66;
+
+    /// <summary>The <c>dref</c> code.</summary>
+    public const uint Dref = 0x64726566;
+
+    /// <summary>The <c>url </c> code.</summary>
+    public const uint Url = 0x75726C20;
+
+    /// <summary>The <c>stss</c> code.</summary>
+    public const uint Stss = 0x73747373;
+
+    /// <summary>The <c>ccst</c> code.</summary>
+    public const uint Ccst = 0x63637374;
+
     /// <summary>The <c>tmap</c> code.</summary>
     public const uint Tmap = 0x746D6170;
 

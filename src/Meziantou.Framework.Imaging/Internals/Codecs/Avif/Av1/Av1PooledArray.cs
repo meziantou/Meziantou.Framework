@@ -34,7 +34,7 @@ internal sealed class Av1PooledArray<T> : IDisposable
 
     /// <summary>Rents an array of <paramref name="length"/> elements.</summary>
     /// <exception cref="ImageResourceLimitException">The array exceeds the live-allocation limit or the maximum buffer length.</exception>
-    public static Av1PooledArray<T> Rent(AllocationScope scope, long length, bool clear = true)
+    public static Av1PooledArray<T> Rent(AllocationScope scope, long length, bool clear = true, AllocationKind kind = AllocationKind.DecoderState)
     {
         ArgumentNullException.ThrowIfNull(scope);
         ArgumentOutOfRangeException.ThrowIfNegative(length);
@@ -42,7 +42,7 @@ internal sealed class Av1PooledArray<T> : IDisposable
         if (bytes > CheckedSizes.MaxBufferLength)
             throw CheckedSizes.CreateOverflowException(scope.Limits);
 
-        return new Av1PooledArray<T>(scope.Rent((int)bytes, AllocationKind.DecoderState, clear), (int)length);
+        return new Av1PooledArray<T>(scope.Rent((int)bytes, kind, clear), (int)length);
     }
 
     public void Dispose()

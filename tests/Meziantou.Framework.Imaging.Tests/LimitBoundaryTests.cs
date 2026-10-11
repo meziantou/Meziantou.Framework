@@ -104,7 +104,7 @@ public sealed class LimitBoundaryTests
         Assert.Equal(new Size(3, 5), tall.Size);
     }
 
-    public static TheoryData<string> Encoders => ["png", "apng", "gif", "jpeg", "webp", "webp-lossy", "webp-animated", "qoi"];
+    public static TheoryData<string> Encoders => ["png", "apng", "gif", "jpeg", "webp", "webp-lossy", "webp-animated", "qoi", "avif", "avif-lossy", "avif-animated"];
 
     [Theory]
     [MemberData(nameof(Encoders))]
@@ -160,9 +160,11 @@ public sealed class LimitBoundaryTests
                 "webp" or "webp-animated" => new WebPEncoder(),
                 "webp-lossy" => new WebPEncoder { Compression = WebPCompression.Lossy },
                 "qoi" => new QoiEncoder(),
+                "avif" or "avif-animated" => new AvifEncoder(),
+                "avif-lossy" => new AvifEncoder { Compression = AvifCompression.Lossy },
                 _ => new JpegEncoder(),
             },
-            ExpectedFrameCount = encoder is "apng" or "webp-animated" ? 2 : 1,
+            ExpectedFrameCount = encoder is "apng" or "webp-animated" or "avif-animated" ? 2 : 1,
             Configuration = Configuration(new ImageResourceLimits { MaxLiveAllocationBytes = budget }),
         };
         using var output = new MemoryStream();

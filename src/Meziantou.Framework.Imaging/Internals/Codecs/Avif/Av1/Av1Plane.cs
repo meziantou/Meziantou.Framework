@@ -42,11 +42,11 @@ internal sealed class Av1Plane : IDisposable
     /// <paramref name="alignment"/> samples in both dimensions.
     /// </summary>
     /// <exception cref="ImageResourceLimitException">The plane exceeds the live-allocation limit or the maximum buffer length.</exception>
-    public static Av1Plane Create(AllocationScope scope, int width, int height, int alignment)
+    public static Av1Plane Create(AllocationScope scope, int width, int height, int alignment, AllocationKind kind = AllocationKind.DecoderState)
     {
         var stride = ((long)width + alignment - 1) / alignment * alignment;
         var allocatedHeight = ((long)height + alignment - 1) / alignment * alignment;
-        var samples = Av1PooledArray<ushort>.Rent(scope, stride * allocatedHeight);
+        var samples = Av1PooledArray<ushort>.Rent(scope, stride * allocatedHeight, clear: true, kind);
         return new Av1Plane(samples, width, height, (int)stride, (int)allocatedHeight);
     }
 

@@ -30,6 +30,7 @@ public sealed class ApiSurfaceTests
         typeof(PngEncoder),
         typeof(GifEncoder),
         typeof(JpegEncoder),
+        typeof(AvifEncoder),
         typeof(Pen),
         typeof(SolidBrush),
         typeof(LinearGradientBrush),

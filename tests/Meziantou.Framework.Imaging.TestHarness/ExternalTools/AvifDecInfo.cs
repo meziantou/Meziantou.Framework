@@ -62,9 +62,16 @@ public sealed partial class AvifDecInfo
 
     /// <summary>
     /// Gets the repetition count of an image sequence (the number of times it is played again after the first time), or
-    /// <see langword="null"/> when it repeats forever or when the file is not an image sequence (<see cref="HasRepetitionCount"/>).
+    /// <see langword="null"/> when it repeats forever, when libavif does not know it
+    /// (<see cref="IsRepetitionCountUnknown"/>) or when the file is not an image sequence (<see cref="HasRepetitionCount"/>).
     /// </summary>
     public int? RepetitionCount { get; private init; }
+
+    /// <summary>
+    /// Gets a value indicating whether libavif prints that it does not know the repetition count, which it does for an image
+    /// sequence whose color track has no edit list.
+    /// </summary>
+    public bool IsRepetitionCountUnknown { get; private init; }
 
     /// <summary>Gets the time scale: the number of time units per second.</summary>
     public long TimeScale { get; private init; }
@@ -123,7 +130,8 @@ public sealed partial class AvifDecInfo
             Mirror = OptionalInt(MirrorRegex().Match(text)),
             CleanApertureCrop = crop.Success ? (Int(crop, "x"), Int(crop, "y"), Int(crop, "width"), Int(crop, "height")) : null,
             HasRepetitionCount = hasRepetitionCount,
-            RepetitionCount = hasRepetitionCount && repetition != "Infinite" ? int.Parse(repetition!, CultureInfo.InvariantCulture) : null,
+            RepetitionCount = hasRepetitionCount && repetition is not ("Infinite" or "Unknown") ? int.Parse(repetition!, CultureInfo.InvariantCulture) : null,
+            IsRepetitionCountUnknown = hasRepetitionCount && repetition is "Unknown",
             TimeScale = long.Parse(timing.Groups["timescale"].Value, CultureInfo.InvariantCulture),
             FrameCount = Int(timing, "frames"),
             Frames = frames,

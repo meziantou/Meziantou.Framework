@@ -10,7 +10,7 @@ namespace Meziantou.Framework.Imaging.Tests.Documentation;
 /// <summary>
 /// Runs the published usage examples (samples/Meziantou.Framework.Imaging.Samples/Examples.cs, linked into this project) and
 /// checks that they do what the documentation says. Inputs are built by the examples themselves, except the AVIF inputs
-/// (the library has no AVIF encoder), which are committed fixtures of the golden corpus.
+/// of the decoding example, which are committed fixtures of the golden corpus (written by another encoder).
 /// </summary>
 public sealed class DocumentationExampleTests : IDisposable
 {
@@ -289,6 +289,46 @@ public sealed class DocumentationExampleTests : IDisposable
         Assert.Equal(2, animation.Frames.Count);
         Assert.Equal(3, animation.Animation!.TotalPlays);
         Assert.Equal(new FrameDuration(33, 1000), animation.Frames[1].Metadata.Duration); // nearest millisecond
+        Assert.Equal(expected.Frames[1][63, 63], animation.Frames[1][63, 63]); // lossless
+    }
+
+    [Fact]
+    public void SaveAvifWritesALossyPhotoALosslessImageAndAnImageSequence()
+    {
+        var (apngPath, _) = BuildAnimation();
+        var photo = GetPath("photo.png");
+        using (var source = new Image<Rgba64>(32, 16, new Rgba64(65535, 32768, 0, 65535)))
+        {
+            source.Save(photo);
+        }
+
+        var avif = GetPath("photo.avif");
+        var lossless = GetPath("lossless.avif");
+        var animated = GetPath("animation.avif");
+        Examples.SaveAvif(photo, avif, lossless, apngPath, animated);
+
+        using (var image = Image.Load<Rgba64>(avif))
+        {
+            // A 12-bit lossy image: the samples are within the error of the quantizer
+            Assert.Equal(ImageFormat.Avif, image.Metadata.SourceFormat);
+            Assert.Equal(12, Image.Identify(avif).BitsPerComponent);
+            var pixel = image.Frames[0][16, 8];
+            Assert.InRange(pixel.R, 63000, 65535);
+            Assert.InRange(pixel.G, 30500, 35000);
+            Assert.InRange(pixel.B, 0, 2500);
+        }
+
+        using (var image = Image.Load<Rgba64>(lossless))
+        {
+            // 16-bit samples rounded to 12 bits: 65535 is 4095, and 32768 is 2048 (which is decoded as 32776)
+            Assert.Equal(new Rgba64(65535, 32776, 0, 65535), image.Frames[0][16, 8]);
+        }
+
+        using var animation = Image.Load<Rgba32>(animated);
+        using var expected = Image.Load<Rgba32>(apngPath);
+        Assert.Equal(2, animation.Frames.Count);
+        Assert.Equal(3, animation.Animation!.TotalPlays);
+        Assert.Equal(expected.Frames[1].Metadata.Duration, animation.Frames[1].Metadata.Duration); // exact
         Assert.Equal(expected.Frames[1][63, 63], animation.Frames[1][63, 63]); // lossless
     }
 

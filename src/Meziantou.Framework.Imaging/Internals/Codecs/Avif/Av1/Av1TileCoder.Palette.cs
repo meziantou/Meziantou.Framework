@@ -1,7 +1,7 @@
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <content>The palette of a block (AV1 specification, sections 5.11.46, 5.11.49, 5.11.50 and 7.11.4).</content>
-internal ref partial struct Av1TileDecoder
+internal ref partial struct Av1TileCoder
 {
     private const int ColorMapStride = 64;
 
@@ -13,14 +13,7 @@ internal ref partial struct Av1TileDecoder
         Span<ushort> cache = stackalloc ushort[2 * Av1Constants.PaletteColors];
         if (_yMode is Av1Constants.DcPred)
         {
-            var ctx = 0;
-            if (_availU && (_paletteSizes[MiIndex(_miRow - 1, _miCol)] & 0xF) > 0)
-                ctx++;
-
-            if (_availL && (_paletteSizes[MiIndex(_miRow, _miCol - 1)] & 0xF) > 0)
-                ctx++;
-
-            var hasPaletteY = ReadSymbol(Av1CdfLayout.PaletteYMode + (((bsizeCtx * Av1Constants.PaletteYModeContexts) + ctx) * Av1CdfLayout.PaletteYModeSize), Av1CdfLayout.PaletteYModeSize) is not 0;
+            var hasPaletteY = ReadSymbol(Av1CdfLayout.PaletteYMode + (((bsizeCtx * Av1Constants.PaletteYModeContexts) + GetPaletteYModeContext()) * Av1CdfLayout.PaletteYModeSize), Av1CdfLayout.PaletteYModeSize) is not 0;
             if (hasPaletteY)
             {
                 _paletteSizeY = ReadSymbol(Av1CdfLayout.PaletteYSize + (bsizeCtx * Av1CdfLayout.PaletteYSizeSize), Av1CdfLayout.PaletteYSizeSize) + 2;
@@ -123,6 +116,19 @@ internal ref partial struct Av1TileDecoder
         }
     }
 
+    // The CDF selection of has_palette_y (section 8.3.2)
+    private readonly int GetPaletteYModeContext()
+    {
+        var ctx = 0;
+        if (_availU && (_paletteSizes[MiIndex(_miRow - 1, _miCol)] & 0xF) > 0)
+            ctx++;
+
+        if (_availL && (_paletteSizes[MiIndex(_miRow, _miCol - 1)] & 0xF) > 0)
+            ctx++;
+
+        return ctx;
+    }
+
     private static int CeilLog2(int x)
     {
         if (x < 2)
@@ -198,31 +204,15 @@ internal ref partial struct Av1TileDecoder
     // Section 5.11.49 "Palette tokens syntax"
     private readonly void PaletteTokens()
     {
-        var blockHeight = BlockHeight(_miSize);
-        var blockWidth = BlockWidth(_miSize);
-        var onscreenHeight = Math.Min(blockHeight, (_miRows - _miRow) * Av1Constants.MiSize);
-        var onscreenWidth = Math.Min(blockWidth, (_miCols - _miCol) * Av1Constants.MiSize);
         if (_paletteSizeY is not 0)
+        {
+            GetColorMapSize(isLuma: true, out var blockWidth, out var blockHeight, out var onscreenWidth, out var onscreenHeight);
             ReadColorMap(_scratch.GetColorMap(0), _paletteSizeY, blockWidth, blockHeight, onscreenWidth, onscreenHeight, isLuma: true);
+        }
 
         if (_paletteSizeUv is not 0)
         {
-            blockHeight >>= _subY;
-            blockWidth >>= _subX;
-            onscreenHeight >>= _subY;
-            onscreenWidth >>= _subX;
-            if (blockWidth < 4)
-            {
-                blockWidth += 2;
-                onscreenWidth += 2;
-            }
-
-            if (blockHeight < 4)
-            {
-                blockHeight += 2;
-                onscreenHeight += 2;
-            }
-
+            GetColorMapSize(isLuma: false, out var blockWidth, out var blockHeight, out var onscreenWidth, out var onscreenHeight);
             ReadColorMap(_scratch.GetColorMap(1), _paletteSizeUv, blockWidth, blockHeight, onscreenWidth, onscreenHeight, isLuma: false);
         }
     }
@@ -244,6 +234,12 @@ internal ref partial struct Av1TileDecoder
             }
         }
 
+        ExtendColorMap(colorMap, blockWidth, blockHeight, onscreenWidth, onscreenHeight);
+    }
+
+    // The colors of the samples of the block that are not in the frame: the ones of the last column and of the last row
+    private static void ExtendColorMap(Span<byte> colorMap, int blockWidth, int blockHeight, int onscreenWidth, int onscreenHeight)
+    {
         for (var i = 0; i < onscreenHeight; i++)
         {
             var row = colorMap.Slice(i * ColorMapStride, blockWidth);
@@ -253,6 +249,34 @@ internal ref partial struct Av1TileDecoder
         for (var i = onscreenHeight; i < blockHeight; i++)
         {
             colorMap.Slice((onscreenHeight - 1) * ColorMapStride, blockWidth).CopyTo(colorMap[(i * ColorMapStride)..]);
+        }
+    }
+
+    // The size of the color map of the luma plane (isLuma) or of the chroma planes of the block, and of its part that is
+    // in the frame (section 5.11.49)
+    private readonly void GetColorMapSize(bool isLuma, out int blockWidth, out int blockHeight, out int onscreenWidth, out int onscreenHeight)
+    {
+        blockHeight = BlockHeight(_miSize);
+        blockWidth = BlockWidth(_miSize);
+        onscreenHeight = Math.Min(blockHeight, (_miRows - _miRow) * Av1Constants.MiSize);
+        onscreenWidth = Math.Min(blockWidth, (_miCols - _miCol) * Av1Constants.MiSize);
+        if (isLuma)
+            return;
+
+        blockHeight >>= _subY;
+        blockWidth >>= _subX;
+        onscreenHeight >>= _subY;
+        onscreenWidth >>= _subX;
+        if (blockWidth < 4)
+        {
+            blockWidth += 2;
+            onscreenWidth += 2;
+        }
+
+        if (blockHeight < 4)
+        {
+            blockHeight += 2;
+            onscreenHeight += 2;
         }
     }
 

@@ -211,7 +211,7 @@ public sealed class ImageWriterTests
         // Static PNG, APNG, GIF and JPEG: PngEncoderTests, ApngEncoderTests, GifEncoderTests,
         // JpegEncoderTests. Creating a writer creates the codec session and writes nothing before the first frame.
         Assert.DoesNotContain(ImageEncoderRegistry.Default.Codecs, codec => codec.GetType().Name.Contains("Unavailable", StringComparison.Ordinal));
-        ImageEncoder[] encoders = [new PngEncoder(), new PngEncoder { AnimationMode = PngAnimationMode.Animated }, new GifEncoder(), new JpegEncoder()];
+        ImageEncoder[] encoders = [new PngEncoder(), new PngEncoder { AnimationMode = PngAnimationMode.Animated }, new GifEncoder(), new JpegEncoder(), new AvifEncoder()];
         foreach (var encoder in encoders)
         {
             using var writer = Image.CreateWriter<Rgba32>(new ThrowingStream(), new ImageWriterOptions(Width, Height) { Encoder = encoder, ExpectedFrameCount = encoder is GifEncoder ? null : 1 });

@@ -1,14 +1,17 @@
 namespace Meziantou.Framework.Imaging.Internals;
 
-/// <summary>A growable byte buffer rented from an allocation scope (<see cref="AllocationKind.Temporary"/>): the output of the VP8 encoder.</summary>
-internal sealed class WebPPayloadWriter : IDisposable
+/// <summary>
+/// A growable byte buffer rented from an allocation scope (<see cref="AllocationKind.Temporary"/>): the output of the
+/// encoders that produce a payload of unknown size (VP8, AV1) before it is written to the file.
+/// </summary>
+internal sealed class PooledPayloadWriter : IDisposable
 {
     private const int InitialCapacity = 4096;
 
     private readonly AllocationScope _scope;
     private PooledBuffer? _buffer;
 
-    public WebPPayloadWriter(AllocationScope scope)
+    public PooledPayloadWriter(AllocationScope scope)
     {
         ArgumentNullException.ThrowIfNull(scope);
         _scope = scope;
@@ -33,6 +36,25 @@ internal sealed class WebPPayloadWriter : IDisposable
         Ensure(data.Length);
         data.CopyTo(_buffer!.RawBuffer.AsSpan(Length));
         Length += data.Length;
+    }
+
+    /// <summary>Writes <paramref name="count"/> zero bytes.</summary>
+    public void WriteZeros(int count)
+    {
+        Ensure(count);
+        _buffer!.RawBuffer.AsSpan(Length, count).Clear();
+        Length += count;
+    }
+
+    /// <summary>Forgets the written bytes and keeps the buffer.</summary>
+    public void Reset() => Length = 0;
+
+    /// <summary>Forgets the bytes written from <paramref name="length"/>.</summary>
+    public void Truncate(int length)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(length);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(length, Length);
+        Length = length;
     }
 
     /// <summary>Increments the byte at <paramref name="index"/> with carry propagation toward the start (boolean encoder carries).</summary>

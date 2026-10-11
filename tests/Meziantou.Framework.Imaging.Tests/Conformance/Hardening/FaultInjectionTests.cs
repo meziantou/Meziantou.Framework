@@ -23,7 +23,7 @@ public sealed class FaultInjectionTests
 
     public static TheoryData<string, string> DecodeCases => Combine(ValidIds, ["load", "load-async", "reader", "reader-async", "reader-into", "identify-full"]);
 
-    public static TheoryData<string, string> SaveCases => Combine(ValidIds, ["png", "gif", "jpeg", "webp", "qoi", "bmp", "bmp-indexed", "tga", "pnm"]);
+    public static TheoryData<string, string> SaveCases => Combine(ValidIds, ["png", "gif", "jpeg", "webp", "qoi", "bmp", "bmp-indexed", "tga", "pnm", "avif"]);
 
     public static TheoryData<string, string> GeometryCases => Combine(ValidIds, ["crop", "auto-crop", "resize", "rotate", "auto-orient"]);
 
@@ -212,8 +212,9 @@ public sealed class FaultInjectionTests
                 audit.FailureInjector = null;
 
                 // Output failures at many positions of a non-seekable stream (a seekable stream for WebP animations, which
-                // patch their RIFF size: they reject non-seekable output before writing anything)
-                var patched = encoder is WebPEncoder && (image.Frames.Count > 1 || image.IsAnimated);
+                // patch their RIFF size, and for AVIF image sequences, which write their moov box last: they reject
+                // non-seekable output before writing anything)
+                var patched = (encoder is WebPEncoder && (image.Frames.Count > 1 || image.IsAnimated)) || (encoder is AvifEncoder && image.Frames.Count > 1);
                 if (patched)
                 {
                     await using var rejected = new TestOutputStream();
@@ -242,7 +243,7 @@ public sealed class FaultInjectionTests
                 Assert.Equal(live, audit.LiveBytes);
 
                 // A writer faulted by an I/O failure stays faulted
-                var patchedWriter = encoder is WebPEncoder && image.Frames.Count > 1;
+                var patchedWriter = encoder is WebPEncoder or AvifEncoder && image.Frames.Count > 1;
                 await using (var output = new TestOutputStream { FailAtPosition = 0, Seekable = patchedWriter, AllowPatching = patchedWriter })
                 using (var writer = CreateWriter(output, image, encoder))
                 {
@@ -404,6 +405,16 @@ public sealed class FaultInjectionTests
                 if (image.Animation is { TotalPlays: > ushort.MaxValue } animation)
                 {
                     animation.TotalPlays = null; // the WebP loop count is 16-bit
+                }
+
+                return image;
+            case "avif":
+                // The fastest search: the test encodes each input once per rental of the encoder
+                encoder = new AvifEncoder { MetadataHandling = MetadataHandling.Strip, AllowBitDepthReduction = true, Effort = 0 };
+                image.RemovePosterFrame();
+                if (image.Frames.Count == 1)
+                {
+                    image.Animation = null; // an image sequence of one image stores no animation settings
                 }
 
                 return image;

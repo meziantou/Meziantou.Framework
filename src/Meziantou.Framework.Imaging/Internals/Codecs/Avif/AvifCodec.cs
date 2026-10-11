@@ -3,7 +3,8 @@ using System.Buffers.Binary;
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
-/// The AVIF codec: still images and image sequences coded with AV1 in an ISO base media (HEIF) container. Decoding only.
+/// The AVIF decoder registration: still images and image sequences coded with AV1 in an ISO base media (HEIF) container.
+/// <see cref="AvifEncoderCodec"/> is the encoder.
 /// </summary>
 internal sealed class AvifCodec : ImageCodec
 {

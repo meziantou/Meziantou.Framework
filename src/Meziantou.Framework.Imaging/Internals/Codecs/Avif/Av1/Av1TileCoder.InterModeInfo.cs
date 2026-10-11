@@ -6,7 +6,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// The mode info of a block that is predicted from another frame, or from the frame itself with intra block copy
 /// (AV1 specification, sections 5.11.10, 5.11.17 to 5.11.23 and 5.11.25 to 5.11.33).
 /// </content>
-internal ref partial struct Av1TileDecoder
+internal ref partial struct Av1TileCoder
 {
     /// <summary>The value of <c>RefFrame[ 1 ]</c> for a block with one reference (<c>NONE</c>).</summary>
     private const int NoReference = -1;
@@ -15,14 +15,7 @@ internal ref partial struct Av1TileDecoder
     private void InterFrameModeInfo()
     {
         _useIntrabc = false;
-        _leftRefFrame0 = _availL ? _refFrames[MiIndex(_miRow, _miCol - 1) * 2] : Av1Constants.IntraFrame;
-        _aboveRefFrame0 = _availU ? _refFrames[MiIndex(_miRow - 1, _miCol) * 2] : Av1Constants.IntraFrame;
-        _leftRefFrame1 = _availL ? _refFrames[(MiIndex(_miRow, _miCol - 1) * 2) + 1] : NoReference;
-        _aboveRefFrame1 = _availU ? _refFrames[(MiIndex(_miRow - 1, _miCol) * 2) + 1] : NoReference;
-        _leftIntra = _leftRefFrame0 <= Av1Constants.IntraFrame;
-        _aboveIntra = _aboveRefFrame0 <= Av1Constants.IntraFrame;
-        _leftSingle = _leftRefFrame1 <= Av1Constants.IntraFrame;
-        _aboveSingle = _aboveRefFrame1 <= Av1Constants.IntraFrame;
+        SetNeighborReferences();
         _skip = false;
         InterSegmentId(preSkip: true);
         ReadSkipMode();
@@ -52,6 +45,20 @@ internal ref partial struct Av1TileDecoder
         {
             IntraBlockModeInfo();
         }
+    }
+
+    // The reference frames of the blocks above and to the left of the block, which select the distributions of the syntax
+    // elements of an inter frame (the variables of section 5.11.18)
+    private void SetNeighborReferences()
+    {
+        _leftRefFrame0 = _availL ? _refFrames[MiIndex(_miRow, _miCol - 1) * 2] : Av1Constants.IntraFrame;
+        _aboveRefFrame0 = _availU ? _refFrames[MiIndex(_miRow - 1, _miCol) * 2] : Av1Constants.IntraFrame;
+        _leftRefFrame1 = _availL ? _refFrames[(MiIndex(_miRow, _miCol - 1) * 2) + 1] : NoReference;
+        _aboveRefFrame1 = _availU ? _refFrames[(MiIndex(_miRow - 1, _miCol) * 2) + 1] : NoReference;
+        _leftIntra = _leftRefFrame0 <= Av1Constants.IntraFrame;
+        _aboveIntra = _aboveRefFrame0 <= Av1Constants.IntraFrame;
+        _leftSingle = _leftRefFrame1 <= Av1Constants.IntraFrame;
+        _aboveSingle = _aboveRefFrame1 <= Av1Constants.IntraFrame;
     }
 
     // Section 5.11.19 "Inter segment ID syntax"
@@ -176,29 +183,24 @@ internal ref partial struct Av1TileDecoder
         }
         else
         {
-            int ctx;
-            if (_availU && _availL)
-            {
-                if (_leftIntra && _aboveIntra)
-                {
-                    ctx = 3;
-                }
-                else
-                {
-                    ctx = _leftIntra || _aboveIntra ? 1 : 0;
-                }
-            }
-            else if (_availU || _availL)
-            {
-                ctx = 2 * ((_availU ? _aboveIntra : _leftIntra) ? 1 : 0);
-            }
-            else
-            {
-                ctx = 0;
-            }
-
-            _isInter = ReadSymbol(Av1CdfLayout.IsInter + (ctx * Av1CdfLayout.IsInterSize), Av1CdfLayout.IsInterSize) is not 0;
+            _isInter = ReadSymbol(Av1CdfLayout.IsInter + (GetIsInterContext() * Av1CdfLayout.IsInterSize), Av1CdfLayout.IsInterSize) is not 0;
         }
+    }
+
+    private readonly int GetIsInterContext()
+    {
+        if (_availU && _availL)
+        {
+            if (_leftIntra && _aboveIntra)
+                return 3;
+
+            return _leftIntra || _aboveIntra ? 1 : 0;
+        }
+
+        if (_availU || _availL)
+            return 2 * ((_availU ? _aboveIntra : _leftIntra) ? 1 : 0);
+
+        return 0;
     }
 
     // Section 5.11.22 "Intra block mode info syntax"
@@ -637,19 +639,9 @@ internal ref partial struct Av1TileDecoder
                     }
                 }
             }
-            else if (compMode is Av1Constants.Globalmv)
-            {
-                _predMv[i * 2] = _globalMvs[i * 2];
-                _predMv[(i * 2) + 1] = _globalMvs[(i * 2) + 1];
-            }
             else
             {
-                var pos = compMode is Av1Constants.Nearestmv ? 0 : _refMvIdx;
-                if (compMode is Av1Constants.Newmv && _numMvFound <= 1)
-                    pos = 0;
-
-                _predMv[i * 2] = _refStackMv[pos][i * 2];
-                _predMv[(i * 2) + 1] = _refStackMv[pos][(i * 2) + 1];
+                SetPredMv(i, compMode);
             }
 
             if (compMode is Av1Constants.Newmv)
@@ -665,6 +657,24 @@ internal ref partial struct Av1TileDecoder
 
         if (!IsMvValid(isCompound))
             throw Av1Errors.Invalid("a motion vector is out of range.");
+    }
+
+    // PredMv of a reference list of a block that is not coded with intra block copy (section 5.11.26)
+    private void SetPredMv(int refList, int compMode)
+    {
+        if (compMode is Av1Constants.Globalmv)
+        {
+            _predMv[refList * 2] = _globalMvs[refList * 2];
+            _predMv[(refList * 2) + 1] = _globalMvs[(refList * 2) + 1];
+            return;
+        }
+
+        var pos = compMode is Av1Constants.Nearestmv ? 0 : _refMvIdx;
+        if (compMode is Av1Constants.Newmv && _numMvFound <= 1)
+            pos = 0;
+
+        _predMv[refList * 2] = _refStackMv[pos][refList * 2];
+        _predMv[(refList * 2) + 1] = _refStackMv[pos][(refList * 2) + 1];
     }
 
     // The is_mv_valid function of section 6.10.25 "Assign mv semantics"
@@ -993,13 +1003,7 @@ internal ref partial struct Av1TileDecoder
         var txfmSplit = false;
         if (txSz is not Av1Constants.Tx4x4 && depth is not Av1Constants.MaxVartxDepth)
         {
-            var above = GetAboveTxWidth(row, col) < Av1Tables.TxWidth[txSz] ? 1 : 0;
-            var left = GetLeftTxHeight(row, col) < Av1Tables.TxHeight[txSz] ? 1 : 0;
-            var size = Math.Min(64, Math.Max(BlockWidth(_miSize), BlockHeight(_miSize)));
-            var maxTxSz = FindTxSize(size, size);
-            var txSzSqrUp = Av1Tables.TxSizeSqrUp[txSz];
-            var ctx = ((txSzSqrUp != maxTxSz ? 1 : 0) * 3) + ((Av1Constants.TxSizes - 1 - maxTxSz) * 6) + above + left;
-            txfmSplit = ReadSymbol(Av1CdfLayout.TxfmSplit + (ctx * Av1CdfLayout.TxfmSplitSize), Av1CdfLayout.TxfmSplitSize) is not 0;
+            txfmSplit = ReadSymbol(Av1CdfLayout.TxfmSplit + (GetTxfmSplitContext(row, col, txSz) * Av1CdfLayout.TxfmSplitSize), Av1CdfLayout.TxfmSplitSize) is not 0;
         }
 
         var w4 = Av1Tables.TxWidth[txSz] / Av1Constants.MiSize;
@@ -1031,6 +1035,17 @@ internal ref partial struct Av1TileDecoder
         }
     }
 
+    // The CDF selection of txfm_split (section 8.3.2)
+    private readonly int GetTxfmSplitContext(int row, int col, int txSz)
+    {
+        var above = GetAboveTxWidth(row, col) < Av1Tables.TxWidth[txSz] ? 1 : 0;
+        var left = GetLeftTxHeight(row, col) < Av1Tables.TxHeight[txSz] ? 1 : 0;
+        var size = Math.Min(64, Math.Max(BlockWidth(_miSize), BlockHeight(_miSize)));
+        var maxTxSz = FindTxSize(size, size);
+        var txSzSqrUp = Av1Tables.TxSizeSqrUp[txSz];
+        return ((txSzSqrUp != maxTxSz ? 1 : 0) * 3) + ((Av1Constants.TxSizes - 1 - maxTxSz) * 6) + above + left;
+    }
+
     // The find_tx_size function of section 5.11.36 "Transform tree syntax"
     private static int FindTxSize(int w, int h)
     {
@@ -1045,7 +1060,7 @@ internal ref partial struct Av1TileDecoder
     }
 
     // Section 5.11.36 "Transform tree syntax"
-    private void TransformTree(int startX, int startY, int w, int h)
+    private void TransformTree(ResidualOperation operation, int startX, int startY, int w, int h)
     {
         var maxX = _miCols * Av1Constants.MiSize;
         var maxY = _miRows * Av1Constants.MiSize;
@@ -1059,24 +1074,36 @@ internal ref partial struct Av1TileDecoder
         var lumaH = Av1Tables.TxHeight[lumaTxSz];
         if (w <= lumaW && h <= lumaH)
         {
-            TransformBlock(0, startX, startY, FindTxSize(w, h), 0, 0);
+            var txSz = FindTxSize(w, h);
+            switch (operation)
+            {
+                case ResidualOperation.Decode:
+                    TransformBlock(0, startX, startY, txSz, 0, 0);
+                    break;
+                case ResidualOperation.Search:
+                    SearchTransformBlock(0, startX, startY, txSz, 0, 0);
+                    break;
+                default:
+                    ReplayTransformBlock(0, startX, startY, txSz, 0, 0);
+                    break;
+            }
         }
         else if (w > h)
         {
-            TransformTree(startX, startY, w / 2, h);
-            TransformTree(startX + (w / 2), startY, w / 2, h);
+            TransformTree(operation, startX, startY, w / 2, h);
+            TransformTree(operation, startX + (w / 2), startY, w / 2, h);
         }
         else if (w < h)
         {
-            TransformTree(startX, startY, w, h / 2);
-            TransformTree(startX, startY + (h / 2), w, h / 2);
+            TransformTree(operation, startX, startY, w, h / 2);
+            TransformTree(operation, startX, startY + (h / 2), w, h / 2);
         }
         else
         {
-            TransformTree(startX, startY, w / 2, h / 2);
-            TransformTree(startX + (w / 2), startY, w / 2, h / 2);
-            TransformTree(startX, startY + (h / 2), w / 2, h / 2);
-            TransformTree(startX + (w / 2), startY + (h / 2), w / 2, h / 2);
+            TransformTree(operation, startX, startY, w / 2, h / 2);
+            TransformTree(operation, startX + (w / 2), startY, w / 2, h / 2);
+            TransformTree(operation, startX, startY + (h / 2), w / 2, h / 2);
+            TransformTree(operation, startX + (w / 2), startY + (h / 2), w / 2, h / 2);
         }
     }
 }

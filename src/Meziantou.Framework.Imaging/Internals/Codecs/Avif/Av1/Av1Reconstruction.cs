@@ -12,6 +12,14 @@ internal static class Av1Reconstruction
     /// <summary>Returns <c>ac_q( b )</c> (section 7.12.2).</summary>
     public static int GetAcQuantizer(int qindex, int bitDepth) => Av1Tables.AcQlookup[(((bitDepth - 8) >> 1) * Av1Tables.AcQlookupLength1) + Math.Clamp(qindex, 0, 255)];
 
+    /// <summary>Returns <c>dqDenom</c>: what the dequantized coefficients of a transform size are divided by (section 7.12.3).</summary>
+    public static int GetDequantizationDenominator(int txSz) => txSz switch
+    {
+        Av1Constants.Tx32x32 or Av1Constants.Tx16x32 or Av1Constants.Tx32x16 or Av1Constants.Tx16x64 or Av1Constants.Tx64x16 => 2,
+        Av1Constants.Tx64x64 or Av1Constants.Tx32x64 or Av1Constants.Tx64x32 => 4,
+        _ => 1,
+    };
+
     /// <summary>
     /// Dequantizes the coefficients of a transform block, applies the inverse transform and adds the residual to the predicted
     /// samples (<c>reconstruct</c>, section 7.12.3).
@@ -40,12 +48,7 @@ internal static class Av1Reconstruction
         var h = 1 << log2H;
         var tw = Math.Min(32, w);
         var th = Math.Min(32, h);
-        var dqDenom = txSz switch
-        {
-            Av1Constants.Tx32x32 or Av1Constants.Tx16x32 or Av1Constants.Tx32x16 or Av1Constants.Tx16x64 or Av1Constants.Tx64x16 => 2,
-            Av1Constants.Tx64x64 or Av1Constants.Tx32x64 or Av1Constants.Tx64x32 => 4,
-            _ => 1,
-        };
+        var dqDenom = GetDequantizationDenominator(txSz);
 
         var dequant = scratch[..(tw * th)];
         var residual = scratch.Slice(1024, w * h);

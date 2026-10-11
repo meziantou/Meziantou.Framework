@@ -66,6 +66,19 @@ public sealed class DefaultsTests
         Assert.Null(jpeg.BackgroundColor);
         Assert.False(jpeg.AllowBitDepthReduction);
         Assert.Equal(MetadataHandling.Strict, jpeg.MetadataHandling);
+
+        var avif = new AvifEncoder();
+        Assert.Equal(ImageFormat.Avif, avif.Format);
+        Assert.Equal(AvifCompression.Lossless, avif.Compression);
+        Assert.Equal(75, avif.Quality);
+        Assert.Equal(5, avif.Effort);
+        Assert.Equal(AvifChromaSubsampling.Auto, avif.ChromaSubsampling);
+        Assert.Null(avif.BitDepth);
+        Assert.False(avif.AllowBitDepthReduction);
+        Assert.False(avif.ClearTransparentColors);
+        Assert.Equal(0, avif.KeyFrameInterval);
+        Assert.Equal(FrameDurationRounding.RequireExact, avif.DurationRounding);
+        Assert.Equal(MetadataHandling.Strict, avif.MetadataHandling);
     }
 
     [Fact]
@@ -78,6 +91,11 @@ public sealed class DefaultsTests
         Assert.Throws<ArgumentOutOfRangeException>(() => new GifEncoder { MaxColors = 257 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new PngEncoder { Filter = (PngFilter)42 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new PngEncoder { MetadataHandling = (MetadataHandling)42 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new AvifEncoder { Quality = 101 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new AvifEncoder { Effort = 10 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new AvifEncoder { BitDepth = 9 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new AvifEncoder { DurationRounding = (FrameDurationRounding)2 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new AvifEncoder { KeyFrameInterval = -1 });
         Assert.Equal(new Rgba64(65535, 0, 0), new JpegEncoder { BackgroundColor = new Rgba32(255, 0, 0) }.BackgroundColor);
     }
 
@@ -107,9 +125,8 @@ public sealed class DefaultsTests
         Assert.IsType<AniEncoder>(ImageEncoder.FromPath("a.ANI"));
         Assert.Throws<ArgumentException>(() => ImageEncoder.FromPath("a.heic"));
 
-        // AVIF is decoded but never encoded: its extensions select no encoder
-        Assert.Equal("path", Assert.Throws<ArgumentException>(() => ImageEncoder.FromPath("a.avif")).ParamName);
-        Assert.Equal("path", Assert.Throws<ArgumentException>(() => ImageEncoder.FromPath("dir/a.AVIFS")).ParamName);
+        Assert.Equal(AvifCompression.Lossless, Assert.IsType<AvifEncoder>(ImageEncoder.FromPath("a.avif")).Compression);
+        Assert.IsType<AvifEncoder>(ImageEncoder.FromPath("dir/a.AVIFS"));
         Assert.Throws<ArgumentException>(() => ImageEncoder.FromPath("noextension"));
     }
 

@@ -7,7 +7,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// (AV1 specification, sections 7.10.2 "Find MV stack process", 7.10.3 "Has overlappable candidates process" and 7.10.4 "Find
 /// warp samples process").
 /// </content>
-internal ref partial struct Av1TileDecoder
+internal ref partial struct Av1TileCoder
 {
     // Section 7.10.2 "Find MV stack process"
     private void FindMvStack(bool isCompound)

@@ -245,21 +245,15 @@ public sealed class ImageSaveTests
     [InlineData("image.avif")]
     [InlineData("IMAGE.AVIF")]
     [InlineData("sequence.avifs")]
-    public async Task AvifExtensionsSelectNoEncoderBecauseTheFormatIsOnlyRead(string name)
+    public async Task AvifExtensionsOnlySelectTheDefaultEncoder(string name)
     {
         using var codecs = TestCodecs.UseAll(out _, out _, out _, out _);
         var directory = ImageWriterTests.CreateDirectory();
         try
         {
-            // AVIF is decoded and never encoded: the path is rejected before anything is written, synchronously
             using var image = StreamImages.CreateAnimation(Width, Height, 1);
             var path = directory / name;
-            Assert.Equal("path", Assert.Throws<ArgumentException>(() => image.Save(path)).ParamName);
-            Task? task = null;
-            var exception = Assert.IsType<ArgumentException>(Record.Exception(() => { task = image.SaveAsync(path, cancellationToken: XunitCancellationToken); }));
-            Assert.Equal("path", exception.ParamName);
-            Assert.Null(task);
-            Assert.Empty(Directory.GetFileSystemEntries(directory));
+            Assert.IsType<AvifEncoder>(ImageEncoder.FromPath(path));
 
             // The extension only selects the default encoder: an explicit encoder writes its own format under that name
             await image.SaveAsync(path, new PngEncoder(), XunitCancellationToken);
@@ -298,6 +292,7 @@ public sealed class ImageSaveTests
         new PnmEncoder(),
         new TiffEncoder(),
         new IcoEncoder(),
+        new AvifEncoder(),
     ];
 
     [Theory]
@@ -338,6 +333,7 @@ public sealed class ImageSaveTests
             TgaEncoder => new TgaEncoder { MetadataHandling = handling },
             PnmEncoder => new PnmEncoder { MetadataHandling = handling },
             TiffEncoder => new TiffEncoder { MetadataHandling = handling },
+            AvifEncoder => new AvifEncoder { MetadataHandling = handling },
             _ => new IcoEncoder { MetadataHandling = handling },
         };
     }

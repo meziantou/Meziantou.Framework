@@ -355,7 +355,8 @@ public abstract partial class Image : IDisposable
     /// <param name="path">The destination path.</param>
     /// <param name="encoder">
     /// The encoder, or <see langword="null"/> to select it from the file extension: <c>.png</c> (PNG, automatic animation mode),
-    /// <c>.apng</c> (animated PNG), <c>.gif</c> (GIF), <c>.jpg</c>/<c>.jpeg</c> (JPEG), each with default settings.
+    /// <c>.apng</c> (animated PNG), <c>.gif</c> (GIF), <c>.jpg</c>/<c>.jpeg</c> (JPEG), <c>.avif</c> (AVIF, lossless), and the
+    /// extensions of the other formats, each with default settings.
     /// </param>
     /// <exception cref="ArgumentException"><paramref name="path"/> is empty, or <paramref name="encoder"/> is <see langword="null"/> and the extension is not recognized.</exception>
     /// <exception cref="UnsupportedImageFeatureException">The image cannot be encoded without a loss that the encoder settings do not allow (animation, alpha, precision, metadata).</exception>

@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using ArmCrc32 = System.Runtime.Intrinsics.Arm.Crc32;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -7,10 +8,16 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// 0xFFFFFFFF), computed with the table-driven method described in the PNG specification, Annex D (sample CRC code).
 /// </summary>
 /// <remarks>
-/// <see cref="Update"/> processes 8 bytes per step with eight derived tables ("slicing by 8"): table <c>k</c> gives the
+/// <para>
+/// <see cref="UpdateTables"/> processes 8 bytes per step with eight derived tables ("slicing by 8"): table <c>k</c> gives the
 /// contribution of a byte followed by <c>k</c> zero bytes, <c>T[k][i] = (T[k - 1][i] &gt;&gt; 8) ^ T[0][T[k - 1][i] &amp; 0xFF]</c>,
 /// which is the byte-at-a-time recurrence applied <c>k</c> more times. The result is the CRC of the reference loop
 /// (<see cref="UpdateScalar"/>); about 5 times faster on the chunk sizes of PNG files.
+/// </para>
+/// <para>
+/// Arm64 processors have instructions for this very polynomial (the CRC32 extension): <see cref="Update"/> uses them when
+/// they are available, 8 bytes per instruction, which is several times faster again and gives the same value.
+/// </para>
 /// </remarks>
 internal static class Crc32
 {
@@ -22,6 +29,26 @@ internal static class Crc32
 
     /// <summary>Updates a running (non-finalized) CRC with more bytes.</summary>
     public static uint Update(uint crc, ReadOnlySpan<byte> data)
+    {
+        if (!ArmCrc32.Arm64.IsSupported)
+            return UpdateTables(crc, data);
+
+        while (data.Length >= 8)
+        {
+            crc = ArmCrc32.Arm64.ComputeCrc32(crc, BinaryPrimitives.ReadUInt64LittleEndian(data));
+            data = data[8..];
+        }
+
+        foreach (var value in data)
+        {
+            crc = ArmCrc32.ComputeCrc32(crc, value);
+        }
+
+        return crc;
+    }
+
+    /// <summary>The table-driven version of <see cref="Update"/>, 8 bytes per step.</summary>
+    internal static uint UpdateTables(uint crc, ReadOnlySpan<byte> data)
     {
         var tables = SlicingTables.AsSpan();
         while (data.Length >= 8)

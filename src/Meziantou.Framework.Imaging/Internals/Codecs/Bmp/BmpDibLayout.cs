@@ -150,14 +150,7 @@ internal sealed class BmpDibLayout
             }
 
             case 24:
-                for (var x = 0; x < width; x++)
-                {
-                    var offset = x * 3;
-                    destination[offset] = source[offset + 2];
-                    destination[offset + 1] = source[offset + 1];
-                    destination[offset + 2] = source[offset];
-                }
-
+                PixelConverter.SwapRedAndBlue24(source[..(width * 3)], destination);
                 break;
 
             default:

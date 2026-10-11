@@ -594,7 +594,45 @@ internal sealed class Vp8Encoder : IDisposable
     }
 
     /// <summary>Quantizes raster-order coefficients into raster-order levels (positions before <paramref name="first"/> are zero).</summary>
-    private static void Quantize(ReadOnlySpan<int> coefficients, Span<short> levels, int dcStep, int acStep, int first)
+    /// <remarks>
+    /// The divisions by the steps, which do not change in a block, are multiplications by their reciprocals followed by a
+    /// correction (<see cref="Divide"/>): the levels are the ones of <see cref="QuantizeReference"/>.
+    /// </remarks>
+    internal static void Quantize(ReadOnlySpan<int> coefficients, Span<short> levels, int dcStep, int acStep, int first)
+    {
+        coefficients = coefficients[..16];
+        levels = levels[..16];
+        if (first > 0)
+        {
+            levels[0] = 0;
+        }
+        else
+        {
+            // Rounding to nearest for DC
+            var magnitude = Math.Abs(coefficients[0]);
+            var level = Math.Min((magnitude + (dcStep >> 1)) / dcStep, MaxLevel);
+            levels[0] = (short)(coefficients[0] < 0 ? -level : level);
+        }
+
+        // A dead zone (2/3 of a step) for AC coefficients
+        var divisor = 3 * acStep;
+        var reciprocal = uint.MaxValue / (uint)divisor;
+        for (var i = 1; i < 16; i++)
+        {
+            if (i < first)
+            {
+                levels[i] = 0;
+                continue;
+            }
+
+            var magnitude = Math.Abs(coefficients[i]);
+            var level = Math.Min(Divide((3 * magnitude) + acStep, divisor, reciprocal), MaxLevel);
+            levels[i] = (short)(coefficients[i] < 0 ? -level : level);
+        }
+    }
+
+    /// <summary>The reference of <see cref="Quantize"/>: one division per coefficient.</summary>
+    internal static void QuantizeReference(ReadOnlySpan<int> coefficients, Span<short> levels, int dcStep, int acStep, int first)
     {
         for (var i = 0; i < 16; i++)
         {
@@ -612,6 +650,20 @@ internal sealed class Vp8Encoder : IDisposable
             level = Math.Min(level, MaxLevel);
             levels[i] = (short)(coefficients[i] < 0 ? -level : level);
         }
+    }
+
+    /// <summary>
+    /// Divides a non-negative number by a positive divisor whose reciprocal <c>floor((2^32 - 1) / divisor)</c> is known.
+    /// </summary>
+    /// <remarks>
+    /// The reciprocal is between <c>2^32 / divisor - 1</c> and <c>2^32 / divisor</c>, so the high half of the product is the
+    /// quotient or one less (the error is below <c>value / 2^32</c>, which is less than 1); one comparison corrects it.
+    /// </remarks>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static int Divide(int value, int divisor, uint reciprocal)
+    {
+        var quotient = (int)(((ulong)(uint)value * reciprocal) >> 32);
+        return (long)(quotient + 1) * divisor <= value ? quotient + 1 : quotient;
     }
 
     private static void Dequantize(ReadOnlySpan<short> levels, Span<short> dequantized, int dcStep, int acStep)

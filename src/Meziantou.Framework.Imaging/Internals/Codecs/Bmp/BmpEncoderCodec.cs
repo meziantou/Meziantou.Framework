@@ -501,14 +501,7 @@ internal sealed class BmpEncoderCodec : ImageEncoderCodec
                             break;
 
                         default:
-                            for (var x = 0; x < _width; x++)
-                            {
-                                var offset = x * 3;
-                                destination[offset] = band[offset + 2];
-                                destination[offset + 1] = band[offset + 1];
-                                destination[offset + 2] = band[offset];
-                            }
-
+                            PixelConverter.SwapRedAndBlue24(band, destination);
                             break;
                     }
                 }

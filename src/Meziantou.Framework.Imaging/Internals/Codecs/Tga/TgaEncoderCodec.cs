@@ -162,11 +162,7 @@ internal sealed class TgaEncoderCodec : ImageEncoderCodec
                 if (_workFormat == PixelFormat.Rgb24)
                 {
                     // TGA stores blue, green and red: the conversion produced RGB, so red and blue are swapped in place
-                    for (var x = 0; x < _width; x++)
-                    {
-                        var offset = x * 3;
-                        (stored[offset], stored[offset + 2]) = (stored[offset + 2], stored[offset]);
-                    }
+                    PixelConverter.SwapRedAndBlue24(stored, stored);
                 }
 
                 if (_runLength)

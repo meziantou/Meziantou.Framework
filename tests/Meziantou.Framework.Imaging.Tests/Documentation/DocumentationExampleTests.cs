@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.Metadata;
 using Meziantou.Framework.Imaging.Samples;
@@ -70,6 +71,74 @@ public sealed class DocumentationExampleTests : IDisposable
         Assert.Equal(new FrameDuration(3, 100), resized.Frames[1].Metadata.Duration);
         Assert.Equal(3, resized.Animation!.TotalPlays);
         Assert.Equal(Blue, resized.Frames[1][120, 120]);
+    }
+
+    [Fact]
+    public void DrawLandscapePaintsShapesOverEachOther()
+    {
+        var output = GetPath("landscape.png");
+        Examples.DrawLandscape(output);
+
+        using var image = Image.Load<Rgba32>(output);
+        Assert.Equal(new Size(256, 160), image.Size);
+        var frame = image.Frames[0];
+
+        // The sky gradient made every pixel opaque
+        frame.ProcessPixelRows(static pixels =>
+        {
+            for (var y = 0; y < pixels.Height; y++)
+            {
+                foreach (var pixel in pixels.GetRowSpan(y))
+                {
+                    Assert.Equal(255, pixel.A);
+                }
+            }
+        });
+
+        // Inside the hill, away from its outline: the solid color exactly
+        Assert.Equal(new Rgba32(60, 140, 60), frame[10, 150]);
+        Assert.Equal(new Rgba32(60, 140, 60), frame[200, 140]);
+
+        // The sky gets lighter toward the bottom, and is the same along a row
+        Assert.True(frame[100, 10].B < frame[100, 60].B);
+        Assert.Equal(frame[40, 30], frame[120, 30]);
+
+        // The sun is nearly opaque at its center and fades into the sky; outside its radius the sky is untouched
+        Assert.True(frame[200, 50].R > 240 && frame[200, 50].G > 240);
+        Assert.True(frame[215, 50].R > frame[120, 50].R && frame[215, 50].R < frame[200, 50].R);
+        Assert.Equal(frame[120, 50], frame[240, 50]);
+
+        // The frame is a translucent black line from 0 to 2 around the canvas: darker than the pixels next to it
+        Assert.True(frame[0, 60].B < frame[3, 60].B);
+        Assert.Equal(frame[0, 60], frame[1, 60]);
+        Assert.True(frame[100, 159].G < frame[100, 157].G);
+    }
+
+    [Fact]
+    public void MarkAnimationDrawsOnEveryFrame()
+    {
+        var (apngPath, _) = BuildAnimation();
+        var output = GetPath("marked.png");
+        Examples.MarkAnimation(apngPath, output);
+
+        using var marked = Image.Load<Rgba32>(output);
+        Assert.Equal(2, marked.Frames.Count);
+        Assert.Equal(new FrameDuration(1, 30), marked.Frames[1].Metadata.Duration);
+
+        // The horizontal line, 4 pixels wide across the center: yellow at 200/255 over red, then over blue.
+        //   over red: green = 255 * 200 / 255 = 200 | over blue: red = green = 200, blue = 255 * 55 / 255 = 55
+        Assert.Equal(new Rgba32(255, 200, 0), marked.Frames[0][32, 32]);
+        Assert.Equal(new Rgba32(200, 200, 55), marked.Frames[1][32, 32]);
+        Assert.Equal(new Rgba32(200, 200, 55), marked.Frames[1][20, 30]);
+
+        // Away from the circle and the line, the frames are untouched
+        Assert.Equal(Red, marked.Frames[0][2, 2]);
+        Assert.Equal(Blue, marked.Frames[1][32, 24]);
+        Assert.Equal(Blue, marked.Frames[1][63, 63]);
+
+        // The circle of radius 16 crosses the vertical through the center at 16 and 48
+        Assert.Equal(new Rgba32(200, 200, 55), marked.Frames[1][32, 16]);
+        Assert.Equal(new Rgba32(200, 200, 55), marked.Frames[1][31, 47]);
     }
 
     [Fact]
@@ -314,6 +383,26 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void SaveIndexedBmpWritesARunLengthEncodedPalettedBitmap()
+    {
+        var (apngPath, _) = BuildAnimation();
+        var bmp = GetPath("indexed.bmp");
+        Examples.SaveIndexedBmp(apngPath, bmp);
+
+        var data = File.ReadAllBytes(bmp);
+        Assert.Equal(8, data[28]); // biBitCount
+        Assert.Equal(1, data[30]); // biCompression: BI_RLE8
+        Assert.Equal((uint)data.Length, BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(2))); // bfSize
+
+        using var expected = Image.Load<Rgba32>(apngPath);
+        using var image = Image.Load(bmp);
+        Assert.Equal(ImageFormat.Bmp, image.Metadata.SourceFormat);
+        Assert.Equal(PixelFormat.Rgb24, image.PixelFormat);
+        Assert.Equal(expected.Size, image.Size);
+        Assert.Equal(1, image.Frames.Count);
+    }
+
+    [Fact]
     public void WriteAndReadTiffDocumentKeepsThePagesIndependent()
     {
         var (apngPath, _) = BuildAnimation();
@@ -529,6 +618,28 @@ public sealed class DocumentationExampleTests : IDisposable
         Examples.ConvertToSrgb(grayOutput, grayInput);
         using var unchanged = Image.Load<Gray8>(grayInput);
         Assert.Equal(new Gray8(62), unchanged.Frames[0][0, 0]);
+    }
+
+    [Fact]
+    public void LoadCmykJpegConvertsTheInks()
+    {
+        // A CMYK JPEG of the corpus without profile: rejected as it is, converted to sRGB by the example
+        var path = GoldenCorpus.Default.Get("invalid/jpeg/cmyk-without-adobe-restart").InputPath;
+        Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(path));
+        using var image = Examples.LoadCmykJpeg(path);
+        Assert.Equal(PixelFormat.Rgb24, image.PixelFormat);
+        Assert.Same(IccProfile.Srgb, image.Metadata.IccProfile);
+
+        // The example leaves the other images alone
+        var gray = GetPath("gray.png");
+        using (var source = new Image<Gray8>(2, 2, new Gray8(64)))
+        {
+            source.Save(gray);
+        }
+
+        using var unchanged = Examples.LoadCmykJpeg(gray);
+        Assert.Equal(PixelFormat.Gray8, unchanged.PixelFormat);
+        Assert.Null(unchanged.Metadata.IccProfile);
     }
 
     [Fact]

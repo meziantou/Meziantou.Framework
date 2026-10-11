@@ -138,6 +138,26 @@ public sealed class IcoCodecTests
     }
 
     [Fact]
+    public void RunLengthAndOs2DibPayloadsAreRejected()
+    {
+        // The standalone BMP decoder reads both; an icon payload has fixed-length color rows followed by its AND mask
+        var payload = IcoFileBuilder.Dib8(2, 2, [0, 1, 1, 0], [new Rgb24(1, 2, 3), new Rgb24(4, 5, 6)]);
+        BinaryPrimitives.WriteUInt32LittleEndian(payload.AsSpan(16), 1);
+        var runLength = Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(new IcoFileBuilder().Add(new IcoEntrySpec { Width = 2, Height = 2, Payload = payload }).Build()));
+        Assert.Equal(ImageFormat.Ico, runLength.Format);
+        Assert.Equal("Compression: RLE", runLength.Feature);
+
+        foreach (var headerLength in new uint[] { 12, 16, 64 })
+        {
+            payload = IcoFileBuilder.Dib8(2, 2, [0, 1, 1, 0], [new Rgb24(1, 2, 3), new Rgb24(4, 5, 6)]);
+            BinaryPrimitives.WriteUInt32LittleEndian(payload, headerLength);
+            var os2 = Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(new IcoFileBuilder().Add(new IcoEntrySpec { Width = 2, Height = 2, Payload = payload }).Build()));
+            Assert.Equal(ImageFormat.Ico, os2.Format);
+            Assert.Equal(string.Create(CultureInfo.InvariantCulture, $"Payload: DIB header of {headerLength} bytes"), os2.Feature);
+        }
+    }
+
+    [Fact]
     public void AnAnimatedPngPayloadIsRejected()
     {
         var apng = SyntheticImages.Apng(4, 4, frames: 2);

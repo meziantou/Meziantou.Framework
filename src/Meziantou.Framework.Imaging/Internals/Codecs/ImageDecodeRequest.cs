@@ -13,7 +13,9 @@ internal sealed record ImageDecodeRequest(PixelFormat? PixelFormat, int? FrameLi
     /// </summary>
     public bool IsEmbeddedPayload { get; init; }
 
+    /// <summary>Gets the color conversion that makes CMYK samples loadable, or <see langword="null"/> to reject them.</summary>
+    public CmykConversionOptions? CmykConversion { get; init; }
 
     public static ImageDecodeRequest Create(ImageDecodeOptions options, PixelFormat? pixelFormat)
-        => new(pixelFormat, options.FrameLimit, options.Conversion);
+        => new(pixelFormat, options.FrameLimit, options.Conversion) { CmykConversion = options.CmykConversion };
 }

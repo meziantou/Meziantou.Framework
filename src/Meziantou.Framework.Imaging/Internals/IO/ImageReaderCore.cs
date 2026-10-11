@@ -32,6 +32,7 @@ internal sealed class ImageReaderCore : IDisposable, IAsyncDisposable
     private readonly SequentialDecodeSession _session;
     private readonly int? _frameLimit;
     private readonly PixelConversionOptions _conversion;
+    private readonly CmykConversionOptions? _cmykConversion;
     private SequentialDecodeParser? _parser;
     private ReaderState _state;
     private int _busy;
@@ -44,6 +45,7 @@ internal sealed class ImageReaderCore : IDisposable, IAsyncDisposable
         _session = session;
         _frameLimit = options.FrameLimit;
         _conversion = options.Conversion;
+        _cmykConversion = options.CmykConversion;
         PixelFormat = pixelFormat;
     }
 
@@ -249,7 +251,7 @@ internal sealed class ImageReaderCore : IDisposable, IAsyncDisposable
         if (codec.RequiresRandomAccess)
             throw new UnsupportedImageFeatureException($"{ImageFormatNames.Get(codec.Format)} cannot be read by a sequential ImageReader: it is a random-access container whose entries are not animation frames. Use ImageCollection to enumerate them, or Image.Load for the first one.", codec.Format, "Sequential reading");
 
-        var request = new ImageDecodeRequest(PixelFormat, _frameLimit, _conversion);
+        var request = new ImageDecodeRequest(PixelFormat, _frameLimit, _conversion) { CmykConversion = _cmykConversion };
         _parser = new SequentialDecodeParser(codec.CreateDecodeParser(request, _context), _session);
     }
 

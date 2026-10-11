@@ -89,7 +89,7 @@ public sealed class VectorizedKernelTests
     public void GifNearestColorMatchesTheScalarReference(int colors)
     {
         var random = new Random(colors);
-        using var quantizer = new GifQuantizer(new AllocationScope(new ImageResourceLimits()));
+        using var quantizer = new PaletteQuantizer(new AllocationScope(new ImageResourceLimits()));
         quantizer.Begin(256);
 
         // Distinct random colors: an exact palette, sorted by key
@@ -118,7 +118,7 @@ public sealed class VectorizedKernelTests
     [Fact]
     public void GifNearestColorTiesSelectTheLowestIndex()
     {
-        using var quantizer = new GifQuantizer(new AllocationScope(new ImageResourceLimits()));
+        using var quantizer = new PaletteQuantizer(new AllocationScope(new ImageResourceLimits()));
         quantizer.Begin(256);
 
         // A grid with step 2: (2i, 0, 0) for i in 0..31; odd red values are equidistant from two entries

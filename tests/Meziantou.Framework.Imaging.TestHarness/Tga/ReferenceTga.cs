@@ -5,7 +5,8 @@ namespace Meziantou.Framework.Imaging.TestHarness.Tga;
 /// <summary>
 /// An independent, deliberately simple reading of the Truevision TGA 2.0 subset the library supports, used to verify the
 /// library's encoder output without the library's decoder. It keeps the whole input in memory, expands every pixel to
-/// straight RGBA8, and is strict: an implausible header, an unsupported depth, a packet past the last pixel, a color-map
+/// straight RGBA8 (a 16-bit grayscale pixel is a gray byte followed by an attribute byte, which is the alpha only when the
+/// image descriptor declares 8 alpha bits; a 16-bit color-map index is little-endian), and is strict: an implausible header, an unsupported depth, a packet past the last pixel, a color-map
 /// index outside the stored map and truncation throw <see cref="InvalidDataException"/>. The TGA 2.0 footer is looked up in
 /// the last 26 bytes of the file and its extension offset is followed: an extension area that does not lie between the image
 /// data and the footer, one that is too short to hold an attributes type, and premultiplied alpha (attributes type 4 with
@@ -91,11 +92,11 @@ public sealed class ReferenceTga
         if (colorMapped != (colorMapType == 1))
             throw new InvalidDataException("The color-map type contradicts the image type.");
 
-        if (colorMapped && (mapLength == 0 || mapEntryBits is not (15 or 16 or 24 or 32) || pixelDepth != 8))
+        if (colorMapped && (mapLength == 0 || mapEntryBits is not (15 or 16 or 24 or 32) || pixelDepth is not (8 or 16)))
             throw new InvalidDataException("Unsupported TGA color map.");
 
         var grayscale = imageType is 3 or 11;
-        if (grayscale && pixelDepth != 8)
+        if (grayscale && pixelDepth is not (8 or 16))
             throw new InvalidDataException($"Unsupported {pixelDepth}-bit TGA grayscale.");
 
         if (!colorMapped && !grayscale && pixelDepth is not (15 or 16 or 24 or 32))
@@ -103,14 +104,21 @@ public sealed class ReferenceTga
 
         var alphaBits = descriptor & 0x0F;
         var sampleBits = colorMapped ? mapEntryBits : pixelDepth;
-        var legal = sampleBits switch { 32 => alphaBits is 0 or 8, 16 => alphaBits is 0 or 1, _ => alphaBits == 0 };
+        var legal = (grayscale, sampleBits) switch
+        {
+            (true, 16) => alphaBits is 0 or 8,
+            (false, 32) => alphaBits is 0 or 8,
+            (false, 16) => alphaBits is 0 or 1,
+            _ => alphaBits == 0,
+        };
+
         if (!legal)
             throw new InvalidDataException($"The TGA declares {alphaBits} alpha bits for {sampleBits}-bit samples.");
 
         var offset = 18 + idLength;
         Require(data, offset);
-        var palette = new byte[256 * 4];
-        var paletteDefined = new bool[256];
+        var palette = new byte[65536 * 4];
+        var paletteDefined = new bool[65536];
         if (colorMapped)
         {
             var entryBytes = (mapEntryBits + 7) / 8;
@@ -118,7 +126,7 @@ public sealed class ReferenceTga
             for (var i = 0; i < mapLength; i++)
             {
                 var index = mapFirst + i;
-                if (index < 256)
+                if (index < paletteDefined.Length)
                 {
                     DecodeSample(data.Slice(offset + (i * entryBytes), entryBytes), mapEntryBits, alphaBits > 0, palette.AsSpan(index * 4, 4));
                     paletteDefined[index] = true;
@@ -183,7 +191,7 @@ public sealed class ReferenceTga
                 var destination = rgba.AsSpan(((y * width) + (rightToLeft ? width - 1 - x : x)) * 4, 4);
                 if (colorMapped)
                 {
-                    var paletteIndex = source[0];
+                    var paletteIndex = pixelDepth == 16 ? BinaryPrimitives.ReadUInt16LittleEndian(source) : source[0];
                     if (!paletteDefined[paletteIndex])
                         throw new InvalidDataException($"The TGA color-map index {paletteIndex} is outside the stored map.");
 
@@ -192,7 +200,7 @@ public sealed class ReferenceTga
                 else if (grayscale)
                 {
                     destination[0] = destination[1] = destination[2] = source[0];
-                    destination[3] = byte.MaxValue;
+                    destination[3] = pixelDepth == 16 && alphaBits == 8 ? source[1] : byte.MaxValue;
                 }
                 else
                 {

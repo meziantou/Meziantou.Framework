@@ -14,10 +14,11 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <item><description>Full scan: walks every scan to EOI; metadata after the first scan (for example COM) is included.</description></item>
 /// <item><description>Decode: like a full scan, with every segment and entropy-coded byte delivered to a <see cref="JpegDecodeObserver"/>.</description></item>
 /// </list>
-/// Supported: 8-bit baseline (SOF0), extended sequential Huffman (SOF1) and progressive Huffman (SOF2) frames with 1 or 3
-/// components. Recognized and rejected with <see cref="UnsupportedImageFeatureException"/>: lossless (SOF3), hierarchical
-/// (SOF5-7, SOF13-15, DHP, EXP), arithmetic coding (SOF9-11, DAC), JPEG-LS, 12/16-bit precision, DNL-defined heights,
-/// CMYK/YCCK (4 components), other component counts and sampling factors that do not divide the largest factors.
+/// Supported: 8-bit baseline (SOF0), extended sequential Huffman (SOF1) and progressive Huffman (SOF2) frames with 1, 3
+/// or 4 components (a 4-component frame is CMYK or YCCK: it is identified here, and decoded only with a color conversion,
+/// see <see cref="JpegDecoder"/>). Recognized and rejected with <see cref="UnsupportedImageFeatureException"/>: lossless
+/// (SOF3), hierarchical (SOF5-7, SOF13-15, DHP, EXP), arithmetic coding (SOF9-11, DAC), JPEG-LS, 12/16-bit precision,
+/// DNL-defined heights, other component counts and sampling factors that do not divide the largest factors.
 /// Malformed or misplaced markers and segments, a missing frame header or scan, interleaved scans of more than 10 blocks
 /// per MCU, progressive scans with invalid spectral selection, successive approximation or coefficient progression (see
 /// <see cref="ValidateProgressiveScan"/>), and truncation (including a missing EOI) are
@@ -112,12 +113,21 @@ internal sealed class JpegStructureParser : ImageParser<ImageInfo>
     public byte? AdobeTransform { get; private set; }
 
     /// <summary>Gets the color model of the encoded samples.</summary>
+    /// <remarks>
+    /// Four components are inks. The Adobe APP14 segment (Adobe Technical Note #5116, "Supporting the DCT Filters in
+    /// PostScript Level 2", section 18) says whether the first three are coded as luma and chroma: transform 0 is CMYK
+    /// and transform 2 is YCCK. Without the segment nothing was transformed (CMYK); the value 1 is defined for three
+    /// components only and is read as YCCK, as common decoders do for any nonzero value.
+    /// </remarks>
     public ImageColorModel ColorModel
     {
         get
         {
             if (Components.Count == 1)
                 return ImageColorModel.Grayscale;
+
+            if (Components.Count == 4)
+                return AdobeTransform is null or 0 ? ImageColorModel.Cmyk : ImageColorModel.Ycck;
 
             if (AdobeTransform is { } transform)
                 return transform == 0 ? ImageColorModel.Rgb : ImageColorModel.YCbCr;
@@ -442,10 +452,7 @@ internal sealed class JpegStructureParser : ImageParser<ImageInfo>
         if (height == 0)
             throw Unsupported("JPEG images whose height is defined by a DNL marker are not supported.", "JPEG DNL height");
 
-        if (count == 4)
-            throw Unsupported("CMYK and YCCK JPEG images are not supported.", "JPEG CMYK/YCCK");
-
-        if (count != 1 && count != 3)
+        if (count is not (1 or 3 or 4))
             throw Unsupported(string.Create(CultureInfo.InvariantCulture, $"JPEG images with {count} components are not supported."), "JPEG " + count.ToString(CultureInfo.InvariantCulture) + " components");
 
         if (count > 1)
@@ -624,7 +631,12 @@ internal sealed class JpegStructureParser : ImageParser<ImageInfo>
         }
 
         _iccChunks = null;
-        _metadata.TryAdoptIccProfile(profile, Components.Count == 1);
+        _metadata.TryAdoptIccProfile(profile, Components.Count switch
+        {
+            1 => IccProfileColorSpace.Gray,
+            4 => IccProfileColorSpace.Cmyk,
+            _ => IccProfileColorSpace.Rgb,
+        });
     }
 
     private ImageInfo CreateInfo(ImageIdentifyMode mode)

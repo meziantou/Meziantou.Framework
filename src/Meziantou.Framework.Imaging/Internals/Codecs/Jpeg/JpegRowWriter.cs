@@ -39,6 +39,14 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// or component identifiers R, G, B) are copied; grayscale samples are the luma samples.
 /// </para>
 /// <para>
+/// Four components are inks, converted to RGB by an ICC conversion that expects ink amounts (0 is no ink). JPEG files
+/// store the complement (255 is no ink): Adobe Photoshop writes them so, and decoders read every four-component file
+/// that way, with or without the Adobe APP14 segment. CMYK samples are therefore complemented. For YCCK (Adobe Technical
+/// Note #5116, section 18: the first three stored samples are complemented, then converted like RGB to YCbCr; the fourth
+/// is kept) the two complements cancel out: the color conversion above gives the cyan, magenta and yellow amounts
+/// directly, and only the black samples are complemented.
+/// </para>
+/// <para>
 /// With 128-bit hardware vector support (and little-endian byte order), the triangle filters and the color conversion process
 /// 16 samples at a time with the same integer arithmetic (16-bit lanes for the filters, 32-bit lanes for the conversion);
 /// the edges and the remainders use the scalar code. The output is identical to the scalar reference.
@@ -55,17 +63,25 @@ internal sealed class JpegRowWriter : IDisposable
     private readonly JpegFrameComponent[] _components;
     private readonly DecodedFrameSink _sink;
     private readonly ImageColorModel _colorModel;
+
+    // The conversion of the inks of a four-component frame to RGB; null for the other frames
+    private readonly IccPipeline? _inkConversion;
     private readonly int _width;
     private readonly int _height;
     private readonly int _bandRows;
     private readonly PooledBuffer?[] _upsampled;
     private PooledBuffer? _sourceRow;
+    private PooledBuffer? _inkRow;
 
-    public JpegRowWriter(JpegFrameComponent[] components, DecodedFrameSink sink, ImageColorModel colorModel, int width, int height, int maxVertical, AllocationScope scope)
+    public JpegRowWriter(JpegFrameComponent[] components, DecodedFrameSink sink, ImageColorModel colorModel, IccPipeline? inkConversion, int width, int height, int maxVertical, AllocationScope scope)
     {
+        if ((components.Length == 4) != (inkConversion is not null))
+            throw new ArgumentException("A four-component frame, and only it, needs the conversion of its inks.", nameof(inkConversion));
+
         _components = components;
         _sink = sink;
         _colorModel = colorModel;
+        _inkConversion = inkConversion;
         _width = width;
         _height = height;
         _bandRows = 8 * maxVertical;
@@ -83,6 +99,11 @@ internal sealed class JpegRowWriter : IDisposable
             if (!sink.Plan.IsIdentity && components.Length > 1)
             {
                 _sourceRow = scope.Rent(width * 3, AllocationKind.DecoderState, clear: false);
+            }
+
+            if (components.Length == 4)
+            {
+                _inkRow = scope.Rent(width * 4, AllocationKind.DecoderState, clear: false);
             }
         }
         catch
@@ -121,6 +142,8 @@ internal sealed class JpegRowWriter : IDisposable
 
         _sourceRow?.Dispose();
         _sourceRow = null;
+        _inkRow?.Dispose();
+        _inkRow = null;
     }
 
     private static int[] CreateTable(Func<int, int> term)
@@ -157,7 +180,24 @@ internal sealed class JpegRowWriter : IDisposable
         var c2 = GetSamples(_components[2], y);
         var identity = _sink.Plan.IsIdentity;
         var row = identity ? lease.GetRowBytes(y)[..(_width * 3)] : _sourceRow!.RawBuffer.AsSpan(0, _width * 3);
-        if (_colorModel == ImageColorModel.Rgb)
+        if (_inkConversion is not null)
+        {
+            var black = GetSamples(_components[3], y);
+            var inks = _inkRow!.RawBuffer.AsSpan(0, _width * 4);
+            if (_colorModel == ImageColorModel.Ycck)
+            {
+                // The output row is free until the inks are converted: it holds the cyan, magenta and yellow amounts first
+                ConvertYCbCr(c0, c1, c2, row);
+                InterleaveInkAmounts(row, black, inks);
+            }
+            else
+            {
+                InterleaveStoredInks(c0, c1, c2, black, inks);
+            }
+
+            ColorConversionKernels.Convert<byte, IccByteSample>(_inkConversion, inks, row, 4, 3);
+        }
+        else if (_colorModel == ImageColorModel.Rgb)
         {
             for (var x = 0; x < c0.Length; x++)
             {
@@ -174,6 +214,30 @@ internal sealed class JpegRowWriter : IDisposable
         if (!identity)
         {
             _sink.WriteRow(lease, y, row);
+        }
+    }
+
+    /// <summary>Interleaves the stored samples of four ink planes as ink amounts: the complement of each sample.</summary>
+    internal static void InterleaveStoredInks(ReadOnlySpan<byte> cyan, ReadOnlySpan<byte> magenta, ReadOnlySpan<byte> yellow, ReadOnlySpan<byte> black, Span<byte> destination)
+    {
+        for (var x = 0; x < black.Length; x++)
+        {
+            destination[4 * x] = (byte)~cyan[x];
+            destination[(4 * x) + 1] = (byte)~magenta[x];
+            destination[(4 * x) + 2] = (byte)~yellow[x];
+            destination[(4 * x) + 3] = (byte)~black[x];
+        }
+    }
+
+    /// <summary>Interleaves interleaved cyan, magenta and yellow amounts with the complement of the stored black samples.</summary>
+    internal static void InterleaveInkAmounts(ReadOnlySpan<byte> amounts, ReadOnlySpan<byte> black, Span<byte> destination)
+    {
+        for (var x = 0; x < black.Length; x++)
+        {
+            destination[4 * x] = amounts[3 * x];
+            destination[(4 * x) + 1] = amounts[(3 * x) + 1];
+            destination[(4 * x) + 2] = amounts[(3 * x) + 2];
+            destination[(4 * x) + 3] = (byte)~black[x];
         }
     }
 

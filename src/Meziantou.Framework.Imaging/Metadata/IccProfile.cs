@@ -53,6 +53,25 @@ public sealed class IccProfile
     /// </summary>
     public static IccProfile SrgbGray => BuiltInIccProfiles.SrgbGray;
 
+    /// <summary>
+    /// Gets a CMYK profile for web offset printing on coated paper, compatible with the CGATS TR 001 characterization
+    /// data: the color space assumed by default for CMYK samples without profile (see
+    /// <see cref="CmykConversionOptions.AssumedSourceProfile"/>).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The profile is <c>CGATS001Compat-v2-micro.icc</c> of the Compact ICC Profiles collection by Clinton Ingram
+    /// (https://github.com/saucecontrol/Compact-ICC-Profiles), released to the public domain (CC0-1.0) and stored
+    /// unmodified: a version 2 input profile of 8,464 bytes.
+    /// </para>
+    /// <para>
+    /// It only describes the conversion from CMYK (one perceptual table of 6 points per ink): it can be the source of a
+    /// conversion with any rendering intent, never its destination. Its small table reproduces the overall appearance of
+    /// the printing condition, not the exact colors of a full-size press profile.
+    /// </para>
+    /// </remarks>
+    public static IccProfile Cgats001CompatibleCmyk => BuiltInIccProfiles.Cgats001CompatibleCmyk;
+
     /// <summary>Gets the raw profile bytes.</summary>
     public MetadataBlob Data { get; }
 

@@ -1,8 +1,8 @@
 # Meziantou.Framework.Imaging
 
 A fully managed image library: PNG/APNG, GIF, JPEG, WebP, QOI, BMP, TGA, Netpbm, TIFF, ICO/CUR and ANI decoding and
-encoding, AVIF decoding (with its own AV1 decoder), animation-aware processing, ICC color conversion, and bounded-memory
-streaming readers and writers.
+encoding, AVIF decoding (with its own AV1 decoder), animation-aware processing, vector drawing, ICC color conversion, and
+bounded-memory streaming readers and writers.
 
 These instructions complete the repository-level `AGENTS.md`. The user guide is [readme.md](readme.md): it states what
 the library guarantees to its callers (support matrix, limitations, defaults). Keep the code, the XML documentation and
@@ -19,9 +19,9 @@ the library guarantees to its callers (support matrix, limitations, defaults). K
   only: their output is compared with ours, their source is never read to write ours.
 - No public allocator, custom pixel type, codec plug-in or image-processor interface. Implementation types are `internal`
   and live under `Internals/`.
-- Public namespaces: `Meziantou.Framework.Imaging`, `.Metadata` and `.Formats` (encoder settings). The base types of the
-  model (`Image`, `ImageFrame`, `ImageFrameCollection`, `ImageEncoder`, `AutoCropAnalysis`) cannot be derived outside the
-  library.
+- Public namespaces: `Meziantou.Framework.Imaging`, `.Metadata`, `.Formats` (encoder settings) and `.Drawing` (brushes,
+  pens, paths, the canvas). The base types of the model (`Image`, `ImageFrame`, `ImageFrameCollection`, `ImageEncoder`,
+  `AutoCropAnalysis`, `Brush`, `GradientBrush`) cannot be derived outside the library.
 - Every public member has XML documentation (`DisableDocumentationWarnings` is `false`).
 - `Meziantou.Framework.FullPath` is used by the tests, benchmarks and tools, never by the library.
 
@@ -29,8 +29,8 @@ the library guarantees to its callers (support matrix, limitations, defaults). K
 
 - **Never lose information silently.** Losing alpha, precision, animation, a poster, metadata or a color profile needs an
   explicit setting; otherwise throw `UnsupportedImageFeatureException`. Color profiles are preserved and labeled, never
-  applied implicitly: only `ConvertColorProfile` and `IccColorTransform` convert colors, and the pixels and their
-  profile always change together.
+  applied implicitly: only `ConvertColorProfile`, `IccColorTransform` and a load with `CmykConversionOptions` convert
+  colors, and the pixels and their profile always change together.
 - **An image holds full displayed frames**, not encoded deltas; decoders composite, encoders write what they are given.
   Timing is exact (`FrameDuration` is a rational number); a duration or play count the output format cannot represent is
   an error unless a rounding policy is set.
@@ -52,8 +52,8 @@ the library guarantees to its callers (support matrix, limitations, defaults). K
   inclusive and always positive (no zero-as-unlimited). A limit failure is never turned into a truncation error or a
   success. Test each limit at the boundary and one over.
 - **Atomicity.** Geometry-changing operations (crop, auto-crop, resize, rotate, auto-orient) are transactional across all frames and
-  the poster. Pixel-only edits may be partially applied on failure but leave the image valid and disposable. A failed
-  operation releases every resource it acquired.
+  the poster. Pixel-only edits (flip, grayscale, convolve, draw) may be partially applied on failure but leave the image
+  valid and disposable. A failed operation releases every resource it acquired.
 - **Ownership.** Images are owned and disposed by their creator. Frames are borrowed views: they are not disposable and
   throw `ObjectDisposedException` once removed, replaced or disposed with their image. Eager loads never retain or close
   the caller's stream.
@@ -114,8 +114,15 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
 
 ## Color management
 
-`IccColorTransform` (sample buffers) and `ConvertColorProfile` (images) are the only code that applies an ICC profile;
-everything is under `Internals/Color`.
+`IccColorTransform` (sample buffers), `ConvertColorProfile` (images) and the decoding of CMYK samples
+(`CmykConversionOptions`) are the only code that applies an ICC profile; everything is under `Internals/Color`.
+
+- No pixel format holds CMYK samples. A decoder that meets them (four-component JPEG) converts its rows with the
+  pipeline of an `IccColorTransform`, only when the request carries `CmykConversionOptions`, and labels the image with
+  the destination profile; without the options it throws `UnsupportedImageFeatureException` before allocating. An
+  embedded profile that cannot be used is an error, never replaced by the assumed one.
+- `IccProfile.Cgats001CompatibleCmyk` is third-party data (CC0-1.0): `Internals/Color/BuiltInCmykProfile.g.cs` is
+  transcribed from the corpus by the `icc-builtin` command of the corpus generator. Never edit it by hand.
 
 - Written from ICC.1:2001-04 (version 2 profiles), ICC.1:2022 (version 4 profiles) and Adobe's published black point
   compensation algorithm. Never port code from another color management system; cite the clause in the code.
@@ -140,13 +147,44 @@ everything is under `Internals/Color`.
   interpolation between grid points, three black point compensation cases).
 - Pixels and their profile change together: `ConvertColorProfile` is transactional. No other operation converts colors.
 
+## Drawing
+
+`ImageFrame.Draw` / `Image.Draw` open a `DrawingSession` (leases, scratch, the validity of the `DrawingCanvas`); everything
+is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `PathFlattener` (curves to chords) ->
+`FillSink` or `Stroker` -> `EdgeBuilder` (clipped edges) -> `CoverageRasterizer` (one row of coverage at a time) ->
+`GradientEvaluator` for gradients -> `DrawingKernels` (compositing on each frame).
+
+- Written from first principles: never port code from another rasterizer or stroker (FreeType, Skia, AGG, stb, ...).
+- The numerical contract is documented in `readme.md` ("Rendering") and in the XML documentation of
+  `CoverageRasterizer`, `DrawingKernels` and `GradientEvaluator`: change it only with them and the tests.
+  - Coverage is the exact area of the pixel inside the shape (the union of overlapping contours), in 1/65536 steps,
+    ties upward. The rasterizer is a sweep line with lazily recorded boundaries; its row scratch is sized up front from
+    the largest number of edges on one row.
+  - Compositing is exact integer source-over (`ulong`), the generalization of `AnimationCompositor.BlendOver8/16` to a
+    fractional source alpha. Colors are converted to the pixel format first (`PixelConverter` rules).
+  - Gradients interpolate premultiplied values of the converted stops, evaluated per pixel at its center.
+- Only `+ - * /` and `Math.Sqrt` in the geometry (no trigonometry, no fused multiply-add), and every order that
+  influences a sum is total (events and crossings are sorted with a tie-break): results must not depend on the
+  platform, the framework version or a sorting algorithm.
+- A stroke is a union of convex pieces with one orientation (`Stroker`): overlaps are harmless because the coverage is
+  the area of the union. The 1/16 pixel flattening tolerance is public; the positions of the chord vertices are not.
+- Every rental of a draw call happens before its first pixel write (edges, then the sweep and gradient scratch in
+  `Render`). Draw calls allocate nothing once the scratch of the session has grown (`PerformanceContractTests`).
+- The cost of a shape follows its edges and their crossings. Keep the events of the sweep logarithmic: no pass over
+  every edge of a row per event.
+- Tests have three independent sources: hand-computed literals (`Drawing*Tests`), the exact rational references of the
+  harness (`TestHarness/Drawing`: `ReferenceCoverage`, `ReferenceCompositor`, `ReferenceGradient`, and the
+  `ReferenceStroke` membership predicate; `Conformance/DrawingReferenceTests`), and invariants over random drawings
+  (`DrawingFuzzTests`). The references never reuse the flattening or stroking of the library: curves are checked
+  against the true curve, strokes against the predicate, and the pieces the library emits are then filled exactly.
+
 ## Performance work
 
 - Remove unnecessary decodes, conversions and copies before micro-optimizing. Profile first and keep the evidence.
 - Scalar kernels are the numerical reference. A vectorized kernel keeps its scalar version (`...Scalar`) and needs a
   test proving identical results (`VectorizedKernelTests`). No fused multiply-add in the DCTs.
 - Default parallelism is one worker (`ImageConfiguration.MaxDegreeOfParallelism`). Only `Resize` and `Convolve` are
-  parallel, and their result must not depend on the worker count. Decoding and encoding stay sequential.
+  parallel, and their result must not depend on the worker count. Decoding, encoding and drawing stay sequential.
 - Static row callbacks allocate nothing per row (`PerformanceContractTests`).
 - This repository builds with the updated memory-safety rules: wrap `MemoryMarshal`, `Unsafe` and `Vector*.LoadUnsafe` /
   `StoreUnsafe` calls in `unsafe(...)`, or in an `unsafe { }` block for a statement.
@@ -193,6 +231,11 @@ dotnet publish tests/Meziantou.Framework.Imaging.AotSmoke -c Release -f net11.0 
 - Lossless comparisons are exact, 16-bit low bits included. Lossy comparisons use an independent decoding of the same
   input with a narrow, justified, per-fixture tolerance. Alpha and structure are always exact.
 - Unit, conformance and fuzz tests must not need an external tool or network access.
+- **CMYK JPEG fixtures.** A four-component JPEG file is an `unsupported` fixture (identified, rejected by a load
+  without conversion) that declares one conversion and its pixels (`inkConversion`). The reference has two independent
+  stages: the samples decoded by `djpeg` from files the generator regroups scan by scan, then the decimal reference of
+  the harness for the colors, with LittleCMS and Apple ColorSync as cross-checks.
+  `JpegDecoderConformanceTests` pins each tolerance to the measured disagreement (`LibraryInkMeasurements`).
 - **AV1 vectors.** `tests/Meziantou.Framework.Imaging.Fixtures/av1` holds raw AV1 streams with, in the manifest, the
   SHA-256 of every plane of every output frame. A digest is recorded only when two independent decoders (dav1d and
   libaom, through the pinned ffmpeg) agree byte for byte. `Av1DecoderConformanceTests` compares the planes of the

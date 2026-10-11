@@ -1,22 +1,47 @@
 using System.IO.Compression;
+using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
-/// Reads one strip or tile of a TIFF page into a buffer of exactly the size the geometry requires, and undoes the
-/// horizontal differencing predictor.
+/// Reads one strip or tile of a TIFF page into rows of exactly the size the geometry requires: it undoes the fill order,
+/// the compression and the horizontal differencing predictor, and converts the data units of a YCbCr page to RGB.
 /// </summary>
 /// <remarks>
+/// <para>
 /// The decompressed size of a block is always known before the block is read (the number of rows times the padded row
-/// length), so a Deflate stream is inflated into a fixed buffer and can never expand without bound: a block that produces
-/// fewer bytes is reported as truncated, and the bytes it produces beyond the buffer are not read. The compressed length
-/// itself comes from <c>StripByteCounts</c>/<c>TileByteCounts</c> and is validated against the length of the input first.
+/// length), so every decompressor fills a fixed buffer and can never expand without bound: a block that produces fewer
+/// bytes is reported as truncated, and the bytes it produces beyond the buffer are not read. The compressed length itself
+/// comes from <c>StripByteCounts</c>/<c>TileByteCounts</c> and is validated against the length of the input first.
+/// </para>
+/// <para>
+/// A block compressed with JPEG is a JPEG datastream of its own, decoded by the JPEG decoder of the library with the
+/// tables of <c>JPEGTables</c>. The photometric interpretation of the page says what its components are: YCbCr components
+/// are converted to RGB as in a JFIF file, the others are the stored samples.
+/// </para>
 /// </remarks>
 internal sealed class TiffBlockReader : IDisposable
 {
+    private const byte JpegMarkerSoi = 0xD8;
+    private const byte JpegMarkerEoi = 0xD9;
+    private const byte JpegMarkerDht = 0xC4;
+    private const byte JpegMarkerDqt = 0xDB;
+    private const byte JpegMarkerDri = 0xDD;
+
+    private const int MaxCompressionExpansion = 16;
+    private const int MaxBlockOverhead = 4096;
+    private const int MaxJpegOverhead = 1024 * 1024;
+
+    private static readonly byte[] ReversedBits = CreateReversedBits();
+
     private readonly RandomAccessSource _source;
     private readonly TiffPage _page;
+    private readonly JpegBlockReceiver? _jpegReceiver;
+    private PooledBuffer? _block;
     private PooledBuffer? _inflateScratch;
+    private PooledBuffer? _units;
+    private PooledBuffer? _changes;
+    private TiffLzwDecoder? _lzw;
 
     public TiffBlockReader(RandomAccessSource source, TiffPage page)
     {
@@ -24,46 +49,198 @@ internal sealed class TiffBlockReader : IDisposable
         ArgumentNullException.ThrowIfNull(page);
         _source = source;
         _page = page;
+        if (page.IsJpeg)
+        {
+            _jpegReceiver = new JpegBlockReceiver(page);
+        }
     }
 
-    /// <summary>Reads, decompresses and un-predicts one block.</summary>
+    /// <summary>Reads and decodes one block into the buffer of the reader.</summary>
     /// <param name="index">The index of the block in <see cref="TiffPage.BlockOffsets"/>.</param>
-    /// <param name="rowCount">The number of stored rows of the block (a short last strip stores fewer rows; a tile never does).</param>
-    /// <param name="destination">Exactly <c>rowCount * BlockRowLength</c> bytes, filled with the stored samples.</param>
+    /// <param name="rowCount">The number of rows of the block that belong to the page (the last blocks of a page hold fewer).</param>
+    /// <returns><paramref name="rowCount"/> rows of <see cref="TiffPage.BlockRowLength"/> bytes, valid until the next call.</returns>
     /// <exception cref="InvalidImageContentException">The block is outside the input, shorter than its geometry requires, or its compressed data is malformed.</exception>
-    public void ReadBlock(int index, int rowCount, Span<byte> destination)
+    public ReadOnlySpan<byte> ReadBlock(int index, int rowCount)
+    {
+        var page = _page;
+        _block ??= _source.Scope.Rent(page.BlockRowLength * page.BlockHeight, AllocationKind.DecoderState, clear: false);
+        var destination = _block.Span[..(rowCount * page.BlockRowLength)];
+        if (page.IsJpeg)
+        {
+            DecodeJpeg(index, rowCount, _block.RawBuffer, handler: null);
+            return destination;
+        }
+
+        // A tile is always stored in full, even when it extends past the bottom edge of the page; a strip is not
+        var storedRows = page.IsTiled ? page.BlockHeight : rowCount;
+        var conversion = page.YCbCr;
+        var stored = conversion is null
+            ? _block.Span[..(storedRows * page.BlockRowLength)]
+            : RentUnits(conversion.GetStoredLength(page.BlockWidth, storedRows));
+        Decompress(index, storedRows, stored);
+        if (page.Predictor == TiffFormat.PredictorHorizontalDifferencing)
+        {
+            UndoHorizontalDifferencing(stored, storedRows);
+        }
+
+        conversion?.Convert(stored, destination, page.BlockWidth, rowCount);
+        return destination;
+    }
+
+    /// <summary>
+    /// Decodes one strip compressed with JPEG and hands its rows over as they are decoded, so that a page stored as one
+    /// strip is never held twice.
+    /// </summary>
+    /// <param name="index">The index of the strip.</param>
+    /// <param name="rowCount">The number of rows of the strip.</param>
+    /// <param name="handler">The destination of the rows.</param>
+    public void ReadJpegStrip(int index, int rowCount, TiffBlockRowHandler handler)
+    {
+        ArgumentNullException.ThrowIfNull(handler);
+        DecodeJpeg(index, rowCount, buffer: null, handler);
+    }
+
+    public void Dispose()
+    {
+        _block?.Dispose();
+        _block = null;
+        _inflateScratch?.Dispose();
+        _inflateScratch = null;
+        _units?.Dispose();
+        _units = null;
+        _changes?.Dispose();
+        _changes = null;
+        _lzw?.Dispose();
+        _lzw = null;
+    }
+
+    private static byte[] CreateReversedBits()
+    {
+        var table = new byte[256];
+        for (var i = 0; i < table.Length; i++)
+        {
+            var value = 0;
+            for (var bit = 0; bit < 8; bit++)
+            {
+                value |= ((i >> bit) & 1) << (7 - bit);
+            }
+
+            table[i] = (byte)value;
+        }
+
+        return table;
+    }
+
+    private Span<byte> RentUnits(long length)
+    {
+        if (length > CheckedSizes.MaxBufferLength)
+            throw CheckedSizes.CreateOverflowException(_source.Limits);
+
+        if (_units is null || _units.Length < length)
+        {
+            _units?.Dispose();
+            _units = null;
+            _units = _source.Scope.Rent((int)length, AllocationKind.DecoderState, clear: false);
+        }
+
+        return _units.Span[..(int)length];
+    }
+
+    private (long Offset, long Length) GetStoredRange(int index)
     {
         var offset = _page.BlockOffsets[index];
         var storedLength = _page.BlockByteCounts[index];
         if (offset > long.MaxValue || storedLength > long.MaxValue)
             throw TiffFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {_page.Index} stores the block {index} at offset {offset} with {storedLength} bytes, outside the input."));
 
-        if (_page.IsDeflate)
-        {
-            if (storedLength == 0)
-                throw TiffFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {_page.Index} declares an empty compressed block {index}."));
+        return ((long)offset, (long)storedLength);
+    }
 
-            using var compressed = _source.ReadToBuffer((long)offset, (long)storedLength);
-            Inflate(compressed, destination, index);
+    /// <summary>
+    /// Reads the compressed bytes of a block, and no more of them than a block of its size can need. Every decompressor
+    /// stops when the rows of the block are complete, so the bytes beyond that bound would never be looked at: not reading
+    /// them keeps the work of a block proportional to its size, whatever <c>StripByteCounts</c> declares and however many
+    /// blocks point at the same bytes.
+    /// </summary>
+    /// <param name="index">The index of the block.</param>
+    /// <param name="decodedLength">The number of bytes the block decompresses to.</param>
+    private PooledBuffer ReadCompressed(int index, long decodedLength)
+    {
+        var (offset, storedLength) = GetStoredRange(index);
+        if (storedLength == 0)
+            throw TiffFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {_page.Index} declares an empty compressed block {index}."));
+
+        // The largest expansions are far below 16 times: about 6 for fax rows of isolated pixels (6 bits per pixel, and an
+        // end-of-line code per row), 1.5 for LZW and 2 for PackBits data that never repeats, about 6.5 for a JPEG block
+        // whose every coefficient has the longest code. A JPEG datastream also carries tables and application segments
+        var needed = (decodedLength * MaxCompressionExpansion) + (_page.IsJpeg ? MaxJpegOverhead : MaxBlockOverhead);
+        var compressed = _source.ReadToBuffer(offset, Math.Min(storedLength, needed));
+        if (_page.IsLeastSignificantBitFirst)
+        {
+            ReverseBits(compressed.Span);
         }
-        else
-        {
-            if ((long)storedLength < destination.Length)
-                throw TiffFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {_page.Index} declares {storedLength} bytes for the uncompressed block {index}; its geometry needs {destination.Length}."));
 
-            _source.Read((long)offset, destination);
-        }
+        return compressed;
+    }
 
-        if (_page.Predictor == TiffFormat.PredictorHorizontalDifferencing)
+    private static void ReverseBits(Span<byte> data)
+    {
+        var table = ReversedBits;
+        for (var i = 0; i < data.Length; i++)
         {
-            UndoHorizontalDifferencing(destination, rowCount);
+            data[i] = table[data[i]];
         }
     }
 
-    public void Dispose()
+    /// <summary>Fills <paramref name="destination"/> with the stored samples of a block.</summary>
+    private void Decompress(int index, int rowCount, Span<byte> destination)
     {
-        _inflateScratch?.Dispose();
-        _inflateScratch = null;
+        var page = _page;
+        if (page.Compression == TiffFormat.CompressionNone)
+        {
+            var (offset, storedLength) = GetStoredRange(index);
+            if (storedLength < destination.Length)
+                throw TiffFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {page.Index} declares {storedLength} bytes for the uncompressed block {index}; its geometry needs {destination.Length}."));
+
+            _source.Read(offset, destination);
+            if (page.IsLeastSignificantBitFirst)
+            {
+                ReverseBits(destination);
+            }
+
+            return;
+        }
+
+        using var compressed = ReadCompressed(index, destination.Length);
+        if (page.IsDeflate)
+        {
+            Inflate(compressed, destination, index);
+            return;
+        }
+
+        if (page.IsCcitt)
+        {
+            DecodeFax(compressed.Span, destination, rowCount, index);
+            return;
+        }
+
+        int written;
+        if (page.Compression == TiffFormat.CompressionLzw)
+        {
+            if (TiffLzwDecoder.UsesOldBitOrder(compressed.Span))
+                throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The LZW data of the TIFF block {index} of page {page.Index} uses the bit order of TIFF 5.0 drafts (least significant bit first), which is not supported."), "Compression: LZW with the old bit order");
+
+            _lzw ??= new TiffLzwDecoder(_source.Scope);
+            if (!_lzw.TryDecode(compressed.Span, destination, out written))
+                throw TiffFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The LZW data of the TIFF block {index} of page {page.Index} is malformed: a code refers to a string that was not defined."));
+        }
+        else
+        {
+            written = TiffPackBits.Decode(compressed.Span, destination);
+        }
+
+        if (written != destination.Length)
+            throw TiffFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The {TiffFormat.GetCompressionName(page.Compression)} data of the TIFF block {index} of page {page.Index} produced {written} bytes; {destination.Length} are required."));
     }
 
     private void Inflate(PooledBuffer compressed, Span<byte> destination, int index)
@@ -89,6 +266,25 @@ internal sealed class TiffBlockReader : IDisposable
         {
             throw new InvalidImageContentException(string.Create(CultureInfo.InvariantCulture, $"The Deflate data of the TIFF block {index} of page {_page.Index} is malformed."), ImageFormat.Tiff, exception);
         }
+    }
+
+    private void DecodeFax(ReadOnlySpan<byte> compressed, Span<byte> destination, int rowCount, int index)
+    {
+        var page = _page;
+        var listLength = TiffCcittDecoder.GetChangeListLength(page.BlockWidth);
+        if (listLength * 2 * sizeof(int) > CheckedSizes.MaxBufferLength)
+            throw CheckedSizes.CreateOverflowException(_source.Limits);
+
+        _changes ??= _source.Scope.Rent((int)(listLength * 2 * sizeof(int)), AllocationKind.DecoderState, clear: false);
+        var lists = unsafe(MemoryMarshal.Cast<byte, int>(_changes.Span));
+        var error = TiffCcittDecoder.Decode(compressed, destination, page.BlockWidth, rowCount, page.Compression, page.IsTwoDimensionalFax, lists[..(int)listLength], lists.Slice((int)listLength, (int)listLength));
+        if (error is null)
+            return;
+
+        if (error == TiffCcittDecoder.UncompressedModeError)
+            throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The {TiffFormat.GetCompressionName(page.Compression)} data of the TIFF block {index} of page {page.Index} uses the uncompressed mode extension, which is not supported."), "Compression: CCITT uncompressed mode");
+
+        throw TiffFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The {TiffFormat.GetCompressionName(page.Compression)} data of the TIFF block {index} of page {page.Index} is malformed: {error}."));
     }
 
     /// <summary>Undoes the horizontal differencing predictor row by row, over the stored (padded) width of the block.</summary>
@@ -139,6 +335,153 @@ internal sealed class TiffBlockReader : IDisposable
         {
             line[offset] = (byte)value;
             line[offset + 1] = (byte)(value >> 8);
+        }
+    }
+
+    /// <summary>Decodes the JPEG datastream of a block into a buffer, or row by row into a handler.</summary>
+    private void DecodeJpeg(int index, int rowCount, byte[]? buffer, TiffBlockRowHandler? handler)
+    {
+        var page = _page;
+        var receiver = _jpegReceiver!;
+        using var compressed = ReadCompressed(index, (long)rowCount * page.BlockRowLength);
+        receiver.Begin(index, rowCount, buffer, handler);
+        try
+        {
+            using var decoder = new JpegDecoder(_source.Context, receiver, page.IsYCbCr ? ImageColorModel.YCbCr : ImageColorModel.Rgb);
+            if (page.JpegTables is { } tables)
+            {
+                LoadJpegTables(decoder, tables);
+            }
+
+            using var parser = new JpegStructureParser(_source.Context, StructureWalk.Decode, decoder);
+            if (!parser.Parse(compressed.Span, isEndOfInput: true, out _).IsComplete)
+                throw TiffFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The JPEG data of the TIFF block {index} of page {page.Index} is truncated."));
+        }
+        catch (InvalidImageContentException exception) when (exception.Format == ImageFormat.Jpeg)
+        {
+            throw new InvalidImageContentException(string.Create(CultureInfo.InvariantCulture, $"The JPEG data of the TIFF block {index} of page {page.Index} is malformed: {exception.Message}"), ImageFormat.Tiff, exception);
+        }
+        catch (UnsupportedImageFeatureException exception) when (exception.Format == ImageFormat.Jpeg)
+        {
+            throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The JPEG data of the TIFF block {index} of page {page.Index} is not supported: {exception.Message}"), string.Create(CultureInfo.InvariantCulture, $"Compression: {exception.Feature}"));
+        }
+        finally
+        {
+            receiver.End();
+        }
+
+        if (receiver.RowsReceived < rowCount)
+            throw TiffFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The JPEG data of the TIFF block {index} of page {page.Index} produced {receiver.RowsReceived} rows; {rowCount} are required."));
+    }
+
+    /// <summary>
+    /// Gives the tables of <c>JPEGTables</c> to a decoder: an abbreviated datastream for table specifications (SOI, the
+    /// quantization and Huffman tables, EOI) that the datastream of every block of the page relies on (TIFF Technical Note 2).
+    /// </summary>
+    private void LoadJpegTables(JpegDecoder decoder, ReadOnlySpan<byte> tables)
+    {
+        if (tables.Length < 4 || tables[0] != 0xFF || tables[1] != JpegMarkerSoi)
+            throw InvalidTables();
+
+        var position = 2;
+        while (true)
+        {
+            if (position + 2 > tables.Length || tables[position] != 0xFF)
+                throw InvalidTables();
+
+            var marker = tables[position + 1];
+            if (marker == 0xFF)
+            {
+                // Fill byte before a marker
+                position++;
+                continue;
+            }
+
+            if (marker == JpegMarkerEoi)
+                return;
+
+            if (position + 4 > tables.Length)
+                throw InvalidTables();
+
+            var length = (tables[position + 2] << 8) | tables[position + 3];
+            if (length < 2 || position + 2 + length > tables.Length)
+                throw InvalidTables();
+
+            var payload = tables.Slice(position + 4, length - 2);
+            if (marker == JpegMarkerDri && payload.Length != 2)
+                throw InvalidTables();
+
+            if (marker is JpegMarkerDqt or JpegMarkerDht or JpegMarkerDri)
+            {
+                decoder.OnSegment(marker, payload);
+            }
+
+            position += 2 + length;
+        }
+
+        InvalidImageContentException InvalidTables()
+            => TiffFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The JPEGTables tag of the TIFF page {_page.Index} is not a JPEG datastream of table specifications."));
+    }
+
+    /// <summary>Receives the rows of the JPEG datastream of one block and checks its frame against the page.</summary>
+    private sealed class JpegBlockReceiver : JpegSampleReceiver
+    {
+        private readonly TiffPage _page;
+        private readonly int _componentCount;
+        private byte[]? _buffer;
+        private TiffBlockRowHandler? _handler;
+        private int _index;
+        private int _rowCount;
+
+        public JpegBlockReceiver(TiffPage page)
+        {
+            _page = page;
+            _componentCount = page.SamplesPerPixel;
+        }
+
+        public int RowsReceived { get; private set; }
+
+        public void Begin(int index, int rowCount, byte[]? buffer, TiffBlockRowHandler? handler)
+        {
+            _index = index;
+            _rowCount = rowCount;
+            _buffer = buffer;
+            _handler = handler;
+            RowsReceived = 0;
+        }
+
+        public void End()
+        {
+            _buffer = null;
+            _handler = null;
+        }
+
+        public override void OnFrame(int width, int height, int componentCount)
+        {
+            if (componentCount != _componentCount)
+                throw TiffFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The JPEG data of the TIFF block {_index} of page {_page.Index} has {componentCount} component(s); the page declares {_componentCount} sample(s) per pixel."));
+
+            // A block holds at least the rows of the page it covers, and never more than the rows of a block: some writers
+            // give the last strip the height of the others, and a taller frame would be decoded to be thrown away
+            if (width != _page.BlockWidth || height < _rowCount || height > _page.BlockHeight)
+                throw TiffFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The JPEG data of the TIFF block {_index} of page {_page.Index} is a {width}x{height} frame; the block is {_page.BlockWidth} pixels wide, holds {_rowCount} rows and has at most {_page.BlockHeight}."));
+        }
+
+        public override void OnRow(int y, ReadOnlySpan<byte> samples)
+        {
+            if (y >= _rowCount)
+                return;
+
+            if (_handler is not null)
+            {
+                _handler.OnRow(y, samples);
+            }
+            else
+            {
+                samples.CopyTo(_buffer.AsSpan(y * _page.BlockRowLength));
+            }
+
+            RowsReceived++;
         }
     }
 }

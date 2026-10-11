@@ -112,7 +112,6 @@ internal sealed class TiffFileBuilder
         {
             TiffFieldSpec.Long(256, (uint)page.Width),
             TiffFieldSpec.Long(257, (uint)page.Height),
-            TiffFieldSpec.Shorts(258, Enumerable.Repeat((ushort)page.BitsPerSample, page.SamplesPerPixel).ToArray()),
             TiffFieldSpec.Short(259, (ushort)page.Compression),
             TiffFieldSpec.Short(262, (ushort)page.Photometric),
             TiffFieldSpec.Short(277, (ushort)page.SamplesPerPixel),
@@ -136,6 +135,16 @@ internal sealed class TiffFileBuilder
             {
                 fields.Add(new TiffFieldSpec(279, offsetType, [.. byteCounts]));
             }
+        }
+
+        if (!page.OmitBitsPerSample)
+        {
+            fields.Add(TiffFieldSpec.Shorts(258, Enumerable.Repeat((ushort)page.BitsPerSample, page.SamplesPerPixel).ToArray()));
+        }
+
+        if (page.FillOrder is { } fillOrder)
+        {
+            fields.Add(TiffFieldSpec.Short(266, (ushort)fillOrder));
         }
 
         if (page.Predictor is { } predictor)

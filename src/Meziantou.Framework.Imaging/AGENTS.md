@@ -149,6 +149,16 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   are shown as they are stored; everything else goes through `JpegXlFrameRenderer`, in floating point, where 1 is the
   largest integer sample. The render order is the one of libjxl: restoration filters, patches, splines, upsampling,
   noise, color transform, blending.
+- **TIFF** (`Internals/Codecs/Tiff`). `TiffPage` resolves and validates a directory without reading a pixel, so every
+  rejection also comes from `Identify`, except the ones of the compressed data. `TiffBlockReader` turns a strip or a
+  tile into rows of samples (fill order, compression, predictor, YCbCr data units) and `TiffRowExpander` turns the rows
+  into pixels (packed samples, palette, inks). The decompressed size of a block is always known first: a decompressor
+  fills a buffer of that size, it never grows one, and it never repairs data. LZW, PackBits and the CCITT compressions
+  are written from TIFF 6.0 and ITU-T T.4 and T.6; the code words of `TiffCcittCodes` are transcribed from the
+  recommendations, and the tests compare strips with code words spelled out from the same tables. A JPEG strip is
+  decoded by `JpegDecoder` given a `JpegSampleReceiver` and written by the session of `JpegEncoderCodec`: there is no
+  second JPEG implementation, and the page says what the components are. The layouts of `TiffEncoder` store a page
+  exactly or reject it before writing anything of it (`TiffDocumentWriter.PreparePage`): no setting makes them lossy.
 - `ZLibStream` reports truncation as a clean end: check that the expected number of bytes was produced.
 
 ## Color management
@@ -156,8 +166,8 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
 `IccColorTransform` (sample buffers), `ConvertColorProfile` (images) and the decoding of CMYK samples
 (`CmykConversionOptions`) are the only code that applies an ICC profile; everything is under `Internals/Color`.
 
-- No pixel format holds CMYK samples. A decoder that meets them (four-component JPEG) converts its rows with the
-  pipeline of an `IccColorTransform`, only when the request carries `CmykConversionOptions`, and labels the image with
+- No pixel format holds CMYK samples. A decoder that meets them (four-component JPEG, separated TIFF) converts its rows
+  with the pipeline of an `IccColorTransform`, only when the request carries `CmykConversionOptions`, and labels the image with
   the destination profile; without the options it throws `UnsupportedImageFeatureException` before allocating. An
   embedded profile that cannot be used is an error, never replaced by the assumed one.
 - `IccProfile.Cgats001CompatibleCmyk` is third-party data (CC0-1.0): `Internals/Color/BuiltInCmykProfile.g.cs` is
@@ -279,6 +289,11 @@ dotnet publish tests/Meziantou.Framework.Imaging.AotSmoke -c Release -f net11.0 
 - Lossless comparisons are exact, 16-bit low bits included. Lossy comparisons use an independent decoding of the same
   input with a narrow, justified, per-fixture tolerance. Alpha and structure are always exact.
 - Unit, conformance and fuzz tests must not need an external tool or network access.
+- **TIFF has no corpus.** The decoder tests assemble files (`TiffFileBuilder`) whose compressed strips never come from
+  the library: the reference encoders of the tests (`TiffReferenceCodecs`), the examples of the specifications, fax
+  strips written by libtiff and kept as literals, and JPEG datastreams of `JpegTestImage`. The encoder tests compare
+  small strips with the bytes the specifications give, and the interop tests decode every compression and layout with
+  FFmpeg or Apple ImageIO (the JPEG pages, which FFmpeg does not read), and the pages FFmpeg writes with the library.
 - **CMYK JPEG fixtures.** A four-component JPEG file is an `unsupported` fixture (identified, rejected by a load
   without conversion) that declares one conversion and its pixels (`inkConversion`). The reference has two independent
   stages: the samples decoded by `djpeg` from files the generator regroups scan by scan, then the decimal reference of

@@ -258,6 +258,38 @@ internal sealed class TiffDirectory
         return double.IsFinite(value) && value > 0 ? value : null;
     }
 
+    /// <summary>Reads an array of RATIONAL values whose length is known.</summary>
+    /// <param name="tag">The tag.</param>
+    /// <param name="expectedCount">The required number of values.</param>
+    /// <returns>The values, or <see langword="null"/> when the tag is absent.</returns>
+    /// <exception cref="InvalidImageContentException">The count differs, the type is not RATIONAL, a denominator is zero, or the values do not fit in the input.</exception>
+    public double[]? TryReadRationalArray(ushort tag, int expectedCount)
+    {
+        if (Find(tag) is not { } field)
+            return null;
+
+        if (field.Count != (ulong)expectedCount)
+            throw TiffFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The TIFF tag {tag} declares {field.Count} values; {expectedCount} are expected."));
+
+        if (field.Type != TiffFieldType.Rational)
+            throw TiffFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The TIFF tag {tag} uses {TiffFieldTypes.GetName(field.Type)}; RATIONAL is expected."));
+
+        var result = new double[expectedCount];
+        using var buffer = ReadValues(field);
+        var span = buffer.Span;
+        for (var i = 0; i < result.Length; i++)
+        {
+            var numerator = _header.ReadUInt32(span[(i * 8)..]);
+            var denominator = _header.ReadUInt32(span[((i * 8) + 4)..]);
+            if (denominator == 0)
+                throw TiffFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The TIFF tag {tag} stores a RATIONAL value with a zero denominator."));
+
+            result[i] = (double)numerator / denominator;
+        }
+
+        return result;
+    }
+
     /// <summary>Reads the bytes of a BYTE, ASCII or UNDEFINED entry (an embedded profile).</summary>
     /// <param name="tag">The tag.</param>
     /// <param name="maxLength">The largest accepted length.</param>

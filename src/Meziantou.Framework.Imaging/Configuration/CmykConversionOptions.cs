@@ -3,7 +3,8 @@ using Meziantou.Framework.Imaging.Metadata;
 namespace Meziantou.Framework.Imaging;
 
 /// <summary>
-/// Immutable options of the color conversion that loads images whose samples are CMYK inks (four-component JPEG):
+/// Immutable options of the color conversion that loads images whose samples are CMYK inks (four-component JPEG files
+/// and separated TIFF pages):
 /// see <see cref="ImageDecodeOptions.CmykConversion"/> and <see cref="ImageReaderOptions.CmykConversion"/>.
 /// </summary>
 /// <remarks>
@@ -11,7 +12,7 @@ namespace Meziantou.Framework.Imaging;
 /// No pixel format holds CMYK samples: the decoder converts them with an <see cref="IccColorTransform"/> from the CMYK
 /// profile embedded in the file, or from <see cref="AssumedSourceProfile"/> when the file has none, to
 /// <see cref="DestinationProfile"/>. The loaded image holds RGB pixels labeled with <see cref="DestinationProfile"/>;
-/// the CMYK profile is not kept.
+/// the CMYK profile is not kept. An alpha sample of a TIFF page is not a color: it is copied unchanged.
 /// </para>
 /// <para>
 /// An embedded CMYK profile that is malformed or not supported is an error: it is never replaced by

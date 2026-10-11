@@ -96,17 +96,17 @@ internal static class ImageCollectionWriterCore
 
     private static void WriteTiff(ImageCollection collection, TiffEncoder encoder, ImageOutputBuffer output, AllocationScope scope, Stream stream)
     {
-        using var writer = new TiffDocumentWriter(encoder, scope);
+        using var writer = new TiffDocumentWriter(encoder, scope, collection.Configuration);
         writer.WriteHeader(output);
         for (var i = 0; i < collection.Count; i++)
         {
             using var page = Materialize(collection[i], configuration: collection.Configuration);
             var image = page.Image;
             var frame = image.Frames[0];
-            var metadata = MetadataWritePlan.Create(image.Metadata, ImageFormat.Tiff, encoder.MetadataHandling, image.Size, image.PixelFormat);
+            var metadata = MetadataWritePlan.Create(image.Metadata, ImageFormat.Tiff, encoder.MetadataHandling, image.Size, TiffSampleLayout.GetLabeledPixelFormat(encoder.PixelLayout, image.PixelFormat));
             MetadataWritePlan.ValidateFrameMetadata(frame.MetadataCore, ImageFormat.Tiff, encoder.MetadataHandling);
-            writer.BeginPage(image.Size, image.PixelFormat, metadata);
-            while (!writer.EncodeStrip(output, frame, CancellationToken.None))
+            writer.BeginPage(frame, image.Size, image.PixelFormat, metadata);
+            while (!writer.EncodeStrip(output, CancellationToken.None))
             {
                 FlushIfNeeded(output, stream);
             }

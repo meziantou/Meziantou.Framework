@@ -18,13 +18,13 @@ public enum ImageColorModel
     /// <summary>Red, green, blue and alpha samples.</summary>
     Rgba = 4,
 
-    /// <summary>Palette indexes (PNG color type 3, GIF). Palette entries may carry transparency.</summary>
+    /// <summary>Palette indexes (PNG color type 3, GIF, palette-color TIFF). Palette entries may carry transparency.</summary>
     Indexed = 5,
 
-    /// <summary>Luma/chroma samples (JPEG YCbCr).</summary>
+    /// <summary>Luma/chroma samples (JPEG and TIFF YCbCr).</summary>
     YCbCr = 6,
 
-    /// <summary>Cyan, magenta, yellow and black ink samples (four-component JPEG).</summary>
+    /// <summary>Cyan, magenta, yellow and black ink samples (four-component JPEG, separated TIFF).</summary>
     Cmyk = 7,
 
     /// <summary>Cyan, magenta and yellow coded as luma/chroma samples, with black ink samples (four-component JPEG with the Adobe YCCK transform).</summary>

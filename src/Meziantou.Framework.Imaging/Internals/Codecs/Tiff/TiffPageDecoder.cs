@@ -1,70 +1,109 @@
-using System.Runtime.InteropServices;
-
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
-/// Decodes the pixels of one TIFF page into a <see cref="DecodedFrameSink"/>: strips or
-/// tiles are read one block row at a time, un-predicted, expanded to the lossless working representation of the page and
-/// written row by row, so the memory of a decode depends on the block geometry and never on the size of the page or of
-/// the document.
+/// Decodes the pixels of one TIFF page into an image: strips or tiles are read one block row at a time, expanded to the
+/// lossless working representation of the page (<see cref="TiffRowExpander"/>) and written row by row, so the memory of
+/// a decode depends on the block geometry and never on the size of the page or of the document.
 /// </summary>
+/// <remarks>
+/// A CMYK page is only decoded when the request carries a <see cref="CmykConversionOptions"/>: its rows are converted to
+/// RGB by an ICC conversion from the CMYK profile of the page (or the assumed one) to the destination profile, which
+/// labels the image. The pixels and their profile change together, and the CMYK profile is not kept. Without the options,
+/// or without any source profile, the page is an <see cref="UnsupportedImageFeatureException"/> raised before any
+/// allocation.
+/// </remarks>
 internal static class TiffPageDecoder
 {
-    /// <summary>Decodes a page into the sink as a single still frame.</summary>
+    /// <summary>Decodes a page into a new image, as a single still frame.</summary>
     /// <param name="source">The input.</param>
     /// <param name="page">The resolved page.</param>
-    /// <param name="sink">The destination, created with the page size and <see cref="TiffPage.SourcePixelFormat"/>.</param>
+    /// <param name="request">The requested representation and conversions.</param>
+    /// <param name="context">The operation context.</param>
+    /// <returns>A new image owned by the caller.</returns>
     /// <exception cref="InvalidImageContentException">A strip or tile is missing, malformed or outside the input.</exception>
-    public static void Decode(RandomAccessSource source, TiffPage page, DecodedFrameSink sink)
+    /// <exception cref="UnsupportedImageFeatureException">The page stores CMYK samples and the request has no conversion for them.</exception>
+    public static Image Decode(RandomAccessSource source, TiffPage page, ImageDecodeRequest request, ImageCodecContext context)
     {
         ArgumentNullException.ThrowIfNull(source);
         ArgumentNullException.ThrowIfNull(page);
-        ArgumentNullException.ThrowIfNull(sink);
+        ArgumentNullException.ThrowIfNull(request);
+        ArgumentNullException.ThrowIfNull(context);
 
+        var profile = page.Metadata.IccProfile;
+        IccPipeline? inkConversion = null;
+        if (page.IsCmyk)
+        {
+            // Only a CMYK profile is adopted for a CMYK page. The rows are converted to the destination profile, which is
+            // the one that labels the image
+            var conversion = request.CmykConversion ?? throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {page.Index} stores CMYK samples, which are only loaded with a color conversion: set the CmykConversion property of the decode options."), "PhotometricInterpretation: 5 without color conversion");
+            var transform = conversion.CreateTransform(profile) ?? throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The CMYK TIFF page {page.Index} has no CMYK color profile and CmykConversionOptions.AssumedSourceProfile is null."), "PhotometricInterpretation: 5 without color profile");
+            inkConversion = transform.Pipeline;
+            profile = conversion.DestinationProfile;
+        }
+
+        using var sink = DecodedFrameSink.Create(context, request, ImageFormat.Tiff, page.Size, page.SourcePixelFormat, page.SourcePixelFormat, profile);
         var scope = source.Scope;
-        var expandedLength = page.Size.Width * PixelFormats.GetBytesPerPixel(page.SourcePixelFormat);
+        using var expander = new TiffRowExpander(page, inkConversion, scope);
         using var reader = new TiffBlockReader(source, page);
-        using var expanded = scope.Rent(expandedLength, AllocationKind.DecoderState, clear: false);
+        using var expanded = scope.Rent(expander.ExpandedRowLength, AllocationKind.DecoderState, clear: false);
         sink.BeginFrame(FrameDuration.Zero);
         if (page.IsTiled)
         {
-            DecodeTiles(source, page, sink, reader, expanded.Span);
+            DecodeTiles(source, page, sink, reader, expander, expanded.Span);
+        }
+        else if (page.IsJpeg)
+        {
+            DecodeJpegStrips(source, page, sink, reader, expander, expanded);
         }
         else
         {
-            DecodeStrips(source, page, sink, reader, expanded.Span);
+            DecodeStrips(source, page, sink, reader, expander, expanded.Span);
         }
 
         sink.EndImage();
+        return sink.Build(page.Metadata, animation: null);
     }
 
-    private static void DecodeStrips(RandomAccessSource source, TiffPage page, DecodedFrameSink sink, TiffBlockReader reader, Span<byte> expanded)
+    private static void DecodeStrips(RandomAccessSource source, TiffPage page, DecodedFrameSink sink, TiffBlockReader reader, TiffRowExpander expander, Span<byte> expanded)
     {
-        using var strip = source.Scope.Rent(page.BlockRowLength * page.BlockHeight, AllocationKind.DecoderState, clear: false);
         using var lease = sink.LeaseCurrentFrame();
         for (var block = 0; block < page.BlocksDown; block++)
         {
             source.Context.CancellationToken.ThrowIfCancellationRequested();
             var firstRow = block * page.BlockHeight;
             var rowCount = Math.Min(page.BlockHeight, page.Size.Height - firstRow);
-            var stored = strip.Span[..(rowCount * page.BlockRowLength)];
-            reader.ReadBlock(block, rowCount, stored);
+            var stored = reader.ReadBlock(block, rowCount);
             for (var row = 0; row < rowCount; row++)
             {
-                ExpandRow(page, stored.Slice(row * page.BlockRowLength, page.BlockRowLength), expanded);
+                expander.Expand(stored.Slice(row * page.BlockRowLength, page.BlockRowLength), expanded);
                 sink.WriteRow(lease, firstRow + row, expanded);
             }
         }
     }
 
-    private static void DecodeTiles(RandomAccessSource source, TiffPage page, DecodedFrameSink sink, TiffBlockReader reader, Span<byte> expanded)
+    /// <summary>
+    /// Decodes strips that are JPEG datastreams: the rows are expanded and written as the JPEG decoder produces them, so a
+    /// page stored as a single strip (what many writers do) costs the working memory of a JPEG file, not a second page.
+    /// </summary>
+    private static void DecodeJpegStrips(RandomAccessSource source, TiffPage page, DecodedFrameSink sink, TiffBlockReader reader, TiffRowExpander expander, PooledBuffer expanded)
     {
-        var packedPixelLength = page.SamplesPerPixel * page.BitsPerSample / 8;
+        var handler = new StripRowHandler(sink, expander, expanded);
+        for (var block = 0; block < page.BlocksDown; block++)
+        {
+            source.Context.CancellationToken.ThrowIfCancellationRequested();
+            handler.FirstRow = block * page.BlockHeight;
+            reader.ReadJpegStrip(block, Math.Min(page.BlockHeight, page.Size.Height - handler.FirstRow), handler);
+        }
+    }
+
+    private static void DecodeTiles(RandomAccessSource source, TiffPage page, DecodedFrameSink sink, TiffBlockReader reader, TiffRowExpander expander, Span<byte> expanded)
+    {
+        // Tile widths are multiples of 16 pixels, so a tile starts on a byte of the band whatever the sample width
+        var bitsPerPixel = page.BitsPerPixel;
         var bandRowLength = (int)page.RowLength;
         if (!CheckedSizes.TryMultiply(bandRowLength, page.BlockHeight, out var bandLength) || bandLength > CheckedSizes.MaxBufferLength)
             throw CheckedSizes.CreateOverflowException(source.Limits);
 
-        using var tile = source.Scope.Rent(page.BlockRowLength * page.BlockHeight, AllocationKind.DecoderState, clear: false);
         using var band = source.Scope.Rent((int)bandLength, AllocationKind.DecoderState, clear: false);
         using var lease = sink.LeaseCurrentFrame();
         for (var blockRow = 0; blockRow < page.BlocksDown; blockRow++)
@@ -74,157 +113,48 @@ internal static class TiffPageDecoder
             var rowCount = Math.Min(page.BlockHeight, page.Size.Height - firstRow);
             for (var blockColumn = 0; blockColumn < page.BlocksAcross; blockColumn++)
             {
-                // A tile is always stored in full, even when it extends past the right or bottom edge of the page
-                reader.ReadBlock((blockRow * page.BlocksAcross) + blockColumn, page.BlockHeight, tile.Span);
+                var tile = reader.ReadBlock((blockRow * page.BlocksAcross) + blockColumn, rowCount);
                 var firstColumn = blockColumn * page.BlockWidth;
                 var columnCount = Math.Min(page.BlockWidth, page.Size.Width - firstColumn);
-                var copyLength = columnCount * packedPixelLength;
+                var copyLength = (int)((((long)columnCount * bitsPerPixel) + 7) / 8);
+                var bandOffset = (int)((long)firstColumn * bitsPerPixel / 8);
                 for (var row = 0; row < rowCount; row++)
                 {
-                    tile.Span.Slice(row * page.BlockRowLength, copyLength)
-                        .CopyTo(band.Span.Slice((row * bandRowLength) + (firstColumn * packedPixelLength), copyLength));
+                    tile.Slice(row * page.BlockRowLength, copyLength)
+                        .CopyTo(band.Span.Slice((row * bandRowLength) + bandOffset, copyLength));
                 }
             }
 
             for (var row = 0; row < rowCount; row++)
             {
-                ExpandRow(page, band.Span.Slice(row * bandRowLength, bandRowLength), expanded);
+                expander.Expand(band.Span.Slice(row * bandRowLength, bandRowLength), expanded);
                 sink.WriteRow(lease, firstRow + row, expanded);
             }
         }
     }
 
-    /// <summary>Expands one stored row to the lossless working representation of the page.</summary>
-    /// <param name="page">The page.</param>
-    /// <param name="stored">The stored samples of the row; only the first <c>Width</c> pixels are read (a tile row is padded).</param>
-    /// <param name="destination">Exactly <c>Width</c> pixels of <see cref="TiffPage.SourcePixelFormat"/>.</param>
-    private static void ExpandRow(TiffPage page, ReadOnlySpan<byte> stored, Span<byte> destination)
+    /// <summary>Expands and writes the rows of a strip as its decoder produces them.</summary>
+    private sealed class StripRowHandler : TiffBlockRowHandler
     {
-        var width = page.Size.Width;
-        var invert = page.IsWhiteIsZero;
-        if (page.BitsPerSample == 8)
+        private readonly DecodedFrameSink _sink;
+        private readonly TiffRowExpander _expander;
+        private readonly PooledBuffer _expanded;
+
+        public StripRowHandler(DecodedFrameSink sink, TiffRowExpander expander, PooledBuffer expanded)
         {
-            switch (page.SamplesPerPixel)
-            {
-                case 1:
-                    stored[..width].CopyTo(destination);
-                    if (invert)
-                    {
-                        InvertBytes(destination[..width]);
-                    }
-
-                    break;
-
-                case 2:
-                    for (var x = 0; x < width; x++)
-                    {
-                        var gray = stored[x * 2];
-                        if (invert)
-                        {
-                            gray = (byte)(255 - gray);
-                        }
-
-                        var offset = x * 4;
-                        destination[offset] = gray;
-                        destination[offset + 1] = gray;
-                        destination[offset + 2] = gray;
-                        destination[offset + 3] = stored[(x * 2) + 1];
-                    }
-
-                    break;
-
-                default:
-                    // RGB (3) and RGBA (4) samples already match Rgb24 and Rgba32
-                    stored[..(width * page.SamplesPerPixel)].CopyTo(destination);
-                    break;
-            }
-
-            return;
+            _sink = sink;
+            _expander = expander;
+            _expanded = expanded;
         }
 
-        var samples = unsafe(MemoryMarshal.Cast<byte, ushort>(destination));
-        switch (page.SamplesPerPixel)
+        /// <summary>Gets or sets the row of the page the first row of the current strip is.</summary>
+        public int FirstRow { get; set; }
+
+        public override void OnRow(int row, ReadOnlySpan<byte> samples)
         {
-            case 1:
-                ReadSamples(page, stored, samples[..width]);
-                if (invert)
-                {
-                    InvertSamples(samples[..width]);
-                }
-
-                break;
-
-            case 2:
-                for (var x = 0; x < width; x++)
-                {
-                    var gray = ReadSample(page, stored, x * 2);
-                    if (invert)
-                    {
-                        gray = (ushort)(ushort.MaxValue - gray);
-                    }
-
-                    var offset = x * 4;
-                    samples[offset] = gray;
-                    samples[offset + 1] = gray;
-                    samples[offset + 2] = gray;
-                    samples[offset + 3] = ReadSample(page, stored, (x * 2) + 1);
-                }
-
-                break;
-
-            case 3:
-                // There is no 16-bit RGB pixel format: the samples are widened to Rgba64 with an opaque alpha channel
-                for (var x = 0; x < width; x++)
-                {
-                    var offset = x * 4;
-                    samples[offset] = ReadSample(page, stored, x * 3);
-                    samples[offset + 1] = ReadSample(page, stored, (x * 3) + 1);
-                    samples[offset + 2] = ReadSample(page, stored, (x * 3) + 2);
-                    samples[offset + 3] = ushort.MaxValue;
-                }
-
-                break;
-
-            default:
-                ReadSamples(page, stored, samples[..(width * 4)]);
-                break;
-        }
-    }
-
-    private static void ReadSamples(TiffPage page, ReadOnlySpan<byte> stored, Span<ushort> destination)
-    {
-        var source = stored[..(destination.Length * 2)];
-        if (page.IsBigEndian)
-        {
-            SampleEndianness.ReadBigEndian(source, destination);
-        }
-        else
-        {
-            SampleEndianness.ReadLittleEndian(source, destination);
-        }
-    }
-
-    private static ushort ReadSample(TiffPage page, ReadOnlySpan<byte> stored, int index)
-    {
-        var offset = index * 2;
-        return page.IsBigEndian
-            ? (ushort)((stored[offset] << 8) | stored[offset + 1])
-            : (ushort)((stored[offset + 1] << 8) | stored[offset]);
-    }
-
-    private static void InvertBytes(Span<byte> values)
-    {
-        for (var i = 0; i < values.Length; i++)
-        {
-            values[i] = (byte)(255 - values[i]);
-        }
-    }
-
-    private static void InvertSamples(Span<ushort> values)
-    {
-        for (var i = 0; i < values.Length; i++)
-        {
-            values[i] = (ushort)(ushort.MaxValue - values[i]);
+            var expanded = _expanded.Span;
+            _expander.Expand(samples, expanded);
+            _sink.WriteRow(FirstRow + row, expanded);
         }
     }
 }

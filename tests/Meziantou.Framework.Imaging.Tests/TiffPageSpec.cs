@@ -16,8 +16,18 @@ internal sealed class TiffPageSpec
     /// <summary>0 (WhiteIsZero), 1 (BlackIsZero), 2 (RGB), or any other value to exercise the rejections.</summary>
     public int Photometric { get; init; } = 1;
 
-    /// <summary>1 (none), 8 (Adobe Deflate), 32946 (Deflate), or any other value to exercise the rejections.</summary>
+    /// <summary>
+    /// 1 (none), 5 (LZW), 8 (Adobe Deflate), 32773 (PackBits) and 32946 (Deflate) are applied to the samples by the
+    /// builder; any other value is only declared (with <see cref="EncodedBlocks"/>, or to exercise the rejections).
+    /// </summary>
     public int Compression { get; init; } = 1;
+
+    /// <summary>The strips or tiles as they are stored, for the compressions the builder does not apply itself; <see cref="Samples"/> is then ignored.</summary>
+    public byte[][]? EncodedBlocks { get; init; }
+
+    public int? FillOrder { get; init; }
+
+    public bool OmitBitsPerSample { get; init; }
 
     public int RowsPerStrip { get; init; } = int.MaxValue;
 
@@ -51,14 +61,18 @@ internal sealed class TiffPageSpec
     /// <summary>Splits the samples into the strips or tiles the directory will describe, compressing them when asked.</summary>
     public byte[][] BuildBlocks()
     {
-        var rowLength = Width * SamplesPerPixel * BitsPerSample / 8;
+        if (EncodedBlocks is not null)
+            return EncodedBlocks;
+
+        // Rows are padded to whole bytes; tile widths are multiples of 16 pixels, so a tile starts on a byte of the row
+        var bitsPerPixel = SamplesPerPixel * BitsPerSample;
+        var rowLength = ((Width * bitsPerPixel) + 7) / 8;
         var blocks = new List<byte[]>();
         if (IsTiled)
         {
             var tileWidth = TileWidth!.Value;
             var tileLength = TileLength!.Value;
-            var tileRowLength = tileWidth * SamplesPerPixel * BitsPerSample / 8;
-            var pixelLength = SamplesPerPixel * BitsPerSample / 8;
+            var tileRowLength = ((tileWidth * bitsPerPixel) + 7) / 8;
             for (var top = 0; top < Height; top += tileLength)
             {
                 for (var left = 0; left < tileWidth * ((Width + tileWidth - 1) / tileWidth); left += tileWidth)
@@ -71,11 +85,11 @@ internal sealed class TiffPageSpec
                         if (columns <= 0)
                             continue;
 
-                        Samples.AsSpan(((top + y) * rowLength) + (left * pixelLength), columns * pixelLength)
+                        Samples.AsSpan(((top + y) * rowLength) + (left * bitsPerPixel / 8), ((columns * bitsPerPixel) + 7) / 8)
                             .CopyTo(tile.AsSpan(y * tileRowLength));
                     }
 
-                    blocks.Add(Finish(tile));
+                    blocks.Add(Finish(tile, tileRowLength));
                 }
             }
 
@@ -86,20 +100,26 @@ internal sealed class TiffPageSpec
         for (var top = 0; top < Height; top += rows)
         {
             var count = Math.Min(rows, Height - top);
-            blocks.Add(Finish(Samples.AsSpan(top * rowLength, count * rowLength).ToArray()));
+            blocks.Add(Finish(Samples.AsSpan(top * rowLength, count * rowLength).ToArray(), rowLength));
         }
 
         return [.. blocks];
     }
 
-    private byte[] Finish(byte[] block)
+    private byte[] Finish(byte[] block, int rowLength)
     {
         if (Predictor == 2)
         {
             block = ApplyHorizontalDifferencing(block);
         }
 
-        return Compression is 8 or 32946 ? TiffFileBuilder.Deflate(block) : block;
+        return Compression switch
+        {
+            5 => TiffReferenceCodecs.EncodeLzw(block),
+            8 or 32946 => TiffFileBuilder.Deflate(block),
+            32773 => TiffReferenceCodecs.EncodePackBits(block, rowLength),
+            _ => block,
+        };
     }
 
     private byte[] ApplyHorizontalDifferencing(byte[] block)

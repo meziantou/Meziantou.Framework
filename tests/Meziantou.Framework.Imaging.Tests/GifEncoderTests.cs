@@ -673,7 +673,7 @@ public sealed class GifEncoderTests
     public void QuantizerPalettesAreSortedBoundedAndExactWhenTheyFit()
     {
         var scope = new AllocationScope(new ImageResourceLimits());
-        using var quantizer = new GifQuantizer(scope);
+        using var quantizer = new PaletteQuantizer(scope);
         var random = new Random(7);
         var keys = Enumerable.Range(0, 5000).Select(_ => random.Next(1 << 24)).ToArray();
         foreach (var target in new[] { 1, 2, 17, 255, 256 })
@@ -689,7 +689,7 @@ public sealed class GifEncoderTests
 
         quantizer.Begin(256);
         quantizer.Add(keys.AsSpan(0, 200));
-        quantizer.Add([GifQuantizer.TransparentKey]);
+        quantizer.Add([PaletteQuantizer.TransparentKey]);
         quantizer.BuildPalette(255);
         Assert.True(quantizer.IsExact && quantizer.HasTransparency);
         Assert.Equal(keys.Take(200).Distinct().Order(), quantizer.Palette.ToArray());

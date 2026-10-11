@@ -1,4 +1,5 @@
 using System.Runtime.CompilerServices;
+using Meziantou.Framework.Imaging.Drawing;
 using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.Metadata;
 
@@ -63,6 +64,57 @@ internal static class Examples
         var laplacian = new ConvolutionKernel(3, 3, [0, 1, 0, 1, -4, 1, 0, 1, 0]);
         image.Convolve(new ConvolutionOptions(laplacian) { PreserveAlpha = true, EdgeMode = ConvolutionEdgeMode.Mirror });
         image.Save(edgesPath);
+    }
+    // end-snippet
+
+    /// <summary>Drawing: gradients, a disk, a filled and stroked curve and a frame on a new image.</summary>
+    // begin-snippet: draw-shapes
+    public static void DrawLandscape(string outputPath)
+    {
+        using var image = new Image<Rgba32>(256, 160);
+
+        // Brushes, pens and paths are immutable: create them once and reuse them
+        var sky = new LinearGradientBrush(new PointD(0, 0), new PointD(0, 160), [new GradientStop(0, new Rgba32(30, 60, 160)), new GradientStop(1, new Rgba32(200, 220, 255))]);
+        var sun = new RadialGradientBrush(new PointD(200, 50), 30, [new GradientStop(0, new Rgba32(255, 255, 200)), new GradientStop(1, new Rgba32(255, 180, 0, 0))]);
+        var hill = new VectorPathBuilder()
+            .MoveTo(0, 160).LineTo(0, 120)
+            .CubicBezierTo(60, 70, 120, 150, 256, 100)
+            .LineTo(256, 160).Close()
+            .Build();
+        var outline = new Pen(new Rgba32(20, 60, 20), 3) { LineJoin = LineJoin.Round };
+        var frame = new Pen(new Rgba32(0, 0, 0, 128), 2);
+
+        image.Frames[0].Draw(canvas =>
+        {
+            canvas.Fill(sky); // the whole canvas
+            canvas.FillCircle(sun, new PointD(200, 50), 30); // fades to transparent at its edge
+            canvas.Fill(new Rgba32(60, 140, 60), hill); // a color converts to a solid brush
+            canvas.Stroke(outline, hill);
+            canvas.StrokeRectangle(frame, new RectangleD(1, 1, 254, 158)); // centered on its path: from 0 to 2
+        });
+
+        image.Save(outputPath);
+    }
+    // end-snippet
+
+    /// <summary>Drawing on every frame of an animation, with a static callback (no closure allocation).</summary>
+    // begin-snippet: draw-on-animation
+    public static void MarkAnimation(string inputPath, string outputPath)
+    {
+        using var image = Image.Load(inputPath);
+        var marker = new Pen(new Rgba32(255, 255, 0, 200), 4) { LineCap = LineCap.Round };
+
+        // Image.Draw paints every frame and the poster identically; the callback runs once
+        image.Draw(marker, static (canvas, pen) =>
+        {
+            // Coordinates are in pixels, with sub-pixel precision; shapes are clipped to the canvas
+            var center = new PointD(canvas.Width / 2.0, canvas.Height / 2.0);
+            var radius = Math.Min(canvas.Width, canvas.Height) / 4.0;
+            canvas.StrokeCircle(pen, center, radius);
+            canvas.StrokeLine(pen, new PointD(center.X - radius, center.Y), new PointD(center.X + radius, center.Y));
+        });
+
+        image.Save(outputPath);
     }
     // end-snippet
 
@@ -226,8 +278,31 @@ internal static class Examples
         frame.Save(tgaPath, new TgaEncoder { Compression = TgaCompression.RunLength, AllowBitDepthReduction = true });
 
         // Netpbm: the variant follows the pixel format (PGM, PPM, or PAM when the pixels have alpha), and MAXVAL follows
-        // the precision, so 16-bit images keep every bit
+        // the precision, so 16-bit images keep every bit. A portable bitmap (PBM) is only written on request, with
+        // PnmPixelLayout.Bitmap, and only from black and white pixels.
         frame.Save(pnmPath, new PnmEncoder());
+    }
+    // end-snippet
+
+    /// <summary>A compact BMP for graphics: 8-bit palette indexes, run-length encoded, with an explicit color-reduction policy.</summary>
+    // begin-snippet: save-bmp-indexed
+    public static void SaveIndexedBmp(string inputPath, string outputPath)
+    {
+        using var image = Image.Load(inputPath);
+        using var frame = image.CloneFrame(0);
+
+        // 8-bit indexes, run-length encoded (BI_RLE8). The palette holds the colors of the frame exactly when there are at
+        // most 256 of them; AllowColorReduction accepts a deterministic palette for the other frames, here with dithering.
+        // A BMP palette has no alpha, so non-opaque pixels need a background color.
+        frame.Save(outputPath, new BmpEncoder
+        {
+            PixelLayout = BmpPixelLayout.Indexed8,
+            Compression = BmpCompression.RunLength,
+            AllowColorReduction = true,
+            Dithering = BmpDithering.FloydSteinberg,
+            BackgroundColor = new Rgba64(65535, 65535, 65535),
+            AllowBitDepthReduction = true,
+        });
     }
     // end-snippet
 
@@ -450,6 +525,22 @@ internal static class Examples
         // Untagged pixels are read as sRGB: the label can be removed for formats that cannot store a profile
         image.Metadata.IccProfile = null;
         image.Save(outputPath);
+    }
+    // end-snippet
+
+    /// <summary>A CMYK JPEG is only loaded with a color conversion.</summary>
+    // begin-snippet: load-cmyk-jpeg
+    public static Image LoadCmykJpeg(string path)
+    {
+        // Default options: converted to sRGB from the CMYK profile of the file, or from
+        // IccProfile.Cgats001CompatibleCmyk when it has none. Images that are not CMYK are loaded as usual.
+        var conversion = new CmykConversionOptions
+        {
+            Transform = new IccColorTransformOptions { Intent = IccRenderingIntent.Perceptual },
+        };
+
+        // The pixels are RGB, labeled with the destination profile (image.Metadata.IccProfile)
+        return Image.Load(path, new ImageDecodeOptions { CmykConversion = conversion });
     }
     // end-snippet
 

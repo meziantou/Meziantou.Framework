@@ -6,7 +6,8 @@ namespace Meziantou.Framework.Imaging.Benchmarks;
 
 /// <summary>
 /// JPEG decoding (baseline and progressive), encoding, and the decode-resize-encode pipeline, in memory. Both inputs encode
-/// the same 2048x1536 pixels at quality 85 with 4:2:0 chroma subsampling.
+/// the same 2048x1536 pixels at quality 85 with 4:2:0 chroma subsampling. The four-component input (YCCK inks) has the
+/// same size: its decoding adds the ICC conversion of every pixel from a CMYK profile to sRGB.
 /// </summary>
 [Config(typeof(WorkloadConfig))]
 public class JpegBenchmarks : IDisposable
@@ -41,6 +42,14 @@ public class JpegBenchmarks : IDisposable
     public int DecodeProgressive()
     {
         using var image = Image.Load<Rgb24>(BenchmarkInputs.ProgressiveJpeg);
+        return image.Width;
+    }
+
+    [Benchmark]
+    [Workload("2048x1536 baseline YCCK JPEG q85 4:2:0 -> sRGB Rgb24 (ICC conversion)")]
+    public int DecodeInks()
+    {
+        using var image = Image.Load<Rgb24>(BenchmarkInputs.InkJpeg, BenchmarkInputs.InkJpegOptions);
         return image.Width;
     }
 

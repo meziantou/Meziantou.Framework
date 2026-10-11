@@ -44,7 +44,6 @@ public sealed class JpegIdentifyTests
     [InlineData((byte)0xCF, 3, 8, "JPEG arithmetic coding")]
     [InlineData((byte)0xC0, 3, 12, "JPEG 12-bit precision")]
     [InlineData((byte)0xC2, 1, 16, "JPEG 16-bit precision")]
-    [InlineData((byte)0xC0, 4, 8, "JPEG CMYK/YCCK")]
     [InlineData((byte)0xC0, 2, 8, "JPEG 2 components")]
     [InlineData((byte)0xF7, 3, 8, "JPEG-LS")]
     public void RecognizedUnsupportedModesAreRejectedExplicitly(byte marker, int components, int precision, string feature)
@@ -173,6 +172,23 @@ public sealed class JpegIdentifyTests
 
         var adobeYcc = new SyntheticImages.JpegBuilder().StartOfImage().Segment(0xEE, [.. "Adobe"u8, 0, 100, 0, 0, 0, 0, 1]).Frame(0xC0, 8, 8, 8, 3).Scan(3).EndOfImage().ToArray();
         Assert.Equal(ImageColorModel.YCbCr, Image.Identify(adobeYcc).ColorModel);
+
+        // Four components are inks: CMYK, or YCCK when the Adobe segment declares a color transform
+        foreach (var (transform, expected) in new (byte? Transform, ImageColorModel Expected)[] { (null, ImageColorModel.Cmyk), (0, ImageColorModel.Cmyk), (1, ImageColorModel.Ycck), (2, ImageColorModel.Ycck) })
+        {
+            var builder = new SyntheticImages.JpegBuilder().StartOfImage();
+            if (transform is { } value)
+            {
+                builder.Segment(0xEE, [.. "Adobe"u8, 0, 100, 0, 0, 0, 0, value]);
+            }
+
+            var inks = builder.Frame(0xC0, 8, 8, 8, 4).Scan(4).EndOfImage().ToArray();
+            var info = Image.Identify(inks);
+            Assert.Equal(expected, info.ColorModel);
+            Assert.Equal(PixelFormat.Rgb24, info.PixelFormat);
+            Assert.Equal(8, info.BitsPerComponent);
+            Assert.False(info.MayHaveTransparency);
+        }
 
         // Component identifiers 'R', 'G', 'B' without JFIF
         var rgbIds = new SyntheticImages.JpegBuilder().StartOfImage().Segment(0xC0, [8, 0, 8, 0, 8, 3, (byte)'R', 0x11, 0, (byte)'G', 0x11, 0, (byte)'B', 0x11, 0]).Segment(0xDA, [1, (byte)'R', 0, 0, 63, 0]).EndOfImage().ToArray();

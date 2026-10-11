@@ -1,4 +1,5 @@
 using System.Globalization;
+using Meziantou.Framework.Imaging.Drawing;
 using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.Metadata;
 
@@ -69,6 +70,41 @@ internal static class SmokeTests
         using var opaque = CreatePattern(seed: 3);
         using var flattened = Image.Load(Encode(opaque, new JpegEncoder { BackgroundColor = new Rgba64(0, 0, 0, 65535) }));
         Check(flattened.PixelFormat == PixelFormat.Rgb24, "JPEG default pixel format");
+    }
+
+    // A 17x9 JPEG file with four components (CMYK inks, no Adobe APP14 segment, no profile, restart intervals): the
+    // fixture invalid/jpeg/cmyk-without-adobe-restart of the test corpus
+    // (tools/Meziantou.Framework.Imaging.CorpusGenerator, BuildInkJpeg). The library has no encoder for inks.
+    private const string CmykJpeg =
+        "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoHBwYIDAoMDAsKCwsNDhIQDQ4RDgsLEBYQERMUFRUVDA8XGBYUGBIUFRT/" +
+        "2wBDAQMEBAUEBQkFBQkUDQsNFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBT/wAAUCAAJABEEAREAAhEBAxEBBBEA" +
+        "/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2Jy" +
+        "ggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLD" +
+        "xMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3" +
+        "AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6" +
+        "goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/90ABAAB/9oADgQBAAIRAxEE" +
+        "AAA/APKvDfgTV/FvijT7jTTbxwjTRe3DysSiwvs2yGVcp1kIwCejgH5Hx93mXF+F8PMGs8xV6lbGzdqfNeWkb6a2UVKLt7rfLOOsrWP3Wfipl2Y14cQ4NP6l" +
+        "QdSlOMtK0pxajeNP4VFOcLOpOFRqcn7NR5ebyrwl+0N4j8S+I49PtrttP1m5j+1tLLK1zesSFO5psLsPnxuM5WQJPgvIAa//0PGPC/wi1LWfGvizTrW5jXW4" +
+        "ry2tbqC4HlhEnLeQ4OeVZXI527gqsAA2a/R58XYPDYT/AF2jO/s4884Rte2/Lf3tVHmi01D342lGElzH0+M8S8Nl8sTgsX77zdf7O6UruEXzfxpq8YyjGrGP" +
+        "7qNW0qc04v3JVOA8I/GLUr3xDeaVo98+nSaNdRreQ2NyHu5Ig5wBcbeN8MssZVVALRKZIlZiR//Rxf8Ahly5/wCgof8Awn9T/wDia9j/AImkwf8A0CS/8Dof" +
+        "/LD4H/V7in/n5hv/AAOl/wDKCT/hL/EP/PWb/vxJ/wDHK//S9F8Sf8lNsP8Adj/9J9Tr8p46/wB2wX/YLD/0/QPxjw6/5NtxP/jl/wCnsEfGfw8/5KHb/wDY" +
+        "NX+b1//T6X4ff8nS+N/+uOi/+k1vX5xT/wCTdZz6z/8AT2JP5nzP4uGv8UP/AEmmfMHwY/5Cfxd/6/LX/wBGXFf/1PtWv8zDxzyyv//Z";
+
+    public static void CmykJpegConversion()
+    {
+        var data = Convert.FromBase64String(CmykJpeg);
+        var info = Image.Identify(data);
+        Check(info.ColorModel == ImageColorModel.Cmyk && info.PixelFormat == PixelFormat.Rgb24 && info.Width == 17 && info.Height == 9, "CMYK JPEG identification");
+
+        // No pixel format holds inks: a load without color conversion is rejected
+        Expect<UnsupportedImageFeatureException>(() => Image.Load(data));
+
+        // The profile the library assumes for inks without profile, converted to sRGB (pixels of the same load on the
+        // just-in-time runtime: the corpus compares them with independent references)
+        using var image = Image.Load<Rgb24>(data, new ImageDecodeOptions { CmykConversion = new CmykConversionOptions() });
+        Check(image.Size == new Size(17, 9) && ReferenceEquals(image.Metadata.IccProfile, IccProfile.Srgb), "CMYK JPEG conversion label");
+        Check(image.Frames[0][0, 0] == new Rgb24(88, 160, 195) && image.Frames[0][8, 4] == new Rgb24(24, 24, 49) && image.Frames[0][16, 8] == new Rgb24(101, 2, 37), "CMYK JPEG converted pixels");
+        Check(IccProfile.Cgats001CompatibleCmyk is { ColorSpace: IccProfileColorSpace.Cmyk, ProfileClass: IccProfileClass.Input } && IccProfile.Cgats001CompatibleCmyk.Data.Length == 8464, "CMYK profile of the library");
     }
 
     public static void WebP()
@@ -224,6 +260,23 @@ internal static class SmokeTests
             Check(info.Format == ImageFormat.Bmp && info.FrameCount == 1, "BMP identification");
         }
 
+        // The indexed layouts (histogram, palette, index plane) and the run-length reader and writer: whatever the row
+        // order and the compression, the decoded pixels are the same
+        var flatten = new Rgba64(0, 0, 0);
+        using var indexed = Image.Load(Encode(still, new BmpEncoder { PixelLayout = BmpPixelLayout.Indexed8, AllowColorReduction = true, BackgroundColor = flatten }));
+        foreach (var encoder in new[]
+        {
+            new BmpEncoder { PixelLayout = BmpPixelLayout.Indexed8, AllowColorReduction = true, BackgroundColor = flatten, Compression = BmpCompression.RunLength },
+            new BmpEncoder { PixelLayout = BmpPixelLayout.Indexed8, AllowColorReduction = true, BackgroundColor = flatten, RowOrder = BmpRowOrder.TopDown },
+        })
+        {
+            using var decoded = Image.Load(Encode(still, encoder));
+            CheckEqual(indexed, decoded, "BMP indexed " + encoder.Compression + " " + encoder.RowOrder);
+        }
+
+        using var highColor = Image.Load(Encode(still, new BmpEncoder { PixelLayout = BmpPixelLayout.Bgr565, AllowBitDepthReduction = true, BackgroundColor = flatten }));
+        Check(highColor.PixelFormat == PixelFormat.Rgb24 && highColor.Size == still.Size, "BMP 5-6-5");
+
         using var reader = Image.OpenReader<Rgba32>(new MemoryStream(Encode(still, new BmpEncoder())));
         using (var frame = reader.ReadFrame())
         {
@@ -274,6 +327,20 @@ internal static class SmokeTests
         plain.Frames[0].CopyPixelDataTo(plainPixels);
         binary.Frames[0].CopyPixelDataTo(binaryPixels);
         Check(plainPixels.AsSpan().SequenceEqual(binaryPixels), "PNM plain and binary agree");
+
+        // A portable bitmap is written on request, from black and white pixels only
+        Gray8[] bits = [new(0), new(255), new(255), new(0), new(0), new(255)];
+        using var bitmap = Image.ImportPixelData<Gray8>(bits, 3, 2);
+        foreach (var encoding in (PnmEncoding[])[PnmEncoding.Binary, PnmEncoding.Plain])
+        {
+            var encoded = Encode(bitmap, new PnmEncoder { PixelLayout = PnmPixelLayout.Bitmap, Encoding = encoding });
+            using var decoded = Image.Load<Gray8>(encoded);
+            var decodedBits = new Gray8[bits.Length];
+            decoded.Frames[0].CopyPixelDataTo(decodedBits);
+            Check(Image.Identify(encoded).BitsPerComponent == 1 && decodedBits.AsSpan().SequenceEqual(bits), $"PBM {encoding}");
+        }
+
+        Check(Expect<UnsupportedImageFeatureException>(() => Encode(opaque, new PnmEncoder { PixelLayout = PnmPixelLayout.Bitmap })).Format == ImageFormat.Pnm, "PBM rejects colors");
     }
 
     public static void Tiff()
@@ -411,6 +478,36 @@ internal static class SmokeTests
         // (5 - 6, 2 - 1, 4 + 12, 3 + 2): the canvas is enlarged on the left and on the right
         Check(bordered.AutoCrop(new AutoCropOptions { PaddingX = 6, PaddingY = 1 }) && bordered.Size == new Size(16, 5), "auto-crop");
         Check(bordered.Frames[0][0, 0] == new Rgba32(255, 255, 255) && bordered.Frames[0][6, 1] == new Rgba32(10, 20, 30), "auto-crop pixels");
+    }
+
+    public static void Drawing()
+    {
+        // Every brush, both fill rules, strokes with every join and cap, on a typed frame and on a whole animation
+        using var image = new Image<Rgba32>(32, 24, new Rgba32(255, 255, 255));
+        image.AppendFrame();
+        var star = new VectorPathBuilder().AddPolygon([new PointD(16, 2), new PointD(20, 20), new PointD(4, 8), new PointD(28, 8), new PointD(12, 20)]).Build();
+        var curve = new VectorPathBuilder().MoveTo(2, 20).CubicBezierTo(10, -6, 20, 30, 30, 4).QuadraticBezierTo(24, 16, 16, 22).Build();
+        var linear = new LinearGradientBrush(new PointD(0, 0), new PointD(32, 0), [new GradientStop(0, new Rgba32(255, 0, 0)), new GradientStop(1, new Rgba32(0, 0, 255, 64))]) { SpreadMode = GradientSpreadMode.Reflect };
+        var radial = new RadialGradientBrush(new PointD(16, 12), 10, [new GradientStop(0, new Rgba32(255, 255, 0)), new GradientStop(1, new Rgba32(0, 128, 0))]) { SpreadMode = GradientSpreadMode.Repeat };
+        image.Draw((star, curve, linear, radial), static (canvas, state) =>
+        {
+            canvas.Fill(state.linear);
+            canvas.Fill(state.radial, state.star, FillRule.EvenOdd);
+            canvas.Stroke(new Pen(new Rgba32(0, 0, 0, 200), 2.5) { LineJoin = LineJoin.Round, LineCap = LineCap.Round }, state.curve);
+            canvas.StrokeRectangle(new Pen(state.linear, 1) { LineJoin = LineJoin.Bevel }, new Rectangle(1, 1, 30, 22));
+            canvas.FillCircle(new Rgba32(0, 0, 0), new PointD(4, 4), 2);
+            canvas.StrokeEllipse(new Pen(new Rgba32(255, 255, 255), 1.5) { LineCap = LineCap.Square, MiterLimit = 2 }, new PointD(24, 16), 5, 3);
+        });
+        image.Frames[1].Draw(canvas => canvas.FillRectangle(new Rgba32(0, 0, 0), new Rectangle(0, 0, 1, 1)));
+        Check(image.Frames[0][4, 4] == new Rgba32(0, 0, 0) && image.Frames[1][4, 4] == new Rgba32(0, 0, 0), "drawing on every frame");
+        Check(image.Frames[1][0, 0] == new Rgba32(0, 0, 0) && image.Frames[0][0, 0] != new Rgba32(0, 0, 0), "drawing on one frame");
+        Check(image.Frames[0][0, 12] != new Rgba32(255, 255, 255), "gradient fill");
+
+        using var gray = new Image<Gray16>(4, 1, new Gray16(0));
+        ((Image)gray).Draw(canvas => canvas.FillRectangle(new LinearGradientBrush(new PointD(0, 0), new PointD(4, 0), [new GradientStop(0, new Rgba32(0, 0, 0)), new GradientStop(1, new Rgba32(255, 255, 255))]), new RectangleD(0, 0, 3.5, 1)));
+
+        // The centers are at 1/8, 3/8, 5/8 and 7/8 of 65535 (ties upward); the last pixel is half covered
+        Check(gray.Frames[0][0, 0] == new Gray16(8192) && gray.Frames[0][1, 0] == new Gray16(24576) && gray.Frames[0][2, 0] == new Gray16(40959) && gray.Frames[0][3, 0] == new Gray16(28672), "gradient samples");
     }
 
     public static void ColorConversion()

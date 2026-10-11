@@ -11,7 +11,7 @@
     <Project Path="../src/Meziantou.Framework.Yaml/Meziantou.Framework.Yaml.csproj" />
   </Folder>
   <Folder Name="/tests/">
-    <Project Path="../tests/Meziantou.Framework.Yaml.AotSmoke/Meziantou.Framework.Yaml.AotSmoke.csproj" />
+    <Project Path="../tests/Meziantou.Framework.Yaml.AotTests/Meziantou.Framework.Yaml.AotTests.csproj" />
     <Project Path="../tests/Meziantou.Framework.Yaml.FeatureSwitchSmoke/Meziantou.Framework.Yaml.FeatureSwitchSmoke.csproj" />
     <Project Path="../tests/Meziantou.Framework.Yaml.Tests/Meziantou.Framework.Yaml.Tests.csproj" />
   </Folder>

@@ -40,6 +40,12 @@ inputs:
     description: Whether to include only test projects
     required: false
     default: "false"
+  where:
+    description: |
+      MSBuild condition evaluated against each project, such as '$(PublishAot)' == 'true'.
+      Only the affected projects for which it is true are written. It is passed as --where.
+    required: false
+    default: ""
   shard:
     description: Optional shard number to pass to DeltaBuild
     required: false
@@ -75,7 +81,9 @@ runs:
     - name: Install DeltaBuild
       if: ${{ inputs.run-generate == 'true' }}
       shell: pwsh
-      run: dotnet tool install --global Meziantou.DeltaBuild
+      # "update" installs the tool when it is missing, and succeeds when a previous call of the
+      # action in the same job already installed it
+      run: dotnet tool update --global Meziantou.DeltaBuild
 
     - name: Generate delta project
       id: generate-delta
@@ -89,6 +97,7 @@ runs:
         FULL_REBUILD_TRIGGERS: ${{ inputs.full-rebuild-triggers }}
         BASE_COMMIT: ${{ inputs.base-commit }}
         TEST_PROJECTS_ONLY: ${{ inputs.test-projects-only }}
+        WHERE_CONDITION: ${{ inputs.where }}
         SHARD: ${{ inputs.shard }}
         TOTAL_SHARDS: ${{ inputs.total-shards }}
         SHARD_SEPARATE: ${{ inputs.shard-separate }}
@@ -119,6 +128,10 @@ runs:
 
         if ($env:TEST_PROJECTS_ONLY -eq "true") {
           $arguments += "--test-projects-only"
+        }
+
+        if ($env:WHERE_CONDITION) {
+          $arguments += @("--where", $env:WHERE_CONDITION)
         }
 
         # All-zero SHAs can appear in some push edge cases (for example branch creation),

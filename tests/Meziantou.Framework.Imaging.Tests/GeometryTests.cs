@@ -100,4 +100,58 @@ public sealed class GeometryTests
         Assert.Throws<ArgumentOutOfRangeException>(() => new Size(1, -1));
         Assert.True(new Size(1, 2) != new Size(2, 1));
     }
+
+    [Fact]
+    public void PointDHoldsSubPixelPositions()
+    {
+        var point = new PointD(1.5, -2.25);
+        Assert.Equal(1.5, point.X);
+        Assert.Equal(-2.25, point.Y);
+        var (x, y) = point;
+        Assert.Equal((1.5, -2.25), (x, y));
+        Assert.Equal(new PointD(1.5, -2.25), point);
+        Assert.True(point == new PointD(1.5, -2.25));
+        Assert.True(point != new PointD(1.5, 2.25));
+        Assert.Equal(point.GetHashCode(), new PointD(1.5, -2.25).GetHashCode());
+        Assert.Equal("(1.5, -2.25)", point.ToString());
+        Assert.Equal(default, PointD.Empty);
+
+        // A pixel coordinate is the top-left corner of that pixel
+        PointD converted = new Point(3, 4);
+        Assert.Equal(new PointD(3, 4), converted);
+        Assert.Equal(new PointD(3, 4), PointD.FromPoint(new Point(3, 4)));
+
+        // Equality is the equality of the coordinates as values: a point that is not a number equals itself
+        Assert.Equal(new PointD(double.NaN, 0), new PointD(double.NaN, 0));
+    }
+
+    [Fact]
+    public void RectangleDHoldsSubPixelBounds()
+    {
+        var rectangle = new RectangleD(0.5, 1.25, 2, 3.5);
+        Assert.Equal((0.5, 1.25, 2d, 3.5), (rectangle.X, rectangle.Y, rectangle.Width, rectangle.Height));
+        Assert.Equal((0.5, 1.25, 2.5, 4.75), (rectangle.Left, rectangle.Top, rectangle.Right, rectangle.Bottom));
+        Assert.False(rectangle.IsEmpty);
+        Assert.True(new RectangleD(1, 1, 0, 5).IsEmpty);
+        Assert.True(new RectangleD(1, 1, 5, 0).IsEmpty);
+        Assert.Equal(default, RectangleD.Empty);
+        Assert.Equal(rectangle, RectangleD.FromLTRB(0.5, 1.25, 2.5, 4.75));
+        Assert.True(rectangle == RectangleD.FromLTRB(0.5, 1.25, 2.5, 4.75));
+        Assert.True(rectangle != new RectangleD(0.5, 1.25, 2, 3));
+        Assert.Equal(rectangle.GetHashCode(), new RectangleD(0.5, 1.25, 2, 3.5).GetHashCode());
+        Assert.Equal("0.5,1.25 2x3.5", rectangle.ToString());
+
+        // A rectangle of pixels is the area those pixels cover
+        RectangleD converted = new Rectangle(1, 2, 3, 4);
+        Assert.Equal(new RectangleD(1, 2, 3, 4), converted);
+        Assert.Equal(new RectangleD(1, 2, 3, 4), RectangleD.FromRectangle(new Rectangle(1, 2, 3, 4)));
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => new RectangleD(0, 0, -1, 1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new RectangleD(0, 0, 1, -0.5));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new RectangleD(0, 0, double.NaN, 1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new RectangleD(0, 0, 1, double.PositiveInfinity));
+        Assert.Throws<ArgumentOutOfRangeException>(() => RectangleD.FromLTRB(2, 0, 1, 1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => RectangleD.FromLTRB(0, 2, 1, 1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => RectangleD.FromLTRB(0, 0, double.NaN, 1));
+    }
 }

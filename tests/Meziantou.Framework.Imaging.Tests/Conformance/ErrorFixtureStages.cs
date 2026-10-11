@@ -27,7 +27,6 @@ internal static class ErrorFixtureStages
         "invalid/gif/graphic-control-wrong-size",
         "invalid/gif/no-image",
         "invalid/jpeg/arithmetic-coding",
-        "invalid/jpeg/cmyk-four-components",
         "invalid/jpeg/lossless",
         "invalid/jpeg/non-integral-sampling",
         "invalid/jpeg/precision-12",
@@ -60,19 +59,21 @@ internal static class ErrorFixtureStages
         "limit/qoi/width-beyond-int32",
         "limit/qoi/width-over-limit",
 
-        // BMP: the file header, the DIB header and the masks that follow a 40-byte BI_BITFIELDS header, all read before
-        // the palette and the pixel data
+        // BMP: the file header, the Windows or OS/2 DIB header (its compression must agree with its bit count and row
+        // order) and the masks that follow a 40-byte BI_BITFIELDS header, all read before the palette and the pixel data
         "invalid/bmp/bit-count-2",
         "invalid/bmp/bit-count-7",
-        "invalid/bmp/core-header",
         "invalid/bmp/embedded-png",
         "invalid/bmp/mask-10-bits",
         "invalid/bmp/non-contiguous-mask",
-        "invalid/bmp/os2-v2-header",
+        "invalid/bmp/os2-core-bit-count-16",
+        "invalid/bmp/os2-core-offset-inside-palette",
+        "invalid/bmp/os2-huffman-1d",
         "invalid/bmp/overlapping-masks",
         "invalid/bmp/pixel-offset-too-small",
         "invalid/bmp/planes-2",
-        "invalid/bmp/rle8",
+        "invalid/bmp/rle8-bit-count-4",
+        "invalid/bmp/rle8-top-down",
         "invalid/bmp/truncated-header",
         "invalid/bmp/undefined-compression",
         "invalid/bmp/zero-green-mask",
@@ -178,7 +179,11 @@ internal static class ErrorFixtureStages
         "invalid/qoi/truncated-in-chunk",
         "limit/qoi/encoded-bytes-over-limit",
 
-        // BMP: the palette, the gap and the padded rows, all consumed by a full scan
+        // BMP: the palette, the gap and the padded rows or the commands of the run-length stream, all walked by a full scan
+        "invalid/bmp/rle4-delta-outside-canvas",
+        "invalid/bmp/rle8-data-after-last-row",
+        "invalid/bmp/rle8-missing-end-of-bitmap",
+        "invalid/bmp/rle8-run-past-row-end",
         "invalid/bmp/truncated-pixels",
 
         // TGA: the packets and the TGA 2.0 trailer, which a full scan walks to the end of the input
@@ -245,6 +250,10 @@ internal static class ErrorFixtureStages
         "invalid/png/palette-index-out-of-range",
         "invalid/png/too-little-image-data",
         "invalid/png/truncated-zlib",
+        // Four components are inks: the file is identified, and only a load without color conversion rejects it
+        "invalid/jpeg/cmyk-adobe-progressive",
+        "invalid/jpeg/cmyk-without-adobe-restart",
+        "invalid/jpeg/cmyk-ycck-embedded-profile",
         "invalid/jpeg/invalid-huffman-code",
         "invalid/jpeg/restart-marker-missing",
         "invalid/jpeg/restart-out-of-sequence",
@@ -270,6 +279,7 @@ internal static class ErrorFixtureStages
 
         // BMP and TGA palettes are only looked up by the decoder; a full scan charges frames, never displayed pixels
         "invalid/bmp/palette-index-out-of-range",
+        "invalid/bmp/rle8-palette-index-out-of-range",
         "invalid/tga/colormap-index-out-of-range",
         "invalid/tga/colormap16-index-out-of-range",
         "limit/pnm/total-pixels-over-limit",

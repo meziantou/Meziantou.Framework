@@ -34,6 +34,7 @@ internal sealed class PnmEncoderCodec : ImageEncoderCodec
         private readonly PixelFormat _workFormat;
         private readonly Rgba64? _background;
         private readonly bool _plain;
+        private readonly bool _bitmap;
         private readonly bool _is16Bit;
         private readonly bool _grayscale;
         private readonly bool _writeAlpha;
@@ -53,13 +54,14 @@ internal sealed class PnmEncoderCodec : ImageEncoderCodec
             _sourceFormat = options.PixelFormat;
             var encoder = (PnmEncoder)options.Encoder;
             _plain = encoder.Encoding == PnmEncoding.Plain;
+            _bitmap = encoder.PixelLayout == PnmPixelLayout.Bitmap;
             _background = encoder.BackgroundColor;
             PixelConverter.ValidateBackground(_background);
             _is16Bit = PixelFormats.GetBitsPerComponent(_sourceFormat) > 8;
             _grayscale = PixelFormats.IsGrayscale(_sourceFormat);
-            _writeAlpha = PixelFormats.HasAlpha(_sourceFormat) && !_plain;
+            _writeAlpha = PixelFormats.HasAlpha(_sourceFormat) && !_plain && !_bitmap;
             _channels = _grayscale ? 1 : (_writeAlpha ? 4 : 3);
-            _flattenFromRgba64 = _plain && _is16Bit && !_grayscale;
+            _flattenFromRgba64 = (_plain || _bitmap) && _is16Bit && !_grayscale;
             _workFormat = (_grayscale, _is16Bit, _writeAlpha) switch
             {
                 (true, false, _) => PixelFormat.Gray8,
@@ -91,15 +93,37 @@ internal sealed class PnmEncoderCodec : ImageEncoderCodec
             ArgumentNullException.ThrowIfNull(frame);
 
             // Alpha is never discarded silently: without a background every pixel must be opaque
-            if (_writeAlpha || !PixelFormats.HasAlpha(_sourceFormat) || _background is not null)
+            var rejectsAlpha = !_writeAlpha && PixelFormats.HasAlpha(_sourceFormat) && _background is null;
+            if (!rejectsAlpha && !_bitmap)
                 return;
 
             using var lease = frame.GetStorage().AcquireLease();
+            if (rejectsAlpha)
+            {
+                for (var y = 0; y < lease.Height; y++)
+                {
+                    var x = PixelConverter.IndexOfNonOpaque(_sourceFormat, lease.GetRowBytes(y));
+                    if (x < 0)
+                        continue;
+
+                    throw new UnsupportedImageFeatureException(_bitmap
+                        ? string.Create(CultureInfo.InvariantCulture, $"A portable bitmap has no alpha channel and the pixel ({x}, {y}) is not fully opaque. Set PnmEncoder.BackgroundColor to composite the pixels over an opaque color, keep PnmPixelLayout.Auto, or flatten the image explicitly.")
+                        : string.Create(CultureInfo.InvariantCulture, $"Plain Netpbm output has no alpha channel (PAM has no plain form) and the pixel ({x}, {y}) is not fully opaque. Set PnmEncoder.BackgroundColor to composite the pixels over an opaque color, keep PnmEncoding.Binary, or flatten the image explicitly."), ImageFormat.Pnm, "Alpha removal");
+                }
+            }
+
+            if (!_bitmap)
+                return;
+
+            // Gray levels and colors are never thresholded silently: every pixel must be exactly black or white
             for (var y = 0; y < lease.Height; y++)
             {
-                var x = PixelConverter.IndexOfNonOpaque(_sourceFormat, lease.GetRowBytes(y));
-                if (x >= 0)
-                    throw new UnsupportedImageFeatureException(string.Create(CultureInfo.InvariantCulture, $"Plain Netpbm output has no alpha channel (PAM has no plain form) and the pixel ({x}, {y}) is not fully opaque. Set PnmEncoder.BackgroundColor to composite the pixels over an opaque color, keep PnmEncoding.Binary, or flatten the image explicitly."), ImageFormat.Pnm, "Alpha removal");
+                var band = ConvertRow(lease.GetRowBytes(y));
+                for (var x = 0; x < _width; x++)
+                {
+                    if (!IsBlackOrWhite(band, x))
+                        throw new UnsupportedImageFeatureException(string.Create(CultureInfo.InvariantCulture, $"A portable bitmap stores black and white pixels only and the pixel ({x}, {y}) is neither. Keep PnmPixelLayout.Auto, or reduce the image to black and white explicitly."), ImageFormat.Pnm, "Bilevel reduction");
+                }
             }
         }
 
@@ -159,43 +183,117 @@ internal sealed class PnmEncoderCodec : ImageEncoderCodec
 
         private void WriteHeader(ImageOutputBuffer output)
         {
-            var header = _writeAlpha
-                ? string.Create(CultureInfo.InvariantCulture, $"P7\nWIDTH {_width}\nHEIGHT {_height}\nDEPTH 4\nMAXVAL {MaxValue}\nTUPLTYPE RGB_ALPHA\nENDHDR\n")
-                : string.Create(CultureInfo.InvariantCulture, $"P{GetMagicDigit()}\n{_width} {_height}\n{MaxValue}\n");
+            // A portable bitmap is the only variant without MAXVAL
+            var header = (_writeAlpha, _bitmap) switch
+            {
+                (true, _) => string.Create(CultureInfo.InvariantCulture, $"P7\nWIDTH {_width}\nHEIGHT {_height}\nDEPTH 4\nMAXVAL {MaxValue}\nTUPLTYPE RGB_ALPHA\nENDHDR\n"),
+                (false, true) => string.Create(CultureInfo.InvariantCulture, $"P{GetMagicDigit()}\n{_width} {_height}\n"),
+                _ => string.Create(CultureInfo.InvariantCulture, $"P{GetMagicDigit()}\n{_width} {_height}\n{MaxValue}\n"),
+            };
+
             var span = output.GetSpan(Encoding.ASCII.GetByteCount(header));
             output.Advance(Encoding.ASCII.GetBytes(header, span));
         }
 
-        private int GetMagicDigit() => (_grayscale, _plain) switch
+        private int GetMagicDigit() => (_bitmap, _grayscale, _plain) switch
         {
-            (true, false) => 5,
-            (true, true) => 2,
-            (false, false) => 6,
+            (true, _, false) => 4,
+            (true, _, true) => 1,
+            (false, true, false) => 5,
+            (false, true, true) => 2,
+            (false, false, false) => 6,
             _ => 3,
         };
 
         private void EncodeBand(ImageOutputBuffer output)
         {
             var frame = _frame ?? throw new InvalidOperationException("No frame was begun.");
-            var bytesPerPixel = PixelFormats.GetBytesPerPixel(_sourceFormat);
             using var lease = frame.GetStorage().AcquireLease();
             var rows = Math.Min(RowsPerCall, _height - _rowsWritten);
             for (var i = 0; i < rows; i++)
             {
                 CancellationToken.ThrowIfCancellationRequested();
-                var source = lease.GetRowBytes(_rowsWritten)[..(_width * bytesPerPixel)];
-                var band = _band!.Span[..(_width * PixelFormats.GetBytesPerPixel(_workFormat))];
-                PixelConverter.ConvertRow(_sourceFormat, source, _workFormat, band, _flattenFromRgba64 ? null : _background, ImageFormat.Pnm);
-                if (_plain)
+                var band = ConvertRow(lease.GetRowBytes(_rowsWritten));
+                switch (_bitmap, _plain)
                 {
-                    WritePlainRow(output, band);
-                }
-                else
-                {
-                    WriteBinaryRow(output, band);
+                    case (true, false):
+                        WriteBinaryBitmapRow(output, band);
+                        break;
+                    case (true, true):
+                        WritePlainBitmapRow(output, band);
+                        break;
+                    case (false, true):
+                        WritePlainRow(output, band);
+                        break;
+                    default:
+                        WriteBinaryRow(output, band);
+                        break;
                 }
 
                 _rowsWritten++;
+            }
+        }
+
+        /// <summary>Converts one source row to the work format, in the row buffer of the session.</summary>
+        private ReadOnlySpan<byte> ConvertRow(ReadOnlySpan<byte> row)
+        {
+            var source = row[..(_width * PixelFormats.GetBytesPerPixel(_sourceFormat))];
+            var band = _band!.Span[..(_width * PixelFormats.GetBytesPerPixel(_workFormat))];
+            PixelConverter.ConvertRow(_sourceFormat, source, _workFormat, band, _flattenFromRgba64 ? null : _background, ImageFormat.Pnm);
+            return band;
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether a pixel is exactly black or exactly white once alpha is removed. The test runs on
+        /// the samples at their own precision, never on a luma: rounding would accept colors that are only nearly black.
+        /// </summary>
+        private bool IsBlackOrWhite(ReadOnlySpan<byte> band, int x)
+        {
+            var value = ReadPlainSample(band, x, channel: 0);
+            if (value != 0 && value != MaxValue)
+                return false;
+
+            return _grayscale || (ReadPlainSample(band, x, channel: 1) == value && ReadPlainSample(band, x, channel: 2) == value);
+        }
+
+        /// <summary>Writes one row of a binary portable bitmap: one bit per pixel, most significant bit first, a set bit is black.</summary>
+        private void WriteBinaryBitmapRow(ImageOutputBuffer output, ReadOnlySpan<byte> band)
+        {
+            var length = (_width + 7) / 8;
+            var destination = output.GetSpan(length);
+            for (var i = 0; i < length; i++)
+            {
+                // The bits past the width are padding and stay clear
+                var bits = 0;
+                var end = Math.Min(_width, (i + 1) * 8);
+                for (var x = i * 8; x < end; x++)
+                {
+                    if (ReadPlainSample(band, x, channel: 0) == 0)
+                    {
+                        bits |= 0x80 >> (x & 7);
+                    }
+                }
+
+                destination[i] = (byte)bits;
+            }
+
+            output.Advance(length);
+        }
+
+        /// <summary>Writes one row of a plain portable bitmap: one digit per pixel (1 is black), in lines of at most <see cref="MaxPlainLineLength"/> characters.</summary>
+        private void WritePlainBitmapRow(ImageOutputBuffer output, ReadOnlySpan<byte> band)
+        {
+            for (var start = 0; start < _width; start += MaxPlainLineLength)
+            {
+                var count = Math.Min(MaxPlainLineLength, _width - start);
+                var destination = output.GetSpan(count + 1);
+                for (var i = 0; i < count; i++)
+                {
+                    destination[i] = ReadPlainSample(band, start + i, channel: 0) == 0 ? (byte)'1' : (byte)'0';
+                }
+
+                destination[count] = (byte)'\n';
+                output.Advance(count + 1);
             }
         }
 
@@ -260,7 +358,7 @@ internal sealed class PnmEncoderCodec : ImageEncoderCodec
             output.Advance(written);
         }
 
-        /// <summary>Reads one plain sample, flattening 16-bit alpha over the background when the plain form cannot store it.</summary>
+        /// <summary>Reads one sample of an output without alpha, flattening 16-bit alpha over the background.</summary>
         private int ReadPlainSample(ReadOnlySpan<byte> band, int x, int channel)
         {
             if (!_is16Bit)

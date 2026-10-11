@@ -176,7 +176,7 @@ public sealed partial class FFmpegTool
     /// frame-rate conversion, and verifies the byte count.
     /// </summary>
     /// <param name="inputPath">The encoded file.</param>
-    /// <param name="pixelFormat">The explicit ffmpeg raw pixel format (<c>rgba</c>, <c>rgba64le</c>, <c>gray</c>, <c>gray16le</c>).</param>
+    /// <param name="pixelFormat">The explicit ffmpeg raw pixel format (<c>rgba</c>, <c>rgba64le</c>, <c>gray</c>, <c>gray16le</c>, <c>rgb24</c>, <c>rgb565le</c>, <c>rgb555le</c>).</param>
     /// <param name="width">The expected width.</param>
     /// <param name="height">The expected height.</param>
     /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
@@ -190,7 +190,7 @@ public sealed partial class FFmpegTool
     /// frame-rate conversion, and verifies the byte count.
     /// </summary>
     /// <param name="inputPath">The encoded file.</param>
-    /// <param name="pixelFormat">The explicit ffmpeg raw pixel format (<c>rgba</c>, <c>rgba64le</c>, <c>gray</c>, <c>gray16le</c>).</param>
+    /// <param name="pixelFormat">The explicit ffmpeg raw pixel format (<c>rgba</c>, <c>rgba64le</c>, <c>gray</c>, <c>gray16le</c>, <c>rgb24</c>, <c>rgb565le</c>, <c>rgb555le</c>).</param>
     /// <param name="width">The expected width.</param>
     /// <param name="height">The expected height.</param>
     /// <param name="ignoreLoop">
@@ -209,6 +209,8 @@ public sealed partial class FFmpegTool
             "gray" => 1,
             "gray16le" => 2,
             "rgb24" => 3,
+            "rgb565le" => 2,
+            "rgb555le" => 2,
             _ => throw new ArgumentOutOfRangeException(nameof(pixelFormat), pixelFormat, "Unsupported raw pixel format."),
         };
 

@@ -119,21 +119,32 @@ public static class EncodedFieldInspector
         };
     }
 
-    /// <summary>BMP stores only the physical resolution (<c>biXPelsPerMeter</c>/<c>biYPelsPerMeter</c>, pixels per meter).</summary>
+    /// <summary>
+    /// BMP stores only the physical resolution (<c>biXPelsPerMeter</c>/<c>biYPelsPerMeter</c>, pixels per meter). The 12-byte
+    /// OS/2 header has none; an OS/2 2.x header (16 to 64 bytes, other than the Windows lengths 40, 52 and 56) may stop
+    /// before it, and stores pixels per meter only when its <c>usUnits</c> field is 0.
+    /// </summary>
     private static EncodedFields InspectBmp(ReadOnlySpan<byte> data)
     {
         if (data.Length < 14 || !data[..2].SequenceEqual("BM"u8))
             throw new InvalidDataException("Missing BMP file header.");
 
         Require(data, 14, 4);
-        var headerLength = BinaryPrimitives.ReadUInt32LittleEndian(data[14..]);
-        if (headerLength < 40)
-            throw new InvalidDataException("The DIB header is shorter than BITMAPINFOHEADER.");
+        var headerLength = (int)BinaryPrimitives.ReadUInt32LittleEndian(data[14..]);
+        if (headerLength is not (12 or (>= 16 and <= 64) or 108 or 124))
+            throw new InvalidDataException("The DIB header length is not one of the BMP headers.");
 
-        Require(data, 14, 40);
+        Require(data, 14, headerLength);
+        var result = new EncodedFields();
+        if (headerLength < 32)
+            return result;
+
+        var isOs2 = headerLength is not (40 or 52 or 56 or 108 or 124);
+        if (isOs2 && headerLength >= 42 && BinaryPrimitives.ReadUInt16LittleEndian(data[54..]) != 0)
+            return result;
+
         var x = BinaryPrimitives.ReadInt32LittleEndian(data[38..]);
         var y = BinaryPrimitives.ReadInt32LittleEndian(data[42..]);
-        var result = new EncodedFields();
         if (x > 0 && y > 0)
         {
             result.Resolution = new EncodedResolution { Unit = "meter", X = x, Y = y };

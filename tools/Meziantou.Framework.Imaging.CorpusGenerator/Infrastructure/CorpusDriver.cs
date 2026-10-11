@@ -54,6 +54,10 @@ internal static class CorpusDriver
                 foreach (var buffer in ((List<object?>)frame["buffers"]!).Cast<Obj>())
                     paths.Add((string)buffer["path"]!);
             }
+
+            // The converted pixels of a CMYK JPEG, which is only loaded with a color conversion
+            if (fixture.TryGetValue("inkConversion", out var conversion) && conversion is Obj inkConversion)
+                paths.Add((string)((Obj)inkConversion["buffer"]!)["path"]!);
         }
 
         return paths;

@@ -1,3 +1,4 @@
+using Meziantou.Framework.Imaging.Metadata;
 using Meziantou.Framework.Imaging.TestHarness.Adapters;
 using Meziantou.Framework.Imaging.TestHarness.Fixtures;
 using Meziantou.Framework.Imaging.TestHarness.Golden;
@@ -13,9 +14,20 @@ namespace Meziantou.Framework.Imaging.Tests.Conformance;
 /// measured mean + 0.01 rounded up to 0.01, never above what the independent cross-checks justify), so a numerical change of
 /// the decoder that loosens or tightens its agreement is noticed and reviewed instead of drifting silently.
 /// </summary>
+/// <remarks>
+/// Four-component files (CMYK and YCCK inks) are only loaded with a color conversion: the generic suites check that they
+/// are identified and rejected by a load without conversion, and this class compares the pixels of the conversion each
+/// fixture declares (<c>inkConversion</c>) with their reference: the samples decoded by djpeg, converted by the decimal
+/// reference of the test harness, with LittleCMS and Apple ColorSync as cross-checks. Their tolerance is pinned to the
+/// measurement in the same way (<c>LibraryInkMeasurements</c> in the generator).
+/// </remarks>
 public sealed class JpegDecoderConformanceTests
 {
     public static TheoryData<string> DecodedFixtures => [.. BaselineIds, .. ProgressiveIds];
+
+    public static TheoryData<string> InkFixtures => [.. InkIds];
+
+    private static IEnumerable<string> InkIds => GoldenCorpus.Default.GetIds(format: "jpeg", kind: FixtureKinds.Unsupported).Where(id => GoldenCorpus.Default.Get(id).Entry.InkConversion is not null);
 
     private static IEnumerable<string> BaselineIds => GetIds(progressive: false);
 
@@ -90,6 +102,82 @@ public sealed class JpegDecoderConformanceTests
         // Alpha is exact and the decoder never exceeds three units: one IDCT rounding unit on each of the luma and chroma
         // samples, amplified by the color conversion (e.g. 1 + 1.772 for B = Y + 1.772 Cb)
         Assert.True(max <= 3, $"Maximum error {max} at {location}.");
+    }
+
+    [Fact]
+    public void InkFixturesCoverTheDecoderFeatures()
+    {
+        var fixtures = InkIds.Select(GoldenCorpus.Default.Get).ToList();
+        Assert.Contains(fixtures, fixture => fixture.InkConversion.ColorModel == "Ycck" && fixture.Entry.HasFeature("jpeg.app14=Adobe"));
+        Assert.Contains(fixtures, fixture => fixture.InkConversion.ColorModel == "Cmyk" && fixture.Entry.HasFeature("jpeg.app14=Adobe"));
+        Assert.Contains(fixtures, fixture => fixture.InkConversion.ColorModel == "Cmyk" && !fixture.Entry.HasFeature("jpeg.app14=Adobe"));
+        Assert.Contains(fixtures, fixture => fixture.InkConversion.SourceProfile == InkConversionDefinition.Embedded && fixture.Entry.HasFeature("jpeg.app2=ICC_PROFILE"));
+        Assert.Contains(fixtures, fixture => fixture.InkConversion.SourceProfile == InkConversionDefinition.Assumed && !fixture.Entry.HasFeature("jpeg.app2=ICC_PROFILE"));
+        Assert.Contains(fixtures, fixture => fixture.Entry.HasFeature("jpeg.process=baseline"));
+        Assert.Contains(fixtures, fixture => fixture.Entry.HasFeature("jpeg.process=progressive"));
+        Assert.Contains(fixtures, fixture => fixture.Entry.Features!.Any(feature => feature.StartsWith("jpeg.restartInterval=", StringComparison.Ordinal)));
+        Assert.Contains(fixtures, fixture => fixture.InkConversion.BlackPointCompensation);
+        Assert.HasCountGreaterThan(1, fixtures.Select(fixture => fixture.InkConversion.Intent).Distinct(StringComparer.Ordinal).ToList());
+
+        // Every four-component file of the corpus declares the conversion that loads it
+        var inks = GoldenCorpus.Default.Fixtures.Where(fixture => fixture.Entry.HasFeature("jpeg.components=4")).Select(fixture => fixture.Id);
+        Assert.Equal(InkIds.Order(StringComparer.Ordinal), inks.Order(StringComparer.Ordinal));
+    }
+
+    [Fact]
+    public void TheProfileAssumedForInksIsTheOneOfTheCorpus()
+    {
+        // The library transcribes the bytes of this file (the icc-builtin generator): the references of the fixtures
+        // without profile were converted from it
+        var profile = LoadProfile(InkConversionDefinition.AssumedProfileId);
+        Assert.True(IccProfile.Cgats001CompatibleCmyk.Data.Span.SequenceEqual(profile.Data.Span), "IccProfile.Cgats001CompatibleCmyk differs from the profile of the corpus: run the icc-builtin generator.");
+        Assert.Same(IccProfile.Cgats001CompatibleCmyk, CmykConversionOptions.Default.AssumedSourceProfile);
+    }
+
+    [Theory]
+    [MemberData(nameof(InkFixtures))]
+    public void InksAreConvertedLikeTheReference(string id)
+    {
+        var fixture = GoldenCorpus.Default.Get(id);
+        var conversion = fixture.InkConversion;
+        var data = fixture.ReadInput();
+        var info = Image.Identify(data);
+        Assert.Equal(conversion.ColorModel, info.ColorModel.ToString());
+        Assert.Equal(PixelFormat.Rgb24, info.PixelFormat);
+        Assert.Equal(conversion.SourceProfile == InkConversionDefinition.Embedded ? IccProfileColorSpace.Cmyk : null, info.Metadata.IccProfile?.ColorSpace);
+
+        var destination = LoadProfile(conversion.DestinationProfile);
+        var intent = (IccRenderingIntent)ColorTransformEntry.Intents.ToList().IndexOf(conversion.Intent);
+        var options = new CmykConversionOptions { DestinationProfile = destination, Transform = new IccColorTransformOptions { Intent = intent, BlackPointCompensation = conversion.BlackPointCompensation } };
+        using var image = Image.Load(data, new ImageDecodeOptions { CmykConversion = options });
+        Assert.True(destination.Data.Span.SequenceEqual(image.Metadata.IccProfile!.Data.Span));
+        var actual = Assert.Single(ImageSnapshots.Capture(image).Frames).Pixels;
+        var expected = fixture.GetInkConversionReference();
+        var (max, mean, location) = Measure(expected, actual);
+        TestContext.Current.TestOutputHelper?.WriteLine(string.Create(CultureInfo.InvariantCulture, $"{id}: max {max} at {location}, mean {mean:F4}"));
+
+        // The tolerance is the measured disagreement, as for the other JPEG fixtures; it stays far below the disagreement
+        // of the independent color management systems recorded as cross-checks
+        var policy = fixture.InkConversionPolicy;
+        var expectedMean = Math.Ceiling(Math.Round((Math.Round(mean, 4, MidpointRounding.AwayFromZero) + 0.01) * 100, 6, MidpointRounding.AwayFromZero)) / 100;
+        var pinned = max == 0 ? policy.IsExact : !policy.IsExact && policy.MaxAbsoluteError == max && Math.Abs(policy.MaxMeanAbsoluteError - expectedMean) < 1e-9;
+        Assert.True(pinned, string.Create(CultureInfo.InvariantCulture, $"The policy of '{id}' is not the one derived from the measured disagreement (max {max} at {location}, mean {mean:F4}). Update LibraryInkMeasurements in tools/Meziantou.Framework.Imaging.CorpusGenerator/GoldenCorpus.JpegInks.cs after reviewing the change."));
+        Assert.True(PixelBufferComparer.Matches(expected, actual, policy));
+        Assert.True(max <= 3, $"Maximum error {max} at {location}.");
+
+        // A sequential reader converts the rows like an eager load
+        using var reader = Image.OpenReader<Rgb24>(fixture.OpenInput(), new ImageReaderOptions { CmykConversion = options, LeaveOpen = false });
+        Assert.Equal(conversion.ColorModel, reader.Info.ColorModel.ToString());
+        using var frame = reader.ReadFrame();
+        Assert.NotNull(frame);
+        Assert.True(destination.Data.Span.SequenceEqual(frame.Metadata.IccProfile!.Data.Span));
+        Assert.Equal(actual.ToArray(), Assert.Single(ImageSnapshots.Capture(frame).Frames).Pixels.ToArray());
+    }
+
+    private static IccProfile LoadProfile(string id)
+    {
+        var entry = GoldenCorpus.Default.Manifest.ColorProfiles!.Single(profile => profile.Id == id);
+        return new IccProfile(new MetadataBlob(File.ReadAllBytes(FixtureRoot.GetDirectory() / entry.File.Path)));
     }
 
     private static IEnumerable<string> GetIds(bool progressive) => GoldenCorpus.Default.GetIds(format: "jpeg", kind: FixtureKinds.Valid).Where(id => GoldenCorpus.Default.Get(id).Entry.HasFeature("jpeg.process=progressive") == progressive);

@@ -46,6 +46,10 @@ internal static class FuzzOracle
 
     private static readonly PixelConversionOptions Conversion = new() { DiscardIncompatibleColorProfile = true };
 
+    // Four-component JPEG files are only loaded with a color conversion: with it, their mutations reach the decoding of
+    // the inks and the embedded CMYK profile instead of stopping at the frame header
+    private static readonly CmykConversionOptions CmykConversion = CmykConversionOptions.Default;
+
     /// <summary>Checks one input.</summary>
     /// <param name="input">The input.</param>
     /// <param name="variant">Selects the reader input (stream kind, read sizes) and the reader methods; part of the case identity.</param>
@@ -73,7 +77,7 @@ internal static class FuzzOracle
 
         var eager = Run(audit, "load", () =>
         {
-            using var image = Image.Load(input, new ImageDecodeOptions { Configuration = Configuration, Conversion = Conversion });
+            using var image = Image.Load(input, new ImageDecodeOptions { Configuration = Configuration, Conversion = Conversion, CmykConversion = CmykConversion });
             return DecodedSummary.Capture(image);
         });
         if (eager.Failure is not null)
@@ -88,7 +92,7 @@ internal static class FuzzOracle
 
         var typed = Run(audit, "load-rgba64", () =>
         {
-            using var image = Image.Load<Rgba64>(input, new ImageDecodeOptions { Configuration = Configuration, Conversion = Conversion });
+            using var image = Image.Load<Rgba64>(input, new ImageDecodeOptions { Configuration = Configuration, Conversion = Conversion, CmykConversion = CmykConversion });
             return DecodedSummary.Capture(image);
         });
         if (typed.Failure is not null)
@@ -184,10 +188,10 @@ internal static class FuzzOracle
     /// <summary>Returns an empty string, or "name: description" for a violated property; throws for exceptions.</summary>
     private static string CheckDecodedImage(byte[] input, DecodedSummary decoded, int variant)
     {
-        using var image = Image.Load(input, new ImageDecodeOptions { Configuration = Configuration, Conversion = Conversion });
+        using var image = Image.Load(input, new ImageDecodeOptions { Configuration = Configuration, Conversion = Conversion, CmykConversion = CmykConversion });
 
         // A frame limit selects a prefix of a valid input
-        using (var first = Image.Load(input, new ImageDecodeOptions { Configuration = Configuration, Conversion = Conversion, FrameLimit = 1 }))
+        using (var first = Image.Load(input, new ImageDecodeOptions { Configuration = Configuration, Conversion = Conversion, CmykConversion = CmykConversion, FrameLimit = 1 }))
         {
             if (first.Frames.Count != 1 || !FrameSummary.Capture(first.Frames[0]).Equals(decoded.Frames[0]))
                 return $"frame-limit-prefix: FrameLimit = 1 returned {first.Frames.Count} frame(s) that differ from the first frame of {decoded}";
@@ -224,7 +228,7 @@ internal static class FuzzOracle
 
         if (encoded is not null)
         {
-            using var reloaded = Image.Load(encoded, new ImageDecodeOptions { Configuration = Configuration, Conversion = Conversion });
+            using var reloaded = Image.Load(encoded, new ImageDecodeOptions { Configuration = Configuration, Conversion = Conversion, CmykConversion = CmykConversion });
             if (reloaded.Width != image.Width || reloaded.Height != image.Height || reloaded.Frames.Count != image.Frames.Count)
                 return $"re-encode-structure: the re-encoded {format} file decodes as {reloaded.Width}x{reloaded.Height} with {reloaded.Frames.Count} frame(s), the source as {decoded}";
 
@@ -287,7 +291,7 @@ internal static class FuzzOracle
             ForbidSynchronousReads = asynchronous,
             ForbidAsynchronousReads = !asynchronous,
         };
-        var options = new ImageReaderOptions { Configuration = Configuration, Conversion = Conversion };
+        var options = new ImageReaderOptions { Configuration = Configuration, Conversion = Conversion, CmykConversion = CmykConversion };
         using var reader = await OpenReaderAsync(stream, options, asynchronous).ConfigureAwait(false);
         var info = reader.Info;
         FrameSummary? poster = null;

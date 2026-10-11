@@ -21,6 +21,8 @@
     <!-- The synthetic ICC profiles of the unit tests are fuzz seeds for the tag types the corpus profiles do not use (ColorProfileFuzzTests) -->
     <Compile Include="..\..\tests\Meziantou.Framework.Imaging.Tests\IccTestProfiles.cs" Link="Shared\IccTestProfiles.cs" />
     <Compile Include="..\..\tools\Meziantou.Framework.Imaging.CorpusGenerator\Common\IccProfileBuilder.cs" Link="Shared\IccProfileBuilder.cs" />
+    <!-- Images of any pixel format and their samples, shared with the drawing unit tests (DrawingFuzzTests) -->
+    <Compile Include="..\..\tests\Meziantou.Framework.Imaging.Tests\DrawingTestSupport.cs" Link="Shared\DrawingTestSupport.cs" />
   </ItemGroup>
 
   <ItemGroup>

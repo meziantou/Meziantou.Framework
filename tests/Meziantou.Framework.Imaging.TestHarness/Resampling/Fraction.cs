@@ -40,6 +40,36 @@ public readonly struct Fraction : IEquatable<Fraction>, IComparable<Fraction>
 
     public static implicit operator Fraction(long value) => new(value, 1);
 
+    /// <summary>Gets the exact value of a finite double (every finite double is a rational number).</summary>
+    /// <param name="value">The value.</param>
+    /// <returns>The same number, exactly.</returns>
+    public static Fraction FromDouble(double value)
+    {
+        if (!double.IsFinite(value))
+            throw new ArgumentOutOfRangeException(nameof(value), value, "The value must be finite.");
+
+        var bits = BitConverter.DoubleToInt64Bits(value);
+        var exponent = (int)((bits >> 52) & 0x7FF);
+        BigInteger mantissa = bits & 0xFFFFFFFFFFFFFL;
+        if (exponent == 0)
+        {
+            // Subnormal: no implicit leading bit
+            exponent = 1;
+        }
+        else
+        {
+            mantissa |= BigInteger.One << 52;
+        }
+
+        if (bits < 0)
+        {
+            mantissa = -mantissa;
+        }
+
+        exponent -= 1075;
+        return exponent >= 0 ? new Fraction(mantissa << exponent, BigInteger.One) : new Fraction(mantissa, BigInteger.One << -exponent);
+    }
+
     public static Fraction operator +(Fraction left, Fraction right) => new((left.Numerator * right.Denominator) + (right.Numerator * left.Denominator), left.Denominator * right.Denominator);
 
     public static Fraction operator -(Fraction left, Fraction right) => new((left.Numerator * right.Denominator) - (right.Numerator * left.Denominator), left.Denominator * right.Denominator);

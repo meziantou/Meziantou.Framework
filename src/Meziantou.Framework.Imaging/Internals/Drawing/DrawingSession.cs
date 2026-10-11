@@ -95,7 +95,9 @@ internal sealed class DrawingSession : IDisposable
     {
         ArgumentNullException.ThrowIfNull(brush);
         ArgumentNullException.ThrowIfNull(path);
-        if (!Enum.IsDefined(fillRule))
+        // Not Enum.IsDefined: the runtime keeps what it knows about an enumeration in a cache that a garbage collection
+        // may drop, and builds it again on the next call. A draw call allocates nothing.
+        if (fillRule is not (FillRule.NonZero or FillRule.EvenOdd))
             throw new ArgumentOutOfRangeException(nameof(fillRule), fillRule, "The fill rule is not valid.");
 
         PathFlattener.Flatten(path, BeginFill());

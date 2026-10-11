@@ -88,7 +88,7 @@ internal sealed class Av1Encoder : IDisposable
             settings.ChromaSamplePosition,
             settings.StillPicture,
             Use128x128Superblock: false,
-            EnableCdef: false,
+            EnableCdef: !settings.Lossless,
             EnableRestoration: false,
             Av1Levels.GetLevelIndex(settings.Width, settings.Height));
 
@@ -103,7 +103,7 @@ internal sealed class Av1Encoder : IDisposable
             _sequenceHeader = _payload.WrittenSpan.ToArray();
             _payload.Reset();
             _sequence = Av1SequenceHeader.Parse(_sequenceHeader, operatingPoint: 0);
-            _workspace = new Av1EncoderWorkspace(scope, _sequence, settings.Width, settings.Height);
+            _workspace = new Av1EncoderWorkspace(scope, _sequence, settings.Width, settings.Height, searchesFilters: !settings.Lossless);
         }
         catch
         {
@@ -222,6 +222,9 @@ internal sealed class Av1Encoder : IDisposable
             TileSizeBytes = 4,
             BaseQIdx = _quantizerIndex,
             TxMode = Av1Constants.TxModeLargest,
+
+            // The damping of CDEF grows with the quantizer: 3 to 6
+            CdefDamping = 3 + Math.Min(3, _quantizerIndex >> 6),
         };
 
         _syntax = syntax;
@@ -286,11 +289,20 @@ internal sealed class Av1Encoder : IDisposable
     {
         var frame = _coding.CurrentFrame!;
         var header = frame.Header;
-        _coding.PostFilter.Apply(_scope, frame, _coding.State, Av1InLoopFilters.All, cancellationToken);
+        var syntax = _syntax!;
+        if (header.CodedLossless)
+        {
+            // A lossless frame has no filter
+            _coding.PostFilter.Apply(_scope, frame, _coding.State, Av1InLoopFilters.All, cancellationToken);
+        }
+        else
+        {
+            Av1FilterSearch.Run(_scope, _coding.PostFilter, frame, _coding.State, _workspace, syntax, cancellationToken);
+        }
+
         _reconstruction = _coding.StoreFrame();
 
         // The size of a tile is coded with the fewest bytes that hold the largest one
-        var syntax = _syntax!;
         var tileCount = header.TileCount;
         var tileSizeBytes = 1;
         for (var i = 0; i < tileCount - 1; i++)

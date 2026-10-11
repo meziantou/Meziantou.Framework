@@ -30,6 +30,7 @@ internal sealed class Av1EncoderWorkspace : IDisposable
 
     private readonly AllocationScope _scope;
     private readonly Av1Plane?[] _source = new Av1Plane?[3];
+    private readonly Av1Plane?[] _saved = new Av1Plane?[3];
     private readonly Av1PooledArray<byte> _contexts;
     private readonly Av1PooledArray<ushort> _pixels;
     private readonly Av1PooledArray<int> _coefficients;
@@ -37,7 +38,12 @@ internal sealed class Av1EncoderWorkspace : IDisposable
 
     /// <summary>Rents the buffers for frames of <paramref name="width"/> x <paramref name="height"/> samples.</summary>
     /// <exception cref="ImageResourceLimitException">The buffers exceed the live-allocation limit.</exception>
-    public Av1EncoderWorkspace(AllocationScope scope, Av1SequenceHeader sequence, int width, int height)
+    /// <param name="scope">The allocation scope of the operation.</param>
+    /// <param name="sequence">The sequence header of the frames.</param>
+    /// <param name="width">The width of the frames.</param>
+    /// <param name="height">The height of the frames.</param>
+    /// <param name="searchesFilters">Whether the parameters of the in-loop filters are searched, which needs a copy of the frame.</param>
+    public Av1EncoderWorkspace(AllocationScope scope, Av1SequenceHeader sequence, int width, int height, bool searchesFilters)
     {
         ArgumentNullException.ThrowIfNull(scope);
         _scope = scope;
@@ -50,6 +56,8 @@ internal sealed class Av1EncoderWorkspace : IDisposable
                 var subX = plane > 0 ? sequence.SubsamplingX : 0;
                 var subY = plane > 0 ? sequence.SubsamplingY : 0;
                 _source[plane] = Av1Plane.Create(scope, (width + subX) >> subX, (height + subY) >> subY, alignment, AllocationKind.Temporary);
+                if (searchesFilters)
+                    _saved[plane] = Av1Plane.Create(scope, (width + subX) >> subX, (height + subY) >> subY, alignment, AllocationKind.Temporary);
             }
 
             // The superblock entry snapshot, then a partition and a block snapshot per level
@@ -82,6 +90,12 @@ internal sealed class Av1EncoderWorkspace : IDisposable
 
     /// <summary>Gets the plane <paramref name="index"/> of the frame to encode: the caller fills it up to its allocated size.</summary>
     public Av1Plane GetSource(int index) => _source[index] ?? throw new ObjectDisposedException(nameof(Av1EncoderWorkspace));
+
+    /// <summary>
+    /// Gets the copy of the plane <paramref name="index"/> of the reconstructed frame that the search of the filter
+    /// parameters restores between two candidates.
+    /// </summary>
+    public Av1Plane GetSavedPlane(int index) => _saved[index] ?? throw new ObjectDisposedException(nameof(Av1EncoderWorkspace));
 
     /// <summary>Gets the context snapshot of the search of a partition node (<paramref name="block"/> false) or of a block of a level.</summary>
     public Span<byte> GetContextSnapshot(int level, bool block) => _contexts.Span.Slice((1 + (2 * level) + (block ? 1 : 0)) * ContextSnapshotLength, ContextSnapshotLength);
@@ -118,6 +132,8 @@ internal sealed class Av1EncoderWorkspace : IDisposable
         {
             _source[i]?.Dispose();
             _source[i] = null;
+            _saved[i]?.Dispose();
+            _saved[i] = null;
         }
 
         _contexts?.Dispose();

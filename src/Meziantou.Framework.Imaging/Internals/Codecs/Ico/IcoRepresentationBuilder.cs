@@ -115,7 +115,7 @@ internal readonly struct IcoRepresentationBuilder(
         Span<byte> sizeField = stackalloc byte[4];
         source.Read(offset, sizeField);
         var headerLength = BinaryPrimitives.ReadUInt32LittleEndian(sizeField);
-        if (!BmpInfoHeader.IsSupportedHeaderLength(headerLength))
+        if (!BmpInfoHeader.IsWindowsHeaderLength(headerLength))
             throw Unsupported(string.Create(CultureInfo.InvariantCulture, $"The payload of the icon directory entry {index} is neither a PNG nor a supported DIB (its header declares {headerLength} bytes)."), string.Create(CultureInfo.InvariantCulture, $"Payload: DIB header of {headerLength} bytes"));
 
         if (headerLength > length)
@@ -131,6 +131,10 @@ internal readonly struct IcoRepresentationBuilder(
         {
             throw Rewrap(exception);
         }
+
+        // A run-length stream has no fixed row length, so the color rows and the AND mask could not be located
+        if (header.IsRunLength)
+            throw Unsupported(string.Create(CultureInfo.InvariantCulture, $"The DIB payload of the icon directory entry {index} uses run-length encoding, which icon payloads do not store."), "Compression: RLE");
 
         var payloadOffset = (long)headerLength;
         if (header.TrailingMaskLength > 0)
@@ -161,7 +165,7 @@ internal readonly struct IcoRepresentationBuilder(
 
         var maskLength = BmpFormat.GetRowLength(size.Width, 1) * size.Height;
         var hasAndMask = payloadOffset + colorLength + maskLength <= length;
-        var hasImplicitAlpha = header.BitsPerPixel == 32 && header.Compression == BmpCompression.Rgb;
+        var hasImplicitAlpha = header.BitsPerPixel == 32 && header.Compression == BmpDibCompression.Rgb;
         if (hasImplicitAlpha)
         {
             // An icon payload stores alpha in the fourth byte of a 32-bit BI_RGB pixel; a standalone BMP does not

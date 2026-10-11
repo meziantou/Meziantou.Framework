@@ -251,7 +251,7 @@ internal static class IcoDocumentWriter
             BinaryPrimitives.WriteInt32LittleEndian(span[8..], size.Height * 2);
             BinaryPrimitives.WriteUInt16LittleEndian(span[12..], 1);
             BinaryPrimitives.WriteUInt16LittleEndian(span[14..], 32);
-            BinaryPrimitives.WriteUInt32LittleEndian(span[16..], (uint)BmpCompression.Rgb);
+            BinaryPrimitives.WriteUInt32LittleEndian(span[16..], BmpFormat.CompressionRgb);
             BinaryPrimitives.WriteUInt32LittleEndian(span[20..], (uint)(colorLength + maskLength));
 
             var colors = span.Slice(BmpFormat.InfoHeaderLength, colorLength);

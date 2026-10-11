@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.Metadata;
 using Meziantou.Framework.Imaging.Samples;
@@ -379,6 +380,26 @@ public sealed class DocumentationExampleTests : IDisposable
         Assert.Equal(24, File.ReadAllBytes(bmp)[28]); // biBitCount
         Assert.Equal(10, File.ReadAllBytes(tga)[2]); // run-length true color
         Assert.Equal("P7"u8.ToArray(), File.ReadAllBytes(pnm)[..2]); // the frame has alpha, so PAM is the only lossless variant
+    }
+
+    [Fact]
+    public void SaveIndexedBmpWritesARunLengthEncodedPalettedBitmap()
+    {
+        var (apngPath, _) = BuildAnimation();
+        var bmp = GetPath("indexed.bmp");
+        Examples.SaveIndexedBmp(apngPath, bmp);
+
+        var data = File.ReadAllBytes(bmp);
+        Assert.Equal(8, data[28]); // biBitCount
+        Assert.Equal(1, data[30]); // biCompression: BI_RLE8
+        Assert.Equal((uint)data.Length, BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(2))); // bfSize
+
+        using var expected = Image.Load<Rgba32>(apngPath);
+        using var image = Image.Load(bmp);
+        Assert.Equal(ImageFormat.Bmp, image.Metadata.SourceFormat);
+        Assert.Equal(PixelFormat.Rgb24, image.PixelFormat);
+        Assert.Equal(expected.Size, image.Size);
+        Assert.Equal(1, image.Frames.Count);
     }
 
     [Fact]

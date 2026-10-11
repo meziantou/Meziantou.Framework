@@ -61,7 +61,7 @@ internal sealed class BmpDibLayout
             return new BmpDibLayout(header, default, default, default, default);
 
         uint redMask = header.RedMask, greenMask = header.GreenMask, blueMask = header.BlueMask, alphaMask = header.AlphaMask;
-        if (header.Compression is BmpCompression.BitFields or BmpCompression.AlphaBitFields)
+        if (header.Compression is BmpDibCompression.BitFields or BmpDibCompression.AlphaBitFields)
         {
             if (redMask == 0 || greenMask == 0 || blueMask == 0)
                 throw BmpFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The BMP declares explicit color masks but the red, green or blue mask is zero (0x{redMask:X8}, 0x{greenMask:X8}, 0x{blueMask:X8})."));
@@ -94,14 +94,18 @@ internal sealed class BmpDibLayout
     }
 
     /// <summary>Adopts the palette stored before the pixel data.</summary>
-    /// <param name="palette">Exactly <see cref="BmpInfoHeader.PaletteLength"/> bytes of <c>RGBQUAD</c> entries (blue, green, red, reserved).</param>
+    /// <param name="palette">
+    /// Exactly <see cref="BmpInfoHeader.PaletteLength"/> bytes of <c>RGBQUAD</c> entries (blue, green, red, reserved), or of
+    /// <c>RGBTRIPLE</c> entries (blue, green, red) after a <c>BITMAPCOREHEADER</c>.
+    /// </param>
     public void SetPalette(ReadOnlySpan<byte> palette)
     {
         var entries = Header.PaletteEntries;
+        var entryLength = Header.PaletteEntryLength;
         var table = new byte[entries * 3];
         for (var i = 0; i < entries; i++)
         {
-            var source = palette.Slice(i * BmpFormat.PaletteEntryLength, BmpFormat.PaletteEntryLength);
+            var source = palette.Slice(i * entryLength, entryLength);
             table[(i * 3) + 0] = source[2];
             table[(i * 3) + 1] = source[1];
             table[(i * 3) + 2] = source[0];

@@ -138,6 +138,19 @@ internal ref partial struct Av1TileCoder
     private InlineArray6<int> _localWarpParams;
     private InlineArray4<int> _localShear;
 
+    // The encoder: the buffers of its search, the symbol encoder and the sink of the syntax elements being written, the
+    // limits of the search, and the positions in the records of the superblock
+    private readonly Av1EncoderWorkspace? _workspace;
+    private readonly Av1SymbolEncoder? _encoder;
+    private SymbolSink _sink;
+    private long _rate;
+    private Av1EncoderDecisions _decisions;
+    private int _recordPosition;
+    private InlineArray3<int> _transformBlockCursor;
+    private bool _estimating;
+    private long _estimate;
+    private bool _hasCoefficients;
+
     public Av1TileCoder(Av1FrameBuffer frame, Av1FrameState state, Av1SymbolDecoder symbols, Av1TileScratch scratch, Av1ReferenceFrames references, Av1InterScratch? interScratch, Span<ushort> cdf, CancellationToken cancellationToken)
     {
         _frame = frame;
@@ -433,6 +446,14 @@ internal ref partial struct Av1TileCoder
     // which is not adapted
     private readonly bool ReadSplitOr(int r, int c, int bSize, bool availU, bool availL, bool isHorizontal)
     {
+        Span<ushort> cdf = [GetSplitOrCdf(r, c, bSize, availU, availL, isHorizontal), 1 << 15, 0];
+        return _symbols.ReadSymbol(cdf) is not 0;
+    }
+
+    // The first value of the distribution of split_or_horz and split_or_vert: 32768 minus the probability of the partitions
+    // that split the block in the direction that is not coded
+    private readonly ushort GetSplitOrCdf(int r, int c, int bSize, bool availU, bool availL, bool isHorizontal)
+    {
         GetPartitionCdf(r, c, bSize, availU, availL, out var offset, out var size);
         var partitionCdf = _cdf.Slice(offset, size);
         var psum = 0;
@@ -457,8 +478,7 @@ internal ref partial struct Av1TileCoder
                 psum += Probability(partitionCdf, Av1Constants.PartitionHorz4);
         }
 
-        Span<ushort> cdf = [(ushort)((1 << 15) - psum), 1 << 15, 0];
-        return _symbols.ReadSymbol(cdf) is not 0;
+        return (ushort)((1 << 15) - psum);
 
         static int Probability(ReadOnlySpan<ushort> cdf, int symbol) => cdf[symbol] - cdf[symbol - 1];
     }
@@ -472,6 +492,24 @@ internal ref partial struct Av1TileCoder
 
     // Section 5.11.5 "Decode block syntax"
     private void DecodeBlock(int r, int c, int subSize)
+    {
+        BeginBlock(r, c, subSize);
+        var bw4 = Av1Tables.Num4x4BlocksWide[subSize];
+        var bh4 = Av1Tables.Num4x4BlocksHigh[subSize];
+        ModeInfo();
+        PaletteTokens();
+        ReadBlockTxSize();
+        if (_skip)
+            ResetBlockContext(bw4, bh4);
+
+        StoreBlock(bw4, bh4);
+        _state.Tools |= GetBlockTools();
+        ComputePrediction();
+        Residual();
+    }
+
+    // The variables of decode_block that only depend on the position and the size of the block
+    private void BeginBlock(int r, int c, int subSize)
     {
         _miRow = r;
         _miCol = c;
@@ -508,17 +546,6 @@ internal ref partial struct Av1TileCoder
             _availUChroma = false;
             _availLChroma = false;
         }
-
-        ModeInfo();
-        PaletteTokens();
-        ReadBlockTxSize();
-        if (_skip)
-            ResetBlockContext(bw4, bh4);
-
-        StoreBlock(bw4, bh4);
-        _state.Tools |= GetBlockTools();
-        ComputePrediction();
-        Residual();
     }
 
     // The coding tools of the block being decoded that its mode info tells

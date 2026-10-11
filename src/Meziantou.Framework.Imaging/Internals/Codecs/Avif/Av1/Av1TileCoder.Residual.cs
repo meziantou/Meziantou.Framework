@@ -5,8 +5,19 @@ internal ref partial struct Av1TileCoder
 {
     private const int TxClass2D = Av1Constants.TxClass2d;
 
+    private enum ResidualOperation
+    {
+        Decode,
+        Search,
+        Replay,
+    }
+
     // Section 5.11.34 "Residual syntax"
-    private void Residual()
+    private void Residual() => Residual(ResidualOperation.Decode, planeMask: 0b111);
+
+    // The transform blocks of the planes of planeMask, in the order of the residual syntax. The decoder reads and
+    // reconstructs them; the encoder searches their coefficients, or writes the ones it recorded
+    private void Residual(ResidualOperation operation, int planeMask)
     {
         _qIndex = _header.GetQIndex(_segmentId, _currentQIndex);
         var widthChunks = Math.Max(1, BlockWidth(_miSize) >> 6);
@@ -18,6 +29,9 @@ internal ref partial struct Av1TileCoder
             {
                 for (var plane = 0; plane < 1 + (_hasChroma ? 2 : 0); plane++)
                 {
+                    if (((planeMask >> plane) & 1) is 0)
+                        continue;
+
                     var txSz = _lossless ? Av1Constants.Tx4x4 : GetTxSize(plane, _txSize);
                     var stepX = Av1Tables.TxWidth[txSz] >> 2;
                     var stepY = Av1Tables.TxHeight[txSz] >> 2;
@@ -28,6 +42,9 @@ internal ref partial struct Av1TileCoder
                     var subY = plane > 0 ? _subY : 0;
                     if (_isInter && !_lossless && plane is 0)
                     {
+                        if (operation is not ResidualOperation.Decode)
+                            throw new NotSupportedException("The transform tree of an inter block is not encoded yet.");
+
                         var miRowChunk = _miRow + (chunkY << 4);
                         var miColChunk = _miCol + (chunkX << 4);
                         TransformTree(miColChunk * Av1Constants.MiSize, miRowChunk * Av1Constants.MiSize, num4x4W * 4, num4x4H * 4);
@@ -40,7 +57,20 @@ internal ref partial struct Av1TileCoder
                     {
                         for (var x = 0; x < num4x4W; x += stepX)
                         {
-                            TransformBlock(plane, baseXBlock, baseYBlock, txSz, x + ((chunkX << 4) >> subX), y + ((chunkY << 4) >> subY));
+                            var blockX = x + ((chunkX << 4) >> subX);
+                            var blockY = y + ((chunkY << 4) >> subY);
+                            switch (operation)
+                            {
+                                case ResidualOperation.Decode:
+                                    TransformBlock(plane, baseXBlock, baseYBlock, txSz, blockX, blockY);
+                                    break;
+                                case ResidualOperation.Search:
+                                    SearchTransformBlock(plane, baseXBlock, baseYBlock, txSz, blockX, blockY);
+                                    break;
+                                default:
+                                    ReplayTransformBlock(plane, baseXBlock, baseYBlock, txSz, blockX, blockY);
+                                    break;
+                            }
                         }
                     }
                 }
@@ -74,6 +104,35 @@ internal ref partial struct Av1TileCoder
     {
         var startX = baseX + (4 * x);
         var startY = baseY + (4 * y);
+        if (!IsTransformBlockInFrame(plane, startX, startY))
+            return;
+
+        PredictTransformBlock(plane, txSz, startX, startY, x, y);
+        if (!_skip)
+        {
+            var eob = Coeffs(plane, startX, startY, txSz);
+            if (eob > 0)
+            {
+                var planeBuffer = _frame.GetPlane(plane);
+                Reconstruct(planeBuffer.Samples, planeBuffer.Stride, plane, startX, startY, txSz);
+            }
+        }
+
+        FinishTransformBlock(plane, txSz, startX, startY);
+    }
+
+    // The transform blocks that start outside the frame are not coded
+    private readonly bool IsTransformBlockInFrame(int plane, int startX, int startY)
+    {
+        var maxX = (_miCols * Av1Constants.MiSize) >> (plane > 0 ? _subX : 0);
+        var maxY = (_miRows * Av1Constants.MiSize) >> (plane > 0 ? _subY : 0);
+        return startX < maxX && startY < maxY;
+    }
+
+    // The prediction of a transform block of a block that is not inter (section 5.11.35): the palette, or the intra
+    // prediction and the chroma from luma prediction
+    private void PredictTransformBlock(int plane, int txSz, int startX, int startY, int x, int y)
+    {
         var subX = plane > 0 ? _subX : 0;
         var subY = plane > 0 ? _subY : 0;
         var row = (startY << subY) >> Av1Constants.MiSizeLog2;
@@ -84,9 +143,6 @@ internal ref partial struct Av1TileCoder
         var stepY = Av1Tables.TxHeight[txSz] >> Av1Constants.MiSizeLog2;
         var maxX = (_miCols * Av1Constants.MiSize) >> subX;
         var maxY = (_miRows * Av1Constants.MiSize) >> subY;
-        if (startX >= maxX || startY >= maxY)
-            return;
-
         var planeBuffer = _frame.GetPlane(plane);
         var samples = planeBuffer.Samples;
         var stride = planeBuffer.Stride;
@@ -137,14 +193,21 @@ internal ref partial struct Av1TileCoder
                 _maxLumaH = startY + (stepY * 4);
             }
         }
+    }
 
-        if (!_skip)
-        {
-            var eob = Coeffs(plane, startX, startY, txSz);
-            if (eob > 0)
-                Reconstruct(samples, stride, plane, startX, startY, txSz);
-        }
-
+    // The end of the transform block syntax: the transform size that the loop filter reads, and the blocks that the intra
+    // prediction of the following blocks may read
+    private readonly void FinishTransformBlock(int plane, int txSz, int startX, int startY)
+    {
+        var subX = plane > 0 ? _subX : 0;
+        var subY = plane > 0 ? _subY : 0;
+        var row = (startY << subY) >> Av1Constants.MiSizeLog2;
+        var col = (startX << subX) >> Av1Constants.MiSizeLog2;
+        var subBlockMiRow = row & _sbMask;
+        var subBlockMiCol = col & _sbMask;
+        var stepX = Av1Tables.TxWidth[txSz] >> Av1Constants.MiSizeLog2;
+        var stepY = Av1Tables.TxHeight[txSz] >> Av1Constants.MiSizeLog2;
+        var blockDecoded = _scratch.GetBlockDecoded(plane);
         var loopFilterTxSizes = _state.GetLoopFilterTxSizes(plane);
         var planeMiCols = _miCols >> subX;
         var planeMiRows = _miRows >> subY;
@@ -294,7 +357,7 @@ internal ref partial struct Av1TileCoder
             if (Av1Tables.TxSizeSqrUp[txSz] is Av1Constants.Tx64x64)
                 _state.Tools |= Av1Tools.Transform64;
 
-            var scan = GetScan(txSz);
+            var scan = GetScan(txSz, _planeTxType);
             var txClass = GetTxClass(_planeTxType);
             var eobMultisize = Math.Min((int)Av1Tables.TxWidthLog2[txSz], 5) + Math.Min((int)Av1Tables.TxHeightLog2[txSz], 5) - 4;
             var eobCtx = txClass is TxClass2D ? 0 : 1;
@@ -717,7 +780,7 @@ internal ref partial struct Av1TileCoder
     }
 
     // Section 5.11.41 "Get scan function"
-    private readonly Av1Scan GetScan(int txSz)
+    private static Av1Scan GetScan(int txSz, int planeTxType)
     {
         if (txSz is Av1Constants.Tx16x64)
             return new Av1Scan(Av1Tables.DefaultScan16x32);
@@ -728,11 +791,11 @@ internal ref partial struct Av1TileCoder
         if (Av1Tables.TxSizeSqrUp[txSz] is Av1Constants.Tx64x64)
             return new Av1Scan(Av1Tables.DefaultScan32x32);
 
-        if (_planeTxType is Av1Constants.Idtx)
+        if (planeTxType is Av1Constants.Idtx)
             return GetDefaultScan(txSz);
 
-        var preferRow = _planeTxType is Av1Constants.VDct or Av1Constants.VAdst or Av1Constants.VFlipadst;
-        var preferCol = _planeTxType is Av1Constants.HDct or Av1Constants.HAdst or Av1Constants.HFlipadst;
+        var preferRow = planeTxType is Av1Constants.VDct or Av1Constants.VAdst or Av1Constants.VFlipadst;
+        var preferCol = planeTxType is Av1Constants.HDct or Av1Constants.HAdst or Av1Constants.HFlipadst;
         if (preferRow)
         {
             return new Av1Scan(txSz switch

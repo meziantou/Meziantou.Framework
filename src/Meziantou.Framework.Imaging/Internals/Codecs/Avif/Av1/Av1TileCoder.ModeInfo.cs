@@ -44,10 +44,16 @@ internal ref partial struct Av1TileCoder
             return;
         }
 
+        _yMode = ReadSymbol(GetIntraFrameYModeCdf(), Av1CdfLayout.IntraFrameYModeSize);
+        ReadIntraModeDetails();
+    }
+
+    // The CDF selection of intra_frame_y_mode (section 8.3.2)
+    private readonly int GetIntraFrameYModeCdf()
+    {
         var aboveMode = Av1Tables.IntraModeContext[_availU ? _yModes[MiIndex(_miRow - 1, _miCol)] : Av1Constants.DcPred];
         var leftMode = Av1Tables.IntraModeContext[_availL ? _yModes[MiIndex(_miRow, _miCol - 1)] : Av1Constants.DcPred];
-        _yMode = ReadSymbol(Av1CdfLayout.IntraFrameYMode + (((aboveMode * Av1Constants.IntraModeContexts) + leftMode) * Av1CdfLayout.IntraFrameYModeSize), Av1CdfLayout.IntraFrameYModeSize);
-        ReadIntraModeDetails();
+        return Av1CdfLayout.IntraFrameYMode + (((aboveMode * Av1Constants.IntraModeContexts) + leftMode) * Av1CdfLayout.IntraFrameYModeSize);
     }
 
     // The syntax elements that follow the luma mode of a block that is not inter, in an intra frame and in an inter frame
@@ -69,11 +75,13 @@ internal ref partial struct Av1TileCoder
             IntraAngleInfoUv();
         }
 
-        if (_miSize >= Av1Constants.Block8x8 && BlockWidth(_miSize) <= 64 && BlockHeight(_miSize) <= 64 && _header.AllowScreenContentTools)
+        if (IsPaletteAllowed())
             PaletteModeInfo();
 
         FilterIntraModeInfo();
     }
+
+    private readonly bool IsPaletteAllowed() => _miSize >= Av1Constants.Block8x8 && BlockWidth(_miSize) <= 64 && BlockHeight(_miSize) <= 64 && _header.AllowScreenContentTools;
 
     private static int BlockWidth(int size) => 4 * Av1Tables.Num4x4BlocksWide[size];
 
@@ -180,6 +188,12 @@ internal ref partial struct Av1TileCoder
             return;
         }
 
+        _skip = ReadSymbol(Av1CdfLayout.Skip + (GetSkipContext() * Av1CdfLayout.SkipSize), Av1CdfLayout.SkipSize) is not 0;
+    }
+
+    // The CDF selection of skip (section 8.3.2)
+    private readonly int GetSkipContext()
+    {
         var ctx = 0;
         if (_availU)
             ctx += _flags[MiIndex(_miRow - 1, _miCol)] & Av1FrameState.SkipFlag;
@@ -187,7 +201,7 @@ internal ref partial struct Av1TileCoder
         if (_availL)
             ctx += _flags[MiIndex(_miRow, _miCol - 1)] & Av1FrameState.SkipFlag;
 
-        _skip = ReadSymbol(Av1CdfLayout.Skip + (ctx * Av1CdfLayout.SkipSize), Av1CdfLayout.SkipSize) is not 0;
+        return ctx;
     }
 
     // Section 5.11.56 "Read CDEF syntax"
@@ -291,23 +305,18 @@ internal ref partial struct Av1TileCoder
 
     private void ReadUvMode()
     {
-        bool cflAllowed;
-        if (_lossless && GetPlaneResidualSize(_miSize, 1) is Av1Constants.Block4x4)
-        {
-            cflAllowed = true;
-        }
-        else if (!_lossless && Math.Max(BlockWidth(_miSize), BlockHeight(_miSize)) <= 32)
-        {
-            cflAllowed = true;
-        }
-        else
-        {
-            cflAllowed = false;
-        }
-
-        _uvMode = cflAllowed
+        _uvMode = IsCflAllowed()
             ? ReadSymbol(Av1CdfLayout.UvModeCflAllowed + (_yMode * Av1CdfLayout.UvModeCflAllowedSize), Av1CdfLayout.UvModeCflAllowedSize)
             : ReadSymbol(Av1CdfLayout.UvModeCflNotAllowed + (_yMode * Av1CdfLayout.UvModeCflNotAllowedSize), Av1CdfLayout.UvModeCflNotAllowedSize);
+    }
+
+    // The CDF selection of uv_mode (section 8.3.2): cflAllowed
+    private readonly bool IsCflAllowed()
+    {
+        if (_lossless && GetPlaneResidualSize(_miSize, 1) is Av1Constants.Block4x4)
+            return true;
+
+        return !_lossless && Math.Max(BlockWidth(_miSize), BlockHeight(_miSize)) <= 32;
     }
 
     // Section 5.11.45 "Read CFL alphas syntax": the signs are CFL_SIGN_ZERO (0), CFL_SIGN_NEG (1) and CFL_SIGN_POS (2)
@@ -339,13 +348,15 @@ internal ref partial struct Av1TileCoder
     private void FilterIntraModeInfo()
     {
         _useFilterIntra = false;
-        if (_sequence.EnableFilterIntra && _yMode is Av1Constants.DcPred && _paletteSizeY is 0 && Math.Max(BlockWidth(_miSize), BlockHeight(_miSize)) <= 32)
+        if (IsFilterIntraAllowed())
         {
             _useFilterIntra = ReadSymbol(Av1CdfLayout.FilterIntra + (_miSize * Av1CdfLayout.FilterIntraSize), Av1CdfLayout.FilterIntraSize) is not 0;
             if (_useFilterIntra)
                 _filterIntraMode = ReadSymbol(Av1CdfLayout.FilterIntraMode, Av1CdfLayout.FilterIntraModeSize);
         }
     }
+
+    private readonly bool IsFilterIntraAllowed() => _sequence.EnableFilterIntra && _yMode is Av1Constants.DcPred && _paletteSizeY is 0 && Math.Max(BlockWidth(_miSize), BlockHeight(_miSize)) <= 32;
 
     // Section 5.11.15 "TX size syntax"
     private void ReadTxSize(bool allowSelect)

@@ -1,0 +1,479 @@
+using System.Diagnostics;
+using System.Numerics;
+
+namespace Meziantou.Framework.Imaging.Internals;
+
+/// <content>
+/// The write walk of the encoder: for each syntax table that the decoder reads, the method that writes the same syntax
+/// elements from the variables of the block (the fields of this type). A write method sits on the same context derivations
+/// as its read method, and leaves the same state behind, so that what follows it is coded like a decoder decodes it.
+/// </content>
+/// <remarks>
+/// The syntax elements go to the sink selected by <c>_sink</c>: nowhere (the walk only rebuilds the state of the blocks),
+/// to a rate (the walk measures the candidates of the search, without adapting the distributions), or to the symbol
+/// encoder.
+/// </remarks>
+internal ref partial struct Av1TileCoder
+{
+    private enum SymbolSink
+    {
+        None,
+        Cost,
+        Range,
+    }
+
+    /// <summary>Creates the coder of the tiles of a frame to encode.</summary>
+    public Av1TileCoder(Av1FrameBuffer frame, Av1FrameState state, Av1EncoderWorkspace workspace, Av1SymbolEncoder encoder, Av1TileScratch scratch, Av1ReferenceFrames references, Av1InterScratch? interScratch, Span<ushort> cdf, CancellationToken cancellationToken)
+        : this(frame, state, symbols: null!, scratch, references, interScratch, cdf, cancellationToken)
+    {
+        _workspace = workspace;
+        _encoder = encoder;
+    }
+
+    private void WriteSymbol(int offset, int size, int symbol)
+    {
+        Debug.Assert((uint)symbol < (uint)(size - 1));
+        switch (_sink)
+        {
+            case SymbolSink.Cost:
+                _rate += Av1Cost.GetSymbolCost(_cdf.Slice(offset, size), symbol);
+                break;
+            case SymbolSink.Range:
+                _encoder!.WriteSymbol(_cdf.Slice(offset, size), symbol);
+                break;
+        }
+    }
+
+    private void WriteLiteral(int value, int count)
+    {
+        switch (_sink)
+        {
+            case SymbolSink.Cost:
+                _rate += Av1Cost.GetLiteralCost(count);
+                break;
+            case SymbolSink.Range:
+                _encoder!.WriteLiteral(value, count);
+                break;
+        }
+    }
+
+    // The partition syntax element of section 5.11.4 "Decode partition syntax", when it is coded
+    private void WritePartition(int r, int c, int bSize, int partition)
+    {
+        if (bSize < Av1Constants.Block8x8)
+            return;
+
+        var availU = IsInside(r - 1, c);
+        var availL = IsInside(r, c - 1);
+        var halfBlock4x4 = Av1Tables.Num4x4BlocksWide[bSize] >> 1;
+        var hasRows = (r + halfBlock4x4) < _miRows;
+        var hasCols = (c + halfBlock4x4) < _miCols;
+        if (hasRows && hasCols)
+        {
+            GetPartitionCdf(r, c, bSize, availU, availL, out var offset, out var size);
+            WriteSymbol(offset, size, partition);
+        }
+        else if (hasCols || hasRows)
+        {
+            // split_or_horz and split_or_vert: a distribution derived from the partition distribution, which is not adapted
+            var first = GetSplitOrCdf(r, c, bSize, availU, availL, isHorizontal: hasCols);
+            var isSplit = partition is Av1Constants.PartitionSplit;
+            switch (_sink)
+            {
+                case SymbolSink.Cost:
+                    _rate += Av1Cost.GetCost(isSplit ? (1 << 15) - first : first);
+                    break;
+                case SymbolSink.Range:
+                    Span<ushort> cdf = [first, 1 << 15, 0];
+                    _encoder!.WriteSymbol(cdf, isSplit ? 1 : 0);
+                    break;
+            }
+        }
+    }
+
+    // The variables that the mode info of a block that is not inter sets without reading a syntax element (sections 5.11.7,
+    // 5.11.8 and 5.11.22), for a frame without segmentation
+    private void SetIntraBlockDefaults()
+    {
+        Debug.Assert(!_header.SegmentationEnabled);
+        _segmentId = 0;
+        _lossless = _header.LosslessArray[0];
+        _skip = false;
+        _skipMode = false;
+        _useIntrabc = false;
+        _isInter = false;
+        _refFrame0 = Av1Constants.IntraFrame;
+        _refFrame1 = NoReference;
+        _interintra = false;
+        _motionMode = Av1Constants.Simple;
+        _compoundType = Av1Constants.CompoundAverage;
+        _compGroupIdx = 0;
+        _compoundIdx = 0;
+        _mv = default;
+        _interpFilter0 = 0;
+        _interpFilter1 = 0;
+        _angleDeltaY = 0;
+        _angleDeltaUv = 0;
+        _useFilterIntra = false;
+        _filterIntraMode = 0;
+        _cflAlphaU = 0;
+        _cflAlphaV = 0;
+        _paletteSizeY = 0;
+        _paletteSizeUv = 0;
+        _uvMode = Av1Constants.DcPred;
+    }
+
+    // Section 5.11.7 "Intra frame mode info syntax"
+    private void WriteIntraFrameModeInfo()
+    {
+        WriteSkip();
+        WriteCdef();
+        WriteDeltaQIndex();
+        _readDeltas = false;
+        if (_header.AllowIntrabc)
+            WriteSymbol(Av1CdfLayout.Intrabc, Av1CdfLayout.IntrabcSize, _useIntrabc ? 1 : 0);
+
+        if (_useIntrabc)
+            throw new NotSupportedException("Intra block copy is not encoded yet.");
+
+        WriteSymbol(GetIntraFrameYModeCdf(), Av1CdfLayout.IntraFrameYModeSize, _yMode);
+        WriteIntraModeDetails();
+    }
+
+    // The syntax elements that follow the luma mode of a block that is not inter
+    private void WriteIntraModeDetails()
+    {
+        WriteIntraAngleInfoY();
+        if (_hasChroma)
+            WriteUvModeInfo();
+
+        if (IsPaletteAllowed())
+            throw new NotSupportedException("Palettes are not encoded yet.");
+
+        WriteFilterIntraModeInfo();
+    }
+
+    // Section 5.11.11 "Skip syntax"
+    private void WriteSkip() => WriteSymbol(Av1CdfLayout.Skip + (GetSkipContext() * Av1CdfLayout.SkipSize), Av1CdfLayout.SkipSize, _skip ? 1 : 0);
+
+    // Section 5.11.56 "Read CDEF syntax": the index of the 64x64 block is coded with its first block that is not skipped
+    private void WriteCdef()
+    {
+        if (_skip || _header.CodedLossless || !_sequence.EnableCdef || _header.AllowIntrabc)
+            return;
+
+        const int CdefSize4 = 16;
+        var r = _miRow & ~(CdefSize4 - 1);
+        var c = _miCol & ~(CdefSize4 - 1);
+        var cols = _state.CdefCols;
+        var index = ((r >> 4) * cols) + (c >> 4);
+        if (_cdefIdx[index] is not -1)
+            return;
+
+        // A frame codes one pair of strengths until the search of the strengths of each 64x64 block exists
+        Debug.Assert(_header.CdefBits is 0);
+        const sbyte Value = 0;
+        WriteLiteral(Value, _header.CdefBits);
+        if (_sink is not SymbolSink.Range)
+            return;
+
+        // The search and the rebuilding of the state write the mode info of a block several times: only the walk that
+        // produces the stream marks the index as coded
+        var w4 = Av1Tables.Num4x4BlocksWide[_miSize];
+        var h4 = Av1Tables.Num4x4BlocksHigh[_miSize];
+        for (var i = r; i < r + h4 && i < _miRows; i += CdefSize4)
+        {
+            for (var j = c; j < c + w4 && j < _miCols; j += CdefSize4)
+            {
+                _cdefIdx[((i >> 4) * cols) + (j >> 4)] = Value;
+            }
+        }
+    }
+
+    // Section 5.11.12 "Quantizer index delta syntax"
+    private readonly void WriteDeltaQIndex()
+    {
+        if (_header.DeltaQPresent)
+            throw new NotSupportedException("Quantizer index deltas are not encoded yet.");
+    }
+
+    // Section 5.11.42 "Intra angle info luma syntax"
+    private void WriteIntraAngleInfoY()
+    {
+        if (_miSize >= Av1Constants.Block8x8 && IsDirectionalMode(_yMode))
+        {
+            WriteSymbol(Av1CdfLayout.AngleDelta + ((_yMode - Av1Constants.VPred) * Av1CdfLayout.AngleDeltaSize), Av1CdfLayout.AngleDeltaSize, _angleDeltaY + Av1Constants.MaxAngleDelta);
+        }
+        else
+        {
+            Debug.Assert(_angleDeltaY is 0);
+        }
+    }
+
+    // uv_mode, section 5.11.45 "Read CFL alphas syntax" and section 5.11.43 "Intra angle info chroma syntax"
+    private void WriteUvModeInfo()
+    {
+        if (IsCflAllowed())
+        {
+            WriteSymbol(Av1CdfLayout.UvModeCflAllowed + (_yMode * Av1CdfLayout.UvModeCflAllowedSize), Av1CdfLayout.UvModeCflAllowedSize, _uvMode);
+        }
+        else
+        {
+            Debug.Assert(_uvMode is not Av1Constants.UvCflPred);
+            WriteSymbol(Av1CdfLayout.UvModeCflNotAllowed + (_yMode * Av1CdfLayout.UvModeCflNotAllowedSize), Av1CdfLayout.UvModeCflNotAllowedSize, _uvMode);
+        }
+
+        if (_uvMode is Av1Constants.UvCflPred)
+        {
+            // The signs are CFL_SIGN_ZERO (0), CFL_SIGN_NEG (1) and CFL_SIGN_POS (2); both are not zero together
+            var signU = _cflAlphaU is 0 ? 0 : (_cflAlphaU < 0 ? 1 : 2);
+            var signV = _cflAlphaV is 0 ? 0 : (_cflAlphaV < 0 ? 1 : 2);
+            Debug.Assert(signU is not 0 || signV is not 0);
+            WriteSymbol(Av1CdfLayout.CflSign, Av1CdfLayout.CflSignSize, (signU * 3) + signV - 1);
+            if (signU is not 0)
+            {
+                var ctx = ((signU - 1) * 3) + signV;
+                WriteSymbol(Av1CdfLayout.CflAlpha + (ctx * Av1CdfLayout.CflAlphaSize), Av1CdfLayout.CflAlphaSize, Math.Abs(_cflAlphaU) - 1);
+            }
+
+            if (signV is not 0)
+            {
+                var ctx = ((signV - 1) * 3) + signU;
+                WriteSymbol(Av1CdfLayout.CflAlpha + (ctx * Av1CdfLayout.CflAlphaSize), Av1CdfLayout.CflAlphaSize, Math.Abs(_cflAlphaV) - 1);
+            }
+        }
+
+        if (_miSize >= Av1Constants.Block8x8 && IsDirectionalMode(_uvMode))
+        {
+            WriteSymbol(Av1CdfLayout.AngleDelta + ((_uvMode - Av1Constants.VPred) * Av1CdfLayout.AngleDeltaSize), Av1CdfLayout.AngleDeltaSize, _angleDeltaUv + Av1Constants.MaxAngleDelta);
+        }
+        else
+        {
+            Debug.Assert(_angleDeltaUv is 0);
+        }
+    }
+
+    // Section 5.11.24 "Filter intra mode info syntax"
+    private void WriteFilterIntraModeInfo()
+    {
+        if (IsFilterIntraAllowed())
+        {
+            WriteSymbol(Av1CdfLayout.FilterIntra + (_miSize * Av1CdfLayout.FilterIntraSize), Av1CdfLayout.FilterIntraSize, _useFilterIntra ? 1 : 0);
+            if (_useFilterIntra)
+                WriteSymbol(Av1CdfLayout.FilterIntraMode, Av1CdfLayout.FilterIntraModeSize, _filterIntraMode);
+        }
+        else
+        {
+            Debug.Assert(!_useFilterIntra);
+        }
+    }
+
+    // Section 5.11.16 "Block TX size syntax"
+    private void WriteBlockTxSize()
+    {
+        if (!_lossless)
+            throw new NotSupportedException("Transform sizes are not encoded yet.");
+
+        // Section 5.11.15 "TX size syntax": a lossless block has 4x4 transform blocks and no syntax element
+        _txSize = Av1Constants.Tx4x4;
+        var width = Math.Min(Av1Tables.Num4x4BlocksWide[_miSize], _miCols - _miCol);
+        var height = Math.Min(Av1Tables.Num4x4BlocksHigh[_miSize], _miRows - _miRow);
+        for (var row = 0; row < height; row++)
+        {
+            _interTxSizes.Slice(MiIndex(_miRow + row, _miCol), width).Fill((byte)_txSize);
+        }
+    }
+
+    // The transform type that compute_tx_type returns for a luma transform block whose transform type syntax element is
+    // lumaTxType: the scan order of the coefficients depends on it
+    private readonly int GetLumaPlaneTxType(int txSz, int lumaTxType)
+    {
+        return _lossless || Av1Tables.TxSizeSqrUp[txSz] > Av1Constants.Tx32x32 ? Av1Constants.DctDct : lumaTxType;
+    }
+
+    /// <summary>
+    /// Writes the coefficients of a transform block (section 5.11.39 "Coefficients syntax"): <paramref name="eob"/> levels
+    /// in scan order, the last one not zero. Like the decoder, leaves the coefficients in <c>Quant</c>, the transform type in
+    /// <c>PlaneTxType</c>, and updates the level and DC contexts.
+    /// </summary>
+    private void WriteCoeffs(int plane, int startX, int startY, int txSz, int lumaTxType, ReadOnlySpan<int> levels, int eob)
+    {
+        Debug.Assert(eob is 0 || levels[eob - 1] is not 0);
+        var x4 = startX >> 2;
+        var y4 = startY >> 2;
+        var w4 = Av1Tables.TxWidth[txSz] >> 2;
+        var h4 = Av1Tables.TxHeight[txSz] >> 2;
+        var txSzCtx = (Av1Tables.TxSizeSqr[txSz] + Av1Tables.TxSizeSqrUp[txSz] + 1) >> 1;
+        var ptype = plane > 0 ? 1 : 0;
+        var segEob = txSz is Av1Constants.Tx16x64 or Av1Constants.Tx64x16 ? 512 : Math.Min(1024, Av1Tables.TxWidth[txSz] * Av1Tables.TxHeight[txSz]);
+        var quant = _scratch.Quant;
+        quant[..segEob].Clear();
+
+        var aboveLevel = _state.GetAboveLevelContext(plane);
+        var aboveDc = _state.GetAboveDcContext(plane);
+        var leftLevel = _scratch.GetLeftLevelContext(plane);
+        var leftDc = _scratch.GetLeftDcContext(plane);
+        var maxX4 = plane > 0 ? _miCols >> _subX : _miCols;
+        var maxY4 = plane > 0 ? _miRows >> _subY : _miRows;
+
+        var culLevel = 0;
+        var dcCategory = 0;
+        WriteSymbol(Av1CdfLayout.TxbSkip + (((txSzCtx * Av1Constants.TxbSkipContexts) + GetAllZeroContext(plane, txSz, x4, y4, w4, h4, maxX4, maxY4)) * Av1CdfLayout.TxbSkipSize), Av1CdfLayout.TxbSkipSize, eob is 0 ? 1 : 0);
+        if (eob is 0)
+        {
+            if (plane is 0)
+                SetTxTypes(x4, y4, w4, h4, Av1Constants.DctDct);
+        }
+        else
+        {
+            if (plane is 0)
+                WriteTransformType(x4, y4, txSz, lumaTxType);
+
+            _planeTxType = ComputeTxType(plane, txSz, x4, y4);
+            var scan = GetScan(txSz, _planeTxType);
+            var txClass = GetTxClass(_planeTxType);
+
+            // eob_pt_*: eob is 1, 2, or 2^(eobPt - 2) + 1 plus eobPt - 2 extra bits
+            var eobPt = eob <= 2 ? eob : BitOperations.Log2((uint)(eob - 1)) + 2;
+            var eobMultisize = Math.Min((int)Av1Tables.TxWidthLog2[txSz], 5) + Math.Min((int)Av1Tables.TxHeightLog2[txSz], 5) - 4;
+            var eobCtx = txClass is TxClass2D ? 0 : 1;
+            switch (eobMultisize)
+            {
+                case 0:
+                    WriteSymbol(Av1CdfLayout.EobPt16 + (((ptype * 2) + eobCtx) * Av1CdfLayout.EobPt16Size), Av1CdfLayout.EobPt16Size, eobPt - 1);
+                    break;
+                case 1:
+                    WriteSymbol(Av1CdfLayout.EobPt32 + (((ptype * 2) + eobCtx) * Av1CdfLayout.EobPt32Size), Av1CdfLayout.EobPt32Size, eobPt - 1);
+                    break;
+                case 2:
+                    WriteSymbol(Av1CdfLayout.EobPt64 + (((ptype * 2) + eobCtx) * Av1CdfLayout.EobPt64Size), Av1CdfLayout.EobPt64Size, eobPt - 1);
+                    break;
+                case 3:
+                    WriteSymbol(Av1CdfLayout.EobPt128 + (((ptype * 2) + eobCtx) * Av1CdfLayout.EobPt128Size), Av1CdfLayout.EobPt128Size, eobPt - 1);
+                    break;
+                case 4:
+                    WriteSymbol(Av1CdfLayout.EobPt256 + (((ptype * 2) + eobCtx) * Av1CdfLayout.EobPt256Size), Av1CdfLayout.EobPt256Size, eobPt - 1);
+                    break;
+                case 5:
+                    WriteSymbol(Av1CdfLayout.EobPt512 + (ptype * Av1CdfLayout.EobPt512Size), Av1CdfLayout.EobPt512Size, eobPt - 1);
+                    break;
+                default:
+                    WriteSymbol(Av1CdfLayout.EobPt1024 + (ptype * Av1CdfLayout.EobPt1024Size), Av1CdfLayout.EobPt1024Size, eobPt - 1);
+                    break;
+            }
+
+            if (eobPt >= 3)
+            {
+                // eob_extra then eob_extra_bit: the bits of eob - (2^(eobPt - 2) + 1), most significant first
+                var extra = eob - ((1 << (eobPt - 2)) + 1);
+                var extraBits = eobPt - 2;
+                WriteSymbol(Av1CdfLayout.EobExtra + (((((txSzCtx * Av1Constants.PlaneTypes) + ptype) * Av1Constants.EobCoefContexts) + (eobPt - 3)) * Av1CdfLayout.EobExtraSize), Av1CdfLayout.EobExtraSize, (extra >> (extraBits - 1)) & 1);
+                for (var i = extraBits - 2; i >= 0; i--)
+                {
+                    WriteLiteral((extra >> i) & 1, 1);
+                }
+            }
+
+            var adjTxSz = Av1Tables.AdjustedTxSize[txSz];
+            var bwl = Av1Tables.TxWidthLog2[adjTxSz];
+            var width = 1 << bwl;
+            var height = Av1Tables.TxHeight[adjTxSz];
+            var coeffBaseOffset = Av1CdfLayout.CoeffBase + ((((txSzCtx * Av1Constants.PlaneTypes) + ptype) * Av1Constants.SigCoefContexts) * Av1CdfLayout.CoeffBaseSize);
+            var coeffBaseEobOffset = Av1CdfLayout.CoeffBaseEob + ((((txSzCtx * Av1Constants.PlaneTypes) + ptype) * Av1Constants.SigCoefContextsEob) * Av1CdfLayout.CoeffBaseEobSize);
+            var coeffBrOffset = Av1CdfLayout.CoeffBr + ((((Math.Min(txSzCtx, Av1Constants.Tx32x32) * Av1Constants.PlaneTypes) + ptype) * Av1Constants.LevelContexts) * Av1CdfLayout.CoeffBrSize);
+            const int MaxCodedLevel = Av1Constants.NumBaseLevels + Av1Constants.CoeffBaseRange + 1;
+            for (var c = eob - 1; c >= 0; c--)
+            {
+                var pos = scan[c];
+                var magnitude = Math.Abs(levels[c]);
+                var level = Math.Min(magnitude, Av1Constants.NumBaseLevels + 1);
+                if (c == eob - 1)
+                {
+                    var ctx = GetCoeffBaseEobContext(c, width, height);
+                    WriteSymbol(coeffBaseEobOffset + (ctx * Av1CdfLayout.CoeffBaseEobSize), Av1CdfLayout.CoeffBaseEobSize, level - 1);
+                }
+                else
+                {
+                    var ctx = GetCoeffBaseContext(quant, txSz, txClass, bwl, width, height, pos);
+                    WriteSymbol(coeffBaseOffset + (ctx * Av1CdfLayout.CoeffBaseSize), Av1CdfLayout.CoeffBaseSize, level);
+                }
+
+                if (level > Av1Constants.NumBaseLevels)
+                {
+                    var ctx = GetCoeffBrContext(quant, txClass, bwl, width, height, pos);
+                    for (var idx = 0; idx < Av1Constants.CoeffBaseRange / (Av1Constants.BrCdfSize - 1); idx++)
+                    {
+                        var coeffBr = Math.Min(magnitude - level, Av1Constants.BrCdfSize - 1);
+                        WriteSymbol(coeffBrOffset + (ctx * Av1CdfLayout.CoeffBrSize), Av1CdfLayout.CoeffBrSize, coeffBr);
+                        level += coeffBr;
+                        if (coeffBr < Av1Constants.BrCdfSize - 1)
+                            break;
+                    }
+                }
+
+                // The contexts of the coefficients that follow read the levels coded so far, without their Golomb part
+                Debug.Assert(level == Math.Min(magnitude, MaxCodedLevel));
+                quant[pos] = level;
+            }
+
+            for (var c = 0; c < eob; c++)
+            {
+                var pos = scan[c];
+                var value = levels[c];
+                if (value is 0)
+                    continue;
+
+                var sign = value < 0 ? 1 : 0;
+                var magnitude = Math.Abs(value);
+                Debug.Assert(magnitude <= 0xFFFFF);
+                if (c is 0)
+                {
+                    var ctx = GetDcSignContext(aboveDc, leftDc, x4, y4, w4, h4, maxX4, maxY4);
+                    WriteSymbol(Av1CdfLayout.DcSign + (((ptype * Av1Constants.DcSignContexts) + ctx) * Av1CdfLayout.DcSignSize), Av1CdfLayout.DcSignSize, sign);
+                }
+                else
+                {
+                    WriteLiteral(sign, 1);
+                }
+
+                if (magnitude >= MaxCodedLevel)
+                {
+                    // golomb_length_bit then golomb_data_bit: x has length bits, written after length - 1 zero bits
+                    var x = magnitude - (MaxCodedLevel - 1);
+                    var length = BitOperations.Log2((uint)x) + 1;
+                    WriteLiteral(0, length - 1);
+                    WriteLiteral(1, 1);
+                    WriteLiteral(x & ((1 << (length - 1)) - 1), length - 1);
+                }
+
+                if (pos is 0)
+                    dcCategory = sign is not 0 ? 1 : 2;
+
+                culLevel += magnitude;
+                quant[pos] = value;
+            }
+
+            culLevel = Math.Min(63, culLevel);
+        }
+
+        aboveLevel.Slice(x4, w4).Fill((byte)culLevel);
+        aboveDc.Slice(x4, w4).Fill((byte)dcCategory);
+        for (var i = 0; i < h4; i++)
+        {
+            leftLevel[(y4 + i) & 31] = (byte)culLevel;
+            leftDc[(y4 + i) & 31] = (byte)dcCategory;
+        }
+    }
+
+    // Section 5.11.47 "Transform type syntax"
+    private readonly void WriteTransformType(int x4, int y4, int txSz, int txType)
+    {
+        var set = GetTxSet(txSz);
+        var qIndex = _header.SegmentationEnabled ? _header.GetQIndex(_segmentId, currentQIndex: -1) : _header.BaseQIdx;
+        if (set > 0 && qIndex > 0)
+            throw new NotSupportedException("Transform types are not encoded yet.");
+
+        Debug.Assert(txType is Av1Constants.DctDct);
+        SetTxTypes(x4, y4, Av1Tables.TxWidth[txSz] >> 2, Av1Tables.TxHeight[txSz] >> 2, txType);
+    }
+}

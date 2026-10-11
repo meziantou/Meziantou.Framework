@@ -1,0 +1,196 @@
+using System.Numerics;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+
+namespace Meziantou.Framework.Imaging.Internals;
+
+/// <summary>Composites a paint over the pixels of a frame, weighted by the coverage of each pixel.</summary>
+/// <remarks>
+/// <para>
+/// <b>Contract.</b> Source-over on the stored (encoded) sample values, with straight alpha and exact integer
+/// arithmetic: this is <see cref="AnimationCompositor.BlendOver8"/> with a source alpha multiplied by a coverage. With
+/// <c>M</c> the largest sample value, <c>Q</c> = <see cref="CoverageRasterizer.FullCoverage"/>, a paint <c>(sc, sa)</c>,
+/// a coverage <c>q</c> and a pixel <c>(dc, da)</c>, the effective source alpha is <c>E / (M Q)</c> with <c>E = sa q</c>:
+/// </para>
+/// <list type="bullet">
+/// <item><description><c>E = 0</c>: the pixel is not written.</description></item>
+/// <item><description>
+/// Otherwise <c>A = E M + da (M Q - E)</c> is the exact output alpha times <c>M^2 Q</c>:
+/// <c>a' = round(A / (M Q))</c> and <c>c' = round((sc E M + dc da (M Q - E)) / A)</c>, both to nearest with ties upward.
+/// When <c>a'</c> is 0 the pixel is not written (it was transparent and stays so, with its hidden color).
+/// </description></item>
+/// <item><description>
+/// A pixel format without alpha is an opaque destination (<c>da = M</c>), for which the color is
+/// <c>round((sc E + dc (M Q - E)) / (M Q))</c> and the pixel stays opaque: the same samples as an opaque pixel of a format
+/// with alpha.
+/// </description></item>
+/// </list>
+/// <para>
+/// Consequences: a full coverage with an opaque paint writes the paint exactly; a full coverage is exactly the
+/// compositing of the animation decoders. Every intermediate value fits in 64 bits: the largest one,
+/// <c>M^3 Q + M^2 Q / 2</c> for 16-bit samples, is just below 2^64.
+/// </para>
+/// </remarks>
+internal static class DrawingKernels
+{
+    /// <summary>Converts a paint color to the pixel format of a frame, with the rules of pixel conversion.</summary>
+    /// <remarks>
+    /// The color samples are those of the opaque color converted by <see cref="PixelConverter"/> (Rec. 709 luma for
+    /// grayscale formats, 16-to-8-bit rounding last); the opacity is the alpha of the color at the precision of the format.
+    /// </remarks>
+    public static DrawingColor ConvertColor<TPixel>(Rgba64 color)
+        where TPixel : unmanaged
+    {
+        var opaque = new Rgba64(color.R, color.G, color.B);
+        TPixel pixel = default;
+        PixelConverter.ConvertRow(new ReadOnlySpan<Rgba64>(in opaque), new Span<TPixel>(ref pixel));
+        if (typeof(TPixel) == typeof(Rgba64))
+        {
+            var value = unsafe(Unsafe.As<TPixel, Rgba64>(ref pixel));
+            return new DrawingColor(value.R, value.G, value.B, color.A);
+        }
+
+        if (typeof(TPixel) == typeof(Gray16))
+            return new DrawingColor(unsafe(Unsafe.As<TPixel, Gray16>(ref pixel)).Value, 0, 0, color.A);
+
+        var alpha = PixelConverter.To8Bit(color.A);
+        if (typeof(TPixel) == typeof(Rgba32))
+        {
+            var value = unsafe(Unsafe.As<TPixel, Rgba32>(ref pixel));
+            return new DrawingColor(value.R, value.G, value.B, alpha);
+        }
+
+        if (typeof(TPixel) == typeof(Bgra32))
+        {
+            var value = unsafe(Unsafe.As<TPixel, Bgra32>(ref pixel));
+            return new DrawingColor(value.B, value.G, value.R, alpha);
+        }
+
+        if (typeof(TPixel) == typeof(Rgb24))
+        {
+            var value = unsafe(Unsafe.As<TPixel, Rgb24>(ref pixel));
+            return new DrawingColor(value.R, value.G, value.B, alpha);
+        }
+
+        if (typeof(TPixel) == typeof(Gray8))
+            return new DrawingColor(unsafe(Unsafe.As<TPixel, Gray8>(ref pixel)).Value, 0, 0, alpha);
+
+        throw new NotSupportedException($"The pixel type '{typeof(TPixel).Name}' is not supported.");
+    }
+
+    /// <summary>Composites a paint over a run of pixels of a row.</summary>
+    /// <param name="storage">The storage of the frame, leased by the caller.</param>
+    /// <param name="y">The row.</param>
+    /// <param name="x">The first column.</param>
+    /// <param name="coverage">The coverage of each pixel of the run, from 0 to <see cref="CoverageRasterizer.FullCoverage"/>.</param>
+    /// <param name="source">The paint, converted to the pixel format of the frame.</param>
+    public static void Composite<TPixel>(PixelStorage storage, int y, int x, ReadOnlySpan<uint> coverage, scoped in DrawingSource source)
+        where TPixel : unmanaged
+    {
+        if (Unsafe.SizeOf<TPixel>() != storage.BytesPerPixel)
+            throw new InvalidOperationException($"The pixel type '{typeof(TPixel).Name}' does not match the storage pixel size.");
+
+        var row = storage.GetRowSpanCore(y);
+        if (typeof(TPixel) == typeof(Rgba32) || typeof(TPixel) == typeof(Bgra32))
+        {
+            Composite(row.Slice(x * 4, coverage.Length * 4), channels: 4, coverage, source);
+        }
+        else if (typeof(TPixel) == typeof(Rgb24))
+        {
+            Composite(row.Slice(x * 3, coverage.Length * 3), channels: 3, coverage, source);
+        }
+        else if (typeof(TPixel) == typeof(Gray8))
+        {
+            Composite(row.Slice(x, coverage.Length), channels: 1, coverage, source);
+        }
+        else if (typeof(TPixel) == typeof(Rgba64))
+        {
+            Composite(unsafe(MemoryMarshal.Cast<byte, ushort>(row)).Slice(x * 4, coverage.Length * 4), channels: 4, coverage, source);
+        }
+        else if (typeof(TPixel) == typeof(Gray16))
+        {
+            Composite(unsafe(MemoryMarshal.Cast<byte, ushort>(row)).Slice(x, coverage.Length), channels: 1, coverage, source);
+        }
+        else
+        {
+            throw new NotSupportedException($"The pixel type '{typeof(TPixel).Name}' is not supported.");
+        }
+    }
+
+    /// <summary>Composites a paint over interleaved samples: 1 (gray), 3 (color) or 4 (color then alpha) per pixel.</summary>
+    internal static void Composite<TSample>(Span<TSample> samples, int channels, ReadOnlySpan<uint> coverage, scoped in DrawingSource source)
+        where TSample : unmanaged, IBinaryInteger<TSample>, IMinMaxValue<TSample>
+    {
+        var max = ulong.CreateTruncating(TSample.MaxValue);
+        var scale = max * CoverageRasterizer.FullCoverage;
+        var half = scale / 2;
+        var colorChannels = channels == 4 ? 3 : channels;
+        var colors = source.Colors;
+        var color = source.Color;
+        Span<ulong> paint = [color.C0, color.C1, color.C2];
+        ulong paintAlpha = color.Alpha;
+        for (var i = 0; i < coverage.Length; i++)
+        {
+            ulong q = coverage[i];
+            if (q == 0)
+                continue;
+
+            if (!colors.IsEmpty)
+            {
+                var entry = colors.Slice(i * 4, 4);
+                paint[0] = entry[0];
+                paint[1] = entry[1];
+                paint[2] = entry[2];
+                paintAlpha = entry[3];
+            }
+
+            if (paintAlpha == 0)
+                continue;
+
+            var pixel = samples.Slice(i * channels, channels);
+            if (q == CoverageRasterizer.FullCoverage && paintAlpha == max)
+            {
+                for (var c = 0; c < colorChannels; c++)
+                {
+                    pixel[c] = TSample.CreateTruncating(paint[c]);
+                }
+
+                if (channels == 4)
+                {
+                    pixel[3] = TSample.MaxValue;
+                }
+
+                continue;
+            }
+
+            var effective = paintAlpha * q;
+            var inverse = scale - effective;
+            var destinationAlpha = channels == 4 ? ulong.CreateTruncating(pixel[3]) : max;
+            if (destinationAlpha == max)
+            {
+                for (var c = 0; c < colorChannels; c++)
+                {
+                    pixel[c] = TSample.CreateTruncating(((paint[c] * effective) + (ulong.CreateTruncating(pixel[c]) * inverse) + half) / scale);
+                }
+
+                continue;
+            }
+
+            var weight = destinationAlpha * inverse;
+            var total = (effective * max) + weight;
+            var alpha = (total + half) / scale;
+            if (alpha == 0)
+                continue;
+
+            // Half of an odd total rounds down, which is still "to nearest": no quotient is half way then
+            var rounding = total / 2;
+            var sourceWeight = effective * max;
+            for (var c = 0; c < 3; c++)
+            {
+                pixel[c] = TSample.CreateTruncating(((paint[c] * sourceWeight) + (ulong.CreateTruncating(pixel[c]) * weight) + rounding) / total);
+            }
+
+            pixel[3] = TSample.CreateTruncating(alpha);
+        }
+    }
+}

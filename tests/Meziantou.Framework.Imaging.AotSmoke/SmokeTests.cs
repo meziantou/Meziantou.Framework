@@ -1,4 +1,5 @@
 using System.Globalization;
+using Meziantou.Framework.Imaging.Drawing;
 using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.Metadata;
 
@@ -460,6 +461,36 @@ internal static class SmokeTests
         // (5 - 6, 2 - 1, 4 + 12, 3 + 2): the canvas is enlarged on the left and on the right
         Check(bordered.AutoCrop(new AutoCropOptions { PaddingX = 6, PaddingY = 1 }) && bordered.Size == new Size(16, 5), "auto-crop");
         Check(bordered.Frames[0][0, 0] == new Rgba32(255, 255, 255) && bordered.Frames[0][6, 1] == new Rgba32(10, 20, 30), "auto-crop pixels");
+    }
+
+    public static void Drawing()
+    {
+        // Every brush, both fill rules, strokes with every join and cap, on a typed frame and on a whole animation
+        using var image = new Image<Rgba32>(32, 24, new Rgba32(255, 255, 255));
+        image.AppendFrame();
+        var star = new VectorPathBuilder().AddPolygon([new PointD(16, 2), new PointD(20, 20), new PointD(4, 8), new PointD(28, 8), new PointD(12, 20)]).Build();
+        var curve = new VectorPathBuilder().MoveTo(2, 20).CubicBezierTo(10, -6, 20, 30, 30, 4).QuadraticBezierTo(24, 16, 16, 22).Build();
+        var linear = new LinearGradientBrush(new PointD(0, 0), new PointD(32, 0), [new GradientStop(0, new Rgba32(255, 0, 0)), new GradientStop(1, new Rgba32(0, 0, 255, 64))]) { SpreadMode = GradientSpreadMode.Reflect };
+        var radial = new RadialGradientBrush(new PointD(16, 12), 10, [new GradientStop(0, new Rgba32(255, 255, 0)), new GradientStop(1, new Rgba32(0, 128, 0))]) { SpreadMode = GradientSpreadMode.Repeat };
+        image.Draw((star, curve, linear, radial), static (canvas, state) =>
+        {
+            canvas.Fill(state.linear);
+            canvas.Fill(state.radial, state.star, FillRule.EvenOdd);
+            canvas.Stroke(new Pen(new Rgba32(0, 0, 0, 200), 2.5) { LineJoin = LineJoin.Round, LineCap = LineCap.Round }, state.curve);
+            canvas.StrokeRectangle(new Pen(state.linear, 1) { LineJoin = LineJoin.Bevel }, new Rectangle(1, 1, 30, 22));
+            canvas.FillCircle(new Rgba32(0, 0, 0), new PointD(4, 4), 2);
+            canvas.StrokeEllipse(new Pen(new Rgba32(255, 255, 255), 1.5) { LineCap = LineCap.Square, MiterLimit = 2 }, new PointD(24, 16), 5, 3);
+        });
+        image.Frames[1].Draw(canvas => canvas.FillRectangle(new Rgba32(0, 0, 0), new Rectangle(0, 0, 1, 1)));
+        Check(image.Frames[0][4, 4] == new Rgba32(0, 0, 0) && image.Frames[1][4, 4] == new Rgba32(0, 0, 0), "drawing on every frame");
+        Check(image.Frames[1][0, 0] == new Rgba32(0, 0, 0) && image.Frames[0][0, 0] != new Rgba32(0, 0, 0), "drawing on one frame");
+        Check(image.Frames[0][0, 12] != new Rgba32(255, 255, 255), "gradient fill");
+
+        using var gray = new Image<Gray16>(4, 1, new Gray16(0));
+        ((Image)gray).Draw(canvas => canvas.FillRectangle(new LinearGradientBrush(new PointD(0, 0), new PointD(4, 0), [new GradientStop(0, new Rgba32(0, 0, 0)), new GradientStop(1, new Rgba32(255, 255, 255))]), new RectangleD(0, 0, 3.5, 1)));
+
+        // The centers are at 1/8, 3/8, 5/8 and 7/8 of 65535 (ties upward); the last pixel is half covered
+        Check(gray.Frames[0][0, 0] == new Gray16(8192) && gray.Frames[0][1, 0] == new Gray16(24576) && gray.Frames[0][2, 0] == new Gray16(40959) && gray.Frames[0][3, 0] == new Gray16(28672), "gradient samples");
     }
 
     public static void ColorConversion()

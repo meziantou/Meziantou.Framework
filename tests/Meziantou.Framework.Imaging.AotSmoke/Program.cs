@@ -24,6 +24,7 @@ Run("icon", SmokeTests.Icon);
 Run("ani", SmokeTests.Ani);
 Run("avif", SmokeTests.Avif);
 Run("processing", SmokeTests.Processing);
+Run("drawing", SmokeTests.Drawing);
 Run("color", SmokeTests.ColorConversion);
 Run("streaming", SmokeTests.Streaming);
 Run("errors", SmokeTests.Errors);

@@ -2,8 +2,8 @@
 
 A fully managed, performance-oriented image library for .NET 10 and .NET 11: PNG, animated PNG (APNG), GIF, JPEG, WebP
 (still and animated, lossless and lossy), QOI, BMP, TGA, Netpbm (PBM/PGM/PPM/PAM), TIFF/BigTIFF, ICO/CUR and animated
-cursor (ANI) decoding and encoding, AVIF decoding (still and animated), animation-aware processing, ICC color
-conversion, and bounded-memory streaming.
+cursor (ANI) decoding and encoding, AVIF decoding (still and animated), animation-aware processing, vector drawing, ICC
+color conversion, and bounded-memory streaming.
 
 - Static PNG, animated PNG (APNG), GIF, baseline/progressive JPEG, WebP (still and animated, lossless and lossy), QOI,
   BMP, TGA, Netpbm (PBM/PGM/PPM/PAM), TIFF/BigTIFF, ICO/CUR and ANI decoding; PNG, APNG, GIF, baseline JPEG, WebP
@@ -19,6 +19,8 @@ conversion, and bounded-memory streaming.
 - Six working pixel formats (`Rgba32`, `Bgra32`, `Rgb24`, `Rgba64`, `Gray8`, `Gray16`) with 16-bit precision preserved
 - Crop, auto-crop (background detection), resize (alpha-aware, Contain/Cover/Stretch), rotate, auto-orient, flip,
   grayscale and convolution matrices (sharpen, blur, edge detection) applied to all frames
+- Antialiased vector drawing on a frame or on every frame: filled and stroked rectangles, ellipses and paths with
+  Bézier curves, solid colors, linear and radial gradients, with exact pixel coverage
 - ICC color management on request: convert an image to another color profile, or convert sample buffers between two
   profiles: matrix- and table-based grayscale, RGB and CMYK profiles of versions 2 and 4, the four rendering intents
   and black point compensation (profiles are never applied implicitly)
@@ -42,6 +44,7 @@ compiled and run by the test suite.
   - [Failure atomicity](#failure-atomicity)
   - [Pixel formats, precision and alpha](#pixel-formats-precision-and-alpha)
   - [Processing](#processing)
+  - [Drawing](#drawing)
   - [Metadata, color profiles and orientation](#metadata-color-profiles-and-orientation)
   - [Color management](#color-management)
   - [Loading, identification and limits](#loading-identification-and-limits)
@@ -66,7 +69,8 @@ compiled and run by the test suite.
 ## Quick start
 
 Namespaces: `Meziantou.Framework.Imaging` (images, I/O, processing, configuration), `Meziantou.Framework.Imaging.Formats`
-(encoders and their settings), `Meziantou.Framework.Imaging.Metadata`.
+(encoders and their settings), `Meziantou.Framework.Imaging.Metadata`, `Meziantou.Framework.Imaging.Drawing` (brushes,
+pens and paths).
 
 <!-- snippet: package-readme-quickstart -->
 ```csharp
@@ -106,6 +110,8 @@ frame.Save("first.jpg", new JpegEncoder { Quality = 85, BackgroundColor = new Rg
 - **Exact timing.** Rational `FrameDuration` preserves GIF, APNG, WebP and ANI delays exactly; `TotalPlays` counts total plays.
 - **Atomic geometry.** Crop, auto-crop, resize, rotate and auto-orient apply to every frame (and the poster)
   transactionally.
+- **Exact drawing.** Shapes are antialiased with the exact area of each pixel they cover, overlaps included, and
+  composited with exact integer arithmetic: the same pixels on every platform.
 - **Bounded streaming.** Sequential readers and writers process long animations with memory bounded by one frame.
 - **Safety.** Configurable resource limits, distinct exceptions for malformed data, unsupported features, limits,
   cancellation and I/O failures, and atomic file publication.
@@ -329,10 +335,11 @@ public static Point WriteAndReadIcon(string inputPath, string iconPath, string c
 | Clones, extracted frames, reader results | Independent: they stay valid after the source image or the reader is disposed. |
 | Input streams, spans and files of eager `Load`/`Identify` | Never retained: everything needed is copied while loading. |
 | Raw pixel imports (`ImportPixelData`, `ImportPixelBytes`) | Always copied; caller memory is never wrapped. |
-| `MetadataBlob`, profiles, options, encoders | Immutable (blobs copy their input); safe to share. |
+| `MetadataBlob`, profiles, options, encoders, brushes, pens, paths | Immutable (blobs copy their input); safe to share. |
 
 **Leases**. Pixels are accessed through exclusive scoped leases: `ProcessPixelRows` (typed rows),
-`ProcessPixelBytes` (raw native-endian bytes), the scalar indexer and `CopyPixelDataTo`/`CopyPixelBytesTo`. Row spans
+`ProcessPixelBytes` (raw native-endian bytes), the scalar indexer, `CopyPixelDataTo`/`CopyPixelBytesTo` and `Draw` (one
+frame, or every frame of the image). Row spans
 contain exactly the visible pixels of one row; rows are contiguous but the whole image is not, and no API exposes
 whole-image memory. The accessors are `ref struct`s, so a callback cannot be asynchronous or keep a span. While a lease
 is active, disposing the image, structural edits and conflicting access throw `InvalidOperationException` (best-effort
@@ -402,7 +409,8 @@ disposed, even after the reader is disposed. Scopes are safety bounds per owner,
 ### Thread safety
 
 Static methods (`Load`, `Identify`, `DetectFormat`, ...) are thread-safe, and so are the immutable
-types (configuration, limits, options, encoders, `MetadataBlob`, profiles). Distinct images can be processed concurrently.
+types (configuration, limits, options, encoders, `MetadataBlob`, profiles, brushes, pens, paths). Distinct images can be
+processed concurrently.
 An `Image` and its frames must not be used concurrently while any thread mutates them or holds a lease. Readers and
 writers support one operation at a time: overlapping calls throw `InvalidOperationException`. Internal parallelism is off
 by default (`ImageConfiguration.MaxDegreeOfParallelism = 1`); with more workers, only large resizes and convolutions are
@@ -416,10 +424,12 @@ split into row bands, with results identical to the sequential ones.
   one transaction: replacements are allocated (and charged) while the originals are live, and any failure before the commit
   (limit, allocation failure, cancellation) leaves dimensions, pixels, frame identities and order, cursor hotspots and
   metadata unchanged.
-- **Pixel mutations may be partial.** `Flip`, `Grayscale`, `Convolve`, row callbacks and `ReadFrameInto` write in place: a
-  failure or a cancellation can leave some rows or frames updated, but the image stays structurally valid and
+- **Pixel mutations may be partial.** `Flip`, `Grayscale`, `Convolve`, `Draw`, row callbacks and `ReadFrameInto` write in
+  place: a failure or a cancellation can leave some rows or frames updated, but the image stays structurally valid and
   disposable. `Convolve` rents its scratch rows first: exceeding the allocation limit leaves the image unchanged. `Flip`
-  moves the hotspot of a frame once that frame is completely mirrored.
+  moves the hotspot of a frame once that frame is completely mirrored. In a `Draw` callback, the shapes already drawn
+  stay; each shape rents its working storage before it changes a pixel, and a canceled shape leaves the same rows
+  painted on every frame.
 - Failed operations release every resource they acquired; nothing is leaked or returned to a pool while still visible.
 
 ### Pixel formats, precision and alpha
@@ -622,7 +632,117 @@ public static void SharpenAndDetectEdges(string inputPath, string sharpenedPath,
 }
 ```
 
-There is no HDR processing, drawing, text rendering or custom processor.
+There is no HDR processing, text rendering or custom processor.
+
+### Drawing
+
+`ImageFrame.Draw` hands a `DrawingCanvas` to a callback, for one frame; `Image.Draw` does the same for a whole image and
+paints every frame and the poster identically. The callback runs once, while the pixels are leased: the canvas is only
+valid inside it, and other pixel access or geometry changes on the same image throw `InvalidOperationException` until it
+returns. The drawing types are in the `Meziantou.Framework.Imaging.Drawing` namespace.
+
+<!-- snippet: draw-shapes -->
+```csharp
+public static void DrawLandscape(string outputPath)
+{
+    using var image = new Image<Rgba32>(256, 160);
+
+    // Brushes, pens and paths are immutable: create them once and reuse them
+    var sky = new LinearGradientBrush(new PointD(0, 0), new PointD(0, 160), [new GradientStop(0, new Rgba32(30, 60, 160)), new GradientStop(1, new Rgba32(200, 220, 255))]);
+    var sun = new RadialGradientBrush(new PointD(200, 50), 30, [new GradientStop(0, new Rgba32(255, 255, 200)), new GradientStop(1, new Rgba32(255, 180, 0, 0))]);
+    var hill = new VectorPathBuilder()
+        .MoveTo(0, 160).LineTo(0, 120)
+        .CubicBezierTo(60, 70, 120, 150, 256, 100)
+        .LineTo(256, 160).Close()
+        .Build();
+    var outline = new Pen(new Rgba32(20, 60, 20), 3) { LineJoin = LineJoin.Round };
+    var frame = new Pen(new Rgba32(0, 0, 0, 128), 2);
+
+    image.Frames[0].Draw(canvas =>
+    {
+        canvas.Fill(sky); // the whole canvas
+        canvas.FillCircle(sun, new PointD(200, 50), 30); // fades to transparent at its edge
+        canvas.Fill(new Rgba32(60, 140, 60), hill); // a color converts to a solid brush
+        canvas.Stroke(outline, hill);
+        canvas.StrokeRectangle(frame, new RectangleD(1, 1, 254, 158)); // centered on its path: from 0 to 2
+    });
+
+    image.Save(outputPath);
+}
+```
+
+**Shapes**. A canvas fills (`Fill`, `FillRectangle`, `FillEllipse`, `FillCircle`) and strokes (`Stroke`,
+`StrokeRectangle`, `StrokeEllipse`, `StrokeCircle`, `StrokeLine`, `StrokeBezier`). Anything else is a `VectorPath`, built
+once with a `VectorPathBuilder` (`MoveTo`, `LineTo`, `QuadraticBezierTo`, `CubicBezierTo`, `Close`, `AddRectangle`,
+`AddEllipse`, `AddCircle`, `AddPolygon`) and drawn as many times as needed. A path holds any number of contours; an open
+contour is closed by a straight segment when it is filled, and gets the caps of the pen when it is stroked. `FillRule`
+decides what is inside when contours overlap: `NonZero` (default) fills everything the contours wind around, `EvenOdd`
+makes a hole wherever an even number of them overlap.
+
+**Coordinates**. Positions are `double` values in pixels (`PointD`, `RectangleD`; the integer `Point` and `Rectangle`
+convert implicitly). The origin is the top-left corner, and integer coordinates are pixel boundaries: the pixel
+`(x, y)` covers the square from `(x, y)` to `(x + 1, y + 1)`. A rectangle on integer coordinates is filled exactly, and
+a one-pixel horizontal line is crisp when it runs through the middle of a row (`y + 0.5`). Shapes are clipped to the
+canvas. A coordinate must be finite (`ArgumentException`) and no larger than 16,777,216 in magnitude
+(`ArgumentOutOfRangeException`).
+
+**Brushes**. A `SolidBrush` paints one color (an `Rgba32` or `Rgba64` converts implicitly to a brush). A
+`LinearGradientBrush` (between two points) and a `RadialGradientBrush` (around a center, up to a radius) paint the color
+of their `GradientStop`s at the center of each pixel; `SpreadMode` gives the colors beyond the stops: `Pad` (default),
+`Repeat` or `Reflect`. Gradients are positioned in canvas coordinates, whatever the shape they fill. Two stops with the
+same offset make a hard edge, and stops are interpolated on alpha-premultiplied values, so a transparent stop does not
+tint its neighbors.
+
+**Pens**. A `Pen` is a brush and a width, centered on the path, with a `LineJoin` for the corners (`Miter` by default,
+beveled beyond `MiterLimit`; `Round`; `Bevel`) and a `LineCap` for the ends of open contours (`Butt` by default; `Round`;
+`Square`). The parts of a stroke that overlap are painted once, also with a translucent paint.
+
+<!-- snippet: draw-on-animation -->
+```csharp
+public static void MarkAnimation(string inputPath, string outputPath)
+{
+    using var image = Image.Load(inputPath);
+    var marker = new Pen(new Rgba32(255, 255, 0, 200), 4) { LineCap = LineCap.Round };
+
+    // Image.Draw paints every frame and the poster identically; the callback runs once
+    image.Draw(marker, static (canvas, pen) =>
+    {
+        // Coordinates are in pixels, with sub-pixel precision; shapes are clipped to the canvas
+        var center = new PointD(canvas.Width / 2.0, canvas.Height / 2.0);
+        var radius = Math.Min(canvas.Width, canvas.Height) / 4.0;
+        canvas.StrokeCircle(pen, center, radius);
+        canvas.StrokeLine(pen, new PointD(center.X - radius, center.Y), new PointD(center.X + radius, center.Y));
+    });
+
+    image.Save(outputPath);
+}
+```
+
+**Rendering**. The result is defined exactly and does not depend on the platform:
+
+- **Coverage.** Each pixel is painted in proportion to the area of it that is inside the shape, rounded to the nearest
+  1/65536 (ties upward). The area is exact, including where the contours of a shape overlap or intersect themselves: two
+  contours over the same half of a pixel cover half of it, not all of it. A pixel that is not covered is left
+  untouched, bit for bit.
+- **Curves.** Curves, ellipses, round joins and round caps are replaced by chords that stay within 1/16 of a pixel of
+  them. The vertices of the chords are not part of the contract.
+- **Colors.** Brush colors are sample values in the color space of the image: no color profile is applied. A color is
+  first converted to the pixel format of the frame with the rules of `CloneAs` (Rec. 709 luma on grayscale frames,
+  rounding to 8 bits on 8-bit frames); its alpha stays the opacity of the paint, also on frames without alpha.
+- **Compositing.** The paint is composited over the pixels (source-over) on the stored sample values, with straight
+  alpha and exact integer arithmetic, rounded to nearest with ties upward. A full coverage with an opaque color writes
+  that color exactly; frames without alpha stay opaque; a pixel that would stay fully transparent is not written and
+  keeps its hidden color. A gradient whose stops have the same color paints exactly what a solid brush paints.
+- **Metadata.** The first shape that changes a pixel removes the EXIF thumbnail, which no longer matches. Cursor
+  hotspots and everything else are kept.
+
+**Cost**. Drawing is sequential. A shape rents working storage from the allocation scope of the image (proportional to
+the width and height of the canvas, and to the number of edges of the shape), and each `Draw` call allocates a few small
+objects; the shapes themselves allocate nothing once that storage has grown to the largest of them, so reuse brushes,
+pens and paths and use the overloads with a state and a static callback. The time to draw a shape grows with the number
+of its edges and with the number of points where they cross each other, which the exact area depends on. One family of
+shapes has millions of crossings: a pen far wider than the bends of a long curve it follows. Pass a `CancellationToken`
+when shapes come from untrusted input; it is checked by every shape, every 64 rows and every few thousand crossings.
 
 ### Metadata, color profiles and orientation
 
@@ -1376,7 +1496,8 @@ Everything below is rejected explicitly (never decoded or encoded approximately)
 | PNG/APNG | No palette output (paletted inputs are re-encoded as RGB/RGBA), no RGB 16-bit or gray+alpha output layouts (16-bit color is written as RGBA 16), no APNG delta-rectangle optimization, unknown critical chunks rejected, unknown ancillary chunks not round-tripped |
 | Metadata | Profiles are preserved and labeled, never applied implicitly (colors are converted only by `ConvertColorProfile` and `IccColorTransform`); EXIF orientation is reported, applied only by `AutoOrient`; extended XMP in JPEG is not supported; per-format storage limits are listed in [Metadata, color profiles and orientation](#metadata-color-profiles-and-orientation); unsupported items follow `MetadataHandling` (`Strict` throws by default) |
 | Color management | ICC version 2 and 4 grayscale, RGB and CMYK profiles (matrix-based and table-based): no version 5 (iccMAX), device-link, abstract or named-color profile, no multi-process-element (`D2Bx`/`B2Dx`) tag, no other data color space; `ConvertColorProfile` keeps the pixel format (an RGB image cannot become grayscale or CMYK this way); no CMYK pixel format: a CMYK JPEG is converted to RGB when it is loaded (`CmykConversionOptions`, RGB destination only) and CMYK cannot be written; no gamut mapping beyond per-channel clipping |
-| Processing | No HDR, drawing, text rendering or custom processors; `LinearSrgb` resizing and convolution accept untagged or recognized sRGB/sGray profiles only; convolution matrices have odd dimensions, no bias or divisor, no ready-made matrices and no separable fast path |
+| Drawing | No text, no image or pattern brush, no transform, no clipping region other than the canvas, no dashed stroke, no elliptical-arc path element, no blend mode other than source-over; always antialiased; blended on the encoded sample values (no linear-light option); sequential; gradients have no focal point and no rotation of their own; coordinates are limited to ±16,777,216 |
+| Processing | No HDR, text rendering or custom processors; `LinearSrgb` resizing and convolution accept untagged or recognized sRGB/sGray profiles only; convolution matrices have odd dimensions, no bias or divisor, no ready-made matrices and no separable fast path |
 | AVIF | Decoding only. Rejected with `UnsupportedImageFeatureException`: premultiplied alpha, `iden`/`iovl` derived images, fragmented files, edit lists that do not play the whole track, image sequences whose images change size, clean apertures that do not select whole samples or that follow a rotation, grid tiles that declare other transformations than their grid, large scale tile streams, and the other matrix coefficients (constant luminance, ICtCp, SMPTE 2085, chromaticity-derived). Not read: gain maps, depth maps, thumbnails, the images that are not the primary item, the `tkhd` matrix and the other transformations of an image sequence (its images are returned as stored), mastering display and content light level boxes. A layered image is returned at its full quality only: its lower layers are not exposed as a progressive rendering. HDR samples are returned as stored: no tone mapping |
 | Formats | JPEG XL is not supported |
 | API | No public allocator, custom pixel type, codec plug-in or image-processor interface; implementation types are internal |

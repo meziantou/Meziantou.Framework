@@ -1,4 +1,5 @@
 using System.IO.Compression;
+using Meziantou.Framework.Imaging.Drawing;
 using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.Metadata;
 
@@ -167,6 +168,33 @@ public sealed class DefaultsTests
         Assert.Equal(ConvolutionWorkingSpace.Encoded, options.WorkingSpace);
         Assert.Equal(default, options.EdgeMode);
         Assert.Equal(default, options.WorkingSpace);
+    }
+
+    [Fact]
+    public void DrawingDefaults()
+    {
+        var brush = new SolidBrush(new Rgba32(1, 2, 3));
+        var pen = new Pen(brush, 2.5);
+        Assert.Same(brush, pen.Brush);
+        Assert.Equal(2.5, pen.Width);
+        Assert.Equal(LineJoin.Miter, pen.LineJoin);
+        Assert.Equal(LineCap.Butt, pen.LineCap);
+        Assert.Equal(4, pen.MiterLimit);
+        Assert.Equal(default, pen.LineJoin);
+        Assert.Equal(default, pen.LineCap);
+
+        GradientStop[] stops = [new(0, new Rgba32(0, 0, 0)), new(1, new Rgba32(255, 255, 255))];
+        Assert.Equal(GradientSpreadMode.Pad, new LinearGradientBrush(default, new PointD(1, 0), stops).SpreadMode);
+        Assert.Equal(GradientSpreadMode.Pad, new RadialGradientBrush(default, 1, stops).SpreadMode);
+        Assert.Equal(default, new RadialGradientBrush(default, 1, stops).SpreadMode);
+        Assert.Equal(default, FillRule.NonZero);
+
+        // The fill rule of a path is non-zero unless told otherwise: the inner square, drawn in the same direction, is
+        // not a hole
+        var path = new VectorPathBuilder().AddRectangle(new Rectangle(0, 0, 3, 3)).AddRectangle(new Rectangle(1, 1, 1, 1)).Build();
+        using var image = new Image<Gray8>(3, 3, new Gray8(0));
+        image.Draw(canvas => canvas.Fill(new SolidBrush(new Rgba32(255, 255, 255)), path), TestContext.Current.CancellationToken);
+        Assert.Equal(new Gray8(255), image.Frames[0][1, 1]);
     }
 
     [Fact]

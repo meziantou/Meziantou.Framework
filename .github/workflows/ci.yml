@@ -194,14 +194,39 @@ jobs:
           )
 
           # The Imaging suites run tens of thousands of decoding and encoding tests and keep every core
-          # busy for about 20 minutes in Debug. In a shard, they starve the suites that start processes:
+          # busy. In a shard, they starve the suites that start processes:
           # Meziantou.Framework.SnapshotTesting.PackageTests completed no test before the hang dump
-          # timeout on Windows. They run in their own job instead.
-          $ImagingProjects = @(
-            "fuzz/Meziantou.Framework.Imaging.FuzzTests/Meziantou.Framework.Imaging.FuzzTests.csproj"
-            "tests/Meziantou.Framework.Imaging.InteropTests/Meziantou.Framework.Imaging.InteropTests.csproj"
-            "tests/Meziantou.Framework.Imaging.Tests/Meziantou.Framework.Imaging.Tests.csproj"
-          )
+          # timeout on Windows. They run in jobs of their own, and in several of them: in a single
+          # job they took more than 90 minutes on the slowest legs.
+          #
+          # The value is the relative cost of a project: the sum of the durations of its tests in
+          # the .trx files of a Debug run. The interoperability tests mostly wait for external
+          # tools, so their cost is their share of the job when everything ran together. The
+          # projects are packed into $ImagingGroupCount groups of similar cost: see the assignment
+          # loop below. A project that tests the Imaging library and is missing here fails the job
+          # instead of landing in a shard.
+          $ImagingProjects = [ordered]@{
+            "tests/Meziantou.Framework.Imaging.InteropTests/Meziantou.Framework.Imaging.InteropTests.csproj" = 3500
+            "tests/Meziantou.Framework.Imaging.AvifEncoder.Tests/Meziantou.Framework.Imaging.AvifEncoder.Tests.csproj" = 1784
+            "tests/Meziantou.Framework.Imaging.Processing.Tests/Meziantou.Framework.Imaging.Processing.Tests.csproj" = 1055
+            "tests/Meziantou.Framework.Imaging.JpegXl.Tests/Meziantou.Framework.Imaging.JpegXl.Tests.csproj" = 725
+            "tests/Meziantou.Framework.Imaging.Avif.Tests/Meziantou.Framework.Imaging.Avif.Tests.csproj" = 569
+            "tests/Meziantou.Framework.Imaging.Av1.Tests/Meziantou.Framework.Imaging.Av1.Tests.csproj" = 539
+            "tests/Meziantou.Framework.Imaging.Tests/Meziantou.Framework.Imaging.Tests.csproj" = 432
+            "tests/Meziantou.Framework.Imaging.Png.Tests/Meziantou.Framework.Imaging.Png.Tests.csproj" = 293
+            "fuzz/Meziantou.Framework.Imaging.FuzzTests/Meziantou.Framework.Imaging.FuzzTests.csproj" = 278
+            "tests/Meziantou.Framework.Imaging.Gif.Tests/Meziantou.Framework.Imaging.Gif.Tests.csproj" = 272
+            "tests/Meziantou.Framework.Imaging.Bmp.Tests/Meziantou.Framework.Imaging.Bmp.Tests.csproj" = 254
+            "tests/Meziantou.Framework.Imaging.WebP.Tests/Meziantou.Framework.Imaging.WebP.Tests.csproj" = 249
+            "tests/Meziantou.Framework.Imaging.Jpeg.Tests/Meziantou.Framework.Imaging.Jpeg.Tests.csproj" = 164
+            "tests/Meziantou.Framework.Imaging.Tga.Tests/Meziantou.Framework.Imaging.Tga.Tests.csproj" = 63
+            "tests/Meziantou.Framework.Imaging.Pnm.Tests/Meziantou.Framework.Imaging.Pnm.Tests.csproj" = 52
+            "tests/Meziantou.Framework.Imaging.Qoi.Tests/Meziantou.Framework.Imaging.Qoi.Tests.csproj" = 36
+            "tests/Meziantou.Framework.Imaging.Ico.Tests/Meziantou.Framework.Imaging.Ico.Tests.csproj" = 1
+            "tests/Meziantou.Framework.Imaging.Tiff.Tests/Meziantou.Framework.Imaging.Tiff.Tests.csproj" = 1
+          }
+
+          $ImagingGroupCount = 6
 
           # Remaining expensive suites, ordered from slowest to fastest. They are dealt out before
           # everything else, so this order is what keeps the shards balanced: see the assignment
@@ -223,7 +248,7 @@ jobs:
 
           # Fail explicitly when a configured project is renamed or removed instead of silently
           # ignoring it and unbalancing the shards.
-          foreach ($project in @($IsolatedProjects) + @($DnsProjects) + @($ImagingProjects) + @($HeavyProjects)) {
+          foreach ($project in @($IsolatedProjects) + @($DnsProjects) + @($ImagingProjects.Keys) + @($HeavyProjects)) {
             if (-not (Test-Path -LiteralPath $project)) {
               throw "Configured project does not exist: $project"
             }
@@ -253,9 +278,35 @@ jobs:
             $groups += [pscustomobject]@{ id = "Dns"; projects = ($dns -join "`n") }
           }
 
-          $imaging = @($ImagingProjects | Where-Object { $affected -contains $_ })
+          $unlistedImaging = @($affected | Where-Object { [System.IO.Path]::GetFileName($_) -like 'Meziantou.Framework.Imaging.*' -and -not $ImagingProjects.Contains($_) })
+          if ($unlistedImaging.Count -gt 0) {
+            throw "Imaging test projects must be listed in `$ImagingProjects with their cost: $($unlistedImaging -join ', ')"
+          }
+
+          # Most expensive first, each into the group that is the cheapest so far: the largest
+          # project sets the duration of the longest job, and the small ones level the others
+          $imaging = @(
+            $ImagingProjects.Keys
+            | Where-Object { $affected -contains $_ }
+            | Sort-Object -Property @{ Expression = { $ImagingProjects[$_] }; Descending = $true }, @{ Expression = { $_ } }
+          )
           if ($imaging.Count -gt 0) {
-            $groups += [pscustomobject]@{ id = "Imaging"; projects = ($imaging -join "`n") }
+            $imagingGroups = @(1..[Math]::Min($ImagingGroupCount, $imaging.Count) | ForEach-Object { [pscustomobject]@{ Cost = 0; Projects = [System.Collections.Generic.List[string]]::new() } })
+            foreach ($project in $imaging) {
+              $cheapest = $imagingGroups[0]
+              foreach ($group in $imagingGroups) {
+                if ($group.Cost -lt $cheapest.Cost) {
+                  $cheapest = $group
+                }
+              }
+
+              $cheapest.Projects.Add($project)
+              $cheapest.Cost += $ImagingProjects[$project]
+            }
+
+            for ($i = 0; $i -lt $imagingGroups.Count; $i++) {
+              $groups += [pscustomobject]@{ id = "Imaging-$($i + 1)"; projects = ($imagingGroups[$i].Projects -join "`n") }
+            }
           }
 
           $rest = @($affected | Where-Object { $isolated -notcontains $_ -and $dns -notcontains $_ -and $imaging -notcontains $_ } | Sort-Object)

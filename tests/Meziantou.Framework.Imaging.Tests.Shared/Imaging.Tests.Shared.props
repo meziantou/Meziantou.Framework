@@ -1,0 +1,31 @@
+<Project>
+  <!--
+    Sources and content shared by the Meziantou.Framework.Imaging.*Tests projects. A project imports this file after
+    declaring its scope:
+    - ImagingTestFixtureFormats: the fixture formats (manifest "format") whose inputs the project runs through the generic
+      decoding suites (Suites/Decode), separated by semicolons.
+    - ImagingTestEncoders: the encoder configurations the project runs through the save cases of the fault injection
+      (Suites/Save), separated by semicolons.
+    - ImagingTestCopyFixtures: false when no test of the project reads the golden corpus.
+    Every fixture format and every encoder must belong to exactly one project (CorpusScopeTests).
+  -->
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)Helpers\**\*.cs" LinkBase="Shared\Helpers" />
+    <Compile Include="$(MSBuildThisFileDirectory)Suites\Common\**\*.cs" LinkBase="Shared\Suites" Condition="'$(ImagingTestFixtureFormats)$(ImagingTestEncoders)' != ''" />
+    <Compile Include="$(MSBuildThisFileDirectory)Suites\Decode\**\*.cs" LinkBase="Shared\Suites" Condition="'$(ImagingTestFixtureFormats)' != ''" />
+    <Compile Include="$(MSBuildThisFileDirectory)Suites\Save\**\*.cs" LinkBase="Shared\Suites" Condition="'$(ImagingTestEncoders)' != ''" />
+    <!-- The synthetic ICC profile builders are shared with the corpus generator, which writes some of these profiles to the corpus (IccTestProfiles wraps them) -->
+    <Compile Include="$(MSBuildThisFileDirectory)..\..\tools\Meziantou.Framework.Imaging.CorpusGenerator\Common\IccProfileBuilder.cs" Link="Shared\IccProfileBuilder.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Read by CorpusScope -->
+    <AssemblyMetadata Include="Meziantou.Framework.Imaging.Tests.ImagingTestFixtureFormats" Value="$(ImagingTestFixtureFormats)" Condition="'$(ImagingTestFixtureFormats)' != ''" />
+    <AssemblyMetadata Include="Meziantou.Framework.Imaging.Tests.ImagingTestEncoders" Value="$(ImagingTestEncoders)" Condition="'$(ImagingTestEncoders)' != ''" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(ImagingTestCopyFixtures)' != 'false'">
+    <!-- Copy the corpus next to the test assembly (FixtureRoot.GetDirectory) -->
+    <None Include="$(MSBuildThisFileDirectory)..\Meziantou.Framework.Imaging.Fixtures\**\*" LinkBase="Fixtures" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

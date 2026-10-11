@@ -14,11 +14,11 @@ public sealed class MetadataWritePlanTests
     [Fact]
     public void ValidIccProfilePassesValidation()
     {
-        Assert.True(MetadataValidation.TryValidateIccProfile(CreateIccProfile("RGB "), out var error), error);
-        Assert.Equal(IccProfileColorSpace.Rgb, new IccProfile(new MetadataBlob(CreateIccProfile("RGB "))).ColorSpace);
-        Assert.Equal(IccProfileColorSpace.Gray, new IccProfile(new MetadataBlob(CreateIccProfile("GRAY"))).ColorSpace);
-        Assert.Equal(IccProfileColorSpace.Cmyk, new IccProfile(new MetadataBlob(CreateIccProfile("CMYK"))).ColorSpace);
-        Assert.Equal(IccProfileColorSpace.Other, new IccProfile(new MetadataBlob(CreateIccProfile("Lab "))).ColorSpace);
+        Assert.True(MetadataValidation.TryValidateIccProfile(IccTestBlobs.Create("RGB "), out var error), error);
+        Assert.Equal(IccProfileColorSpace.Rgb, new IccProfile(new MetadataBlob(IccTestBlobs.Create("RGB "))).ColorSpace);
+        Assert.Equal(IccProfileColorSpace.Gray, new IccProfile(new MetadataBlob(IccTestBlobs.Create("GRAY"))).ColorSpace);
+        Assert.Equal(IccProfileColorSpace.Cmyk, new IccProfile(new MetadataBlob(IccTestBlobs.Create("CMYK"))).ColorSpace);
+        Assert.Equal(IccProfileColorSpace.Other, new IccProfile(new MetadataBlob(IccTestBlobs.Create("Lab "))).ColorSpace);
     }
 
     [Fact]
@@ -26,22 +26,22 @@ public sealed class MetadataWritePlanTests
     {
         Assert.False(MetadataValidation.TryValidateIccProfile(new byte[100], out _));
 
-        var wrongSize = CreateIccProfile("RGB ");
+        var wrongSize = IccTestBlobs.Create("RGB ");
         BinaryPrimitives.WriteUInt32BigEndian(wrongSize, (uint)wrongSize.Length + 1);
         Assert.False(MetadataValidation.TryValidateIccProfile(wrongSize, out var error));
         Assert.Contains("declares", error, StringComparison.Ordinal);
 
-        var noSignature = CreateIccProfile("RGB ");
+        var noSignature = IccTestBlobs.Create("RGB ");
         noSignature[36] = (byte)'x';
         Assert.False(MetadataValidation.TryValidateIccProfile(noSignature, out error));
         Assert.Contains("acsp", error, StringComparison.Ordinal);
 
-        var tagOutside = CreateIccProfile("RGB ");
+        var tagOutside = IccTestBlobs.Create("RGB ");
         BinaryPrimitives.WriteUInt32BigEndian(tagOutside.AsSpan(128 + 4 + 8), 1000); // tag size
         Assert.False(MetadataValidation.TryValidateIccProfile(tagOutside, out error));
         Assert.Contains("outside the profile", error, StringComparison.Ordinal);
 
-        var tooManyTags = CreateIccProfile("RGB ");
+        var tooManyTags = IccTestBlobs.Create("RGB ");
         BinaryPrimitives.WriteUInt32BigEndian(tooManyTags.AsSpan(128), 100);
         Assert.False(MetadataValidation.TryValidateIccProfile(tooManyTags, out _));
     }
@@ -104,7 +104,7 @@ public sealed class MetadataWritePlanTests
     public void GifRejectsUnsupportedMetadataInStrictModeAndDropsItOtherwise()
     {
         AssertUnsupported(new ImageMetadata { Orientation = ExifOrientation.BottomRight }, ImageFormat.Gif, "EXIF orientation other than TopLeft");
-        AssertUnsupported(new ImageMetadata { IccProfile = new IccProfile(new MetadataBlob(CreateIccProfile("RGB "))) }, ImageFormat.Gif, "ICC color profile");
+        AssertUnsupported(new ImageMetadata { IccProfile = new IccProfile(new MetadataBlob(IccTestBlobs.Create("RGB "))) }, ImageFormat.Gif, "ICC color profile");
         AssertUnsupported(new ImageMetadata { ExifProfile = new ExifProfile(new MetadataBlob(ExifTiff.CreateMinimal(ExifOrientation.TopLeft))) }, ImageFormat.Gif, "EXIF profile");
         AssertUnsupported(new ImageMetadata { XmpProfile = new XmpProfile(new MetadataBlob("<x/>"u8)) }, ImageFormat.Gif, "XMP packet");
         AssertUnsupported(new ImageMetadata { Resolution = new ImageResolution(72, 72) }, ImageFormat.Gif, "resolution");
@@ -170,7 +170,7 @@ public sealed class MetadataWritePlanTests
     [Fact]
     public void IccProfilesMustMatchTheWrittenPixelFormat()
     {
-        var gray = new ImageMetadata { IccProfile = new IccProfile(new MetadataBlob(CreateIccProfile("GRAY"))) };
+        var gray = new ImageMetadata { IccProfile = new IccProfile(new MetadataBlob(IccTestBlobs.Create("GRAY"))) };
         Assert.NotNull(MetadataWritePlan.Create(gray, ImageFormat.Png, MetadataHandling.Strict, Canvas).IccProfile); // pixel format unknown
         Assert.NotNull(MetadataWritePlan.Create(gray, ImageFormat.Png, MetadataHandling.Strict, Canvas, PixelFormat.Gray16).IccProfile);
         Assert.Null(MetadataWritePlan.Create(gray, ImageFormat.Jpeg, MetadataHandling.DiscardUnsupported, Canvas, PixelFormat.Rgb24).IccProfile);
@@ -311,7 +311,7 @@ public sealed class MetadataWritePlanTests
 
         // A description that is displayed like sRGB is the default encoding; an ICC profile describes the colors in its place
         Assert.Null(MetadataWritePlan.Create(new ImageMetadata { Cicp = new CicpColorDescription(1, 13, 0, fullRange: true) }, ImageFormat.JpegXl, MetadataHandling.Strict, Canvas).Cicp);
-        var profiled = new ImageMetadata { Cicp = cicp, IccProfile = new IccProfile(new MetadataBlob(CreateIccProfile("RGB "))) };
+        var profiled = new ImageMetadata { Cicp = cicp, IccProfile = new IccProfile(new MetadataBlob(IccTestBlobs.Create("RGB "))) };
         plan = MetadataWritePlan.Create(profiled, ImageFormat.JpegXl, MetadataHandling.Strict, Canvas);
         Assert.Null(plan.Cicp);
         Assert.Same(profiled.IccProfile, plan.IccProfile);
@@ -369,27 +369,12 @@ public sealed class MetadataWritePlanTests
         {
             Orientation = ExifOrientation.RightTop,
             Resolution = new ImageResolution(300, 300),
-            IccProfile = new IccProfile(new MetadataBlob(CreateIccProfile("RGB "))),
+            IccProfile = new IccProfile(new MetadataBlob(IccTestBlobs.Create("RGB "))),
             ExifProfile = new ExifProfile(new MetadataBlob(ExifTiff.CreateMinimal(ExifOrientation.TopLeft))),
             XmpProfile = new XmpProfile(new MetadataBlob("<x:xmpmeta xmlns:x=\"adobe:ns:meta/\"/>"u8)),
         };
         metadata.TextEntries.Add(new ImageTextEntry("Title", "A title"));
         metadata.TextEntries.Add(new ImageTextEntry("Title", "Un titre", "fr", "Titre"));
         return metadata;
-    }
-
-    internal static byte[] CreateIccProfile(string colorSpace)
-    {
-        // Header + one 'desc'-like tag of 12 bytes
-        var data = new byte[128 + 4 + 12 + 12];
-        BinaryPrimitives.WriteUInt32BigEndian(data, (uint)data.Length);
-        Encoding.ASCII.GetBytes(colorSpace).CopyTo(data, 16);
-        "XYZ "u8.CopyTo(data.AsSpan(20));
-        "acsp"u8.CopyTo(data.AsSpan(36));
-        BinaryPrimitives.WriteUInt32BigEndian(data.AsSpan(128), 1);
-        "desc"u8.CopyTo(data.AsSpan(132));
-        BinaryPrimitives.WriteUInt32BigEndian(data.AsSpan(136), 144);
-        BinaryPrimitives.WriteUInt32BigEndian(data.AsSpan(140), 12);
-        return data;
     }
 }

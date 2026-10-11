@@ -81,8 +81,6 @@ internal static class ErrorFixtureStages
         "limit/bmp/width-over-limit",
 
         // TGA: the 18-byte header (the only part a header identification reads)
-        "invalid/tga/colormap-16bit-indexes",
-        "invalid/tga/grayscale-16bit",
         "limit/tga/width-over-limit",
 
         // PNM: the magic number and the header tokens or PAM header lines up to ENDHDR
@@ -276,6 +274,7 @@ internal static class ErrorFixtureStages
         // BMP and TGA palettes are only looked up by the decoder; a full scan charges frames, never displayed pixels
         "invalid/bmp/palette-index-out-of-range",
         "invalid/tga/colormap-index-out-of-range",
+        "invalid/tga/colormap16-index-out-of-range",
         "limit/pnm/total-pixels-over-limit",
 
         // AVIF: the frame headers and the tile data of the AV1 bitstream are only interpreted by the decoder (the size of a

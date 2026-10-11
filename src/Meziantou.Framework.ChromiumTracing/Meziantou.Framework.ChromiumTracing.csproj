@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
-    <Version>2.0.3</Version>
+    <Version>2.0.4</Version>
     <IsTrimmable>true</IsTrimmable>
     <Description>Classes to generate a tracing file that can be opened by Chromium browsers and other tools</Description>
     <PackageTags>tracing, chromium, trace-event, perfetto, profiling, diagnostics</PackageTags>

@@ -1,6 +1,8 @@
 # Meziantou.Framework.Unicode
 
-This package provides Unicode helpers for normalizing confusable characters using the Unicode confusables table.
+This package provides Unicode text algorithms and data that do not depend on the Unicode version of the runtime or on
+ICU: character properties, grapheme, word and line segmentation, normalization, the bidirectional algorithm, script
+runs, and confusable detection. The data is the one of Unicode 18.0.0.
 
 ```csharp
 using Meziantou.Framework;
@@ -32,10 +34,9 @@ var skeleton = Unicode.GetConfusableSkeleton(userName);
 > The skeleton is a comparison key, not displayable text. Do not show it to users or store it
 > in place of the original string.
 
-> These two methods require Unicode normalization and therefore ICU. In
-> globalization-invariant mode (`InvariantGlobalization=true`) `string.Normalize` silently does
-> nothing, so they throw `PlatformNotSupportedException` rather than return a result that would
-> quietly fail to detect spoofing.
+> These two methods use the normalization of this package (see [Normalization](#normalization)), not the one of the
+> platform: the skeleton does not depend on the version of ICU and is available in globalization-invariant mode
+> (`InvariantGlobalization=true`).
 
 ## Detecting mixed-script text
 
@@ -90,6 +91,94 @@ UnicodeProperties.ToSimpleLowercase('A');            // 'a'
   Hebrew block. An integer that is not a code point has the default value of the property.
 - The numeric values of the enumerations (`UnicodeScript`, `UnicodeLineBreakClass`, ...) never change: a later
   version of the standard only appends values.
+
+## Text segmentation
+
+The boundaries are those of [UAX #29](https://www.unicode.org/reports/tr29/) and
+[UAX #14](https://www.unicode.org/reports/tr14/) for Unicode 18.0.0. The enumerators are `ref struct`s over a
+`ReadOnlySpan<char>` and do not allocate.
+
+```csharp
+// Extended grapheme clusters: what a reader perceives as one character
+foreach (Range cluster in Unicode.EnumerateGraphemeClusters("e\u0301🇫🇷"))
+{
+    // "e\u0301", then the flag
+}
+
+// Word boundaries: words, numbers, runs of spaces, punctuation marks
+foreach (Range segment in Unicode.EnumerateWordBoundaries("Hello, world!"))
+{
+    // "Hello", ",", " ", "world", "!"
+}
+
+// Line break opportunities
+foreach (UnicodeLineBreak lineBreak in Unicode.EnumerateLineBreaks("A long line\nof text"))
+{
+    // lineBreak.Index: the index of the first character of the next line
+    // lineBreak.IsMandatory: after a line feed, and at the end of the text
+}
+```
+
+`EnumerateLineBreaks` takes two optional tailorings, which match the CSS properties `line-break` and `word-break`:
+
+- `UnicodeLineBreakStrictness`: `Strict` (the default rules), `Normal` (a line can start with a small kana),
+  `Anywhere` (a line can break between any two grapheme clusters).
+- `UnicodeWordBreakBehavior`: `Normal`, `BreakAll` (a line can break between any two letters), `KeepAll` (no break
+  between letters or ideographs).
+
+No dictionary is used: Thai, Lao, Khmer and the other scripts written without spaces only break at spaces and at
+zero width spaces. A soft hyphen (U+00AD) is a break opportunity like any other; the caller recognizes it by the
+character before the break.
+
+`Unicode.EnumerateScriptRuns` splits a text into runs of one script, for shaping and font selection
+([UAX #24](https://www.unicode.org/reports/tr24/)): combining marks follow their base, spaces and punctuation follow
+the text before them, `Script_Extensions` are honored, and both brackets of a pair are in the same run script.
+
+```csharp
+foreach (UnicodeScriptRun run in Unicode.EnumerateScriptRuns("gamma (γ) is"))
+{
+    // "gamma (" Latin, "γ" Greek, ") is" Latin
+}
+```
+
+## Normalization
+
+`UnicodeNormalization` implements the four normalization forms of [UAX #15](https://www.unicode.org/reports/tr15/)
+without the globalization library of the platform: the results are the same on every platform and in
+globalization-invariant mode, where `string.Normalize` only handles ASCII.
+
+```csharp
+UnicodeNormalization.Normalize("cafe\u0301");                            // "café" (NFC)
+UnicodeNormalization.Normalize("café", NormalizationForm.FormD);         // "cafe\u0301"
+UnicodeNormalization.IsNormalized("café");                               // true
+UnicodeNormalization.TryNormalize(source, destination, out var written); // span-based
+UnicodeNormalization.TryComposeCanonical('e', 0x0301, out var composite); // true, 'é'
+```
+
+`Normalize` returns the same instance when the text is already normalized.
+
+## Bidirectional text
+
+`UnicodeBidi` implements the Unicode Bidirectional Algorithm ([UAX #9](https://www.unicode.org/reports/tr9/)), in
+the two steps the annex defines: levels per paragraph, then display order per line.
+
+```csharp
+var paragraph = "car \u05D0\u05D1\u05D2!";
+Span<byte> levels = stackalloc byte[paragraph.Length];
+var paragraphLevel = UnicodeBidi.ResolveLevels(paragraph, UnicodeBidiDirection.Auto, levels);
+
+// For each line, once the paragraph is broken into lines:
+UnicodeBidi.ResetLineLevels(paragraph, paragraphLevel, levels);
+Span<int> visualToLogical = stackalloc int[paragraph.Length];
+UnicodeBidi.GetVisualOrder(levels, visualToLogical); // 0 1 2 3 6 5 4 7
+```
+
+- A character whose level is odd is displayed right to left.
+- `UnicodeBidi.MayRequireBidi` is a fast check: when it returns `false`, every level is 0 and the display order is
+  the order of the text.
+- `ResolveLevels` has an overload that takes its workspace from the caller (`GetWorkspaceLength`) and does not
+  allocate.
+- Mirroring (rule L4) is `UnicodeProperties.TryGetBidiMirroringGlyph`.
 
 ## Character information
 

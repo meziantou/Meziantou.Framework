@@ -39,7 +39,7 @@ public static class UnicodeProperties
     /// <summary>Gets the Canonical_Combining_Class of a code point.</summary>
     /// <param name="codePoint">The code point.</param>
     /// <returns>The combining class; 0 for a starter.</returns>
-    public static byte GetCanonicalCombiningClass(int codePoint) => (byte)UnicodeTables.GetCombiningClass(codePoint);
+    public static byte GetCanonicalCombiningClass(int codePoint) => UnicodeNormalizationTables.NormalizationTuples[UnicodeNormalizationTables.GetNormalization(codePoint) * 2];
 
     /// <summary>Gets the Bidi_Class of a code point.</summary>
     /// <param name="codePoint">The code point.</param>

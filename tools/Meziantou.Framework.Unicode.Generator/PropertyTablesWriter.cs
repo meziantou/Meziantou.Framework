@@ -31,7 +31,6 @@ internal static class PropertyTablesWriter
         GeneratedEnum[] enums = [lineBreakEnum, graphemeEnum, conjunctEnum, wordEnum, widthEnum, bracketEnum, joiningTypeEnum, joiningGroupEnum, syllabicEnum, positionalEnum];
 
         var generalCategory = await LoadGeneralCategoryAsync();
-        var combiningClass = await LoadCombiningClassAsync();
         var bidiClass = await LoadBidiClassAsync(aliases);
         var mirrored = await LoadBinaryAsync("ucd/extracted/DerivedBinaryProperties.txt", "Bidi_Mirrored");
         var defaultIgnorable = await LoadBinaryAsync("ucd/DerivedCoreProperties.txt", "Default_Ignorable_Code_Point");
@@ -131,7 +130,6 @@ internal static class PropertyTablesWriter
             (a UnicodeWordBreak).
             """);
         AppendBytes(tables, sizes, "SegmentationTuples", segmentationTuples.Bytes);
-        AppendTrie(tables, sizes, "CombiningClass", combiningClass, "Canonical_Combining_Class.");
         AppendTrie(tables, sizes, "Joining", joining, """
             Index of a 2-byte entry of JoiningTuples: Joining_Type (a UnicodeJoiningType), then Joining_Group
             (a UnicodeJoiningGroup).
@@ -438,7 +436,7 @@ internal static class PropertyTablesWriter
         return result;
     }
 
-    private static async Task<byte[]> LoadCombiningClassAsync()
+    internal static async Task<byte[]> LoadCombiningClassAsync()
     {
         var result = new byte[ValueCount];
         foreach (var line in Ucd.ParseLines(await Ucd.DownloadAsync("ucd/extracted/DerivedCombiningClass.txt")))

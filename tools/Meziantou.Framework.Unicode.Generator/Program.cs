@@ -57,6 +57,13 @@ await WriteUnicodeScriptsFile();
 if (await PropertyTablesWriter.WriteAsync(outputPath))
     outputUpdated = true;
 
+if (await NormalizationWriter.WriteAsync(outputPath))
+    outputUpdated = true;
+
+// The conformance files only change the tests: they are reported as an update, but they do not change the version
+// of the package.
+var testFilesUpdated = await ConformanceFilesWriter.WriteAsync(root);
+
 // Update project version
 if (outputUpdated)
 {
@@ -115,6 +122,12 @@ if (outputUpdated)
         await Console.Error.WriteLineAsync($"Failed to run git diff: {ex.Message}");
     }
 
+    return 1;
+}
+
+if (testFilesUpdated)
+{
+    Console.WriteLine("The conformance files have been updated");
     return 1;
 }
 

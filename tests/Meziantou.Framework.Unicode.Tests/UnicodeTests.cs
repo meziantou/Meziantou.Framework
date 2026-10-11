@@ -1,5 +1,3 @@
-using Meziantou.Xunit;
-
 namespace Meziantou.Framework.Tests;
 
 public sealed class UnicodeTests
@@ -439,7 +437,6 @@ public sealed class UnicodeTests
         Assert.Equal(block.GetHashCode(), UnicodeBlocks.BasicLatin.GetHashCode());
     }
 
-    [RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
     [Theory]
     // Composed vs decomposed forms of the same text.
     [InlineData("caf\u00E9", "cafe\u0301")]
@@ -455,7 +452,6 @@ public sealed class UnicodeTests
         Assert.Equal(Unicode.GetConfusableSkeleton(a), Unicode.GetConfusableSkeleton(b));
     }
 
-    [RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
     [Theory]
     [InlineData("paypal", "example")]
     [InlineData("a", "b")]
@@ -465,7 +461,6 @@ public sealed class UnicodeTests
         Assert.False(Unicode.AreConfusable(a, b));
     }
 
-    [RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
     [Fact]
     public void GetConfusableSkeleton_FoldsThroughTheAsciiMappings()
     {
@@ -474,7 +469,6 @@ public sealed class UnicodeTests
         Assert.Equal("l\u0308", Unicode.GetConfusableSkeleton("\u00CF"));
     }
 
-    [RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
     [Fact]
     public void GetConfusableSkeleton_IsIdempotent()
     {
@@ -498,25 +492,12 @@ public sealed class UnicodeTests
         Assert.Throws<ArgumentNullException>(() => Unicode.AreConfusable("a", null!));
     }
 
-    [RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
     [Fact]
     public void GetConfusableSkeleton_RejectsUnpairedSurrogates()
     {
-        Assert.Throws<ArgumentException>(() => Unicode.GetConfusableSkeleton("a\uD800"));
-    }
-
-    [RunIf(globalizationMode: TestGlobalizationMode.Invariant)]
-    [Fact]
-    public void GetConfusableSkeleton_ThrowsInInvariantGlobalization()
-    {
-        // string.Normalize is a no-op without ICU, so the skeleton would silently degrade to a
-        // single unnormalized mapping pass. Refusing is the only safe answer for a security API.
-        Assert.Throws<PlatformNotSupportedException>(() => Unicode.GetConfusableSkeleton("caf\u00E9"));
-        Assert.Throws<PlatformNotSupportedException>(() => Unicode.AreConfusable("caf\u00E9", "cafe\u0301"));
-
-        // The paths that answer before normalization is needed still work.
-        Assert.Same("", Unicode.GetConfusableSkeleton(""));
-        Assert.True(Unicode.AreConfusable("identical", "identical"));
+        Assert.Throws<ArgumentException>("value", () => Unicode.GetConfusableSkeleton("a\uD800"));
+        Assert.Throws<ArgumentException>("value", () => Unicode.GetConfusableSkeleton("\uDC00a"));
+        Assert.Equal("\U0001F600", Unicode.GetConfusableSkeleton("\U0001F600"));
     }
 
     [Theory]
@@ -1105,5 +1086,484 @@ public sealed class UnicodeTests
         Assert.Equal(0, (int)UnicodeJoiningGroup.NoJoiningGroup);
         Assert.Equal(0, (int)UnicodeIndicSyllabicCategory.Other);
         Assert.Equal(0, (int)UnicodeIndicPositionalCategory.NotApplicable);
+    }
+
+    [Theory]
+    [InlineData("", new int[0])]
+    [InlineData("abc", new[] { 1, 1, 1 })]
+    // A base letter and its combining mark.
+    [InlineData("e\u0301a", new[] { 2, 1 })]
+    [InlineData("\r\n\n", new[] { 2, 1 })]
+    // Two flags: each is a pair of regional indicators.
+    [InlineData("\U0001F1EB\U0001F1F7\U0001F1E9\U0001F1EA", new[] { 4, 4 })]
+    // An emoji with a skin tone, then a family joined by zero width joiners.
+    [InlineData("\U0001F44B\U0001F3FD\U0001F468\u200D\U0001F469\u200D\U0001F467", new[] { 4, 8 })]
+    // A Hangul syllable written with conjoining jamos.
+    [InlineData("\u1100\u1161\u11A8\uAC00", new[] { 3, 1 })]
+    // A Devanagari conjunct: consonant, virama, consonant.
+    [InlineData("\u0915\u094D\u0937\u093F", new[] { 4 })]
+    public void EnumerateGraphemeClusters_ReturnsTheClusters(string text, int[] expectedLengths)
+    {
+        var lengths = new List<int>();
+        var position = 0;
+        foreach (var range in Unicode.EnumerateGraphemeClusters(text))
+        {
+            Assert.Equal(position, range.Start.Value);
+            lengths.Add(range.End.Value - range.Start.Value);
+            position = range.End.Value;
+        }
+
+        Assert.Equal(expectedLengths, lengths.ToArray());
+        Assert.Equal(text.Length, position);
+        Assert.Equal(expectedLengths.Length == 0 ? 0 : expectedLengths[0], Unicode.GetGraphemeClusterLength(text));
+    }
+
+    [Fact]
+    public void Segmentation_TreatsAnUnpairedSurrogateAsACharacter()
+    {
+        // Built in code: test data that goes through UTF-8 cannot hold an unpaired surrogate.
+        var text = "a" + (char)0xD800 + "e" + (char)0x0301 + (char)0xDC00 + " b";
+
+        var clusters = new List<int>();
+        foreach (var range in Unicode.EnumerateGraphemeClusters(text))
+        {
+            clusters.Add(range.End.Value);
+        }
+
+        Assert.Equal(new[] { 1, 2, 4, 5, 6, 7 }, clusters.ToArray());
+
+        var lineBreaks = new List<int>();
+        foreach (var lineBreak in Unicode.EnumerateLineBreaks(text))
+        {
+            lineBreaks.Add(lineBreak.Index);
+        }
+
+        Assert.Equal(new[] { 6, 7 }, lineBreaks.ToArray());
+
+        var runs = 0;
+        foreach (var run in Unicode.EnumerateScriptRuns(text))
+        {
+            runs++;
+        }
+
+        Assert.True(runs >= 1);
+        Assert.Equal(text.Length, UnicodeBidi.GetWorkspaceLength(text.Length) / 3);
+        Assert.Equal(0, UnicodeBidi.ResolveLevels(text, UnicodeBidiDirection.Auto, new byte[text.Length]));
+
+        // Normalization copies it and composes around it.
+        var composed = UnicodeNormalization.Normalize(text, NormalizationForm.FormC);
+        Assert.Equal("a" + (char)0xD800 + (char)0x00E9 + (char)0xDC00 + " b", composed);
+        Assert.Same(composed, UnicodeNormalization.Normalize(composed, NormalizationForm.FormC));
+    }
+
+    [Theory]
+    [InlineData("", new string[0])]
+    [InlineData("Hello, world!", new[] { "Hello", ",", " ", "world", "!" })]
+    [InlineData("can't stop", new[] { "can't", " ", "stop" })]
+    [InlineData("3.14 or 1,000", new[] { "3.14", " ", "or", " ", "1,000" })]
+    [InlineData("example.com.", new[] { "example.com", "." })]
+    [InlineData("snake_case42", new[] { "snake_case42" })]
+    [InlineData("a  b", new[] { "a", "  ", "b" })]
+    // Ideographs are not grouped into words: there is no dictionary.
+    [InlineData("\u65E5\u672C", new[] { "\u65E5", "\u672C" })]
+    [InlineData("a\r\nb", new[] { "a", "\r\n", "b" })]
+    public void EnumerateWordBoundaries_ReturnsTheSegments(string text, string[] expected)
+    {
+        var segments = new List<string>();
+        foreach (var range in Unicode.EnumerateWordBoundaries(text))
+        {
+            segments.Add(text[range]);
+        }
+
+        Assert.Equal(expected, segments.ToArray());
+    }
+
+    [Theory]
+    [InlineData("", new int[0], new int[0])]
+    [InlineData("a b", new[] { 2, 3 }, new[] { 3 })]
+    [InlineData("a\nb", new[] { 2, 3 }, new[] { 2, 3 })]
+    [InlineData("a\r\nb", new[] { 3, 4 }, new[] { 3, 4 })]
+    // Paragraph separator and next line are hard line breaks too.
+    [InlineData("a\u2029b\u0085c", new[] { 2, 4, 5 }, new[] { 2, 4, 5 })]
+    // A soft hyphen is an opportunity after it.
+    [InlineData("co\u00ADop", new[] { 3, 5 }, new[] { 5 })]
+    // No break at a no-break space, nor before the closing punctuation.
+    [InlineData("a\u00A0b (c)", new[] { 4, 7 }, new[] { 7 })]
+    [InlineData("\u65E5\u672C\u8A9E", new[] { 1, 2, 3 }, new[] { 3 })]
+    // A zero width space is an opportunity that takes no room.
+    [InlineData("ab\u200Bcd", new[] { 3, 5 }, new[] { 5 })]
+    public void EnumerateLineBreaks_ReturnsTheBreaks(string text, int[] expectedIndexes, int[] expectedMandatory)
+    {
+        var indexes = new List<int>();
+        var mandatory = new List<int>();
+        foreach (var lineBreak in Unicode.EnumerateLineBreaks(text))
+        {
+            indexes.Add(lineBreak.Index);
+            if (lineBreak.IsMandatory)
+            {
+                mandatory.Add(lineBreak.Index);
+            }
+        }
+
+        Assert.Equal(expectedIndexes, indexes.ToArray());
+        Assert.Equal(expectedMandatory, mandatory.ToArray());
+    }
+
+    [Theory]
+    // A small kana does not start a line with the strict rules; it can with the normal ones.
+    [InlineData("\u3042\u3041", UnicodeLineBreakStrictness.Strict, UnicodeWordBreakBehavior.Normal, new[] { 2 })]
+    [InlineData("\u3042\u3041", UnicodeLineBreakStrictness.Normal, UnicodeWordBreakBehavior.Normal, new[] { 1, 2 })]
+    [InlineData("ab 12", UnicodeLineBreakStrictness.Strict, UnicodeWordBreakBehavior.BreakAll, new[] { 1, 3, 4, 5 })]
+    [InlineData("\u65E5\u672C a", UnicodeLineBreakStrictness.Strict, UnicodeWordBreakBehavior.KeepAll, new[] { 3, 4 })]
+    // Every grapheme cluster boundary, including before a space and inside a word.
+    [InlineData("ab e\u0301", UnicodeLineBreakStrictness.Anywhere, UnicodeWordBreakBehavior.Normal, new[] { 1, 2, 3, 5 })]
+    [InlineData("a\r\nb", UnicodeLineBreakStrictness.Anywhere, UnicodeWordBreakBehavior.Normal, new[] { 1, 3, 4 })]
+    public void EnumerateLineBreaks_AppliesTheTailoring(string text, UnicodeLineBreakStrictness strictness, UnicodeWordBreakBehavior wordBreak, int[] expectedIndexes)
+    {
+        var indexes = new List<int>();
+        foreach (var lineBreak in Unicode.EnumerateLineBreaks(text, strictness, wordBreak))
+        {
+            indexes.Add(lineBreak.Index);
+            Assert.Equal(lineBreak.Index == text.Length || text[lineBreak.Index - 1] == '\n', lineBreak.IsMandatory);
+        }
+
+        Assert.Equal(expectedIndexes, indexes.ToArray());
+    }
+
+    [Fact]
+    public void EnumerateLineBreaks_ValidatesArguments()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>("strictness", () => { _ = Unicode.EnumerateLineBreaks("a", (UnicodeLineBreakStrictness)3); });
+        Assert.Throws<ArgumentOutOfRangeException>("strictness", () => { _ = Unicode.EnumerateLineBreaks("a", (UnicodeLineBreakStrictness)(-1)); });
+        Assert.Throws<ArgumentOutOfRangeException>("wordBreak", () => { _ = Unicode.EnumerateLineBreaks("a", wordBreak: (UnicodeWordBreakBehavior)3); });
+    }
+
+    [Theory]
+    [InlineData("caf\u00E9", NormalizationForm.FormD, "cafe\u0301")]
+    [InlineData("cafe\u0301", NormalizationForm.FormC, "caf\u00E9")]
+    // The marks are put in canonical order: below (220) before above (230).
+    [InlineData("a\u0301\u0323", NormalizationForm.FormD, "a\u0323\u0301")]
+    [InlineData("a\u0301\u0323", NormalizationForm.FormC, "\u1EA1\u0301")]
+    // A Hangul syllable and its jamos.
+    [InlineData("\uD55C", NormalizationForm.FormD, "\u1112\u1161\u11AB")]
+    [InlineData("\u1112\u1161\u11AB", NormalizationForm.FormC, "\uD55C")]
+    // A ligature and a superscript only change in the compatibility forms.
+    [InlineData("\uFB01\u00B2", NormalizationForm.FormC, "\uFB01\u00B2")]
+    [InlineData("\uFB01\u00B2", NormalizationForm.FormKC, "fi2")]
+    [InlineData("\uFB01\u00B2", NormalizationForm.FormKD, "fi2")]
+    // The ohm sign is a singleton: it is replaced in every form.
+    [InlineData("\u2126", NormalizationForm.FormC, "\u03A9")]
+    // A composition exclusion stays decomposed.
+    [InlineData("\u0958", NormalizationForm.FormC, "\u0915\u093C")]
+    [InlineData("", NormalizationForm.FormC, "")]
+    public void Normalize_ReturnsTheNormalizedText(string text, NormalizationForm form, string expected)
+    {
+        var actual = UnicodeNormalization.Normalize(text, form);
+
+        Assert.Equal(expected, actual);
+        Assert.Equal(string.Equals(text, expected, StringComparison.Ordinal), UnicodeNormalization.IsNormalized(text, form));
+        Assert.Equal(expected.Length, UnicodeNormalization.GetNormalizedLength(text, form));
+
+        var buffer = new char[expected.Length];
+        Assert.True(UnicodeNormalization.TryNormalize(text, buffer, out var written, form));
+        Assert.Equal(expected, new string(buffer, 0, written));
+        if (expected.Length > 0)
+        {
+            Assert.False(UnicodeNormalization.TryNormalize(text, buffer.AsSpan(1), out written, form));
+            Assert.Equal(0, written);
+        }
+    }
+
+    [Fact]
+    public void Normalize_ReturnsTheSameInstanceWhenTheTextIsNormalized()
+    {
+        var composed = "caf\u00E9 \u1EA1\u0301";
+        Assert.Same(composed, UnicodeNormalization.Normalize(composed));
+
+        // The quick check cannot decide for a mark that may combine: the text is still returned as is.
+        var maybe = "x\u0301";
+        Assert.Same(maybe, UnicodeNormalization.Normalize(maybe));
+    }
+
+    [Fact]
+    public void Normalize_SortsALongRunOfMarks()
+    {
+        // 10,000 marks in decreasing class order, twice: the result is sorted and keeps the order of equal classes.
+        var marks = new StringBuilder("a");
+        for (var i = 0; i < 5000; i++)
+        {
+            marks.Append("\u0301\u0300\u0323\u0316");
+        }
+
+        var normalized = UnicodeNormalization.Normalize(marks.ToString(), NormalizationForm.FormD);
+
+        var expected = new StringBuilder("a");
+        for (var i = 0; i < 5000; i++)
+        {
+            expected.Append("\u0323\u0316");
+        }
+
+        for (var i = 0; i < 5000; i++)
+        {
+            expected.Append("\u0301\u0300");
+        }
+
+        Assert.Equal(expected.ToString(), normalized);
+    }
+
+    [Fact]
+    public void Normalize_ValidatesArguments()
+    {
+        Assert.Throws<ArgumentNullException>("value", () => UnicodeNormalization.Normalize(null!));
+        Assert.Throws<ArgumentOutOfRangeException>("form", () => UnicodeNormalization.Normalize("a", (NormalizationForm)3));
+        Assert.Throws<ArgumentOutOfRangeException>("form", () => UnicodeNormalization.IsNormalized("a", (NormalizationForm)0));
+        Assert.Throws<ArgumentOutOfRangeException>("form", () => UnicodeNormalization.GetNormalizedLength("a", (NormalizationForm)7));
+        Assert.Throws<ArgumentOutOfRangeException>("form", () => UnicodeNormalization.TryNormalize("a", new char[1], out _, (NormalizationForm)7));
+    }
+
+    [Theory]
+    [InlineData(0x00E9, true, 0x0065, 0x0301)]
+    // One step only: the first code point decomposes again.
+    [InlineData(0x1EA5, true, 0x00E2, 0x0301)]
+    [InlineData(0x2126, true, 0x03A9, -1)]
+    [InlineData(0xD55C, true, 0xD558, 0x11AB)]
+    [InlineData(0xD558, true, 0x1112, 0x1161)]
+    [InlineData(0x0041, false, 0x0041, -1)]
+    // A compatibility decomposition is not a canonical one.
+    [InlineData(0xFB01, false, 0xFB01, -1)]
+    [InlineData(-1, false, -1, -1)]
+    public void TryDecomposeCanonical_ReturnsOneStep(int codePoint, bool expected, int expectedFirst, int expectedSecond)
+    {
+        Assert.Equal(expected, UnicodeNormalization.TryDecomposeCanonical(codePoint, out var first, out var second));
+        Assert.Equal(expectedFirst, first);
+        Assert.Equal(expectedSecond, second);
+    }
+
+    [Theory]
+    [InlineData(0x0065, 0x0301, true, 0x00E9)]
+    [InlineData(0x1112, 0x1161, true, 0xD558)]
+    [InlineData(0xD558, 0x11AB, true, 0xD55C)]
+    // A syllable that already has a trailing consonant does not take another one.
+    [InlineData(0xD55C, 0x11AB, false, 0)]
+    // Excluded from composition.
+    [InlineData(0x0915, 0x093C, false, 0)]
+    [InlineData(0x0041, 0x0042, false, 0)]
+    [InlineData(-1, 0x0301, false, 0)]
+    [InlineData(0x0065, 0x110000, false, 0)]
+    public void TryComposeCanonical_ReturnsThePrimaryComposite(int first, int second, bool expected, int expectedComposite)
+    {
+        Assert.Equal(expected, UnicodeNormalization.TryComposeCanonical(first, second, out var composite));
+        Assert.Equal(expectedComposite, composite);
+    }
+
+    [Theory]
+    [InlineData(0x0041, new[] { 0x0041 })]
+    [InlineData(0x1EA5, new[] { 0x0061, 0x0302, 0x0301 })]
+    [InlineData(0xD55C, new[] { 0x1112, 0x1161, 0x11AB })]
+    // The longest canonical decompositions have four code points.
+    [InlineData(0x1F82, new[] { 0x03B1, 0x0313, 0x0300, 0x0345 })]
+    public void GetCanonicalDecomposition_ReturnsTheFullDecomposition(int codePoint, int[] expected)
+    {
+        var buffer = new int[UnicodeNormalization.MaxCanonicalDecompositionLength];
+
+        var count = UnicodeNormalization.GetCanonicalDecomposition(codePoint, buffer);
+
+        Assert.Equal(expected, buffer[..count]);
+        if (expected.Length > 1)
+        {
+            Assert.Throws<ArgumentException>("destination", () => UnicodeNormalization.GetCanonicalDecomposition(codePoint, new int[expected.Length - 1]));
+        }
+    }
+
+    [Theory]
+    [InlineData("abc", false)]
+    [InlineData("caf\u00E9 123", false)]
+    [InlineData("a\u05D0", true)]
+    [InlineData("a\u0661", true)]
+    // An explicit embedding raises the level even in left-to-right text.
+    [InlineData("a\u202Ab", true)]
+    [InlineData("a\u2067b", true)]
+    [InlineData("\U0001E900", true)]
+    public void MayRequireBidi_DetectsTheTextThatNeedsTheAlgorithm(string text, bool expected)
+    {
+        Assert.Equal(expected, UnicodeBidi.MayRequireBidi(text));
+        if (!expected)
+        {
+            var levels = new byte[text.Length];
+            Assert.Equal(0, UnicodeBidi.ResolveLevels(text, UnicodeBidiDirection.Auto, levels));
+            Assert.Equal(new byte[text.Length], levels);
+        }
+    }
+
+    [Theory]
+    [InlineData("abc", UnicodeBidiDirection.Auto, 0)]
+    [InlineData("", UnicodeBidiDirection.Auto, 0)]
+    [InlineData("123 \u05D0", UnicodeBidiDirection.Auto, 1)]
+    [InlineData("\u0627 abc", UnicodeBidiDirection.Auto, 1)]
+    // The content of an isolate does not count.
+    [InlineData("\u2067\u05D0\u2069 a", UnicodeBidiDirection.Auto, 0)]
+    [InlineData("\u05D0", UnicodeBidiDirection.LeftToRight, 0)]
+    [InlineData("a", UnicodeBidiDirection.RightToLeft, 1)]
+    public void GetParagraphLevel_ReturnsTheLevel(string text, UnicodeBidiDirection direction, int expected)
+    {
+        Assert.Equal(expected, UnicodeBidi.GetParagraphLevel(text, direction));
+        Assert.Equal(expected, UnicodeBidi.ResolveLevels(text, direction, new byte[text.Length]));
+    }
+
+    [Fact]
+    public void ResolveLevels_ReordersMixedText()
+    {
+        // "car means " then three Hebrew letters and an exclamation mark, in a left-to-right paragraph.
+        var text = "car \u05D0\u05D1\u05D2!";
+        var levels = new byte[text.Length];
+
+        Assert.Equal(0, UnicodeBidi.ResolveLevels(text, UnicodeBidiDirection.Auto, levels));
+        Assert.Equal(new byte[] { 0, 0, 0, 0, 1, 1, 1, 0 }, levels);
+
+        var order = new int[text.Length];
+        UnicodeBidi.GetVisualOrder(levels, order);
+        Assert.Equal(new[] { 0, 1, 2, 3, 6, 5, 4, 7 }, order);
+
+        // In a right-to-left paragraph the Latin word is the embedded one, and the mark follows the paragraph.
+        Assert.Equal(1, UnicodeBidi.ResolveLevels(text, UnicodeBidiDirection.RightToLeft, levels));
+        Assert.Equal(new byte[] { 2, 2, 2, 1, 1, 1, 1, 1 }, levels);
+        UnicodeBidi.GetVisualOrder(levels, order);
+        Assert.Equal(new[] { 7, 6, 5, 4, 3, 0, 1, 2 }, order);
+    }
+
+    [Fact]
+    public void ResolveLevels_GivesBothCodeUnitsOfAPairTheSameLevel()
+    {
+        // Adlam is a right-to-left script outside the Basic Multilingual Plane.
+        var text = "a\U0001E900\U0001E901b";
+        var levels = new byte[text.Length];
+
+        UnicodeBidi.ResolveLevels(text, UnicodeBidiDirection.Auto, levels);
+
+        Assert.Equal(new byte[] { 0, 1, 1, 1, 1, 0 }, levels);
+    }
+
+    [Fact]
+    public void ResetLineLevels_GivesTrailingWhiteSpaceTheParagraphLevel()
+    {
+        // The line ends with Hebrew then spaces: the spaces would be displayed on the left without the reset.
+        var text = "a \u05D0\u05D1  ";
+        var levels = new byte[text.Length];
+        var paragraphLevel = UnicodeBidi.ResolveLevels(text, UnicodeBidiDirection.RightToLeft, levels);
+        Assert.Equal(new byte[] { 2, 1, 1, 1, 1, 1 }, levels);
+
+        // The same text as a line of a left-to-right paragraph.
+        paragraphLevel = UnicodeBidi.ResolveLevels(text, UnicodeBidiDirection.LeftToRight, levels);
+        levels.AsSpan(4).Fill(1);
+        UnicodeBidi.ResetLineLevels(text, paragraphLevel, levels);
+        Assert.Equal(new byte[] { 0, 0, 1, 1, 0, 0 }, levels);
+
+        // A tab is a segment separator: it and the spaces before it take the paragraph level.
+        var withTab = "\u05D0 \t\u05D1";
+        var tabLevels = new byte[] { 1, 1, 1, 1 };
+        UnicodeBidi.ResetLineLevels(withTab, 0, tabLevels);
+        Assert.Equal(new byte[] { 1, 0, 0, 1 }, tabLevels);
+    }
+
+    [Fact]
+    public void GetVisualOrder_ReversesNestedLevels()
+    {
+        byte[] levels = [0, 1, 2, 2, 1, 0];
+        var order = new int[6];
+
+        UnicodeBidi.GetVisualOrder(levels, order);
+
+        Assert.Equal(new[] { 0, 4, 2, 3, 1, 5 }, order);
+    }
+
+    [Fact]
+    public void Bidi_ValidatesArguments()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>("direction", () => UnicodeBidi.GetParagraphLevel("a", (UnicodeBidiDirection)3));
+        Assert.Throws<ArgumentOutOfRangeException>("direction", () => UnicodeBidi.ResolveLevels("a", (UnicodeBidiDirection)3, new byte[1]));
+        Assert.Throws<ArgumentException>("levels", () => UnicodeBidi.ResolveLevels("ab", UnicodeBidiDirection.Auto, new byte[1]));
+        Assert.Throws<ArgumentException>("workspace", () => UnicodeBidi.ResolveLevels("ab", UnicodeBidiDirection.Auto, new byte[2], new int[UnicodeBidi.GetWorkspaceLength(2) - 1]));
+        Assert.Throws<ArgumentOutOfRangeException>("textLength", () => UnicodeBidi.GetWorkspaceLength(-1));
+        Assert.Throws<OverflowException>(() => UnicodeBidi.GetWorkspaceLength(int.MaxValue));
+        Assert.Throws<ArgumentOutOfRangeException>("paragraphLevel", () => UnicodeBidi.ResetLineLevels("a", 2, new byte[1]));
+        Assert.Throws<ArgumentException>("levels", () => UnicodeBidi.ResetLineLevels("ab", 0, new byte[1]));
+        Assert.Throws<ArgumentException>("visualToLogical", () => UnicodeBidi.GetVisualOrder(new byte[2], new int[1]));
+    }
+
+    [Fact]
+    public void ResolveLevels_HandlesDeepNestingAndLongParagraphs()
+    {
+        // More embeddings than the algorithm allows, and a paragraph longer than the stack-allocated workspace.
+        var text = new string('\u202B', 300) + new string('a', 2000) + new string('\u05D0', 2000);
+        var levels = new byte[text.Length];
+
+        // An embedding is not a strong character: the paragraph takes the direction of the first letter.
+        Assert.Equal(0, UnicodeBidi.ResolveLevels(text, UnicodeBidiDirection.Auto, levels));
+
+        // Right-to-left embeddings give the odd levels up to 125; the Latin letters are one level above.
+        Assert.Equal(126, levels[300]);
+        Assert.Equal(125, levels[^1]);
+    }
+
+    [Theory]
+    [InlineData("", new int[0], new UnicodeScript[0])]
+    [InlineData("hello", new[] { 5 }, new[] { UnicodeScript.Latin })]
+    // Spaces, digits and punctuation belong to the run before them.
+    [InlineData("abc 123, \u0430\u0431\u0432!", new[] { 9, 4 }, new[] { UnicodeScript.Latin, UnicodeScript.Cyrillic })]
+    // At the start of the text they belong to the run after them.
+    [InlineData("123 \u0430\u0431", new[] { 6 }, new[] { UnicodeScript.Cyrillic })]
+    [InlineData("123 !?", new[] { 6 }, new[] { UnicodeScript.Common })]
+    // Both parentheses are in the script of the text around them.
+    [InlineData("gamma (\u03B3) is", new[] { 7, 1, 4 }, new[] { UnicodeScript.Latin, UnicodeScript.Greek, UnicodeScript.Latin })]
+    // A combining mark has the script of its base.
+    [InlineData("e\u0301\u03B1\u0301", new[] { 2, 2 }, new[] { UnicodeScript.Latin, UnicodeScript.Greek })]
+    // The prolonged sound mark is only used with Hiragana and Katakana: it does not continue a Latin run.
+    [InlineData("a\u30FC\u30AB", new[] { 1, 2 }, new[] { UnicodeScript.Latin, UnicodeScript.Katakana })]
+    [InlineData("\u3042\u30FC\u30AB", new[] { 2, 1 }, new[] { UnicodeScript.Hiragana, UnicodeScript.Katakana })]
+    // Private use characters have no script: they are a run of their own.
+    [InlineData("a\uE000b", new[] { 1, 1, 1 }, new[] { UnicodeScript.Latin, UnicodeScript.Unknown, UnicodeScript.Latin })]
+    public void EnumerateScriptRuns_ReturnsTheRuns(string text, int[] expectedLengths, UnicodeScript[] expectedScripts)
+    {
+        var lengths = new List<int>();
+        var scripts = new List<UnicodeScript>();
+        var position = 0;
+        foreach (var run in Unicode.EnumerateScriptRuns(text))
+        {
+            Assert.Equal(position, run.Index);
+            lengths.Add(run.Length);
+            scripts.Add(run.Script);
+            position += run.Length;
+        }
+
+        Assert.Equal(text.Length, position);
+        Assert.Equal(expectedLengths, lengths.ToArray());
+        Assert.Equal(expectedScripts, scripts.ToArray());
+    }
+
+    [Fact]
+    public void SegmentationValues_ImplementEquality()
+    {
+        var lineBreaks = new List<UnicodeLineBreak>();
+        foreach (var lineBreak in Unicode.EnumerateLineBreaks("a b"))
+        {
+            lineBreaks.Add(lineBreak);
+        }
+
+        Assert.Equal(lineBreaks[0], lineBreaks[0]);
+        Assert.True(lineBreaks[0] != lineBreaks[1]);
+        Assert.False(lineBreaks[0].Equals((object)lineBreaks[1]));
+        Assert.NotEqual(lineBreaks[0].GetHashCode(), lineBreaks[1].GetHashCode());
+        Assert.Equal(default, new UnicodeLineBreak());
+
+        var runs = new List<UnicodeScriptRun>();
+        foreach (var run in Unicode.EnumerateScriptRuns("a\u0430"))
+        {
+            runs.Add(run);
+        }
+
+        Assert.Equal(runs[0], runs[0]);
+        Assert.True(runs[0] != runs[1]);
+        Assert.False(runs[0].Equals((object)runs[1]));
+        Assert.Equal(default, new UnicodeScriptRun());
     }
 }

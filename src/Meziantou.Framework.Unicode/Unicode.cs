@@ -155,7 +155,6 @@ public static partial class Unicode
     /// <param name="value">The text to reduce. Must be well-formed UTF-16.</param>
     /// <returns>The skeleton of <paramref name="value"/>.</returns>
     /// <exception cref="ArgumentException"><paramref name="value"/> contains an unpaired surrogate.</exception>
-    /// <exception cref="PlatformNotSupportedException">The application runs in globalization-invariant mode.</exception>
     /// <remarks>
     /// The skeleton is <c>toNFD(toConfusable(toNFD(X)))</c>. It is a comparison key and nothing more:
     /// it is not displayable text, and it must not be shown to users or stored in place of the
@@ -176,19 +175,20 @@ public static partial class Unicode
         if (value.Length == 0)
             return value;
 
-        ThrowIfGlobalizationInvariant();
+        ThrowIfNotWellFormed(value, nameof(value));
 
-        var decomposed = value.Normalize(NormalizationForm.FormD);
+        // The normalization is the one of this library, not the one of the platform: the skeleton does not depend on
+        // the version of ICU, and it is available in globalization-invariant mode.
+        var decomposed = UnicodeNormalization.Normalize(value, NormalizationForm.FormD);
         var mapped = MapConfusableCharacters(decomposed);
-        return mapped.Normalize(NormalizationForm.FormD);
+        return UnicodeNormalization.Normalize(mapped, NormalizationForm.FormD);
     }
 
     /// <summary>Determines whether two strings are visually confusable, as defined by Unicode Technical Standard #39.</summary>
     /// <param name="a">The first string. Must be well-formed UTF-16.</param>
     /// <param name="b">The second string. Must be well-formed UTF-16.</param>
     /// <returns><see langword="true"/> when both strings have the same skeleton; otherwise <see langword="false"/>.</returns>
-    /// <exception cref="ArgumentException">Either string contains an unpaired surrogate.</exception>
-    /// <exception cref="PlatformNotSupportedException">The application runs in globalization-invariant mode.</exception>
+    /// <exception cref="ArgumentException">The strings are different and one of them contains an unpaired surrogate.</exception>
     /// <remarks>
     /// This compares whole strings character by character after reduction. It does not consider
     /// script mixing, so two strings drawn from different scripts that are not individually
@@ -202,8 +202,6 @@ public static partial class Unicode
 
         if (string.Equals(a, b, StringComparison.Ordinal))
             return true;
-
-        ThrowIfGlobalizationInvariant();
 
         return string.Equals(GetConfusableSkeleton(a), GetConfusableSkeleton(b), StringComparison.Ordinal);
     }
@@ -237,16 +235,21 @@ public static partial class Unicode
         return sb?.ToString() ?? value;
     }
 
-    /// <summary>Whether the application runs without ICU, where <see cref="string.Normalize(NormalizationForm)"/> does nothing.</summary>
-    private static readonly bool IsGlobalizationInvariant = GlobalizationHelper.IsGlobalizationInvariant();
-
-    private static void ThrowIfGlobalizationInvariant()
+    private static void ThrowIfNotWellFormed(string value, string parameterName)
     {
-        // In globalization-invariant mode string.Normalize returns its input unchanged instead of
-        // throwing, which would silently reduce the skeleton to a single unnormalized mapping pass
-        // and reintroduce the homograph bypass this algorithm exists to close. Refusing to answer is
-        // the only safe option: a wrong answer here is a security decision made on bad data.
-        if (IsGlobalizationInvariant)
-            throw new PlatformNotSupportedException("Confusable detection requires Unicode normalization, which is unavailable in globalization-invariant mode. Disable InvariantGlobalization to use this API.");
+        for (var index = 0; index < value.Length; index++)
+        {
+            var c = value[index];
+            if (!char.IsSurrogate(c))
+                continue;
+
+            if (char.IsHighSurrogate(c) && index + 1 < value.Length && char.IsLowSurrogate(value[index + 1]))
+            {
+                index++;
+                continue;
+            }
+
+            throw new ArgumentException("The string contains an unpaired surrogate", parameterName);
+        }
     }
 }

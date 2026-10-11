@@ -19,6 +19,30 @@ namespace Meziantou.Framework
         public static bool AreConfusable(string a, string b) => throw null;
         public static bool IsSingleScript(string value) => throw null;
         public static bool IsMixedScript(string value) => throw null;
+        public static int GetGraphemeClusterLength(System.ReadOnlySpan<char> text) => throw null;
+        public static Meziantou.Framework.UnicodeGraphemeClusterEnumerator EnumerateGraphemeClusters(System.ReadOnlySpan<char> text) => throw null;
+        public static Meziantou.Framework.UnicodeWordEnumerator EnumerateWordBoundaries(System.ReadOnlySpan<char> text) => throw null;
+        public static Meziantou.Framework.UnicodeLineBreakEnumerator EnumerateLineBreaks(System.ReadOnlySpan<char> text, Meziantou.Framework.UnicodeLineBreakStrictness strictness = Meziantou.Framework.UnicodeLineBreakStrictness.Strict, Meziantou.Framework.UnicodeWordBreakBehavior wordBreak = Meziantou.Framework.UnicodeWordBreakBehavior.Normal) => throw null;
+        public static Meziantou.Framework.UnicodeScriptRunEnumerator EnumerateScriptRuns(System.ReadOnlySpan<char> text) => throw null;
+    }
+
+    public static class UnicodeBidi
+    {
+        public const int MaxExplicitDepth = 125;
+        public static bool MayRequireBidi(System.ReadOnlySpan<char> text) => throw null;
+        public static int GetParagraphLevel(System.ReadOnlySpan<char> paragraph, Meziantou.Framework.UnicodeBidiDirection direction = Meziantou.Framework.UnicodeBidiDirection.Auto) => throw null;
+        public static int GetWorkspaceLength(int textLength) => throw null;
+        public static int ResolveLevels(System.ReadOnlySpan<char> paragraph, Meziantou.Framework.UnicodeBidiDirection direction, System.Span<byte> levels) => throw null;
+        public static int ResolveLevels(System.ReadOnlySpan<char> paragraph, Meziantou.Framework.UnicodeBidiDirection direction, System.Span<byte> levels, System.Span<int> workspace) => throw null;
+        public static void ResetLineLevels(System.ReadOnlySpan<char> line, int paragraphLevel, System.Span<byte> levels) { }
+        public static void GetVisualOrder(System.ReadOnlySpan<byte> levels, System.Span<int> visualToLogical) { }
+    }
+
+    public enum UnicodeBidiDirection
+    {
+        Auto = 0,
+        LeftToRight = 1,
+        RightToLeft = 2,
     }
 
     public enum UnicodeBidiPairedBracketType : byte
@@ -501,6 +525,13 @@ namespace Meziantou.Framework
         ZWJ = 17,
     }
 
+    public ref struct UnicodeGraphemeClusterEnumerator
+    {
+        public readonly System.Range Current { get => throw null; }
+        public readonly Meziantou.Framework.UnicodeGraphemeClusterEnumerator GetEnumerator() => throw null;
+        public bool MoveNext() => throw null;
+    }
+
     public enum UnicodeIndicConjunctBreak : byte
     {
         None = 0,
@@ -700,6 +731,17 @@ namespace Meziantou.Framework
         Transparent = 5,
     }
 
+    public readonly struct UnicodeLineBreak : System.IEquatable<Meziantou.Framework.UnicodeLineBreak>
+    {
+        public int Index { get => throw null; }
+        public bool IsMandatory { get => throw null; }
+        public bool Equals(Meziantou.Framework.UnicodeLineBreak other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public static bool operator ==(Meziantou.Framework.UnicodeLineBreak left, Meziantou.Framework.UnicodeLineBreak right) => throw null;
+        public static bool operator !=(Meziantou.Framework.UnicodeLineBreak left, Meziantou.Framework.UnicodeLineBreak right) => throw null;
+    }
+
     public enum UnicodeLineBreakClass : byte
     {
         Unknown = 0,
@@ -751,6 +793,32 @@ namespace Meziantou.Framework
         WordJoiner = 46,
         ZWSpace = 47,
         ZWJ = 48,
+    }
+
+    public ref struct UnicodeLineBreakEnumerator
+    {
+        public readonly Meziantou.Framework.UnicodeLineBreak Current { get => throw null; }
+        public readonly Meziantou.Framework.UnicodeLineBreakEnumerator GetEnumerator() => throw null;
+        public bool MoveNext() => throw null;
+    }
+
+    public enum UnicodeLineBreakStrictness
+    {
+        Strict = 0,
+        Normal = 1,
+        Anywhere = 2,
+    }
+
+    public static class UnicodeNormalization
+    {
+        public static int MaxCanonicalDecompositionLength { get => throw null; }
+        public static string Normalize(string value, System.Text.NormalizationForm form = System.Text.NormalizationForm.FormC) => throw null;
+        public static bool TryNormalize(System.ReadOnlySpan<char> source, System.Span<char> destination, out int charsWritten, System.Text.NormalizationForm form = System.Text.NormalizationForm.FormC) => throw null;
+        public static int GetNormalizedLength(System.ReadOnlySpan<char> source, System.Text.NormalizationForm form = System.Text.NormalizationForm.FormC) => throw null;
+        public static bool IsNormalized(System.ReadOnlySpan<char> value, System.Text.NormalizationForm form = System.Text.NormalizationForm.FormC) => throw null;
+        public static bool TryDecomposeCanonical(int codePoint, out int first, out int second) => throw null;
+        public static bool TryComposeCanonical(int first, int second, out int composite) => throw null;
+        public static int GetCanonicalDecomposition(int codePoint, System.Span<int> destination) => throw null;
     }
 
     public static class UnicodeProperties
@@ -976,6 +1044,25 @@ namespace Meziantou.Framework
         ZanabazarSquare = 178,
     }
 
+    public readonly struct UnicodeScriptRun : System.IEquatable<Meziantou.Framework.UnicodeScriptRun>
+    {
+        public int Index { get => throw null; }
+        public int Length { get => throw null; }
+        public Meziantou.Framework.UnicodeScript Script { get => throw null; }
+        public bool Equals(Meziantou.Framework.UnicodeScriptRun other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public static bool operator ==(Meziantou.Framework.UnicodeScriptRun left, Meziantou.Framework.UnicodeScriptRun right) => throw null;
+        public static bool operator !=(Meziantou.Framework.UnicodeScriptRun left, Meziantou.Framework.UnicodeScriptRun right) => throw null;
+    }
+
+    public ref struct UnicodeScriptRunEnumerator
+    {
+        public readonly Meziantou.Framework.UnicodeScriptRun Current { get => throw null; }
+        public readonly Meziantou.Framework.UnicodeScriptRunEnumerator GetEnumerator() => throw null;
+        public bool MoveNext() => throw null;
+    }
+
     public static class UnicodeScripts
     {
         public static int MaxScriptExtensionCount { get => throw null; }
@@ -1011,5 +1098,19 @@ namespace Meziantou.Framework
         SingleQuote = 20,
         WSegSpace = 21,
         ZWJ = 22,
+    }
+
+    public enum UnicodeWordBreakBehavior
+    {
+        Normal = 0,
+        BreakAll = 1,
+        KeepAll = 2,
+    }
+
+    public ref struct UnicodeWordEnumerator
+    {
+        public readonly System.Range Current { get => throw null; }
+        public readonly Meziantou.Framework.UnicodeWordEnumerator GetEnumerator() => throw null;
+        public bool MoveNext() => throw null;
     }
 }

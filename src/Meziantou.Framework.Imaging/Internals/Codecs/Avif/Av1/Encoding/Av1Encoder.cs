@@ -323,7 +323,7 @@ internal sealed class Av1Encoder : IDisposable
         }
         else
         {
-            Av1FilterSearch.Run(_scope, _coding.PostFilter, frame, _coding.State, _workspace, syntax, cancellationToken);
+            Av1FilterSearch.Run(_scope, _coding.PostFilter, frame, _coding.State, _workspace, syntax, _decisions.FilterSearch, cancellationToken);
         }
 
         _reconstruction = _coding.StoreFrame();

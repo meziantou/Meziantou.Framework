@@ -24,19 +24,31 @@ internal static class Av1Quantizer
     /// <param name="rounding">The rounding offset, in units of 1/256 of a quantizer step.</param>
     public static void Quantize(ReadOnlySpan<int> coefficients, Span<int> levels, int dcQuantizer, int acQuantizer, int denominator, int bitDepth, int rounding)
     {
+        if (coefficients.IsEmpty)
+            return;
+
+        Quantize(coefficients[..1], levels, dcQuantizer, denominator, bitDepth, rounding);
+        Quantize(coefficients[1..], levels[1..], acQuantizer, denominator, bitDepth, rounding);
+    }
+
+    private static void Quantize(ReadOnlySpan<int> coefficients, Span<int> levels, long quantizer, int denominator, int bitDepth, int rounding)
+    {
+        var offset = (quantizer * rounding) / RoundingScale;
+        var maxLevel = GetMaxLevel(quantizer, denominator, bitDepth);
+
+        // Most coefficients are quantized to zero: the ones whose magnitude plus the offset is below the quantizer
+        var threshold = quantizer - offset;
         for (var i = 0; i < coefficients.Length; i++)
         {
             var coefficient = coefficients[i];
-            if (coefficient is 0)
+            var magnitude = (long)Math.Abs(coefficient) * denominator;
+            if (magnitude < threshold)
             {
                 levels[i] = 0;
                 continue;
             }
 
-            long quantizer = i is 0 ? dcQuantizer : acQuantizer;
-            var magnitude = (long)Math.Abs(coefficient) * denominator;
-            var level = (magnitude + ((quantizer * rounding) / RoundingScale)) / quantizer;
-            level = Math.Min(level, GetMaxLevel(quantizer, denominator, bitDepth));
+            var level = Math.Min((magnitude + offset) / quantizer, maxLevel);
             levels[i] = coefficient < 0 ? -(int)level : (int)level;
         }
     }

@@ -187,9 +187,19 @@ internal ref partial struct Av1TileCoder
         var best = MaxCost;
         var bestLength = 0;
         var lastIsBest = false;
+        var noneCost = MaxCost;
+        var splitCost = MaxCost;
         for (var i = 0; i < count; i++)
         {
             var partition = candidates[i];
+            if (partition is Av1Constants.PartitionHorz or Av1Constants.PartitionVert && !_decisions.ExhaustiveSearch && noneCost is not MaxCost && splitCost is not MaxCost)
+            {
+                // Two rectangles are between the block as a whole and the block split in four: they are tried when
+                // these two cost about the same, within a quarter
+                if (Math.Min(noneCost, splitCost) * 4 < Math.Max(noneCost, splitCost) * 3)
+                    continue;
+            }
+
             if (i > 0)
                 CopyContexts(contexts, r, c, num4x4, num4x4, save: false);
 
@@ -202,9 +212,17 @@ internal ref partial struct Av1TileCoder
             _isPredictedExactly = false;
             var cost = _decisions.GetCost(0, _rate) + VisitPartition(r, c, bSize, partition, search: true);
 
-            // A block that the previous frame predicts without residual is not split: its parts would be predicted the same
+            // A block that is predicted without residual is not split: its parts would be predicted the same
             var isFinal = partition is Av1Constants.PartitionNone && _isPredictedExactly;
             _isPredictedExactly = false;
+            if (partition is Av1Constants.PartitionNone)
+            {
+                noneCost = cost;
+            }
+            else if (partition is Av1Constants.PartitionSplit)
+            {
+                splitCost = cost;
+            }
             if (cost < best)
             {
                 best = cost;
@@ -387,6 +405,7 @@ internal ref partial struct Av1TileCoder
                 return intraCost;
             }
 
+            _isPredictedExactly = false;
             search.LastIsBest = false;
         }
 
@@ -421,6 +440,10 @@ internal ref partial struct Av1TileCoder
         public bool BestIsSkipped;
         public bool BestHasNoResidual;
         public bool LastIsBest;
+        public int BestMode;
+        public int BestRefMvIdx;
+        public int BestMvRow;
+        public int BestMvCol;
     }
 
     // The search of the inter modes of a block: the motion vectors of the stack that a decoder builds for the block, then
@@ -456,7 +479,10 @@ internal ref partial struct Av1TileCoder
         }
 
         if (_decisions.MotionStep is 0 || search.BestHasNoResidual)
+        {
+            RefineInterMode(ref search);
             return;
+        }
 
         // The motion search predicts the block with motion vectors that are not the ones of the best candidate
         SearchMotion(search.Bw4, search.Bh4, stack, tried[..(2 * triedCount)], out var mvRow, out var mvCol);
@@ -481,20 +507,37 @@ internal ref partial struct Av1TileCoder
 
         if (refMvIdx >= 0)
             TryInterMode(ref search, Av1Constants.Newmv, refMvIdx, mvRow, mvCol, tried, ref triedCount);
+
+        RefineInterMode(ref search);
+    }
+
+    // The transform types of the transform blocks of the best inter mode, when it has coefficients
+    private void RefineInterMode(ref InterSearch search)
+    {
+        if (_decisions.TransformTypeCandidates <= 1 || _lossless || search.BestIsSkipped || search.BestCost is MaxCost)
+            return;
+
+        var triedCount = 0;
+        _searchesTransformTypes = true;
+        TryInterMode(ref search, search.BestMode, search.BestRefMvIdx, search.BestMvRow, search.BestMvCol, tried: default, ref triedCount);
+        _searchesTransformTypes = false;
     }
 
     // Encodes the block with an inter mode, and keeps its record and its samples when it is the best candidate so far
     private void TryInterMode(ref InterSearch search, int mode, int refMvIdx, int mvRow, int mvCol, scoped Span<int> tried, ref int triedCount)
     {
-        for (var i = 0; i < triedCount; i++)
+        if (!tried.IsEmpty)
         {
-            if (tried[2 * i] == mvRow && tried[(2 * i) + 1] == mvCol)
-                return;
-        }
+            for (var i = 0; i < triedCount; i++)
+            {
+                if (tried[2 * i] == mvRow && tried[(2 * i) + 1] == mvCol)
+                    return;
+            }
 
-        tried[2 * triedCount] = mvRow;
-        tried[(2 * triedCount) + 1] = mvCol;
-        triedCount++;
+            tried[2 * triedCount] = mvRow;
+            tried[(2 * triedCount) + 1] = mvCol;
+            triedCount++;
+        }
 
         var workspace = _workspace!;
         var (r, c, bw4, bh4) = (search.R, search.C, search.Bw4, search.Bh4);
@@ -583,6 +626,10 @@ internal ref partial struct Av1TileCoder
         search.BestIsSkipped = isSkipped;
         search.BestHasNoResidual = hasNoResidual;
         search.LastIsBest = true;
+        search.BestMode = mode;
+        search.BestRefMvIdx = refMvIdx;
+        search.BestMvRow = mvRow;
+        search.BestMvCol = mvCol;
         if (candidateStart != search.Start)
             workspace.Records.Slice(candidateStart, length).CopyTo(workspace.Records[search.Start..]);
 
@@ -655,10 +702,33 @@ internal ref partial struct Av1TileCoder
         if (_decisions.AngleDeltas && subSize >= Av1Constants.Block8x8 && IsDirectionalMode(luma.BestMode))
         {
             var mode = luma.BestMode;
-            for (var delta = 1; delta <= Av1Constants.MaxAngleDelta; delta++)
+            if (_decisions.ExhaustiveSearch)
             {
-                TryLumaMode(ref luma, mode, delta, filterIntraMode: -1, maxTxSize);
-                TryLumaMode(ref luma, mode, -delta, filterIntraMode: -1, maxTxSize);
+                for (var delta = 1; delta <= Av1Constants.MaxAngleDelta; delta++)
+                {
+                    TryLumaMode(ref luma, mode, delta, filterIntraMode: -1, maxTxSize);
+                    TryLumaMode(ref luma, mode, -delta, filterIntraMode: -1, maxTxSize);
+                }
+            }
+            else
+            {
+                // The angle delta whose prediction is the closest to the block, when it is closer than the one of the mode
+                var bestDelta = 0;
+                var bestError = EstimateLumaMode(contexts, r, c, bw4, bh4, mode, angleDelta: 0, filterIntraMode: -1);
+                for (var delta = -Av1Constants.MaxAngleDelta; delta <= Av1Constants.MaxAngleDelta; delta++)
+                {
+                    if (delta is 0)
+                        continue;
+
+                    var error = EstimateLumaMode(contexts, r, c, bw4, bh4, mode, delta, filterIntraMode: -1);
+                    if (error < bestError)
+                        (bestError, bestDelta) = (error, delta);
+                }
+
+                // The estimates predicted the block: the frame does not hold the best mode any more
+                luma.LastIsBest = false;
+                if (bestDelta is not 0)
+                    TryLumaMode(ref luma, mode, bestDelta, filterIntraMode: -1, maxTxSize);
             }
         }
 
@@ -667,9 +737,26 @@ internal ref partial struct Av1TileCoder
             _yMode = Av1Constants.DcPred;
             if (IsFilterIntraAllowed())
             {
-                for (var mode = 0; mode < Av1Constants.IntraFilterModes; mode++)
+                if (_decisions.ExhaustiveSearch)
                 {
-                    TryLumaMode(ref luma, Av1Constants.DcPred, angleDelta: 0, mode, maxTxSize);
+                    for (var mode = 0; mode < Av1Constants.IntraFilterModes; mode++)
+                    {
+                        TryLumaMode(ref luma, Av1Constants.DcPred, angleDelta: 0, mode, maxTxSize);
+                    }
+                }
+                else
+                {
+                    // The recursive filter whose prediction is the closest to the block
+                    var bestFilter = 0;
+                    var bestError = long.MaxValue;
+                    for (var mode = 0; mode < Av1Constants.IntraFilterModes; mode++)
+                    {
+                        var error = EstimateLumaMode(contexts, r, c, bw4, bh4, Av1Constants.DcPred, angleDelta: 0, mode);
+                        if (error < bestError)
+                            (bestError, bestFilter) = (error, mode);
+                    }
+
+                    TryLumaMode(ref luma, Av1Constants.DcPred, angleDelta: 0, bestFilter, maxTxSize);
                 }
             }
         }
@@ -688,6 +775,14 @@ internal ref partial struct Av1TileCoder
                 if (!luma.LastIsBest)
                     break;
             }
+        }
+
+        if (_decisions.TransformTypeCandidates > 1 && !_lossless)
+        {
+            // The transform types of the transform blocks of the best mode
+            _searchesTransformTypes = true;
+            TryLumaMode(ref luma, luma.BestMode, luma.BestAngle, luma.BestFilterIntra, luma.BestTxSize);
+            _searchesTransformTypes = false;
         }
 
         _yMode = luma.BestMode;
@@ -811,6 +906,10 @@ internal ref partial struct Av1TileCoder
         ReplayBlock(r, c, subSize);
         _sink = sink;
         Debug.Assert(_recordPosition == end);
+
+        // The prediction of a block without coefficient is the block, exactly for a lossless frame: splitting it is
+        // only tried by the exhaustive search of a lossy frame
+        _isPredictedExactly = _skip && (_lossless || !_decisions.ExhaustiveSearch);
         return _decisions.GetCost(distortion, _rate);
     }
 
@@ -935,6 +1034,21 @@ internal ref partial struct Av1TileCoder
 
         _estimate = 0;
         Residual(ResidualOperation.Search, planeMask: 1 << plane);
+        return _estimate;
+    }
+
+    // The error of the prediction of the luma samples of the block with a mode: see RankIntraModes
+    private long EstimateLumaMode(Span<byte> contexts, int r, int c, int bw4, int bh4, int mode, int angleDelta, int filterIntraMode)
+    {
+        CopyContexts(contexts, r, c, bw4, bh4, save: false);
+        _yMode = mode;
+        _angleDeltaY = angleDelta;
+        _useFilterIntra = filterIntraMode >= 0;
+        _filterIntraMode = Math.Max(filterIntraMode, 0);
+        _estimating = true;
+        _estimate = 0;
+        Residual(ResidualOperation.Search, planeMask: 0b001);
+        _estimating = false;
         return _estimate;
     }
 
@@ -1355,11 +1469,12 @@ internal ref partial struct Av1TileCoder
 
     // The search of the transform type of a luma transform block (the value of intra_tx_type or inter_tx_type): each type
     // is costed with its coefficients and with the error of their quantization, which is measured on the coefficients
-    // rather than on the samples that they are transformed back to. The contexts are left as they are found
+    // rather than on the samples that they are transformed back to. The contexts are left as they are found. The modes of
+    // a block are compared with a DCT in both directions: the types are only searched for the mode that is kept
     private int SearchTransformType(scoped ReadOnlySpan<int> residual, scoped Span<int> coefficients, int txSz, int startX, int startY)
     {
         var set = GetTxSet(txSz);
-        if (_lossless || set is Av1Constants.TxSetDctonly || _decisions.TransformTypeCandidates <= 1)
+        if (!_searchesTransformTypes || _lossless || set is Av1Constants.TxSetDctonly)
             return Av1Constants.DctDct;
 
         var workspace = _workspace!;

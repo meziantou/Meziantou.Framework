@@ -563,7 +563,7 @@ internal ref partial struct Av1TileCoder
 
     /// <summary>
     /// Writes the coefficients of a transform block (section 5.11.39 "Coefficients syntax"): <paramref name="eob"/> levels
-    /// in scan order, the last one not zero. Like the decoder, leaves the coefficients in <c>Quant</c>, the transform type in
+    /// in scan order, the last one not zero. Like the decoder, leaves the coefficients in <c>Quant</c> (when there is one), the transform type in
     /// <c>PlaneTxType</c>, and updates the level and DC contexts.
     /// </summary>
     private void WriteCoeffs(int plane, int startX, int startY, int txSz, int lumaTxType, ReadOnlySpan<int> levels, int eob)
@@ -577,7 +577,6 @@ internal ref partial struct Av1TileCoder
         var ptype = plane > 0 ? 1 : 0;
         var segEob = txSz is Av1Constants.Tx16x64 or Av1Constants.Tx64x16 ? 512 : Math.Min(1024, Av1Tables.TxWidth[txSz] * Av1Tables.TxHeight[txSz]);
         var quant = _scratch.Quant;
-        quant[..segEob].Clear();
 
         var aboveLevel = _state.GetAboveLevelContext(plane);
         var aboveDc = _state.GetAboveDcContext(plane);
@@ -596,6 +595,8 @@ internal ref partial struct Av1TileCoder
         }
         else
         {
+            // Quant is only read for a transform block that has coefficients
+            quant[..segEob].Clear();
             if (plane is 0)
                 WriteTransformType(x4, y4, txSz, lumaTxType);
 

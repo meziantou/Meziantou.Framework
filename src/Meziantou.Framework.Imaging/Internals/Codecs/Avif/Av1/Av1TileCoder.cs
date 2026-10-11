@@ -153,6 +153,7 @@ internal ref partial struct Av1TileCoder
     private bool _hasCoefficients;
     private bool _isPredictedExactly;
     private long _transformSizeRate;
+    private bool _searchesTransformTypes;
 
     public Av1TileCoder(Av1FrameBuffer frame, Av1FrameState state, Av1SymbolDecoder symbols, Av1TileScratch scratch, Av1ReferenceFrames references, Av1InterScratch? interScratch, Span<ushort> cdf, CancellationToken cancellationToken)
     {

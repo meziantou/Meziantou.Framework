@@ -60,38 +60,22 @@ internal static class Av1ForwardTransform
 
         // The columns: th outputs per column, with IntermediateBits fractional bits
         Span<long> intermediate = stackalloc long[th * w];
+        Span<int> column = stackalloc int[64];
+        column = column[..h];
         var colBasis = GetBasis(colKind, log2H);
         var colIdentity = GetIdentityMultiplier(log2H);
         for (var c = 0; c < w; c++)
         {
+            // The samples of the column, in the order of the basis
             var sourceColumn = flipLR ? w - 1 - c : c;
+            for (var r = 0; r < h; r++)
+            {
+                column[r] = residual[((flipUD ? h - 1 - r : r) * w) + sourceColumn];
+            }
+
             for (var k = 0; k < th; k++)
             {
-                long sum;
-                if (colBasis is null)
-                {
-                    sum = residual[(k * w) + sourceColumn] * colIdentity;
-                }
-                else
-                {
-                    sum = 0;
-                    var basis = colBasis.AsSpan(k * h, h);
-                    if (flipUD)
-                    {
-                        for (var r = 0; r < h; r++)
-                        {
-                            sum += (long)residual[((h - 1 - r) * w) + sourceColumn] * basis[r];
-                        }
-                    }
-                    else
-                    {
-                        for (var r = 0; r < h; r++)
-                        {
-                            sum += (long)residual[(r * w) + sourceColumn] * basis[r];
-                        }
-                    }
-                }
-
+                var sum = colBasis is null ? column[flipUD ? h - 1 - k : k] * colIdentity : Dot(column, colBasis.AsSpan(k * h, h));
                 intermediate[(k * w) + c] = Round(sum, BasisBits - IntermediateBits);
             }
         }
@@ -112,12 +96,7 @@ internal static class Av1ForwardTransform
                 }
                 else
                 {
-                    sum = 0;
-                    var basis = rowBasis.AsSpan(l * w, w);
-                    for (var c = 0; c < w; c++)
-                    {
-                        sum += line[c] * basis[c];
-                    }
+                    sum = Dot(line, rowBasis.AsSpan(l * w, w));
                 }
 
                 if (isRectangular2To1)
@@ -126,6 +105,47 @@ internal static class Av1ForwardTransform
                 coefficients[(k * tw) + l] = (int)Round(sum, shift);
             }
         }
+    }
+
+    // The sums of products are exact: the order of the terms does not change them
+    private static long Dot(ReadOnlySpan<int> samples, ReadOnlySpan<int> basis)
+    {
+        basis = basis[..samples.Length];
+        long sum0 = 0;
+        long sum1 = 0;
+        var i = 0;
+        for (; i <= samples.Length - 4; i += 4)
+        {
+            sum0 += ((long)samples[i] * basis[i]) + ((long)samples[i + 2] * basis[i + 2]);
+            sum1 += ((long)samples[i + 1] * basis[i + 1]) + ((long)samples[i + 3] * basis[i + 3]);
+        }
+
+        for (; i < samples.Length; i++)
+        {
+            sum0 += (long)samples[i] * basis[i];
+        }
+
+        return sum0 + sum1;
+    }
+
+    private static long Dot(ReadOnlySpan<long> samples, ReadOnlySpan<int> basis)
+    {
+        basis = basis[..samples.Length];
+        long sum0 = 0;
+        long sum1 = 0;
+        var i = 0;
+        for (; i <= samples.Length - 4; i += 4)
+        {
+            sum0 += (samples[i] * basis[i]) + (samples[i + 2] * basis[i + 2]);
+            sum1 += (samples[i + 1] * basis[i + 1]) + (samples[i + 3] * basis[i + 3]);
+        }
+
+        for (; i < samples.Length; i++)
+        {
+            sum0 += samples[i] * basis[i];
+        }
+
+        return sum0 + sum1;
     }
 
     private static int[]? GetBasis(Av1InverseTransform.Kind kind, int n) => kind switch

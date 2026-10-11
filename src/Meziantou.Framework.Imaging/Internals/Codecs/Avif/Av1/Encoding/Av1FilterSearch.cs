@@ -17,9 +17,22 @@ internal static class Av1FilterSearch
 {
     private static ReadOnlySpan<byte> LoopFilterLevels => [1, 2, 3, 4, 6, 8, 10, 12, 16, 20, 24, 32, 40, 48, 63];
 
+    private static ReadOnlySpan<byte> FastLoopFilterLevels => [2, 4, 8, 16, 32];
+
     private static ReadOnlySpan<byte> CdefPrimaryStrengths => [1, 2, 3, 4, 6, 8, 10, 12, 15];
 
+    private static ReadOnlySpan<byte> FastCdefPrimaryStrengths => [2, 4, 8, 12];
+
     private static ReadOnlySpan<byte> CdefSecondaryStrengths => [1, 2, 4];
+
+    private static ReadOnlySpan<byte> FastCdefSecondaryStrengths => [2];
+
+    private enum Stage
+    {
+        LoopFilter,
+        CdefPrimary,
+        CdefSecondary,
+    }
 
     /// <summary>Chooses the parameters of the filters of <paramref name="frame"/> and applies them.</summary>
     /// <param name="scope">The allocation scope of the operation.</param>
@@ -28,35 +41,23 @@ internal static class Av1FilterSearch
     /// <param name="state">The block-level state of the frame.</param>
     /// <param name="workspace">The source planes, and the planes that save the frame between candidates.</param>
     /// <param name="syntax">The syntax elements of the header to write, which receive the parameters too.</param>
+    /// <param name="thoroughness">
+    /// 0 to search a few values, 1 to search every value from the middle one by halving a step (the error is assumed to
+    /// have one minimum), 2 to evaluate every value.
+    /// </param>
     /// <param name="cancellationToken">The cancellation token of the operation.</param>
-    public static void Run(AllocationScope scope, Av1PostFilter postFilter, Av1FrameBuffer frame, Av1FrameState state, Av1EncoderWorkspace workspace, Av1FrameHeader syntax, CancellationToken cancellationToken)
+    public static void Run(AllocationScope scope, Av1PostFilter postFilter, Av1FrameBuffer frame, Av1FrameState state, Av1EncoderWorkspace workspace, Av1FrameHeader syntax, int thoroughness, CancellationToken cancellationToken)
     {
         var header = frame.Header;
-        var planeCount = frame.PlaneCount;
+        var search = new Search(scope, postFilter, frame, state, workspace, thoroughness >= 2, cancellationToken);
         Span<long> best = stackalloc long[3];
-        Span<long> error = stackalloc long[3];
         Span<int> value = stackalloc int[3];
 
         // The loop filter: one level for both directions of the luma plane, and one for each chroma plane
         Save(frame, workspace);
         MeasureError(frame, workspace, best);
         value.Clear();
-        foreach (var level in LoopFilterLevels)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            header.LoopFilterLevel[0] = header.LoopFilterLevel[1] = header.LoopFilterLevel[2] = header.LoopFilterLevel[3] = level;
-            postFilter.Apply(scope, frame, state, Av1InLoopFilters.Deblock, cancellationToken);
-            MeasureError(frame, workspace, error);
-            Restore(frame, workspace);
-            for (var plane = 0; plane < planeCount; plane++)
-            {
-                if (error[plane] < best[plane])
-                {
-                    best[plane] = error[plane];
-                    value[plane] = level;
-                }
-            }
-        }
+        search.Run(Stage.LoopFilter, thoroughness is 0 ? FastLoopFilterLevels : LoopFilterLevels, best, value);
 
         // The chroma levels are only coded when the luma plane is filtered
         if (value[0] is 0)
@@ -79,54 +80,19 @@ internal static class Av1FilterSearch
         Save(frame, workspace);
         MeasureError(frame, workspace, best);
         best[1] += best[2];
-        var lumaPrimary = 0;
-        var chromaPrimary = 0;
         header.CdefBits = 0;
+        header.CdefYPriStrength[0] = header.CdefUvPriStrength[0] = 0;
         header.CdefYSecStrength[0] = header.CdefUvSecStrength[0] = 0;
-        foreach (var strength in CdefPrimaryStrengths)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            header.CdefYPriStrength[0] = header.CdefUvPriStrength[0] = strength;
-            postFilter.Apply(scope, frame, state, Av1InLoopFilters.Cdef, cancellationToken);
-            MeasureError(frame, workspace, error);
-            Restore(frame, workspace);
-            if (error[0] < best[0])
-            {
-                best[0] = error[0];
-                lumaPrimary = strength;
-            }
-
-            if (planeCount > 1 && error[1] + error[2] < best[1])
-            {
-                best[1] = error[1] + error[2];
-                chromaPrimary = strength;
-            }
-        }
-
-        var lumaSecondary = 0;
-        var chromaSecondary = 0;
+        value.Clear();
+        search.Run(Stage.CdefPrimary, thoroughness is 0 ? FastCdefPrimaryStrengths : CdefPrimaryStrengths, best, value);
+        var lumaPrimary = value[0];
+        var chromaPrimary = value[1];
         header.CdefYPriStrength[0] = (byte)lumaPrimary;
         header.CdefUvPriStrength[0] = (byte)chromaPrimary;
-        foreach (var strength in CdefSecondaryStrengths)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            header.CdefYSecStrength[0] = header.CdefUvSecStrength[0] = strength;
-            postFilter.Apply(scope, frame, state, Av1InLoopFilters.Cdef, cancellationToken);
-            MeasureError(frame, workspace, error);
-            Restore(frame, workspace);
-            if (error[0] < best[0])
-            {
-                best[0] = error[0];
-                lumaSecondary = strength;
-            }
-
-            if (planeCount > 1 && error[1] + error[2] < best[1])
-            {
-                best[1] = error[1] + error[2];
-                chromaSecondary = strength;
-            }
-        }
-
+        value.Clear();
+        search.Run(Stage.CdefSecondary, thoroughness is 0 ? FastCdefSecondaryStrengths : CdefSecondaryStrengths, best, value);
+        var lumaSecondary = value[0];
+        var chromaSecondary = value[1];
         header.CdefYSecStrength[0] = (byte)lumaSecondary;
         header.CdefUvSecStrength[0] = (byte)chromaSecondary;
         syntax.CdefDamping = header.CdefDamping;
@@ -137,6 +103,105 @@ internal static class Av1FilterSearch
         syntax.CdefUvSecStrength[0] = header.CdefUvSecStrength[0];
         if (lumaPrimary is not 0 || lumaSecondary is not 0 || chromaPrimary is not 0 || chromaSecondary is not 0)
             postFilter.Apply(scope, frame, state, Av1InLoopFilters.Cdef, cancellationToken);
+    }
+
+    // The search of the value of a parameter. A pass of the filter gives the error of a value for every plane: the search
+    // follows the error of the luma plane, and the chroma planes take the best of the values that were evaluated
+    private readonly struct Search(AllocationScope scope, Av1PostFilter postFilter, Av1FrameBuffer frame, Av1FrameState state, Av1EncoderWorkspace workspace, bool exhaustive, CancellationToken cancellationToken)
+    {
+        // The largest number of values of a parameter
+        private const int MaxValues = 16;
+
+        /// <summary>
+        /// Evaluates values of the parameter of <paramref name="stage"/>. <paramref name="best"/> holds the error of each
+        /// plane (or of the luma plane then of both chroma planes, for CDEF) without the filter, and receives the error of
+        /// the value of <paramref name="chosen"/>, which stays 0 when no value lowers the error.
+        /// </summary>
+        public void Run(Stage stage, ReadOnlySpan<byte> values, Span<long> best, Span<int> chosen)
+        {
+            Span<long> errors = stackalloc long[MaxValues];
+            Span<bool> evaluated = stackalloc bool[MaxValues];
+            if (exhaustive || values.Length <= 2)
+            {
+                for (var i = 0; i < values.Length; i++)
+                {
+                    Evaluate(stage, values, i, errors, evaluated, best, chosen);
+                }
+
+                return;
+            }
+
+            // From the middle value, towards the neighbor with the smallest error: first by a quarter of the values, then
+            // by half as many, and by one value until no neighbor is better
+            var center = values.Length / 2;
+            Evaluate(stage, values, center, errors, evaluated, best, chosen);
+            for (var step = Math.Max(1, (values.Length + 1) / 4); step >= 1; step /= 2)
+            {
+                bool moved;
+                do
+                {
+                    moved = false;
+                    var low = Math.Max(0, center - step);
+                    var high = Math.Min(values.Length - 1, center + step);
+                    Evaluate(stage, values, low, errors, evaluated, best, chosen);
+                    Evaluate(stage, values, high, errors, evaluated, best, chosen);
+                    var next = errors[low] < errors[center] ? low : center;
+                    if (errors[high] < errors[next])
+                        next = high;
+
+                    if (next != center)
+                    {
+                        center = next;
+                        moved = true;
+                    }
+                }
+                while (moved && step is 1);
+            }
+        }
+
+        private void Evaluate(Stage stage, ReadOnlySpan<byte> values, int index, Span<long> errors, Span<bool> evaluated, Span<long> best, Span<int> chosen)
+        {
+            if (evaluated[index])
+                return;
+
+            cancellationToken.ThrowIfCancellationRequested();
+            var header = frame.Header;
+            var value = values[index];
+            switch (stage)
+            {
+                case Stage.LoopFilter:
+                    header.LoopFilterLevel[0] = header.LoopFilterLevel[1] = header.LoopFilterLevel[2] = header.LoopFilterLevel[3] = value;
+                    break;
+                case Stage.CdefPrimary:
+                    header.CdefYPriStrength[0] = header.CdefUvPriStrength[0] = value;
+                    break;
+                default:
+                    header.CdefYSecStrength[0] = header.CdefUvSecStrength[0] = value;
+                    break;
+            }
+
+            Span<long> error = stackalloc long[3];
+            postFilter.Apply(scope, frame, state, stage is Stage.LoopFilter ? Av1InLoopFilters.Deblock : Av1InLoopFilters.Cdef, cancellationToken);
+            MeasureError(frame, workspace, error);
+            Restore(frame, workspace);
+            if (stage is not Stage.LoopFilter)
+            {
+                // The strengths of the chroma planes are the same
+                error[1] += error[2];
+                error[2] = long.MaxValue;
+            }
+
+            evaluated[index] = true;
+            errors[index] = error[0];
+            for (var group = 0; group < frame.PlaneCount; group++)
+            {
+                if (error[group] < best[group])
+                {
+                    best[group] = error[group];
+                    chosen[group] = value;
+                }
+            }
+        }
     }
 
     private static void Save(Av1FrameBuffer frame, Av1EncoderWorkspace workspace)

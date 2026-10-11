@@ -3,8 +3,8 @@ using Meziantou.Framework.Imaging.Formats;
 namespace Meziantou.Framework.Imaging.InteropTests;
 
 /// <summary>
-/// Netpbm encoder output decoded by FFmpeg's independent codecs (libavcodec <c>pgm</c>/<c>ppm</c>/<c>pam</c>): the binary
-/// output of the encoder decodes exactly in FFmpeg. The decoder is covered by the golden corpus (FFmpeg-written inputs
+/// Netpbm encoder output decoded by FFmpeg's independent codecs (libavcodec <c>pbm</c>/<c>pgm</c>/<c>ppm</c>/<c>pam</c>): the
+/// binary output of the encoder, and both forms of a portable bitmap, decode exactly in FFmpeg. The decoder is covered by the golden corpus (FFmpeg-written inputs
 /// included); the committed references are re-verified against the installed FFmpeg by the corpus generator (<c>verify</c>).
 /// </summary>
 public sealed class PnmInteropTests
@@ -24,5 +24,18 @@ public sealed class PnmInteropTests
 
         return LosslessEncoderInterop.AssertEncoderOutputDecodesExactlyInFFmpegAsync(id, format, nameof(PnmInteropTests),
             [(new PnmEncoder { MetadataHandling = MetadataHandling.Strip }, extension, "")]);
+    }
+
+    public static TheoryData<string, string> BitmapEncoderCases() => LosslessEncoderInterop.BlackAndWhiteEncoderCases();
+
+    [Theory]
+    [MemberData(nameof(BitmapEncoderCases))]
+    public Task BitmapEncoderOutputDecodesExactlyInFFmpeg(string id, string format)
+    {
+        return LosslessEncoderInterop.AssertEncoderOutputDecodesExactlyInFFmpegAsync(id, format, nameof(PnmInteropTests),
+        [
+            (new PnmEncoder { PixelLayout = PnmPixelLayout.Bitmap, MetadataHandling = MetadataHandling.Strip }, "pbm", "-P4"),
+            (new PnmEncoder { PixelLayout = PnmPixelLayout.Bitmap, Encoding = PnmEncoding.Plain, MetadataHandling = MetadataHandling.Strip }, "pbm", "-P1"),
+        ]);
     }
 }

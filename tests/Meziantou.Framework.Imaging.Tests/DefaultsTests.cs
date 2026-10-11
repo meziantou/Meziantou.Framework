@@ -93,10 +93,12 @@ public sealed class DefaultsTests
         Assert.IsType<BmpEncoder>(ImageEncoder.FromPath("a.BMP"));
         Assert.IsType<BmpEncoder>(ImageEncoder.FromPath("a.dib"));
         Assert.IsType<TgaEncoder>(ImageEncoder.FromPath("a.tga"));
-        Assert.IsType<PnmEncoder>(ImageEncoder.FromPath("a.pnm"));
-        Assert.IsType<PnmEncoder>(ImageEncoder.FromPath("a.pam"));
-        Assert.IsType<PnmEncoder>(ImageEncoder.FromPath("a.ppm"));
-        Assert.IsType<PnmEncoder>(ImageEncoder.FromPath("a.pgm"));
+        Assert.Equal(PnmPixelLayout.Auto, Assert.IsType<PnmEncoder>(ImageEncoder.FromPath("a.pnm")).PixelLayout);
+        Assert.Equal(PnmPixelLayout.Auto, Assert.IsType<PnmEncoder>(ImageEncoder.FromPath("a.pam")).PixelLayout);
+        Assert.Equal(PnmPixelLayout.Auto, Assert.IsType<PnmEncoder>(ImageEncoder.FromPath("a.ppm")).PixelLayout);
+        Assert.Equal(PnmPixelLayout.Auto, Assert.IsType<PnmEncoder>(ImageEncoder.FromPath("a.pgm")).PixelLayout);
+        Assert.Equal(PnmPixelLayout.Bitmap, Assert.IsType<PnmEncoder>(ImageEncoder.FromPath("a.pbm")).PixelLayout);
+        Assert.Equal(PnmPixelLayout.Bitmap, Assert.IsType<PnmEncoder>(ImageEncoder.FromPath("dir/a.PBM")).PixelLayout);
         Assert.IsType<TiffEncoder>(ImageEncoder.FromPath("a.tif"));
         Assert.IsType<TiffEncoder>(ImageEncoder.FromPath("a.TIFF"));
         Assert.IsType<IcoEncoder>(ImageEncoder.FromPath("a.ico"));

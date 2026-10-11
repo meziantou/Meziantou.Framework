@@ -134,7 +134,7 @@ decoded or encoded approximately; see [Format reference](#format-reference) and 
 | QOI | Every chunk form, 3 or 4 channels, colorspace label | Lossless 8-bit RGB/RGBA | `.qoi` |
 | BMP | Windows headers up to V5 and OS/2 1.x/2.x headers, 1/4/8/16/24/32-bit, bit fields, RLE4/RLE8/RLE24 | 24-bit or 32-bit with an alpha mask by default; 1/4/8-bit indexed, RLE4/RLE8, 16-bit and top-down on request | `.bmp`, `.dib` |
 | TGA | True-color, grayscale and color-mapped, uncompressed or run-length | True-color and grayscale, uncompressed or run-length | `.tga`, `.icb`, `.vda`, `.vst` |
-| Netpbm | `P1` to `P7` (PBM, PGM, PPM, PAM), 8 and 16 bits | `P2`/`P3`/`P5`/`P6`/`P7`, lossless | `.pnm`, `.pam`, `.ppm`, `.pgm` |
+| Netpbm | `P1` to `P7` (PBM, PGM, PPM, PAM), 8 and 16 bits | `P1` to `P7`, lossless (PBM on request, from black and white pixels) | `.pnm`, `.pam`, `.ppm`, `.pgm`, `.pbm` |
 | TIFF / BigTIFF | Both byte orders and offset sizes, 8/16-bit gray, gray+alpha, RGB, RGBA, strips and tiles, Deflate, predictor; multi-page documents | Strips, uncompressed or Deflate, classic or BigTIFF; multi-page documents (seekable destination) | `.tif`, `.tiff` |
 | ICO / CUR | PNG and DIB representations, cursor hotspots | PNG or 32-bit DIB representations, cursor hotspots | `.ico`, `.cur` |
 | AVIF | Still images and image sequences (animations); 8, 10 and 12 bits; 4:4:4, 4:2:2, 4:2:0 and monochrome; alpha; grids; film grain; ICC/EXIF/XMP and CICP color descriptions | Not supported | None: `.avif` is rejected by `Save(path)` |
@@ -439,7 +439,8 @@ goes through 8 bits.
 | --- | --- |
 | Alpha, when converting or loading into a format without alpha | `PixelConversionOptions.BackgroundColor` (flattened at source precision in the encoded color space) |
 | Alpha, when encoding JPEG | `JpegEncoder.BackgroundColor` |
-| Alpha, when encoding BMP in any layout but 32-bit, or plain Netpbm | `BmpEncoder.BackgroundColor`, `PnmEncoder.BackgroundColor` |
+| Alpha, when encoding BMP in any layout but 32-bit, plain Netpbm or a portable bitmap | `BmpEncoder.BackgroundColor`, `PnmEncoder.BackgroundColor` |
+| Gray levels and colors, when encoding a portable bitmap (`PnmPixelLayout.Bitmap`, `.pbm`) | None: pixels that are not exactly black or white are rejected, never thresholded or dithered |
 | Partial alpha, when encoding GIF (GIF has one transparent index) | `GifEncoder.AlphaMode`: `Threshold` (default, `AlphaThreshold` 128) or `Flatten` with `BackgroundColor` |
 | 16-bit precision, when encoding JPEG, WebP, QOI, BMP or TGA | `AllowBitDepthReduction` on the encoder |
 | 8-bit precision, when encoding 16-bit BMP (`Bgr565`, `Bgr555`: 5 or 6 bits per channel) | `BmpEncoder.AllowBitDepthReduction` |
@@ -980,8 +981,8 @@ public static void StreamingWithReusedBuffer(string inputPath, string outputPath
 
 `Save(stream, encoder)` requires an encoder. `Save(path)` infers it from the extension: `.png`
 (APNG when the image is animated), `.apng` (always APNG), `.gif`, `.jpg`/`.jpeg`, `.webp` (lossless by default), `.qoi`,
-`.bmp`/`.dib`, `.tga`/`.icb`/`.vda`/`.vst`, `.pnm`/`.pam`/`.ppm`/`.pgm`, `.tif`/`.tiff`, `.ico`, `.cur` and `.ani`; anything
-else throws `ArgumentException`. An eager save validates the whole image against the output (animation, poster,
+`.bmp`/`.dib`, `.tga`/`.icb`/`.vda`/`.vst`, `.pnm`/`.pam`/`.ppm`/`.pgm`, `.pbm` (a portable bitmap, from black and white
+pixels only), `.tif`/`.tiff`, `.ico`, `.cur` and `.ani`; anything else throws `ArgumentException`. An eager save validates the whole image against the output (animation, poster,
 durations, alpha, precision, metadata) before writing anything.
 
 Path outputs, eager or through writers, are written to a temporary file in the destination directory and published by a
@@ -1193,7 +1194,8 @@ public static void SaveAssetFormats(string inputPath, string bmpPath, string tga
     frame.Save(tgaPath, new TgaEncoder { Compression = TgaCompression.RunLength, AllowBitDepthReduction = true });
 
     // Netpbm: the variant follows the pixel format (PGM, PPM, or PAM when the pixels have alpha), and MAXVAL follows
-    // the precision, so 16-bit images keep every bit
+    // the precision, so 16-bit images keep every bit. A portable bitmap (PBM) is only written on request, with
+    // PnmPixelLayout.Bitmap, and only from black and white pixels.
     frame.Save(pnmPath, new PnmEncoder());
 }
 ```
@@ -1271,11 +1273,11 @@ animation.
 
 | Feature | Decoding | Encoding |
 | --- | --- | --- |
-| Magic numbers | `P1` to `P6` (plain and binary PBM, PGM, PPM) and `P7` (PAM) | `P5`/`P6` (binary) or `P2`/`P3` (plain, `PnmEncoding.Plain`), and `P7` for pixel formats with alpha; the variant follows the pixel format, not the extension; `P1`/`P4` are never written |
+| Magic numbers | `P1` to `P6` (plain and binary PBM, PGM, PPM) and `P7` (PAM) | `P5`/`P6` (binary) or `P2`/`P3` (plain, `PnmEncoding.Plain`), and `P7` for pixel formats with alpha: the variant follows the pixel format. `P4`, or `P1` when plain, only with `PnmPixelLayout.Bitmap`. An encoder never looks at the extension; `Save(path)` without an encoder maps `.pbm` to `PnmPixelLayout.Bitmap` |
 | Header | White space and `#` comments between tokens, exactly one white-space byte before a binary raster, `ENDHDR` for PAM; bounded at 65,536 bytes; illegal values are `InvalidImageContentException` | — |
 | Tuple types | `BLACKANDWHITE`, `GRAYSCALE`, `RGB` and their `_ALPHA` forms, inferred from `DEPTH` when `TUPLTYPE` is absent; others are not supported | `RGB_ALPHA` for pixel formats with alpha |
-| Samples | 8 or 16 bits (big-endian); a sample above `MAXVAL` is `InvalidImageContentException`; a set PBM bit is black, while a PAM `BLACKANDWHITE` sample is an intensity | `MAXVAL` 255 or 65,535, so the output is always lossless (no bit-depth setting) |
-| Plain rasters | Decimal samples with comments allowed; a prefix of a plain raster can be a complete raster with a smaller last sample, so truncation is not detectable there | Lines within 70 characters; PAM has no plain form, so alpha then needs `BackgroundColor` |
+| Samples | 8 or 16 bits (big-endian); a sample above `MAXVAL` is `InvalidImageContentException`; a set PBM bit is black, while a PAM `BLACKANDWHITE` sample is an intensity | `MAXVAL` 255 or 65,535, so the output is always lossless (no bit-depth setting). A portable bitmap is lossless too: one bit per pixel, a set bit is black, and a pixel that is not exactly black or white (once composited over `BackgroundColor`) is `UnsupportedImageFeatureException`; it is read back as `Gray8` with one bit per component |
+| Plain rasters | Decimal samples with comments allowed; a prefix of a plain raster can be a complete raster with a smaller last sample, so truncation is not detectable there | Lines within 70 characters; PAM has no plain form, so alpha then needs `BackgroundColor`, as it does for a portable bitmap. A plain portable bitmap has one digit per pixel, without separators |
 | Metadata | Netpbm stores none | Follows `MetadataHandling` |
 
 ### TIFF and BigTIFF
@@ -1396,7 +1398,7 @@ Everything below is rejected explicitly (never decoded or encoded approximately)
 | QOI | 8-bit RGB(A) only (gray written as RGB, 16-bit after explicit reduction); one still image; no metadata; the colorspace field is a label (no linear-to-sRGB conversion exists) |
 | BMP | Decoding: no embedded JPEG/PNG payloads, no OS/2 Huffman 1D, no 2-bit depth, no channel wider than 8 bits, no embedded ICC profile; OS/2 bitmap arrays (`BA`) are not recognized; a 40-byte header is always a Windows header (an OS/2 2.x header of that length with Huffman 1D or RLE24 is read as `BI_BITFIELDS` or `BI_JPEG`); run-length streams are read strictly (nothing is clamped, the end-of-bitmap marker is required). Encoding: one still image; Windows headers only; run-length output for 4-bit and 8-bit indexed layouts only, bottom-up; indexed output needs one byte per pixel of working memory; no alpha below 32 bits (no 1-5-5-5 output); resolution is the only metadata; the file must fit the 32-bit `bfSize` field |
 | TGA | Decoding: 16-bit grayscale is always an 8-bit gray sample and an attribute byte, so a file that stores a 16-bit luminance is not read as one; premultiplied alpha (attributes type 4) is rejected and no other attributes type changes the decoded representation (an alpha channel the extension area calls absent or undefined is still decoded when the image descriptor declares it); the other fields of the extension area and the developer area are not interpreted; the input is read to its end and the bytes after the image data are buffered; truncation is only detected before the end of the image data. Encoding: true-color and grayscale only, bottom-up, one still image, at most 65,535 pixels per side; no color map, no 15/16-bit output, no metadata |
-| Netpbm | Decoding: only the first image of a concatenation is read; tuple types other than the standard grayscale, RGB and alpha forms are rejected; the header is bounded at 65,536 bytes; truncation of a plain raster is not detectable. Encoding: `P2`/`P3`/`P5`/`P6`/`P7` only (the variant follows the pixel format, not the extension), one image, no metadata; plain output has no alpha (PAM has no plain form) |
+| Netpbm | Decoding: only the first image of a concatenation is read; tuple types other than the standard grayscale, RGB and alpha forms are rejected; the header is bounded at 65,536 bytes; truncation of a plain raster is not detectable. Encoding: one image, no metadata; the variant follows the pixel format, and a portable bitmap (`P1`/`P4`) is only written on request, from pixels that are exactly black or white (no threshold, no dithering); plain output and portable bitmaps have no alpha (PAM has no plain form) |
 | TIFF | Decoding: LZW, PackBits, CCITT fax and JPEG compression, palette, CMYK, YCbCr and L\*a\*b\* photometric interpretations, planar storage, reversed fill order, the floating-point predictor, signed and floating-point samples, sample widths other than 8 and 16 bits, more than one extra sample, and associated (premultiplied) or unspecified extra samples are all rejected with `UnsupportedImageFeatureException`. No EXIF block, no sub-IFD, no unknown-tag round trip. Encoding: one page per `Image.Save` (use `ImageCollection.Save`), strips only, no predictor, no tiles, a seekable destination required |
 | ICO/CUR | Decoding: a top-down DIB payload, a DIB whose stored height is not doubled, an animated PNG payload, a representation larger than 256 pixels per side and the DIB variants an icon payload cannot use (run-length encoding, embedded codecs, OS/2 headers) are rejected. Encoding: 32-bit DIB or still PNG payloads only (16-bit pixels need a PNG payload: `IconPayloadFormat.Dib` is rejected for them), at most 256 pixels per side, no metadata; an icon cannot store a hotspot |
 | ANI | Decoding: raw bitmap frames (no icon flag), a frame without a representation of the canvas size and everything the ICO/CUR decoder rejects are `UnsupportedImageFeatureException`; the geometry fields and the sequence flag of the header are not used (the payloads and the `seq ` chunk are authoritative); an ICC profile or text inside a PNG frame is not retained; `Image.OpenReader` does not read it. Encoding: one representation per frame, at most 256 pixels per side, whole jiffies, an infinite play count only, a title and an author as the only metadata, a seekable destination, at most 4 GiB per file |

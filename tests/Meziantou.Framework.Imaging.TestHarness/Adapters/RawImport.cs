@@ -141,6 +141,35 @@ public static class RawImport
         return true;
     }
 
+    /// <summary>
+    /// Determines whether every pixel of a reference is exactly black or exactly white: equal color samples that are 0 or
+    /// the largest sample value, at the precision of the reference. Alpha is not looked at (see <see cref="IsOpaque"/>).
+    /// </summary>
+    /// <param name="source">The reference.</param>
+    /// <returns><see langword="true"/> if the reference holds only black and white pixels.</returns>
+    public static bool IsBlackAndWhite(RawPixelBuffer source)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        var colorChannels = source.Layout.IsColor ? 3 : 1;
+        for (var y = 0; y < source.Height; y++)
+        {
+            for (var x = 0; x < source.Width; x++)
+            {
+                var value = source.GetSample(x, y, 0);
+                if (value != 0 && value != source.Layout.MaxSampleValue)
+                    return false;
+
+                for (var channel = 1; channel < colorChannels; channel++)
+                {
+                    if (source.GetSample(x, y, channel) != value)
+                        return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
     private static TPixel CreatePixel<TPixel>(RawPixelBuffer source, int x, int y)
         where TPixel : unmanaged
     {

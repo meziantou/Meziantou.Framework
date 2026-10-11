@@ -226,7 +226,8 @@ internal static class Examples
         frame.Save(tgaPath, new TgaEncoder { Compression = TgaCompression.RunLength, AllowBitDepthReduction = true });
 
         // Netpbm: the variant follows the pixel format (PGM, PPM, or PAM when the pixels have alpha), and MAXVAL follows
-        // the precision, so 16-bit images keep every bit
+        // the precision, so 16-bit images keep every bit. A portable bitmap (PBM) is only written on request, with
+        // PnmPixelLayout.Bitmap, and only from black and white pixels.
         frame.Save(pnmPath, new PnmEncoder());
     }
     // end-snippet

@@ -54,14 +54,17 @@ public sealed class SequentialReadConformanceTests
     {
         var options = CreateReaderOptions(fixture);
         var lateLoopPlays = GetLateGifLoopPlays(fixture);
+
+        // The metadata of a reader are those of the first image it returns, unless they follow the images in the input
+        var metadataOfLastImage = FixtureTraits.MetadataFollowsTheImages(fixture);
         return Enum.Parse<PixelFormat>(fixture.Expected.PixelFormat) switch
         {
-            PixelFormat.Rgba32 => ReadAsync<Rgba32>(variant, data, format, options, into, lateLoopPlays),
-            PixelFormat.Rgb24 => ReadAsync<Rgb24>(variant, data, format, options, into, lateLoopPlays),
-            PixelFormat.Rgba64 => ReadAsync<Rgba64>(variant, data, format, options, into, lateLoopPlays),
-            PixelFormat.Gray8 => ReadAsync<Gray8>(variant, data, format, options, into, lateLoopPlays),
-            PixelFormat.Gray16 => ReadAsync<Gray16>(variant, data, format, options, into, lateLoopPlays),
-            _ => ReadAsync<Bgra32>(variant, data, format, options, into, lateLoopPlays),
+            PixelFormat.Rgba32 => ReadAsync<Rgba32>(variant, data, format, options, into, lateLoopPlays, metadataOfLastImage),
+            PixelFormat.Rgb24 => ReadAsync<Rgb24>(variant, data, format, options, into, lateLoopPlays, metadataOfLastImage),
+            PixelFormat.Rgba64 => ReadAsync<Rgba64>(variant, data, format, options, into, lateLoopPlays, metadataOfLastImage),
+            PixelFormat.Gray8 => ReadAsync<Gray8>(variant, data, format, options, into, lateLoopPlays, metadataOfLastImage),
+            PixelFormat.Gray16 => ReadAsync<Gray16>(variant, data, format, options, into, lateLoopPlays, metadataOfLastImage),
+            _ => ReadAsync<Bgra32>(variant, data, format, options, into, lateLoopPlays, metadataOfLastImage),
         };
     }
 
@@ -79,14 +82,14 @@ public sealed class SequentialReadConformanceTests
         return header.Animation is null ? fixture.Expected.Animation?.TotalPlays : null;
     }
 
-    private static Task<DecodedImageSnapshot> ReadAsync<TPixel>(InputVariant variant, byte[] data, ImageFormat format, ImageReaderOptions options, bool into, int? lateLoopPlays)
+    private static Task<DecodedImageSnapshot> ReadAsync<TPixel>(InputVariant variant, byte[] data, ImageFormat format, ImageReaderOptions options, bool into, int? lateLoopPlays, bool metadataOfLastImage)
         where TPixel : unmanaged
     {
         return InputVariants.ReadAsync<TPixel, DecodedImageSnapshot>(variant, data, format, options, async (reader, asynchronous) =>
         {
             var snapshot = into
-                ? await ReaderSnapshots.CaptureIntoAsync(reader, asynchronous, includeMetadata: true, XunitCancellationToken)
-                : await ReaderSnapshots.CaptureAsync(reader, asynchronous, includeMetadata: true, XunitCancellationToken);
+                ? await ReaderSnapshots.CaptureIntoAsync(reader, asynchronous, includeMetadata: true, metadataOfLastImage, XunitCancellationToken)
+                : await ReaderSnapshots.CaptureAsync(reader, asynchronous, includeMetadata: true, metadataOfLastImage, XunitCancellationToken);
             return WithAnimationKnownAfterReading(reader.Info, snapshot, lateLoopPlays);
         }, XunitCancellationToken);
     }

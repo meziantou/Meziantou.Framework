@@ -48,6 +48,29 @@ public sealed class TimingAndMetadataConformanceTests
         if (expected.Animation is { } animation)
         {
             Assert.Equal(animation.EncodedLoopValue, fields.LoopValue);
+            Assert.Equal(animation.EditList is null, fields.EditList is null);
+            Assert.Equal(animation.EditList?.Repeating, fields.EditList?.Repeating);
+            Assert.Equal(animation.EditList?.SegmentDuration, fields.EditList?.SegmentDuration);
+            Assert.Equal(animation.EditList?.TrackDuration, fields.EditList?.TrackDuration);
+        }
+
+        if (fixture.Entry.Format == "avif")
+        {
+            // The orientation of an AVIF image is the composition of its irot and imir properties, and a colr box of type
+            // nclx is its color description (without one the bitstream describes the colors, which the inspector does not read)
+            Assert.Equal(expected.Orientation, fields.TransformOrientation);
+            if (fields.ContainerCicp is { } cicp)
+            {
+                Assert.Equal(expected.Cicp?.ToString(), cicp.ToString());
+            }
+            else
+            {
+                Assert.True(fixture.Entry.HasFeature("avif.colr=none") || fixture.Entry.HasFeature("avif.colr=icc"), "A file without nclx color information has the feature that says so.");
+            }
+        }
+        else
+        {
+            Assert.Null(expected.Cicp);
         }
 
         // Metadata
@@ -91,6 +114,13 @@ public sealed class TimingAndMetadataConformanceTests
                 Assert.Equal(actual, new FrameDuration(numerator, denominator));
                 Assert.NotEqual(0, denominator);
             }
+            else if (fixture.Entry.Format == "avif")
+            {
+                // The duration of a sample over the time scale of its media: an exact rational, whatever the time scale
+                actual = new FrameDuration(raw.SampleDelta!.Value, raw.Timescale!.Value);
+                Assert.Equal(expected, actual);
+                Assert.Equal((double)raw.SampleDelta.Value / raw.Timescale.Value, actual.TotalSeconds);
+            }
             else if (fixture.Entry.Format == "webp")
             {
                 actual = AnimationTiming.FromWebPDuration(raw.Milliseconds!.Value);
@@ -123,7 +153,13 @@ public sealed class TimingAndMetadataConformanceTests
         var fixture = GoldenCorpus.Default.Get(id);
         var animation = fixture.Expected.Animation!;
         var loop = fixture.InspectInput().LoopValue;
-        if (fixture.Entry.Format == "png")
+        if (fixture.Entry.Format == "avif")
+        {
+            // No loop field: the edit list of the track and the duration of its header give the plays
+            Assert.Null(loop);
+            Assert.Equal(animation.TotalPlays, EditListExpectation.GetTotalPlays(fixture.InspectInput().EditList));
+        }
+        else if (fixture.Entry.Format == "png")
         {
             Assert.NotNull(loop);
             Assert.Equal(animation.TotalPlays, AnimationTiming.FromApngNumPlays((uint)loop.Value));
@@ -175,6 +211,9 @@ public sealed class TimingAndMetadataConformanceTests
         Assert.Contains(delays, item => item.Format == "webp" && item.EncodedDelay is { Milliseconds: 0 });
         Assert.Contains(delays, item => item.Format == "webp" && item.EncodedDelay is { Milliseconds: 7 });
         Assert.Contains(delays, item => item.Format == "webp" && item.EncodedDelay is { Milliseconds: 655350 });
+        Assert.Contains(delays, item => item.Format == "avif" && item.EncodedDelay is { SampleDelta: 1001, Timescale: 30000 }); // not a whole number of milliseconds
+        Assert.Contains(delays, item => item.Format == "avif" && item.EncodedDelay is { SampleDelta: 3, Timescale: 10 });
+        Assert.Contains(delays, item => item.Format == "avif" && item.EncodedDelay is { SampleDelta: 1000, Timescale: 1000 });
 
         var plays = GoldenCorpus.Default.Fixtures.Where(fixture => fixture.IsValid && fixture.Expected.Animation is not null).Select(fixture => (fixture.Entry.Format, fixture.Expected.Animation!.TotalPlays)).ToList();
         Assert.Contains(plays, item => item is ("png", null));
@@ -183,6 +222,9 @@ public sealed class TimingAndMetadataConformanceTests
         Assert.Contains(plays, item => item.Format == "gif" && item.TotalPlays > 1);
         Assert.Contains(plays, item => item is ("webp", null));
         Assert.Contains(plays, item => item.Format == "webp" && item.TotalPlays > 1);
+        Assert.Contains(plays, item => item is ("avif", null));
+        Assert.Contains(plays, item => item is ("avif", 1));
+        Assert.Contains(plays, item => item.Format == "avif" && item.TotalPlays > 1);
     }
 
     [Fact]
@@ -202,7 +244,15 @@ public sealed class TimingAndMetadataConformanceTests
         var fixture = GoldenCorpus.Default.Get(id);
         var exif = fixture.InspectInput().Exif!.Value.ToArray();
         Assert.True(MetadataValidation.TryValidateExif(exif, out var error), error);
-        Assert.Equal((ExifOrientation)fixture.Expected.Orientation, ExifTiff.ReadOrientation(exif));
+        if (fixture.Entry.Format == "avif")
+        {
+            // The orientation of an AVIF image comes from its irot and imir properties; its EXIF orientation tag is ignored
+            Assert.Equal(fixture.Expected.Orientation, fixture.InspectInput().TransformOrientation);
+        }
+        else
+        {
+            Assert.Equal((ExifOrientation)fixture.Expected.Orientation, ExifTiff.ReadOrientation(exif));
+        }
 
         // The container preserves the exact source bytes; the typed orientation imported from them is authoritative
         var profile = new ExifProfile(new MetadataBlob(exif));
@@ -219,6 +269,7 @@ public sealed class TimingAndMetadataConformanceTests
     {
         var fixture = GoldenCorpus.Default.Get(id);
         var exif = fixture.InspectInput().Exif!.Value.ToArray();
+        var storedOrientation = ExifTiff.ReadOrientation(exif);
         var size = new Size(fixture.Expected.Width, fixture.Expected.Height);
         var metadata = new ImageMetadata { ExifProfile = new ExifProfile(new MetadataBlob(exif)), Orientation = ExifOrientation.BottomRight };
 
@@ -230,7 +281,7 @@ public sealed class TimingAndMetadataConformanceTests
 
         // The source profile is immutable: serialization never changes it
         Assert.True(fixture.Expected.Profiles.Exif!.Matches(metadata.ExifProfile!.Data.Span));
-        Assert.Equal((ExifOrientation)fixture.Expected.Orientation, ExifTiff.ReadOrientation(metadata.ExifProfile.Data.Span));
+        Assert.Equal(storedOrientation, ExifTiff.ReadOrientation(metadata.ExifProfile.Data.Span));
     }
 
     [Fact]

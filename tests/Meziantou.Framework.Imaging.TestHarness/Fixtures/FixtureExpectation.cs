@@ -47,6 +47,13 @@ public sealed class FixtureExpectation
     [JsonIgnore]
     public string EffectiveTransferFunction => TransferFunction ?? "srgb";
 
+    /// <summary>
+    /// Gets the expected color description of an AVIF input (<c>ImageMetadata.Cicp</c>), or <see langword="null"/> when the
+    /// input declares none (and for every other format).
+    /// </summary>
+    [JsonPropertyName("cicp")]
+    public CicpExpectation? Cicp { get; init; }
+
     /// <summary>Gets the expected physical resolution, or <see langword="null"/> when the input has none (or only an aspect ratio).</summary>
     [JsonPropertyName("resolution")]
     public required ResolutionExpectation? Resolution { get; init; }

@@ -15,6 +15,9 @@ namespace Meziantou.Framework.Imaging.CorpusGenerator;
 /// cross-checked at generation time (FFmpeg's swscale conversion varies across versions).</description></item>
 /// <item><description>libwebp: every valid WebP fixture with dwebp (stills, within the fixture policy) and anim_dump
 /// (animations, visible pixels within the policy plus one unit, alpha exact).</description></item>
+/// <item><description>AV1 conformance vectors (<see cref="AvifCorpus.Verify"/>): the hash of every stream, and the SHA-256
+/// of every plane of every output frame re-derived with each of the two decoders of the FFmpeg build, dav1d and libaom
+/// (AV1 decoding is bit-exact: any difference is a disagreement).</description></item>
 /// </list>
 /// </summary>
 internal static class CorpusVerifier
@@ -33,7 +36,12 @@ internal static class CorpusVerifier
                 var id = (string)fixture["id"]!;
                 var format = (string)fixture["format"]!;
                 List<string> errors;
-                if (format == "webp")
+                if (format == "avif")
+                {
+                    // Verified below from the AV1 payloads (AvifCorpus.VerifyContainer)
+                    continue;
+                }
+                else if (format == "webp")
                 {
                     errors = VerifyWebP(tools, scratch, fixture);
                 }
@@ -55,9 +63,15 @@ internal static class CorpusVerifier
             Directory.Delete(scratch, recursive: true);
         }
 
+        var (vectors, vectorFailures) = AvifCorpus.Verify(tools);
+        failures.AddRange(vectorFailures);
+        var (containers, containerFailures) = AvifCorpus.VerifyContainer();
+        verified += containers;
+        failures.AddRange(containerFailures);
+
         foreach (var failure in failures)
             Console.WriteLine("  " + failure);
-        Console.WriteLine($"{verified} fixtures verified, {failures.Count} disagreement(s).");
+        Console.WriteLine($"{verified} fixtures and {vectors} AV1 vectors verified, {failures.Count} disagreement(s).");
         return failures.Count == 0 ? 0 : 1;
     }
 

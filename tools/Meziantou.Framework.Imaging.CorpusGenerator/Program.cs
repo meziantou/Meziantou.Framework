@@ -17,11 +17,19 @@ const string Usage = """
         bmp           BMP fixtures (ffmpeg; any OS)
         tga           TGA fixtures (ffmpeg; any OS)
         pnm           Netpbm fixtures (ffmpeg; any OS)
+        avif          AV1 conformance vectors, intra, inter and layered, with plane digests (the ffmpeg of the pinned
+                      meziantou/prebuilt release: libaom and SVT-AV1 encoders, dav1d and libaom decoders, trace_headers;
+                      libavif avifenc for the streams with spatial layers)
+        avif-container
+                      AVIF fixtures: stills, grids, alpha, transformations, metadata, image sequences, layered images,
+                      malformed and over-limit files (libavif avifenc/avifdec and the ffmpeg of the pinned
+                      meziantou/prebuilt release)
         icc           ICC profiles and color conversion vectors (transicc of LittleCMS; any OS)
 
     Verification (read-only, any tool versions):
         verify        re-decode the committed corpus with the ffmpeg, dwebp and anim_dump of the pinned meziantou/prebuilt release and
-                      compare with the committed references: detects reference drift and the impact of a tool upgrade
+                      compare with the committed references: detects reference drift and the impact of a tool upgrade. The AV1
+                      vectors are checked too: file hashes, and plane digests re-derived with dav1d and libaom
 
     Options:
         --write                   replace the committed fixtures of the generator (explicit, reviewed operation);
@@ -94,6 +102,10 @@ try
             return TgaCorpus.Run(options);
         case "pnm":
             return PnmCorpus.Run(options);
+        case "avif":
+            return AvifCorpus.Run(options);
+        case "avif-container":
+            return AvifCorpus.RunContainer(options);
         case "icc":
             if (iccProfiles is null)
             {

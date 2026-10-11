@@ -2,12 +2,15 @@
 
 A fully managed, performance-oriented image library for .NET 10 and .NET 11: PNG, animated PNG (APNG), GIF, JPEG, WebP
 (still and animated, lossless and lossy), QOI, BMP, TGA, Netpbm (PBM/PGM/PPM/PAM), TIFF/BigTIFF, ICO/CUR and animated
-cursor (ANI) decoding and encoding, animation-aware processing, ICC color conversion, and bounded-memory streaming.
+cursor (ANI) decoding and encoding, AVIF decoding (still and animated), animation-aware processing, ICC color
+conversion, and bounded-memory streaming.
 
 - Static PNG, animated PNG (APNG), GIF, baseline/progressive JPEG, WebP (still and animated, lossless and lossy), QOI,
   BMP, TGA, Netpbm (PBM/PGM/PPM/PAM), TIFF/BigTIFF, ICO/CUR and ANI decoding; PNG, APNG, GIF, baseline JPEG, WebP
   (lossless and lossy, still and animated), QOI, BMP, TGA, Netpbm, TIFF/BigTIFF, ICO/CUR and ANI encoding (unsupported
   modes, such as arithmetic or CMYK JPEG, RLE BMP, 16-bit TGA color maps or LZW TIFF, are rejected explicitly)
+- AVIF decoding with a fully managed AV1 decoder: still images and animations, 8, 10 and 12 bits, alpha, grids, film
+  grain (there is no AVIF encoder)
 - `ImageCollection` for the images that are not animation frames: TIFF document pages and icon/cursor representations,
   read and written one entry at a time
 - Animation-aware model: every frame is a full-canvas displayed image with exact rational timing and, for cursors, a
@@ -55,6 +58,7 @@ compiled and run by the test suite.
   - [Netpbm: PBM, PGM, PPM and PAM](#netpbm-pbm-pgm-ppm-and-pam)
   - [TIFF and BigTIFF](#tiff-and-bigtiff)
   - [ICO and CUR](#ico-and-cur)
+  - [AVIF](#avif)
   - [ANI](#ani)
 - [Limitations](#limitations)
 
@@ -132,9 +136,10 @@ decoded or encoded approximately; see [Format reference](#format-reference) and 
 | Netpbm | `P1` to `P7` (PBM, PGM, PPM, PAM), 8 and 16 bits | `P2`/`P3`/`P5`/`P6`/`P7`, lossless | `.pnm`, `.pam`, `.ppm`, `.pgm` |
 | TIFF / BigTIFF | Both byte orders and offset sizes, 8/16-bit gray, gray+alpha, RGB, RGBA, strips and tiles, Deflate, predictor; multi-page documents | Strips, uncompressed or Deflate, classic or BigTIFF; multi-page documents (seekable destination) | `.tif`, `.tiff` |
 | ICO / CUR | PNG and DIB representations, cursor hotspots | PNG or 32-bit DIB representations, cursor hotspots | `.ico`, `.cur` |
+| AVIF | Still images and image sequences (animations); 8, 10 and 12 bits; 4:4:4, 4:2:2, 4:2:0 and monochrome; alpha; grids; film grain; ICC/EXIF/XMP and CICP color descriptions | Not supported | None: `.avif` is rejected by `Save(path)` |
 | ANI | Animated cursors: icon and cursor frames (PNG and DIB), rate and sequence tables, hotspots, title and author | One cursor image per frame (PNG or 32-bit DIB), hotspots, identical frames stored once, title and author (seekable destination) | `.ani` |
 
-JPEG XL and AVIF are not supported.
+JPEG XL is not supported.
 
 ## Usage guide
 
@@ -631,6 +636,11 @@ resolution, ICC/EXIF/XMP profiles (byte-for-byte payloads) and text entries.
   converts the pixels (and resets the label); linear-light resizing filters `Linear` samples directly. Only QOI stores
   the label: the other encoders treat `Linear` as metadata they cannot store, so the samples are never silently
   relabeled as sRGB.
+- **CICP color descriptions are labels too.** `Metadata.Cicp` holds the code points of ITU-T H.273 that an AVIF file
+  declares: color primaries, transfer characteristics, matrix coefficients and range. The decoder applies the matrix and
+  the range to produce RGB; the primaries and the transfer characteristics are never applied (HDR samples are not tone
+  mapped). No encoder stores the description: a description that is not equivalent to sRGB is metadata the format cannot
+  store, unless an ICC profile is written, and linear-light processing rejects it.
 - **Orientation is reported, never applied by decoders.** `Metadata.Orientation` reports the EXIF orientation;
   `AutoOrient()` transforms the pixels for all eight orientations and resets it to `TopLeft`. On save, the typed
   orientation is authoritative: EXIF orientation and dimension tags are rewritten and thumbnails made stale by geometry
@@ -655,7 +665,8 @@ resolution, ICC/EXIF/XMP profiles (byte-for-byte payloads) and text entries.
 
 TIFF stores the resolution, the orientation, an ICC profile and XMP (no EXIF block, no text entries); ICO stores no
 metadata, CUR only the hotspot of each representation, and ANI the hotspot of each frame plus one `Title` and one `Author`
-text entry (Latin-1). Unknown chunks, segments and extensions are skipped on decode and not round-tripped.
+text entry (Latin-1). AVIF is decoded only: its ICC profile, EXIF, XMP, CICP color description and orientation are
+read. Unknown chunks, segments and extensions are skipped on decode and not round-tripped.
 
 <!-- snippet: edit-metadata -->
 ```csharp
@@ -791,6 +802,10 @@ encoded bytes, metadata bytes, live allocations) are safety bounds: exceeding on
 (`Kind`, `Limit`, `Requested`) and is never turned into a successful truncation. `FrameLimit` (decode and reader options)
 is deliberate prefix selection: decoding stops after that many displayed frames and the rest of the input is neither
 examined nor validated. Limits are inclusive and enforced before allocating or consuming.
+
+AVIF is detected from its file type box (12 bytes) and read forward only: the data of the image are captured as they go
+by, so a file whose media data precede its index is buffered up to that index, bounded by `MaxEncodedBytes` and the live
+allocation limit.
 
 `MaxEncodedBytes` equal to the length of the input is always enough, and a smaller value fails the same way from a span,
 a path or a stream. A stream only reports its end by returning no byte, so when the format needs the end of the input (the
@@ -1248,6 +1263,48 @@ known once the last frame is written.
 | Metadata | `INFO` list: `INAM` as a `Title` text entry and `IART` as an `Author` one (Latin-1) | One `Title` and one `Author` text entry (Latin-1, no NUL), following `MetadataHandling` |
 | Memory | The structure is validated without decoding a pixel; one embedded frame is decoded at a time | One encoded frame at a time, plus 8 bytes per step and a digest per distinct frame |
 
+### AVIF
+
+AVIF is decoded and never encoded: `Save("image.avif")` throws an `ArgumentException`, and a loaded image is saved in
+another format. The AV1 decoder is fully managed, written from the AV1 specification, and exact: every plane it decodes
+equals the output of the reference decoders, film grain included.
+
+<!-- snippet: load-avif -->
+```csharp
+public static string ConvertAvif(string avifPath, string pngPath)
+{
+    using var image = Image.Load(avifPath);
+
+    // The color description of the file (primaries, transfer characteristics, matrix and range code points) is a
+    // label, as an ICC profile is: the matrix and the range were applied to produce RGB, nothing else was converted.
+    var description = $"{image.Width}x{image.Height} {image.PixelFormat}, frames: {image.Frames.Count}, color: {image.Metadata.Cicp}";
+
+    // There is no AVIF encoder. PNG keeps 16-bit samples, alpha and animations; it cannot store a color description
+    // that is not sRGB, so a strict save of an HDR image fails instead of relabeling its samples.
+    image.Save(pngPath, new PngEncoder { MetadataHandling = MetadataHandling.Strict });
+    return description;
+}
+```
+
+| Feature | Decoding |
+| --- | --- |
+| Presentation | A file with the `avis` brand presents its image sequence (the `pict` track): an animation whose frames are full-canvas images. Any other file presents its primary item. Thumbnails, gain maps, depth maps and the other images of the file are not read |
+| Bitstream | Every AV1 profile: 8, 10 and 12 bits, 4:4:4, 4:2:2, 4:2:0 and monochrome, intra and inter frames, intra block copy, super-resolution, reference scaling, film grain, temporal and spatial layers |
+| Layered images | A layered (progressive) image holds a frame per spatial layer, each refining the previous ones. The image is the frame of the highest layer of the operating point, which is the image at its full quality; the lower layers are decoded on the way and never returned. The `a1op` property selects the operating point (the first one otherwise) and the `lsel` property a layer, whose frame is then the image and must have the size that the `ispe` property declares. In an image sequence, every sample gives the frame of its highest layer |
+| Pixel formats | 8-bit files load as `Rgb24` (`Rgba32` with alpha, `Gray8` for monochrome without alpha); 10-bit and 12-bit files load as `Rgba64` (`Gray16` for monochrome without alpha), their samples scaled to 16 bits exactly |
+| Color conversion | The matrix coefficients and the range of the `colr` box, or else of the bitstream, convert YCbCr to RGB with integer arithmetic and a documented rounding: identity (RGB, exact), BT.709, FCC, BT.470BG, BT.601, SMPTE 240M, YCgCo and BT.2020 non-constant luminance; unspecified coefficients are BT.601. Subsampled chroma is upsampled bilinearly at the sample position that the bitstream declares |
+| Alpha | The alpha auxiliary image, or the alpha track of a sequence, of the size of the color image. Premultiplied alpha is rejected |
+| Grids | Grid images, for the color image and its alpha plane. The transformations of a grid apply once, to the assembled image, whether or not the tiles repeat them |
+| Transformations | `irot` and `imir` are composed and reported as `Metadata.Orientation`, never applied (`AutoOrient()` applies them); the EXIF orientation tag is ignored, as the format requires. `clap` crops the image when it selects whole samples. `pasp` is ignored |
+| Metadata | ICC profile, EXIF, XMP and the CICP color description. A still image takes them from its primary item. An image sequence takes its ICC profile and its color description from its track, and its EXIF and XMP from the `meta` box of the track, or else from the `meta` box of the file when it precedes the `moov` box |
+| Identification | `Header` mode reads the `meta` box (or the `moov` box of a sequence). When the file has no `colr` box, it reads on to the sequence header of the bitstream, which gives the color description and tells RGB samples from YCbCr ones, and stops there; if the bitstream precedes that box, it has already gone by and the color model is `Unknown`, never guessed. The EXIF and XMP items, which are data of the file, are returned by a full scan or a load. `FullScan` also walks every item and sample, and checks the sample format of the bitstream against its declaration |
+| Animations | Exact frame durations (the sample durations over the time scale of the track); the number of plays comes from the edit list, and a sequence without edit list loops forever. `ImageReader` decodes a sequence frame by frame with a memory that does not depend on the number of frames |
+| Limits | Every frame of the bitstream is checked against the canvas limits, and the frames that are decoded without being shown (hidden frames, and the lower layers of a layered image) count toward `MaxTotalPixels` |
+
+Derived images other than grids (`iden`, `iovl`), fragmented files (`moof`), edit lists that do not play the whole
+track, sequences whose images change size, large scale tile streams and matrix coefficients other than the ones above
+are rejected with `UnsupportedImageFeatureException`.
+
 ## Limitations
 
 Everything below is rejected explicitly (never decoded or encoded approximately) or documented as lossy.
@@ -1271,5 +1328,6 @@ Everything below is rejected explicitly (never decoded or encoded approximately)
 | Metadata | Profiles are preserved and labeled, never applied implicitly (colors are converted only by `ConvertColorProfile` and `IccColorTransform`); EXIF orientation is reported, applied only by `AutoOrient`; extended XMP in JPEG is not supported; per-format storage limits are listed in [Metadata, color profiles and orientation](#metadata-color-profiles-and-orientation); unsupported items follow `MetadataHandling` (`Strict` throws by default) |
 | Color management | ICC version 2 and 4 grayscale, RGB and CMYK profiles (matrix-based and table-based): no version 5 (iccMAX), device-link, abstract or named-color profile, no multi-process-element (`D2Bx`/`B2Dx`) tag, no other data color space; `ConvertColorProfile` keeps the pixel format (an RGB image cannot become grayscale or CMYK this way); CMYK images cannot be decoded; no gamut mapping beyond per-channel clipping |
 | Processing | No HDR, drawing, text rendering or custom processors; `LinearSrgb` resizing and convolution accept untagged or recognized sRGB/sGray profiles only; convolution matrices have odd dimensions, no bias or divisor, no ready-made matrices and no separable fast path |
-| Formats | JPEG XL and AVIF are not supported |
+| AVIF | Decoding only. Rejected with `UnsupportedImageFeatureException`: premultiplied alpha, `iden`/`iovl` derived images, fragmented files, edit lists that do not play the whole track, image sequences whose images change size, clean apertures that do not select whole samples or that follow a rotation, grid tiles that declare other transformations than their grid, large scale tile streams, and the other matrix coefficients (constant luminance, ICtCp, SMPTE 2085, chromaticity-derived). Not read: gain maps, depth maps, thumbnails, the images that are not the primary item, the `tkhd` matrix and the other transformations of an image sequence (its images are returned as stored), mastering display and content light level boxes. A layered image is returned at its full quality only: its lower layers are not exposed as a progressive rendering. HDR samples are returned as stored: no tone mapping |
+| Formats | JPEG XL is not supported |
 | API | No public allocator, custom pixel type, codec plug-in or image-processor interface; implementation types are internal |

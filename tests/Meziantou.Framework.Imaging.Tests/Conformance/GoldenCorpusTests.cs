@@ -175,12 +175,15 @@ public sealed class GoldenCorpusTests
 
             // A lossy fixture is compared exactly only when every independent decoder agrees exactly (e.g. a single-block frame)
             var decodedIdentically = fixture.Entry.Reference?.CrossChecks?.Where(check => check.ExcludedFromTolerance != true).All(check => check.MaxAbsoluteError == 0) == true;
-            Assert.Equal((fixture.Entry.Format == "jpeg" || fixture.Entry.HasFeature("webp.bitstream=vp8")) && !decodedIdentically, !policy.IsExact);
+            // AVIF: only the samples a matrix applies to are converted with rounded coefficients (identity-matrix,
+            // monochrome and alpha samples are exact, whether or not the AV1 coding is lossless)
+            var isMatrixedAvif = fixture.Entry.Format == "avif" && (fixture.Entry.Features ?? []).Any(feature => feature.StartsWith("avif.matrix=", StringComparison.Ordinal) && feature != "avif.matrix=0");
+            Assert.Equal((fixture.Entry.Format == "jpeg" || fixture.Entry.HasFeature("webp.bitstream=vp8") || isMatrixedAvif) && !decodedIdentically, !policy.IsExact);
             if (!policy.IsExact)
             {
                 Assert.True(policy.MaxAbsoluteError <= ComparisonPolicy.AbsoluteErrorCeiling);
                 Assert.Contains("measured", policy.Justification!, StringComparison.Ordinal);
-                Assert.Empty(FixtureManifestValidator.FindUndetectableDefects(fixture.GetFrame(0, RawPixelLayout.Rgba8), policy));
+                Assert.Empty(FixtureManifestValidator.FindUndetectableDefects(fixture.GetFrame(0, fixture.CanonicalLayout), policy));
             }
         }
     }
@@ -205,6 +208,9 @@ public sealed class GoldenCorpusTests
             HorizontalDpi = fields.Resolution is { } resolution ? ResolutionExpectation.ToDpi(resolution.Unit, resolution.X) : null,
             VerticalDpi = fields.Resolution is { } resolution2 ? ResolutionExpectation.ToDpi(resolution2.Unit, resolution2.Y) : null,
             TransferFunction = fields.TransferFunction ?? "srgb",
+
+            // Without a colr box of type nclx the AV1 bitstream describes the colors; the inspector does not read coded data
+            Cicp = fields.ContainerCicp?.ToString() ?? (fixture.Entry.Format == "avif" ? fixture.Expected.Cicp?.ToString() : null),
             IccProfile = fields.Icc,
             ExifProfile = fields.Exif,
             XmpProfile = fields.Xmp,

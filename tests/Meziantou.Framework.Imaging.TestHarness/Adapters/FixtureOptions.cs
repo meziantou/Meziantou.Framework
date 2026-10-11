@@ -58,6 +58,7 @@ public static class FixtureOptions
             "bmp" => ImageFormat.Bmp,
             "tga" => ImageFormat.Tga,
             "pnm" => ImageFormat.Pnm,
+            "avif" => ImageFormat.Avif,
             _ => ImageFormat.Unknown,
         };
     }

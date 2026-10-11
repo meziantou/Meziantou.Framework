@@ -24,9 +24,14 @@ public static class ReaderSnapshots
     /// <param name="reader">The reader, positioned before the first image.</param>
     /// <param name="asynchronous">Whether to use the asynchronous reader methods.</param>
     /// <param name="includeMetadata">Whether the snapshot carries the metadata of the first returned image.</param>
+    /// <param name="metadataOfLastImage">
+    /// Whether the metadata is the one of the last returned image instead of the first one: for an input whose metadata
+    /// follow its images (an AVIF image sequence whose Exif and XMP item data follow the samples), a reader gives them with
+    /// the images that follow their data, at the latest with the last one.
+    /// </param>
     /// <param name="cancellationToken">The token passed to asynchronous calls.</param>
     /// <returns>The snapshot (animation settings from <c>reader.Info</c>).</returns>
-    public static async Task<DecodedImageSnapshot> CaptureAsync<TPixel>(ImageReader<TPixel> reader, bool asynchronous, bool includeMetadata = false, CancellationToken cancellationToken = default)
+    public static async Task<DecodedImageSnapshot> CaptureAsync<TPixel>(ImageReader<TPixel> reader, bool asynchronous, bool includeMetadata = false, bool metadataOfLastImage = false, CancellationToken cancellationToken = default)
         where TPixel : unmanaged
     {
         ArgumentNullException.ThrowIfNull(reader);
@@ -42,7 +47,7 @@ public static class ReaderSnapshots
             using (image)
             {
                 state.CheckStill(image, $"frame {frames.Count.ToString(CultureInfo.InvariantCulture)}");
-                state.OnImage(image, includeMetadata);
+                state.OnImage(image, includeMetadata, metadataOfLastImage);
                 frames.Add(new DecodedFrameSnapshot(ImageSnapshots.CaptureFrameRows(image.Frames[0]), ImageSnapshots.ToRational(image.Frames[0].Metadata.Duration)));
                 Overwrite(image);
             }
@@ -59,9 +64,10 @@ public static class ReaderSnapshots
     /// <param name="reader">The reader, positioned before the first image.</param>
     /// <param name="asynchronous">Whether to use the asynchronous reader methods.</param>
     /// <param name="includeMetadata">Whether the snapshot carries the metadata of the destination after the first frame.</param>
+    /// <param name="metadataOfLastImage">Whether the metadata is the one of the destination after the last frame instead of the first one.</param>
     /// <param name="cancellationToken">The token passed to asynchronous calls.</param>
     /// <returns>The snapshot.</returns>
-    public static async Task<DecodedImageSnapshot> CaptureIntoAsync<TPixel>(ImageReader<TPixel> reader, bool asynchronous, bool includeMetadata = false, CancellationToken cancellationToken = default)
+    public static async Task<DecodedImageSnapshot> CaptureIntoAsync<TPixel>(ImageReader<TPixel> reader, bool asynchronous, bool includeMetadata = false, bool metadataOfLastImage = false, CancellationToken cancellationToken = default)
         where TPixel : unmanaged
     {
         ArgumentNullException.ThrowIfNull(reader);
@@ -77,7 +83,7 @@ public static class ReaderSnapshots
             if (!ReferenceEquals(frame, destination.Frames[0]))
                 throw new GoldenAssertionException($"{name}: ReadFrameInto replaced the destination frame instead of reusing its storage.");
 
-            state.OnImage(destination, includeMetadata);
+            state.OnImage(destination, includeMetadata, metadataOfLastImage);
             frames.Add(new DecodedFrameSnapshot(ImageSnapshots.CaptureFrameRows(frame), ImageSnapshots.ToRational(frame.Metadata.Duration)));
 
             // The next frame must not depend on the destination content: full-canvas frames overwrite every pixel
@@ -107,7 +113,7 @@ public static class ReaderSnapshots
                 throw new GoldenAssertionException("ReadPosterFrame returned an image but the header does not announce a separate poster frame.");
 
             state.CheckStill(image, "poster");
-            state.OnImage(image, includeMetadata: false);
+            state.OnImage(image, includeMetadata: false, replace: false);
             var pixels = ImageSnapshots.CaptureFrameRows(image.Frames[0]);
             Overwrite(image);
             return pixels;
@@ -171,10 +177,10 @@ public static class ReaderSnapshots
                 throw new GoldenAssertionException($"{name}: a returned image must not have animation settings (they belong to reader.Info).");
         }
 
-        public void OnImage(Image image, bool includeMetadata)
+        public void OnImage(Image image, bool includeMetadata, bool replace)
         {
             _orientation ??= (int)image.Metadata.Orientation;
-            if (includeMetadata && _metadata is null)
+            if (includeMetadata && (replace || _metadata is null))
             {
                 _metadata = ImageSnapshots.CaptureMetadata(image.Metadata);
             }

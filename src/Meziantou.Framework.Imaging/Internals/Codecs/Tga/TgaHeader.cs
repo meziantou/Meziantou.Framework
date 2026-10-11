@@ -7,9 +7,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <remarks>
 /// TGA has no magic number, so <see cref="IsPlausible"/> is the detection rule: every field of the header must be a legal
 /// value and the fields must agree with each other (a color map exactly when the image type is color-mapped, an alpha-bit
-/// count the sample depth can hold, no reserved descriptor bit). Recognized values this version cannot decode are accepted
-/// by <see cref="IsPlausible"/> and rejected by <see cref="Parse"/>, so they are reported as unsupported features instead of
-/// as an unknown format.
+/// count the sample depth can hold, no reserved descriptor bit). Every header <see cref="IsPlausible"/> accepts is decoded.
 /// </remarks>
 [StructLayout(LayoutKind.Auto)]
 internal readonly struct TgaHeader
@@ -52,7 +50,10 @@ internal readonly struct TgaHeader
     /// <summary>Gets the positive height, in pixels.</summary>
     public int Height { get; }
 
-    /// <summary>Gets the number of bits of one stored pixel (8, 15, 16, 24 or 32).</summary>
+    /// <summary>
+    /// Gets the number of bits of one stored pixel: 8 or 16 for a color-map index, 8 or 16 for a grayscale sample (16 bits
+    /// are an 8-bit gray sample followed by an 8-bit attribute), and 15, 16, 24 or 32 for a true-color sample.
+    /// </summary>
     public int PixelDepth { get; }
 
     /// <summary>Gets the image descriptor byte.</summary>
@@ -137,44 +138,42 @@ internal readonly struct TgaHeader
         if (!depthIsLegal)
             return false;
 
-        var sampleBits = isColorMapped ? colorMapEntryBits : pixelDepth;
-        return IsAlphaBitCountLegal(descriptor & TgaFormat.DescriptorAlphaBitsMask, sampleBits);
+        var alphaBits = descriptor & TgaFormat.DescriptorAlphaBitsMask;
+        if (imageType is TgaImageType.Grayscale or TgaImageType.RleGrayscale)
+            return IsGrayscaleAlphaBitCountLegal(alphaBits, pixelDepth);
+
+        return IsAlphaBitCountLegal(alphaBits, isColorMapped ? colorMapEntryBits : pixelDepth);
     }
 
     /// <summary>Parses and validates a TGA header.</summary>
     /// <param name="header">Exactly <see cref="TgaFormat.HeaderLength"/> bytes.</param>
     /// <returns>The parsed header.</returns>
     /// <exception cref="InvalidImageContentException">A field is out of range or inconsistent.</exception>
-    /// <exception cref="UnsupportedImageFeatureException">The variant is recognized but not supported.</exception>
     public static TgaHeader Parse(ReadOnlySpan<byte> header)
     {
         if (!IsPlausible(header))
             throw TgaFormat.Invalid("The TGA header is not a legal, self-consistent 18-byte header (image type, color map, dimensions, pixel depth and image descriptor).");
 
-        var imageType = (TgaImageType)header[2];
-        var colorMapEntryBits = header[7];
-        var pixelDepth = header[16];
-        var isColorMapped = imageType is TgaImageType.ColorMapped or TgaImageType.RleColorMapped;
-        if (isColorMapped && pixelDepth != 8)
-            throw TgaFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TGA stores {pixelDepth}-bit color-map indexes; this version decodes 8-bit indexes."), "Color map: 16-bit indexes");
-
-        if (imageType is TgaImageType.Grayscale or TgaImageType.RleGrayscale && pixelDepth != 8)
-            throw TgaFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TGA stores {pixelDepth}-bit grayscale samples; this version decodes 8-bit grayscale."), "Grayscale: 16-bit samples");
-
         return new TgaHeader(
             header[0],
             hasColorMap: header[1] == 1,
-            imageType,
+            (TgaImageType)header[2],
             BinaryPrimitives.ReadUInt16LittleEndian(header[3..]),
             BinaryPrimitives.ReadUInt16LittleEndian(header[5..]),
-            colorMapEntryBits,
+            header[7],
             BinaryPrimitives.ReadUInt16LittleEndian(header[12..]),
             BinaryPrimitives.ReadUInt16LittleEndian(header[14..]),
-            pixelDepth,
+            header[16],
             header[17]);
     }
 
-    /// <summary>Determines whether an alpha-bit count can be stored by samples of a given width.</summary>
+    /// <summary>
+    /// Determines whether an alpha-bit count can be stored by grayscale pixels of a given depth: the second byte of a
+    /// 16-bit pixel is an attribute, which is either the alpha channel (8 bits) or unspecified (0 bits).
+    /// </summary>
+    private static bool IsGrayscaleAlphaBitCountLegal(int alphaBits, int pixelDepth) => pixelDepth == 16 ? alphaBits is 0 or 8 : alphaBits == 0;
+
+    /// <summary>Determines whether an alpha-bit count can be stored by true-color samples or color-map entries of a given width.</summary>
     private static bool IsAlphaBitCountLegal(int alphaBits, int sampleBits) => sampleBits switch
     {
         32 => alphaBits is 0 or 8,

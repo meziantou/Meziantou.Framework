@@ -805,9 +805,9 @@ public static string DescribeFont(string path)
 
 ### Text
 
-A `TextLayout` is a text laid out with a font at a size: its glyphs and their positions. It measures the text
-(`Width`, `Height`, `Baseline`, `LineCount`, `InkBounds`) and is what `DrawingCanvas.FillText` and `StrokeText` draw, so
-that what is measured is what is drawn.
+A `TextLayout` is a text laid out: its lines, its glyphs and their positions. It measures the text (`Width`,
+`Height`, `Baseline`, `Lines`, `InkBounds`) and is what `DrawingCanvas.FillText` and `StrokeText` draw, so that what is
+measured is what is drawn. The text types are in the `Meziantou.Framework.Imaging.Typography` namespace.
 
 <!-- snippet: draw-text -->
 ```csharp
@@ -836,44 +836,101 @@ public static void DrawLabel(string fontPath, string outputPath)
 }
 ```
 
-- **Lines.** The text is one line, or several when it contains line breaks (line feed, carriage return with or without
-  a line feed, vertical tab, form feed, U+0085, U+2028, U+2029); a line break at the end starts an empty line. Lines
-  are not wrapped. A line is as tall as the line height of the font; the line gap is split above and below the glyphs,
-  so the first baseline is half the line gap plus the ascent under the top of the layout.
-- **Shaping.** The text is shaped with the OpenType Layout tables of the font, one run per script:
+A text of one font is `TextLayout.Create(text, font, size)`. A `TextStyle` holds everything else about how a text is
+set, a `RichText` gives each part of a text its own style, and `TextLayoutOptions` say how the text is wrapped and
+aligned:
+
+<!-- snippet: draw-paragraph -->
+```csharp
+public static void DrawParagraph(string fontPath, string outputPath)
+{
+    var font = Font.Load(fontPath);
+    var regular = new TextStyle(font, 18);
+    var emphasis = new TextStyle(font, 18) { Brush = new SolidBrush(new Rgba32(180, 30, 30)), Decorations = TextDecorations.Underline };
+
+    // A span is not a word or a line: the layout wraps the whole text, and shapes the letters of two spans together
+    var text = new RichTextBuilder()
+        .Append("Text is wrapped where ", regular)
+        .Append("Unicode", emphasis)
+        .Append(" allows a line to break, and each line is stretched to the width of the paragraph.", regular)
+        .Build();
+    var layout = TextLayout.Create(text, new TextLayoutOptions { MaxWidth = 300, Alignment = TextAlignment.Justify });
+
+    using var image = new Image<Rgba32>(320, (int)Math.Ceiling(layout.Height) + 20, new Rgba32(255, 255, 255));
+
+    // The brush of the call paints the spans that have none
+    image.Draw(canvas => canvas.FillText(new Rgba32(0, 0, 0), layout, new PointD(10, 10)));
+    image.Save(outputPath);
+}
+```
+
+- **Paragraphs and lines.** A paragraph ends at a line break of the text (line feed, carriage return with or without
+  a line feed, vertical tab, form feed, U+0085, U+2028, U+2029); a line break at the end starts an empty line. With
+  `MaxWidth`, the lines of a paragraph are wrapped where the Unicode line breaking algorithm (UAX #14) allows it;
+  `WordBreak` and `LineBreak` select its variants, and `OverflowWrap` lets a word that is wider than the layout be cut
+  between two characters. The white space that ends a wrapped line hangs: it does not count in the width of the line.
+  A line is as tall as its fonts ask (the largest ascent and descent, each with half of the line gap), or as
+  `LineHeight` says.
+- **Hyphenation.** A word is broken at a soft hyphen (U+00AD), and the line then ends with a hyphen. With
+  `Hyphenation = Automatic`, a word is also broken where the patterns of its style allow it: `TextStyle.Hyphenator` is
+  a `Hyphenator` of `Meziantou.Framework.Unicode`, loaded from TeX hyphenation patterns. No pattern is provided with
+  the library.
+- **Direction.** Each paragraph is ordered by the Unicode Bidirectional Algorithm (UAX #9): left-to-right and
+  right-to-left text can be mixed, mirrored characters are mirrored, and each line is put in display order.
+  `Direction` imposes the base direction of the paragraphs; by default it is the one of their first strong character.
+  `Alignment` is relative to it: `Start` is the left of a left-to-right paragraph and the right of a right-to-left one.
+- **Alignment.** Lines are aligned in `MaxWidth`, or in the width of the widest line without it. `Justify` stretches
+  each line to that width by widening its spaces, except the last line of a paragraph. `FirstLineIndent` indents the
+  first line of each paragraph, and `TabSize` sets the tabulation stops.
+- **Fitting.** `MaxLines` and `MaxHeight` cut the text (the first line is always kept); `Trimming` ends the last line
+  with an ellipsis after the last character or the last word that leaves room for it, and also trims a line that is
+  wider than `MaxWidth` when lines are not wrapped. `IsTruncated` says that a part of the text is not in the layout.
+- **Styles.** A `TextStyle` has a `FontStack` (a font, then the fonts used for the characters the ones before lack; a
+  `Font` converts to a stack of one font) and a size, and optionally a brush, OpenType features to turn on or off
+  (`new FontFeature("liga", 0)`, `new FontFeature("smcp")`), letter and word spacing, decorations (underline,
+  strikethrough, overline, drawn with the metrics of the font) and hyphenation patterns. Spans that only differ by
+  what is painted are shaped together: letters of two colors still kern and join.
+- **Shaping.** Each run of one script, direction and font is shaped with the OpenType Layout tables of the font:
   - the characters are put in the form the font has glyphs for: a character the font lacks is decomposed into parts
     it has, and a character and its marks use the composed glyph when the font has it, so `é` typed as one character
     or as `e` and a combining accent gives the same result; a variation sequence selects its glyph;
   - the `GSUB` table substitutes glyphs (ligatures, contextual and localized forms, composition) and the `GPOS` table
     positions them (kerning, marks on their base or on a component of a ligature, marks on marks, cursive
     connection), with the features a client applies by default to horizontal text: `ccmp`, `locl`, `rlig`, `calt`,
-    `clig`, `liga`, `rclm`, `ltra`, `ltrm`, `mark`, `mkmk`, `abvm`, `blwm`, `curs`, `dist`, `kern`, and `frac`,
-    `numr`, `dnom` around a fraction slash (`1⁄2`);
+    `clig`, `liga`, `rclm`, the direction features (`ltra`, `ltrm`, `rtla`, `rtlm`), `mark`, `mkmk`, `abvm`, `blwm`,
+    `curs`, `dist`, `kern`, and `frac`, `numr`, `dnom` around a fraction slash (`1⁄2`);
   - a font without `GPOS` kerning is kerned by its `kern` table; a mark does not move the pen;
   - spaces of a fixed width and the non-breaking hyphen that a font lacks are made from its space and its hyphen.
 
-  Control characters are not drawn, format characters (joiners, variation selectors, the soft hyphen) are invisible,
-  and a tabulation moves to the next multiple of eight spaces. A character the font has no glyph for is drawn with
-  the missing glyph of the font, and `HasMissingGlyphs` says so: nothing throws, and no other font is used.
+  Control characters are not drawn and format characters (joiners, variation selectors, the soft hyphen where the line
+  is not broken) are invisible. A character no font of the stack has is drawn with the missing glyph of the primary
+  font, and `HasMissingGlyphs` says so: nothing throws.
 - **Rendering.** The outlines are scaled to the size and placed at fractions of a pixel, then filled or stroked like any
   path: exact coverage, the same compositing, the same flattening tolerance. Nothing is snapped to the pixel grid and
-  the hinting of the font is not applied, so the same text gives the same pixels on every platform. The glyphs of one
-  call are one shape: where glyphs overlap, the brush is applied once. `TextLayout.ToPath` gives the same outlines as
-  a `VectorPath`; filling or stroking it changes the same pixels to the same values.
+  the hinting of the font is not applied, so the same text gives the same pixels on every platform. The glyphs and the
+  decorations of one paint are one shape: where glyphs overlap, the brush is applied once. The brush of `FillText`
+  paints the spans that have none; `StrokeText` strokes every outline with its pen. `TextLayout.ToPath` gives the
+  outlines as a `VectorPath`; filling or stroking it changes the same pixels to the same values as a layout of one
+  paint.
+- **Measuring.** `Width` and `Height` are the size of the text, `Lines` gives each line (its part of the text, its
+  position, its width, its baseline), and `InkBounds` contains everything that is drawn.
 - **Cost.** Creating a layout allocates (its glyphs and positions) and decodes each distinct glyph once, which validates
   the font data the text uses: drawing a layout then only fails on a limit of the image or on cancellation, and
   allocates nothing. `FillText(brush, text, font, size, origin)` creates a layout on each call; create the layout
-  yourself to measure a text or to draw it more than once. A layout is immutable and thread-safe.
-- **Limits.** `MaxTextLength` (UTF-16 code units), `MaxTextGlyphs` and `MaxGlyphComplexity`, from the configuration the
-  font was loaded with.
+  yourself to measure a text or to draw it more than once. Layouts, styles, options and rich texts are immutable and
+  thread-safe.
+- **Limits.** `MaxTextLength` (UTF-16 code units), `MaxTextGlyphs`, `MaxTextLines` and `MaxGlyphComplexity`, from the
+  configuration the primary font of the first span was loaded with.
 
-What text layout does not do yet: text is laid out left to right, so right-to-left scripts are in the wrong order,
-and the scripts that need more than the lookups of the font (Arabic joining, the reordering of Indic and Southeast
-Asian scripts) are not shaped correctly. Features cannot be chosen by the caller. There is no line wrapping,
-alignment, font fallback or decoration.
+What text layout does not do yet: the scripts that need more than the lookups of the font to be shaped (Arabic
+joining, the reordering of Indic and Southeast Asian scripts, which also have no dictionary to break their lines) are
+not shaped correctly. The language of a text cannot be given. Lines are broken one after the other, each as full as
+possible, not by optimizing the whole paragraph. Text is horizontal.
 
 The glyphs and positions are checked against the Annotated OpenType Specification tests of Adobe for every format of
-the lookups, and against the OpenType shaper of HarfBuzz for texts set in the fonts of the test corpus.
+the lookups, and against the OpenType shaper of HarfBuzz for texts set in the fonts of the test corpus; line breaking
+and bidirectional ordering are the algorithms of `Meziantou.Framework.Unicode`, which pass the conformance tests of
+the Unicode Consortium.
 
 ### Metadata, color profiles and orientation
 
@@ -1759,6 +1816,6 @@ Everything below is rejected explicitly (never decoded or encoded approximately)
 | AVIF encoding | An image of a sequence is predicted from the previous image only, with one motion vector per block and the regular interpolation filter: no compound prediction (two references), global, warped or overlapped motion, switchable interpolation filter, temporal motion vector prediction, or scene change detection (an image that differs from the previous one is coded with intra blocks, not as a key frame). Not used: intra block copy (content that repeats in an image, such as the characters of a text, is not predicted from the image itself: a lossless screenshot can be larger than its PNG), the split of the transform blocks of an inter block (it has the largest transform of its size), quantizer deltas, quantization matrices, loop restoration, CDEF strengths per block (one pair per frame), super-resolution and film grain. No grid, layered (progressive) or premultiplied-alpha output; no `clap`, `pasp`, mastering display or content light level box; no orientation for an image sequence. An image sequence of one image cannot store animation settings (it is read back as a still image): a single frame with animation settings is rejected. An image sequence needs a seekable destination and its frame count. The level of the stream is the lowest one whose picture size holds the image; the other limits of a level are not checked |
 | AVIF decoding | Rejected with `UnsupportedImageFeatureException`: premultiplied alpha, `iden`/`iovl` derived images, fragmented files, edit lists that do not play the whole track, image sequences whose images change size, clean apertures that do not select whole samples or that follow a rotation, grid tiles that declare other transformations than their grid, large scale tile streams, and the other matrix coefficients (constant luminance, ICtCp, SMPTE 2085, chromaticity-derived). Not read: gain maps, depth maps, thumbnails, the images that are not the primary item, the `tkhd` matrix and the other transformations of an image sequence (its images are returned as stored), mastering display and content light level boxes. A layered image is returned at its full quality only: its lower layers are not exposed as a progressive rendering. HDR samples are returned as stored: no tone mapping |
 | JPEG XL | Decoding, rejected with `UnsupportedImageFeatureException` (also from `Identify` when the image header tells): floating-point samples and samples of more than 16 bits, premultiplied alpha, CMYK (a black channel) and spot colors, an XYB image whose ICC profile is not sRGB (it needs a color conversion to that profile), the PQ or HLG transfer function with primaries or a white point that CICP cannot express, a Modular frame stored as YCbCr with subsampled channels, restoration filters on a grayscale Modular frame, an upsampled frame with patches or splines whose extra channels have another resolution. Ignored: the preview frame, frame names, the intrinsic size, the JPEG reconstruction data (`jbrd`: a recompressed JPEG file is decoded to pixels, the JPEG file is not rebuilt), `jumb` and unknown boxes; depth, selection mask, thermal and the other extra channels than alpha are decoded and dropped. Samples of 1 to 16 bits other than 8 and 16 are scaled exactly to 8 or 16 bits. A lossy frame is decoded in floating point: the result is within a few sixteen-bit units of the reference decoders, not bit-exact. Encoding: lossless only (no lossy output), full frames that replace the image (no layers, blending, patches or cropped frames), frame durations in whole milliseconds, no frame of an animation without duration; an EXIF orientation is written to the image header |
-| Text | One font and one size per layout, left to right: no right-to-left reordering, no shaping beyond the lookups of the font (Arabic joining, Indic and Southeast Asian reordering), no choice of features, no line wrapping, alignment, font fallback or decoration; no AAT (`morx`, `kerx`) shaping, no device or variation adjustment of positions; no hinting and no subpixel (LCD) rendering; see [Text](#text) |
+| Text | Horizontal text only; no shaping beyond the lookups of the font (Arabic joining, Indic and Southeast Asian reordering) and no dictionary line breaking for the scripts that need one; no language-specific forms; greedy line breaking; no AAT (`morx`, `kerx`) shaping, no device or variation adjustment of positions; no hinting and no subpixel (LCD) rendering; no system font: every font is given by the caller; see [Text](#text) |
 | Fonts | No system font, no CFF2 outline, variation, bitmap or color glyph table, no Type 1 font, no hinting; see [Fonts](#fonts) |
 | API | No public allocator, custom pixel type, codec plug-in or image-processor interface; implementation types are internal |

@@ -203,9 +203,29 @@ internal sealed class DrawingSession : IDisposable
         ArgumentNullException.ThrowIfNull(brush);
         ArgumentNullException.ThrowIfNull(layout);
         DrawingGuard.Point(origin, nameof(origin));
-        var sink = BeginFill();
-        layout.Emit(sink, _glyphSink ??= new GlyphPathSink(), _glyphScratch ??= new GlyphScratch(_image.Owner.Scope), origin.X, origin.Y, _edges);
-        Render(brush, FillRule.NonZero);
+        var glyphSink = _glyphSink ??= new GlyphPathSink();
+        var scratch = _glyphScratch ??= new GlyphScratch(_image.Owner.Scope);
+        if (layout.BrushCount <= 1)
+        {
+            layout.Emit(BeginFill(), glyphSink, scratch, origin.X, origin.Y, _edges, brush: -1);
+            Render(layout.BrushCount == 0 ? brush : layout.GetBrush(0) ?? brush, FillRule.NonZero);
+            return;
+        }
+
+        // A text of several paints is one shape per paint. Every rental of a call happens before its first pixel
+        // write: each shape is prepared once without being painted, so that the working storage has grown to the
+        // largest of them, then the shapes are painted in the order of the paints.
+        for (var i = 0; i < layout.BrushCount; i++)
+        {
+            layout.Emit(BeginFill(), glyphSink, scratch, origin.X, origin.Y, _edges, i);
+            Prepare(layout.GetBrush(i) ?? brush, FillRule.NonZero, out _, out _);
+        }
+
+        for (var i = 0; i < layout.BrushCount; i++)
+        {
+            layout.Emit(BeginFill(), glyphSink, scratch, origin.X, origin.Y, _edges, i);
+            Render(layout.GetBrush(i) ?? brush, FillRule.NonZero);
+        }
     }
 
     public void StrokeText(Pen pen, TextLayout layout, PointD origin)
@@ -214,7 +234,7 @@ internal sealed class DrawingSession : IDisposable
         ArgumentNullException.ThrowIfNull(layout);
         DrawingGuard.Point(origin, nameof(origin));
         var sink = BeginStroke(pen);
-        layout.Emit(sink, _glyphSink ??= new GlyphPathSink(), _glyphScratch ??= new GlyphScratch(_image.Owner.Scope), origin.X, origin.Y, edges: null);
+        layout.Emit(sink, _glyphSink ??= new GlyphPathSink(), _glyphScratch ??= new GlyphScratch(_image.Owner.Scope), origin.X, origin.Y, edges: null, brush: -1);
         RenderStroke(pen);
     }
 
@@ -293,28 +313,7 @@ internal sealed class DrawingSession : IDisposable
     /// <summary>Rasterizes the edges of the call and composites every row onto every frame.</summary>
     private void Render(Brush brush, FillRule fillRule)
     {
-        var edges = _edges!;
-        if (edges.Count == 0)
-            return;
-
-        DrawingColor color = default;
-        GradientEvaluator? gradient = null;
-        if (brush is SolidBrush solid)
-        {
-            color = _frames[0].ConvertDrawingColor(solid.Color);
-            if (color.Alpha == 0)
-                return;
-        }
-        else
-        {
-            gradient = _gradient ??= new GradientEvaluator(_image.Owner.Scope);
-            gradient.Prepare((GradientBrush)brush, _frames[0], Width);
-            if (gradient.IsTransparent)
-                return;
-        }
-
-        var rasterizer = _rasterizer!;
-        if (!rasterizer.Begin(edges, fillRule, _cancellationToken))
+        if (!Prepare(brush, fillRule, out var color, out var gradient))
             return;
 
         if (!_thumbnailRemoved)
@@ -324,6 +323,7 @@ internal sealed class DrawingSession : IDisposable
             _thumbnailRemoved = true;
         }
 
+        var rasterizer = _rasterizer!;
         while (rasterizer.MoveNext())
         {
             var y = rasterizer.Y;
@@ -335,5 +335,32 @@ internal sealed class DrawingSession : IDisposable
                 _frames[i].CompositePixels(_storages[i], y, x, coverage, source);
             }
         }
+    }
+
+    /// <summary>Prepares the paint and the sweep of the edges of the call: every rental happens here, and no pixel is changed.</summary>
+    /// <returns><see langword="false"/> when there is nothing to paint.</returns>
+    private bool Prepare(Brush brush, FillRule fillRule, out DrawingColor color, out GradientEvaluator? gradient)
+    {
+        color = default;
+        gradient = null;
+        var edges = _edges!;
+        if (edges.Count == 0)
+            return false;
+
+        if (brush is SolidBrush solid)
+        {
+            color = _frames[0].ConvertDrawingColor(solid.Color);
+            if (color.Alpha == 0)
+                return false;
+        }
+        else
+        {
+            gradient = _gradient ??= new GradientEvaluator(_image.Owner.Scope);
+            gradient.Prepare((GradientBrush)brush, _frames[0], Width);
+            if (gradient.IsTransparent)
+                return false;
+        }
+
+        return _rasterizer!.Begin(edges, fillRule, _cancellationToken);
     }
 }

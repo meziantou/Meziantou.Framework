@@ -80,6 +80,7 @@ public sealed class PerformanceContractTests
             TextLayout.Create("OPQ\nR O", FontTestSupport.Load(FontSamples.Curves()), 14.5),
             TextLayout.Create("ABCDEFG", FontTestSupport.Load(FontSamples.Charstrings()), 9.25),
             TextLayout.Create("AB\u00C1H", FontTestSupport.Load(FontSamples.Boxes()), 12),
+            CreateRichLayout(),
             new StrongBox<long>(long.MaxValue));
 
         // Tiered compilation running concurrently can attribute a few bytes to this thread, and the many methods behind a
@@ -124,6 +125,23 @@ public sealed class PerformanceContractTests
             canvas.FillText(state.Solid, state.CffText, new PointD(4, 20));
             canvas.StrokeText(state.Pen, state.CffText, new PointD(4, 30));
             canvas.FillText(state.Solid, state.CompositeText, new PointD(0.5, 30.25));
+
+            // A wrapped and justified paragraph of several paints, a gradient among them, with decorations and two fonts
+            canvas.FillText(state.Solid, state.RichText, new PointD(1.25, 0.5));
+            canvas.StrokeText(state.Pen, state.RichText, new PointD(3, 2));
+        }
+
+        static TextLayout CreateRichLayout()
+        {
+            var boxes = FontTestSupport.Load(FontSamples.Boxes());
+            var curves = FontTestSupport.Load(FontSamples.Curves());
+            var gradient = new LinearGradientBrush(new PointD(0, 0), new PointD(60, 40), [new GradientStop(0, new Rgba32(0, 0, 255)), new GradientStop(1, new Rgba32(255, 255, 0, 100))]);
+            var text = new RichTextBuilder()
+                .Append("AB A", new TextStyle(boxes, 9) { Brush = new SolidBrush(new Rgba32(200, 0, 0, 180)), Decorations = TextDecorations.Underline })
+                .Append("B OP ", new TextStyle(new FontStack(boxes, curves), 7.5) { Brush = gradient, Decorations = TextDecorations.Strikethrough, DecorationBrush = new SolidBrush(new Rgba32(0, 0, 0)) })
+                .Append("QA BA", new TextStyle(curves, 11) { LetterSpacing = 0.5 })
+                .Build();
+            return TextLayout.Create(text, new TextLayoutOptions { MaxWidth = 50, Alignment = TextAlignment.Justify });
         }
     }
 
@@ -288,5 +306,5 @@ public sealed class PerformanceContractTests
         return stream.ToArray();
     }
 
-    private sealed record DrawingState(SolidBrush Solid, GradientBrush Gradient, Pen Pen, VectorPath Path, TextLayout Text, TextLayout CffText, TextLayout CompositeText, StrongBox<long> Allocated);
+    private sealed record DrawingState(SolidBrush Solid, GradientBrush Gradient, Pen Pen, VectorPath Path, TextLayout Text, TextLayout CffText, TextLayout CompositeText, TextLayout RichText, StrongBox<long> Allocated);
 }

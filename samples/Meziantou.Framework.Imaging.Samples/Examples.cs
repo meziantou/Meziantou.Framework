@@ -650,4 +650,28 @@ internal static class Examples
         image.Save(outputPath);
     }
     // end-snippet
+
+    /// <summary>Text: a wrapped and justified paragraph whose parts have their own style.</summary>
+    // begin-snippet: draw-paragraph
+    public static void DrawParagraph(string fontPath, string outputPath)
+    {
+        var font = Font.Load(fontPath);
+        var regular = new TextStyle(font, 18);
+        var emphasis = new TextStyle(font, 18) { Brush = new SolidBrush(new Rgba32(180, 30, 30)), Decorations = TextDecorations.Underline };
+
+        // A span is not a word or a line: the layout wraps the whole text, and shapes the letters of two spans together
+        var text = new RichTextBuilder()
+            .Append("Text is wrapped where ", regular)
+            .Append("Unicode", emphasis)
+            .Append(" allows a line to break, and each line is stretched to the width of the paragraph.", regular)
+            .Build();
+        var layout = TextLayout.Create(text, new TextLayoutOptions { MaxWidth = 300, Alignment = TextAlignment.Justify });
+
+        using var image = new Image<Rgba32>(320, (int)Math.Ceiling(layout.Height) + 20, new Rgba32(255, 255, 255));
+
+        // The brush of the call paints the spans that have none
+        image.Draw(canvas => canvas.FillText(new Rgba32(0, 0, 0), layout, new PointD(10, 10)));
+        image.Save(outputPath);
+    }
+    // end-snippet
 }

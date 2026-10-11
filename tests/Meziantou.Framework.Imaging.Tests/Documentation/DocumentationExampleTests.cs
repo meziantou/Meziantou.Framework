@@ -622,6 +622,39 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void DrawParagraphWrapsAndPaintsTheSpans()
+    {
+        var fontPath = FixtureRoot.GetDirectory() / "fonts" / "noto-sans" / "NotoSans-Regular.subset.ttf";
+        var output = GetPath("paragraph.png");
+        Examples.DrawParagraph(fontPath, output);
+
+        using var image = Image.Load<Rgba32>(output);
+        Assert.Equal(320, image.Width);
+
+        // Several lines of 18 pixels text, 1.362 times as tall: the height is a whole number of them, plus the margins.
+        var lineCount = (image.Height - 20) / (18 * 1.362);
+        Assert.True(lineCount is > 2.9 and < 6, $"The image is {image.Height} pixels tall");
+
+        // The text is black, and the emphasized word and its underline are red; the margins are untouched.
+        var black = 0;
+        var red = 0;
+        image.Frames[0].ProcessPixelRows(pixels =>
+        {
+            for (var y = 0; y < pixels.Height; y++)
+            {
+                foreach (var pixel in pixels.GetRowSpan(y))
+                {
+                    black += pixel == new Rgba32(0, 0, 0) ? 1 : 0;
+                    red += pixel == new Rgba32(180, 30, 30) ? 1 : 0;
+                }
+            }
+        });
+        Assert.True(black > 500, $"Only {black} pixels are black");
+        Assert.True(red > 20, $"Only {red} pixels are red");
+        Assert.Equal(new Rgba32(255, 255, 255), image.Frames[0][5, 5]);
+    }
+
+    [Fact]
     public void ConvertToGray16FlattensAlphaOntoTheBackground()
     {
         var input = GetPath("translucent.png");

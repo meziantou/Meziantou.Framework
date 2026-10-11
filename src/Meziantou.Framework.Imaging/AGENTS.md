@@ -259,28 +259,43 @@ directory and the fixed-size tables, `CmapTable` maps characters, `GlyfOutlineRe
 
 ## Text
 
-`TextLayout` (`Typography/`) turns a text into glyphs and positions; `DrawingSession.FillText` and `StrokeText` draw it
-through `GlyphPathSink` into the sinks of the drawing pipeline.
+`TextLayoutEngine` (`Internals/Text/Layout`) turns a text, its spans and `TextLayoutOptions` into the content of a
+`TextLayout`: lines, glyphs, positions and decorations. `DrawingSession.FillText` and `StrokeText` draw a layout through
+`GlyphPathSink` into the sinks of the drawing pipeline.
 
-- **A layout is the only thing that is measured and drawn.** There is no separate measuring code: `Width`, `Height` and
-  `InkBounds` come from the positions that are drawn. A layout is immutable and thread-safe, holds exact managed arrays
-  (like `VectorPath`) and no pooled storage.
+- **A layout is the only thing that is measured and drawn.** There is no separate measuring code: `Width`, `Height`,
+  `Lines` and `InkBounds` come from the positions that are drawn. A layout is immutable and thread-safe, holds exact
+  managed arrays (like `VectorPath`) and no pooled storage; so are `TextStyle`, `TextLayoutOptions`, `RichText` and
+  `FontStack`.
 - **Validate at layout, not at draw.** Creating a layout decodes each distinct glyph once, so the errors of the font
   data surface there; drawing a layout then only fails on a limit of the image or on cancellation. Do not add a failure
   mode to `FillText` that `TextLayout.Create` could have reported.
+- **The Unicode algorithms are those of `Meziantou.Framework.Unicode`**: line breaking (UAX #14), bidirectional levels
+  and reordering (UAX #9), script runs (UAX #24), grapheme clusters and words (UAX #29), hyphenation. Do not
+  reimplement or approximate one here; a missing piece belongs in that package, with its conformance tests.
+- **The steps of a paragraph**: levels, items (one level, script, font and shaping style each), shaping, lines, display
+  order. An item is cut where shaping could differ, never where only the paint differs. A line break inside an item
+  cuts it, and both parts are shaped again: no ligature or kerning pair spans two lines. The advance of each character
+  (`Paragraph.Advances`) is what line breaking measures; it is refreshed whenever an item is shaped.
+- **Lines follow each other in the text and cover it** (`TextLine.Start` and `Length`), whatever cut them: a width, a
+  line break, a trimming. `IsTruncated` is the only way text is left out. `TextLayoutFuzzTests` checks it on random
+  texts and options.
 - **Transform, then flatten.** The control points of an outline are transformed to pixels with `Affine2D` (one fixed
   order of operations), then flattened by the unchanged `PathFlattener` with the tolerance of every other curve. No
-  hinting, no snapping, no rounding of advances: positions are computed in whole font units, then scaled once.
+  hinting, no snapping, no rounding of advances: a run is positioned in whole font units, then scaled once.
   `TextLayout.ToPath` uses the same transform, and filling or stroking that path must stay bit-identical to
-  `FillText` and `StrokeText` (`DrawingTextTests.DrawingALayoutIsDrawingItsPath`).
-- **One shape per call, one orientation per glyph.** All the glyphs of a call are rasterized in one sweep, so overlaps
-  are painted once. TrueType and CFF outlines turn in opposite directions: `Emit` reverses the edges of a glyph whose
-  signed area is negative (`EdgeBuilder.NegateDirections`), otherwise overlapping glyphs of two conventions would
-  cancel under the nonzero rule.
+  `FillText` and `StrokeText` of a layout of one paint (`DrawingTextTests.DrawingALayoutIsDrawingItsPath`).
+- **One shape per paint, one orientation per glyph.** The glyphs and decorations of one paint are rasterized in one
+  sweep, so overlaps are painted once. TrueType and CFF outlines turn in opposite directions: `Emit` reverses the
+  edges of a glyph whose signed area is negative (`EdgeBuilder.NegateDirections`), otherwise overlapping glyphs of two
+  conventions would cancel under the nonzero rule; decorations are emitted in the same orientation. A layout of several
+  paints prepares every shape before painting the first one (`DrawingSession.Prepare`), which keeps "every rental
+  happens before the first pixel write".
 - **The layout overloads allocate nothing** once the scratch of the session has grown (`PerformanceContractTests`). The
   overload that takes a string creates a layout and is the documented exception.
-- Tests: literals on the boxes font (rectangles on whole pixels at 16 pixels per em, compared with `FillRectangle`),
-  layout against path on the fonts of the corpus, and `FontFuzzTests`, which lays out and draws with every mutated font.
+- Tests: literals on the boxes font (rectangles on whole pixels at 16 pixels per em, compared with `FillRectangle`;
+  `DrawingTextTests`, `TextLayoutTests`), layout against path on the fonts of the corpus, `FontFuzzTests`, which lays
+  out and draws with every mutated font, and `TextLayoutFuzzTests`. A defect the fuzzers find becomes a literal test.
 
 ### Shaping
 

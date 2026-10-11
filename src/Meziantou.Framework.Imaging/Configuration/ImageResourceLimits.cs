@@ -50,6 +50,9 @@ public sealed class ImageResourceLimits
     /// <summary>The default maximum number of glyphs of a text layout (1,000,000).</summary>
     public const long DefaultMaxTextGlyphs = 1_000_000;
 
+    /// <summary>The default maximum number of lines of a text layout (100,000).</summary>
+    public const int DefaultMaxTextLines = 100_000;
+
     /// <summary>Gets the default limits.</summary>
     public static ImageResourceLimits Default { get; } = new();
 
@@ -218,6 +221,22 @@ public sealed class ImageResourceLimits
             field = value;
         }
     } = DefaultMaxTextGlyphs;
+
+    /// <summary>Gets the maximum number of lines of a text layout. Defaults to <see cref="DefaultMaxTextLines"/>.</summary>
+    /// <remarks>
+    /// A text that needs more lines is an error; <see cref="Typography.TextLayoutOptions.MaxLines"/> is what cuts a text
+    /// at a number of lines.
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException">The value is not positive.</exception>
+    public int MaxTextLines
+    {
+        get;
+        init
+        {
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
+            field = value;
+        }
+    } = DefaultMaxTextLines;
 
     /// <summary>
     /// Validates canvas dimensions against <see cref="MaxWidth"/>, <see cref="MaxHeight"/> and <see cref="MaxFramePixels"/>,

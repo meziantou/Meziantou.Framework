@@ -38,6 +38,8 @@ public sealed class ApiSurfaceTests
         typeof(RadialGradientBrush),
         typeof(VectorPath),
         typeof(FontLoadOptions),
+        typeof(TextStyle),
+        typeof(TextLayoutOptions),
     ];
 
     [Fact]
@@ -82,6 +84,9 @@ public sealed class ApiSurfaceTests
     [InlineData(typeof(Font))]
     [InlineData(typeof(FontCollection))]
     [InlineData(typeof(TextLayout))]
+    [InlineData(typeof(RichText))]
+    [InlineData(typeof(RichTextBuilder))]
+    [InlineData(typeof(FontStack))]
     public void ConcreteTypesAreSealed(Type type) => Assert.True(type.IsSealed, $"{type} must be sealed");
 
     [Fact]

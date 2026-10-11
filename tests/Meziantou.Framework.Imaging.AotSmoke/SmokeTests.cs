@@ -619,6 +619,24 @@ internal static class SmokeTests
             CheckEqual(fromPath, image, "text: path");
         }
 
+        // A wrapped paragraph of two paints with a decoration and a stack of fonts. "AA AB" in 40 pixels: two lines,
+        // aligned on the right; the B of the second line is red and underlined, one pixel thick, 2 pixels under the baseline
+        var boxes = Font.Load(SmokeFonts.BoxesWoff);
+        var rich = new RichTextBuilder()
+            .Append("AA A", new TextStyle(new FontStack(boxes, Font.Load(SmokeFonts.CharstringsOtf)), 16) { Features = [new FontFeature("kern", 0)] })
+            .Append("B", new TextStyle(boxes, 16) { Brush = new SolidBrush(new Rgba32(255, 0, 0)), Decorations = TextDecorations.Underline })
+            .Build();
+        var paragraph = TextLayout.Create(rich, new TextLayoutOptions { MaxWidth = 40, Alignment = TextAlignment.End, Hyphenation = TextHyphenation.Automatic });
+        Check(paragraph.LineCount == 2 && paragraph.Lines[1].Start == 3 && !paragraph.IsTruncated && paragraph.Height == 32, "text: paragraph");
+        using (var wrapped = new Image<Rgba32>(48, 40, new Rgba32(255, 255, 255)))
+        {
+            wrapped.Draw(paragraph, static (canvas, layout) => canvas.FillText(new Rgba32(0, 0, 0), layout, new PointD(0, 0)));
+            Check(Pixels(wrapped.Frames[0]).Any(static value => value == 0) && wrapped.Frames[0][36, 31] == new Rgba32(255, 0, 0), "text: paragraph pixels");
+        }
+
+        var hebrew = TextLayout.Create("\u05D0\u05D1 AB", new TextStyle(boxes, 16), new TextLayoutOptions { Direction = TextDirection.RightToLeft });
+        Check(hebrew.Lines[0].IsRightToLeft && hebrew.HasMissingGlyphs, "text: direction");
+
         // CFF outlines, stroked, through the overload that lays out the text
         var cff = Font.Load(SmokeFonts.CharstringsOtf);
         using var stroked = new Image<Rgba32>(64, 16);

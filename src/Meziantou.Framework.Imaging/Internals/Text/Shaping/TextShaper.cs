@@ -41,6 +41,9 @@ internal static class TextShaper
     private const uint NumeratorMask = 0x04;
     private const uint DenominatorMask = 0x08;
 
+    // The feature that mirrors a glyph in a right-to-left run, for the characters Unicode does not mirror itself.
+    private const uint MirrorMask = 0x10;
+
     private const int FractionSlash = 0x2044;
     private const int ZeroWidthNonJoiner = 0x200C;
     private const int ZeroWidthJoiner = 0x200D;
@@ -50,8 +53,9 @@ internal static class TextShaper
     private static readonly uint Dnom = ShapingFeature.ToTag("dnom");
     private static readonly uint Kern = ShapingFeature.ToTag("kern");
 
+    private static readonly uint Rtlm = ShapingFeature.ToTag("rtlm");
     private static readonly uint[] LeftToRightFeatures = [ShapingFeature.ToTag("ltra"), ShapingFeature.ToTag("ltrm")];
-    private static readonly uint[] RightToLeftFeatures = [ShapingFeature.ToTag("rtla"), ShapingFeature.ToTag("rtlm")];
+    private static readonly uint[] RightToLeftFeatures = [ShapingFeature.ToTag("rtla"), Rtlm];
 
     private static readonly uint[] DefaultFeatures =
     [
@@ -87,6 +91,11 @@ internal static class TextShaper
         buffer.StartShaping();
         SetCharacterProperties(buffer);
         FormClusters(buffer);
+        if (isRightToLeft)
+        {
+            Mirror(buffer, face);
+        }
+
         Normalize(buffer, face);
         MapGlyphs(buffer, face);
 
@@ -138,7 +147,7 @@ internal static class TextShaper
 
         if (!hasKerningFeature && face.HasLegacyKerning && (!plan.TryGetMask(Kern, out var kerningMask) || kerningMask != 0))
         {
-            ApplyLegacyKerning(buffer, face);
+            ApplyLegacyKerning(buffer, face, isRightToLeft);
         }
 
         // A mark does not move the pen. Without positioning lookups, a mark that has an advance is drawn before the pen
@@ -162,6 +171,12 @@ internal static class TextShaper
         }
 
         LayoutApplier.FinishPositions(buffer.Positions, isRightToLeft);
+
+        // The glyphs of a right-to-left run were shaped in the order of the text: they are drawn in the other order.
+        if (isRightToLeft)
+        {
+            buffer.Reverse();
+        }
     }
 
     /// <summary>Gives each character its general category, its combining class and what it is for shaping.</summary>
@@ -196,6 +211,31 @@ internal static class TextShaper
         };
         info.Flags = (byte)flags;
         info.ShaperData = 0;
+    }
+
+    /// <summary>
+    /// Mirrors the characters of a right-to-left run that have a mirrored form: an opening parenthesis is drawn as a
+    /// closing one. The mirrored character is used when the font has it; otherwise the font is asked to mirror the
+    /// glyph with its <c>rtlm</c> feature.
+    /// </summary>
+    private static void Mirror(GlyphBuffer buffer, FontFace face)
+    {
+        foreach (ref var info in buffer.Info)
+        {
+            if (!UnicodeProperties.IsBidiMirrored(info.CodePoint))
+                continue;
+
+            if (UnicodeProperties.TryGetBidiMirroringGlyph(info.CodePoint, out var mirrored) && face.MapCodePoint(mirrored) != 0)
+            {
+                var cluster = info.Cluster;
+                SetCharacterProperties(ref info, mirrored);
+                info.Cluster = cluster;
+            }
+            else
+            {
+                info.ShaperData = NeedsMirroring;
+            }
+        }
     }
 
     /// <summary>
@@ -365,6 +405,7 @@ internal static class TextShaper
     }
 
     // The widths of the spaces: a fraction of the em, or the width of another character.
+    private const int NeedsMirroring = 0xFF;
     private const int SpaceOfSpace = 1;
     private const int SpaceEm = 2;
     private const int SpaceEm2 = 3;
@@ -483,6 +524,14 @@ internal static class TextShaper
     {
         var info = buffer.Info;
         plan.SetMasks(info);
+        foreach (ref var glyph in info)
+        {
+            if (glyph.ShaperData == NeedsMirroring)
+            {
+                glyph.Mask |= MirrorMask;
+                glyph.ShaperData = 0;
+            }
+        }
 
         if (!hasFractions)
             return;
@@ -587,6 +636,10 @@ internal static class TextShaper
                     AddLookups(table, data, feature, tag == Frac ? FractionMask : tag == Numr ? NumeratorMask : DenominatorMask, lookups);
                 }
             }
+            else if (isRightToLeft && tag == Rtlm)
+            {
+                AddLookups(table, data, feature, MirrorMask, lookups);
+            }
             else if (DefaultFeatures.AsSpan().Contains(tag) || (isRightToLeft ? RightToLeftFeatures : LeftToRightFeatures).AsSpan().Contains(tag))
             {
                 hasKerning |= tag == Kern;
@@ -654,7 +707,7 @@ internal static class TextShaper
     }
 
     /// <summary>Applies the pair adjustments of the legacy kerning table between each glyph and the next visible glyph that is not a mark.</summary>
-    private static void ApplyLegacyKerning(GlyphBuffer buffer, FontFace face)
+    private static void ApplyLegacyKerning(GlyphBuffer buffer, FontFace face, bool isRightToLeft)
     {
         var info = buffer.Info;
         var positions = buffer.Positions;
@@ -670,7 +723,9 @@ internal static class TextShaper
                 // Half of the adjustment is taken from the advance of the first glyph, and the other half from the
                 // second one, which is moved back by it: the two glyphs are as far apart as the font asks, and the
                 // boundary between them stays between them.
-                var adjustment = face.GetLegacyKerning(info[previous].Glyph, info[i].Glyph);
+                // The pairs of the table are a glyph and the glyph on its right: in a right-to-left run, the glyph that
+                // comes later in the text is the one on the left.
+                var adjustment = isRightToLeft ? face.GetLegacyKerning(info[i].Glyph, info[previous].Glyph) : face.GetLegacyKerning(info[previous].Glyph, info[i].Glyph);
                 var first = adjustment >> 1;
                 var second = adjustment - first;
                 positions[previous].XAdvance += first;
@@ -693,7 +748,7 @@ internal static class TextShaper
     private sealed class FeaturePlan
     {
         // The first bit after the ones of the default and fraction features.
-        private const int FirstShift = 4;
+        private const int FirstShift = 5;
 
         private readonly List<(uint Tag, uint Mask)> _masks = [];
         private readonly ShapingFeature[] _features;

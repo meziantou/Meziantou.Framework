@@ -41,4 +41,7 @@ public enum ImageResourceLimitKind
 
     /// <summary><see cref="ImageResourceLimits.MaxTextGlyphs"/>.</summary>
     TextGlyphs = 12,
+
+    /// <summary><see cref="ImageResourceLimits.MaxTextLines"/>.</summary>
+    TextLines = 13,
 }

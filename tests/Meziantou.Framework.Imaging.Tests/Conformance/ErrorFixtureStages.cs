@@ -27,7 +27,6 @@ internal static class ErrorFixtureStages
         "invalid/gif/graphic-control-wrong-size",
         "invalid/gif/no-image",
         "invalid/jpeg/arithmetic-coding",
-        "invalid/jpeg/cmyk-four-components",
         "invalid/jpeg/lossless",
         "invalid/jpeg/non-integral-sampling",
         "invalid/jpeg/precision-12",
@@ -245,6 +244,10 @@ internal static class ErrorFixtureStages
         "invalid/png/palette-index-out-of-range",
         "invalid/png/too-little-image-data",
         "invalid/png/truncated-zlib",
+        // Four components are inks: the file is identified, and only a load without color conversion rejects it
+        "invalid/jpeg/cmyk-adobe-progressive",
+        "invalid/jpeg/cmyk-without-adobe-restart",
+        "invalid/jpeg/cmyk-ycck-embedded-profile",
         "invalid/jpeg/invalid-huffman-code",
         "invalid/jpeg/restart-marker-missing",
         "invalid/jpeg/restart-out-of-sequence",

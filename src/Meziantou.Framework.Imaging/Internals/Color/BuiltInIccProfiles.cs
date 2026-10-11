@@ -45,6 +45,12 @@ internal static class BuiltInIccProfiles
     /// <summary>Gets the profile of linear-light grayscale samples with the sRGB white point.</summary>
     public static IccProfile LinearGray { get; } = Create(gray: true, linear: true, "Linear gray");
 
+    /// <summary>
+    /// Gets the CMYK profile assumed for CMYK samples without profile. Unlike the other profiles it is not built here:
+    /// its bytes are third-party data (<see cref="BuiltInCmykProfile"/>).
+    /// </summary>
+    public static IccProfile Cgats001CompatibleCmyk { get; } = new(MetadataBlob.FromOwnedArray(BuiltInCmykProfile.Data.ToArray()));
+
     private static IccProfile Create(bool gray, bool linear, string description)
     {
         var curve = linear ? CreateIdentityCurve() : CreateSrgbCurve();

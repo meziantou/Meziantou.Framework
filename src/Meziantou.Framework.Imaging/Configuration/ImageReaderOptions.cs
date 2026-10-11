@@ -53,6 +53,16 @@ public sealed class ImageReaderOptions
     } = PixelConversionOptions.Default;
 
     /// <summary>
+    /// Gets the color conversion applied to images whose samples are CMYK inks (four-component JPEG), or
+    /// <see langword="null"/> (the default) to reject them with an <see cref="UnsupportedImageFeatureException"/>.
+    /// </summary>
+    /// <remarks>
+    /// No pixel format holds CMYK samples, so such an image can only be loaded by converting its colors. Like every color
+    /// conversion it is explicit: set <c>new CmykConversionOptions()</c> to convert to sRGB. Other images are not affected.
+    /// </remarks>
+    public CmykConversionOptions? CmykConversion { get; init; }
+
+    /// <summary>
     /// Gets a value indicating whether a caller-provided stream is left open when the reader is disposed. Defaults to
     /// <see langword="true"/>. Streams opened by the path overloads are always owned and closed by the reader.
     /// </summary>

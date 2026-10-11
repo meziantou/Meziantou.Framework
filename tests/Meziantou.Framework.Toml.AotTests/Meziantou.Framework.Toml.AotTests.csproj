@@ -5,6 +5,10 @@
     <PublishAot>true</PublishAot>
     <InvariantGlobalization>true</InvariantGlobalization>
     <StripSymbols>true</StripSymbols>
+    <!-- xUnit.net requires an apphost, but its package only sets UseAppHost once restored, whereas the SDK disables the apphost for Native AOT.
+         The restore that does not see it yet would not download the apphost pack of a target framework that the SDK does not bundle,
+         and the build then fails with MSB3030 on a machine that does not already have it. -->
+    <UseAppHost>true</UseAppHost>
 
     <!-- Meziantou.Xunit extends the reflection-based xUnit.net packages and Meziantou.Framework.Assertions relies on reflection, so neither can be used in a Native AOT application -->
     <IncludeDefaultTestReferences>false</IncludeDefaultTestReferences>

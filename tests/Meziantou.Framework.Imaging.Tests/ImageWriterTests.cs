@@ -552,7 +552,7 @@ public sealed class ImageWriterTests
     public async Task PathWritersPublishAtomicallyOnlyOnSuccessfulCompletion(bool asynchronous)
     {
         using var codecs = TestCodecs.UseAll(out _, out _, out _, out _);
-        var directory = CreateDirectory();
+        var directory = TestFiles.CreateDirectory();
         try
         {
             var path = directory / "animation.gif";
@@ -600,7 +600,7 @@ public sealed class ImageWriterTests
     public async Task FailedPathWritersNeverReplaceTheDestination(string failure)
     {
         using var codecs = TestCodecs.UseAll(out _, out var png, out _, out _);
-        var directory = CreateDirectory();
+        var directory = TestFiles.CreateDirectory();
         try
         {
             var path = directory / "image.png";
@@ -656,7 +656,7 @@ public sealed class ImageWriterTests
     public void PathWritersInferTheEncoderFromTheExtensionUnlessOneIsGiven()
     {
         using var codecs = TestCodecs.UseAll(out _, out var png, out var gif, out var jpeg);
-        var directory = CreateDirectory();
+        var directory = TestFiles.CreateDirectory();
         try
         {
             ImageWriterCore Create(string name, ImageEncoder? encoder = null, int? count = 1)
@@ -693,7 +693,7 @@ public sealed class ImageWriterTests
     {
         using var codecs = TestCodecs.UseAll(out _, out var png, out _, out _);
         png.CreationFailure = new UnsupportedImageFeatureException("The test encoder cannot encode this configuration.", ImageFormat.Png, "Test");
-        var directory = CreateDirectory();
+        var directory = TestFiles.CreateDirectory();
         try
         {
             Assert.Throws<UnsupportedImageFeatureException>(() => Image.CreateWriter<Rgba32>(directory / "a.png", new ImageWriterOptions(Width, Height) { ExpectedFrameCount = 1 }));
@@ -704,13 +704,6 @@ public sealed class ImageWriterTests
         {
             Directory.Delete(directory, recursive: true);
         }
-    }
-
-    internal static FullPath CreateDirectory()
-    {
-        var directory = FullPath.GetTempPath() / "Meziantou.Framework.Imaging.Tests" / Guid.NewGuid().ToString("N");
-        Directory.CreateDirectory(directory);
-        return directory;
     }
 
     private static async Task Write(ImageWriter<Rgba32> writer, Image<Rgba32> frame, bool asynchronous)

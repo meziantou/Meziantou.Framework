@@ -253,7 +253,10 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
 | Path | Content |
 | --- | --- |
 | `src/Meziantou.Framework.Imaging` | The library and the package README (`readme.md`) |
-| `tests/Meziantou.Framework.Imaging.Tests` | Unit tests (no fixture file) and, under `Conformance/`, golden-corpus tests. No external tool, no network |
+| `tests/Meziantou.Framework.Imaging.Tests` | Tests that are not about one codec: image model, pixels, memory, metadata, readers and writers with test codecs, format detection, defaults, API surface, the corpus and harness self-tests, the documentation examples |
+| `tests/Meziantou.Framework.Imaging.Processing.Tests` | Processing, resampling, convolution, automatic cropping, drawing and color conversion, with their golden and reference suites |
+| `tests/Meziantou.Framework.Imaging.<Codec>.Tests` | One project per codec (`Png` with APNG, `Gif`, `Jpeg`, `JpegXl`, `WebP`, `Qoi`, `Bmp`, `Tga`, `Pnm`, `Tiff`, `Ico` with CUR and ANI, `Av1`, `Avif`, `AvifEncoder`): its unit tests (no fixture file), its conformance tests under `Conformance/`, and the generic suites for its fixtures and its encoder |
+| `tests/Meziantou.Framework.Imaging.Tests.Shared` | Sources compiled into every project above (no project file): `Helpers/`, the generic suites over the corpus (`Suites/`) and `Imaging.Tests.Shared.props` |
 | `tests/Meziantou.Framework.Imaging.InteropTests` | Files produced by the encoders are decoded by pinned external tools |
 | `tests/Meziantou.Framework.Imaging.TestHarness` | Shared, test-framework-agnostic support: corpus manifest, raw-buffer comparison, independent reference readers, tool helpers |
 | `tests/Meziantou.Framework.Imaging.AotSmoke` | Console app exercising every format; published with NativeAOT |
@@ -269,10 +272,23 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
 ```shell
 dotnet build slnx/Meziantou.Framework.Imaging.slnx
 dotnet test --solution slnx/Meziantou.Framework.Imaging.slnx
-dotnet test --project tests/Meziantou.Framework.Imaging.Tests/Meziantou.Framework.Imaging.Tests.csproj --framework net11.0
+dotnet test --project tests/Meziantou.Framework.Imaging.Png.Tests/Meziantou.Framework.Imaging.Png.Tests.csproj --framework net11.0
 dotnet publish tests/Meziantou.Framework.Imaging.AotSmoke -c Release -f net11.0 --use-current-runtime -o artifacts/aot
 ```
 
+- **One test project per codec.** The unit and conformance tests are split so that CI runs them in several jobs
+  (`$ImagingProjects` in `.github/workflows/ci.yml`); none of them needs an external tool or network access. The suites
+  that run every fixture through the decoders (identification, loading, sequential reading, truncation, limits, accounting,
+  fault injection) and every encoder through the save fault injection live once in `Tests.Shared/Suites` and are compiled
+  into each codec project, which declares its part in its project file: `ImagingTestFixtureFormats` (manifest formats) and
+  `ImagingTestEncoders` (`CorpusScope` filters the cases). The sources of the encoder suites are never filtered: an encoder
+  is tested with the fixtures of every format. `CorpusScopeTests` fails when a format or an encoder belongs to no project
+  or to two.
+- **Adding a codec**: create `tests/Meziantou.Framework.Imaging.<Codec>.Tests` from an existing codec project, set its two
+  scope properties, add its `InternalsVisibleTo` to the library, add the encoder name to `CorpusScope.AllEncoderNames` and
+  to `FaultInjectionTests.LoadForEncoder`, add the project with a weight to `$ImagingProjects` in `ci.yml`, and run
+  `dotnet run ./eng/update-all.cs`. A helper used by several projects goes to `Tests.Shared/Helpers`; a test class never
+  calls a member of a test class of another project.
 - **Expected values come from independent sources**: hand-computed values, specifications, independent decoders or the
   reference readers of the test harness. Never produce a decoder expectation with our encoder or compositor, and never
   use the code under test as its own oracle.

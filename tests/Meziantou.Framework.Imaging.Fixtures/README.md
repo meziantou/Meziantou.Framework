@@ -178,11 +178,11 @@ The `colorProfiles` and `colorTransforms` sections of the manifest are the refer
   `1.5 x measured mean + 0.1` (at least 0.5); and proof that channel swaps and flips of each reference are rejected.
   JPEG fixtures decoded by the sequential and progressive decoders use tighter policies: the library's measured
   disagreement with the `djpeg` reference (`LibraryJpegMeasurements` in the generator: max(1, measured max) and measured
-  mean + 0.01, rounded up to 0.01), which `Tests/Conformance/JpegDecoderConformanceTests` checks against a fresh
+  mean + 0.01, rounded up to 0.01), which `Jpeg.Tests/Conformance/JpegDecoderConformanceTests` checks against a fresh
   measurement; independent decoders whose differences exceed that policy are recorded as `differs` (with notes) and still
   bound the justified tolerance. Lossy WebP fixtures follow the same scheme: the reference is libwebp `dwebp`'s decoding of
   the input, the policy is the library's measured disagreement with it (`LibraryWebPMeasurements` in `WebPCorpus.cs`,
-  checked by `Tests/Conformance/WebPDecoderConformanceTests`), and the independent cross-check is FFmpeg's libavcodec VP8
+  checked by `WebP.Tests/Conformance/WebPDecoderConformanceTests`), and the independent cross-check is FFmpeg's libavcodec VP8
   decoding to raw `yuv420p` planes converted by the generator with exact BT.601 rationals (FFmpeg's own swscale RGB
   conversion is recorded but excluded from the tolerance: its chroma sample positions differ from centered upsampling).
 - AVIF: decoding AV1 is exact, so the samples that no matrix applies to (identity-matrix RGB, monochrome, alpha) are
@@ -190,7 +190,7 @@ The `colorProfiles` and `colorTransforms` sections of the manifest are the refer
   the exact-rational conversion of the planes (`TestHarness/Avif/ReferenceYuvConverter`: H.273 equations, the documented
   bilinear chroma upsampling at the declared sample position, one rounding), and the library documents coefficients
   rounded to 16 fractional bits. The mean is the library's measured disagreement + 0.01 (`LibraryAvifMeasurements` in
-  `AvifCorpus.Container.cs`, checked by `Tests/Conformance/AvifDecoderConformanceTests`; currently 0 for every 8-bit
+  `AvifCorpus.Container.cs`, checked by `Avif.Tests/Conformance/AvifDecoderConformanceTests`; currently 0 for every 8-bit
   fixture). The cross-check that justifies a tolerance is libavif `avifdec`, whose own conversion differs from the exact
   one by 1 to 75 units (it ignores the chroma sample position); 16-bit errors are recorded on the 8-bit scale (units of 257).
 - Whatever the policy: alpha is compared exactly; dimensions, layouts, buffer lengths, frame counts, poster presence,
@@ -365,7 +365,7 @@ its content is as small as its feature allows: 8x8 for a matrix, a range, a bit 
 grain and for the sequences of 8 to 12 images; the 64x64 and 67x65 images, the grids of 64-sample tiles that `avifenc`
 writes and the 64x64 minimum of SVT-AV1 are the exceptions, each for its feature. Matrixed content is subsampled wherever
 `avifdec` converts 4:4:4 samples exactly, because a tolerance must be justified by the measured disagreement of an
-independent decoder; the 4:4:4 conversion of every matrix is checked in `Tests/Conformance/AvifContainerConformanceTests`.
+independent decoder; the 4:4:4 conversion of every matrix is checked in `Avif.Tests/Conformance/AvifContainerConformanceTests`.
 
 Malformed, unsupported and over-limit inputs are byte edits of the valid files, each confirmed by the strict transcription.
 One exception is recorded in the tests: `invalid/pnm/header-too-long` is legal Netpbm that only this library's bounded
@@ -868,7 +868,7 @@ follows it, so keep both headings unique in this file.
 | JPEG XL frame upsampled by 2 | `jxl.upsampling=2` | 1 | 0 | 0 | 0 |
 
 Not covered by fixtures, and verified elsewhere: encoder outputs (independent readers, FFmpeg and Apple ImageIO), malformed-input robustness beyond the error
-fixtures (`FuzzTests/MutationFuzzTests`, `Tests/Conformance/Hardening/TruncationTests`), and limits at every boundary (`Tests/Conformance/Hardening/ResourceLimitBoundaryTests`).
+fixtures (`FuzzTests/MutationFuzzTests`, `Tests.Shared/Suites/Decode/TruncationTests`), and limits at every boundary (`Tests.Shared/Suites/Decode/ResourceLimitBoundaryTests`).
 
 ## AV1 conformance vectors
 
@@ -940,7 +940,7 @@ of `manifest.json`, apart from `fixtures`:
   fails when the encoder did not produce them.
 - **Coding tools.** The headers do not tell which tools the blocks use (palette, chroma from luma, intra block copy,
   compound prediction types, overlapped and warped motion compensation, scaled references, 64-point transforms...).
-  `Tests/Conformance/Av1ToolCoverageTests` decodes every vector and requires that, together, they reach every tool the
+  `Av1.Tests/Conformance/Av1ToolCoverageTests` decodes every vector and requires that, together, they reach every tool the
   decoder reports (`Av1Tools`), without exception. The four tools that neither encoder produces (the bilinear
   interpolation filter, an interpolation filter per direction, a predicted segment id and the reference-frame
   segmentation feature) are each required on the vectors made for them
@@ -949,7 +949,7 @@ of `manifest.json`, apart from `fixtures`:
   turns it on by itself for screen content) unless it requires that tag: the two `intrabc-*` vectors. An inter vector
   (`Av1Vector.Inter`) must have a frame that is not a shown key frame. There is no size limit ([Size](#size)): the
   largest inputs are the two 512x256 loop restoration vectors (25 and 37 KB).
-- **Tests.** `Tests/Conformance/Av1DecoderConformanceTests` decodes every vector with the library and compares the digest
+- **Tests.** `Av1.Tests/Conformance/Av1DecoderConformanceTests` decodes every vector with the library and compares the digest
   of each plane of each output frame, then decodes it again from a pool whose buffers are all filled with a non-zero
   pattern (`Hardening/DirtySlabPool`): a read of uninitialized state changes the digests. `CorpusManifestTests`
   validates the section (files, hashes, licenses, two decoders, orphan files), the feature coverage below, and what the
@@ -1264,22 +1264,22 @@ public void Decode(string id)
   written to `MEZIANTOU_FRAMEWORK_IMAGING_TEST_ARTIFACTS` (default `<test output>/TestArtifacts/<fixture id>`; disable with
   `MEZIANTOU_FRAMEWORK_IMAGING_TEST_PREVIEWS=false`). Previews are for diagnosis only.
 - Add a layout the test needs to the generator instead of converting references in tests.
-- Processing tests (`Tests/Conformance/ProcessingGoldenTests`) reuse the decode references as inputs: they import every
+- Processing tests (`Processing.Tests/Conformance/ProcessingGoldenTests`) reuse the decode references as inputs: they import every
   frame and poster, apply crop/rotate/flip/auto-orient, and compare exactly with the reference transformed by the
   harness (`RawPixelBuffer.Crop`, `FlipHorizontal`/`FlipVertical`, `Rotate180`, `Rotate90Clockwise`/`CounterClockwise`,
   `Transpose`, `Transverse`: pure index permutations checked against literals in `PixelBufferTests`). No processed
   reference files are stored; the expected output is never produced by the library.
-- Auto-crop tests (`Tests/Conformance/AutoCropGoldenTests`) import every frame and poster as is and wrapped in a
+- Auto-crop tests (`Processing.Tests/Conformance/AutoCropGoldenTests`) import every frame and poster as is and wrapped in a
   synthetic border (`RawPixelBuffer.Extend`, checked against literals in `PixelBufferTests`), and compare the detected
   box, the background and the cropped or enlarged pixels exactly with `TestHarness/AutoCrop/ReferenceAutoCrop`, an
   independent implementation of the auto-crop contract (plain loops over every pixel, linear color lists, exact
   `BigInteger` weights). No processed reference files are stored.
-- Resize tests (`Tests/Conformance/ResizeGoldenTests`) also import every frame and poster and compare the resized pixels
+- Resize tests (`Processing.Tests/Conformance/ResizeGoldenTests`) also import every frame and poster and compare the resized pixels
   with `TestHarness/Resampling/ReferenceResampler`, an independent high-precision implementation of the resize contract
   (exact rational geometry, decimal kernels and
   sums). Generic tool resize output (FFmpeg, ImageMagick) is not an oracle: their pixel-center, edge, alpha and rounding
   conventions differ. No resized reference files are stored.
-- Convolution tests (`Tests/Conformance/ConvolutionGoldenTests`) do the same with
+- Convolution tests (`Processing.Tests/Conformance/ConvolutionGoldenTests`) do the same with
   `TestHarness/Convolution/ReferenceConvolver`, an independent implementation of the convolution contract:
   a direct two-dimensional decimal sum per output
   pixel over a copy of the source, for every edge mode, alpha mode and working space, with contiguous and segmented
@@ -1293,7 +1293,7 @@ public void Decode(string id)
   error fixture in `ErrorFixtureStages`: header defects (found by a header identification), structure defects (found by a
   full scan) or pixel defects (inside compressed pixel data of a valid container: only decoding finds them, a full scan
   succeeds; limits that only decoding charges, such as `MaxTotalPixels`, are classified with them).
-- APNG processing (`Tests/Conformance/ApngProcessingConformanceTests`) decodes every corpus APNG with the library and
+- APNG processing (`Processing.Tests/Conformance/ApngProcessingConformanceTests`) decodes every corpus APNG with the library and
   crops, rotates, flips, resizes, convolves and reorders it: frames and posters keep the canvas size, pixel format,
   identities and durations, and their pixels equal the references transformed by the harness (`RawPixelBuffer`,
   `ReferenceResampler`, `ReferenceConvolver`).

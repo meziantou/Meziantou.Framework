@@ -5,8 +5,8 @@
     <RootNamespace>Meziantou.Framework</RootNamespace>
     <Version>2.0.7</Version>
     <IsTrimmable>true</IsTrimmable>
-    <Description>Unicode character properties (scripts, line breaking, segmentation, bidirectional, shaping), confusable detection and character metadata.</Description>
-    <PackageTags>unicode, confusables, homoglyph, normalization, text, script, bidi, line-break, grapheme</PackageTags>
+    <Description>Unicode text algorithms that do not depend on the runtime or on ICU: character properties, grapheme, word and line segmentation, normalization, bidirectional algorithm, script runs, hyphenation and confusable detection.</Description>
+    <PackageTags>unicode, confusables, homoglyph, normalization, text, script, bidi, line-break, grapheme, hyphenation</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

@@ -12,7 +12,29 @@ internal sealed record Trie(int Shift1, int Shift2, ushort[] Stage1, ushort[] St
 {
     public const int CodePointCount = 0x110000;
 
-    public int ByteCount => (Stage1.Length * 2) + (Stage2.Length * 2) + Stage3.Length;
+    /// <summary>Gets the number of bytes of an entry of the first stage: 1 when every index fits in a byte.</summary>
+    public int Stage1Width => Stage1.Length == 0 || Stage1.Max() <= byte.MaxValue ? 1 : 2;
+
+    /// <summary>Gets the number of bytes of an entry of the second stage: 1 when every index fits in a byte.</summary>
+    public int Stage2Width => Stage2.Length == 0 || Stage2.Max() <= byte.MaxValue ? 1 : 2;
+
+    public int ByteCount => (Stage1.Length * Stage1Width) + (Stage2.Length * Stage2Width) + Stage3.Length;
+
+    /// <summary>Encodes the entries of a stage as bytes, in little-endian order when an entry takes two bytes.</summary>
+    public static byte[] Encode(ushort[] values, int width)
+    {
+        var result = new byte[values.Length * width];
+        for (var i = 0; i < values.Length; i++)
+        {
+            result[i * width] = (byte)values[i];
+            if (width == 2)
+            {
+                result[(i * 2) + 1] = (byte)(values[i] >> 8);
+            }
+        }
+
+        return result;
+    }
 
     public byte Lookup(int codePoint)
     {

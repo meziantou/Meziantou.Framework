@@ -231,10 +231,11 @@ public static class UnicodeNormalization
 
         if ((uint)first <= 0x10FFFF && (uint)second <= 0x10FFFF)
         {
-            var index = UnicodeNormalizationTables.CompositionKeys.BinarySearch(((long)first << 21) | (uint)second);
-            if (index >= 0)
+            var compositions = UnicodeNormalizationTables.Compositions;
+            var offset = UnicodeTableReader.FindRecord(compositions, 9, first, second);
+            if (offset >= 0)
             {
-                composite = UnicodeNormalizationTables.CompositionValues[index];
+                composite = UnicodeTableReader.ReadUInt24(compositions, offset + 6);
                 return true;
             }
         }
@@ -267,17 +268,17 @@ public static class UnicodeNormalization
 
     private static bool TryFindCanonical(int codePoint, out int first, out int second)
     {
-        var index = UnicodeNormalizationTables.CanonicalKeys.BinarySearch(codePoint);
-        if (index < 0)
+        var mappings = UnicodeNormalizationTables.CanonicalMappings;
+        var offset = UnicodeTableReader.FindRecord(mappings, 9, codePoint);
+        if (offset < 0)
         {
             first = codePoint;
             second = 0;
             return false;
         }
 
-        var values = UnicodeNormalizationTables.CanonicalValues;
-        first = values[index * 2];
-        second = values[(index * 2) + 1];
+        first = UnicodeTableReader.ReadUInt24(mappings, offset + 3);
+        second = UnicodeTableReader.ReadUInt24(mappings, offset + 6);
         return true;
     }
 
@@ -387,18 +388,19 @@ public static class UnicodeNormalization
             var start = count;
             if (isCompatibility && TryFindCompatibility(codePoint, out var decomposition))
             {
+                // UTF-16 code units, two bytes each in little-endian order.
                 for (var i = 0; i < decomposition.Length;)
                 {
-                    var unit = (char)decomposition[i];
+                    var unit = (char)(decomposition[i] | (decomposition[i + 1] << 8));
                     if (char.IsHighSurrogate(unit))
                     {
-                        buffer[count++] = char.ConvertToUtf32(unit, (char)decomposition[i + 1]);
-                        i += 2;
+                        buffer[count++] = char.ConvertToUtf32(unit, (char)(decomposition[i + 2] | (decomposition[i + 3] << 8)));
+                        i += 4;
                     }
                     else
                     {
                         buffer[count++] = unit;
-                        i++;
+                        i += 2;
                     }
                 }
             }
@@ -438,17 +440,20 @@ public static class UnicodeNormalization
         buffer = larger;
     }
 
-    private static bool TryFindCompatibility(int codePoint, out ReadOnlySpan<ushort> decomposition)
+    private static bool TryFindCompatibility(int codePoint, out ReadOnlySpan<byte> decomposition)
     {
-        var index = UnicodeNormalizationTables.CompatibilityKeys.BinarySearch(codePoint);
-        if (index < 0)
+        var mappings = UnicodeNormalizationTables.CompatibilityMappings;
+        var offset = UnicodeTableReader.FindRecord(mappings, 9, codePoint);
+        if (offset < 0)
         {
             decomposition = default;
             return false;
         }
 
-        var entry = UnicodeNormalizationTables.CompatibilityEntries[index];
-        decomposition = UnicodeNormalizationTables.CompatibilityPool.Slice(entry >> 6, entry & 0x3F);
+        // The offset and the length are in UTF-16 code units; the pool holds two bytes per code unit.
+        var start = UnicodeTableReader.ReadUInt24(mappings, offset + 3);
+        var length = UnicodeTableReader.ReadUInt24(mappings, offset + 6);
+        decomposition = UnicodeNormalizationTables.CompatibilityPool.Slice(start * 2, length * 2);
         return true;
     }
 

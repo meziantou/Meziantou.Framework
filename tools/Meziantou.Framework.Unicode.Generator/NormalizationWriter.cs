@@ -159,14 +159,26 @@ internal static class NormalizationWriter
             Index of a 2-byte entry of NormalizationTuples: Canonical_Combining_Class, then the quick check flags:
             NFD_QC=No (bit 0), NFKD_QC=No (bit 1), NFC_QC=No (bit 2) or Maybe (bit 3), NFKC_QC=No (bit 4) or Maybe (bit 5).
             """);
-        Append(tables, sizes, "byte", "NormalizationTuples", tuples.ToArray(), "See GetNormalization.");
-        Append(tables, sizes, "int", "CanonicalKeys", canonical.Keys.ToArray(), "The code points that have a canonical decomposition mapping, sorted. Hangul syllables are decomposed by arithmetic.");
-        Append(tables, sizes, "int", "CanonicalValues", canonical.Values.SelectMany(values => new[] { values[0], values.Length == 2 ? values[1] : 0 }).ToArray(), "For each key, the one or two code points of its mapping; the second is 0 for a singleton.");
-        Append(tables, sizes, "int", "CompatibilityKeys", compatibilityKeys.ToArray(), "The code points whose full compatibility decomposition differs from the canonical one, sorted.");
-        Append(tables, sizes, "int", "CompatibilityEntries", compatibilityEntries.ToArray(), "For each key, the offset in CompatibilityPool (bits 6 and above) and the length (bits 0-5) of its decomposition.");
-        Append(tables, sizes, "ushort", "CompatibilityPool", pool.ToArray(), "UTF-16 code units of the full compatibility decompositions.");
-        Append(tables, sizes, "long", "CompositionKeys", compositions.Keys.ToArray(), "The pairs of the primary composites, sorted: (first << 21) | second.");
-        Append(tables, sizes, "int", "CompositionValues", compositions.Values.ToArray(), "For each pair, the composite.");
+        PropertyTablesWriter.AppendBytes(tables, sizes, "NormalizationTuples", [.. tuples], "See GetNormalization.");
+
+        // Fixed-size records of three-byte little-endian fields, searched by their first fields.
+        PropertyTablesWriter.AppendBytes(tables, sizes, "CanonicalMappings",
+            PropertyTablesWriter.EncodeUInt24(canonical.SelectMany(pair => new[] { pair.Key, pair.Value[0], pair.Value.Length == 2 ? pair.Value[1] : 0 })),
+            "Canonical decomposition mappings: 9-byte entries sorted by code point: the code point, then the one or two code points of its mapping (the second is 0 for a singleton). Hangul syllables are decomposed by arithmetic.");
+        PropertyTablesWriter.AppendBytes(tables, sizes, "CompatibilityMappings",
+            PropertyTablesWriter.EncodeUInt24(compatibilityKeys.SelectMany((key, index) => new[] { key, compatibilityEntries[index] >> 6, compatibilityEntries[index] & 0x3F })),
+            "Full compatibility decompositions that differ from the canonical one: 9-byte entries sorted by code point: the code point, then the offset and the length of its decomposition in CompatibilityPool, in UTF-16 code units.");
+        var poolBytes = new byte[pool.Count * 2];
+        for (var i = 0; i < pool.Count; i++)
+        {
+            poolBytes[i * 2] = (byte)pool[i];
+            poolBytes[(i * 2) + 1] = (byte)(pool[i] >> 8);
+        }
+
+        PropertyTablesWriter.AppendBytes(tables, sizes, "CompatibilityPool", poolBytes, "UTF-16 code units of the full compatibility decompositions, in little-endian order.");
+        PropertyTablesWriter.AppendBytes(tables, sizes, "Compositions",
+            PropertyTablesWriter.EncodeUInt24(compositions.SelectMany(pair => new[] { (int)(pair.Key >> 21), (int)(pair.Key & 0x1FFFFF), pair.Value })),
+            "Primary composites: 9-byte entries sorted by their first two fields: the two code points of the pair, then the composite.");
 
         var sizeLines = string.Join('\n', sizes.Select(size => string.Create(CultureInfo.InvariantCulture, $"//   - {size.Name}: {size.Bytes:N0} bytes")));
         var content = string.Create(CultureInfo.InvariantCulture, $$"""
@@ -191,6 +203,8 @@ internal static class NormalizationWriter
             {
                 /// <summary>The greatest length, in UTF-16 code units, of the full compatibility decomposition of a code point.</summary>
                 internal const int MaxCompatibilityDecompositionLength = {{maxCompatibilityLength}};
+
+            {{PropertyTablesWriter.ReadUInt16Method}}
             {{tables.ToString().TrimEnd()}}
             }
 
@@ -198,20 +212,6 @@ internal static class NormalizationWriter
 
         Console.WriteLine(string.Create(CultureInfo.InvariantCulture, $"  Normalization tables: {sizes.Sum(size => size.Bytes):N0} bytes"));
         return await GeneratorFiles.WriteTextIfChanged(outputPath / "UnicodeNormalizationTables.g.cs", content);
-    }
-
-    private static void Append<T>(StringBuilder destination, List<(string Name, int Bytes)> sizes, string type, string name, T[] values, string comment)
-        where T : unmanaged, IFormattable
-    {
-        sizes.Add((name, values.Length * System.Runtime.CompilerServices.Unsafe.SizeOf<T>()));
-        destination.Append(string.Create(CultureInfo.InvariantCulture, $$"""
-
-                // {{comment}}
-                internal static ReadOnlySpan<{{type}}> {{name}} =>
-                [{{TrieBuilder.FormatElements<T>(values, "        ")}}
-                ];
-
-            """).ReplaceLineEndings("\n"));
     }
 
     private static bool IsHangulSyllable(int codePoint) => codePoint is >= HangulBase and < HangulBase + HangulCount;

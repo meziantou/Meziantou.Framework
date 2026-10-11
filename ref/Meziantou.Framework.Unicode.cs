@@ -4,6 +4,32 @@
 
 namespace Meziantou.Framework
 {
+    public sealed class Hyphenator
+    {
+        public int LeftHyphenMin { get => throw null; }
+        public int RightHyphenMin { get => throw null; }
+        public int PatternCount { get => throw null; }
+        public int ExceptionCount { get => throw null; }
+        public static Meziantou.Framework.Hyphenator Load(string patternsPath, string? exceptionsPath = null, Meziantou.Framework.HyphenatorOptions? options = null) => throw null;
+        public static Meziantou.Framework.Hyphenator Load(System.IO.Stream patterns, System.IO.Stream? exceptions = null, Meziantou.Framework.HyphenatorOptions? options = null) => throw null;
+        public static System.Threading.Tasks.Task<Meziantou.Framework.Hyphenator> LoadAsync(string patternsPath, string? exceptionsPath = null, Meziantou.Framework.HyphenatorOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static System.Threading.Tasks.Task<Meziantou.Framework.Hyphenator> LoadAsync(System.IO.Stream patterns, System.IO.Stream? exceptions = null, Meziantou.Framework.HyphenatorOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static Meziantou.Framework.Hyphenator Parse(System.ReadOnlySpan<char> patterns, System.ReadOnlySpan<char> exceptions = default, Meziantou.Framework.HyphenatorOptions? options = null) => throw null;
+        public static Meziantou.Framework.Hyphenator Parse(System.ReadOnlySpan<byte> utf8Patterns, System.ReadOnlySpan<byte> utf8Exceptions = default, Meziantou.Framework.HyphenatorOptions? options = null) => throw null;
+        public int Hyphenate(System.ReadOnlySpan<char> word, System.Span<int> breakPositions) => throw null;
+    }
+
+    public sealed class HyphenatorOptions
+    {
+        public static Meziantou.Framework.HyphenatorOptions Default { get => throw null; }
+        public int LeftHyphenMin { get => throw null; init { } }
+        public int RightHyphenMin { get => throw null; init { } }
+        public int MaxPatternCount { get => throw null; init { } }
+        public int MaxPatternLength { get => throw null; init { } }
+        public long MaxInputLength { get => throw null; init { } }
+        public int MaxWordLength { get => throw null; init { } }
+    }
+
     public static class Unicode
     {
         public static System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.UnicodeCharacterInfo> AllCharacters { get => throw null; }

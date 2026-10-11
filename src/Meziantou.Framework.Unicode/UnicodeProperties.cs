@@ -173,13 +173,13 @@ public static class UnicodeProperties
     /// <param name="codePoint">The code point.</param>
     /// <returns>The lowercase code point, or <paramref name="codePoint"/> when it has no mapping.</returns>
     /// <remarks>The mapping is the one-to-one, culture-independent mapping of the Unicode Character Database.</remarks>
-    public static int ToSimpleLowercase(int codePoint) => codePoint + UnicodeTables.CaseTuples[UnicodeTables.GetCase(codePoint) * 2];
+    public static int ToSimpleLowercase(int codePoint) => codePoint + UnicodeTableReader.ReadInt32(UnicodeTables.CaseTuples, UnicodeTables.GetCase(codePoint) * 8);
 
     /// <summary>Gets the Simple_Uppercase_Mapping of a code point.</summary>
     /// <param name="codePoint">The code point.</param>
     /// <returns>The uppercase code point, or <paramref name="codePoint"/> when it has no mapping.</returns>
     /// <remarks>The mapping is the one-to-one, culture-independent mapping of the Unicode Character Database.</remarks>
-    public static int ToSimpleUppercase(int codePoint) => codePoint + UnicodeTables.CaseTuples[(UnicodeTables.GetCase(codePoint) * 2) + 1];
+    public static int ToSimpleUppercase(int codePoint) => codePoint + UnicodeTableReader.ReadInt32(UnicodeTables.CaseTuples, (UnicodeTables.GetCase(codePoint) * 8) + 4);
 
     internal static EmojiProperties GetEmojiProperties(int codePoint)
     {
@@ -202,30 +202,17 @@ public static class UnicodeProperties
         return tuples[index] | (tuples[index + 1] << 8);
     }
 
-    private static bool TryFindPair(ReadOnlySpan<int> pairs, int codePoint, out int value)
+    private static bool TryFindPair(ReadOnlySpan<byte> pairs, int codePoint, out int value)
     {
-        var low = 0;
-        var high = (pairs.Length / 2) - 1;
-        while (low <= high)
+        // 6-byte entries: the code point, then the value.
+        var offset = UnicodeTableReader.FindRecord(pairs, 6, codePoint);
+        if (offset < 0)
         {
-            var middle = (int)(((uint)low + (uint)high) / 2);
-            var key = pairs[middle * 2];
-            if (codePoint < key)
-            {
-                high = middle - 1;
-            }
-            else if (codePoint > key)
-            {
-                low = middle + 1;
-            }
-            else
-            {
-                value = pairs[(middle * 2) + 1];
-                return true;
-            }
+            value = codePoint;
+            return false;
         }
 
-        value = codePoint;
-        return false;
+        value = UnicodeTableReader.ReadUInt24(pairs, offset + 3);
+        return true;
     }
 }

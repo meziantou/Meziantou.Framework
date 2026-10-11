@@ -677,6 +677,8 @@ async Task WriteUnicodeScriptsFile()
 
             /// <summary>The number of scripts of the largest Script_Extensions set.</summary>
             internal const int MaxExtensionCount = {{maxSetCount}};
+
+        {{PropertyTablesWriter.ReadUInt16Method}}
         {{tries.ToString().TrimEnd()}}
 
             // 3-byte offsets into ExtensionSets.

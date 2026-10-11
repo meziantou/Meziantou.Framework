@@ -141,6 +141,31 @@ foreach (UnicodeScriptRun run in Unicode.EnumerateScriptRuns("gamma (γ) is"))
 }
 ```
 
+## Hyphenation
+
+The Unicode Standard says where a line can break, including after a soft hyphen (U+00AD), but hyphenating a word
+needs data for its language. `Hyphenator` applies the pattern algorithm of TeX (Franklin Liang) to patterns that you
+provide. No pattern is included in this package: the [hyph-utf8](https://ctan.org/pkg/hyph-utf8) project publishes
+patterns for many languages, each under its own license.
+
+```csharp
+// The patterns, as plain text: "hy3ph he2n ..." or a \patterns{...} group; exceptions such as "as-so-ciate"
+var hyphenator = Hyphenator.Load("hyph-en-us.pat.txt", "hyph-en-us.hyp.txt");
+
+Span<int> positions = stackalloc int[32];
+var count = hyphenator.Hyphenate("hyphenation", positions); // 2 positions: 2 and 6 (hy-phen-ation)
+```
+
+- `Hyphenate` takes one word, in any case, and returns the indexes before which a hyphen can be inserted. It does
+  not allocate. Use `Unicode.EnumerateWordBoundaries` to find the words of a text.
+- A break is never inside a grapheme cluster, and leaves at least `LeftHyphenMin` characters before it and
+  `RightHyphenMin` after it (2 and 3 by default; the right values depend on the language).
+- The patterns match code points: pass the word in the normalization form of the patterns, usually NFC.
+- Only the plain text form is read. A file that uses TeX macros, `\lccode` or the `^^` notation is rejected with a
+  `FormatException`, as is a file that exceeds a limit of `HyphenatorOptions` (pattern count, pattern length, input
+  length), so that a pattern file from an untrusted source cannot exhaust memory.
+- Hyphenation that changes the spelling of a word is not supported.
+
 ## Normalization
 
 `UnicodeNormalization` implements the four normalization forms of [UAX #15](https://www.unicode.org/reports/tr15/)

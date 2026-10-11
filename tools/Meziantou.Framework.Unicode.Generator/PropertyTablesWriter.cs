@@ -141,12 +141,19 @@ internal static class PropertyTablesWriter
             """);
         AppendBytes(tables, sizes, "IndicTuples", indicTuples.Bytes);
         AppendTrie(tables, sizes, "Case", caseLeaves, """
-            Index of a pair of CaseTuples: the difference between the code point and its Simple_Lowercase_Mapping, then
-            the difference with its Simple_Uppercase_Mapping.
+            Index of an 8-byte entry of CaseTuples: the difference between the Simple_Lowercase_Mapping of the code point
+            and the code point, then the difference between its Simple_Uppercase_Mapping and the code point.
             """);
-        AppendInts(tables, sizes, "CaseTuples", caseTuples.SelectMany(tuple => new[] { tuple.Lower, tuple.Upper }).ToArray(), "Pairs of differences, see GetCase.");
-        AppendInts(tables, sizes, "BidiMirroringPairs", mirroringPairs, "Bidi_Mirroring_Glyph: pairs of a code point and its mirrored code point, sorted by the first one.");
-        AppendInts(tables, sizes, "BidiBracketPairs", bracketPairs, "Bidi_Paired_Bracket: pairs of a code point and its paired bracket, sorted by the first one.");
+        var caseBytes = new byte[caseTuples.Count * 8];
+        for (var i = 0; i < caseTuples.Count; i++)
+        {
+            System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian(caseBytes.AsSpan(i * 8), caseTuples[i].Lower);
+            System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian(caseBytes.AsSpan((i * 8) + 4), caseTuples[i].Upper);
+        }
+
+        AppendBytes(tables, sizes, "CaseTuples", caseBytes, "8-byte entries: two little-endian 32-bit differences, see GetCase.");
+        AppendBytes(tables, sizes, "BidiMirroringPairs", EncodeUInt24(mirroringPairs), "Bidi_Mirroring_Glyph: 6-byte entries sorted by code point: the code point then its mirrored code point, 3 bytes each, little-endian.");
+        AppendBytes(tables, sizes, "BidiBracketPairs", EncodeUInt24(bracketPairs), "Bidi_Paired_Bracket: 6-byte entries sorted by code point: the code point then its paired bracket, 3 bytes each, little-endian.");
 
         var sizeLines = string.Join('\n', sizes.Select(size => string.Create(CultureInfo.InvariantCulture, $"//   - {size.Name}: {size.Bytes:N0} bytes")));
         var tablesContent = string.Create(CultureInfo.InvariantCulture, $$"""
@@ -170,6 +177,8 @@ internal static class PropertyTablesWriter
             {
                 /// <summary>The version of the Unicode Standard the tables were generated from.</summary>
                 internal const string UnicodeVersion = "{{Ucd.Version}}";
+
+            {{ReadUInt16Method}}
             {{tables.ToString().TrimEnd()}}
             }
 
@@ -196,6 +205,16 @@ internal static class PropertyTablesWriter
             destination.Append(CultureInfo.InvariantCulture, $"    // {line}\n");
         }
 
+        // The stages are bytes, read in little-endian order when an index takes two of them: a span of bytes over
+        // static data never allocates, whatever the build configuration and the tier of the JIT compiler.
+        var read1 = trie.Stage1Width == 1
+            ? $"{name}Stage1[codePoint >> {trie.Shift1}]"
+            : $"ReadUInt16({name}Stage1, (codePoint >> {trie.Shift1}) * 2)";
+        var index2 = $"(block2 << {bits2}) + ((codePoint >> {trie.Shift2}) & {(1 << bits2) - 1})";
+        var read2 = trie.Stage2Width == 1
+            ? $"{name}Stage2[{index2}]"
+            : $"ReadUInt16({name}Stage2, ({index2}) * 2)";
+
         destination.Append(string.Create(CultureInfo.InvariantCulture, $$"""
                 internal const int {{name}}Default = {{defaultValue}};
 
@@ -205,21 +224,57 @@ internal static class PropertyTablesWriter
                     if ((uint)codePoint > 0x10FFFF)
                         return {{name}}Default;
 
-                    var block2 = {{name}}Stage1[codePoint >> {{trie.Shift1}}];
-                    var block3 = {{name}}Stage2[(block2 << {{bits2}}) + ((codePoint >> {{trie.Shift2}}) & {{(1 << bits2) - 1}})];
+                    var block2 = {{read1}};
+                    var block3 = {{read2}};
                     return {{name}}Stage3[(block3 << {{trie.Shift2}}) + (codePoint & {{(1 << trie.Shift2) - 1}})];
                 }
 
-                private static ReadOnlySpan<ushort> {{name}}Stage1 =>
-                [{{TrieBuilder.FormatElements<ushort>(trie.Stage1, "        ")}}
+                private static ReadOnlySpan<byte> {{name}}Stage1 =>
+                [{{TrieBuilder.FormatElements<byte>(Trie.Encode(trie.Stage1, trie.Stage1Width), "        ")}}
                 ];
 
-                private static ReadOnlySpan<ushort> {{name}}Stage2 =>
-                [{{TrieBuilder.FormatElements<ushort>(trie.Stage2, "        ")}}
+                private static ReadOnlySpan<byte> {{name}}Stage2 =>
+                [{{TrieBuilder.FormatElements<byte>(Trie.Encode(trie.Stage2, trie.Stage2Width), "        ")}}
                 ];
 
                 private static ReadOnlySpan<byte> {{name}}Stage3 =>
                 [{{TrieBuilder.FormatElements<byte>(trie.Stage3, "        ")}}
+                ];
+
+            """).ReplaceLineEndings("\n"));
+    }
+
+    /// <summary>The helper the generated lookups call to read a two-byte index.</summary>
+    public const string ReadUInt16Method = """
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private static int ReadUInt16(ReadOnlySpan<byte> values, int offset) => values[offset] | (values[offset + 1] << 8);
+        """;
+
+    /// <summary>Encodes records of three-byte little-endian fields.</summary>
+    public static byte[] EncodeUInt24(IEnumerable<int> values)
+    {
+        var result = new List<byte>();
+        foreach (var value in values)
+        {
+            if ((uint)value > 0xFFFFFF)
+                throw new InvalidOperationException("The value does not fit in three bytes: " + value);
+
+            result.Add((byte)value);
+            result.Add((byte)(value >> 8));
+            result.Add((byte)(value >> 16));
+        }
+
+        return [.. result];
+    }
+
+    public static void AppendBytes(StringBuilder destination, List<(string Name, int Bytes)> sizes, string name, byte[] values, string comment)
+    {
+        sizes.Add((name, values.Length));
+        destination.Append(string.Create(CultureInfo.InvariantCulture, $$"""
+
+                // {{comment}}
+                internal static ReadOnlySpan<byte> {{name}} =>
+                [{{TrieBuilder.FormatElements<byte>(values, "        ")}}
                 ];
 
             """).ReplaceLineEndings("\n"));
@@ -232,19 +287,6 @@ internal static class PropertyTablesWriter
 
                 internal static ReadOnlySpan<byte> {{name}} =>
                 [{{TrieBuilder.FormatElements<byte>(values.ToArray(), "        ")}}
-                ];
-
-            """).ReplaceLineEndings("\n"));
-    }
-
-    private static void AppendInts(StringBuilder destination, List<(string Name, int Bytes)> sizes, string name, int[] values, string comment)
-    {
-        sizes.Add((name, values.Length * sizeof(int)));
-        destination.Append(string.Create(CultureInfo.InvariantCulture, $$"""
-
-                // {{comment}}
-                internal static ReadOnlySpan<int> {{name}} =>
-                [{{TrieBuilder.FormatElements<int>(values, "        ")}}
                 ];
 
             """).ReplaceLineEndings("\n"));

@@ -1,7 +1,7 @@
 <Project Sdk="Meziantou.NET.Sdk.Test">
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
-    <!-- 'dotnet test' runs these tests on the JIT. The test_aot job of ci.yml publishes the project and runs the native executable. -->
+    <!-- 'dotnet test' runs these tests on the JIT, so CI leaves the project out of the regular test jobs: the test_aot job of ci.yml publishes it and runs the native executable. -->
     <PublishAot>true</PublishAot>
     <InvariantGlobalization>true</InvariantGlobalization>
     <StripSymbols>true</StripSymbols>

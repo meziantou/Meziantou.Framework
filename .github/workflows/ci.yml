@@ -106,6 +106,8 @@ jobs:
     outputs:
       matrix: ${{ steps.compute-matrix.outputs.matrix }}
       has-tests: ${{ steps.compute-matrix.outputs.has-tests }}
+      aot-matrix: ${{ steps.compute-aot-matrix.outputs.matrix }}
+      has-aot-projects: ${{ steps.compute-aot-matrix.outputs.has-projects }}
       base-commit: ${{ steps.base-commit.outputs.base-commit }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -146,6 +148,25 @@ jobs:
           base-commit: ${{ steps.base-commit.outputs.base-commit }}
           run-generate: "true"
           test-projects-only: "true"
+          # "dotnet test" runs a test project on the JIT, which validates nothing for the ones
+          # meant to be published with Native AOT. The test_aot job runs them as native executables.
+          where: "'$(PublishAot)' != 'true'"
+          full-rebuild-triggers: |
+            .github/workflows/ci.yml
+            eng/**/*.proj
+
+      - name: List affected Native AOT projects
+        id: affected-aot-projects
+        uses: ./.github/actions/deltabuild
+        with:
+          input-project: eng/build.proj
+          properties: SkipUnsupportedPlatforms=false
+          output-project: affected-aot-projects.json
+          base-commit: ${{ steps.base-commit.outputs.base-commit }}
+          run-generate: "true"
+          # Not limited to the test projects: some of them are console applications that return
+          # a non-zero exit code when a check fails
+          where: "'$(PublishAot)' == 'true'"
           full-rebuild-triggers: |
             .github/workflows/ci.yml
             eng/**/*.proj
@@ -269,6 +290,38 @@ jobs:
           Write-Host "Matrix: $matrix"
           "matrix=$matrix" >> $env:GITHUB_OUTPUT
           "has-tests=$(($groups.Count -gt 0).ToString().ToLowerInvariant())" >> $env:GITHUB_OUTPUT
+
+      - name: Compute Native AOT matrix
+        id: compute-aot-matrix
+        run: |
+          $projects = @()
+          if (Test-Path -LiteralPath "affected-aot-projects.json") {
+            $projects = @(
+              Get-Content -Raw -LiteralPath "affected-aot-projects.json"
+              | ConvertFrom-Json
+              | ForEach-Object { $_.Replace('\', '/') }
+              # An application published with Native AOT outside of the tests folder is a product,
+              # not something that validates itself when it runs
+              | Where-Object { $_.StartsWith("tests/", [StringComparison]::Ordinal) }
+              | Sort-Object
+            )
+          }
+
+          Write-Host "Affected Native AOT projects: $($projects.Count)"
+
+          $groups = @()
+          foreach ($project in $projects) {
+            # tests/Meziantou.Framework.Yaml.AotTests/Meziantou.Framework.Yaml.AotTests.csproj -> Yaml.AotTests
+            $id = [System.IO.Path]::GetFileNameWithoutExtension($project) -replace '^Meziantou\.Framework\.', ''
+            $groups += [pscustomobject]@{ id = $id; project = $project }
+            Write-Host "  $project"
+          }
+
+          # -InputObject does not unroll the array, so the result is a JSON array for 0, 1 or more projects
+          $matrix = ConvertTo-Json -InputObject @($groups) -Compress
+          Write-Host "Matrix: $matrix"
+          "matrix=$matrix" >> $env:GITHUB_OUTPUT
+          "has-projects=$(($groups.Count -gt 0).ToString().ToLowerInvariant())" >> $env:GITHUB_OUTPUT
 
   build_and_test:
     needs: [ compute_test_matrix ]
@@ -434,60 +487,52 @@ jobs:
         uses: ./.github/actions/setup-dotnet
       - run: dotnet publish --configuration Release --runtime ${{ matrix.runtime }} --self-contained eng/Trimmable.Wpf/Trimmable.Wpf.csproj
 
-  # Building a project that sets PublishAot does not compile it ahead of time, and "dotnet test"
-  # runs the xUnit.net ones on the JIT like any other test project. Only a published application
-  # is native, and Native AOT cannot target another OS, so each platform publishes every project
-  # of the tests folder that sets PublishAot, test project or console application, and runs the
-  # native executable.
+  # Building a project that sets PublishAot does not compile it ahead of time. Only a published
+  # application is native, and Native AOT cannot target another OS, so each platform publishes
+  # the affected projects of the tests folder that set PublishAot, xUnit.net test project or
+  # console application, and runs the native executable.
   test_aot:
+    needs: [ compute_test_matrix ]
+    if: needs.compute_test_matrix.outputs.has-aot-projects == 'true'
+    name: test_aot (${{ matrix.runs-on }}, ${{ matrix.aot-project.id }})
     runs-on: ${{ matrix.runs-on }}
     timeout-minutes: 60
     strategy:
       matrix:
         runs-on: [ windows-2025-vs2026, ubuntu-26.04, macos-26 ]
+        aot-project: ${{ fromJson(needs.compute_test_matrix.outputs.aot-matrix) }}
       fail-fast: false
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Setup .NET
         uses: ./.github/actions/setup-dotnet
-      - name: Publish and run the Native AOT projects
+      - name: Publish and run the native executable
+        env:
+          PROJECT: ${{ matrix.aot-project.project }}
         run: |
-          $projects = @(
-            Get-ChildItem -Path tests -Recurse -Filter *.csproj
-            | Where-Object { Select-String -LiteralPath $_.FullName -SimpleMatch -Quiet -Pattern '<PublishAot>true</PublishAot>' }
-            | Sort-Object FullName
-          )
-
-          # Fail explicitly instead of reporting a success when the projects are moved or renamed
-          if ($projects.Count -eq 0) {
-            throw "No project of the tests folder sets PublishAot"
+          $project = Get-Item -LiteralPath $env:PROJECT
+          $frameworks = (dotnet msbuild $project.FullName -getProperty:TargetFrameworks).Split(';', [StringSplitOptions]::RemoveEmptyEntries)
+          if ($frameworks.Count -eq 0) {
+            throw "Cannot get the target frameworks of $($project.Name)"
           }
 
           $extension = $(if ($IsWindows) { ".exe" } else { "" })
           $failures = @()
-          foreach ($project in $projects) {
-            $frameworks = (dotnet msbuild $project.FullName -getProperty:TargetFrameworks).Split(';', [StringSplitOptions]::RemoveEmptyEntries)
-            if ($frameworks.Count -eq 0) {
-              throw "Cannot get the target frameworks of $($project.Name)"
+          foreach ($framework in $frameworks) {
+            $output = Join-Path $env:RUNNER_TEMP "aot" $framework
+
+            Write-Host "::group::Publish $framework"
+            dotnet publish $project.FullName --configuration Release --framework $framework --output $output
+            $published = $LASTEXITCODE -eq 0
+            Write-Host "::endgroup::"
+            if (-not $published) {
+              $failures += "${framework}: publish failed"
+              continue
             }
 
-            foreach ($framework in $frameworks) {
-              $name = "$($project.BaseName) ($framework)"
-              $output = Join-Path $env:RUNNER_TEMP "aot" $project.BaseName $framework
-
-              Write-Host "::group::Publish $name"
-              dotnet publish $project.FullName --configuration Release --framework $framework --output $output
-              $published = $LASTEXITCODE -eq 0
-              Write-Host "::endgroup::"
-              if (-not $published) {
-                $failures += "${name}: publish failed"
-                continue
-              }
-
-              & (Join-Path $output "$($project.BaseName)$extension")
-              if ($LASTEXITCODE -ne 0) {
-                $failures += "${name}: the native executable failed with exit code $LASTEXITCODE"
-              }
+            & (Join-Path $output "$($project.BaseName)$extension")
+            if ($LASTEXITCODE -ne 0) {
+              $failures += "${framework}: the native executable failed with exit code $LASTEXITCODE"
             }
           }
 

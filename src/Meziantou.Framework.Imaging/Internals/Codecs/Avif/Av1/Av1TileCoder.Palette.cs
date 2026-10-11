@@ -1,7 +1,7 @@
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <content>The palette of a block (AV1 specification, sections 5.11.46, 5.11.49, 5.11.50 and 7.11.4).</content>
-internal ref partial struct Av1TileDecoder
+internal ref partial struct Av1TileCoder
 {
     private const int ColorMapStride = 64;
 

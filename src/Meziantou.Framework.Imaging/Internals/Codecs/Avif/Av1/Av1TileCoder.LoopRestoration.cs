@@ -1,7 +1,7 @@
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <content>The loop restoration units read with the superblocks (AV1 specification, sections 5.11.57 and 5.11.58).</content>
-internal ref partial struct Av1TileDecoder
+internal ref partial struct Av1TileCoder
 {
     // Section 5.11.57 "Read loop restoration syntax"
     private void ReadLr(int r, int c, int bSize)

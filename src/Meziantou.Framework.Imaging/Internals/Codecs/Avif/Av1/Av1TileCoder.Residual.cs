@@ -1,7 +1,7 @@
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <content>The residual of a block (AV1 specification, sections 5.11.34 to 5.11.41, 5.11.47 and 5.11.48).</content>
-internal ref partial struct Av1TileDecoder
+internal ref partial struct Av1TileCoder
 {
     private const int TxClass2D = Av1Constants.TxClass2d;
 

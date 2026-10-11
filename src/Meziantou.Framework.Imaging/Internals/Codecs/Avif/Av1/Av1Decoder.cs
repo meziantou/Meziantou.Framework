@@ -19,17 +19,9 @@ internal sealed class Av1Decoder : IDisposable
     private readonly AllocationScope _scope;
     private readonly int _operatingPoint;
     private readonly InputResourceTracker? _tracker;
-    private readonly Av1FrameBuffer?[] _slots = new Av1FrameBuffer?[Av1Constants.NumRefFrames];
-    private readonly bool[] _refValid = new bool[Av1Constants.NumRefFrames];
+    private readonly Av1FrameCodingState _coding;
     private readonly Av1SymbolDecoder _symbols = new();
-    private readonly Av1FrameState _state = new();
-    private readonly Av1PostFilter _postFilter = new();
-    private readonly Av1ReferenceFrames _references = new();
-    private Av1InterScratch? _interScratch;
-    private Av1TileScratch? _scratch;
-    private Av1PooledArray<ushort>? _contexts;
     private Av1SequenceHeader? _sequence;
-    private Av1FrameBuffer? _currentFrame;
     private Av1FrameBuffer? _heldOutput;
     private int _heldSpatialId;
     private bool _seenFrameHeader;
@@ -46,6 +38,7 @@ internal sealed class Av1Decoder : IDisposable
     {
         ArgumentNullException.ThrowIfNull(scope);
         _scope = scope;
+        _coding = new Av1FrameCodingState(scope);
         _tracker = tracker;
         _operatingPoint = operatingPoint;
     }
@@ -69,18 +62,10 @@ internal sealed class Av1Decoder : IDisposable
     public int OutputSpatialId { get; private set; }
 
     /// <summary>Gets the coding tools used by the blocks decoded so far: a diagnostic.</summary>
-    public Av1Tools Tools => _state.Tools;
+    public Av1Tools Tools => _coding.State.Tools;
 
     /// <summary>Gets the active sequence header, or <see langword="null"/> before the first one is decoded.</summary>
     public Av1SequenceHeader? Sequence => _sequence;
-
-    // The frame context (the CDF arrays without prefix), the context of the tile being decoded ("Tile") and the context
-    // saved by the tile that updates the frame context ("Saved")
-    private Span<ushort> FrameContext => _contexts!.Span[..Av1CdfLayout.TotalLength];
-
-    private Span<ushort> TileContext => _contexts!.Span.Slice(Av1CdfLayout.TotalLength, Av1CdfLayout.TotalLength);
-
-    private Span<ushort> SavedContext => _contexts!.Span.Slice(2 * Av1CdfLayout.TotalLength, Av1CdfLayout.TotalLength);
 
     /// <summary>
     /// Sets the units to decode: <paramref name="length"/> bytes of <paramref name="data"/> from <paramref name="offset"/>,
@@ -220,7 +205,7 @@ internal sealed class Av1Decoder : IDisposable
         if (_sequence is not null && !_sequence.IsSameSequence(sequence))
         {
             // A new coded video sequence does not refer to the frames of the previous one
-            ReleaseSlots();
+            _coding.ReleaseSlots();
         }
 
         _sequence = sequence;
@@ -232,7 +217,7 @@ internal sealed class Av1Decoder : IDisposable
         var sequence = _sequence ?? throw Av1Errors.Invalid("a frame header has no sequence header.");
         var payload = _data.AsSpan(payloadOffset, obu.PayloadLength);
         var reader = new Av1BitReader(payload);
-        var header = Av1FrameHeaderParser.Parse(ref reader, sequence, obu, _slots, _refValid);
+        var header = Av1FrameHeaderParser.Parse(ref reader, sequence, obu, _coding.Slots, _coding.RefValid);
         if (header.ShowExistingFrame)
         {
             if (isFrameObu)
@@ -261,13 +246,13 @@ internal sealed class Av1Decoder : IDisposable
 
     private Av1FrameBuffer ShowExistingFrame(Av1FrameHeader header)
     {
-        var frame = _slots[header.FrameToShowMapIdx] ?? throw Av1Errors.Invalid("a frame refers to an empty reference slot.");
+        var frame = _coding.Slots[header.FrameToShowMapIdx] ?? throw Av1Errors.Invalid("a frame refers to an empty reference slot.");
         if (header.FrameType is Av1Constants.KeyFrame)
         {
             // Section 7.21 "Reference frame loading process", then the reference frame update process with every slot
             for (var i = 0; i < Av1Constants.NumRefFrames; i++)
             {
-                SetSlot(i, frame);
+                _coding.SetSlot(i, frame);
             }
         }
 
@@ -283,67 +268,13 @@ internal sealed class Av1Decoder : IDisposable
         if (!header.ShowFrame)
             _tracker?.ChargeHiddenPixels((long)header.UpscaledWidth * header.FrameHeight);
 
-        _scratch ??= new Av1TileScratch(_scope);
-        _contexts ??= Av1PooledArray<ushort>.Rent(_scope, 3L * Av1CdfLayout.TotalLength, clear: false);
-
-        var frame = new Av1FrameBuffer(sequence, header);
-        _currentFrame?.Release();
-        _currentFrame = frame;
-        frame.Allocate(_scope);
-
-        // The reference frames of the frame, and load_previous_segment_ids
-        _references.Clear();
-        Av1FrameBuffer? segmentationSource = null;
-        if (!header.FrameIsIntra)
-        {
-            for (var i = 0; i < Av1Constants.RefsPerFrame; i++)
-            {
-                var reference = _slots[header.RefFrameIdx[i]] ?? throw Av1Errors.Invalid("a frame refers to an empty reference slot.");
-                _references.Set(Av1Constants.LastFrame + i, reference, sequence, header);
-            }
-        }
-
-        if (header.PrimaryRefFrame is not Av1Constants.PrimaryRefNone && header.SegmentationEnabled)
-        {
-            var previous = _slots[header.RefFrameIdx[header.PrimaryRefFrame]] ?? throw Av1Errors.Invalid("a frame refers to an empty reference slot.");
-            if (previous.Header.MiCols == header.MiCols && previous.Header.MiRows == header.MiRows)
-                segmentationSource = previous;
-        }
-
-        if (!header.FrameIsIntra || header.AllowIntrabc)
-            _interScratch ??= new Av1InterScratch(_scope);
-
-        _state.Prepare(_scope, sequence, header, segmentationSource);
-        if (header.UseRefFrameMvs)
-            Av1MotionField.Estimate(sequence, header, _references, _state.MotionFieldMvs);
-
-        // init_non_coeff_cdfs and init_coeff_cdfs, or load_cdfs
-        var frameContext = FrameContext;
-        if (header.PrimaryRefFrame is Av1Constants.PrimaryRefNone)
-        {
-            Av1CdfLayout.InitializeNonCoefficients(frameContext);
-            var index = header.BaseQIdx switch
-            {
-                <= 20 => 0,
-                <= 60 => 1,
-                <= 120 => 2,
-                _ => 3,
-            };
-
-            Av1CdfLayout.InitializeCoefficients(frameContext, index);
-        }
-        else
-        {
-            var reference = _slots[header.RefFrameIdx[header.PrimaryRefFrame]] ?? throw Av1Errors.Invalid("a frame refers to an empty reference slot.");
-            reference.Cdfs.CopyTo(frameContext);
-            Av1CdfLayout.ResetCounters(frameContext);
-        }
+        _coding.BeginFrame(sequence, header);
     }
 
     // Section 5.11.1 "General tile group OBU syntax"
     private Av1FrameBuffer? ReadTileGroup(int offset, int length, CancellationToken cancellationToken)
     {
-        var frame = _currentFrame!;
+        var frame = _coding.CurrentFrame!;
         var header = frame.Header;
         var tileCount = header.TileCount;
         var reader = new Av1BitReader(_data.AsSpan(offset, length));
@@ -398,9 +329,7 @@ internal sealed class Av1Decoder : IDisposable
         if (tgEnd != tileCount - 1)
             return null;
 
-        if (!header.DisableFrameEndUpdateCdf)
-            SavedContext.CopyTo(FrameContext);
-
+        _coding.EndTiles(header);
         _seenFrameHeader = false;
         return DecodeFrameWrapup(frame, cancellationToken);
     }
@@ -412,47 +341,22 @@ internal sealed class Av1Decoder : IDisposable
         var tileCol = _tileNum % header.TileCols;
 
         // init_symbol: the tile decodes with a copy of the frame context, and with the default intra frame y mode distributions
-        var tileContext = TileContext;
-        FrameContext.CopyTo(tileContext);
-        Av1Tables.DefaultIntraFrameYModeCdf.CopyTo(tileContext[Av1CdfLayout.IntraFrameYMode..]);
+        var tileContext = _coding.BeginTile();
         _symbols.Initialize(_data, position, tileSize, header.DisableCdfUpdate);
 
-        var decoder = new Av1TileDecoder(frame, _state, _symbols, _scratch!, _references, _interScratch, tileContext, cancellationToken);
+        var decoder = new Av1TileCoder(frame, _coding.State, _symbols, _coding.Scratch!, _coding.References, _coding.InterScratch, tileContext, cancellationToken);
         decoder.DecodeTile(tileRow, tileCol);
 
         _symbols.Exit();
-        if (!header.DisableFrameEndUpdateCdf && _tileNum == header.ContextUpdateTileId)
-            tileContext.CopyTo(SavedContext);
+        _coding.EndTile(header, _tileNum);
     }
 
     // Section 7.4 "Decode frame wrapup process"
     private Av1FrameBuffer? DecodeFrameWrapup(Av1FrameBuffer frame, CancellationToken cancellationToken)
     {
         var header = frame.Header;
-        _postFilter.Apply(_scope, frame, _state, InLoopFilters, cancellationToken);
-
-        // Section 7.19 "Motion field motion vector storage process", and the segmentation map of the frame
-        if (!header.FrameIsIntra && frame.Sequence.EnableRefFrameMvs)
-            frame.SaveMotionField(_scope, _state.RefFrames, _state.Mvs);
-
-        if (header.SegmentationEnabled)
-        {
-            var segmentIds = header.SegmentationUpdateMap ? _state.SegmentIds : _state.PrevSegmentIds;
-            if (!segmentIds.IsEmpty)
-                frame.SaveSegmentIds(_scope, segmentIds);
-        }
-
-        _references.Clear();
-
-        // Section 7.20 "Reference frame update process"
-        FrameContext.CopyTo(frame.Cdfs);
-        for (var i = 0; i < Av1Constants.NumRefFrames; i++)
-        {
-            if (((header.RefreshFrameFlags >> i) & 1) is not 0)
-                SetSlot(i, frame);
-        }
-
-        _currentFrame = null;
+        _coding.PostFilter.Apply(_scope, frame, _coding.State, InLoopFilters, cancellationToken);
+        _coding.StoreFrame();
         if (header.ShowFrame)
             return frame;
 
@@ -460,43 +364,10 @@ internal sealed class Av1Decoder : IDisposable
         return null;
     }
 
-    private void SetSlot(int index, Av1FrameBuffer frame)
-    {
-        if (!ReferenceEquals(_slots[index], frame))
-        {
-            frame.AddReference();
-            _slots[index]?.Release();
-            _slots[index] = frame;
-        }
-
-        _refValid[index] = true;
-    }
-
-    private void ReleaseSlots()
-    {
-        for (var i = 0; i < _slots.Length; i++)
-        {
-            _slots[i]?.Release();
-            _slots[i] = null;
-            _refValid[i] = false;
-        }
-    }
-
     public void Dispose()
     {
-        ReleaseSlots();
-        _currentFrame?.Release();
-        _currentFrame = null;
         _heldOutput?.Release();
         _heldOutput = null;
-        _state.Dispose();
-        _postFilter.Dispose();
-        _scratch?.Dispose();
-        _scratch = null;
-        _interScratch?.Dispose();
-        _interScratch = null;
-        _references.Clear();
-        _contexts?.Dispose();
-        _contexts = null;
+        _coding.Dispose();
     }
 }

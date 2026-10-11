@@ -6,7 +6,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// The prediction of a block from another frame, or from the frame itself with intra block copy (AV1 specification, sections
 /// 5.11.33 "Compute prediction syntax" and 7.11.3 "Inter prediction process").
 /// </content>
-internal ref partial struct Av1TileDecoder
+internal ref partial struct Av1TileCoder
 {
     // Section 5.11.33 "Compute prediction syntax": the intra prediction of a block that is not inter is made for each
     // transform block

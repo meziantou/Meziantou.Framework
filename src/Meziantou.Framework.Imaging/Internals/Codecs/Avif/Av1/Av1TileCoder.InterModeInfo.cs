@@ -6,7 +6,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// The mode info of a block that is predicted from another frame, or from the frame itself with intra block copy
 /// (AV1 specification, sections 5.11.10, 5.11.17 to 5.11.23 and 5.11.25 to 5.11.33).
 /// </content>
-internal ref partial struct Av1TileDecoder
+internal ref partial struct Av1TileCoder
 {
     /// <summary>The value of <c>RefFrame[ 1 ]</c> for a block with one reference (<c>NONE</c>).</summary>
     private const int NoReference = -1;

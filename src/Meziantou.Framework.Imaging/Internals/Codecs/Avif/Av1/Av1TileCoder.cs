@@ -8,7 +8,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// follow the syntax tables of the specification and keep their names; the variables of the specification that describe the
 /// block being decoded are the fields of this type.
 /// </summary>
-internal ref partial struct Av1TileDecoder
+internal ref partial struct Av1TileCoder
 {
     private readonly Av1SequenceHeader _sequence;
     private readonly Av1FrameHeader _header;
@@ -138,7 +138,7 @@ internal ref partial struct Av1TileDecoder
     private InlineArray6<int> _localWarpParams;
     private InlineArray4<int> _localShear;
 
-    public Av1TileDecoder(Av1FrameBuffer frame, Av1FrameState state, Av1SymbolDecoder symbols, Av1TileScratch scratch, Av1ReferenceFrames references, Av1InterScratch? interScratch, Span<ushort> cdf, CancellationToken cancellationToken)
+    public Av1TileCoder(Av1FrameBuffer frame, Av1FrameState state, Av1SymbolDecoder symbols, Av1TileScratch scratch, Av1ReferenceFrames references, Av1InterScratch? interScratch, Span<ushort> cdf, CancellationToken cancellationToken)
     {
         _frame = frame;
         _references = references;

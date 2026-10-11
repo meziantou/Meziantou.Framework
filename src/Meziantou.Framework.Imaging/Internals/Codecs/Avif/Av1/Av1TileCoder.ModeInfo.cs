@@ -1,7 +1,7 @@
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <content>The mode info of a block (AV1 specification, sections 5.11.7 to 5.11.17, 5.11.24 and 5.11.42 to 5.11.46).</content>
-internal ref partial struct Av1TileDecoder
+internal ref partial struct Av1TileCoder
 {
     // Section 5.11.7 "Intra frame mode info syntax"
     private void IntraFrameModeInfo()

@@ -434,9 +434,11 @@ jobs:
         uses: ./.github/actions/setup-dotnet
       - run: dotnet publish --configuration Release --runtime ${{ matrix.runtime }} --self-contained eng/Trimmable.Wpf/Trimmable.Wpf.csproj
 
-  # "dotnet test" runs the test projects that set PublishAot on the JIT, like any other test project.
-  # Only a published application is compiled ahead of time, and Native AOT cannot target another
-  # OS, so each platform publishes these projects and runs the native executables.
+  # Building a project that sets PublishAot does not compile it ahead of time, and "dotnet test"
+  # runs the xUnit.net ones on the JIT like any other test project. Only a published application
+  # is native, and Native AOT cannot target another OS, so each platform publishes every project
+  # of the tests folder that sets PublishAot, test project or console application, and runs the
+  # native executable.
   test_aot:
     runs-on: ${{ matrix.runs-on }}
     timeout-minutes: 60
@@ -448,7 +450,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Setup .NET
         uses: ./.github/actions/setup-dotnet
-      - name: Publish and run the Native AOT tests
+      - name: Publish and run the Native AOT projects
         run: |
           $projects = @(
             Get-ChildItem -Path tests -Recurse -Filter *.csproj
@@ -458,7 +460,7 @@ jobs:
 
           # Fail explicitly instead of reporting a success when the projects are moved or renamed
           if ($projects.Count -eq 0) {
-            throw "No test project sets PublishAot"
+            throw "No project of the tests folder sets PublishAot"
           }
 
           $extension = $(if ($IsWindows) { ".exe" } else { "" })
@@ -484,7 +486,7 @@ jobs:
 
               & (Join-Path $output "$($project.BaseName)$extension")
               if ($LASTEXITCODE -ne 0) {
-                $failures += "${name}: tests failed with exit code $LASTEXITCODE"
+                $failures += "${name}: the native executable failed with exit code $LASTEXITCODE"
               }
             }
           }

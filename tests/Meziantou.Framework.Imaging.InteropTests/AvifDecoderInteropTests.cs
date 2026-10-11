@@ -1010,8 +1010,9 @@ public sealed class AvifDecoderInteropTests
 
         using var image = Image.Load(path);
 
-        // "frames <count> <width> <height> <bits>": straight RGBA, opaque
-        var header = result.StandardError.Trim().Split(' ');
+        // "frames <count> <width> <height> <bits>": straight RGBA, opaque. It is the last line of the error output: the
+        // system frameworks can write diagnostics before it (a virtual machine without the hardware scaler does)
+        var header = result.StandardError.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)[^1].Split(' ');
         Assert.Equal(["frames", frameCount.ToString(CultureInfo.InvariantCulture), image.Width.ToString(CultureInfo.InvariantCulture), image.Height.ToString(CultureInfo.InvariantCulture), "8"], header);
         Assert.Equal(frameCount, image.Frames.Count);
         var frameLength = RawPixelLayout.Rgba8.GetByteLength(image.Width, image.Height);
@@ -1336,7 +1337,7 @@ public sealed class AvifDecoderInteropTests
     private static int CountOccurrences(string trace, string element, string value)
     {
         var count = 0;
-        foreach (var line in trace.Split('\n'))
+        foreach (var line in trace.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries))
         {
             // "[trace_headers @ 0x...] 27          show_frame                                                  1 = 1"
             var parts = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);

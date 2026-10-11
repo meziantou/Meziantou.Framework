@@ -149,6 +149,7 @@ internal ref partial struct Av1TileCoder
     private InlineArray3<int> _transformBlockCursor;
     private bool _estimating;
     private long _estimate;
+    private long _distortion;
     private bool _hasCoefficients;
 
     public Av1TileCoder(Av1FrameBuffer frame, Av1FrameState state, Av1SymbolDecoder symbols, Av1TileScratch scratch, Av1ReferenceFrames references, Av1InterScratch? interScratch, Span<ushort> cdf, CancellationToken cancellationToken)

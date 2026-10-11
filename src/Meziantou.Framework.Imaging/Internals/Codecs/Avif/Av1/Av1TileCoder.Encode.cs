@@ -182,7 +182,7 @@ internal ref partial struct Av1TileCoder
             workspace.Records[_recordPosition++] = partition;
             _rate = 0;
             WritePartition(r, c, bSize, partition);
-            var cost = _decisions.GetRateCost(_rate) + VisitPartition(r, c, bSize, partition, search: true);
+            var cost = _decisions.GetCost(0, _rate) + VisitPartition(r, c, bSize, partition, search: true);
             if (cost < best)
             {
                 best = cost;
@@ -336,7 +336,7 @@ internal ref partial struct Av1TileCoder
         var workspace = _workspace!;
         BeginBlock(r, c, subSize);
         SetIntraBlockDefaults();
-        _txSize = Av1Constants.Tx4x4;
+        _txSize = _lossless ? Av1Constants.Tx4x4 : Av1Tables.MaxTxSizeRect[subSize];
         var bw4 = Av1Tables.Num4x4BlocksWide[subSize];
         var bh4 = Av1Tables.Num4x4BlocksHigh[subSize];
         var start = _recordPosition;
@@ -387,6 +387,7 @@ internal ref partial struct Av1TileCoder
             CopyPixels(pixels, r, c, bw4, bh4, planeMask: 0b001, save: false);
 
         var bestLength = luma.BestLength;
+        var distortion = luma.BestDistortion;
         long bestCost;
         bool bestHasCoefficients;
         bool lastIsBest;
@@ -399,6 +400,7 @@ internal ref partial struct Av1TileCoder
             var chromaCount = RankIntraModes(contexts, r, c, bw4, bh4, planeMask: 0b110, estimates, modes, _decisions.ChromaModeCandidates);
             bestCost = MaxCost;
             var bestUvMode = Av1Constants.DcPred;
+            long bestDistortion = 0;
             bestHasCoefficients = false;
             lastIsBest = false;
             _uvMode = Av1Constants.DcPred;
@@ -409,16 +411,18 @@ internal ref partial struct Av1TileCoder
                 _recordPosition = candidateStart;
                 _uvMode = modes[i];
                 _rate = 0;
+                _distortion = 0;
                 _hasCoefficients = false;
                 WriteUvModeInfo();
                 Residual(ResidualOperation.Search, planeMask: 0b010);
                 var candidateULength = _recordPosition - candidateStart;
                 Residual(ResidualOperation.Search, planeMask: 0b100);
-                var cost = _decisions.GetRateCost(_rate);
+                var cost = _decisions.GetCost(_distortion, _rate);
                 if (cost < bestCost)
                 {
                     bestCost = cost;
                     bestUvMode = _uvMode;
+                    bestDistortion = _distortion;
                     bestHasCoefficients = _hasCoefficients;
                     uLength = candidateULength;
                     chromaLength = _recordPosition - candidateStart;
@@ -436,6 +440,7 @@ internal ref partial struct Av1TileCoder
             }
 
             _uvMode = bestUvMode;
+            distortion += bestDistortion;
             hasCoefficients |= bestHasCoefficients;
             if (!lastIsBest)
                 CopyPixels(pixels, r, c, bw4, bh4, planeMask: 0b110, save: false);
@@ -468,7 +473,7 @@ internal ref partial struct Av1TileCoder
         ReplayBlock(r, c, subSize);
         _sink = sink;
         Debug.Assert(_recordPosition == end);
-        return _decisions.GetRateCost(_rate);
+        return _decisions.GetCost(distortion, _rate);
     }
 
     [StructLayout(LayoutKind.Auto)]
@@ -485,6 +490,7 @@ internal ref partial struct Av1TileCoder
         public int BestAngle;
         public int BestFilterIntra;
         public int BestLength;
+        public long BestDistortion;
         public bool BestHasCoefficients;
         public bool LastIsBest;
     }
@@ -502,12 +508,13 @@ internal ref partial struct Av1TileCoder
         _useFilterIntra = filterIntraMode >= 0;
         _filterIntraMode = Math.Max(filterIntraMode, 0);
         _rate = 0;
+        _distortion = 0;
         _hasCoefficients = false;
         WriteSymbol(GetIntraFrameYModeCdf(), Av1CdfLayout.IntraFrameYModeSize, _yMode);
         WriteIntraAngleInfoY();
         WriteFilterIntraModeInfo();
         Residual(ResidualOperation.Search, planeMask: 0b001);
-        var cost = _decisions.GetRateCost(_rate);
+        var cost = _decisions.GetCost(_distortion, _rate);
         if (cost >= search.BestCost)
         {
             search.LastIsBest = false;
@@ -517,6 +524,7 @@ internal ref partial struct Av1TileCoder
         search.BestCost = cost;
         search.BestMode = mode;
         search.BestAngle = angleDelta;
+        search.BestDistortion = _distortion;
         search.BestFilterIntra = filterIntraMode;
         search.BestHasCoefficients = _hasCoefficients;
         search.BestLength = _recordPosition - candidateStart;
@@ -655,9 +663,6 @@ internal ref partial struct Av1TileCoder
             return;
         }
 
-        if (!_lossless)
-            throw new NotSupportedException("Lossy transform blocks are not encoded yet.");
-
         var residual = workspace.Residual[..(w * h)];
         for (var i = 0; i < h; i++)
         {
@@ -669,14 +674,25 @@ internal ref partial struct Av1TileCoder
             }
         }
 
-        var coefficients = workspace.Coefficients;
-        Av1ForwardTransform.ForwardWalshHadamard4x4(residual, coefficients);
-
-        // The record: the levels in scan order, up to the last one that is not zero
+        // The transform type of a luma block is DCT in both directions until the search of the types exists; the type of a
+        // chroma block follows from its mode
         const int LumaTxType = Av1Constants.DctDct;
         var planeTxType = plane is 0 ? GetLumaPlaneTxType(txSz, LumaTxType) : ComputeTxType(plane, txSz, startX >> 2, startY >> 2);
+        var count = txSz is Av1Constants.Tx16x64 or Av1Constants.Tx64x16 ? 512 : Math.Min(1024, w * h);
+        var coefficients = workspace.Coefficients[..count];
+        if (_lossless)
+        {
+            Av1ForwardTransform.ForwardWalshHadamard4x4(residual, coefficients);
+        }
+        else
+        {
+            GetQuantizers(plane, out var dcQuantizer, out var acQuantizer);
+            Av1ForwardTransform.Forward(residual, coefficients, txSz, planeTxType);
+            Av1Quantizer.Quantize(coefficients, coefficients, dcQuantizer, acQuantizer, Av1Reconstruction.GetDequantizationDenominator(txSz), _bitDepth, _decisions.QuantizerRounding);
+        }
+
+        // The record: the levels in scan order, up to the last one that is not zero
         var scan = GetScan(txSz, planeTxType);
-        var count = w * h;
         workspace.EnsureRecords(_recordPosition, 2 + count);
         var record = workspace.Records.Slice(_recordPosition, 2 + count);
         var eob = 0;
@@ -696,6 +712,26 @@ internal ref partial struct Av1TileCoder
         {
             _hasCoefficients = true;
             Reconstruct(samples, stride, plane, startX, startY, txSz);
+        }
+
+        if (!_lossless)
+        {
+            // The squared error of the samples of the transform block that are part of the frame
+            var visibleWidth = Math.Max(0, Math.Min(w, planeBuffer.Width - startX));
+            var visibleHeight = Math.Max(0, Math.Min(h, planeBuffer.Height - startY));
+            long error = 0;
+            for (var i = 0; i < visibleHeight; i++)
+            {
+                var reconstructed = samples.Slice(((startY + i) * stride) + startX, visibleWidth);
+                var original = source.Slice(((startY + i) * sourceStride) + startX, visibleWidth);
+                for (var j = 0; j < visibleWidth; j++)
+                {
+                    var difference = original[j] - reconstructed[j];
+                    error += difference * difference;
+                }
+            }
+
+            _distortion += error;
         }
 
         FinishTransformBlock(plane, txSz, startX, startY);

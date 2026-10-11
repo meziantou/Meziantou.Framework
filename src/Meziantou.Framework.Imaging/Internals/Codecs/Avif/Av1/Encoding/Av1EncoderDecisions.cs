@@ -31,13 +31,19 @@ internal struct Av1EncoderDecisions
     public bool FilterIntra;
 
     /// <summary>
-    /// The Lagrange multiplier of the rate: the distortion that a bit is worth, in units of 1/256, or 0 for a lossless frame,
-    /// which has no distortion.
+    /// The Lagrange multiplier of the rate: the squared error that a bit is worth, with 10 fractional bits; 0 for a lossless
+    /// frame, which has no distortion.
     /// </summary>
     public long Lambda;
 
-    /// <summary>Returns the cost of a rate in units of 1/256 bit, in the unit of a distortion; the rate itself for a lossless frame.</summary>
-    public readonly long GetRateCost(long rate) => Lambda is 0 ? rate : (rate * Lambda) >> 16;
+    /// <summary>The rounding offset of the quantizer, in units of 1/256 of a quantizer step (128 rounds to nearest).</summary>
+    public int QuantizerRounding;
+
+    /// <summary>
+    /// Returns the cost of a candidate: its rate (in units of 1/256 bit) for a lossless frame; otherwise its squared error
+    /// plus <see cref="Lambda"/> times its rate, in units of 1/256 of a squared sample difference.
+    /// </summary>
+    public readonly long GetCost(long distortion, long rate) => Lambda is 0 ? rate : (distortion << 8) + ((rate * Lambda) >> 10);
 
     /// <summary>Returns the limits of an effort, 0 (fastest) to 9 (smallest output).</summary>
     public static Av1EncoderDecisions Create(int effort)

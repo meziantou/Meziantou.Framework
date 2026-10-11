@@ -57,32 +57,43 @@ internal sealed class AvifEncoderCodec : ImageEncoderCodec
             _sourceFormat = options.PixelFormat;
             _width = options.CanvasSize.Width;
             _height = options.CanvasSize.Height;
-            if (_encoder.Compression is not AvifCompression.Lossless)
-                throw new NotSupportedException("Lossy AVIF encoding is not implemented yet.");
-
             var bitDepth = ResolveBitDepth(_encoder, _sourceFormat);
             var monochrome = PixelFormats.IsGrayscale(_sourceFormat);
             var deep = PixelFormats.GetBitsPerComponent(_sourceFormat) > 8;
             _layout = monochrome ? (deep ? PixelFormat.Gray16 : PixelFormat.Gray8) : (deep ? PixelFormat.Rgba64 : PixelFormat.Rgba32);
 
-            // The lossless coding has no color conversion: the identity matrix, in full range. The matrix does not apply to a
-            // monochrome image, which keeps the one of its description
+            // The lossless coding has no color conversion: the identity matrix, in full range and without subsampling. The
+            // lossy coding keeps the matrix and the range of the color description of the image when the library converts
+            // them, and uses BT.601 in full range otherwise. No matrix applies to a monochrome image
+            var lossless = _encoder.Compression is AvifCompression.Lossless;
             var metadata = options.Metadata;
             var cicp = metadata.Cicp;
             var primaries = cicp?.ColorPrimaries ?? Av1Constants.CpUnspecified;
             var transfer = cicp?.TransferCharacteristics ?? Av1Constants.TcUnspecified;
+            var hasMatrix = cicp is { MatrixCoefficients: Av1Constants.McBt709 or Av1Constants.McFcc or Av1Constants.McBt470BG or Av1Constants.McBt601 or Av1Constants.McSmpte240 or Av1Constants.McSmpteYcgco or Av1Constants.McBt2020Ncl };
             int matrix;
+            var fullRange = true;
+            var subsamplingX = 0;
+            var subsamplingY = 0;
             if (monochrome)
             {
-                matrix = cicp is { MatrixCoefficients: not Av1Constants.McIdentity } ? cicp.MatrixCoefficients : Av1Constants.McUnspecified;
+                matrix = hasMatrix ? cicp!.MatrixCoefficients : Av1Constants.McUnspecified;
+                fullRange = lossless || (cicp?.FullRange ?? true);
             }
-            else
+            else if (lossless)
             {
                 matrix = Av1Constants.McIdentity;
             }
+            else
+            {
+                matrix = hasMatrix ? cicp!.MatrixCoefficients : Av1Constants.McBt601;
+                fullRange = !hasMatrix || cicp!.FullRange;
+                subsamplingX = _encoder.ChromaSubsampling is AvifChromaSubsampling.Ratio444 ? 0 : 1;
+                subsamplingY = _encoder.ChromaSubsampling is AvifChromaSubsampling.Auto or AvifChromaSubsampling.Ratio420 ? 1 : 0;
+            }
 
-            _colorDescription = new CicpColorDescription((byte)primaries, (byte)transfer, (byte)matrix, fullRange: true);
-            _converter = new AvifRgbConverter(_layout, bitDepth, subsamplingX: 0, subsamplingY: 0, matrix, fullRange: true, _encoder.ClearTransparentColors);
+            _colorDescription = new CicpColorDescription((byte)primaries, (byte)transfer, (byte)matrix, fullRange);
+            _converter = new AvifRgbConverter(_layout, bitDepth, subsamplingX, subsamplingY, matrix, fullRange, _encoder.ClearTransparentColors);
             _icc = metadata.IccProfile?.Data.ToArray();
             _exif = metadata.Exif;
             _xmp = metadata.XmpProfile?.Data.ToArray();
@@ -92,7 +103,7 @@ internal sealed class AvifEncoderCodec : ImageEncoderCodec
             try
             {
                 var scope = options.Scope;
-                var settings = new Av1EncoderSettings(_width, _height, bitDepth, monochrome, SubsamplingX: 0, SubsamplingY: 0, primaries, transfer, matrix, FullRange: true, ChromaSamplePosition: 0, StillPicture: true, Lossless: true, _encoder.Quality, _encoder.Effort);
+                var settings = new Av1EncoderSettings(_width, _height, bitDepth, monochrome, subsamplingX, subsamplingY, primaries, transfer, matrix, fullRange, ChromaSamplePosition: 0, StillPicture: true, lossless, _encoder.Quality, _encoder.Effort);
                 _color = new Av1Encoder(scope, settings);
                 if (PixelFormats.HasAlpha(_sourceFormat))
                 {
@@ -101,7 +112,8 @@ internal sealed class AvifEncoderCodec : ImageEncoderCodec
                     _alpha = new Av1Encoder(scope, alphaSettings);
                 }
 
-                var rowBytes = (long)_width * PixelFormats.GetBytesPerPixel(_layout);
+                // Two rows of pixels in the layout of the converter: a chroma sample covers two rows when it is subsampled
+                var rowBytes = 2L * _width * PixelFormats.GetBytesPerPixel(_layout);
                 if (rowBytes > CheckedSizes.MaxBufferLength)
                     throw CheckedSizes.CreateOverflowException(scope.Limits);
 
@@ -227,29 +239,28 @@ internal sealed class AvifEncoderCodec : ImageEncoderCodec
             var u = monochrome ? null : color.GetSourcePlane(1);
             var v = monochrome ? null : color.GetSourcePlane(2);
             var alpha = _alpha?.GetSourcePlane(0);
-            var scratch = _rows!.RawBuffer.AsSpan(0, _width * PixelFormats.GetBytesPerPixel(_layout));
+            var rowLength = _width * PixelFormats.GetBytesPerPixel(_layout);
+            var scratch = _rows!.RawBuffer.AsSpan(0, 2 * rowLength);
+            var step = _converter.RowsPerCall;
+            var subY = step - 1;
             var end = Math.Min(_height, _row + RowsPerCall);
             using (var lease = frame.GetStorage().AcquireLease())
             {
-                for (; _row < end; _row++)
+                for (; _row < end; _row += step)
                 {
-                    ReadOnlySpan<byte> row = lease.GetRowBytes(_row);
-                    if (_sourceFormat != _layout)
-                    {
-                        PixelConverter.ConvertRow(_sourceFormat, row, _layout, scratch, background: null, ImageFormat.Avif);
-                        row = scratch;
-                    }
-
+                    var hasSecondRow = step is 2 && _row + 1 < _height;
+                    var row0 = Normalize(lease.GetRowBytes(_row), scratch[..rowLength]);
+                    var row1 = hasSecondRow ? Normalize(lease.GetRowBytes(_row + 1), scratch[rowLength..]) : row0;
                     _isTransparent |= _converter.ConvertRows(
-                        row,
-                        row,
+                        row0,
+                        row1,
                         luma.GetRow(_row),
-                        default,
-                        u is null ? default : u.GetRow(_row),
-                        v is null ? default : v.GetRow(_row),
+                        hasSecondRow ? luma.GetRow(_row + 1) : default,
+                        u is null ? default : u.GetRow(_row >> subY),
+                        v is null ? default : v.GetRow(_row >> subY),
                         alpha is null ? default : alpha.GetRow(_row),
-                        default,
-                        hasSecondRow: false);
+                        alpha is null || !hasSecondRow ? default : alpha.GetRow(_row + 1),
+                        hasSecondRow);
                 }
             }
 
@@ -259,6 +270,16 @@ internal sealed class AvifEncoderCodec : ImageEncoderCodec
             _frame = null;
             color.BeginFrame();
             _step = Step.EncodeColor;
+        }
+
+        // A row of the frame in the layout of the converter
+        private ReadOnlySpan<byte> Normalize(ReadOnlySpan<byte> row, Span<byte> scratch)
+        {
+            if (_sourceFormat == _layout)
+                return row;
+
+            PixelConverter.ConvertRow(_sourceFormat, row, _layout, scratch, background: null, ImageFormat.Avif);
+            return scratch;
         }
 
         // Writes the boxes that precede the coded images, now that their sizes are known

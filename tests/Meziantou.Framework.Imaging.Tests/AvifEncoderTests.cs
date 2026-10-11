@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.Internals;
 using Meziantou.Framework.Imaging.Metadata;
@@ -286,6 +287,122 @@ public sealed class AvifEncoderTests
         using var decoded = Image.Load<Rgba32>(data);
         Assert.Equal(orientation, decoded.Metadata.Orientation);
         Assert.Equal(GetBytes(image), GetBytes(decoded));
+    }
+
+    [Theory]
+    [InlineData(AvifChromaSubsampling.Auto, 1, 1, 0)]
+    [InlineData(AvifChromaSubsampling.Ratio420, 1, 1, 0)]
+    [InlineData(AvifChromaSubsampling.Ratio422, 1, 0, 2)]
+    [InlineData(AvifChromaSubsampling.Ratio444, 0, 0, 1)]
+    public void LossyOutputIsYCbCrWithTheRequestedSubsamplingAndExactAlpha(AvifChromaSubsampling subsampling, int subsamplingX, int subsamplingY, int profile)
+    {
+        using var image = CreateSmoothImage(75, 41, transparent: true);
+        var source = GetBytes(image);
+        var data = Encode(image, new AvifEncoder { Compression = AvifCompression.Lossy, Quality = 90, ChromaSubsampling = subsampling });
+        var reader = ReferenceAvif.Parse(data);
+        var color = reader.PrimaryItem;
+        Assert.NotNull(color);
+        Assert.Equal(new ReferenceAvif.Av1Configuration(profile, Av1Levels.GetLevelIndex(75, 41), BitDepth: 8, IsMonochrome: false, subsamplingX, subsamplingY, ChromaSamplePosition: 0), color.Configuration);
+
+        // BT.601 in full range, with the primaries and the transfer function left unspecified
+        Assert.Equal(new ReferenceAvif.ColorDescription(2, 2, 6, FullRange: true), color.Nclx);
+        Assert.NotNull(reader.AlphaItem);
+
+        using var decoded = Image.Load<Rgba32>(data);
+        var actual = GetBytes(decoded);
+        double squaredError = 0;
+        for (var i = 0; i < source.Length; i += 4)
+        {
+            Assert.Equal(source[i + 3], actual[i + 3]);
+            for (var channel = 0; channel < 3; channel++)
+            {
+                double difference = source[i + channel] - actual[i + channel];
+                squaredError += difference * difference;
+            }
+        }
+
+        var psnr = 10 * Math.Log10(255.0 * 255.0 * (source.Length / 4 * 3) / Math.Max(squaredError, 1));
+        Assert.True(psnr >= 34, string.Create(CultureInfo.InvariantCulture, $"PSNR {psnr:F2} dB"));
+    }
+
+    [Fact]
+    public void QualityTradesSizeForFidelity()
+    {
+        using var image = CreateSmoothImage(96, 64, transparent: false);
+        var source = GetBytes(image);
+        var previousSize = int.MaxValue;
+        var previousError = -1.0;
+        foreach (var quality in new[] { 100, 80, 50, 20, 0 })
+        {
+            var data = Encode(image, new AvifEncoder { Compression = AvifCompression.Lossy, Quality = quality });
+            using var decoded = Image.Load<Rgba32>(data);
+            var actual = GetBytes(decoded);
+            double error = 0;
+            for (var i = 0; i < source.Length; i++)
+            {
+                error += Math.Abs(source[i] - actual[i]);
+            }
+
+            Assert.HasCountLessThan(previousSize, data);
+            Assert.True(error > previousError, string.Create(CultureInfo.InvariantCulture, $"quality {quality}: error {error}, the previous quality {previousError}"));
+            previousSize = data.Length;
+            previousError = error;
+        }
+    }
+
+    [Fact]
+    public void LossyGrayPixelsAreAMonochromeImage()
+    {
+        var pixels = new Gray8[40 * 30];
+        for (var i = 0; i < pixels.Length; i++)
+        {
+            pixels[i] = new Gray8((byte)(((i % 40) * 4) + (i / 40 * 2)));
+        }
+
+        using var image = Image.ImportPixelData<Gray8>(pixels, 40, 30);
+        var data = Encode(image, new AvifEncoder { Compression = AvifCompression.Lossy, Quality = 95 });
+        var item = ReferenceAvif.Parse(data).PrimaryItem;
+        Assert.True(item!.Configuration!.IsMonochrome);
+        using var decoded = Image.Load(data);
+        Assert.Equal(PixelFormat.Gray8, decoded.PixelFormat);
+        var actual = new byte[pixels.Length];
+        decoded.Frames[0].CopyPixelBytesTo(actual);
+        for (var i = 0; i < pixels.Length; i++)
+        {
+            Assert.True(Math.Abs(pixels[i].Value - actual[i]) <= 6, $"pixel {i}: {pixels[i].Value} was decoded as {actual[i]}");
+        }
+    }
+
+    [Fact]
+    public void TheMatrixAndTheRangeOfTheColorDescriptionAreKeptByLossyOutput()
+    {
+        using var image = CreateSmoothImage(32, 32, transparent: false);
+        image.Metadata.Cicp = new CicpColorDescription(9, 16, 9, fullRange: false);
+        var data = Encode(image, new AvifEncoder { Compression = AvifCompression.Lossy, Quality = 90, BitDepth = 10 });
+        Assert.Equal(new ReferenceAvif.ColorDescription(9, 16, 9, FullRange: false), ReferenceAvif.Parse(data).PrimaryItem!.Nclx);
+        using var decoded = Image.Load(data);
+        Assert.Equal(new CicpColorDescription(9, 16, 9, fullRange: false), decoded.Metadata.Cicp);
+
+        // The lossless coding has no matrix: the description keeps the primaries and the transfer function
+        var lossless = Encode(image, new AvifEncoder());
+        Assert.Equal(new ReferenceAvif.ColorDescription(9, 16, 0, FullRange: true), ReferenceAvif.Parse(lossless).PrimaryItem!.Nclx);
+    }
+
+    private static Image<Rgba32> CreateSmoothImage(int width, int height, bool transparent)
+    {
+        var pixels = new Rgba32[width * height];
+        for (var y = 0; y < height; y++)
+        {
+            for (var x = 0; x < width; x++)
+            {
+                var r = (byte)(128 + (100 * Math.Sin(x / 11.0)));
+                var g = (byte)(128 + (100 * Math.Cos((x + y) / 17.0)));
+                var b = (byte)((x * 255 / width / 2) + (y * 255 / height / 2));
+                pixels[(y * width) + x] = new Rgba32(r, g, b, transparent ? (byte)((x * 7) ^ (y * 13)) : byte.MaxValue);
+            }
+        }
+
+        return Image.ImportPixelData<Rgba32>(pixels, width, height);
     }
 
     private static byte[] Encode(Image image, AvifEncoder encoder)

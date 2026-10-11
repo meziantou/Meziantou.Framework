@@ -288,7 +288,8 @@ internal ref partial struct Av1TileCoder
         return mode is Av1Constants.SmoothPred or Av1Constants.SmoothVPred or Av1Constants.SmoothHPred;
     }
 
-    private readonly void Reconstruct(Span<ushort> samples, int stride, int plane, int startX, int startY, int txSz)
+    // get_dc_quant( plane ) and get_ac_quant( plane ) for the block (section 7.12.2)
+    private readonly void GetQuantizers(int plane, out int dcQuantizer, out int acQuantizer)
     {
         var delta = plane switch
         {
@@ -297,8 +298,13 @@ internal ref partial struct Av1TileCoder
             _ => (_header.DeltaQVDc, _header.DeltaQVAc),
         };
 
-        var dcQuantizer = Av1Reconstruction.GetDcQuantizer(_qIndex + delta.Item1, _bitDepth);
-        var acQuantizer = Av1Reconstruction.GetAcQuantizer(_qIndex + delta.Item2, _bitDepth);
+        dcQuantizer = Av1Reconstruction.GetDcQuantizer(_qIndex + delta.Item1, _bitDepth);
+        acQuantizer = Av1Reconstruction.GetAcQuantizer(_qIndex + delta.Item2, _bitDepth);
+    }
+
+    private readonly void Reconstruct(Span<ushort> samples, int stride, int plane, int startX, int startY, int txSz)
+    {
+        GetQuantizers(plane, out var dcQuantizer, out var acQuantizer);
         var quantizerMatrix = ReadOnlySpan<byte>.Empty;
         if (_header.UsingQmatrix && !_lossless)
         {

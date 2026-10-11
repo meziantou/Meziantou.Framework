@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using Meziantou.Framework.Imaging.Internals;
 
 namespace Meziantou.Framework.Imaging.Tests;
@@ -124,6 +125,132 @@ public sealed class Av1EncoderRoundTripTests
             }
 
             Assert.Null(decoder.DecodeNextOutputFrame(XunitCancellationToken));
+        }
+        finally
+        {
+            frame.Release();
+        }
+    }
+
+    public static TheoryData<int, int, int, string, string, int, int> LossyCases()
+    {
+        var data = new TheoryData<int, int, int, string, string, int, int>();
+        (int Width, int Height)[] sizes = [(1, 1), (5, 3), (16, 16), (33, 47), (64, 64), (130, 70)];
+        string[] formats = ["400", "420", "422", "444"];
+        string[] contents = ["flat", "gradient", "noise", "blocks", "photo"];
+        int[] qualities = [0, 30, 60, 85, 100];
+        var index = 0;
+        foreach (var (width, height) in sizes)
+        {
+            foreach (var format in formats)
+            {
+                var bitDepth = 8 + (2 * (index % 3));
+                data.Add(width, height, bitDepth, format, contents[index % contents.Length], qualities[index % qualities.Length], index % 10);
+                index++;
+            }
+        }
+
+        // Every transform size: blocks of 128 down to 4 samples, and the effort ladder
+        for (var effort = 0; effort <= 9; effort++)
+        {
+            data.Add(200, 136, 8, "420", "photo", 70, effort);
+        }
+
+        return data;
+    }
+
+    [Theory]
+    [MemberData(nameof(LossyCases))]
+    public void LossyFramesDecodeToTheReconstructionOfTheEncoder(int width, int height, int bitDepth, string format, string content, int quality, int effort)
+    {
+        var name = $"lossy-{width}x{height}-{bitDepth}-{format}-{content}-q{quality}-e{effort}";
+        var scope = AllocationScope.Create(ImageConfiguration.Default, name);
+        var monochrome = format is "400";
+        var settings = new Av1EncoderSettings(width, height, bitDepth, monochrome, format is "420" or "422" ? 1 : 0, format is "420" ? 1 : 0, ColorPrimaries: 1, TransferCharacteristics: 13, MatrixCoefficients: 6, FullRange: true, ChromaSamplePosition: 0, StillPicture: true, Lossless: false, quality, effort);
+        using var encoder = new Av1Encoder(scope, settings);
+        var planeCount = monochrome ? 1 : 3;
+        var source = new ushort[planeCount][];
+        for (var plane = 0; plane < planeCount; plane++)
+        {
+            var buffer = encoder.GetSourcePlane(plane);
+            source[plane] = CreateSamples(content, buffer.Width, buffer.Height, bitDepth, seed: (plane * 7919) + width + (31 * height));
+            for (var y = 0; y < buffer.Height; y++)
+            {
+                source[plane].AsSpan(y * buffer.Width, buffer.Width).CopyTo(buffer.GetRow(y));
+            }
+        }
+
+        encoder.BeginFrame();
+        while (!encoder.Encode(XunitCancellationToken))
+        {
+        }
+
+        var payload = encoder.Payload.ToArray();
+
+        // TEMPORARY-DUMP
+        if (Environment.GetEnvironmentVariable("AV1_ENC_DUMP") is { Length: > 0 } dump)
+        {
+            Directory.CreateDirectory(dump);
+            File.WriteAllBytes(Path.Combine(dump, name + ".obu"), [0x12, 0x00, .. payload]);
+            using var raw = File.Create(Path.Combine(dump, name + ".yuv"));
+            for (var plane = 0; plane < planeCount; plane++)
+            {
+                var reconstructed = encoder.Reconstruction.GetPlane(plane);
+                for (var y = 0; y < reconstructed.Height; y++)
+                {
+                    foreach (var sample in reconstructed.GetRow(y))
+                    {
+                        raw.WriteByte((byte)sample);
+                        if (bitDepth > 8)
+                            raw.WriteByte((byte)(sample >> 8));
+                    }
+                }
+            }
+        }
+
+        using var decoder = new Av1Decoder(scope);
+        decoder.SetInput(payload, 0, payload.Length);
+        var frame = decoder.DecodeNextOutputFrame(XunitCancellationToken);
+        Assert.NotNull(frame);
+        try
+        {
+            Assert.False(frame.Header.CodedLossless);
+            Assert.Equal(Av1Encoder.GetQuantizerIndex(quality), frame.Header.BaseQIdx);
+            double squaredError = 0;
+            long count = 0;
+            for (var plane = 0; plane < planeCount; plane++)
+            {
+                var decoded = frame.GetPlane(plane);
+                var reconstructed = encoder.Reconstruction.GetPlane(plane);
+                for (var y = 0; y < decoded.Height; y++)
+                {
+                    Assert.True(reconstructed.GetRow(y).SequenceEqual(decoded.GetRow(y)), $"{name}: row {y} of plane {plane} is not the row that the encoder reconstructed");
+                    var expected = source[plane].AsSpan(y * decoded.Width, decoded.Width);
+                    var actual = decoded.GetRow(y);
+                    for (var x = 0; x < expected.Length; x++)
+                    {
+                        double difference = expected[x] - actual[x];
+                        squaredError += difference * difference;
+                    }
+
+                    count += expected.Length;
+                }
+            }
+
+            // The fidelity follows the quality: a loose floor, which a broken transform or quantizer does not reach
+            double max = (1 << bitDepth) - 1;
+            var psnr = squaredError is 0 ? 100 : 10 * Math.Log10(max * max * count / squaredError);
+            TestContext.Current.TestOutputHelper?.WriteLine(string.Create(CultureInfo.InvariantCulture, $"{name}: {payload.Length} bytes, PSNR {psnr:F2} dB"));
+            var floor = quality switch
+            {
+                100 => 44,
+                >= 85 => 34,
+                >= 60 => 28,
+                >= 30 => 22,
+                _ => 12,
+            };
+
+            Assert.True(psnr >= floor, string.Create(CultureInfo.InvariantCulture, $"{name}: PSNR {psnr:F2} dB is below {floor} dB"));
         }
         finally
         {

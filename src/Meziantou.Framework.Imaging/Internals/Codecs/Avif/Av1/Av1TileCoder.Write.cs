@@ -271,11 +271,21 @@ internal ref partial struct Av1TileCoder
     // Section 5.11.16 "Block TX size syntax"
     private void WriteBlockTxSize()
     {
-        if (!_lossless)
+        // Section 5.11.15 "TX size syntax": a lossless block has 4x4 transform blocks, and a frame whose TxMode is
+        // TX_MODE_LARGEST the largest transform of the block size; neither has a syntax element
+        if (_lossless)
+        {
+            _txSize = Av1Constants.Tx4x4;
+        }
+        else if (_header.TxMode is Av1Constants.TxModeSelect)
+        {
             throw new NotSupportedException("Transform sizes are not encoded yet.");
+        }
+        else
+        {
+            _txSize = Av1Tables.MaxTxSizeRect[_miSize];
+        }
 
-        // Section 5.11.15 "TX size syntax": a lossless block has 4x4 transform blocks and no syntax element
-        _txSize = Av1Constants.Tx4x4;
         var width = Math.Min(Av1Tables.Num4x4BlocksWide[_miSize], _miCols - _miCol);
         var height = Math.Min(Av1Tables.Num4x4BlocksHigh[_miSize], _miRows - _miRow);
         for (var row = 0; row < height; row++)
@@ -466,14 +476,48 @@ internal ref partial struct Av1TileCoder
     }
 
     // Section 5.11.47 "Transform type syntax"
-    private readonly void WriteTransformType(int x4, int y4, int txSz, int txType)
+    private void WriteTransformType(int x4, int y4, int txSz, int txType)
     {
         var set = GetTxSet(txSz);
         var qIndex = _header.SegmentationEnabled ? _header.GetQIndex(_segmentId, currentQIndex: -1) : _header.BaseQIdx;
         if (set > 0 && qIndex > 0)
-            throw new NotSupportedException("Transform types are not encoded yet.");
+        {
+            var txSzSqr = Av1Tables.TxSizeSqr[txSz];
+            var symbol = Av1EncoderTables.GetTxTypeSymbol(_isInter, set, txType);
+            Debug.Assert(symbol >= 0);
+            if (_isInter)
+            {
+                switch (set)
+                {
+                    case Av1Constants.TxSetInter1:
+                        WriteSymbol(Av1CdfLayout.InterTxTypeSet1 + (txSzSqr * Av1CdfLayout.InterTxTypeSet1Size), Av1CdfLayout.InterTxTypeSet1Size, symbol);
+                        break;
+                    case Av1Constants.TxSetInter2:
+                        WriteSymbol(Av1CdfLayout.InterTxTypeSet2, Av1CdfLayout.InterTxTypeSet2Size, symbol);
+                        break;
+                    default:
+                        WriteSymbol(Av1CdfLayout.InterTxTypeSet3 + (txSzSqr * Av1CdfLayout.InterTxTypeSet3Size), Av1CdfLayout.InterTxTypeSet3Size, symbol);
+                        break;
+                }
+            }
+            else
+            {
+                var intraDir = _useFilterIntra ? Av1Tables.FilterIntraModeToIntraDir[_filterIntraMode] : _yMode;
+                if (set is Av1Constants.TxSetIntra1)
+                {
+                    WriteSymbol(Av1CdfLayout.IntraTxTypeSet1 + (((txSzSqr * Av1Constants.IntraModes) + intraDir) * Av1CdfLayout.IntraTxTypeSet1Size), Av1CdfLayout.IntraTxTypeSet1Size, symbol);
+                }
+                else
+                {
+                    WriteSymbol(Av1CdfLayout.IntraTxTypeSet2 + (((txSzSqr * Av1Constants.IntraModes) + intraDir) * Av1CdfLayout.IntraTxTypeSet2Size), Av1CdfLayout.IntraTxTypeSet2Size, symbol);
+                }
+            }
+        }
+        else
+        {
+            Debug.Assert(txType is Av1Constants.DctDct);
+        }
 
-        Debug.Assert(txType is Av1Constants.DctDct);
         SetTxTypes(x4, y4, Av1Tables.TxWidth[txSz] >> 2, Av1Tables.TxHeight[txSz] >> 2, txType);
     }
 }

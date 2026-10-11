@@ -9,7 +9,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </summary>
 internal static class Av1InverseTransform
 {
-    private enum Kind
+    /// <summary>The one-dimensional transform of the rows or of the columns of a transform type.</summary>
+    internal enum Kind
     {
         Dct,
         Adst,
@@ -107,7 +108,7 @@ internal static class Av1InverseTransform
         }
     }
 
-    private static Kind GetRowKind(int txType) => txType switch
+    internal static Kind GetRowKind(int txType) => txType switch
     {
         Av1Constants.DctDct or Av1Constants.AdstDct or Av1Constants.FlipadstDct or Av1Constants.HDct => Kind.Dct,
         Av1Constants.DctAdst or Av1Constants.AdstAdst or Av1Constants.DctFlipadst or Av1Constants.FlipadstFlipadst
@@ -115,7 +116,7 @@ internal static class Av1InverseTransform
         _ => Kind.Identity,
     };
 
-    private static Kind GetColumnKind(int txType) => txType switch
+    internal static Kind GetColumnKind(int txType) => txType switch
     {
         Av1Constants.DctDct or Av1Constants.DctAdst or Av1Constants.DctFlipadst or Av1Constants.VDct => Kind.Dct,
         Av1Constants.AdstDct or Av1Constants.AdstAdst or Av1Constants.FlipadstDct or Av1Constants.FlipadstFlipadst

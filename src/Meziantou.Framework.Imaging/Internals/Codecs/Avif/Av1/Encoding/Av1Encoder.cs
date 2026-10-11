@@ -30,6 +30,7 @@ internal sealed class Av1Encoder : IDisposable
     private readonly PooledPayloadWriter _frameData;
     private readonly PooledPayloadWriter _payload;
     private readonly Av1EncoderDecisions _decisions;
+    private readonly int _quantizerIndex;
     private Av1FrameHeader? _syntax;
     private Av1FrameBuffer? _reconstruction;
     private int[] _tileSizes = [];
@@ -55,15 +56,24 @@ internal sealed class Av1Encoder : IDisposable
         ArgumentOutOfRangeException.ThrowIfGreaterThan(settings.Width, 65536);
         ArgumentOutOfRangeException.ThrowIfLessThan(settings.Height, 1);
         ArgumentOutOfRangeException.ThrowIfGreaterThan(settings.Height, 65536);
-        if (!settings.Lossless)
-            throw new NotSupportedException("Lossy AV1 encoding is not implemented yet.");
-
+        ArgumentOutOfRangeException.ThrowIfLessThan(settings.Quality, 0);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(settings.Quality, 100);
         if (!settings.StillPicture)
             throw new NotSupportedException("AV1 sequences are not encoded yet.");
 
         _scope = scope;
         _settings = settings;
         _decisions = Av1EncoderDecisions.Create(settings.Effort);
+        if (!settings.Lossless)
+        {
+            // The Lagrange multiplier of the high resolution approximation, 0.12 times the square of the quantizer step.
+            // The coefficients of AV1 have 3 fractional bits, so that the step of a quantizer q is q / 8 sample units
+            _quantizerIndex = GetQuantizerIndex(settings.Quality);
+            long quantizer = Av1Reconstruction.GetAcQuantizer(_quantizerIndex, settings.BitDepth);
+            _decisions.Lambda = Math.Max(1, (123 * quantizer * quantizer) / 64);
+            _decisions.QuantizerRounding = 96;
+        }
+
         var parameters = new Av1SequenceParameters(
             settings.Width,
             settings.Height,
@@ -78,8 +88,8 @@ internal sealed class Av1Encoder : IDisposable
             settings.ChromaSamplePosition,
             settings.StillPicture,
             Use128x128Superblock: false,
-            EnableCdef: !settings.Lossless,
-            EnableRestoration: !settings.Lossless,
+            EnableCdef: false,
+            EnableRestoration: false,
             Av1Levels.GetLevelIndex(settings.Width, settings.Height));
 
         _coding = new Av1FrameCodingState(scope);
@@ -175,6 +185,12 @@ internal sealed class Av1Encoder : IDisposable
         _phase = Phase.Idle;
     }
 
+    /// <summary>
+    /// Returns the <c>base_q_idx</c> of a quality, 0 (the coarsest quantizer) to 100 (the finest one that is not lossless):
+    /// the quantizer index 0 with no delta is the lossless coding, which is selected on its own.
+    /// </summary>
+    public static int GetQuantizerIndex(int quality) => Math.Clamp(((100 - quality) * 255 + 50) / 100, 1, 255);
+
     // The samples beyond the frame, which the blocks that cross its right and bottom edges predict and code: they repeat
     // the last column and the last row, which costs the fewest bits
     private static void ExtendPlane(Av1Plane plane)
@@ -204,7 +220,8 @@ internal sealed class Av1Encoder : IDisposable
             TileColsLog2 = limits.MinLog2TileCols,
             TileRowsLog2 = Math.Max(limits.MinLog2Tiles - limits.MinLog2TileCols, 0),
             TileSizeBytes = 4,
-            BaseQIdx = 0,
+            BaseQIdx = _quantizerIndex,
+            TxMode = Av1Constants.TxModeLargest,
         };
 
         _syntax = syntax;

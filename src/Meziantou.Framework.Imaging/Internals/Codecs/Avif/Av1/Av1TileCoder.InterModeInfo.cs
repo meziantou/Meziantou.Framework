@@ -1003,13 +1003,7 @@ internal ref partial struct Av1TileCoder
         var txfmSplit = false;
         if (txSz is not Av1Constants.Tx4x4 && depth is not Av1Constants.MaxVartxDepth)
         {
-            var above = GetAboveTxWidth(row, col) < Av1Tables.TxWidth[txSz] ? 1 : 0;
-            var left = GetLeftTxHeight(row, col) < Av1Tables.TxHeight[txSz] ? 1 : 0;
-            var size = Math.Min(64, Math.Max(BlockWidth(_miSize), BlockHeight(_miSize)));
-            var maxTxSz = FindTxSize(size, size);
-            var txSzSqrUp = Av1Tables.TxSizeSqrUp[txSz];
-            var ctx = ((txSzSqrUp != maxTxSz ? 1 : 0) * 3) + ((Av1Constants.TxSizes - 1 - maxTxSz) * 6) + above + left;
-            txfmSplit = ReadSymbol(Av1CdfLayout.TxfmSplit + (ctx * Av1CdfLayout.TxfmSplitSize), Av1CdfLayout.TxfmSplitSize) is not 0;
+            txfmSplit = ReadSymbol(Av1CdfLayout.TxfmSplit + (GetTxfmSplitContext(row, col, txSz) * Av1CdfLayout.TxfmSplitSize), Av1CdfLayout.TxfmSplitSize) is not 0;
         }
 
         var w4 = Av1Tables.TxWidth[txSz] / Av1Constants.MiSize;
@@ -1039,6 +1033,17 @@ internal ref partial struct Av1TileCoder
 
             _txSize = txSz;
         }
+    }
+
+    // The CDF selection of txfm_split (section 8.3.2)
+    private readonly int GetTxfmSplitContext(int row, int col, int txSz)
+    {
+        var above = GetAboveTxWidth(row, col) < Av1Tables.TxWidth[txSz] ? 1 : 0;
+        var left = GetLeftTxHeight(row, col) < Av1Tables.TxHeight[txSz] ? 1 : 0;
+        var size = Math.Min(64, Math.Max(BlockWidth(_miSize), BlockHeight(_miSize)));
+        var maxTxSz = FindTxSize(size, size);
+        var txSzSqrUp = Av1Tables.TxSizeSqrUp[txSz];
+        return ((txSzSqrUp != maxTxSz ? 1 : 0) * 3) + ((Av1Constants.TxSizes - 1 - maxTxSz) * 6) + above + left;
     }
 
     // The find_tx_size function of section 5.11.36 "Transform tree syntax"

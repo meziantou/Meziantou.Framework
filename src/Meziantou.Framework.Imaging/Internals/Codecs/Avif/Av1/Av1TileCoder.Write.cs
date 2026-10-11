@@ -15,6 +15,9 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </remarks>
 internal ref partial struct Av1TileCoder
 {
+    // The largest value of tx_depth
+    private const int MaxCodedTxDepth = 2;
+
     private enum SymbolSink
     {
         None,
@@ -479,22 +482,49 @@ internal ref partial struct Av1TileCoder
         }
     }
 
-    // Section 5.11.16 "Block TX size syntax"
+    // Section 5.11.16 "Block TX size syntax". The transform size of a block that is not inter is the one of the block
+    // (TxSize), which the search chose; the transform blocks of an inter block are not split
     private void WriteBlockTxSize()
     {
-        // Section 5.11.15 "TX size syntax": a lossless block has 4x4 transform blocks, and a frame whose TxMode is
-        // TX_MODE_LARGEST the largest transform of the block size; neither has a syntax element
+        var maxTxSize = Av1Tables.MaxTxSizeRect[_miSize];
+        var selects = _header.TxMode is Av1Constants.TxModeSelect && _miSize > Av1Constants.Block4x4 && !_lossless;
+        if (selects && _isInter && !_skip)
+        {
+            // Section 5.11.17 "Var TX size syntax", for each transform block of the largest size
+            var txW4 = Av1Tables.TxWidth[maxTxSize] / Av1Constants.MiSize;
+            var txH4 = Av1Tables.TxHeight[maxTxSize] / Av1Constants.MiSize;
+            for (var row = _miRow; row < _miRow + Av1Tables.Num4x4BlocksHigh[_miSize]; row += txH4)
+            {
+                for (var col = _miCol; col < _miCol + Av1Tables.Num4x4BlocksWide[_miSize]; col += txW4)
+                {
+                    WriteVarTxSize(row, col, maxTxSize, depth: 0);
+                }
+            }
+
+            return;
+        }
+
+        // Section 5.11.15 "TX size syntax": a lossless block has 4x4 transform blocks, and a block without tx_depth the
+        // largest transform of its size
         if (_lossless)
         {
             _txSize = Av1Constants.Tx4x4;
         }
-        else if (_header.TxMode is Av1Constants.TxModeSelect)
+        else if (selects && !_isInter)
         {
-            throw new NotSupportedException("Transform sizes are not encoded yet.");
+            var txDepth = 0;
+            for (var txSz = maxTxSize; txSz != _txSize; txSz = Av1Tables.SplitTxSize[txSz])
+            {
+                txDepth++;
+                Debug.Assert(txDepth <= Math.Min(MaxCodedTxDepth, (int)Av1Tables.MaxTxDepth[_miSize]));
+            }
+
+            GetTxDepthCdf(out var offset, out var size);
+            WriteSymbol(offset, size, txDepth);
         }
         else
         {
-            _txSize = Av1Tables.MaxTxSizeRect[_miSize];
+            _txSize = maxTxSize;
         }
 
         var width = Math.Min(Av1Tables.Num4x4BlocksWide[_miSize], _miCols - _miCol);
@@ -503,6 +533,25 @@ internal ref partial struct Av1TileCoder
         {
             _interTxSizes.Slice(MiIndex(_miRow + row, _miCol), width).Fill((byte)_txSize);
         }
+    }
+
+    // Section 5.11.17 "Var TX size syntax" for a transform block that is not split
+    private void WriteVarTxSize(int row, int col, int txSz, int depth)
+    {
+        if (row >= _miRows || col >= _miCols)
+            return;
+
+        if (txSz is not Av1Constants.Tx4x4 && depth is not Av1Constants.MaxVartxDepth)
+            WriteSymbol(Av1CdfLayout.TxfmSplit + (GetTxfmSplitContext(row, col, txSz) * Av1CdfLayout.TxfmSplitSize), Av1CdfLayout.TxfmSplitSize, 0);
+
+        var width = Math.Min(Av1Tables.TxWidth[txSz] / Av1Constants.MiSize, _miCols - col);
+        var height = Math.Min(Av1Tables.TxHeight[txSz] / Av1Constants.MiSize, _miRows - row);
+        for (var i = 0; i < height; i++)
+        {
+            _interTxSizes.Slice(MiIndex(row + i, col), width).Fill((byte)txSz);
+        }
+
+        _txSize = txSz;
     }
 
     // The transform type that compute_tx_type returns for a luma transform block whose transform type syntax element is

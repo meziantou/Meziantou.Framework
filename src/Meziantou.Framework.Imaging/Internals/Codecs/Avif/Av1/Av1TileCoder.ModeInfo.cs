@@ -367,48 +367,55 @@ internal ref partial struct Av1TileCoder
             return;
         }
 
-        var maxRectTxSize = Av1Tables.MaxTxSizeRect[_miSize];
-        var maxTxDepth = Av1Tables.MaxTxDepth[_miSize];
-        _txSize = maxRectTxSize;
+        _txSize = Av1Tables.MaxTxSizeRect[_miSize];
         if (_miSize > Av1Constants.Block4x4 && allowSelect && _header.TxMode is Av1Constants.TxModeSelect)
         {
-            var maxTxWidth = Av1Tables.TxWidth[maxRectTxSize];
-            var maxTxHeight = Av1Tables.TxHeight[maxRectTxSize];
-            int aboveW;
-            if (_availU && (_flags[MiIndex(_miRow - 1, _miCol)] & Av1FrameState.IsInterFlag) is not 0)
-            {
-                aboveW = BlockWidth(_miSizes[MiIndex(_miRow - 1, _miCol)]);
-            }
-            else
-            {
-                aboveW = _availU ? GetAboveTxWidth(_miRow, _miCol) : 0;
-            }
-
-            int leftH;
-            if (_availL && (_flags[MiIndex(_miRow, _miCol - 1)] & Av1FrameState.IsInterFlag) is not 0)
-            {
-                leftH = BlockHeight(_miSizes[MiIndex(_miRow, _miCol - 1)]);
-            }
-            else
-            {
-                leftH = _availL ? GetLeftTxHeight(_miRow, _miCol) : 0;
-            }
-
-            var ctx = (aboveW >= maxTxWidth ? 1 : 0) + (leftH >= maxTxHeight ? 1 : 0);
-            var (offset, size) = maxTxDepth switch
-            {
-                4 => (Av1CdfLayout.Tx64x64, Av1CdfLayout.Tx64x64Size),
-                3 => (Av1CdfLayout.Tx32x32, Av1CdfLayout.Tx32x32Size),
-                2 => (Av1CdfLayout.Tx16x16, Av1CdfLayout.Tx16x16Size),
-                _ => (Av1CdfLayout.Tx8x8, Av1CdfLayout.Tx8x8Size),
-            };
-
-            var txDepth = ReadSymbol(offset + (ctx * size), size);
+            GetTxDepthCdf(out var offset, out var size);
+            var txDepth = ReadSymbol(offset, size);
             for (var i = 0; i < txDepth; i++)
             {
                 _txSize = Av1Tables.SplitTxSize[_txSize];
             }
         }
+    }
+
+    // The CDF selection of tx_depth (section 8.3.2)
+    private readonly void GetTxDepthCdf(out int offset, out int size)
+    {
+        var maxRectTxSize = Av1Tables.MaxTxSizeRect[_miSize];
+        var maxTxDepth = Av1Tables.MaxTxDepth[_miSize];
+        var maxTxWidth = Av1Tables.TxWidth[maxRectTxSize];
+        var maxTxHeight = Av1Tables.TxHeight[maxRectTxSize];
+        int aboveW;
+        if (_availU && (_flags[MiIndex(_miRow - 1, _miCol)] & Av1FrameState.IsInterFlag) is not 0)
+        {
+            aboveW = BlockWidth(_miSizes[MiIndex(_miRow - 1, _miCol)]);
+        }
+        else
+        {
+            aboveW = _availU ? GetAboveTxWidth(_miRow, _miCol) : 0;
+        }
+
+        int leftH;
+        if (_availL && (_flags[MiIndex(_miRow, _miCol - 1)] & Av1FrameState.IsInterFlag) is not 0)
+        {
+            leftH = BlockHeight(_miSizes[MiIndex(_miRow, _miCol - 1)]);
+        }
+        else
+        {
+            leftH = _availL ? GetLeftTxHeight(_miRow, _miCol) : 0;
+        }
+
+        var ctx = (aboveW >= maxTxWidth ? 1 : 0) + (leftH >= maxTxHeight ? 1 : 0);
+        (offset, size) = maxTxDepth switch
+        {
+            4 => (Av1CdfLayout.Tx64x64, Av1CdfLayout.Tx64x64Size),
+            3 => (Av1CdfLayout.Tx32x32, Av1CdfLayout.Tx32x32Size),
+            2 => (Av1CdfLayout.Tx16x16, Av1CdfLayout.Tx16x16Size),
+            _ => (Av1CdfLayout.Tx8x8, Av1CdfLayout.Tx8x8Size),
+        };
+
+        offset += ctx * size;
     }
 
     private readonly int GetAboveTxWidth(int row, int col)

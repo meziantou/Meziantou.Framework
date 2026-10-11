@@ -454,6 +454,8 @@ public sealed class Av1EncoderRoundTripTests
         Assert.NotNull(frame);
         try
         {
+            // The size of the transform blocks is coded when the search splits them
+            Assert.Equal(expected ? Av1Constants.TxModeSelect : Av1Constants.TxModeLargest, frame.Header.TxMode);
             for (var plane = 0; plane < 3; plane++)
             {
                 var decoded = frame.GetPlane(plane);

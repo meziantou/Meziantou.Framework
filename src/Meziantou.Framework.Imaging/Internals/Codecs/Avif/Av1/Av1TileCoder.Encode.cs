@@ -551,9 +551,10 @@ internal ref partial struct Av1TileCoder
         var cost = _decisions.GetCost(distortion, _rate);
         if (!isSkipped && !_lossless)
         {
-            // The same block without its coefficients: the syntax elements of its mode info are the same, apart from skip
+            // The same block without its coefficients: the syntax elements of its mode info are the same, apart from skip,
+            // and it does not code the size of its transform blocks
             var skipCdf = _cdf.Slice(Av1CdfLayout.Skip + (GetSkipContext() * Av1CdfLayout.SkipSize), Av1CdfLayout.SkipSize);
-            var skipRate = _rate - coefficientRate - Av1Cost.GetSymbolCost(skipCdf, 0) + Av1Cost.GetSymbolCost(skipCdf, 1);
+            var skipRate = _rate - coefficientRate - _transformSizeRate - Av1Cost.GetSymbolCost(skipCdf, 0) + Av1Cost.GetSymbolCost(skipCdf, 1);
             var skipCost = _decisions.GetCost(predictionError, skipRate);
             if (skipCost < cost)
             {
@@ -644,10 +645,11 @@ internal ref partial struct Av1TileCoder
         Span<int> modes = stackalloc int[IntraModeCount];
         var lumaStart = start + RecordHeaderLength;
         var lumaCount = RankIntraModes(contexts, r, c, bw4, bh4, planeMask: 0b001, estimates, modes, _decisions.LumaModeCandidates);
-        var luma = new LumaSearch { R = r, C = c, Bw4 = bw4, Bh4 = bh4, Level = level, Start = lumaStart, BestCost = MaxCost, BestMode = Av1Constants.DcPred, BestFilterIntra = -1 };
+        var maxTxSize = _txSize;
+        var luma = new LumaSearch { R = r, C = c, Bw4 = bw4, Bh4 = bh4, Level = level, Start = lumaStart, BestCost = MaxCost, BestMode = Av1Constants.DcPred, BestFilterIntra = -1, BestTxSize = maxTxSize };
         for (var i = 0; i < lumaCount; i++)
         {
-            TryLumaMode(ref luma, modes[i], angleDelta: 0, filterIntraMode: -1);
+            TryLumaMode(ref luma, modes[i], angleDelta: 0, filterIntraMode: -1, maxTxSize);
         }
 
         if (_decisions.AngleDeltas && subSize >= Av1Constants.Block8x8 && IsDirectionalMode(luma.BestMode))
@@ -655,8 +657,8 @@ internal ref partial struct Av1TileCoder
             var mode = luma.BestMode;
             for (var delta = 1; delta <= Av1Constants.MaxAngleDelta; delta++)
             {
-                TryLumaMode(ref luma, mode, delta, filterIntraMode: -1);
-                TryLumaMode(ref luma, mode, -delta, filterIntraMode: -1);
+                TryLumaMode(ref luma, mode, delta, filterIntraMode: -1, maxTxSize);
+                TryLumaMode(ref luma, mode, -delta, filterIntraMode: -1, maxTxSize);
             }
         }
 
@@ -667,8 +669,24 @@ internal ref partial struct Av1TileCoder
             {
                 for (var mode = 0; mode < Av1Constants.IntraFilterModes; mode++)
                 {
-                    TryLumaMode(ref luma, Av1Constants.DcPred, angleDelta: 0, mode);
+                    TryLumaMode(ref luma, Av1Constants.DcPred, angleDelta: 0, mode, maxTxSize);
                 }
+            }
+        }
+
+        if (_header.TxMode is Av1Constants.TxModeSelect && !_lossless)
+        {
+            // The best mode with smaller transform blocks, as long as they cost less: each one is predicted from the
+            // samples of the ones before it
+            var (mode, angleDelta, filterIntraMode) = (luma.BestMode, luma.BestAngle, luma.BestFilterIntra);
+            var maxDepth = Math.Min(_decisions.TransformSizeDepth, Math.Min(MaxCodedTxDepth, (int)Av1Tables.MaxTxDepth[subSize]));
+            var txSize = maxTxSize;
+            for (var depth = 1; depth <= maxDepth; depth++)
+            {
+                txSize = Av1Tables.SplitTxSize[txSize];
+                TryLumaMode(ref luma, mode, angleDelta, filterIntraMode, txSize);
+                if (!luma.LastIsBest)
+                    break;
             }
         }
 
@@ -676,6 +694,7 @@ internal ref partial struct Av1TileCoder
         _angleDeltaY = luma.BestAngle;
         _useFilterIntra = luma.BestFilterIntra >= 0;
         _filterIntraMode = Math.Max(luma.BestFilterIntra, 0);
+        _txSize = luma.BestTxSize;
         var hasCoefficients = luma.BestHasCoefficients;
         if (!luma.LastIsBest)
             CopyPixels(pixels, r, c, bw4, bh4, planeMask: 0b001, save: false);
@@ -808,6 +827,7 @@ internal ref partial struct Av1TileCoder
         public int BestMode;
         public int BestAngle;
         public int BestFilterIntra;
+        public int BestTxSize;
         public int BestLength;
         public long BestDistortion;
         public bool BestHasCoefficients;
@@ -816,7 +836,7 @@ internal ref partial struct Av1TileCoder
 
     // Encodes the luma transform blocks of the block with a mode, and keeps their records and their samples when the mode
     // is the best one so far
-    private void TryLumaMode(ref LumaSearch search, int mode, int angleDelta, int filterIntraMode)
+    private void TryLumaMode(ref LumaSearch search, int mode, int angleDelta, int filterIntraMode, int txSize)
     {
         var workspace = _workspace!;
         CopyContexts(workspace.GetContextSnapshot(search.Level, block: true), search.R, search.C, search.Bw4, search.Bh4, save: false);
@@ -826,12 +846,14 @@ internal ref partial struct Av1TileCoder
         _angleDeltaY = angleDelta;
         _useFilterIntra = filterIntraMode >= 0;
         _filterIntraMode = Math.Max(filterIntraMode, 0);
+        _txSize = txSize;
         _rate = 0;
         _distortion = 0;
         _hasCoefficients = false;
         WriteYMode();
         WriteIntraAngleInfoY();
         WriteFilterIntraModeInfo();
+        WriteBlockTxSize();
         Residual(ResidualOperation.Search, planeMask: 0b001);
         var cost = _decisions.GetCost(_distortion, _rate);
         if (cost >= search.BestCost)
@@ -845,6 +867,7 @@ internal ref partial struct Av1TileCoder
         search.BestAngle = angleDelta;
         search.BestDistortion = _distortion;
         search.BestFilterIntra = filterIntraMode;
+        search.BestTxSize = txSize;
         search.BestHasCoefficients = _hasCoefficients;
         search.BestLength = _recordPosition - candidateStart;
         if (candidateStart != search.Start)
@@ -1006,7 +1029,9 @@ internal ref partial struct Av1TileCoder
         var bw4 = Av1Tables.Num4x4BlocksWide[subSize];
         var bh4 = Av1Tables.Num4x4BlocksHigh[subSize];
         WriteModeInfo();
+        var rate = _rate;
         WriteBlockTxSize();
+        _transformSizeRate = _rate - rate;
         if (_skip)
             ResetBlockContext(bw4, bh4);
 

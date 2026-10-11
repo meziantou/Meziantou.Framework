@@ -246,7 +246,7 @@ internal sealed class Av1Encoder : IDisposable
             TileRowsLog2 = Math.Max(limits.MinLog2Tiles - limits.MinLog2TileCols, 0),
             TileSizeBytes = 4,
             BaseQIdx = _quantizerIndex,
-            TxMode = Av1Constants.TxModeLargest,
+            TxMode = !_settings.Lossless && _decisions.TransformSizeDepth > 0 ? Av1Constants.TxModeSelect : Av1Constants.TxModeLargest,
 
             // The damping of CDEF grows with the quantizer: 3 to 6
             CdefDamping = 3 + Math.Min(3, _quantizerIndex >> 6),

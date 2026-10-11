@@ -1,8 +1,8 @@
 # Meziantou.Framework.Imaging
 
 A fully managed image library: PNG/APNG, GIF, JPEG, WebP, QOI, BMP, TGA, Netpbm, TIFF, ICO/CUR, ANI and AVIF (with its
-own AV1 decoder and encoder) decoding and encoding, animation-aware processing, vector drawing, ICC color conversion, and
-bounded-memory streaming readers and writers.
+own AV1 decoder and encoder) decoding and encoding, JPEG XL decoding and lossless encoding, animation-aware processing,
+vector drawing, ICC color conversion, and bounded-memory streaming readers and writers.
 
 These instructions complete the repository-level `AGENTS.md`. The user guide is [readme.md](readme.md): it states what
 the library guarantees to its callers (support matrix, limitations, defaults). Keep the code, the XML documentation and
@@ -138,6 +138,17 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
     the blocks of a region as not written (`RefFrameNotWritten`) whenever it restores the region. The motion search
     only proposes a motion vector: the block is then encoded like any candidate.
   - The container writer (`AvifFileWriter`) shares no code with `AvifFileBuilder`, the builder of the test harness.
+- **JPEG XL** (`Internals/Codecs/JpegXl`). The structure parser reads the container and gives the codestream to
+  `JpegXlCodestreamWalker` in whatever slices arrive; the image header and each frame header are parsed speculatively
+  and retried with more bytes, a frame is decoded once its sections are complete. The constant tables
+  (`JpegXl/Tables/*.cs`) are transcribed by hand, since there is no public specification text to extract them from:
+  every table must be reached by a test that compares the decoder with the reference decoders. Lossless (Modular)
+  decoding and the encoder are exact. VarDCT is defined in floating point, so lossy decoding is compared with a
+  tolerance, measured against both djxl and jxl-oxide, which must also agree with each other: never loosen a tolerance
+  to hide a file that is read in two ways. The integer path (`JpegXlDecoder.WriteFrame`) is only taken by frames that
+  are shown as they are stored; everything else goes through `JpegXlFrameRenderer`, in floating point, where 1 is the
+  largest integer sample. The render order is the one of libjxl: restoration filters, patches, splines, upsampling,
+  noise, color transform, blending.
 - `ZLibStream` reports truncation as a clean end: check that the expected number of bytes was produced.
 
 ## Color management
@@ -290,8 +301,8 @@ dotnet publish tests/Meziantou.Framework.Imaging.AotSmoke -c Release -f net11.0 
   tool directly (`--alllayers 1`, its default, against `Av1Decoder.OutputAllLayers`: the reference digests of the Argon
   suite hold every shown frame of every layer, where a player and this test only take the highest layer of a temporal
   unit).
-- Interop tests download ffmpeg, libwebp and libavif from the release pinned by the `Meziantou.Prebuilt` package (same
-  version in the test harness and the corpus generator). A download failure, an unexpected version or a missing
+- Interop tests download ffmpeg, libwebp, libavif, libjxl (`cjxl`, `djxl`, `jxlinfo`, `jxl_from_tree`) and jxl-oxide from
+  the release pinned by the `Meziantou.Prebuilt` package (same version in the test harness and the corpus generator). A download failure, an unexpected version or a missing
   capability fails the test; it is never skipped. The Apple ImageIO cases need `swift` and only run on macOS.
 - When implementing or changing a member, add unit tests, conformance tests with independent references, and interop
   tests for encoders.
@@ -307,6 +318,16 @@ dotnet publish tests/Meziantou.Framework.Imaging.AotSmoke -c Release -f net11.0 
 
   The `icc` generator (color profiles and LittleCMS vectors) also needs `--icc-profiles <directory>`: see the fixtures
   README.
+- **JPEG XL fixtures** (`jxl` generator, `JxlCorpus.cs` and `JxlCorpus.Fixtures.cs`). A lossless fixture expects the
+  pattern given to `cjxl`, or the values its `jxl_from_tree` tree sets; djxl and jxl-oxide must both give exactly that. A
+  lossy fixture expects what djxl decodes, cross-checked with jxl-oxide, under a tolerance derived from the measured error
+  of the library (`LibraryJxlMeasurements`): after a change of the lossy decoder, run
+  `JpegXlDecoderConformanceTests.ToleranceIsTheMeasuredDisagreementWithTheReference`, copy the lines it prints into the
+  table and regenerate. An invalid fixture is only added when both reference decoders reject it. The fields of the files
+  (boxes, image header, frame headers, feature tags, hidden pixels) are read by `TestHarness/JpegXl/ReferenceJpegXl`,
+  which is linked into the generator and has no dependency on the library; it does not read what is entropy coded (the
+  ICC profile of a codestream, a permuted table of contents), so the ICC fixtures use profiles of the corpus and the
+  conformance tests look them up by their hash.
 
   The coverage tables of the fixtures README are checked against the manifest (`FixtureCoverageMatrixTests`): update them
   when fixtures or feature tags change.

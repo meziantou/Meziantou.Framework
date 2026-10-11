@@ -164,9 +164,12 @@
             "hundredths": { "type": "integer", "minimum": 0, "maximum": 65535 },
             "milliseconds": { "type": "integer", "minimum": 0, "maximum": 16777215 },
             "sampleDelta": { "type": "integer", "minimum": 0, "maximum": 4294967295 },
-            "timescale": { "type": "integer", "minimum": 1, "maximum": 4294967295 }
+            "timescale": { "type": "integer", "minimum": 1, "maximum": 4294967295 },
+            "ticks": { "type": "integer", "minimum": 0, "maximum": 4294967295 },
+            "ticksPerSecondNumerator": { "type": "integer", "minimum": 1, "maximum": 1073741824 },
+            "ticksPerSecondDenominator": { "type": "integer", "minimum": 1, "maximum": 1024 }
           },
-          "description": "Raw delay field read from the encoded input: APNG fcTL delay_num/delay_den (den 0 means 100), GIF Graphic Control Extension hundredths, WebP ANMF frame duration in milliseconds, or the stts sample delta of an AVIF image sequence with the mdhd time scale of its media. Absent when the input has no delay field for the frame."
+          "description": "Raw delay field read from the encoded input: APNG fcTL delay_num/delay_den (den 0 means 100), GIF Graphic Control Extension hundredths, WebP ANMF frame duration in milliseconds, the stts sample delta of an AVIF image sequence with the mdhd time scale of its media, or the duration of a JPEG XL frame in ticks with the ticks per second (a fraction) of its image header. Absent when the input has no delay field for the frame."
         },
         "encoding": { "type": "string", "description": "How the frame is encoded (delta rectangle, blend/dispose, delay field)." },
         "buffers": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/buffer" } }
@@ -223,11 +226,11 @@
         "height": { "type": "integer", "minimum": 1 },
         "pixelFormat": { "enum": ["Rgba32", "Bgra32", "Rgb24", "Rgba64", "Gray8", "Gray16"] },
         "colorModel": { "enum": ["Grayscale", "GrayscaleAlpha", "Rgb", "Rgba", "Indexed", "YCbCr", "Cmyk", "Ycck"] },
-        "bitsPerComponent": { "enum": [1, 2, 4, 8, 10, 12, 16], "description": "10 and 12 are the bit depths of AVIF inputs only." },
+        "bitsPerComponent": { "enum": [1, 2, 4, 8, 10, 12, 16], "description": "10 and 12 are the bit depths of AVIF and JPEG XL inputs only." },
         "orientation": { "type": "integer", "minimum": 1, "maximum": 8 },
         "iccProfile": { "enum": ["none", "rgb", "gray"] },
         "cicp": {
-          "description": "Color description of an AVIF input (ImageMetadata.Cicp): the ITU-T H.273 code points of its colr box of type nclx, or else of its AV1 sequence header; null or absent when the input declares none, and for every other format.",
+          "description": "Color description of an AVIF or JPEG XL input (ImageMetadata.Cicp): the ITU-T H.273 code points of the colr box of type nclx of an AVIF input, or else of its AV1 sequence header, and those equivalent to the enumerated color encoding of a JPEG XL input (full-range RGB); null or absent when the input declares none, and for every other format.",
           "oneOf": [
             { "type": "null" },
             {
@@ -243,7 +246,7 @@
             }
           ]
         },
-        "transferFunction": { "enum": ["srgb", "linear"], "description": "Transfer function label of the decoded samples (ImageMetadata.TransferFunction); absent means srgb. QOI colorspace 1 is linear." },
+        "transferFunction": { "enum": ["srgb", "linear"], "description": "Transfer function label of the decoded samples (ImageMetadata.TransferFunction); absent means srgb. QOI colorspace 1 is linear, and so is a JPEG XL color encoding with the sRGB primaries and a linear transfer function." },
         "resolution": {
           "description": "Physical resolution in dots per inch converted from the encoded fields (dpi = x * 0.0254 per meter, x per inch, x * 2.54 per centimeter); null when absent or aspect-ratio only.",
           "oneOf": [
@@ -303,7 +306,7 @@
               "required": ["totalPlays"],
               "properties": {
                 "totalPlays": { "type": ["integer", "null"], "minimum": 1, "description": "Total plays including the first; null is infinite." },
-                "encodedLoopValue": { "type": ["integer", "null"], "minimum": 0, "description": "Raw APNG num_plays, GIF NETSCAPE2.0 loop count or WebP ANIM loop count; null when absent." },
+                "encodedLoopValue": { "type": ["integer", "null"], "minimum": 0, "description": "Raw APNG num_plays, GIF NETSCAPE2.0 loop count, WebP ANIM loop count or JPEG XL num_loops; null when absent." },
                 "editList": {
                   "description": "AVIF image sequences: the edit list of the track of the color images and the duration of its track header, which give the number of plays (none: forever; not repeating: once; repeating: the track duration over the edit duration, rounded up; forever when the track duration is indefinite). null without edit list.",
                   "oneOf": [
@@ -430,7 +433,7 @@
       "properties": {
         "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._/-]*$" },
         "kind": { "enum": ["valid", "invalid", "unsupported", "limit"] },
-        "format": { "enum": ["png", "gif", "jpeg", "webp", "qoi", "bmp", "tga", "pnm", "avif"] },
+        "format": { "enum": ["png", "gif", "jpeg", "webp", "qoi", "bmp", "tga", "pnm", "avif", "jxl"] },
         "input": { "$ref": "#/$defs/file" },
         "provenance": { "$ref": "#/$defs/provenance" },
         "features": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },

@@ -332,6 +332,34 @@ public sealed class DocumentationExampleTests : IDisposable
         Assert.Equal(expected.Frames[1][63, 63], animation.Frames[1][63, 63]); // lossless
     }
 
+    [Fact]
+    public void SaveJpegXlWritesLosslessFilesAndAnimations()
+    {
+        var (apngPath, _) = BuildAnimation();
+        var photo = GetPath("photo16.png");
+        var color = new Rgba64(65535, 32768, 1, 32767);
+        using (var source = new Image<Rgba64>(32, 16, color))
+        {
+            source.Save(photo);
+        }
+
+        var jxl = GetPath("photo.jxl");
+        var animated = GetPath("animation.jxl");
+        Assert.Equal("JpegXl 32x16 Rgba64, 16 bits", Examples.SaveJpegXl(photo, jxl, apngPath, animated));
+        using (var image = Image.Load<Rgba64>(jxl))
+        {
+            Assert.Equal(ImageFormat.JpegXl, image.Metadata.SourceFormat);
+            Assert.Equal(color, image.Frames[0][16, 8]); // 16 bits, lossless
+        }
+
+        using var animation = Image.Load<Rgba32>(animated);
+        using var expected = Image.Load<Rgba32>(apngPath);
+        Assert.Equal(2, animation.Frames.Count);
+        Assert.Equal(3, animation.Animation!.TotalPlays);
+        Assert.Equal(new FrameDuration(33, 1000), animation.Frames[1].Metadata.Duration); // nearest millisecond
+        Assert.Equal(expected.Frames[1][63, 63], animation.Frames[1][63, 63]);
+    }
+
     [Theory]
     [InlineData("avif/lossless-rgba8", "12x9 Rgba32, frames: 1, color: 1/13/0 full")]
     [InlineData("avif/lossless-rgb10", "8x8 Rgba64, frames: 1, color: 1/13/0 full")] // PNG keeps the 16-bit samples

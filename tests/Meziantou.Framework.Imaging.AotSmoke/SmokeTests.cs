@@ -178,6 +178,66 @@ internal static class SmokeTests
         "QoULZ0zL+pKDcO+XeY/N9GvzJZrR80GngPIFZSpCCuZAEgAyGzADwIAAAEaAAQAgKt+T+n2mzlWGu7ZgUgODwBIAMhgwBAEEAABGgAEAInEUpn+E93lt023a" +
         "wXA=";
 
+    // The fixture jxl/lossy-rgb8 of the corpus: a VarDCT frame of 32x16 pixels, stored in XYB
+    private const string JpegXlLossy =
+        "/wrDQUJxIQATiAIAFAe1nyAAABUqo4wbvJzr+fJDh8W0jesMbbVtYQljs70wSEg4IxqHB33Zmh+4+yYKvg1vJj9vVs0UFw4zrJmC/gMchhoYWPPRAcDRttgWQIUUyAFgt+3d3E0yLyZhBeLUQM8nf9li9APiyWOXh5tB5lpj53vi+kQYY00WJwHHyrDNOqUXXL9YiLTFuZB2ilSkbzSF7UoGNffJVs7vtySNE5/JxsQ8q1b4l29G9Y1mkpbuENJUHbaOqiHK9N9pP/3rDRz14FgLwnWTnbZIAjSX5YSpgJMC27fmp9OxCkhCDTYWWDcil7D4Vyw9iEm2JGdZbA6U2bWnn30QqzvSTjGvf+dZxpdA1wU0REK7e+1TNgKjbiO8rtPIGKaN9SqLe091Tyc/O9QPeb0vXiX0BsnzGBNqXbofwrevpLCa+Z7M86d/XR8MocxnE9K5nj7/K1tDVO7L+ajXsr5lbtTXOn825DbGuIJ6xMJkzUx/I79SvdJ9pEMRP9rqjEm7/ccotsSl4BEbtg3tiU2LN4NmjgKIFox5nlMr6dNKJO18/H8NAt99EnhFU3QZ7YJIqJY9FK4/1GY96zPNhVPQlDLVwrFdBnWdSDwUKis=";
+
+    public static void JpegXl()
+    {
+        // Lossless: 8-bit and 16-bit samples, the colors of transparent pixels included, at two efforts
+        using var still = CreatePattern(seed: 9);
+        foreach (var effort in new[] { 1, 7 })
+        {
+            var encoded = Encode(still, new JpegXlEncoder { Effort = effort });
+            Check(Image.DetectFormat(encoded) == ImageFormat.JpegXl, "JPEG XL detection");
+            var info = Image.Identify(encoded);
+            Check(info.Width == Width && info.Height == Height && info.FrameCount == 1 && info.PixelFormat == PixelFormat.Rgba32 && info.MayHaveTransparency == true, "JPEG XL identification");
+            using var decoded = Image.Load(encoded);
+            CheckEqual(still, decoded, "JPEG XL lossless");
+        }
+
+        using (var deep = still.CloneAs<Rgba64>())
+        using (var decoded = Image.Load(Encode(deep, new JpegXlEncoder())))
+        {
+            Check(decoded.PixelFormat == PixelFormat.Rgba64, "JPEG XL 16-bit pixel format");
+            CheckEqual(deep, decoded, "JPEG XL 16-bit lossless");
+        }
+
+        // An animation, frame by frame
+        using var animation = CreateAnimation(frames: 3);
+        using (var reader = Image.OpenReader<Rgba32>(new MemoryStream(Encode(animation, new JpegXlEncoder { Effort = 3 }))))
+        {
+            var count = 0;
+            while (reader.ReadFrame() is { } frame)
+            {
+                using (frame)
+                {
+                    Check(Pixels(animation.Frames[count]).AsSpan().SequenceEqual(Pixels(frame.Frames[0])), "JPEG XL animation frame");
+                }
+
+                count++;
+            }
+
+            Check(count == 3, "JPEG XL animation frame count");
+        }
+
+        // A lossy file: the floating-point path (inverse transforms, filters, XYB). The reference decoder gives these samples
+        using var lossy = Image.Load<Rgb24>(Convert.FromBase64String(JpegXlLossy));
+        Check(lossy.Width == 32 && lossy.Height == 16 && lossy.Frames.Count == 1, "JPEG XL lossy size");
+        var sum = 0;
+        foreach (var sample in Pixels(lossy.Frames[0]))
+        {
+            sum += sample;
+        }
+
+        Check(Math.Abs(sum - 181036) <= 16, string.Create(CultureInfo.InvariantCulture, $"JPEG XL lossy samples (sum {sum})"));
+        foreach (var (x, y, r, g, b) in new[] { (0, 0, 0, 255, 119), (15, 7, 0, 128, 154), (31, 15, 206, 45, 108), (8, 12, 56, 88, 52) })
+        {
+            var pixel = lossy.Frames[0][x, y];
+            Check(Math.Abs(pixel.R - r) <= 1 && Math.Abs(pixel.G - g) <= 1 && Math.Abs(pixel.B - b) <= 1, string.Create(CultureInfo.InvariantCulture, $"JPEG XL lossy sample at ({x}, {y}): {pixel}"));
+        }
+    }
+
     public static void Avif()
     {
         var still = Convert.FromBase64String(AvifStill);

@@ -123,6 +123,8 @@ public sealed class DefaultsTests
         Assert.IsType<IcoEncoder>(ImageEncoder.FromPath("a.ico"));
         Assert.Equal(IconKind.Cursor, Assert.IsType<IcoEncoder>(ImageEncoder.FromPath("a.cur")).Kind);
         Assert.IsType<AniEncoder>(ImageEncoder.FromPath("a.ANI"));
+        Assert.IsType<JpegXlEncoder>(ImageEncoder.FromPath("a.jxl"));
+        Assert.IsType<JpegXlEncoder>(ImageEncoder.FromPath("dir/a.JXL"));
         Assert.Throws<ArgumentException>(() => ImageEncoder.FromPath("a.heic"));
 
         Assert.Equal(AvifCompression.Lossless, Assert.IsType<AvifEncoder>(ImageEncoder.FromPath("a.avif")).Compression);

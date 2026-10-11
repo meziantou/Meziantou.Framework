@@ -133,4 +133,23 @@ internal static class DefaultPixelFormats
     /// DIB-backed frame decodes to), or <see cref="PixelFormat.Rgba64"/> when a frame has 16-bit samples.
     /// </returns>
     public static PixelFormat ForAni(bool hasSixteenBitFrame) => hasSixteenBitFrame ? PixelFormat.Rgba64 : PixelFormat.Rgba32;
+
+    /// <summary>Selects the default pixel format of a JPEG XL image.</summary>
+    /// <param name="isGray">Whether the image has a single color channel.</param>
+    /// <param name="hasAlpha">Whether the image has an alpha channel.</param>
+    /// <param name="isSixteenBit">Whether the color channels or the alpha channel have more than 8 bits.</param>
+    /// <returns>
+    /// The pixel format: there is no gray-with-alpha and no 16-bit RGB format, so that grayscale images with alpha are
+    /// stored as RGBA and deep color images without alpha are opaque <see cref="PixelFormat.Rgba64"/>.
+    /// </returns>
+    public static PixelFormat ForJpegXl(bool isGray, bool hasAlpha, bool isSixteenBit)
+    {
+        if (isSixteenBit)
+            return isGray && !hasAlpha ? PixelFormat.Gray16 : PixelFormat.Rgba64;
+
+        if (hasAlpha)
+            return PixelFormat.Rgba32;
+
+        return isGray ? PixelFormat.Gray8 : PixelFormat.Rgb24;
+    }
 }

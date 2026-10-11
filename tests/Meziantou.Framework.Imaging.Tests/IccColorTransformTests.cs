@@ -103,6 +103,50 @@ public sealed class IccColorTransformTests
         Assert.Equal([0x0000F6D6, 0x00010000, 0x0000D32D], sum);
     }
 
+    [Fact]
+    public void AProfileWrittenForTheSrgbColorSpaceIsTheBuiltInOne()
+    {
+        // IEC 61966-2-1: the primaries, the D65 white point and the transfer function
+        var profile = BuiltInIccProfiles.TryCreate(gray: false, [0.64, 0.33, 0.30, 0.60, 0.15, 0.06], 0.3127, 0.3290, BuiltInIccCurve.Srgb, exponent: 1, renderingIntent: 0, "sRGB IEC61966-2.1");
+        Assert.NotNull(profile);
+        Assert.Equal(IccProfile.Srgb.Data.Length, profile.Data.Length);
+        Assert.True(MetadataValidation.TryValidateIccProfile(profile.Data.Span, out _));
+        Assert.True(SrgbProfileRecognition.IsSrgb(profile, PixelFormat.Rgb24));
+        foreach (var signature in (string[])["wtpt", "rTRC", "gTRC", "bTRC", "desc", "cprt"])
+        {
+            Assert.True(GetTag(profile, signature).SequenceEqual(GetTag(IccProfile.Srgb, signature)), signature);
+        }
+
+        // The numbers computed from the chromaticities are those of the built-in profile, to the last digit or the one before
+        foreach (var signature in (string[])["rXYZ", "gXYZ", "bXYZ", "chad"])
+        {
+            var expected = GetTag(IccProfile.Srgb, signature);
+            var actual = GetTag(profile, signature);
+            Assert.True(expected[..8].SequenceEqual(actual[..8]), signature);
+            for (var offset = 8; offset < expected.Length; offset += 4)
+            {
+                Assert.True(Math.Abs(BinaryPrimitives.ReadInt32BigEndian(expected[offset..]) - BinaryPrimitives.ReadInt32BigEndian(actual[offset..])) <= 2, $"{signature} at {offset}");
+            }
+        }
+    }
+
+    [Fact]
+    public void AProfileIsNotWrittenForChromaticitiesThatDefineNoColorSpace()
+    {
+        double[] srgb = [0.64, 0.33, 0.30, 0.60, 0.15, 0.06];
+        Assert.NotNull(BuiltInIccProfiles.TryCreate(gray: false, srgb, 0.3127, 0.3290, BuiltInIccCurve.Power, exponent: 2.2, renderingIntent: 1, "Test"));
+
+        // Primaries on a line, a white point without luminance, and numbers an s15Fixed16Number cannot hold
+        Assert.Null(BuiltInIccProfiles.TryCreate(gray: false, [0.6, 0.3, 0.4, 0.3, 0.2, 0.3], 0.3127, 0.3290, BuiltInIccCurve.Srgb, exponent: 1, renderingIntent: 0, "Test"));
+        Assert.Null(BuiltInIccProfiles.TryCreate(gray: false, srgb, 0.3127, 0, BuiltInIccCurve.Srgb, exponent: 1, renderingIntent: 0, "Test"));
+        Assert.Null(BuiltInIccProfiles.TryCreate(gray: true, srgb, 0.3127, 0, BuiltInIccCurve.Srgb, exponent: 1, renderingIntent: 0, "Test"));
+        Assert.Null(BuiltInIccProfiles.TryCreate(gray: false, srgb, 0.3127, 0.3290, BuiltInIccCurve.Power, exponent: 40000, renderingIntent: 0, "Test"));
+        Assert.Null(BuiltInIccProfiles.TryCreate(gray: false, srgb, 0.3127, 0.3290, BuiltInIccCurve.Power, exponent: 0, renderingIntent: 0, "Test"));
+
+        // The primaries are not used for grayscale
+        Assert.NotNull(BuiltInIccProfiles.TryCreate(gray: true, [0.6, 0.3, 0.4, 0.3, 0.2, 0.3], 0.3127, 0.3290, BuiltInIccCurve.Bt709, exponent: 1, renderingIntent: 0, "Test"));
+    }
+
     [Theory]
     [InlineData(255, 0, 0, 234, 51, 35)]
     [InlineData(0, 255, 0, 117, 251, 76)]

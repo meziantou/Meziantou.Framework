@@ -37,13 +37,13 @@ internal sealed class Vp8LEncoder : IDisposable
     private static ReadOnlySpan<byte> CodeLengthCodeOrder => [17, 18, 0, 1, 2, 3, 4, 5, 16, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
 
     private readonly AllocationScope _scope;
-    private readonly Vp8LBitWriter _writer;
+    private readonly LsbBitWriter _writer;
     private readonly int _effort;
     private readonly bool _entropyPredictors;
     private readonly CancellationToken _cancellationToken;
     private readonly List<PooledBuffer> _buffers = [];
 
-    private Vp8LEncoder(AllocationScope scope, Vp8LBitWriter writer, int effort, bool entropyPredictors, CancellationToken cancellationToken)
+    private Vp8LEncoder(AllocationScope scope, LsbBitWriter writer, int effort, bool entropyPredictors, CancellationToken cancellationToken)
     {
         _scope = scope;
         _writer = writer;
@@ -64,7 +64,7 @@ internal sealed class Vp8LEncoder : IDisposable
     /// Whether the predictor modes are chosen by the entropy of the residuals instead of their sum of absolute values;
     /// <see langword="null"/> selects it from the effort (6 and above).
     /// </param>
-    public static void Encode(AllocationScope scope, Vp8LBitWriter writer, Span<uint> argb, int width, int height, int effort, CancellationToken cancellationToken, bool? entropyPredictors = null)
+    public static void Encode(AllocationScope scope, LsbBitWriter writer, Span<uint> argb, int width, int height, int effort, CancellationToken cancellationToken, bool? entropyPredictors = null)
     {
         var alphaIsUsed = false;
         foreach (var pixel in argb)
@@ -86,7 +86,7 @@ internal sealed class Vp8LEncoder : IDisposable
     }
 
     /// <summary>Encodes a headerless image stream of known dimensions (the lossless compression of an <c>ALPH</c> chunk).</summary>
-    public static void EncodeImageStream(AllocationScope scope, Vp8LBitWriter writer, Span<uint> argb, int width, int height, int effort, CancellationToken cancellationToken)
+    public static void EncodeImageStream(AllocationScope scope, LsbBitWriter writer, Span<uint> argb, int width, int height, int effort, CancellationToken cancellationToken)
     {
         using var encoder = new Vp8LEncoder(scope, writer, effort, effort >= 6, cancellationToken);
         encoder.EncodeMainImage(argb, width, height);
@@ -582,8 +582,8 @@ internal sealed class Vp8LEncoder : IDisposable
             return new PrefixCode(new byte[histogram.Length], codes);
         }
 
-        Vp8LHuffmanBuilder.BuildLengths(histogram, Vp8LPrefixCodes.MaxCodeLength, lengths);
-        Vp8LHuffmanBuilder.BuildCodes(lengths, codes);
+        CanonicalHuffmanBuilder.BuildLengths(histogram, Vp8LPrefixCodes.MaxCodeLength, lengths);
+        CanonicalHuffmanBuilder.BuildCodes(lengths, codes);
         WriteNormalCodeLengths(lengths);
         if (used == 1)
             return new PrefixCode(new byte[histogram.Length], codes); // a single leaf: no bit is written
@@ -658,8 +658,8 @@ internal sealed class Vp8LEncoder : IDisposable
 
         var codeLengths = new byte[19];
         var codes = new ushort[19];
-        Vp8LHuffmanBuilder.BuildLengths(histogram, 7, codeLengths);
-        Vp8LHuffmanBuilder.BuildCodes(codeLengths, codes);
+        CanonicalHuffmanBuilder.BuildLengths(histogram, 7, codeLengths);
+        CanonicalHuffmanBuilder.BuildCodes(codeLengths, codes);
         var count19 = 19;
         while (count19 > 4 && codeLengths[CodeLengthCodeOrder[count19 - 1]] == 0)
         {
@@ -887,7 +887,7 @@ internal sealed class Vp8LEncoder : IDisposable
     }
 
     [StructLayout(LayoutKind.Auto)]
-    private readonly struct EmitSink(Vp8LBitWriter writer, PrefixCode[] codes, int cacheBits) : ITokenSink
+    private readonly struct EmitSink(LsbBitWriter writer, PrefixCode[] codes, int cacheBits) : ITokenSink
     {
         private readonly uint[] _cache = new uint[cacheBits == 0 ? 0 : 1 << cacheBits];
 

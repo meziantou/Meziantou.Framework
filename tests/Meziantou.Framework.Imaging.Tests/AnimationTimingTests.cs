@@ -49,6 +49,40 @@ public sealed class AnimationTimingTests
     }
 
     [Fact]
+    public void JpegXlExportIsExactForMillisecondsAndFollowsTheRoundingPolicyOtherwise()
+    {
+        foreach (var milliseconds in (uint[])[0, 1, 7, 100, 1000, 60_000, uint.MaxValue])
+        {
+            var duration = FrameDuration.FromMilliseconds(milliseconds);
+            Assert.Equal(milliseconds, AnimationTiming.ToJpegXlDuration(duration, FrameDurationRounding.RequireExact));
+            Assert.Equal(milliseconds, AnimationTiming.ToJpegXlDuration(duration, FrameDurationRounding.RoundToNearest));
+        }
+
+        // A fraction that is a whole number of milliseconds is exact whatever its denominator
+        Assert.Equal(40u, AnimationTiming.ToJpegXlDuration(new FrameDuration(1, 25), FrameDurationRounding.RequireExact));
+        Assert.Equal(125u, AnimationTiming.ToJpegXlDuration(new FrameDuration(3, 24), FrameDurationRounding.RequireExact));
+
+        // 1/2000 s is half a millisecond (ties up); 1/2001 s is just below
+        Assert.Equal(1u, AnimationTiming.ToJpegXlDuration(new FrameDuration(1, 2000), FrameDurationRounding.RoundToNearest));
+        Assert.Equal(0u, AnimationTiming.ToJpegXlDuration(new FrameDuration(1, 2001), FrameDurationRounding.RoundToNearest));
+        Assert.Equal(33u, AnimationTiming.ToJpegXlDuration(new FrameDuration(1001, 30000), FrameDurationRounding.RoundToNearest)); // 33.37 ms
+        Assert.Equal(17u, AnimationTiming.ToJpegXlDuration(new FrameDuration(1, 60), FrameDurationRounding.RoundToNearest)); // 16.67 ms
+        var precision = Assert.Throws<UnsupportedImageFeatureException>(() => AnimationTiming.ToJpegXlDuration(new FrameDuration(1, 60), FrameDurationRounding.RequireExact));
+        Assert.Equal((ImageFormat.JpegXl, "JPEG XL frame duration precision"), (precision.Format, precision.Feature));
+
+        // One millisecond more than the 32-bit field holds, and a value that only exceeds it once rounded up
+        foreach (var rounding in Enum.GetValues<FrameDurationRounding>())
+        {
+            var range = Assert.Throws<UnsupportedImageFeatureException>(() => AnimationTiming.ToJpegXlDuration(new FrameDuration(1L << 32, 1000), rounding));
+            Assert.Equal((ImageFormat.JpegXl, "JPEG XL frame duration range"), (range.Format, range.Feature));
+        }
+
+        Assert.Equal("JPEG XL frame duration range", Assert.Throws<UnsupportedImageFeatureException>(() => AnimationTiming.ToJpegXlDuration(new FrameDuration((2L * uint.MaxValue) + 1, 2000), FrameDurationRounding.RoundToNearest)).Feature);
+        Assert.Equal(uint.MaxValue, AnimationTiming.ToJpegXlDuration(new FrameDuration((2L * uint.MaxValue) - 1, 2000), FrameDurationRounding.RoundToNearest));
+        Assert.Equal("JPEG XL frame duration range", Assert.Throws<UnsupportedImageFeatureException>(() => AnimationTiming.ToJpegXlDuration(new FrameDuration(long.MaxValue, 1), FrameDurationRounding.RoundToNearest)).Feature);
+    }
+
+    [Fact]
     public void AnAnimatedCursorHasNoPlayCount()
     {
         AnimationTiming.EnsureAniPlayCount(null);

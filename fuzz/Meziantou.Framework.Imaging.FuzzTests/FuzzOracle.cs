@@ -261,9 +261,13 @@ internal static class FuzzOracle
         image.Grayscale();
 
         // Last, since enlarging the canvas may legitimately exceed the limits of the configuration
+        // A canvas that keeps its size has still changed when the content box and its padding are not the canvas: one side
+        // is cropped by what the opposite one is enlarged
         size = image.Size;
-        if (image.AutoCrop(new AutoCropOptions { PaddingX = 2, PaddingY = 1 }) && image.Size == size)
-            return $"auto-crop-expand: the {size} canvas is reported as changed but kept its size";
+        var expand = new AutoCropOptions { PaddingX = 2, PaddingY = 1 };
+        var box = image.AnalyzeAutoCrop(expand).Bounds;
+        if (image.AutoCrop(expand) && image.Size == size && box.X == expand.PaddingX && box.Y == expand.PaddingY)
+            return $"auto-crop-expand: the {size} canvas is reported as changed but the content box {box} and its padding are the canvas";
 
         return string.Empty;
     }

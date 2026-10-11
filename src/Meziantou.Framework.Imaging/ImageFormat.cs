@@ -3,8 +3,7 @@ namespace Meziantou.Framework.Imaging;
 /// <summary>Identifies an encoded image file format.</summary>
 /// <remarks>
 /// Formats are detected from content, never from file names. Animated PNG (APNG) is reported as <see cref="Png"/>:
-/// it is a PNG variant, not a competing signature. Follow-up formats (JPEG XL) will be added as new
-/// members when they are implemented.
+/// it is a PNG variant, not a competing signature. New formats are added as new members.
 /// </remarks>
 public enum ImageFormat
 {
@@ -60,4 +59,10 @@ public enum ImageFormat
     /// AV1 Image File Format: still images and image sequences coded with AV1 in an ISO base media (HEIF) container.
     /// </summary>
     Avif = 13,
+
+    /// <summary>
+    /// JPEG XL (ISO/IEC 18181): a bare codestream or its container, still images and animations, lossy (VarDCT) and
+    /// lossless (Modular) coding. Encoding is lossless.
+    /// </summary>
+    JpegXl = 14,
 }

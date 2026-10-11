@@ -103,7 +103,7 @@ public sealed class MetadataExpectationValidationTests
         Assert.Contains(errors, error => error.Contains("avif/sequence-lossless-infinite': an AVIF image sequence has no loop field", StringComparison.Ordinal));
         Assert.Contains(errors, error => error.Contains("avif/lossless-rgb8': the CICP code points are 8-bit values", StringComparison.Ordinal));
         Assert.Contains(errors, error => error.Contains("avif/irot-1': invalid bitsPerComponent 9", StringComparison.Ordinal));
-        Assert.Contains(errors, error => error.Contains("png/single-pixel': only AVIF inputs declare a CICP color description", StringComparison.Ordinal));
+        Assert.Contains(errors, error => error.Contains("png/single-pixel': only AVIF and JPEG XL inputs declare a CICP color description", StringComparison.Ordinal));
         Assert.Contains(errors, error => error.Contains("png/single-pixel': invalid bitsPerComponent 10", StringComparison.Ordinal));
         Assert.Contains(errors, error => error.Contains("gif/ffmpeg-animated': only AVIF image sequences have an edit list", StringComparison.Ordinal));
         Assert.Contains(errors, error => error.Contains("apng/blend-source-over' frame 0: encodedDelay must be", StringComparison.Ordinal));

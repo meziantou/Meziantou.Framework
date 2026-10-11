@@ -2,14 +2,17 @@
 
 A fully managed, performance-oriented image library for .NET 10 and .NET 11: PNG, animated PNG (APNG), GIF, JPEG, WebP
 (still and animated, lossless and lossy), QOI, BMP, TGA, Netpbm (PBM/PGM/PPM/PAM), TIFF/BigTIFF, ICO/CUR and animated
-cursor (ANI) and AVIF (still and animated, lossless and lossy) decoding and encoding, animation-aware processing, vector
-drawing, ICC color conversion, and bounded-memory streaming.
+cursor (ANI) and AVIF (still and animated, lossless and lossy) decoding and encoding, JPEG XL decoding and lossless
+encoding, animation-aware processing, vector drawing, ICC color conversion, and bounded-memory streaming.
 
 - Static PNG, animated PNG (APNG), GIF, baseline/progressive JPEG, WebP (still and animated, lossless and lossy), QOI,
   BMP, TGA, Netpbm (PBM/PGM/PPM/PAM), TIFF/BigTIFF, ICO/CUR and ANI decoding; PNG, APNG, GIF, baseline JPEG, WebP
   (lossless and lossy, still and animated), QOI, BMP, TGA, Netpbm, TIFF/BigTIFF, ICO/CUR and ANI encoding (unsupported
   modes, such as arithmetic JPEG, embedded JPEG or PNG in BMP, premultiplied-alpha TGA or LZW TIFF, are rejected
   explicitly; a CMYK JPEG is loaded with an explicit color conversion)
+- JPEG XL decoding with a fully managed decoder: lossy (VarDCT) and lossless (Modular) files, alpha, animations and
+  layers, losslessly recompressed JPEG files; lossless JPEG XL encoding of every pixel format, animations included
+  (there is no lossy JPEG XL encoder)
 - AVIF decoding and encoding with a fully managed AV1 decoder and a fully managed AV1 encoder: still images and
   animations, lossless and lossy, 8, 10 and 12 bits, alpha; grids and film grain are decoded
 - `ImageCollection` for the images that are not animation frames: TIFF document pages and icon/cursor representations,
@@ -64,6 +67,7 @@ compiled and run by the test suite.
   - [ICO and CUR](#ico-and-cur)
   - [AVIF](#avif)
   - [ANI](#ani)
+  - [JPEG XL](#jpeg-xl)
 - [Limitations](#limitations)
 
 ## Quick start
@@ -144,9 +148,8 @@ decoded or encoded approximately; see [Format reference](#format-reference) and 
 | TIFF / BigTIFF | Both byte orders and offset sizes, 8/16-bit gray, gray+alpha, RGB, RGBA, strips and tiles, Deflate, predictor; multi-page documents | Strips, uncompressed or Deflate, classic or BigTIFF; multi-page documents (seekable destination) | `.tif`, `.tiff` |
 | ICO / CUR | PNG and DIB representations, cursor hotspots | PNG or 32-bit DIB representations, cursor hotspots | `.ico`, `.cur` |
 | AVIF | Still images and image sequences (animations); 8, 10 and 12 bits; 4:4:4, 4:2:2, 4:2:0 and monochrome; alpha; grids; film grain; ICC/EXIF/XMP and CICP color descriptions | Lossless and lossy still images and image sequences (seekable destination); 8, 10 and 12 bits; 4:4:4, 4:2:2, 4:2:0 and monochrome; lossless alpha; ICC/EXIF/XMP, CICP color descriptions and orientation | `.avif`, `.avifs` (lossless by default) |
+| JPEG XL | Bare codestreams and containers; lossy (VarDCT) and lossless (Modular) frames; up to 16 bits; alpha; animations and layers; patches, splines, noise; recompressed JPEG files; ICC/EXIF/XMP and enumerated color encodings | Lossless, every pixel format at its own depth, alpha, animations with any frame count, ICC/EXIF/XMP, orientation | `.jxl` |
 | ANI | Animated cursors: icon and cursor frames (PNG and DIB), rate and sequence tables, hotspots, title and author | One cursor image per frame (PNG or 32-bit DIB), hotspots, identical frames stored once, title and author (seekable destination) | `.ani` |
-
-JPEG XL is not supported.
 
 ## Usage guide
 
@@ -759,14 +762,16 @@ resolution, ICC/EXIF/XMP profiles (byte-for-byte payloads) and text entries.
   it is, since no pixel format holds inks: it is rejected unless the load asks for its conversion
   (`CmykConversionOptions`).
 - **Transfer functions are labels too.** `Metadata.TransferFunction` is `Srgb` (the default: sRGB samples, or as described
-  by the ICC profile) or `Linear` (linear-light samples, declared by a QOI colorspace of 1). Only `ConvertColorProfile`
-  converts the pixels (and resets the label); linear-light resizing filters `Linear` samples directly. Only QOI stores
-  the label: the other encoders treat `Linear` as metadata they cannot store, so the samples are never silently
-  relabeled as sRGB.
+  by the ICC profile) or `Linear` (linear-light samples, declared by a QOI colorspace of 1 or by a JPEG XL color
+  encoding with the sRGB primaries and a linear transfer function). Only `ConvertColorProfile` converts the pixels (and
+  resets the label); linear-light resizing filters `Linear` samples directly. Only QOI and JPEG XL store the label: the
+  other encoders treat `Linear` as metadata they cannot store, so the samples are never silently relabeled as sRGB.
 - **CICP color descriptions are labels too.** `Metadata.Cicp` holds the code points of ITU-T H.273 that an AVIF file
-  declares: color primaries, transfer characteristics, matrix coefficients and range. The decoder applies the matrix and
-  the range to produce RGB; the primaries and the transfer characteristics are never applied (HDR samples are not tone
-  mapped). Only the AVIF encoder stores the description (with the matrix and the range that it used). For the other
+  declares, or that are equivalent to the enumerated color encoding of a JPEG XL file: color primaries, transfer
+  characteristics, matrix coefficients and range. The decoder applies the matrix and the range to produce RGB; the
+  primaries and the transfer characteristics are never applied (HDR samples are not tone mapped). The AVIF encoder
+  stores the description (with the matrix and the range that it used), and the JPEG XL encoder stores it when the
+  format can enumerate it (full-range RGB with the sRGB, Display P3, DCI-P3 or BT.2020 primaries). For the other
   encoders, a description that is not equivalent to sRGB is metadata the format cannot store, unless an ICC profile is
   written. Linear-light processing rejects such a description.
 - **Orientation is reported, never applied by decoders.** `Metadata.Orientation` reports the EXIF orientation;
@@ -795,8 +800,10 @@ TIFF stores the resolution, the orientation, an ICC profile and XMP (no EXIF blo
 metadata, CUR only the hotspot of each representation, and ANI the hotspot of each frame plus one `Title` and one `Author`
 text entry (Latin-1). AVIF stores the ICC profile and the CICP color description (`colr` boxes), EXIF and XMP (items)
 and, for a still image, the orientation (`irot` and `imir` properties, never an EXIF block created for it); an image
-sequence stores no orientation, and AVIF has no text entry and no resolution. Unknown chunks, segments and extensions
-are skipped on decode and not round-tripped.
+sequence stores no orientation, and AVIF has no text entry and no resolution. JPEG XL stores an ICC profile (in the
+codestream), EXIF and XMP (in `Exif` and `xml ` boxes), the orientation (in the image header, not as an EXIF tag), the
+linear transfer function and a CICP color description; it stores no resolution and no text entry. Unknown chunks,
+segments and extensions are skipped on decode and not round-tripped.
 
 <!-- snippet: edit-metadata -->
 ```csharp
@@ -1032,6 +1039,7 @@ output.
 | APNG | Required (the count precedes the image data and seeking is never used) |
 | GIF | Optional: unknown counts are supported with fixed memory (local palettes, no global prepass) |
 | WebP | Optional; an animation (any count other than 1) needs a seekable destination |
+| JPEG XL | Optional; any count, without seeking (a frame is written when the next one, or the completion, tells whether it is the last) |
 | ANI | Optional; any count, with a seekable destination (the counts and sizes are patched at completion) |
 | AVIF | Required; an image sequence (any count other than 1) needs a seekable destination (its index is written at completion, in the room that the count reserves) |
 | JPEG, QOI, BMP, TGA, Netpbm, TIFF, ICO/CUR | Optional; exactly one frame |
@@ -1107,7 +1115,7 @@ public static void StreamingWithReusedBuffer(string inputPath, string outputPath
 `Save(stream, encoder)` requires an encoder. `Save(path)` infers it from the extension: `.png`
 (APNG when the image is animated), `.apng` (always APNG), `.gif`, `.jpg`/`.jpeg`, `.webp` (lossless by default), `.qoi`,
 `.bmp`/`.dib`, `.tga`/`.icb`/`.vda`/`.vst`, `.pnm`/`.pam`/`.ppm`/`.pgm`, `.pbm` (a portable bitmap, from black and white
-pixels only), `.tif`/`.tiff`, `.ico`, `.cur`, `.ani` and `.avif`/`.avifs` (lossless by default); anything else throws `ArgumentException`. An eager save validates the whole image against the output (animation, poster,
+pixels only), `.tif`/`.tiff`, `.ico`, `.cur`, `.ani`, `.avif`/`.avifs` (lossless by default) and `.jxl` (lossless); anything else throws `ArgumentException`. An eager save validates the whole image against the output (animation, poster,
 durations, alpha, precision, metadata) before writing anything.
 
 Path outputs, eager or through writers, are written to a temporary file in the destination directory and published by a
@@ -1552,6 +1560,52 @@ public static void SaveAvif(string photoPath, string avifPath, string losslessPa
 
 The encoder does not use every coding tool of AV1: see [Limitations](#limitations).
 
+### JPEG XL
+
+JPEG XL files are decoded, lossy or lossless, and encoded losslessly. The decoder and the encoder are fully managed. The
+lossless path is exact: a lossless file decodes to the samples that were encoded, and the files the encoder writes
+decode to the same samples in libjxl and jxl-oxide. The lossy path (VarDCT) is defined in floating point: the decoded
+samples are within a few sixteen-bit units of what those decoders give (they differ from each other by as much), not
+bit-exact.
+
+<!-- snippet: save-jpegxl -->
+```csharp
+public static string SaveJpegXl(string inputPath, string jxlPath, string animatedPath, string animatedJxlPath)
+{
+    // Every pixel format is stored as it is: no bit depth reduction, no flattening, and the colors of fully
+    // transparent pixels are kept. The effort changes the size and the encoding time, never the pixels.
+    using (var image = Image.Load(inputPath))
+    {
+        image.Save(jxlPath, new JpegXlEncoder { Effort = 7 });
+    }
+
+    // Frames are written as they come: the destination does not need to be seekable, whatever the frame count.
+    using (var animation = Image.Load(animatedPath))
+    {
+        animation.Save(animatedJxlPath);
+    }
+
+    // Lossy (VarDCT) and lossless (Modular) files are decoded, whatever wrote them.
+    var info = Image.Identify(jxlPath);
+    return $"{info.Format} {info.Size.Width}x{info.Size.Height} {info.PixelFormat}, {info.BitsPerComponent} bits";
+}
+```
+
+| Feature | Decoding | Encoding |
+| --- | --- | --- |
+| Files | A bare codestream, or the container: `jxlc` or `jxlp` boxes (a codestream split anywhere), `Exif`, `xml ` and their Brotli-compressed form (`brob`), boxes of 64-bit size or that extend to the end of the file | A bare codestream; the container when the image has EXIF or XMP, or needs level 10 of the format (16-bit samples, more than 262,144 pixels per side or 268,435,456 pixels, an ICC profile above 4 MiB) |
+| Coding | VarDCT (every transform, quantization table and coefficient order, chroma from luma, adaptive LF smoothing, LF frames, progressive passes) and Modular (every predictor, MA trees, RCT, palette and delta palette, squeeze), Gaborish and edge-preserving filters, upsampling by 2, 4 and 8, patches, splines, noise, groups in any order | Modular, lossless: groups of 256x256 samples, a reversible color transform and a predictor per image |
+| Pixel formats | 8-bit files load as `Gray8`, `Rgb24` or `Rgba32`; deeper files as `Gray16` or `Rgba64`; grayscale with alpha as `Rgba32`/`Rgba64`. Depths other than 8 and 16 are scaled exactly; `ImageInfo.BitsPerComponent` reports the depth of the file | `Gray8`, `Gray16`, `Rgb24`, `Rgba32`, `Bgra32` and `Rgba64`, each at its own depth: nothing is reduced |
+| Color | Samples stay in the color space the file declares; an XYB (lossy) image is converted to it. sRGB is untagged; linear sRGB sets `TransferFunction.Linear`; the other enumerated encodings with H.273 code points (Display P3, DCI-P3, BT.2020, BT.709, PQ, HLG) set `Metadata.Cicp`; custom primaries, a custom white point or a power function are described by an ICC profile written for them; an embedded ICC profile is kept byte for byte. HDR samples are returned as stored, never tone mapped | The ICC profile, byte for byte; otherwise `TransferFunction.Linear` and a `Metadata.Cicp` the format can enumerate as its color encoding; otherwise sRGB |
+| JPEG recompression | A JPEG file recompressed by `cjxl` is decoded to pixels: YCbCr, subsampled chroma, the quantization tables of the file | Not written |
+| Animations | Exact durations (ticks over the tick rate), play count; frames smaller or larger than the image, the blend modes (replace, add, blend, alpha-weighted add, multiply) and the four reference frames are composed. A frame without duration is a layer of the next one, not a frame of the animation | Full frames, 1000 ticks per second (`DurationRounding`), play count; a frame without duration is rejected |
+| Orientation | The orientation of the image header is reported as `Metadata.Orientation`, never applied; the EXIF orientation tag is ignored, as the format requires | Stored in the image header |
+| Effort | n/a | `Effort` 0 to 9 (default 5): 0 to 2 use prefix codes and fixed choices, 3 and above use ANS entropy coding and search the color transform and the predictor, 7 and above also try the weighted predictor. The pixels never depend on it |
+| Limits | Every frame is checked against the frame limits, shown or not; the pixels that are decoded without being shown (reference frames, layers, LF frames, the part of a frame outside the image) count toward `MaxTotalPixels`; decoded planes are charged to the memory budget | At most 1,073,741,824 pixels per side |
+
+`ImageReader` decodes an animation frame by frame; its memory does not depend on the number of frames. A frame is
+decoded once all its bytes are available: the encoded size of a frame is buffered, not the file.
+
 ## Limitations
 
 Everything below is rejected explicitly (never decoded or encoded approximately) or documented as lossy.
@@ -1578,5 +1632,5 @@ Everything below is rejected explicitly (never decoded or encoded approximately)
 | Processing | No HDR, text rendering or custom processors; `LinearSrgb` resizing and convolution accept untagged or recognized sRGB/sGray profiles only; convolution matrices have odd dimensions, no bias or divisor, no ready-made matrices and no separable fast path |
 | AVIF encoding | An image of a sequence is predicted from the previous image only, with one motion vector per block and the regular interpolation filter: no compound prediction (two references), global, warped or overlapped motion, switchable interpolation filter, temporal motion vector prediction, or scene change detection (an image that differs from the previous one is coded with intra blocks, not as a key frame). Not used: intra block copy (content that repeats in an image, such as the characters of a text, is not predicted from the image itself: a lossless screenshot can be larger than its PNG), the split of the transform blocks of an inter block (it has the largest transform of its size), quantizer deltas, quantization matrices, loop restoration, CDEF strengths per block (one pair per frame), super-resolution and film grain. No grid, layered (progressive) or premultiplied-alpha output; no `clap`, `pasp`, mastering display or content light level box; no orientation for an image sequence. An image sequence of one image cannot store animation settings (it is read back as a still image): a single frame with animation settings is rejected. An image sequence needs a seekable destination and its frame count. The level of the stream is the lowest one whose picture size holds the image; the other limits of a level are not checked |
 | AVIF decoding | Rejected with `UnsupportedImageFeatureException`: premultiplied alpha, `iden`/`iovl` derived images, fragmented files, edit lists that do not play the whole track, image sequences whose images change size, clean apertures that do not select whole samples or that follow a rotation, grid tiles that declare other transformations than their grid, large scale tile streams, and the other matrix coefficients (constant luminance, ICtCp, SMPTE 2085, chromaticity-derived). Not read: gain maps, depth maps, thumbnails, the images that are not the primary item, the `tkhd` matrix and the other transformations of an image sequence (its images are returned as stored), mastering display and content light level boxes. A layered image is returned at its full quality only: its lower layers are not exposed as a progressive rendering. HDR samples are returned as stored: no tone mapping |
-| Formats | JPEG XL is not supported |
+| JPEG XL | Decoding, rejected with `UnsupportedImageFeatureException` (also from `Identify` when the image header tells): floating-point samples and samples of more than 16 bits, premultiplied alpha, CMYK (a black channel) and spot colors, an XYB image whose ICC profile is not sRGB (it needs a color conversion to that profile), the PQ or HLG transfer function with primaries or a white point that CICP cannot express, a Modular frame stored as YCbCr with subsampled channels, restoration filters on a grayscale Modular frame, an upsampled frame with patches or splines whose extra channels have another resolution. Ignored: the preview frame, frame names, the intrinsic size, the JPEG reconstruction data (`jbrd`: a recompressed JPEG file is decoded to pixels, the JPEG file is not rebuilt), `jumb` and unknown boxes; depth, selection mask, thermal and the other extra channels than alpha are decoded and dropped. Samples of 1 to 16 bits other than 8 and 16 are scaled exactly to 8 or 16 bits. A lossy frame is decoded in floating point: the result is within a few sixteen-bit units of the reference decoders, not bit-exact. Encoding: lossless only (no lossy output), full frames that replace the image (no layers, blending, patches or cropped frames), frame durations in whole milliseconds, no frame of an animation without duration; an EXIF orientation is written to the image header |
 | API | No public allocator, custom pixel type, codec plug-in or image-processor interface; implementation types are internal |

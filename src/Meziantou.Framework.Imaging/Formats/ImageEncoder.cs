@@ -78,6 +78,9 @@ public abstract class ImageEncoder
         if (extension.Equals(".ani", StringComparison.OrdinalIgnoreCase))
             return new AniEncoder();
 
+        if (extension.Equals(".jxl", StringComparison.OrdinalIgnoreCase))
+            return new JpegXlEncoder();
+
         if (extension.Equals(".avif", StringComparison.OrdinalIgnoreCase) || extension.Equals(".avifs", StringComparison.OrdinalIgnoreCase))
             return new AvifEncoder();
 

@@ -434,6 +434,66 @@ jobs:
         uses: ./.github/actions/setup-dotnet
       - run: dotnet publish --configuration Release --runtime ${{ matrix.runtime }} --self-contained eng/Trimmable.Wpf/Trimmable.Wpf.csproj
 
+  # "dotnet test" runs the test projects that set PublishAot on the JIT, like any other test project.
+  # Only a published application is compiled ahead of time, and Native AOT cannot target another
+  # OS, so each platform publishes these projects and runs the native executables.
+  test_aot:
+    runs-on: ${{ matrix.runs-on }}
+    timeout-minutes: 60
+    strategy:
+      matrix:
+        runs-on: [ windows-2025-vs2026, ubuntu-26.04, macos-26 ]
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Setup .NET
+        uses: ./.github/actions/setup-dotnet
+      - name: Publish and run the Native AOT tests
+        run: |
+          $projects = @(
+            Get-ChildItem -Path tests -Recurse -Filter *.csproj
+            | Where-Object { Select-String -LiteralPath $_.FullName -SimpleMatch -Quiet -Pattern '<PublishAot>true</PublishAot>' }
+            | Sort-Object FullName
+          )
+
+          # Fail explicitly instead of reporting a success when the projects are moved or renamed
+          if ($projects.Count -eq 0) {
+            throw "No test project sets PublishAot"
+          }
+
+          $extension = $(if ($IsWindows) { ".exe" } else { "" })
+          $failures = @()
+          foreach ($project in $projects) {
+            $frameworks = (dotnet msbuild $project.FullName -getProperty:TargetFrameworks).Split(';', [StringSplitOptions]::RemoveEmptyEntries)
+            if ($frameworks.Count -eq 0) {
+              throw "Cannot get the target frameworks of $($project.Name)"
+            }
+
+            foreach ($framework in $frameworks) {
+              $name = "$($project.BaseName) ($framework)"
+              $output = Join-Path $env:RUNNER_TEMP "aot" $project.BaseName $framework
+
+              Write-Host "::group::Publish $name"
+              dotnet publish $project.FullName --configuration Release --framework $framework --output $output
+              $published = $LASTEXITCODE -eq 0
+              Write-Host "::endgroup::"
+              if (-not $published) {
+                $failures += "${name}: publish failed"
+                continue
+              }
+
+              & (Join-Path $output "$($project.BaseName)$extension")
+              if ($LASTEXITCODE -ne 0) {
+                $failures += "${name}: tests failed with exit code $LASTEXITCODE"
+              }
+            }
+          }
+
+          if ($failures.Count -gt 0) {
+            $failures | ForEach-Object { Write-Host "::error::$_" }
+            exit 1
+          }
+
   merge_coverage:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.enable_code_coverage }}
     runs-on: ubuntu-26.04
@@ -475,7 +535,7 @@ jobs:
   final_status_check:
     runs-on: ubuntu-slim
     if: always()
-    needs: [ build_eng_scripts, validate_generated_files, run_analyzers, compute_test_matrix, build_and_test, test_trimming, test_trimming_wpf, merge_coverage ]
+    needs: [ build_eng_scripts, validate_generated_files, run_analyzers, compute_test_matrix, build_and_test, test_trimming, test_trimming_wpf, test_aot, merge_coverage ]
     steps:
       - name: Check previous jobs status
         env:

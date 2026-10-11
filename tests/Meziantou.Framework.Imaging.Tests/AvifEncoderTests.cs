@@ -388,14 +388,150 @@ public sealed class AvifEncoderTests
         Assert.Equal(new ReferenceAvif.ColorDescription(9, 16, 0, FullRange: true), ReferenceAvif.Parse(lossless).PrimaryItem!.Nclx);
     }
 
-    private static Image<Rgba32> CreateSmoothImage(int width, int height, bool transparent)
+    [Theory]
+    [InlineData(AvifCompression.Lossless, false, null)]
+    [InlineData(AvifCompression.Lossless, true, 3)]
+    [InlineData(AvifCompression.Lossy, true, 1)]
+    public void AnAnimationIsAnImageSequenceWithExactDurationsAndPlayCount(AvifCompression compression, bool transparent, int? totalPlays)
+    {
+        FrameDuration[] durations = [new(1, 30), new(1, 25), new(0, 1), new(7, 3), new(1, 25)];
+        using var image = CreateSmoothImage(40, 26, transparent);
+        for (var i = 1; i < durations.Length; i++)
+        {
+            using var frame = CreateSmoothImage(40, 26, transparent, phase: i * 5);
+            image.AppendFrame(frame.Frames[0]);
+        }
+
+        for (var i = 0; i < durations.Length; i++)
+        {
+            image.Frames[i].Metadata.Duration = durations[i];
+        }
+
+        image.Animation = new AnimationMetadata { TotalPlays = totalPlays };
+        var data = Encode(image, new AvifEncoder { Compression = compression, Quality = 95 });
+        var reader = ReferenceAvif.Parse(data);
+        Assert.Equal("avis", reader.MajorBrand);
+        Assert.True(reader.IsSequence);
+        Assert.Contains("avif", reader.CompatibleBrands);
+        Assert.Contains("msf1", reader.CompatibleBrands);
+        Assert.False(reader.IsFragmented);
+
+        // The boxes of the first image, the moov box in the room reserved for it, then the media data
+        Assert.Equal(["ftyp", "meta", "moov", "free", "mdat"], reader.TopLevelBoxes.Select(box => box.Type));
+        Assert.Equal(data.Length, reader.TopLevelBoxes[^1].Offset + reader.TopLevelBoxes[^1].Size);
+        Assert.True(reader.TopLevelBoxes[^1].HasLargeSize);
+
+        // The time scale is the smallest one that holds 1/30, 1/25, 0 and 7/3 exactly: 150
+        var track = reader.ColorTrack;
+        Assert.NotNull(track);
+        Assert.Equal(150u, track.Timescale);
+        Assert.Equal([5u, 6u, 0u, 350u, 6u], track.Samples.Select(sample => sample.Duration));
+        Assert.Equal("av01", track.SampleEntryType);
+        Assert.Equal((40, 26), (track.Width, track.Height));
+        Assert.Equal(totalPlays, track.TotalPlays);
+        Assert.Equal("co64", track.ChunkOffsetBox);
+        var alpha = reader.AlphaTrack;
+        if (transparent)
+        {
+            Assert.NotNull(alpha);
+            Assert.Equal(ReferenceAvif.AlphaAuxiliaryType, alpha.AuxiliaryType);
+            Assert.HasCount(durations.Length, alpha.Samples);
+            Assert.Equal(("auxl", 1u), (Assert.Single(alpha.References).Type, Assert.Single(Assert.Single(alpha.References).TrackIds)));
+        }
+        else
+        {
+            // An opaque image of a pixel format with alpha still has an alpha track in a sequence
+            Assert.NotNull(alpha);
+        }
+
+        // The samples are in the media data, one after the other, and the first image is also the primary item
+        long position = track.Samples[0].Offset - (alpha?.Samples[0].Size ?? 0);
+        for (var i = 0; i < durations.Length; i++)
+        {
+            if (alpha is not null)
+            {
+                Assert.Equal(position, alpha.Samples[i].Offset);
+                position += alpha.Samples[i].Size;
+            }
+
+            Assert.Equal(position, track.Samples[i].Offset);
+            position += track.Samples[i].Size;
+        }
+
+        Assert.Equal(data.Length, position);
+        Assert.Equal((track.Samples[0].Offset, (long)track.Samples[0].Size), Assert.Single(reader.PrimaryItem!.Extents));
+
+        using var decoded = Image.Load<Rgba32>(data);
+        Assert.HasCount(durations.Length, decoded.Frames);
+        Assert.Equal(totalPlays, decoded.Animation?.TotalPlays);
+        for (var i = 0; i < durations.Length; i++)
+        {
+            Assert.Equal(durations[i], decoded.Frames[i].Metadata.Duration);
+            var expected = GetBytes(image, i);
+            var actual = GetBytes(decoded, i);
+            if (compression is AvifCompression.Lossless)
+            {
+                Assert.Equal(expected, actual);
+            }
+            else
+            {
+                for (var j = 0; j < expected.Length; j++)
+                {
+                    Assert.True(Math.Abs(expected[j] - actual[j]) <= (j % 4 is 3 ? 0 : 24), $"frame {i}, byte {j}: {expected[j]} was decoded as {actual[j]}");
+                }
+            }
+        }
+    }
+
+    [Fact]
+    public void AnImageSequenceNeedsASeekableStreamAndTheNumberOfItsFrames()
+    {
+        using var image = CreateSmoothImage(8, 8, transparent: false);
+        using (var second = CreateSmoothImage(8, 8, transparent: false, phase: 3))
+        {
+            image.AppendFrame(second.Frames[0]);
+        }
+
+        using var stream = new TestOutputStream();
+        Assert.Equal("stream", Assert.Throws<ArgumentException>(() => image.Save(stream, new AvifEncoder())).ParamName);
+        Assert.Equal(0, stream.BytesWritten);
+
+        using var seekable = new MemoryStream();
+        Assert.Throws<ArgumentException>(() => Image.CreateWriter<Rgba32>(seekable, new ImageWriterOptions(8, 8) { Encoder = new AvifEncoder() }));
+    }
+
+    [Fact]
+    public void DurationsWithoutACommonTimeScaleNeedARoundingPolicy()
+    {
+        // 1/4294967291 and 1/4294967279 (two primes below 2^32) have no common time scale of 32 bits
+        using var image = CreateSmoothImage(8, 8, transparent: false);
+        using (var second = CreateSmoothImage(8, 8, transparent: false, phase: 3))
+        {
+            image.AppendFrame(second.Frames[0]);
+        }
+
+        image.Frames[0].Metadata.Duration = new FrameDuration(1, 4294967291);
+        image.Frames[1].Metadata.Duration = new FrameDuration(1073741820, 4294967279);
+        using var stream = new MemoryStream();
+        var exception = Assert.Throws<UnsupportedImageFeatureException>(() => image.Save(stream, new AvifEncoder()));
+        Assert.Equal("AVIF frame duration precision", exception.Feature);
+        Assert.Equal(0, stream.Length);
+
+        // Rounded to microseconds: 0 and 250,000 (0.25 s)
+        var data = Encode(image, new AvifEncoder { DurationRounding = FrameDurationRounding.RoundToNearest });
+        var track = ReferenceAvif.Parse(data).ColorTrack;
+        Assert.Equal(1_000_000u, track!.Timescale);
+        Assert.Equal([0u, 250_000u], track.Samples.Select(sample => sample.Duration));
+    }
+
+    private static Image<Rgba32> CreateSmoothImage(int width, int height, bool transparent, int phase = 0)
     {
         var pixels = new Rgba32[width * height];
         for (var y = 0; y < height; y++)
         {
             for (var x = 0; x < width; x++)
             {
-                var r = (byte)(128 + (100 * Math.Sin(x / 11.0)));
+                var r = (byte)(128 + (100 * Math.Sin((x + phase) / 11.0)));
                 var g = (byte)(128 + (100 * Math.Cos((x + y) / 17.0)));
                 var b = (byte)((x * 255 / width / 2) + (y * 255 / height / 2));
                 pixels[(y * width) + x] = new Rgba32(r, g, b, transparent ? (byte)((x * 7) ^ (y * 13)) : byte.MaxValue);

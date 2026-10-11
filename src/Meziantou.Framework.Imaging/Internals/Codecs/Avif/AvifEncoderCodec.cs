@@ -1,9 +1,11 @@
+using System.Buffers.Binary;
+using System.Numerics;
 using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.Metadata;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
-/// <summary>The AVIF encoder registration: still images, coded by the AV1 encoder of the library.</summary>
+/// <summary>The AVIF encoder registration: still images and image sequences, coded by the AV1 encoder of the library.</summary>
 internal sealed class AvifEncoderCodec : ImageEncoderCodec
 {
     public static AvifEncoderCodec Instance { get; } = new();
@@ -21,11 +23,20 @@ internal sealed class AvifEncoderCodec : ImageEncoderCodec
     /// color image, and the alpha plane of a pixel format that has alpha), which encode them a row of superblocks at a time.
     /// The file is written once both are coded, because the boxes that describe the image hold the size of what follows
     /// them: a still image goes to any stream, without seeking.
+    /// <para>
+    /// An image sequence writes the same boxes for its first image, room for its <c>moov</c> box, then the coded images as
+    /// they are encoded. The <c>moov</c> box, which holds the size and the duration of every image, and the size of the media
+    /// data are written at completion (<see cref="ImageOutputBuffer.AddPatch"/>; the destination is seekable). The session
+    /// keeps 24 bytes per image for them, rented before any output.
+    /// </para>
     /// </summary>
     private sealed class Session : ImageEncoderSession
     {
         private const int RowsPerCall = 32;
         private const int EmitPieceLength = 64 * 1024;
+
+        // The time scale of the durations that have no common time scale of 32 bits: microseconds
+        private const long RoundedTimescale = 1_000_000;
 
         private readonly AvifEncoder _encoder;
         private readonly PixelFormat _sourceFormat;
@@ -38,7 +49,20 @@ internal sealed class AvifEncoderCodec : ImageEncoderCodec
         private readonly byte[]? _exif;
         private readonly byte[]? _xmp;
         private readonly ExifOrientation _orientation;
+        private readonly bool _isSequence;
+        private readonly int _frameCount;
+        private readonly int _movieReservation;
         private readonly List<ReadOnlyMemory<byte>> _pieces = [];
+        private Av1PooledArray<int>? _sizes;
+        private Av1PooledArray<long>? _durations;
+        private Av1PooledArray<byte>? _keyFrames;
+        private PooledPayloadWriter? _movie;
+        private long _timescale = 1;
+        private int _frameIndex;
+        private int _movieOffset;
+        private int _mediaSizeOffset;
+        private long _firstSampleOffset;
+        private bool _completing;
         private Av1Encoder? _color;
         private Av1Encoder? _alpha;
         private PooledBuffer? _rows;
@@ -57,6 +81,8 @@ internal sealed class AvifEncoderCodec : ImageEncoderCodec
             _sourceFormat = options.PixelFormat;
             _width = options.CanvasSize.Width;
             _height = options.CanvasSize.Height;
+            _isSequence = options.Capabilities.IsAnimated;
+            _frameCount = _isSequence ? options.ExpectedFrameCount ?? throw new ArgumentException("An AVIF image sequence requires the number of its images.", nameof(options)) : 1;
             var bitDepth = ResolveBitDepth(_encoder, _sourceFormat);
             var monochrome = PixelFormats.IsGrayscale(_sourceFormat);
             var deep = PixelFormats.GetBitsPerComponent(_sourceFormat) > 8;
@@ -98,17 +124,25 @@ internal sealed class AvifEncoderCodec : ImageEncoderCodec
             _exif = metadata.Exif;
             _xmp = metadata.XmpProfile?.Data.ToArray();
             _orientation = metadata.Orientation;
+            if (_isSequence && _orientation is not ExifOrientation.TopLeft)
+            {
+                // The transformations are properties of an item: a track has none
+                if (_encoder.MetadataHandling is MetadataHandling.Strict)
+                    throw new UnsupportedImageFeatureException("The Avif format cannot store the orientation of an image sequence. Apply it with AutoOrient, remove it, or set the encoder's MetadataHandling to DiscardUnsupported or Strip.", ImageFormat.Avif, "Metadata: orientation of an image sequence");
+
+                _orientation = ExifOrientation.TopLeft;
+            }
 
             // Every buffer whose size is known is rented before any output, so that a limit failure leaves no output
             try
             {
                 var scope = options.Scope;
-                var settings = new Av1EncoderSettings(_width, _height, bitDepth, monochrome, subsamplingX, subsamplingY, primaries, transfer, matrix, fullRange, ChromaSamplePosition: 0, StillPicture: true, lossless, _encoder.Quality, _encoder.Effort);
+                var settings = new Av1EncoderSettings(_width, _height, bitDepth, monochrome, subsamplingX, subsamplingY, primaries, transfer, matrix, fullRange, ChromaSamplePosition: 0, StillPicture: !_isSequence, lossless, _encoder.Quality, _encoder.Effort);
                 _color = new Av1Encoder(scope, settings);
                 if (PixelFormats.HasAlpha(_sourceFormat))
                 {
                     // The alpha plane: a monochrome image in full range, always lossless
-                    var alphaSettings = new Av1EncoderSettings(_width, _height, bitDepth, Monochrome: true, SubsamplingX: 1, SubsamplingY: 1, Av1Constants.CpUnspecified, Av1Constants.TcUnspecified, Av1Constants.McUnspecified, FullRange: true, ChromaSamplePosition: 0, StillPicture: true, Lossless: true, Quality: 100, _encoder.Effort);
+                    var alphaSettings = new Av1EncoderSettings(_width, _height, bitDepth, Monochrome: true, SubsamplingX: 1, SubsamplingY: 1, Av1Constants.CpUnspecified, Av1Constants.TcUnspecified, Av1Constants.McUnspecified, FullRange: true, ChromaSamplePosition: 0, StillPicture: !_isSequence, Lossless: true, Quality: 100, _encoder.Effort);
                     _alpha = new Av1Encoder(scope, alphaSettings);
                 }
 
@@ -119,6 +153,18 @@ internal sealed class AvifEncoderCodec : ImageEncoderCodec
 
                 _rows = scope.Rent((int)rowBytes, AllocationKind.Temporary, clear: false);
                 _prefix = new PooledPayloadWriter(scope);
+                if (_isSequence)
+                {
+                    // The size of the color image and of the alpha plane, the duration and the kind of each image; then
+                    // the room of the largest moov box that this number of images can need
+                    _sizes = Av1PooledArray<int>.Rent(scope, 2L * _frameCount, clear: true, AllocationKind.Temporary);
+                    _durations = Av1PooledArray<long>.Rent(scope, 2L * _frameCount, clear: true, AllocationKind.Temporary);
+                    _keyFrames = Av1PooledArray<byte>.Rent(scope, _frameCount, clear: true, AllocationKind.Temporary);
+                    _movie = new PooledPayloadWriter(scope);
+                    WriteMovie(reservation: 0, worstCase: true);
+                    _movieReservation = checked(_movie.Length + 8);
+                    _movie.Reset();
+                }
             }
             catch
             {
@@ -136,13 +182,47 @@ internal sealed class AvifEncoderCodec : ImageEncoderCodec
             Emit,
         }
 
+        public override void ValidateFrame(ImageFrame frame, bool isPoster)
+        {
+            ArgumentNullException.ThrowIfNull(frame);
+            if (!_isSequence)
+                return;
+
+            // The time scale of the sequence is the smallest one that holds every duration seen so far exactly. A frame
+            // may be validated more than once: the time scale only grows, and only with a frame that is accepted
+            var duration = frame.Metadata.Duration;
+            var timescale = LeastCommonMultiple(_timescale, duration.Denominator);
+            if (timescale > uint.MaxValue)
+            {
+                if (_encoder.DurationRounding is FrameDurationRounding.RequireExact)
+                    throw new UnsupportedImageFeatureException($"The duration {duration} cannot be stored exactly with the other durations of the AVIF image sequence: their common time scale exceeds 32 bits. Set AvifEncoder.DurationRounding to RoundToNearest to round the durations to microseconds.", ImageFormat.Avif, "AVIF frame duration precision");
+
+                timescale = RoundedTimescale;
+            }
+
+            if ((Int128)duration.Numerator * timescale > (Int128)uint.MaxValue * duration.Denominator)
+                throw new UnsupportedImageFeatureException($"The duration {duration} exceeds what an AVIF image sequence stores for an image with the time scale of its durations.", ImageFormat.Avif, "AVIF frame duration range");
+
+            _timescale = timescale;
+        }
+
         public override void BeginPosterFrame(ImageFrame frame) => throw new InvalidOperationException("AVIF output has no poster frame.");
 
         public override void BeginFrame(ImageFrame frame, int index)
         {
             ArgumentNullException.ThrowIfNull(frame);
-            if (index is not 0)
+            if (!_isSequence && index is not 0)
                 throw new InvalidOperationException("A still AVIF image stores a single frame.");
+
+            if (_isSequence)
+            {
+                if (index != _frameIndex || index >= _frameCount)
+                    throw new InvalidOperationException("The images of an AVIF image sequence are written in order, up to the announced number of images.");
+
+                var duration = frame.Metadata.Duration;
+                _durations!.Span[2 * index] = duration.Numerator;
+                _durations.Span[(2 * index) + 1] = duration.Denominator;
+            }
 
             _frame = frame;
             _row = 0;
@@ -152,7 +232,11 @@ internal sealed class AvifEncoderCodec : ImageEncoderCodec
 
         public override void BeginComplete(int frameCount)
         {
-            // A still image is complete once its frame is written
+            // A still image is complete once its frame is written; an image sequence still has its moov box to write
+            if (_isSequence && _frameIndex != _frameCount)
+                throw new InvalidOperationException("The AVIF image sequence does not have the announced number of images.");
+
+            _completing = true;
             _pieces.Clear();
             _pieceIndex = 0;
             _pieceOffset = 0;
@@ -170,7 +254,8 @@ internal sealed class AvifEncoderCodec : ImageEncoderCodec
                 case Step.EncodeColor:
                     if (_color!.Encode(CancellationToken))
                     {
-                        if (_alpha is not null && _isTransparent)
+                        // The alpha track of a sequence has every image, whether it is opaque or not
+                        if (_alpha is not null && (_isTransparent || _isSequence))
                         {
                             _alpha.BeginFrame();
                             _step = Step.EncodeAlpha;
@@ -188,7 +273,13 @@ internal sealed class AvifEncoderCodec : ImageEncoderCodec
 
                     return false;
                 case Step.Emit:
-                    return Emit(output);
+                    if (!Emit(output))
+                        return false;
+
+                    if (_completing && _isSequence)
+                        CompleteSequence(output);
+
+                    return true;
                 default:
                     throw new InvalidOperationException("No AVIF operation was begun.");
             }
@@ -206,6 +297,14 @@ internal sealed class AvifEncoderCodec : ImageEncoderCodec
                 _rows = null;
                 _prefix?.Dispose();
                 _prefix = null;
+                _movie?.Dispose();
+                _movie = null;
+                _sizes?.Dispose();
+                _sizes = null;
+                _durations?.Dispose();
+                _durations = null;
+                _keyFrames?.Dispose();
+                _keyFrames = null;
                 _pieces.Clear();
                 _frame = null;
             }
@@ -282,39 +381,147 @@ internal sealed class AvifEncoderCodec : ImageEncoderCodec
             return scratch;
         }
 
-        // Writes the boxes that precede the coded images, now that their sizes are known
+        // Writes the boxes that precede the coded images, now that their sizes are known; the following images of a
+        // sequence are only their samples
         private void Assemble()
         {
             var color = _color!;
-            var alpha = _isTransparent ? _alpha : null;
+            var alpha = _isTransparent || _isSequence ? _alpha : null;
             var colorPayload = color.Payload;
             var alphaPayload = alpha?.Payload ?? default;
-            var prefix = _prefix!;
-            prefix.Reset();
-            AvifFileWriter.WriteStillImagePrefix(prefix, new AvifFileWriter.StillImage
-            {
-                Width = _width,
-                Height = _height,
-                Color = color.Sequence,
-                ColorLength = colorPayload.Length,
-                Alpha = alpha?.Sequence,
-                AlphaLength = alphaPayload.Length,
-                ColorDescription = _colorDescription,
-                IccProfile = _icc,
-                Exif = _exif,
-                Xmp = _xmp,
-                Orientation = _orientation,
-            });
-
             _pieces.Clear();
-            _pieces.Add(prefix.WrittenMemory);
+            if (_frameIndex is 0)
+            {
+                var prefix = _prefix!;
+                prefix.Reset();
+                (_movieOffset, _mediaSizeOffset) = AvifFileWriter.WritePrefix(
+                    prefix,
+                    new AvifFileWriter.StillImage
+                    {
+                        Width = _width,
+                        Height = _height,
+                        Color = color.Sequence,
+                        ColorLength = colorPayload.Length,
+                        Alpha = alpha?.Sequence,
+                        AlphaLength = alphaPayload.Length,
+                        ColorDescription = _colorDescription,
+                        IccProfile = _icc,
+                        Exif = _exif,
+                        Xmp = _xmp,
+                        Orientation = _orientation,
+                    },
+                    _isSequence ? _movieReservation : -1);
+
+                _firstSampleOffset = prefix.Length;
+                _pieces.Add(prefix.WrittenMemory);
+            }
+
+            if (_isSequence)
+            {
+                _sizes!.Span[2 * _frameIndex] = colorPayload.Length;
+                _sizes.Span[(2 * _frameIndex) + 1] = alphaPayload.Length;
+                _keyFrames!.Span[_frameIndex] = (byte)(color.IsKeyFrame ? 1 : 0);
+            }
+
             if (alpha is not null)
                 _pieces.Add(alphaPayload);
 
             _pieces.Add(colorPayload);
+            _frameIndex++;
             _pieceIndex = 0;
             _pieceOffset = 0;
             _step = Step.Emit;
+        }
+
+        // The moov box takes the place of the bytes that were reserved for it, and the media data get their size
+        private void CompleteSequence(ImageOutputBuffer output)
+        {
+            var movie = _movie!;
+            movie.Reset();
+            WriteMovie(_movieReservation, worstCase: false);
+            output.AddPatch(_movieOffset, movie.WrittenSpan);
+            Span<byte> size = stackalloc byte[8];
+            BinaryPrimitives.WriteUInt64BigEndian(size, (ulong)(output.TotalBytes - (_mediaSizeOffset - 8)));
+            output.AddPatch(_mediaSizeOffset, size);
+            _completing = false;
+        }
+
+        private void WriteMovie(int reservation, bool worstCase)
+        {
+            // The sizes and the durations in the layout of the tables, for the images written so far
+            var count = worstCase ? _frameCount : _frameIndex;
+            var scope = Options.Scope;
+            using var tables = Av1PooledArray<int>.Rent(scope, 2L * count, clear: true, AllocationKind.Temporary);
+            using var deltaTable = Av1PooledArray<uint>.Rent(scope, count, clear: true, AllocationKind.Temporary);
+            var sizes = _sizes!.Span;
+            var durations = _durations!.Span;
+            var colorSizes = tables.Span[..count];
+            var alphaSizes = _alpha is null ? default : tables.Span[count..];
+            var deltas = deltaTable.Span;
+            var timescale = worstCase ? 1 : GetTimescale();
+            for (var i = 0; i < count; i++)
+            {
+                colorSizes[i] = sizes[2 * i];
+                if (_alpha is not null)
+                    alphaSizes[i] = sizes[(2 * i) + 1];
+
+                if (!worstCase)
+                    deltas[i] = GetSampleDelta(durations[2 * i], durations[(2 * i) + 1], timescale);
+            }
+
+            AvifFileWriter.WriteMovie(
+                _movie!,
+                new AvifFileWriter.Movie
+                {
+                    Width = _width,
+                    Height = _height,
+                    Color = _color!.Sequence,
+                    Alpha = _alpha?.Sequence,
+                    ColorDescription = _colorDescription,
+                    IccProfile = _icc,
+                    Timescale = (uint)timescale,
+                    TotalPlays = worstCase ? null : Options.Animation?.TotalPlays,
+                },
+                colorSizes,
+                alphaSizes,
+                deltas,
+                _keyFrames!.Span[..count],
+                _firstSampleOffset,
+                reservation,
+                worstCase);
+        }
+
+        // The smallest time scale that holds the duration of every image exactly, or microseconds when it has more than
+        // 32 bits (which ValidateFrame only accepts when the durations may be rounded)
+        private long GetTimescale()
+        {
+            long timescale = 1;
+            var durations = _durations!.Span;
+            for (var i = 0; i < _frameIndex; i++)
+            {
+                timescale = LeastCommonMultiple(timescale, durations[(2 * i) + 1]);
+                if (timescale > uint.MaxValue)
+                    return RoundedTimescale;
+            }
+
+            return timescale;
+        }
+
+        private static uint GetSampleDelta(long numerator, long denominator, long timescale)
+        {
+            var delta = (((Int128)numerator * timescale * 2) + denominator) / ((Int128)denominator * 2);
+            if (delta > uint.MaxValue)
+                throw new UnsupportedImageFeatureException("A duration exceeds what an AVIF image sequence stores for an image with the time scale of its durations.", ImageFormat.Avif, "AVIF frame duration range");
+
+            return (uint)delta;
+        }
+
+        // Returns a value above 32 bits when the multiple does not fit in 32 bits
+        private static long LeastCommonMultiple(long a, long b)
+        {
+            var gcd = (long)BigInteger.GreatestCommonDivisor(a, b);
+            var multiple = (Int128)a / gcd * b;
+            return multiple > uint.MaxValue ? long.MaxValue : (long)multiple;
         }
 
         // Bounded pieces: the writer flushes between calls

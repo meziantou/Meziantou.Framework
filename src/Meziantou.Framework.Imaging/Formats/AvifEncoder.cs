@@ -15,6 +15,13 @@ namespace Meziantou.Framework.Imaging.Formats;
 /// not opaque, losslessly, as an auxiliary image.
 /// </para>
 /// <para>
+/// An image with several frames is written as an image sequence: every frame is a full image, with its exact duration, and
+/// the play count of the animation. A sequence needs a seekable destination and the number of its frames
+/// (<see cref="ImageWriterOptions.ExpectedFrameCount"/> for a writer), because the box that describes the frames precedes
+/// them and is written last. A still image goes to any stream. An image sequence of one image cannot store animation
+/// settings: it is read back as a still image.
+/// </para>
+/// <para>
 /// Metadata (subject to <see cref="ImageEncoder.MetadataHandling"/>): the CICP color description (<c>colr</c> box, with the
 /// matrix coefficients and the range that the encoder used), the ICC profile, EXIF and XMP items, and the orientation
 /// (<c>irot</c> and <c>imir</c> properties). AVIF has no text or resolution field.
@@ -118,4 +125,23 @@ public sealed class AvifEncoder : ImageEncoder
     /// </summary>
     /// <remarks>Setting it usually makes the output smaller; the visible pixels and every alpha value are unchanged.</remarks>
     public bool ClearTransparentColors { get; init; }
+
+    /// <summary>
+    /// Gets how the durations of the images of a sequence are stored. Defaults to
+    /// <see cref="FrameDurationRounding.RequireExact"/>: the time scale of the sequence is the smallest one that holds every
+    /// duration exactly, and a sequence whose durations have no common time scale of 32 bits is an error.
+    /// <see cref="FrameDurationRounding.RoundToNearest"/> then rounds the durations to microseconds.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">The value is not a defined <see cref="FrameDurationRounding"/>.</exception>
+    public FrameDurationRounding DurationRounding
+    {
+        get;
+        init
+        {
+            if (!Enum.IsDefined(value))
+                throw new ArgumentOutOfRangeException(nameof(value), value, "The duration rounding is not valid.");
+
+            field = value;
+        }
+    }
 }

@@ -56,6 +56,13 @@ internal readonly struct AvifBoxWriter
         _output.Write(bytes);
     }
 
+    public void WriteUInt64(ulong value)
+    {
+        Span<byte> bytes = stackalloc byte[8];
+        BinaryPrimitives.WriteUInt64BigEndian(bytes, value);
+        _output.Write(bytes);
+    }
+
     public void WriteBytes(ReadOnlySpan<byte> value) => _output.Write(value);
 
     /// <summary>Writes a string and the zero byte that ends it.</summary>

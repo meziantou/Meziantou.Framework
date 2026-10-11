@@ -37,6 +37,7 @@ internal sealed class Av1Encoder : IDisposable
     private Phase _phase = Phase.Idle;
     private int _tile;
     private int _row;
+    private int _frameIndex = -1;
 
     private enum Phase
     {
@@ -58,9 +59,6 @@ internal sealed class Av1Encoder : IDisposable
         ArgumentOutOfRangeException.ThrowIfGreaterThan(settings.Height, 65536);
         ArgumentOutOfRangeException.ThrowIfLessThan(settings.Quality, 0);
         ArgumentOutOfRangeException.ThrowIfGreaterThan(settings.Quality, 100);
-        if (!settings.StillPicture)
-            throw new NotSupportedException("AV1 sequences are not encoded yet.");
-
         _scope = scope;
         _settings = settings;
         _decisions = Av1EncoderDecisions.Create(settings.Effort);
@@ -121,6 +119,12 @@ internal sealed class Av1Encoder : IDisposable
     /// <summary>Gets the units of the last encoded frame; valid until the next frame starts.</summary>
     public ReadOnlyMemory<byte> Payload => _phase is Phase.Done ? _payload.WrittenMemory : throw new InvalidOperationException("No frame is encoded.");
 
+    /// <summary>
+    /// Gets whether the last encoded frame is a key frame: a frame that a decoder can start from, which is a sync sample of
+    /// an image sequence.
+    /// </summary>
+    public bool IsKeyFrame { get; private set; }
+
     /// <summary>Gets the last encoded frame as a decoder reconstructs it; valid until the next frame starts.</summary>
     public Av1FrameBuffer Reconstruction => _reconstruction ?? throw new InvalidOperationException("No frame is encoded.");
 
@@ -136,6 +140,10 @@ internal sealed class Av1Encoder : IDisposable
         if (_phase is not (Phase.Idle or Phase.Done))
             throw new InvalidOperationException("The previous frame is not complete.");
 
+        if (_settings.StillPicture && _frameIndex >= 0)
+            throw new InvalidOperationException("A still picture has a single frame.");
+
+        _frameIndex++;
         _reconstruction?.Release();
         _reconstruction = null;
         for (var plane = 0; plane < _sequence.PlaneCount; plane++)
@@ -215,8 +223,10 @@ internal sealed class Av1Encoder : IDisposable
         var limits = Av1FrameHeaderParser.ComputeTileLimits(_sequence.Use128x128Superblock, 2 * ((_settings.Width + 7) >> 3), 2 * ((_settings.Height + 7) >> 3));
         var syntax = new Av1FrameHeader
         {
+            // Every frame is a key frame until the inter prediction of the following frames exists
             FrameType = Av1Constants.KeyFrame,
             ShowFrame = true,
+            OrderHint = _sequence.EnableOrderHint ? _frameIndex & ((1 << _sequence.OrderHintBits) - 1) : 0,
             TileColsLog2 = limits.MinLog2TileCols,
             TileRowsLog2 = Math.Max(limits.MinLog2Tiles - limits.MinLog2TileCols, 0),
             TileSizeBytes = 4,
@@ -228,6 +238,7 @@ internal sealed class Av1Encoder : IDisposable
         };
 
         _syntax = syntax;
+        IsKeyFrame = syntax.FrameType is Av1Constants.KeyFrame;
         var header = ParseFrameHeader(syntax);
         _coding.BeginFrame(_sequence, header);
         if (_tileSizes.Length < header.TileCount)
@@ -337,8 +348,11 @@ internal sealed class Av1Encoder : IDisposable
             offset += _tileSizes[i];
         }
 
+        // A key frame starts with the sequence header, so that a decoder can start from it
         _payload.Reset();
-        Av1ObuWriter.Write(_payload, Av1Constants.ObuSequenceHeader, _sequenceHeader);
+        if (IsKeyFrame)
+            Av1ObuWriter.Write(_payload, Av1Constants.ObuSequenceHeader, _sequenceHeader);
+
         Av1ObuWriter.Write(_payload, Av1Constants.ObuFrame, _frameData.WrittenSpan);
     }
 }

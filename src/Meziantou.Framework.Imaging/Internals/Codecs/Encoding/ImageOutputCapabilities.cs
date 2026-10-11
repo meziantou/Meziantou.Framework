@@ -152,7 +152,9 @@ internal sealed class ImageOutputCapabilities
         PnmEncoder => new ImageOutputCapabilities(ImageFormat.Pnm, isAnimated: false, requiresFrameCount: false, maxFrameCount: 1, supportsPosterFrame: false, maxDimension: int.MaxValue),
         TiffEncoder => new ImageOutputCapabilities(ImageFormat.Tiff, isAnimated: false, requiresFrameCount: false, maxFrameCount: 1, supportsPosterFrame: false, maxDimension: int.MaxValue, requiresSeekableOutput: true),
         IcoEncoder ico => new ImageOutputCapabilities(ico.Format, isAnimated: false, requiresFrameCount: false, maxFrameCount: 1, supportsPosterFrame: false, maxDimension: IcoEncoder.MaxDimension),
-        AvifEncoder => new ImageOutputCapabilities(ImageFormat.Avif, isAnimated: false, requiresFrameCount: false, maxFrameCount: 1, supportsPosterFrame: false, maxDimension: AvifMaxDimension),
+        // An image sequence stores the size of its images in 16-bit fields, and its index after the images: the box is
+        // written last, in the room that the number of images gives it
+        AvifEncoder => new ImageOutputCapabilities(ImageFormat.Avif, isAnimated: frameCount != 1, requiresFrameCount: true, maxFrameCount: null, supportsPosterFrame: false, maxDimension: frameCount != 1 ? ushort.MaxValue : AvifMaxDimension, requiresSeekableOutput: frameCount != 1),
         AniEncoder => new ImageOutputCapabilities(ImageFormat.Ani, isAnimated: true, requiresFrameCount: false, maxFrameCount: null, supportsPosterFrame: false, maxDimension: AniEncoder.MaxDimension, requiresSeekableOutput: true),
         _ => throw new ArgumentException($"The encoder {encoder.GetType().Name} is not supported.", nameof(encoder)),
     };

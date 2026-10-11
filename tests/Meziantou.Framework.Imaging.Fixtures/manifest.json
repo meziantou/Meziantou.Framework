@@ -31159,34 +31159,6 @@
       "notes": "The header width is 0."
     },
     {
-      "id": "invalid/tga/colormap-16bit-indexes",
-      "kind": "unsupported",
-      "format": "tga",
-      "input": {
-        "path": "invalid/tga/colormap-16bit-indexes.tga",
-        "sha256": "18b0a7c6b7e0d7948d22cc642a4671fba964b20cfa82b7c08b0a7642acd424f8",
-        "role": "encoded"
-      },
-      "provenance": {
-        "origin": "hand-authored",
-        "license": "CC0-1.0",
-        "author": "Meziantou.Framework.Imaging contributors",
-        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/TgaCorpus.cs (BuildErrors)",
-        "tools": [
-          ".NET 10.0"
-        ]
-      },
-      "expectedError": {
-        "exception": "UnsupportedImageFeatureException",
-        "format": "Tga",
-        "feature": "Color map: 16-bit indexes"
-      },
-      "features": [
-        "tga.unsupported=colormap-16bit"
-      ],
-      "notes": "16-bit color-map indexes are recognized and rejected; this version decodes 8-bit indexes."
-    },
-    {
       "id": "invalid/tga/colormap-index-out-of-range",
       "kind": "invalid",
       "format": "tga",
@@ -31209,6 +31181,30 @@
         "format": "Tga"
       },
       "notes": "A pixel uses the color-map index 1, below the first stored entry (the map starts at index 2 and holds five entries)."
+    },
+    {
+      "id": "invalid/tga/colormap16-index-out-of-range",
+      "kind": "invalid",
+      "format": "tga",
+      "input": {
+        "path": "invalid/tga/colormap16-index-out-of-range.tga",
+        "sha256": "2af9a27dd0e3c6e322718cbf416f1c988bd91a00c209387b677b111908a0e696",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/TgaCorpus.cs (BuildErrors)",
+        "tools": [
+          ".NET 10.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "InvalidImageContentException",
+        "format": "Tga"
+      },
+      "notes": "A pixel uses the 16-bit color-map index 550, one past the last stored entry (the map starts at index 250 and holds 300 entries)."
     },
     {
       "id": "invalid/tga/extension-offset-past-footer",
@@ -31285,34 +31281,6 @@
         "format": "Tga"
       },
       "notes": "The extension area declares 494 bytes, one fewer than the TGA 2.0 extension area: it cannot hold the attributes type, its last byte."
-    },
-    {
-      "id": "invalid/tga/grayscale-16bit",
-      "kind": "unsupported",
-      "format": "tga",
-      "input": {
-        "path": "invalid/tga/grayscale-16bit.tga",
-        "sha256": "2e903dcb20442f337fee95e581ebf85f459c988c93680e89c888593691feec46",
-        "role": "encoded"
-      },
-      "provenance": {
-        "origin": "hand-authored",
-        "license": "CC0-1.0",
-        "author": "Meziantou.Framework.Imaging contributors",
-        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/TgaCorpus.cs (BuildErrors)",
-        "tools": [
-          ".NET 10.0"
-        ]
-      },
-      "expectedError": {
-        "exception": "UnsupportedImageFeatureException",
-        "format": "Tga",
-        "feature": "Grayscale: 16-bit samples"
-      },
-      "features": [
-        "tga.unsupported=grayscale-16bit"
-      ],
-      "notes": "16-bit grayscale samples are recognized and rejected; this version decodes 8-bit grayscale."
     },
     {
       "id": "invalid/tga/packet-past-end",
@@ -49499,6 +49467,110 @@
       }
     },
     {
+      "id": "tga/colormap16-indexes",
+      "kind": "valid",
+      "format": "tga",
+      "input": {
+        "path": "tga/colormap16-indexes.tga",
+        "sha256": "ac55ac9e140125f64082fdca13b6ccaf7d61ec3811a1fe634f366c0c9e1fb59b",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/TgaCorpus.cs (BuildTga)",
+        "tools": [
+          "ffmpeg 9.0.2 (cross-check only)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "width": 5,
+          "height": 3,
+          "pixelDepth": 16,
+          "colorMapFirstEntry": 250,
+          "colorMapLength": 300,
+          "colorMapEntry": "(i * 7 + 3, i * 13 + 5, i * 29 + 11) % 256"
+        }
+      },
+      "features": [
+        "tga.alphaBits=0",
+        "tga.colorMap.offset",
+        "tga.colorMap=250/300/24",
+        "tga.columnOrder=left-to-right",
+        "tga.depth=16",
+        "tga.imageType=1",
+        "tga.indexBits=16",
+        "tga.rowOrder=bottom-up",
+        "tga.width=odd"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "Color-mapped image with 16-bit little-endian indexes: the map starts at index 250 and holds 300 24-bit BGR entries (indexes 250 to 549), so the image uses indexes on both sides of 255, the first and the last entry included.",
+        "crossChecks": [
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec tga decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt rgba -",
+            "result": "differs",
+            "notes": "FFmpeg decodes every 16-bit TGA pixel as 5-5-5 true color, whatever the image type: it does not implement 16-bit color-map indexes (Pillow 11.3.0 and Apple ImageIO reject the file). The reference is the literal grid and the color map, read as the specification defines them."
+          }
+        ]
+      },
+      "expected": {
+        "width": 5,
+        "height": 3,
+        "pixelFormat": "Rgb24",
+        "colorModel": "Indexed",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "tga/colormap16-indexes.frame-0.rgba8.raw",
+                "sha256": "b817731f276e076f3f1ebd77d757d4c693516ef538470f0260eb428c03d11f72",
+                "layout": "rgba8",
+                "width": 5,
+                "height": 3,
+                "rowBytes": 20,
+                "byteLength": 60,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "tga/colormap16-indexes.frame-0.rgb8.raw",
+                "sha256": "06c5690928a6caf9ae815b2b7a6f690ed506f43430b3358c7afeae06820ad493",
+                "layout": "rgb8",
+                "width": 5,
+                "height": 3,
+                "rowBytes": 15,
+                "byteLength": 45,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
       "id": "tga/colormap8-offset",
       "kind": "valid",
       "format": "tga",
@@ -49529,6 +49601,7 @@
         "tga.columnOrder=left-to-right",
         "tga.depth=8",
         "tga.imageType=1",
+        "tga.indexBits=8",
         "tga.rowOrder=bottom-up",
         "tga.width=odd"
       ],
@@ -49629,6 +49702,7 @@
         "tga.columnOrder=left-to-right",
         "tga.depth=8",
         "tga.imageType=1",
+        "tga.indexBits=8",
         "tga.rowOrder=bottom-up",
         "tga.width=odd"
       ],
@@ -50175,6 +50249,198 @@
       }
     },
     {
+      "id": "tga/grayscale16-alpha",
+      "kind": "valid",
+      "format": "tga",
+      "input": {
+        "path": "tga/grayscale16-alpha.tga",
+        "sha256": "804eb29b91051733a14e60d8c3a87fcf059456b858f91d77a0b61b689a830f6c",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/TgaCorpus.cs (BuildTga)",
+        "tools": [
+          "ffmpeg 9.0.2 (cross-check only)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "width": 5,
+          "height": 3,
+          "pixelDepth": 16,
+          "alphaBits": 8
+        }
+      },
+      "features": [
+        "tga.alphaBits=8",
+        "tga.columnOrder=left-to-right",
+        "tga.depth=16",
+        "tga.grayAttribute=alpha",
+        "tga.imageType=3",
+        "tga.rowOrder=bottom-up",
+        "tga.width=odd"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "16-bit grayscale with eight declared alpha bits: each pixel is an 8-bit gray sample followed by an 8-bit alpha sample. The library has no gray-with-alpha pixel format, so the gray sample is replicated into Rgba32; fully transparent pixels keep their gray value.",
+        "crossChecks": [
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec tga decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt rgba -",
+            "maxAbsoluteError": 255,
+            "meanAbsoluteError": 64.7556,
+            "result": "differs",
+            "notes": "FFmpeg decodes every 16-bit TGA pixel as 5-5-5 true color, whatever the image type: it does not implement 16-bit grayscale. The reference is the literal grid. Pillow 11.3.0 and Apple ImageIO, run by hand when the fixture was authored, both read the pixel as a gray byte followed by an alpha byte."
+          }
+        ]
+      },
+      "expected": {
+        "width": 5,
+        "height": 3,
+        "pixelFormat": "Rgba32",
+        "colorModel": "GrayscaleAlpha",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "tga/grayscale16-alpha.frame-0.rgba8.raw",
+                "sha256": "7f85051868f0a20094cf4a70473b90891a3a1e885fcb1dccfbc1a78e448b8b14",
+                "layout": "rgba8",
+                "width": 5,
+                "height": 3,
+                "rowBytes": 20,
+                "byteLength": 60,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "tga/grayscale16-unspecified-attribute",
+      "kind": "valid",
+      "format": "tga",
+      "input": {
+        "path": "tga/grayscale16-unspecified-attribute.tga",
+        "sha256": "c606a5fec81ef58c679ae73ab6932a6c6f057d5fea517936251c47efc6949e8c",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/TgaCorpus.cs (BuildTga)",
+        "tools": [
+          "ffmpeg 9.0.2 (cross-check only)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "width": 5,
+          "height": 3,
+          "pixelDepth": 16,
+          "alphaBits": 0
+        }
+      },
+      "features": [
+        "tga.alphaBits=0",
+        "tga.columnOrder=left-to-right",
+        "tga.depth=16",
+        "tga.grayAttribute=unspecified",
+        "tga.imageType=3",
+        "tga.rowOrder=bottom-up",
+        "tga.width=odd"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "The same 16-bit payload with zero declared alpha bits: the second byte of each pixel is an unspecified attribute and is discarded, so the image is the opaque 8-bit gray samples. The two bytes are never read as a 16-bit luminance.",
+        "crossChecks": [
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec tga decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt rgba -",
+            "maxAbsoluteError": 248,
+            "meanAbsoluteError": 64.7556,
+            "result": "differs",
+            "notes": "FFmpeg decodes every 16-bit TGA pixel as 5-5-5 true color, whatever the image type: it does not implement 16-bit grayscale. The reference is the literal grid. Pillow 11.3.0 and Apple ImageIO, run by hand when the fixture was authored, both read the pixel as a gray byte followed by an alpha byte. Both read it whatever the image descriptor declares; the specification makes the second byte an attribute whose meaning the descriptor defines, so the reference is opaque, as for a 32-bit payload without declared alpha bits."
+          }
+        ]
+      },
+      "expected": {
+        "width": 5,
+        "height": 3,
+        "pixelFormat": "Gray8",
+        "colorModel": "Grayscale",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "tga/grayscale16-unspecified-attribute.frame-0.rgba8.raw",
+                "sha256": "38992633fcfc7c0127832aba23f88b0dc8da407dc177db6c9f2e477ab8c57f32",
+                "layout": "rgba8",
+                "width": 5,
+                "height": 3,
+                "rowBytes": 20,
+                "byteLength": 60,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "tga/grayscale16-unspecified-attribute.frame-0.gray8.raw",
+                "sha256": "7e535ef58bab401c075cf59e69bc9f953578a43d4145022d7689e13629c69588",
+                "layout": "gray8",
+                "width": 5,
+                "height": 3,
+                "rowBytes": 5,
+                "byteLength": 15,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
       "id": "tga/grayscale8",
       "kind": "valid",
       "format": "tga",
@@ -50363,6 +50629,192 @@
                 "rowBytes": 15,
                 "byteLength": 45,
                 "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "tga/rle-colormap16-indexes",
+      "kind": "valid",
+      "format": "tga",
+      "input": {
+        "path": "tga/rle-colormap16-indexes.tga",
+        "sha256": "e815ba64260b941a151fb20bd35d413fd1ca44bdedf0cb4d860dbca6d19a76fc",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/TgaCorpus.cs (BuildTga)",
+        "tools": [
+          "ffmpeg 9.0.2 (cross-check only)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "width": 8,
+          "height": 6,
+          "imageType": 9,
+          "pixelDepth": 16,
+          "colorMapLength": 260,
+          "colorMapEntry": "(i * 5, i * 11 + 1, i * 17 + 2, i * 3 + 7) % 256"
+        }
+      },
+      "features": [
+        "tga.alphaBits=8",
+        "tga.colorMap=0/260/32",
+        "tga.columnOrder=left-to-right",
+        "tga.depth=16",
+        "tga.imageType=9",
+        "tga.indexBits=16",
+        "tga.rle.crossesRow",
+        "tga.rle.raw",
+        "tga.rle.run",
+        "tga.rowOrder=top-down"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "Run-length encoded color-mapped image (image type 9) with 16-bit little-endian indexes into 260 32-bit BGRA entries and eight declared alpha bits: the packets repeat or list two-byte indexes, and the indexes 256 and 1 (the same two bytes in opposite orders) select different entries.",
+        "crossChecks": [
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec tga decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt rgba -",
+            "result": "differs",
+            "notes": "FFmpeg decodes every 16-bit TGA pixel as 5-5-5 true color, whatever the image type: it does not implement 16-bit color-map indexes (Pillow 11.3.0 and Apple ImageIO reject the file). The reference is the literal grid and the color map, read as the specification defines them."
+          }
+        ]
+      },
+      "expected": {
+        "width": 8,
+        "height": 6,
+        "pixelFormat": "Rgba32",
+        "colorModel": "Indexed",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "tga/rle-colormap16-indexes.frame-0.rgba8.raw",
+                "sha256": "01e48651cdd2de41c79b8d5cee9b28ea7fef23f58c9ce79812f3539d935558d5",
+                "layout": "rgba8",
+                "width": 8,
+                "height": 6,
+                "rowBytes": 32,
+                "byteLength": 192,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "tga/rle-grayscale16-alpha",
+      "kind": "valid",
+      "format": "tga",
+      "input": {
+        "path": "tga/rle-grayscale16-alpha.tga",
+        "sha256": "fbbc8f04394617419764e340f17bee1fca1bef20b63f27100a2c4727ad226bdc",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/TgaCorpus.cs (BuildTga)",
+        "tools": [
+          "ffmpeg 9.0.2 (cross-check only)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "width": 8,
+          "height": 6,
+          "imageType": 11,
+          "pixelDepth": 16,
+          "alphaBits": 8
+        }
+      },
+      "features": [
+        "tga.alphaBits=8",
+        "tga.columnOrder=left-to-right",
+        "tga.depth=16",
+        "tga.grayAttribute=alpha",
+        "tga.imageType=11",
+        "tga.rle.crossesRow",
+        "tga.rle.raw",
+        "tga.rle.run",
+        "tga.rowOrder=top-down"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "Run-length encoded 16-bit grayscale with eight declared alpha bits (image type 11): the packets repeat or list two-byte pixels, runs cross scan lines, and two neighbours with the same gray and different alphas are stored in a raw packet.",
+        "crossChecks": [
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec tga decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt rgba -",
+            "maxAbsoluteError": 255,
+            "meanAbsoluteError": 147.9444,
+            "result": "differs",
+            "notes": "FFmpeg decodes every 16-bit TGA pixel as 5-5-5 true color, whatever the image type: it does not implement 16-bit grayscale. The reference is the literal grid. Pillow 11.3.0 and Apple ImageIO, run by hand when the fixture was authored, both read the pixel as a gray byte followed by an alpha byte."
+          }
+        ]
+      },
+      "expected": {
+        "width": 8,
+        "height": 6,
+        "pixelFormat": "Rgba32",
+        "colorModel": "GrayscaleAlpha",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "tga/rle-grayscale16-alpha.frame-0.rgba8.raw",
+                "sha256": "a499d108795ec1ef98c1bef6122e480bb22a08ecce52255bd7fd4e021e2fad97",
+                "layout": "rgba8",
+                "width": 8,
+                "height": 6,
+                "rowBytes": 32,
+                "byteLength": 192,
+                "alpha": "straight",
                 "rowOrder": "top-down",
                 "compression": "none"
               }

@@ -11,8 +11,9 @@ namespace Meziantou.Framework.Imaging.Tests;
 
 /// <summary>
 /// TGA decoding and encoding through the public APIs, on files assembled byte by byte with literal expected pixels:
-/// the supported image types and depths, both origin bits, BGR ordering, the descriptor alpha bits, color maps with a
-/// first-entry offset, run-length packets across scan lines and at the end of the image, the TGA 2.0 trailer (footer,
+/// the supported image types and depths, both origin bits, BGR ordering, the descriptor alpha bits, 16-bit grayscale as a
+/// gray sample and an attribute, color maps with a first-entry offset and 8- or 16-bit indexes, run-length packets across
+/// scan lines and at the end of the image, the TGA 2.0 trailer (footer,
 /// extension area and its attributes type, developer area), truncation, limits, bounded streaming memory, and the
 /// encoder's compression, precision and metadata policies.
 /// </summary>
@@ -124,13 +125,116 @@ public sealed class TgaCodecTests
     }
 
     [Fact]
-    public void UnsupportedDepthsAreRecognizedAndRejected()
+    public void SixteenBitGrayscaleIsAGraySampleAndAnAttribute()
     {
-        var grayscale = Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(Tga(1, 1, 16, 3, [0, 0])));
-        Assert.Equal("Grayscale: 16-bit samples", grayscale.Feature);
+        // Each pixel is a gray byte followed by an attribute byte
+        byte[] pixels = [10, 255, 128, 64, 255, 0];
 
-        var indexes = Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(Tga(1, 1, 16, 1, [0, 0], colorMap: (0, 2, 24), colorMapData: [0, 0, 0, 1, 1, 1])));
-        Assert.Equal("Color map: 16-bit indexes", indexes.Feature);
+        // Eight declared alpha bits: the attribute is the alpha channel
+        var withAlpha = Tga(3, 1, 16, 3, pixels, descriptor: 0x08);
+        var info = Image.Identify(withAlpha);
+        Assert.Equal(PixelFormat.Rgba32, info.PixelFormat);
+        Assert.Equal(ImageColorModel.GrayscaleAlpha, info.ColorModel);
+        Assert.Equal(8, info.BitsPerComponent);
+        Assert.True(info.MayHaveTransparency);
+        Assert.Equal([new(10, 10, 10, 255), new(128, 128, 128, 64), new(255, 255, 255, 0)], Decode(withAlpha));
+
+        // No declared alpha bit: the attribute is unspecified and discarded, and the two bytes are never a 16-bit sample
+        var opaque = Tga(3, 1, 16, 3, pixels);
+        info = Image.Identify(opaque);
+        Assert.Equal(PixelFormat.Gray8, info.PixelFormat);
+        Assert.Equal(ImageColorModel.Grayscale, info.ColorModel);
+        Assert.Equal(8, info.BitsPerComponent);
+        Assert.False(info.MayHaveTransparency);
+        Assert.Equal([new(10, 10, 10), new(128, 128, 128), new(255, 255, 255)], Decode(opaque));
+        using (var image = Image.Load(opaque))
+        {
+            Assert.Equal(PixelFormat.Gray8, image.PixelFormat);
+        }
+
+        // Right-to-left storage moves whole two-byte pixels
+        Assert.Equal([new(255, 255, 255, 0), new(128, 128, 128, 64), new(10, 10, 10, 255)], Decode(Tga(3, 1, 16, 3, pixels, descriptor: 0x18)));
+        Assert.Equal([new(255, 255, 255), new(128, 128, 128), new(10, 10, 10)], Decode(Tga(3, 1, 16, 3, pixels, descriptor: 0x10)));
+    }
+
+    [Fact]
+    public void RunLengthPacketsRepeatTwoBytePixels()
+    {
+        // A run of five gray-and-alpha pixels over a 2x3 image, then a raw packet of one: the same gray with another alpha
+        byte[] packets = [0x84, 7, 9, 0x00, 7, 8];
+        Assert.Equal(
+            [new(7, 7, 7, 9), new(7, 7, 7, 9), new(7, 7, 7, 9), new(7, 7, 7, 9), new(7, 7, 7, 9), new(7, 7, 7, 8)],
+            Decode(Tga(2, 3, 16, 11, packets, descriptor: 0x28)));
+
+        // The same packets without declared alpha bits
+        Assert.Equal(Enumerable.Repeat(new Rgba32(7, 7, 7), 6).ToArray(), Decode(Tga(2, 3, 16, 11, packets, descriptor: 0x20)));
+
+        // A run of two 16-bit indexes (256, stored 00 01), then a raw packet of two (1 and 257)
+        byte[] map = [.. Enumerable.Range(0, 258).SelectMany(index => new[] { (byte)index, (byte)(index >> 8), (byte)(index / 2) })];
+        byte[] indexes = [0x81, 0, 1, 0x01, 1, 0, 1, 1];
+        Assert.Equal(
+            [new(128, 1, 0), new(128, 1, 0), new(0, 0, 1), new(128, 1, 1)],
+            Decode(Tga(2, 2, 16, 9, indexes, descriptor: 0x20, colorMap: (0, 258, 24), colorMapData: map)));
+
+        // A truncated two-byte run pixel
+        Assert.Throws<InvalidImageContentException>(() => Image.Load(Tga(2, 1, 16, 11, [0x81, 7], descriptor: 0x08)));
+    }
+
+    [Fact]
+    public void SixteenBitColorMapIndexesAreLittleEndian()
+    {
+        // 300 entries for the indexes 250 to 549: the entry of an index is stored as blue = index / 2, green = the high
+        // byte of the index, red = its low byte
+        byte[] map = [.. Enumerable.Range(250, 300).SelectMany(index => new[] { (byte)(index / 2), (byte)(index >> 8), (byte)index })];
+
+        // The indexes 250, 256 (stored 00 01), 549 (25 02) and 511 (FF 01)
+        var data = Tga(4, 1, 16, 1, [250, 0, 0, 1, 0x25, 2, 0xFF, 1], colorMap: (250, 300, 24), colorMapData: map);
+        var info = Image.Identify(data);
+        Assert.Equal(PixelFormat.Rgb24, info.PixelFormat);
+        Assert.Equal(ImageColorModel.Indexed, info.ColorModel);
+        Assert.Equal(8, info.BitsPerComponent);
+        Assert.Equal([new(250, 0, 125), new(0, 1, 128), new(0x25, 2, 18), new(255, 1, 255)], Decode(data));
+        Assert.Equal(info.Size, Image.Identify(data, new ImageIdentifyOptions { Mode = ImageIdentifyMode.FullScan }).Size);
+
+        // One past the last entry, one before the first one, and 1 (stored 01 00), which is not 256
+        foreach (var (index, stored) in new (int, byte[])[] { (550, [0x26, 2]), (249, [249, 0]), (1, [1, 0]) })
+        {
+            var invalid = Assert.Throws<InvalidImageContentException>(() => Image.Load(Tga(1, 1, 16, 1, stored, colorMap: (250, 300, 24), colorMapData: map)));
+            Assert.Contains(string.Create(CultureInfo.InvariantCulture, $"color-map index {index} "), invalid.Message, StringComparison.Ordinal);
+        }
+
+        // 32-bit map entries carry alpha when the descriptor declares it
+        var alpha = Tga(2, 1, 16, 1, [1, 0, 0, 0], colorMap: (0, 2, 32), colorMapData: [30, 20, 10, 128, 60, 50, 40, 0], descriptor: 0x08);
+        Assert.Equal([new(40, 50, 60, 0), new(10, 20, 30, 128)], Decode(alpha));
+
+        // A map longer than its 8-bit indexes can address is read whole; the entries above 255 are never used
+        Assert.Equal([new(255, 0, 127)], Decode(Tga(1, 1, 8, 1, [255], colorMap: (250, 300, 24), colorMapData: map)));
+        Assert.Throws<InvalidImageContentException>(() => Image.Load(Tga(1, 1, 8, 1, [249], colorMap: (250, 300, 24), colorMapData: map)));
+    }
+
+    [Fact]
+    public void TheColorMapIsChargedAsDecoderStateAndReleased()
+    {
+        // The largest color map (its length is a 16-bit field): 65,535 entries expanded to four bytes each
+        var data = Tga(1, 1, 16, 1, [0xFE, 0xFF], descriptor: 0x08, colorMap: (0, 65535, 32), colorMapData: [.. Enumerable.Range(0, 65535).SelectMany(index => new[] { (byte)index, (byte)(index >> 8), (byte)7, (byte)9 })]);
+        long peak;
+        using (var image = Image.Load<Rgba32>(data))
+        {
+            Assert.Equal([new(7, 255, 254, 9)], GetPixels(image.Frames[0]));
+            var scope = image.Owner.Scope;
+            Assert.Equal(0, scope.GetLiveBytes(AllocationKind.DecoderState));
+            peak = scope.GetDiagnostics().PeakLiveBytes;
+            Assert.True(peak >= 65535 * 4, $"Peak live bytes {peak}.");
+        }
+
+        Image.Load(data, Options(peak)).Dispose();
+
+        Assert.Equal(ImageResourceLimitKind.LiveAllocationBytes, Assert.Throws<ImageResourceLimitException>(() => Image.Load(data, Options(peak - 1))).Kind);
+
+        // Identification never stores the map
+        Assert.Equal(new Size(1, 1), Image.Identify(data, new ImageIdentifyOptions { Mode = ImageIdentifyMode.FullScan, Configuration = Options(4096).Configuration }).Size);
+
+        static ImageDecodeOptions Options(long limit) => new() { Configuration = new ImageConfiguration { Limits = new ImageResourceLimits { MaxLiveAllocationBytes = limit } } };
     }
 
     [Fact]
@@ -182,12 +286,13 @@ public sealed class TgaCodecTests
     [Fact]
     public void PremultipliedAlphaIsRejectedOnceTheTrailerIsRead()
     {
-        // 32-bit pixels, a 16-bit pixel with its alpha bit, and a color map with 32-bit entries
+        // 32-bit pixels, a 16-bit pixel with its alpha bit, a color map with 32-bit entries, and a gray pixel with its alpha
         byte[][] withAlpha =
         [
             Tga(2, 1, 32, 2, [0x30, 0x20, 0x10, 0x40, 0x33, 0x22, 0x11, 0x00], descriptor: 0x08),
             Tga(1, 1, 16, 2, [0xFF, 0xFF], descriptor: 0x01),
             Tga(1, 1, 8, 1, [0], descriptor: 0x08, colorMap: (0, 1, 32), colorMapData: [1, 2, 3, 4]),
+            Tga(1, 1, 16, 3, [9, 128], descriptor: 0x08),
         ];
         foreach (var image in withAlpha)
         {
@@ -212,6 +317,8 @@ public sealed class TgaCodecTests
         Assert.Equal([new(1, 2, 3), new(4, 5, 6)], Decode([.. opaque, .. Trailer(opaque.Length, attributesType: 4)]));
         var undeclared = Tga(2, 1, 32, 2, [0x30, 0x20, 0x10, 0x40, 0x33, 0x22, 0x11, 0x00]);
         Assert.Equal([new(0x10, 0x20, 0x30), new(0x11, 0x22, 0x33)], Decode([.. undeclared, .. Trailer(undeclared.Length, attributesType: 4)]));
+        var undeclaredGray = Tga(1, 1, 16, 3, [9, 128]);
+        Assert.Equal([new(9, 9, 9)], Decode([.. undeclaredGray, .. Trailer(undeclaredGray.Length, attributesType: 4)]));
     }
 
     [Fact]

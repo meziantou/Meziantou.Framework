@@ -48,12 +48,19 @@ public sealed class FormatDetectionTests
     [InlineData(10, 32, 8, 0, 0, 0, ImageFormat.Tga)] // run-length true color with alpha
     [InlineData(3, 8, 0, 0, 0, 0, ImageFormat.Tga)] // grayscale
     [InlineData(1, 8, 0, 1, 4, 24, ImageFormat.Tga)] // color-mapped
+    [InlineData(9, 16, 0, 1, 4, 24, ImageFormat.Tga)] // run-length color-mapped with 16-bit indexes
+    [InlineData(3, 16, 8, 0, 0, 0, ImageFormat.Tga)] // grayscale with an alpha attribute
+    [InlineData(11, 16, 0, 0, 0, 0, ImageFormat.Tga)] // run-length grayscale with an unspecified attribute
     [InlineData(0, 24, 0, 0, 0, 0, ImageFormat.Unknown)] // image type 0 (no image data)
     [InlineData(4, 24, 0, 0, 0, 0, ImageFormat.Unknown)] // undefined image type
     [InlineData(2, 24, 0, 1, 4, 24, ImageFormat.Unknown)] // a color map with a true-color image type
     [InlineData(1, 8, 0, 0, 0, 0, ImageFormat.Unknown)] // a color-mapped image without a color map
     [InlineData(2, 23, 0, 0, 0, 0, ImageFormat.Unknown)] // undefined pixel depth
     [InlineData(2, 24, 8, 0, 0, 0, ImageFormat.Unknown)] // alpha bits a 24-bit sample cannot hold
+    [InlineData(3, 8, 8, 0, 0, 0, ImageFormat.Unknown)] // alpha bits an 8-bit gray pixel cannot hold
+    [InlineData(3, 16, 1, 0, 0, 0, ImageFormat.Unknown)] // the attribute of a 16-bit gray pixel is a whole byte
+    [InlineData(3, 24, 0, 0, 0, 0, ImageFormat.Unknown)] // undefined grayscale depth
+    [InlineData(1, 24, 0, 1, 4, 24, ImageFormat.Unknown)] // color-map indexes wider than 16 bits
     public void TgaIsDetectedFromAPlausibleHeader(int imageType, int pixelDepth, int alphaBits, int colorMapType, int colorMapLength, int colorMapEntryBits, ImageFormat expected)
     {
         var header = new byte[18];

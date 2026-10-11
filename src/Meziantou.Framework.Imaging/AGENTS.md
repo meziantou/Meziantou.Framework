@@ -304,6 +304,9 @@ dotnet publish tests/Meziantou.Framework.Imaging.AotSmoke -c Release -f net11.0 
 - Interop tests download ffmpeg, libwebp, libavif, libjxl (`cjxl`, `djxl`, `jxlinfo`, `jxl_from_tree`) and jxl-oxide from
   the release pinned by the `Meziantou.Prebuilt` package (same version in the test harness and the corpus generator). A download failure, an unexpected version or a missing
   capability fails the test; it is never skipped. The Apple ImageIO cases need `swift` and only run on macOS.
+- Interop tests start every tool through `ProcessRunner` (test harness), never through `System.Diagnostics.Process`
+  directly: on macOS it uses `posix_spawn`, because `Process` forks there before .NET 11, which makes the thousands of
+  tool runs of a test process wait on each other (the net10.0 run took five times longer than the net11.0 one).
 - When implementing or changing a member, add unit tests, conformance tests with independent references, and interop
   tests for encoders.
 - **Fixtures.** Every file of the corpus is listed in `manifest.json` with its hash, provenance and license; the manifest

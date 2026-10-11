@@ -212,13 +212,7 @@ internal sealed class BmpEncoderCodec : ImageEncoderCodec
                 {
                     var band = _band!.Span[..(_width * 3)];
                     PixelConverter.ConvertRow(_sourceFormat, source, PixelFormat.Rgb24, band, _background, ImageFormat.Bmp);
-                    for (var x = 0; x < _width; x++)
-                    {
-                        var offset = x * 3;
-                        destination[offset] = band[offset + 2];
-                        destination[offset + 1] = band[offset + 1];
-                        destination[offset + 2] = band[offset];
-                    }
+                    PixelConverter.SwapRedAndBlue24(band, destination);
                 }
 
                 destination.Slice(samples, _paddingLength).Clear();

@@ -136,23 +136,48 @@ internal static class Av1LoopRestoration
         var oneOverN = ((1 << Av1Constants.SgrprojRecipBits) + (n / 2)) / n;
         var boxStride = w + 2;
         var depthShift = bitDepth - 8;
+
+        // The sums of the samples and of their squares over the 2r + 1 rows of a box, for each column from -1 - r to w + r.
+        // A box is the sum of 2r + 1 consecutive columns: from one box to the next, a column leaves and another one enters.
+        // A sum of squares of 12-bit samples over 25 samples is below 2^29
+        var diameter = (2 * r) + 1;
+        var columnCount = w + 2 + (2 * r);
+        Span<int> columnSums = stackalloc int[MaxBlockWidth + 2 + 4];
+        Span<int> columnSquares = stackalloc int[MaxBlockWidth + 2 + 4];
+        columnSums = columnSums[..columnCount];
+        columnSquares = columnSquares[..columnCount];
         for (var i = -1; i < h + 1; i++)
         {
+            // The first pass only uses the odd rows of A and B (the other rows have a weight of zero)
+            if (pass is 0 && (i & 1) is 0)
+                continue;
+
+            columnSums.Clear();
+            columnSquares.Clear();
+            for (var dy = -r; dy <= r; dy++)
+            {
+                var row = source.Slice(sourceOffset + ((i + dy) * sourceStride) - 1 - r, columnCount);
+                for (var k = 0; k < row.Length; k++)
+                {
+                    int c = row[k];
+                    columnSums[k] += c;
+                    columnSquares[k] += c * c;
+                }
+            }
+
+            long sumSquares = 0;
+            long sum = 0;
+            for (var k = 0; k < diameter - 1; k++)
+            {
+                sumSquares += columnSquares[k];
+                sum += columnSums[k];
+            }
+
             for (var j = -1; j < w + 1; j++)
             {
-                long sumSquares = 0;
-                long sum = 0;
-                for (var dy = -r; dy <= r; dy++)
-                {
-                    var row = source[(sourceOffset + ((i + dy) * sourceStride) + j - r)..];
-                    for (var dx = 0; dx <= 2 * r; dx++)
-                    {
-                        long c = row[dx];
-                        sumSquares += c * c;
-                        sum += c;
-                    }
-                }
-
+                // The box of column j: the columns j - r to j + r, at the indexes j + 1 to j + 1 + 2r
+                sumSquares += columnSquares[j + diameter];
+                sum += columnSums[j + diameter];
                 var aa = Round2(sumSquares, 2 * depthShift);
                 var d = Round2(sum, depthShift);
                 var p = Math.Max(0, (aa * n) - (d * d));
@@ -175,6 +200,8 @@ internal static class Av1LoopRestoration
                 var index = ((i + 1) * boxStride) + j + 1;
                 a[index] = (int)a2;
                 b[index] = (int)Round2(b2, Av1Constants.SgrprojRecipBits);
+                sumSquares -= columnSquares[j + 1];
+                sum -= columnSums[j + 1];
             }
         }
 

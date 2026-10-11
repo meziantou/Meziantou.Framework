@@ -109,6 +109,57 @@ public sealed class SlabPoolTests
     }
 
     [Fact]
+    public void StaleSizeClassesAreReleasedForTheSizesInUse()
+    {
+        var pool = new SlabPool(new SlabPoolOptions { MaxRetainedBuffersPerBucket = 100, MaxRetainedBytes = 1024, StaleAfterOperations = 4 });
+        var buffers = Enumerable.Range(0, 4).Select(_ => pool.Rent(256, clear: false)).ToArray();
+        Assert.All(buffers, buffer => Assert.True(pool.Return(buffer)));
+        Assert.Equal(1024, pool.GetDiagnostics().RetainedBytes);
+
+        // The retained class was just used: a buffer of another class that does not fit is dropped
+        Assert.False(pool.Return(pool.Rent(512, clear: false)));
+        Assert.Equal(0, pool.GetDiagnostics().ReleasedStaleBuffers);
+
+        // Once the retained class has not been used for a while, it gives its bytes back, only as many as needed
+        var retained = false;
+        for (var i = 0; i < 4 && !retained; i++)
+        {
+            retained = pool.Return(pool.Rent(512, clear: false));
+        }
+
+        Assert.True(retained);
+        var diagnostics = pool.GetDiagnostics();
+        Assert.Equal(2, diagnostics.ReleasedStaleBuffers);
+        Assert.Equal(3, diagnostics.RetainedBuffers);
+        Assert.Equal(1024, diagnostics.RetainedBytes);
+
+        // The new class is now served from the pool
+        var reused = diagnostics.ReusedRentals;
+        Assert.True(pool.Return(pool.Rent(512, clear: false)));
+        Assert.Equal(reused + 1, pool.GetDiagnostics().ReusedRentals);
+    }
+
+    [Fact]
+    public void SizeClassesInUseAreNotReleasedForOneAnother()
+    {
+        var pool = new SlabPool(new SlabPoolOptions { MaxRetainedBuffersPerBucket = 100, MaxRetainedBytes = 1024, StaleAfterOperations = 8 });
+        var buffers = Enumerable.Range(0, 4).Select(_ => pool.Rent(256, clear: false)).ToArray();
+        Assert.All(buffers, buffer => Assert.True(pool.Return(buffer)));
+
+        // Both classes are used in turn: the one that filled the pool keeps its buffers
+        for (var i = 0; i < 50; i++)
+        {
+            Assert.False(pool.Return(pool.Rent(512, clear: false)));
+            Assert.True(pool.Return(pool.Rent(256, clear: false)));
+        }
+
+        var diagnostics = pool.GetDiagnostics();
+        Assert.Equal(0, diagnostics.ReleasedStaleBuffers);
+        Assert.Equal(1024, diagnostics.RetainedBytes);
+        Assert.Equal(50, diagnostics.ReusedRentals);
+    }
+
+    [Fact]
     public void RetentionCanBeDisabled()
     {
         var pool = new SlabPool(new SlabPoolOptions { MaxRetainedBuffersPerBucket = 0 });
@@ -132,6 +183,7 @@ public sealed class SlabPoolTests
         Assert.Throws<ArgumentOutOfRangeException>(() => new SlabPoolOptions { MaxPooledLength = 64 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new SlabPoolOptions { MaxRetainedBytes = -1 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new SlabPoolOptions { MaxRetainedBuffersPerBucket = -1 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new SlabPoolOptions { StaleAfterOperations = 0 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new SlabPool().Rent(-1, clear: false));
     }
 

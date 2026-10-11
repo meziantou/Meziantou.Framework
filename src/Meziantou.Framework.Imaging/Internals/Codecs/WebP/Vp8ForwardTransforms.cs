@@ -1,3 +1,5 @@
+using System.Runtime.CompilerServices;
+
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
@@ -13,12 +15,69 @@ internal static class Vp8ForwardTransforms
     private const int BasisBits = 12;
     private static readonly int[] DctBasis = CreateDctBasis();
 
+    // Whether the fixed-point basis has the symmetries of the DCT: (a, a, a, a), (b, c, -c, -b), (a, -a, -a, a), (c, -b, b, -c)
+    private static readonly bool IsBasisSymmetric = DctBasis.AsSpan().SequenceEqual(
+    [
+        DctBasis[0], DctBasis[0], DctBasis[0], DctBasis[0],
+        DctBasis[4], DctBasis[5], -DctBasis[5], -DctBasis[4],
+        DctBasis[0], -DctBasis[0], -DctBasis[0], DctBasis[0],
+        DctBasis[5], -DctBasis[4], DctBasis[4], -DctBasis[5],
+    ]);
+
     private static ReadOnlySpan<sbyte> Hadamard => [1, 1, 1, 1, 1, 1, -1, -1, 1, -1, -1, 1, 1, -1, 1, -1];
 
     /// <summary>Computes the VP8 DCT coefficients (raster order) of a 4x4 residual block.</summary>
     /// <param name="residual">The 16 residuals (source minus prediction), raster order.</param>
     /// <param name="coefficients">The 16 coefficients, raster order.</param>
+    /// <remarks>
+    /// The rows of the basis are <c>(a, a, a, a)</c>, <c>(b, c, -c, -b)</c>, <c>(a, -a, -a, a)</c> and <c>(c, -b, b, -c)</c>:
+    /// the four products of a row or column are computed from the sums and differences of its outer and inner samples.
+    /// Integer arithmetic is exact, so the coefficients are the ones of the plain matrix products
+    /// (<see cref="ForwardDctReference"/>).
+    /// </remarks>
     public static void ForwardDct(ReadOnlySpan<int> residual, Span<int> coefficients)
+    {
+        if (!IsBasisSymmetric)
+        {
+            ForwardDctReference(residual, coefficients);
+            return;
+        }
+
+        residual = residual[..16];
+        coefficients = coefficients[..16];
+        var a = DctBasis[0];
+        var b = DctBasis[4];
+        var c = DctBasis[5];
+        Span<int> temp = stackalloc int[16];
+
+        // Rows, then columns: C R C^T
+        for (var y = 0; y < 16; y += 4)
+        {
+            var outerSum = residual[y] + residual[y + 3];
+            var innerSum = residual[y + 1] + residual[y + 2];
+            var outerDifference = residual[y] - residual[y + 3];
+            var innerDifference = residual[y + 1] - residual[y + 2];
+            temp[y] = a * (outerSum + innerSum);
+            temp[y + 1] = (b * outerDifference) + (c * innerDifference);
+            temp[y + 2] = a * (outerSum - innerSum);
+            temp[y + 3] = (c * outerDifference) - (b * innerDifference);
+        }
+
+        for (var u = 0; u < 4; u++)
+        {
+            var outerSum = (long)temp[u] + temp[12 + u];
+            var innerSum = (long)temp[4 + u] + temp[8 + u];
+            var outerDifference = (long)temp[u] - temp[12 + u];
+            var innerDifference = (long)temp[4 + u] - temp[8 + u];
+            coefficients[u] = Round(a * (outerSum + innerSum));
+            coefficients[4 + u] = Round((b * outerDifference) + (c * innerDifference));
+            coefficients[8 + u] = Round(a * (outerSum - innerSum));
+            coefficients[12 + u] = Round((c * outerDifference) - (b * innerDifference));
+        }
+    }
+
+    /// <summary>The reference of <see cref="ForwardDct"/>: the two matrix products, term by term.</summary>
+    internal static void ForwardDctReference(ReadOnlySpan<int> residual, Span<int> coefficients)
     {
         var basis = DctBasis.AsSpan(0, 16);
         residual = residual[..16];
@@ -38,17 +97,23 @@ internal static class Vp8ForwardTransforms
             }
         }
 
-        // The coefficients are twice the orthonormal ones, rounded to nearest (ties away from zero)
-        const int Shift = (2 * BasisBits) - 1;
-        const long Half = 1L << (Shift - 1);
         for (var v = 0; v < 4; v++)
         {
             for (var u = 0; u < 4; u++)
             {
                 var sum = ((long)basis[v * 4] * temp[u]) + ((long)basis[(v * 4) + 1] * temp[4 + u]) + ((long)basis[(v * 4) + 2] * temp[8 + u]) + ((long)basis[(v * 4) + 3] * temp[12 + u]);
-                coefficients[(v * 4) + u] = (int)(sum >= 0 ? (sum + Half) >> Shift : -((-sum + Half) >> Shift));
+                coefficients[(v * 4) + u] = Round(sum);
             }
         }
+    }
+
+    // The coefficients are twice the orthonormal ones, rounded to nearest (ties away from zero)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static int Round(long sum)
+    {
+        const int Shift = (2 * BasisBits) - 1;
+        const long Half = 1L << (Shift - 1);
+        return (int)(sum >= 0 ? (sum + Half) >> Shift : -((-sum + Half) >> Shift));
     }
 
     /// <summary>Computes the Y2 coefficients (raster order) from the 16 DC coefficients of the luma blocks (block raster order).</summary>

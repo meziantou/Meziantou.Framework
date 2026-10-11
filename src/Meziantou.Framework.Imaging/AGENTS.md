@@ -72,6 +72,10 @@ the library guarantees to its callers (support matrix, limitations, defaults). K
 - Geometry changes go through `PixelStorageTransaction`: replacements are budgeted while the originals are live and are
   only swapped on commit.
 - Sequential readers and writers keep live storage independent of the frame count.
+- `SlabPool` retention is bounded per size class and in total bytes. When the total bound is reached, a returned buffer
+  releases the buffers of the size classes that were not used recently (`SlabPoolOptions.StaleAfterOperations`), so that
+  a change of image sizes or codecs does not leave the pool full of buffers nobody rents; the size classes in use are
+  never released for one another.
 
 ## Codec infrastructure
 
@@ -157,10 +161,19 @@ everything is under `Internals/Color`.
   dotnet run -c Release --project benchmarks/ImagingBenchmarks -f net10.0 -- service --seconds 10
   dotnet run -c Release --project benchmarks/ImagingBenchmarks -f net10.0 -- webp-quality 512 3
   dotnet run -c Release --project benchmarks/ImagingBenchmarks -f net10.0 -- profile PngBenchmarks.SaveLarge8 20
+  dotnet run -c Release --project benchmarks/ImagingBenchmarks -f net10.0 -- profile PngBenchmarks.SaveLarge8 50x
   dotnet run eng/compare-benchmarks.cs -- <baseline>/results <current>/results
   ```
 
   `Workloads/` has no BenchmarkDotNet dependency: the conformance tests compile it to validate the workload outputs.
+
+  `profile` prints the mean, the minimum and the median time of an iteration, the managed bytes allocated per iteration and
+  what the shared buffer pool did. `<n>x` runs a fixed number of iterations instead of a duration: on a busy machine,
+  compare two builds with a process counter that does not depend on the load (`/usr/bin/time -l dotnet
+  ImagingBenchmarks.dll profile <Class.Method> <n>x` reports the retired instructions and the cycles on macOS; subtract a
+  `1x` run to remove the setup) rather than with wall-clock times.
+- The stack sampler of `dotnet-trace` blames the method that holds the next safe point, and it also samples the setup of
+  the benchmark class: confirm a hot spot by timing the stage (temporary `Stopwatch` counters) before optimizing it.
 
 ## Projects
 

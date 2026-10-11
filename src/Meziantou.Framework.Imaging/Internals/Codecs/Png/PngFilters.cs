@@ -1,4 +1,7 @@
 using System.Numerics;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -21,7 +24,50 @@ internal static class PngFilters
     /// <param name="previous">The reconstructed previous scanline of the same pass (all zero for the first one), same length as <paramref name="row"/>.</param>
     /// <param name="bytesPerPixel">The number of bytes per complete pixel, at least 1.</param>
     /// <exception cref="InvalidImageContentException">The filter type is not 0 to 4.</exception>
+    /// <remarks>
+    /// With 128-bit hardware vector support, Up adds whole vectors, and Sub, Average and Paeth reconstruct one pixel per
+    /// step for pixels of 3, 4, 6 and 8 bytes: the bytes of a pixel only depend on the previous pixel, so they are computed
+    /// together in the lanes of one vector (16-bit lanes for Average and Paeth, whose intermediate values exceed a byte).
+    /// The result is identical to <see cref="UnfilterScalar(byte, Span{byte}, ReadOnlySpan{byte}, int)"/>, the reference.
+    /// </remarks>
     public static void Unfilter(byte filterType, Span<byte> row, ReadOnlySpan<byte> previous, int bytesPerPixel)
+    {
+        if (!UseVectors || row.Length < Vector128<byte>.Count)
+        {
+            UnfilterScalar(filterType, row, previous, bytesPerPixel);
+            return;
+        }
+
+        previous = previous[..row.Length];
+        if (filterType == Up)
+        {
+            UnfilterUpVector(row, previous);
+            return;
+        }
+
+        // The pixel-at-a-time loops stop before the last 16 bytes; the scalar reference reconstructs the rest
+        var done = 0;
+        if (filterType is Sub or Average or Paeth)
+        {
+            done = bytesPerPixel switch
+            {
+                3 => UnfilterPixels<PixelSize3>(filterType, row, previous),
+                4 => UnfilterPixels<PixelSize4>(filterType, row, previous),
+                6 => UnfilterPixels<PixelSize6>(filterType, row, previous),
+                8 => UnfilterPixels<PixelSize8>(filterType, row, previous),
+                _ => 0,
+            };
+        }
+
+        UnfilterScalar(filterType, row, previous, bytesPerPixel, done);
+    }
+
+    /// <summary>The scalar reference of <see cref="Unfilter"/>.</summary>
+    internal static void UnfilterScalar(byte filterType, Span<byte> row, ReadOnlySpan<byte> previous, int bytesPerPixel)
+        => UnfilterScalar(filterType, row, previous, bytesPerPixel, start: 0);
+
+    /// <summary>Reconstructs the bytes of a scanline from <paramref name="start"/> (a pixel boundary); the bytes before it are already reconstructed.</summary>
+    private static void UnfilterScalar(byte filterType, Span<byte> row, ReadOnlySpan<byte> previous, int bytesPerPixel, int start)
     {
         previous = previous[..row.Length];
         switch (filterType)
@@ -30,7 +76,7 @@ internal static class PngFilters
                 break;
 
             case Sub:
-                for (var i = bytesPerPixel; i < row.Length; i++)
+                for (var i = Math.Max(start, bytesPerPixel); i < row.Length; i++)
                 {
                     row[i] += row[i - bytesPerPixel];
                 }
@@ -38,7 +84,7 @@ internal static class PngFilters
                 break;
 
             case Up:
-                for (var i = 0; i < row.Length; i++)
+                for (var i = start; i < row.Length; i++)
                 {
                     row[i] += previous[i];
                 }
@@ -48,12 +94,12 @@ internal static class PngFilters
             case Average:
             {
                 var first = Math.Min(bytesPerPixel, row.Length);
-                for (var i = 0; i < first; i++)
+                for (var i = start; i < first; i++)
                 {
                     row[i] += (byte)(previous[i] >> 1);
                 }
 
-                for (var i = first; i < row.Length; i++)
+                for (var i = Math.Max(start, first); i < row.Length; i++)
                 {
                     row[i] += (byte)((row[i - bytesPerPixel] + previous[i]) >> 1);
                 }
@@ -65,12 +111,12 @@ internal static class PngFilters
             {
                 // With a = c = 0 (first pixel) the predictor is the byte above
                 var first = Math.Min(bytesPerPixel, row.Length);
-                for (var i = 0; i < first; i++)
+                for (var i = start; i < first; i++)
                 {
                     row[i] += previous[i];
                 }
 
-                for (var i = first; i < row.Length; i++)
+                for (var i = Math.Max(start, first); i < row.Length; i++)
                 {
                     row[i] += PaethPredictor(row[i - bytesPerPixel], previous[i], previous[i - bytesPerPixel]);
                 }
@@ -278,6 +324,123 @@ internal static class PngFilters
         return sum;
     }
 
+    private static bool UseVectors => Vector128.IsHardwareAccelerated && BitConverter.IsLittleEndian;
+
+    private static void UnfilterUpVector(Span<byte> row, ReadOnlySpan<byte> previous)
+    {
+        ref var current = ref unsafe(MemoryMarshal.GetReference(row));
+        ref var above = ref unsafe(MemoryMarshal.GetReference(previous));
+        var length = (nuint)row.Length;
+        nuint i = 0;
+        if (Vector.IsHardwareAccelerated)
+        {
+            var count = (nuint)Vector<byte>.Count;
+            for (; i + count <= length; i += count)
+            {
+                unsafe { (Vector.LoadUnsafe(ref current, i) + Vector.LoadUnsafe(ref above, i)).StoreUnsafe(ref current, i); }
+            }
+        }
+
+        for (; i < length; i++)
+        {
+            unsafe { Unsafe.Add(ref current, i) += Unsafe.Add(ref above, i); }
+        }
+    }
+
+    /// <summary>
+    /// Reconstructs the pixels of a Sub, Average or Paeth scanline whose 16 following bytes exist (whole vectors are loaded;
+    /// only the bytes of the pixel are stored), one pixel per step.
+    /// </summary>
+    /// <returns>The number of bytes reconstructed (a multiple of the pixel size).</returns>
+    private static int UnfilterPixels<TSize>(byte filterType, Span<byte> row, ReadOnlySpan<byte> previous)
+        where TSize : struct, IPixelSize
+    {
+        ref var current = ref unsafe(MemoryMarshal.GetReference(row));
+        ref var above = ref unsafe(MemoryMarshal.GetReference(previous));
+        var step = (nuint)TSize.Value;
+        var last = (nuint)(row.Length - Vector128<byte>.Count);
+        nuint i = 0;
+        if (filterType == Sub)
+        {
+            var left = Vector128<byte>.Zero;
+            for (; i <= last; i += step)
+            {
+                left += unsafe(Vector128.LoadUnsafe(ref current, i));
+                StorePixel<TSize>(ref unsafe(Unsafe.Add(ref current, i)), left);
+            }
+        }
+        else if (filterType == Average)
+        {
+            // floor((left + above) / 2) needs 9 bits: 16-bit lanes, the sum reduced modulo 256 before it is the next "left"
+            var byteMask = Vector128.Create((ushort)0xFF);
+            var left = Vector128<ushort>.Zero;
+            for (; i <= last; i += step)
+            {
+                var b = Vector128.WidenLower(unsafe(Vector128.LoadUnsafe(ref above, i)));
+                var x = Vector128.WidenLower(unsafe(Vector128.LoadUnsafe(ref current, i)));
+                left = (x + ((left + b) >>> 1)) & byteMask;
+                StorePixel<TSize>(ref unsafe(Unsafe.Add(ref current, i)), Vector128.Narrow(left, left));
+            }
+        }
+        else
+        {
+            // With p = a + b - c: |p - a| = |b - c|, |p - b| = |a - c| and |p - c| = |(a - c) + (b - c)|; ties prefer a, then b.
+            // The first pixel has a = c = 0, which selects b (or a = b = 0): the byte above, as the specification requires
+            var byteMask = Vector128.Create((short)0xFF);
+            var a = Vector128<short>.Zero;
+            var c = Vector128<short>.Zero;
+            for (; i <= last; i += step)
+            {
+                var b = Vector128.WidenLower(unsafe(Vector128.LoadUnsafe(ref above, i))).AsInt16();
+                var x = Vector128.WidenLower(unsafe(Vector128.LoadUnsafe(ref current, i))).AsInt16();
+                var deltaA = b - c;
+                var deltaB = a - c;
+                var distanceA = Vector128.Abs(deltaA);
+                var distanceB = Vector128.Abs(deltaB);
+                var distanceC = Vector128.Abs(deltaA + deltaB);
+                var useA = Vector128.LessThanOrEqual(distanceA, distanceB) & Vector128.LessThanOrEqual(distanceA, distanceC);
+                var useB = Vector128.LessThanOrEqual(distanceB, distanceC);
+                var predictor = Vector128.ConditionalSelect(useA, a, Vector128.ConditionalSelect(useB, b, c));
+                a = (x + predictor) & byteMask;
+                c = b;
+                StorePixel<TSize>(ref unsafe(Unsafe.Add(ref current, i)), Vector128.Narrow(a.AsUInt16(), a.AsUInt16()));
+            }
+        }
+
+        return (int)i;
+    }
+
+    /// <summary>Stores the first <c>TSize.Value</c> bytes of a vector (the size is a JIT-time constant of each instantiation).</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void StorePixel<TSize>(ref byte destination, Vector128<byte> pixel)
+        where TSize : struct, IPixelSize
+    {
+        if (TSize.Value == 3)
+        {
+            unsafe
+            {
+                Unsafe.WriteUnaligned(ref destination, pixel.AsUInt16().ToScalar());
+                Unsafe.Add(ref destination, 2) = pixel.GetElement(2);
+            }
+        }
+        else if (TSize.Value == 4)
+        {
+            unsafe { Unsafe.WriteUnaligned(ref destination, pixel.AsUInt32().ToScalar()); }
+        }
+        else if (TSize.Value == 6)
+        {
+            unsafe
+            {
+                Unsafe.WriteUnaligned(ref destination, pixel.AsUInt32().ToScalar());
+                Unsafe.WriteUnaligned(ref Unsafe.Add(ref destination, 4), pixel.AsUInt16().GetElement(2));
+            }
+        }
+        else
+        {
+            unsafe { Unsafe.WriteUnaligned(ref destination, pixel.AsUInt64().ToScalar()); }
+        }
+    }
+
     private static void FilterUpVector(ReadOnlySpan<byte> row, ReadOnlySpan<byte> previous, Span<byte> destination)
     {
         var count = Vector<byte>.Count;
@@ -328,5 +491,31 @@ internal static class PngFilters
             return left;
 
         return distanceAbove <= distanceUpperLeft ? above : upperLeft;
+    }
+
+    /// <summary>A pixel size as a type argument, so that each size gets its own specialized loop.</summary>
+    private interface IPixelSize
+    {
+        static abstract int Value { get; }
+    }
+
+    private readonly struct PixelSize3 : IPixelSize
+    {
+        public static int Value => 3;
+    }
+
+    private readonly struct PixelSize4 : IPixelSize
+    {
+        public static int Value => 4;
+    }
+
+    private readonly struct PixelSize6 : IPixelSize
+    {
+        public static int Value => 6;
+    }
+
+    private readonly struct PixelSize8 : IPixelSize
+    {
+        public static int Value => 8;
     }
 }

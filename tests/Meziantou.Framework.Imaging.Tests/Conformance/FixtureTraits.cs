@@ -40,7 +40,17 @@ internal static class FixtureTraits
     /// format, so that truncation is not detectable: a TGA or AVIF file whose trailing bytes are cut is a valid file, and a
     /// plain (ASCII) Netpbm raster cut inside its last sample is a complete raster with a smaller last sample.
     /// </summary>
-    public static bool ProperPrefixMayBeValid(GoldenFixture fixture) => IsDelimitedByEndOfInput(fixture) || HasUnreadTrailingBytes(fixture);
+    /// <summary>
+    /// Gets a value indicating whether boxes follow the codestream of a JPEG XL container: the file that ends before any of
+    /// them is a complete file too (<see cref="JpegXlDecoderConformanceTests"/> checks every other prefix).
+    /// </summary>
+    public static bool HasBoxesAfterTheCodestream(GoldenFixture fixture)
+    {
+        ArgumentNullException.ThrowIfNull(fixture);
+        return fixture.Entry.HasFeature("jxl.boxesAfterCodestream");
+    }
+
+    public static bool ProperPrefixMayBeValid(GoldenFixture fixture) => IsDelimitedByEndOfInput(fixture) || HasUnreadTrailingBytes(fixture) || HasBoxesAfterTheCodestream(fixture);
 
     /// <summary>
     /// Gets a value indicating whether a header identification needs the whole input: an AVIF file whose last box is the
@@ -65,7 +75,7 @@ internal static class FixtureTraits
     public static bool MetadataFollowsTheImages(GoldenFixture fixture)
     {
         ArgumentNullException.ThrowIfNull(fixture);
-        return fixture.Entry.HasFeature("avif.seq.metadataAfterSamples");
+        return fixture.Entry.HasFeature("avif.seq.metadataAfterSamples") || fixture.Entry.HasFeature("jxl.metadataAfterCodestream");
     }
 
     /// <summary>
@@ -88,7 +98,9 @@ internal static class FixtureTraits
     {
         ArgumentNullException.ThrowIfNull(fixture);
         var hiddenFrames = GetFeatureValue(fixture, "avif.seq.hiddenFrames=");
-        return (hiddenFrames * fixture.Expected.Width * fixture.Expected.Height) + GetFeatureValue(fixture, "avif.layers.hiddenPixels=");
+        // JPEG XL: the frames that are decoded without being shown (reference frames, LF frames, layers) and what a shown
+        // frame has beyond the image, as the corpus generator summed them from the frame headers (jxl.hiddenPixels)
+        return (hiddenFrames * fixture.Expected.Width * fixture.Expected.Height) + GetFeatureValue(fixture, "avif.layers.hiddenPixels=") + GetFeatureValue(fixture, "jxl.hiddenPixels=");
 
         static long GetFeatureValue(GoldenFixture fixture, string prefix)
         {

@@ -115,7 +115,7 @@ internal static class WebPQualityReport
     }
 
     /// <summary>Synthetic graphics: flat colors, sharp axis-aligned and diagonal edges, thin lines and small glyph-like blocks.</summary>
-    private static Rgba32[] Graphics(int width, int height)
+    internal static Rgba32[] Graphics(int width, int height)
     {
         Rgba32[] palette = [new(250, 250, 250), new(30, 30, 30), new(220, 40, 40), new(40, 120, 220), new(250, 200, 30), new(60, 170, 80)];
         var pixels = new Rgba32[width * height];

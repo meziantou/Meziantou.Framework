@@ -55,6 +55,36 @@ internal static class AnimationTiming
         return (int)quotient;
     }
 
+    /// <summary>Converts a duration to a JPEG XL frame duration in ticks of one millisecond (the tick rate the encoder writes).</summary>
+    /// <param name="duration">The duration.</param>
+    /// <param name="rounding">
+    /// <see cref="FrameDurationRounding.RequireExact"/> throws unless <c>duration * 1000</c> is an integer;
+    /// <see cref="FrameDurationRounding.RoundToNearest"/> rounds to the nearest millisecond (ties up).
+    /// </param>
+    /// <returns>The encoded duration.</returns>
+    /// <exception cref="UnsupportedImageFeatureException">The duration is not exactly representable (strict mode) or exceeds 2^32 - 1 milliseconds after rounding.</exception>
+    public static uint ToJpegXlDuration(FrameDuration duration, FrameDurationRounding rounding)
+    {
+        var scaled = (UInt128)(ulong)duration.Numerator * 1000;
+        var denominator = (UInt128)(ulong)duration.Denominator;
+        var (quotient, remainder) = UInt128.DivRem(scaled, denominator);
+        if (remainder != 0)
+        {
+            if (rounding == FrameDurationRounding.RequireExact)
+                throw new UnsupportedImageFeatureException(string.Create(CultureInfo.InvariantCulture, $"The frame duration {duration} is not a whole number of milliseconds and cannot be stored exactly by the JPEG XL encoder. Use FrameDurationRounding.RoundToNearest to round it."), ImageFormat.JpegXl, "JPEG XL frame duration precision");
+
+            if (remainder * 2 >= denominator)
+            {
+                quotient++;
+            }
+        }
+
+        if (quotient > uint.MaxValue)
+            throw new UnsupportedImageFeatureException(string.Create(CultureInfo.InvariantCulture, $"The frame duration {duration} exceeds the maximum JPEG XL frame duration of 4294967.295 seconds."), ImageFormat.JpegXl, "JPEG XL frame duration range");
+
+        return (uint)quotient;
+    }
+
     /// <summary>Converts a WebP <c>ANIM</c> loop count to <c>TotalPlays</c>: 0 means infinite, <c>n</c> means <c>n</c> plays in total.</summary>
     /// <param name="loopCount">The encoded loop count.</param>
     /// <returns>The total number of plays, or <see langword="null"/> for infinite.</returns>

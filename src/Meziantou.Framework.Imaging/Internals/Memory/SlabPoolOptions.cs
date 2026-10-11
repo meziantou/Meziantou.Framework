@@ -9,7 +9,7 @@ internal sealed class SlabPoolOptions
     public const int DefaultMaxPooledLength = 8 * 1024 * 1024;
 
     /// <summary>The default maximum number of retained buffers per size class.</summary>
-    public const int DefaultMaxRetainedBuffersPerBucket = 8;
+    public const int DefaultMaxRetainedBuffersPerBucket = 64;
 
     /// <summary>The default maximum number of bytes retained by the pool across all size classes (32 MiB).</summary>
     public const long DefaultMaxRetainedBytes = 32L * 1024 * 1024;
@@ -48,4 +48,22 @@ internal sealed class SlabPoolOptions
             field = value;
         }
     } = DefaultMaxRetainedBytes;
+
+    /// <summary>The default number of pool operations after which an unused size class is stale.</summary>
+    public const int DefaultStaleAfterOperations = 256;
+
+    /// <summary>
+    /// Gets the number of pool operations (rentals and returns, of any size) after which the buffers of a size class that
+    /// was not used meanwhile are stale: they are released when a returned buffer needs their share of
+    /// <see cref="MaxRetainedBytes"/>. <see cref="int.MaxValue"/> never releases a retained buffer for another one.
+    /// </summary>
+    public int StaleAfterOperations
+    {
+        get;
+        init
+        {
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
+            field = value;
+        }
+    } = DefaultStaleAfterOperations;
 }

@@ -68,6 +68,13 @@ public sealed class TimingAndMetadataConformanceTests
                 Assert.True(fixture.Entry.HasFeature("avif.colr=none") || fixture.Entry.HasFeature("avif.colr=icc"), "A file without nclx color information has the feature that says so.");
             }
         }
+        else if (fixture.Entry.Format == "jxl")
+        {
+            // The orientation of a JPEG XL image is a field of its image header, and its enumerated color encoding, when
+            // ITU-T H.273 has code points for it, is its color description
+            Assert.Equal(expected.Orientation, fields.TransformOrientation);
+            Assert.Equal(expected.Cicp?.ToString(), fields.ContainerCicp?.ToString());
+        }
         else
         {
             Assert.Null(expected.Cicp);
@@ -78,7 +85,17 @@ public sealed class TimingAndMetadataConformanceTests
         Assert.Equal(expected.Resolution?.Encoded.X, fields.Resolution?.X);
         Assert.Equal(expected.Resolution?.Encoded.Y, fields.Resolution?.Y);
         Assert.Equal(expected.EffectiveTransferFunction, fields.TransferFunction ?? "srgb");
-        AssertProfile(expected.Profiles.Icc, fields.Icc);
+        if (fields.HasUnreadIccProfile)
+        {
+            // The ICC profile of a JPEG XL codestream is entropy coded: the inspector only tells that there is one
+            Assert.NotNull(expected.Profiles.Icc);
+            Assert.NotNull(GoldenCorpusTests.FindCorpusProfile(fixture));
+        }
+        else
+        {
+            AssertProfile(expected.Profiles.Icc, fields.Icc);
+        }
+
         AssertProfile(expected.Profiles.Exif, fields.Exif);
         AssertProfile(expected.Profiles.Xmp, fields.Xmp);
         Assert.Equal(
@@ -120,6 +137,13 @@ public sealed class TimingAndMetadataConformanceTests
                 actual = new FrameDuration(raw.SampleDelta!.Value, raw.Timescale!.Value);
                 Assert.Equal(expected, actual);
                 Assert.Equal((double)raw.SampleDelta.Value / raw.Timescale.Value, actual.TotalSeconds);
+            }
+            else if (fixture.Entry.Format == "jxl")
+            {
+                // A number of ticks over the ticks per second of the animation, itself a fraction: an exact rational
+                actual = new FrameDuration(raw.Ticks!.Value * raw.TicksPerSecondDenominator!.Value, raw.TicksPerSecondNumerator!.Value);
+                Assert.Equal(expected, actual);
+                Assert.Equal((double)raw.Ticks.Value * raw.TicksPerSecondDenominator.Value / raw.TicksPerSecondNumerator.Value, actual.TotalSeconds, 12);
             }
             else if (fixture.Entry.Format == "webp")
             {
@@ -164,6 +188,12 @@ public sealed class TimingAndMetadataConformanceTests
             Assert.NotNull(loop);
             Assert.Equal(animation.TotalPlays, AnimationTiming.FromApngNumPlays((uint)loop.Value));
             Assert.Equal((uint)loop.Value, AnimationTiming.ToApngNumPlays(animation.TotalPlays));
+        }
+        else if (fixture.Entry.Format == "jxl")
+        {
+            // num_loops: the total number of plays, 0 repeats forever
+            Assert.NotNull(loop);
+            Assert.Equal(animation.TotalPlays, loop.Value == 0 ? null : loop.Value);
         }
         else if (fixture.Entry.Format == "webp")
         {
@@ -244,9 +274,10 @@ public sealed class TimingAndMetadataConformanceTests
         var fixture = GoldenCorpus.Default.Get(id);
         var exif = fixture.InspectInput().Exif!.Value.ToArray();
         Assert.True(MetadataValidation.TryValidateExif(exif, out var error), error);
-        if (fixture.Entry.Format == "avif")
+        if (fixture.Entry.Format is "avif" or "jxl")
         {
-            // The orientation of an AVIF image comes from its irot and imir properties; its EXIF orientation tag is ignored
+            // The orientation of an AVIF image comes from its irot and imir properties, and the one of a JPEG XL image from
+            // its image header; their EXIF orientation tag is ignored
             Assert.Equal(fixture.Expected.Orientation, fixture.InspectInput().TransformOrientation);
         }
         else
@@ -313,7 +344,9 @@ public sealed class TimingAndMetadataConformanceTests
     public void IccProfileIsPreservedAndLabeled(string id)
     {
         var fixture = GoldenCorpus.Default.Get(id);
-        var icc = fixture.InspectInput().Icc!.Value.ToArray();
+        // The ICC profile of a JPEG XL codestream is entropy coded: the inspector does not read it, and the profile is the one
+        // of the corpus that the fixture expects
+        var icc = (fixture.InspectInput().Icc ?? GoldenCorpusTests.FindCorpusProfile(fixture))!.Value.ToArray();
         Assert.True(MetadataValidation.TryValidateIccProfile(icc, out var error), error);
         var profile = new IccProfile(new MetadataBlob(icc));
         Assert.True(fixture.Expected.Profiles.Icc!.Matches(profile.Data.Span));

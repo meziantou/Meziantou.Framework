@@ -16,6 +16,14 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// to anyone).
 /// </para>
 /// <para>
+/// The total bound must not be held by buffers that are no longer used: when the sizes in use change (other image
+/// dimensions, another codec), the buffers retained for the previous sizes would otherwise keep every new buffer out of
+/// the pool. A returned buffer that does not fit therefore releases the buffers of <em>stale</em> size classes first, the
+/// least recently used first. A size class is stale when it was neither rented from nor returned to during the last
+/// <see cref="SlabPoolOptions.StaleAfterOperations"/> pool operations; the size classes in use are never released for one
+/// another, so workloads that alternate keep what they retained.
+/// </para>
+/// <para>
 /// Rented buffers may contain data of a previous rental unless <c>clear</c> is requested; callers that expose a buffer
 /// (pixel storage) always request clearing. The pool is thread-safe.
 /// </para>
@@ -31,6 +39,8 @@ internal sealed class SlabPool
     private readonly Lock _lock = new();
     private readonly byte[]?[][] _buckets;
     private readonly int[] _bucketCounts;
+    private readonly long[] _bucketLastUse;
+    private long _operations;
     private long _retainedBytes;
     private int _retainedBuffers;
     private long _reusedRentals;
@@ -38,6 +48,7 @@ internal sealed class SlabPool
     private long _unpooledAllocations;
     private long _retainedReturns;
     private long _droppedReturns;
+    private long _releasedStaleBuffers;
 
     public SlabPool(SlabPoolOptions? options = null)
     {
@@ -45,6 +56,7 @@ internal sealed class SlabPool
         var bucketCount = GetBucketIndex(Options.MaxPooledLength) + 1;
         _buckets = new byte[]?[bucketCount][];
         _bucketCounts = new int[bucketCount];
+        _bucketLastUse = new long[bucketCount];
         for (var i = 0; i < bucketCount; i++)
         {
             _buckets[i] = new byte[]?[Options.MaxRetainedBuffersPerBucket];
@@ -116,9 +128,11 @@ internal sealed class SlabPool
         byte[]? buffer = null;
         lock (_lock)
         {
+            _operations++;
             ref var count = ref _bucketCounts[index];
             if (count > 0)
             {
+                _bucketLastUse[index] = _operations;
                 count--;
                 buffer = _buckets[index][count];
                 _buckets[index][count] = null;
@@ -172,19 +186,62 @@ internal sealed class SlabPool
 
         lock (_lock)
         {
+            _operations++;
             ref var count = ref _bucketCounts[index];
-            if (count < _buckets[index].Length && _retainedBytes + buffer.Length <= Options.MaxRetainedBytes)
+            if (count < _buckets[index].Length && buffer.Length <= Options.MaxRetainedBytes)
             {
-                _buckets[index][count] = buffer;
-                count++;
-                _retainedBuffers++;
-                _retainedBytes += buffer.Length;
-                _retainedReturns++;
-                return true;
+                if (_retainedBytes + buffer.Length > Options.MaxRetainedBytes)
+                {
+                    ReleaseStaleBuffers(index, buffer.Length);
+                }
+
+                if (_retainedBytes + buffer.Length <= Options.MaxRetainedBytes)
+                {
+                    _bucketLastUse[index] = _operations;
+                    _buckets[index][count] = buffer;
+                    count++;
+                    _retainedBuffers++;
+                    _retainedBytes += buffer.Length;
+                    _retainedReturns++;
+                    return true;
+                }
             }
 
             _droppedReturns++;
             return false;
+        }
+    }
+
+    /// <summary>
+    /// Releases retained buffers of stale size classes, the least recently used class first, until <paramref name="length"/>
+    /// more bytes can be retained or no stale class is left. Called under the lock.
+    /// </summary>
+    private void ReleaseStaleBuffers(int returningIndex, int length)
+    {
+        var staleBefore = _operations - Options.StaleAfterOperations;
+        while (_retainedBytes + length > Options.MaxRetainedBytes)
+        {
+            var oldest = -1;
+            for (var i = 0; i < _bucketCounts.Length; i++)
+            {
+                if (i != returningIndex && _bucketCounts[i] > 0 && _bucketLastUse[i] < staleBefore && (oldest < 0 || _bucketLastUse[i] < _bucketLastUse[oldest]))
+                {
+                    oldest = i;
+                }
+            }
+
+            if (oldest < 0)
+                return;
+
+            ref var count = ref _bucketCounts[oldest];
+            while (count > 0 && _retainedBytes + length > Options.MaxRetainedBytes)
+            {
+                count--;
+                _retainedBytes -= _buckets[oldest][count]!.Length;
+                _buckets[oldest][count] = null;
+                _retainedBuffers--;
+                _releasedStaleBuffers++;
+            }
         }
     }
 
@@ -215,7 +272,8 @@ internal sealed class SlabPool
                 Interlocked.Read(ref _newPooledAllocations),
                 Interlocked.Read(ref _unpooledAllocations),
                 _retainedReturns,
-                Interlocked.Read(ref _droppedReturns));
+                Interlocked.Read(ref _droppedReturns),
+                _releasedStaleBuffers);
         }
     }
 

@@ -26,6 +26,22 @@ public sealed class FFmpegToolTests
         }
     }
 
+    /// <summary>What the JPEG XL interoperability tests need from the pinned build: the libjxl decoders of stills and of animations, and the demuxer of animations.</summary>
+    [Fact]
+    public async Task FFmpegHasJpegXlCapabilities()
+    {
+        var ffmpeg = await RequireFFmpegAsync();
+
+        var decoders = await ffmpeg.GetDecodersAsync(XunitCancellationToken);
+        foreach (var decoder in new[] { "libjxl", "libjxl_anim" })
+        {
+            Assert.True(decoders.Contains(decoder), $"ffmpeg {ffmpeg.Version} does not provide the '{decoder}' decoder.");
+        }
+
+        var demuxers = await ffmpeg.GetDemuxersAsync(XunitCancellationToken);
+        Assert.True(demuxers.Contains("jpegxl_anim"), $"ffmpeg {ffmpeg.Version} does not provide the 'jpegxl_anim' demuxer.");
+    }
+
     /// <summary>
     /// What the AVIF and AV1 interoperability tests need from the pinned build: two AV1 encoders, two independent AV1 decoders,
     /// raw AV1 streams (the <c>obu</c> muxer and demuxer), FFmpeg's own AVIF muxer, the header parser and the planar formats

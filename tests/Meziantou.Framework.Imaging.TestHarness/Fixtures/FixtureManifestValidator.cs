@@ -42,7 +42,7 @@ public static partial class FixtureManifestValidator
     public static IReadOnlySet<string> AllowedKinds => FixtureKinds.All;
 
     /// <summary>The accepted values of <see cref="FixtureEntry.Format"/> (container formats; APNG is <c>png</c>).</summary>
-    public static IReadOnlySet<string> AllowedFormats { get; } = new HashSet<string>(StringComparer.Ordinal) { "png", "gif", "jpeg", "webp", "qoi", "bmp", "tga", "pnm", "avif" };
+    public static IReadOnlySet<string> AllowedFormats { get; } = new HashSet<string>(StringComparer.Ordinal) { "png", "gif", "jpeg", "webp", "qoi", "bmp", "tga", "pnm", "avif", "jxl" };
 
     /// <summary>The accepted values of <see cref="FixtureExpectation.PixelFormat"/> (library <c>PixelFormat</c> names).</summary>
     public static IReadOnlySet<string> AllowedPixelFormats { get; } = new HashSet<string>(StringComparer.Ordinal) { "Rgba32", "Bgra32", "Rgb24", "Rgba64", "Gray8", "Gray16" };
@@ -504,17 +504,17 @@ public static partial class FixtureManifestValidator
             errors.Add($"{name}: invalid colorModel '{expected.ColorModel}' (allowed: {string.Join(", ", AllowedColorModels)}).");
         }
 
-        // AV1 samples are 8, 10 or 12 bits wide
-        if (expected.BitsPerComponent is not null and not (1 or 2 or 4 or 8 or 16) && !(entry.Format == "avif" && expected.BitsPerComponent is 10 or 12))
+        // AV1 samples are 8, 10 or 12 bits wide; JPEG XL samples have any width, the fixtures use the same ones
+        if (expected.BitsPerComponent is not null and not (1 or 2 or 4 or 8 or 16) && !(entry.Format is "avif" or "jxl" && expected.BitsPerComponent is 10 or 12))
         {
             errors.Add($"{name}: invalid bitsPerComponent {expected.BitsPerComponent}.");
         }
 
         if (expected.Cicp is { } cicp)
         {
-            if (entry.Format != "avif")
+            if (entry.Format is not ("avif" or "jxl"))
             {
-                errors.Add($"{name}: only AVIF inputs declare a CICP color description.");
+                errors.Add($"{name}: only AVIF and JPEG XL inputs declare a CICP color description.");
             }
 
             if (cicp.ColorPrimaries is < 0 or > 255 || cicp.TransferCharacteristics is < 0 or > 255 || cicp.MatrixCoefficients is < 0 or > 255)
@@ -537,9 +537,9 @@ public static partial class FixtureManifestValidator
         {
             errors.Add($"{name}: invalid transferFunction '{transfer}' (allowed: {string.Join(", ", AllowedTransferFunctions)}).");
         }
-        else if (expected.EffectiveTransferFunction == "linear" && entry.Format != "qoi")
+        else if (expected.EffectiveTransferFunction == "linear" && entry.Format is not ("qoi" or "jxl"))
         {
-            errors.Add($"{name}: only QOI inputs declare linear samples (colorspace 1).");
+            errors.Add($"{name}: only QOI inputs (colorspace 1) and JPEG XL inputs (a linear transfer function with the sRGB primaries) declare linear samples.");
         }
 
         if (expected.Frames.Count == 0)
@@ -607,7 +607,7 @@ public static partial class FixtureManifestValidator
     {
         if (frame.EncodedDelay is not { } delay)
         {
-            if (expected.Animation is not null && (entry.Format is "png" or "webp" or "avif" || duration != RationalDuration.Zero))
+            if (expected.Animation is not null && (entry.Format is "png" or "webp" or "avif" or "jxl" || duration != RationalDuration.Zero))
             {
                 errors.Add($"{frameName}: frames of animated inputs must record the encoded delay field (encodedDelay).");
             }
@@ -657,9 +657,21 @@ public static partial class FixtureManifestValidator
 
             expectedDuration = RationalDuration.Create(delay.SampleDelta!.Value, delay.Timescale!.Value);
         }
+        else if (delay.IsJpegXl && entry.Format == "jxl")
+        {
+            // The duration of a frame in ticks (a 32-bit field) and the ticks per second of the animation: a numerator of
+            // 1 to 2^30 over a denominator of 1 to 1024
+            if (delay.Ticks is < 0 or > uint.MaxValue || delay.TicksPerSecondNumerator is < 1 or > (1L << 30) || delay.TicksPerSecondDenominator is < 1 or > 1024)
+            {
+                errors.Add($"{frameName}: the duration of a JPEG XL frame is a 32-bit number of ticks, and the ticks per second are 1 to 2^30 over 1 to 1024.");
+                return;
+            }
+
+            expectedDuration = RationalDuration.Create(delay.Ticks!.Value * delay.TicksPerSecondDenominator!.Value, delay.TicksPerSecondNumerator!.Value);
+        }
         else
         {
-            errors.Add($"{frameName}: encodedDelay must be {{numerator, denominator}} for APNG, {{hundredths}} for GIF, {{milliseconds}} for WebP or {{sampleDelta, timescale}} for AVIF, matching the fixture format '{entry.Format}'.");
+            errors.Add($"{frameName}: encodedDelay must be {{numerator, denominator}} for APNG, {{hundredths}} for GIF, {{milliseconds}} for WebP, {{sampleDelta, timescale}} for AVIF or {{ticks, ticksPerSecondNumerator, ticksPerSecondDenominator}} for JPEG XL, matching the fixture format '{entry.Format}'.");
             return;
         }
 
@@ -726,8 +738,9 @@ public static partial class FixtureManifestValidator
             errors.Add($"{name}: iccProfile '{expected.IccProfile}' is inconsistent with profiles.icc ({(profiles.Icc is null ? "absent" : "present")}).");
         }
 
-        // The orientation of an AVIF input comes from its irot and imir properties, never from its EXIF payload
-        if (expected.Orientation != 1 && profiles.Exif is null && entry.Format != "avif")
+        // The orientation of an AVIF input comes from its irot and imir properties, and the one of a JPEG XL input from its
+        // image header, never from their EXIF payload
+        if (expected.Orientation != 1 && profiles.Exif is null && entry.Format is not ("avif" or "jxl"))
         {
             errors.Add($"{name}: orientation {expected.Orientation} can only come from an EXIF payload (profiles.exif).");
         }
@@ -749,6 +762,10 @@ public static partial class FixtureManifestValidator
             else if (entry.Format == "avif")
             {
                 errors.Add($"{name}: no text of an AVIF file is read.");
+            }
+            else if (entry.Format == "jxl")
+            {
+                errors.Add($"{name}: no text of a JPEG XL file is read.");
             }
             else if (entry.Format == "qoi")
             {
@@ -836,6 +853,19 @@ public static partial class FixtureManifestValidator
             if (animation.TotalPlays != expectedPlays)
             {
                 errors.Add($"{name}: the edit list of the sequence means totalPlays {Format(expectedPlays)} (none: forever; not repeating: once; repeating: the track duration over the edit duration, rounded up, forever when indefinite), not {Format(animation.TotalPlays)}.");
+            }
+        }
+
+        else if (entry.Format == "jxl")
+        {
+            // num_loops: the total number of plays, 0 is infinite
+            if (animation.EncodedLoopValue is not { } loops)
+            {
+                errors.Add($"{name}: animated JPEG XL fixtures must record the encoded num_loops field (encodedLoopValue).");
+            }
+            else if (animation.TotalPlays != (loops == 0 ? null : loops))
+            {
+                errors.Add($"{name}: JPEG XL num_loops {loops} means totalPlays {(loops == 0 ? "null (infinite)" : loops.ToString(CultureInfo.InvariantCulture))}, not {Format(animation.TotalPlays)}.");
             }
         }
 

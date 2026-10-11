@@ -12,8 +12,9 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <para>
 /// Push-model use: <see cref="Feed"/> copies a bounded piece of compressed data, then <see cref="TryReadRow"/> returns the
 /// reconstructed rows that piece completes, until the inflater starves; finally <see cref="Complete"/> validates the end of
-/// the datastream. Memory is bounded by two scanlines, one expanded row, one compressed piece and the inflater window,
-/// whatever the image or chunk sizes; every buffer is charged to the operation scope as decoder state.
+/// the datastream. Memory is bounded by two scanlines, one expanded row (none when the scanline bytes already are the
+/// source pixels), one compressed piece and the inflater window, whatever the image or chunk sizes; every buffer is charged
+/// to the operation scope as decoder state. The two scanline buffers are swapped after each row instead of being copied.
 /// </para>
 /// <para>
 /// Validation (every failure is <see cref="InvalidImageContentException"/>): invalid zlib data (header, deflate blocks,
@@ -49,6 +50,7 @@ internal sealed class PngImageDataDecoder : IDisposable
     private int _filled;
     private long _decodedScanlines;
     private bool _done;
+    private bool _firstScanlineOfPass;
     private uint _adler = BoundedInflater.Adler32Initial;
     private long _compressedLength;
     private uint _trailer;
@@ -90,8 +92,12 @@ internal sealed class PngImageDataDecoder : IDisposable
         try
         {
             _scanlineBuffer = scope.Rent((int)scanlineLength, AllocationKind.DecoderState, clear: false);
-            _previousBuffer = scope.Rent((int)scanlineLength, AllocationKind.DecoderState);
-            _pixelBuffer = scope.Rent((int)pixelLength, AllocationKind.DecoderState, clear: false);
+            _previousBuffer = scope.Rent((int)scanlineLength, AllocationKind.DecoderState, clear: false);
+            if (!format.IsIdentity)
+            {
+                _pixelBuffer = scope.Rent((int)pixelLength, AllocationKind.DecoderState, clear: false);
+            }
+
             _feedBuffer = scope.Rent(FeedCapacity, AllocationKind.DecoderState, clear: false);
             _feed = new InflateFeedStream(_feedBuffer.RawBuffer);
             _zlib = new ZLibStream(_feed, CompressionMode.Decompress, leaveOpen: true);
@@ -171,10 +177,26 @@ internal sealed class PngImageDataDecoder : IDisposable
 
         _context.CancellationToken.ThrowIfCancellationRequested();
         var data = scanline[1..];
-        PngFilters.Unfilter(scanline[0], data, _previousBuffer!.RawBuffer, _format.FilterBytesPerPixel);
-        var pixels = _pixelBuffer!.RawBuffer.AsSpan(0, _passWidth * _format.SourceBytesPerPixel);
-        _format.Expand(data, _passWidth, pixels);
-        data.CopyTo(_previousBuffer.RawBuffer);
+        if (_firstScanlineOfPass)
+        {
+            // The row above the first scanline of a pass is zero. Cleared here, not when the pass starts: the last row of
+            // the previous pass may still be referenced by the caller
+            _previousBuffer!.RawBuffer.AsSpan(0, _scanlineLength).Clear();
+            _firstScanlineOfPass = false;
+        }
+
+        PngFilters.Unfilter(scanline[0], data, _previousBuffer!.RawBuffer.AsSpan(1), _format.FilterBytesPerPixel);
+        ReadOnlySpan<byte> pixels = data;
+        if (_pixelBuffer is { } pixelBuffer)
+        {
+            var expanded = pixelBuffer.RawBuffer.AsSpan(0, _passWidth * _format.SourceBytesPerPixel);
+            _format.Expand(data, _passWidth, expanded);
+            pixels = expanded;
+        }
+
+        // The reconstructed scanline becomes the previous one (both buffers keep the filter byte slot); it stays untouched
+        // until the scanline after the next one, so the row may reference it
+        (_scanlineBuffer, _previousBuffer) = (_previousBuffer, _scanlineBuffer);
 
         var (x0, y0, dx, dy) = _passCount == 1 ? (0, 0, 1, 1) : PngInterlace.GetPass(_pass);
         row = new PngDecodedRow(y0 + (_passRow * dy), x0, dx, _passWidth, pixels);
@@ -236,7 +258,7 @@ internal sealed class PngImageDataDecoder : IDisposable
 
             _passRow = 0;
             _scanlineLength = (int)(_format.GetScanlineLength(_passWidth) + 1);
-            _previousBuffer!.RawBuffer.AsSpan(0, _scanlineLength).Clear();
+            _firstScanlineOfPass = true;
             return;
         }
 

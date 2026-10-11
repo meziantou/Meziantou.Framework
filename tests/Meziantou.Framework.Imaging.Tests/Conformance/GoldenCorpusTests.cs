@@ -178,7 +178,9 @@ public sealed class GoldenCorpusTests
             // AVIF: only the samples a matrix applies to are converted with rounded coefficients (identity-matrix,
             // monochrome and alpha samples are exact, whether or not the AV1 coding is lossless)
             var isMatrixedAvif = fixture.Entry.Format == "avif" && (fixture.Entry.Features ?? []).Any(feature => feature.StartsWith("avif.matrix=", StringComparison.Ordinal) && feature != "avif.matrix=0");
-            Assert.Equal((fixture.Entry.Format == "jpeg" || fixture.Entry.HasFeature("webp.bitstream=vp8") || isMatrixedAvif) && !decodedIdentically, !policy.IsExact);
+            // JPEG XL: an image stored in XYB, and a VarDCT frame, are decoded in floating point
+            var isLossyJpegXl = fixture.Entry.Format == "jxl" && (fixture.Entry.HasFeature("jxl.colorTransform=xyb") || fixture.Entry.HasFeature("jxl.encoding=vardct"));
+            Assert.Equal((fixture.Entry.Format == "jpeg" || fixture.Entry.HasFeature("webp.bitstream=vp8") || isMatrixedAvif || isLossyJpegXl) && !decodedIdentically, !policy.IsExact);
             if (!policy.IsExact)
             {
                 Assert.True(policy.MaxAbsoluteError <= ComparisonPolicy.AbsoluteErrorCeiling);
@@ -211,11 +213,31 @@ public sealed class GoldenCorpusTests
 
             // Without a colr box of type nclx the AV1 bitstream describes the colors; the inspector does not read coded data
             Cicp = fields.ContainerCicp?.ToString() ?? (fixture.Entry.Format == "avif" ? fixture.Expected.Cicp?.ToString() : null),
-            IccProfile = fields.Icc,
+
+            // The ICC profile of a JPEG XL codestream is entropy coded: the inspector says it is there, and the profile is the
+            // one of the corpus that the fixture expects
+            IccProfile = fields.Icc ?? (fields.HasUnreadIccProfile ? FindCorpusProfile(fixture) : null),
             ExifProfile = fields.Exif,
             XmpProfile = fields.Xmp,
             TextEntries = [.. fields.Text.Select(entry => new DecodedTextEntry(entry.Keyword, entry.Value, entry.LanguageTag, entry.TranslatedKeyword))],
         };
+    }
+
+    /// <summary>Finds the ICC profile of the corpus (<c>colorProfiles</c>) that a fixture expects.</summary>
+    internal static ReadOnlyMemory<byte>? FindCorpusProfile(GoldenFixture fixture)
+    {
+        var expected = fixture.Expected.Profiles.Icc;
+        if (expected is null)
+            return null;
+
+        foreach (var path in Directory.EnumerateFiles(GoldenCorpus.Default.RootDirectory / "icc" / "profiles", "*.icc").Order(StringComparer.Ordinal))
+        {
+            var data = File.ReadAllBytes(path);
+            if (expected.Matches(data))
+                return data;
+        }
+
+        throw new InvalidOperationException($"{fixture.Id}: the ICC profile of the fixture is not a profile of the corpus.");
     }
 
     private static int[] Pixel(RawPixelBuffer buffer, int x, int y) => [.. Enumerable.Range(0, buffer.Layout.ChannelCount).Select(c => buffer.GetSample(x, y, c))];

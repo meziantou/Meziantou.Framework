@@ -93,25 +93,7 @@ internal sealed class Av1SymbolDecoder
 
         Renormalize(prev - cur, cur);
         if (!_disableCdfUpdate)
-        {
-            var counter = cdf[n];
-            var rate = 3 + (counter > 15 ? 1 : 0) + (counter > 31 ? 1 : 0) + Math.Min(BitOperations.Log2((uint)n), 2);
-            for (var i = 0; i < n - 1; i++)
-            {
-                // tmp is 0 before the decoded symbol and 32768 from it
-                if (i < symbol)
-                {
-                    cdf[i] -= (ushort)(cdf[i] >> rate);
-                }
-                else
-                {
-                    cdf[i] += (ushort)(((1 << 15) - cdf[i]) >> rate);
-                }
-            }
-
-            if (counter < 32)
-                cdf[n] = (ushort)(counter + 1);
-        }
+            Av1Cdf.Update(cdf, symbol);
 
         return symbol;
     }

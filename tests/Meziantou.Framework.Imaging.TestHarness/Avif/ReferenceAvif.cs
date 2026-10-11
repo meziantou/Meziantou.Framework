@@ -755,6 +755,21 @@ public sealed class ReferenceAvif
                     break;
                 }
 
+                case "stss":
+                {
+                    // ISO/IEC 14496-12, section 8.6.2 "Sync Sample Box": the numbers of the sync samples, from 1
+                    reader.Skip(4);
+                    var count = reader.U32();
+                    var syncSamples = new List<uint>();
+                    for (var i = 0u; i < count; i++)
+                    {
+                        syncSamples.Add(reader.U32());
+                    }
+
+                    track.SyncSamples = syncSamples;
+                    break;
+                }
+
                 case "stz2":
                 {
                     track.SampleSizeBox = "stz2";
@@ -1216,6 +1231,12 @@ public sealed class ReferenceAvif
 
         /// <summary>Gets the samples, in decoding order.</summary>
         public IReadOnlyList<Sample> Samples => _samples;
+
+        /// <summary>
+        /// Gets the numbers of the sync samples (<c>stss</c>), from 1, or <see langword="null"/> when the track has no such box:
+        /// every sample is then a sync sample.
+        /// </summary>
+        public IReadOnlyList<uint>? SyncSamples { get; internal set; }
 
         /// <summary>Gets a value indicating whether the track has a <c>meta</c> box (ISO/IEC 14496-12, section 8.11.1).</summary>
         public bool HasMeta { get; private set; }

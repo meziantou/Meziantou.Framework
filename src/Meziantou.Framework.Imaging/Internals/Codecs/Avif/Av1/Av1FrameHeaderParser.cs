@@ -1,3 +1,5 @@
+using System.Runtime.InteropServices;
+
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
@@ -545,17 +547,10 @@ internal ref struct Av1FrameHeaderParser
     private void ReadTileInfo()
     {
         var header = _header;
-        var use128 = _sequence.Use128x128Superblock;
-        var sbCols = use128 ? (header.MiCols + 31) >> 5 : (header.MiCols + 15) >> 4;
-        var sbRows = use128 ? (header.MiRows + 31) >> 5 : (header.MiRows + 15) >> 4;
-        var sbShift = use128 ? 5 : 4;
-        var sbSize = sbShift + 2;
-        var maxTileWidthSb = Av1Constants.MaxTileWidth >> sbSize;
-        var maxTileAreaSb = Av1Constants.MaxTileArea >> (2 * sbSize);
-        var minLog2TileCols = TileLog2(maxTileWidthSb, sbCols);
-        var maxLog2TileCols = TileLog2(1, Math.Min(sbCols, Av1Constants.MaxTileCols));
-        var maxLog2TileRows = TileLog2(1, Math.Min(sbRows, Av1Constants.MaxTileRows));
-        var minLog2Tiles = Math.Max(minLog2TileCols, TileLog2(maxTileAreaSb, sbRows * sbCols));
+        var limits = ComputeTileLimits(_sequence.Use128x128Superblock, header.MiCols, header.MiRows);
+        var (sbCols, sbRows, sbShift) = (limits.SbCols, limits.SbRows, limits.SbShift);
+        var (maxTileWidthSb, maxTileAreaSb) = (limits.MaxTileWidthSb, limits.MaxTileAreaSb);
+        var (minLog2TileCols, maxLog2TileCols, maxLog2TileRows, minLog2Tiles) = (limits.MinLog2TileCols, limits.MaxLog2TileCols, limits.MaxLog2TileRows, limits.MinLog2Tiles);
 
         Span<int> colStarts = stackalloc int[Av1Constants.MaxTileCols + 1];
         Span<int> rowStarts = stackalloc int[Av1Constants.MaxTileRows + 1];
@@ -640,6 +635,29 @@ internal ref struct Av1FrameHeaderParser
             header.TileSizeBytes = ReadBits(2) + 1;
         }
     }
+
+    /// <summary>
+    /// Returns the variables that the tile info syntax derives from the size of the frame before it reads anything
+    /// (section 5.9.15): the size of the frame in superblocks and the limits of the number of tiles.
+    /// </summary>
+    public static TileLimits ComputeTileLimits(bool use128x128Superblock, int miCols, int miRows)
+    {
+        var sbCols = use128x128Superblock ? (miCols + 31) >> 5 : (miCols + 15) >> 4;
+        var sbRows = use128x128Superblock ? (miRows + 31) >> 5 : (miRows + 15) >> 4;
+        var sbShift = use128x128Superblock ? 5 : 4;
+        var sbSize = sbShift + 2;
+        var maxTileWidthSb = Av1Constants.MaxTileWidth >> sbSize;
+        var maxTileAreaSb = Av1Constants.MaxTileArea >> (2 * sbSize);
+        var minLog2TileCols = TileLog2(maxTileWidthSb, sbCols);
+        var maxLog2TileCols = TileLog2(1, Math.Min(sbCols, Av1Constants.MaxTileCols));
+        var maxLog2TileRows = TileLog2(1, Math.Min(sbRows, Av1Constants.MaxTileRows));
+        var minLog2Tiles = Math.Max(minLog2TileCols, TileLog2(maxTileAreaSb, sbRows * sbCols));
+        return new TileLimits(sbCols, sbRows, sbShift, maxTileWidthSb, maxTileAreaSb, minLog2TileCols, maxLog2TileCols, maxLog2TileRows, minLog2Tiles);
+    }
+
+    /// <summary>The variables of the tile info syntax that only depend on the size of the frame.</summary>
+    [StructLayout(LayoutKind.Auto)]
+    public readonly record struct TileLimits(int SbCols, int SbRows, int SbShift, int MaxTileWidthSb, int MaxTileAreaSb, int MinLog2TileCols, int MaxLog2TileCols, int MaxLog2TileRows, int MinLog2Tiles);
 
     // Section 5.9.16: the smallest k such that blkSize << k is greater than or equal to target
     private static int TileLog2(int blockSize, int target)

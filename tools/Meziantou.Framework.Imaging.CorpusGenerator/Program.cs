@@ -24,6 +24,8 @@ const string Usage = """
                       AVIF fixtures: stills, grids, alpha, transformations, metadata, image sequences, layered images,
                       malformed and over-limit files (libavif avifenc/avifdec and the ffmpeg of the pinned
                       meziantou/prebuilt release)
+        jxl           JPEG XL fixtures: lossless and lossy stills, metadata, containers, animations, malformed, unsupported
+                      and over-limit files (cjxl, jxl_from_tree, djxl and jxl-oxide of the pinned meziantou/prebuilt release)
         icc           ICC profiles and color conversion vectors (transicc of LittleCMS; any OS)
         icc-builtin   the source of the CMYK profile provided by the library, transcribed from the committed corpus
                       (no tool; any OS)
@@ -117,6 +119,8 @@ try
             return AvifCorpus.Run(options);
         case "avif-container":
             return AvifCorpus.RunContainer(options);
+        case "jxl":
+            return JxlCorpus.Run(options);
         case "icc":
             if (iccProfiles is null)
             {

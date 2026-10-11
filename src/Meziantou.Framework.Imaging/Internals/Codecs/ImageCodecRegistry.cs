@@ -21,11 +21,11 @@ internal sealed class ImageCodecRegistry
     }
 
     /// <summary>
-    /// Gets the built-in codecs: PNG (including APNG), GIF, JPEG, WebP, ANI, QOI, BMP, TIFF (including BigTIFF), ICO, CUR,
-    /// PNM and TGA. TGA has no signature and is recognized by the plausibility of its header, so it is always consulted last;
+    /// Gets the built-in codecs: PNG (including APNG), GIF, JPEG, WebP, ANI, QOI, BMP, TIFF (including BigTIFF), AVIF,
+    /// JPEG XL, ICO, CUR, PNM and TGA. TGA has no signature and is recognized by the plausibility of its header, so it is always consulted last;
     /// ICO and CUR have a very weak one and are therefore consulted before it (<see cref="IcoFormat.MatchesSignature"/>).
     /// </summary>
-    public static ImageCodecRegistry Default { get; } = new([PngCodec.Instance, GifCodec.Instance, JpegCodec.Instance, WebPCodec.Instance, AniCodec.Instance, QoiCodec.Instance, BmpCodec.Instance, TiffCodec.Instance, AvifCodec.Instance, IcoCodec.Icon, IcoCodec.Cursor, PnmCodec.Instance, TgaCodec.Instance]);
+    public static ImageCodecRegistry Default { get; } = new([PngCodec.Instance, GifCodec.Instance, JpegCodec.Instance, WebPCodec.Instance, AniCodec.Instance, QoiCodec.Instance, BmpCodec.Instance, TiffCodec.Instance, AvifCodec.Instance, JpegXlCodec.Instance, IcoCodec.Icon, IcoCodec.Cursor, PnmCodec.Instance, TgaCodec.Instance]);
 
     /// <summary>Gets the registry used by the public API in the current asynchronous flow.</summary>
     public static ImageCodecRegistry Current => CurrentOverride.Value ?? Default;

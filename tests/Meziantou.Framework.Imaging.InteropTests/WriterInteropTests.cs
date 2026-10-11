@@ -5,7 +5,7 @@ using Meziantou.Framework.Imaging.TestHarness.Streams;
 namespace Meziantou.Framework.Imaging.InteropTests;
 
 /// <summary>
-/// Writer output decoded by the pinned independent tool (PNG, APNG, GIF, JPEG, QOI, BMP, TGA, PNM and PBM encoders): frames are
+/// Writer output decoded by the pinned independent tool (PNG, APNG, GIF, JPEG, QOI, BMP, TGA, PNM, PBM and JPEG XL encoders): frames are
 /// written one by one to a non-seekable stream and through an atomically published path writer, completed explicitly, and
 /// ffmpeg must decode exactly the written frames in one pass.
 /// </summary>
@@ -33,9 +33,13 @@ public sealed class WriterInteropTests
     [InlineData("pnm", true)]
     [InlineData("pbm", false)]
     [InlineData("pbm", true)]
+    [InlineData("jxl", false)]
+    [InlineData("jxl", true)]
+    [InlineData("jxl-animation", false)]
+    [InlineData("jxl-animation", true)]
     public async Task WriterOutputDecodesIndependently(string output, bool toPath)
     {
-        var frames = CreateFrames(output is "apng" or "gif" ? 3 : 1, blackAndWhite: output == "pbm");
+        var frames = CreateFrames(output is "apng" or "gif" or "jxl-animation" ? 3 : 1, blackAndWhite: output == "pbm");
         var directory = InteropSettings.GetArtifactsDirectory(nameof(WriterOutputDecodesIndependently));
         var path = directory / $"{output}-{(toPath ? "path" : "stream")}{GetExtension(output)}";
         File.Delete(path);
@@ -51,6 +55,7 @@ public sealed class WriterInteropTests
                 "tga" => new TgaEncoder { Compression = TgaCompression.RunLength },
                 "pnm" => new PnmEncoder(),
                 "pbm" => new PnmEncoder { PixelLayout = PnmPixelLayout.Bitmap },
+                "jxl" or "jxl-animation" => new JpegXlEncoder(),
                 _ => new JpegEncoder(),
             },
             ExpectedFrameCount = output == "gif" ? null : frames.Length, // GIF: unknown count
@@ -116,6 +121,7 @@ public sealed class WriterInteropTests
         "tga" => ".tga",
         "pnm" => ".pam",
         "pbm" => ".pbm",
+        "jxl" or "jxl-animation" => ".jxl",
         _ => ".png",
     };
 

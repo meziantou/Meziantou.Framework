@@ -35,9 +35,11 @@ internal sealed class MetadataWritePlan
 
     private static readonly MetadataWritePlan Empty = new(null, null, null, [], null, ColorTransferFunction.Srgb);
 
-    private MetadataWritePlan(IccProfile? iccProfile, byte[]? exif, XmpProfile? xmpProfile, IReadOnlyList<ImageTextEntry> textEntries, ImageResolution? resolution, ColorTransferFunction transferFunction, ExifOrientation orientation = ExifOrientation.TopLeft)
+    private MetadataWritePlan(IccProfile? iccProfile, byte[]? exif, XmpProfile? xmpProfile, IReadOnlyList<ImageTextEntry> textEntries, ImageResolution? resolution, ColorTransferFunction transferFunction, ExifOrientation orientation = ExifOrientation.TopLeft, CicpColorDescription? cicp = null)
     {
+        Cicp = cicp;
         TransferFunction = transferFunction;
+        Cicp = cicp;
         IccProfile = iccProfile;
         Exif = exif;
         XmpProfile = xmpProfile;
@@ -52,6 +54,12 @@ internal sealed class MetadataWritePlan
     /// <see cref="Exif"/> instead, which <see cref="ExifTiff"/> already reconciled.
     /// </summary>
     public ExifOrientation Orientation { get; }
+
+    /// <summary>
+    /// Gets the CICP color description to write, or <see langword="null"/>: for AVIF, which stores any description, and
+    /// for JPEG XL, which stores the ones its enumerated color encoding expresses, when no ICC profile is written.
+    /// </summary>
+    public CicpColorDescription? Cicp { get; }
 
     /// <summary>Gets the ICC profile to write, or <see langword="null"/>.</summary>
     public IccProfile? IccProfile { get; }
@@ -131,7 +139,7 @@ internal sealed class MetadataWritePlan
             {
                 exif = ExifTiff.Rewrite(exifProfile.Data.Span, metadata.Orientation, canvasSize, removeThumbnail: false, format);
             }
-            else if (metadata.Orientation != ExifOrientation.TopLeft)
+            else if (metadata.Orientation != ExifOrientation.TopLeft && !capabilities.NativeOrientation)
             {
                 exif = ExifTiff.CreateMinimal(metadata.Orientation);
             }
@@ -248,13 +256,24 @@ internal sealed class MetadataWritePlan
             }
         }
 
-        // No format stores a CICP color description. A written ICC profile describes the colors in its place; without one,
-        // dropping a description that is not equivalent to sRGB would relabel the samples as sRGB
-        if (metadata.Cicp is { } cicp && icc is null && !IsSrgbEquivalent(cicp) && !(metadata.TransferFunction == ColorTransferFunction.Linear && cicp.TransferCharacteristics is 8))
-            context.Unsupported("CICP color description (the samples would be read as sRGB)");
+        // AVIF stores any CICP color description; JPEG XL stores the ones it can enumerate, as its color encoding, when no
+        // ICC profile is written. Elsewhere a written ICC profile describes the colors in its place; without one, dropping
+        // a description that is not equivalent to sRGB would relabel the samples as sRGB
+        var storedCicp = capabilities.Cicp ? metadata.Cicp : null;
+        if (!capabilities.Cicp && metadata.Cicp is { } cicp && icc is null && !IsSrgbEquivalent(cicp) && !(metadata.TransferFunction == ColorTransferFunction.Linear && cicp.TransferCharacteristics is 8))
+        {
+            if (capabilities.EnumeratedCicp && JpegXlEncoderColor.FromCicp(cicp) is not null)
+            {
+                storedCicp = cicp;
+            }
+            else
+            {
+                context.Unsupported("CICP color description (the samples would be read as sRGB)");
+            }
+        }
 
         var orientation = capabilities.NativeOrientation ? metadata.Orientation : ExifOrientation.TopLeft;
-        return new MetadataWritePlan(icc, exif, xmp, text, resolution, transferFunction, orientation);
+        return new MetadataWritePlan(icc, exif, xmp, text, resolution, transferFunction, orientation, storedCicp);
     }
 
     private static bool ContainsKeyword(List<ImageTextEntry> entries, string keyword)
@@ -317,8 +336,16 @@ internal sealed class MetadataWritePlan
         // TIFF stores the orientation in its own tag, so no EXIF block has to be synthesized for it
         private static readonly FormatCapabilities Tiff = new(icc: true, exif: false, xmp: true, resolution: true, TextSupport.None, nativeOrientation: true);
 
-        private FormatCapabilities(bool icc, bool exif, bool xmp, bool resolution, TextSupport text, bool linearTransfer = false, bool nativeOrientation = false)
+        // AVIF stores the orientation as item properties (irot and imir) and the color description in a colr box
+        private static readonly FormatCapabilities Avif = new(icc: true, exif: true, xmp: true, resolution: false, TextSupport.None, nativeOrientation: true, cicp: true);
+
+        // JPEG XL stores the orientation, the linear transfer function and an enumerable CICP description in its image header
+        private static readonly FormatCapabilities JpegXl = new(icc: true, exif: true, xmp: true, resolution: false, TextSupport.None, linearTransfer: true, nativeOrientation: true, enumeratedCicp: true);
+
+        private FormatCapabilities(bool icc, bool exif, bool xmp, bool resolution, TextSupport text, bool linearTransfer = false, bool nativeOrientation = false, bool cicp = false, bool enumeratedCicp = false)
         {
+            Cicp = cicp;
+            EnumeratedCicp = enumeratedCicp;
             LinearTransfer = linearTransfer;
             NativeOrientation = nativeOrientation;
             Icc = icc;
@@ -348,8 +375,20 @@ internal sealed class MetadataWritePlan
         /// <summary>Gets a value indicating whether the format can declare linear-light samples (QOI colorspace 1).</summary>
         public bool LinearTransfer { get; }
 
-        /// <summary>Gets a value indicating whether the format stores the orientation in a field of its own (the TIFF <c>Orientation</c> tag).</summary>
+        /// <summary>
+        /// Gets a value indicating whether the format stores the orientation in a field of its own (the TIFF <c>Orientation</c>
+        /// tag, the AVIF <c>irot</c> and <c>imir</c> properties): no EXIF block is created to hold it.
+        /// </summary>
         public bool NativeOrientation { get; }
+
+        /// <summary>
+        /// Gets a value indicating whether the format stores the CICP color descriptions that its own color encoding can
+        /// enumerate, when no ICC profile is written (JPEG XL).
+        /// </summary>
+        public bool EnumeratedCicp { get; }
+
+        /// <summary>Gets a value indicating whether the format stores any CICP color description (AVIF).</summary>
+        public bool Cicp { get; }
 
         /// <summary>
         /// Gets a value indicating whether the format stores at most one text entry per keyword (the ANI <c>INFO</c> list has
@@ -369,6 +408,8 @@ internal sealed class MetadataWritePlan
             ImageFormat.Bmp => Bmp,
             ImageFormat.Tiff => Tiff,
             ImageFormat.Ani => Ani,
+            ImageFormat.Avif => Avif,
+            ImageFormat.JpegXl => JpegXl,
             _ => None,
         };
 

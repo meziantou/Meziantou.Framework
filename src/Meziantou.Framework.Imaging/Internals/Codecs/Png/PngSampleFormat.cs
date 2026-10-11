@@ -114,6 +114,12 @@ internal sealed class PngSampleFormat
     /// <summary>Gets the number of bytes per expanded pixel.</summary>
     public int SourceBytesPerPixel { get; }
 
+    /// <summary>
+    /// Gets a value indicating whether an unfiltered scanline already is a row of source pixels (8-bit gray, RGB or RGBA
+    /// without a <c>tRNS</c> key), so that <see cref="Expand"/> would only copy it.
+    /// </summary>
+    public bool IsIdentity => BitDepth == 8 && !_hasKey && ColorType is 0 or 2 or 6;
+
     /// <summary>Creates the sample format of the image walked by a structure parser (IHDR, PLTE, tRNS already validated).</summary>
     public static PngSampleFormat Create(PngStructureParser structure)
     {

@@ -10,6 +10,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <param name="UnpooledAllocations">The number of rentals larger than the largest size class (allocated exactly, never retained).</param>
 /// <param name="RetainedReturns">The number of returned buffers that were retained.</param>
 /// <param name="DroppedReturns">The number of returned buffers left to the garbage collector because a retention bound was reached or the buffer is not poolable.</param>
+/// <param name="ReleasedStaleBuffers">The number of retained buffers of size classes no longer in use that were released to retain a returned buffer.</param>
 [StructLayout(LayoutKind.Auto)]
 internal readonly record struct SlabPoolDiagnostics(
     int RetainedBuffers,
@@ -18,4 +19,5 @@ internal readonly record struct SlabPoolDiagnostics(
     long NewPooledAllocations,
     long UnpooledAllocations,
     long RetainedReturns,
-    long DroppedReturns);
+    long DroppedReturns,
+    long ReleasedStaleBuffers);

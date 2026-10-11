@@ -10,7 +10,7 @@ internal static class WebPAlphaEncoder
 {
     /// <summary>Encodes the alpha channel of <paramref name="rgba"/>.</summary>
     /// <returns>The compressed bitstream (after the header byte) and the header byte.</returns>
-    public static (Vp8LBitWriter Bitstream, byte Header) Encode(AllocationScope scope, ReadOnlySpan<byte> rgba, int width, int height, int effort, CancellationToken cancellationToken)
+    public static (LsbBitWriter Bitstream, byte Header) Encode(AllocationScope scope, ReadOnlySpan<byte> rgba, int width, int height, int effort, CancellationToken cancellationToken)
     {
         var count = width * height;
         using var alphaBuffer = scope.Rent(count, AllocationKind.Temporary, clear: false);
@@ -48,10 +48,10 @@ internal static class WebPAlphaEncoder
             }
         }
 
-        Vp8LBitWriter? writer = null;
+        LsbBitWriter? writer = null;
         try
         {
-            writer = new Vp8LBitWriter(scope);
+            writer = new LsbBitWriter(scope);
             Vp8LEncoder.EncodeImageStream(scope, writer, argb, width, height, effort, cancellationToken);
             writer.Finish();
             var result = (writer, (byte)(1 | (filter << 2)));

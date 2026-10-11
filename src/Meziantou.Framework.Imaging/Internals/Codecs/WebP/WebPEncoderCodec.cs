@@ -429,10 +429,10 @@ internal sealed class WebPEncoderCodec : ImageEncoderCodec
     /// <summary>The compressed chunks of one frame: the bitstream (and the alpha data of a lossy frame).</summary>
     private sealed class EncodedFrame : IDisposable
     {
-        private Vp8LBitWriter? _alpha;
+        private LsbBitWriter? _alpha;
         private byte _alphaHeader;
-        private Vp8LBitWriter? _lossless;
-        private WebPPayloadWriter? _lossy;
+        private LsbBitWriter? _lossless;
+        private PooledPayloadWriter? _lossy;
 
         public static EncodedFrame EncodeLossless(AllocationScope scope, Span<byte> rgba, int width, int height, int effort, CancellationToken cancellationToken)
         {
@@ -458,13 +458,13 @@ internal sealed class WebPEncoderCodec : ImageEncoderCodec
         }
 
         /// <summary>Effort 9: neither predictor selection criterion is always smaller, so both are tried and the smaller stream is kept.</summary>
-        private static Vp8LBitWriter EncodeSmallestStream(AllocationScope scope, Span<uint> argb, int width, int height, CancellationToken cancellationToken)
+        private static LsbBitWriter EncodeSmallestStream(AllocationScope scope, Span<uint> argb, int width, int height, CancellationToken cancellationToken)
         {
             using var copy = scope.Rent(argb.Length * sizeof(uint), AllocationKind.Temporary, clear: false);
             var second = unsafe(MemoryMarshal.Cast<byte, uint>(copy.RawBuffer.AsSpan(0, argb.Length * sizeof(uint))));
             argb.CopyTo(second);
             var entropy = EncodeStream(scope, argb, width, height, effort: 9, entropyPredictors: true, cancellationToken);
-            Vp8LBitWriter absolute;
+            LsbBitWriter absolute;
             try
             {
                 absolute = EncodeStream(scope, second, width, height, effort: 9, entropyPredictors: false, cancellationToken);
@@ -485,9 +485,9 @@ internal sealed class WebPEncoderCodec : ImageEncoderCodec
             return entropy;
         }
 
-        private static Vp8LBitWriter EncodeStream(AllocationScope scope, Span<uint> argb, int width, int height, int effort, bool? entropyPredictors, CancellationToken cancellationToken)
+        private static LsbBitWriter EncodeStream(AllocationScope scope, Span<uint> argb, int width, int height, int effort, bool? entropyPredictors, CancellationToken cancellationToken)
         {
-            var writer = new Vp8LBitWriter(scope);
+            var writer = new LsbBitWriter(scope);
             try
             {
                 Vp8LEncoder.Encode(scope, writer, argb, width, height, effort, cancellationToken, entropyPredictors);

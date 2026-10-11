@@ -104,7 +104,7 @@ public sealed class LimitBoundaryTests
         Assert.Equal(new Size(3, 5), tall.Size);
     }
 
-    public static TheoryData<string> Encoders => ["png", "apng", "gif", "jpeg", "webp", "webp-lossy", "webp-animated", "qoi"];
+    public static TheoryData<string> Encoders => ["png", "apng", "gif", "jpeg", "webp", "webp-lossy", "webp-animated", "qoi", "avif", "avif-lossy", "avif-animated", "jxl", "jxl-fast", "jxl-animated"];
 
     [Theory]
     [MemberData(nameof(Encoders))]
@@ -122,6 +122,9 @@ public sealed class LimitBoundaryTests
                 }
             }
         });
+
+        // A frame of a JPEG XL animation must have a duration
+        image.Frames[0].Metadata.Duration = new FrameDuration(1, 10);
 
         // Bisect the smallest budget the writer accepts (its private state at actual rented capacity), then check one byte less
         var low = 1L;
@@ -160,9 +163,13 @@ public sealed class LimitBoundaryTests
                 "webp" or "webp-animated" => new WebPEncoder(),
                 "webp-lossy" => new WebPEncoder { Compression = WebPCompression.Lossy },
                 "qoi" => new QoiEncoder(),
+                "avif" or "avif-animated" => new AvifEncoder(),
+                "avif-lossy" => new AvifEncoder { Compression = AvifCompression.Lossy },
+                "jxl" or "jxl-animated" => new JpegXlEncoder(),
+                "jxl-fast" => new JpegXlEncoder { Effort = 0 },
                 _ => new JpegEncoder(),
             },
-            ExpectedFrameCount = encoder is "apng" or "webp-animated" ? 2 : 1,
+            ExpectedFrameCount = encoder is "apng" or "webp-animated" or "avif-animated" or "jxl-animated" ? 2 : 1,
             Configuration = Configuration(new ImageResourceLimits { MaxLiveAllocationBytes = budget }),
         };
         using var output = new MemoryStream();

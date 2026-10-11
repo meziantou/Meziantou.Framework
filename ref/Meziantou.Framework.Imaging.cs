@@ -314,6 +314,7 @@ namespace Meziantou.Framework.Imaging
         Cur = 11,
         Ani = 12,
         Avif = 13,
+        JpegXl = 14,
     }
 
     public abstract class ImageFrame
@@ -967,6 +968,34 @@ namespace Meziantou.Framework.Imaging.Formats
         public Meziantou.Framework.Imaging.Formats.FrameDurationRounding DurationRounding { get => throw null; init { } }
     }
 
+    public enum AvifChromaSubsampling
+    {
+        Auto = 0,
+        Ratio444 = 1,
+        Ratio422 = 2,
+        Ratio420 = 3,
+    }
+
+    public enum AvifCompression
+    {
+        Lossless = 0,
+        Lossy = 1,
+    }
+
+    public sealed class AvifEncoder : Meziantou.Framework.Imaging.Formats.ImageEncoder
+    {
+        public override Meziantou.Framework.Imaging.ImageFormat Format { get => throw null; }
+        public Meziantou.Framework.Imaging.Formats.AvifCompression Compression { get => throw null; init { } }
+        public int Quality { get => throw null; init { } }
+        public int Effort { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Formats.AvifChromaSubsampling ChromaSubsampling { get => throw null; init { } }
+        public int? BitDepth { get => throw null; init { } }
+        public bool AllowBitDepthReduction { get => throw null; init { } }
+        public bool ClearTransparentColors { get => throw null; init { } }
+        public int KeyFrameInterval { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Formats.FrameDurationRounding DurationRounding { get => throw null; init { } }
+    }
+
     public enum BmpCompression
     {
         None = 0,
@@ -1084,6 +1113,13 @@ namespace Meziantou.Framework.Imaging.Formats
         public Meziantou.Framework.Imaging.Formats.JpegChromaSubsampling ChromaSubsampling { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Rgba64? BackgroundColor { get => throw null; init { } }
         public bool AllowBitDepthReduction { get => throw null; init { } }
+    }
+
+    public sealed class JpegXlEncoder : Meziantou.Framework.Imaging.Formats.ImageEncoder
+    {
+        public override Meziantou.Framework.Imaging.ImageFormat Format { get => throw null; }
+        public int Effort { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Formats.FrameDurationRounding DurationRounding { get => throw null; init { } }
     }
 
     public enum MetadataHandling

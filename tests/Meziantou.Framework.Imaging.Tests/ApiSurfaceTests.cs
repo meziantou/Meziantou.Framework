@@ -31,6 +31,7 @@ public sealed class ApiSurfaceTests
         typeof(PngEncoder),
         typeof(GifEncoder),
         typeof(JpegEncoder),
+        typeof(AvifEncoder),
         typeof(Pen),
         typeof(SolidBrush),
         typeof(LinearGradientBrush),
@@ -122,6 +123,26 @@ public sealed class ApiSurfaceTests
         Assert.NotNull(property.GetGetMethod());
         Assert.NotNull(property.GetSetMethod());
         Assert.Equal(NullabilityState.Nullable, new NullabilityInfoContext().Create(property).ReadState);
+    }
+
+    [Fact]
+    public void JpegXlAdditionsHaveTheirPublicShape()
+    {
+        // A new format is appended: the values of the existing members never change
+        Assert.Equal(14, (int)ImageFormat.JpegXl);
+        Assert.Equal(nameof(ImageFormat.JpegXl), Enum.GetName((ImageFormat)14));
+        Assert.Equal(14, Enum.GetValues<ImageFormat>().Max(format => (int)format));
+
+        // The encoder is an immutable settings object like the others: sealed, a parameterless constructor, init-only settings
+        var type = typeof(JpegXlEncoder);
+        Assert.Equal("Meziantou.Framework.Imaging.Formats", type.Namespace);
+        Assert.True(type.IsPublic && type.IsSealed && type.IsSubclassOf(typeof(ImageEncoder)));
+        Assert.NotNull(type.GetConstructor(Type.EmptyTypes));
+        Assert.Equal(
+            [nameof(JpegXlEncoder.DurationRounding), nameof(JpegXlEncoder.Effort), nameof(JpegXlEncoder.Format)],
+            type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly).Select(property => property.Name).Order(StringComparer.Ordinal));
+        Assert.Equal(typeof(int), GetDeclaredProperty(type, nameof(JpegXlEncoder.Effort)).PropertyType);
+        Assert.Equal(typeof(FrameDurationRounding), GetDeclaredProperty(type, nameof(JpegXlEncoder.DurationRounding)).PropertyType);
     }
 
     [Theory]

@@ -1,4 +1,7 @@
 using System.Numerics;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -11,6 +14,9 @@ internal static class Av1Cdef
 {
     /// <summary>The number of rows of the unfiltered copy of a band: 8 rows, and 2 rows above and below.</summary>
     public const int SourceRows = 12;
+
+    // The taps of a sample: 4 primary taps and 8 secondary taps
+    private const int TapCount = 12;
 
     /// <summary>Filters the planes of <paramref name="frame"/>.</summary>
     /// <param name="frame">The deblocked frame.</param>
@@ -222,7 +228,7 @@ internal static class Av1Cdef
     {
         // The offsets of the taps in the window: 4 primary taps, then 8 secondary taps; two taps of opposite signs for each
         // distance, the two taps of the first distance before the ones of the second
-        Span<int> offsets = stackalloc int[12];
+        Span<int> offsets = stackalloc int[TapCount];
         var directions = Av1Tables.CdefDirections;
         for (var k = 0; k < 2; k++)
         {
@@ -241,10 +247,33 @@ internal static class Av1Cdef
 
         var priShift = priStr is 0 ? 0 : Math.Max(0, damping - BitOperations.Log2((uint)priStr));
         var secShift = secStr is 0 ? 0 : Math.Max(0, damping - BitOperations.Log2((uint)secStr));
-        int priTap0 = priTaps[0];
-        int priTap1 = priTaps[1];
-        int secTap0 = secTaps[0];
-        int secTap1 = secTaps[1];
+        FilterInteriorRows(destination, window, stride, w, h, offsets, priStr, secStr, priShift, secShift, priTaps[0], priTaps[1], secTaps[0], secTaps[1]);
+    }
+
+    /// <summary>
+    /// Filters the rows of a block whose taps are all inside the frame, from the offsets of its taps in the window.
+    /// </summary>
+    /// <remarks>
+    /// With 128-bit hardware vectors, the samples of a row of the block (8 or 4 samples) are filtered together in 16-bit
+    /// lanes, with the arithmetic of <see cref="FilterInteriorRowsScalar"/>: a sample has at most 12 bits, a difference of
+    /// samples 13 bits with its sign, and the sum of the 12 weighted taps (weights of at most 4, magnitudes of at most the
+    /// strengths, which are below 256) stays far below 2^15.
+    /// </remarks>
+    internal static void FilterInteriorRows(Span<ushort> destination, ReadOnlySpan<ushort> window, int stride, int w, int h, ReadOnlySpan<int> offsets, int priStr, int secStr, int priShift, int secShift, int priTap0, int priTap1, int secTap0, int secTap1)
+    {
+        if (Vector128.IsHardwareAccelerated && w is 8 or 4 && AreTapsInside(destination, window, stride, w, h, offsets))
+        {
+            FilterInteriorRowsVector(destination, window, stride, w, h, offsets, priStr, secStr, priShift, secShift, priTap0, priTap1, secTap0, secTap1);
+        }
+        else
+        {
+            FilterInteriorRowsScalar(destination, window, stride, w, h, offsets, priStr, secStr, priShift, secShift, priTap0, priTap1, secTap0, secTap1);
+        }
+    }
+
+    /// <summary>The scalar reference of <see cref="FilterInteriorRows"/>.</summary>
+    internal static void FilterInteriorRowsScalar(Span<ushort> destination, ReadOnlySpan<ushort> window, int stride, int w, int h, ReadOnlySpan<int> offsets, int priStr, int secStr, int priShift, int secShift, int priTap0, int priTap1, int secTap0, int secTap1)
+    {
         for (var i = 0; i < h; i++)
         {
             var center = ((i + 2) * stride) + 2;
@@ -264,7 +293,7 @@ internal static class Av1Cdef
                         sum += (t < 2 ? priTap0 : priTap1) * ConstrainShifted(p - x, priStr, priShift);
                 }
 
-                for (var t = 4; t < 12; t++)
+                for (var t = 4; t < TapCount; t++)
                 {
                     int p = window[center + offsets[t]];
                     max = Math.Max(p, max);
@@ -275,6 +304,89 @@ internal static class Av1Cdef
 
                 row[j] = (ushort)Math.Clamp(x + ((8 + sum - (sum < 0 ? 1 : 0)) >> 4), min, max);
             }
+        }
+    }
+
+    // Whether every sample that the vector rows read and write is inside the spans (they are then accessed without checks)
+    private static bool AreTapsInside(Span<ushort> destination, ReadOnlySpan<ushort> window, int stride, int w, int h, ReadOnlySpan<int> offsets)
+    {
+        var lowest = 0;
+        var highest = 0;
+        foreach (var offset in offsets)
+        {
+            lowest = Math.Min(lowest, offset);
+            highest = Math.Max(highest, offset);
+        }
+
+        var firstCenter = (2 * stride) + 2;
+        var lastCenter = ((h + 1) * stride) + 2 + (w - 1);
+        return offsets.Length == TapCount && h > 0 && stride >= w && firstCenter + lowest >= 0 && lastCenter + highest < window.Length && ((h - 1) * stride) + w <= destination.Length;
+    }
+
+    private static void FilterInteriorRowsVector(Span<ushort> destination, ReadOnlySpan<ushort> window, int stride, int w, int h, ReadOnlySpan<int> offsets, int priStr, int secStr, int priShift, int secShift, int priTap0, int priTap1, int secTap0, int secTap1)
+    {
+        ref var source = ref unsafe(MemoryMarshal.GetReference(window));
+        ref var output = ref unsafe(MemoryMarshal.GetReference(destination));
+        var priThreshold = Vector128.Create((short)priStr);
+        var secThreshold = Vector128.Create((short)secStr);
+        var eight = Vector128.Create((short)8);
+        for (var i = 0; i < h; i++)
+        {
+            var center = ((i + 2) * stride) + 2;
+            var x = Load(ref source, center, w);
+            var max = x;
+            var min = x;
+            var sum = Vector128<short>.Zero;
+            for (var t = 0; t < 4; t++)
+            {
+                var p = Load(ref source, center + offsets[t], w);
+                max = Vector128.Max(p, max);
+                min = Vector128.Min(p, min);
+                if (priStr is not 0)
+                    sum += Constrain(p - x, priThreshold, priShift) * (short)(t < 2 ? priTap0 : priTap1);
+            }
+
+            for (var t = 4; t < TapCount; t++)
+            {
+                var p = Load(ref source, center + offsets[t], w);
+                max = Vector128.Max(p, max);
+                min = Vector128.Min(p, min);
+                if (secStr is not 0)
+                    sum += Constrain(p - x, secThreshold, secShift) * (short)(t < 8 ? secTap0 : secTap1);
+            }
+
+            // (8 + sum - (sum < 0 ? 1 : 0)) >> 4: the sign of the sum is -1 or 0
+            var filtered = x + ((eight + sum + (sum >> 15)) >> 4);
+            var result = Vector128.Min(Vector128.Max(filtered, min), max).AsUInt16();
+            ref var target = ref unsafe(Unsafe.Add(ref output, i * stride));
+            if (w is 8)
+            {
+                unsafe { result.StoreUnsafe(ref target); }
+            }
+            else
+            {
+                unsafe { Unsafe.WriteUnaligned(ref Unsafe.As<ushort, byte>(ref target), result.AsUInt64().ToScalar()); }
+            }
+        }
+
+        // 8 samples, or 4 samples in the lower lanes (nothing is read after them)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static Vector128<short> Load(ref ushort source, int index, int w)
+        {
+            ref var first = ref unsafe(Unsafe.Add(ref source, index));
+            return w is 8
+                ? unsafe(Vector128.LoadUnsafe(ref first)).AsInt16()
+                : Vector128.CreateScalar(unsafe(Unsafe.ReadUnaligned<ulong>(ref Unsafe.As<ushort, byte>(ref first)))).AsInt16();
+        }
+
+        // ConstrainShifted on every lane
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static Vector128<short> Constrain(Vector128<short> diff, Vector128<short> threshold, int shift)
+        {
+            var absolute = Vector128.Abs(diff);
+            var magnitude = Vector128.Max(Vector128<short>.Zero, Vector128.Min(absolute, threshold - (absolute >> shift)));
+            var sign = diff >> 15;
+            return (magnitude ^ sign) - sign;
         }
     }
 

@@ -47,8 +47,8 @@ public sealed class ImageMetadata
     /// This is a label: setting it does not convert the pixels. <see cref="ImageProcessingExtensions.ConvertColorProfile"/>
     /// converts <see cref="ColorTransferFunction.Linear"/> samples as linear light and resets the label. Linear-light
     /// resizing (<see cref="ResizeWorkingSpace.LinearSrgb"/>) and convolution (<see cref="ConvolutionWorkingSpace.LinearSrgb"/>) filter
-    /// <see cref="ColorTransferFunction.Linear"/> samples directly, as they already are linear light. Only QOI stores
-    /// <see cref="ColorTransferFunction.Linear"/>; other encoders treat it as metadata they cannot store
+    /// <see cref="ColorTransferFunction.Linear"/> samples directly, as they already are linear light. Only QOI and JPEG XL
+    /// store <see cref="ColorTransferFunction.Linear"/>; other encoders treat it as metadata they cannot store
     /// (<see cref="Formats.ImageEncoder.MetadataHandling"/>).
     /// </remarks>
     /// <exception cref="ArgumentOutOfRangeException">The value is not a defined <see cref="ColorTransferFunction"/>.</exception>
@@ -70,8 +70,11 @@ public sealed class ImageMetadata
     /// </summary>
     /// <remarks>
     /// This is a label: no operation converts the pixels. When an <see cref="IccProfile"/> is also present, the profile
-    /// describes the color primaries and the transfer function. Only AVIF stores a description; encoders treat a description
-    /// that is not equivalent to sRGB as metadata they cannot store (<see cref="Formats.ImageEncoder.MetadataHandling"/>).
+    /// describes the color primaries and the transfer function. AVIF files declare a description, and so do the JPEG XL
+    /// files whose enumerated color encoding has code points. The AVIF encoder stores any description and the JPEG XL
+    /// encoder the ones the format can enumerate; the other encoders treat a description that is not equivalent to sRGB as
+    /// metadata they cannot store
+    /// (<see cref="Formats.ImageEncoder.MetadataHandling"/>).
     /// </remarks>
     public CicpColorDescription? Cicp { get; set; }
 

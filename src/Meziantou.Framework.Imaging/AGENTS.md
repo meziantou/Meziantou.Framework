@@ -1,8 +1,9 @@
 # Meziantou.Framework.Imaging
 
-A fully managed image library: PNG/APNG, GIF, JPEG, WebP, QOI, BMP, TGA, Netpbm, TIFF, ICO/CUR and ANI decoding and
-encoding, AVIF decoding (with its own AV1 decoder), animation-aware processing, vector drawing, font files (TrueType,
-OpenType, WOFF, WOFF2), ICC color conversion, and bounded-memory streaming readers and writers.
+A fully managed image library: PNG/APNG, GIF, JPEG, WebP, QOI, BMP, TGA, Netpbm, TIFF, ICO/CUR, ANI and AVIF (with its
+own AV1 decoder and encoder) decoding and encoding, JPEG XL decoding and lossless encoding, animation-aware processing,
+vector drawing, font files (TrueType, OpenType, WOFF, WOFF2), ICC color conversion, and bounded-memory streaming readers
+and writers.
 
 These instructions complete the repository-level `AGENTS.md`. The user guide is [readme.md](readme.md): it states what
 the library guarantees to its callers (support matrix, limitations, defaults). Keep the code, the XML documentation and
@@ -73,6 +74,10 @@ the library guarantees to its callers (support matrix, limitations, defaults). K
 - Geometry changes go through `PixelStorageTransaction`: replacements are budgeted while the originals are live and are
   only swapped on commit.
 - Sequential readers and writers keep live storage independent of the frame count.
+- `SlabPool` retention is bounded per size class and in total bytes. When the total bound is reached, a returned buffer
+  releases the buffers of the size classes that were not used recently (`SlabPoolOptions.StaleAfterOperations`), so that
+  a change of image sizes or codecs does not leave the pool full of buffers nobody rents; the size classes in use are
+  never released for one another.
 
 ## Codec infrastructure
 
@@ -97,8 +102,8 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
 - A new format always adds an `ImageFormat` member, its name in `ImageFormatNames`, an `ImageCodec` in
   `ImageCodecRegistry`, a default pixel format in `DefaultPixelFormats`, and a row in the support matrix and a section in
   the format reference of `readme.md`. A format that is also written adds an encoder codec in `ImageEncoderRegistry`, a
-  public `ImageEncoder` in `Formats/` and its extensions in `ImageEncoder.FromPath`. A format that is only read (AVIF)
-  makes `ImageEncoder.FromPath` reject its extensions with a message that says so.
+  public `ImageEncoder` in `Formats/` and its extensions in `ImageEncoder.FromPath`. A format that is only read (none
+  today) makes `ImageEncoder.FromPath` reject its extensions with a message that says so.
 - **AVIF and AV1** (`Internals/Codecs/Avif`). The container walker resolves the image (`AvifImagePlan`, from the `meta`
   box) or the image sequence (`AvifMovieBox`, from the `moov` box) before any data is read, then captures the items or
   samples as their bytes go by. The AV1 decoder (`Av1/`) follows the AV1 Bitstream & Decoding Process Specification
@@ -111,6 +116,41 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   Scalability only changes which frames are output, never how they are decoded: the units outside the operating point
   are dropped, and a temporal unit with several spatial layers outputs the frame of its highest layer (what a player
   shows, and what `lsel`-less layered AVIF images present). `OutputAllLayers` is for conformance tests only.
+- **AV1 encoder** (`Internals/Codecs/Avif/Av1/Encoding`, and the `Write` and `Encode` parts of `Av1TileCoder`). The
+  specification only describes decoding: the encoder is written from it, never from another encoder.
+  - The encoder shares the state and the processes of the decoder (`Av1FrameCodingState`, the prediction, the
+    reconstruction, the in-loop filters) and never duplicates them: the frame it keeps is the frame a decoder outputs.
+    A syntax element is written by a `Write` method that sits on the same context derivation as its `Read` method in
+    `Av1TileCoder`; extract the derivation when a `Read` method computes it inline.
+  - The headers are written (`Av1HeaderWriter`), then parsed back by the parsers of the decoder: the encoder never
+    derives a header variable itself.
+  - The search encodes its candidates for real, records its decisions (`Av1EncoderWorkspace`) and replays the records to
+    the symbol encoder. A candidate that changes a context that the search does not save, or a decision that is not in
+    the record of its block, is a stream that decodes to something else: `Av1EncoderRoundTripTests` (the decoder of the
+    library must output the reconstruction of the encoder) and `AvifEncoderInteropTests` (dav1d and libaom must output
+    the same planes) are the tests to run after any change.
+  - Every decision is made with integers (rates, distortions, the forward transforms): the output must not depend on
+    the platform. The forward transforms are measured on the inverse kernels of the decoder, not written out.
+  - The palettes of the block being coded live where the decoder has them (the scratch of the tile), and those of the
+    blocks above and to the left are contexts: a candidate with a palette changes them, so they are in the context
+    snapshots of a frame that has palettes, and the palettes of a block are in its record.
+  - A frame of a sequence that is not a key frame is an inter frame whose only reference is the previous frame
+    (`LAST_FRAME`; every slot is refreshed by every frame). An inter block is written from the motion vector stack that
+    `FindMvStack` builds, like a decoder: the stack reads which blocks of the frame are written, so the search marks
+    the blocks of a region as not written (`RefFrameNotWritten`) whenever it restores the region. The motion search
+    only proposes a motion vector: the block is then encoded like any candidate.
+  - The container writer (`AvifFileWriter`) shares no code with `AvifFileBuilder`, the builder of the test harness.
+- **JPEG XL** (`Internals/Codecs/JpegXl`). The structure parser reads the container and gives the codestream to
+  `JpegXlCodestreamWalker` in whatever slices arrive; the image header and each frame header are parsed speculatively
+  and retried with more bytes, a frame is decoded once its sections are complete. The constant tables
+  (`JpegXl/Tables/*.cs`) are transcribed by hand, since there is no public specification text to extract them from:
+  every table must be reached by a test that compares the decoder with the reference decoders. Lossless (Modular)
+  decoding and the encoder are exact. VarDCT is defined in floating point, so lossy decoding is compared with a
+  tolerance, measured against both djxl and jxl-oxide, which must also agree with each other: never loosen a tolerance
+  to hide a file that is read in two ways. The integer path (`JpegXlDecoder.WriteFrame`) is only taken by frames that
+  are shown as they are stored; everything else goes through `JpegXlFrameRenderer`, in floating point, where 1 is the
+  largest integer sample. The render order is the one of libjxl: restoration filters, patches, splines, upsampling,
+  noise, color transform, blending.
 - `ZLibStream` reports truncation as a clean end: check that the expected number of bytes was produced.
 
 ## Color management
@@ -232,10 +272,19 @@ directory and the fixed-size tables, `CmapTable` maps characters, `GlyfOutlineRe
   dotnet run -c Release --project benchmarks/ImagingBenchmarks -f net10.0 -- service --seconds 10
   dotnet run -c Release --project benchmarks/ImagingBenchmarks -f net10.0 -- webp-quality 512 3
   dotnet run -c Release --project benchmarks/ImagingBenchmarks -f net10.0 -- profile PngBenchmarks.SaveLarge8 20
+  dotnet run -c Release --project benchmarks/ImagingBenchmarks -f net10.0 -- profile PngBenchmarks.SaveLarge8 50x
   dotnet run eng/compare-benchmarks.cs -- <baseline>/results <current>/results
   ```
 
   `Workloads/` has no BenchmarkDotNet dependency: the conformance tests compile it to validate the workload outputs.
+
+  `profile` prints the mean, the minimum and the median time of an iteration, the managed bytes allocated per iteration and
+  what the shared buffer pool did. `<n>x` runs a fixed number of iterations instead of a duration: on a busy machine,
+  compare two builds with a process counter that does not depend on the load (`/usr/bin/time -l dotnet
+  ImagingBenchmarks.dll profile <Class.Method> <n>x` reports the retired instructions and the cycles on macOS; subtract a
+  `1x` run to remove the setup) rather than with wall-clock times.
+- The stack sampler of `dotnet-trace` blames the method that holds the next safe point, and it also samples the setup of
+  the benchmark class: confirm a hot spot by timing the stage (temporary `Stopwatch` counters) before optimizing it.
 
 ## Projects
 
@@ -290,8 +339,8 @@ dotnet publish tests/Meziantou.Framework.Imaging.AotSmoke -c Release -f net11.0 
   tool directly (`--alllayers 1`, its default, against `Av1Decoder.OutputAllLayers`: the reference digests of the Argon
   suite hold every shown frame of every layer, where a player and this test only take the highest layer of a temporal
   unit).
-- Interop tests download ffmpeg, libwebp and libavif from the release pinned by the `Meziantou.Prebuilt` package (same
-  version in the test harness and the corpus generator). A download failure, an unexpected version or a missing
+- Interop tests download ffmpeg, libwebp, libavif, libjxl (`cjxl`, `djxl`, `jxlinfo`, `jxl_from_tree`) and jxl-oxide from
+  the release pinned by the `Meziantou.Prebuilt` package (same version in the test harness and the corpus generator). A download failure, an unexpected version or a missing
   capability fails the test; it is never skipped. The Apple ImageIO cases need `swift` and only run on macOS.
 - When implementing or changing a member, add unit tests, conformance tests with independent references, and interop
   tests for encoders.
@@ -307,6 +356,16 @@ dotnet publish tests/Meziantou.Framework.Imaging.AotSmoke -c Release -f net11.0 
 
   The `icc` generator (color profiles and LittleCMS vectors) also needs `--icc-profiles <directory>`: see the fixtures
   README.
+- **JPEG XL fixtures** (`jxl` generator, `JxlCorpus.cs` and `JxlCorpus.Fixtures.cs`). A lossless fixture expects the
+  pattern given to `cjxl`, or the values its `jxl_from_tree` tree sets; djxl and jxl-oxide must both give exactly that. A
+  lossy fixture expects what djxl decodes, cross-checked with jxl-oxide, under a tolerance derived from the measured error
+  of the library (`LibraryJxlMeasurements`): after a change of the lossy decoder, run
+  `JpegXlDecoderConformanceTests.ToleranceIsTheMeasuredDisagreementWithTheReference`, copy the lines it prints into the
+  table and regenerate. An invalid fixture is only added when both reference decoders reject it. The fields of the files
+  (boxes, image header, frame headers, feature tags, hidden pixels) are read by `TestHarness/JpegXl/ReferenceJpegXl`,
+  which is linked into the generator and has no dependency on the library; it does not read what is entropy coded (the
+  ICC profile of a codestream, a permuted table of contents), so the ICC fixtures use profiles of the corpus and the
+  conformance tests look them up by their hash.
 
   The coverage tables of the fixtures README are checked against the manifest (`FixtureCoverageMatrixTests`): update them
   when fixtures or feature tags change.

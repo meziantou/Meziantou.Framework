@@ -33,6 +33,10 @@ internal static class BuiltInIccProfiles
     // c = 1 / 12.92, d = 0.04045
     private static readonly int[] SrgbCurveParameters = [0x00026666, 0x0000F2A7, 0x00000D59, 0x000013D0, 0x00000A5B];
 
+    // The decoding function of Rec. ITU-R BT.709 as a parametric curve of type 3: g = 1 / 0.45, a = 1 / 1.099,
+    // b = 0.099 / 1.099, c = 1 / 4.5, d = 0.081
+    private static readonly int[] Bt709CurveParameters = [0x000238E4, 0x0000E8F0, 0x00001710, 0x000038E4, 0x000014BC];
+
     /// <summary>Gets the sRGB profile.</summary>
     public static IccProfile Srgb { get; } = Create(gray: false, linear: false, "sRGB IEC61966-2.1");
 
@@ -51,15 +55,104 @@ internal static class BuiltInIccProfiles
     /// </summary>
     public static IccProfile Cgats001CompatibleCmyk { get; } = new(MetadataBlob.FromOwnedArray(BuiltInCmykProfile.Data.ToArray()));
 
-    private static IccProfile Create(bool gray, bool linear, string description)
+    /// <summary>
+    /// Creates the profile of a color space given by the chromaticities of its primaries and of its white point and by a
+    /// tone curve: the colorants are adapted to the D50 illuminant of the connection space with the linear Bradford
+    /// transform, and rounded so that they sum exactly to that illuminant.
+    /// </summary>
+    /// <param name="gray">Whether the profile describes grayscale samples; the primaries are then not used.</param>
+    /// <param name="primaries">The chromaticities of the primaries: the x and y of red, green and blue.</param>
+    /// <param name="whiteX">The x of the white point.</param>
+    /// <param name="whiteY">The y of the white point.</param>
+    /// <param name="curve">The function that decodes the samples to linear light.</param>
+    /// <param name="exponent">The exponent of the decoding function, for <see cref="BuiltInIccCurve.Power"/>.</param>
+    /// <param name="renderingIntent">The rendering intent of the profile header.</param>
+    /// <param name="description">The description of the profile.</param>
+    /// <returns>The profile, or <see langword="null"/> when the chromaticities do not define a color space or a number does not fit an ICC profile.</returns>
+    public static IccProfile? TryCreate(bool gray, ReadOnlySpan<double> primaries, double whiteX, double whiteY, BuiltInIccCurve curve, double exponent, int renderingIntent, string description)
     {
-        var curve = linear ? CreateIdentityCurve() : CreateSrgbCurve();
+        ReadOnlySpan<double> d50 = [D50[0] / 65536.0, D50[1] / 65536.0, D50[2] / 65536.0];
+        Span<double> adaptation = stackalloc double[9];
+        if (!ChromaticityMath.TryGetBradfordAdaptation(whiteX, whiteY, d50, adaptation))
+            return null;
+
+        var chromaticAdaptation = new int[9];
+        if (!TryConvertToFixed(adaptation, chromaticAdaptation))
+            return null;
+
+        var colorants = new int[9];
+        if (!gray)
+        {
+            Span<double> rgbToXyz = stackalloc double[9];
+            Span<double> adapted = stackalloc double[9];
+            if (!ChromaticityMath.TryGetRgbToXyz(primaries, whiteX, whiteY, rgbToXyz))
+                return null;
+
+            ChromaticityMath.Multiply(adaptation, rgbToXyz, adapted);
+            Span<double> columns = [adapted[0], adapted[3], adapted[6], adapted[1], adapted[4], adapted[7], adapted[2], adapted[5], adapted[8]];
+            if (!TryConvertToFixed(columns, colorants))
+                return null;
+
+            // White (1, 1, 1) converts to the white of the connection space
+            for (var i = 0; i < 3; i++)
+            {
+                var blue = (long)D50[i] - colorants[i] - colorants[3 + i];
+                if (blue is < int.MinValue or > int.MaxValue)
+                    return null;
+
+                colorants[6 + i] = (int)blue;
+            }
+        }
+
+        byte[] curveData;
+        switch (curve)
+        {
+            case BuiltInIccCurve.Linear:
+                curveData = CreateIdentityCurve();
+                break;
+            case BuiltInIccCurve.Srgb:
+                curveData = CreateParametricCurve(3, SrgbCurveParameters);
+                break;
+            case BuiltInIccCurve.Bt709:
+                curveData = CreateParametricCurve(3, Bt709CurveParameters);
+                break;
+            default:
+                Span<int> parameters = stackalloc int[1];
+                if (!TryConvertToFixed([exponent], parameters) || parameters[0] <= 0)
+                    return null;
+
+                curveData = CreateParametricCurve(0, parameters);
+                break;
+        }
+
+        return Create(gray, curveData, chromaticAdaptation, colorants.AsSpan(0, 3), colorants.AsSpan(3, 3), colorants.AsSpan(6, 3), renderingIntent, description);
+    }
+
+    private static bool TryConvertToFixed(ReadOnlySpan<double> values, Span<int> result)
+    {
+        for (var i = 0; i < values.Length; i++)
+        {
+            var scaled = Math.Round(values[i] * 65536.0, MidpointRounding.AwayFromZero);
+            if (!(scaled >= int.MinValue && scaled <= int.MaxValue))
+                return false;
+
+            result[i] = (int)scaled;
+        }
+
+        return true;
+    }
+
+    private static IccProfile Create(bool gray, bool linear, string description)
+        => Create(gray, linear ? CreateIdentityCurve() : CreateParametricCurve(3, SrgbCurveParameters), ChromaticAdaptation, RedColorant, GreenColorant, BlueColorant, renderingIntent: 0, description);
+
+    private static IccProfile Create(bool gray, byte[] curve, ReadOnlySpan<int> chromaticAdaptation, ReadOnlySpan<int> red, ReadOnlySpan<int> green, ReadOnlySpan<int> blue, int renderingIntent, string description)
+    {
         var tags = new List<(string Signature, byte[] Data)>
         {
             ("desc", CreateText(description)),
             ("cprt", CreateText("Public domain (CC0-1.0)")),
             ("wtpt", CreateNumbers("XYZ ", D50)),
-            ("chad", CreateNumbers("sf32", ChromaticAdaptation)),
+            ("chad", CreateNumbers("sf32", chromaticAdaptation)),
         };
 
         if (gray)
@@ -68,9 +161,9 @@ internal static class BuiltInIccProfiles
         }
         else
         {
-            tags.Add(("rXYZ", CreateNumbers("XYZ ", RedColorant)));
-            tags.Add(("gXYZ", CreateNumbers("XYZ ", GreenColorant)));
-            tags.Add(("bXYZ", CreateNumbers("XYZ ", BlueColorant)));
+            tags.Add(("rXYZ", CreateNumbers("XYZ ", red)));
+            tags.Add(("gXYZ", CreateNumbers("XYZ ", green)));
+            tags.Add(("bXYZ", CreateNumbers("XYZ ", blue)));
             tags.Add(("rTRC", curve));
             tags.Add(("gTRC", curve));
             tags.Add(("bTRC", curve));
@@ -105,6 +198,7 @@ internal static class BuiltInIccProfiles
         BinaryPrimitives.WriteUInt16BigEndian(span[26..], 1);
         BinaryPrimitives.WriteUInt16BigEndian(span[28..], 1);
         "acsp"u8.CopyTo(span[36..]);
+        BinaryPrimitives.WriteUInt32BigEndian(span[64..], (uint)renderingIntent);
         for (var i = 0; i < 3; i++)
         {
             BinaryPrimitives.WriteInt32BigEndian(span[(68 + (4 * i))..], D50[i]);
@@ -136,15 +230,15 @@ internal static class BuiltInIccProfiles
         return data;
     }
 
-    /// <summary>Creates a parametricCurveType of function type 3 with the sRGB parameters.</summary>
-    private static byte[] CreateSrgbCurve()
+    /// <summary>Creates a parametricCurveType: function type 0 is a power function, function type 3 a power function with a linear segment near black.</summary>
+    private static byte[] CreateParametricCurve(ushort functionType, ReadOnlySpan<int> parameters)
     {
-        var data = new byte[12 + (4 * SrgbCurveParameters.Length)];
+        var data = new byte[12 + (4 * parameters.Length)];
         "para"u8.CopyTo(data);
-        BinaryPrimitives.WriteUInt16BigEndian(data.AsSpan(8), 3);
-        for (var i = 0; i < SrgbCurveParameters.Length; i++)
+        BinaryPrimitives.WriteUInt16BigEndian(data.AsSpan(8), functionType);
+        for (var i = 0; i < parameters.Length; i++)
         {
-            BinaryPrimitives.WriteInt32BigEndian(data.AsSpan(12 + (4 * i)), SrgbCurveParameters[i]);
+            BinaryPrimitives.WriteInt32BigEndian(data.AsSpan(12 + (4 * i)), parameters[i]);
         }
 
         return data;

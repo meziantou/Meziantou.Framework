@@ -23,7 +23,7 @@ public sealed class FaultInjectionTests
 
     public static TheoryData<string, string> DecodeCases => Combine(ValidIds, ["load", "load-async", "reader", "reader-async", "reader-into", "identify-full"]);
 
-    public static TheoryData<string, string> SaveCases => Combine(ValidIds, ["png", "gif", "jpeg", "webp", "qoi", "bmp", "bmp-indexed", "tga", "pnm"]);
+    public static TheoryData<string, string> SaveCases => Combine(ValidIds, ["png", "gif", "jpeg", "webp", "qoi", "bmp", "bmp-indexed", "tga", "pnm", "avif", "jxl"]);
 
     public static TheoryData<string, string> GeometryCases => Combine(ValidIds, ["crop", "auto-crop", "resize", "rotate", "auto-orient"]);
 
@@ -212,8 +212,9 @@ public sealed class FaultInjectionTests
                 audit.FailureInjector = null;
 
                 // Output failures at many positions of a non-seekable stream (a seekable stream for WebP animations, which
-                // patch their RIFF size: they reject non-seekable output before writing anything)
-                var patched = encoder is WebPEncoder && (image.Frames.Count > 1 || image.IsAnimated);
+                // patch their RIFF size, and for AVIF image sequences, which write their moov box last: they reject
+                // non-seekable output before writing anything)
+                var patched = (encoder is WebPEncoder && (image.Frames.Count > 1 || image.IsAnimated)) || (encoder is AvifEncoder && image.Frames.Count > 1);
                 if (patched)
                 {
                     await using var rejected = new TestOutputStream();
@@ -242,7 +243,7 @@ public sealed class FaultInjectionTests
                 Assert.Equal(live, audit.LiveBytes);
 
                 // A writer faulted by an I/O failure stays faulted
-                var patchedWriter = encoder is WebPEncoder && image.Frames.Count > 1;
+                var patchedWriter = encoder is WebPEncoder or AvifEncoder && image.Frames.Count > 1;
                 await using (var output = new TestOutputStream { FailAtPosition = 0, Seekable = patchedWriter, AllowPatching = patchedWriter })
                 using (var writer = CreateWriter(output, image, encoder))
                 {
@@ -407,6 +408,29 @@ public sealed class FaultInjectionTests
                 }
 
                 return image;
+            case "avif":
+                // The fastest search: the test encodes each input once per rental of the encoder
+                encoder = new AvifEncoder { MetadataHandling = MetadataHandling.Strip, AllowBitDepthReduction = true, Effort = 0 };
+                image.RemovePosterFrame();
+                if (image.Frames.Count == 1)
+                {
+                    image.Animation = null; // an image sequence of one image stores no animation settings
+                }
+
+                return image;
+            case "jxl":
+                encoder = new JpegXlEncoder { MetadataHandling = MetadataHandling.Strip };
+                image.RemovePosterFrame();
+                if (image.Frames.Count > 1)
+                {
+                    // A frame of a JPEG XL animation must have a duration, of at least half a millisecond
+                    foreach (var frame in image.Frames.Where(frame => frame.Metadata.Duration < new FrameDuration(1, 1000)))
+                    {
+                        frame.Metadata.Duration = new FrameDuration(1, 100);
+                    }
+                }
+
+                return image;
             case "qoi":
             case "bmp":
             case "bmp-indexed":
@@ -456,6 +480,12 @@ public sealed class FaultInjectionTests
         for (var i = 0; i < count; i++)
         {
             using var frame = image.Frames[i] is ImageFrame<Rgba32> ? null : Image.ImportPixelData<Rgba32>(new Rgba32[image.Width * image.Height], image.Width, image.Height);
+            if (frame is not null)
+            {
+                // The substitute keeps the timing of the frame: an encoder may reject a duration (JPEG XL frames without one)
+                frame.Frames[0].Metadata.Duration = image.Frames[i].Metadata.Duration;
+            }
+
             writer.WriteFrame(frame?.Frames[0] ?? (ImageFrame<Rgba32>)image.Frames[i]);
         }
     }

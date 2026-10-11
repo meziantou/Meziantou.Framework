@@ -418,7 +418,34 @@ internal static class Examples
     }
     // end-snippet
 
-    /// <summary>AVIF input: a still image or an animation is decoded, then saved in a format that has an encoder.</summary>
+    /// <summary>AVIF output: a lossy photo, a lossless image and an animation written as an image sequence.</summary>
+    // begin-snippet: save-avif
+    public static void SaveAvif(string photoPath, string avifPath, string losslessPath, string animatedPath, string animatedAvifPath)
+    {
+        using (var photo = Image.Load(photoPath))
+        {
+            // Lossy: Y'CbCr 4:2:0 by default. The alpha plane, when the image has one, is always stored losslessly.
+            photo.Save(avifPath, new AvifEncoder
+            {
+                Compression = AvifCompression.Lossy,
+                Quality = 80, // 0-100: size versus fidelity
+                Effort = 6,   // 0-9: encoding time versus size
+                AllowBitDepthReduction = true, // 16-bit sources are written with 12 bits
+            });
+
+            // The default is lossless: every sample of an 8-bit image is decoded back exactly. AVIF stores at most 12 bits:
+            // a 16-bit image needs a bit depth, which is the consent to round its samples.
+            photo.Save(losslessPath, new AvifEncoder { BitDepth = 12 });
+        }
+
+        // An animation is written as an image sequence, with its exact durations and its play count. It needs a seekable
+        // destination (the index of the images is written last): a path, a FileStream or a MemoryStream.
+        using var animation = Image.Load(animatedPath);
+        animation.Save(animatedAvifPath, new AvifEncoder());
+    }
+    // end-snippet
+
+    /// <summary>AVIF input: a still image or an animation is decoded, then saved in another format.</summary>
     // begin-snippet: load-avif
     public static string ConvertAvif(string avifPath, string pngPath)
     {
@@ -428,10 +455,33 @@ internal static class Examples
         // label, as an ICC profile is: the matrix and the range were applied to produce RGB, nothing else was converted.
         var description = $"{image.Width}x{image.Height} {image.PixelFormat}, frames: {image.Frames.Count}, color: {image.Metadata.Cicp}";
 
-        // There is no AVIF encoder. PNG keeps 16-bit samples, alpha and animations; it cannot store a color description
+        // PNG keeps 16-bit samples, alpha and animations, without loss. It cannot store a color description
         // that is not sRGB, so a strict save of an HDR image fails instead of relabeling its samples.
         image.Save(pngPath, new PngEncoder { MetadataHandling = MetadataHandling.Strict });
         return description;
+    }
+    // end-snippet
+
+    /// <summary>JPEG XL output: lossless files, 16-bit samples and animations included, and what a JPEG XL file declares.</summary>
+    // begin-snippet: save-jpegxl
+    public static string SaveJpegXl(string inputPath, string jxlPath, string animatedPath, string animatedJxlPath)
+    {
+        // Every pixel format is stored as it is: no bit depth reduction, no flattening, and the colors of fully
+        // transparent pixels are kept. The effort changes the size and the encoding time, never the pixels.
+        using (var image = Image.Load(inputPath))
+        {
+            image.Save(jxlPath, new JpegXlEncoder { Effort = 7 });
+        }
+
+        // Frames are written as they come: the destination does not need to be seekable, whatever the frame count.
+        using (var animation = Image.Load(animatedPath))
+        {
+            animation.Save(animatedJxlPath);
+        }
+
+        // Lossy (VarDCT) and lossless (Modular) files are decoded, whatever wrote them.
+        var info = Image.Identify(jxlPath);
+        return $"{info.Format} {info.Size.Width}x{info.Size.Height} {info.PixelFormat}, {info.BitsPerComponent} bits";
     }
     // end-snippet
 

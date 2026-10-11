@@ -124,8 +124,12 @@ internal sealed class AvifMovieBox : IDisposable
         // the track. The duration of the edit is in units of the time scale of the movie
         if (color.HasEditList && color.SegmentDuration is not (0 or ulong.MaxValue) && _timescale is not 0)
         {
+            // An edit that ends where the last image starts plays it when the image has no duration: the edit then covers
+            // the whole media
             var lastImageStart = color.MediaDuration - Math.Min(color.MediaDuration, color.LastSampleDuration);
-            if ((UInt128)color.SegmentDuration * color.Timescale <= (UInt128)lastImageStart * _timescale)
+            var editEnd = (UInt128)color.SegmentDuration * color.Timescale;
+            var lastStart = (UInt128)lastImageStart * _timescale;
+            if (editEnd < lastStart || (editEnd == lastStart && color.LastSampleDuration is not 0))
                 throw AvifFormat.Unsupported("The AVIF image sequence has an edit list that does not play the whole track.", "edit list");
         }
 

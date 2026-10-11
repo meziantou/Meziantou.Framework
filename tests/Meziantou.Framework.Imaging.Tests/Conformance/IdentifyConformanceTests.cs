@@ -267,9 +267,10 @@ public sealed class IdentifyConformanceTests
             return;
         }
 
-        if (fixture.Entry.Format == "webp" && expected.Animation is not null)
+        if (fixture.Entry.Format is "webp" or "jxl" && expected.Animation is not null)
         {
-            // A WebP header (VP8X animation flag, ANIM) declares an animation and its loop count, never its frame count
+            // A WebP header (VP8X animation flag, ANIM) declares an animation and its loop count, never its frame count; the
+            // image header of a JPEG XL codestream does the same (a frame without duration is a layer, not a frame)
             Assert.Null(info.FrameCount);
             Assert.True(info.IsAnimated);
             Assert.Equal(expected.Animation.TotalPlays, info.Animation?.TotalPlays);

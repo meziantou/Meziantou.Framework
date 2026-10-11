@@ -45,4 +45,10 @@ public sealed class EncodedFields
     /// AVIF input, or <see langword="null"/> for every other format.
     /// </summary>
     public int? TransformOrientation { get; internal set; }
+
+    /// <summary>
+    /// Gets a value indicating whether the input has an ICC profile that the inspector does not read: the one of a JPEG XL
+    /// codestream, which is entropy coded. <see cref="Icc"/> is then <see langword="null"/>.
+    /// </summary>
+    public bool HasUnreadIccProfile { get; internal set; }
 }

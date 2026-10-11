@@ -153,27 +153,13 @@ internal sealed class TgaPixelLayout
                     break;
 
                 case 24:
-                    for (var x = 0; x < width; x++)
-                    {
-                        var offset = x * 3;
-                        destination[offset] = stored[offset + 2];
-                        destination[offset + 1] = stored[offset + 1];
-                        destination[offset + 2] = stored[offset];
-                    }
-
+                    PixelConverter.SwapRedAndBlue24(stored[..(width * 3)], destination);
                     break;
 
                 default:
                     if (hasAlpha)
                     {
-                        for (var x = 0; x < width; x++)
-                        {
-                            var offset = x * 4;
-                            destination[offset] = stored[offset + 2];
-                            destination[offset + 1] = stored[offset + 1];
-                            destination[offset + 2] = stored[offset];
-                            destination[offset + 3] = stored[offset + 3];
-                        }
+                        PixelConverter.ConvertRow(PixelFormat.Bgra32, stored[..(width * 4)], PixelFormat.Rgba32, destination);
                     }
                     else
                     {

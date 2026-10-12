@@ -11,7 +11,7 @@ using Meziantou.Framework.Imaging.TestHarness.Streams;
 namespace Meziantou.Framework.Imaging.InteropTests;
 
 /// <summary>
-/// Baseline JPEG encoder output decoded by the pinned FFmpeg. FFmpeg decodes every output to its native planes
+/// Baseline and progressive JPEG encoder output decoded by the pinned FFmpeg. FFmpeg decodes every output to its native planes
 /// (no swscale conversion, so nothing depends on FFmpeg's chroma interpolation or color conversion, which vary between
 /// versions); ffprobe reports the dimensions, the sampling (pixel format <c>yuvj444p</c>/<c>yuvj422p</c>/<c>yuvj420p</c>/<c>gray</c>),
 /// the full-range flag, the ICC profile and the EXIF orientation.
@@ -54,27 +54,31 @@ public sealed class JpegEncoderInteropTests
         [("gray", 100)] = 55,
     };
 
-    public static TheoryData<string, int, int, int> Cases()
+    public static TheoryData<string, int, int, int, JpegEncodingProcess> Cases()
     {
-        var data = new TheoryData<string, int, int, int>();
-        foreach (var sampling in new[] { "444", "422", "420", "gray" })
+        var data = new TheoryData<string, int, int, int, JpegEncodingProcess>();
+        foreach (var process in new[] { JpegEncodingProcess.Baseline, JpegEncodingProcess.Progressive })
         {
-            foreach (var quality in new[] { 10, 50, 90, 100 })
+            foreach (var sampling in new[] { "444", "422", "420", "gray" })
             {
-                data.Add(sampling, quality, 96, 64);
-                data.Add(sampling, quality, 37, 23);
+                foreach (var quality in new[] { 10, 50, 90, 100 })
+                {
+                    data.Add(sampling, quality, 96, 64, process);
+                    data.Add(sampling, quality, 37, 23, process);
+                }
             }
+
+            data.Add("420", 75, 1, 1, process);
+            data.Add("422", 75, 17, 2, process);
+            data.Add("444", 75, 2, 17, process);
         }
 
-        data.Add("420", 75, 1, 1);
-        data.Add("422", 75, 17, 2);
-        data.Add("444", 75, 2, 17);
         return data;
     }
 
     [Theory]
     [MemberData(nameof(Cases))]
-    public async Task EncodedImagesDecodeWithFFmpeg(string sampling, int quality, int width, int height)
+    public async Task EncodedImagesDecodeWithFFmpeg(string sampling, int quality, int width, int height, JpegEncodingProcess process)
     {
         var ffmpeg = await RequiredTools.FFmpegAsync();
         var source = JpegTestPatterns.PhotoLike(width, height, seed: 7);
@@ -84,8 +88,9 @@ public sealed class JpegEncoderInteropTests
             source = JpegTestPatterns.ToGray(source);
         }
 
-        var encoder = new JpegEncoder { Quality = quality, ChromaSubsampling = GetSubsampling(sampling) };
-        var name = string.Create(CultureInfo.InvariantCulture, $"photo-{sampling}-q{quality}-{width}x{height}");
+        // Both processes code the same coefficients: the same checks and thresholds apply
+        var encoder = new JpegEncoder { Quality = quality, ChromaSubsampling = GetSubsampling(sampling), Process = process };
+        var name = string.Create(CultureInfo.InvariantCulture, $"photo-{sampling}-q{quality}-{width}x{height}-{process}");
         var path = await EncodeToFileAsync(source, gray ? PixelFormat.Gray8 : PixelFormat.Rgb24, encoder, name);
         var error = await AssertDecodesWithFFmpegAsync(ffmpeg, path, source, sampling);
         TestContext.Current.TestOutputHelper?.WriteLine(string.Create(CultureInfo.InvariantCulture, $"{name}: {new FileInfo(path).Length} bytes, {error.Describe()} (FFmpeg {ffmpeg.Version})"));
@@ -221,16 +226,18 @@ public sealed class JpegEncoderInteropTests
         Assert.Equal(["Comment: a comment"], fields.Text.Select(entry => entry.ToString()));
     }
 
-    [Fact]
-    public async Task NonSeekableAsynchronousWriterOutputDecodesWithFFmpeg()
+    [Theory]
+    [InlineData(JpegEncodingProcess.Baseline)]
+    [InlineData(JpegEncodingProcess.Progressive)]
+    public async Task NonSeekableAsynchronousWriterOutputDecodesWithFFmpeg(JpegEncodingProcess process)
     {
         var ffmpeg = await RequiredTools.FFmpegAsync();
         var source = JpegTestPatterns.PhotoLike(640, 360, seed: 5);
         using var image = Image.ImportPixelBytes<Rgb24>(source.Span, 640, 360);
-        var path = InteropSettings.GetArtifactsDirectory(nameof(JpegEncoderInteropTests)) / "large-writer.jpg";
+        var path = InteropSettings.GetArtifactsDirectory(nameof(JpegEncoderInteropTests)) / $"large-writer-{process}.jpg";
         using (var stream = new TestOutputStream { ForbidSynchronousWrites = true })
         {
-            await using (var writer = Image.CreateWriter<Rgb24>(stream, new ImageWriterOptions(640, 360) { Encoder = new JpegEncoder { Quality = 100, ChromaSubsampling = JpegChromaSubsampling.Ratio444 } }))
+            await using (var writer = Image.CreateWriter<Rgb24>(stream, new ImageWriterOptions(640, 360) { Encoder = new JpegEncoder { Quality = 100, ChromaSubsampling = JpegChromaSubsampling.Ratio444, Process = process } }))
             {
                 await writer.WriteFrameAsync(image.Frames[0], XunitCancellationToken);
                 await writer.CompleteAsync(XunitCancellationToken);

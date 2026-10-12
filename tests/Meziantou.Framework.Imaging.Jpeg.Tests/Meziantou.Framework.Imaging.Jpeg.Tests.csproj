@@ -4,7 +4,7 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework.Imaging.Tests</RootNamespace>
     <ImagingTestFixtureFormats>jpeg</ImagingTestFixtureFormats>
-    <ImagingTestEncoders>jpeg</ImagingTestEncoders>
+    <ImagingTestEncoders>jpeg;jpeg-progressive</ImagingTestEncoders>
   </PropertyGroup>
 
   <ItemGroup>

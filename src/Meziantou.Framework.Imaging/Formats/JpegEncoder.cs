@@ -1,10 +1,11 @@
 namespace Meziantou.Framework.Imaging.Formats;
 
-/// <summary>Immutable settings for baseline 8-bit JPEG encoding.</summary>
+/// <summary>Immutable settings for 8-bit JPEG encoding.</summary>
 /// <remarks>
 /// <para>
-/// The output is a baseline sequential Huffman JPEG (JFIF): one interleaved scan, the typical Huffman tables of ITU-T T.81
-/// Annex K, and the Annex K quantization tables scaled by <see cref="Quality"/>. Gray pixel formats produce a single
+/// The output is a Huffman-coded JPEG (JFIF) whose quantization tables are those of ITU-T T.81 Annex K scaled by
+/// <see cref="Quality"/>: by default a baseline sequential one (one interleaved scan, the typical Huffman tables of
+/// Annex K), or a progressive one (<see cref="Process"/>). Gray pixel formats produce a single
 /// grayscale component; color pixel formats produce full-range YCbCr subsampled according to <see cref="ChromaSubsampling"/>.
 /// The component layout follows the pixel format, never the pixel values.
 /// </para>
@@ -58,6 +59,28 @@ public sealed class JpegEncoder : ImageEncoder
         {
             if (!Enum.IsDefined(value))
                 throw new ArgumentOutOfRangeException(nameof(value), value, "The chroma subsampling is not valid.");
+
+            field = value;
+        }
+    }
+
+    /// <summary>Gets the coding process. Defaults to <see cref="JpegEncodingProcess.Baseline"/>.</summary>
+    /// <remarks>
+    /// Both processes store the same quantized coefficients, so they decode to the same pixels.
+    /// <see cref="JpegEncodingProcess.Progressive"/> writes them in several scans (six for a grayscale image, ten for a color
+    /// one), each with Huffman tables computed from its own statistics: the DC coefficients without their lowest bit, the
+    /// first five AC coefficients of the luminance without their two lowest bits, the chrominance without its lowest bit,
+    /// the rest of the luminance, then the missing bits. The coefficients of the whole image are kept in memory until the
+    /// last scan (two bytes per coefficient), where the baseline process only keeps a few rows.
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException">The value is not a defined <see cref="JpegEncodingProcess"/>.</exception>
+    public JpegEncodingProcess Process
+    {
+        get;
+        init
+        {
+            if (!Enum.IsDefined(value))
+                throw new ArgumentOutOfRangeException(nameof(value), value, "The coding process is not valid.");
 
             field = value;
         }

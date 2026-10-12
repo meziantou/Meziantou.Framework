@@ -139,7 +139,7 @@ internal static partial class CommonCorpus
         features.Add("jpeg.scans=" + Str(info.Scans));
         if (info.Scans > 1 && info.Sof is 0xC0 or 0xC1)
             features.Add("jpeg.scanComponents=" + string.Join(',', info.ScanComponents));
-        if (info.Sof == 0xC2)
+        if (info.Sof is 0xC2 or 0xCA)
             features.AddRange(ProgressiveFeatures(info));
         if (info.Quantization16)
             features.Add("jpeg.quantization=16-bit");

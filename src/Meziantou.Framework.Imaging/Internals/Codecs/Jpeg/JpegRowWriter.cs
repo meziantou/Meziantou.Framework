@@ -5,7 +5,7 @@ using System.Runtime.Intrinsics;
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
-/// Turns decoded component planes into output rows: chroma upsampling to the frame size,
+/// Turns decoded component planes of 8-bit samples into output rows: chroma upsampling to the frame size,
 /// color conversion to the source layout of the sink (<see cref="PixelFormat.Gray8"/> or <see cref="PixelFormat.Rgb24"/>), and
 /// the row writes. When the sink's plan is an identity, rows are produced directly in the frame storage.
 /// </summary>
@@ -52,7 +52,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// the edges and the remainders use the scalar code. The output is identical to the scalar reference.
 /// </para>
 /// </remarks>
-internal sealed class JpegRowWriter : IDisposable
+internal sealed class JpegRowWriter : JpegBandWriter
 {
     // Per-sample color terms: complete for R and B, unshifted (with the rounding half added once) for G
     private static readonly int[] CrToR = CreateTable(static v => ((91881 * v) + 32768) >> 16);
@@ -70,8 +70,6 @@ internal sealed class JpegRowWriter : IDisposable
     // The conversion of the inks of a four-component frame to RGB; null for the other frames
     private readonly IccPipeline? _inkConversion;
     private readonly int _width;
-    private readonly int _height;
-    private readonly int _bandRows;
     private readonly PooledBuffer?[] _upsampled;
     private PooledBuffer? _sourceRow;
     private PooledBuffer? _inkRow;
@@ -90,6 +88,7 @@ internal sealed class JpegRowWriter : IDisposable
     }
 
     private JpegRowWriter(JpegFrameComponent[] components, DecodedFrameSink? sink, JpegSampleReceiver? receiver, ImageColorModel colorModel, IccPipeline? inkConversion, int width, int height, int maxVertical, AllocationScope scope)
+        : base(height, maxVertical)
     {
         _components = components;
         _sink = sink;
@@ -97,8 +96,6 @@ internal sealed class JpegRowWriter : IDisposable
         _colorModel = colorModel;
         _inkConversion = inkConversion;
         _width = width;
-        _height = height;
-        _bandRows = 8 * maxVertical;
         _upsampled = new PooledBuffer?[components.Length];
         try
         {
@@ -128,16 +125,8 @@ internal sealed class JpegRowWriter : IDisposable
         }
     }
 
-    /// <summary>Gets the number of bands written so far.</summary>
-    public int BandsWritten { get; private set; }
-
-    /// <summary>Writes the output rows of the next band (<c>8 * Vmax</c> rows, fewer for the last band).</summary>
-    /// <remarks>The planes must hold the band's rows and their context rows (the last row of the previous band and the first row of the next one, when they exist).</remarks>
-    public void WriteNextBand(CancellationToken cancellationToken)
+    protected override void WriteRows(int first, int last)
     {
-        cancellationToken.ThrowIfCancellationRequested();
-        var first = BandsWritten * _bandRows;
-        var last = Math.Min(_height, first + _bandRows);
         if (_receiver is not null)
         {
             for (var y = first; y < last; y++)
@@ -153,11 +142,9 @@ internal sealed class JpegRowWriter : IDisposable
                 WriteRow(lease, y);
             }
         }
-
-        BandsWritten++;
     }
 
-    public void Dispose()
+    protected override void Dispose(bool disposing)
     {
         for (var i = 0; i < _upsampled.Length; i++)
         {
@@ -169,6 +156,7 @@ internal sealed class JpegRowWriter : IDisposable
         _sourceRow = null;
         _inkRow?.Dispose();
         _inkRow = null;
+        base.Dispose(disposing);
     }
 
     private static int[] CreateTable(Func<int, int> term)

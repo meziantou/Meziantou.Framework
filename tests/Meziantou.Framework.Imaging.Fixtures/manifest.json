@@ -30123,45 +30123,6 @@
       "notes": "Byte 0x2A after the first image is neither an extension, an image nor the trailer."
     },
     {
-      "id": "invalid/jpeg/arithmetic-coding",
-      "kind": "unsupported",
-      "format": "jpeg",
-      "input": {
-        "path": "invalid/jpeg/arithmetic-coding.jpg",
-        "sha256": "59c98f951c2f159d7ab32fe7dd6774f023ecf9da730102b911dba080ce19d40d",
-        "role": "encoded"
-      },
-      "provenance": {
-        "origin": "generated",
-        "license": "CC0-1.0",
-        "author": "Meziantou.Framework.Imaging contributors",
-        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/GoldenCorpus.cs (BuildJpeg PatternSmoothColor)",
-        "tools": [
-          "libjpeg-turbo 3.2.0 (cjpeg/djpeg)",
-          ".NET 10.0"
-        ],
-        "parameters": {
-          "width": 8,
-          "height": 8
-        },
-        "commands": [
-          "cjpeg -arithmetic -quality 90 -outfile {input} {source}.ppm"
-        ]
-      },
-      "expectedError": {
-        "exception": "UnsupportedImageFeatureException",
-        "format": "Jpeg"
-      },
-      "features": [
-        "jpeg.app0=JFIF",
-        "jpeg.components=3",
-        "jpeg.process=arithmetic-sequential",
-        "jpeg.sampling=4:2:0",
-        "jpeg.scans=1"
-      ],
-      "notes": "Arithmetic-coded JPEG (SOF9) is out of scope."
-    },
-    {
       "id": "invalid/jpeg/cmyk-adobe-progressive",
       "kind": "unsupported",
       "format": "jpeg",
@@ -30682,12 +30643,12 @@
       ]
     },
     {
-      "id": "invalid/jpeg/precision-12",
+      "id": "invalid/jpeg/precision-16",
       "kind": "unsupported",
       "format": "jpeg",
       "input": {
-        "path": "invalid/jpeg/precision-12.jpg",
-        "sha256": "a73c86429789a3bf86624ec6dfecd21d3b41b89915e6e64a0a2000047610e8be",
+        "path": "invalid/jpeg/precision-16.jpg",
+        "sha256": "5d752e3b8e83bbd64bae189a39aa3e50edcd8bee2d007d093798f6c34b83f2f8",
         "role": "encoded"
       },
       "provenance": {
@@ -30704,23 +30665,24 @@
           "height": 8
         },
         "commands": [
-          "cjpeg -dct int -precision 12 -quality 90 -outfile {input} {source}.pnm"
+          "cjpeg -dct int -precision 12 -quality 90 -outfile {input} {source}.pnm",
+          "set the sample precision of the frame header to 16"
         ]
       },
       "expectedError": {
         "exception": "UnsupportedImageFeatureException",
         "format": "Jpeg",
-        "feature": "JPEG 12-bit precision"
+        "feature": "JPEG 16-bit precision"
       },
       "features": [
         "jpeg.app0=JFIF",
         "jpeg.components=3",
-        "jpeg.precision=12",
+        "jpeg.precision=16",
         "jpeg.process=extended",
         "jpeg.sampling=4:2:0",
         "jpeg.scans=1"
       ],
-      "notes": "12-bit JPEG (extended sequential, P = 12) is out of scope: only 8-bit samples are decoded."
+      "notes": "A sample precision of 16 bits in an extended sequential frame: T.81 defines DCT processes for 8-bit and 12-bit samples only, and only those are decoded."
     },
     {
       "id": "invalid/jpeg/progressive-invalid-spectral-range",
@@ -33788,6 +33750,486 @@
         "format": "WebP"
       },
       "notes": "The RIFF header declares 100 bytes more than the file contains."
+    },
+    {
+      "id": "jpeg/arithmetic-420-partial-mcu-restart-rows",
+      "kind": "valid",
+      "format": "jpeg",
+      "input": {
+        "path": "jpeg/arithmetic-420-partial-mcu-restart-rows.jpg",
+        "sha256": "c59a1dbed0041816f1d55bfab45cc76d97a6f5cd42b0a80eea2f042b9b1aa8a5",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/GoldenCorpus.cs (BuildJpeg PatternDetailColor)",
+        "tools": [
+          "libjpeg-turbo 3.2.0 (cjpeg/djpeg)",
+          "libjpeg-turbo 3.2.0 jpegtran (cross-check only)",
+          "ffmpeg 9.0.2 (cross-check only)",
+          "Apple ImageIO macOS 27.0.1 sips-316 (cross-check only)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "width": 36,
+          "height": 20
+        },
+        "commands": [
+          "cjpeg -dct int -quality 80 -sample 2x2 -arithmetic -restart 1 -outfile {input} {source}.pnm"
+        ]
+      },
+      "features": [
+        "jpeg.app0=JFIF",
+        "jpeg.components=3",
+        "jpeg.process=arithmetic-sequential",
+        "jpeg.restartInterval=3",
+        "jpeg.sampling=4:2:0",
+        "jpeg.scans=1"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "Decoded from the same encoded input by libjpeg-turbo djpeg (accurate integer IDCT, fancy upsampling, no rotation).",
+        "decoder": "libjpeg-turbo 3.2.0 djpeg",
+        "backend": "libjpeg-turbo 3.2.0 (jidctint islow IDCT, h2v1/h1v2/h2v2 fancy upsampling, jdcolor YCbCr->RGB)",
+        "command": "djpeg -dct int -pnm {input}",
+        "crossChecks": [
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec mjpeg decoder, swscale yuvj->rgba), after the entropy coding is rewritten with Huffman codes by libjpeg-turbo 3.2.0 jpegtran (same coefficients): FFmpeg has no arithmetic decoder",
+            "command": "jpegtran -copy all -outfile {huffman} {input} && ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {huffman} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt rgba -",
+            "result": "differs",
+            "maxAbsoluteError": 3,
+            "meanAbsoluteError": 0.3671,
+            "notes": "Lossy inter-decoder differences (IDCT, chroma upsampling and YCbCr->RGB rounding) larger than the library tolerance of this fixture; they bound the tolerance that independent decoders justify."
+          },
+          {
+            "decoder": "Apple ImageIO (macOS 27.0.1, sips-316)",
+            "command": "sips -s format bmp {input} --out {output}.bmp",
+            "result": "differs",
+            "maxAbsoluteError": 48,
+            "meanAbsoluteError": 6.9648,
+            "excludedFromTolerance": true,
+            "notes": "ImageIO agrees exactly with the reference on the arithmetic-coded files that have no chroma subsampling, where its own decoder differs by a few units on Huffman-coded files of the same content: it does not decode arithmetic coding with an implementation of its own, so it is recorded but is not an independent decoder and does not justify the tolerance (with chroma subsampling it upsamples differently)."
+          }
+        ]
+      },
+      "expected": {
+        "width": 36,
+        "height": 20,
+        "pixelFormat": "Rgb24",
+        "colorModel": "YCbCr",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "jpeg/arithmetic-420-partial-mcu-restart-rows.frame-0.rgba8.raw",
+                "sha256": "d70f54866b0d3fce62ad64fca037c9740b1faba78711ecb1f87c96ca4e15d552",
+                "layout": "rgba8",
+                "width": 36,
+                "height": 20,
+                "rowBytes": 144,
+                "byteLength": 2880,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "jpeg/arithmetic-420-partial-mcu-restart-rows.frame-0.rgb8.raw",
+                "sha256": "762e6bfb742b4613c99597019104c1af05834d98ee856fe7a0bbbb792c1cb57f",
+                "layout": "rgb8",
+                "width": 36,
+                "height": 20,
+                "rowBytes": 108,
+                "byteLength": 2160,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "tolerance",
+        "maxAbsoluteError": 2,
+        "maxMeanAbsoluteError": 0.05,
+        "justification": "Lossy JPEG compared with an independent decoding of the same encoded input (libjpeg-turbo djpeg: islow integer IDCT, fancy upsampling). The library decoder (double-precision IDCT rounded to nearest, triangle chroma upsampling with the same edge replication and rounding biases, 16-bit fixed-point JFIF YCbCr->RGB) differs from it only by IDCT rounding, chroma upsampling (4:2:0) (one unit on some component samples, amplified by the color conversion); measured: max 2, mean 0.0352. Allowed: the measured max (at least 1) and the measured mean + 0.01 (rounded up to 0.01), tighter than the disagreement between independent decoders (see reference.crossChecks: max 3, mean 0.3671, which would justify max 4 / mean 0.66). Alpha is compared exactly, and the policy is verified to reject channel swaps and flips of this reference."
+      },
+      "notes": "Arithmetic coding with 4:2:0 and partial MCUs on both edges, one restart interval per MCU row: the statistics and the conditioning of the DC differences start again at each marker."
+    },
+    {
+      "id": "jpeg/arithmetic-422-smooth",
+      "kind": "valid",
+      "format": "jpeg",
+      "input": {
+        "path": "jpeg/arithmetic-422-smooth.jpg",
+        "sha256": "444c15976ab789826503439a04585b107234d36b4253dd901ea833f90e691809",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/GoldenCorpus.cs (BuildJpeg PatternSmoothColor)",
+        "tools": [
+          "libjpeg-turbo 3.2.0 (cjpeg/djpeg)",
+          "libjpeg-turbo 3.2.0 jpegtran (cross-check only)",
+          "ffmpeg 9.0.2 (cross-check only)",
+          "Apple ImageIO macOS 27.0.1 sips-316 (cross-check only)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "width": 28,
+          "height": 13
+        },
+        "commands": [
+          "cjpeg -dct int -quality 90 -sample 2x1 -arithmetic -outfile {input} {source}.pnm"
+        ]
+      },
+      "features": [
+        "jpeg.app0=JFIF",
+        "jpeg.components=3",
+        "jpeg.process=arithmetic-sequential",
+        "jpeg.sampling=4:2:2",
+        "jpeg.scans=1"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "Decoded from the same encoded input by libjpeg-turbo djpeg (accurate integer IDCT, fancy upsampling, no rotation).",
+        "decoder": "libjpeg-turbo 3.2.0 djpeg",
+        "backend": "libjpeg-turbo 3.2.0 (jidctint islow IDCT, h2v1/h1v2/h2v2 fancy upsampling, jdcolor YCbCr->RGB)",
+        "command": "djpeg -dct int -pnm {input}",
+        "crossChecks": [
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec mjpeg decoder, swscale yuvj->rgba), after the entropy coding is rewritten with Huffman codes by libjpeg-turbo 3.2.0 jpegtran (same coefficients): FFmpeg has no arithmetic decoder",
+            "command": "jpegtran -copy all -outfile {huffman} {input} && ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {huffman} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt rgba -",
+            "result": "differs",
+            "maxAbsoluteError": 2,
+            "meanAbsoluteError": 0.326,
+            "notes": "Lossy inter-decoder differences (IDCT, chroma upsampling and YCbCr->RGB rounding) larger than the library tolerance of this fixture; they bound the tolerance that independent decoders justify."
+          },
+          {
+            "decoder": "Apple ImageIO (macOS 27.0.1, sips-316)",
+            "command": "sips -s format bmp {input} --out {output}.bmp",
+            "result": "differs",
+            "maxAbsoluteError": 3,
+            "meanAbsoluteError": 0.3947,
+            "excludedFromTolerance": true,
+            "notes": "ImageIO agrees exactly with the reference on the arithmetic-coded files that have no chroma subsampling, where its own decoder differs by a few units on Huffman-coded files of the same content: it does not decode arithmetic coding with an implementation of its own, so it is recorded but is not an independent decoder and does not justify the tolerance (with chroma subsampling it upsamples differently)."
+          }
+        ]
+      },
+      "expected": {
+        "width": 28,
+        "height": 13,
+        "pixelFormat": "Rgb24",
+        "colorModel": "YCbCr",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "jpeg/arithmetic-422-smooth.frame-0.rgba8.raw",
+                "sha256": "7e68c4eaa043936db65d8739fa9bdb896e8d4273180014f8b3cffdbd71a504dc",
+                "layout": "rgba8",
+                "width": 28,
+                "height": 13,
+                "rowBytes": 112,
+                "byteLength": 1456,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "jpeg/arithmetic-422-smooth.frame-0.rgb8.raw",
+                "sha256": "7554f63c287b6c8e6dd662a1dabb4fff88632fe749d1021353c40f338d6a3e33",
+                "layout": "rgb8",
+                "width": 28,
+                "height": 13,
+                "rowBytes": 84,
+                "byteLength": 1092,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "tolerance",
+        "maxAbsoluteError": 2,
+        "maxMeanAbsoluteError": 0.03,
+        "justification": "Lossy JPEG compared with an independent decoding of the same encoded input (libjpeg-turbo djpeg: islow integer IDCT, fancy upsampling). The library decoder (double-precision IDCT rounded to nearest, triangle chroma upsampling with the same edge replication and rounding biases, 16-bit fixed-point JFIF YCbCr->RGB) differs from it only by IDCT rounding, chroma upsampling (4:2:2) (one unit on some component samples, amplified by the color conversion); measured: max 2, mean 0.0137. Allowed: the measured max (at least 1) and the measured mean + 0.01 (rounded up to 0.01), tighter than the disagreement between independent decoders (see reference.crossChecks: max 2, mean 0.3260, which would justify max 3 / mean 0.59). Alpha is compared exactly, and the policy is verified to reject channel swaps and flips of this reference."
+      },
+      "notes": "Arithmetic coding on a smooth gradient (few decisions per block), 4:2:2 with an odd height."
+    },
+    {
+      "id": "jpeg/arithmetic-444-detail",
+      "kind": "valid",
+      "format": "jpeg",
+      "input": {
+        "path": "jpeg/arithmetic-444-detail.jpg",
+        "sha256": "1a3f9b0992dcbdd9f78a8919d2573dd3727a11252b0a9b0655709b6d5ed5226e",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/GoldenCorpus.cs (BuildJpeg PatternDetailColor)",
+        "tools": [
+          "libjpeg-turbo 3.2.0 (cjpeg/djpeg)",
+          "libjpeg-turbo 3.2.0 jpegtran (cross-check only)",
+          "ffmpeg 9.0.2 (cross-check only)",
+          "Apple ImageIO macOS 27.0.1 sips-316 (cross-check only)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "width": 24,
+          "height": 16
+        },
+        "commands": [
+          "cjpeg -dct int -quality 95 -sample 1x1 -arithmetic -outfile {input} {source}.pnm"
+        ]
+      },
+      "features": [
+        "jpeg.app0=JFIF",
+        "jpeg.components=3",
+        "jpeg.process=arithmetic-sequential",
+        "jpeg.sampling=4:4:4",
+        "jpeg.scans=1"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "Decoded from the same encoded input by libjpeg-turbo djpeg (accurate integer IDCT, fancy upsampling, no rotation).",
+        "decoder": "libjpeg-turbo 3.2.0 djpeg",
+        "backend": "libjpeg-turbo 3.2.0 (jidctint islow IDCT, h2v1/h1v2/h2v2 fancy upsampling, jdcolor YCbCr->RGB)",
+        "command": "djpeg -dct int -pnm {input}",
+        "crossChecks": [
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec mjpeg decoder, swscale yuvj->rgba), after the entropy coding is rewritten with Huffman codes by libjpeg-turbo 3.2.0 jpegtran (same coefficients): FFmpeg has no arithmetic decoder",
+            "command": "jpegtran -copy all -outfile {huffman} {input} && ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {huffman} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt rgba -",
+            "result": "differs",
+            "maxAbsoluteError": 3,
+            "meanAbsoluteError": 0.079,
+            "notes": "Lossy inter-decoder differences (IDCT, chroma upsampling and YCbCr->RGB rounding) larger than the library tolerance of this fixture; they bound the tolerance that independent decoders justify."
+          },
+          {
+            "decoder": "Apple ImageIO (macOS 27.0.1, sips-316)",
+            "command": "sips -s format bmp {input} --out {output}.bmp",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "excludedFromTolerance": true,
+            "notes": "ImageIO agrees exactly with the reference on the arithmetic-coded files that have no chroma subsampling, where its own decoder differs by a few units on Huffman-coded files of the same content: it does not decode arithmetic coding with an implementation of its own, so it is recorded but is not an independent decoder and does not justify the tolerance (with chroma subsampling it upsamples differently)."
+          }
+        ]
+      },
+      "expected": {
+        "width": 24,
+        "height": 16,
+        "pixelFormat": "Rgb24",
+        "colorModel": "YCbCr",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "jpeg/arithmetic-444-detail.frame-0.rgba8.raw",
+                "sha256": "8a42b7b431f41304ada483a9517e5e430f0acef593f6bab0189d82113dbb6ca5",
+                "layout": "rgba8",
+                "width": 24,
+                "height": 16,
+                "rowBytes": 96,
+                "byteLength": 1536,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "jpeg/arithmetic-444-detail.frame-0.rgb8.raw",
+                "sha256": "742075ff6a801e57782c77dabd75fd17e85268ca9d052573abf8f6f440c50da2",
+                "layout": "rgb8",
+                "width": 24,
+                "height": 16,
+                "rowBytes": 72,
+                "byteLength": 1152,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "tolerance",
+        "maxAbsoluteError": 3,
+        "maxMeanAbsoluteError": 0.07,
+        "justification": "Lossy JPEG compared with an independent decoding of the same encoded input (libjpeg-turbo djpeg: islow integer IDCT, fancy upsampling). The library decoder (double-precision IDCT rounded to nearest, triangle chroma upsampling with the same edge replication and rounding biases, 16-bit fixed-point JFIF YCbCr->RGB) differs from it only by IDCT rounding (one unit on some component samples, amplified by the color conversion); measured: max 3, mean 0.0599. Allowed: the measured max (at least 1) and the measured mean + 0.01 (rounded up to 0.01), tighter than the disagreement between independent decoders (see reference.crossChecks: max 3, mean 0.0790, which would justify max 4 / mean 0.50). Alpha is compared exactly, and the policy is verified to reject channel swaps and flips of this reference."
+      },
+      "notes": "Arithmetic coding (SOF9) on high-frequency content, without chroma subsampling."
+    },
+    {
+      "id": "jpeg/arithmetic-gray-odd-restart-blocks",
+      "kind": "valid",
+      "format": "jpeg",
+      "input": {
+        "path": "jpeg/arithmetic-gray-odd-restart-blocks.jpg",
+        "sha256": "dcd28828f0c15f29cf31ca556a5451c399f01aff474d04fd2a844d0c8145f7d3",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/GoldenCorpus.cs (BuildJpeg PatternDetailGray)",
+        "tools": [
+          "libjpeg-turbo 3.2.0 (cjpeg/djpeg)",
+          "libjpeg-turbo 3.2.0 jpegtran (cross-check only)",
+          "ffmpeg 9.0.2 (cross-check only)",
+          "Apple ImageIO macOS 27.0.1 sips-316 (cross-check only)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "width": 23,
+          "height": 17
+        },
+        "commands": [
+          "cjpeg -dct int -quality 90 -arithmetic -restart 3B -outfile {input} {source}.pnm"
+        ]
+      },
+      "features": [
+        "jpeg.app0=JFIF",
+        "jpeg.components=1",
+        "jpeg.process=arithmetic-sequential",
+        "jpeg.restartInterval=3",
+        "jpeg.scans=1"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "Decoded from the same encoded input by libjpeg-turbo djpeg (accurate integer IDCT, fancy upsampling, no rotation).",
+        "decoder": "libjpeg-turbo 3.2.0 djpeg",
+        "backend": "libjpeg-turbo 3.2.0 (jidctint islow IDCT, h2v1/h1v2/h2v2 fancy upsampling, jdcolor YCbCr->RGB)",
+        "command": "djpeg -dct int -pnm {input}",
+        "crossChecks": [
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec mjpeg decoder, swscale yuvj->rgba), after the entropy coding is rewritten with Huffman codes by libjpeg-turbo 3.2.0 jpegtran (same coefficients): FFmpeg has no arithmetic decoder",
+            "command": "jpegtran -copy all -outfile {huffman} {input} && ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {huffman} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt rgba -",
+            "result": "within-tolerance",
+            "maxAbsoluteError": 1,
+            "meanAbsoluteError": 0.0256
+          },
+          {
+            "decoder": "Apple ImageIO (macOS 27.0.1, sips-316)",
+            "command": "sips -s format bmp {input} --out {output}.bmp",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "excludedFromTolerance": true,
+            "notes": "ImageIO agrees exactly with the reference on the arithmetic-coded files that have no chroma subsampling, where its own decoder differs by a few units on Huffman-coded files of the same content: it does not decode arithmetic coding with an implementation of its own, so it is recorded but is not an independent decoder and does not justify the tolerance (with chroma subsampling it upsamples differently)."
+          }
+        ]
+      },
+      "expected": {
+        "width": 23,
+        "height": 17,
+        "pixelFormat": "Gray8",
+        "colorModel": "Grayscale",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "jpeg/arithmetic-gray-odd-restart-blocks.frame-0.rgba8.raw",
+                "sha256": "21131a09509fcb5b798d48bdb4da08905efdbcd1837a8cb030f78b18a7b8862b",
+                "layout": "rgba8",
+                "width": 23,
+                "height": 17,
+                "rowBytes": 92,
+                "byteLength": 1564,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "jpeg/arithmetic-gray-odd-restart-blocks.frame-0.gray8.raw",
+                "sha256": "e1b3feaa4a5885e69e4490ef7a2a6c17cf5f6b7bd1155dd881e6bb843f8833b1",
+                "layout": "gray8",
+                "width": 23,
+                "height": 17,
+                "rowBytes": 23,
+                "byteLength": 391,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "tolerance",
+        "maxAbsoluteError": 1,
+        "maxMeanAbsoluteError": 0.03,
+        "justification": "Lossy JPEG compared with an independent decoding of the same encoded input (libjpeg-turbo djpeg: islow integer IDCT, fancy upsampling). The library decoder (double-precision IDCT rounded to nearest, triangle chroma upsampling with the same edge replication and rounding biases, 16-bit fixed-point JFIF YCbCr->RGB) differs from it only by IDCT rounding (one unit on some component samples, amplified by the color conversion); measured: max 1, mean 0.0153. Allowed: the measured max (at least 1) and the measured mean + 0.01 (rounded up to 0.01), tighter than the disagreement between independent decoders (see reference.crossChecks: max 1, mean 0.0256, which would justify max 2 / mean 0.50). Alpha is compared exactly, and the policy is verified to reject channel swaps and flips of this reference."
+      },
+      "notes": "Arithmetic-coded grayscale frame, restart interval of 3 blocks crossing block rows."
     },
     {
       "id": "jpeg/baseline-411-odd",
@@ -36993,6 +37435,448 @@
       "notes": "Sequential frame coded in three non-interleaved scans (Cb, Y, then Cr: each component's own block grid), with Huffman tables between scans and a restart interval of 2 blocks."
     },
     {
+      "id": "jpeg/precision12-420-odd-restart-rows",
+      "kind": "valid",
+      "format": "jpeg",
+      "input": {
+        "path": "jpeg/precision12-420-odd-restart-rows.jpg",
+        "sha256": "e84ce57952c77f675bfe3651f6563a9252f6708e5a9578064734f005bea389fb",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/GoldenCorpus.cs (BuildJpeg PatternDetailColor 12-bit)",
+        "tools": [
+          "libjpeg-turbo 3.2.0 (cjpeg/djpeg)",
+          "ffmpeg 9.0.2 (cross-check only)",
+          "Apple ImageIO macOS 27.0.1 sips-316 (cross-check only)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "width": 33,
+          "height": 17
+        },
+        "commands": [
+          "cjpeg -dct int -precision 12 -quality 85 -sample 2x2 -optimize -restart 1 -outfile {input} {source}.pnm"
+        ]
+      },
+      "features": [
+        "jpeg.app0=JFIF",
+        "jpeg.components=3",
+        "jpeg.precision=12",
+        "jpeg.process=extended",
+        "jpeg.restartInterval=3",
+        "jpeg.sampling=4:2:0",
+        "jpeg.scans=1"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "Decoded from the same encoded input by libjpeg-turbo djpeg (accurate integer IDCT, fancy upsampling, no rotation); each 12-bit sample s scaled to 16 bits as (s * 65535 + 2047) / 4095.",
+        "decoder": "libjpeg-turbo 3.2.0 djpeg",
+        "backend": "libjpeg-turbo 3.2.0 (jidctint islow IDCT, h2v1/h1v2/h2v2 fancy upsampling, jdcolor YCbCr->RGB)",
+        "command": "djpeg -dct int -pnm {input}",
+        "crossChecks": [
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec mjpeg decoder, swscale yuv->rgba64; the decoder shifts the 12-bit samples to 16 bits)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt rgba64le -",
+            "result": "differs",
+            "maxAbsoluteError": 44,
+            "meanAbsoluteError": 9.8556,
+            "excludedFromTolerance": true,
+            "notes": "swscale stretches the 17x9 chroma planes to 33x17 pixels for odd dimensions instead of centered upsampling by whole factors (error grows across the image): an FFmpeg conversion artifact, not a legitimate decoder difference, so it does not justify the tolerance."
+          },
+          {
+            "decoder": "Apple ImageIO (macOS 27.0.1, sips-316)",
+            "command": "sips -s format png {input} --out {output}.png (16-bit PNG, read back with FFmpeg)",
+            "result": "differs",
+            "maxAbsoluteError": 41,
+            "meanAbsoluteError": 9.4157,
+            "notes": "Lossy inter-decoder differences (IDCT, chroma upsampling and YCbCr->RGB rounding) larger than the library tolerance of this fixture; they bound the tolerance that independent decoders justify."
+          }
+        ]
+      },
+      "expected": {
+        "width": 33,
+        "height": 17,
+        "pixelFormat": "Rgba64",
+        "colorModel": "YCbCr",
+        "bitsPerComponent": 12,
+        "orientation": 1,
+        "iccProfile": "none",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "jpeg/precision12-420-odd-restart-rows.frame-0.rgba16le.raw",
+                "sha256": "493719415a6f199ae5d101143d62b2a885267d22b1456cb89810f4da06da210f",
+                "layout": "rgba16le",
+                "width": 33,
+                "height": 17,
+                "rowBytes": 264,
+                "byteLength": 4488,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "tolerance",
+        "maxAbsoluteError": 1,
+        "maxMeanAbsoluteError": 0.02,
+        "justification": "Lossy JPEG compared with an independent decoding of the same encoded input (libjpeg-turbo djpeg: islow integer IDCT, fancy upsampling). The library decoder (double-precision IDCT rounded to nearest, triangle chroma upsampling with the same edge replication and rounding biases, 16-bit fixed-point JFIF YCbCr->RGB) differs from it only by IDCT rounding, chroma upsampling (4:2:0) (one unit on some component samples, amplified by the color conversion); measured: max 1, mean 0.0050. Allowed: the measured max (at least 1) and the measured mean + 0.01 (rounded up to 0.01), tighter than the disagreement between independent decoders (see reference.crossChecks: max 41, mean 9.4157, which would justify max 42 / mean 14.23). Alpha is compared exactly, and the policy is verified to reject channel swaps and flips of this reference."
+      },
+      "notes": "12-bit samples with odd dimensions and 4:2:0 (partial MCUs on both edges, triangle chroma filters on 12-bit samples), optimized Huffman tables, one restart interval per MCU row."
+    },
+    {
+      "id": "jpeg/precision12-422-smooth",
+      "kind": "valid",
+      "format": "jpeg",
+      "input": {
+        "path": "jpeg/precision12-422-smooth.jpg",
+        "sha256": "89b0c8e402ea49603df5d0c0afd5df070e3a010bad8bd3c23446b9e62fa3b088",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/GoldenCorpus.cs (BuildJpeg PatternSmoothColor 12-bit)",
+        "tools": [
+          "libjpeg-turbo 3.2.0 (cjpeg/djpeg)",
+          "ffmpeg 9.0.2 (cross-check only)",
+          "Apple ImageIO macOS 27.0.1 sips-316 (cross-check only)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "width": 29,
+          "height": 13
+        },
+        "commands": [
+          "cjpeg -dct int -precision 12 -quality 90 -sample 2x1 -outfile {input} {source}.pnm"
+        ]
+      },
+      "features": [
+        "jpeg.app0=JFIF",
+        "jpeg.components=3",
+        "jpeg.precision=12",
+        "jpeg.process=extended",
+        "jpeg.sampling=4:2:2",
+        "jpeg.scans=1"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "Decoded from the same encoded input by libjpeg-turbo djpeg (accurate integer IDCT, fancy upsampling, no rotation); each 12-bit sample s scaled to 16 bits as (s * 65535 + 2047) / 4095.",
+        "decoder": "libjpeg-turbo 3.2.0 djpeg",
+        "backend": "libjpeg-turbo 3.2.0 (jidctint islow IDCT, h2v1/h1v2/h2v2 fancy upsampling, jdcolor YCbCr->RGB)",
+        "command": "djpeg -dct int -pnm {input}",
+        "crossChecks": [
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec mjpeg decoder, swscale yuv->rgba64; the decoder shifts the 12-bit samples to 16 bits)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt rgba64le -",
+            "result": "differs",
+            "maxAbsoluteError": 5,
+            "meanAbsoluteError": 1.2068,
+            "excludedFromTolerance": true,
+            "notes": "swscale stretches the 15x13 chroma planes to 29x13 pixels for odd dimensions instead of centered upsampling by whole factors (error grows across the image): an FFmpeg conversion artifact, not a legitimate decoder difference, so it does not justify the tolerance."
+          },
+          {
+            "decoder": "Apple ImageIO (macOS 27.0.1, sips-316)",
+            "command": "sips -s format png {input} --out {output}.png (16-bit PNG, read back with FFmpeg)",
+            "result": "differs",
+            "maxAbsoluteError": 1,
+            "meanAbsoluteError": 0.0789,
+            "notes": "Lossy inter-decoder differences (IDCT, chroma upsampling and YCbCr->RGB rounding) larger than the library tolerance of this fixture; they bound the tolerance that independent decoders justify."
+          }
+        ]
+      },
+      "expected": {
+        "width": 29,
+        "height": 13,
+        "pixelFormat": "Rgba64",
+        "colorModel": "YCbCr",
+        "bitsPerComponent": 12,
+        "orientation": 1,
+        "iccProfile": "none",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "jpeg/precision12-422-smooth.frame-0.rgba16le.raw",
+                "sha256": "3b8aa8302892e80f757c70d4a9ba2f673b6cb9d4911f230be6fb62726f13b823",
+                "layout": "rgba16le",
+                "width": 29,
+                "height": 13,
+                "rowBytes": 232,
+                "byteLength": 3016,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "tolerance",
+        "maxAbsoluteError": 1,
+        "maxMeanAbsoluteError": 0.02,
+        "justification": "Lossy JPEG compared with an independent decoding of the same encoded input (libjpeg-turbo djpeg: islow integer IDCT, fancy upsampling). The library decoder (double-precision IDCT rounded to nearest, triangle chroma upsampling with the same edge replication and rounding biases, 16-bit fixed-point JFIF YCbCr->RGB) differs from it only by IDCT rounding, chroma upsampling (4:2:2) (one unit on some component samples, amplified by the color conversion); measured: max 1, mean 0.0031. Allowed: the measured max (at least 1) and the measured mean + 0.01 (rounded up to 0.01), tighter than the disagreement between independent decoders (see reference.crossChecks: max 1, mean 0.0789, which would justify max 2 / mean 0.50). Alpha is compared exactly, and the policy is verified to reject channel swaps and flips of this reference."
+      },
+      "notes": "12-bit samples on a smooth gradient, 4:2:2 with an odd width."
+    },
+    {
+      "id": "jpeg/precision12-444-detail",
+      "kind": "valid",
+      "format": "jpeg",
+      "input": {
+        "path": "jpeg/precision12-444-detail.jpg",
+        "sha256": "9a18fbae7c5c9c769e58a40e60ce235325fb7dbafe35cbf076ef23fbae47bc07",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/GoldenCorpus.cs (BuildJpeg PatternDetailColor 12-bit)",
+        "tools": [
+          "libjpeg-turbo 3.2.0 (cjpeg/djpeg)",
+          "ffmpeg 9.0.2 (cross-check only)",
+          "Apple ImageIO macOS 27.0.1 sips-316 (cross-check only)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "width": 24,
+          "height": 16
+        },
+        "commands": [
+          "cjpeg -dct int -precision 12 -quality 95 -sample 1x1 -outfile {input} {source}.pnm"
+        ]
+      },
+      "features": [
+        "jpeg.app0=JFIF",
+        "jpeg.components=3",
+        "jpeg.precision=12",
+        "jpeg.process=extended",
+        "jpeg.sampling=4:4:4",
+        "jpeg.scans=1"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "Decoded from the same encoded input by libjpeg-turbo djpeg (accurate integer IDCT, fancy upsampling, no rotation); each 12-bit sample s scaled to 16 bits as (s * 65535 + 2047) / 4095.",
+        "decoder": "libjpeg-turbo 3.2.0 djpeg",
+        "backend": "libjpeg-turbo 3.2.0 (jidctint islow IDCT, h2v1/h1v2/h2v2 fancy upsampling, jdcolor YCbCr->RGB)",
+        "command": "djpeg -dct int -pnm {input}",
+        "crossChecks": [
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec mjpeg decoder, swscale yuv->rgba64; the decoder shifts the 12-bit samples to 16 bits)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt rgba64le -",
+            "result": "differs",
+            "maxAbsoluteError": 1,
+            "meanAbsoluteError": 0.0512,
+            "notes": "Lossy inter-decoder differences (IDCT, chroma upsampling and YCbCr->RGB rounding) larger than the library tolerance of this fixture; they bound the tolerance that independent decoders justify."
+          },
+          {
+            "decoder": "Apple ImageIO (macOS 27.0.1, sips-316)",
+            "command": "sips -s format png {input} --out {output}.png (16-bit PNG, read back with FFmpeg)",
+            "result": "differs",
+            "maxAbsoluteError": 1,
+            "meanAbsoluteError": 0.087,
+            "notes": "Lossy inter-decoder differences (IDCT, chroma upsampling and YCbCr->RGB rounding) larger than the library tolerance of this fixture; they bound the tolerance that independent decoders justify."
+          }
+        ]
+      },
+      "expected": {
+        "width": 24,
+        "height": 16,
+        "pixelFormat": "Rgba64",
+        "colorModel": "YCbCr",
+        "bitsPerComponent": 12,
+        "orientation": 1,
+        "iccProfile": "none",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "jpeg/precision12-444-detail.frame-0.rgba16le.raw",
+                "sha256": "52d3d39665b9bdd7d2de13b6a09d492b837f830c5f9f7a35b897c3885c0689f2",
+                "layout": "rgba16le",
+                "width": 24,
+                "height": 16,
+                "rowBytes": 192,
+                "byteLength": 3072,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "tolerance",
+        "maxAbsoluteError": 1,
+        "maxMeanAbsoluteError": 0.02,
+        "justification": "Lossy JPEG compared with an independent decoding of the same encoded input (libjpeg-turbo djpeg: islow integer IDCT, fancy upsampling). The library decoder (double-precision IDCT rounded to nearest, triangle chroma upsampling with the same edge replication and rounding biases, 16-bit fixed-point JFIF YCbCr->RGB) differs from it only by IDCT rounding (one unit on some component samples, amplified by the color conversion); measured: max 1, mean 0.0077. Allowed: the measured max (at least 1) and the measured mean + 0.01 (rounded up to 0.01), tighter than the disagreement between independent decoders (see reference.crossChecks: max 1, mean 0.0870, which would justify max 2 / mean 0.50). Alpha is compared exactly, and the policy is verified to reject channel swaps and flips of this reference."
+      },
+      "notes": "12-bit samples on high-frequency content, without chroma subsampling."
+    },
+    {
+      "id": "jpeg/precision12-gray-odd",
+      "kind": "valid",
+      "format": "jpeg",
+      "input": {
+        "path": "jpeg/precision12-gray-odd.jpg",
+        "sha256": "79a5cfe8f66bec3bf5714c06288ae075ae32ffae45f69e5e9004400f1483cab3",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/GoldenCorpus.cs (BuildJpeg PatternDetailGray 12-bit)",
+        "tools": [
+          "libjpeg-turbo 3.2.0 (cjpeg/djpeg)",
+          "ffmpeg 9.0.2 (cross-check only)",
+          "Apple ImageIO macOS 27.0.1 sips-316 (cross-check only)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "width": 23,
+          "height": 17
+        },
+        "commands": [
+          "cjpeg -dct int -precision 12 -quality 90 -restart 3B -outfile {input} {source}.pnm"
+        ]
+      },
+      "features": [
+        "jpeg.app0=JFIF",
+        "jpeg.components=1",
+        "jpeg.precision=12",
+        "jpeg.process=extended",
+        "jpeg.restartInterval=3",
+        "jpeg.scans=1"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "Decoded from the same encoded input by libjpeg-turbo djpeg (accurate integer IDCT, fancy upsampling, no rotation); each 12-bit sample s scaled to 16 bits as (s * 65535 + 2047) / 4095.",
+        "decoder": "libjpeg-turbo 3.2.0 djpeg",
+        "backend": "libjpeg-turbo 3.2.0 (jidctint islow IDCT, h2v1/h1v2/h2v2 fancy upsampling, jdcolor YCbCr->RGB)",
+        "command": "djpeg -dct int -pnm {input}",
+        "crossChecks": [
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec mjpeg decoder, swscale yuv->rgba64; the decoder shifts the 12-bit samples to 16 bits)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt rgba64le -",
+            "result": "differs",
+            "maxAbsoluteError": 1,
+            "meanAbsoluteError": 0.0362,
+            "notes": "Lossy inter-decoder differences (IDCT, chroma upsampling and YCbCr->RGB rounding) larger than the library tolerance of this fixture; they bound the tolerance that independent decoders justify."
+          },
+          {
+            "decoder": "Apple ImageIO (macOS 27.0.1, sips-316)",
+            "command": "sips -s format png {input} --out {output}.png (16-bit PNG, read back with FFmpeg)",
+            "result": "within-tolerance",
+            "maxAbsoluteError": 1,
+            "meanAbsoluteError": 0.0085
+          }
+        ]
+      },
+      "expected": {
+        "width": 23,
+        "height": 17,
+        "pixelFormat": "Gray16",
+        "colorModel": "Grayscale",
+        "bitsPerComponent": 12,
+        "orientation": 1,
+        "iccProfile": "none",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "jpeg/precision12-gray-odd.frame-0.rgba16le.raw",
+                "sha256": "bb94f66bafeba2b8b5e627fd5bf1fba190abd8800a6fc6bca3f5b7ba5316d21a",
+                "layout": "rgba16le",
+                "width": 23,
+                "height": 17,
+                "rowBytes": 184,
+                "byteLength": 3128,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "jpeg/precision12-gray-odd.frame-0.gray16le.raw",
+                "sha256": "2afc00a679aa38796e68ebd1701510d1370bc92183e41f37d683ffbfd9c7b81c",
+                "layout": "gray16le",
+                "width": 23,
+                "height": 17,
+                "rowBytes": 46,
+                "byteLength": 782,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "tolerance",
+        "maxAbsoluteError": 1,
+        "maxMeanAbsoluteError": 0.02,
+        "justification": "Lossy JPEG compared with an independent decoding of the same encoded input (libjpeg-turbo djpeg: islow integer IDCT, fancy upsampling). The library decoder (double-precision IDCT rounded to nearest, triangle chroma upsampling with the same edge replication and rounding biases, 16-bit fixed-point JFIF YCbCr->RGB) differs from it only by IDCT rounding (one unit on some component samples, amplified by the color conversion); measured: max 1, mean 0.0051. Allowed: the measured max (at least 1) and the measured mean + 0.01 (rounded up to 0.01), tighter than the disagreement between independent decoders (see reference.crossChecks: max 1, mean 0.0362, which would justify max 2 / mean 0.50). Alpha is compared exactly, and the policy is verified to reject channel swaps and flips of this reference."
+      },
+      "notes": "12-bit grayscale samples, restart interval of 3 blocks crossing block rows."
+    },
+    {
       "id": "jpeg/progressive-411-separate-dc",
       "kind": "valid",
       "format": "jpeg",
@@ -37972,6 +38856,378 @@
       "notes": "Default libjpeg-turbo progression on high-frequency content: DC and AC successive approximation, spectral selection of the luma AC band."
     },
     {
+      "id": "jpeg/progressive-arithmetic-420",
+      "kind": "valid",
+      "format": "jpeg",
+      "input": {
+        "path": "jpeg/progressive-arithmetic-420.jpg",
+        "sha256": "38c96e9e9dee71bc221b199a82e9a329d04227b951b92313fa61b131aac09809",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/GoldenCorpus.cs (BuildJpeg PatternDetailColor)",
+        "tools": [
+          "libjpeg-turbo 3.2.0 (cjpeg/djpeg)",
+          "libjpeg-turbo 3.2.0 jpegtran (cross-check only)",
+          "ffmpeg 9.0.2 (cross-check only)",
+          "Apple ImageIO macOS 27.0.1 sips-316 (cross-check only)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "width": 20,
+          "height": 12
+        },
+        "commands": [
+          "cjpeg -dct int -quality 85 -sample 2x2 -progressive -arithmetic -outfile {input} {source}.pnm"
+        ]
+      },
+      "features": [
+        "jpeg.app0=JFIF",
+        "jpeg.components=3",
+        "jpeg.process=arithmetic-progressive",
+        "jpeg.progressive=ac-refinement",
+        "jpeg.progressive=dc-refinement",
+        "jpeg.progressive=spectral-selection",
+        "jpeg.progressive=successive-approximation",
+        "jpeg.sampling=4:2:0",
+        "jpeg.scans=10"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "Decoded from the same encoded input by libjpeg-turbo djpeg (accurate integer IDCT, fancy upsampling, no rotation; block smoothing inactive: DC and AC coefficients 1-9 complete).",
+        "decoder": "libjpeg-turbo 3.2.0 djpeg",
+        "backend": "libjpeg-turbo 3.2.0 (jidctint islow IDCT, h2v1/h1v2/h2v2 fancy upsampling, jdcolor YCbCr->RGB)",
+        "command": "djpeg -dct int -pnm {input}",
+        "crossChecks": [
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec mjpeg decoder, swscale yuvj->rgba), after the entropy coding is rewritten with Huffman codes by libjpeg-turbo 3.2.0 jpegtran (same coefficients): FFmpeg has no arithmetic decoder",
+            "command": "jpegtran -copy all -outfile {huffman} {input} && ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {huffman} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt rgba -",
+            "result": "differs",
+            "maxAbsoluteError": 2,
+            "meanAbsoluteError": 0.3278,
+            "notes": "Lossy inter-decoder differences (IDCT, chroma upsampling and YCbCr->RGB rounding) larger than the library tolerance of this fixture; they bound the tolerance that independent decoders justify."
+          },
+          {
+            "decoder": "Apple ImageIO (macOS 27.0.1, sips-316)",
+            "command": "sips -s format bmp {input} --out {output}.bmp",
+            "result": "differs",
+            "maxAbsoluteError": 40,
+            "meanAbsoluteError": 7.1111,
+            "excludedFromTolerance": true,
+            "notes": "ImageIO agrees exactly with the reference on the arithmetic-coded files that have no chroma subsampling, where its own decoder differs by a few units on Huffman-coded files of the same content: it does not decode arithmetic coding with an implementation of its own, so it is recorded but is not an independent decoder and does not justify the tolerance (with chroma subsampling it upsamples differently)."
+          }
+        ]
+      },
+      "expected": {
+        "width": 20,
+        "height": 12,
+        "pixelFormat": "Rgb24",
+        "colorModel": "YCbCr",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "jpeg/progressive-arithmetic-420.frame-0.rgba8.raw",
+                "sha256": "c381e528683c665e4b96e1ee754facc261c4151f036c6995e8c0693c2b25e459",
+                "layout": "rgba8",
+                "width": 20,
+                "height": 12,
+                "rowBytes": 80,
+                "byteLength": 960,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "jpeg/progressive-arithmetic-420.frame-0.rgb8.raw",
+                "sha256": "2c6f6c591103d5d62d60d7100e302944de78e426948134f74b29db93ef6b72dd",
+                "layout": "rgb8",
+                "width": 20,
+                "height": 12,
+                "rowBytes": 60,
+                "byteLength": 720,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "tolerance",
+        "maxAbsoluteError": 2,
+        "maxMeanAbsoluteError": 0.05,
+        "justification": "Lossy JPEG compared with an independent decoding of the same encoded input (libjpeg-turbo djpeg: islow integer IDCT, fancy upsampling, block smoothing inactive). The library decoder (the coefficients of every scan accumulated, then double-precision IDCT rounded to nearest, triangle chroma upsampling with the same edge replication and rounding biases, 16-bit fixed-point JFIF YCbCr->RGB) differs from it only by IDCT rounding, chroma upsampling (4:2:0) (one unit on some component samples, amplified by the color conversion); measured: max 2, mean 0.0333. Allowed: the measured max (at least 1) and the measured mean + 0.01 (rounded up to 0.01), tighter than the disagreement between independent decoders (see reference.crossChecks: max 2, mean 0.3278, which would justify max 3 / mean 0.60). Alpha is compared exactly, and the policy is verified to reject channel swaps and flips of this reference."
+      },
+      "notes": "Progressive arithmetic coding (SOF10) with libjpeg-turbo's default progression: DC and AC first scans and refinements."
+    },
+    {
+      "id": "jpeg/progressive-arithmetic-420-restart-rows-deep",
+      "kind": "valid",
+      "format": "jpeg",
+      "input": {
+        "path": "jpeg/progressive-arithmetic-420-restart-rows-deep.jpg",
+        "sha256": "776157e764a055068f830ac39ad88d86e4cb04d3e9248738dc5b1b88e921d669",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/GoldenCorpus.cs (BuildJpeg PatternDetailColor)",
+        "tools": [
+          "libjpeg-turbo 3.2.0 (cjpeg/djpeg)",
+          "libjpeg-turbo 3.2.0 jpegtran (cross-check only)",
+          "ffmpeg 9.0.2 (cross-check only)",
+          "Apple ImageIO macOS 27.0.1 sips-316 (cross-check only)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "width": 36,
+          "height": 20
+        },
+        "commands": [
+          "cjpeg -dct int -quality 80 -sample 2x2 -arithmetic -restart 1 -scans {scans} (0,1,2: 0-0, 0, 3; 0: 1-9, 0, 4; 1: 1-63, 0, 1; 2: 1-63, 0, 1; 0: 10-63, 0, 2; 0,1,2: 0-0, 3, 2; 0: 1-9, 4, 3; 0: 1-9, 3, 2; 0: 1-63, 2, 1; 0,1,2: 0-0, 2, 1; 0,1,2: 0-0, 1, 0; 2: 1-63, 1, 0; 1: 1-63, 1, 0; 0: 1-63, 1, 0;) -outfile {input} {source}.pnm"
+        ]
+      },
+      "features": [
+        "jpeg.app0=JFIF",
+        "jpeg.components=3",
+        "jpeg.process=arithmetic-progressive",
+        "jpeg.progressive=ac-refinement",
+        "jpeg.progressive=dc-refinement",
+        "jpeg.progressive=spectral-selection",
+        "jpeg.progressive=successive-approximation",
+        "jpeg.restartInterval=5",
+        "jpeg.sampling=4:2:0",
+        "jpeg.scans=14"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "Decoded from the same encoded input by libjpeg-turbo djpeg (accurate integer IDCT, fancy upsampling, no rotation; block smoothing inactive: DC and AC coefficients 1-9 complete).",
+        "decoder": "libjpeg-turbo 3.2.0 djpeg",
+        "backend": "libjpeg-turbo 3.2.0 (jidctint islow IDCT, h2v1/h1v2/h2v2 fancy upsampling, jdcolor YCbCr->RGB)",
+        "command": "djpeg -dct int -pnm {input}",
+        "crossChecks": [
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec mjpeg decoder, swscale yuvj->rgba), after the entropy coding is rewritten with Huffman codes by libjpeg-turbo 3.2.0 jpegtran (same coefficients): FFmpeg has no arithmetic decoder",
+            "command": "jpegtran -copy all -outfile {huffman} {input} && ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {huffman} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt rgba -",
+            "result": "differs",
+            "maxAbsoluteError": 2,
+            "meanAbsoluteError": 0.3685,
+            "notes": "Lossy inter-decoder differences (IDCT, chroma upsampling and YCbCr->RGB rounding) larger than the library tolerance of this fixture; they bound the tolerance that independent decoders justify."
+          },
+          {
+            "decoder": "Apple ImageIO (macOS 27.0.1, sips-316)",
+            "command": "sips -s format bmp {input} --out {output}.bmp",
+            "result": "differs",
+            "maxAbsoluteError": 50,
+            "meanAbsoluteError": 6.8037,
+            "excludedFromTolerance": true,
+            "notes": "ImageIO agrees exactly with the reference on the arithmetic-coded files that have no chroma subsampling, where its own decoder differs by a few units on Huffman-coded files of the same content: it does not decode arithmetic coding with an implementation of its own, so it is recorded but is not an independent decoder and does not justify the tolerance (with chroma subsampling it upsamples differently)."
+          }
+        ]
+      },
+      "expected": {
+        "width": 36,
+        "height": 20,
+        "pixelFormat": "Rgb24",
+        "colorModel": "YCbCr",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "jpeg/progressive-arithmetic-420-restart-rows-deep.frame-0.rgba8.raw",
+                "sha256": "44f3e2bd5bbff76cbe0c7cab13d8e8169ede113f896424a9546077013468601e",
+                "layout": "rgba8",
+                "width": 36,
+                "height": 20,
+                "rowBytes": 144,
+                "byteLength": 2880,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "jpeg/progressive-arithmetic-420-restart-rows-deep.frame-0.rgb8.raw",
+                "sha256": "935138fe5bf80b854fdf94664cf31c087e7794a9e456a874115afb8092cc2ece",
+                "layout": "rgb8",
+                "width": 36,
+                "height": 20,
+                "rowBytes": 108,
+                "byteLength": 2160,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "tolerance",
+        "maxAbsoluteError": 2,
+        "maxMeanAbsoluteError": 0.06,
+        "justification": "Lossy JPEG compared with an independent decoding of the same encoded input (libjpeg-turbo djpeg: islow integer IDCT, fancy upsampling, block smoothing inactive). The library decoder (the coefficients of every scan accumulated, then double-precision IDCT rounded to nearest, triangle chroma upsampling with the same edge replication and rounding biases, 16-bit fixed-point JFIF YCbCr->RGB) differs from it only by IDCT rounding, chroma upsampling (4:2:0) (one unit on some component samples, amplified by the color conversion); measured: max 2, mean 0.0468. Allowed: the measured max (at least 1) and the measured mean + 0.01 (rounded up to 0.01), tighter than the disagreement between independent decoders (see reference.crossChecks: max 2, mean 0.3685, which would justify max 3 / mean 0.66). Alpha is compared exactly, and the policy is verified to reject channel swaps and flips of this reference."
+      },
+      "notes": "Progressive arithmetic coding with a custom scan script: interleaved DC scans refined from bit 3 to bit 0, a luma band 1-9 refined from bit 4, chroma AC refined from bit 1, one restart interval per MCU row."
+    },
+    {
+      "id": "jpeg/progressive-arithmetic-gray-refinement",
+      "kind": "valid",
+      "format": "jpeg",
+      "input": {
+        "path": "jpeg/progressive-arithmetic-gray-refinement.jpg",
+        "sha256": "320e8fbeba2f916036c4c416d4ea4a2c44bfce31dd8eba5fe07e5bcd632bb1b6",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/GoldenCorpus.cs (BuildJpeg PatternDetailGray)",
+        "tools": [
+          "libjpeg-turbo 3.2.0 (cjpeg/djpeg)",
+          "libjpeg-turbo 3.2.0 jpegtran (cross-check only)",
+          "ffmpeg 9.0.2 (cross-check only)",
+          "Apple ImageIO macOS 27.0.1 sips-316 (cross-check only)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "width": 23,
+          "height": 17
+        },
+        "commands": [
+          "cjpeg -dct int -quality 75 -arithmetic -restart 3B -scans {scans} (0: 0-0, 0, 2; 0: 1-5, 0, 3; 0: 6-63, 0, 1; 0: 1-5, 3, 2; 0: 0-0, 2, 1; 0: 1-5, 2, 1; 0: 0-0, 1, 0; 0: 1-63, 1, 0;) -outfile {input} {source}.pnm"
+        ]
+      },
+      "features": [
+        "jpeg.app0=JFIF",
+        "jpeg.components=1",
+        "jpeg.process=arithmetic-progressive",
+        "jpeg.progressive=ac-refinement",
+        "jpeg.progressive=dc-refinement",
+        "jpeg.progressive=spectral-selection",
+        "jpeg.progressive=successive-approximation",
+        "jpeg.restartInterval=3",
+        "jpeg.scans=8"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "Decoded from the same encoded input by libjpeg-turbo djpeg (accurate integer IDCT, fancy upsampling, no rotation; block smoothing inactive: DC and AC coefficients 1-9 complete).",
+        "decoder": "libjpeg-turbo 3.2.0 djpeg",
+        "backend": "libjpeg-turbo 3.2.0 (jidctint islow IDCT, h2v1/h1v2/h2v2 fancy upsampling, jdcolor YCbCr->RGB)",
+        "command": "djpeg -dct int -pnm {input}",
+        "crossChecks": [
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec mjpeg decoder, swscale yuvj->rgba), after the entropy coding is rewritten with Huffman codes by libjpeg-turbo 3.2.0 jpegtran (same coefficients): FFmpeg has no arithmetic decoder",
+            "command": "jpegtran -copy all -outfile {huffman} {input} && ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {huffman} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt rgba -",
+            "result": "within-tolerance",
+            "maxAbsoluteError": 1,
+            "meanAbsoluteError": 0.0281
+          },
+          {
+            "decoder": "Apple ImageIO (macOS 27.0.1, sips-316)",
+            "command": "sips -s format bmp {input} --out {output}.bmp",
+            "result": "exact",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "excludedFromTolerance": true,
+            "notes": "ImageIO agrees exactly with the reference on the arithmetic-coded files that have no chroma subsampling, where its own decoder differs by a few units on Huffman-coded files of the same content: it does not decode arithmetic coding with an implementation of its own, so it is recorded but is not an independent decoder and does not justify the tolerance (with chroma subsampling it upsamples differently)."
+          }
+        ]
+      },
+      "expected": {
+        "width": 23,
+        "height": 17,
+        "pixelFormat": "Gray8",
+        "colorModel": "Grayscale",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "jpeg/progressive-arithmetic-gray-refinement.frame-0.rgba8.raw",
+                "sha256": "3dcc48440cb5ed8ac11f794a76d56c77511f436f54cc5b197a7df40380f3f142",
+                "layout": "rgba8",
+                "width": 23,
+                "height": 17,
+                "rowBytes": 92,
+                "byteLength": 1564,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "jpeg/progressive-arithmetic-gray-refinement.frame-0.gray8.raw",
+                "sha256": "44d6bfa2f193c24b256629520eec92cebd56c9cf53b6146256547a74843909a6",
+                "layout": "gray8",
+                "width": 23,
+                "height": 17,
+                "rowBytes": 23,
+                "byteLength": 391,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "tolerance",
+        "maxAbsoluteError": 1,
+        "maxMeanAbsoluteError": 0.04,
+        "justification": "Lossy JPEG compared with an independent decoding of the same encoded input (libjpeg-turbo djpeg: islow integer IDCT, fancy upsampling, block smoothing inactive). The library decoder (the coefficients of every scan accumulated, then double-precision IDCT rounded to nearest, triangle chroma upsampling with the same edge replication and rounding biases, 16-bit fixed-point JFIF YCbCr->RGB) differs from it only by IDCT rounding (one unit on some component samples, amplified by the color conversion); measured: max 1, mean 0.0205. Allowed: the measured max (at least 1) and the measured mean + 0.01 (rounded up to 0.01), tighter than the disagreement between independent decoders (see reference.crossChecks: max 1, mean 0.0281, which would justify max 2 / mean 0.50). Alpha is compared exactly, and the policy is verified to reject channel swaps and flips of this reference."
+      },
+      "notes": "Progressive arithmetic-coded grayscale frame with a custom scan script: DC from bit 2, luma band 1-5 refined from bit 3, band 6-63 from bit 1, restart interval of 3 blocks."
+    },
+    {
       "id": "jpeg/progressive-gray-default",
       "kind": "valid",
       "format": "jpeg",
@@ -38212,6 +39468,239 @@
         "justification": "Lossy JPEG compared with an independent decoding of the same encoded input (libjpeg-turbo djpeg: islow integer IDCT, fancy upsampling, block smoothing inactive). The library decoder (the coefficients of every scan accumulated, then double-precision IDCT rounded to nearest, triangle chroma upsampling with the same edge replication and rounding biases, 16-bit fixed-point JFIF YCbCr->RGB) differs from it only by IDCT rounding (one unit on some component samples, amplified by the color conversion); measured: max 1, mean 0.0230. Allowed: the measured max (at least 1) and the measured mean + 0.01 (rounded up to 0.01), tighter than the disagreement between independent decoders (see reference.crossChecks: max 1, mean 0.0691, which would justify max 2 / mean 0.50). Alpha is compared exactly, and the policy is verified to reject channel swaps and flips of this reference."
       },
       "notes": "Grayscale custom scan script: DC from bit 2, luma band 1-5 refined from bit 3, band 6-63 from bit 1, restart interval of 3 blocks crossing block rows."
+    },
+    {
+      "id": "jpeg/progressive-precision12-420",
+      "kind": "valid",
+      "format": "jpeg",
+      "input": {
+        "path": "jpeg/progressive-precision12-420.jpg",
+        "sha256": "377979f6dc7f6010052b0d6e57e94eda379dcbf3ef171b4cc14b13eeb698fd7b",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/GoldenCorpus.cs (BuildJpeg PatternDetailColor 12-bit)",
+        "tools": [
+          "libjpeg-turbo 3.2.0 (cjpeg/djpeg)",
+          "ffmpeg 9.0.2 (cross-check only)",
+          "Apple ImageIO macOS 27.0.1 sips-316 (cross-check only)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "width": 20,
+          "height": 12
+        },
+        "commands": [
+          "cjpeg -dct int -precision 12 -quality 85 -sample 2x2 -progressive -outfile {input} {source}.pnm"
+        ]
+      },
+      "features": [
+        "jpeg.app0=JFIF",
+        "jpeg.components=3",
+        "jpeg.precision=12",
+        "jpeg.process=progressive",
+        "jpeg.progressive=ac-refinement",
+        "jpeg.progressive=dc-refinement",
+        "jpeg.progressive=spectral-selection",
+        "jpeg.progressive=successive-approximation",
+        "jpeg.sampling=4:2:0",
+        "jpeg.scans=10"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "Decoded from the same encoded input by libjpeg-turbo djpeg (accurate integer IDCT, fancy upsampling, no rotation; block smoothing inactive: DC and AC coefficients 1-9 complete); each 12-bit sample s scaled to 16 bits as (s * 65535 + 2047) / 4095.",
+        "decoder": "libjpeg-turbo 3.2.0 djpeg",
+        "backend": "libjpeg-turbo 3.2.0 (jidctint islow IDCT, h2v1/h1v2/h2v2 fancy upsampling, jdcolor YCbCr->RGB)",
+        "command": "djpeg -dct int -pnm {input}",
+        "crossChecks": [
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec mjpeg decoder, swscale yuv->rgba64; the decoder shifts the 12-bit samples to 16 bits)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt rgba64le -",
+            "result": "differs",
+            "maxAbsoluteError": 19,
+            "meanAbsoluteError": 4.7611,
+            "notes": "Lossy inter-decoder differences (IDCT, chroma upsampling and YCbCr->RGB rounding) larger than the library tolerance of this fixture; they bound the tolerance that independent decoders justify."
+          },
+          {
+            "decoder": "Apple ImageIO (macOS 27.0.1, sips-316)",
+            "command": "sips -s format png {input} --out {output}.png (16-bit PNG, read back with FFmpeg)",
+            "result": "differs",
+            "maxAbsoluteError": 37,
+            "meanAbsoluteError": 9.9075,
+            "notes": "Lossy inter-decoder differences (IDCT, chroma upsampling and YCbCr->RGB rounding) larger than the library tolerance of this fixture; they bound the tolerance that independent decoders justify."
+          }
+        ]
+      },
+      "expected": {
+        "width": 20,
+        "height": 12,
+        "pixelFormat": "Rgba64",
+        "colorModel": "YCbCr",
+        "bitsPerComponent": 12,
+        "orientation": 1,
+        "iccProfile": "none",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "jpeg/progressive-precision12-420.frame-0.rgba16le.raw",
+                "sha256": "da7dfdf5e6993063ddea384c57c498b55e111fd7e2a46ecd57c9f58ed763c7b2",
+                "layout": "rgba16le",
+                "width": 20,
+                "height": 12,
+                "rowBytes": 160,
+                "byteLength": 1920,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "tolerance",
+        "maxAbsoluteError": 1,
+        "maxMeanAbsoluteError": 0.02,
+        "justification": "Lossy JPEG compared with an independent decoding of the same encoded input (libjpeg-turbo djpeg: islow integer IDCT, fancy upsampling, block smoothing inactive). The library decoder (the coefficients of every scan accumulated, then double-precision IDCT rounded to nearest, triangle chroma upsampling with the same edge replication and rounding biases, 16-bit fixed-point JFIF YCbCr->RGB) differs from it only by IDCT rounding, chroma upsampling (4:2:0) (one unit on some component samples, amplified by the color conversion); measured: max 1, mean 0.0071. Allowed: the measured max (at least 1) and the measured mean + 0.01 (rounded up to 0.01), tighter than the disagreement between independent decoders (see reference.crossChecks: max 37, mean 9.9075, which would justify max 38 / mean 14.97). Alpha is compared exactly, and the policy is verified to reject channel swaps and flips of this reference."
+      },
+      "notes": "12-bit samples with libjpeg-turbo's default progression."
+    },
+    {
+      "id": "jpeg/progressive-precision12-gray-refinement",
+      "kind": "valid",
+      "format": "jpeg",
+      "input": {
+        "path": "jpeg/progressive-precision12-gray-refinement.jpg",
+        "sha256": "227e92fea62b3bcb59c551c9629ce0e6b39613aea6f99d50cccb0ea65960a89e",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/GoldenCorpus.cs (BuildJpeg PatternDetailGray 12-bit)",
+        "tools": [
+          "libjpeg-turbo 3.2.0 (cjpeg/djpeg)",
+          "ffmpeg 9.0.2 (cross-check only)",
+          "Apple ImageIO macOS 27.0.1 sips-316 (cross-check only)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "width": 17,
+          "height": 9
+        },
+        "commands": [
+          "cjpeg -dct int -precision 12 -quality 80 -restart 3B -scans {scans} (0: 0-0, 0, 2; 0: 1-5, 0, 3; 0: 6-63, 0, 1; 0: 1-5, 3, 2; 0: 0-0, 2, 1; 0: 1-5, 2, 1; 0: 0-0, 1, 0; 0: 1-63, 1, 0;) -outfile {input} {source}.pnm"
+        ]
+      },
+      "features": [
+        "jpeg.app0=JFIF",
+        "jpeg.components=1",
+        "jpeg.precision=12",
+        "jpeg.process=progressive",
+        "jpeg.progressive=ac-refinement",
+        "jpeg.progressive=dc-refinement",
+        "jpeg.progressive=spectral-selection",
+        "jpeg.progressive=successive-approximation",
+        "jpeg.restartInterval=3",
+        "jpeg.scans=8"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "Decoded from the same encoded input by libjpeg-turbo djpeg (accurate integer IDCT, fancy upsampling, no rotation; block smoothing inactive: DC and AC coefficients 1-9 complete); each 12-bit sample s scaled to 16 bits as (s * 65535 + 2047) / 4095.",
+        "decoder": "libjpeg-turbo 3.2.0 djpeg",
+        "backend": "libjpeg-turbo 3.2.0 (jidctint islow IDCT, h2v1/h1v2/h2v2 fancy upsampling, jdcolor YCbCr->RGB)",
+        "command": "djpeg -dct int -pnm {input}",
+        "crossChecks": [
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec mjpeg decoder, swscale yuv->rgba64; the decoder shifts the 12-bit samples to 16 bits)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt rgba64le -",
+            "result": "differs",
+            "maxAbsoluteError": 1,
+            "meanAbsoluteError": 0.0394,
+            "notes": "Lossy inter-decoder differences (IDCT, chroma upsampling and YCbCr->RGB rounding) larger than the library tolerance of this fixture; they bound the tolerance that independent decoders justify."
+          },
+          {
+            "decoder": "Apple ImageIO (macOS 27.0.1, sips-316)",
+            "command": "sips -s format png {input} --out {output}.png (16-bit PNG, read back with FFmpeg)",
+            "result": "within-tolerance",
+            "maxAbsoluteError": 1,
+            "meanAbsoluteError": 0.0071
+          }
+        ]
+      },
+      "expected": {
+        "width": 17,
+        "height": 9,
+        "pixelFormat": "Gray16",
+        "colorModel": "Grayscale",
+        "bitsPerComponent": 12,
+        "orientation": 1,
+        "iccProfile": "none",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "jpeg/progressive-precision12-gray-refinement.frame-0.rgba16le.raw",
+                "sha256": "c2c472fba6a5fb098270c62eec40fe9f6a35abf942a21f012ab7301bd2729bcc",
+                "layout": "rgba16le",
+                "width": 17,
+                "height": 9,
+                "rowBytes": 136,
+                "byteLength": 1224,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "jpeg/progressive-precision12-gray-refinement.frame-0.gray16le.raw",
+                "sha256": "654b8dca3bc45a8cacfe97b8c3cb20a5cf1fa2c7095916b4ab6c460c38387d0e",
+                "layout": "gray16le",
+                "width": 17,
+                "height": 9,
+                "rowBytes": 34,
+                "byteLength": 306,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "tolerance",
+        "maxAbsoluteError": 1,
+        "maxMeanAbsoluteError": 0.02,
+        "justification": "Lossy JPEG compared with an independent decoding of the same encoded input (libjpeg-turbo djpeg: islow integer IDCT, fancy upsampling, block smoothing inactive). The library decoder (the coefficients of every scan accumulated, then double-precision IDCT rounded to nearest, triangle chroma upsampling with the same edge replication and rounding biases, 16-bit fixed-point JFIF YCbCr->RGB) differs from it only by IDCT rounding (one unit on some component samples, amplified by the color conversion); measured: max 1, mean 0.0045. Allowed: the measured max (at least 1) and the measured mean + 0.01 (rounded up to 0.01), tighter than the disagreement between independent decoders (see reference.crossChecks: max 1, mean 0.0394, which would justify max 2 / mean 0.50). Alpha is compared exactly, and the policy is verified to reject channel swaps and flips of this reference."
+      },
+      "notes": "12-bit grayscale samples with a custom scan script: DC from bit 2, luma band 1-5 refined from bit 3, band 6-63 from bit 1, restart interval of 3 blocks."
     },
     {
       "id": "jpeg/progressive-rgb-adobe",

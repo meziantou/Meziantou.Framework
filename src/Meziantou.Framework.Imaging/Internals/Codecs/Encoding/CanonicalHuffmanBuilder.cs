@@ -1,7 +1,7 @@
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
-/// Builds the length-limited canonical prefix codes of the lossless encoders (WebP, JPEG XL) from symbol histograms: Huffman code
+/// Builds the length-limited canonical prefix codes of the encoders (WebP, JPEG XL, progressive JPEG) from symbol histograms: Huffman code
 /// lengths (two-queue construction over the symbols sorted by count, deterministic ties), limited to a maximum length by
 /// raising the smallest counts until the tree fits, then the canonical codes in the decoder's bit order.
 /// </summary>
@@ -9,7 +9,7 @@ internal static class CanonicalHuffmanBuilder
 {
     /// <summary>Computes the code lengths of a histogram.</summary>
     /// <param name="histogram">The count of each symbol.</param>
-    /// <param name="maxLength">The maximum code length (15 for symbols, 7 for the code-length code).</param>
+    /// <param name="maxLength">The maximum code length (15 for symbols, 7 for the code-length code, 16 for JPEG).</param>
     /// <param name="lengths">Receives the length of each symbol: 0 for unused symbols; a single used symbol gets length 1 (a zero-bit code for the decoder).</param>
     public static void BuildLengths(ReadOnlySpan<uint> histogram, int maxLength, Span<byte> lengths)
     {

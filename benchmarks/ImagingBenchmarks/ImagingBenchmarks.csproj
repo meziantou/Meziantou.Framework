@@ -13,6 +13,7 @@
 
   <ItemGroup>
     <Compile Include="..\..\tests\Meziantou.Framework.Imaging.Tests.Shared\Helpers\Codecs\JpegTestImage.cs" Link="Workloads\TestEncoders\JpegTestImage.cs" />
+    <Compile Include="..\..\tests\Meziantou.Framework.Imaging.Tests.Shared\Helpers\Codecs\JpegTestArithmeticCoder.cs" Link="Workloads\TestEncoders\JpegTestArithmeticCoder.cs" />
     <Compile Include="..\..\tests\Meziantou.Framework.Imaging.Tests.Shared\Helpers\Codecs\JpegTestEncodeOptions.cs" Link="Workloads\TestEncoders\JpegTestEncodeOptions.cs" />
     <Compile Include="..\..\tests\Meziantou.Framework.Imaging.Tests.Shared\Helpers\Codecs\JpegTestHuffmanStyle.cs" Link="Workloads\TestEncoders\JpegTestHuffmanStyle.cs" />
     <Compile Include="..\..\tests\Meziantou.Framework.Imaging.Tests.Shared\Helpers\Codecs\JpegTestInkCoding.cs" Link="Workloads\TestEncoders\JpegTestInkCoding.cs" />

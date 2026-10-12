@@ -223,6 +223,20 @@ internal static class Examples
     }
     // end-snippet
 
+    /// <summary>A progressive JPEG shows the whole picture early when it is downloaded, and is usually smaller.</summary>
+    // begin-snippet: save-progressive-jpeg
+    public static void SaveProgressiveJpeg(string sourcePath, string jpegPath)
+    {
+        using var image = Image.Load<Rgb24>(sourcePath);
+        image.Save(jpegPath, new JpegEncoder
+        {
+            Quality = 85,
+            Process = JpegEncodingProcess.Progressive,
+            MetadataHandling = MetadataHandling.DiscardUnsupported,
+        });
+    }
+    // end-snippet
+
     /// <summary>WebP output: a lossy photo with its alpha kept losslessly, and a lossless animation published atomically.</summary>
     // begin-snippet: save-webp
     public static void SaveWebP(string photoPath, string webpPath, string animatedPath, string animatedWebPPath)

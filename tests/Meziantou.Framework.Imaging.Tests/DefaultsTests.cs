@@ -64,6 +64,7 @@ public sealed class DefaultsTests
         var jpeg = new JpegEncoder();
         Assert.Equal(90, jpeg.Quality);
         Assert.Equal(JpegChromaSubsampling.Auto, jpeg.ChromaSubsampling);
+        Assert.Equal(JpegEncodingProcess.Baseline, jpeg.Process);
         Assert.Null(jpeg.BackgroundColor);
         Assert.False(jpeg.AllowBitDepthReduction);
         Assert.Equal(MetadataHandling.Strict, jpeg.MetadataHandling);

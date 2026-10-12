@@ -493,8 +493,9 @@ public static partial class FixtureManifestValidator
             errors.Add($"{name}: invalid colorModel '{expected.ColorModel}' (allowed: {string.Join(", ", AllowedColorModels)}).");
         }
 
-        // AV1 samples are 8, 10 or 12 bits wide; JPEG XL samples have any width, the fixtures use the same ones
-        if (expected.BitsPerComponent is not null and not (1 or 2 or 4 or 8 or 16) && !(entry.Format is "avif" or "jxl" && expected.BitsPerComponent is 10 or 12))
+        // AV1 samples are 8, 10 or 12 bits wide; JPEG XL samples have any width, the fixtures use the same ones; JPEG
+        // samples are 8 or 12 bits wide
+        if (expected.BitsPerComponent is not null and not (1 or 2 or 4 or 8 or 16) && !(entry.Format is "avif" or "jxl" && expected.BitsPerComponent is 10 or 12) && !(entry.Format is "jpeg" && expected.BitsPerComponent is 12))
         {
             errors.Add($"{name}: invalid bitsPerComponent {expected.BitsPerComponent}.");
         }

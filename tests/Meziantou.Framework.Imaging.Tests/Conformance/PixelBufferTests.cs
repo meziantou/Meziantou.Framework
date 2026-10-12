@@ -184,7 +184,7 @@ public sealed class PixelBufferTests
 
         // Not-yet-implemented codecs are reported clearly instead of passing
 #pragma warning disable MA0025 // Simulates a not-yet-implemented member
-        Assert.Contains("NotImplementedException", Assert.Throws<GoldenAssertionException>(() => GoldenAssert.FailsAsExpected(corpus.Get("invalid/jpeg/arithmetic-coding"), () => throw new NotImplementedException("not yet implemented"))).Message, StringComparison.Ordinal);
+        Assert.Contains("NotImplementedException", Assert.Throws<GoldenAssertionException>(() => GoldenAssert.FailsAsExpected(corpus.Get("invalid/jpeg/lossless"), () => throw new NotImplementedException("not yet implemented"))).Message, StringComparison.Ordinal);
 #pragma warning restore MA0025
     }
 

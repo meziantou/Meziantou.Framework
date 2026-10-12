@@ -212,7 +212,8 @@ public sealed partial class FaultInjectionTests
                 image.Dispose();
                 return null;
             default:
-                encoder = new JpegEncoder { MetadataHandling = MetadataHandling.Strip, BackgroundColor = new Rgba64(65535, 65535, 65535, 65535), AllowBitDepthReduction = true };
+                // The progressive process keeps the coefficients of the image and codes each scan in two passes
+                encoder = new JpegEncoder { MetadataHandling = MetadataHandling.Strip, BackgroundColor = new Rgba64(65535, 65535, 65535, 65535), AllowBitDepthReduction = true, Process = encoderName == "jpeg-progressive" ? JpegEncodingProcess.Progressive : JpegEncodingProcess.Baseline };
                 if (image.Frames.Count == 1 && image.PosterFrame is null && !image.IsAnimated)
                     return image;
 

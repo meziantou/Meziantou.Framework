@@ -109,17 +109,19 @@ internal static class DefaultPixelFormats
         return hasAlpha ? PixelFormat.Rgba32 : PixelFormat.Rgb24;
     }
 
-    /// <summary>Selects the default pixel format of one TIFF page.</summary>
-    /// <param name="samplesPerPixel">The number of samples of one pixel: 1, 2, 3 or 4.</param>
-    /// <param name="bitsPerSample">The width of one sample: 8 or 16.</param>
+    /// <summary>Selects the default pixel format of one TIFF page whose samples are not palette indexes.</summary>
+    /// <param name="isGrayscale">Whether the samples are grayscale (<c>WhiteIsZero</c> or <c>BlackIsZero</c>).</param>
+    /// <param name="hasAlpha">Whether the page stores an unassociated alpha sample.</param>
+    /// <param name="is16Bit">Whether the samples have 16 bits.</param>
     /// <returns>
     /// The lossless working representation: <see cref="PixelFormat.Gray8"/>/<see cref="PixelFormat.Gray16"/> for grayscale
-    /// pages without alpha, <see cref="PixelFormat.Rgb24"/> for 8-bit RGB, and <see cref="PixelFormat.Rgba32"/> or
+    /// pages without alpha (samples of 1, 2 and 4 bits are scaled exactly to 8 bits), <see cref="PixelFormat.Rgb24"/> for
+    /// 8-bit color (RGB, and YCbCr and CMYK pages, which are converted to RGB), and <see cref="PixelFormat.Rgba32"/> or
     /// <see cref="PixelFormat.Rgba64"/> otherwise (the library has no gray-with-alpha and no 16-bit RGB pixel format, so
-    /// 16-bit RGB pages are widened to <see cref="PixelFormat.Rgba64"/> with an opaque alpha channel).
+    /// 16-bit color pages are widened to <see cref="PixelFormat.Rgba64"/> with an opaque alpha channel). A palette page is
+    /// <see cref="PixelFormat.Rgb24"/>, or <see cref="PixelFormat.Rgba64"/> when its colors need 16 bits.
     /// </returns>
-    public static PixelFormat ForTiff(int samplesPerPixel, int bitsPerSample)
-        => ForPnm(isGrayscale: samplesPerPixel <= 2, hasAlpha: samplesPerPixel is 2 or 4, is16Bit: bitsPerSample == 16);
+    public static PixelFormat ForTiff(bool isGrayscale, bool hasAlpha, bool is16Bit) => ForPnm(isGrayscale, hasAlpha, is16Bit);
 
     /// <summary>Selects the default pixel format of one DIB-backed ICO or CUR representation.</summary>
     /// <param name="hasMask">Whether the entry stores an AND mask or an alpha channel.</param>

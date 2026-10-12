@@ -10,7 +10,18 @@ public static class ProcessRunner
     /// <param name="arguments">The arguments, passed without shell interpretation.</param>
     /// <param name="cancellationToken">The token to monitor for cancellation requests; the process is killed on cancellation.</param>
     /// <returns>The result.</returns>
-    public static async Task<ProcessResult> RunAsync(string fileName, IEnumerable<string> arguments, CancellationToken cancellationToken)
+    public static Task<ProcessResult> RunAsync(string fileName, IEnumerable<string> arguments, CancellationToken cancellationToken)
+    {
+#if !NET11_0_OR_GREATER
+        // Process.Start forks on macOS before .NET 11: the starts of a process then run one at a time, at several milliseconds each
+        if (OperatingSystem.IsMacOS())
+            return PosixSpawnProcess.RunAsync(fileName, arguments, cancellationToken);
+#endif
+
+        return RunWithProcessAsync(fileName, arguments, cancellationToken);
+    }
+
+    private static async Task<ProcessResult> RunWithProcessAsync(string fileName, IEnumerable<string> arguments, CancellationToken cancellationToken)
     {
         var startInfo = new ProcessStartInfo(fileName)
         {

@@ -453,6 +453,52 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void SaveIndexedPngWritesAPaletteWhenTheColorsFit()
+    {
+        // Two frames of one color each: a 1-bit palette of two entries, shared by the frames
+        var (apngPath, _) = BuildAnimation();
+        var indexed = GetPath("indexed.png");
+        Assert.True(Examples.SaveIndexedPng(apngPath, indexed));
+
+        var data = File.ReadAllBytes(indexed);
+        Assert.Equal((1, 3), (data[24], data[25])); // IHDR bit depth and color type
+        Assert.True(data.AsSpan().IndexOf("PLTE"u8) > 0);
+        var info = Image.Identify(indexed);
+        Assert.Equal(ImageColorModel.Indexed, info.ColorModel);
+        using (var expected = Image.Load<Rgba32>(apngPath))
+        using (var image = Image.Load<Rgba32>(indexed))
+        {
+            Assert.Equal(2, image.Frames.Count);
+            Assert.Equal(expected.Frames[1].Metadata.Duration, image.Frames[1].Metadata.Duration);
+            Assert.Equal(Red, image.Frames[0][0, 0]);
+            Assert.Equal(Blue, image.Frames[1][63, 63]);
+        }
+
+        // A gradient of 1,024 colors does not fit a palette: the example falls back to the layout of the pixel format
+        var gradientPath = GetPath("gradient.png");
+        using (var gradient = new Image<Rgba32>(32, 32))
+        {
+            gradient.Frames[0].ProcessPixelRows(pixels =>
+            {
+                for (var y = 0; y < pixels.Height; y++)
+                {
+                    var row = pixels.GetRowSpan(y);
+                    for (var x = 0; x < row.Length; x++)
+                    {
+                        row[x] = new Rgba32((byte)(x * 8), (byte)(y * 8), 0);
+                    }
+                }
+            });
+
+            gradient.Save(gradientPath);
+        }
+
+        var fallback = GetPath("fallback.png");
+        Assert.False(Examples.SaveIndexedPng(gradientPath, fallback));
+        Assert.Equal((8, 6), (File.ReadAllBytes(fallback)[24], File.ReadAllBytes(fallback)[25]));
+    }
+
+    [Fact]
     public void SaveIndexedBmpWritesARunLengthEncodedPalettedBitmap()
     {
         var (apngPath, _) = BuildAnimation();

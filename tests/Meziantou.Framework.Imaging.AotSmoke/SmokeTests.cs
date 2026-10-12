@@ -30,6 +30,20 @@ internal static class SmokeTests
         using var gray = Image.ImportPixelData<Gray16>([.. Enumerable.Range(0, 64).Select(i => new Gray16((ushort)(i * 1031)))], 8, 8);
         using var gray16 = Image.Load<Gray16>(Encode(gray, new PngEncoder()));
         CheckEqual(gray, gray16, "16-bit gray PNG round trip");
+
+        // The indexed layout: sixteen colors are stored exactly as 4-bit indexes into a palette
+        using var fewColors = CreatePattern(seed: 3, colors: 16);
+        var indexed = Encode(fewColors, new PngEncoder { PixelLayout = PngPixelLayout.Indexed, Interlaced = true });
+        var indexedInfo = Image.Identify(indexed);
+        Check(indexedInfo.ColorModel == ImageColorModel.Indexed && indexedInfo.BitsPerComponent == 4, "PNG palette identification");
+        using (var decoded = Image.Load<Rgba32>(indexed))
+        {
+            CheckEqual(fewColors, decoded, "PNG palette round trip");
+        }
+
+        // It never reduces colors: more than 256 of them are rejected
+        using var manyColors = CreatePattern(seed: 1);
+        Expect<UnsupportedImageFeatureException>(() => Encode(manyColors, new PngEncoder { PixelLayout = PngPixelLayout.Indexed }));
     }
 
     public static void Apng()
@@ -41,6 +55,13 @@ internal static class SmokeTests
         Check(decoded.Frames.Count == 3 && decoded.Animation?.TotalPlays == 2, "APNG frames and plays");
         CheckEqual(animation, decoded, "APNG round trip");
         Check(decoded.Frames[1].Metadata.Duration == new FrameDuration(1, 10), "APNG duration");
+
+        // The indexed layout: one palette holds the colors of every frame
+        using var fewColors = CreateAnimation(frames: 3, colors: 16);
+        var indexed = Encode(fewColors, new PngEncoder { AnimationMode = PngAnimationMode.Animated, PixelLayout = PngPixelLayout.Indexed });
+        Check(Image.Identify(indexed).ColorModel == ImageColorModel.Indexed, "APNG palette identification");
+        using var indexedDecoded = Image.Load<Rgba32>(indexed);
+        CheckEqual(fewColors, indexedDecoded, "APNG palette round trip");
     }
 
     public static void Gif()
@@ -433,7 +454,7 @@ internal static class SmokeTests
     public static void Tiff()
     {
         using var still = CreatePattern(seed: 23);
-        foreach (var compression in new[] { TiffCompression.None, TiffCompression.Deflate })
+        foreach (var compression in new[] { TiffCompression.None, TiffCompression.Deflate, TiffCompression.Lzw, TiffCompression.PackBits })
         {
             foreach (var bigTiff in new[] { false, true })
             {
@@ -441,6 +462,75 @@ internal static class SmokeTests
                 using var decoded = Image.Load(data);
                 CheckEqual(still, decoded, string.Create(CultureInfo.InvariantCulture, $"TIFF {compression} bigtiff={bigTiff}"));
             }
+        }
+
+        // The bilevel layout with the CCITT compressions, from black and white pixels only
+        var bits = new Gray8[Width * Height];
+        for (var i = 0; i < bits.Length; i++)
+        {
+            bits[i] = new Gray8(((i % Width) / 3) % 2 == ((i / Width) / 2) % 2 ? (byte)0 : (byte)255);
+        }
+
+        using var bilevel = Image.ImportPixelData<Gray8>(bits, Width, Height);
+        foreach (var compression in new[] { TiffCompression.CcittModifiedHuffman, TiffCompression.CcittGroup3, TiffCompression.CcittGroup4, TiffCompression.Lzw })
+        {
+            var data = Encode(bilevel, new TiffEncoder { Compression = compression, PixelLayout = TiffPixelLayout.Bilevel });
+            using var decoded = Image.Load(data);
+            Check(Image.Identify(data).BitsPerComponent == 1, string.Create(CultureInfo.InvariantCulture, $"TIFF bilevel {compression} depth"));
+            CheckEqual(bilevel, decoded, string.Create(CultureInfo.InvariantCulture, $"TIFF bilevel {compression}"));
+        }
+
+        Check(Expect<UnsupportedImageFeatureException>(() => Encode(still, new TiffEncoder { PixelLayout = TiffPixelLayout.Bilevel })).Format == ImageFormat.Tiff, "TIFF bilevel rejects colors");
+
+        // The palette layout stores the colors of the page exactly; a JPEG page holds what the JPEG encoder writes
+        using var opaque = still.CloneAs<Rgb24>(new PixelConversionOptions { BackgroundColor = new Rgba64(0, 0, 0) });
+        using var fewColors = CreatePattern(seed: 23, colors: 16);
+        using var palette = fewColors.CloneAs<Rgb24>(new PixelConversionOptions { BackgroundColor = new Rgba64(0, 0, 0) });
+        var indexed = Encode(palette, new TiffEncoder { PixelLayout = TiffPixelLayout.Indexed, Compression = TiffCompression.PackBits });
+        using (var decoded = Image.Load(indexed))
+        {
+            Check(Image.Identify(indexed).ColorModel == ImageColorModel.Indexed, "TIFF palette identification");
+            CheckEqual(palette, decoded, "TIFF palette");
+        }
+
+        var jpegPage = Encode(opaque, new TiffEncoder { Compression = TiffCompression.Jpeg, JpegQuality = 85 });
+        using (var decoded = Image.Load(jpegPage))
+        using (var expected = Image.Load(Encode(opaque, new JpegEncoder { Quality = 85 })))
+        {
+            Check(Image.Identify(jpegPage).ColorModel == ImageColorModel.YCbCr, "TIFF JPEG identification");
+            CheckEqual(expected, decoded, "TIFF JPEG page and JPEG file");
+        }
+
+        // A page of 16-bit inks (two pixels, one uncompressed strip, assembled here: the library writes no CMYK data) is
+        // only loaded with a color conversion, and converted like the public transform converts the same samples
+        ushort[] inks = [0, 0, 0, 0, 60000, 20000, 5000, 1000];
+        byte[] cmyk =
+        [
+            (byte)'I', (byte)'I', 42, 0, 32, 0, 0, 0,
+            .. inks.SelectMany(static ink => (byte[])[(byte)ink, (byte)(ink >> 8)]),
+            16, 0, 16, 0, 16, 0, 16, 0,
+            9, 0,
+            0, 1, 4, 0, 1, 0, 0, 0, 2, 0, 0, 0,
+            1, 1, 4, 0, 1, 0, 0, 0, 1, 0, 0, 0,
+            2, 1, 3, 0, 4, 0, 0, 0, 24, 0, 0, 0,
+            3, 1, 3, 0, 1, 0, 0, 0, 1, 0, 0, 0,
+            6, 1, 3, 0, 1, 0, 0, 0, 5, 0, 0, 0,
+            17, 1, 4, 0, 1, 0, 0, 0, 8, 0, 0, 0,
+            21, 1, 3, 0, 1, 0, 0, 0, 4, 0, 0, 0,
+            22, 1, 4, 0, 1, 0, 0, 0, 1, 0, 0, 0,
+            23, 1, 4, 0, 1, 0, 0, 0, 16, 0, 0, 0,
+            0, 0, 0, 0,
+        ];
+        Check(Image.Identify(cmyk).ColorModel == ImageColorModel.Cmyk, "CMYK TIFF identification");
+        Check(Expect<UnsupportedImageFeatureException>(() => Image.Load(cmyk)).Format == ImageFormat.Tiff, "CMYK TIFF needs a conversion");
+        using (var converted = Image.Load<Rgba64>(cmyk, new ImageDecodeOptions { CmykConversion = new CmykConversionOptions() }))
+        {
+            var colors = new ushort[6];
+            IccColorTransform.Create(IccProfile.Cgats001CompatibleCmyk, IccProfile.Srgb).Convert(inks, colors);
+            var first = converted.Frames[0][0, 0];
+            var second = converted.Frames[0][1, 0];
+            Check(ReferenceEquals(converted.Metadata.IccProfile, IccProfile.Srgb), "CMYK TIFF conversion label");
+            Check(first == new Rgba64(colors[0], colors[1], colors[2], ushort.MaxValue) && second == new Rgba64(colors[3], colors[4], colors[5], ushort.MaxValue), "CMYK TIFF converted pixels");
         }
 
         // A multi-page document: the pages keep their own size and are read one at a time

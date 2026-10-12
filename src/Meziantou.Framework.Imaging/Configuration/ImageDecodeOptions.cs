@@ -51,7 +51,7 @@ public sealed class ImageDecodeOptions
     } = PixelConversionOptions.Default;
 
     /// <summary>
-    /// Gets the color conversion applied to images whose samples are CMYK inks (four-component JPEG), or
+    /// Gets the color conversion applied to images whose samples are CMYK inks (four-component JPEG, separated TIFF), or
     /// <see langword="null"/> (the default) to reject them with an <see cref="UnsupportedImageFeatureException"/>.
     /// </summary>
     /// <remarks>

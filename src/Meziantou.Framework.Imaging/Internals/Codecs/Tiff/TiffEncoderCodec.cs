@@ -28,7 +28,7 @@ internal sealed class TiffEncoderCodec : ImageEncoderCodec
         public Session(ImageEncoderSessionOptions options)
             : base(options)
         {
-            _writer = new TiffDocumentWriter((TiffEncoder)options.Encoder, options.Scope);
+            _writer = new TiffDocumentWriter((TiffEncoder)options.Encoder, options.Scope, options.Configuration);
         }
 
         private enum Step
@@ -37,6 +37,15 @@ internal sealed class TiffEncoderCodec : ImageEncoderCodec
             Header,
             Strips,
             Complete,
+        }
+
+        public override void ValidateFrame(ImageFrame frame, bool isPoster)
+        {
+            ArgumentNullException.ThrowIfNull(frame);
+
+            // The layouts that store a page exactly or not at all read the whole frame before anything of it is written,
+            // so a rejection leaves the writer usable
+            _writer.PreparePage(frame, Options.PixelFormat);
         }
 
         public override void BeginPosterFrame(ImageFrame frame) => throw new InvalidOperationException("TIFF output has no poster frame.");
@@ -60,12 +69,12 @@ internal sealed class TiffEncoderCodec : ImageEncoderCodec
             {
                 case Step.Header:
                     _writer.WriteHeader(output);
-                    _writer.BeginPage(Options.CanvasSize, Options.PixelFormat, Options.Metadata);
+                    _writer.BeginPage(_frame!, Options.CanvasSize, Options.PixelFormat, Options.Metadata);
                     _step = Step.Strips;
                     return false;
 
                 case Step.Strips:
-                    if (!_writer.EncodeStrip(output, _frame!, CancellationToken))
+                    if (!_writer.EncodeStrip(output, CancellationToken))
                         return false;
 
                     _writer.CompletePage(output);

@@ -17,8 +17,8 @@ namespace Meziantou.Framework.Imaging.InteropTests;
 /// poster is checked by decoding the file without its APNG chunks (what a decoder without APNG support shows) as a static
 /// PNG. Durations, plays, the frame count, sequence numbers and control fields are checked on the encoded data with the
 /// independent harness reader (<see cref="ApngOutputVerifier"/>), never with FFmpeg timestamps. On macOS, Apple ImageIO
-/// (CGImageSource, through <c>tools/Meziantou.Framework.Imaging.CorpusGenerator/imageio_frames.swift</c>) decodes the 8- and 16-bit RGBA outputs as
-/// well; the CI interop job runs on macOS and requires them (MEZIANTOU_FRAMEWORK_IMAGING_IMAGEIO_REQUIRED=true); elsewhere they are skipped.
+/// (CGImageSource, through <c>tools/Meziantou.Framework.Imaging.CorpusGenerator/imageio_frames.swift</c>) decodes the 8- and 16-bit RGBA outputs
+/// and the indexed outputs (one palette for every frame) as well; the CI interop job runs on macOS and requires them (MEZIANTOU_FRAMEWORK_IMAGING_IMAGEIO_REQUIRED=true); elsewhere they are skipped.
 /// </summary>
 public sealed class ApngEncoderInteropTests
 {
@@ -52,6 +52,24 @@ public sealed class ApngEncoderInteropTests
         var name = $"{format}-{(poster ? "poster" : "frame0")}-{(interlaced ? "adam7" : "progressive")}";
         var path = await SaveAsync(image, new PngEncoder { Interlaced = interlaced }, name);
         ApngOutputVerifier.Verify(await File.ReadAllBytesAsync(path, XunitCancellationToken), image, context: name);
+        await AssertFFmpegDecodesAsync(ffmpeg, path, image, name);
+    }
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    [InlineData(true, true)]
+    public async Task IndexedAnimationsDecodeExactlyWithFFmpeg(bool poster, bool interlaced)
+    {
+        // One palette for the colors of every frame and of the poster, some of them transparent
+        var ffmpeg = await RequiredTools.FFmpegAsync();
+        using var image = CreateIndexedAnimation(poster);
+        var name = $"indexed-{(poster ? "poster" : "frame0")}-{(interlaced ? "adam7" : "progressive")}";
+        var path = await SaveAsync(image, new PngEncoder { PixelLayout = PngPixelLayout.Indexed, Interlaced = interlaced }, name);
+        var reference = ApngOutputVerifier.Verify(await File.ReadAllBytesAsync(path, XunitCancellationToken), image, context: name);
+        Assert.Equal((3, 8), (reference.ColorType, reference.BitDepth));
+        Assert.Single(reference.GetChunks("PLTE"));
         await AssertFFmpegDecodesAsync(ffmpeg, path, image, name);
     }
 
@@ -127,6 +145,31 @@ public sealed class ApngEncoderInteropTests
 
         var name = $"imageio-{format}-{(poster ? "poster" : "frame0")}{(singleFrame ? "-single" : "")}";
         var path = await SaveAsync(image, new PngEncoder(), name);
+        await AssertAppleImageIODecodesAsync(swift, script, path, image, name);
+    }
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public async Task IndexedAnimationsDecodeExactlyWithAppleImageIO(bool poster, bool singleFrame)
+    {
+        var (swift, script) = RequiredTools.AppleImageIO();
+
+        using var image = CreateIndexedAnimation(poster);
+        while (singleFrame && image.Frames.Count > 1)
+        {
+            image.RemoveFrame(image.Frames.Count - 1);
+        }
+
+        var name = $"imageio-indexed-{(poster ? "poster" : "frame0")}{(singleFrame ? "-single" : "")}";
+        var path = await SaveAsync(image, new PngEncoder { PixelLayout = PngPixelLayout.Indexed }, name);
+        Assert.Equal((byte)3, ReferencePng.Parse(await File.ReadAllBytesAsync(path, XunitCancellationToken)).ColorType);
+        await AssertAppleImageIODecodesAsync(swift, script, path, image, name);
+    }
+
+    private static async Task AssertAppleImageIODecodesAsync(string swift, string script, FullPath path, Image image, string name)
+    {
         var result = await ProcessRunner.RunAsync(swift, [script, path], XunitCancellationToken);
         if (result.ExitCode != 0)
             Assert.Fail($"ImageIO failed (exit code {result.ExitCode}): {result.StandardError}");
@@ -135,13 +178,13 @@ public sealed class ApngEncoderInteropTests
         var header = result.StandardError.Trim().Split(' ');
         Assert.Equal(["frames", image.Frames.Count.ToString(CultureInfo.InvariantCulture), Width.ToString(CultureInfo.InvariantCulture), Height.ToString(CultureInfo.InvariantCulture)], header[..4]);
         var layout = header[4] == "16" ? RawPixelLayout.Rgba16Le : RawPixelLayout.Rgba8;
-        Assert.Equal(format == PixelFormat.Rgba64 ? RawPixelLayout.Rgba16Le : RawPixelLayout.Rgba8, layout);
+        Assert.Equal(image.PixelFormat == PixelFormat.Rgba64 ? RawPixelLayout.Rgba16Le : RawPixelLayout.Rgba8, layout);
         var frameLength = layout.GetByteLength(Width, Height);
         Assert.Equal(image.Frames.Count * frameLength, result.StandardOutput.Length);
         // Known ImageIO behavior (corpus notes of apng/poster-rgba16-dispose and apng/separate-poster): with a separate poster
         // and several frames, ImageIO returns the second animation frame at index 0; every later frame is compared, and the
         // single-frame poster layout confirms frame 0 after a poster
-        var first = poster && image.Frames.Count > 1 ? 1 : 0;
+        var first = image.PosterFrame is not null && image.Frames.Count > 1 ? 1 : 0;
         for (var i = first; i < image.Frames.Count; i++)
         {
             // ImageIO may store another color in fully transparent pixels (corpus cross-check notes): compare them as transparent
@@ -222,6 +265,28 @@ public sealed class ApngEncoderInteropTests
             var posterBytes = new byte[Width * Height * bytesPerPixel];
             random.NextBytes(posterBytes);
             using var posterImage = Import(format, posterBytes);
+            image.SetPosterFrame(posterImage.Frames[0]);
+        }
+
+        image.Animation = new AnimationMetadata();
+        return image;
+    }
+
+    /// <summary>Three frames (and a poster) of twelve colors each, every image with its own colors.</summary>
+    private static Image CreateIndexedAnimation(bool poster)
+    {
+        FrameDuration[] durations = [new(1, 10), new(1, 3), new(7, 9)];
+        var image = PngEncoderInteropTests.CreateWithColors(PixelFormat.Rgba32, Width, Height, colors: 12, seed: 0);
+        image.Frames[0].Metadata.Duration = durations[0];
+        for (var i = 1; i < durations.Length; i++)
+        {
+            using var frame = PngEncoderInteropTests.CreateWithColors(PixelFormat.Rgba32, Width, Height, colors: 12, seed: i * 20);
+            image.AppendFrame(frame.Frames[0]).Metadata.Duration = durations[i];
+        }
+
+        if (poster)
+        {
+            using var posterImage = PngEncoderInteropTests.CreateWithColors(PixelFormat.Rgba32, Width, Height, colors: 12, seed: 90);
             image.SetPosterFrame(posterImage.Frames[0]);
         }
 

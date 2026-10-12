@@ -164,3 +164,8 @@ dotnet_diagnostic.MFAS0050.severity = none
 dotnet_diagnostic.MFAS0054.severity = none
 # MFAS0055: Use Assert.DoesNotContain with the expected value instead of an equality predicate
 dotnet_diagnostic.MFAS0055.severity = none
+
+[tests/Meziantou.Framework.Imaging.Tests.Shared/Helpers/**.cs]
+# MA0182: Avoid unused internal types
+# These helpers are compiled into every Meziantou.Framework.Imaging.*Tests project, and each project uses only some of them.
+dotnet_diagnostic.MA0182.severity = none

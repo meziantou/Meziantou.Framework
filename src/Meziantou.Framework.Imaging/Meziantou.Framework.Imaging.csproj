@@ -17,6 +17,21 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Meziantou.Framework.Imaging.Tests" />
+    <InternalsVisibleTo Include="Meziantou.Framework.Imaging.Av1.Tests" />
+    <InternalsVisibleTo Include="Meziantou.Framework.Imaging.Avif.Tests" />
+    <InternalsVisibleTo Include="Meziantou.Framework.Imaging.AvifEncoder.Tests" />
+    <InternalsVisibleTo Include="Meziantou.Framework.Imaging.Bmp.Tests" />
+    <InternalsVisibleTo Include="Meziantou.Framework.Imaging.Gif.Tests" />
+    <InternalsVisibleTo Include="Meziantou.Framework.Imaging.Ico.Tests" />
+    <InternalsVisibleTo Include="Meziantou.Framework.Imaging.Jpeg.Tests" />
+    <InternalsVisibleTo Include="Meziantou.Framework.Imaging.JpegXl.Tests" />
+    <InternalsVisibleTo Include="Meziantou.Framework.Imaging.Png.Tests" />
+    <InternalsVisibleTo Include="Meziantou.Framework.Imaging.Pnm.Tests" />
+    <InternalsVisibleTo Include="Meziantou.Framework.Imaging.Processing.Tests" />
+    <InternalsVisibleTo Include="Meziantou.Framework.Imaging.Qoi.Tests" />
+    <InternalsVisibleTo Include="Meziantou.Framework.Imaging.Tga.Tests" />
+    <InternalsVisibleTo Include="Meziantou.Framework.Imaging.Tiff.Tests" />
+    <InternalsVisibleTo Include="Meziantou.Framework.Imaging.WebP.Tests" />
     <InternalsVisibleTo Include="Meziantou.Framework.Imaging.FuzzTests" />
     <InternalsVisibleTo Include="Meziantou.Framework.Imaging.InteropTests" />
     <InternalsVisibleTo Include="ImagingBenchmarks" />

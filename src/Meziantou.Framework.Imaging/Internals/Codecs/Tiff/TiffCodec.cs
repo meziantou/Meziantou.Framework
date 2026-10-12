@@ -65,8 +65,6 @@ internal sealed class TiffCodec : ImageCodec
         var header = TiffHeader.Read(source);
         var directory = TiffDirectory.Read(source, header, header.FirstDirectoryOffset);
         var page = TiffPage.Resolve(directory, index: 0, context);
-        using var sink = DecodedFrameSink.Create(context, request, ImageFormat.Tiff, page.Size, page.SourcePixelFormat, page.SourcePixelFormat, page.Metadata.IccProfile);
-        TiffPageDecoder.Decode(source, page, sink);
-        return sink.Build(page.Metadata, animation: null);
+        return TiffPageDecoder.Decode(source, page, request, context);
     }
 }

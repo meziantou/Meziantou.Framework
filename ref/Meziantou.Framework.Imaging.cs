@@ -1183,6 +1183,7 @@ namespace Meziantou.Framework.Imaging.Formats
     {
         public override Meziantou.Framework.Imaging.ImageFormat Format { get => throw null; }
         public Meziantou.Framework.Imaging.Formats.PngAnimationMode AnimationMode { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Formats.PngPixelLayout PixelLayout { get => throw null; init { } }
         public System.IO.Compression.CompressionLevel CompressionLevel { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Formats.PngFilter Filter { get => throw null; init { } }
         public bool Interlaced { get => throw null; init { } }
@@ -1197,6 +1198,12 @@ namespace Meziantou.Framework.Imaging.Formats
         Up = 3,
         Average = 4,
         Paeth = 5,
+    }
+
+    public enum PngPixelLayout
+    {
+        Auto = 0,
+        Indexed = 1,
     }
 
     public sealed class PnmEncoder : Meziantou.Framework.Imaging.Formats.ImageEncoder
@@ -1242,6 +1249,12 @@ namespace Meziantou.Framework.Imaging.Formats
     {
         None = 0,
         Deflate = 1,
+        Lzw = 2,
+        PackBits = 3,
+        CcittModifiedHuffman = 4,
+        CcittGroup3 = 5,
+        CcittGroup4 = 6,
+        Jpeg = 7,
     }
 
     public sealed class TiffEncoder : Meziantou.Framework.Imaging.Formats.ImageEncoder
@@ -1249,9 +1262,19 @@ namespace Meziantou.Framework.Imaging.Formats
         public const int DefaultStripBytes = 65536;
         public override Meziantou.Framework.Imaging.ImageFormat Format { get => throw null; }
         public Meziantou.Framework.Imaging.Formats.TiffCompression Compression { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Formats.TiffPixelLayout PixelLayout { get => throw null; init { } }
+        public int JpegQuality { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Formats.JpegChromaSubsampling JpegChromaSubsampling { get => throw null; init { } }
         public bool BigTiff { get => throw null; init { } }
         public bool BigEndian { get => throw null; init { } }
         public int RowsPerStrip { get => throw null; init { } }
+    }
+
+    public enum TiffPixelLayout
+    {
+        Auto = 0,
+        Bilevel = 1,
+        Indexed = 2,
     }
 
     public enum WebPCompression

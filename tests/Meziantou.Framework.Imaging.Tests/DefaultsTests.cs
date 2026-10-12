@@ -55,6 +55,7 @@ public sealed class DefaultsTests
         var png = new PngEncoder();
         Assert.Equal(ImageFormat.Png, png.Format);
         Assert.Equal(PngAnimationMode.Auto, png.AnimationMode);
+        Assert.Equal(PngPixelLayout.Auto, png.PixelLayout);
         Assert.Equal(CompressionLevel.Optimal, png.CompressionLevel);
         Assert.Equal(PngFilter.Adaptive, png.Filter);
         Assert.False(png.Interlaced);
@@ -100,6 +101,7 @@ public sealed class DefaultsTests
         Assert.Throws<ArgumentOutOfRangeException>(() => new GifEncoder { MaxColors = 1 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new GifEncoder { MaxColors = 257 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new PngEncoder { Filter = (PngFilter)42 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new PngEncoder { PixelLayout = (PngPixelLayout)2 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new PngEncoder { MetadataHandling = (MetadataHandling)42 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new AvifEncoder { Quality = 101 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new AvifEncoder { Effort = 10 });

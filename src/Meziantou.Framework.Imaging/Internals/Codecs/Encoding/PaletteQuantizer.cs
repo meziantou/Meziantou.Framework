@@ -6,7 +6,7 @@ using System.Runtime.Intrinsics;
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
-/// The deterministic color reduction of one frame, shared by the encoders that write palettes (GIF, indexed BMP): a
+/// The deterministic color reduction of one frame, shared by the encoders that reduce colors to a palette (GIF, indexed BMP): a
 /// histogram pass over the frame's opaque colors, a palette of at most the requested number of colors, and the mapping of
 /// colors to palette indices.
 /// </summary>

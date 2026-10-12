@@ -153,6 +153,16 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   are shown as they are stored; everything else goes through `JpegXlFrameRenderer`, in floating point, where 1 is the
   largest integer sample. The render order is the one of libjxl: restoration filters, patches, splines, upsampling,
   noise, color transform, blending.
+- **TIFF** (`Internals/Codecs/Tiff`). `TiffPage` resolves and validates a directory without reading a pixel, so every
+  rejection also comes from `Identify`, except the ones of the compressed data. `TiffBlockReader` turns a strip or a
+  tile into rows of samples (fill order, compression, predictor, YCbCr data units) and `TiffRowExpander` turns the rows
+  into pixels (packed samples, palette, inks). The decompressed size of a block is always known first: a decompressor
+  fills a buffer of that size, it never grows one, and it never repairs data. LZW, PackBits and the CCITT compressions
+  are written from TIFF 6.0 and ITU-T T.4 and T.6; the code words of `TiffCcittCodes` are transcribed from the
+  recommendations, and the tests compare strips with code words spelled out from the same tables. A JPEG strip is
+  decoded by `JpegDecoder` given a `JpegSampleReceiver` and written by the session of `JpegEncoderCodec`: there is no
+  second JPEG implementation, and the page says what the components are. The layouts of `TiffEncoder` store a page
+  exactly or reject it before writing anything of it (`TiffDocumentWriter.PreparePage`): no setting makes them lossy.
 - `ZLibStream` reports truncation as a clean end: check that the expected number of bytes was produced.
 
 ## Color management
@@ -160,8 +170,8 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
 `IccColorTransform` (sample buffers), `ConvertColorProfile` (images) and the decoding of CMYK samples
 (`CmykConversionOptions`) are the only code that applies an ICC profile; everything is under `Internals/Color`.
 
-- No pixel format holds CMYK samples. A decoder that meets them (four-component JPEG) converts its rows with the
-  pipeline of an `IccColorTransform`, only when the request carries `CmykConversionOptions`, and labels the image with
+- No pixel format holds CMYK samples. A decoder that meets them (four-component JPEG, separated TIFF) converts its rows
+  with the pipeline of an `IccColorTransform`, only when the request carries `CmykConversionOptions`, and labels the image with
   the destination profile; without the options it throws `UnsupportedImageFeatureException` before allocating. An
   embedded profile that cannot be used is an error, never replaced by the assumed one.
 - `IccProfile.Cgats001CompatibleCmyk` is third-party data (CC0-1.0): `Internals/Color/BuiltInCmykProfile.g.cs` is
@@ -523,7 +533,10 @@ glyphs and positions in a `GlyphBuffer`; `LayoutApplier` (`Internals/Text/OpenTy
 | Path | Content |
 | --- | --- |
 | `src/Meziantou.Framework.Imaging` | The library and the package README (`readme.md`) |
-| `tests/Meziantou.Framework.Imaging.Tests` | Unit tests (no fixture file) and, under `Conformance/`, golden-corpus tests. No external tool, no network |
+| `tests/Meziantou.Framework.Imaging.Tests` | Tests that are not about one codec: image model, pixels, memory, metadata, readers and writers with test codecs, format detection, defaults, API surface, the corpus and harness self-tests, the documentation examples |
+| `tests/Meziantou.Framework.Imaging.Processing.Tests` | Processing, resampling, convolution, automatic cropping, drawing and color conversion, with their golden and reference suites |
+| `tests/Meziantou.Framework.Imaging.<Codec>.Tests` | One project per codec (`Png` with APNG, `Gif`, `Jpeg`, `JpegXl`, `WebP`, `Qoi`, `Bmp`, `Tga`, `Pnm`, `Tiff`, `Ico` with CUR and ANI, `Av1`, `Avif`, `AvifEncoder`): its unit tests (no fixture file), its conformance tests under `Conformance/`, and the generic suites for its fixtures and its encoder |
+| `tests/Meziantou.Framework.Imaging.Tests.Shared` | Sources compiled into every project above (no project file): `Helpers/`, the generic suites over the corpus (`Suites/`) and `Imaging.Tests.Shared.props` |
 | `tests/Meziantou.Framework.Imaging.InteropTests` | Files produced by the encoders are decoded by pinned external tools |
 | `tests/Meziantou.Framework.Imaging.TestHarness` | Shared, test-framework-agnostic support: corpus manifest, raw-buffer comparison, independent reference readers, tool helpers |
 | `tests/Meziantou.Framework.Imaging.AotSmoke` | Console app exercising every format; published with NativeAOT |
@@ -539,16 +552,34 @@ glyphs and positions in a `GlyphBuffer`; `LayoutApplier` (`Internals/Text/OpenTy
 ```shell
 dotnet build slnx/Meziantou.Framework.Imaging.slnx
 dotnet test --solution slnx/Meziantou.Framework.Imaging.slnx
-dotnet test --project tests/Meziantou.Framework.Imaging.Tests/Meziantou.Framework.Imaging.Tests.csproj --framework net11.0
+dotnet test --project tests/Meziantou.Framework.Imaging.Png.Tests/Meziantou.Framework.Imaging.Png.Tests.csproj --framework net11.0
 dotnet publish tests/Meziantou.Framework.Imaging.AotSmoke -c Release -f net11.0 --use-current-runtime -o artifacts/aot
 ```
 
+- **One test project per codec.** The unit and conformance tests are split so that CI runs them in several jobs
+  (`$ImagingProjects` in `.github/workflows/ci.yml`); none of them needs an external tool or network access. The suites
+  that run every fixture through the decoders (identification, loading, sequential reading, truncation, limits, accounting,
+  fault injection) and every encoder through the save fault injection live once in `Tests.Shared/Suites` and are compiled
+  into each codec project, which declares its part in its project file: `ImagingTestFixtureFormats` (manifest formats) and
+  `ImagingTestEncoders` (`CorpusScope` filters the cases). The sources of the encoder suites are never filtered: an encoder
+  is tested with the fixtures of every format. `CorpusScopeTests` fails when a format or an encoder belongs to no project
+  or to two.
+- **Adding a codec**: create `tests/Meziantou.Framework.Imaging.<Codec>.Tests` from an existing codec project, set its two
+  scope properties, add its `InternalsVisibleTo` to the library, add the encoder name to `CorpusScope.AllEncoderNames` and
+  to `FaultInjectionTests.LoadForEncoder`, add the project with a weight to `$ImagingProjects` in `ci.yml`, and run
+  `dotnet run ./eng/update-all.cs`. A helper used by several projects goes to `Tests.Shared/Helpers`; a test class never
+  calls a member of a test class of another project.
 - **Expected values come from independent sources**: hand-computed values, specifications, independent decoders or the
   reference readers of the test harness. Never produce a decoder expectation with our encoder or compositor, and never
   use the code under test as its own oracle.
 - Lossless comparisons are exact, 16-bit low bits included. Lossy comparisons use an independent decoding of the same
   input with a narrow, justified, per-fixture tolerance. Alpha and structure are always exact.
 - Unit, conformance and fuzz tests must not need an external tool or network access.
+- **TIFF has no corpus.** The decoder tests assemble files (`TiffFileBuilder`) whose compressed strips never come from
+  the library: the reference encoders of the tests (`TiffReferenceCodecs`), the examples of the specifications, fax
+  strips written by libtiff and kept as literals, and JPEG datastreams of `JpegTestImage`. The encoder tests compare
+  small strips with the bytes the specifications give, and the interop tests decode every compression and layout with
+  FFmpeg or Apple ImageIO (the JPEG pages, which FFmpeg does not read), and the pages FFmpeg writes with the library.
 - **CMYK JPEG fixtures.** A four-component JPEG file is an `unsupported` fixture (identified, rejected by a load
   without conversion) that declares one conversion and its pixels (`inkConversion`). The reference has two independent
   stages: the samples decoded by `djpeg` from files the generator regroups scan by scan, then the decimal reference of
@@ -574,6 +605,10 @@ dotnet publish tests/Meziantou.Framework.Imaging.AotSmoke -c Release -f net11.0 
 - Interop tests download ffmpeg, libwebp, libavif, libjxl (`cjxl`, `djxl`, `jxlinfo`, `jxl_from_tree`) and jxl-oxide from
   the release pinned by the `Meziantou.Prebuilt` package (same version in the test harness and the corpus generator). A download failure, an unexpected version or a missing
   capability fails the test; it is never skipped. The Apple ImageIO cases need `swift` and only run on macOS.
+- Interop tests start every tool through `ProcessRunner` (test harness), never through `System.Diagnostics.Process`
+  directly: on macOS, `Process` forks before .NET 11, which makes the thousands of tool runs of a test process wait on
+  each other (the net10.0 run took five times longer than the net11.0 one), so the net10.0 build of `ProcessRunner`
+  uses `posix_spawn` there.
 - When implementing or changing a member, add unit tests, conformance tests with independent references, and interop
   tests for encoders.
 - **Fixtures.** Every file of the corpus is listed in `manifest.json` with its hash, provenance and license; the manifest

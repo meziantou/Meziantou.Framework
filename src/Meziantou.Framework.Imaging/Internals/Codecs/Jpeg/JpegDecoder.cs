@@ -48,8 +48,12 @@ internal sealed class JpegDecoder : JpegDecodeObserver
     private const byte MarkerDri = 0xDD;
     private const int EntropyBufferCapacity = 64 * 1024;
 
-    private readonly ImageDecodeRequest _request;
+    private readonly ImageDecodeRequest? _request;
     private readonly ImageCodecContext _context;
+
+    // The container of an embedded datastream and the meaning it gives to the components; null for an image
+    private readonly JpegSampleReceiver? _receiver;
+    private readonly ImageColorModel _embeddedColorModel;
     private readonly JpegHuffmanTable?[] _dcTables = new JpegHuffmanTable?[4];
     private readonly JpegHuffmanTable?[] _acTables = new JpegHuffmanTable?[4];
     private readonly ushort[]?[] _quantizationTables = new ushort[]?[4];
@@ -76,6 +80,26 @@ internal sealed class JpegDecoder : JpegDecodeObserver
         ArgumentNullException.ThrowIfNull(context);
         _request = request;
         _context = context;
+    }
+
+    /// <summary>
+    /// Creates the decoder of a datastream embedded in another format (a strip or a tile of a TIFF page): no image is
+    /// built, the rows are handed to <paramref name="receiver"/>, and the container says what the components are, whatever
+    /// the JFIF and Adobe segments of the datastream say.
+    /// </summary>
+    /// <param name="context">The context of the operation that decodes the container.</param>
+    /// <param name="receiver">The destination of the rows.</param>
+    /// <param name="colorModel">
+    /// <see cref="ImageColorModel.YCbCr"/> to convert three components to RGB; any other value hands the stored samples
+    /// over.
+    /// </param>
+    public JpegDecoder(ImageCodecContext context, JpegSampleReceiver receiver, ImageColorModel colorModel)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(receiver);
+        _context = context;
+        _receiver = receiver;
+        _embeddedColorModel = colorModel;
     }
 
     public override void OnSegment(byte marker, ReadOnlySpan<byte> payload)
@@ -131,19 +155,27 @@ internal sealed class JpegDecoder : JpegDecodeObserver
         _maxVertical = maxVertical;
         _mcusX = (structure.Width + (8 * maxHorizontal) - 1) / (8 * maxHorizontal);
         _mcusY = (structure.Height + (8 * maxVertical) - 1) / (8 * maxVertical);
+        if (_receiver is not null)
+        {
+            _colorModel = _embeddedColorModel;
+            _receiver.OnFrame(structure.Width, structure.Height, components.Length);
+            return;
+        }
+
+        var request = _request!;
         var source = components.Length == 1 ? PixelFormat.Gray8 : PixelFormat.Rgb24;
         var profile = structure.Metadata.IccProfile;
         if (components.Length == 4)
         {
             // The walker only adopts a CMYK profile for four components. The rows are converted to the destination
             // profile, which is the one that labels the image
-            var conversion = _request.CmykConversion ?? throw Unsupported("CMYK and YCCK JPEG images are only loaded with a color conversion: set the CmykConversion property of the decode or reader options.", "JPEG CMYK/YCCK");
+            var conversion = request.CmykConversion ?? throw Unsupported("CMYK and YCCK JPEG images are only loaded with a color conversion: set the CmykConversion property of the decode or reader options.", "JPEG CMYK/YCCK");
             var transform = conversion.CreateTransform(profile) ?? throw Unsupported("The CMYK JPEG image has no CMYK color profile and CmykConversionOptions.AssumedSourceProfile is null.", "JPEG CMYK without color profile");
             _inkConversion = transform.Pipeline;
             profile = conversion.DestinationProfile;
         }
 
-        _sink = DecodedFrameSink.Create(_context, _request, ImageFormat.Jpeg, structure.Size, structure.DefaultPixelFormat, source, profile);
+        _sink = DecodedFrameSink.Create(_context, request, ImageFormat.Jpeg, structure.Size, structure.DefaultPixelFormat, source, profile);
         _sink.BeginFrame(FrameDuration.Zero);
     }
 
@@ -198,6 +230,9 @@ internal sealed class JpegDecoder : JpegDecodeObserver
             WriteProgressiveFrame();
         }
 
+        if (_receiver is not null)
+            return;
+
         var sink = _sink ?? throw new InvalidOperationException("The JPEG header was not parsed.");
         sink.UpdateMetadata(structure.Metadata);
         sink.EndImage();
@@ -206,7 +241,8 @@ internal sealed class JpegDecoder : JpegDecodeObserver
     public override Image GetResult()
     {
         var structure = _structure ?? throw new InvalidOperationException("The JPEG file was not decoded.");
-        return _sink!.Build(structure.Metadata, animation: null);
+        var sink = _sink ?? throw new InvalidOperationException("An embedded JPEG datastream is not an image.");
+        return sink.Build(structure.Metadata, animation: null);
     }
 
     protected override void Dispose(bool disposing)
@@ -435,7 +471,7 @@ internal sealed class JpegDecoder : JpegDecodeObserver
             component.AllocatePlane(scope, _mcusX, bandCount, _context.Limits);
         }
 
-        _writer = new JpegRowWriter(_components, _sink!, _colorModel, _inkConversion, _structure!.Width, _structure.Height, _maxVertical, scope);
+        _writer = CreateRowWriter(scope);
         var block = new double[64];
         for (var row = 0; row < _mcusY; row++)
         {
@@ -494,7 +530,15 @@ internal sealed class JpegDecoder : JpegDecodeObserver
         }
 
         _reader = new JpegEntropyReader(scope, Math.Max(EntropyBufferCapacity, 2 * JpegScanDecoder.GetRequiredBufferCapacity(10)));
-        _writer = new JpegRowWriter(_components, _sink!, _colorModel, _inkConversion, _structure!.Width, _structure.Height, _maxVertical, scope);
+        _writer = CreateRowWriter(scope);
+    }
+
+    private JpegRowWriter CreateRowWriter(AllocationScope scope)
+    {
+        var structure = _structure!;
+        return _receiver is not null
+            ? new JpegRowWriter(_components, _receiver, _colorModel, structure.Width, structure.Height, _maxVertical, scope)
+            : new JpegRowWriter(_components, _sink!, _colorModel, _inkConversion, structure.Width, structure.Height, _maxVertical, scope);
     }
 
     /// <summary>Streaming: once MCU row <paramref name="row"/> is decoded, the previous one has its lower context row and is written.</summary>

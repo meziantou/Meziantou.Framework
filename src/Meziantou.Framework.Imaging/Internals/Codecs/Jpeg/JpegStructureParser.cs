@@ -14,11 +14,12 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <item><description>Full scan: walks every scan to EOI; metadata after the first scan (for example COM) is included.</description></item>
 /// <item><description>Decode: like a full scan, with every segment and entropy-coded byte delivered to a <see cref="JpegDecodeObserver"/>.</description></item>
 /// </list>
-/// Supported: 8-bit baseline (SOF0), extended sequential Huffman (SOF1) and progressive Huffman (SOF2) frames with 1, 3
-/// or 4 components (a 4-component frame is CMYK or YCCK: it is identified here, and decoded only with a color conversion,
-/// see <see cref="JpegDecoder"/>). Recognized and rejected with <see cref="UnsupportedImageFeatureException"/>: lossless
-/// (SOF3), hierarchical (SOF5-7, SOF13-15, DHP, EXP), arithmetic coding (SOF9-11, DAC), JPEG-LS, 12/16-bit precision,
-/// DNL-defined heights, other component counts and sampling factors that do not divide the largest factors.
+/// Supported: baseline (SOF0), extended sequential Huffman (SOF1) and progressive Huffman (SOF2) frames of 8-bit or
+/// 12-bit samples with 1, 3 or 4 components (a 4-component frame is CMYK or YCCK: it is identified here, and decoded only
+/// with a color conversion, see <see cref="JpegDecoder"/>). A baseline frame only has 8-bit samples by definition; a
+/// 12-bit one is read as an extended sequential frame, as common decoders do. Recognized and rejected with
+/// <see cref="UnsupportedImageFeatureException"/>: lossless (SOF3), hierarchical (SOF5-7, SOF13-15, DHP, EXP),
+/// arithmetic coding (SOF9-11, DAC), JPEG-LS, other precisions than 8 and 12 bits, DNL-defined heights, other component counts and sampling factors that do not divide the largest factors.
 /// Malformed or misplaced markers and segments, a missing frame header or scan, interleaved scans of more than 10 blocks
 /// per MCU, progressive scans with invalid spectral selection, successive approximation or coefficient progression (see
 /// <see cref="ValidateProgressiveScan"/>), and truncation (including a missing EOI) are
@@ -97,6 +98,9 @@ internal sealed class JpegStructureParser : ImageParser<ImageInfo>
 
     public bool IsProgressive => FrameMarker == MarkerSof2;
 
+    /// <summary>Gets the number of bits of a sample (8 or 12), or 0 before the frame header.</summary>
+    public int Precision { get; private set; }
+
     public int Width { get; private set; }
 
     public int Height { get; private set; }
@@ -143,7 +147,7 @@ internal sealed class JpegStructureParser : ImageParser<ImageInfo>
     public ImageMetadata Metadata => _metadata.Metadata;
 
     /// <summary>Gets the default working representation.</summary>
-    public PixelFormat DefaultPixelFormat => DefaultPixelFormats.ForJpeg(Components.Count);
+    public PixelFormat DefaultPixelFormat => DefaultPixelFormats.ForJpeg(Components.Count, Precision);
 
     public override ParseStatus Parse(ReadOnlySpan<byte> buffer, bool isEndOfInput, out int consumed)
     {
@@ -446,8 +450,8 @@ internal sealed class JpegStructureParser : ImageParser<ImageInfo>
         if (width == 0)
             throw Invalid("The JPEG frame width is zero.");
 
-        if (precision != 8)
-            throw Unsupported(string.Create(CultureInfo.InvariantCulture, $"{precision}-bit JPEG precision is not supported (only 8-bit samples)."), "JPEG " + precision.ToString(CultureInfo.InvariantCulture) + "-bit precision");
+        if (precision is not (8 or 12))
+            throw Unsupported(string.Create(CultureInfo.InvariantCulture, $"{precision}-bit JPEG precision is not supported (only 8-bit and 12-bit samples)."), "JPEG " + precision.ToString(CultureInfo.InvariantCulture) + "-bit precision");
 
         if (height == 0)
             throw Unsupported("JPEG images whose height is defined by a DNL marker are not supported.", "JPEG DNL height");
@@ -465,6 +469,7 @@ internal sealed class JpegStructureParser : ImageParser<ImageInfo>
         }
 
         FrameMarker = marker;
+        Precision = precision;
         Width = width;
         Height = height;
         Components = components;
@@ -647,7 +652,7 @@ internal sealed class JpegStructureParser : ImageParser<ImageInfo>
             Size,
             DefaultPixelFormat,
             ColorModel,
-            bitsPerComponent: 8,
+            bitsPerComponent: Precision,
             frameCount: 1,
             isAnimated: false,
             hasPosterFrame: false,

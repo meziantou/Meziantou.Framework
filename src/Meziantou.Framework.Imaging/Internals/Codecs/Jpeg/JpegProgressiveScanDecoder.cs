@@ -10,8 +10,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <para>
 /// The walker validated the spectral selection, the successive approximation and the progression of every coefficient
 /// (<see cref="JpegStructureParser"/>). Validation here (all <see cref="InvalidImageContentException"/>), besides the scan
-/// structure of <see cref="JpegScanDecoder"/>: invalid Huffman codes, DC categories above 11, AC magnitudes above 10 (8-bit
-/// precision), coefficients whose value shifted by <c>Al</c> does not fit in 16 bits (DC: two's complement range; AC:
+/// structure of <see cref="JpegScanDecoder"/>: invalid Huffman codes, DC categories above 11, AC magnitudes above 10 (15
+/// and 14 for 12-bit samples), coefficients whose value shifted by <c>Al</c> does not fit in 16 bits (DC: two's complement range; AC:
 /// magnitude at most 32,767, so that refinements cannot overflow), runs past the end of the band, and refinement
 /// magnitudes other than 1.
 /// </para>
@@ -87,8 +87,8 @@ internal sealed class JpegProgressiveScanDecoder : JpegScanDecoder
     {
         var reader = Reader;
         var category = reader.DecodeHuffman(scanComponent.DcTable!);
-        if (category > 11)
-            throw Invalid("The JPEG DC coefficient category is greater than 11.");
+        if (category > MaxDcCategory)
+            throw Invalid(string.Create(CultureInfo.InvariantCulture, $"The JPEG DC coefficient category is greater than {MaxDcCategory}."));
 
         var dc = scanComponent.Predictor + (category == 0 ? 0 : reader.ReceiveExtend(category));
         var value = (long)dc << _low;
@@ -132,8 +132,8 @@ internal sealed class JpegProgressiveScanDecoder : JpegScanDecoder
             if (k > _end)
                 throw Invalid("The JPEG AC coefficients run past the end of the spectral band.");
 
-            if (size > 10)
-                throw Invalid("The JPEG AC coefficient magnitude category is greater than 10.");
+            if (size > MaxAcCategory)
+                throw Invalid(string.Create(CultureInfo.InvariantCulture, $"The JPEG AC coefficient magnitude category is greater than {MaxAcCategory}."));
 
             var value = (long)reader.ReceiveExtend(size) << _low;
             if (Math.Abs(value) > short.MaxValue)

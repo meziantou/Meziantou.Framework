@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Imaging.Tests.Codecs;
 
@@ -9,7 +10,8 @@ namespace Meziantou.Framework.Imaging.Tests.Codecs;
 /// refinement scans, AC first scans with EOB runs, AC refinement scans with correction bits) and the expected decoded pixels
 /// computed from the specifications: the direct
 /// two-dimensional inverse DCT of ITU-T T.81 A.3.3 evaluated in double precision, and the upsampling and color conversion
-/// contract of the library transcribed pixel by pixel. Nothing here uses the library decoder.
+/// contract of the library transcribed pixel by pixel. Nothing here uses the library decoder. The samples have 8 bits, or
+/// 12 bits (an extended sequential or progressive frame, whose expected pixels are scaled to 16 bits).
 /// </summary>
 /// <remarks>
 /// Random blocks whose exact inverse DCT has a sample within 1e-6 of a rounding boundary are drawn again, so that the
@@ -19,11 +21,15 @@ internal sealed class JpegTestImage
 {
     private static readonly double[][] CosineTable = CreateCosineTable();
 
-    private JpegTestImage(int width, int height, bool rgb, JpegTestInkCoding inks, Component[] components, ushort[][] quantizationTables)
+    private JpegTestImage(int width, int height, bool rgb, JpegTestInkCoding inks, Component[] components, ushort[][] quantizationTables, int precision)
     {
         if ((components.Length == 4) != (inks != JpegTestInkCoding.None))
             throw new ArgumentException("Four components, and only them, are inks.", nameof(inks));
 
+        if (precision is not (8 or 12))
+            throw new ArgumentOutOfRangeException(nameof(precision));
+
+        Precision = precision;
         Width = width;
         Height = height;
         Rgb = rgb;
@@ -39,6 +45,12 @@ internal sealed class JpegTestImage
     public int Width { get; }
 
     public int Height { get; }
+
+    /// <summary>Gets the number of bits of a sample: 8 or 12.</summary>
+    public int Precision { get; }
+
+    /// <summary>Gets the largest sample value: 255 or 4095.</summary>
+    public int MaxSample => (1 << Precision) - 1;
 
     /// <summary>Gets a value indicating whether the samples are RGB (Adobe APP14 transform 0) rather than YCbCr.</summary>
     public bool Rgb { get; }
@@ -59,7 +71,10 @@ internal sealed class JpegTestImage
 
     public int McusY { get; }
 
-    public PixelFormat PixelFormat => Components.Length == 1 ? PixelFormat.Gray8 : PixelFormat.Rgb24;
+    /// <summary>Gets the pixel format of the decoded image: 12-bit samples are scaled to 16 bits, and color ones are opaque RGBA.</summary>
+    public PixelFormat PixelFormat => Precision > 8
+        ? Components.Length == 1 ? PixelFormat.Gray16 : PixelFormat.Rgba64
+        : Components.Length == 1 ? PixelFormat.Gray8 : PixelFormat.Rgb24;
 
     public static ReadOnlySpan<byte> ZigZag =>
     [
@@ -77,8 +92,9 @@ internal sealed class JpegTestImage
     /// <param name="dcOnlyProbability">The probability that a block has only a DC coefficient.</param>
     /// <param name="largeQuantization">Quantization values up to 1000 (16-bit tables).</param>
     /// <param name="inks">How the samples code inks (4 components).</param>
+    /// <param name="precision">The number of bits of a sample: 8 or 12.</param>
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
-    public static JpegTestImage CreateRandom(int width, int height, (int H, int V)[] sampling, int seed, bool rgb = false, double acDensity = 0.35, double dcOnlyProbability = 0.2, bool largeQuantization = false, JpegTestInkCoding inks = JpegTestInkCoding.None)
+    public static JpegTestImage CreateRandom(int width, int height, (int H, int V)[] sampling, int seed, bool rgb = false, double acDensity = 0.35, double dcOnlyProbability = 0.2, bool largeQuantization = false, JpegTestInkCoding inks = JpegTestInkCoding.None, int precision = 8)
     {
         var random = new Random(seed);
         var tables = new ushort[2][];
@@ -100,15 +116,15 @@ internal sealed class JpegTestImage
                 int[] block;
                 do
                 {
-                    block = CreateBlock(random, quantization, acDensity, dcOnlyProbability);
+                    block = CreateBlock(random, quantization, acDensity, dcOnlyProbability, precision);
                 }
-                while (!TryTransform(block, quantization, out _));
+                while (!TryTransform(block, quantization, precision, out _));
 
                 component.Blocks[b] = block;
             }
         }
 
-        return new JpegTestImage(width, height, rgb, inks, components, tables);
+        return new JpegTestImage(width, height, rgb, inks, components, tables, precision);
     }
 
     /// <summary>Creates an image from given quantized coefficients (used to build realistic progressive inputs, e.g. for benchmarks).</summary>
@@ -118,7 +134,8 @@ internal sealed class JpegTestImage
     /// <param name="quantizationTables">The two quantization tables (natural order): table 0 for the first component, table 1 for the others.</param>
     /// <param name="getBlock">Gets the 64 quantized coefficients (natural order) of a component block: component index, block column, block row.</param>
     /// <param name="inks">How the samples code inks (4 components).</param>
-    public static JpegTestImage FromCoefficients(int width, int height, (int H, int V)[] sampling, ushort[][] quantizationTables, Func<int, int, int, int[]> getBlock, JpegTestInkCoding inks = JpegTestInkCoding.None)
+    /// <param name="precision">The number of bits of a sample: 8 or 12.</param>
+    public static JpegTestImage FromCoefficients(int width, int height, (int H, int V)[] sampling, ushort[][] quantizationTables, Func<int, int, int, int[]> getBlock, JpegTestInkCoding inks = JpegTestInkCoding.None, int precision = 8)
     {
         var components = CreateComponents(width, height, sampling, rgb: false);
         for (var c = 0; c < components.Length; c++)
@@ -133,18 +150,29 @@ internal sealed class JpegTestImage
             }
         }
 
-        return new JpegTestImage(width, height, rgb: false, inks, components, quantizationTables);
+        return new JpegTestImage(width, height, rgb: false, inks, components, quantizationTables, precision);
     }
 
-    /// <summary>Gets the exact inverse DCT of a block (T.81 A.3.3), level shifted, rounded (ties upward) and clamped.</summary>
+    /// <summary>Gets the exact inverse DCT of a block of 8-bit samples (T.81 A.3.3), level shifted, rounded (ties upward) and clamped.</summary>
     /// <returns><see langword="false"/> if a sample is within 1e-6 of a rounding boundary.</returns>
     public static bool TryTransform(int[] coefficients, ushort[] quantization, out byte[] samples)
     {
-        samples = new byte[64];
+        var result = TryTransform(coefficients, quantization, precision: 8, out var values);
+        samples = [.. values.Select(value => (byte)value)];
+        return result;
+    }
+
+    /// <summary>Gets the exact inverse DCT of a block (T.81 A.3.3), level shifted by half the range, rounded (ties upward) and clamped.</summary>
+    /// <returns><see langword="false"/> if a sample is within 1e-6 of a rounding boundary.</returns>
+    public static bool TryTransform(int[] coefficients, ushort[] quantization, int precision, out int[] samples)
+    {
+        var center = 1 << (precision - 1);
+        var max = (1 << precision) - 1;
+        samples = new int[64];
         if (coefficients.AsSpan(1).IndexOfAnyExcept(0) < 0)
         {
             // Exact: DC * Q / 8, ties upward
-            var value = (byte)Math.Clamp((int)Math.Floor((coefficients[0] * (double)quantization[0] / 8) + 0.5) + 128, 0, 255);
+            var value = Math.Clamp((int)Math.Floor((coefficients[0] * (double)quantization[0] / 8) + 0.5) + center, 0, max);
             samples.AsSpan().Fill(value);
             return true;
         }
@@ -166,12 +194,12 @@ internal sealed class JpegTestImage
                     }
                 }
 
-                var shifted = (sum / 4) + 128;
+                var shifted = (sum / 4) + center;
                 var rounded = Math.Floor(shifted + 0.5);
-                if (Math.Abs(shifted + 0.5 - rounded) < 1e-6 && rounded is > 0 and <= 255)
+                if (Math.Abs(shifted + 0.5 - rounded) < 1e-6 && rounded > 0 && rounded <= max)
                     return false;
 
-                samples[(y * 8) + x] = (byte)Math.Clamp(rounded, 0, 255);
+                samples[(y * 8) + x] = (int)Math.Clamp(rounded, 0, max);
             }
         }
 
@@ -205,17 +233,26 @@ internal sealed class JpegTestImage
         return components;
     }
 
-    /// <summary>Gets the expected samples of a component (its real width and height).</summary>
+    /// <summary>Gets the expected 8-bit samples of a component (its real width and height).</summary>
     public byte[] GetComponentSamples(int index)
+    {
+        if (Precision != 8)
+            throw new InvalidOperationException("The samples are not bytes: use GetComponentValues.");
+
+        return [.. GetComponentValues(index).Select(value => (byte)value)];
+    }
+
+    /// <summary>Gets the expected samples of a component (its real width and height), at the precision of the image.</summary>
+    public int[] GetComponentValues(int index)
     {
         var component = Components[index];
         var quantization = QuantizationTables[component.QuantizationTable];
-        var plane = new byte[component.Width * component.Height];
+        var plane = new int[component.Width * component.Height];
         for (var by = 0; by * 8 < component.Height; by++)
         {
             for (var bx = 0; bx * 8 < component.Width; bx++)
             {
-                if (!TryTransform(component.Blocks[(by * component.BlocksX) + bx], quantization, out var samples))
+                if (!TryTransform(component.Blocks[(by * component.BlocksX) + bx], quantization, Precision, out var samples))
                     throw new InvalidOperationException("Ambiguous block.");
 
                 for (var y = 0; y < 8 && (by * 8) + y < component.Height; y++)
@@ -232,17 +269,92 @@ internal sealed class JpegTestImage
     }
 
     /// <summary>
-    /// Gets the expected ink amounts of a four-component image: interleaved cyan, magenta, yellow and black, where 0 is no
-    /// ink. The stored samples are complements (255 is no ink). YCCK (Adobe Technical Note #5116) complements the first
-    /// three stored samples again before coding them like RGB, so its color conversion gives their ink amounts directly.
+    /// Gets the expected ink amounts of a four-component image of 8-bit samples: interleaved cyan, magenta, yellow and
+    /// black, where 0 is no ink. The stored samples are complements (255 is no ink). YCCK (Adobe Technical Note #5116)
+    /// complements the first three stored samples again before coding them like RGB, so its color conversion gives their
+    /// ink amounts directly.
     /// </summary>
     public byte[] GetExpectedInks()
+    {
+        if (Precision != 8)
+            throw new InvalidOperationException("The amounts are not bytes: use GetExpectedDeepInks.");
+
+        return [.. GetInkAmounts().Select(value => (byte)value)];
+    }
+
+    /// <summary>Gets the expected ink amounts of a four-component image of 12-bit samples, scaled to 16 bits like the samples of the decoded pixels.</summary>
+    public ushort[] GetExpectedDeepInks()
+    {
+        if (Precision == 8)
+            throw new InvalidOperationException("The amounts are bytes: use GetExpectedInks.");
+
+        return [.. GetInkAmounts().Select(ScaleToSixteenBits)];
+    }
+
+    /// <summary>
+    /// Gets the expected decoded pixels in <see cref="PixelFormat"/>: <see cref="PixelFormat.Gray8"/> or
+    /// <see cref="PixelFormat.Rgb24"/> bytes, or the native 16-bit samples of <see cref="PixelFormat.Gray16"/> or opaque
+    /// <see cref="PixelFormat.Rgba64"/> for 12-bit samples, each scaled to 16 bits.
+    /// </summary>
+    public byte[] GetExpectedPixels()
+    {
+        if (Inks != JpegTestInkCoding.None)
+            throw new InvalidOperationException("The pixels of inks depend on a color conversion: use GetExpectedInks.");
+
+        var planes = Enumerable.Range(0, Components.Length).Select(GetComponentValues).ToArray();
+        var channels = Components.Length;
+        var values = new int[Width * Height * channels];
+        for (var y = 0; y < Height; y++)
+        {
+            for (var x = 0; x < Width; x++)
+            {
+                var offset = ((y * Width) + x) * channels;
+                if (channels == 1)
+                {
+                    values[offset] = planes[0][(y * Width) + x];
+                    continue;
+                }
+
+                var c0 = Upsample(Components[0], planes[0], x, y);
+                var c1 = Upsample(Components[1], planes[1], x, y);
+                var c2 = Upsample(Components[2], planes[2], x, y);
+                (values[offset], values[offset + 1], values[offset + 2]) = Rgb ? (c0, c1, c2) : ConvertYCbCr(c0, c1, c2);
+            }
+        }
+
+        if (Precision == 8)
+            return [.. values.Select(value => (byte)value)];
+
+        // Gray16, or Rgba64 with an opaque alpha sample
+        var samples = new ushort[Width * Height * (channels == 1 ? 1 : 4)];
+        for (var pixel = 0; pixel < Width * Height; pixel++)
+        {
+            if (channels == 1)
+            {
+                samples[pixel] = ScaleToSixteenBits(values[pixel]);
+                continue;
+            }
+
+            samples[4 * pixel] = ScaleToSixteenBits(values[3 * pixel]);
+            samples[(4 * pixel) + 1] = ScaleToSixteenBits(values[(3 * pixel) + 1]);
+            samples[(4 * pixel) + 2] = ScaleToSixteenBits(values[(3 * pixel) + 2]);
+            samples[(4 * pixel) + 3] = ushort.MaxValue;
+        }
+
+        return unsafe(MemoryMarshal.AsBytes(samples.AsSpan())).ToArray();
+    }
+
+    /// <summary>The nearest 16-bit value of the same fraction of the range.</summary>
+    private ushort ScaleToSixteenBits(int sample) => (ushort)Math.Floor((sample * 65535.0 / MaxSample) + 0.5);
+
+    private int[] GetInkAmounts()
     {
         if (Inks == JpegTestInkCoding.None)
             throw new InvalidOperationException("The image has no ink.");
 
-        var planes = Enumerable.Range(0, Components.Length).Select(GetComponentSamples).ToArray();
-        var inks = new byte[Width * Height * 4];
+        var max = MaxSample;
+        var planes = Enumerable.Range(0, Components.Length).Select(GetComponentValues).ToArray();
+        var inks = new int[Width * Height * 4];
         for (var y = 0; y < Height; y++)
         {
             for (var x = 0; x < Width; x++)
@@ -252,67 +364,23 @@ internal sealed class JpegTestImage
                 var c1 = Upsample(Components[1], planes[1], x, y);
                 var c2 = Upsample(Components[2], planes[2], x, y);
                 var c3 = Upsample(Components[3], planes[3], x, y);
-                if (Inks == JpegTestInkCoding.Ycck)
-                {
-                    (inks[offset], inks[offset + 1], inks[offset + 2]) = ConvertYCbCr(c0, c1, c2);
-                }
-                else
-                {
-                    (inks[offset], inks[offset + 1], inks[offset + 2]) = ((byte)(255 - c0), (byte)(255 - c1), (byte)(255 - c2));
-                }
-
-                inks[offset + 3] = (byte)(255 - c3);
+                (inks[offset], inks[offset + 1], inks[offset + 2]) = Inks == JpegTestInkCoding.Ycck ? ConvertYCbCr(c0, c1, c2) : (max - c0, max - c1, max - c2);
+                inks[offset + 3] = max - c3;
             }
         }
 
         return inks;
     }
 
-    /// <summary>Gets the expected decoded pixels: <see cref="PixelFormat.Gray8"/> or <see cref="PixelFormat.Rgb24"/>.</summary>
-    public byte[] GetExpectedPixels()
-    {
-        if (Inks != JpegTestInkCoding.None)
-            throw new InvalidOperationException("The pixels of inks depend on a color conversion: use GetExpectedInks.");
-
-        var planes = Enumerable.Range(0, Components.Length).Select(GetComponentSamples).ToArray();
-        var channels = Components.Length;
-        var pixels = new byte[Width * Height * channels];
-        for (var y = 0; y < Height; y++)
-        {
-            for (var x = 0; x < Width; x++)
-            {
-                var offset = ((y * Width) + x) * channels;
-                if (channels == 1)
-                {
-                    pixels[offset] = planes[0][(y * Width) + x];
-                    continue;
-                }
-
-                var c0 = Upsample(Components[0], planes[0], x, y);
-                var c1 = Upsample(Components[1], planes[1], x, y);
-                var c2 = Upsample(Components[2], planes[2], x, y);
-                if (Rgb)
-                {
-                    (pixels[offset], pixels[offset + 1], pixels[offset + 2]) = ((byte)c0, (byte)c1, (byte)c2);
-                }
-                else
-                {
-                    (pixels[offset], pixels[offset + 1], pixels[offset + 2]) = ConvertYCbCr(c0, c1, c2);
-                }
-            }
-        }
-
-        return pixels;
-    }
-
     /// <summary>JFIF full range, 16-bit fixed-point coefficients, ties upward.</summary>
-    private static (byte R, byte G, byte B) ConvertYCbCr(int luma, int blue, int red)
+    private (int R, int G, int B) ConvertYCbCr(int luma, int blue, int red)
     {
-        var cb = blue - 128;
-        var cr = red - 128;
+        var max = MaxSample;
+        var cb = blue - (1 << (Precision - 1));
+        var cr = red - (1 << (Precision - 1));
         return (Clamp(luma + (((91881 * cr) + 32768) >> 16)), Clamp(luma + (((-22554 * cb) - (46802 * cr) + 32768) >> 16)), Clamp(luma + (((116130 * cb) + 32768) >> 16)));
 
-        static byte Clamp(int value) => (byte)Math.Clamp(value, 0, 255);
+        int Clamp(int value) => Math.Clamp(value, 0, max);
     }
 
     /// <summary>
@@ -343,7 +411,7 @@ internal sealed class JpegTestImage
             components[c] = copy;
         }
 
-        return new JpegTestImage(Width, Height, Rgb, Inks, components, QuantizationTables);
+        return new JpegTestImage(Width, Height, Rgb, Inks, components, QuantizationTables, Precision);
     }
 
     /// <summary>Encodes the image.</summary>
@@ -388,15 +456,16 @@ internal sealed class JpegTestImage
             AddSegment(output, 0xDB, [.. dqt]);
         }
 
-        var sof = new List<byte> { 8, (byte)(Height >> 8), (byte)Height, (byte)(Width >> 8), (byte)Width, (byte)Components.Length };
+        var sof = new List<byte> { (byte)Precision, (byte)(Height >> 8), (byte)Height, (byte)(Width >> 8), (byte)Width, (byte)Components.Length };
         foreach (var component in Components)
         {
             sof.AddRange([component.Id, (byte)((component.Declared.H << 4) | component.Declared.V), (byte)component.QuantizationTable]);
         }
 
+        // A baseline frame only has 8-bit samples: deeper ones are written in an extended sequential frame by default
         var progression = options.Progression;
-        AddSegment(output, progression is null ? options.FrameMarker : (byte)0xC2, [.. sof]);
-        var tables = Enumerable.Range(0, tableCount).Select(t => (Dc: HuffmanCode.Create(false, options.Huffman, options.HuffmanSeed + (2 * t), progression is not null), Ac: HuffmanCode.Create(true, options.Huffman, options.HuffmanSeed + (2 * t) + 1, progression is not null))).ToArray();
+        AddSegment(output, progression is null ? options.FrameMarker ?? (Precision > 8 ? (byte)0xC1 : (byte)0xC0) : (byte)0xC2, [.. sof]);
+        var tables = Enumerable.Range(0, tableCount).Select(t => (Dc: HuffmanCode.Create(false, options.Huffman, options.HuffmanSeed + (2 * t), progression is not null, Precision), Ac: HuffmanCode.Create(true, options.Huffman, options.HuffmanSeed + (2 * t) + 1, progression is not null, Precision))).ToArray();
         if (!options.TablesBeforeEachScan)
         {
             WriteHuffmanTables(output, tables);
@@ -483,13 +552,20 @@ internal sealed class JpegTestImage
     }
 
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
-    private static int[] CreateBlock(Random random, ushort[] quantization, double acDensity, double dcOnlyProbability)
+    private static int[] CreateBlock(Random random, ushort[] quantization, double acDensity, double dcOnlyProbability, int precision)
     {
         var block = new int[64];
 
-        // Mean sample offset within the 8-bit range (occasionally beyond, to exercise clamping)
-        var mean = random.Next(-140, 141);
+        // Mean sample offset within the range of the samples (occasionally beyond, to exercise clamping)
+        var scale = 1 << (precision - 8);
+        var mean = random.Next(-140 * scale, (140 * scale) + 1);
         block[0] = (int)Math.Round(mean * 8.0 / quantization[0], MidpointRounding.AwayFromZero);
+        if (precision > 8)
+        {
+            // The difference of two DC coefficients must stay within the category 15
+            block[0] = Math.Clamp(block[0], -16383, 16383);
+        }
+
         if (random.NextDouble() < dcOnlyProbability)
             return block;
 
@@ -498,7 +574,7 @@ internal sealed class JpegTestImage
             if (random.NextDouble() < acDensity * (1 - (k / 80.0)))
             {
                 var natural = ZigZag[k];
-                var limit = Math.Clamp(400 / quantization[natural], 1, 1023);
+                var limit = Math.Clamp(400 * scale / quantization[natural], 1, precision > 8 ? 16383 : 1023);
                 var value = random.Next(1, limit + 1);
                 block[natural] = random.Next(2) == 0 ? value : -value;
             }
@@ -547,7 +623,7 @@ internal sealed class JpegTestImage
     }
 
     /// <summary>The upsampling contract of the library, one output sample at a time.</summary>
-    private int Upsample(Component component, byte[] plane, int x, int y)
+    private int Upsample(Component component, int[] plane, int x, int y)
     {
         var rh = MaxHorizontal / component.H;
         var rv = MaxVertical / component.V;
@@ -732,16 +808,19 @@ internal sealed class JpegTestImage
         }
 
         [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
-        public static HuffmanCode Create(bool ac, JpegTestHuffmanStyle style, int seed, bool progressive = false)
+        public static HuffmanCode Create(bool ac, JpegTestHuffmanStyle style, int seed, bool progressive = false, int precision = 8)
         {
-            // Progressive AC tables also code the end-of-band runs EOB1-EOB14 (T.81 G.1.2.2)
+            // Progressive AC tables also code the end-of-band runs EOB1-EOB14 (T.81 G.1.2.2). The samples of 12 bits have
+            // four more categories: DC differences up to 15 and AC coefficients up to 14 (T.81 tables F.6 and F.7)
+            var acCategories = precision > 8 ? 14 : 10;
             var symbols = ac
-                ? [0x00, 0xF0, .. Enumerable.Range(0, 16).SelectMany(run => Enumerable.Range(1, 10).Select(size => (byte)((run << 4) | size))), .. progressive ? Enumerable.Range(1, 14).Select(run => (byte)(run << 4)) : []]
-                : Enumerable.Range(0, 12).Select(value => (byte)value).ToArray();
+                ? [0x00, 0xF0, .. Enumerable.Range(0, 16).SelectMany(run => Enumerable.Range(1, acCategories).Select(size => (byte)((run << 4) | size))), .. progressive ? Enumerable.Range(1, 14).Select(run => (byte)(run << 4)) : []]
+                : Enumerable.Range(0, precision > 8 ? 16 : 12).Select(value => (byte)value).ToArray();
             var counts = new byte[16];
             if (style == JpegTestHuffmanStyle.Fixed)
             {
-                counts[ac ? 7 : 3] = (byte)symbols.Length;
+                // The sixteen DC categories of 12-bit samples need 5-bit codes: a code of 1-bits only is not allowed
+                counts[ac ? 7 : precision > 8 ? 4 : 3] = (byte)symbols.Length;
                 return new HuffmanCode(counts, symbols);
             }
 

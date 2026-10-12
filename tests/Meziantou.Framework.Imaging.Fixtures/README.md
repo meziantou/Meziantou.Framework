@@ -216,6 +216,19 @@ recorded and excluded from the tolerance; for progressive fixtures djpeg's optio
 every scan script completes the DC and AC coefficients 1-9, so the reference is a plain decoding of the coefficients as
 sent). Disagreements are documented, never hidden.
 
+12-bit JPEG fixtures (`jpeg/precision12-*`, `jpeg/progressive-precision12-*`): `cjpeg -precision 12` encodes a pattern of
+12-bit samples and `djpeg` writes the decoded 12-bit samples as they are (a portable anymap with the maximum value 4095).
+The reference is each sample `s` scaled to 16 bits as the library does, `(s * 65535 + 2047) / 4095`, in 16-bit layouts;
+the errors are recorded on the 8-bit scale like every tolerance (units of 257, the maximum rounded up), so three units of
+a 12-bit sample count as one. The cross-checks are FFmpeg, whose decoder shifts the samples left by four bits instead (a
+difference below one unit of the 8-bit scale) and whose planes are converted by swscale with its default scaler (the
+bilinear scaler of FFmpeg 9.0.2 does not convert subsampled planes of more than 8 bits), and Apple ImageIO, whose 16-bit
+PNG output FFmpeg reads back without loss. Both upsample the chroma of 12-bit files very differently from `djpeg` on
+detailed content (maximum 19 to 44, mean 5 to 10), which bounds what independent decoders justify; the tolerance of each
+fixture is the disagreement measured for the library (`LibraryJpegMeasurements`), which decodes like `djpeg`. No
+fixture has 12-bit RGB samples (Adobe transform 0): neither FFmpeg nor ImageIO reads them as RGB, so nothing would
+cross-check the reference; the unit tests cover them.
+
 Four-component JPEG fixtures (`BuildInkJpeg`, `inkConversion`): LittleCMS `jpgicc` separates an RGB JPEG into a YCCK
 file, `jpegtran` rewrites its scans (progressive, restart intervals) without changing a coefficient, and the generator
 edits the Adobe APP14 segment for the CMYK variants (transform 0, or no segment). No pinned tool writes the four planes
@@ -381,8 +394,8 @@ header (65,536 bytes) rejects.
 | PNG | every legal color type/bit depth: gray 1/2/4/8/16, RGB 8/16, palette 1/2/4/8 (partial tRNS, 256 colors, fewer entries than the depth allows), gray+alpha 8/16, RGBA 8/16; tRNS keys for gray 4/8/16 and RGB 8/16 (16-bit keys differing from opaque pixels only in the low bit or by a byte swap); 16-bit low-bit gradients (gray, gray+alpha, RGB, RGBA); Adam7 for 8/16-bit and sub-byte samples and the edge cases 1x1 (passes 2-7 empty), 1x9, 9x1, 3x2 and odd sizes; split and empty IDAT chunks; every filter type on 1-, 2-, 4-, 6- and 8-byte pixels; FFmpeg-encoded (compressed) and hand-authored (stored deflate) inputs; native `gray8`/`gray16le` and `rgb8` references for `Gray8`/`Gray16`/`Rgb24` decoding |
 | APNG | SOURCE/OVER blending, dispose NONE/BACKGROUND/PREVIOUS, separate poster with first-frame PREVIOUS (treated as BACKGROUND), exact rational delays (`3/30`, `0/0`, `7/1000`), finite and infinite plays, FFmpeg-encoded 8/16-bit animations; compositing fixtures: translucent OVER at 8 bits (`over-alpha-rgba8`: over opaque, translucent and cleared pixels, OVER on the first frame drawn with SOURCE, BACKGROUND then OVER, SOURCE transparent replacement with hidden colors, PREVIOUS, delays `65535/1000`, `7/0`) and 16 bits (`over-alpha-rgba16`), a separate 16-bit poster with partial first frame and consecutive PREVIOUS (`poster-rgba16-dispose`, delays `0/1`, `1/65535`), gray + `tRNS` key with Adam7 frame regions of odd sizes and `fdAT` split in three chunks (`gray8-trns-adam7`), a poster plus one partial frame (`poster-partial-single-frame`), and a one-frame palette + `tRNS` animation (`palette-single-frame`) |
 | GIF | GIF87a 2-color palette (minimum code size 2), interlaced frame with local palette, disposal 0-3 with transparency, LZW full table with clear codes and with deferred clear (KwKwK runs), FFmpeg-encoded animation with finite loop; for the decoder (`build_gif_decoding`, every frame a literal grid): palette changes (global, local 4/16/2 entries with a transparent index, an image without Graphic Control Extension, delay 65535, loop 1), disposal and the background color (bg index never painted: partial first image with disposal 3, disposal 2 without transparent index), undefined disposals 4 and 5-7, a transparent first image, interlaced images of heights 1-9, rectangles larger than / partly / entirely outside the screen, LZW minimum code size 1, code-size boundaries (no initial clear, two leading clears, clears at 2^k and 2^k + 1, KwKwK runs, minimum code size 8 with 16 colors), a missing end code, data after the end code, ANIMEXTS1.0, loop extensions after the first image (the last wins), a single image with loop 65535 and a NETSCAPE2.0 buffering sub-block, skipped extensions and comments |
-| JPEG | baseline 4:2:0 / 4:2:2 (odd width, restart markers) / 4:4:4, progressive 4:2:0 with partial MCUs, grayscale odd size, EXIF orientation 6 (metadata only), JFIF density 300x150 dpi + XMP + COM; for the sequential decoder: high-frequency content (`pattern_detail_*`) with odd 4:2:0 and one restart interval per MCU row and optimized Huffman tables, 4:4:0 (vertical triangle filter), 4:1:1 (replication), 4:4:4 detail, grayscale with 3-block restart intervals, optimized tables and a gray ICC profile, extended sequential SOF1 with 16-bit DQT (quality 3), Adobe RGB (transform 0, `R`/`G`/`B` identifiers), multi-scan sequential frames (Cb/Y/Cr in separate non-interleaved scans with restarts; Y then interleaved CbCr), RGB ICC in three out-of-order APP2 chunks + big-endian EXIF orientation 3 + JFIF dots per centimeter; tiny frames whose chroma planes are at most 2 samples wide (4:2:0 4x9 and 2x13, 4:2:2 3x5, progressive 4:2:0 4x6: replicated like libjpeg-turbo); for the progressive decoder: the default libjpeg-turbo progression (DC/AC successive approximation, luma band split) at 4:4:4 detail, odd 4:2:2 with 2-MCU restarts, gray smaller than two blocks and Adobe RGB, and `-scans` scripts (`PROGRESSIVE_*_SCRIPT`): DC refined from bit 3 and a luma band refined from bit 4 at odd 4:2:0 with per-row restarts, spectral selection only at 4:4:0, separate DC scans with different point transforms at 4:1:1 with 3-block restarts, a gray refinement script with 3-block restarts, and a partial progression (high frequencies never refined to bit 0 or never sent) — encoded by libjpeg-turbo `cjpeg`. Every color JPEG also has an `rgb8` reference for `Rgb24` decoding |
-| JPEG errors | Unsupported (header): arithmetic coding, lossless (SOF3), 12-bit precision, non-integral sampling ratios; unsupported without a color conversion (identified, and loaded with the conversion their `inkConversion` declares): four components, as YCCK inks with an embedded CMYK profile, as CMYK inks (Adobe transform 0) in a progressive frame, and as CMYK inks without Adobe segment with restart intervals; structure: interleaved scan with 18 blocks per MCU; decoding only (valid containers): truncated entropy-coded data, an unassigned Huffman code, a zero quantization value, a truncated DQT, an undefined Huffman table, an oversubscribed Huffman table, a restart marker out of sequence, a missing last restart marker, a frame whose third component has no scan; progressive: structure (scan headers, found by a full identification): an AC scan with Ss > Se, a refinement scan moved before the first scan of its band; decoding only: a truncated scan followed by the remaining scans, an invalid code at the start of an AC refinement, a frame whose Cr component has no scan; limit: a frame header declaring 20000x20000 pixels (`MaxFramePixels`, before any allocation) |
+| JPEG | baseline 4:2:0 / 4:2:2 (odd width, restart markers) / 4:4:4, progressive 4:2:0 with partial MCUs, grayscale odd size, EXIF orientation 6 (metadata only), JFIF density 300x150 dpi + XMP + COM; for the sequential decoder: high-frequency content (`pattern_detail_*`) with odd 4:2:0 and one restart interval per MCU row and optimized Huffman tables, 4:4:0 (vertical triangle filter), 4:1:1 (replication), 4:4:4 detail, grayscale with 3-block restart intervals, optimized tables and a gray ICC profile, extended sequential SOF1 with 16-bit DQT (quality 3), Adobe RGB (transform 0, `R`/`G`/`B` identifiers), multi-scan sequential frames (Cb/Y/Cr in separate non-interleaved scans with restarts; Y then interleaved CbCr), RGB ICC in three out-of-order APP2 chunks + big-endian EXIF orientation 3 + JFIF dots per centimeter; tiny frames whose chroma planes are at most 2 samples wide (4:2:0 4x9 and 2x13, 4:2:2 3x5, progressive 4:2:0 4x6: replicated like libjpeg-turbo); for the progressive decoder: the default libjpeg-turbo progression (DC/AC successive approximation, luma band split) at 4:4:4 detail, odd 4:2:2 with 2-MCU restarts, gray smaller than two blocks and Adobe RGB, and `-scans` scripts (`PROGRESSIVE_*_SCRIPT`): DC refined from bit 3 and a luma band refined from bit 4 at odd 4:2:0 with per-row restarts, spectral selection only at 4:4:0, separate DC scans with different point transforms at 4:1:1 with 3-block restarts, a gray refinement script with 3-block restarts, and a partial progression (high frequencies never refined to bit 0 or never sent) — encoded by libjpeg-turbo `cjpeg`. Every color JPEG also has an `rgb8` reference for `Rgb24` decoding; 12-bit samples (`cjpeg -precision 12`, references in 16-bit layouts): 4:4:4 detail, odd 4:2:0 with optimized tables and one restart interval per MCU row, odd 4:2:2 on a smooth gradient, grayscale with 3-block restart intervals, the default progression at 4:2:0 and a grayscale refinement script |
+| JPEG errors | Unsupported (header): arithmetic coding, lossless (SOF3), a sample precision of 16 bits in an extended sequential frame (the DCT processes have 8-bit or 12-bit samples), non-integral sampling ratios; unsupported without a color conversion (identified, and loaded with the conversion their `inkConversion` declares): four components, as YCCK inks with an embedded CMYK profile, as CMYK inks (Adobe transform 0) in a progressive frame, and as CMYK inks without Adobe segment with restart intervals; structure: interleaved scan with 18 blocks per MCU; decoding only (valid containers): truncated entropy-coded data, an unassigned Huffman code, a zero quantization value, a truncated DQT, an undefined Huffman table, an oversubscribed Huffman table, a restart marker out of sequence, a missing last restart marker, a frame whose third component has no scan; progressive: structure (scan headers, found by a full identification): an AC scan with Ss > Se, a refinement scan moved before the first scan of its band; decoding only: a truncated scan followed by the remaining scans, an invalid code at the start of an AC refinement, a frame whose Cr component has no scan; limit: a frame header declaring 20000x20000 pixels (`MaxFramePixels`, before any allocation) |
 | WebP | lossless (VP8L): 1x1, odd width, RGBA corner markers, hidden colors under alpha 0 (`-exact`), a detailed pattern with the transforms `cwebp -z 9` chooses (`lossless-detail-transforms`), a small palette with pixel bundling and a 256-color palette, extended layout with ICC/EXIF/XMP, an opaque extended file with an unknown chunk; lossy (VP8): normal and simple loop filters with segmentation, no filter at high quality, odd and tiny (3x2) sizes, raw `ALPH` and lossless-compressed `ALPH` with horizontal filtering, metadata; animations: blend/dispose combinations with partial frames and a finite loop, a partial first frame with infinite loop, mixed lossy and lossless frames, a single-frame animation |
 | BMP | 24-bit bottom-up and top-down with row padding, 32-bit `BITMAPV4HEADER` with an alpha mask and the same bytes as 32-bit `BI_RGB` (unspecified fourth byte), 16-bit implicit 5-5-5 and explicit 5-6-5 masks after a 40-byte header, 16-bit 1-5-5-5 with a `BITMAPV3INFOHEADER` alpha mask, 8-bit palette with five entries and a gap before the pixel data, 4-bit and 1-bit palettes with odd widths, `biXPelsPerMeter`/`biYPelsPerMeter`, FFmpeg-encoded 24-bit and 32-bit files; run-length streams: `BI_RLE8` and `BI_RLE4` with encoded runs (alternating indexes for 4 bits), absolute runs with and without a padding byte, and every way of skipping pixels (delta to the right, delta to a later row, early end of line, early end of bitmap) over a palette whose first entry is not black; OS/2: `BITMAPCOREHEADER` with 24-bit rows and with 1-, 4- and 8-bit `RGBTRIPLE` palettes (one shorter than its bit count allows, ended by `bfOffBits`), `BITMAPCOREHEADER2` complete (64 bytes, with a resolution) and cut after its bit count (16 bytes), and `BCA_RLE24` |
 | BMP errors | invalid: zero width/height, two planes, bit count 7, undefined compression, pixel offset inside the header, truncated header and pixel data, palette index out of range, overlapping/non-contiguous/zero masks; run-length: `BI_RLE8` with top-down rows or 4 bits per pixel, a run past the end of its row, a delta outside the canvas, data after the last row, a missing end-of-bitmap marker, a palette index out of range; OS/2: `BITMAPCOREHEADER` with 16 bits per pixel or a pixel offset that leaves no palette entry; unsupported: OS/2 Huffman 1D, `BI_PNG`, 2 bits per pixel, a 10-bit channel mask; limits: width, frame pixels |
@@ -433,7 +446,7 @@ follows it, so keep both headings unique in this file.
 | avif | 139 | 33 | 14 | 12 |
 | bmp | 24 | 21 | 4 | 2 |
 | gif | 24 | 15 | 1 | 2 |
-| jpeg | 42 | 15 | 7 | 1 |
+| jpeg | 48 | 15 | 7 | 1 |
 | jxl | 53 | 7 | 4 | 6 |
 | png | 109 | 31 | 1 | 6 |
 | pnm | 15 | 12 | 1 | 2 |
@@ -515,33 +528,34 @@ follows it, so keep both headings unique in this file.
 | GIF LZW missing end code | `gif.lzw.missingEndCode` | 1 | 0 | 0 | 0 |
 | GIF LZW data after the end code | `gif.lzw.dataAfterEndCode` | 1 | 0 | 0 | 0 |
 | JPEG baseline (SOF0) | `jpeg.process=baseline` | 30 | 10 | 3 | 1 |
-| JPEG extended sequential (SOF1) | `jpeg.process=extended` | 1 | 0 | 1 | 0 |
-| JPEG progressive (SOF2) | `jpeg.process=progressive` | 11 | 5 | 1 | 0 |
-| JPEG progressive spectral selection | `jpeg.progressive=spectral-selection` | 10 | 4 | 1 | 0 |
-| JPEG progressive successive approximation | `jpeg.progressive=successive-approximation` | 10 | 4 | 1 | 0 |
-| JPEG progressive DC refinement | `jpeg.progressive=dc-refinement` | 10 | 4 | 1 | 0 |
-| JPEG progressive AC refinement | `jpeg.progressive=ac-refinement` | 10 | 4 | 1 | 0 |
+| JPEG extended sequential (SOF1) | `jpeg.process=extended` | 5 | 0 | 1 | 0 |
+| JPEG progressive (SOF2) | `jpeg.process=progressive` | 13 | 5 | 1 | 0 |
+| JPEG progressive spectral selection | `jpeg.progressive=spectral-selection` | 12 | 4 | 1 | 0 |
+| JPEG progressive successive approximation | `jpeg.progressive=successive-approximation` | 12 | 4 | 1 | 0 |
+| JPEG progressive DC refinement | `jpeg.progressive=dc-refinement` | 12 | 4 | 1 | 0 |
+| JPEG progressive AC refinement | `jpeg.progressive=ac-refinement` | 12 | 4 | 1 | 0 |
 | JPEG progressive separate DC scans | `jpeg.progressive=dc-separate` | 1 | 1 | 0 | 0 |
 | JPEG partial progression | `jpeg.progressive=partial` | 1 | 1 | 0 | 0 |
 | JPEG multi-scan sequential frames | `jpeg.process=baseline` + `jpeg.scans=3` | 1 | 0 | 0 | 0 |
 | JPEG non-interleaved scans | `jpeg.scanComponents=1` | 2 | 1 | 0 | 0 |
-| JPEG grayscale (one component) | `jpeg.components=1` | 4 | 0 | 0 | 1 |
-| JPEG three components (YCbCr or RGB) | `jpeg.components=3` | 38 | 15 | 4 | 0 |
+| JPEG grayscale (one component) | `jpeg.components=1` | 6 | 0 | 0 | 1 |
+| JPEG three components (YCbCr or RGB) | `jpeg.components=3` | 42 | 15 | 4 | 0 |
 | JPEG Adobe APP14 segment (RGB, CMYK or YCCK) | `jpeg.app14=Adobe` | 2 | 0 | 3 | 0 |
-| JPEG sampling 4:4:4 | `jpeg.sampling=4:4:4` | 7 | 0 | 1 | 0 |
-| JPEG sampling 4:2:2 | `jpeg.sampling=4:2:2` | 5 | 0 | 0 | 0 |
-| JPEG sampling 4:2:0 | `jpeg.sampling=4:2:0` | 14 | 14 | 2 | 0 |
+| JPEG sampling 4:4:4 | `jpeg.sampling=4:4:4` | 8 | 0 | 1 | 0 |
+| JPEG sampling 4:2:2 | `jpeg.sampling=4:2:2` | 6 | 0 | 0 | 0 |
+| JPEG sampling 4:2:0 | `jpeg.sampling=4:2:0` | 16 | 14 | 2 | 0 |
 | JPEG sampling 4:4:0 | `jpeg.sampling=4:4:0` | 2 | 0 | 0 | 0 |
 | JPEG sampling 4:1:1 | `jpeg.sampling=4:1:1` | 2 | 0 | 0 | 0 |
-| JPEG restart intervals | `jpeg.restartInterval` | 8 | 2 | 1 | 0 |
+| JPEG restart intervals | `jpeg.restartInterval` | 11 | 2 | 1 | 0 |
 | JPEG 16-bit quantization tables | `jpeg.quantization=16-bit` | 1 | 0 | 0 | 0 |
-| JPEG JFIF APP0 (density) | `jpeg.app0=JFIF` | 28 | 15 | 6 | 0 |
+| JPEG JFIF APP0 (density) | `jpeg.app0=JFIF` | 34 | 15 | 6 | 0 |
 | JPEG EXIF (APP1) | `jpeg.app1=Exif` | 2 | 0 | 0 | 0 |
 | JPEG XMP (APP1) | `jpeg.app1=http://ns.adobe.com/xap/1.0/` | 1 | 0 | 0 | 0 |
 | JPEG ICC profile (APP2) | `jpeg.app2=ICC_PROFILE` | 2 | 0 | 1 | 0 |
 | JPEG arithmetic coding (rejected) | `jpeg.process=arithmetic-sequential` | 0 | 0 | 1 | 0 |
 | JPEG lossless (rejected) | `jpeg.process=lossless` | 0 | 0 | 1 | 0 |
-| JPEG 12-bit precision (rejected) | `jpeg.precision=12` | 0 | 0 | 1 | 0 |
+| JPEG 12-bit samples | `jpeg.precision=12` | 6 | 0 | 0 | 0 |
+| JPEG precisions other than 8 and 12 bits (rejected) | `jpeg.precision=16` | 0 | 0 | 1 | 0 |
 | JPEG four components (CMYK/YCCK inks), loaded only with a color conversion (rejected) | `jpeg.components=4` | 0 | 0 | 3 | 0 |
 | WebP simple layout | `webp.layout=simple` | 12 | 4 | 1 | 2 |
 | WebP extended layout (`VP8X`) | `webp.layout=extended` | 9 | 4 | 0 | 3 |

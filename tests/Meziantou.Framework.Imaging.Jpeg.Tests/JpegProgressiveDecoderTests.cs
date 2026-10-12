@@ -93,6 +93,40 @@ public sealed class JpegProgressiveDecoderTests
     }
 
     [Theory]
+    [InlineData("gray", 9, 7)]
+    [InlineData("gray", 37, 21)]
+    [InlineData("4:4:4", 17, 9)]
+    [InlineData("4:2:2", 37, 21)]
+    [InlineData("4:2:0", 9, 7)]
+    [InlineData("4:2:0", 37, 21)]
+    [InlineData("4:1:1", 17, 9)]
+    [InlineData("mixed-chroma", 37, 21)]
+    public void TwelveBitFramesDecodeToTheContractScaledToSixteenBits(string layout, int width, int height)
+    {
+        // The coefficients of 12-bit samples have four more bits: the same progressions refine them
+        var sampling = Layouts[layout];
+        var image = JpegTestImage.CreateRandom(width, height, sampling, seed: (width * 41) + height + layout.Length, precision: 12);
+        var expected = image.GetExpectedPixels();
+        var gray = sampling.Length == 1;
+        var encodings = new (string Name, JpegTestEncodeOptions Options)[]
+        {
+            ("standard progression, fixed tables", Progressive(gray ? GrayStandard : ColorStandard)),
+            ("spectral selection only, long codes, restart 1", Progressive(gray ? GraySpectral : ColorSpectral, restartInterval: 1, huffman: JpegTestHuffmanStyle.Skewed)),
+            ("successive approximation from bit 5, separate DC scans, tables before each scan, EOB runs of at most 3, restart 3", Progressive(gray ? GrayDeep : ColorDeep, restartInterval: 3, huffman: JpegTestHuffmanStyle.Skewed, maxEndOfBandRun: 3, tablesBeforeEachScan: true)),
+        };
+
+        foreach (var (name, options) in encodings)
+        {
+            var data = image.Encode(options);
+            Assert.Equal(12, data[FindSegment(data, 0xC2) + 4]);
+            Assert.Equal(12, Image.Identify(data).BitsPerComponent);
+            using var decoded = Image.Load(data);
+            Assert.Equal(gray ? PixelFormat.Gray16 : PixelFormat.Rgba64, decoded.PixelFormat);
+            AssertPixels(expected, decoded, $"12-bit {layout} {width}x{height}, {name}");
+        }
+    }
+
+    [Theory]
     [InlineData("Cmyk", "0,1,2,3: 0 0 0 1; 3: 1 63 0 1; 0: 1 5 0 2; 2: 1 63 0 1; 1: 1 63 0 1; 0: 6 63 0 2; 0: 1 63 2 1; 0,1,2,3: 0 0 1 0; 3: 1 63 1 0; 2: 1 63 1 0; 1: 1 63 1 0; 0: 1 63 1 0")]
     [InlineData("Ycck", "0,1,2,3: 0 0 0 1; 3: 1 63 0 1; 0: 1 5 0 2; 2: 1 63 0 1; 1: 1 63 0 1; 0: 6 63 0 2; 0: 1 63 2 1; 0,1,2,3: 0 0 1 0; 3: 1 63 1 0; 2: 1 63 1 0; 1: 1 63 1 0; 0: 1 63 1 0")]
     [InlineData("Ycck", "3: 0 0 0 0; 0,1,2: 0 0 0 0; 0: 1 63 0 0; 1: 1 63 0 0; 2: 1 63 0 0; 3: 1 9 0 0; 3: 10 63 0 0")]

@@ -20,10 +20,13 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </remarks>
 internal abstract class JpegScanDecoder
 {
-    // Worst case of one block: DC (16-bit code + 11 bits), 63 AC coefficients (16 + 10 bits) and 4 ZRL codes: 1729 bits. The
-    // progressive scans need less: an AC first scan at most 63 x (16 + 10) bits and 4 ZRL codes; a refinement scan at most
-    // 63 x (16 + 1 + 1) bits (code, sign and correction bits), 3 ZRL codes and an EOB run (16 + 14 bits)
+    // Worst case of one block of 8-bit samples: DC (16-bit code + 11 bits), 63 AC coefficients (16 + 10 bits) and 4 ZRL
+    // codes: 1729 bits. The progressive scans need less: an AC first scan at most 63 x (16 + 10) bits and 4 ZRL codes; a
+    // refinement scan at most 63 x (16 + 1 + 1) bits (code, sign and correction bits), 3 ZRL codes and an EOB run (16 + 14 bits)
     private const int MaxBytesPerBlock = 220;
+
+    // The same with the categories of 12-bit samples: DC 16 + 15 bits and AC 16 + 14 bits, 1985 bits
+    private const int MaxBytesPerDeepBlock = 256;
 
     private readonly ScanComponent[] _components;
     private readonly JpegEntropyReader _reader;
@@ -70,7 +73,10 @@ internal abstract class JpegScanDecoder
             blocksPerMcu += _interleaved ? scanComponent.Component.HorizontalSampling * scanComponent.Component.VerticalSampling : 1;
         }
 
-        _safeBytes = (blocksPerMcu * MaxBytesPerBlock) + 8;
+        var precision = components[0].Component.Precision;
+        _safeBytes = GetRequiredBufferCapacity(blocksPerMcu, precision);
+        MaxDcCategory = precision > 8 ? 15 : 11;
+        MaxAcCategory = precision > 8 ? 14 : 10;
         _restartInterval = restartInterval;
         _intervalRemaining = restartInterval;
         _mcuRowDecoded = mcuRowDecoded;
@@ -79,13 +85,21 @@ internal abstract class JpegScanDecoder
     }
 
     /// <summary>Gets the number of bytes the entropy reader must be able to buffer.</summary>
-    public static int GetRequiredBufferCapacity(int blocksPerMcu) => (blocksPerMcu * MaxBytesPerBlock) + 8;
+    /// <param name="blocksPerMcu">The largest number of blocks of an MCU.</param>
+    /// <param name="precision">The number of bits of a sample (8 or 12).</param>
+    public static int GetRequiredBufferCapacity(int blocksPerMcu, int precision) => (blocksPerMcu * (precision > 8 ? MaxBytesPerDeepBlock : MaxBytesPerBlock)) + 8;
 
     /// <summary>Gets a value indicating whether every MCU of the scan was decoded.</summary>
     public bool IsComplete => _mcu >= _totalMcus;
 
     /// <summary>Gets the entropy reader of the scan.</summary>
     protected JpegEntropyReader Reader => _reader;
+
+    /// <summary>Gets the largest category of a DC difference: 11 for 8-bit samples, 15 for 12-bit samples (T.81 tables F.1 and F.6).</summary>
+    protected int MaxDcCategory { get; }
+
+    /// <summary>Gets the largest category of an AC coefficient: 10 for 8-bit samples, 14 for 12-bit samples (T.81 tables F.2 and F.7).</summary>
+    protected int MaxAcCategory { get; }
 
     private bool IsDiscarding => _mcu >= _totalMcus || (_restartInterval > 0 && _intervalRemaining == 0);
 

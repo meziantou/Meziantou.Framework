@@ -41,7 +41,7 @@ internal static class ErrorFixtureStages
         "invalid/jpeg/arithmetic-coding",
         "invalid/jpeg/lossless",
         "invalid/jpeg/non-integral-sampling",
-        "invalid/jpeg/precision-12",
+        "invalid/jpeg/precision-16",
         "limit/jpeg/frame-pixels-excessive",
         "limit/png/frame-pixels-over-limit",
         "limit/png/width-over-limit",

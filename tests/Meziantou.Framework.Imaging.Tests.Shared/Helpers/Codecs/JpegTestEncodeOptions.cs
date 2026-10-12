@@ -13,8 +13,11 @@ internal sealed class JpegTestEncodeOptions
 
     public int HuffmanSeed { get; init; } = 1;
 
-    /// <summary>Gets the frame marker: 0xC0 (baseline) or 0xC1 (extended sequential); progressive encodings always write 0xC2.</summary>
-    public byte FrameMarker { get; init; } = 0xC0;
+    /// <summary>
+    /// Gets the frame marker: 0xC0 (baseline) or 0xC1 (extended sequential); <see langword="null"/> is the baseline frame for
+    /// 8-bit samples and the extended sequential one for 12-bit samples. Progressive encodings always write 0xC2.
+    /// </summary>
+    public byte? FrameMarker { get; init; }
 
     /// <summary>
     /// Gets the scans of a progressive encoding (SOF2), in order, or <see langword="null"/> for a sequential encoding. The

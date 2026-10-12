@@ -3,9 +3,9 @@ using System.Buffers.Binary;
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
-/// The 8-bit Huffman JPEG pixel decoder plugged into the <see cref="JpegStructureParser"/> marker walk, shared by eager loads
+/// The Huffman JPEG pixel decoder plugged into the <see cref="JpegStructureParser"/> marker walk, shared by eager loads
 /// and sequential readers: sequential frames (baseline SOF0 and extended
-/// sequential SOF1) and progressive frames (SOF2). The walker validates the container (markers, segment lengths,
+/// sequential SOF1) and progressive frames (SOF2), of 8-bit or 12-bit samples. The walker validates the container (markers, segment lengths,
 /// frame and scan headers, progressive scan parameters and coefficient progression, unsupported modes, metadata, limits);
 /// this observer parses the tables, decodes every scan and writes the rows through the frame sink.
 /// </summary>
@@ -37,6 +37,11 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// of the file (or the assumed one) to the destination profile, which labels the image: the pixels and their profile
 /// change together, and the CMYK profile is not kept. Without the options, or without any source profile, the frame is
 /// an <see cref="UnsupportedImageFeatureException"/> raised before any allocation.
+/// </description></item>
+/// <item><description>
+/// Samples of 12 bits are kept in 16-bit planes and written scaled to 16 bits (<see cref="JpegDeepRowWriter"/>):
+/// <see cref="PixelFormat.Gray16"/> for one component, opaque <see cref="PixelFormat.Rgba64"/> otherwise. A datastream
+/// embedded in another format only has 8-bit samples: 12-bit ones are an <see cref="UnsupportedImageFeatureException"/>.
 /// </description></item>
 /// </list>
 /// </remarks>
@@ -70,7 +75,8 @@ internal sealed class JpegDecoder : JpegDecodeObserver
     private bool _progressive;
     private int _scanCount;
     private JpegEntropyReader? _reader;
-    private JpegRowWriter? _writer;
+    private JpegBandWriter? _writer;
+    private int _precision;
     private JpegScanDecoder? _scan;
     private JpegScanDecoder.ScanComponent[] _scanComponents = [];
 
@@ -130,7 +136,13 @@ internal sealed class JpegDecoder : JpegDecodeObserver
         ArgumentNullException.ThrowIfNull(structure);
         _structure = structure;
         _progressive = structure.IsProgressive;
+        _precision = structure.Precision;
         _colorModel = structure.ColorModel;
+
+        // The container of an embedded datastream is handed rows of bytes
+        if (_receiver is not null && _precision != 8)
+            throw Unsupported("An embedded JPEG datastream with 12-bit samples is not supported.", "JPEG 12-bit precision");
+
         var frameComponents = structure.Components;
         var components = new JpegFrameComponent[frameComponents.Count];
         for (var i = 0; i < components.Length; i++)
@@ -139,8 +151,8 @@ internal sealed class JpegDecoder : JpegDecodeObserver
 
             // The only component of a grayscale frame is coded in a non-interleaved scan: its sampling factors play no role
             components[i] = components.Length == 1
-                ? new JpegFrameComponent(i, component.Id, 1, 1, component.QuantizationTable)
-                : new JpegFrameComponent(i, component.Id, component.HorizontalSampling, component.VerticalSampling, component.QuantizationTable);
+                ? new JpegFrameComponent(i, component.Id, 1, 1, component.QuantizationTable, _precision)
+                : new JpegFrameComponent(i, component.Id, component.HorizontalSampling, component.VerticalSampling, component.QuantizationTable, _precision);
         }
 
         var maxHorizontal = components.Max(component => component.HorizontalSampling);
@@ -163,7 +175,8 @@ internal sealed class JpegDecoder : JpegDecodeObserver
         }
 
         var request = _request!;
-        var source = components.Length == 1 ? PixelFormat.Gray8 : PixelFormat.Rgb24;
+        // The rows of the writer: 8-bit samples as they are, deeper ones scaled to 16 bits (no 16-bit RGB format: opaque RGBA)
+        var source = DefaultPixelFormats.ForJpeg(components.Length, _precision);
         var profile = structure.Metadata.IccProfile;
         if (components.Length == 4)
         {
@@ -452,7 +465,7 @@ internal sealed class JpegDecoder : JpegDecodeObserver
             component.AllocateCoefficients(scope, _mcusX, _mcusY, _context.Limits);
         }
 
-        _reader = new JpegEntropyReader(scope, Math.Max(EntropyBufferCapacity, 2 * JpegScanDecoder.GetRequiredBufferCapacity(10)));
+        _reader = new JpegEntropyReader(scope, Math.Max(EntropyBufferCapacity, 2 * JpegScanDecoder.GetRequiredBufferCapacity(10, _precision)));
     }
 
     /// <summary>
@@ -494,18 +507,27 @@ internal sealed class JpegDecoder : JpegDecodeObserver
     private static void TransformBlockRows(JpegFrameComponent component, int mcuRow, double[] block)
     {
         var quantization = component.LatchedQuantization!;
-        var samples = component.Samples;
         var stride = component.Stride;
+        var precision = component.Precision;
         for (var blockRow = mcuRow * component.VerticalSampling; blockRow < (mcuRow + 1) * component.VerticalSampling; blockRow++)
         {
             var rowOffset = component.GetRowOffset(blockRow * 8);
             for (var blockColumn = 0; blockColumn < component.CoefficientBlocksPerLine; blockColumn++)
             {
                 var coefficients = component.GetCoefficients(blockRow, blockColumn);
-                var destination = samples.AsSpan(rowOffset + (blockColumn * 8));
+                var offset = rowOffset + (blockColumn * 8);
                 if (coefficients[1..].IndexOfAnyExcept((short)0) < 0)
                 {
-                    JpegIdct.TransformDcOnly((long)coefficients[0] * quantization[0], destination, stride);
+                    var dc = (long)coefficients[0] * quantization[0];
+                    if (precision > 8)
+                    {
+                        JpegIdct.TransformDeepDcOnly(dc, component.DeepSamples[offset..], stride, precision);
+                    }
+                    else
+                    {
+                        JpegIdct.TransformDcOnly(dc, component.Samples.AsSpan(offset), stride);
+                    }
+
                     continue;
                 }
 
@@ -514,7 +536,14 @@ internal sealed class JpegDecoder : JpegDecodeObserver
                     block[i] = coefficients[i] * (double)quantization[i];
                 }
 
-                JpegIdct.Transform(block, destination, stride);
+                if (precision > 8)
+                {
+                    JpegIdct.TransformDeep(block, component.DeepSamples[offset..], stride, precision);
+                }
+                else
+                {
+                    JpegIdct.Transform(block, component.Samples.AsSpan(offset), stride);
+                }
             }
         }
     }
@@ -529,13 +558,16 @@ internal sealed class JpegDecoder : JpegDecodeObserver
             component.AllocatePlane(scope, _mcusX, bandCount, _context.Limits);
         }
 
-        _reader = new JpegEntropyReader(scope, Math.Max(EntropyBufferCapacity, 2 * JpegScanDecoder.GetRequiredBufferCapacity(10)));
+        _reader = new JpegEntropyReader(scope, Math.Max(EntropyBufferCapacity, 2 * JpegScanDecoder.GetRequiredBufferCapacity(10, _precision)));
         _writer = CreateRowWriter(scope);
     }
 
-    private JpegRowWriter CreateRowWriter(AllocationScope scope)
+    private JpegBandWriter CreateRowWriter(AllocationScope scope)
     {
         var structure = _structure!;
+        if (_precision > 8)
+            return new JpegDeepRowWriter(_components, _sink!, _colorModel, _inkConversion, structure.Width, structure.Height, _maxVertical, _precision, scope);
+
         return _receiver is not null
             ? new JpegRowWriter(_components, _receiver, _colorModel, structure.Width, structure.Height, _maxVertical, scope)
             : new JpegRowWriter(_components, _sink!, _colorModel, _inkConversion, structure.Width, structure.Height, _maxVertical, scope);

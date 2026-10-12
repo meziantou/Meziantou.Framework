@@ -36,13 +36,40 @@ public sealed class JpegIdentifyTests
     }
 
     [Theory]
+    [InlineData((byte)0xC1, 3, PixelFormat.Rgba64, ImageColorModel.YCbCr)]
+    [InlineData((byte)0xC2, 3, PixelFormat.Rgba64, ImageColorModel.YCbCr)]
+    [InlineData((byte)0xC1, 1, PixelFormat.Gray16, ImageColorModel.Grayscale)]
+    [InlineData((byte)0xC2, 1, PixelFormat.Gray16, ImageColorModel.Grayscale)]
+    [InlineData((byte)0xC1, 4, PixelFormat.Rgba64, ImageColorModel.Cmyk)]
+
+    // A baseline frame has 8-bit samples by definition: with 12-bit ones, it is read as an extended sequential frame
+    [InlineData((byte)0xC0, 3, PixelFormat.Rgba64, ImageColorModel.YCbCr)]
+    public void TwelveBitFramesAreIdentifiedInBothModes(byte marker, int components, PixelFormat pixelFormat, ImageColorModel colorModel)
+    {
+        var data = SyntheticImages.Jpeg(marker, components, precision: 12, width: 17, height: 9);
+        foreach (var options in new[] { ImageIdentifyOptions.Default, FullScan })
+        {
+            var info = Image.Identify(data, options);
+            Assert.Equal(ImageFormat.Jpeg, info.Format);
+            Assert.Equal(new Size(17, 9), info.Size);
+
+            // The samples are scaled to 16 bits; there is no 16-bit RGB format, so color pixels are opaque RGBA
+            Assert.Equal(pixelFormat, info.PixelFormat);
+            Assert.Equal(colorModel, info.ColorModel);
+            Assert.Equal(12, info.BitsPerComponent);
+            Assert.False(info.MayHaveTransparency);
+        }
+    }
+
+    [Theory]
     [InlineData((byte)0xC3, 3, 8, "JPEG lossless")]
     [InlineData((byte)0xC5, 3, 8, "JPEG hierarchical")]
     [InlineData((byte)0xC7, 3, 8, "JPEG hierarchical")]
     [InlineData((byte)0xC9, 3, 8, "JPEG arithmetic coding")]
     [InlineData((byte)0xCA, 1, 8, "JPEG arithmetic coding")]
     [InlineData((byte)0xCF, 3, 8, "JPEG arithmetic coding")]
-    [InlineData((byte)0xC0, 3, 12, "JPEG 12-bit precision")]
+    [InlineData((byte)0xC1, 3, 10, "JPEG 10-bit precision")]
+    [InlineData((byte)0xC1, 1, 4, "JPEG 4-bit precision")]
     [InlineData((byte)0xC2, 1, 16, "JPEG 16-bit precision")]
     [InlineData((byte)0xC0, 2, 8, "JPEG 2 components")]
     [InlineData((byte)0xF7, 3, 8, "JPEG-LS")]

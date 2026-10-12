@@ -1117,6 +1117,10 @@ public sealed class TiffCodecTests
         var unsupported = Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(Page(16, 8, 3, 6, arithmetic)));
         Assert.Equal(ImageFormat.Tiff, unsupported.Format);
 
+        // A datastream of 12-bit samples is a JPEG file the library reads, but not a strip: the samples of a page are bytes
+        var deep = JpegTestImage.CreateRandom(16, 8, sampling, seed: 9, precision: 12).Encode();
+        Assert.Equal("Compression: JPEG 12-bit precision", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(Page(16, 8, 3, 6, deep))).Feature);
+
         // JPEG stores 8-bit samples without alpha, no palette indexes, and YCbCr samples as JFIF defines them
         Assert.Equal("Compression: JPEG with 16-bit samples", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(Page(16, 8, 3, 2, strip, bitsPerSample: 16))).Feature);
         Assert.Equal("Compression: JPEG with this sample layout", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(Page(16, 8, 4, 2, strip, configure: static page => page.ExtraFields.Add(TiffFieldSpec.Short(338, 2))))).Feature);

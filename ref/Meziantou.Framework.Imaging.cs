@@ -1436,6 +1436,11 @@ namespace Meziantou.Framework.Imaging.Typography
         public int UnitsPerEm { get => throw null; }
         public int GlyphCount { get => throw null; }
         public Meziantou.Framework.Imaging.Typography.FontMetrics Metrics { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Imaging.Typography.FontVariationAxis> VariationAxes { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Imaging.Typography.FontNamedInstance> NamedInstances { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Imaging.Typography.FontVariationSetting> Variations { get => throw null; }
+        public Meziantou.Framework.Imaging.Typography.Font WithVariations(params System.ReadOnlySpan<Meziantou.Framework.Imaging.Typography.FontVariationSetting> settings) => throw null;
+        public Meziantou.Framework.Imaging.Typography.Font WithVariations(Meziantou.Framework.Imaging.Typography.FontNamedInstance instance) => throw null;
         public static Meziantou.Framework.Imaging.Typography.Font Load(string path, Meziantou.Framework.Imaging.Typography.FontLoadOptions? options = null) => throw null;
         public static Meziantou.Framework.Imaging.Typography.Font Load(System.IO.Stream stream, Meziantou.Framework.Imaging.Typography.FontLoadOptions? options = null) => throw null;
         public static Meziantou.Framework.Imaging.Typography.Font Load(System.ReadOnlySpan<byte> data, Meziantou.Framework.Imaging.Typography.FontLoadOptions? options = null) => throw null;
@@ -1496,6 +1501,14 @@ namespace Meziantou.Framework.Imaging.Typography
         public static bool operator !=(Meziantou.Framework.Imaging.Typography.FontMetrics left, Meziantou.Framework.Imaging.Typography.FontMetrics right) => throw null;
     }
 
+    public sealed class FontNamedInstance
+    {
+        public string Name { get => throw null; }
+        public string? PostScriptName { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Imaging.Typography.FontVariationSetting> Settings { get => throw null; }
+        public override string ToString() => throw null;
+    }
+
     public sealed class FontStack
     {
         public Meziantou.Framework.Imaging.Typography.Font Primary { get => throw null; }
@@ -1504,6 +1517,30 @@ namespace Meziantou.Framework.Imaging.Typography
         public FontStack(Meziantou.Framework.Imaging.Typography.Font primary, params System.ReadOnlySpan<Meziantou.Framework.Imaging.Typography.Font> fallbacks) { }
         public static implicit operator Meziantou.Framework.Imaging.Typography.FontStack(Meziantou.Framework.Imaging.Typography.Font font) => throw null;
         public static Meziantou.Framework.Imaging.Typography.FontStack FromFont(Meziantou.Framework.Imaging.Typography.Font font) => throw null;
+    }
+
+    public sealed class FontVariationAxis
+    {
+        public string Tag { get => throw null; }
+        public string Name { get => throw null; }
+        public double Minimum { get => throw null; }
+        public double Default { get => throw null; }
+        public double Maximum { get => throw null; }
+        public bool IsHidden { get => throw null; }
+        public override string ToString() => throw null;
+    }
+
+    public readonly struct FontVariationSetting : System.IEquatable<Meziantou.Framework.Imaging.Typography.FontVariationSetting>
+    {
+        public string Tag { get => throw null; }
+        public double Value { get => throw null; }
+        public FontVariationSetting(string tag, double value) { }
+        public bool Equals(Meziantou.Framework.Imaging.Typography.FontVariationSetting other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.Imaging.Typography.FontVariationSetting left, Meziantou.Framework.Imaging.Typography.FontVariationSetting right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Imaging.Typography.FontVariationSetting left, Meziantou.Framework.Imaging.Typography.FontVariationSetting right) => throw null;
     }
 
     public sealed class RichText

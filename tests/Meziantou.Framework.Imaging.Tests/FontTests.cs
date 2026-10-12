@@ -704,15 +704,12 @@ public sealed class FontTests
         exception = Assert.Throws<UnsupportedImageFeatureException>(() => LoadCff(cff));
         Assert.Equal("Font: Type 1 charstrings", exception.Feature);
 
-        // The CFF2 table: the font loads, with its metrics and its character map; its outlines cannot be decoded.
+        // A CFF table is not a CFF2 table, whatever its tag says.
         var builder = FontSamples.Charstrings();
         builder.RawTables["CFF2"] = builder.RawTables["CFF "];
         builder.RawTables.Remove("CFF ");
-        var cff2 = FontTestSupport.Load(builder);
-        Assert.Equal(600, cff2.Face.GetAdvanceWidth(1));
-        Assert.Equal(1, cff2.Face.MapCodePoint('A'));
-        exception = Assert.Throws<UnsupportedImageFeatureException>(() => FontTestSupport.GetOutline(cff2, 1));
-        Assert.Equal("Font: CFF2 outlines", exception.Feature);
+        var invalid = Assert.Throws<InvalidImageContentException>(() => FontTestSupport.Load(builder));
+        Assert.Contains("'CFF2' table has the unknown version 1", invalid.Message, StringComparison.Ordinal);
     }
 
     [Fact]

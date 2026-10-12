@@ -150,6 +150,14 @@ public sealed class FontFuzzTests
         if (seeds.Count < 200)
             throw new InvalidOperationException("The corpus has no font.");
 
+        // A campaign on one kind of font: the fonts whose identifier contains a text.
+        if (FuzzSettings.SeedFilter is { } filter)
+        {
+            seeds.RemoveAll(seed => !seed.Id.Contains(filter, StringComparison.Ordinal));
+            if (seeds.Count == 0)
+                throw new InvalidOperationException($"No font of the corpus has an identifier that contains '{filter}'.");
+        }
+
         return seeds;
     }
 
@@ -242,11 +250,41 @@ public sealed class FontFuzzTests
             return FuzzFailure.FromException("load", exception);
         }
 
+        // The instances of a variable font are fonts too: the ends of the axes, and a place between them.
+        var fonts = new List<Font>(collection);
+        foreach (var font in collection)
+        {
+            try
+            {
+                var axes = font.VariationAxes;
+                if (axes.Count == 0)
+                    continue;
+
+                _ = font.NamedInstances.Count;
+                fonts.Add(font.WithVariations([.. axes.Select(axis => new FontVariationSetting(axis.Tag, axis.Minimum))]));
+                fonts.Add(font.WithVariations([.. axes.Select(axis => new FontVariationSetting(axis.Tag, axis.Maximum))]));
+                fonts.Add(font.WithVariations([.. axes.Select((axis, index) => new FontVariationSetting(axis.Tag, axis.Minimum + ((axis.Maximum - axis.Minimum) * (index % 2 == 0 ? 0.37 : 0.81))))]));
+                if (font.NamedInstances.Count > 0)
+                {
+                    fonts.Add(font.WithVariations(font.NamedInstances[^1]));
+                }
+            }
+            catch (Exception exception) when (exception is InvalidImageContentException or UnsupportedImageFeatureException or ImageResourceLimitException)
+            {
+                // A malformed variation table: the documented outcomes.
+            }
+            catch (Exception exception)
+            {
+                return FuzzFailure.FromException("instance", exception);
+            }
+        }
+
         var decoded = 0;
         var rejected = 0;
         using var scratch = new GlyphScratch(AllocationScope.Create(Options.Configuration, "FontFuzz"));
-        foreach (var font in collection)
+        foreach (var font in fonts)
         {
+            var isInstance = font.Face.Instance is not null;
             try
             {
                 _ = (font.FamilyName, font.SubfamilyName, font.PostScriptName, font.Weight, font.IsItalic, font.IsMonospaced);
@@ -277,7 +315,8 @@ public sealed class FontFuzzTests
                 var sink = new CheckingSink();
                 try
                 {
-                    if (font.Face.GetAdvanceWidth(glyph) is < 0 or > ushort.MaxValue)
+                    // The advance of an instance is the one of the font and a delta, which can be anything.
+                    if (font.Face.GetAdvanceWidth(glyph) is < 0 or > ushort.MaxValue && !isInstance)
                         return FuzzFailure.Property("advance-range", "An advance is not a 16-bit value.");
 
                     var budget = new GlyphBudget(font.Face.Data.Limits);
@@ -302,10 +341,10 @@ public sealed class FontFuzzTests
         }
 
         // Stroking is by far the slowest step: one font out of eight is stroked, chosen by the content of the file.
-        if (CheckText(collection, withStroke: (input.Length & 7) == 0) is { } textFailure)
+        if (CheckText(fonts, withStroke: (input.Length & 7) == 0) is { } textFailure)
             return textFailure;
 
-        if (CheckShaping(collection) is { } shapingFailure)
+        if (CheckShaping(fonts) is { } shapingFailure)
             return shapingFailure;
 
         result = new CheckResult("loaded", decoded, rejected);
@@ -316,7 +355,7 @@ public sealed class FontFuzzTests
     /// Shapes the characters the fonts of the suites map, with the feature their lookups are in: the shaper stops with a
     /// documented exception or gives glyphs of the font, with clusters that are characters of the text.
     /// </summary>
-    private static FuzzFailure? CheckShaping(FontCollection collection)
+    private static FuzzFailure? CheckShaping(List<Font> collection)
     {
         foreach (var font in collection)
         {
@@ -355,7 +394,7 @@ public sealed class FontFuzzTests
     /// Lays out a text with each font and draws it: a layout is refused with a documented exception or is created, and
     /// a layout that was created is drawn, filled, stroked and converted to a path, without any exception.
     /// </summary>
-    private static FuzzFailure? CheckText(FontCollection collection, bool withStroke)
+    private static FuzzFailure? CheckText(List<Font> collection, bool withStroke)
     {
         foreach (var font in collection)
         {

@@ -777,11 +777,55 @@ public static string DescribeFont(string path)
 | | Supported |
 | --- | --- |
 | Containers | TrueType and OpenType files (`.ttf`, `.otf`), font collections (`.ttc`, `.otc`), WOFF 1.0 and WOFF 2.0 (with the transformed glyph, location and horizontal metrics tables, and collections); detected from the content, never from the extension |
-| Outlines | TrueType (`glyf`: simple and composite glyphs, scaled, rotated and placed by matching points) and CFF version 1 (`CFF `: Type 2 charstrings, subroutines, CID-keyed fonts) |
+| Outlines | TrueType (`glyf`: simple and composite glyphs, scaled, rotated and placed by matching points), CFF version 1 (`CFF `: Type 2 charstrings, subroutines, CID-keyed fonts) and CFF version 2 (`CFF2`) |
+| Variable fonts | The axes and the named instances (`fvar`), the mapping of the axes (`avar` version 1), and what an instance varies: TrueType outlines (`gvar`), CFF2 outlines (the `blend` operator), advances (`HVAR`, or the phantom points of the glyphs), metrics (`MVAR`), the positions and anchors of `GPOS` (the variation store of `GDEF`) and the features a font replaces in a part of its variation space (feature variations, `rvrn`) |
 | Character maps | Unicode subtables of formats 0, 4, 6, 12 and 13, variation sequences (format 14), and the Macintosh Roman subtable for ASCII when a font has no Unicode one |
 | Names | The typographic family and subfamily when the font has them, the legacy ones otherwise; Windows and Unicode platform names, then Macintosh Roman |
 | Metrics | In font units (`Font.Metrics`) or scaled to a size in pixels (`Font.GetMetrics`): ascent, descent, line gap, cap height, x-height, underline and strikethrough. The ascent, descent and line gap come from the table the font designates (`hhea`, or the typographic values of `OS/2` when the font sets `USE_TYPO_METRICS` or has an empty `hhea`) |
 
+A variable font is one file for a whole family: its axes (`Font.VariationAxes`) say what varies, such as the weight or
+the width, and `Font.WithVariations` gives the font of an instance.
+
+<!-- snippet: variable-font -->
+```csharp
+public static void DrawWeights(string variableFontPath, string outputPath)
+{
+    var font = Font.Load(variableFontPath);
+
+    // The axes say what can vary, and in what range
+    var weight = font.VariationAxes.First(axis => axis.Tag == "wght");
+
+    using var image = new Image<Rgba32>(220, 200, new Rgba32(255, 255, 255));
+    image.Draw(canvas =>
+    {
+        for (var i = 0; i < 5; i++)
+        {
+            // An instance is a font: it shares the data of the font it comes from
+            var value = weight.Minimum + ((weight.Maximum - weight.Minimum) * i / 4);
+            var instance = font.WithVariations(new FontVariationSetting("wght", value));
+            canvas.FillText(new Rgba32(0, 0, 0), "Variable", instance, size: 32, new PointD(10, i * 38));
+        }
+    });
+
+    image.Save(outputPath);
+}
+```
+
+- **Instances.** A font is loaded at its default instance. `WithVariations` takes the value of some axes, by their tag
+  (`wght`, `wdth`, `slnt`, `ital`, `opsz`, or a tag of the font); an axis that is not named is at its default, a value
+  outside the range of its axis is brought to its nearest end, and a tag the font does not have is ignored.
+  `NamedInstances` lists the instances the font names ("Light", "Bold Condensed"), which `WithVariations` also
+  accepts, and `Variations` gives the values of a font. An instance is a `Font`: it shares the bytes of the font it
+  comes from, is as immutable, and can be used wherever a font is; `Weight` is the value of its weight axis. A font
+  that does not vary has no axis and is its only instance.
+- **What an instance is.** The values are normalized and mapped as the OpenType specification describes, and the
+  glyphs are varied when they are used: their points are not rounded to font units, so an instance is as smooth as
+  the default one. The advances, the metrics and the positions of the layout tables of an instance are whole font
+  units. An instance costs a few small arrays when it is created (no glyph is read), and its glyphs cost more to
+  decode than those of the default instance; that work counts in `MaxGlyphComplexity`.
+- **A glyph is drawn from its origin.** The outline of a TrueType glyph is placed by its left side bearing, as a
+  TrueType rasterizer does: a font whose side bearings are not the left of its outlines is drawn where its metrics
+  say.
 - **A font is immutable and thread-safe**, and is not disposable: it keeps the bytes of its file (the expanded font for
   WOFF and WOFF2) in one array for its lifetime and has no cache. The fonts of a collection share that array.
   `Font.Load` on a collection gives its first font; `FontCollection.Load` gives them all, and a file that holds one font
@@ -797,8 +841,8 @@ public static string DescribeFont(string path)
 - **Errors** are the exceptions of the library with `ImageFormat.Unknown`: `UnknownImageFormatException` when the data
   is not a font, `InvalidImageContentException` for a malformed font, `UnsupportedImageFeatureException` for the
   features below, `ImageResourceLimitException` for a limit.
-- **Not supported**: CFF2 outlines and the variation tables (the font loads at its default instance, without its CFF2
-  outlines), bitmap and color glyph tables (`sbix`, `CBDT`, `COLR`, `SVG `), PostScript Type 1 fonts, Type 1
+- **Not supported**: version 2 of the `avar` table (its version 1 part is applied), the variation of the vertical
+  metrics and of the hinting values (`VVAR`, `cvar`), bitmap and color glyph tables (`sbix`, `CBDT`, `COLR`, `SVG `), PostScript Type 1 fonts, Type 1
   charstrings and the deprecated `seac` form of `endchar` in a CFF table, the font matrix of a CFF table (the units of
   the `head` table are used), and hinting: instructions and hints are skipped. A WOFF or WOFF2 file is expanded in
   memory; its metadata and private blocks are not read. Table checksums are not verified.
@@ -911,7 +955,7 @@ public static void DrawTextOnPath(string fontPath, string outputPath)
   with an ellipsis after the last character or the last word that leaves room for it, and also trims a line that is
   wider than `MaxWidth` when lines are not wrapped. `IsTruncated` says that a part of the text is not in the layout.
 - **Styles.** A `TextStyle` has a `FontStack` (a font, then the fonts used for the characters the ones before lack; a
-  `Font` converts to a stack of one font) and a size, and optionally a brush, OpenType features to turn on or off
+  `Font` converts to a stack of one font; an instance of a variable font is a font) and a size, and optionally a brush, OpenType features to turn on or off
   (`new FontFeature("liga", 0)`, `new FontFeature("smcp")`), letter and word spacing, decorations (underline,
   strikethrough, overline, drawn with the metrics of the font) and hyphenation patterns. Spans that only differ by
   what is painted are shaped together: letters of two colors still kern and join.
@@ -1855,6 +1899,6 @@ Everything below is rejected explicitly (never decoded or encoded approximately)
 | AVIF encoding | An image of a sequence is predicted from the previous image only, with one motion vector per block and the regular interpolation filter: no compound prediction (two references), global, warped or overlapped motion, switchable interpolation filter, temporal motion vector prediction, or scene change detection (an image that differs from the previous one is coded with intra blocks, not as a key frame). Not used: intra block copy (content that repeats in an image, such as the characters of a text, is not predicted from the image itself: a lossless screenshot can be larger than its PNG), the split of the transform blocks of an inter block (it has the largest transform of its size), quantizer deltas, quantization matrices, loop restoration, CDEF strengths per block (one pair per frame), super-resolution and film grain. No grid, layered (progressive) or premultiplied-alpha output; no `clap`, `pasp`, mastering display or content light level box; no orientation for an image sequence. An image sequence of one image cannot store animation settings (it is read back as a still image): a single frame with animation settings is rejected. An image sequence needs a seekable destination and its frame count. The level of the stream is the lowest one whose picture size holds the image; the other limits of a level are not checked |
 | AVIF decoding | Rejected with `UnsupportedImageFeatureException`: premultiplied alpha, `iden`/`iovl` derived images, fragmented files, edit lists that do not play the whole track, image sequences whose images change size, clean apertures that do not select whole samples or that follow a rotation, grid tiles that declare other transformations than their grid, large scale tile streams, and the other matrix coefficients (constant luminance, ICtCp, SMPTE 2085, chromaticity-derived). Not read: gain maps, depth maps, thumbnails, the images that are not the primary item, the `tkhd` matrix and the other transformations of an image sequence (its images are returned as stored), mastering display and content light level boxes. A layered image is returned at its full quality only: its lower layers are not exposed as a progressive rendering. HDR samples are returned as stored: no tone mapping |
 | JPEG XL | Decoding, rejected with `UnsupportedImageFeatureException` (also from `Identify` when the image header tells): floating-point samples and samples of more than 16 bits, premultiplied alpha, CMYK (a black channel) and spot colors, an XYB image whose ICC profile is not sRGB (it needs a color conversion to that profile), the PQ or HLG transfer function with primaries or a white point that CICP cannot express, a Modular frame stored as YCbCr with subsampled channels, restoration filters on a grayscale Modular frame, an upsampled frame with patches or splines whose extra channels have another resolution. Ignored: the preview frame, frame names, the intrinsic size, the JPEG reconstruction data (`jbrd`: a recompressed JPEG file is decoded to pixels, the JPEG file is not rebuilt), `jumb` and unknown boxes; depth, selection mask, thermal and the other extra channels than alpha are decoded and dropped. Samples of 1 to 16 bits other than 8 and 16 are scaled exactly to 8 or 16 bits. A lossy frame is decoded in floating point: the result is within a few sixteen-bit units of the reference decoders, not bit-exact. Encoding: lossless only (no lossy output), full frames that replace the image (no layers, blending, patches or cropped frames), frame durations in whole milliseconds, no frame of an animation without duration; an EXIF orientation is written to the image header |
-| Text | Horizontal text only; no shaping beyond the lookups of the font (Arabic joining, Indic and Southeast Asian reordering) and no dictionary line breaking for the scripts that need one; no language-specific forms; greedy line breaking; no AAT (`morx`, `kerx`) shaping, no device or variation adjustment of positions; no hinting and no subpixel (LCD) rendering; no system font: every font is given by the caller; along a path, glyphs are turned but not warped; see [Text](#text) |
-| Fonts | No system font, no CFF2 outline, variation, bitmap or color glyph table, no Type 1 font, no hinting; see [Fonts](#fonts) |
+| Text | Horizontal text only; no shaping beyond the lookups of the font (Arabic joining, Indic and Southeast Asian reordering) and no dictionary line breaking for the scripts that need one; no language-specific forms; greedy line breaking; no AAT (`morx`, `kerx`) shaping, no device adjustment of positions (hinting); no hinting and no subpixel (LCD) rendering; no system font: every font is given by the caller; along a path, glyphs are turned but not warped; see [Text](#text) |
+| Fonts | No system font, no bitmap or color glyph table, no Type 1 font, no hinting; variable fonts without version 2 of `avar`; see [Fonts](#fonts) |
 | API | No public allocator, custom pixel type, codec plug-in or image-processor interface; implementation types are internal |

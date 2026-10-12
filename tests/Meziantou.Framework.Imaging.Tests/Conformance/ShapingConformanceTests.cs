@@ -41,7 +41,8 @@ public sealed class ShapingConformanceTests
         foreach (var testCase in vectors.Cases)
         {
             var text = testCase.Characters;
-            var key = id + ";" + testCase.Text + ";" + testCase.Features;
+            var key = id + ";" + testCase.Text + ";" + testCase.Features + (testCase.Variations is null ? "" : ";" + testCase.Variations);
+            var face = (testCase.Variations is null ? font : FontTestSupport.WithVariations(font, testCase.Variations)).Face;
             var expected = Format(testCase.Glyphs.Select(glyph => (glyph[0], glyph[1], glyph[2], glyph[3], glyph[4], glyph[5])));
 
             // The reference clusters are indices of characters; the ones of the library are indices of UTF-16 code units.
@@ -55,7 +56,10 @@ public sealed class ShapingConformanceTests
             var buffer = new GlyphBuffer(ImageResourceLimits.Default);
             TextShaper.AddText(buffer, text);
             var script = GetScript(text);
-            TextShaper.Shape(buffer, font.Face, script, language: 0, isRightToLeft: false, ParseFeatures(testCase.Features));
+
+            // The reference shaper lays a text out in the direction of its script, and gives the glyphs from left to right.
+            var isRightToLeft = script is UnicodeScript.Arabic or UnicodeScript.Hebrew;
+            TextShaper.Shape(buffer, face, script, language: 0, isRightToLeft, ParseFeatures(testCase.Features));
             var glyphs = new List<(int, int, int, int, int, int)>();
             for (var i = 0; i < buffer.Length; i++)
             {
@@ -67,11 +71,11 @@ public sealed class ShapingConformanceTests
             var isKnown = KnownDivergences.ContainsKey(key);
             if (!string.Equals(expected, actual, StringComparison.Ordinal) && !isKnown)
             {
-                failures.Add($"{testCase.Text} [{testCase.Features}] \"{text}\"\n    expected {expected}\n    actual   {actual}");
+                failures.Add($"{testCase.Text} [{testCase.Features}] [{testCase.Variations}] \"{text}\"\n    expected {expected}\n    actual   {actual}");
             }
             else if (string.Equals(expected, actual, StringComparison.Ordinal) && isKnown)
             {
-                failures.Add($"{testCase.Text} [{testCase.Features}] is listed as a known divergence and no longer diverges");
+                failures.Add($"{testCase.Text} [{testCase.Features}] [{testCase.Variations}] is listed as a known divergence and no longer diverges");
             }
         }
 

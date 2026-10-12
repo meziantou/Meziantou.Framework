@@ -13,6 +13,90 @@ internal static class FontTestSupport
     /// Gets the outline of a glyph as SVG path data in font units, with the y axis up, in the form the corpus generator
     /// records it: absolute M, L, Q, C and Z commands, and numbers with at most two decimals.
     /// </summary>
+    /// <summary>Gets an instance of a variable font from the syntax of the reference tools: <c>wght=650,wdth=80</c>.</summary>
+    public static Font WithVariations(Font font, string variations)
+    {
+        var settings = new List<FontVariationSetting>();
+        foreach (var item in variations.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            var separator = item.IndexOf('=', StringComparison.Ordinal);
+            settings.Add(new FontVariationSetting(item[..separator], double.Parse(item[(separator + 1)..], CultureInfo.InvariantCulture)));
+        }
+
+        return font.WithVariations([.. settings]);
+    }
+
+    /// <summary>
+    /// Compares two outlines written as SVG paths: the same commands, with numbers that differ by at most a tolerance.
+    /// </summary>
+    /// <returns>The largest difference, or <see langword="null"/> when the outlines are not the same commands.</returns>
+    public static double? GetOutlineDifference(string expected, string actual)
+    {
+        var expectedParts = SplitOutline(expected);
+        var actualParts = SplitOutline(actual);
+        if (expectedParts.Count != actualParts.Count)
+            return null;
+
+        var difference = 0.0;
+        for (var i = 0; i < expectedParts.Count; i++)
+        {
+            var isExpectedNumber = double.TryParse(expectedParts[i], NumberStyles.Float, CultureInfo.InvariantCulture, out var expectedValue);
+            var isActualNumber = double.TryParse(actualParts[i], NumberStyles.Float, CultureInfo.InvariantCulture, out var actualValue);
+            if (isExpectedNumber != isActualNumber)
+                return null;
+
+            if (isExpectedNumber)
+            {
+                difference = Math.Max(difference, Math.Abs(expectedValue - actualValue));
+            }
+            else if (!string.Equals(expectedParts[i], actualParts[i], StringComparison.Ordinal))
+            {
+                return null;
+            }
+        }
+
+        return difference;
+
+        // Commands are letters; numbers are separated by commands, commas and spaces.
+        static List<string> SplitOutline(string outline)
+        {
+            var parts = new List<string>();
+            var start = -1;
+            for (var i = 0; i <= outline.Length; i++)
+            {
+                var isNumberCharacter = i < outline.Length && (char.IsAsciiDigit(outline[i]) || outline[i] is '-' or '.');
+                if (isNumberCharacter)
+                {
+                    start = start < 0 ? i : start;
+                    continue;
+                }
+
+                if (start >= 0)
+                {
+                    parts.Add(outline[start..i]);
+                    start = -1;
+                }
+
+                if (i < outline.Length && char.IsAsciiLetter(outline[i]))
+                {
+                    parts.Add(outline[i].ToString());
+                }
+            }
+
+            return parts;
+        }
+    }
+
+    /// <summary>Gets the outline of a glyph as an SVG path, with the numbers written to a number of decimals.</summary>
+    public static string GetOutline(Font font, int glyphId, int decimals, ImageConfiguration? configuration = null)
+    {
+        using var scratch = new GlyphScratch(AllocationScope.Create(configuration, "FontTests"));
+        var budget = new GlyphBudget(font.Face.Data.Limits);
+        var sink = new SvgPathSink { Format = "0." + new string('#', decimals) };
+        font.Face.DecodeOutline(glyphId, sink, scratch, ref budget);
+        return sink.ToString();
+    }
+
     public static string GetOutline(Font font, int glyphId, ImageConfiguration? configuration = null)
     {
         using var scratch = new GlyphScratch(AllocationScope.Create(configuration, "FontTests"));
@@ -26,20 +110,22 @@ internal static class FontTestSupport
     {
         private readonly StringBuilder _path = new();
 
-        public override void MoveTo(double x, double y) => _path.Append(CultureInfo.InvariantCulture, $"M{Format(x)},{Format(y)}");
+        public string Format { get; init; } = "0.##";
 
-        public override void LineTo(double x, double y) => _path.Append(CultureInfo.InvariantCulture, $"L{Format(x)},{Format(y)}");
+        public override void MoveTo(double x, double y) => _path.Append(CultureInfo.InvariantCulture, $"M{Write(x)},{Write(y)}");
+
+        public override void LineTo(double x, double y) => _path.Append(CultureInfo.InvariantCulture, $"L{Write(x)},{Write(y)}");
 
         public override void QuadraticTo(double controlX, double controlY, double x, double y)
-            => _path.Append(CultureInfo.InvariantCulture, $"Q{Format(controlX)},{Format(controlY)} {Format(x)},{Format(y)}");
+            => _path.Append(CultureInfo.InvariantCulture, $"Q{Write(controlX)},{Write(controlY)} {Write(x)},{Write(y)}");
 
         public override void CubicTo(double control1X, double control1Y, double control2X, double control2Y, double x, double y)
-            => _path.Append(CultureInfo.InvariantCulture, $"C{Format(control1X)},{Format(control1Y)} {Format(control2X)},{Format(control2Y)} {Format(x)},{Format(y)}");
+            => _path.Append(CultureInfo.InvariantCulture, $"C{Write(control1X)},{Write(control1Y)} {Write(control2X)},{Write(control2Y)} {Write(x)},{Write(y)}");
 
         public override void Close() => _path.Append('Z');
 
         public override string ToString() => _path.ToString();
 
-        private static string Format(double value) => value.ToString("0.##", CultureInfo.InvariantCulture);
+        private string Write(double value) => value.ToString(Format, CultureInfo.InvariantCulture);
     }
 }

@@ -36,9 +36,26 @@ internal sealed class FontFace
     private readonly CffTable? _cff;
     private readonly int _cffOffset;
     private readonly int _cffLength;
+    private readonly FvarTable? _fvar;
+    private readonly int _avarOffset;
+    private readonly int _avarLength;
+    private readonly GvarTable? _gvar;
+    private readonly int _gvarOffset;
+    private readonly int _gvarLength;
+    private readonly int _hvarOffset;
+    private readonly int _hvarLength;
+    private readonly int _hvarStore;
+    private readonly int _hvarAdvanceMap;
+    private readonly int _mvarOffset;
+    private readonly int _mvarLength;
+
+    // The face of the default instance, which the other instances are made from: itself for the face that was loaded.
+    private readonly FontFace _default;
+    private FontInstance? _instance;
 
     public FontFace(FontData data, long directoryOffset)
     {
+        _default = this;
         Data = data;
         var file = data.Bytes.AsSpan();
         _directory = SfntDirectory.Read(file, directoryOffset);
@@ -169,13 +186,44 @@ internal sealed class FontFace
             _cff = CffTable.Read(file.Slice(_cffOffset, _cffLength));
             Outlines = FontOutlineKind.Cff;
         }
-        else if (_directory.TryFind(FontTags.Cff2, out _, out _))
+        else if (_directory.TryFind(FontTags.Cff2, out _cffOffset, out _cffLength))
         {
+            _cff = CffTable.Read(file.Slice(_cffOffset, _cffLength), isCff2: true);
             Outlines = FontOutlineKind.Cff2;
         }
         else
         {
             Outlines = FontOutlineKind.None;
+        }
+
+        // The variations: the axes, then the tables that vary the outlines, the advances and the metrics along them.
+        // A table whose header is not understood is left out: what it varies keeps its default value.
+        if (_directory.TryFind(FontTags.Fvar, out var fvarOffset, out var fvarLength))
+        {
+            _fvar = FvarTable.Read(file.Slice(fvarOffset, fvarLength));
+        }
+
+        if (_fvar is not null)
+        {
+            _directory.TryFind(FontTags.Avar, out _avarOffset, out _avarLength);
+            _directory.TryFind(FontTags.Mvar, out _mvarOffset, out _mvarLength);
+            if (Outlines == FontOutlineKind.TrueType && _directory.TryFind(FontTags.Gvar, out _gvarOffset, out _gvarLength))
+            {
+                _gvar = GvarTable.Read(file.Slice(_gvarOffset, _gvarLength), _fvar.Axes.Length);
+            }
+
+            // HVAR: OpenType specification, "HVAR - Horizontal Metrics Variations Table".
+            if (_directory.TryFind(FontTags.Hvar, out _hvarOffset, out _hvarLength) && _hvarLength >= 20)
+            {
+                var hvar = file.Slice(_hvarOffset, _hvarLength);
+                var store = FontBinary.UInt32(hvar, 4);
+                var map = FontBinary.UInt32(hvar, 8);
+                if (FontBinary.UInt16(hvar, 0) == 1 && store != 0 && store <= hvar.Length - 8 && map <= hvar.Length - 4 && FontBinary.UInt16(hvar, (int)store) == 1)
+                {
+                    _hvarStore = (int)store;
+                    _hvarAdvanceMap = (int)map;
+                }
+            }
         }
     }
 
@@ -193,45 +241,45 @@ internal sealed class FontFace
 
     public string? PostScriptName { get; }
 
-    public int Weight { get; }
+    public int Weight { get; private set; }
 
     public bool IsItalic { get; }
 
     public bool IsMonospaced { get; }
 
-    public int HorizontalAscender { get; }
+    public int HorizontalAscender { get; private set; }
 
-    public int HorizontalDescender { get; }
+    public int HorizontalDescender { get; private set; }
 
-    public int HorizontalLineGap { get; }
+    public int HorizontalLineGap { get; private set; }
 
     public bool HasOs2 { get; }
 
     public bool UseTypoMetrics { get; }
 
-    public int TypoAscender { get; }
+    public int TypoAscender { get; private set; }
 
-    public int TypoDescender { get; }
+    public int TypoDescender { get; private set; }
 
-    public int TypoLineGap { get; }
+    public int TypoLineGap { get; private set; }
 
-    public int WinAscent { get; }
+    public int WinAscent { get; private set; }
 
-    public int WinDescent { get; }
+    public int WinDescent { get; private set; }
 
-    public int XHeight { get; }
+    public int XHeight { get; private set; }
 
-    public int CapHeight { get; }
+    public int CapHeight { get; private set; }
 
-    public int StrikeoutPosition { get; }
+    public int StrikeoutPosition { get; private set; }
 
-    public int StrikeoutSize { get; }
+    public int StrikeoutSize { get; private set; }
 
     public bool HasPost { get; }
 
-    public int UnderlinePosition { get; }
+    public int UnderlinePosition { get; private set; }
 
-    public int UnderlineThickness { get; }
+    public int UnderlineThickness { get; private set; }
 
     /// <summary>Gets the glyph definition table, or <see langword="null"/>.</summary>
     public GdefTable? Gdef { get; }
@@ -272,6 +320,11 @@ internal sealed class FontFace
     public CmapVariation MapVariation(int codePoint, int selector, out int glyphId) => _cmap.MapVariation(codePoint, selector, out glyphId);
 
     /// <summary>Gets the advance width of a glyph, in font units.</summary>
+    /// <remarks>
+    /// In an instance of a variable font, the advance of the default instance varies by the delta of the <c>HVAR</c>
+    /// table, rounded to a font unit; a font with TrueType outlines and without this table varies its advances with
+    /// the phantom points of its glyphs.
+    /// </remarks>
     public int GetAdvanceWidth(int glyphId)
     {
         if ((uint)glyphId >= (uint)GlyphCount)
@@ -279,7 +332,218 @@ internal sealed class FontFace
 
         // The glyphs after the last metric share its advance.
         var index = Math.Min(glyphId, _horizontalMetricCount - 1);
-        return FontBinary.UInt16(Data.Bytes.AsSpan(_hmtxOffset, _hmtxLength), index * 4);
+        var advance = FontBinary.UInt16(Data.Bytes.AsSpan(_hmtxOffset, _hmtxLength), index * 4);
+        if (_instance is null)
+            return advance;
+
+        if (_hvarStore != 0)
+        {
+            var hvar = Data.Bytes.AsSpan(_hvarOffset, _hvarLength);
+            var outer = 0;
+            var inner = glyphId;
+            if (_hvarAdvanceMap != 0)
+            {
+                ItemVariationStore.ReadIndexMap(hvar, _hvarAdvanceMap, glyphId, out outer, out inner);
+            }
+
+            return advance + ItemVariationStore.Round(ItemVariationStore.GetDelta(hvar, _hvarStore, outer, inner, _instance.AdvanceScalars));
+        }
+
+        if (_gvar is not null)
+        {
+            var budget = new GlyphBudget(Data.Limits);
+            return ItemVariationStore.Round(GlyfOutlineReader.GetAdvance(CreateGlyfContext(), glyphId, ref budget));
+        }
+
+        return advance;
+    }
+
+    /// <summary>Gets the axes of a variable font; empty for a font that does not vary.</summary>
+    public ReadOnlySpan<FontAxisRecord> Axes => _fvar is null ? default : _fvar.Axes;
+
+    /// <summary>Gets the named instances of a variable font.</summary>
+    public ReadOnlySpan<FontInstanceRecord> NamedInstances => _fvar is null ? default : _fvar.Instances;
+
+    /// <summary>Gets the instance of a variable font the face is, or <see langword="null"/> for the default instance.</summary>
+    public FontInstance? Instance => _instance;
+
+    /// <summary>Gets a name of the font by its identifier in the <c>name</c> table.</summary>
+    public string? GetName(int nameId)
+        => TryGetTable(FontTags.Name, out var name) && name.Length >= 6 ? NameTable.Find(name.Span, nameId) : null;
+
+    /// <summary>
+    /// Gets the delta of a value of the layout tables for the instance, from the item variation store of the GDEF
+    /// table, rounded to a font unit; 0 for the default instance.
+    /// </summary>
+    public int GetLayoutDelta(int outer, int inner)
+    {
+        if (_instance is null || Gdef is not { VariationStore: not 0 } gdef)
+            return 0;
+
+        return ItemVariationStore.Round(ItemVariationStore.GetDelta(GdefData.Span, gdef.VariationStore, outer, inner, _instance.LayoutScalars));
+    }
+
+    /// <summary>Gets the face of an instance of a variable font.</summary>
+    /// <param name="userCoordinates">
+    /// The value of each axis, in the order of the axes, as 16.16 fixed-point numbers; an axis without value is at its
+    /// default. A value outside the range of its axis is brought to the nearest end.
+    /// </param>
+    /// <returns>The face of the instance; the face of the default instance when every axis is at its default.</returns>
+    public FontFace WithCoordinates(ReadOnlySpan<int> userCoordinates)
+    {
+        var root = _default;
+        if (root._fvar is null)
+            return root;
+
+        var axes = root._fvar.Axes;
+        var user = new int[axes.Length];
+        var coordinates = new int[axes.Length];
+        var isDefault = true;
+        for (var i = 0; i < axes.Length; i++)
+        {
+            user[i] = i < userCoordinates.Length ? Math.Clamp(userCoordinates[i], axes[i].Minimum, axes[i].Maximum) : axes[i].Default;
+            coordinates[i] = FontInstance.Normalize(axes[i], user[i]);
+            isDefault &= user[i] == axes[i].Default;
+        }
+
+        if (isDefault)
+            return root;
+
+        // "Coordinate scales and normalization": the values are normalized as 16.16 numbers, mapped by the avar table,
+        // then rounded to 2.14 numbers.
+        var bytes = Data.Bytes.AsSpan();
+        AvarTable.Map(bytes.Slice(root._avarOffset, root._avarLength), coordinates);
+        for (var i = 0; i < coordinates.Length; i++)
+        {
+            coordinates[i] = FontInstance.ToTableValue(coordinates[i]);
+        }
+
+        var instance = new FontInstance(user, coordinates);
+        if (root._hvarStore != 0)
+        {
+            instance.AdvanceScalars = ItemVariationStore.ComputeScalars(bytes.Slice(root._hvarOffset, root._hvarLength), root._hvarStore, coordinates);
+        }
+
+        if (root.Gdef is { VariationStore: not 0 } gdef)
+        {
+            instance.LayoutScalars = ItemVariationStore.ComputeScalars(root.GdefData.Span, gdef.VariationStore, coordinates);
+        }
+
+        if (root._cff is { VariationStore: not 0 } cff)
+        {
+            instance.OutlineScalars = ItemVariationStore.ComputeScalars(bytes.Slice(root._cffOffset, root._cffLength), cff.VariationStore, coordinates);
+        }
+
+        var face = (FontFace)root.MemberwiseClone();
+        face._instance = instance;
+        face.ApplyMetricVariations(instance);
+        return face;
+    }
+
+    /// <summary>
+    /// Varies the metrics of the font: OpenType specification, "MVAR - Metrics Variations Table". The table gives a
+    /// delta to values of the OS/2, hhea and post tables, each named by a tag.
+    /// </summary>
+    private void ApplyMetricVariations(FontInstance instance)
+    {
+        // The weight class is not a metric: an instance says its weight with the axis of weights.
+        var axes = Axes;
+        for (var i = 0; i < axes.Length; i++)
+        {
+            if (axes[i].Tag == FontTags.WeightAxis)
+            {
+                Weight = Math.Clamp((instance.UserCoordinates[i] + 0x8000) >> 16, 1, 1000);
+            }
+        }
+
+        var mvar = Data.Bytes.AsSpan(_mvarOffset, _mvarLength);
+        if (mvar.Length < 12 || FontBinary.UInt16(mvar, 0) != 1)
+            return;
+
+        var recordSize = FontBinary.UInt16(mvar, 6);
+        var recordCount = FontBinary.UInt16(mvar, 8);
+        var store = FontBinary.UInt16(mvar, 10);
+        if (store == 0 || recordSize < 8)
+            return;
+
+        var records = FontBinary.Slice(mvar, 12, (long)recordCount * recordSize);
+        var scalars = ItemVariationStore.ComputeScalars(mvar, store, instance.Coordinates);
+        for (var i = 0; i < recordCount; i++)
+        {
+            var record = records.Slice(i * recordSize, 8);
+            var delta = ItemVariationStore.Round(ItemVariationStore.GetDelta(mvar, store, FontBinary.UInt16(record, 4), FontBinary.UInt16(record, 6), scalars));
+            if (delta == 0)
+                continue;
+
+            // The ascender, the descender and the line gap have one tag for the tables that both give them.
+            switch (FontBinary.UInt32(record, 0))
+            {
+                case FontTags.MetricAscender:
+                    TypoAscender += delta;
+                    HorizontalAscender += delta;
+                    break;
+
+                case FontTags.MetricDescender:
+                    TypoDescender += delta;
+                    HorizontalDescender += delta;
+                    break;
+
+                case FontTags.MetricLineGap:
+                    TypoLineGap += delta;
+                    HorizontalLineGap += delta;
+                    break;
+
+                case FontTags.MetricWinAscent:
+                    WinAscent += delta;
+                    break;
+
+                case FontTags.MetricWinDescent:
+                    WinDescent += delta;
+                    break;
+
+                case FontTags.MetricXHeight:
+                    XHeight += delta;
+                    break;
+
+                case FontTags.MetricCapHeight:
+                    CapHeight += delta;
+                    break;
+
+                case FontTags.MetricStrikeoutSize:
+                    StrikeoutSize += delta;
+                    break;
+
+                case FontTags.MetricStrikeoutOffset:
+                    StrikeoutPosition += delta;
+                    break;
+
+                case FontTags.MetricUnderlineSize:
+                    UnderlineThickness += delta;
+                    break;
+
+                case FontTags.MetricUnderlineOffset:
+                    UnderlinePosition += delta;
+                    break;
+            }
+        }
+    }
+
+    private GlyfContext CreateGlyfContext()
+    {
+        var bytes = Data.Bytes.AsSpan();
+        var varies = _instance is not null && _gvar is not null;
+        return new GlyfContext
+        {
+            Loca = bytes.Slice(_locaOffset, _locaLength),
+            Glyf = bytes.Slice(_glyfOffset, _glyfLength),
+            Hmtx = bytes.Slice(_hmtxOffset, _hmtxLength),
+            HasLongLocations = _hasLongLocations,
+            GlyphCount = GlyphCount,
+            MetricCount = _horizontalMetricCount,
+            Variations = varies ? _gvar : null,
+            Gvar = varies ? bytes.Slice(_gvarOffset, _gvarLength) : default,
+            Coordinates = varies ? _instance!.Coordinates : default,
+        };
     }
 
     /// <summary>Gets a value indicating whether the font has pair adjustments in its legacy kerning table.</summary>
@@ -309,8 +573,7 @@ internal sealed class FontFace
         switch (Outlines)
         {
             case FontOutlineKind.TrueType:
-                var bytes = Data.Bytes.AsSpan();
-                GlyfOutlineReader.Decode(bytes.Slice(_locaOffset, _locaLength), bytes.Slice(_glyfOffset, _glyfLength), _hasLongLocations, GlyphCount, glyphId, sink, scratch, ref budget);
+                GlyfOutlineReader.Decode(CreateGlyfContext(), glyphId, sink, scratch, ref budget);
                 break;
 
             case FontOutlineKind.Cff:
@@ -318,7 +581,8 @@ internal sealed class FontFace
                 break;
 
             case FontOutlineKind.Cff2:
-                throw FontErrors.Unsupported("The font has CFF2 outlines, which are not supported.", "CFF2 outlines");
+                _cff!.Decode(Data.Bytes.AsSpan(_cffOffset, _cffLength), glyphId, sink, ref budget, _instance is null ? default : _instance.OutlineScalars);
+                break;
         }
     }
 

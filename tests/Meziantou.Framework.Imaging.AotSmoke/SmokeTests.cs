@@ -645,6 +645,17 @@ internal static class SmokeTests
             CheckEqual(turned, expected, "text: path of the text");
         }
 
+        // An instance of a variable font: at the heaviest weight, A is the rectangle (80, 0)-(560, 700) of 1000 units
+        // per em and advances by 640 units; at 20 pixels per em, it is drawn from 1.6 to 11.2 and the text is 12.8 wide
+        var variable = Font.Load(SmokeFonts.VariableTtf);
+        var heavy = variable.WithVariations(new FontVariationSetting("wght", 900));
+        Check(variable.VariationAxes is [{ Tag: "wght", Minimum: 100, Default: 400, Maximum: 900 }, { Tag: "wdth" }] && variable.NamedInstances.Count == 3, "text: axes");
+        Check(heavy.Weight == 900 && heavy.Variations[0].Value == 900 && heavy.Metrics.Ascent == 850, "text: instance");
+        var heavyLayout = TextLayout.Create("A", heavy, 20);
+        Check(TextLayout.Create("A", variable, 20).Width == 12 && Math.Abs(heavyLayout.Width - 12.8) < 1e-9, "text: instance advance");
+        Check(Math.Abs(heavyLayout.InkBounds.Left - 1.6) < 1e-9 && Math.Abs(heavyLayout.InkBounds.Right - 11.2) < 1e-9, "text: instance outline");
+        Check(variable.WithVariations(variable.NamedInstances[2]).Variations[1].Value == 200, "text: named instance");
+
         var hebrew = TextLayout.Create("\u05D0\u05D1 AB", new TextStyle(boxes, 16), new TextLayoutOptions { Direction = TextDirection.RightToLeft });
         Check(hebrew.Lines[0].IsRightToLeft && hebrew.HasMissingGlyphs, "text: direction");
 

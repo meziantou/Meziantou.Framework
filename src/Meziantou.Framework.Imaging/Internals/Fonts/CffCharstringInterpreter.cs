@@ -14,6 +14,12 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// advances of an OpenType font are in its <c>hmtx</c> table.
 /// </para>
 /// <para>
+/// The charstrings of a CFF2 table (OpenType specification, "CFF2 CharString Format") are the same programs without
+/// width and without <c>endchar</c>, with two more operators: <c>blend</c> replaces values of the default instance and
+/// their deltas by the values of an instance of a variable font, and <c>vsindex</c> selects the regions the deltas are
+/// for. The values of an instance are not rounded.
+/// </para>
+/// <para>
 /// A contour is closed when the next one starts or when the charstring ends, by a line to its first point when its last
 /// point is another one. A contour that draws nothing emits nothing.
 /// </para>
@@ -30,6 +36,9 @@ internal ref struct CffCharstringInterpreter
     /// <summary>The depth of subroutine calls: appendix B, "Type 2 Charstring Implementation Limits".</summary>
     private const int MaxCallDepth = 10;
 
+    /// <summary>The distance, in font units, under which the last point of a contour is its first point.</summary>
+    private const double ClosingTolerance = 1.0 / (1 << 20);
+
     /// <summary>The size of the transient array of the <c>put</c> and <c>get</c> operators.</summary>
     private const int TransientArraySize = 32;
 
@@ -38,6 +47,11 @@ internal ref struct CffCharstringInterpreter
     private readonly CffIndex _localSubroutines;
     private readonly OutlineSink _sink;
     private readonly ref GlyphBudget _budget;
+    private readonly bool _isCff2;
+    private readonly int _variationStore;
+    private readonly ReadOnlySpan<double> _scalars;
+    private int _variationStoreIndex;
+    private int _regionCount;
     private Buffer _buffer;
     private int _count;
     private int _hintCount;
@@ -55,6 +69,26 @@ internal ref struct CffCharstringInterpreter
         _localSubroutines = localSubroutines;
         _sink = sink;
         _budget = ref budget;
+    }
+
+    /// <summary>Creates an interpreter of the charstrings of a CFF2 table, which have no width and blend their arguments for an instance.</summary>
+    /// <param name="table">The table.</param>
+    /// <param name="globalSubroutines">The global subroutines.</param>
+    /// <param name="localSubroutines">The subroutines of the font DICT of the glyph.</param>
+    /// <param name="sink">The sink.</param>
+    /// <param name="budget">The complexity budget of the glyph.</param>
+    /// <param name="variationStore">The position of the item variation store, or 0.</param>
+    /// <param name="variationStoreIndex">The subtable of the store the font DICT of the glyph blends with.</param>
+    /// <param name="scalars">The scalars of the regions of the store for the instance; empty for the default instance.</param>
+    public CffCharstringInterpreter(ReadOnlySpan<byte> table, CffIndex globalSubroutines, CffIndex localSubroutines, OutlineSink sink, ref GlyphBudget budget, int variationStore, int variationStoreIndex, ReadOnlySpan<double> scalars)
+        : this(table, globalSubroutines, localSubroutines, sink, ref budget)
+    {
+        _isCff2 = true;
+        _hasWidth = true;
+        _variationStore = variationStore;
+        _variationStoreIndex = variationStoreIndex;
+        _scalars = scalars;
+        _regionCount = -1;
     }
 
     /// <summary>Runs the charstring of a glyph.</summary>
@@ -312,6 +346,19 @@ internal ref struct CffCharstringInterpreter
                     ExecuteEscape(stack, FontBinary.UInt8(code, position++));
                     break;
 
+                // vsindex, of CFF2: the subtable of the variation store the next blends use.
+                case 15 when _isCff2:
+                    Require(1);
+                    _variationStoreIndex = (int)Math.Clamp(stack[_count - 1], -1, ushort.MaxValue + 1);
+                    _regionCount = -1;
+                    _count = 0;
+                    break;
+
+                // blend, of CFF2.
+                case 16 when _isCff2:
+                    Blend(stack);
+                    break;
+
                 default:
                     throw Invalid($"uses the reserved operator {b0}");
             }
@@ -540,6 +587,60 @@ internal ref struct CffCharstringInterpreter
         }
     }
 
+    /// <summary>
+    /// Replaces n values of the default instance, followed by their deltas for each region and by n, with the n values
+    /// of the instance: OpenType specification, "CFF2 CharString Format", "blend".
+    /// </summary>
+    private void Blend(scoped Span<double> stack)
+    {
+        if (_regionCount < 0)
+        {
+            // The scalar of each region the deltas are for: none of them applies to the default instance.
+            var blend = _buffer.Blend;
+            _regionCount = 0;
+            if (_variationStore != 0 && (uint)_variationStoreIndex <= ushort.MaxValue)
+            {
+                if (_scalars.IsEmpty)
+                {
+                    _regionCount = ItemVariationStore.GetRegionCount(_table, _variationStore, _variationStoreIndex);
+                    if (_regionCount > blend.Length)
+                        throw Invalid("blends more regions than the stack can hold");
+
+                    blend[.._regionCount].Clear();
+                }
+                else
+                {
+                    _regionCount = ItemVariationStore.GetRegionScalars(_table, _variationStore, _variationStoreIndex, _scalars, blend);
+                }
+            }
+        }
+
+        Require(1);
+        var count = stack[--_count];
+        if (!(count >= 0 && count <= StackSize) || count != Math.Floor(count))
+            throw Invalid("blends a number of values that is not a count");
+
+        var valueCount = (int)count;
+        var first = _count - (valueCount * (_regionCount + 1));
+        if (first < 0)
+            throw Invalid("has an operator with too few arguments");
+
+        var scalars = _buffer.Blend[.._regionCount];
+        var deltas = stack.Slice(first + valueCount, valueCount * _regionCount);
+        for (var i = 0; i < valueCount; i++)
+        {
+            var value = stack[first + i];
+            for (var region = 0; region < scalars.Length; region++)
+            {
+                value += scalars[region] * deltas[(i * _regionCount) + region];
+            }
+
+            stack[first + i] = value;
+        }
+
+        _count = first + valueCount;
+    }
+
     private static void Roll(Span<double> values, int shift)
     {
         if (values.Length < 2)
@@ -630,8 +731,10 @@ internal ref struct CffCharstringInterpreter
         if (!_isPathOpen)
             return;
 
+        // The values an instance of a variable font blends are fractions, whose sums are not exact: a contour that
+        // comes back to its first point misses it by a rounding error, which is not a line to draw.
         _isPathOpen = false;
-        if (_x != _startX || _y != _startY)
+        if (Math.Abs(_x - _startX) > ClosingTolerance || Math.Abs(_y - _startY) > ClosingTolerance)
         {
             _sink.LineTo(_startX, _startY);
         }
@@ -647,9 +750,14 @@ internal ref struct CffCharstringInterpreter
     {
         private StackValues _stack;
         private TransientValues _transient;
+        private BlendValues _blend;
 
         [UnscopedRef]
         public Span<double> Stack => _stack;
+
+        /// <summary>Gets the scalars of the regions the charstring blends with.</summary>
+        [UnscopedRef]
+        public Span<double> Blend => _blend;
 
         [UnscopedRef]
         public Span<double> Transient => _transient;
@@ -663,6 +771,12 @@ internal ref struct CffCharstringInterpreter
 
     [InlineArray(TransientArraySize)]
     private struct TransientValues
+    {
+        private double _first;
+    }
+
+    [InlineArray(StackSize)]
+    private struct BlendValues
     {
         private double _first;
     }

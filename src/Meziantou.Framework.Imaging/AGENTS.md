@@ -249,7 +249,30 @@ directory and the fixed-size tables, `CmapTable` maps characters, `GlyfOutlineRe
   are given known-size destinations and must fill them exactly; a decompressor error of any type is malformed content.
 - **Outlines are what the reference readers emit.** A TrueType contour is always closed by a line to its first point and
   a contour of one point is kept; a CFF contour is closed by a line only when its last point is another one, and a
-  contour that draws nothing is not emitted. The recorded outlines of the corpus compare as strings: keep that exact.
+  contour that draws nothing is not emitted. A TrueType outline is moved so that its origin (the left of its bounding
+  box minus its left side bearing, or the origin of the component whose metrics a composite glyph uses) is at zero. The
+  recorded outlines of the default instances compare as strings: keep that exact.
+- **Variable fonts.** `FontFace.WithCoordinates` gives the face of an instance: a shallow copy of the default face with
+  a `FontInstance` (the values of the axes, their normalized coordinates, and the scalar of each region of each item
+  variation store, computed once) and the metrics `MVAR` varies. Nothing else is cached; `Font.WithVariations` is the
+  public form.
+  - Normalization follows "Coordinate scales and normalization" in its order: normalize as 16.16, map with `avar` at
+    that precision, then round to 2.14 (add 2, drop two bits). Rounding before `avar`, or keeping 16.16 coordinates,
+    both differ from the reference readers by a visible fraction of a unit.
+  - Outlines are not rounded (`gvar` deltas, inferred deltas, the offsets of components, `blend` in CFF2); what is a
+    whole number of font units in the font stays one in an instance: advances (`HVAR`, else the phantom points of
+    `gvar`), `MVAR` metrics and `GPOS` deltas are rounded with `ItemVariationStore.Round` (halves upward).
+  - `GvarTable.AddDeltas` reads the packed points and deltas as streams, without storing them, into sums that live in
+    the work stack of `GlyphScratch` (`RentWork`; spans of it do not survive another rental). Tuple variations charge
+    `GlyphBudget` per tuple and per point.
+  - The charstrings of `CFF2` are run by the same interpreter as CFF (`blend`, `vsindex`, no width); the tag of the
+    table says which format it is, never its version byte.
+  - The shaper applies `rvrn` before every other feature and resolves feature variations for every instance,
+    including the default one (a condition can contain it).
+  - The instance values of the corpus are the outlines HarfBuzz gives to three decimals (`--precision=3`), once
+    FreeType has drawn the same segments within two units; the tests accept 0.005 unit, the precision of the single
+    precision numbers of HarfBuzz. Advances and metrics are exact. `FontVariationTests` has the literals, computed by
+    hand from `FontSamples.Variable` and `VariableCharstrings`.
 - Tests have three sources: literals computed by hand on fonts built in memory (`FontTests`, with `Common/FontBuilder.cs`,
   `FontCffWriter.cs`, `FontCharstring.cs` and `FontWoff2Writer.cs` of the corpus generator, linked into the tests), the
   values HarfBuzz and FreeType both give for the fonts of the corpus (`Conformance/FontConformanceTests`: names,
@@ -449,7 +472,8 @@ dotnet publish tests/Meziantou.Framework.Imaging.AotSmoke -c Release -f net11.0 
   The coverage tables of the fixtures README are checked against the manifest (`FixtureCoverageMatrixTests`): update them
   when fixtures or feature tags change.
 - **Fuzzing.** The default budget is small and deterministic. Longer campaigns are opt-in through
-  `MEZIANTOU_FRAMEWORK_IMAGING_FUZZ_ITERATIONS`, `_FUZZ_DURATION_SECONDS`, `_FUZZ_SEED` and `_FUZZ_CASE_TIMEOUT_SECONDS`.
+  `MEZIANTOU_FRAMEWORK_IMAGING_FUZZ_ITERATIONS`, `_FUZZ_DURATION_SECONDS`, `_FUZZ_SEED`, `_FUZZ_CASE_TIMEOUT_SECONDS`
+  and, for the font fuzzer, `_FUZZ_SEED_FILTER` (a text the identifier of the seeds contains, such as `variable`).
   A failure is minimized and committed to `FuzzRegressions/` with an entry in `regressions.json`.
 - Failed golden comparisons write expected/actual/difference previews to `MEZIANTOU_FRAMEWORK_IMAGING_TEST_ARTIFACTS`
   (default: `TestArtifacts` next to the test assembly). Interop outputs go to

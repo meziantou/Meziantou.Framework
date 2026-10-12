@@ -81085,6 +81085,51 @@
       "original": "fonts/noto-sans-cjk-jp-regular"
     },
     {
+      "id": "fonts/noto-sans-cjk-jp-variable",
+      "file": {
+        "path": "fonts/noto-sans-cjk-variable/NotoSansCJKjp-Variable.subset.otf",
+        "sha256": "8fd09f40f8c57370d905dcbe18eabb665e59f65a1e58b491a85b9671cf67312a",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "Adobe (https://github.com/notofonts/noto-cjk)",
+        "source": "https://github.com/notofonts/noto-cjk/blob/f8d157532fbfaeda587e826d4cd5b21a49186f7c/Sans/Variable/OTF/NotoSansCJKjp-VF.otf",
+        "tools": [
+          "hb-subset 14.6.0"
+        ],
+        "commands": [
+          "hb-subset --unicodes=20-7E,3001,3002,300C,300D,3042,3044,3046,304B,304C,306E,30A2,30AD,30B9,30C6,30C8,30FC,4E00-4E0F,4EAC,56FD,65E5,6771,672C,8A9E --layout-features=* --notdef-outline --output-file=NotoSansCJKjp-Variable.subset.otf NotoSansCJKjp-VF.otf"
+        ]
+      },
+      "flavor": "otf",
+      "faceCount": 1,
+      "modification": "subset",
+      "features": [
+        "font.cmap=4",
+        "font.table=BASE",
+        "font.table=CFF2",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB",
+        "font.table=HVAR",
+        "font.table=STAT",
+        "font.table=avar",
+        "font.table=fvar"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-sans-cjk-jp-variable.json",
+        "sha256": "7619eb5a48fe5bf399b01453a913448fd25d16d6b3f225702dfddf26e58bc28c",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-sans-cjk-jp-variable.json",
+        "sha256": "60ccd2e1a47f454464430fb662a2026db35d9eff00f3081b8213d1274cfffc67",
+        "role": "shaping-vectors"
+      }
+    },
+    {
       "id": "fonts/noto-sans-regular",
       "file": {
         "path": "fonts/noto-sans/NotoSans-Regular.subset.ttf",
@@ -81233,6 +81278,53 @@
       "faceCount": 1,
       "modification": "container",
       "original": "fonts/noto-sans-regular"
+    },
+    {
+      "id": "fonts/noto-sans-variable",
+      "file": {
+        "path": "fonts/noto-sans-variable/NotoSans-Variable.subset.ttf",
+        "sha256": "d1d009e3d9f253d9c914f976bda8451127c517c0f4033d7a1166b4a211b0f345",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "The Noto Project Authors (https://github.com/notofonts/latin-greek-cyrillic)",
+        "source": "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSans/unhinted/variable-ttf/NotoSans%5Bwdth%2Cwght%5D.ttf",
+        "tools": [
+          "hb-subset 14.6.0"
+        ],
+        "commands": [
+          "hb-subset --unicodes=20-7E,C0,C1,C5,C9,D1,E0,E1,E5,E9,F1,FC,300-304,308,30A,327,2010-2014,2044,20AC,FB01,FB02 --layout-features=* --no-hinting --notdef-outline --output-file=NotoSans-Variable.subset.ttf NotoSans[wdth,wght].ttf"
+        ]
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "subset",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB",
+        "font.table=HVAR",
+        "font.table=MVAR",
+        "font.table=STAT",
+        "font.table=avar",
+        "font.table=fvar",
+        "font.table=glyf",
+        "font.table=gvar"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-sans-variable.json",
+        "sha256": "6a26e874ff1e27a2691f469eb7ddb50be696aa2ec706a556e56c1674daf7d0bf",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-sans-variable.json",
+        "sha256": "d551ab1c6b412a4b159a91996cbf6af1c430b1682c48c75edfaf41400896213e",
+        "role": "shaping-vectors"
+      }
     },
     {
       "id": "fonts/synthetic-boxes",
@@ -81647,6 +81739,447 @@
       "faceCount": 1,
       "modification": "container",
       "original": "fonts/synthetic-deltas"
+    },
+    {
+      "id": "fonts/synthetic-variable",
+      "file": {
+        "path": "fonts/synthetic/variable.ttf",
+        "sha256": "55bb0240b24b3defca71703548682a9eb856ca550a88e4bc2827ebc3ac257ceb",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/Common/FontSamples.cs (Variable)",
+        "tools": [
+          ".NET 10.0"
+        ]
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=HVAR",
+        "font.table=MVAR",
+        "font.table=avar",
+        "font.table=fvar",
+        "font.table=glyf",
+        "font.table=gvar"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/synthetic-variable.json",
+        "sha256": "b6f2fe6abb8688939b0b88fd704208b245d1f216ef328e2c879ab48a485a1632",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/synthetic-variable.json",
+        "sha256": "a958b8b5f2cc953766dfa7caf261452dfd5a6b8006fc8dc167c9326a5a818a3b",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/synthetic-variable-charstrings",
+      "file": {
+        "path": "fonts/synthetic/variable-charstrings.otf",
+        "sha256": "865d7eae287d198ef4ec97c95256b51a2301f6fa7689174f38c12a6806d4f420",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/Common/FontSamples.cs (VariableCharstrings)",
+        "tools": [
+          ".NET 10.0"
+        ]
+      },
+      "flavor": "otf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.table=CFF2",
+        "font.table=HVAR",
+        "font.table=fvar"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/synthetic-variable-charstrings.json",
+        "sha256": "32a229e1cd8d127f411a1780888d5abd5c006bb2bae7d2fc329995b94514c792",
+        "role": "font-vectors"
+      }
+    },
+    {
+      "id": "fonts/synthetic-variable-phantom",
+      "file": {
+        "path": "fonts/synthetic/variable.phantom.ttf",
+        "sha256": "bf64dbc8d52890c712559e8c3eaf5e392c643246aebe895065cc2f638e4e486b",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/Common/FontSamples.cs (Variable without HVAR)",
+        "tools": [
+          ".NET 10.0"
+        ]
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=MVAR",
+        "font.table=avar",
+        "font.table=fvar",
+        "font.table=glyf",
+        "font.table=gvar"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/synthetic-variable-phantom.json",
+        "sha256": "f45fc57b21ed9fe3ed85da938386d49d0ef431f5156eddc90c8f3cc66205fe73",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/synthetic-variable-phantom.json",
+        "sha256": "a958b8b5f2cc953766dfa7caf261452dfd5a6b8006fc8dc167c9326a5a818a3b",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/trt-avar",
+      "file": {
+        "path": "fonts/text-rendering-tests/TestAVAR.ttf",
+        "sha256": "5deb587e7abe1b175d740dfded516b93ebb4a6cb7ea9c65b784d3f4498d2c7cf",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "Unicode, Inc.",
+        "source": "https://github.com/harfbuzz/harfbuzz/blob/c7a7457b7385f33178e8cf87615ca077a810bbe7/test/shape/data/text-rendering-tests/fonts/TestAVAR.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=avar",
+        "font.table=fvar",
+        "font.table=glyf",
+        "font.table=gvar"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/trt-avar.json",
+        "sha256": "5a789c190c9a4cce2f0b45782451aa37fb8a6d5f7f25bfafaec34edf311d82aa",
+        "role": "font-vectors"
+      }
+    },
+    {
+      "id": "fonts/trt-cff2",
+      "file": {
+        "path": "fonts/text-rendering-tests/AdobeVFPrototype-Subset.otf",
+        "sha256": "0f7e3b59c2c44ba3683bd636b4f24541ec405f9132b4d37eef1baa78ebb559db",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "Adobe Systems Incorporated",
+        "source": "https://github.com/harfbuzz/harfbuzz/blob/c7a7457b7385f33178e8cf87615ca077a810bbe7/test/shape/data/text-rendering-tests/fonts/AdobeVFPrototype-Subset.otf"
+      },
+      "flavor": "otf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.cmap=6",
+        "font.table=BASE",
+        "font.table=CFF2",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB",
+        "font.table=HVAR",
+        "font.table=fvar"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/trt-cff2.json",
+        "sha256": "b7400608845a25236d6a4fc75435a9a52c4ef59221b78fd690aa79aaf87333b1",
+        "role": "font-vectors"
+      }
+    },
+    {
+      "id": "fonts/trt-gpos-four",
+      "file": {
+        "path": "fonts/text-rendering-tests/TestGPOSFour.ttf",
+        "sha256": "281f3412f17191e65fb4f29c60521e745c8d248bea091909a13d7c96c2392795",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "Unicode, Inc.",
+        "source": "https://github.com/harfbuzz/harfbuzz/blob/c7a7457b7385f33178e8cf87615ca077a810bbe7/test/shape/data/text-rendering-tests/fonts/TestGPOSFour.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=12",
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB",
+        "font.table=MVAR",
+        "font.table=avar",
+        "font.table=fvar",
+        "font.table=glyf",
+        "font.table=gvar"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/trt-gpos-four.json",
+        "sha256": "4e962f10510e3b433e9ab472d8ca04c7af18e6ed4af44443d1d526da967fde3d",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/trt-gpos-four.json",
+        "sha256": "0bca26891d3b5c74fc1715a4b58b44f6c15dc47615de06973026f9ba1bb08b15",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/trt-gvar-composite",
+      "file": {
+        "path": "fonts/text-rendering-tests/TestGVAR-Composite-0.ttf",
+        "sha256": "5be59bda5b4326b5c62f5b04a8d70fdc2a1a39ede56abb29385ab4b0f068ca95",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "CC0-1.0",
+        "author": "Jens Kutilek (a subset of the Normschrift font, dedicated to the public domain)",
+        "source": "https://github.com/harfbuzz/harfbuzz/blob/c7a7457b7385f33178e8cf87615ca077a810bbe7/test/shape/data/text-rendering-tests/fonts/TestGVAR-Composite-0.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=HVAR",
+        "font.table=MVAR",
+        "font.table=STAT",
+        "font.table=fvar",
+        "font.table=glyf",
+        "font.table=gvar"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/trt-gvar-composite.json",
+        "sha256": "3e0074ea77e618c379ec39816b84581e3cf4d79e6da9fcb18bb9a995727deb0e",
+        "role": "font-vectors"
+      }
+    },
+    {
+      "id": "fonts/trt-gvar-four",
+      "file": {
+        "path": "fonts/text-rendering-tests/TestGVARFour.ttf",
+        "sha256": "a749ef97d87e7bb6ab211e1e9ac262c8ab9bb0fb7e2cb7b2e9647dc78fe5676f",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "Unicode, Inc.",
+        "source": "https://github.com/harfbuzz/harfbuzz/blob/c7a7457b7385f33178e8cf87615ca077a810bbe7/test/shape/data/text-rendering-tests/fonts/TestGVARFour.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=GDEF",
+        "font.table=HVAR",
+        "font.table=fvar",
+        "font.table=glyf",
+        "font.table=gvar"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/trt-gvar-four.json",
+        "sha256": "b4def3238becb939e1fa5fac4e0d2706e94b338b2f29aa64dc8eac2682a83e0c",
+        "role": "font-vectors"
+      }
+    },
+    {
+      "id": "fonts/trt-gvar-nine",
+      "file": {
+        "path": "fonts/text-rendering-tests/TestGVARNine.ttf",
+        "sha256": "fa23bfa9bac087a09029802e83c424f09714a94cb547caac098da9d6285e4fbd",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "Apache-2.0",
+        "author": "Unicode, Inc. (text-rendering-tests)",
+        "source": "https://github.com/harfbuzz/harfbuzz/blob/c7a7457b7385f33178e8cf87615ca077a810bbe7/test/shape/data/text-rendering-tests/fonts/TestGVARNine.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.cmap=6",
+        "font.loca=short",
+        "font.table=fvar",
+        "font.table=glyf",
+        "font.table=gvar"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/trt-gvar-nine.json",
+        "sha256": "30dbfe1c012088b76c767e9163e901fe4a0f08d5145b10caeb1437f3397e90c6",
+        "role": "font-vectors"
+      }
+    },
+    {
+      "id": "fonts/trt-hvar-one",
+      "file": {
+        "path": "fonts/text-rendering-tests/TestHVAROne.otf",
+        "sha256": "2682f90cb31d6e5b0dd9e57b8638e297f4e542f3a30a80e620698ae12c6dfdfb",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "Unicode, Inc.",
+        "source": "https://github.com/harfbuzz/harfbuzz/blob/c7a7457b7385f33178e8cf87615ca077a810bbe7/test/shape/data/text-rendering-tests/fonts/TestHVAROne.otf"
+      },
+      "flavor": "otf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.table=CFF2",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=HVAR",
+        "font.table=fvar"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/trt-hvar-one.json",
+        "sha256": "c0598ebdc192d1941b737b931293a79fbad461e6a087e12dbfc6a4dde7081a51",
+        "role": "font-vectors"
+      }
+    },
+    {
+      "id": "fonts/trt-hvar-two",
+      "file": {
+        "path": "fonts/text-rendering-tests/TestHVARTwo.ttf",
+        "sha256": "dba292b3000989b54c6b61e2ace37addf32132a8dbd3e69215f02cdf09d90bed",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "Unicode, Inc.",
+        "source": "https://github.com/harfbuzz/harfbuzz/blob/c7a7457b7385f33178e8cf87615ca077a810bbe7/test/shape/data/text-rendering-tests/fonts/TestHVARTwo.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=GDEF",
+        "font.table=HVAR",
+        "font.table=fvar",
+        "font.table=glyf",
+        "font.table=gvar"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/trt-hvar-two.json",
+        "sha256": "35c0a960bd3a4c79d0a1ed9576dab14801ac5a724ef46d23fbe7ca187054e429",
+        "role": "font-vectors"
+      }
+    },
+    {
+      "id": "fonts/trt-rvrn",
+      "file": {
+        "path": "fonts/text-rendering-tests/TestRVRN.ttf",
+        "sha256": "3afdfa8efd4a1fdf2a79b98f9a832456d1d168236fbd22da0a60b3492e144d88",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "Unicode, Inc.",
+        "source": "https://github.com/harfbuzz/harfbuzz/blob/c7a7457b7385f33178e8cf87615ca077a810bbe7/test/shape/data/text-rendering-tests/fonts/TestRVRN.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=GSUB",
+        "font.table=HVAR",
+        "font.table=STAT",
+        "font.table=fvar",
+        "font.table=glyf",
+        "font.table=gvar"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/trt-rvrn.json",
+        "sha256": "e02430faf1a660b3892b61a148c8be6375d0475078285268a1edf070ed07d03e",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/trt-rvrn.json",
+        "sha256": "8f9d0d32373a4c1f8cdc85d5ae129987089c41e08479d4565618682f8b774987",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/trt-rvrn-cff2",
+      "file": {
+        "path": "fonts/text-rendering-tests/TestRVRN-CFF2.otf",
+        "sha256": "9734b58ae11a8a9a1a5759fe8d79f0856a29e155cfe891aa88e67d08620554b2",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "Unicode, Inc.",
+        "source": "https://github.com/harfbuzz/harfbuzz/blob/c7a7457b7385f33178e8cf87615ca077a810bbe7/test/shape/data/text-rendering-tests/fonts/TestRVRN-CFF2.otf"
+      },
+      "flavor": "otf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.table=CFF2",
+        "font.table=GSUB",
+        "font.table=HVAR",
+        "font.table=STAT",
+        "font.table=fvar"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/trt-rvrn-cff2.json",
+        "sha256": "0b2ff21a0a2e084a974da8725af4ea4f652787a47da8e74e582bdd9734b8821e",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/trt-rvrn-cff2.json",
+        "sha256": "8f9d0d32373a4c1f8cdc85d5ae129987089c41e08479d4565618682f8b774987",
+        "role": "shaping-vectors"
+      }
     }
   ],
   "fontSuites": [

@@ -35,27 +35,29 @@ internal readonly struct CffIndex
     public int End { get; }
 
     /// <summary>Reads the header of an INDEX at a position of the table.</summary>
-    public static CffIndex Read(ReadOnlySpan<byte> table, long position)
+    public static CffIndex Read(ReadOnlySpan<byte> table, long position, bool isCff2 = false)
     {
-        if (position < 0 || position > table.Length - 2)
+        // The count is 16 bits in a CFF table and 32 bits in a CFF2 table.
+        var countSize = isCff2 ? 4 : 2;
+        if (position < 0 || position > table.Length - countSize)
             throw FontErrors.InvalidTable(FontTags.Cff, "has an INDEX outside its bounds.");
 
         var start = (int)position;
-        var count = FontBinary.UInt16(table, start);
+        var count = isCff2 ? FontBinary.Offset32(table, start) : FontBinary.UInt16(table, start);
         if (count == 0)
-            return new CffIndex(0, 0, 0, 0, 0, start + 2);
+            return new CffIndex(0, 0, 0, 0, 0, start + countSize);
 
-        var offsetSize = FontBinary.UInt8(table, start + 2);
+        var offsetSize = FontBinary.UInt8(table, start + countSize);
         if (offsetSize is < 1 or > 4)
             throw FontErrors.InvalidTable(FontTags.Cff, $"has an INDEX with offsets of {offsetSize} bytes.");
 
         // The offsets are relative to the byte that precedes the data: the first one is 1, the last one gives the
         // length of the data.
-        var offsets = start + 3;
+        var offsets = start + countSize + 1;
         var offsetsLength = ((long)count + 1) * offsetSize;
         FontBinary.EnsureRange(table, offsets, offsetsLength);
         var data = offsets + (int)offsetsLength;
-        var last = ReadOffset(table, offsets + (count * offsetSize), offsetSize);
+        var last = ReadOffset(table, offsets + (int)(offsetsLength - offsetSize), offsetSize);
         if (last < 1 || data + (last - 1) > table.Length)
             throw FontErrors.InvalidTable(FontTags.Cff, "has an INDEX whose data lies outside the table.");
 

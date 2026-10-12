@@ -16,6 +16,13 @@ internal sealed class FontCharstring
     public const int CallSubr = 10;
     public const int Return = 11;
     public const int EndChar = 14;
+
+    /// <summary>CFF2: selects the subtable of the variation store the blends use.</summary>
+    public const int VsIndex = 15;
+
+    /// <summary>CFF2: replaces values and their deltas by the values of the instance.</summary>
+    public const int Blend = 16;
+
     public const int HStemHM = 18;
     public const int HintMask = 19;
     public const int CntrMask = 20;

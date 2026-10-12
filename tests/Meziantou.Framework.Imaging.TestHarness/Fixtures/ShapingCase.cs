@@ -17,6 +17,10 @@ public sealed class ShapingCase
     /// The glyphs, in visual order. Each one is six numbers: the glyph identifier, the cluster (the index of a
     /// character of the text), the horizontal and vertical offsets, the horizontal and vertical advances, in font units.
     /// </summary>
+    /// <summary>Gets the instance of a variable font the text is shaped with, in the syntax of the reference shaper; <see langword="null"/> for the default instance.</summary>
+    [JsonPropertyName("variations")]
+    public string? Variations { get; init; }
+
     [JsonPropertyName("glyphs")]
     public required IReadOnlyList<IReadOnlyList<int>> Glyphs { get; init; }
 

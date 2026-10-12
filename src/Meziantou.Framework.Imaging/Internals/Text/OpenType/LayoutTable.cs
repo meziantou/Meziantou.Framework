@@ -16,12 +16,14 @@ internal sealed class LayoutTable
     private readonly int _scripts;
     private readonly int _features;
     private readonly int _lookups;
+    private readonly int _featureVariations;
 
-    private LayoutTable(int scripts, int features, int lookups)
+    private LayoutTable(int scripts, int features, int lookups, int featureVariations)
     {
         _scripts = scripts;
         _features = features;
         _lookups = lookups;
+        _featureVariations = featureVariations;
     }
 
     /// <summary>Reads the header of a GSUB or GPOS table.</summary>
@@ -37,7 +39,63 @@ internal sealed class LayoutTable
         if (scripts == 0 || features == 0 || lookups == 0 || Math.Max(scripts, Math.Max(features, lookups)) > table.Length - 2)
             return null;
 
-        return new LayoutTable(scripts, features, lookups);
+        // Version 1.1 adds the feature variations: features that are replaced in a part of the variation space.
+        var featureVariations = 0;
+        if (FontBinary.UInt16(table, 2) >= 1 && table.Length >= 14)
+        {
+            var offset = FontBinary.UInt32(table, 10);
+            featureVariations = offset != 0 && offset <= table.Length - 8 && FontBinary.UInt16(table, (int)offset) == 1 ? (int)offset : 0;
+        }
+
+        return new LayoutTable(scripts, features, lookups, featureVariations);
+    }
+
+    /// <summary>
+    /// Finds the feature substitutions that apply to an instance of a variable font: "FeatureVariations table". The
+    /// first record whose conditions all hold is the one that applies.
+    /// </summary>
+    /// <param name="table">The table.</param>
+    /// <param name="coordinates">The normalized coordinates of the instance, as 2.14 fixed-point numbers; an axis without coordinate is at its default.</param>
+    /// <returns>The position of the feature table substitution, or 0 when no feature is replaced.</returns>
+    public int FindFeatureSubstitutions(ReadOnlySpan<byte> table, ReadOnlySpan<int> coordinates)
+    {
+        if (_featureVariations == 0)
+            return 0;
+
+        var count = FontBinary.UInt32(table, _featureVariations + 4);
+        var records = FontBinary.Slice(table, _featureVariations + 8, (long)count * 8);
+        for (var i = 0; i < (int)count; i++)
+        {
+            var conditions = FontBinary.Offset32(records, i * 8);
+            if (conditions != 0 && !MatchesConditions(table, FontBinary.AddOffset(_featureVariations, conditions), coordinates))
+                continue;
+
+            var substitutions = FontBinary.Offset32(records, (i * 8) + 4);
+            return substitutions == 0 ? 0 : FontBinary.AddOffset(_featureVariations, substitutions);
+        }
+
+        return 0;
+    }
+
+    /// <summary>Tells whether every condition of a set holds: each one is a range of the normalized value of an axis.</summary>
+    private static bool MatchesConditions(ReadOnlySpan<byte> table, int set, ReadOnlySpan<int> coordinates)
+    {
+        var count = FontBinary.UInt16(table, set);
+        for (var i = 0; i < count; i++)
+        {
+            var condition = FontBinary.AddOffset(set, FontBinary.Offset32(table, set + 2 + (i * 4)));
+
+            // A condition of a format that is not known does not hold.
+            if (FontBinary.UInt16(table, condition) != 1)
+                return false;
+
+            var axis = FontBinary.UInt16(table, condition + 2);
+            var coordinate = axis < coordinates.Length ? coordinates[axis] : 0;
+            if (coordinate < FontBinary.Int16(table, condition + 4) || coordinate > FontBinary.Int16(table, condition + 6))
+                return false;
+        }
+
+        return true;
     }
 
     /// <summary>Gets the number of lookups.</summary>
@@ -107,15 +165,33 @@ internal sealed class LayoutTable
         => (uint)feature < (uint)FontBinary.UInt16(table, _features) ? FontBinary.UInt32(table, _features + 2 + (feature * 6)) : 0;
 
     /// <summary>Gets the number of lookups of a feature of the feature list.</summary>
-    public int GetFeatureLookupCount(ReadOnlySpan<byte> table, int feature) => FontBinary.UInt16(table, GetFeature(table, feature) + 2);
+    /// <param name="table">The table.</param>
+    /// <param name="feature">The index of the feature in the feature list.</param>
+    /// <param name="substitutions">The feature substitutions of the instance, from <see cref="FindFeatureSubstitutions"/>, or 0.</param>
+    public int GetFeatureLookupCount(ReadOnlySpan<byte> table, int feature, int substitutions = 0) => FontBinary.UInt16(table, GetFeature(table, feature, substitutions) + 2);
 
     /// <summary>Gets a lookup of a feature of the feature list.</summary>
-    public int GetFeatureLookup(ReadOnlySpan<byte> table, int feature, int index) => FontBinary.UInt16(table, GetFeature(table, feature) + 4 + (index * 2));
+    public int GetFeatureLookup(ReadOnlySpan<byte> table, int feature, int index, int substitutions = 0) => FontBinary.UInt16(table, GetFeature(table, feature, substitutions) + 4 + (index * 2));
 
-    private int GetFeature(ReadOnlySpan<byte> table, int feature)
+    private int GetFeature(ReadOnlySpan<byte> table, int feature, int substitutions)
     {
         if ((uint)feature >= (uint)FontBinary.UInt16(table, _features))
             throw FontErrors.Invalid("a layout table refers to a feature that does not exist.");
+
+        if (substitutions != 0)
+        {
+            // The alternate feature tables of the instance, sorted by the index of the feature they replace.
+            var count = FontBinary.UInt16(table, substitutions + 4);
+            for (var i = 0; i < count; i++)
+            {
+                var replaced = FontBinary.UInt16(table, substitutions + 6 + (i * 6));
+                if (replaced == feature)
+                    return FontBinary.AddOffset(substitutions, FontBinary.Offset32(table, substitutions + 8 + (i * 6)));
+
+                if (replaced > feature)
+                    break;
+            }
+        }
 
         return _features + FontBinary.UInt16(table, _features + 6 + (feature * 6));
     }

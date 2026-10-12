@@ -185,13 +185,34 @@ its first point, even a line without length: the library does the same, so that 
 | `fonts/noto-sans-regular` | ttf | 1 | OFL-1.1 | Noto Sans Regular 2.015, subset to 232 characters (Basic Latin, Latin-1, combining marks, punctuation): 425 glyphs, `GDEF`, `GSUB`, `GPOS` |
 | `fonts/noto-sans-regular-cff` | otf | 1 | OFL-1.1 | The CFF flavor of the same font and the same characters: 421 glyphs, subroutines |
 | `fonts/noto-sans-cjk-jp-regular` | otf | 1 | OFL-1.1 | Noto Sans CJK JP Regular 2.004, subset to 408 characters (Basic Latin, kana, a few ideographs, fullwidth forms): 1,099 glyphs, a CID-keyed CFF table with several font DICTs, hints kept |
+| `fonts/synthetic-variable` | ttf | 1 | CC0-1.0 | A variable font of two axes: `fvar` with named instances, `avar`, `gvar` (deltas for every point, for some points with inferred deltas, shared and private point numbers, a region that starts away from the default, composite glyphs, phantom points), `HVAR` with a delta set index map and two subtables, `MVAR`, a glyph whose left side bearing is not the left of its outline |
+| `fonts/synthetic-variable-phantom` | ttf | 1 | CC0-1.0 | The same font without `HVAR`: the advances vary with the phantom points, and a glyph varies its origin |
+| `fonts/synthetic-variable-charstrings` | otf | 1 | CC0-1.0 | A variable font with CFF2 outlines: `blend` of one and of several values, `vsindex` in a private DICT and in a charstring, a blending subroutine, two font DICTs, a variation store of two subtables |
+| `fonts/noto-sans-variable` | ttf | 1 | OFL-1.1 | Noto Sans 2.015 variable (weight and width), subset to 123 characters (279 glyphs) with every variation table kept: `gvar`, `HVAR`, `MVAR`, `avar`, positions and anchors of `GPOS` that vary |
+| `fonts/noto-sans-cjk-jp-variable` | otf | 1 | OFL-1.1 | Noto Sans CJK JP 2.004 variable (weight), subset to 133 characters (566 glyphs): a CID-keyed `CFF2` table with several font DICTs, blended hints kept, `HVAR`, `avar` |
+| `fonts/trt-*` | ttf, otf | 1 | OFL-1.1, Apache-2.0 or CC0-1.0 (see the manifest) | Ten fonts of the text-rendering-tests suite of the Unicode Consortium, stored as they are (`fonts/text-rendering-tests/`), each made for one feature: `avar`, `gvar` (also composite glyphs and regions between two values), `HVAR` with TrueType and with CFF2 outlines, `CFF2`, feature variations (`rvrn`) with both kinds of outlines, anchors of `GPOS` that vary |
 | `fonts/*-woff`, `fonts/*-woff2` | woff, woff2 | as the original | as the original | WOFF of the boxes, deltas, charstrings, Noto Sans and Noto Sans CJK fonts; WOFF2 of the boxes, curves, deltas, charstrings, collection and both Noto Sans fonts |
 | `fonts/synthetic-boxes-woff2-metrics`, `fonts/synthetic-deltas-woff2-boxes` | woff2 | 1 | CC0-1.0 | Written by `FontWoff2Writer`: transformed horizontal metrics (both flags, then one), every bounding box stored |
 
 ### Shaping vectors
 
+A variable font also has **instances** in its vectors: for values of its axes listed in `FontCorpus.cs`, the metrics,
+the advance of each glyph and the outline of each glyph. The advances are whole font units, on which the two readers
+must agree. The points of an instance are fractions of font units: HarfBuzz keeps them, with the precision of single
+precision numbers, where FreeType rounds the deltas of the offsets of components and gives whole units for CFF2
+outlines. The outlines recorded are those of HarfBuzz to three decimals (`hb-vector --precision=3`), once FreeType has
+drawn the same segments within two units; the tests accept a difference of 0.005 unit. The metrics of an instance are
+those of `hb-info`. A glyph whose origin varies is only in the font without `HVAR`: with that table, FreeType takes the
+side bearings from it and HarfBuzz from the phantom points.
+
+The fonts of the text-rendering-tests suite come from `test/shape/data/text-rendering-tests/fonts` of the checkout of
+HarfBuzz the AOTS suite comes from, copied to a `text-rendering-tests` directory of the fonts directory. Only the fonts
+whose own license (the one their `name` table declares, or the Apache-2.0 license of the suite when they declare none)
+is accepted by the corpus are stored; the fonts of the suite under another license are not.
+
 The `shaping` file of a font (`ShapingVectors` in the test harness) holds texts and what the OpenType shaper of
-HarfBuzz gives for them: `hb-shape --shapers=ot --font-funcs=ot --no-glyph-names`, with the features of the case. A text
+HarfBuzz gives for them: `hb-shape --shapers=ot --font-funcs=ot --no-glyph-names`, with the features of the case and, for a variable font, the
+instance of the case (`--variations`). A text
 is stored as the hexadecimal code points of its characters, so that no invisible character is lost in an editor; a
 glyph is six numbers: the glyph identifier, the cluster (an index of character), the two offsets and the two advances,
 in font units. The texts are listed in `FontCorpus.cs`, chosen for what shaping does to them: kerning, ligatures, marks

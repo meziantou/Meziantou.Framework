@@ -13,6 +13,9 @@ public sealed class FontCorpusTests
         // hold for the fonts the tests build.
         Assert.Equal(FontSamples.Boxes().Build(), ReadFont("fonts/synthetic-boxes"));
         Assert.Equal(FontSamples.Curves().Build(), ReadFont("fonts/synthetic-curves"));
+        Assert.Equal(FontSamples.Variable().Build(), ReadFont("fonts/synthetic-variable"));
+        Assert.Equal(FontSamples.Variable(withAdvanceVariations: false).Build(), ReadFont("fonts/synthetic-variable-phantom"));
+        Assert.Equal(FontSamples.VariableCharstrings().Build(), ReadFont("fonts/synthetic-variable-charstrings"));
         Assert.Equal(FontBuilder.WriteCollection([FontSamples.Boxes().BuildTables(), FontSamples.Curves().BuildTables()]), ReadFont("fonts/synthetic-collection"));
     }
 
@@ -21,6 +24,7 @@ public sealed class FontCorpusTests
     {
         var root = FixtureRoot.GetDirectory();
         var count = 0;
+        var instances = 0;
         foreach (var font in LoadFonts())
         {
             if (font.Vectors is not { } vectorsFile)
@@ -53,10 +57,20 @@ public sealed class FontCorpusTests
                 {
                     Assert.True(outline.Length == 0 || (outline[0] == 'M' && outline[^1] == 'Z'), $"{font.Id}: unexpected outline '{outline}'");
                 }
+
+                // The instances of a variable font describe every glyph too.
+                foreach (var instance in face.Instances ?? [])
+                {
+                    instances++;
+                    Assert.NotEmpty(instance.Variations);
+                    Assert.HasCount(face.GlyphCount, instance.Advances);
+                    Assert.HasCount(face.GlyphCount, instance.Outlines);
+                }
             }
         }
 
         Assert.True(count >= 5, $"Only {count} faces have vectors");
+        Assert.True(instances >= 50, $"Only {instances} instances of variable fonts have vectors");
     }
 
     [Fact]

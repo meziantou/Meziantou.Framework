@@ -23,10 +23,28 @@ public sealed class Font
     /// <summary>The greatest font size, in pixels per em.</summary>
     internal const double MaxSize = 65536;
 
+    private readonly FontVariationAxis[] _axes;
+    private readonly FontNamedInstance[] _namedInstances;
+    private readonly FontVariationSetting[] _variations;
+
     internal Font(FontFace face)
+        : this(face, CreateAxes(face), namedInstances: null)
+    {
+    }
+
+    private Font(FontFace face, FontVariationAxis[] axes, FontNamedInstance[]? namedInstances)
     {
         Face = face;
         Metrics = CreateMetrics(face);
+        _axes = axes;
+        _namedInstances = namedInstances ?? CreateNamedInstances(face, axes);
+
+        // The value of each axis: the ones of the instance, or the defaults.
+        _variations = axes.Length == 0 ? [] : new FontVariationSetting[axes.Length];
+        for (var i = 0; i < _variations.Length; i++)
+        {
+            _variations[i] = new FontVariationSetting(axes[i].Tag, face.Instance is { } instance ? instance.UserCoordinates[i] / 65536.0 : axes[i].Default);
+        }
     }
 
     internal FontFace Face { get; }
@@ -42,6 +60,7 @@ public sealed class Font
     public string? PostScriptName => Face.PostScriptName;
 
     /// <summary>Gets the weight of the font, from 1 to 1000: 400 is regular, 700 is bold.</summary>
+    /// <remarks>For an instance of a variable font that has a weight axis (<c>wght</c>), the value of that axis, rounded.</remarks>
     public int Weight => Face.Weight;
 
     /// <summary>Gets a value indicating whether the font is italic or oblique.</summary>
@@ -69,6 +88,83 @@ public sealed class Font
     /// </para>
     /// </remarks>
     public FontMetrics Metrics { get; }
+
+    /// <summary>Gets the axes of a variable font: what can vary, and in what range. Empty for a font that does not vary.</summary>
+    public IReadOnlyList<FontVariationAxis> VariationAxes => _axes;
+
+    /// <summary>Gets the instances a variable font names, such as "Light" or "Bold Condensed". Empty for a font that names none.</summary>
+    public IReadOnlyList<FontNamedInstance> NamedInstances => _namedInstances;
+
+    /// <summary>
+    /// Gets the value of each axis of a variable font for this font, in the order of <see cref="VariationAxes"/>: the
+    /// defaults for a font as it is loaded, the values of the instance for a font <see cref="WithVariations(ReadOnlySpan{FontVariationSetting})"/>
+    /// returned. Empty for a font that does not vary.
+    /// </summary>
+    public IReadOnlyList<FontVariationSetting> Variations => _variations;
+
+    /// <summary>Gets an instance of a variable font: the same font with other values of its axes.</summary>
+    /// <param name="settings">
+    /// The values of the axes. An axis that is not named has its default value, whatever its value in this font; a value
+    /// outside the range of its axis is brought to the nearest end of the range; a tag that is not one of the axes of
+    /// the font is ignored; when an axis is named several times, its last value is used.
+    /// </param>
+    /// <returns>
+    /// A font that shares the data of this one: its outlines, its advances, its metrics and the positions of its
+    /// layout tables are the ones of the instance. For a font that does not vary, the font itself.
+    /// </returns>
+    /// <remarks>
+    /// <para>
+    /// Creating an instance reads no glyph: it normalizes the values (with the <c>avar</c> table of the font) and
+    /// computes how much of each region of the variation data applies. The glyphs are varied when they are needed:
+    /// their points are not rounded, so an instance is as smooth as the default one. The advances and the metrics of
+    /// an instance are whole font units.
+    /// </para>
+    /// <para>The instances of a font are different fonts for text layout: a text that uses two of them is shaped in two runs.</para>
+    /// </remarks>
+    public Font WithVariations(params ReadOnlySpan<FontVariationSetting> settings)
+    {
+        if (_axes.Length == 0)
+            return this;
+
+        Span<int> coordinates = _axes.Length <= 64 ? stackalloc int[_axes.Length] : new int[_axes.Length];
+        var axes = Face.Axes;
+        for (var i = 0; i < coordinates.Length; i++)
+        {
+            coordinates[i] = axes[i].Default;
+        }
+
+        foreach (var setting in settings)
+        {
+            var tag = setting.TagValue;
+            for (var i = 0; i < coordinates.Length; i++)
+            {
+                if (axes[i].Tag == tag)
+                {
+                    // A 16.16 fixed-point number; the face brings it into the range of the axis.
+                    coordinates[i] = (int)Math.Clamp(Math.Round(setting.Value * 65536, MidpointRounding.AwayFromZero), int.MinValue, int.MaxValue);
+                }
+            }
+        }
+
+        return new Font(Face.WithCoordinates(coordinates), _axes, _namedInstances);
+    }
+
+    /// <summary>Gets a named instance of a variable font.</summary>
+    /// <param name="instance">An instance of <see cref="NamedInstances"/>.</param>
+    /// <returns>The font of the instance.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="instance"/> is <see langword="null"/>.</exception>
+    public Font WithVariations(FontNamedInstance instance)
+    {
+        ArgumentNullException.ThrowIfNull(instance);
+        var settings = instance.Settings;
+        var values = new FontVariationSetting[settings.Count];
+        for (var i = 0; i < values.Length; i++)
+        {
+            values[i] = settings[i];
+        }
+
+        return WithVariations(values);
+    }
 
     /// <summary>Loads a font from a file. For a font collection, the first face is loaded.</summary>
     /// <param name="path">The path of the file. The file is closed before the method returns.</param>
@@ -170,6 +266,46 @@ public sealed class Font
     }
 
     private static async Task<Font> LoadCoreAsync(Task<FontFace[]> faces) => new((await faces.ConfigureAwait(false))[0]);
+
+    private static FontVariationAxis[] CreateAxes(FontFace face)
+    {
+        var records = face.Axes;
+        if (records.IsEmpty)
+            return [];
+
+        var axes = new FontVariationAxis[records.Length];
+        for (var i = 0; i < axes.Length; i++)
+        {
+            var tag = FontTags.Format(records[i].Tag);
+            axes[i] = new FontVariationAxis(tag, face.GetName(records[i].NameId) ?? tag, records[i].Minimum / 65536.0, records[i].Default / 65536.0, records[i].Maximum / 65536.0, records[i].IsHidden);
+        }
+
+        return axes;
+    }
+
+    private static FontNamedInstance[] CreateNamedInstances(FontFace face, FontVariationAxis[] axes)
+    {
+        var records = face.NamedInstances;
+        if (records.IsEmpty)
+            return [];
+
+        var instances = new FontNamedInstance[records.Length];
+        for (var i = 0; i < instances.Length; i++)
+        {
+            var record = records[i];
+            var settings = new FontVariationSetting[axes.Length];
+            for (var axis = 0; axis < settings.Length; axis++)
+            {
+                settings[axis] = new FontVariationSetting(axes[axis].Tag, record.Coordinates[axis] / 65536.0);
+            }
+
+            // The identifiers 0xFFFF and 0 say that the instance has no PostScript name.
+            var postScriptName = record.PostScriptNameId is 0 or 0xFFFF ? null : face.GetName(record.PostScriptNameId);
+            instances[i] = new FontNamedInstance(face.GetName(record.NameId) ?? "", postScriptName, settings);
+        }
+
+        return instances;
+    }
 
     private static FontMetrics CreateMetrics(FontFace face)
     {

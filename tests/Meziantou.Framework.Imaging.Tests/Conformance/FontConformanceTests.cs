@@ -10,6 +10,12 @@ namespace Meziantou.Framework.Imaging.Tests.Conformance;
 /// </summary>
 public sealed class FontConformanceTests
 {
+    /// <summary>
+    /// The largest difference between a coordinate of an instance and the one the reference reader writes, in font
+    /// units: its numbers have 24 bits of precision and three decimals.
+    /// </summary>
+    private const double InstanceTolerance = 0.005;
+
     public static TheoryData<string> FontsWithVectors()
     {
         var data = new TheoryData<string>();
@@ -55,8 +61,12 @@ public sealed class FontConformanceTests
         {
             var font = collection[faceIndex];
             var expected = vectors.Faces[faceIndex];
-            Assert.Equal(expected.Family, font.FamilyName);
-            Assert.Equal(expected.Subfamily, font.SubfamilyName);
+            // The reference reader gives the names of the family and of the style (the name identifiers 1 and 2); the
+            // font prefers the typographic names (16 and 17) when it has them.
+            Assert.Equal(expected.Family, font.Face.GetName(NameTable.FamilyName) ?? "");
+            Assert.Equal(expected.Subfamily, font.Face.GetName(NameTable.SubfamilyName) ?? "");
+            Assert.Equal(font.Face.GetName(NameTable.TypographicFamilyName) ?? expected.Family, font.FamilyName);
+            Assert.Equal(font.Face.GetName(NameTable.TypographicSubfamilyName) ?? expected.Subfamily, font.SubfamilyName);
             Assert.Equal(expected.PostScriptName, font.PostScriptName);
             Assert.Equal(expected.UnitsPerEm, font.UnitsPerEm);
             Assert.Equal(expected.GlyphCount, font.GlyphCount);
@@ -106,6 +116,45 @@ public sealed class FontConformanceTests
                 {
                     Assert.Fail($"{id}: the outline of the glyph {glyph} differs\n  expected: {expected.Outlines[glyph]}\n  actual:   {outline}");
                 }
+            }
+
+            // The instances of a variable font: the metrics and the advances are whole font units, which are exact; the
+            // points are fractions of font units that the reference reader computes with single precision numbers and
+            // writes to three decimals.
+            foreach (var instance in expected.Instances ?? [])
+            {
+                var varied = FontTestSupport.WithVariations(font, instance.Variations);
+                var variedMetrics = varied.Metrics;
+                AssertInstanceMetric(instance, "hasc", variedMetrics.Ascent);
+                AssertInstanceMetric(instance, "hdsc", -variedMetrics.Descent);
+                AssertInstanceMetric(instance, "hlgp", variedMetrics.LineGap);
+                AssertInstanceMetric(instance, "xhgt", variedMetrics.XHeight);
+                AssertInstanceMetric(instance, "cpht", variedMetrics.CapHeight);
+                AssertInstanceMetric(instance, "unds", variedMetrics.UnderlineThickness);
+                AssertInstanceMetric(instance, "undo", -variedMetrics.UnderlinePosition);
+                AssertInstanceMetric(instance, "strs", variedMetrics.StrikethroughThickness);
+                AssertInstanceMetric(instance, "stro", variedMetrics.StrikethroughPosition);
+                for (var glyph = 0; glyph < varied.GlyphCount; glyph++)
+                {
+                    if (varied.Face.GetAdvanceWidth(glyph) != instance.Advances[glyph])
+                    {
+                        Assert.Fail($"{id} [{instance.Variations}]: the glyph {glyph} has the advance {varied.Face.GetAdvanceWidth(glyph)}, expected {instance.Advances[glyph]}");
+                    }
+
+                    var outline = FontTestSupport.GetOutline(varied, glyph, decimals: 3);
+                    if (FontTestSupport.GetOutlineDifference(instance.Outlines[glyph], outline) is not <= InstanceTolerance)
+                    {
+                        Assert.Fail($"{id} [{instance.Variations}]: the outline of the glyph {glyph} differs\n  expected: {instance.Outlines[glyph]}\n  actual:   {outline}");
+                    }
+                }
+            }
+        }
+
+        static void AssertInstanceMetric(FontInstanceVectors expected, string tag, double actual)
+        {
+            if (expected.Metrics.TryGetValue(tag, out var value) && value != actual)
+            {
+                Assert.Fail($"[{expected.Variations}] The metric '{tag}' is {actual}, expected {value}");
             }
         }
 

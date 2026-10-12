@@ -54,6 +54,10 @@ internal static class TextShaper
     private static readonly uint Kern = ShapingFeature.ToTag("kern");
 
     private static readonly uint Rtlm = ShapingFeature.ToTag("rtlm");
+    // The required variation alternates: the glyphs a variable font replaces in a part of its variation space. Its
+    // lookups are applied before every other one, whatever their place in the lookup list.
+    private static readonly uint Rvrn = ShapingFeature.ToTag("rvrn");
+
     private static readonly uint[] LeftToRightFeatures = [ShapingFeature.ToTag("ltra"), ShapingFeature.ToTag("ltrm")];
     private static readonly uint[] RightToLeftFeatures = [ShapingFeature.ToTag("rtla"), Rtlm];
 
@@ -62,7 +66,7 @@ internal static class TextShaper
         ShapingFeature.ToTag("abvm"), ShapingFeature.ToTag("blwm"), ShapingFeature.ToTag("ccmp"), ShapingFeature.ToTag("locl"),
         ShapingFeature.ToTag("mark"), ShapingFeature.ToTag("mkmk"), ShapingFeature.ToTag("rlig"),
         ShapingFeature.ToTag("calt"), ShapingFeature.ToTag("clig"), ShapingFeature.ToTag("curs"), ShapingFeature.ToTag("dist"),
-        Kern, ShapingFeature.ToTag("liga"), ShapingFeature.ToTag("rclm"),
+        Kern, ShapingFeature.ToTag("liga"), ShapingFeature.ToTag("rclm"), Rvrn,
     ];
 
     /// <summary>Adds the characters of a text to a buffer, each with the index of its first UTF-16 code unit as cluster.</summary>
@@ -102,13 +106,14 @@ internal static class TextShaper
         Span<uint> scripts = stackalloc uint[OpenTypeScript.MaxTagCount];
         scripts = scripts[..OpenTypeScript.GetTags(script, scripts)];
 
+        ReadOnlySpan<int> coordinates = face.Instance is null ? default : face.Instance.Coordinates;
         var applier = new LayoutApplier(buffer, face);
         applier.SetGlyphClasses();
         var plan = new FeaturePlan(features);
         var hasFractions = false;
         if (face.Gsub is { } gsub)
         {
-            var lookups = CollectLookups(gsub, face.GsubData.Span, scripts, language, isRightToLeft, plan, out hasFractions, out _);
+            var lookups = CollectLookups(gsub, face.GsubData.Span, scripts, language, isRightToLeft, plan, coordinates, out hasFractions, out _);
             SetMasks(buffer, plan, hasFractions);
             applier.Begin(gsub, face.GsubData, isPositioning: false, isRightToLeft);
             foreach (var lookup in lookups)
@@ -136,7 +141,7 @@ internal static class TextShaper
         var hasPositioning = false;
         if (face.Gpos is { } gpos)
         {
-            var lookups = CollectLookups(gpos, face.GposData.Span, scripts, language, isRightToLeft, plan, out _, out hasKerningFeature);
+            var lookups = CollectLookups(gpos, face.GposData.Span, scripts, language, isRightToLeft, plan, coordinates, out _, out hasKerningFeature);
             hasPositioning = lookups.Count > 0;
             applier.Begin(gpos, face.GposData, isPositioning: true, isRightToLeft);
             foreach (var lookup in lookups)
@@ -583,6 +588,7 @@ internal static class TextShaper
         uint language,
         bool isRightToLeft,
         FeaturePlan plan,
+        ReadOnlySpan<int> coordinates,
         out bool hasFractions,
         out bool hasKerning)
     {
@@ -593,10 +599,14 @@ internal static class TextShaper
         if (system == 0)
             return lookups;
 
+        // The features an instance of a variable font replaces. The conditions are also tested for the default
+        // instance: a range can contain it.
+        var substitutions = table.FindFeatureSubstitutions(data, coordinates);
+
         var required = LayoutTable.GetRequiredFeature(data, system);
         if (required != LayoutTable.NoFeature && table.GetFeatureTag(data, required) != 0)
         {
-            AddLookups(table, data, required, GlobalMask, lookups);
+            AddLookups(table, data, required, GlobalMask, lookups, substitutions);
         }
 
         // The fraction features need each other: a numerator without a fraction bar is not a fraction.
@@ -626,34 +636,34 @@ internal static class TextShaper
                 if (mask != 0)
                 {
                     hasKerning |= tag == Kern;
-                    AddLookups(table, data, feature, mask, lookups);
+                    AddLookups(table, data, feature, mask, lookups, substitutions);
                 }
             }
             else if (tag == Frac || tag == Numr || tag == Dnom)
             {
                 if (hasFractions)
                 {
-                    AddLookups(table, data, feature, tag == Frac ? FractionMask : tag == Numr ? NumeratorMask : DenominatorMask, lookups);
+                    AddLookups(table, data, feature, tag == Frac ? FractionMask : tag == Numr ? NumeratorMask : DenominatorMask, lookups, substitutions);
                 }
             }
             else if (isRightToLeft && tag == Rtlm)
             {
-                AddLookups(table, data, feature, MirrorMask, lookups);
+                AddLookups(table, data, feature, MirrorMask, lookups, substitutions);
             }
             else if (DefaultFeatures.AsSpan().Contains(tag) || (isRightToLeft ? RightToLeftFeatures : LeftToRightFeatures).AsSpan().Contains(tag))
             {
                 hasKerning |= tag == Kern;
-                AddLookups(table, data, feature, GlobalMask, lookups);
+                AddLookups(table, data, feature, GlobalMask, lookups, substitutions);
             }
         }
 
-        // The lookups are applied in the order of the lookup list, each one once: a lookup of several features applies
-        // where any of them does.
-        lookups.Sort(static (left, right) => left.Index.CompareTo(right.Index));
+        // The lookups of a stage are applied in the order of the lookup list, each one once: a lookup of several
+        // features applies where any of them does.
+        lookups.Sort(static (left, right) => left.Stage != right.Stage ? left.Stage.CompareTo(right.Stage) : left.Index.CompareTo(right.Index));
         var unique = 0;
         for (var i = 0; i < lookups.Count; i++)
         {
-            if (unique > 0 && lookups[unique - 1].Index == lookups[i].Index)
+            if (unique > 0 && lookups[unique - 1].Stage == lookups[i].Stage && lookups[unique - 1].Index == lookups[i].Index)
             {
                 lookups[unique - 1] = lookups[unique - 1] with { Mask = lookups[unique - 1].Mask | lookups[i].Mask };
             }
@@ -667,17 +677,18 @@ internal static class TextShaper
         return lookups;
     }
 
-    private static void AddLookups(LayoutTable table, ReadOnlySpan<byte> data, int feature, uint mask, List<PlannedLookup> lookups)
+    private static void AddLookups(LayoutTable table, ReadOnlySpan<byte> data, int feature, uint mask, List<PlannedLookup> lookups, int substitutions)
     {
-        var count = table.GetFeatureLookupCount(data, feature);
+        var stage = table.GetFeatureTag(data, feature) == Rvrn ? 0 : 1;
+        var count = table.GetFeatureLookupCount(data, feature, substitutions);
         var lookupCount = table.GetLookupCount(data);
         for (var i = 0; i < count; i++)
         {
             // A feature can name a lookup the table does not have: it is ignored.
-            var lookup = table.GetFeatureLookup(data, feature, i);
+            var lookup = table.GetFeatureLookup(data, feature, i, substitutions);
             if (lookup < lookupCount)
             {
-                lookups.Add(new PlannedLookup(lookup, mask));
+                lookups.Add(new PlannedLookup(stage, lookup, mask));
             }
         }
     }
@@ -738,7 +749,7 @@ internal static class TextShaper
     }
 
     [StructLayout(LayoutKind.Auto)]
-    private readonly record struct PlannedLookup(int Index, uint Mask);
+    private readonly record struct PlannedLookup(int Stage, int Index, uint Mask);
 
     /// <summary>
     /// The features the caller sets, and where the mask of a glyph holds the value of each one. A feature that is on

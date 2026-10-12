@@ -116,6 +116,33 @@ internal sealed class FontBuilder
     /// <summary>Gets or sets a value indicating whether the trailing glyphs that share an advance only store their side bearing in <c>hmtx</c>.</summary>
     public bool CompactHorizontalMetrics { get; set; }
 
+    /// <summary>Gets the axes of a variable font. With at least one axis, the font has the tables of a variable font.</summary>
+    public List<FontAxisDefinition> Axes { get; } = [];
+
+    /// <summary>Gets the named instances of a variable font.</summary>
+    public List<FontNamedInstanceDefinition> NamedInstances { get; } = [];
+
+    /// <summary>Gets or sets a value indicating whether the peaks of the tuple variations are stored once in the <c>gvar</c> table.</summary>
+    public bool ShareVariationTuples { get; set; }
+
+    /// <summary>Gets or sets a value indicating whether the offsets of the <c>gvar</c> table are 32 bits.</summary>
+    public bool UseLongVariationOffsets { get; set; }
+
+    /// <summary>Gets or sets the deltas of the advances, for the <c>HVAR</c> table: by default, the item of a glyph is its index in the first subtable.</summary>
+    public FontVariationStore? AdvanceVariations { get; set; }
+
+    /// <summary>Gets or sets the delta set index map of the <c>HVAR</c> table, as written by <see cref="FontVariationWriter.WriteIndexMap"/>.</summary>
+    public byte[]? AdvanceVariationMap { get; set; }
+
+    /// <summary>Gets or sets the deltas of the metrics, for the <c>MVAR</c> table.</summary>
+    public FontVariationStore? MetricVariations { get; set; }
+
+    /// <summary>Gets the item of each metric the <c>MVAR</c> table varies, by its tag.</summary>
+    public SortedDictionary<string, (int Outer, int Inner)> MetricVariationItems { get; } = new(StringComparer.Ordinal);
+
+    /// <summary>Gets names that are added to the <c>name</c> table, by identifier.</summary>
+    public SortedDictionary<int, string> ExtraNames { get; } = [];
+
     /// <summary>Gets the tables written as given, which replace the generated table of the same tag.</summary>
     public SortedDictionary<string, byte[]> RawTables { get; } = new(StringComparer.Ordinal);
 
@@ -172,7 +199,7 @@ internal sealed class FontBuilder
             ["hmtx"] = WriteHmtx(bounds, horizontalMetricCount),
             ["loca"] = loca.ToArray(),
             ["maxp"] = WriteMaxp(),
-            ["name"] = WriteName(),
+            ["name"] = WriteName(ExtraNames),
             ["post"] = WritePost(),
         };
 
@@ -184,6 +211,33 @@ internal sealed class FontBuilder
         if (KerningPairs.Count > 0)
         {
             tables["kern"] = WriteKern();
+        }
+
+        if (Axes.Count > 0)
+        {
+            // The names of the axes and of the instances follow the names of the font.
+            var names = new SortedDictionary<int, string>(ExtraNames);
+            tables["fvar"] = FontVariationWriter.WriteFvar(Axes, NamedInstances, 256, names);
+            tables["name"] = WriteName(names);
+            if (Axes.Any(axis => axis.Map.Count > 0))
+            {
+                tables["avar"] = FontVariationWriter.WriteAvar(Axes);
+            }
+
+            if (Glyphs.Any(glyph => glyph.Variations.Count > 0))
+            {
+                tables["gvar"] = FontVariationWriter.WriteGvar(Glyphs, Axes.Count, ShareVariationTuples, UseLongVariationOffsets);
+            }
+
+            if (AdvanceVariations is not null)
+            {
+                tables["HVAR"] = FontVariationWriter.WriteHvar(AdvanceVariations, Axes.Count, AdvanceVariationMap);
+            }
+
+            if (MetricVariations is not null)
+            {
+                tables["MVAR"] = FontVariationWriter.WriteMvar(MetricVariations, Axes.Count, MetricVariationItems);
+            }
         }
 
         foreach (var (tag, data) in RawTables)
@@ -789,7 +843,7 @@ internal sealed class FontBuilder
         return writer.ToArray();
     }
 
-    private byte[] WriteName()
+    private byte[] WriteName(SortedDictionary<int, string> extraNames)
     {
         var names = new List<(int Id, string Value)> { (1, FamilyName), (2, SubfamilyName), (4, FamilyName + " " + SubfamilyName) };
         if (PostScriptName is not null)
@@ -806,6 +860,8 @@ internal sealed class FontBuilder
         {
             names.Add((17, TypographicSubfamilyName));
         }
+
+        names.AddRange(extraNames.Select(name => (name.Key, name.Value)));
 
         // Records are sorted by platform, encoding, language and name identifier.
         var records = new List<(int Platform, int Encoding, int Language, int Id, byte[] Data)>();

@@ -23,6 +23,13 @@ internal sealed class FontGlyph
     /// <summary>Gets or sets the bytes of the glyph, written as given: for malformed glyphs.</summary>
     public byte[]? RawData { get; set; }
 
+    /// <summary>
+    /// Gets the tuple variations of the glyph, for the <c>gvar</c> table of a variable font. The points of a glyph are
+    /// those of its contours in order, or one point per component, then four phantom points: the origin, the advance,
+    /// the top and the bottom.
+    /// </summary>
+    public List<FontTupleVariation> Variations { get; } = [];
+
     /// <summary>Creates a glyph without outline, such as a space.</summary>
     public static FontGlyph Empty(int advanceWidth) => new() { AdvanceWidth = advanceWidth };
 

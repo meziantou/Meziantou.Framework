@@ -21,6 +21,8 @@ internal sealed class CffTable
     private const int CharStringsOperator = 17;
     private const int PrivateOperator = 18;
     private const int SubrsOperator = 19;
+    private const int VariationStoreIndexOperator = 22;
+    private const int VariationStoreOperator = 24;
     private const int CharstringTypeOperator = CffDictReader.Escape + 6;
     private const int RosOperator = CffDictReader.Escape + 30;
     private const int FdArrayOperator = CffDictReader.Escape + 36;
@@ -35,22 +37,43 @@ internal sealed class CffTable
     private readonly int _fdSelect;
     private readonly int _fdSelectFormat;
 
-    private CffTable(CffIndex charStrings, CffIndex globalSubroutines, CffIndex[] localSubroutines, int fdSelect, int fdSelectFormat)
+    // CFF2: the subtable of the variation store that the charstrings of each font DICT blend with, unless they say
+    // otherwise.
+    private readonly int[]? _variationStoreIndexes;
+
+    private CffTable(CffIndex charStrings, CffIndex globalSubroutines, CffIndex[] localSubroutines, int fdSelect, int fdSelectFormat, int variationStore = 0, int[]? variationStoreIndexes = null)
     {
         _charStrings = charStrings;
         _globalSubroutines = globalSubroutines;
         _localSubroutines = localSubroutines;
         _fdSelect = fdSelect;
         _fdSelectFormat = fdSelectFormat;
+        VariationStore = variationStore;
+        _variationStoreIndexes = variationStoreIndexes;
     }
+
+    /// <summary>Gets a value indicating whether the table is a CFF2 table, whose charstrings have another set of operators.</summary>
+    public bool IsCff2 => _variationStoreIndexes is not null;
+
+    /// <summary>Gets the position of the item variation store of a CFF2 table; 0 when the table has none.</summary>
+    public int VariationStore { get; }
 
     /// <summary>Gets the number of charstrings.</summary>
     public int GlyphCount => _charStrings.Count;
 
-    public static CffTable Read(ReadOnlySpan<byte> table)
+    /// <summary>Reads a <c>CFF</c> table, or a <c>CFF2</c> table: the tag of the table says which one it is.</summary>
+    public static CffTable Read(ReadOnlySpan<byte> table, bool isCff2 = false)
     {
         // Header: major version, minor version, header size, offset size.
         var major = FontBinary.UInt8(table, 0);
+        if (isCff2)
+        {
+            if (major != 2)
+                throw FontErrors.InvalidTable(FontTags.Cff2, $"has the unknown version {major}.");
+
+            return ReadCff2(table);
+        }
+
         if (major != 1)
             throw FontErrors.InvalidTable(FontTags.Cff, $"has the unknown version {major}.");
 
@@ -140,12 +163,131 @@ internal sealed class CffTable
             localSubroutines[i] = ReadLocalSubroutines(table, privateOffset, privateLength);
         }
 
-        // The selector: section 19. Format 0 has one byte per glyph; format 3 has ranges of glyphs, closed by a sentinel.
+        return new CffTable(charStrings, globalSubroutines, localSubroutines, (int)fdSelectOffset, ReadFontDictSelectorFormat(table, fdSelectOffset, charStrings.Count));
+    }
+
+    /// <summary>
+    /// Reads a CFF2 table: OpenType specification, "CFF2 - Compact Font Format (CFF) Version 2". The header is followed
+    /// by one Top DICT and the global subroutines; there are no names nor strings, every font has an array of font
+    /// DICTs, and the counts of the INDEX structures are 32 bits.
+    /// </summary>
+    private static CffTable ReadCff2(ReadOnlySpan<byte> table)
+    {
+        var headerSize = FontBinary.UInt8(table, 2);
+        var topDictLength = FontBinary.UInt16(table, 3);
+        if (headerSize < 5)
+            throw FontErrors.InvalidTable(FontTags.Cff2, "has a header shorter than its fields.");
+
+        var globalSubroutines = CffIndex.Read(table, (long)headerSize + topDictLength, isCff2: true);
+        long charStringsOffset = -1;
+        long fdArrayOffset = -1;
+        long fdSelectOffset = -1;
+        long variationStoreOffset = -1;
+        Span<double> operands = stackalloc double[CffDictReader.MaxOperands];
+        var reader = new CffDictReader(FontBinary.Slice(table, headerSize, topDictLength), isCff2: true);
+        while (reader.TryRead(operands, out var count, out var @operator))
+        {
+            switch (@operator)
+            {
+                case CharStringsOperator when count >= 1:
+                    charStringsOffset = ToOffset(operands[0]);
+                    break;
+
+                case VariationStoreOperator when count >= 1:
+                    variationStoreOffset = ToOffset(operands[0]);
+                    break;
+
+                case FdArrayOperator when count >= 1:
+                    fdArrayOffset = ToOffset(operands[0]);
+                    break;
+
+                case FdSelectOperator when count >= 1:
+                    fdSelectOffset = ToOffset(operands[0]);
+                    break;
+            }
+        }
+
+        if (charStringsOffset < 0 || fdArrayOffset < 0)
+            throw FontErrors.InvalidTable(FontTags.Cff2, "does not say where its charstrings or its font DICTs are.");
+
+        var charStrings = CffIndex.Read(table, charStringsOffset, isCff2: true);
+        if (charStrings.Count == 0)
+            throw FontErrors.InvalidTable(FontTags.Cff2, "has no charstring.");
+
+        var fontDicts = CffIndex.Read(table, fdArrayOffset, isCff2: true);
+        if (fontDicts.Count == 0)
+            throw FontErrors.InvalidTable(FontTags.Cff2, "has an empty font DICT array.");
+
+        var localSubroutines = new CffIndex[fontDicts.Count];
+        var variationStoreIndexes = new int[fontDicts.Count];
+        for (var i = 0; i < localSubroutines.Length; i++)
+        {
+            long privateOffset = -1;
+            long privateLength = 0;
+            reader = new CffDictReader(fontDicts.Get(table, i), isCff2: true);
+            while (reader.TryRead(operands, out var count, out var @operator))
+            {
+                if (@operator == PrivateOperator && count >= 2)
+                {
+                    privateLength = ToOffset(operands[0]);
+                    privateOffset = ToOffset(operands[1]);
+                }
+            }
+
+            if (privateOffset < 0 || privateLength == 0)
+                continue;
+
+            long subroutinesOffset = -1;
+            reader = new CffDictReader(FontBinary.Slice(table, privateOffset, privateLength), isCff2: true);
+            while (reader.TryRead(operands, out var count, out var @operator))
+            {
+                switch (@operator)
+                {
+                    case SubrsOperator when count >= 1:
+                        subroutinesOffset = ToOffset(operands[0]);
+                        break;
+
+                    case VariationStoreIndexOperator when count >= 1:
+                        variationStoreIndexes[i] = (int)ToOffset(operands[0]);
+                        break;
+                }
+            }
+
+            if (subroutinesOffset >= 0)
+            {
+                localSubroutines[i] = CffIndex.Read(table, privateOffset + subroutinesOffset, isCff2: true);
+            }
+        }
+
+        // The selector is optional: without it, every glyph uses the first font DICT.
+        var fdSelectFormat = 0;
+        if (fdSelectOffset >= 0)
+        {
+            fdSelectFormat = ReadFontDictSelectorFormat(table, fdSelectOffset, charStrings.Count);
+        }
+
+        // The store follows its length, on 16 bits. A store of a format that is not known is left out: the glyphs then
+        // do not vary.
+        var variationStore = 0;
+        if (variationStoreOffset >= 0 && variationStoreOffset <= table.Length - 10 && FontBinary.UInt16(table, (int)variationStoreOffset + 2) == 1)
+        {
+            variationStore = (int)variationStoreOffset + 2;
+        }
+
+        return new CffTable(charStrings, globalSubroutines, localSubroutines, (int)fdSelectOffset, fdSelectFormat, variationStore, variationStoreIndexes);
+    }
+
+    /// <summary>
+    /// Validates the font DICT selector: section 19 of the CFF specification. Format 0 has one byte per glyph; formats
+    /// 3 and 4 have ranges of glyphs, closed by a sentinel, with 16-bit and 32-bit glyph numbers.
+    /// </summary>
+    private static int ReadFontDictSelectorFormat(ReadOnlySpan<byte> table, long fdSelectOffset, int glyphCount)
+    {
         var format = FontBinary.UInt8(table, (int)Math.Min(fdSelectOffset, int.MaxValue));
         switch (format)
         {
             case 0:
-                FontBinary.EnsureRange(table, fdSelectOffset + 1, charStrings.Count);
+                FontBinary.EnsureRange(table, fdSelectOffset + 1, glyphCount);
                 break;
 
             case 3:
@@ -153,18 +295,32 @@ internal sealed class CffTable
                 FontBinary.EnsureRange(table, fdSelectOffset + 3, ((long)rangeCount * 3) + 2);
                 break;
 
+            case 4:
+                var longRangeCount = FontBinary.UInt32(table, (int)fdSelectOffset + 1);
+                FontBinary.EnsureRange(table, fdSelectOffset + 5, ((long)longRangeCount * 6) + 4);
+                break;
+
             default:
                 throw FontErrors.InvalidTable(FontTags.Cff, $"has a font DICT selector of the unknown format {format}.");
         }
 
-        return new CffTable(charStrings, globalSubroutines, localSubroutines, (int)fdSelectOffset, format);
+        return format;
     }
 
     /// <summary>Decodes the outline of a glyph into a sink.</summary>
     /// <exception cref="InvalidImageContentException">The charstring of the glyph is malformed.</exception>
     /// <exception cref="UnsupportedImageFeatureException">The charstring uses a feature that is not supported.</exception>
     /// <exception cref="ImageResourceLimitException">The glyph exceeds the complexity limit.</exception>
-    public void Decode(ReadOnlySpan<byte> table, int glyphId, OutlineSink sink, ref GlyphBudget budget)
+    /// <summary>Decodes the outline of a glyph into a sink.</summary>
+    /// <param name="table">The table.</param>
+    /// <param name="glyphId">The glyph.</param>
+    /// <param name="sink">The sink.</param>
+    /// <param name="budget">The complexity budget of the glyph.</param>
+    /// <param name="scalars">
+    /// The scalars of the regions of the variation store of a CFF2 table for an instance of a variable font; empty for
+    /// the default instance.
+    /// </param>
+    public void Decode(ReadOnlySpan<byte> table, int glyphId, OutlineSink sink, ref GlyphBudget budget, ReadOnlySpan<double> scalars = default)
     {
         if ((uint)glyphId >= (uint)_charStrings.Count)
             return;
@@ -173,7 +329,9 @@ internal sealed class CffTable
         if ((uint)fontDict >= (uint)_localSubroutines.Length)
             throw FontErrors.InvalidTable(FontTags.Cff, "selects a font DICT that does not exist for a glyph.");
 
-        var interpreter = new CffCharstringInterpreter(table, _globalSubroutines, _localSubroutines[fontDict], sink, ref budget);
+        var interpreter = _variationStoreIndexes is null
+            ? new CffCharstringInterpreter(table, _globalSubroutines, _localSubroutines[fontDict], sink, ref budget)
+            : new CffCharstringInterpreter(table, _globalSubroutines, _localSubroutines[fontDict], sink, ref budget, VariationStore, _variationStoreIndexes[fontDict], scalars);
         interpreter.Run(_charStrings.Get(table, glyphId));
     }
 
@@ -184,6 +342,9 @@ internal sealed class CffTable
 
         if (_fdSelectFormat == 0)
             return table[_fdSelect + 1 + glyphId];
+
+        if (_fdSelectFormat == 4)
+            return GetFontDictOfLongRanges(table, glyphId);
 
         // Format 3: the ranges are sorted by first glyph; the range of a glyph is the last one that starts at or before it.
         var ranges = table[(_fdSelect + 3)..];
@@ -208,6 +369,30 @@ internal sealed class CffTable
     }
 
     /// <summary>Reads the private DICT of a font and gives its local subroutines, which the DICT places relative to itself.</summary>
+    /// <summary>Format 4 of the selector: the ranges of format 3 with 32-bit glyph numbers and 16-bit font DICT numbers.</summary>
+    private int GetFontDictOfLongRanges(ReadOnlySpan<byte> table, int glyphId)
+    {
+        var ranges = table[(_fdSelect + 5)..];
+        long low = 0;
+        var high = (long)FontBinary.UInt32(table, _fdSelect + 1) - 1;
+        var result = -1;
+        while (low <= high)
+        {
+            var middle = (int)((low + high) >>> 1);
+            if (FontBinary.UInt32(ranges, middle * 6) <= (uint)glyphId)
+            {
+                result = FontBinary.UInt16(ranges, (middle * 6) + 4);
+                low = middle + 1;
+            }
+            else
+            {
+                high = middle - 1;
+            }
+        }
+
+        return result;
+    }
+
     private static CffIndex ReadLocalSubroutines(ReadOnlySpan<byte> table, long privateOffset, long privateLength)
     {
         if (privateOffset < 0 || privateLength == 0)

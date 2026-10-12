@@ -624,6 +624,31 @@ internal static class Examples
     }
     // end-snippet
 
+    /// <summary>Variable fonts: draw a word at five weights of one font file.</summary>
+    // begin-snippet: variable-font
+    public static void DrawWeights(string variableFontPath, string outputPath)
+    {
+        var font = Font.Load(variableFontPath);
+
+        // The axes say what can vary, and in what range
+        var weight = font.VariationAxes.First(axis => axis.Tag == "wght");
+
+        using var image = new Image<Rgba32>(220, 200, new Rgba32(255, 255, 255));
+        image.Draw(canvas =>
+        {
+            for (var i = 0; i < 5; i++)
+            {
+                // An instance is a font: it shares the data of the font it comes from
+                var value = weight.Minimum + ((weight.Maximum - weight.Minimum) * i / 4);
+                var instance = font.WithVariations(new FontVariationSetting("wght", value));
+                canvas.FillText(new Rgba32(0, 0, 0), "Variable", instance, size: 32, new PointD(10, i * 38));
+            }
+        });
+
+        image.Save(outputPath);
+    }
+    // end-snippet
+
     /// <summary>Text: measure a text with a layout, then fill and outline it on an image of its size.</summary>
     // begin-snippet: draw-text
     public static void DrawLabel(string fontPath, string outputPath)

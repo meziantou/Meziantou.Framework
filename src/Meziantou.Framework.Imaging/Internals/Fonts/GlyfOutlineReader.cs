@@ -12,6 +12,16 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// points of a component are transformed in place once the component is read, so a nested composite is transformed
 /// once per level. The contours are then emitted. Hinting instructions are skipped: outlines are not grid-fitted.
 /// </para>
+/// <para>
+/// A glyph also has phantom points, which are not drawn: its origin, at the left side bearing of the horizontal metrics
+/// before the left of its bounding box, and its advance after the origin. The outline is placed so that the origin is
+/// at zero, as a TrueType rasterizer does: a glyph whose left side bearing is not the left of its bounding box is
+/// moved. A composite glyph can take the phantom points of one of its components.
+/// </para>
+/// <para>
+/// In an instance of a variable font, the points of each glyph (those of a simple glyph, the offsets of the components
+/// of a composite glyph, and the phantom points) are first moved by the deltas of the <c>gvar</c> table.
+/// </para>
 /// </remarks>
 internal static class GlyfOutlineReader
 {
@@ -31,6 +41,7 @@ internal static class GlyfOutlineReader
     private const int ArgumentsAreXYValues = 0x0002;
     private const int HasScale = 0x0008;
     private const int MoreComponents = 0x0020;
+    private const int UseMyMetrics = 0x0200;
     private const int HasXAndYScale = 0x0040;
     private const int HasTwoByTwo = 0x0080;
     private const int ScaledComponentOffset = 0x0800;
@@ -39,18 +50,89 @@ internal static class GlyfOutlineReader
     /// <summary>Decodes a glyph into a sink.</summary>
     /// <exception cref="InvalidImageContentException">The data of the glyph is malformed.</exception>
     /// <exception cref="ImageResourceLimitException">The glyph exceeds the complexity limit or the allocation limit.</exception>
-    public static void Decode(ReadOnlySpan<byte> loca, ReadOnlySpan<byte> glyf, bool longOffsets, int glyphCount, int glyphId, OutlineSink sink, GlyphScratch scratch, ref GlyphBudget budget)
+    public static void Decode(in GlyfContext context, int glyphId, OutlineSink sink, GlyphScratch scratch, ref GlyphBudget budget)
     {
         scratch.Reset();
-        Collect(loca, glyf, longOffsets, glyphCount, glyphId, scratch, ref budget, depth: 0);
-        Emit(scratch.Points, sink);
+        Collect(context, glyphId, scratch, ref budget, depth: 0, out var origin, out _);
+        var points = scratch.Points;
+        if (origin != 0)
+        {
+            for (var i = 0; i < points.Length; i++)
+            {
+                points[i].X -= origin;
+            }
+        }
+
+        Emit(points, sink);
     }
 
-    private static ReadOnlySpan<byte> GetGlyphData(ReadOnlySpan<byte> loca, ReadOnlySpan<byte> glyf, bool longOffsets, int glyphId)
+    /// <summary>
+    /// Gets the advance of a glyph of an instance of a variable font from its phantom points: the way a font without
+    /// <c>HVAR</c> table varies its advances.
+    /// </summary>
+    public static double GetAdvance(in GlyfContext context, int glyphId, ref GlyphBudget budget, int depth = 0)
     {
+        GetMetrics(context, glyphId, out var advance, out _);
+        var data = GetGlyphData(context, glyphId);
+        var pointCount = 0;
+        if (data.Length >= 10)
+        {
+            var contourCount = FontBinary.Int16(data, 0);
+            if (contourCount > 0)
+            {
+                pointCount = FontBinary.UInt16(data, 10 + ((contourCount - 1) * 2)) + 1;
+            }
+            else if (contourCount < 0)
+            {
+                if (depth >= MaxCompositeDepth)
+                    throw FontErrors.InvalidTable(FontTags.Glyf, "has composite glyphs nested too deeply, or that refer to each other.");
+
+                // The component whose metrics the glyph uses, if any: the last one that says so.
+                var metricsComponent = -1;
+                var position = 10;
+                while (true)
+                {
+                    budget.Charge(1);
+                    var flags = FontBinary.UInt16(data, position);
+                    if ((flags & UseMyMetrics) != 0)
+                    {
+                        metricsComponent = FontBinary.UInt16(data, position + 2);
+                    }
+
+                    position += GetComponentLength(flags);
+                    pointCount++;
+                    if ((flags & MoreComponents) == 0)
+                        break;
+                }
+
+                if (metricsComponent >= 0)
+                {
+                    if (metricsComponent >= context.GlyphCount)
+                        throw FontErrors.InvalidTable(FontTags.Glyf, $"has a composite glyph that refers to the glyph {metricsComponent}, which the font does not have.");
+
+                    return GetAdvance(context, metricsComponent, ref budget, depth + 1);
+                }
+            }
+        }
+
+        if (context.Variations is null)
+            return advance;
+
+        // Only the deltas of the origin and of the advance are needed: the two first phantom points.
+        Span<double> sumX = stackalloc double[4];
+        Span<double> sumY = stackalloc double[4];
+        sumX.Clear();
+        sumY.Clear();
+        context.Variations.AddDeltas(context.Gvar, glyphId, context.Coordinates, pointCount + 4, pointCount, sumX, sumY, contours: default, work: default, ref budget);
+        return advance + sumX[1] - sumX[0];
+    }
+
+    private static ReadOnlySpan<byte> GetGlyphData(in GlyfContext context, int glyphId)
+    {
+        var loca = context.Loca;
         long start;
         long end;
-        if (longOffsets)
+        if (context.HasLongLocations)
         {
             start = FontBinary.UInt32(loca, glyphId * 4);
             end = FontBinary.UInt32(loca, (glyphId * 4) + 4);
@@ -62,30 +144,139 @@ internal static class GlyfOutlineReader
             end = FontBinary.UInt16(loca, (glyphId * 2) + 2) * 2L;
         }
 
-        if (end < start || end > glyf.Length)
+        if (end < start || end > context.Glyf.Length)
             throw FontErrors.InvalidTable(FontTags.Loca, $"gives the glyph {glyphId} a location outside the 'glyf' table.");
 
-        return glyf.Slice((int)start, (int)(end - start));
+        return context.Glyf.Slice((int)start, (int)(end - start));
     }
 
-    /// <summary>Appends the points of a glyph to the scratch, in the coordinate space of the glyph.</summary>
-    private static void Collect(ReadOnlySpan<byte> loca, ReadOnlySpan<byte> glyf, bool longOffsets, int glyphCount, int glyphId, GlyphScratch scratch, ref GlyphBudget budget, int depth)
+    /// <summary>Reads the horizontal metrics of a glyph: the glyphs after the last metric have its advance, and their own bearing.</summary>
+    private static void GetMetrics(in GlyfContext context, int glyphId, out int advance, out int leftSideBearing)
     {
-        var data = GetGlyphData(loca, glyf, longOffsets, glyphId);
-        if (data.IsEmpty)
+        var hmtx = context.Hmtx;
+        if (glyphId < context.MetricCount)
+        {
+            advance = FontBinary.UInt16(hmtx, glyphId * 4);
+            leftSideBearing = FontBinary.Int16(hmtx, (glyphId * 4) + 2);
             return;
+        }
 
-        // The header: the number of contours, then a bounding box that the outline does not need.
+        advance = FontBinary.UInt16(hmtx, (context.MetricCount - 1) * 4);
+        var bearing = (context.MetricCount * 4) + ((glyphId - context.MetricCount) * 2);
+
+        // A table that stops before the bearing of the glyph gives it none.
+        leftSideBearing = bearing <= hmtx.Length - 2 ? FontBinary.Int16(hmtx, bearing) : 0;
+    }
+
+    /// <summary>Gets the length of the record of a component of a composite glyph.</summary>
+    private static int GetComponentLength(int flags)
+    {
+        var length = 4 + ((flags & ArgumentsAreWords) != 0 ? 4 : 2);
+        if ((flags & HasScale) != 0)
+        {
+            length += 2;
+        }
+        else if ((flags & HasXAndYScale) != 0)
+        {
+            length += 4;
+        }
+        else if ((flags & HasTwoByTwo) != 0)
+        {
+            length += 8;
+        }
+
+        return length;
+    }
+
+    /// <summary>
+    /// Appends the points of a glyph to the scratch, in the coordinate space of the glyph, and gives its origin and its
+    /// advance point.
+    /// </summary>
+    private static void Collect(in GlyfContext context, int glyphId, GlyphScratch scratch, ref GlyphBudget budget, int depth, out double origin, out double advancePoint)
+    {
+        var data = GetGlyphData(context, glyphId);
+        GetMetrics(context, glyphId, out var advance, out var leftSideBearing);
+        var variations = context.Variations;
+        if (data.IsEmpty)
+        {
+            // A glyph without outline still has phantom points, which can vary.
+            origin = -leftSideBearing;
+            advancePoint = origin + advance;
+            if (variations is not null)
+            {
+                Span<double> sumX = stackalloc double[4];
+                Span<double> sumY = stackalloc double[4];
+                sumX.Clear();
+                sumY.Clear();
+                variations.AddDeltas(context.Gvar, glyphId, context.Coordinates, 4, 0, sumX, sumY, contours: default, work: default, ref budget);
+                origin += sumX[0];
+                advancePoint += sumX[1];
+            }
+
+            return;
+        }
+
+        // The header: the number of contours, then the bounding box, whose left side places the origin.
         var contourCount = FontBinary.Int16(data, 0);
+        origin = FontBinary.Int16(data, 2) - leftSideBearing;
+        advancePoint = origin + advance;
         if (contourCount >= 0)
         {
+            var first = scratch.Count;
             CollectSimple(data, contourCount, scratch, ref budget);
+            if (variations is not null)
+            {
+                // The sums of the deltas of the points and of the phantom points, then what a tuple variation needs
+                // to infer the deltas of the points it does not give.
+                var count = scratch.Count - first;
+                var total = count + 4;
+                var workStart = scratch.RentWork((2L * total) + (3L * count));
+                var work = scratch.Work[workStart..];
+                var sumX = work[..total];
+                var sumY = work.Slice(total, total);
+                var points = scratch.Points[first..];
+                variations.AddDeltas(context.Gvar, glyphId, context.Coordinates, total, 0, sumX, sumY, points, work[(2 * total)..], ref budget);
+                for (var i = 0; i < points.Length; i++)
+                {
+                    points[i].X += sumX[i];
+                    points[i].Y += sumY[i];
+                }
+
+                origin += sumX[count];
+                advancePoint += sumX[count + 1];
+                scratch.ReturnWork(workStart);
+            }
+
             return;
         }
 
         if (depth >= MaxCompositeDepth)
             throw FontErrors.InvalidTable(FontTags.Glyf, "has composite glyphs nested too deeply, or that refer to each other.");
 
+        // In an instance, the offset of each component and the phantom points have deltas: one point per component.
+        var deltas = -1;
+        var componentCount = 0;
+        if (variations is not null)
+        {
+            for (var record = 10; ;)
+            {
+                budget.Charge(1);
+                var flags = FontBinary.UInt16(data, record);
+                record += GetComponentLength(flags);
+                componentCount++;
+                if ((flags & MoreComponents) == 0)
+                    break;
+            }
+
+            var total = componentCount + 4;
+            deltas = scratch.RentWork(2L * total);
+            var work = scratch.Work[deltas..];
+            variations.AddDeltas(context.Gvar, glyphId, context.Coordinates, total, 0, work[..total], work.Slice(total, total), contours: default, work: default, ref budget);
+            origin += work[componentCount];
+            advancePoint += work[componentCount + 1];
+        }
+
+        var componentNumber = 0;
         var glyphStart = scratch.Count;
         var position = 10;
         while (true)
@@ -94,7 +285,7 @@ internal static class GlyfOutlineReader
             var flags = FontBinary.UInt16(data, position);
             var component = FontBinary.UInt16(data, position + 2);
             position += 4;
-            if (component >= glyphCount)
+            if (component >= context.GlyphCount)
                 throw FontErrors.InvalidTable(FontTags.Glyf, $"has a composite glyph that refers to the glyph {component}, which the font does not have.");
 
             int argument1;
@@ -156,7 +347,13 @@ internal static class GlyfOutlineReader
             }
 
             var componentStart = scratch.Count;
-            Collect(loca, glyf, longOffsets, glyphCount, component, scratch, ref budget, depth + 1);
+            Collect(context, component, scratch, ref budget, depth + 1, out var componentOrigin, out var componentAdvancePoint);
+            if ((flags & UseMyMetrics) != 0)
+            {
+                origin = componentOrigin;
+                advancePoint = componentAdvancePoint;
+            }
+
             var points = scratch.Points;
             var isTransformed = a != 1 || b != 0 || c != 0 || d != 1;
             if (isTransformed)
@@ -176,13 +373,21 @@ internal static class GlyfOutlineReader
             {
                 offsetX = argument1;
                 offsetY = argument2;
+                if (deltas >= 0)
+                {
+                    var work = scratch.Work[deltas..];
+                    offsetX += work[componentNumber];
+                    offsetY += work[componentCount + 4 + componentNumber];
+                }
 
                 // The offset is in the space of the composite glyph, unless the font asks for the transformation of
                 // the component to apply to it too.
                 if (isTransformed && (flags & ScaledComponentOffset) != 0 && (flags & UnscaledComponentOffset) == 0)
                 {
-                    offsetX = (a * argument1) + (c * argument2);
-                    offsetY = (b * argument1) + (d * argument2);
+                    var x = offsetX;
+                    var y = offsetY;
+                    offsetX = (a * x) + (c * y);
+                    offsetY = (b * x) + (d * y);
                 }
             }
             else
@@ -206,8 +411,14 @@ internal static class GlyfOutlineReader
                 }
             }
 
+            componentNumber++;
             if ((flags & MoreComponents) == 0)
                 break;
+        }
+
+        if (deltas >= 0)
+        {
+            scratch.ReturnWork(deltas);
         }
     }
 
@@ -345,7 +556,7 @@ internal static class GlyfOutlineReader
         var hasControl = false;
         double controlX = 0;
         double controlY = 0;
-                for (var i = from; i < to; i++)
+        for (var i = from; i < to; i++)
         {
             var point = contour[i];
             if ((point.Flags & GlyphPoint.OnCurve) != 0)

@@ -14,6 +14,9 @@ internal sealed class GlyphScratch : IDisposable
     private readonly AllocationScope _scope;
     private PooledBuffer? _buffer;
     private int _capacity;
+    private PooledBuffer? _work;
+    private int _workCapacity;
+    private int _workCount;
 
     public GlyphScratch(AllocationScope scope)
     {
@@ -27,7 +30,11 @@ internal sealed class GlyphScratch : IDisposable
     public Span<GlyphPoint> Points => _buffer is null ? default : unsafe(MemoryMarshal.Cast<byte, GlyphPoint>(_buffer.Span))[..Count];
 
     /// <summary>Removes every point and keeps the storage.</summary>
-    public void Reset() => Count = 0;
+    public void Reset()
+    {
+        Count = 0;
+        _workCount = 0;
+    }
 
     /// <summary>Adds points, whose content is unspecified, and returns the index of the first one.</summary>
     /// <exception cref="ImageResourceLimitException">The points exceed the allocation limit.</exception>
@@ -44,12 +51,50 @@ internal sealed class GlyphScratch : IDisposable
         return start;
     }
 
+    /// <summary>Gets the working numbers that are rented.</summary>
+    public Span<double> Work => _work is null ? default : unsafe(MemoryMarshal.Cast<byte, double>(_work.Span))[.._workCount];
+
+    /// <summary>
+    /// Rents working numbers, set to zero, after the ones already rented. The storage can move: a span of
+    /// <see cref="Work"/> must not be kept across another rental.
+    /// </summary>
+    /// <returns>The index of the first number in <see cref="Work"/>.</returns>
+    public int RentWork(long count)
+    {
+        var start = _workCount;
+        var required = start + count;
+        if (required > _workCapacity)
+        {
+            var capacity = Math.Max(required, _workCapacity == 0 ? InitialCapacity : (long)_workCapacity * 2);
+            var buffer = ResampleWeights.Rent<double>(_scope, capacity);
+            if (_work is not null)
+            {
+                _work.Span.CopyTo(buffer.Span);
+                _work.Dispose();
+            }
+
+            _work = buffer;
+            _workCapacity = (int)Math.Min(capacity, int.MaxValue);
+        }
+
+        _workCount = (int)required;
+        Work[start..].Clear();
+        return start;
+    }
+
+    /// <summary>Returns the working numbers rented last.</summary>
+    public void ReturnWork(int start) => _workCount = start;
+
     public void Dispose()
     {
         _buffer?.Dispose();
         _buffer = null;
         _capacity = 0;
         Count = 0;
+        _work?.Dispose();
+        _work = null;
+        _workCapacity = 0;
+        _workCount = 0;
     }
 
     private void Grow(long required)

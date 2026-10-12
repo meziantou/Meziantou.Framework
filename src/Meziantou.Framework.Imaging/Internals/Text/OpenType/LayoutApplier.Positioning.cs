@@ -5,17 +5,48 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <content>The positioning lookups: OpenType specification, "GPOS - Glyph Positioning Table", lookup types 1 to 6.</content>
 internal sealed partial class LayoutApplier
 {
-    // The fields of a value record, in the order of their bits. The four device tables adjust a value at a pixel size
-    // (hinting), which this library does not do: they are skipped.
+    // The fields of a value record, in the order of their bits: four values, then four offsets to device tables. A
+    // device table adjusts a value at a pixel size (hinting), which this library does not do, or - in a variable font -
+    // names the deltas of the value in the item variation store of the GDEF table.
     private const int XPlacement = 0x0001;
     private const int YPlacement = 0x0002;
     private const int XAdvance = 0x0004;
+    private const int XPlacementDevice = 0x0010;
+    private const int YPlacementDevice = 0x0020;
+    private const int XAdvanceDevice = 0x0040;
+    private const int VariationIndexFormat = 0x8000;
 
     private static int GetValueRecordLength(int format) => BitOperations.PopCount((uint)(format & 0xFF)) * 2;
 
     /// <summary>Adds a value record to the position of a glyph.</summary>
-    private static void ApplyValue(ReadOnlySpan<byte> data, int record, int format, ref GlyphPosition position)
+    /// <param name="data">The table.</param>
+    /// <param name="parent">The table the offsets of the record are from: the subtable, or the pair set of the first format of pairs.</param>
+    /// <param name="record">The position of the record.</param>
+    /// <param name="format">The fields of the record.</param>
+    /// <param name="position">The position of the glyph.</param>
+    private void ApplyValue(ReadOnlySpan<byte> data, int parent, int record, int format, ref GlyphPosition position)
     {
+        if (_hasVariations && (format & (XPlacementDevice | YPlacementDevice | XAdvanceDevice)) != 0)
+        {
+            var device = record + (BitOperations.PopCount((uint)(format & 0x0F)) * 2);
+            if ((format & XPlacementDevice) != 0)
+            {
+                position.XOffset += GetVariationDelta(data, parent, FontBinary.UInt16(data, device));
+                device += 2;
+            }
+
+            if ((format & YPlacementDevice) != 0)
+            {
+                position.YOffset += GetVariationDelta(data, parent, FontBinary.UInt16(data, device));
+                device += 2;
+            }
+
+            if ((format & XAdvanceDevice) != 0)
+            {
+                position.XAdvance += GetVariationDelta(data, parent, FontBinary.UInt16(data, device));
+            }
+        }
+
         if ((format & XPlacement) != 0)
         {
             position.XOffset += FontBinary.Int16(data, record);
@@ -35,6 +66,21 @@ internal sealed partial class LayoutApplier
         }
     }
 
+    /// <summary>
+    /// Gets the delta of a value for the instance of a variable font, rounded to a font unit: the device table of the
+    /// value is then a variation index, the subtable and the item of its deltas in the store of the GDEF table.
+    /// </summary>
+    private int GetVariationDelta(ReadOnlySpan<byte> data, int parent, int offset)
+    {
+        if (offset == 0)
+            return 0;
+
+        var device = parent + offset;
+        return FontBinary.UInt16(data, device + 4) == VariationIndexFormat
+            ? _face.GetLayoutDelta(FontBinary.UInt16(data, device), FontBinary.UInt16(data, device + 2))
+            : 0;
+    }
+
     /// <summary>Type 1: a glyph is moved or its advance is changed.</summary>
     private bool ApplySinglePositioning(int subtable, ref int index)
     {
@@ -48,7 +94,7 @@ internal sealed partial class LayoutApplier
         {
             // The same value for every glyph.
             case 1:
-                ApplyValue(data, subtable + 6, format, ref _buffer.Positions[index]);
+                ApplyValue(data, subtable, subtable + 6, format, ref _buffer.Positions[index]);
                 break;
 
             // One value per covered glyph.
@@ -56,7 +102,7 @@ internal sealed partial class LayoutApplier
                 if (coverage >= FontBinary.UInt16(data, subtable + 6))
                     return false;
 
-                ApplyValue(data, subtable + 8 + (coverage * GetValueRecordLength(format)), format, ref _buffer.Positions[index]);
+                ApplyValue(data, subtable, subtable + 8 + (coverage * GetValueRecordLength(format)), format, ref _buffer.Positions[index]);
                 break;
 
             default:
@@ -85,6 +131,7 @@ internal sealed partial class LayoutApplier
         var length1 = GetValueRecordLength(format1);
         var length2 = GetValueRecordLength(format2);
         int record;
+        var parent = subtable;
         switch (FontBinary.UInt16(data, subtable))
         {
             // The pairs of each first glyph, sorted by second glyph.
@@ -94,6 +141,7 @@ internal sealed partial class LayoutApplier
                         return false;
 
                     var set = subtable + FontBinary.UInt16(data, subtable + 10 + (coverage * 2));
+                    parent = set;
                     var recordLength = 2 + length1 + length2;
                     var low = 0;
                     var high = FontBinary.UInt16(data, set) - 1;
@@ -142,8 +190,8 @@ internal sealed partial class LayoutApplier
                 return false;
         }
 
-        ApplyValue(data, record, format1, ref _buffer.Positions[index]);
-        ApplyValue(data, record + length1, format2, ref _buffer.Positions[second]);
+        ApplyValue(data, parent, record, format1, ref _buffer.Positions[index]);
+        ApplyValue(data, parent, record + length1, format2, ref _buffer.Positions[second]);
 
         // The second glyph is the first one of the next pair, unless the lookup moved it.
         index = format2 != 0 ? second + 1 : second;
@@ -387,12 +435,18 @@ internal sealed partial class LayoutApplier
 
     /// <summary>
     /// Reads an anchor: a point of a glyph, in font units. The three formats start with the coordinates; the contour
-    /// point of the format 2 and the device tables of the format 3 refine them for a hinted glyph, which there is not.
+    /// point of the format 2 refines them for a hinted glyph, which there is not, and the device tables of the format 3
+    /// give the deltas of the coordinates in a variable font.
     /// </summary>
-    private static void ReadAnchor(ReadOnlySpan<byte> data, int anchor, out int x, out int y)
+    private void ReadAnchor(ReadOnlySpan<byte> data, int anchor, out int x, out int y)
     {
         x = FontBinary.Int16(data, anchor + 2);
         y = FontBinary.Int16(data, anchor + 4);
+        if (_hasVariations && FontBinary.UInt16(data, anchor) == 3)
+        {
+            x += GetVariationDelta(data, anchor, FontBinary.UInt16(data, anchor + 6));
+            y += GetVariationDelta(data, anchor, FontBinary.UInt16(data, anchor + 8));
+        }
     }
 
     /// <summary>

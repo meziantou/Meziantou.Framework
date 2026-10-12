@@ -11,12 +11,17 @@ internal ref struct CffDictReader
     /// <summary>The value added to the second byte of a two-byte operator, which follows the escape byte 12.</summary>
     public const int Escape = 0x0C00;
 
+    /// <summary>The operator of a CFF2 DICT that replaces operands and their deltas by the values of the default instance.</summary>
+    private const int BlendOperator = 23;
+
     private readonly ReadOnlySpan<byte> _data;
+    private readonly bool _isCff2;
     private int _position;
 
-    public CffDictReader(ReadOnlySpan<byte> data)
+    public CffDictReader(ReadOnlySpan<byte> data, bool isCff2 = false)
     {
         _data = data;
+        _isCff2 = isCff2;
         _position = 0;
     }
 
@@ -31,16 +36,28 @@ internal ref struct CffDictReader
         while (_position < _data.Length)
         {
             var b0 = _data[_position++];
-            if (b0 <= 21)
+            if (b0 <= 21 || (_isCff2 && b0 <= 24))
             {
+                if (_isCff2 && b0 == BlendOperator)
+                {
+                    // The blended values are hints, which are not read: the operands of the entry start again.
+                    count = 0;
+                    continue;
+                }
+
                 @operator = b0 == 12 ? Escape + FontBinary.UInt8(_data, _position++) : b0;
                 return true;
             }
 
-            if (count == MaxOperands)
+            var operand = ReadOperand(b0);
+            if (count < operands.Length)
+            {
+                operands[count++] = operand;
+            }
+            else if (!_isCff2)
+            {
                 throw FontErrors.InvalidTable(FontTags.Cff, "has a DICT entry with too many operands.");
-
-            operands[count++] = ReadOperand(b0);
+            }
         }
 
         if (count != 0)

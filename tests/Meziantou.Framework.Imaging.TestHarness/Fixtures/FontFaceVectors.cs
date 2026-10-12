@@ -49,4 +49,8 @@ public sealed class FontFaceVectors
     /// </summary>
     [JsonPropertyName("outlines")]
     public required IReadOnlyList<string> Outlines { get; init; }
+
+    /// <summary>Gets what the reference readers give for instances of a variable font; <see langword="null"/> when none is recorded.</summary>
+    [JsonPropertyName("instances")]
+    public IReadOnlyList<FontInstanceVectors>? Instances { get; init; }
 }

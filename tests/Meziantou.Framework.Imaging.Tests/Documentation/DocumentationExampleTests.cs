@@ -591,6 +591,35 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void DrawWeightsDrawsHeavierAndHeavierText()
+    {
+        var fontPath = FixtureRoot.GetDirectory() / "fonts" / "noto-sans-variable" / "NotoSans-Variable.subset.ttf";
+        var output = GetPath("weights.png");
+        Examples.DrawWeights(fontPath, output);
+
+        // Five lines of the same word, 38 pixels apart, from the lightest weight of the font to its heaviest: each
+        // line has more ink than the one above it.
+        using var image = Image.Load<Rgba32>(output);
+        Assert.Equal((220, 200), (image.Width, image.Height));
+        var ink = new long[5];
+        image.Frames[0].ProcessPixelRows(pixels =>
+        {
+            for (var y = 0; y < 190; y++)
+            {
+                foreach (var pixel in pixels.GetRowSpan(y))
+                {
+                    ink[y / 38] += 255 - pixel.R;
+                }
+            }
+        });
+        Assert.True(ink[0] > 50_000, $"The first line has an ink of {ink[0]}");
+        for (var i = 1; i < ink.Length; i++)
+        {
+            Assert.True(ink[i] > ink[i - 1] * 1.1, $"The line {i} has an ink of {ink[i]} and the line above it {ink[i - 1]}");
+        }
+    }
+
+    [Fact]
     public void DrawLabelDrawsTheTextOnAnImageOfItsSize()
     {
         var fontPath = FixtureRoot.GetDirectory() / "fonts" / "noto-sans" / "NotoSans-Regular.subset.ttf";

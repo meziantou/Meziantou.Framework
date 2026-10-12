@@ -5,7 +5,7 @@ namespace Meziantou.Framework.Imaging.CorpusGenerator.Common;
 /// expected values of a test can be computed by hand: 1024 units per em, so that a size of 16 pixels maps 64 units to
 /// one pixel, and coordinates that are multiples of 64.
 /// </summary>
-internal static class FontSamples
+internal static partial class FontSamples
 {
     public const int NotdefGlyph = 0;
     public const int SpaceGlyph = 1;

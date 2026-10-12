@@ -12,12 +12,19 @@ internal sealed class GdefTable
     private readonly int _markAttachmentClasses;
     private readonly int _markGlyphSets;
 
-    private GdefTable(int glyphClasses, int markAttachmentClasses, int markGlyphSets)
+    private GdefTable(int glyphClasses, int markAttachmentClasses, int markGlyphSets, int variationStore)
     {
         _glyphClasses = glyphClasses;
         _markAttachmentClasses = markAttachmentClasses;
         _markGlyphSets = markGlyphSets;
+        VariationStore = variationStore;
     }
+
+    /// <summary>
+    /// Gets the position of the item variation store of the table, which holds the deltas of the positions of the GPOS
+    /// table in a variable font; 0 when the table has none.
+    /// </summary>
+    public int VariationStore { get; }
 
     /// <summary>Gets a value indicating whether the table gives the classes of the glyphs.</summary>
     public bool HasGlyphClasses => _glyphClasses != 0;
@@ -33,7 +40,15 @@ internal sealed class GdefTable
         var glyphClasses = Validate(table, FontBinary.UInt16(table, 4));
         var markAttachmentClasses = Validate(table, FontBinary.UInt16(table, 10));
         var markGlyphSets = minor >= 2 && table.Length >= 14 ? Validate(table, FontBinary.UInt16(table, 12)) : 0;
-        return new GdefTable(glyphClasses, markAttachmentClasses, markGlyphSets);
+        var variationStore = 0;
+        if (minor >= 3 && table.Length >= 18)
+        {
+            // A store that is not readable is left out: the positions then do not vary.
+            var offset = FontBinary.UInt32(table, 14);
+            variationStore = offset != 0 && offset <= table.Length - 8 && FontBinary.UInt16(table, (int)offset) == 1 ? (int)offset : 0;
+        }
+
+        return new GdefTable(glyphClasses, markAttachmentClasses, markGlyphSets, variationStore);
     }
 
     /// <summary>Gets the class of a glyph as the bits of <see cref="GlyphInfo"/>, or 0 for a glyph without class.</summary>

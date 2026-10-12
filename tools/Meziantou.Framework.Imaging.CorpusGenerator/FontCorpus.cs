@@ -56,7 +56,48 @@ internal static partial class FontCorpus
         new("fonts/synthetic-charstrings", "fonts/synthetic/charstrings.otf", static () => FontSamples.Charstrings().Build(), nameof(FontSamples.Charstrings), "otf", 1),
         new("fonts/synthetic-cid", "fonts/synthetic/cid.otf", static () => FontSamples.CidKeyed().Build(), nameof(FontSamples.CidKeyed), "otf", 1),
         new("fonts/synthetic-collection", "fonts/synthetic/collection.ttc", static () => FontBuilder.WriteCollection([FontSamples.Boxes().BuildTables(), FontSamples.Curves().BuildTables()]), nameof(FontSamples.Boxes) + " and " + nameof(FontSamples.Curves), "ttc", 2),
+        new("fonts/synthetic-variable", "fonts/synthetic/variable.ttf", static () => FontSamples.Variable().Build(), nameof(FontSamples.Variable), "ttf", 1),
+        new("fonts/synthetic-variable-phantom", "fonts/synthetic/variable.phantom.ttf", static () => FontSamples.Variable(withAdvanceVariations: false).Build(), nameof(FontSamples.Variable) + " without HVAR", "ttf", 1),
+        new("fonts/synthetic-variable-charstrings", "fonts/synthetic/variable-charstrings.otf", static () => FontSamples.VariableCharstrings().Build(), nameof(FontSamples.VariableCharstrings), "otf", 1),
     ];
+
+    // The instances of the variable fonts whose advances, outlines and metrics are recorded, in the syntax of the
+    // reference tools. The default instance is always recorded.
+    private static readonly string[] SyntheticInstances = ["wght=900", "wght=100", "wght=650", "wght=775", "wdth=200", "wdth=50", "wdth=125", "wght=900,wdth=200", "wght=775,wdth=150", "wght=250,wdth=75", "wght=1000,wdth=10"];
+
+    private static readonly Dictionary<string, string[]> Instances = new(StringComparer.Ordinal)
+    {
+        ["fonts/synthetic-variable"] = SyntheticInstances,
+        ["fonts/synthetic-variable-phantom"] = SyntheticInstances,
+        ["fonts/synthetic-variable-charstrings"] = ["wght=900", "wght=100", "wght=650", "wght=250", "wght=525"],
+        ["fonts/noto-sans-variable"] = ["wght=900", "wght=100,wdth=62.5", "wght=555,wdth=77", "wght=650,wdth=81.25", "wght=250"],
+        ["fonts/noto-sans-cjk-jp-variable"] = ["wght=400", "wght=900", "wght=555", "wght=250"],
+        ["fonts/trt-avar"] = ["TEST=100", "TEST=150", "TEST=200", "TEST=250", "TEST=300", "TEST=350", "TEST=400", "TEST=450", "TEST=500", "TEST=550", "TEST=600", "TEST=650", "TEST=700", "TEST=750", "TEST=800", "TEST=850", "TEST=900"],
+        ["fonts/trt-gvar-four"] = ["wght=150", "wght=200", "wght=250", "wght=300", "wght=350", "wght=400", "wght=450", "cntr=100", "wght=600,cntr=40"],
+        ["fonts/trt-gvar-nine"] = ["TEST=-1.0", "TEST=-0.5", "TEST=0.25", "TEST=0.5", "TEST=0.75", "TEST=1.0"],
+        ["fonts/trt-gvar-composite"] = ["slnt=-15", "slnt=-11.25", "slnt=-7.5", "slnt=-3"],
+        ["fonts/trt-hvar-one"] = ["wght=200", "wght=400", "wght=600", "wght=800", "wght=1000"],
+        ["fonts/trt-hvar-two"] = ["wght=200", "wght=400", "wght=600", "wght=800", "wght=1000", "cntr=100", "wght=500,cntr=50"],
+        ["fonts/trt-rvrn"] = ["wght=400", "wght=650", "wght=900", "opsz=10", "opsz=30,wght=500"],
+        ["fonts/trt-rvrn-cff2"] = ["wght=400", "wght=650", "wght=900", "opsz=10", "opsz=30,wght=500"],
+        ["fonts/trt-cff2"] = ["wght=0", "wght=100", "wght=200", "wght=300", "wght=400", "wght=500", "wght=600", "wght=700", "wght=800", "wght=900", "xxxx=100", "wght=350,xxxx=50"],
+        ["fonts/trt-gpos-four"] = ["wght=100", "wght=600", "wght=900"],
+    };
+
+    // The fonts of the text-rendering-tests suite that are used, with the SHA-256 of each file.
+    private static readonly Dictionary<string, string> TextRenderingHashes = new(StringComparer.Ordinal)
+    {
+        ["TestAVAR.ttf"] = "5deb587e7abe1b175d740dfded516b93ebb4a6cb7ea9c65b784d3f4498d2c7cf",
+        ["TestGVARFour.ttf"] = "a749ef97d87e7bb6ab211e1e9ac262c8ab9bb0fb7e2cb7b2e9647dc78fe5676f",
+        ["TestGVARNine.ttf"] = "fa23bfa9bac087a09029802e83c424f09714a94cb547caac098da9d6285e4fbd",
+        ["TestGVAR-Composite-0.ttf"] = "5be59bda5b4326b5c62f5b04a8d70fdc2a1a39ede56abb29385ab4b0f068ca95",
+        ["TestHVAROne.otf"] = "2682f90cb31d6e5b0dd9e57b8638e297f4e542f3a30a80e620698ae12c6dfdfb",
+        ["TestHVARTwo.ttf"] = "dba292b3000989b54c6b61e2ace37addf32132a8dbd3e69215f02cdf09d90bed",
+        ["TestRVRN.ttf"] = "3afdfa8efd4a1fdf2a79b98f9a832456d1d168236fbd22da0a60b3492e144d88",
+        ["TestRVRN-CFF2.otf"] = "9734b58ae11a8a9a1a5759fe8d79f0856a29e155cfe891aa88e67d08620554b2",
+        ["AdobeVFPrototype-Subset.otf"] = "0f7e3b59c2c44ba3683bd636b4f24541ec405f9132b4d37eef1baa78ebb559db",
+        ["TestGPOSFour.ttf"] = "281f3412f17191e65fb4f29c60521e745c8d248bea091909a13d7c96c2392795",
+    };
 
     private static readonly ExternalFont[] ExternalFonts =
     [
@@ -99,7 +140,62 @@ internal static partial class FontCorpus
             // are in different font DICTs. The hints are kept: they are part of what a charstring reader must skip.
             Unicodes: "20-7E,3001,3002,300C,300D,3041-3096,30A1-30FA,30FC,4E00-4E1F,4EAC,56FD,65E5,6771,672C,8A9E,FF01-FF5E",
             KeepHinting: true),
+        new(
+            "fonts/noto-sans-variable",
+            "fonts/noto-sans-variable/NotoSans-Variable.subset.ttf",
+            "NotoSans[wdth,wght].ttf",
+            "511cc04b442ffcc3b24d65c2cc780bdffaf482b20ba0aebdc8f27b37017ff0f5",
+            "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSans/unhinted/variable-ttf/NotoSans%5Bwdth%2Cwght%5D.ttf",
+            "The Noto Project Authors (https://github.com/notofonts/latin-greek-cyrillic)",
+            "OFL-1.1",
+            ReservedFontName: null,
+
+            // A variable font with TrueType outlines and two axes, the weight and the width: Basic Latin, a few
+            // accented letters, combining marks and the fi ligature. The subset keeps every variation table.
+            Unicodes: "20-7E,C0,C1,C5,C9,D1,E0,E1,E5,E9,F1,FC,300-304,308,30A,327,2010-2014,2044,20AC,FB01,FB02"),
+        new(
+            "fonts/noto-sans-cjk-jp-variable",
+            "fonts/noto-sans-cjk-variable/NotoSansCJKjp-Variable.subset.otf",
+            "NotoSansCJKjp-VF.otf",
+            "ab2728702f90d2ae900309f299dc3c2b075010888a1a8a67fbd5b4c6aff713a0",
+            "https://github.com/notofonts/noto-cjk/blob/f8d157532fbfaeda587e826d4cd5b21a49186f7c/Sans/Variable/OTF/NotoSansCJKjp-VF.otf",
+            "Adobe (https://github.com/notofonts/noto-cjk)",
+            "OFL-1.1",
+            ReservedFontName: null,
+
+            // A variable font with CFF2 outlines and several font DICTs: Basic Latin, CJK punctuation, a few kana and
+            // ideographs. The hints are kept: they are blended too, and a charstring reader must skip them.
+            Unicodes: "20-7E,3001,3002,300C,300D,3042,3044,3046,304B,304C,306E,30A2,30AD,30B9,30C6,30C8,30FC,4E00-4E0F,4EAC,56FD,65E5,6771,672C,8A9E",
+            KeepHinting: true),
+
+        // Fonts of the text-rendering-tests suite of the Unicode Consortium, as the HarfBuzz project distributes them:
+        // each one was made for one feature of a font format. They are stored as they are. Only the fonts whose own
+        // license is one the corpus accepts are used.
+        TextRenderingFont("trt-avar", "TestAVAR.ttf", "OFL-1.1", "Unicode, Inc."),
+        TextRenderingFont("trt-gvar-four", "TestGVARFour.ttf", "OFL-1.1", "Unicode, Inc."),
+        TextRenderingFont("trt-gvar-nine", "TestGVARNine.ttf", "Apache-2.0", "Unicode, Inc. (text-rendering-tests)"),
+        TextRenderingFont("trt-gvar-composite", "TestGVAR-Composite-0.ttf", "CC0-1.0", "Jens Kutilek (a subset of the Normschrift font, dedicated to the public domain)"),
+        TextRenderingFont("trt-hvar-one", "TestHVAROne.otf", "OFL-1.1", "Unicode, Inc."),
+        TextRenderingFont("trt-hvar-two", "TestHVARTwo.ttf", "OFL-1.1", "Unicode, Inc."),
+        TextRenderingFont("trt-rvrn", "TestRVRN.ttf", "OFL-1.1", "Unicode, Inc."),
+        TextRenderingFont("trt-rvrn-cff2", "TestRVRN-CFF2.otf", "OFL-1.1", "Unicode, Inc."),
+        TextRenderingFont("trt-cff2", "AdobeVFPrototype-Subset.otf", "OFL-1.1", "Adobe Systems Incorporated"),
+        TextRenderingFont("trt-gpos-four", "TestGPOSFour.ttf", "OFL-1.1", "Unicode, Inc."),
     ];
+
+    private static ExternalFont TextRenderingFont(string id, string fileName, string license, string author)
+    {
+        return new ExternalFont(
+            "fonts/" + id,
+            "fonts/text-rendering-tests/" + fileName,
+            "text-rendering-tests/" + fileName,
+            TextRenderingHashes[fileName],
+            $"https://github.com/harfbuzz/harfbuzz/blob/{AotsCommit}/test/shape/data/text-rendering-tests/fonts/{fileName}",
+            author,
+            license,
+            ReservedFontName: null,
+            Unicodes: null);
+    }
 
     // The fonts that are also stored in the other containers.
     // The Annotated OpenType Specification tests of Adobe, as the HarfBuzz project distributes them: small fonts and, for
@@ -112,7 +208,7 @@ internal static partial class FontCorpus
     // The texts shaped with each font by the reference shaper, as (text, features). The texts are chosen for what
     // shaping does to them: kerning, ligatures, marks that compose or are attached, characters without visible form,
     // spaces and hyphens the font does not have, fractions, features turned on and off.
-    private static readonly (string Text, string? Features)[] LatinShapingCases =
+    private static readonly ShapingText[] LatinShapingCases =
     [
         ("Hello, World!", null),
         ("AVATAR To Ty. V, W; LT Yo r, f.", null),
@@ -137,7 +233,7 @@ internal static partial class FontCorpus
         ("H\u2060e\u034Fl\u061Clo", null),
     ];
 
-    private static readonly (string Text, string? Features)[] CjkShapingCases =
+    private static readonly ShapingText[] CjkShapingCases =
     [
         ("\u65E5\u672C\u8A9E\u306E\u30C6\u30AD\u30B9\u30C8\u3002", null),
         ("\u304B\u3099\u304D\u309A \u30AB\u3099\u30CF\u309A \u304C\u3071", null),
@@ -147,7 +243,7 @@ internal static partial class FontCorpus
         ("ABC abc 123 To AV", "-kern,palt"),
     ];
 
-    private static readonly (string Text, string? Features)[] BoxesShapingCases =
+    private static readonly ShapingText[] BoxesShapingCases =
     [
         ("ABA BA AAB", null),
         ("ABA BA AAB", "-kern"),
@@ -157,12 +253,71 @@ internal static partial class FontCorpus
         ("AZB", null),
     ];
 
-    private static readonly Dictionary<string, (string Text, string? Features)[]> ShapingCases = new(StringComparer.Ordinal)
+    // Texts shaped with instances of the variable fonts: the advances, the kerning and the marks of the positioning
+    // table vary, and a font can replace a glyph in a part of its variation space.
+    private static readonly ShapingText[] VariableLatinShapingCases =
+    [
+        ("AVATAR To Ty. V, W; LT Yo r, f.", null),
+        new("AVATAR To Ty. V, W; LT Yo r, f.", null, "wght=900"),
+        new("AVATAR To Ty. V, W; LT Yo r, f.", null, "wght=100,wdth=62.5"),
+        new("AVATAR To Ty. V, W; LT Yo r, f.", "-kern", "wght=555,wdth=77"),
+        new("e\u0301 a\u0308\u0304 o\u0327\u0301 A\u030A x\u0301\u0327 q\u0308", null, "wght=900"),
+        new("e\u0301 a\u0308\u0304 o\u0327\u0301 A\u030A x\u0301\u0327 q\u0308", null, "wght=250,wdth=81.25"),
+        new("office fi fl ffi 1\u20442", null, "wght=650,wdth=70"),
+        new("The quick brown fox jumps over the lazy dog. 0123456789", null, "wght=333,wdth=91"),
+    ];
+
+    private static readonly ShapingText[] VariableCjkShapingCases =
+    [
+        new("\u65E5\u672C\u8A9E\u306E\u30C6\u30AD\u30B9\u30C8\u3002 ABC To AV", null, "wght=900"),
+        new("\u65E5\u672C\u8A9E\u306E\u30C6\u30AD\u30B9\u30C8\u3002 ABC To AV", null, "wght=555"),
+        new("ABC abc 123 To AV", "-kern,palt", "wght=700"),
+    ];
+
+    private static readonly ShapingText[] VariableBoxesShapingCases =
+    [
+        ("AB CDEFGH", null),
+        new("AB CDEFGH", null, "wght=900"),
+        new("AB CDEFGH", null, "wght=100,wdth=200"),
+        new("AB CDEFGH", null, "wght=775,wdth=50"),
+        new("AB CDEFGH", null, "wght=650,wdth=150"),
+    ];
+
+    // A font that replaces glyphs in parts of its variation space (the 'rvrn' feature and the feature variations of
+    // its substitution table). The characters are presentation forms: the shaper does not have to join them.
+    private static readonly ShapingText[] RvrnShapingCases =
+    [
+        ("\uFE97\uFEEB\uFEF0 \uFE96\uFEEC\uFEEA \uFE98", null),
+        new("\uFE97\uFEEB\uFEF0 \uFE96\uFEEC\uFEEA \uFE98", null, "wght=400"),
+        new("\uFE97\uFEEB\uFEF0 \uFE96\uFEEC\uFEEA \uFE98", null, "wght=650"),
+        new("\uFE97\uFEEB\uFEF0 \uFE96\uFEEC\uFEEA \uFE98", null, "wght=900"),
+        new("\uFE97\uFEEB\uFEF0 \uFE96\uFEEC\uFEEA \uFE98", null, "opsz=10"),
+        new("\uFE97\uFEEB\uFEF0 \uFE96\uFEEC\uFEEA \uFE98", null, "opsz=30,wght=500"),
+        new("\uFE97\uFEEB\uFEF0 \uFE96\uFEEC\uFEEA \uFE98", "-rvrn", "wght=900"),
+    ];
+
+    private static readonly ShapingText[] MarkVariationShapingCases =
+    [
+        new("\u0634\u0652", null, "wght=100"),
+        new("\u0634\u0652", null, "wght=300"),
+        new("\u0634\u0652", null, "wght=600"),
+        new("\u0634\u0652", null, "wght=700"),
+        new("\u0634\u0652", null, "wght=900"),
+    ];
+
+    private static readonly Dictionary<string, ShapingText[]> ShapingCases = new(StringComparer.Ordinal)
     {
+        ["fonts/noto-sans-variable"] = VariableLatinShapingCases,
+        ["fonts/noto-sans-cjk-jp-variable"] = VariableCjkShapingCases,
+        ["fonts/synthetic-variable"] = VariableBoxesShapingCases,
+        ["fonts/synthetic-variable-phantom"] = VariableBoxesShapingCases,
         ["fonts/noto-sans-regular"] = LatinShapingCases,
         ["fonts/noto-sans-regular-cff"] = LatinShapingCases,
         ["fonts/noto-sans-cjk-jp-regular"] = CjkShapingCases,
         ["fonts/synthetic-boxes"] = BoxesShapingCases,
+        ["fonts/trt-rvrn"] = RvrnShapingCases,
+        ["fonts/trt-rvrn-cff2"] = RvrnShapingCases,
+        ["fonts/trt-gpos-four"] = MarkVariationShapingCases,
     };
 
     // The WOFF2 files are written by the reference encoder, except the variants: it does not transform the horizontal
@@ -418,7 +573,7 @@ internal static partial class FontCorpus
             var faces = new List<object?>();
             for (var face = 0; face < faceCount; face++)
             {
-                faces.Add(RecordFace(work, tools, data, face));
+                faces.Add(RecordFace(work, tools, data, face, Instances.GetValueOrDefault(id) ?? []));
             }
 
             var vectors = new Obj
@@ -448,7 +603,7 @@ internal static partial class FontCorpus
     }
 
     /// <summary>Records what the two font readers say of a face.</summary>
-    private static Obj RecordFace(FullPath work, Tools tools, byte[] data, int face)
+    private static Obj RecordFace(FullPath work, Tools tools, byte[] data, int face, string[] instances)
     {
         var file = work / "record.font";
         File.WriteAllBytes(file, data);
@@ -456,17 +611,7 @@ internal static partial class FontCorpus
 
         var info = ParseKeyValues(Proc.RunText([tools.HbInfo, .. faceArguments, file]));
         var glyphCount = int.Parse(info["Glyph count"], CultureInfo.InvariantCulture);
-
-        var metrics = new Obj();
-        foreach (var line in Proc.RunText([tools.HbInfo, .. faceArguments, "--list-metrics", file]).Split('\n'))
-        {
-            // "hasc: horizontal-ascender<tabs>832<tab>": a value marked with * is a fallback the font does not declare.
-            var match = MetricRegex().Match(line);
-            if (match.Success && MetricTags.Contains(match.Groups["tag"].Value, StringComparer.Ordinal) && !match.Groups["fallback"].Success)
-            {
-                metrics[match.Groups["tag"].Value] = int.Parse(match.Groups["value"].Value, CultureInfo.InvariantCulture);
-            }
-        }
+        var metrics = RecordMetrics(tools, file, faceArguments);
 
         // The character map without shaping: code point to glyph name, then glyph name to glyph identifier.
         var glyphIds = new Dictionary<string, int>(StringComparer.Ordinal);
@@ -497,25 +642,8 @@ internal static partial class FontCorpus
             throw new FatalException("hb-info does not list as many characters as it counts.");
 
         // The advances of every glyph, without shaping, from the two font readers.
-        var advances = new List<int>();
+        var advances = RecordAdvances(tools, file, faceArguments, glyphCount);
         var outlines = new List<string>();
-        for (var start = 0; start < glyphCount; start += 256)
-        {
-            var glyphs = "[" + string.Join('|', Enumerable.Range(start, Math.Min(256, glyphCount - start)).Select(id => id.ToString(CultureInfo.InvariantCulture))) + "]";
-            var withOt = Proc.RunText([tools.HbShape, .. faceArguments, "--font-funcs=ot", "--glyphs", "--output-format=json", "--no-glyph-names", file, glyphs]);
-            var withFt = Proc.RunText([tools.HbShape, .. faceArguments, "--font-funcs=ft", "--glyphs", "--output-format=json", "--no-glyph-names", file, glyphs]);
-            if (withOt != withFt)
-                throw new FatalException("The two font readers disagree on the advances of the glyphs.");
-
-            foreach (Match match in AdvanceRegex().Matches(withOt))
-            {
-                advances.Add(int.Parse(match.Groups["advance"].Value, CultureInfo.InvariantCulture));
-            }
-        }
-
-        if (advances.Count != glyphCount)
-            throw new FatalException($"hb-shape gives {advances.Count} advances for {glyphCount} glyphs.");
-
         for (var glyph = 0; glyph < glyphCount; glyph++)
         {
             var text = glyph.ToString(CultureInfo.InvariantCulture);
@@ -543,22 +671,120 @@ internal static partial class FontCorpus
         result["characterMap"] = characterMap;
         result["advances"] = advances.Cast<object?>().ToList();
         result["outlines"] = outlines.Cast<object?>().ToList();
+
+        // The instances of a variable font. The advances are whole font units, on which the two readers must agree.
+        // The points of an instance are fractions of font units: HarfBuzz keeps them, with the precision of single
+        // precision numbers; FreeType rounds the deltas of the offsets of the components, works in 1/64 of a unit for
+        // TrueType outlines, and gives whole units for the blended charstrings of a CFF2 table, whose errors add up
+        // along a contour. The outlines of HarfBuzz are recorded, to three decimals, once FreeType has drawn the same
+        // segments within two units.
+        if (instances.Length > 0)
+        {
+            var records = new List<object?>();
+            foreach (var instance in instances)
+            {
+                string[] arguments = [.. faceArguments, "--variations=" + instance];
+                var instanceOutlines = new List<object?>();
+                for (var glyph = 0; glyph < glyphCount; glyph++)
+                {
+                    var text = glyph.ToString(CultureInfo.InvariantCulture);
+                    var withOt = GetOutline(Proc.RunText([tools.HbVector, .. arguments, "--font-funcs=ot", "--precision=3", "--glyphs", file, text]));
+                    var withFt = GetOutline(Proc.RunText([tools.HbVector, .. arguments, "--font-funcs=ft", "--precision=3", "--glyphs", file, text]));
+                    if (!AreClose(withOt, withFt, tolerance: 2.0))
+                        throw new FatalException($"The two font readers disagree on the outline of the glyph {glyph} of the instance {instance}:\n  ot: {withOt}\n  ft: {withFt}");
+
+                    instanceOutlines.Add(withOt);
+                }
+
+                records.Add(new Obj
+                {
+                    ["variations"] = instance,
+                    ["metrics"] = RecordMetrics(tools, file, arguments),
+                    ["advances"] = RecordAdvances(tools, file, arguments, glyphCount).Cast<object?>().ToList(),
+                    ["outlines"] = instanceOutlines,
+                });
+            }
+
+            result["instances"] = records;
+        }
+
         return result;
     }
 
+    private static Obj RecordMetrics(Tools tools, FullPath file, string[] arguments)
+    {
+        var metrics = new Obj();
+        foreach (var line in Proc.RunText([tools.HbInfo, .. arguments, "--list-metrics", file]).Split('\n'))
+        {
+            // "hasc: horizontal-ascender<tabs>832<tab>": a value marked with * is a fallback the font does not declare.
+            var match = MetricRegex().Match(line);
+            if (match.Success && MetricTags.Contains(match.Groups["tag"].Value, StringComparer.Ordinal) && !match.Groups["fallback"].Success)
+            {
+                metrics[match.Groups["tag"].Value] = int.Parse(match.Groups["value"].Value, CultureInfo.InvariantCulture);
+            }
+        }
+
+        return metrics;
+    }
+
+    private static List<int> RecordAdvances(Tools tools, FullPath file, string[] arguments, int glyphCount)
+    {
+        var advances = new List<int>();
+        for (var start = 0; start < glyphCount; start += 256)
+        {
+            var glyphs = "[" + string.Join('|', Enumerable.Range(start, Math.Min(256, glyphCount - start)).Select(id => id.ToString(CultureInfo.InvariantCulture))) + "]";
+            var withOt = Proc.RunText([tools.HbShape, .. arguments, "--font-funcs=ot", "--glyphs", "--output-format=json", "--no-glyph-names", file, glyphs]);
+            var withFt = Proc.RunText([tools.HbShape, .. arguments, "--font-funcs=ft", "--glyphs", "--output-format=json", "--no-glyph-names", file, glyphs]);
+            if (withOt != withFt)
+                throw new FatalException($"The two font readers disagree on the advances of the glyphs ({string.Join(' ', arguments)}):\n  ot: {withOt}\n  ft: {withFt}");
+
+            foreach (Match match in AdvanceRegex().Matches(withOt))
+            {
+                advances.Add(int.Parse(match.Groups["advance"].Value, CultureInfo.InvariantCulture));
+            }
+        }
+
+        if (advances.Count != glyphCount)
+            throw new FatalException($"hb-shape gives {advances.Count} advances for {glyphCount} glyphs.");
+
+        return advances;
+    }
+
+    /// <summary>Tells whether two outlines are the same commands with numbers that differ by at most a tolerance.</summary>
+    private static bool AreClose(string left, string right, double tolerance)
+    {
+        var leftNumbers = NumberRegex().Matches(left);
+        var rightNumbers = NumberRegex().Matches(right);
+        if (leftNumbers.Count != rightNumbers.Count || NumberRegex().Replace(left, "#") != NumberRegex().Replace(right, "#"))
+            return false;
+
+        for (var i = 0; i < leftNumbers.Count; i++)
+        {
+            if (Math.Abs(double.Parse(leftNumbers[i].Value, CultureInfo.InvariantCulture) - double.Parse(rightNumbers[i].Value, CultureInfo.InvariantCulture)) > tolerance)
+                return false;
+        }
+
+        return true;
+    }
+
     /// <summary>Shapes texts with the OpenType shaper of HarfBuzz and its own font functions, and records the glyphs.</summary>
-    private static Obj RecordShaping(FullPath work, Tools tools, byte[] font, (string Text, string? Features)[] cases)
+    private static Obj RecordShaping(FullPath work, Tools tools, byte[] font, ShapingText[] cases)
     {
         var fontFile = work / "shaping.font";
         File.WriteAllBytes(fontFile, font);
         var results = new List<object?>();
-        foreach (var (text, features) in cases)
+        foreach (var (text, features, variations) in cases)
         {
             var codePoints = text.EnumerateRunes().Select(rune => rune.Value.ToString("X4", CultureInfo.InvariantCulture)).ToList();
             List<string> arguments = ["--shapers=ot", "--font-funcs=ot", "--output-format=json", "--no-glyph-names"];
             if (features is not null)
             {
                 arguments.Add("--features=" + features);
+            }
+
+            if (variations is not null)
+            {
+                arguments.Add("--variations=" + variations);
             }
 
             arguments.Add("--unicodes=" + string.Join(',', codePoints.Select(codePoint => "U+" + codePoint)));
@@ -576,6 +802,11 @@ internal static partial class FontCorpus
             if (features is not null)
             {
                 result["features"] = features;
+            }
+
+            if (variations is not null)
+            {
+                result["variations"] = variations;
             }
 
             result["glyphs"] = glyphs;
@@ -737,8 +968,17 @@ internal static partial class FontCorpus
     [GeneratedRegex("<path d=\"(?<data>[^\"]*)\"", RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 10_000)]
     private static partial Regex PathRegex();
 
+    [GeneratedRegex(@"-?[0-9]+(\.[0-9]+)?", RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 10_000)]
+    private static partial Regex NumberRegex();
+
     [GeneratedRegex(@"\(HarfBuzz\) (?<version>\S+)", RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 10_000)]
     private static partial Regex HarfBuzzVersionRegex();
+
+    /// <summary>A text to shape, with the features and the instance of a variable font it is shaped with.</summary>
+    private sealed record ShapingText(string Text, string? Features, string? Variations = null)
+    {
+        public static implicit operator ShapingText((string Text, string? Features) value) => new(value.Text, value.Features);
+    }
 
     private sealed record Container(string Original, string Flavor, string? Variant = null, Func<byte[]>? Build = null, string? Description = null);
 

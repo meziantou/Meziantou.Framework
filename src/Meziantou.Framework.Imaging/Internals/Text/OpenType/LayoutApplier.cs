@@ -38,6 +38,7 @@ internal sealed partial class LayoutApplier
     private readonly FontFace _face;
     private readonly GdefTable? _gdef;
     private readonly ReadOnlyMemory<byte> _gdefData;
+    private readonly bool _hasVariations;
     private LayoutTable? _table;
     private ReadOnlyMemory<byte> _data;
     private bool _isPositioning;
@@ -55,6 +56,7 @@ internal sealed partial class LayoutApplier
         _face = face;
         _gdef = face.Gdef;
         _gdefData = face.GdefData;
+        _hasVariations = face.Instance is not null && face.Gdef is { VariationStore: not 0 };
     }
 
     /// <summary>Starts applying the lookups of a table.</summary>

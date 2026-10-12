@@ -29,6 +29,27 @@ internal static class FontTags
     public const uint Gpos = ((uint)'G' << 24) | ((uint)'P' << 16) | ((uint)'O' << 8) | 'S';
     public const uint Cff = ((uint)'C' << 24) | ((uint)'F' << 16) | ((uint)'F' << 8) | ' ';
     public const uint Cff2 = ((uint)'C' << 24) | ((uint)'F' << 16) | ((uint)'F' << 8) | '2';
+    public const uint Fvar = ((uint)'f' << 24) | ((uint)'v' << 16) | ((uint)'a' << 8) | 'r';
+    public const uint Avar = ((uint)'a' << 24) | ((uint)'v' << 16) | ((uint)'a' << 8) | 'r';
+    public const uint Gvar = ((uint)'g' << 24) | ((uint)'v' << 16) | ((uint)'a' << 8) | 'r';
+    public const uint Hvar = ((uint)'H' << 24) | ((uint)'V' << 16) | ((uint)'A' << 8) | 'R';
+    public const uint Mvar = ((uint)'M' << 24) | ((uint)'V' << 16) | ((uint)'A' << 8) | 'R';
+
+    // Axes of a variable font
+    public const uint WeightAxis = ((uint)'w' << 24) | ((uint)'g' << 16) | ((uint)'h' << 8) | 't';
+
+    // Metrics the MVAR table varies: OpenType specification, "MVAR", "Value tags"
+    public const uint MetricAscender = ((uint)'h' << 24) | ((uint)'a' << 16) | ((uint)'s' << 8) | 'c';
+    public const uint MetricDescender = ((uint)'h' << 24) | ((uint)'d' << 16) | ((uint)'s' << 8) | 'c';
+    public const uint MetricLineGap = ((uint)'h' << 24) | ((uint)'l' << 16) | ((uint)'g' << 8) | 'p';
+    public const uint MetricWinAscent = ((uint)'h' << 24) | ((uint)'c' << 16) | ((uint)'l' << 8) | 'a';
+    public const uint MetricWinDescent = ((uint)'h' << 24) | ((uint)'c' << 16) | ((uint)'l' << 8) | 'd';
+    public const uint MetricXHeight = ((uint)'x' << 24) | ((uint)'h' << 16) | ((uint)'g' << 8) | 't';
+    public const uint MetricCapHeight = ((uint)'c' << 24) | ((uint)'p' << 16) | ((uint)'h' << 8) | 't';
+    public const uint MetricStrikeoutSize = ((uint)'s' << 24) | ((uint)'t' << 16) | ((uint)'r' << 8) | 's';
+    public const uint MetricStrikeoutOffset = ((uint)'s' << 24) | ((uint)'t' << 16) | ((uint)'r' << 8) | 'o';
+    public const uint MetricUnderlineSize = ((uint)'u' << 24) | ((uint)'n' << 16) | ((uint)'d' << 8) | 's';
+    public const uint MetricUnderlineOffset = ((uint)'u' << 24) | ((uint)'n' << 16) | ((uint)'d' << 8) | 'o';
 
     /// <summary>Formats a tag for a message: its four characters when they are printable, its hexadecimal value otherwise.</summary>
     public static string Format(uint tag)

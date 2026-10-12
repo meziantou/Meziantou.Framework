@@ -95,6 +95,72 @@ public sealed class AvifContainerConformanceTests
         Assert.True(worst <= unit, string.Create(CultureInfo.InvariantCulture, $"{id} with matrix coefficients {matrix}, {(fullRange ? "full" : "limited")} range: a sample is {worst} away from the exact conversion (one unit is {unit})."));
     }
 
+    public static TheoryData<string, int, int, bool> DerivedMatrixCases
+    {
+        get
+        {
+            var data = new TheoryData<string, int, int, bool>();
+            foreach (var source in MatrixSources)
+            {
+                foreach (var fullRange in new[] { true, false })
+                {
+                    // SMPTE ST 2085, whatever the primaries
+                    data.Add(source, 9, 11, fullRange);
+
+                    // Chromaticity-derived non-constant luminance, for every color primaries that have chromaticities
+                    foreach (var primaries in new[] { 1, 4, 5, 6, 7, 8, 9, 10, 11, 12, 22 })
+                    {
+                        data.Add(source, primaries, 12, fullRange);
+                    }
+                }
+            }
+
+            return data;
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(DerivedMatrixCases))]
+    public void ColorBoxConvertsWithTheSmpte2085AndTheChromaticityDerivedMatrices(string id, int primaries, int matrix, bool fullRange)
+    {
+        var builder = AvifFileBuilder.From(GoldenCorpus.Default.Get(id).ReadInput());
+        ReplaceProperty(builder, builder.GetItem(1), "colr", AvifFileBuilder.ColorNclx(primaries, 13, matrix, fullRange));
+        var data = builder.Build();
+
+        using var image = Image.Load(data);
+        Assert.Equal(new CicpColorDescription((byte)primaries, 13, (byte)matrix, fullRange), image.Metadata.Cicp);
+        Assert.Equal(image.Metadata.Cicp, Image.Identify(data).Metadata.Cicp);
+        var actual = ImageSnapshots.Capture(image).Frames[0].Pixels;
+        var maximum = actual.Layout.MaxSampleValue;
+        var expected = ConvertPrimaryItem(data, matrix, fullRange, maximum, primaries);
+        var unit = actual.Layout.ScaleFrom8Bit;
+        var worst = 0;
+        for (var i = 0; i < actual.Width * actual.Height; i++)
+        {
+            for (var channel = 0; channel < 3; channel++)
+            {
+                worst = Math.Max(worst, Math.Abs(expected[(3 * i) + channel] - actual.GetSample(i % actual.Width, i / actual.Width, channel)));
+            }
+        }
+
+        Assert.True(worst <= unit, string.Create(CultureInfo.InvariantCulture, $"{id} with primaries {primaries} and matrix coefficients {matrix}, {(fullRange ? "full" : "limited")} range: a sample is {worst} away from the exact conversion (one unit is {unit})."));
+    }
+
+    [Theory]
+    [InlineData(2)] // unspecified
+    [InlineData(3)] // reserved
+    [InlineData(13)]
+    [InlineData(255)]
+    public void TheChromaticityDerivedMatrixNeedsPrimariesThatHaveChromaticities(int primaries)
+    {
+        var builder = AvifFileBuilder.From(GoldenCorpus.Default.Get(MatrixSources[0]).ReadInput());
+        ReplaceProperty(builder, builder.GetItem(1), "colr", AvifFileBuilder.ColorNclx(primaries, 13, 12, fullRange: true));
+        var data = builder.Build();
+        var exception = Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(data));
+        Assert.Equal(ImageFormat.Avif, exception.Format);
+        Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(data).Dispose());
+    }
+
     [Fact]
     public void RangeOfTheColorBoxAppliesToUnmatrixedSamples()
     {
@@ -687,7 +753,7 @@ public sealed class AvifContainerConformanceTests
     /// Decodes the primary item with the AV1 decoder of the library and converts its planes with the exact-rational
     /// converter of the harness. The items of these tests have no alpha plane, grid, clean aperture or film grain.
     /// </summary>
-    private static int[] ConvertPrimaryItem(byte[] data, int matrix, bool fullRange, int outputMaximum)
+    private static int[] ConvertPrimaryItem(byte[] data, int matrix, bool fullRange, int outputMaximum, int primaries = 2)
     {
         var file = ReferenceAvif.Parse(data);
         var payload = file.ReadItemData(file.PrimaryItem!);
@@ -712,7 +778,7 @@ public sealed class AvifContainerConformanceTests
 
             var sequence = frame.Sequence;
             var luma = frame.GetPlane(0);
-            return ReferenceYuvConverter.ConvertToRgb(planes[0], planes[1], planes[2], luma.Width, luma.Height, sequence.BitDepth, sequence.SubsamplingX, sequence.SubsamplingY, sequence.ChromaSamplePosition, matrix, fullRange, outputMaximum);
+            return ReferenceYuvConverter.ConvertToRgb(planes[0], planes[1], planes[2], luma.Width, luma.Height, sequence.BitDepth, sequence.SubsamplingX, sequence.SubsamplingY, sequence.ChromaSamplePosition, matrix, fullRange, outputMaximum, primaries);
         }
         finally
         {

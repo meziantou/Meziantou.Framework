@@ -78,8 +78,10 @@ internal static partial class AvifCorpus
         ["avif/lossy-420-bt709-odd-12bit"] = (0, 0.0),
         ["avif/lossy-420-chroma-colocated"] = (0, 0.0),
         ["avif/lossy-420-chroma-vertical"] = (0, 0.0),
+        ["avif/lossy-420-chromaticity-p3-limited-10bit"] = (0, 0.0),
         ["avif/lossy-420-fcc-limited-10bit"] = (0, 0.0),
         ["avif/lossy-420-pasp-clli"] = (0, 0.0),
+        ["avif/lossy-420-smpte2085"] = (0, 0.0),
         ["avif/lossy-420-smpte240m-full-odd"] = (0, 0.0),
         ["avif/lossy-420-unspecified"] = (0, 0.0),
         ["avif/lossy-420-ycgco-full-12bit"] = (0, 0.0),
@@ -96,6 +98,7 @@ internal static partial class AvifCorpus
         ["avif/lossy-422-ycgco-full-10bit"] = (0, 0.0),
         ["avif/lossy-444-bt2020-full"] = (0, 0.0),
         ["avif/lossy-444-bt601-full"] = (0, 0.0),
+        ["avif/lossy-444-chromaticity-bt2020"] = (0, 0.0),
         ["avif/lossy-444-unspecified-limited"] = (0, 0.0),
         ["avif/nclx-overrides-bitstream"] = (0, 0.0),
         ["avif/no-colr-bitstream-bt709"] = (0, 0.0),
@@ -490,7 +493,7 @@ internal static partial class AvifCorpus
     }
 
     /// <summary>Converts the planes of a color image and of its alpha plane to a frame, then keeps a rectangle of it.</summary>
-    private static Img ToFrame(PlaneImage color, PlaneImage? alpha, int matrix, bool fullRange, (int X, int Y, int Width, int Height) crop, bool isPremultiplied = false)
+    private static Img ToFrame(PlaneImage color, PlaneImage? alpha, int matrix, bool fullRange, (int X, int Y, int Width, int Height) crop, bool isPremultiplied = false, int primaries = 2)
     {
         var deep = color.Color.BitDepth > 8 || alpha?.Color.BitDepth > 8;
         var maximum = deep ? 65535 : 255;
@@ -507,7 +510,7 @@ internal static partial class AvifCorpus
         else
         {
             rgb = ReferenceYuvConverter.ConvertToRgb(color.Planes[0], color.Planes[1], color.Planes[2], width, height, color.Color.BitDepth, color.Color.SubsamplingX, color.Color.SubsamplingY,
-                color.ChromaSamplePosition, matrix, fullRange, maximum);
+                color.ChromaSamplePosition, matrix, fullRange, maximum, primaries);
         }
 
         if (alpha is not null)
@@ -703,7 +706,7 @@ internal static partial class AvifCorpus
             MasteringDisplay = primary.MasteringDisplay,
             PixelAspectRatio = primary.PixelAspectRatio,
             HasMiafTransformOrder = primary.HasMiafTransformOrder,
-            Frames = [ToFrame(color, alpha, matrix, fullRange, crop, file.IsPremultiplied)],
+            Frames = [ToFrame(color, alpha, matrix, fullRange, crop, file.IsPremultiplied, cicp?.ColorPrimaries ?? 2)],
             PixelFormat = PixelFormatOf(color, alpha),
             ColorModel = ColorModelOf(color, alpha is not null, matrix),
             BitsPerComponent = color.Color.BitDepth,
@@ -857,7 +860,7 @@ internal static partial class AvifCorpus
             Py.Assert(transformedAlpha.Orientation == 1 || transformedAlpha.Orientation == track.Orientation, "the alpha track has the matrix of the color track or none");
         }
 
-        var frames = payload.Frames.Select((frame, i) => ToFrame(frame, alphaPayload?.Frames[i], matrix, fullRange, crop, file.IsPremultiplied)).ToList();
+        var frames = payload.Frames.Select((frame, i) => ToFrame(frame, alphaPayload?.Frames[i], matrix, fullRange, crop, file.IsPremultiplied, cicp?.ColorPrimaries ?? 2)).ToList();
         AddPresentationFeatures(features, track.ContentLightLevel, track.MasteringDisplay, track.PixelAspectRatio);
         return new AvifReference
         {
@@ -1309,7 +1312,7 @@ internal static partial class AvifCorpus
         {
             var message = Encoding.UTF8.GetString(result.Stderr).Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).LastOrDefault() ?? "error";
             check["result"] = "differs";
-            check["notes"] = "avifdec rejects the file: " + message.Replace(path.Value, "{input}", StringComparison.Ordinal);
+            check["notes"] = "avifdec rejects the file: " + message.Replace(path.Value, "{input}", StringComparison.Ordinal).Replace(output.Value, "{output}.png", StringComparison.Ordinal);
             return check;
         }
 

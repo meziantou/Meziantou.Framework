@@ -364,9 +364,12 @@ public sealed class AvifDecoderConformanceTests
     [MemberData(nameof(ExactFixtures))]
     public void UnmatrixedSamplesAreExact(string id)
     {
-        // Identity-matrix, monochrome and alpha samples are scaled without matrix: no tolerance, low bits included
+        // Identity-matrix, monochrome and alpha samples are scaled without matrix: no tolerance, low bits included. So are
+        // the samples of a matrix that no independent decoder converts (SMPTE ST 2085: libavif has no conversion for it):
+        // a tolerance needs a measured disagreement, so the exact conversion of the harness is the reference to the bit
         var fixture = GoldenCorpus.Default.Get(id);
-        Assert.False(IsMatrixed(fixture), $"{id}: a matrixed fixture is compared within one unit unless every independent decoder agrees exactly.");
+        var isConvertedByAnotherDecoder = fixture.Entry.Reference?.CrossChecks?.Any(check => check.MaxAbsoluteError is not null) ?? false;
+        Assert.False(IsMatrixed(fixture) && isConvertedByAnotherDecoder, $"{id}: a matrixed fixture is compared within one unit unless every independent decoder agrees exactly.");
         using var image = Image.Load(fixture.ReadInput());
         var snapshot = ImageSnapshots.Capture(image);
         Assert.Equal(fixture.Expected.FrameCount, snapshot.Frames.Count);
@@ -410,9 +413,17 @@ public sealed class AvifDecoderConformanceTests
         Assert.True(units <= 1, string.Create(CultureInfo.InvariantCulture, $"'{id}' differs from the exact conversion by {max} at {location}: more than one unit."));
 
         var policy = fixture.Policy;
-        Assert.False(policy.IsExact, $"'{id}' is matrixed: its policy is a tolerance of one unit (every independent cross-check agrees exactly with the reference?).");
         var checks = fixture.Entry.Reference?.CrossChecks?.Where(check => check.ExcludedFromTolerance != true && check.MaxAbsoluteError is not null).ToList() ?? [];
-        Assert.NotEmpty(checks);
+        if (checks.Count is 0)
+        {
+            // No independent decoder converts these matrix coefficients (SMPTE ST 2085): nothing measures a disagreement
+            // that would justify a tolerance, so the library equals the exact conversion to the bit
+            Assert.True(policy.IsExact, $"'{id}' has no measured cross-check: its policy is exact.");
+            Assert.True(max is 0, string.Create(CultureInfo.InvariantCulture, $"'{id}' differs from the exact conversion by {max} at {location}, and no independent decoder justifies a tolerance."));
+            return;
+        }
+
+        Assert.False(policy.IsExact, $"'{id}' is matrixed: its policy is a tolerance of one unit (every independent cross-check agrees exactly with the reference?).");
         var (justifiedMax, justifiedMean) = ComparisonPolicy.GetMaximumJustifiedTolerance(checks.Max(check => check.MaxAbsoluteError!.Value), checks.Max(check => check.MeanAbsoluteError!.Value));
         var expectedMax = Math.Min(justifiedMax, 1);
         var expectedMean = Math.Min(justifiedMean, Math.Ceiling(Math.Round((mean + 0.01) * 100, 6, MidpointRounding.AwayFromZero)) / 100);

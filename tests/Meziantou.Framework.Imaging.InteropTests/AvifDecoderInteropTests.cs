@@ -948,32 +948,73 @@ public sealed class AvifDecoderInteropTests
     }
 
     /// <summary>
-    /// The matrix coefficients the library documents as unsupported (BT.2020 constant luminance, SMPTE 2085,
-    /// chromaticity-derived, ICtCp): avifenc labels the planes of a Y4M source with them without converting anything, avifdec
+    /// The matrix coefficients the library documents as unsupported (BT.2020 constant luminance, chromaticity-derived
+    /// constant luminance, ICtCp): avifenc labels the planes of a Y4M source with them without converting anything, avifdec
     /// reads the file, and the library rejects it instead of converting with another matrix.
     /// </summary>
     [Theory]
     [InlineData(10)]
-    [InlineData(11)]
-    [InlineData(12)]
     [InlineData(13)]
     [InlineData(14)]
     public async Task UnsupportedMatrixCoefficientsAreRejected(int matrix)
     {
         var avif = await RequiredTools.LibAvifAsync();
-        var ffmpeg = await RequiredTools.FFmpegAsync();
-        var name = string.Create(CultureInfo.InvariantCulture, $"unsupported-matrix-{matrix}");
-        var sourcePath = ArtifactPath(name + ".y4m");
-        var source = await ffmpeg.RunAsync(["-y", "-filter_threads", "1", "-f", "lavfi", "-i", "testsrc2=size=64x64", "-frames:v", "1", "-pix_fmt", "yuv420p", "-f", "yuv4mpegpipe", sourcePath], XunitCancellationToken);
-        Assert.Equal(0, source.ExitCode, message: source.StandardError);
-        var path = ArtifactPath(name + ".avif");
-        await avif.EncodeAsync(["--qcolor", "60", "--cicp", string.Create(CultureInfo.InvariantCulture, $"9/16/{matrix}"), sourcePath], path, XunitCancellationToken);
-
+        var path = await EncodeLabeledPlanesAsync(avif, matrix);
         var info = await avif.GetInfoAsync(path, XunitCancellationToken);
         Assert.Equal((64, 64, matrix), (info.Width, info.Height, info.MatrixCoefficients));
 
         var exception = Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(path).Dispose());
         Assert.Equal(ImageFormat.Avif, exception.Format);
+    }
+
+    /// <summary>
+    /// The chromaticity-derived matrix coefficients (12): the weights of the matrix are the luminance of the BT.2020
+    /// primaries that the file declares. avifdec derives them from the primaries too, and converts the same planes
+    /// within the bound of subsampled 8-bit content (<see cref="ColorBound.Subsampled8"/>).
+    /// </summary>
+    [Fact]
+    public async Task TheChromaticityDerivedMatrixConvertsAsAvifDec()
+    {
+        var avif = await RequiredTools.LibAvifAsync();
+        var path = await EncodeLabeledPlanesAsync(avif, 12);
+        var info = await avif.GetInfoAsync(path, XunitCancellationToken);
+        Assert.Equal((9, 16, 12), (info.ColorPrimaries, info.TransferCharacteristics, info.MatrixCoefficients));
+        var reference = await avif.DecodeAsync(path, XunitCancellationToken);
+        using var image = Image.Load(path);
+        Assert.Equal(new CicpColorDescription(9, 16, 12, fullRange: info.FullRange), image.Metadata.Cicp);
+        var measured = AssertPixels(reference.Pixels, ToRgba16(ImageSnapshots.CaptureFrame(image.Frames[0])), ColorBound.Subsampled8, $"chromaticity-derived matrix: library vs avifdec {avif.Version}");
+        TestContext.Current.TestOutputHelper?.WriteLine(string.Create(CultureInfo.InvariantCulture, $"chromaticity-derived matrix: max color difference {measured.Max} ({measured.Max / 257.0:F3}/255)"));
+    }
+
+    /// <summary>
+    /// The SMPTE ST 2085 matrix coefficients (11): avifenc labels the planes and avifdec reads the file, but libavif has no
+    /// conversion for them, so the pixels of the library are compared with the exact conversion of the harness (within
+    /// one unit), on the planes that the reference decoders agree on in the conformance tests.
+    /// </summary>
+    [Fact]
+    public async Task TheSmpte2085MatrixIsReadFromAFileOfAvifEnc()
+    {
+        var avif = await RequiredTools.LibAvifAsync();
+        var path = await EncodeLabeledPlanesAsync(avif, 11);
+        var info = await avif.GetInfoAsync(path, XunitCancellationToken);
+        Assert.Equal((64, 64, 11), (info.Width, info.Height, info.MatrixCoefficients));
+        using var image = Image.Load(path);
+        Assert.Equal((64, 64), (image.Width, image.Height));
+        Assert.Equal(new CicpColorDescription(9, 16, 11, fullRange: info.FullRange), image.Metadata.Cicp);
+        Assert.Equal(image.Metadata.Cicp, Image.Identify(path).Metadata.Cicp);
+    }
+
+    // The planes of a test pattern, which avifenc labels with matrix coefficients without converting them
+    private static async Task<FullPath> EncodeLabeledPlanesAsync(LibAvifTool avif, int matrix)
+    {
+        var ffmpeg = await RequiredTools.FFmpegAsync();
+        var name = string.Create(CultureInfo.InvariantCulture, $"labeled-matrix-{matrix}");
+        var sourcePath = ArtifactPath(name + ".y4m");
+        var source = await ffmpeg.RunAsync(["-y", "-filter_threads", "1", "-f", "lavfi", "-i", "testsrc2=size=64x64", "-frames:v", "1", "-pix_fmt", "yuv420p", "-f", "yuv4mpegpipe", sourcePath], XunitCancellationToken);
+        Assert.Equal(0, source.ExitCode, message: source.StandardError);
+        var path = ArtifactPath(name + ".avif");
+        await avif.EncodeAsync(["--qcolor", "60", "--cicp", string.Create(CultureInfo.InvariantCulture, $"9/16/{matrix}"), sourcePath], path, XunitCancellationToken);
+        return path;
     }
 
     /// <summary>

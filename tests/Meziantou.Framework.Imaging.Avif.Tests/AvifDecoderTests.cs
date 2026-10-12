@@ -928,6 +928,51 @@ public sealed class AvifDecoderTests
         Assert.Equal([red, green, blue], rgb);
     }
 
+    // ITU-T H.273, section 8.3, MatrixCoefficients 11 (SMPTE ST 2085): E'Y = E'G, E'PB = (0.986566 E'B - E'Y) / 2 and
+    // E'PR = (E'R - 0.991902 E'Y) / 2, hence G = Y, B = (Y + 2 PB) / 0.986566 and R = 0.991902 Y + 2 PR, computed by hand
+    [Theory]
+    [InlineData(true, 100, 140, 90, 23, 100, 126)] // R = 99.19 - 76 = 23.19, B = (100 + 24) / 0.986566 = 125.69
+    [InlineData(true, 200, 100, 150, 242, 200, 146)] // R = 198.38 + 44 = 242.38, B = (200 - 56) / 0.986566 = 145.96
+    [InlineData(true, 128, 128, 128, 127, 128, 130)] // a gray of the planes is not a gray: R = 126.96, B = 129.74
+    [InlineData(false, 126, 140, 120, 109, 128, 158)] // (110 / 219, 12 / 224, -8 / 224): R = 108.83, G = 128.08, B = 157.52
+    public void ReferenceConverterAppliesTheEquationsOfSmpte2085(bool fullRange, int y, int u, int v, int red, int green, int blue)
+    {
+        var rgb = ReferenceYuvConverter.ConvertToRgb([(ushort)y], [(ushort)u], [(ushort)v], 1, 1, 8, 0, 0, ReferenceYuvConverter.ChromaUnknown, 11, fullRange, 255);
+        Assert.Equal([red, green, blue], rgb);
+    }
+
+    [Fact]
+    public void ReferenceConverterDerivesTheChromaticityDerivedMatrixFromThePrimaries()
+    {
+        // KR and KB are the luminance of the red and of the blue primary: for BT.709 and BT.2020, the values that the
+        // recommendations round to 0.2126 and 0.0722, and to 0.2627 and 0.0593 (40 digits computed apart from the library)
+        var bt709 = ReferenceYuvConverter.GetLuminanceWeights(1)!.Value;
+        Assert.Equal(0.212639005872, (double)bt709.Kr / (double)bt709.Denominator, 1e-11);
+        Assert.Equal(0.072192315361, (double)bt709.Kb / (double)bt709.Denominator, 1e-11);
+        var bt2020 = ReferenceYuvConverter.GetLuminanceWeights(9)!.Value;
+        Assert.Equal(0.262700212011, (double)bt2020.Kr / (double)bt2020.Denominator, 1e-11);
+        Assert.Equal(0.059301716470, (double)bt2020.Kb / (double)bt2020.Denominator, 1e-11);
+        var displayP3 = ReferenceYuvConverter.GetLuminanceWeights(12)!.Value;
+        Assert.Equal(0.228974564070, (double)displayP3.Kr / (double)displayP3.Denominator, 1e-11);
+        Assert.Equal(0.079286914094, (double)displayP3.Kb / (double)displayP3.Denominator, 1e-11);
+
+        // The primaries of CIE XYZ: the luminance is the second component
+        var xyz = ReferenceYuvConverter.GetLuminanceWeights(10)!.Value;
+        Assert.True(xyz.Kr.IsZero && xyz.Kb.IsZero);
+        Assert.Null(ReferenceYuvConverter.GetLuminanceWeights(2));
+        Assert.Null(ReferenceYuvConverter.GetLuminanceWeights(3));
+
+        // An 8-bit sample is the same as with the rounded weights of BT.709: R = 100 + 1.574722 x 72 = 213.38, G = 66.29
+        Assert.Equal([213, 66, 100], ReferenceYuvConverter.ConvertToRgb([100], [128], [200], 1, 1, 8, 0, 0, 0, 12, fullRange: true, 255, colorPrimaries: 1));
+
+        // A 12-bit sample at 16 bits is not: G = 23538.36 with the exact weights, 23540.38 with 0.2126 and 0.0722
+        Assert.Equal([65535, 23538, 16502], ReferenceYuvConverter.ConvertToRgb([2048], [1500], [3500], 1, 1, 12, 0, 0, 0, 12, fullRange: true, 65535, colorPrimaries: 1));
+        Assert.Equal([65535, 23540, 16502], ReferenceYuvConverter.ConvertToRgb([2048], [1500], [3500], 1, 1, 12, 0, 0, 0, 1, fullRange: true, 65535));
+
+        // Primaries without chromaticities give no matrix
+        Assert.Throws<NotSupportedException>(() => ReferenceYuvConverter.ConvertToRgb([0], [0], [0], 1, 1, 8, 0, 0, 0, 12, fullRange: true, 255, colorPrimaries: 2));
+    }
+
     [Fact]
     public void ReferenceConverterScalesDeepSamplesExactly()
     {
@@ -993,7 +1038,10 @@ public sealed class AvifDecoderTests
     {
         Assert.False(ReferenceYuvConverter.IsSupportedMatrix(3));
         Assert.False(ReferenceYuvConverter.IsSupportedMatrix(10));
+        Assert.False(ReferenceYuvConverter.IsSupportedMatrix(13));
         Assert.False(ReferenceYuvConverter.IsSupportedMatrix(14));
+        Assert.True(ReferenceYuvConverter.IsSupportedMatrix(11));
+        Assert.True(ReferenceYuvConverter.IsSupportedMatrix(12));
         Assert.Throws<NotSupportedException>(() => ReferenceYuvConverter.ConvertToRgb([0], [0], [0], 1, 1, 8, 0, 0, 0, 14, fullRange: true, 255));
         Assert.Throws<ArgumentException>(() => ReferenceYuvConverter.ConvertToRgb([0, 0], [0], [0], 2, 1, 8, 1, 0, 0, 0, fullRange: true, 255));
     }

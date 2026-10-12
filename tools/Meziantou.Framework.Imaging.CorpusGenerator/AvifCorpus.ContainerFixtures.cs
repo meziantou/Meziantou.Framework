@@ -205,6 +205,16 @@ internal static partial class AvifCorpus
         Still(context, "lossy-420-chroma-colocated", Y4m(8, 8, "420paldv"), "-q 70 --cicp 1/13/6", ["avif.chromaSamplePosition=colocated"], sourceName: "source.y4m");
         Still(context, "lossy-420-alpha", Png(WithAlpha(smooth)), "-q 70 --qalpha 70 -y 420 --cicp 1/13/6", ["avif.alpha", "avif.matrix=6", "avif.subsampling=4:2:0"]);
 
+        // The matrices whose coefficients are not a line of table 4: the chromaticity-derived coefficients (12), which are
+        // the luminance of the primaries that the file declares (libavif converts with them), and the SMPTE ST 2085
+        // coefficients (11), which libavif has no conversion for (avifenc labels the planes of a y4m source)
+        Still(context, "lossy-444-chromaticity-bt2020", Png(CommonCorpus.PatternSmoothColor(8, 6)), "-q 70 -y 444 --cicp 9/14/12", ["avif.matrix=12", "avif.subsampling=4:4:4"],
+            notes: "Chromaticity-derived matrix coefficients with the BT.2020 primaries: KR and KB are the luminance of the red and of the blue primary.");
+        Still(context, "lossy-420-chromaticity-p3-limited-10bit", Png(DeepColor(8, 6, 10)), "-q 70 -d 10 -y 420 --cicp 12/13/12 -r limited", ["avif.matrix=12", "avif.range=limited", "avif.bitDepth=10", "avif.subsampling=4:2:0"],
+            notes: "Chromaticity-derived matrix coefficients with the Display P3 primaries, in limited range.");
+        Still(context, "lossy-420-smpte2085", Y4m(8, 6, "420mpeg2"), "-q 70 --cicp 9/16/11", ["avif.matrix=11", "avif.subsampling=4:2:0"], sourceName: "source.y4m",
+            notes: "SMPTE ST 2085 matrix coefficients (Y'D'zD'x): the planes of a y4m source that avifenc labels without converting them.");
+
         // Premultiplied alpha, as avifenc writes it (-p: a prem reference from the color image to its alpha plane): the
         // colors are divided by the alpha once they are converted. Lossless content is exact; the lossy image is matrixed
         var premultiplied = WithAlpha(CommonCorpus.PatternDetailColor(8, 6, 3));

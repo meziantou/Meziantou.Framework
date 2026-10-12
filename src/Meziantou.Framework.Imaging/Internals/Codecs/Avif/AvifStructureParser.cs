@@ -407,7 +407,7 @@ internal sealed class AvifStructureParser : ImageParser<ImageInfo>
         var metadata = _metadata.Metadata;
         _nclx = plan.Nclx;
         if (plan.Nclx is { } nclx)
-            AvifYuvConverter.EnsureSupported(nclx.MatrixCoefficients, plan.Color.IsMonochrome, plan.Color.SubsamplingX, plan.Color.SubsamplingY);
+            AvifYuvConverter.EnsureSupported(nclx.MatrixCoefficients, plan.Color.IsMonochrome, plan.Color.SubsamplingX, plan.Color.SubsamplingY, nclx.ColorPrimaries);
 
         metadata.Orientation = plan.Orientation;
         metadata.Cicp = plan.Nclx;
@@ -780,7 +780,7 @@ internal sealed class AvifStructureParser : ImageParser<ImageInfo>
             return;
 
         // Without 'colr' box, the matrix coefficients of the bitstream convert the samples
-        AvifYuvConverter.EnsureSupported(sequence.MatrixCoefficients, sequence.Monochrome, sequence.SubsamplingX, sequence.SubsamplingY);
+        AvifYuvConverter.EnsureSupported(sequence.MatrixCoefficients, sequence.Monochrome, sequence.SubsamplingX, sequence.SubsamplingY, sequence.ColorPrimaries);
         _bitstreamMatrix = sequence.MatrixCoefficients;
         if (sequence.ColorDescriptionPresent)
             _metadata.Metadata.Cicp ??= new CicpColorDescription((byte)sequence.ColorPrimaries, (byte)sequence.TransferCharacteristics, (byte)sequence.MatrixCoefficients, sequence.FullRange);
@@ -932,7 +932,7 @@ internal sealed class AvifStructureParser : ImageParser<ImageInfo>
         _context.Limits.EnsureCanvasWithinLimits(color.Size.Width, color.Size.Height);
         _nclx = color.Nclx;
         if (color.Nclx is { } nclx)
-            AvifYuvConverter.EnsureSupported(nclx.MatrixCoefficients, color.IsMonochrome, color.SubsamplingX, color.SubsamplingY);
+            AvifYuvConverter.EnsureSupported(nclx.MatrixCoefficients, color.IsMonochrome, color.SubsamplingX, color.SubsamplingY, nclx.ColorPrimaries);
 
         _metadata.Metadata.Cicp = color.Nclx;
         _metadata.Metadata.Orientation = color.Orientation;

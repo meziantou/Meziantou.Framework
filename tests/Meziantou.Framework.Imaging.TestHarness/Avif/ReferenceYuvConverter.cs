@@ -28,8 +28,11 @@ namespace Meziantou.Framework.Imaging.TestHarness.Avif;
 /// </list>
 /// The library computes the matrix with coefficients rounded to 16 fractional bits: its result differs from this one by at
 /// most one unit, and only for matrixed content. Supported matrix coefficients: 0 (identity), 1 (BT.709), 4 (FCC),
-/// 5 (BT.470BG), 6 (BT.601), 7 (SMPTE 240M), 8 (YCgCo), 9 (BT.2020 non-constant luminance) and 2 (unspecified, converted
-/// as BT.601).
+/// 5 (BT.470BG), 6 (BT.601), 7 (SMPTE 240M), 8 (YCgCo), 9 (BT.2020 non-constant luminance), 2 (unspecified, converted
+/// as BT.601), 11 (SMPTE ST 2085, whose two constants are the decimal numbers of the recommendation) and 12
+/// (chromaticity-derived non-constant luminance: K<sub>R</sub> and K<sub>B</sub> are the luminance of the red and blue
+/// primaries, computed here as fractions by inverting the matrix of the chromaticities of table 2, which is another
+/// route than the two closed-form equations of section 8.3).
 /// </remarks>
 public static class ReferenceYuvConverter
 {
@@ -44,8 +47,62 @@ public static class ReferenceYuvConverter
 
     /// <summary>Gets a value indicating whether the converter implements matrix coefficients.</summary>
     /// <param name="matrixCoefficients">The code point of ITU-T H.273.</param>
-    /// <returns><see langword="true"/> for 0, 1, 2 and 4 to 9.</returns>
-    public static bool IsSupportedMatrix(int matrixCoefficients) => matrixCoefficients is 0 or 1 or 2 or (>= 4 and <= 9);
+    /// <returns><see langword="true"/> for 0, 1, 2, 4 to 9, 11 and 12.</returns>
+    public static bool IsSupportedMatrix(int matrixCoefficients) => matrixCoefficients is 0 or 1 or 2 or (>= 4 and <= 9) or 11 or 12;
+
+    /// <summary>
+    /// Computes the K<sub>R</sub> and K<sub>B</sub> of color primaries (ITU-T H.273, table 2) as exact fractions of one
+    /// denominator: the luminance of the red and of the blue primary for a white of luminance 1, which is the second row of
+    /// the matrix from linear R, G, B to CIE X, Y, Z.
+    /// </summary>
+    /// <param name="colorPrimaries">The color primaries code point.</param>
+    /// <returns>The numerators of K<sub>R</sub> and K<sub>B</sub> and their denominator, or <see langword="null"/> for primaries without chromaticities.</returns>
+    public static (BigInteger Kr, BigInteger Kb, BigInteger Denominator)? GetLuminanceWeights(int colorPrimaries)
+    {
+        // The x and y of red, green, blue and white, in thousandths (ten-thousandths for the white D65)
+        (int[] Primaries, int[] White)? chromaticities = colorPrimaries switch
+        {
+            1 => ([640, 330, 300, 600, 150, 60], [3127, 3290]),
+            4 => ([670, 330, 210, 710, 140, 80], [3100, 3160]),
+            5 => ([640, 330, 290, 600, 150, 60], [3127, 3290]),
+            6 or 7 => ([630, 340, 310, 595, 155, 70], [3127, 3290]),
+            8 => ([681, 319, 243, 692, 145, 49], [3100, 3160]),
+            9 => ([708, 292, 170, 797, 131, 46], [3127, 3290]),
+            10 => ([1000, 0, 0, 1000, 0, 0], [3333, 3333]),
+            11 => ([680, 320, 265, 690, 150, 60], [3140, 3510]),
+            12 => ([680, 320, 265, 690, 150, 60], [3127, 3290]),
+            22 => ([630, 340, 295, 605, 155, 77], [3127, 3290]),
+            _ => null,
+        };
+
+        if (chromaticities is not var (p, w))
+            return null;
+
+        // Columns of the matrix M: the (x, y, z) of each primary, over 1000; the white is (xW, yW, zW) / yW
+        BigInteger[] m =
+        [
+            p[0], p[2], p[4],
+            p[1], p[3], p[5],
+            1000 - p[0] - p[1], 1000 - p[2] - p[3], 1000 - p[4] - p[5],
+        ];
+        BigInteger xW = w[0], yW = w[1];
+
+        // The equal-energy white of the CIE XYZ primaries is one third exactly
+        var zW = colorPrimaries == 10 ? yW : 10000 - xW - yW;
+
+        // The scale of each primary is the solution S of M S = W (Cramer's rule): S_i = det(M with column i replaced by W) / det(M),
+        // and its luminance is y_i S_i. The common factors (1000 per chromaticity, yW of the white) cancel in the fractions
+        var determinant = Determinant(m[0], m[1], m[2], m[3], m[4], m[5], m[6], m[7], m[8]);
+        var red = Determinant(xW, m[1], m[2], yW, m[4], m[5], zW, m[7], m[8]);
+        var blue = Determinant(m[0], m[1], xW, m[3], m[4], yW, m[6], m[7], zW);
+        var kr = m[3] * red;
+        var kb = m[5] * blue;
+        var denominator = determinant * yW;
+        return denominator.Sign < 0 ? (-kr, -kb, -denominator) : (kr, kb, denominator);
+
+        static BigInteger Determinant(BigInteger a, BigInteger b, BigInteger c, BigInteger d, BigInteger e, BigInteger f, BigInteger g, BigInteger h, BigInteger i)
+            => (a * ((e * i) - (f * h))) - (b * ((d * i) - (f * g))) + (c * ((d * h) - (e * g)));
+    }
 
     /// <summary>Converts planes to interleaved R, G, B samples.</summary>
     /// <param name="y">The first plane: <paramref name="width"/> x <paramref name="height"/> samples.</param>
@@ -60,13 +117,17 @@ public static class ReferenceYuvConverter
     /// <param name="matrixCoefficients">The matrix coefficients that apply to the image.</param>
     /// <param name="fullRange">Whether the samples use the full range.</param>
     /// <param name="outputMaximum">The maximum of the output samples: 255 or 65535.</param>
+    /// <param name="colorPrimaries">The color primaries that apply to the image, from which the chromaticity-derived matrix coefficients (12) are computed.</param>
     /// <returns>Three samples per pixel, rows in order.</returns>
-    /// <exception cref="NotSupportedException">The matrix coefficients are not implemented.</exception>
+    /// <exception cref="NotSupportedException">The matrix coefficients are not implemented, or they are derived from primaries that have no chromaticities.</exception>
     /// <exception cref="ArgumentException">The identity matrix is used with subsampled chroma, or a plane does not have its size.</exception>
-    public static int[] ConvertToRgb(ReadOnlySpan<ushort> y, ReadOnlySpan<ushort> u, ReadOnlySpan<ushort> v, int width, int height, int bitDepth, int subsamplingX, int subsamplingY, int chromaSamplePosition, int matrixCoefficients, bool fullRange, int outputMaximum)
+    public static int[] ConvertToRgb(ReadOnlySpan<ushort> y, ReadOnlySpan<ushort> u, ReadOnlySpan<ushort> v, int width, int height, int bitDepth, int subsamplingX, int subsamplingY, int chromaSamplePosition, int matrixCoefficients, bool fullRange, int outputMaximum, int colorPrimaries = 2)
     {
         if (!IsSupportedMatrix(matrixCoefficients))
             throw new NotSupportedException($"The matrix coefficients {matrixCoefficients.ToString(CultureInfo.InvariantCulture)} are not implemented.");
+
+        if (matrixCoefficients == 12 && GetLuminanceWeights(colorPrimaries) is null)
+            throw new NotSupportedException($"The color primaries {colorPrimaries.ToString(CultureInfo.InvariantCulture)} have no chromaticities to derive the matrix coefficients from.");
 
         if (matrixCoefficients == 0 && (subsamplingX != 0 || subsamplingY != 0))
             throw new ArgumentException("The identity matrix requires 4:4:4 samples.", nameof(matrixCoefficients));
@@ -84,18 +145,19 @@ public static class ReferenceYuvConverter
         BigInteger chromaOffset = 1 << (bitDepth - 1);
         BigInteger chromaRange = fullRange ? maximum : 224 * scale;
 
-        // KR and KB as fractions over 10000 (ITU-T H.273, table 4)
-        const int Denominator = 10000;
-        var (kr, kb) = matrixCoefficients switch
+        // KR and KB as fractions: over 10000 for the decimal numbers of ITU-T H.273, table 4, and the exact values of the
+        // color primaries for the chromaticity-derived coefficients
+        (BigInteger kr, BigInteger kb, BigInteger Denominator) = matrixCoefficients switch
         {
-            1 => (2126, 722),
-            4 => (3000, 1100),
-            2 or 5 or 6 => (2990, 1140),
-            7 => (2120, 870),
-            9 => (2627, 593),
-            _ => (0, 0),
+            1 => (2126, 722, 10000),
+            4 => (3000, 1100, 10000),
+            2 or 5 or 6 => (2990, 1140, 10000),
+            7 => (2120, 870, 10000),
+            9 => (2627, 593, 10000),
+            12 => GetLuminanceWeights(colorPrimaries)!.Value,
+            _ => (BigInteger.Zero, BigInteger.Zero, new BigInteger(10000)),
         };
-        BigInteger kg = Denominator - kr - kb;
+        var kg = Denominator - kr - kb;
 
         for (var i = 0; i < width * height; i++)
         {
@@ -117,7 +179,17 @@ public static class ReferenceYuvConverter
             BigInteger green;
             BigInteger blue;
             BigInteger denominator;
-            if (matrixCoefficients == 8)
+            if (matrixCoefficients == 11)
+            {
+                // SMPTE ST 2085 (section 8.3, MatrixCoefficients equal to 11): E'Y = E'G, E'PB = (0.986566 E'B - E'Y) / 2 and
+                // E'PR = (E'R - 0.991902 E'Y) / 2, hence G = Y, B = (Y + 2 PB) / 0.986566 and R = 0.991902 Y + 2 PR
+                const int Million = 1_000_000;
+                denominator = lumaRange * chromaRange * Million * 986_566;
+                green = luma * chromaRange * Million * 986_566;
+                blue = ((luma * chromaRange) + (2 * cb * lumaRange)) * Million * Million;
+                red = ((991_902 * luma * chromaRange) + (2 * (BigInteger)Million * cr * lumaRange)) * 986_566;
+            }
+            else if (matrixCoefficients == 8)
             {
                 // YCgCo: E'PB is Cg and E'PR is Co; G = Y + Cg, R = Y - Cg + Co, B = Y - Cg - Co
                 denominator = lumaRange * chromaRange;

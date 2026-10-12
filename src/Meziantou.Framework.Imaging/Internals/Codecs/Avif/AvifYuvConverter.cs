@@ -1,3 +1,4 @@
+using System.Numerics;
 using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Imaging.Internals;
@@ -19,7 +20,9 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <item><description>
 /// A matrix is applied with coefficients rounded to 16 fractional bits, which include the scaling of the limited or full range
 /// to the full range of the output: 0 to 255 for 8-bit planes without deeper alpha, otherwise 0 to 65535. Each component is
-/// rounded once.
+/// rounded once. The coefficients of the chromaticity-derived matrix (12) are the exact KR and KB of the color
+/// primaries, computed as fractions from the chromaticities of ITU-T H.273, and the SMPTE ST 2085 matrix (11) uses its
+/// two constants as the decimal numbers that the recommendation gives.
 /// </description></item>
 /// <item><description>
 /// Samples that are not matrixed (monochrome, identity matrix and alpha in full range) are scaled by
@@ -55,6 +58,8 @@ internal sealed class AvifYuvConverter
     private readonly long _cGV;
     private readonly long _cBU;
     private readonly long _cC;
+    private readonly long _cYR;
+    private readonly long _cYB;
     private readonly int _alphaMax;
     private readonly bool _alphaFullRange;
     private readonly int _alphaOffset;
@@ -68,9 +73,10 @@ internal sealed class AvifYuvConverter
     /// <param name="alpha">The sequence header of the alpha plane, or <see langword="null"/> for an opaque image.</param>
     /// <param name="layout">The pixel layout of the rows to produce.</param>
     /// <param name="isPremultiplied">Whether the color samples are multiplied by the alpha of their pixel: the pixels that are produced are not.</param>
+    /// <param name="colorPrimaries">The color primaries code point that applies to the image, which the chromaticity-derived matrix coefficients need.</param>
     /// <exception cref="UnsupportedImageFeatureException">The matrix coefficients are not supported.</exception>
     /// <exception cref="InvalidImageContentException">The identity matrix is used with subsampled chroma.</exception>
-    public AvifYuvConverter(Av1SequenceHeader sequence, int matrixCoefficients, bool fullRange, Av1SequenceHeader? alpha, PixelFormat layout, bool isPremultiplied = false)
+    public AvifYuvConverter(Av1SequenceHeader sequence, int matrixCoefficients, bool fullRange, Av1SequenceHeader? alpha, PixelFormat layout, bool isPremultiplied = false, int colorPrimaries = Av1Constants.CpUnspecified)
     {
         _layout = layout;
         _isPremultiplied = isPremultiplied && alpha is not null;
@@ -98,31 +104,46 @@ internal sealed class AvifYuvConverter
             cRange = 224L << (bitDepth - 8);
         }
 
-        EnsureSupported(matrixCoefficients, _monochrome, _subX, _subY);
+        EnsureSupported(matrixCoefficients, _monochrome, _subX, _subY, colorPrimaries);
         _cY = RoundedDivide(_outputMax * One, yRange);
         _cC = RoundedDivide(_outputMax * One, cRange);
-        if (!_monochrome)
+        if (!_monochrome && matrixCoefficients is Av1Constants.McSmpte2085)
         {
-            // Kr and Kb of the matrix coefficients, over 10000 (ITU-T H.273, table 4)
-            const long D = 10000;
-            (long Kr, long Kb)? weights = matrixCoefficients switch
+            // ITU-T H.273, MatrixCoefficients 11: E'Y = E'G, E'PB = (0.986566 E'B - E'Y) / 2 and
+            // E'PR = (E'R - 0.991902 E'Y) / 2, so G = Y, B = (Y + 2 PB) / 0.986566 and R = 0.991902 Y + 2 PR
+            const long Million = 1_000_000;
+            const long C1 = 986_566;
+            const long C2 = 991_902;
+            _cYB = RoundedDivide((Int128)_outputMax * One * Million, (Int128)C1 * yRange);
+            _cBU = RoundedDivide((Int128)_outputMax * One * 2 * Million, (Int128)C1 * cRange);
+            _cYR = RoundedDivide((Int128)_outputMax * One * C2, (Int128)Million * yRange);
+            _cRV = RoundedDivide((Int128)_outputMax * One * 2, cRange);
+        }
+        else if (!_monochrome)
+        {
+            // KR and KB of the matrix coefficients, as fractions: over 10000 for the ones that ITU-T H.273 gives as decimal
+            // numbers (table 4), and the exact values that the chromaticities of the color primaries give for the
+            // chromaticity-derived matrix
+            (BigInteger Kr, BigInteger Kb, BigInteger Denominator)? weights = matrixCoefficients switch
             {
-                Av1Constants.McBt709 => (2126, 722),
-                Av1Constants.McFcc => (3000, 1100),
-                Av1Constants.McBt470BG or Av1Constants.McBt601 or Av1Constants.McUnspecified => (2990, 1140),
-                Av1Constants.McSmpte240 => (2120, 870),
-                Av1Constants.McBt2020Ncl => (2627, 593),
+                Av1Constants.McBt709 => (2126, 722, 10000),
+                Av1Constants.McFcc => (3000, 1100, 10000),
+                Av1Constants.McBt470BG or Av1Constants.McBt601 or Av1Constants.McUnspecified => (2990, 1140, 10000),
+                Av1Constants.McSmpte240 => (2120, 870, 10000),
+                Av1Constants.McBt2020Ncl => (2627, 593, 10000),
+                Av1Constants.McChromatNcl => GetChromaticityDerivedWeights(colorPrimaries),
                 Av1Constants.McIdentity or Av1Constants.McSmpteYcgco => null,
                 _ => throw AvifFormat.Unsupported($"The matrix coefficients {matrixCoefficients} of the AVIF image are not supported.", "matrix coefficients"),
             };
 
-
-            if (weights is var (kr, kb))
+            if (weights is var (kr, kb, d))
             {
-                _cRV = RoundedDivide((Int128)_outputMax * One * 2 * (D - kr), D * cRange);
-                _cBU = RoundedDivide((Int128)_outputMax * One * 2 * (D - kb), D * cRange);
-                _cGU = RoundedDivide((Int128)_outputMax * One * 2 * kb * (D - kb), (Int128)D * (D - kr - kb) * cRange);
-                _cGV = RoundedDivide((Int128)_outputMax * One * 2 * kr * (D - kr), (Int128)D * (D - kr - kb) * cRange);
+                var kg = d - kr - kb;
+                BigInteger scale = (BigInteger)_outputMax * One * 2;
+                _cRV = RoundedDivide(scale * (d - kr), d * cRange);
+                _cBU = RoundedDivide(scale * (d - kb), d * cRange);
+                _cGU = RoundedDivide(scale * kb * (d - kb), d * kg * cRange);
+                _cGV = RoundedDivide(scale * kr * (d - kr), d * kg * cRange);
             }
         }
 
@@ -143,24 +164,49 @@ internal sealed class AvifYuvConverter
     /// <param name="isMonochrome">Whether the image has no chroma: the matrix does not apply to it.</param>
     /// <param name="subsamplingX">The horizontal subsampling of the chroma planes.</param>
     /// <param name="subsamplingY">The vertical subsampling of the chroma planes.</param>
-    /// <exception cref="UnsupportedImageFeatureException">The matrix coefficients are not supported.</exception>
+    /// <param name="colorPrimaries">The color primaries code point that applies to the image.</param>
+    /// <exception cref="UnsupportedImageFeatureException">The matrix coefficients are not supported, or they are derived from color primaries that have no chromaticities.</exception>
     /// <exception cref="InvalidImageContentException">The identity matrix is used with subsampled chroma.</exception>
-    public static void EnsureSupported(int matrixCoefficients, bool isMonochrome, int subsamplingX, int subsamplingY)
+    public static void EnsureSupported(int matrixCoefficients, bool isMonochrome, int subsamplingX, int subsamplingY, int colorPrimaries = Av1Constants.CpUnspecified)
     {
         if (isMonochrome)
             return;
 
         if (matrixCoefficients is not (Av1Constants.McIdentity or Av1Constants.McBt709 or Av1Constants.McUnspecified or Av1Constants.McFcc or Av1Constants.McBt470BG
-            or Av1Constants.McBt601 or Av1Constants.McSmpte240 or Av1Constants.McSmpteYcgco or Av1Constants.McBt2020Ncl))
+            or Av1Constants.McBt601 or Av1Constants.McSmpte240 or Av1Constants.McSmpteYcgco or Av1Constants.McBt2020Ncl or Av1Constants.McSmpte2085 or Av1Constants.McChromatNcl))
         {
             throw AvifFormat.Unsupported($"The matrix coefficients {matrixCoefficients} of the AVIF image are not supported.", "matrix coefficients");
         }
+
+        // The chromaticity-derived coefficients are the ones of the color primaries: unspecified or reserved primaries give none
+        if (matrixCoefficients is Av1Constants.McChromatNcl && (colorPrimaries is < 0 or > byte.MaxValue || !CicpPrimaries.IsSupported((byte)colorPrimaries)))
+            throw AvifFormat.Unsupported($"The matrix coefficients of the AVIF image are derived from its color primaries ({colorPrimaries}), which have no chromaticities.", "matrix coefficients");
 
         if (matrixCoefficients is Av1Constants.McIdentity && (subsamplingX is not 0 || subsamplingY is not 0))
             throw AvifFormat.Invalid("the identity matrix requires 4:4:4 samples.");
     }
 
     private static long RoundedDivide(Int128 numerator, Int128 denominator) => (long)(((2 * numerator) + denominator) / (2 * denominator));
+
+    private static long RoundedDivide(BigInteger numerator, BigInteger denominator) => (long)(((2 * numerator) + denominator) / (2 * denominator));
+
+    // ITU-T H.273, section 8.3, MatrixCoefficients 12: KR and KB from the chromaticities (x, y) of the primaries and of the
+    // white point, with z = 1 - x - y. Both are fractions of one denominator; the chromaticities are integers over a
+    // common denominator, which the two equations cancel
+    private static (BigInteger Kr, BigInteger Kb, BigInteger Denominator) GetChromaticityDerivedWeights(int colorPrimaries)
+    {
+        Span<int> values = stackalloc int[8];
+        if (colorPrimaries is < 0 or > byte.MaxValue || !CicpPrimaries.TryGetChromaticities((byte)colorPrimaries, values))
+            throw AvifFormat.Unsupported($"The matrix coefficients of the AVIF image are derived from its color primaries ({colorPrimaries}), which have no chromaticities.", "matrix coefficients");
+
+        BigInteger one = CicpPrimaries.GetDenominator((byte)colorPrimaries);
+        BigInteger xR = values[0], yR = values[1], xG = values[2], yG = values[3], xB = values[4], yB = values[5], xW = values[6], yW = values[7];
+        var (zR, zG, zB, zW) = (one - xR - yR, one - xG - yG, one - xB - yB, one - xW - yW);
+        var denominator = yW * ((xR * ((yG * zB) - (yB * zG))) + (xG * ((yB * zR) - (yR * zB))) + (xB * ((yR * zG) - (yG * zR))));
+        var kr = yR * ((xW * ((yG * zB) - (yB * zG))) + (yW * ((xB * zG) - (xG * zB))) + (zW * ((xG * yB) - (xB * yG))));
+        var kb = yB * ((xW * ((yR * zG) - (yG * zR))) + (yW * ((xG * zR) - (xR * zG))) + (zW * ((xR * yG) - (xG * yR))));
+        return denominator.Sign < 0 ? (-kr, -kb, -denominator) : (kr, kb, denominator);
+    }
 
     /// <summary>Gets the number of bytes of a pixel of the layout.</summary>
     public int BytesPerPixel => PixelFormats.GetBytesPerPixel(_layout);
@@ -277,7 +323,15 @@ internal sealed class AvifYuvConverter
                 var luma = (_cY * (y[x] - _yOffset)) + Half;
                 long cb = u[x] - _cOffset;
                 long cr = v[x] - _cOffset;
-                if (_matrix is Av1Constants.McSmpteYcgco)
+                if (_matrix is Av1Constants.McSmpte2085)
+                {
+                    // The green is the luma; the blue and the red have a luma coefficient of their own
+                    long centered = y[x] - _yOffset;
+                    g = Clip(luma >> 16);
+                    b = Clip(((_cYB * centered) + (_cBU * cb) + Half) >> 16);
+                    r = Clip(((_cYR * centered) + (_cRV * cr) + Half) >> 16);
+                }
+                else if (_matrix is Av1Constants.McSmpteYcgco)
                 {
                     // U is Cg and V is Co
                     g = Clip((luma + (_cC * cb)) >> 16);

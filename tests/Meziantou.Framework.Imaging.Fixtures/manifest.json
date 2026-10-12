@@ -12676,6 +12676,106 @@
       }
     },
     {
+      "id": "avif/lossy-420-chromaticity-p3-limited-10bit",
+      "kind": "valid",
+      "format": "avif",
+      "input": {
+        "path": "avif/lossy-420-chromaticity-p3-limited-10bit.avif",
+        "sha256": "f94ca72a29b4259bc555d94f137ac048795a00364b702d50d145e5d94da050a5",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/AvifCorpus.Container.cs (BuildStills)",
+        "tools": [
+          "libavif 1.4.2 avifenc (aom 3.14.1)",
+          "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+          ".NET 10.0"
+        ],
+        "commands": [
+          "avifenc -j 1 -s 6 -q 70 -d 10 -y 420 --cicp 12/13/12 -r limited source.png {output}.avif"
+        ]
+      },
+      "features": [
+        "avif.bitDepth=10",
+        "avif.colr=nclx",
+        "avif.majorBrand=avif",
+        "avif.matrix=12",
+        "avif.range=limited",
+        "avif.subsampling=4:2:0"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "Planes of the items decoded identically by both decoders, converted with exact rationals (matrix, range and chroma position of the file).",
+        "decoder": "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+        "backend": "ReferenceAvif and ReferenceYuvConverter (test harness)",
+        "command": "av1Vectors.decoders[].command",
+        "crossChecks": [
+          {
+            "decoder": "libavif 1.4.2 avifdec (dav1d 1.5.3)",
+            "command": "avifdec -j 1 -d 16 {input} {output}.png",
+            "maxAbsoluteError": 1,
+            "meanAbsoluteError": 0.0788,
+            "result": "differs",
+            "notes": "Independent conversion (its own chroma upsampling and rounding). Alpha is identical."
+          }
+        ]
+      },
+      "expected": {
+        "width": 8,
+        "height": 6,
+        "pixelFormat": "Rgba64",
+        "colorModel": "YCbCr",
+        "bitsPerComponent": 10,
+        "orientation": 1,
+        "iccProfile": "none",
+        "cicp": {
+          "colorPrimaries": 12,
+          "transferCharacteristics": 13,
+          "matrixCoefficients": 12,
+          "fullRange": false
+        },
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "avif/lossy-420-chromaticity-p3-limited-10bit.frame-0.rgba16le.raw",
+                "sha256": "0735996eebee8a46d73d3d7169a55648f3f86b15f9442d10747328e924e2dd5f",
+                "layout": "rgba16le",
+                "width": 8,
+                "height": 6,
+                "rowBytes": 64,
+                "byteLength": 384,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "tolerance",
+        "maxAbsoluteError": 1,
+        "maxMeanAbsoluteError": 0.01,
+        "justification": "Exact-rational reference; the library rounds its matrix coefficients to 16 fractional bits (measured: max 0, mean 0.0). Allowed: 1 and the measured mean + 0.01; the cross-checks would justify max 2, mean 0.5."
+      },
+      "notes": "Chromaticity-derived matrix coefficients with the Display P3 primaries, in limited range."
+    },
+    {
       "id": "avif/lossy-420-fcc-limited-10bit",
       "kind": "valid",
       "format": "avif",
@@ -12895,6 +12995,114 @@
         "justification": "Exact-rational reference; the library rounds its matrix coefficients to 16 fractional bits (measured: max 0, mean 0.0). Allowed: 1 and the measured mean + 0.01; the cross-checks would justify max 2, mean 0.5."
       },
       "notes": "A pixel aspect ratio of 4:3 and a content light level (MaxCLL 1000, MaxPALL 400 cd/m2): labels, which change no pixel."
+    },
+    {
+      "id": "avif/lossy-420-smpte2085",
+      "kind": "valid",
+      "format": "avif",
+      "input": {
+        "path": "avif/lossy-420-smpte2085.avif",
+        "sha256": "b3432feea5d1a7bd44413d82570c959506e359c43adc01df9e8f2a618b65d0e0",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/AvifCorpus.Container.cs (BuildStills)",
+        "tools": [
+          "libavif 1.4.2 avifenc (aom 3.14.1)",
+          "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+          ".NET 10.0"
+        ],
+        "commands": [
+          "avifenc -j 1 -s 6 -q 70 --cicp 9/16/11 source.y4m {output}.avif"
+        ]
+      },
+      "features": [
+        "avif.bitDepth=8",
+        "avif.chromaSamplePosition=vertical",
+        "avif.colr=nclx",
+        "avif.majorBrand=avif",
+        "avif.matrix=11",
+        "avif.range=full",
+        "avif.subsampling=4:2:0"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "Planes of the items decoded identically by both decoders, converted with exact rationals (matrix, range and chroma position of the file).",
+        "decoder": "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+        "backend": "ReferenceAvif and ReferenceYuvConverter (test harness)",
+        "command": "av1Vectors.decoders[].command",
+        "crossChecks": [
+          {
+            "decoder": "libavif 1.4.2 avifdec (dav1d 1.5.3)",
+            "command": "avifdec -j 1 {input} {output}.png",
+            "result": "differs",
+            "notes": "avifdec rejects the file: Conversion to RGB failed: {output}.png"
+          }
+        ]
+      },
+      "expected": {
+        "width": 8,
+        "height": 6,
+        "pixelFormat": "Rgb24",
+        "colorModel": "YCbCr",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "cicp": {
+          "colorPrimaries": 9,
+          "transferCharacteristics": 16,
+          "matrixCoefficients": 11,
+          "fullRange": true
+        },
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "avif/lossy-420-smpte2085.frame-0.rgba8.raw",
+                "sha256": "a8edef5d80cbda09ca0a55918d035a62456ff55ddc3b463a1977657ae958b0db",
+                "layout": "rgba8",
+                "width": 8,
+                "height": 6,
+                "rowBytes": 32,
+                "byteLength": 192,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "avif/lossy-420-smpte2085.frame-0.rgb8.raw",
+                "sha256": "c5a2f4b5c5a587a29f5c50e8fab36c8b29bb95e5c3b8d07d347ac081bbfaf153",
+                "layout": "rgb8",
+                "width": 8,
+                "height": 6,
+                "rowBytes": 24,
+                "byteLength": 144,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      },
+      "notes": "SMPTE ST 2085 matrix coefficients (Y'D'zD'x): the planes of a y4m source that avifenc labels without converting them."
     },
     {
       "id": "avif/lossy-420-smpte240m-full-odd",
@@ -14589,6 +14797,118 @@
         "maxMeanAbsoluteError": 0.01,
         "justification": "Exact-rational reference; the library rounds its matrix coefficients to 16 fractional bits (measured: max 0, mean 0.0). Allowed: 1 and the measured mean + 0.01; the cross-checks would justify max 2, mean 0.5."
       }
+    },
+    {
+      "id": "avif/lossy-444-chromaticity-bt2020",
+      "kind": "valid",
+      "format": "avif",
+      "input": {
+        "path": "avif/lossy-444-chromaticity-bt2020.avif",
+        "sha256": "ba44a6567070af936c1fb704318188c09186ec69cd6ca98a40e55abf5ecc3bda",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/AvifCorpus.Container.cs (BuildStills)",
+        "tools": [
+          "libavif 1.4.2 avifenc (aom 3.14.1)",
+          "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+          ".NET 10.0"
+        ],
+        "commands": [
+          "avifenc -j 1 -s 6 -q 70 -y 444 --cicp 9/14/12 source.png {output}.avif"
+        ]
+      },
+      "features": [
+        "avif.bitDepth=8",
+        "avif.colr=nclx",
+        "avif.majorBrand=avif",
+        "avif.matrix=12",
+        "avif.range=full",
+        "avif.subsampling=4:4:4"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "Planes of the items decoded identically by both decoders, converted with exact rationals (matrix, range and chroma position of the file).",
+        "decoder": "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+        "backend": "ReferenceAvif and ReferenceYuvConverter (test harness)",
+        "command": "av1Vectors.decoders[].command",
+        "crossChecks": [
+          {
+            "decoder": "libavif 1.4.2 avifdec (dav1d 1.5.3)",
+            "command": "avifdec -j 1 {input} {output}.png",
+            "maxAbsoluteError": 1,
+            "meanAbsoluteError": 0.1875,
+            "result": "differs",
+            "notes": "Independent conversion (its own chroma upsampling and rounding). Alpha is identical."
+          }
+        ]
+      },
+      "expected": {
+        "width": 8,
+        "height": 6,
+        "pixelFormat": "Rgb24",
+        "colorModel": "YCbCr",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "cicp": {
+          "colorPrimaries": 9,
+          "transferCharacteristics": 14,
+          "matrixCoefficients": 12,
+          "fullRange": true
+        },
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "avif/lossy-444-chromaticity-bt2020.frame-0.rgba8.raw",
+                "sha256": "91958282a8ace0abc07d90ea203edd199be6b402e1bdabe4dee2991a8cf9574f",
+                "layout": "rgba8",
+                "width": 8,
+                "height": 6,
+                "rowBytes": 32,
+                "byteLength": 192,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "avif/lossy-444-chromaticity-bt2020.frame-0.rgb8.raw",
+                "sha256": "05701a3a7980cec4248190d6f823e3699e76a5102d568ffaff6a8c82f5e119b3",
+                "layout": "rgb8",
+                "width": 8,
+                "height": 6,
+                "rowBytes": 24,
+                "byteLength": 144,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "tolerance",
+        "maxAbsoluteError": 1,
+        "maxMeanAbsoluteError": 0.01,
+        "justification": "Exact-rational reference; the library rounds its matrix coefficients to 16 fractional bits (measured: max 0, mean 0.0). Allowed: 1 and the measured mean + 0.01; the cross-checks would justify max 2, mean 0.5."
+      },
+      "notes": "Chromaticity-derived matrix coefficients with the BT.2020 primaries: KR and KB are the luminance of the red and of the blue primary."
     },
     {
       "id": "avif/lossy-444-unspecified-limited",

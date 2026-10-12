@@ -173,8 +173,11 @@ public sealed class GoldenCorpusTests
         {
             var policy = fixture.Policy;
 
-            // A lossy fixture is compared exactly only when every independent decoder agrees exactly (e.g. a single-block frame)
-            var decodedIdentically = fixture.Entry.Reference?.CrossChecks?.Where(check => check.ExcludedFromTolerance != true).All(check => check.MaxAbsoluteError == 0) == true;
+            // A lossy fixture is compared exactly only when every independent decoder that measures it agrees exactly (e.g. a
+            // single-block frame), which includes the case where none does: a decoder that rejects the input measures
+            // nothing, and a tolerance needs a measured disagreement (the SMPTE ST 2085 matrix of AVIF, which libavif does
+            // not convert, is compared to the bit with the exact conversion of the harness)
+            var decodedIdentically = fixture.Entry.Reference?.CrossChecks?.Where(check => check.ExcludedFromTolerance != true && check.MaxAbsoluteError is not null).All(check => check.MaxAbsoluteError == 0) == true;
             // AVIF: only the samples a matrix applies to are converted with rounded coefficients (identity-matrix,
             // monochrome and alpha samples are exact, whether or not the AV1 coding is lossless)
             var isMatrixedAvif = fixture.Entry.Format == "avif" && (fixture.Entry.Features ?? []).Any(feature => feature.StartsWith("avif.matrix=", StringComparison.Ordinal) && feature != "avif.matrix=0");

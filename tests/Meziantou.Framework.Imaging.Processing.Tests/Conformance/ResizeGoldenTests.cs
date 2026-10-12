@@ -1,3 +1,4 @@
+using Meziantou.Framework.Imaging.Metadata;
 using Meziantou.Framework.Imaging.TestHarness.Adapters;
 using Meziantou.Framework.Imaging.TestHarness.Golden;
 using Meziantou.Framework.Imaging.TestHarness.Pixels;
@@ -127,6 +128,45 @@ public sealed class ResizeGoldenTests
         }
     }
 
+    /// <summary>
+    /// Linear-light resizing decodes the samples with the transfer function that the CICP color description of the image
+    /// declares: every function of Rec. ITU-T H.273 against the <see cref="decimal"/> reference, which evaluates the
+    /// functions with its own series (<c>ReferenceCicpTransfer</c>), at 8 and 16 bits, with alpha, down and up.
+    /// </summary>
+    [Theory]
+    [InlineData(1)] // Rec. ITU-R BT.709 (the function of 6, 11, 12, 14 and 15)
+    [InlineData(4)] // gamma 2.2
+    [InlineData(5)] // gamma 2.8
+    [InlineData(7)] // SMPTE 240M
+    [InlineData(9)] // logarithmic, 100:1
+    [InlineData(10)] // logarithmic, 100 * sqrt(10):1
+    [InlineData(14)]
+    [InlineData(16)] // PQ
+    [InlineData(17)] // SMPTE ST 428-1
+    [InlineData(18)] // HLG
+    public void LinearLightUsesTheTransferCharacteristicsOfTheImage(int transfer)
+    {
+        foreach (var (name, source) in Synthetic().Where(item => item.Name is "rgba8-alpha-ramp-transparent-edges" or "rgba16-low-bit-alpha-ramp"))
+        {
+            foreach (var kernel in new[] { ReferenceKernel.Triangle, ReferenceKernel.Lanczos3 })
+            {
+                var down = new ReferenceResizeOptions(Math.Max(1, source.Width / 3), Math.Max(1, source.Height / 2), ReferenceResizeMode.Stretch, kernel, Linear: true, Transfer: transfer);
+                var up = new ReferenceResizeOptions((source.Width * 2) + 1, source.Height + 2, ReferenceResizeMode.Stretch, kernel, Linear: true, Transfer: transfer);
+                foreach (var options in new[] { down, up })
+                {
+                    if (source.Layout == RawPixelLayout.Rgba16Le)
+                    {
+                        CheckSingle<Rgba64>(source, name, options);
+                    }
+                    else
+                    {
+                        CheckSingle<Rgba32>(source, name, options);
+                    }
+                }
+            }
+        }
+    }
+
     [Fact]
     public void TheReferenceDetectsWrongResults()
     {
@@ -229,6 +269,12 @@ public sealed class ResizeGoldenTests
         where TPixel : unmanaged
     {
         using var image = Import<TPixel>(source);
+
+        // Other transfer characteristics than sRGB are those of the CICP color description of the image, whose primaries
+        // do not matter
+        if (options.Transfer != 13)
+            image.Metadata.Cicp = new CicpColorDescription(9, (byte)options.Transfer, 0, fullRange: true);
+
         image.Resize(ToLibrary(options), TestContext.Current.CancellationToken);
         AssertMatches(ReferenceResampler.Resize(source, options), ImageSnapshots.CaptureFrameRows(image.Frames[0]), context);
     }

@@ -31,12 +31,13 @@ internal sealed class ResizePlan : IDisposable
     private readonly List<PooledBuffer> _buffers = [];
     private ResizeScratch?[] _scratch = [];
 
-    public ResizePlan(ResizeGeometry geometry, ResamplingFilter filter, ResizeWorkingSpace workingSpace, PixelFormat format, int maxDegreeOfParallelism = 1)
+    public ResizePlan(ResizeGeometry geometry, ResamplingFilter filter, ResizeWorkingSpace workingSpace, PixelFormat format, int maxDegreeOfParallelism = 1, byte transfer = CicpTransfer.Srgb)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxDegreeOfParallelism);
         Geometry = geometry;
         Filter = filter;
         IsLinear = workingSpace == ResizeWorkingSpace.LinearSrgb;
+        Transfer = IsLinear ? transfer : (byte)0;
         Channels = PixelFormats.GetComponentCount(format);
         HasAlpha = PixelFormats.HasAlpha(format);
         MaxValue = PixelFormats.GetBitsPerComponent(format) == 16 ? ushort.MaxValue : byte.MaxValue;
@@ -55,8 +56,14 @@ internal sealed class ResizePlan : IDisposable
 
     public ResamplingFilter Filter { get; }
 
-    /// <summary>Gets a value indicating whether samples are filtered in linear light (sRGB transfer function).</summary>
+    /// <summary>Gets a value indicating whether samples are filtered in linear light.</summary>
     public bool IsLinear { get; }
+
+    /// <summary>
+    /// Gets the transfer characteristics (<see cref="CicpTransfer"/>) whose function decodes the samples to the linear
+    /// light they are filtered in, or 0 when they are filtered as they are stored.
+    /// </summary>
+    public byte Transfer { get; }
 
     /// <summary>Gets the number of samples per pixel (alpha included).</summary>
     public int Channels { get; }

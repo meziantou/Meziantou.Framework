@@ -1,4 +1,5 @@
 using Meziantou.Framework.Imaging.Internals;
+using Meziantou.Framework.Imaging.Metadata;
 using Meziantou.Framework.Imaging.TestHarness.Adapters;
 using Meziantou.Framework.Imaging.TestHarness.Convolution;
 using Meziantou.Framework.Imaging.TestHarness.Golden;
@@ -111,6 +112,28 @@ public sealed class ConvolutionGoldenTests
         }
     }
 
+    /// <summary>
+    /// Linear-light convolution decodes the samples with the transfer function that the CICP color description of the
+    /// image declares, against the <see cref="decimal"/> reference.
+    /// </summary>
+    [Theory]
+    [InlineData(1)]
+    [InlineData(4)]
+    [InlineData(10)]
+    [InlineData(16)]
+    [InlineData(18)]
+    public void LinearLightUsesTheTransferCharacteristicsOfTheImage(int transfer)
+    {
+        decimal[] weights = [0.0625m, -0.125m, 0.25m, 0.5m, 0.375m, -0.0625m, 0, 0.125m, -0.125m];
+        foreach (var (name, source) in ResizeGoldenTests.Synthetic().Where(item => item.Name is "rgba8-alpha-ramp-transparent-edges" or "rgba16-low-bit-alpha-ramp"))
+        {
+            foreach (var preserveAlpha in new[] { false, true })
+            {
+                CheckSynthetic(source, name, new ReferenceConvolutionOptions(3, 3, weights, ReferenceEdgeMode.Clamp, preserveAlpha, Linear: true, Transfer: transfer));
+            }
+        }
+    }
+
     [Fact]
     public void TheReferenceDetectsWrongResults()
     {
@@ -188,6 +211,9 @@ public sealed class ConvolutionGoldenTests
         where TPixel : unmanaged
     {
         using var image = Import<TPixel>(source, segmented: false);
+        if (options.Transfer != 13)
+            image.Metadata.Cicp = new CicpColorDescription(9, (byte)options.Transfer, 0, fullRange: true);
+
         image.Convolve(ToLibrary(options), TestContext.Current.CancellationToken);
         return ImageSnapshots.CaptureFrameRows(image.Frames[0]);
     }

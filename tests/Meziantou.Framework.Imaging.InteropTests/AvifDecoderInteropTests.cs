@@ -1,6 +1,7 @@
 using System.Buffers.Binary;
 using System.Globalization;
 using Meziantou.Framework.Imaging.Formats;
+using Meziantou.Framework.Imaging.Internals;
 using Meziantou.Framework.Imaging.Metadata;
 using Meziantou.Framework.Imaging.TestHarness.Adapters;
 using Meziantou.Framework.Imaging.TestHarness.Avif;
@@ -1170,6 +1171,71 @@ public sealed class AvifDecoderInteropTests
         {
             AssertPixels(expected, actual, ColorBound.Exact, $"{id}: library vs Apple ImageIO");
         }
+    }
+
+    /// <summary>
+    /// The curves that compress the highlights of high dynamic range samples, against the <c>tonemap</c> filter of
+    /// FFmpeg on frames of linear floating-point samples (a black box: it is given colors in units of the white and the
+    /// peak of the source, and applies its curve to the largest component of each color, as the library does). The clip,
+    /// the filmic curve of Hable and the Möbius curve are the same functions; FFmpeg computes in single precision. Its
+    /// <c>reinhard</c> is another variant than the equation of the paper that the library implements, and it has no
+    /// BT.2390 curve: those two are verified against the decimal reference and against literals in the processing tests.
+    /// </summary>
+    [Theory]
+    [InlineData(HdrToneMappingOperator.Clip, "clip")]
+    [InlineData(HdrToneMappingOperator.Hable, "hable")]
+    [InlineData(HdrToneMappingOperator.Mobius, "mobius")]
+    public async Task ToneMappingCurvesAreThoseOfFFmpeg(HdrToneMappingOperator toneMappingOperator, string name)
+    {
+        var ffmpeg = await RequiredTools.FFmpegAsync();
+        const double White = 203;
+        const double Peak = 1000;
+        const int Count = 96;
+
+        // Colors whose largest component goes from black to the peak, with two other components at fixed ratios, in
+        // units of the white; planar G, B, R
+        var colors = new float[3 * Count];
+        for (var i = 0; i < Count; i++)
+        {
+            var x = (float)(i * (Peak / White) / (Count - 1));
+            (colors[i], colors[Count + i], colors[(2 * Count) + i]) = (x / 2, x / 4, x);
+        }
+
+        var input = ArtifactPath($"tonemap-{name}-in.raw");
+        var output = ArtifactPath($"tonemap-{name}-out.raw");
+        var inputBytes = new byte[colors.Length * sizeof(float)];
+        for (var i = 0; i < colors.Length; i++)
+        {
+            BinaryPrimitives.WriteSingleLittleEndian(inputBytes.AsSpan(i * sizeof(float)), colors[i]);
+        }
+
+        await File.WriteAllBytesAsync(input, inputBytes, XunitCancellationToken);
+        var filter = string.Create(CultureInfo.InvariantCulture, $"tonemap=tonemap={name}:peak={Peak / White:R}:desat=0");
+        var result = await ffmpeg.RunAsync(["-y", "-f", "rawvideo", "-pix_fmt", "gbrpf32le", "-s", string.Create(CultureInfo.InvariantCulture, $"{Count}x1"), "-i", input, "-vf", filter, "-f", "rawvideo", "-pix_fmt", "gbrpf32le", output], XunitCancellationToken);
+        Assert.Equal(0, result.ExitCode, message: result.StandardError);
+        var outputBytes = await File.ReadAllBytesAsync(output, XunitCancellationToken);
+        Assert.HasCount(inputBytes.Length, outputBytes);
+        var mapped = new float[colors.Length];
+        for (var i = 0; i < mapped.Length; i++)
+        {
+            mapped[i] = BinaryPrimitives.ReadSingleLittleEndian(outputBytes.AsSpan(i * sizeof(float)));
+        }
+
+        // The stage takes what the PQ function decodes to: fractions of 10,000 cd/m2
+        var stage = new HdrToneMapStage(new CicpColorSpace(9, CicpTransfer.Pq, IsGray: false), toneMappingOperator, Peak, White);
+        Span<double> values = stackalloc double[IccPipeline.MaxChannels];
+        var worst = 0d;
+        for (var i = 0; i < Count; i++)
+        {
+            values[0] = (double)colors[(2 * Count) + i] * White / 10_000;
+            values[1] = (double)colors[i] * White / 10_000;
+            values[2] = (double)colors[Count + i] * White / 10_000;
+            stage.Apply(values);
+            worst = Math.Max(worst, Math.Max(Math.Abs(values[0] - mapped[(2 * Count) + i]), Math.Max(Math.Abs(values[1] - mapped[i]), Math.Abs(values[2] - mapped[Count + i]))));
+        }
+
+        TestContext.Current.TestOutputHelper?.WriteLine(string.Create(CultureInfo.InvariantCulture, $"{name}: largest difference with FFmpeg {worst:E2}"));
+        Assert.True(worst <= 2e-6, string.Create(CultureInfo.InvariantCulture, $"{name}: the curve differs from the one of FFmpeg by {worst:E3}."));
     }
 
     /// <summary>

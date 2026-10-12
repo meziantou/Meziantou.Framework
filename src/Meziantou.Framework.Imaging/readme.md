@@ -575,10 +575,16 @@ transparent pixels never bleed (zero alpha becomes transparent black), and 16-bi
 precision.
 
 - `ResizeWorkingSpace.Encoded` (default) filters the stored sample values directly, like most image tools.
-- `ResizeWorkingSpace.LinearSrgb` converts sRGB samples to linear light (IEC 61966-2-1 transfer) before filtering and back
-  afterward (more physically correct averages, for example for thin bright lines). It accepts untagged images (assumed
-  sRGB) and ICC profiles recognized as sRGB or sGray only; any other profile is rejected rather than misinterpreted. No
-  ICC transform is applied in either space: convert such an image first with `ConvertColorProfile(IccProfile.Srgb)`.
+- `ResizeWorkingSpace.LinearSrgb` converts the samples to linear light before filtering and back afterward (more
+  physically correct averages, for example for thin bright lines), with the transfer function of the image: sRGB
+  (IEC 61966-2-1) for an untagged image and for an ICC profile recognized as sRGB or sGray; any other profile is
+  rejected rather than misinterpreted. No ICC transform is applied in either space: convert such an image first with
+  `ConvertColorProfile(IccProfile.Srgb)`. An image with a CICP color description and no ICC profile (an AVIF or JPEG XL
+  image, for example) is decoded with the function of its transfer characteristics, whatever its primaries, which do
+  not change how light adds up: BT.709, gamma 2.2, PQ, HLG and the other functions of Rec. ITU-T H.273. PQ and HLG
+  samples are filtered in the light their function decodes to, relative to its nominal peak, and stay PQ or HLG
+  samples. Unspecified transfer characteristics are read as sRGB, linear ones are filtered as stored, and reserved
+  ones are rejected. The name of the value is historical.
 
 A resize to the current size leaves the image unchanged. Results do not depend on the worker count or on SIMD support:
 the vectorized and parallel kernels are bit-identical to the scalar reference.
@@ -770,11 +776,13 @@ content light level, the mastering display color volume and text entries.
 - **CICP color descriptions are labels too.** `Metadata.Cicp` holds the code points of ITU-T H.273 that an AVIF file
   declares, or that are equivalent to the enumerated color encoding of a JPEG XL file: color primaries, transfer
   characteristics, matrix coefficients and range. The decoder applies the matrix and the range to produce RGB; the
-  primaries and the transfer characteristics are never applied (HDR samples are not tone mapped). The AVIF encoder
+  primaries and the transfer characteristics are not applied when a file is read or written (the samples of an HDR
+  image are returned as they are stored). `ConvertColorProfile` converts the pixels from the color space they
+  describe, and linear-light processing decodes the samples with their transfer function. The AVIF encoder
   stores the description (with the matrix and the range that it used), and the JPEG XL encoder stores it when the
   format can enumerate it (full-range RGB with the sRGB, Display P3, DCI-P3 or BT.2020 primaries). For the other
   encoders, a description that is not equivalent to sRGB is metadata the format cannot store, unless an ICC profile is
-  written. Linear-light processing rejects such a description.
+  written.
 - **Light levels, the mastering display and the shape of the pixels are labels too.** `Metadata.ContentLightLevel`
   (MaxCLL and MaxPALL, in cd/m2) and `Metadata.MasteringDisplay` (the primaries, the white point and the luminance
   range of the display, as the integers of SMPTE ST 2086) describe high dynamic range samples as they were mastered;
@@ -830,9 +838,16 @@ public static void EditMetadata(string path)
 Color conversion between ICC profiles is always explicit. `image.ConvertColorProfile(profile)` converts every frame and
 the poster from the color space of the image to the color space of `profile`, then labels the image with it:
 
-- The source is `Metadata.IccProfile`. Without profile it is sRGB (`IccProfile.Srgb`), sGray for grayscale pixel formats
+- The source is `Metadata.IccProfile`. Without profile it is the color space of the CICP color description
+  (`Metadata.Cicp`): the function of its transfer characteristics, then its color primaries, adapted to the white of
+  the ICC connection space with the linear Bradford transform. Unspecified code points are those of sRGB, the matrix
+  coefficients and the range play no part (they describe how a file stored the samples), and reserved primaries or
+  transfer characteristics are rejected. Without profile and without description, or with a description that is
+  equivalent to sRGB, the source is sRGB (`IccProfile.Srgb`), sGray for grayscale pixel formats
   (`IccProfile.SrgbGray`), or their linear-light counterparts when `Metadata.TransferFunction` is `Linear`. A profile
   together with the `Linear` label is ambiguous and rejected.
+- After the conversion the profile describes the pixels: a color description that is not equivalent to sRGB, the
+  content light level and the mastering display are removed with the colors they described.
 - The pixel format is kept, so the destination must be an RGB profile for color formats and a grayscale profile for
   `Gray8`/`Gray16`. Colors are converted at the storage precision (16-bit formats stay 16-bit); alpha is copied
   unchanged and the color of transparent pixels is converted like any other.
@@ -856,6 +871,45 @@ public static void ConvertToSrgb(string inputPath, string outputPath)
     // Untagged pixels are read as sRGB: the label can be removed for formats that cannot store a profile
     image.Metadata.IccProfile = null;
     image.Save(outputPath);
+}
+```
+
+High dynamic range samples (the PQ and HLG transfer characteristics, 16 and 18) are not converted implicitly: an ICC
+profile describes a standard dynamic range, and compressing highlights into it changes the look of the image.
+`ConvertColorProfile` rejects them unless `IccColorTransformOptions.ToneMapping` says how:
+
+- PQ samples are the light of a display, up to 10,000 cd/m2. HLG samples are the light of a scene, turned into the
+  light of a display by the opto-optical transfer function of Rec. ITU-R BT.2100 for the peak of the source.
+- `TargetWhiteLuminance` (203 cd/m2 by default, the reference white of Report ITU-R BT.2408) becomes the white of the
+  result. `SourcePeakLuminance` is the brightest light of the source, which the curve maps to that white: when it is
+  not set, it is the maximum content light level of the image (PQ), else the maximum luminance of its mastering
+  display, else 10,000 cd/m2 (PQ) or 1,000 cd/m2 (HLG).
+- `Operator` is the curve: `Bt2390` (the default: the EETF of Report ITU-R BT.2390, which keeps the light below a knee
+  and rolls off above), `Clip`, `Reinhard`, `Hable` or `Mobius`. Every curve is applied to the largest component of a
+  color and the three components are scaled together, so highlights keep their hue. The result is linear light in
+  the primaries of the source, which is then converted to the destination profile like any other color; a source
+  whose peak is below the white is neither compressed nor brightened.
+- Samples are 8-bit or 16-bit integers from end to end: there is no floating-point pixel format, and the converted
+  image is a standard dynamic range one.
+
+<!-- snippet: convert-hdr-to-srgb -->
+```csharp
+public static void ConvertHdrToSrgb(string avifPath, string pngPath)
+{
+    using var image = Image.Load(avifPath);
+
+    // The image has no ICC profile: its color description (BT.2020 primaries with PQ samples, for
+    // example) is what the colors are converted from. PQ and HLG samples are only converted when
+    // the options say how the light above the white of the result is compressed.
+    var options = new IccColorTransformOptions
+    {
+        ToneMapping = new HdrToneMappingOptions { Operator = HdrToneMappingOperator.Bt2390 },
+    };
+    var grayscale = image.PixelFormat is PixelFormat.Gray8 or PixelFormat.Gray16;
+    image.ConvertColorProfile(grayscale ? IccProfile.SrgbGray : IccProfile.Srgb, options);
+
+    // The pixels are sRGB ones: the color description and the light levels went with the conversion
+    image.Save(pngPath, new PngEncoder { MetadataHandling = MetadataHandling.Strict });
 }
 ```
 
@@ -1681,8 +1735,8 @@ Everything below is rejected explicitly (never decoded or encoded approximately)
 | Metadata | Profiles are preserved and labeled, never applied implicitly (colors are converted only by `ConvertColorProfile` and `IccColorTransform`); EXIF orientation is reported, applied only by `AutoOrient`; extended XMP in JPEG is not supported; per-format storage limits are listed in [Metadata, color profiles and orientation](#metadata-color-profiles-and-orientation); unsupported items follow `MetadataHandling` (`Strict` throws by default) |
 | Color management | ICC version 2 and 4 grayscale, RGB and CMYK profiles (matrix-based and table-based): no version 5 (iccMAX), device-link, abstract or named-color profile, no multi-process-element (`D2Bx`/`B2Dx`) tag, no other data color space; `ConvertColorProfile` keeps the pixel format (an RGB image cannot become grayscale or CMYK this way); no CMYK pixel format: a CMYK JPEG file or TIFF page is converted to RGB when it is loaded (`CmykConversionOptions`, RGB destination only) and CMYK cannot be written; no gamut mapping beyond per-channel clipping |
 | Drawing | No text, no image or pattern brush, no transform, no clipping region other than the canvas, no dashed stroke, no elliptical-arc path element, no blend mode other than source-over; always antialiased; blended on the encoded sample values (no linear-light option); sequential; gradients have no focal point and no rotation of their own; coordinates are limited to ±16,777,216 |
-| Processing | No HDR, text rendering or custom processors; `LinearSrgb` resizing and convolution accept untagged or recognized sRGB/sGray profiles only; convolution matrices have odd dimensions, no bias or divisor, no ready-made matrices and no separable fast path |
+| Processing | No floating-point or scene-referred pixel format (HDR samples are 16-bit integers, converted to a standard dynamic range by an explicit tone mapping), no text rendering or custom processors; `LinearSrgb` resizing and convolution accept untagged images, recognized sRGB/sGray profiles and CICP transfer characteristics that have a function; convolution matrices have odd dimensions, no bias or divisor, no ready-made matrices and no separable fast path |
 | AVIF encoding | An image of a sequence is predicted from the previous image only, with one motion vector per block and the regular interpolation filter: no compound prediction (two references), global, warped or overlapped motion, switchable interpolation filter, temporal motion vector prediction, or scene change detection (an image that differs from the previous one is coded with intra blocks, not as a key frame). Not used: intra block copy (content that repeats in an image, such as the characters of a text, is not predicted from the image itself: a lossless screenshot can be larger than its PNG), the split of the transform blocks of an inter block (it has the largest transform of its size), quantizer deltas, quantization matrices, loop restoration, CDEF strengths per block (one pair per frame), super-resolution and film grain. No layered (progressive) output, and no grid for an image sequence. An image sequence of one image cannot store animation settings (it is read back as a still image): a single frame with animation settings is rejected. An image sequence needs a seekable destination and its frame count. The level of the stream is the lowest one whose picture size holds the image; the other limits of a level are not checked |
-| AVIF decoding | Rejected with `UnsupportedImageFeatureException`: `iovl` derived images, grids of derived images, more than eight nested identity derivations, an alpha plane that is not presented as its derived color image, fragmented files, edit lists that do not play the whole track, image sequences whose images change size, clean apertures that do not select whole samples, grid tiles that declare other transformations than their grid, large scale tile streams, reserved matrix coefficients, and matrix coefficients without the transfer characteristics or the primaries they are defined with (constant luminance without a transfer function, ICtCp with other transfer characteristics than PQ and HLG, chromaticity-derived coefficients without chromaticities). Not read: gain maps, depth maps, thumbnails, the images that are not the primary item, a `tkhd` matrix that is not a quarter turn or a mirror (the images are returned as stored), the content color volume (`cclv`) and the light levels and the mastering display of AV1 metadata units. A layered image is returned at its full quality only: its lower layers are not exposed as a progressive rendering. HDR samples are returned as stored: no tone mapping |
+| AVIF decoding | Rejected with `UnsupportedImageFeatureException`: `iovl` derived images, grids of derived images, more than eight nested identity derivations, an alpha plane that is not presented as its derived color image, fragmented files, edit lists that do not play the whole track, image sequences whose images change size, clean apertures that do not select whole samples, grid tiles that declare other transformations than their grid, large scale tile streams, reserved matrix coefficients, and matrix coefficients without the transfer characteristics or the primaries they are defined with (constant luminance without a transfer function, ICtCp with other transfer characteristics than PQ and HLG, chromaticity-derived coefficients without chromaticities). Not read: gain maps, depth maps, thumbnails, the images that are not the primary item, a `tkhd` matrix that is not a quarter turn or a mirror (the images are returned as stored), the content color volume (`cclv`) and the light levels and the mastering display of AV1 metadata units. A layered image is returned at its full quality only: its lower layers are not exposed as a progressive rendering. HDR samples are returned as stored: tone mapping is an explicit `ConvertColorProfile` with `ToneMapping` options |
 | JPEG XL | Decoding, rejected with `UnsupportedImageFeatureException` (also from `Identify` when the image header tells): floating-point samples and samples of more than 16 bits, premultiplied alpha, CMYK (a black channel) and spot colors, an XYB image whose ICC profile is not sRGB (it needs a color conversion to that profile), the PQ or HLG transfer function with primaries or a white point that CICP cannot express, a Modular frame stored as YCbCr with subsampled channels, restoration filters on a grayscale Modular frame, an upsampled frame with patches or splines whose extra channels have another resolution. Ignored: the preview frame, frame names, the intrinsic size, the JPEG reconstruction data (`jbrd`: a recompressed JPEG file is decoded to pixels, the JPEG file is not rebuilt), `jumb` and unknown boxes; depth, selection mask, thermal and the other extra channels than alpha are decoded and dropped. Samples of 1 to 16 bits other than 8 and 16 are scaled exactly to 8 or 16 bits. A lossy frame is decoded in floating point: the result is within a few sixteen-bit units of the reference decoders, not bit-exact. Encoding: lossless only (no lossy output), full frames that replace the image (no layers, blending, patches or cropped frames), frame durations in whole milliseconds, no frame of an animation without duration; an EXIF orientation is written to the image header |
 | API | No public allocator, custom pixel type, codec plug-in or image-processor interface; implementation types are internal |

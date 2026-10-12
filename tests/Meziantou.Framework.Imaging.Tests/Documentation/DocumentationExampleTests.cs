@@ -649,6 +649,36 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void ConvertHdrToSrgbToneMapsTheImageAndSavesItAsPng()
+    {
+        // BT.2020 primaries with the PQ transfer characteristics, 10 bits: the image that ConvertAvif cannot save as PNG
+        var fixture = GoldenCorpus.Default.Get("avif/lossy-420-bt2020-limited-10bit");
+        var png = GetPath("hdr-to-srgb.png");
+        Examples.ConvertHdrToSrgb(fixture.InputPath, png);
+
+        using var converted = Image.Load<Rgba64>(png);
+        Assert.Null(converted.Metadata.Cicp);
+        Assert.NotNull(converted.Metadata.IccProfile);
+        Assert.Equal(IccProfile.Srgb.Data.Span, converted.Metadata.IccProfile.Data.Span);
+
+        // The same pixels as the conversion of the loaded image, which are not the stored samples
+        using var source = Image.Load<Rgba64>(fixture.InputPath);
+        using var expected = Image.Load<Rgba64>(fixture.InputPath);
+        expected.ConvertColorProfile(IccProfile.Srgb, new IccColorTransformOptions { ToneMapping = HdrToneMappingOptions.Default }, TestContext.Current.CancellationToken);
+        var changed = false;
+        for (var y = 0; y < expected.Height; y++)
+        {
+            for (var x = 0; x < expected.Width; x++)
+            {
+                Assert.Equal(expected.Frames[0][x, y], converted.Frames[0][x, y]);
+                changed |= source.Frames[0][x, y] != expected.Frames[0][x, y];
+            }
+        }
+
+        Assert.True(changed);
+    }
+
+    [Fact]
     public void ConvertToSrgbConvertsTheColorsAndRemovesTheLabel()
     {
         // Display P3 (200, 100, 50) is sRGB (215, 93, 31); the result is saved to QOI, which stores no profile

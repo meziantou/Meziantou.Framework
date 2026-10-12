@@ -30,7 +30,8 @@ the library guarantees to its callers (support matrix, limitations, defaults). K
 - **Never lose information silently.** Losing alpha, precision, animation, a poster, metadata or a color profile needs an
   explicit setting; otherwise throw `UnsupportedImageFeatureException`. Color profiles are preserved and labeled, never
   applied implicitly: only `ConvertColorProfile`, `IccColorTransform` and a load with `CmykConversionOptions` convert
-  colors, and the pixels and their profile always change together.
+  colors, and the pixels and their profile always change together. A CICP color description is a label too: only
+  `ConvertColorProfile` converts from it, and high dynamic range samples only with explicit `ToneMapping` options.
 - **An image holds full displayed frames**, not encoded deltas; decoders composite, encoders write what they are given.
   Timing is exact (`FrameDuration` is a rational number); a duration or play count the output format cannot represent is
   an error unless a rounding policy is set.
@@ -183,6 +184,16 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
 - A conversion is a list of `IccStage` evaluated in `double`, one color at a time (`ColorConversionKernels.ConvertScalar`
   is the numerical reference). Both profiles meet in CIEXYZ relative to D50. A faster kernel must be bit-identical and
   proven so in `VectorizedKernelTests`.
+- The source of `ConvertColorProfile` may be the CICP color description of an image without profile
+  (`CicpColorSpace`, `IccPipeline.Create(CicpColorSpace, ...)`): a `CicpDecodeStage` (the functions of
+  `CicpTransfer`, Rec. ITU-T H.273 table 3), the matrix of the primaries (`CicpPrimaries`, table 2) adapted to D50 with
+  the linear Bradford transform, then the destination half of the ICC pipeline. Descriptions equivalent to sRGB keep
+  the built-in profiles, bit for bit. PQ and HLG samples go through `HdrToneMapStage` first (BT.2100 display light,
+  then a curve of `HdrToneMappingOperator` on the largest component), and are rejected without `ToneMapping` options.
+  The decimal references are `ReferenceCicpColorSpace`, `ReferenceCicpTransfer` and `ReferenceHdrToneMap`; the curves
+  also have literals computed outside the library, and FFmpeg's `tonemap` filter agrees with three of them
+  (`ToneMappingCurvesAreThoseOfFFmpeg`). `ResizeWorkingSpace.LinearSrgb` and `ConvolutionWorkingSpace.LinearSrgb` use
+  the transfer function of the description (`Image.GetLinearLightTransfer`), whatever its primaries.
 - The interpolation of color lookup tables (simplex along the main diagonal for gray, RGB and CIEXYZ inputs,
   multilinear for CIELAB and CMYK inputs), the generalized inverse of tone curves and the black point estimates are
   part of the documented numerical contract: change them only with `readme.md` and the tests.

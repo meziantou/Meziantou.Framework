@@ -43,4 +43,17 @@ public sealed class IccColorTransformOptions
     /// converted back to the profile connection space has no measurable black point and is not compensated.
     /// </remarks>
     public bool BlackPointCompensation { get; init; } = true;
+
+    /// <summary>
+    /// Gets how high dynamic range samples are brought to the standard dynamic range of the destination profile, or
+    /// <see langword="null"/> (the default) to refuse to convert them.
+    /// </summary>
+    /// <remarks>
+    /// It applies to <see cref="ImageProcessingExtensions.ConvertColorProfile"/> on an image whose samples are PQ or HLG
+    /// ones: an image without ICC profile whose CICP color description (<see cref="Metadata.ImageMetadata.Cicp"/>)
+    /// declares the transfer characteristics 16 or 18. Such an image is rejected when this is <see langword="null"/>:
+    /// compressing the highlights changes the look of the image, which is a choice. It is ignored for every other
+    /// source, and by <see cref="IccColorTransform"/>, whose sources are ICC profiles.
+    /// </remarks>
+    public HdrToneMappingOptions? ToneMapping { get; init; }
 }

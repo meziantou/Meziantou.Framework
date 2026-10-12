@@ -186,7 +186,7 @@ internal static class Convolver
                 accumulator.Clear();
             }
 
-            WorkingSamples.Store(accumulator, GetSamples<TSample>(storage, y), plan.Alpha, plan.IsLinear, plan.MaxValue);
+            WorkingSamples.Store(accumulator, GetSamples<TSample>(storage, y), plan.Alpha, plan.Transfer, plan.MaxValue);
         }
 
         observer?.Invoke(band, false);
@@ -202,7 +202,7 @@ internal static class Convolver
         var channels = plan.Channels;
         var centerX = plan.CenterX;
         var width = plan.Size.Width;
-        WorkingSamples.Load<TSample>(GetSamples<TSample>(storage, y), padded.Slice(centerX * channels, width * channels), plan.Alpha, plan.IsLinear);
+        WorkingSamples.Load<TSample>(GetSamples<TSample>(storage, y), padded.Slice(centerX * channels, width * channels), plan.Alpha, plan.Transfer);
         for (var i = 0; i < centerX; i++)
         {
             FillPadding(padded, i, plan.MapColumn(i - centerX), centerX, channels);

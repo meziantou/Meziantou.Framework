@@ -146,6 +146,23 @@ namespace Meziantou.Framework.Imaging
         public static bool operator !=(Meziantou.Framework.Imaging.Gray8 left, Meziantou.Framework.Imaging.Gray8 right) => throw null;
     }
 
+    public enum HdrToneMappingOperator
+    {
+        Bt2390 = 0,
+        Clip = 1,
+        Reinhard = 2,
+        Hable = 3,
+        Mobius = 4,
+    }
+
+    public sealed class HdrToneMappingOptions
+    {
+        public static Meziantou.Framework.Imaging.HdrToneMappingOptions Default { get => throw null; }
+        public Meziantou.Framework.Imaging.HdrToneMappingOperator Operator { get => throw null; init { } }
+        public double? SourcePeakLuminance { get => throw null; init { } }
+        public double TargetWhiteLuminance { get => throw null; init { } }
+    }
+
     public sealed class IccColorTransform
     {
         public int SourceChannelCount { get => throw null; }
@@ -161,6 +178,7 @@ namespace Meziantou.Framework.Imaging
         public static Meziantou.Framework.Imaging.IccColorTransformOptions Default { get => throw null; }
         public Meziantou.Framework.Imaging.Metadata.IccRenderingIntent Intent { get => throw null; init { } }
         public bool BlackPointCompensation { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.HdrToneMappingOptions? ToneMapping { get => throw null; init { } }
     }
 
     public abstract class Image : System.IDisposable

@@ -1105,8 +1105,15 @@ namespace Meziantou.Framework.Imaging.Formats
         public override Meziantou.Framework.Imaging.ImageFormat Format { get => throw null; }
         public int Quality { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Formats.JpegChromaSubsampling ChromaSubsampling { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Formats.JpegEncodingProcess Process { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Rgba64? BackgroundColor { get => throw null; init { } }
         public bool AllowBitDepthReduction { get => throw null; init { } }
+    }
+
+    public enum JpegEncodingProcess
+    {
+        Baseline = 0,
+        Progressive = 1,
     }
 
     public sealed class JpegXlEncoder : Meziantou.Framework.Imaging.Formats.ImageEncoder

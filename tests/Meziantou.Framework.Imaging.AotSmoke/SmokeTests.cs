@@ -65,6 +65,10 @@ internal static class SmokeTests
             using var decoded = Image.Load<Rgb24>(encoded);
             var error = MaxError(source, decoded);
             Check(error <= 24, string.Create(CultureInfo.InvariantCulture, $"JPEG {subsampling} reconstruction (max error {error})"));
+
+            // The progressive process codes the same coefficients in several scans
+            using var progressive = Image.Load<Rgb24>(Encode(source, new JpegEncoder { Quality = 95, ChromaSubsampling = subsampling, Process = JpegEncodingProcess.Progressive }));
+            Check(MaxError(decoded, progressive) == 0, $"JPEG {subsampling} progressive output");
         }
 
         using var opaque = CreatePattern(seed: 3);

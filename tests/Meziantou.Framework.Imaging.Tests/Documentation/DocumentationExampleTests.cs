@@ -261,6 +261,51 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void SaveProgressiveJpegWritesTheSamePixelsInSeveralScans()
+    {
+        var source = GetPath("photo-source.png");
+        using (var image = new Image<Rgb24>(40, 24))
+        {
+            image.Frames[0].ProcessPixelRows(pixels =>
+            {
+                for (var y = 0; y < pixels.Height; y++)
+                {
+                    var row = pixels.GetRowSpan(y);
+                    for (var x = 0; x < row.Length; x++)
+                    {
+                        row[x] = new Rgb24 { R = (byte)(x * 6), G = (byte)(y * 10), B = (byte)((x + y) * 4) };
+                    }
+                }
+            });
+            image.Save(source);
+        }
+
+        var output = GetPath("progressive.jpg");
+        Examples.SaveProgressiveJpeg(source, output);
+
+        // A progressive frame (SOF2) with ten scans, which decodes to the pixels of the baseline file of the same settings
+        var data = File.ReadAllBytes(output);
+        Assert.True(data.AsSpan().IndexOf([(byte)0xFF, (byte)0xC2, (byte)0x00, (byte)0x11, (byte)0x08]) > 0);
+        Assert.Equal(-1, data.AsSpan().IndexOf([(byte)0xFF, (byte)0xC0, (byte)0x00, (byte)0x11, (byte)0x08]));
+        using var progressive = Image.Load<Rgb24>(output);
+        var baselinePath = GetPath("baseline.jpg");
+        using (var image = Image.Load<Rgb24>(source))
+        {
+            image.Save(baselinePath, new JpegEncoder { Quality = 85 });
+        }
+
+        using var baseline = Image.Load<Rgb24>(baselinePath);
+        Assert.Equal(new Size(40, 24), progressive.Size);
+        for (var y = 0; y < 24; y++)
+        {
+            for (var x = 0; x < 40; x++)
+            {
+                Assert.Equal(baseline.Frames[0][x, y], progressive.Frames[0][x, y]);
+            }
+        }
+    }
+
+    [Fact]
     public void SaveWebPWritesALossyPhotoAndALosslessAnimation()
     {
         var (apngPath, _) = BuildAnimation();

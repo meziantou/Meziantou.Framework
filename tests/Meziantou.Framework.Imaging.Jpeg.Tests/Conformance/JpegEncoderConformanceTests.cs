@@ -20,13 +20,13 @@ public sealed class JpegEncoderConformanceTests
 {
     private static readonly Rgba64 Background = new(0xFFFF, 0x4000, 0x0080);
 
-    private static readonly JpegEncoder[] Encoders =
+    private static readonly (int Quality, JpegChromaSubsampling Subsampling)[] Settings =
     [
-        new JpegEncoder { BackgroundColor = Background, AllowBitDepthReduction = true },
-        new JpegEncoder { Quality = 75, ChromaSubsampling = JpegChromaSubsampling.Ratio444, BackgroundColor = Background, AllowBitDepthReduction = true },
-        new JpegEncoder { Quality = 50, ChromaSubsampling = JpegChromaSubsampling.Ratio422, BackgroundColor = Background, AllowBitDepthReduction = true },
-        new JpegEncoder { Quality = 100, ChromaSubsampling = JpegChromaSubsampling.Ratio444, BackgroundColor = Background, AllowBitDepthReduction = true },
-        new JpegEncoder { Quality = 30, ChromaSubsampling = JpegChromaSubsampling.Ratio420, BackgroundColor = Background, AllowBitDepthReduction = true },
+        (90, JpegChromaSubsampling.Auto),
+        (75, JpegChromaSubsampling.Ratio444),
+        (50, JpegChromaSubsampling.Ratio422),
+        (100, JpegChromaSubsampling.Ratio444),
+        (30, JpegChromaSubsampling.Ratio420),
     ];
 
     public static TheoryData<string, string> Cases()
@@ -50,32 +50,38 @@ public sealed class JpegEncoderConformanceTests
         {
             var samples = JpegTestPatterns.ToEncodedSamples(expected, (Background.R, Background.G, Background.B));
             using var image = EncoderSources.CreateImage(expected, pixelFormat);
-            foreach (var encoder in Encoders)
+            foreach (var (quality, subsampling) in Settings)
             {
-                using var stream = new MemoryStream();
-                image.Save(stream, encoder);
-                var context = $"{id} {name} as {pixelFormat} (quality {encoder.Quality}, {encoder.ChromaSubsampling})";
-                var reference = ReferenceJpeg.Parse(stream.ToArray());
-                Assert.True(reference.Width == expected.Width && reference.Height == expected.Height && reference.HasJfifFirst, context);
                 var gray = samples.Layout == RawPixelLayout.Gray8;
-                var (h, v) = gray ? (1, 1) : encoder.ChromaSubsampling switch
+                var (h, v) = gray ? (1, 1) : subsampling switch
                 {
                     JpegChromaSubsampling.Ratio444 => (1, 1),
                     JpegChromaSubsampling.Ratio422 => (2, 1),
                     _ => (2, 2),
                 };
 
-                Assert.True(reference.Components.Count == (gray ? 1 : 3) && reference.Components[0].H == h && reference.Components[0].V == v, context);
-                var model = JpegEncoderModel.ComputeCoefficients(samples, h, v, JpegEncoderModel.ScaleTable(JpegEncoderModel.AnnexKLuminance, encoder.Quality), JpegEncoderModel.ScaleTable(JpegEncoderModel.AnnexKChrominance, encoder.Quality));
-                var comparison = JpegEncoderModel.Compare(model, reference.DecodeCoefficients());
-                Assert.True(comparison.IsMatch, context + ": " + comparison.Describe());
-
-                // Near-lossless setting: the plain reconstruction stays within a few units of the flattened, reduced source
-                // (the corpus references are tiny, so a per-channel bias is not meaningful here)
-                if (encoder.Quality == 100 && encoder.ChromaSubsampling == JpegChromaSubsampling.Ratio444)
+                // Both processes code the coefficients of the same model
+                var model = JpegEncoderModel.ComputeCoefficients(samples, h, v, JpegEncoderModel.ScaleTable(JpegEncoderModel.AnnexKLuminance, quality), JpegEncoderModel.ScaleTable(JpegEncoderModel.AnnexKChrominance, quality));
+                foreach (var process in new[] { JpegEncodingProcess.Baseline, JpegEncodingProcess.Progressive })
                 {
-                    var error = ReconstructionError.Measure(samples, reference.DecodePixels());
-                    Assert.True(error.Psnr > 40 && error.MaxError <= 4, context + ": " + error.Describe());
+                    var encoder = new JpegEncoder { Quality = quality, ChromaSubsampling = subsampling, Process = process, BackgroundColor = Background, AllowBitDepthReduction = true };
+                    using var stream = new MemoryStream();
+                    image.Save(stream, encoder);
+                    var context = $"{id} {name} as {pixelFormat} (quality {quality}, {subsampling}, {process})";
+                    var reference = ReferenceJpeg.Parse(stream.ToArray());
+                    Assert.True(reference.Width == expected.Width && reference.Height == expected.Height && reference.HasJfifFirst, context);
+                    Assert.Equal(process == JpegEncodingProcess.Progressive, reference.IsProgressive);
+                    Assert.True(reference.Components.Count == (gray ? 1 : 3) && reference.Components[0].H == h && reference.Components[0].V == v, context);
+                    var comparison = JpegEncoderModel.Compare(model, reference.DecodeCoefficients());
+                    Assert.True(comparison.IsMatch, context + ": " + comparison.Describe());
+
+                    // Near-lossless setting: the plain reconstruction stays within a few units of the flattened, reduced source
+                    // (the corpus references are tiny, so a per-channel bias is not meaningful here)
+                    if (quality == 100 && subsampling == JpegChromaSubsampling.Ratio444)
+                    {
+                        var error = ReconstructionError.Measure(samples, reference.DecodePixels());
+                        Assert.True(error.Psnr > 40 && error.MaxError <= 4, context + ": " + error.Describe());
+                    }
                 }
             }
         }

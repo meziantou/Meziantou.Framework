@@ -10,7 +10,6 @@ namespace Meziantou.Framework.Imaging.Internals;
 internal static class AvifFileWriter
 {
     private const int ColorItemId = 1;
-    private const int AlphaItemId = 2;
 
     /// <summary>What a still image file describes besides its coded payloads.</summary>
     internal sealed class StillImage
@@ -52,12 +51,36 @@ internal static class AvifFileWriter
 
         /// <summary>Gets a value indicating whether the color samples are multiplied by the alpha of their pixel; ignored without alpha plane.</summary>
         public bool IsPremultiplied { get; init; }
+
+        /// <summary>
+        /// Gets the grid of an image that is coded as tiles, or <see langword="null"/> for an image that is one coded item.
+        /// <see cref="Color"/> and <see cref="Alpha"/> are then the sequence headers of the tiles, and
+        /// <see cref="ColorLength"/> and <see cref="AlphaLength"/> are not used.
+        /// </summary>
+        public GridLayout? Grid { get; init; }
+    }
+
+    /// <summary>
+    /// The grid of a still image that is coded as tiles (ISO/IEC 23008-12, section 6.6.2.3): tiles of one size, in row-major
+    /// order, whose right column and bottom row may extend past the image.
+    /// </summary>
+    internal sealed class GridLayout
+    {
+        public required int TileWidth { get; init; }
+
+        public required int TileHeight { get; init; }
+
+        public required int Columns { get; init; }
+
+        public required int Rows { get; init; }
+
+        public int TileCount => Columns * Rows;
     }
 
     /// <summary>
     /// Writes everything that precedes the coded images of a file: the <c>ftyp</c> and <c>meta</c> boxes, the header of the
     /// <c>mdat</c> box and the EXIF and XMP items. The file continues with the coded alpha plane, when there is one, then
-    /// the coded color image.
+    /// the coded color image: tile after tile for a grid, whose descriptors this method writes too.
     /// </summary>
     /// <remarks>
     /// An image sequence has the same boxes, which describe its first image as a still image for the readers that do not
@@ -68,17 +91,82 @@ internal static class AvifFileWriter
     /// <param name="output">The buffer that receives the boxes.</param>
     /// <param name="image">The image: the first one of a sequence.</param>
     /// <param name="movieReservation">The number of bytes to reserve for the <c>moov</c> box of an image sequence, or -1 for a still image.</param>
+    /// <param name="colorTileLengths">For a grid, the number of bytes of each coded color tile, in row-major order.</param>
+    /// <param name="alphaTileLengths">For a grid with an alpha plane, the number of bytes of each coded alpha tile.</param>
     /// <returns>For an image sequence, the position of the reserved bytes and of the size of the <c>mdat</c> box.</returns>
-    /// <exception cref="UnsupportedImageFeatureException">The file would exceed 4 GiB.</exception>
-    public static (int MovieOffset, int MediaSizeOffset) WritePrefix(PooledPayloadWriter output, StillImage image, int movieReservation = -1)
+    /// <exception cref="UnsupportedImageFeatureException">The file would exceed 4 GiB, or has more tiles than item identifiers.</exception>
+    public static (int MovieOffset, int MediaSizeOffset) WritePrefix(PooledPayloadWriter output, StillImage image, int movieReservation = -1, ReadOnlySpan<int> colorTileLengths = default, ReadOnlySpan<int> alphaTileLengths = default)
     {
         var isSequence = movieReservation >= 0;
         var writer = new AvifBoxWriter(output);
         var hasAlpha = image.Alpha is not null;
         var hasExif = !image.Exif.IsEmpty;
         var hasXmp = !image.Xmp.IsEmpty;
-        var exifItemId = hasAlpha ? AlphaItemId + 1 : ColorItemId + 1;
+
+        // The items, in the order of their identifiers: the color image, its tiles when it is a grid, the alpha plane and
+        // its tiles, then the metadata. A grid is an item whose data are its descriptor
+        var grid = image.Grid;
+        var tileCount = grid?.TileCount ?? 0;
+        var alphaSlot = tileCount + 1;
+        var exifSlot = (2 * tileCount) + 2;
+        var xmpSlot = exifSlot + 1;
+        var slotCount = xmpSlot + 1;
+        var alphaItemId = ColorItemId + tileCount + 1;
+        var exifItemId = hasAlpha ? alphaItemId + tileCount + 1 : alphaItemId;
         var xmpItemId = exifItemId + (hasExif ? 1 : 0);
+        if (xmpItemId > ushort.MaxValue)
+            throw new UnsupportedImageFeatureException("The AVIF image has more tiles than item identifiers.", ImageFormat.Avif, "AVIF grid tile count");
+
+        var descriptorLength = grid is null ? 0 : (image.Width > ushort.MaxValue || image.Height > ushort.MaxValue ? 12 : 8);
+        Span<int> extentOffsets = slotCount <= 16 ? stackalloc int[16] : new int[slotCount];
+        Span<int> lengths = slotCount <= 16 ? stackalloc int[16] : new int[slotCount];
+        Span<int> itemIds = slotCount <= 16 ? stackalloc int[16] : new int[slotCount];
+        lengths[..slotCount].Fill(-1);
+        itemIds[0] = ColorItemId;
+        lengths[0] = grid is null ? image.ColorLength : descriptorLength;
+        if (hasAlpha)
+        {
+            itemIds[alphaSlot] = alphaItemId;
+            lengths[alphaSlot] = grid is null ? image.AlphaLength : descriptorLength;
+        }
+
+        if (grid is not null)
+        {
+            for (var i = 0; i < tileCount; i++)
+            {
+                itemIds[1 + i] = ColorItemId + 1 + i;
+                lengths[1 + i] = colorTileLengths[i];
+                if (hasAlpha)
+                {
+                    itemIds[alphaSlot + 1 + i] = alphaItemId + 1 + i;
+                    lengths[alphaSlot + 1 + i] = alphaTileLengths[i];
+                }
+            }
+        }
+
+        if (hasExif)
+        {
+            // The data of the item start with the offset of the TIFF header in them
+            itemIds[exifSlot] = exifItemId;
+            lengths[exifSlot] = image.Exif.Length + 4;
+        }
+
+        if (hasXmp)
+        {
+            itemIds[xmpSlot] = xmpItemId;
+            lengths[xmpSlot] = image.Xmp.Length;
+        }
+
+        var itemCount = 0;
+        long dataLength = 0;
+        for (var slot = 0; slot < slotCount; slot++)
+        {
+            if (lengths[slot] < 0)
+                continue;
+
+            itemCount++;
+            dataLength += lengths[slot];
+        }
 
         // ISO/IEC 14496-12, section 4.3 "File Type Box"
         var box = writer.BeginBox(AvifFormat.Ftyp);
@@ -115,35 +203,36 @@ internal static class AvifFileWriter
 
         // Item location: one extent per item, with 4-byte offsets from the start of the file and 4-byte lengths. The
         // offsets are known once the meta box ends
-        Span<int> extentOffsets = stackalloc int[4];
-        Span<int> lengths = [image.ColorLength, image.AlphaLength, image.Exif.Length + (hasExif ? 4 : 0), image.Xmp.Length];
-        Span<int> itemIds = [ColorItemId, AlphaItemId, exifItemId, xmpItemId];
-        Span<bool> present = [true, hasAlpha, hasExif, hasXmp];
-        var itemCount = 1 + (hasAlpha ? 1 : 0) + (hasExif ? 1 : 0) + (hasXmp ? 1 : 0);
         box = writer.BeginFullBox(AvifFormat.Iloc, version: 0, flags: 0);
         writer.WriteByte(0x44); // offset_size and length_size
         writer.WriteByte(0x00); // base_offset_size and reserved
         writer.WriteUInt16(itemCount);
-        for (var i = 0; i < 4; i++)
+        for (var slot = 0; slot < slotCount; slot++)
         {
-            if (!present[i])
+            if (lengths[slot] < 0)
                 continue;
 
-            writer.WriteUInt16(itemIds[i]);
+            writer.WriteUInt16(itemIds[slot]);
             writer.WriteUInt16(0); // data_reference_index: this file
             writer.WriteUInt16(1); // extent_count
-            extentOffsets[i] = writer.Length;
+            extentOffsets[slot] = writer.Length;
             writer.WriteUInt32(0);
-            writer.WriteUInt32((uint)lengths[i]);
+            writer.WriteUInt32((uint)lengths[slot]);
         }
 
         writer.EndBox(box);
 
+        // The tiles of a grid are not images of their own: they are hidden
         box = writer.BeginFullBox(AvifFormat.Iinf, version: 0, flags: 0);
         writer.WriteUInt16(itemCount);
-        WriteItemInfo(writer, ColorItemId, AvifFormat.Av01, contentType: default);
-        if (hasAlpha)
-            WriteItemInfo(writer, AlphaItemId, AvifFormat.Av01, contentType: default);
+        for (var slot = 0; slot < exifSlot; slot++)
+        {
+            if (lengths[slot] < 0)
+                continue;
+
+            var isTile = slot is not 0 && slot != alphaSlot;
+            WriteItemInfo(writer, itemIds[slot], grid is not null && !isTile ? AvifFormat.Grid : AvifFormat.Av01, contentType: default, isHidden: isTile);
+        }
 
         if (hasExif)
             WriteItemInfo(writer, exifItemId, AvifFormat.Exif, contentType: default);
@@ -153,15 +242,23 @@ internal static class AvifFileWriter
 
         writer.EndBox(box);
 
-        if (hasAlpha || hasExif || hasXmp)
+        if (grid is not null || hasAlpha || hasExif || hasXmp)
         {
             box = writer.BeginFullBox(AvifFormat.Iref, version: 0, flags: 0);
+            if (grid is not null)
+            {
+                // ISO/IEC 23008-12, section 6.6.2.3: a grid is derived from its tiles, in row-major order
+                WriteItemReference(writer, AvifFormat.Dimg, ColorItemId, ColorItemId + 1, tileCount);
+                if (hasAlpha)
+                    WriteItemReference(writer, AvifFormat.Dimg, alphaItemId, alphaItemId + 1, tileCount);
+            }
+
             if (hasAlpha)
-                WriteItemReference(writer, AvifFormat.Auxl, AlphaItemId, ColorItemId);
+                WriteItemReference(writer, AvifFormat.Auxl, alphaItemId, ColorItemId);
 
             // ISO/IEC 23008-12, section 6.6.2.2: the color image refers to the alpha plane that its colors are multiplied by
             if (hasAlpha && image.IsPremultiplied)
-                WriteItemReference(writer, AvifFormat.Prem, ColorItemId, AlphaItemId);
+                WriteItemReference(writer, AvifFormat.Prem, ColorItemId, alphaItemId);
 
             if (hasExif)
                 WriteItemReference(writer, AvifFormat.Cdsc, exifItemId, ColorItemId);
@@ -172,16 +269,8 @@ internal static class AvifFileWriter
             writer.EndBox(box);
         }
 
-        WriteItemProperties(writer, image);
+        WriteItemProperties(writer, image, alphaItemId);
         writer.EndBox(meta);
-
-        // The media data: the metadata items, the alpha plane, the color image
-        long dataLength = 0;
-        for (var i = 0; i < 4; i++)
-        {
-            if (present[i])
-                dataLength += lengths[i];
-        }
 
         var movieOffset = 0;
         var mediaSizeOffset = 0;
@@ -213,15 +302,25 @@ internal static class AvifFileWriter
             writer.WriteUInt32(AvifFormat.Mdat);
         }
 
+        // The media data: the metadata items and the descriptors of the grids, which this method writes, then the alpha
+        // plane and the color image, tile by tile for a grid
         var offset = mediaStart;
-        Span<int> order = [2, 3, 1, 0];
-        foreach (var i in order)
+        Locate(writer, extentOffsets, lengths, exifSlot, ref offset);
+        Locate(writer, extentOffsets, lengths, xmpSlot, ref offset);
+        if (grid is not null)
         {
-            if (!present[i])
-                continue;
+            Locate(writer, extentOffsets, lengths, 0, ref offset);
+            Locate(writer, extentOffsets, lengths, alphaSlot, ref offset);
+        }
 
-            writer.PatchUInt32(extentOffsets[i], (uint)offset);
-            offset += lengths[i];
+        for (var slot = alphaSlot + (grid is null ? 0 : 1); slot < exifSlot; slot++)
+        {
+            Locate(writer, extentOffsets, lengths, slot, ref offset);
+        }
+
+        for (var slot = grid is null ? 0 : 1; slot < alphaSlot; slot++)
+        {
+            Locate(writer, extentOffsets, lengths, slot, ref offset);
         }
 
         if (hasExif)
@@ -234,7 +333,44 @@ internal static class AvifFileWriter
         if (hasXmp)
             writer.WriteBytes(image.Xmp.Span);
 
+        if (grid is not null)
+        {
+            WriteGridDescriptor(writer, grid, image.Width, image.Height);
+            if (hasAlpha)
+                WriteGridDescriptor(writer, grid, image.Width, image.Height);
+        }
+
         return (movieOffset, mediaSizeOffset);
+
+        static void Locate(AvifBoxWriter writer, ReadOnlySpan<int> extentOffsets, ReadOnlySpan<int> lengths, int slot, ref long offset)
+        {
+            if (lengths[slot] < 0)
+                return;
+
+            writer.PatchUInt32(extentOffsets[slot], (uint)offset);
+            offset += lengths[slot];
+        }
+    }
+
+    // ISO/IEC 23008-12, section 6.6.2.3.2: the version, the flags (1 for 32-bit fields), the numbers of rows and of columns
+    // minus one, then the size of the image that the tiles reconstruct
+    private static void WriteGridDescriptor(AvifBoxWriter writer, GridLayout grid, int width, int height)
+    {
+        var isLarge = width > ushort.MaxValue || height > ushort.MaxValue;
+        writer.WriteByte(0);
+        writer.WriteByte((byte)(isLarge ? 1 : 0));
+        writer.WriteByte((byte)(grid.Rows - 1));
+        writer.WriteByte((byte)(grid.Columns - 1));
+        if (isLarge)
+        {
+            writer.WriteUInt32((uint)width);
+            writer.WriteUInt32((uint)height);
+        }
+        else
+        {
+            writer.WriteUInt16(width);
+            writer.WriteUInt16(height);
+        }
     }
 
     /// <summary>What the <c>moov</c> box of an image sequence describes besides its samples.</summary>
@@ -702,9 +838,9 @@ internal static class AvifFileWriter
     }
 
     // ISO/IEC 14496-12, section 8.11.6 "Item Information Box": an entry of version 2
-    private static void WriteItemInfo(AvifBoxWriter writer, int itemId, uint itemType, ReadOnlySpan<byte> contentType)
+    private static void WriteItemInfo(AvifBoxWriter writer, int itemId, uint itemType, ReadOnlySpan<byte> contentType, bool isHidden = false)
     {
-        var box = writer.BeginFullBox(AvifFormat.Infe, version: 2, flags: 0);
+        var box = writer.BeginFullBox(AvifFormat.Infe, version: 2, flags: isHidden ? 1 : 0);
         writer.WriteUInt16(itemId);
         writer.WriteUInt16(0); // item_protection_index
         writer.WriteUInt32(itemType);
@@ -715,25 +851,37 @@ internal static class AvifFileWriter
         writer.EndBox(box);
     }
 
-    // ISO/IEC 14496-12, section 8.11.12 "Item Reference Box"
-    private static void WriteItemReference(AvifBoxWriter writer, uint type, int fromItemId, int toItemId)
+    // ISO/IEC 14496-12, section 8.11.12 "Item Reference Box": the reference of an item to the items whose identifiers
+    // start at toItemId and follow one another
+    private static void WriteItemReference(AvifBoxWriter writer, uint type, int fromItemId, int toItemId, int count = 1)
     {
         var box = writer.BeginBox(type);
         writer.WriteUInt16(fromItemId);
-        writer.WriteUInt16(1);
-        writer.WriteUInt16(toItemId);
+        writer.WriteUInt16(count);
+        for (var i = 0; i < count; i++)
+        {
+            writer.WriteUInt16(toItemId + i);
+        }
+
         writer.EndBox(box);
     }
 
     // ISO/IEC 23008-12, section 9.3 "Item Properties Box": the properties, then their association with the items. The
-    // properties that a reader must understand to display the item are marked essential
-    private static void WriteItemProperties(AvifBoxWriter writer, StillImage image)
+    // properties that a reader must understand to display the item are marked essential.
+    // A grid has the properties that describe the image (its size, its colors, its transformations), and its tiles the
+    // ones that describe their coded data (their size and their AV1 configuration)
+    private static void WriteItemProperties(AvifBoxWriter writer, StillImage image, int alphaItemId)
     {
         const int Essential = 0x80;
+        var grid = image.Grid;
         Span<byte> color = stackalloc byte[16];
         Span<byte> alpha = stackalloc byte[16];
+        Span<byte> colorTile = stackalloc byte[8];
+        Span<byte> alphaTile = stackalloc byte[8];
         var colorCount = 0;
         var alphaCount = 0;
+        var colorTileCount = 0;
+        var alphaTileCount = 0;
         var index = 0;
         var iprp = writer.BeginBox(AvifFormat.Iprp);
         var ipco = writer.BeginBox(AvifFormat.Ipco);
@@ -746,11 +894,30 @@ internal static class AvifFileWriter
         index++;
         color[colorCount++] = (byte)index;
         alpha[alphaCount++] = (byte)index;
+        if (grid is not null)
+        {
+            // The size of the tiles
+            box = writer.BeginFullBox(AvifFormat.Ispe, version: 0, flags: 0);
+            writer.WriteUInt32((uint)grid.TileWidth);
+            writer.WriteUInt32((uint)grid.TileHeight);
+            writer.EndBox(box);
+            index++;
+            colorTile[colorTileCount++] = (byte)index;
+            alphaTile[alphaTileCount++] = (byte)index;
+        }
 
         WritePixelInformation(writer, image.Color);
         color[colorCount++] = (byte)++index;
+        if (grid is not null)
+            colorTile[colorTileCount++] = (byte)index;
+
+        // The configuration describes coded data: the one of the tiles of a grid
         WriteConfiguration(writer, image.Color);
-        color[colorCount++] = (byte)(++index | Essential);
+        index++;
+        if (grid is null)
+            color[colorCount++] = (byte)(index | Essential);
+        else
+            colorTile[colorTileCount++] = (byte)(index | Essential);
 
         for (var i = WriteColorInformation(writer, image.ColorDescription, image.IccProfile); i > 0; i--)
         {
@@ -814,14 +981,24 @@ internal static class AvifFileWriter
         {
             WritePixelInformation(writer, alphaSequence);
             alpha[alphaCount++] = (byte)++index;
+            if (grid is not null)
+                alphaTile[alphaTileCount++] = (byte)index;
+
             WriteConfiguration(writer, alphaSequence);
-            alpha[alphaCount++] = (byte)(++index | Essential);
+            index++;
+            if (grid is null)
+                alpha[alphaCount++] = (byte)(index | Essential);
+            else
+                alphaTile[alphaTileCount++] = (byte)(index | Essential);
 
             // ISO/IEC 23008-12, section 6.5.8 "Auxiliary type property"
             box = writer.BeginFullBox(AvifFormat.AuxC, version: 0, flags: 0);
             writer.WriteCString(AvifFormat.AlphaAuxiliaryType);
             writer.EndBox(box);
             alpha[alphaCount++] = (byte)++index;
+            if (grid is not null)
+                alphaTile[alphaTileCount++] = (byte)index;
+
             if (pixelAspectRatioIndex is not 0)
                 alpha[alphaCount++] = (byte)pixelAspectRatioIndex;
 
@@ -837,20 +1014,33 @@ internal static class AvifFileWriter
 
         writer.EndBox(ipco);
 
+        var tileCount = grid?.TileCount ?? 0;
         box = writer.BeginFullBox(AvifFormat.Ipma, version: 0, flags: 0);
-        writer.WriteUInt32(image.Alpha is null ? 1u : 2u);
-        writer.WriteUInt16(ColorItemId);
-        writer.WriteByte((byte)colorCount);
-        writer.WriteBytes(color[..colorCount]);
+        writer.WriteUInt32((uint)((1 + tileCount) * (image.Alpha is null ? 1 : 2)));
+        WriteAssociations(writer, ColorItemId, color[..colorCount]);
+        for (var i = 0; i < tileCount; i++)
+        {
+            WriteAssociations(writer, ColorItemId + 1 + i, colorTile[..colorTileCount]);
+        }
+
         if (image.Alpha is not null)
         {
-            writer.WriteUInt16(AlphaItemId);
-            writer.WriteByte((byte)alphaCount);
-            writer.WriteBytes(alpha[..alphaCount]);
+            WriteAssociations(writer, alphaItemId, alpha[..alphaCount]);
+            for (var i = 0; i < tileCount; i++)
+            {
+                WriteAssociations(writer, alphaItemId + 1 + i, alphaTile[..alphaTileCount]);
+            }
         }
 
         writer.EndBox(box);
         writer.EndBox(iprp);
+
+        static void WriteAssociations(AvifBoxWriter writer, int itemId, ReadOnlySpan<byte> associations)
+        {
+            writer.WriteUInt16(itemId);
+            writer.WriteByte((byte)associations.Length);
+            writer.WriteBytes(associations);
+        }
     }
 
     // ISO/IEC 23008-12, section 6.5.6 "Pixel information"

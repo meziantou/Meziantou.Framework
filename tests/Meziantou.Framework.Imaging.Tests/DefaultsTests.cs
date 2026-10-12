@@ -78,6 +78,7 @@ public sealed class DefaultsTests
         Assert.False(avif.ClearTransparentColors);
         Assert.Null(avif.CleanAperture);
         Assert.False(avif.PremultiplyAlpha);
+        Assert.Null(avif.GridTileSize);
         Assert.Equal(0, avif.KeyFrameInterval);
         Assert.Equal(FrameDurationRounding.RequireExact, avif.DurationRounding);
         Assert.Equal(MetadataHandling.Strict, avif.MetadataHandling);
@@ -100,6 +101,8 @@ public sealed class DefaultsTests
         Assert.Throws<ArgumentOutOfRangeException>(() => new AvifEncoder { KeyFrameInterval = -1 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new AvifEncoder { CleanAperture = new Rectangle(0, 0, 0, 4) });
         Assert.Throws<ArgumentOutOfRangeException>(() => new AvifEncoder { CleanAperture = new Rectangle(-1, 0, 4, 4) });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new AvifEncoder { GridTileSize = new Size(63, 64) });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new AvifEncoder { GridTileSize = new Size(64, 65537) });
         Assert.Equal(new Rgba64(65535, 0, 0), new JpegEncoder { BackgroundColor = new Rgba32(255, 0, 0) }.BackgroundColor);
     }
 

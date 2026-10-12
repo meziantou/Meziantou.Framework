@@ -31,6 +31,7 @@ public sealed class AvifEncoderTests
         Assert.False(encoder.ClearTransparentColors);
         Assert.Null(encoder.CleanAperture);
         Assert.False(encoder.PremultiplyAlpha);
+        Assert.Null(encoder.GridTileSize);
         Assert.Equal(0, encoder.KeyFrameInterval);
         Assert.Equal(FrameDurationRounding.RequireExact, encoder.DurationRounding);
         Assert.Equal(MetadataHandling.Strict, encoder.MetadataHandling);
@@ -50,6 +51,11 @@ public sealed class AvifEncoderTests
         Assert.Throws<ArgumentOutOfRangeException>(() => new AvifEncoder { CleanAperture = new Rectangle(-1, 0, 1, 1) });
         Assert.Throws<ArgumentOutOfRangeException>(() => new AvifEncoder { CleanAperture = new Rectangle(0, -1, 1, 1) });
         Assert.Equal(new Rectangle(1, 2, 3, 4), new AvifEncoder { CleanAperture = new Rectangle(1, 2, 3, 4) }.CleanAperture);
+        Assert.Throws<ArgumentOutOfRangeException>(() => new AvifEncoder { GridTileSize = new Size(63, 64) });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new AvifEncoder { GridTileSize = new Size(64, 63) });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new AvifEncoder { GridTileSize = new Size(65537, 64) });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new AvifEncoder { GridTileSize = new Size(64, 65537) });
+        Assert.Equal(new Size(64, 65536), new AvifEncoder { GridTileSize = new Size(64, 65536) }.GridTileSize);
         foreach (var bitDepth in new int?[] { null, 8, 10, 12 })
         {
             Assert.Equal(bitDepth, new AvifEncoder { BitDepth = bitDepth }.BitDepth);
@@ -298,6 +304,158 @@ public sealed class AvifEncoderTests
         using var decoded = Image.Load<Rgba32>(data);
         Assert.Equal(orientation, decoded.Metadata.Orientation);
         Assert.Equal(GetBytes(image), GetBytes(decoded));
+    }
+
+    [Theory]
+    [InlineData(150, 100, 64, 64, 3, 2)] // the right column and the bottom row extend past the image
+    [InlineData(128, 64, 64, 64, 2, 1)] // tiles that cover the image exactly
+    [InlineData(65, 130, 64, 65, 2, 2)] // one column and one row of samples in the last tiles
+    [InlineData(70, 200, 128, 64, 1, 4)] // a tile wider than the image: one column
+    public void AnImageLargerThanATileIsAGridOfTiles(int width, int height, int tileWidth, int tileHeight, int columns, int rows)
+    {
+        using var image = CreateSmoothImage(width, height, transparent: true);
+        var data = Encode(image, new AvifEncoder { GridTileSize = new Size(tileWidth, tileHeight), Effort = 0 });
+        var reader = ReferenceAvif.Parse(data);
+
+        // ISO/IEC 23008-12, section 6.6.2.3: the primary item is a grid, whose data are its descriptor, derived from its
+        // tiles in row-major order; the tiles are hidden items of one size
+        var grid = reader.PrimaryItem;
+        Assert.NotNull(grid);
+        Assert.Equal("grid", grid.Type);
+        Assert.Equal((width, height), grid.Size);
+        Assert.Equal((rows, columns, (long)width, (long)height), reader.ReadGridDescriptor(grid));
+        Assert.Null(grid.Configuration);
+        var tiles = reader.GetGridTiles(grid);
+        Assert.HasCount(columns * rows, tiles);
+        Assert.All(tiles, tile =>
+        {
+            Assert.Equal("av01", tile.Type);
+            Assert.True(tile.IsHidden);
+            Assert.Equal((tileWidth, tileHeight), tile.Size);
+            Assert.NotNull(tile.Configuration);
+        });
+        Assert.Equal(Enumerable.Range(2, columns * rows).Select(id => (uint)id), tiles.Select(tile => tile.Id));
+        Assert.False(grid.IsHidden);
+
+        // The alpha plane is a grid of the same tiles
+        var alpha = reader.AlphaItem;
+        Assert.NotNull(alpha);
+        Assert.Equal("grid", alpha.Type);
+        Assert.Equal((rows, columns, (long)width, (long)height), reader.ReadGridDescriptor(alpha));
+        var alphaTiles = reader.GetGridTiles(alpha);
+        Assert.HasCount(columns * rows, alphaTiles);
+        Assert.All(alphaTiles, tile => Assert.Equal((tileWidth, tileHeight), tile.Size));
+        Assert.All(alphaTiles, tile => Assert.True(tile.IsHidden));
+
+        // Lossless: every sample of the image is decoded back, and nothing of what the tiles hold past the image
+        using var decoded = Image.Load<Rgba32>(data);
+        Assert.Equal((width, height), (decoded.Width, decoded.Height));
+        Assert.Equal(GetBytes(image), GetBytes(decoded));
+        var info = Image.Identify(data, new ImageIdentifyOptions { Mode = ImageIdentifyMode.FullScan });
+        Assert.Equal((width, height), (info.Width, info.Height));
+        Assert.True(info.MayHaveTransparency);
+    }
+
+    [Fact]
+    public void AGridHasThePropertiesOfTheImageAndItsTilesTheOnesOfTheirData()
+    {
+        using var image = CreateSmoothImage(150, 100, transparent: true);
+        var xmp = "<x:xmpmeta xmlns:x=\"adobe:ns:meta/\"><rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\"/></x:xmpmeta>"u8.ToArray();
+        image.Metadata.Orientation = ExifOrientation.RightTop;
+        image.Metadata.XmpProfile = new XmpProfile(new MetadataBlob(xmp));
+        image.Metadata.Cicp = new CicpColorDescription(12, 13, 0, fullRange: true);
+        image.Metadata.PixelAspectRatio = new PixelAspectRatio(4, 3);
+        var aperture = new Rectangle(10, 20, 100, 70);
+        var data = Encode(image, new AvifEncoder { GridTileSize = new Size(64, 64), CleanAperture = aperture, Effort = 0 });
+        var reader = ReferenceAvif.Parse(data);
+        var grid = reader.PrimaryItem!;
+        var alpha = reader.AlphaItem!;
+
+        // The grids describe the image: its size, its colors, its transformations, the shape of its pixels
+        Assert.Equal(["ispe", "pixi", "colr", "pasp", "clap", "irot"], grid.Associations.Select(association => association.Property.Type));
+        Assert.Equal(["ispe", "pixi", "auxC", "pasp", "clap", "irot"], alpha.Associations.Select(association => association.Property.Type));
+        Assert.Equal(new ReferenceAvif.ColorDescription(12, 13, 0, FullRange: true), grid.Nclx);
+        Assert.Equal((10, 20, 100, 70), grid.CleanAperture!.GetRectangle(150, 100));
+        Assert.Equal((int)ExifOrientation.RightTop, grid.Orientation);
+
+        // The tiles describe their coded data, which a reader must be able to decode
+        foreach (var tile in reader.GetGridTiles(grid))
+        {
+            Assert.Equal(["ispe", "pixi", "av1C"], tile.Associations.Select(association => association.Property.Type));
+            Assert.True(tile.Associations[2].IsEssential);
+        }
+
+        foreach (var tile in reader.GetGridTiles(alpha))
+        {
+            Assert.Equal(["ispe", "pixi", "av1C", "auxC"], tile.Associations.Select(association => association.Property.Type));
+        }
+
+        // The grids are derived from their tiles, the alpha grid belongs to the color grid, which the XMP item describes
+        Assert.Equal(["dimg", "dimg", "auxl", "cdsc"], reader.ItemReferences.Select(reference => reference.Type));
+        Assert.Equal((alpha.Id, grid.Id), (reader.ItemReferences[2].FromItemId, reader.ItemReferences[2].ToItemIds[0]));
+        Assert.Equal(grid.Id, reader.ItemReferences[3].ToItemIds[0]);
+
+        using var decoded = Image.Load<Rgba32>(data);
+        Assert.Equal((100, 70), (decoded.Width, decoded.Height));
+        Assert.Equal(ExifOrientation.RightTop, decoded.Metadata.Orientation);
+        Assert.Equal(new PixelAspectRatio(4, 3), decoded.Metadata.PixelAspectRatio);
+        Assert.Equal(xmp, decoded.Metadata.XmpProfile!.Data.ToArray());
+        using var expected = image.Clone();
+        expected.Crop(aperture, TestContext.Current.CancellationToken);
+        Assert.Equal(GetBytes(expected), GetBytes(decoded));
+    }
+
+    [Fact]
+    public void AGridIsOnlyWrittenForAStillImageThatIsLargerThanATile()
+    {
+        // An image that one tile holds is one item, whatever the setting
+        using var small = CreateSmoothImage(64, 48, transparent: false);
+        Assert.Equal(Encode(small, new AvifEncoder { Effort = 0 }), Encode(small, new AvifEncoder { GridTileSize = new Size(64, 64), Effort = 0 }));
+
+        // An opaque image of a pixel format with alpha has no alpha grid
+        using var opaque = CreateSmoothImage(100, 70, transparent: false);
+        var reader = ReferenceAvif.Parse(Encode(opaque, new AvifEncoder { GridTileSize = new Size(64, 64), Effort = 0 }));
+        Assert.Equal("grid", reader.PrimaryItem!.Type);
+        Assert.Null(reader.AlphaItem);
+        Assert.Equal(["dimg"], reader.ItemReferences.Select(reference => reference.Type));
+
+        // An image sequence is not a grid
+        using var frame = CreateSmoothImage(100, 70, transparent: false, phase: 3);
+        opaque.AppendFrame(frame.Frames[0]);
+        opaque.Frames[0].Metadata.Duration = new FrameDuration(1, 10);
+        opaque.Frames[1].Metadata.Duration = new FrameDuration(1, 10);
+        var sequence = ReferenceAvif.Parse(Encode(opaque, new AvifEncoder { GridTileSize = new Size(64, 64), Effort = 0 }));
+        Assert.True(sequence.IsSequence);
+        Assert.Equal("av01", sequence.PrimaryItem!.Type);
+    }
+
+    [Fact]
+    public void AGridOfSubsampledChromaNeedsEvenSizes()
+    {
+        static AvifEncoder Lossy(AvifChromaSubsampling subsampling, int tileWidth, int tileHeight) => new() { Compression = AvifCompression.Lossy, ChromaSubsampling = subsampling, GridTileSize = new Size(tileWidth, tileHeight), Effort = 0 };
+        using var even = CreateSmoothImage(100, 70, transparent: false);
+        using var oddWidth = CreateSmoothImage(101, 70, transparent: false);
+        using var oddHeight = CreateSmoothImage(100, 71, transparent: false);
+
+        // 4:2:0: the widths and the heights of the tiles and of the image are even
+        Assert.Equal("grid", ReferenceAvif.Parse(Encode(even, Lossy(AvifChromaSubsampling.Ratio420, 64, 64))).PrimaryItem!.Type);
+        var exception = Assert.Throws<UnsupportedImageFeatureException>(() => Encode(oddWidth, Lossy(AvifChromaSubsampling.Ratio420, 64, 64)));
+        Assert.Equal(ImageFormat.Avif, exception.Format);
+        Assert.Throws<UnsupportedImageFeatureException>(() => Encode(oddHeight, Lossy(AvifChromaSubsampling.Ratio420, 64, 64)));
+        Assert.Throws<UnsupportedImageFeatureException>(() => Encode(even, Lossy(AvifChromaSubsampling.Ratio420, 65, 64)));
+        Assert.Throws<UnsupportedImageFeatureException>(() => Encode(even, Lossy(AvifChromaSubsampling.Ratio420, 64, 65)));
+
+        // 4:2:2: only the widths; 4:4:4, the lossless coding and gray pixels: any size
+        Assert.Equal("grid", ReferenceAvif.Parse(Encode(oddHeight, Lossy(AvifChromaSubsampling.Ratio422, 64, 65))).PrimaryItem!.Type);
+        Assert.Throws<UnsupportedImageFeatureException>(() => Encode(oddWidth, Lossy(AvifChromaSubsampling.Ratio422, 64, 64)));
+        Assert.Equal("grid", ReferenceAvif.Parse(Encode(oddWidth, Lossy(AvifChromaSubsampling.Ratio444, 65, 65))).PrimaryItem!.Type);
+        Assert.Equal("grid", ReferenceAvif.Parse(Encode(oddWidth, new AvifEncoder { GridTileSize = new Size(65, 65), Effort = 0 })).PrimaryItem!.Type);
+        using var gray = oddWidth.CloneAs<Gray8>();
+        Assert.Equal("grid", ReferenceAvif.Parse(Encode(gray, Lossy(AvifChromaSubsampling.Ratio420, 65, 65))).PrimaryItem!.Type);
+
+        // At most 256 columns and 256 rows
+        using var wide = new Image<Gray8>(64 * 257, 64);
+        Assert.Throws<UnsupportedImageFeatureException>(() => Encode(wide, new AvifEncoder { GridTileSize = new Size(64, 64), Effort = 0 }));
     }
 
     [Theory]

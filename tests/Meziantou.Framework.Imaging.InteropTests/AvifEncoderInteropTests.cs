@@ -457,6 +457,56 @@ public sealed class AvifEncoderInteropTests
         Assert.Equal(orientation, Image.Identify(path).Metadata.Orientation);
     }
 
+    [Theory]
+    [InlineData(AvifCompression.Lossless, AvifChromaSubsampling.Auto, 150, 100, 64, 64, true)]
+    [InlineData(AvifCompression.Lossless, AvifChromaSubsampling.Auto, 65, 130, 64, 65, false)]
+    [InlineData(AvifCompression.Lossy, AvifChromaSubsampling.Ratio444, 150, 100, 64, 64, true)]
+    [InlineData(AvifCompression.Lossy, AvifChromaSubsampling.Ratio420, 130, 70, 64, 64, false)]
+    public async Task GridsAreAssembledByAvifDec(AvifCompression compression, AvifChromaSubsampling subsampling, int width, int height, int tileWidth, int tileHeight, bool transparent)
+    {
+        var libavif = await RequiredTools.LibAvifAsync();
+        using var image = CreateImage(width, height, monochrome: false, bitDepth: 8, seed: 91, transparent);
+        var path = await SaveAsync(image, new AvifEncoder { Compression = compression, ChromaSubsampling = subsampling, Quality = 85, Effort = 0, GridTileSize = new Size(tileWidth, tileHeight) }, $"grid-{compression}-{subsampling}-{width}x{height}-{tileWidth}x{tileHeight}");
+        var reader = ReferenceAvif.Parse(await File.ReadAllBytesAsync(path, XunitCancellationToken));
+        Assert.Equal("grid", reader.PrimaryItem!.Type);
+        Assert.Equal(transparent, reader.AlphaItem is not null);
+
+        // libavif, which validates the grid in its strict mode, assembles the tiles into the image
+        var info = await libavif.GetInfoAsync(path, XunitCancellationToken);
+        Assert.Equal((width, height), (info.Width, info.Height));
+        Assert.Equal(transparent, info.HasAlpha);
+        var decoded = await libavif.DecodeAsync(path, XunitCancellationToken);
+        Assert.Equal((width, height), (decoded.Width, decoded.Height));
+        using var loaded = Image.Load(path);
+        var actual = ImageSnapshots.CaptureFrame(loaded.Frames[0]);
+        if (compression is AvifCompression.Lossless)
+        {
+            AssertSamples(ImageSnapshots.CaptureFrame(image.Frames[0]), decoded.Pixels, $"grid decoded by avifdec {libavif.Version}");
+            AssertSamples(ImageSnapshots.CaptureFrame(image.Frames[0]), actual, "grid decoded by the library");
+            return;
+        }
+
+        // Lossy: the library and avifdec decode the same tiles, and convert them with their own arithmetic. Without chroma
+        // upsampling, an 8-bit color of the library is at most half an 8-bit step from the 16-bit color of avifdec
+        // (measured: 129 units of a 16-bit sample). With 4:2:0, the library also rounds the upsampled chroma before the
+        // BT.601 matrix in full range, whose largest chroma coefficient is 1.772: at most 0.5 + 0.5 x 1.772 = 1.386 steps
+        // (measured: 355). Alpha is exact
+        var scale = decoded.Pixels.Layout.MaxSampleValue / actual.Layout.MaxSampleValue;
+        var bound = subsampling is AvifChromaSubsampling.Ratio444 ? 130 : 358;
+        var channels = actual.Layout.ChannelCount;
+        for (var y = 0; y < height; y++)
+        {
+            for (var x = 0; x < width; x++)
+            {
+                for (var channel = 0; channel < channels; channel++)
+                {
+                    var difference = Math.Abs(decoded.Pixels.GetSample(x, y, channel) - (actual.GetSample(x, y, channel) * scale));
+                    Assert.True(difference <= (channel is 3 ? 0 : bound), $"pixel ({x}, {y}), channel {channel} differs by {difference} from avifdec {libavif.Version} (bound {bound}).");
+                }
+            }
+        }
+    }
+
     [Fact]
     public async Task TheCleanApertureOfASequenceIsReadByOtherReaders()
     {

@@ -131,6 +131,37 @@ public sealed class AvifEncoder : ImageEncoder
     public bool ClearTransparentColors { get; init; }
 
     /// <summary>
+    /// Gets the size of the tiles of a still image that is coded as a grid, or <see langword="null"/> (the default) for an
+    /// image that is coded whole. An image that is larger than a tile is cut into tiles of this size, each one coded on
+    /// its own, which a grid item assembles; an image that one tile holds is coded whole.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A grid bounds the size of what a decoder decodes at once, and the memory that encoding takes (one tile at a time):
+    /// it is what the profiles of the format expect of large images. The tiles of the right column and of the bottom row
+    /// extend past the image, whose last column and last row they repeat. A tile is coded without its neighbors: lossy
+    /// output can show the edges of the tiles, and is larger than the image coded whole.
+    /// </para>
+    /// <para>
+    /// Each side of a tile is between 64 and 65,536 pixels, and a grid has at most 256 columns and 256 rows. With
+    /// subsampled chroma (<see cref="ChromaSubsampling"/>), the widths of the tiles and of the image must be even, and
+    /// their heights too for 4:2:0. Ignored by an image sequence.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException">A side of the tiles is not between 64 and 65,536.</exception>
+    public Size? GridTileSize
+    {
+        get;
+        init
+        {
+            if (value is { } tile && (tile.Width is < 64 or > 65536 || tile.Height is < 64 or > 65536))
+                throw new ArgumentOutOfRangeException(nameof(value), value, "Each side of a tile must be between 64 and 65,536 pixels.");
+
+            field = value;
+        }
+    }
+
+    /// <summary>
     /// Gets a value indicating whether the color of every pixel is stored multiplied by its alpha (premultiplied alpha).
     /// Defaults to <see langword="false"/>: colors and alpha are stored independently.
     /// </summary>

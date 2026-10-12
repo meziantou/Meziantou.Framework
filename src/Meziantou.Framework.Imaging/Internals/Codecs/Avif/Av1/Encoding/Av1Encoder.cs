@@ -164,6 +164,23 @@ internal sealed class Av1Encoder : IDisposable
         _phase = Phase.Start;
     }
 
+    /// <summary>
+    /// Forgets the frames that were encoded, so that the next frame starts a new stream: the first frame of a sequence,
+    /// or another still picture of the same size and format (the tiles of a grid are coded one after the other by one
+    /// encoder). The payload of the last frame is no longer valid.
+    /// </summary>
+    public void Reset()
+    {
+        if (_phase is not (Phase.Idle or Phase.Done))
+            throw new InvalidOperationException("The previous frame is not complete.");
+
+        _reconstruction?.Release();
+        _reconstruction = null;
+        _coding.ReleaseSlots();
+        _frameIndex = -1;
+        _phase = Phase.Idle;
+    }
+
     /// <summary>Encodes a part of the frame: a row of superblocks, or the end of the frame.</summary>
     /// <returns><see langword="true"/> when the frame is complete.</returns>
     /// <exception cref="ImageResourceLimitException">A buffer exceeds the live-allocation limit.</exception>

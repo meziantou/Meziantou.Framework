@@ -83148,6 +83148,88 @@
       }
     },
     {
+      "id": "fonts/noto-sans-cjk-kr-letters",
+      "file": {
+        "path": "fonts/noto-sans-cjk-kr/NotoSansCJKkr-Regular.letters.otf",
+        "sha256": "8e1c886da8f9e70327cb582ccee1198ae690e60744957a9ec2647db69e3a2e6d",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "Adobe (https://github.com/notofonts/noto-cjk)",
+        "source": "https://github.com/notofonts/noto-cjk/blob/f8d157532fbfaeda587e826d4cd5b21a49186f7c/Sans/OTF/Korean/NotoSansCJKkr-Regular.otf",
+        "tools": [
+          "hb-subset 14.6.0"
+        ],
+        "commands": [
+          "hb-subset --unicodes=20,2E,41,301,302E,302F,3099,25CC,200C,200D,1100-1116,115F,1160-1178,11A7-11C5,11EB,11F0,11F9,A960,A964,D7B0,D7B5,D7CB,D7DD,3131,314F --layout-features=* --notdef-outline --output-file=NotoSansCJKkr-Regular.letters.otf NotoSansCJKkr-Regular.otf"
+        ]
+      },
+      "flavor": "otf",
+      "faceCount": 1,
+      "modification": "subset",
+      "features": [
+        "font.cmap=4",
+        "font.table=BASE",
+        "font.table=CFF",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-sans-cjk-kr-letters.json",
+        "sha256": "955504ee37d90f792f5f70e7ae02d7525dcf4e0243b16068f5667345043b1b86",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-sans-cjk-kr-letters.json",
+        "sha256": "fbb3d1c77ec9fffa086f116078284c292ba47629fbdf59c35e74875dcab66b9c",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/noto-sans-cjk-kr-regular",
+      "file": {
+        "path": "fonts/noto-sans-cjk-kr/NotoSansCJKkr-Regular.subset.otf",
+        "sha256": "5c256d5b8d7fbe6df6ad89dd172d7a7cdaa690eebc05a6462bd0da62deaa28c4",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "Adobe (https://github.com/notofonts/noto-cjk)",
+        "source": "https://github.com/notofonts/noto-cjk/blob/f8d157532fbfaeda587e826d4cd5b21a49186f7c/Sans/OTF/Korean/NotoSansCJKkr-Regular.otf",
+        "tools": [
+          "hb-subset 14.6.0"
+        ],
+        "commands": [
+          "hb-subset --unicodes=20,2E,41,301,302E,302F,3099,25CC,200C,200D,1100-1116,115F,1160-1178,11A7-11C5,11EB,11F0,11F9,A960,A964,D7B0,D7B5,D7CB,D7DD,3131,314F,AC00-AC1C,AC12,AE00,B098,B2E4,D55C --layout-features=* --notdef-outline --output-file=NotoSansCJKkr-Regular.subset.otf NotoSansCJKkr-Regular.otf"
+        ]
+      },
+      "flavor": "otf",
+      "faceCount": 1,
+      "modification": "subset",
+      "features": [
+        "font.cmap=4",
+        "font.table=BASE",
+        "font.table=CFF",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-sans-cjk-kr-regular.json",
+        "sha256": "f23e359c4d37e0bfb17bf828da87c0c3b798d79bb439ba294428674adeef6157",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-sans-cjk-kr-regular.json",
+        "sha256": "468cb9d3da6599a7d1f57dab2a7fef12dfcecd9fe10ebb8f7e25fdef2de9e3ff",
+        "role": "shaping-vectors"
+      }
+    },
+    {
       "id": "fonts/noto-sans-hebrew",
       "file": {
         "path": "fonts/noto-sans-hebrew/NotoSansHebrew-Regular.ttf",
@@ -83219,6 +83301,41 @@
       "shaping": {
         "path": "fonts/shaping/noto-sans-hebrew-without-positioning.json",
         "sha256": "c795cc27f34caeef660e57ec82ba5f30f3189b585a98e76c5afc0f8d302d49a3",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/noto-sans-lao",
+      "file": {
+        "path": "fonts/noto-sans-lao/NotoSansLao-Regular.ttf",
+        "sha256": "d3976b0ac08702c54999ff42eae295d1597fd73b44e0c57d7f4917524e18afbe",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "The Noto Project Authors (https://github.com/notofonts/lao)",
+        "source": "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansLao/unhinted/ttf/NotoSansLao-Regular.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB",
+        "font.table=glyf"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-sans-lao.json",
+        "sha256": "4366953f0d6ca809fe7c4732bd0a8ecc80bf895b4e3ea9a00618129ae30acd94",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-sans-lao.json",
+        "sha256": "368cc67925005f187392de9730b805fd5dcabe311a7b8cd9365194b694b6e513",
         "role": "shaping-vectors"
       }
     },
@@ -83404,6 +83521,41 @@
       "shaping": {
         "path": "fonts/shaping/noto-sans-syriac.json",
         "sha256": "c1fcb7083fdf56646e57f02b1b765ab873376d4e1130fabe3027ce2b4d0225a9",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/noto-sans-thai",
+      "file": {
+        "path": "fonts/noto-sans-thai/NotoSansThai-Regular.ttf",
+        "sha256": "d4303fe9c63ebb72759ca8b6d2040c8ae81689f7d08d7b91c656154382b49313",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "The Noto Project Authors (https://github.com/notofonts/thai)",
+        "source": "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansThai/unhinted/ttf/NotoSansThai-Regular.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB",
+        "font.table=glyf"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-sans-thai.json",
+        "sha256": "5a018eeed2454c2be55be514c5d8147ebb8e01ad405e8f70c33b21b7b1e954a5",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-sans-thai.json",
+        "sha256": "efe92e041e30d520612b20ad2d9d77ac9af597e6d43bf4fdbdf20947c3588734",
         "role": "shaping-vectors"
       }
     },

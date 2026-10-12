@@ -377,7 +377,8 @@ public sealed class FontFuzzTests
                     continue;
                 }
 
-                if (hasScript && CheckShaping(font, text, script, isRightToLeft: true, []) is { } scriptFailure)
+                var isRightToLeft = script is UnicodeScript.Arabic or UnicodeScript.Hebrew or UnicodeScript.Syriac;
+                if (hasScript && CheckShaping(font, text, script, isRightToLeft, []) is { } scriptFailure)
                     return scriptFailure;
             }
         }
@@ -418,11 +419,15 @@ public sealed class FontFuzzTests
     }
 
     // A text per script: letters in each form, marks in an order that is not the one of shaping, joiners, a lam-alef,
-    // a precomposed letter with a mark, and the mark that stretches over a word.
+    // a precomposed letter with a mark, the mark that stretches over a word; the vowel of Thai and Lao that is
+    // decomposed, with and without marks above its consonant; the letters and syllables of Hangul, with tone marks.
     private static readonly (UnicodeScript Script, string Text)[] ScriptTexts =
     [
         (UnicodeScript.Arabic, "\u0628\u064E\u0651\u0633\u0654\u0650\u0645\u0020\u0644\u0627\u0020\u0644\u200D\u0627\u0020\u0628\u200C\u0628\u0640\u0622\u0655\u0020\u06AF\u0654\u064F"),
         (UnicodeScript.Hebrew, "\u05E9\u05BC\u05C1\u05B8\u05DC\u05D5\u05B9\u05DD\u0020\uFB2C\u05B7\u0020\u05D0\u05B7\u05B0\u05BD\u200D\u05B7"),
+        (UnicodeScript.Thai, "\u0E01\u0E48\u0E33 \u0E19\u0E49\u0E33\u0E33 \u0E1B\u0E38\u0E3A\u0E48 \u0E33"),
+        (UnicodeScript.Lao, "\u0E81\u0EC8\u0EB3 \u0E99\u0EC9\u0EB3 \u0EAB\u0EBC\u0EB8\u0EC8 \u0EB3"),
+        (UnicodeScript.Hangul, "\u1100\u1161\u11A8 \uAC00\u11A8\u302E \u1113\u1161\u11C3\u302F \u302E \uAC01\u11EB\u115F\u1160"),
         (UnicodeScript.Syriac, "\u0712\u0710\u0712\u0020\u0715\u0710\u0020\u070F\u072B\u0718\u0712\u0730\u0020\u0717\u200D\u0710\u0710"),
     ];
 

@@ -684,6 +684,11 @@ internal static class SmokeTests
         var joined = TextLayout.Create("\u0628\u064E\u0651\u0644\u0627 \u05E9\u05BC\u05C1\uFB2C \u070F\u0712\u0710\u0710", boxes, 16);
         Check(joined.Lines[0].IsRightToLeft && joined.HasMissingGlyphs && joined.Width == 11 * 8, "text: shaping models");
 
+        // Thai and Hangul: a consonant, a tone mark and a sara am (decomposed into a ring, which is a mark, and a vowel),
+        // then the letters of a syllable, which the font has neither as letters nor as a syllable.
+        var syllables = TextLayout.Create("\u0E01\u0E48\u0E33 \u1100\u1161\u11A8", boxes, 16);
+        Check(!syllables.Lines[0].IsRightToLeft && syllables.HasMissingGlyphs && syllables.Width == 6 * 8, "text: syllables");
+
         // CFF outlines, stroked, through the overload that lays out the text
         var cff = Font.Load(SmokeFonts.CharstringsOtf);
         using var stroked = new Image<Rgba32>(64, 16);

@@ -11,4 +11,10 @@ internal enum ScriptShaperKind
 
     /// <summary>Hebrew: the order of its points, and the precomposed letters of fonts that cannot position them.</summary>
     Hebrew,
+
+    /// <summary>Hangul: syllable blocks composed from letters, or drawn with them.</summary>
+    Hangul,
+
+    /// <summary>Thai and Lao: the vowel written with a ring above the consonant and a letter after it.</summary>
+    Thai,
 }

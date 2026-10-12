@@ -7,10 +7,15 @@ internal sealed class ShaperPlan
     public static ShaperPlan Default { get; } = new([], finalStage: 1);
 
     private readonly ShaperFeature[] _features;
+    private readonly uint[] _disabledFeatures;
 
-    public ShaperPlan(ShaperFeature[] features, int finalStage)
+    /// <param name="features">The features of the model.</param>
+    /// <param name="finalStage">The stage of the features every script has.</param>
+    /// <param name="disabledFeatures">The features every script has that the model does not apply, unless the caller asks for them.</param>
+    public ShaperPlan(ShaperFeature[] features, int finalStage, uint[]? disabledFeatures = null)
     {
         _features = features;
+        _disabledFeatures = disabledFeatures ?? [];
         FinalStage = finalStage;
         foreach (var feature in features)
         {
@@ -30,6 +35,9 @@ internal sealed class ShaperPlan
 
     /// <summary>Gets the number of features that apply to the glyphs the analysis of the text chooses.</summary>
     public int PerGlyphCount { get; }
+
+    /// <summary>Determines whether the model leaves out a feature every script has.</summary>
+    public bool IsDisabled(uint tag) => _disabledFeatures.AsSpan().Contains(tag);
 
     /// <summary>Finds a feature of the model.</summary>
     /// <param name="tag">The tag of the feature.</param>

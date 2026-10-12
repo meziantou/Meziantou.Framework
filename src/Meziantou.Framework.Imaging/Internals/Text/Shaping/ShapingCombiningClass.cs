@@ -20,6 +20,11 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <b>Arabic.</b> The shadda comes before the vowel marks, which are drawn above or below it: Unicode Technical
 /// Report #53, "Unicode Arabic Mark Rendering".
 /// </para>
+/// <para>
+/// <b>Thai.</b> The vowels below the consonant (class 103) are the marks closest to it: they come before the phinthu
+/// (class 9), which is drawn under them. Microsoft, "Developing OpenType Fonts for Thai Script": the classes of
+/// marks below the base. The marks of Lao are in that order already.
+/// </para>
 /// </remarks>
 internal static class ShapingCombiningClass
 {
@@ -28,6 +33,8 @@ internal static class ShapingCombiningClass
 
     /// <summary>The second class of the marks <see cref="ArabicShaper"/> moves to the front of the marks of a letter.</summary>
     public const int FrontAbove = 26;
+
+    private const int ThaiVowelBelow = 103;
 
     public const int Shadda = 27;
     public const int Patah = 20;
@@ -56,6 +63,6 @@ internal static class ShapingCombiningClass
         if (combiningClass is >= 27 and <= 35)
             return (byte)(27 + ArabicOrder.IndexOf(combiningClass));
 
-        return combiningClass;
+        return combiningClass == ThaiVowelBelow ? (byte)3 : combiningClass;
     }
 }

@@ -328,6 +328,110 @@ public sealed class TextShaperTests
         Assert.Equal("3=0@-2304,0+0|4=0@-1792,0+0|3=0@-1024,0+0", Format(buffer));
     }
 
+    [Fact]
+    public void TheRingOfASaraAmGoesBeforeTheMarksAboveItsConsonant()
+    {
+        // Thai: ko kai (2), mai ek (3), nikhahit (4), sara aa (5), sara u (6), sara i (7), phinthu (8). The font does not
+        // have the sara am itself, which is always drawn with the nikhahit and the sara aa.
+        var builder = FontSamples.Boxes();
+        builder.CharacterMap[0x0E01] = FontSamples.BoxA;
+        builder.CharacterMap[0x0E48] = FontSamples.BoxB;
+        builder.CharacterMap[0x0E4D] = FontSamples.BoxC;
+        builder.CharacterMap[0x0E32] = FontSamples.TriangleD;
+        builder.CharacterMap[0x0E38] = FontSamples.FrameE;
+        builder.CharacterMap[0x0E34] = FontSamples.OverlapF;
+        builder.CharacterMap[0x0E3A] = FontSamples.Boxa;
+        builder.CharacterMap[0x0E81] = FontSamples.BoxA;
+        builder.CharacterMap[0x0EC8] = FontSamples.BoxB;
+        builder.CharacterMap[0x0ECD] = FontSamples.BoxC;
+        builder.CharacterMap[0x0EB2] = FontSamples.TriangleD;
+        var font = FontTestSupport.Load(builder);
+
+        // The two parts belong to the cluster of the consonant.
+        Assert.Equal("2=0 4=0 5=0", Clusters(font, "\u0E01\u0E33", UnicodeScript.Thai));
+        Assert.Equal("4=0 5=0", Clusters(font, "\u0E33", UnicodeScript.Thai));
+        Assert.Equal("2=0 4=0 5=0 4=0 5=0", Clusters(font, "\u0E01\u0E33\u0E33", UnicodeScript.Thai));
+
+        // A tone mark, or a vowel above, is typed before the sara am: the ring is drawn under it, on the consonant.
+        Assert.Equal("2=0 4=0 3=0 5=0", Clusters(font, "\u0E01\u0E48\u0E33", UnicodeScript.Thai));
+        Assert.Equal("2=0 4=0 7=0 3=0 5=0", Clusters(font, "\u0E01\u0E34\u0E48\u0E33", UnicodeScript.Thai));
+
+        // A vowel below is not above the consonant: the ring stays after it.
+        Assert.Equal("2=0 6=0 4=0 3=0 5=0", Clusters(font, "\u0E01\u0E38\u0E48\u0E33", UnicodeScript.Thai));
+        Assert.Equal("2=0 6=0 3=0 4=0 5=0", Clusters(font, "\u0E01\u0E48\u0E38\u0E33", UnicodeScript.Thai));
+
+        // The vowel below is closer to the consonant than the phinthu, which Unicode orders first.
+        Assert.Equal("2=0 6=0 8=0", Clusters(font, "\u0E01\u0E3A\u0E38", UnicodeScript.Thai));
+        Assert.Equal("2=0 6=0 8=0", Clusters(font, "\u0E01\u0E38\u0E3A", UnicodeScript.Thai));
+
+        // Lao has the same vowel; the other scripts leave these characters alone.
+        Assert.Equal("2=0 4=0 3=0 5=0", Clusters(font, "\u0E81\u0EC8\u0EB3", UnicodeScript.Lao));
+        Assert.Equal("2=0 3=0 0=2", Clusters(font, "\u0E01\u0E48\u0E33", UnicodeScript.Latin));
+    }
+
+    [Fact]
+    public void LettersOfHangulAreComposedIntoTheSyllablesTheFontHas()
+    {
+        // A leading consonant (2), a vowel (3), a trailing consonant (4), the syllables they make without (5) and with
+        // (6) the trailing consonant, a tone mark (7, with a width), the dotted circle (8) and a leading consonant of
+        // Old Hangul (11), which no syllable character includes.
+        var builder = FontSamples.Boxes();
+        builder.CharacterMap[0x1100] = FontSamples.BoxA;
+        builder.CharacterMap[0x1161] = FontSamples.BoxB;
+        builder.CharacterMap[0x11A8] = FontSamples.BoxC;
+        builder.CharacterMap[0xAC00] = FontSamples.TriangleD;
+        builder.CharacterMap[0xAC01] = FontSamples.FrameE;
+        builder.CharacterMap[0x302E] = FontSamples.OverlapF;
+        builder.CharacterMap[0x25CC] = FontSamples.Boxa;
+        builder.CharacterMap[0x1113] = FontSamples.ScaledH;
+        var font = FontTestSupport.Load(builder);
+
+        Assert.Equal("5=0", Clusters(font, "\u1100\u1161", UnicodeScript.Hangul));
+        Assert.Equal("6=0", Clusters(font, "\u1100\u1161\u11A8", UnicodeScript.Hangul));
+        Assert.Equal("6=0", Clusters(font, "\uAC00\u11A8", UnicodeScript.Hangul));
+        Assert.Equal("5=0 6=1 5=2", Clusters(font, "\uAC00\uAC01\u1100\u1161", UnicodeScript.Hangul));
+
+        // Letters that do not make a block stay letters: two leading consonants, a vowel after a complete syllable, a
+        // letter of Old Hangul (whose block is one cluster), a zero width joiner between two letters.
+        Assert.Equal("2=0 5=1", Clusters(font, "\u1100\u1100\u1161", UnicodeScript.Hangul));
+        Assert.Equal("6=0 3=1 4=2", Clusters(font, "\uAC01\u1161\u11A8", UnicodeScript.Hangul));
+        Assert.Equal("11=0 3=0 4=0", Clusters(font, "\u1113\u1161\u11A8", UnicodeScript.Hangul));
+        Assert.Equal("2=0 1=0 3=2", Clusters(font, "\u1100\u200D\u1161", UnicodeScript.Hangul));
+
+        // A tone mark is written after its syllable and drawn before it; without a syllable, it is shown with a dotted
+        // circle, where the syllable would be.
+        Assert.Equal("7=0 5=0", Clusters(font, "\uAC00\u302E", UnicodeScript.Hangul));
+        Assert.Equal("7=0 6=0", Clusters(font, "\u1100\u1161\u11A8\u302E", UnicodeScript.Hangul));
+        Assert.Equal("7=0 8=0", Clusters(font, "\u302E", UnicodeScript.Hangul));
+        Assert.Equal("2=0 7=0 8=0", Clusters(font, "\u1100\u302E", UnicodeScript.Hangul));
+
+        // A font without the syllable of a block draws it with its letters, however the text has it.
+        builder.CharacterMap.Remove(0xAC01);
+        font = FontTestSupport.Load(builder);
+        Assert.Equal("2=0 3=0 4=0", Clusters(font, "\u1100\u1161\u11A8", UnicodeScript.Hangul));
+        Assert.Equal("2=0 3=0 4=0", Clusters(font, "\uAC01", UnicodeScript.Hangul));
+        Assert.Equal("2=0 3=0 4=0", Clusters(font, "\uAC00\u11A8", UnicodeScript.Hangul));
+        Assert.Equal("5=0", Clusters(font, "\u1100\u1161", UnicodeScript.Hangul));
+
+        // A tone mark without width is a mark the font places: it stays after its syllable, and its circle is before it.
+        builder.CharacterMap[0x302E] = FontSamples.AcuteMark;
+        font = FontTestSupport.Load(builder);
+        Assert.Equal("5=0 9=0", Clusters(font, "\uAC00\u302E", UnicodeScript.Hangul));
+        Assert.Equal("8=0 9=0", Clusters(font, "\u302E", UnicodeScript.Hangul));
+
+        // The other scripts do not compose letters.
+        Assert.Equal("2=0 3=1", Clusters(font, "\u1100\u1161", UnicodeScript.Latin));
+    }
+
+    /// <summary>Shapes a text in the order of its characters and gives the glyphs with their clusters.</summary>
+    private static string Clusters(Font font, string text, UnicodeScript script)
+    {
+        var buffer = new GlyphBuffer(ImageResourceLimits.Default);
+        TextShaper.AddText(buffer, text);
+        TextShaper.Shape(buffer, font.Face, script, language: 0, isRightToLeft: false, []);
+        return string.Join(' ', buffer.Info.ToArray().Select(glyph => string.Create(CultureInfo.InvariantCulture, $"{glyph.Glyph}={glyph.Cluster}")));
+    }
+
     /// <summary>Shapes a text in the order of its characters and gives the identifiers of the glyphs.</summary>
     private static string Glyphs(Font font, string text, UnicodeScript script)
     {

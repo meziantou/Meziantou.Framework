@@ -195,6 +195,9 @@ its first point, even a line without length: the library does the same, so that 
 | `fonts/noto-sans-hebrew` | ttf | 1 | OFL-1.1 | Noto Sans Hebrew 3.001, stored as it is: letters, points, cantillation marks, precomposed letters, with anchors for the marks |
 | `fonts/noto-sans-hebrew-without-positioning` | ttf | 1 | OFL-1.1 | The same font without its `GPOS` table (`hb-subset --drop-tables+=GPOS`), as a font made before OpenType Layout: a letter and its point are then drawn with the precomposed letter |
 | `fonts/noto-sans-syriac` | ttf | 1 | OFL-1.1 | Noto Sans Syriac 3.000, stored as it is: the forms of the letters and of alaph (`fin2`, `fin3`, `med2`), marks, and the abbreviation mark that stretches (`stch`) |
+| `fonts/noto-sans-thai`, `fonts/noto-sans-lao` | ttf | 1 | OFL-1.1 | Noto Sans Thai 2.002 and Noto Sans Lao 2.003, stored as they are: the marks above tall consonants and below consonants that have a tail, the sara am, ligatures of a ring and a tone mark |
+| `fonts/noto-sans-cjk-kr-regular` | otf | 1 | OFL-1.1 | Noto Sans CJK KR 2.004, subset to the letters of Hangul (the modern ones, a few of Old Hangul and of the extended blocks, the fillers), the tone marks and thirty syllables, with the glyphs the font has for a letter at each position of a block (`ljmo`, `vjmo`, `tjmo`); CFF outlines, hints kept |
+| `fonts/noto-sans-cjk-kr-letters` | otf | 1 | OFL-1.1 | The same subset without any syllable: every block is drawn with its letters |
 | `fonts/trt-*` | ttf, otf | 1 | OFL-1.1, Apache-2.0 or CC0-1.0 (see the manifest) | Ten fonts of the text-rendering-tests suite of the Unicode Consortium, stored as they are (`fonts/text-rendering-tests/`), each made for one feature: `avar`, `gvar` (also composite glyphs and regions between two values), `HVAR` with TrueType and with CFF2 outlines, `CFF2`, feature variations (`rvrn`) with both kinds of outlines, anchors of `GPOS` that vary |
 | `fonts/synthetic-color-boxes` | ttf | 1 | CC0-1.0 | A color font of rectangles: `COLR` version 0 (layers, a layer with the color of the text), `CPAL` version 1 with two palettes and their types |
 | `fonts/synthetic-color-transforms`, `-gradients`, `-clips` | ttf | 1 | CC0-1.0 | `COLR` version 1, one glyph per case: opacity, translation, scale, rotation, skew, matrix, nested clips, compositions; linear, radial and sweep gradients with each extend mode and the degenerate color lines; clip boxes, a glyph that paints another one, a glyph that paints itself |
@@ -265,7 +268,9 @@ The reference shaper guesses the script of a text from its first letter and lays
 script; the test does the same, so a right-to-left text is compared in the order its glyphs are drawn in. The texts of
 Arabic, Urdu, Hebrew and Syriac are about what the shaping model of these scripts does: the forms of the letters and
 what joins or separates them, the order of the marks, the ligatures and what keeps them from forming, the forms of the
-Syriac alaph, the mark that stretches over a word, the precomposed Hebrew letters. Several of them were found by
+Syriac alaph, the mark that stretches over a word, the precomposed Hebrew letters. Those of Thai and Lao are about the
+sara am and the order of the marks; those of Hangul about the letters that make a syllable or not, in a font that has
+the syllables and in one that does not, and about the tone marks. Several of them were found by
 shaping random sequences of the characters of a script with both shapers. For the font without positioning table, the
 glyphs and the clusters are compared and the positions are not: the reference shaper then places marks from the shape
 of the glyphs, by rules of its own.

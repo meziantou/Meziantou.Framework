@@ -240,6 +240,54 @@ internal static partial class FontCorpus
             ReservedFontName: null,
             Unicodes: null),
 
+        new(
+            "fonts/noto-sans-thai",
+            "fonts/noto-sans-thai/NotoSansThai-Regular.ttf",
+            "NotoSansThai-Regular.ttf",
+            "d4303fe9c63ebb72759ca8b6d2040c8ae81689f7d08d7b91c656154382b49313",
+            "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansThai/unhinted/ttf/NotoSansThai-Regular.ttf",
+            "The Noto Project Authors (https://github.com/notofonts/thai)",
+            "OFL-1.1",
+            ReservedFontName: null,
+            Unicodes: null),
+        new(
+            "fonts/noto-sans-lao",
+            "fonts/noto-sans-lao/NotoSansLao-Regular.ttf",
+            "NotoSansLao-Regular.ttf",
+            "d3976b0ac08702c54999ff42eae295d1597fd73b44e0c57d7f4917524e18afbe",
+            "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansLao/unhinted/ttf/NotoSansLao-Regular.ttf",
+            "The Noto Project Authors (https://github.com/notofonts/lao)",
+            "OFL-1.1",
+            ReservedFontName: null,
+            Unicodes: null),
+        new(
+            "fonts/noto-sans-cjk-kr-regular",
+            "fonts/noto-sans-cjk-kr/NotoSansCJKkr-Regular.subset.otf",
+            "NotoSansCJKkr-Regular.otf",
+            "6bcb2a0703aa137e874fc2dffa85f6c21ba9a67fa329e81b8c801663af7e992a",
+            "https://github.com/notofonts/noto-cjk/blob/f8d157532fbfaeda587e826d4cd5b21a49186f7c/Sans/OTF/Korean/NotoSansCJKkr-Regular.otf",
+            "Adobe (https://github.com/notofonts/noto-cjk)",
+            "OFL-1.1",
+            ReservedFontName: null,
+
+            // The letters of modern Hangul and a few of Old Hangul, with the forms the font has for each position
+            // of a syllable block, the fillers, the tone marks, and some syllables.
+            Unicodes: "20,2E,41,301,302E,302F,3099,25CC,200C,200D,1100-1116,115F,1160-1178,11A7-11C5,11EB,11F0,11F9,A960,A964,D7B0,D7B5,D7CB,D7DD,3131,314F,AC00-AC1C,AC12,AE00,B098,B2E4,D55C",
+            KeepHinting: true),
+        new(
+            "fonts/noto-sans-cjk-kr-letters",
+            "fonts/noto-sans-cjk-kr/NotoSansCJKkr-Regular.letters.otf",
+            "NotoSansCJKkr-Regular.otf",
+            "6bcb2a0703aa137e874fc2dffa85f6c21ba9a67fa329e81b8c801663af7e992a",
+            "https://github.com/notofonts/noto-cjk/blob/f8d157532fbfaeda587e826d4cd5b21a49186f7c/Sans/OTF/Korean/NotoSansCJKkr-Regular.otf",
+            "Adobe (https://github.com/notofonts/noto-cjk)",
+            "OFL-1.1",
+            ReservedFontName: null,
+
+            // The same letters without any syllable: every block is drawn with its letters.
+            Unicodes: "20,2E,41,301,302E,302F,3099,25CC,200C,200D,1100-1116,115F,1160-1178,11A7-11C5,11EB,11F0,11F9,A960,A964,D7B0,D7B5,D7CB,D7DD,3131,314F",
+            KeepHinting: true),
+
         // Fonts of the text-rendering-tests suite of the Unicode Consortium, as the HarfBuzz project distributes them:
         // each one was made for one feature of a font format. They are stored as they are. Only the fonts whose own
         // license is one the corpus accepts are used.
@@ -512,6 +560,60 @@ internal static partial class FontCorpus
         ("\u0646\u0633\u062A\u0639\u0644\u06CC\u0642 \u06C1\u06D2", "-mark,-mkmk"),
     ];
 
+    // Thai: the sara am, whose ring goes before the marks above the consonant, the marks above tall consonants and
+    // below consonants that have a tail, the order of the marks, vowels written before their consonant (which are not
+    // reordered: they are typed first), and marks without a consonant.
+    private static readonly ShapingText[] ThaiShapingCases =
+    [
+        ("\u0E20\u0E32\u0E29\u0E32\u0E44\u0E17\u0E22 \u0E2A\u0E27\u0E31\u0E2A\u0E14\u0E35 \u0E04\u0E23\u0E31\u0E1A", null),
+        ("\u0E19\u0E49\u0E33 \u0E01\u0E33 \u0E01\u0E48\u0E33 \u0E01\u0E38\u0E48\u0E33 \u0E01\u0E34\u0E48\u0E33 \u0E33 \u0E01\u0E33\u0E33", null),
+        ("\u0E01\u0E4D\u0E32 \u0E01\u0E48\u0E4D\u0E32 \u0E01\u0E48\u200D\u0E33 \u0E01\u0E48\u0E38\u0E33  \u0E33 \u25CC\u0E33", null),
+        ("\u0E17\u0E35\u0E48\u0E19\u0E35\u0E48 \u0E1B\u0E35\u0E48 \u0E1B\u0E49\u0E32 \u0E1F\u0E49\u0E32 \u0E1D\u0E31\u0E48\u0E07 \u0E1B\u0E34\u0E48\u0E19", null),
+        ("\u0E0D\u0E38 \u0E10\u0E39 \u0E0E\u0E38 \u0E0F\u0E39 \u0E24\u0E45 \u0E2C\u0E4C", null),
+        ("\u0E01\u0E38\u0E48 \u0E01\u0E48\u0E38 \u0E01\u0E3A\u0E38 \u0E01\u0E38\u0E3A \u0E01\u0E31\u0E49 \u0E01\u0E49\u0E31 \u0E01\u0E47\u0E48\u0E4C", null),
+        ("\u0E40\u0E01 \u0E42\u0E01 \u0E44\u0E01 \u0E40\u0E01\u0E35\u0E22 \u0E40\u0E01\u0E37\u0E2D \u0E41\u0E01\u0E30", null),
+        ("\u0E48 \u0E01\u0E48\u0E49 \u25CC\u0E48 \u0E38 \u0E51\u0E52\u0E53 \u0E3F\u0E51\u0E50\u0E50 \u0E01\u0E2F \u0E46 \u0E4F\u0E5A\u0E5B", null),
+        ("\u0E01\u200B\u0E02 \u0E01\u200C\u0E48 \u0E01\u034F\u0E48 A\u0E01.", null),
+        ("\u0E19\u0E49\u0E33 \u0E1B\u0E35\u0E48 \u0E0D\u0E38", "-ccmp"),
+        ("\u0E19\u0E49\u0E33 \u0E1B\u0E35\u0E48 \u0E0D\u0E38", "-mark,-mkmk"),
+    ];
+
+    // Lao: the same vowel and the same marks, with the semivowel written below the consonant.
+    private static readonly ShapingText[] LaoShapingCases =
+    [
+        ("\u0E9E\u0EB2\u0EAA\u0EB2\u0EA5\u0EB2\u0EA7 \u0EAA\u0EB0\u0E9A\u0EB2\u0E8D\u0E94\u0EB5", null),
+        ("\u0E99\u0EC9\u0EB3 \u0E81\u0EB3 \u0E81\u0EC8\u0EB3 \u0E81\u0EB8\u0EC8\u0EB3 \u0E81\u0EB4\u0EC8\u0EB3 \u0EB3 \u0E81\u0EB3\u0EB3", null),
+        ("\u0E81\u0ECD\u0EB2 \u0E81\u0EC8\u0ECD\u0EB2 \u0E81\u0EC8\u200D\u0EB3 \u0E81\u0ECC\u0EB3 \u0E81\u0EBB\u0EB3 \u0E81\u0ECE\u0EB3", null),
+        ("\u0EAB\u0EBC \u0EAB\u0EBC\u0EB2\u0E8D \u0E81\u0EB1\u0EC8 \u0E81\u0EBB\u0EC9 \u0E9B\u0EB5\u0EC9 \u0E9F\u0EC9\u0EB2", null),
+        ("\u0E81\u0EB8\u0EC8 \u0E81\u0EC8\u0EB8 \u0E81\u0EBA\u0EB9 \u0E81\u0EB9\u0EBA \u0ECB\u0EBA\u0EB9 \u0E81\u0EBC\u0EB8", null),
+        ("\u0EC0\u0E81 \u0EC2\u0E81 \u0EC4\u0E81 \u0EC0\u0E81\u0EB5\u0E8D \u0EDC \u0EDD \u0EC6 \u0ED1\u0ED2\u0ED3", null),
+        ("\u0EC8 \u25CC\u0EC8 \u0EB8 \u0E81\u200B\u0E82 \u0E81\u200C\u0EC8 A\u0E81.", null),
+        ("\u0E99\u0EC9\u0EB3 \u0E9B\u0EB5\u0EC9 \u0EAB\u0EBC", "-ccmp"),
+        ("\u0E99\u0EC9\u0EB3 \u0E9B\u0EB5\u0EC9 \u0EAB\u0EBC", "-mark,-mkmk"),
+    ];
+
+    // Hangul: syllables, letters that make a syllable the font has (composed) or not (shaped with the features of
+    // their positions), a syllable followed by a trailing consonant, the letters of Old Hangul and the fillers, letters
+    // that do not make a block, the tone marks and their dotted circle, and what keeps letters apart.
+    private static readonly ShapingText[] HangulShapingCases =
+    [
+        ("\uD55C\uAE00 \uAC00\uAC01\uAC04 \uB098\uB2E4", null),
+        ("\u1112\u1161\u11AB\u1100\u1173\u11AF \u1100\u1161 \u1100\u1161\u11A8 \uAC00\u11A8 \uAC00\u11AB", null),
+        ("\u1100\u1161\u11A8\u11A8 \uAC01\u11A8 \uAC01\u1161 \uAC00\u1161 \u1100\u1100\u1161 \u1100\u1161\u1161", null),
+        ("\u1100 \u1161 \u11A8 \u1161\u11A8 \u1100\u11A8 \u1100\u11A7 \u1100\u1161\u11A7", null),
+        ("\u1113\u1161 \u1113\u1161\u11A8 \u1100\u1176 \u1100\u1161\u11C3 \uAC00\u11C3 \uAC00\u11EB \uAC00\u11F9", null),
+        ("\u115F\u1161 \u1100\u1160 \u115F\u1160 \u1100\u1160\u11A8 \u115F\u1161\u11A8", null),
+        ("\uA960\uD7B0 \uA964\u1161\uD7CB \u1100\uD7B5 \u1100\u1161\uD7DD \uAC00\uD7CB", null),
+        ("\uAC00\u302E \uD55C\u302F \u1100\u1161\u302E \u1113\u1161\u11A8\u302F \uAC00\u302E\u302F", null),
+        ("\u302E \u1100\u302E A\u302F \uAC00\u0301\u302E \u302F\u3099 \u11A8\u302E\u3099", null),
+        ("\u1100\u200D\u1161 \uAC00\u200D\u11A8 \uAC00\u200C\u11A8 \u3131\u314F \uAC00\u3099 \uAC00\u0301", null),
+        ("A\uAC00. \uAC00 \uB098. \u1103\u11A5 \u1110", null),
+        ("\u1113\u1161\u11A8 \u1100\u1160\u11A8 \uAC00\u11C3", "-ljmo"),
+        ("\u1113\u1161\u11A8 \u1100\u1160\u11A8 \uAC00\u11C3", "-vjmo,-tjmo"),
+        ("\u1113\u1161\u11A8 \u1103\u11A5 \u1110", "-calt"),
+        ("\u1100\u1161 \uAC00\u11A8 \uD55C\uAE00", "-ccmp,-liga"),
+    ];
+
     // Hebrew: letters and final forms, the points in the order of a normalized text and in the order they are typed
     // in, a meteg between the parts of a vowel, cantillation marks, the precomposed letters (which a font that
     // positions the points draws as a letter and its points, and a font that does not draws as they are), the
@@ -567,6 +669,10 @@ internal static partial class FontCorpus
     {
         ["fonts/noto-naskh-arabic"] = ArabicShapingCases,
         ["fonts/noto-nastaliq-urdu"] = UrduShapingCases,
+        ["fonts/noto-sans-thai"] = ThaiShapingCases,
+        ["fonts/noto-sans-lao"] = LaoShapingCases,
+        ["fonts/noto-sans-cjk-kr-regular"] = HangulShapingCases,
+        ["fonts/noto-sans-cjk-kr-letters"] = HangulShapingCases,
         ["fonts/noto-sans-hebrew"] = HebrewShapingCases,
         ["fonts/noto-sans-hebrew-without-positioning"] = HebrewShapingCases,
         ["fonts/noto-sans-syriac"] = SyriacShapingCases,

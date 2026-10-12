@@ -88,7 +88,10 @@ public sealed class ShapingConformanceTests
     [InlineData("fonts/noto-nastaliq-urdu", UnicodeScript.Arabic)]
     [InlineData("fonts/noto-sans-hebrew", UnicodeScript.Hebrew)]
     [InlineData("fonts/noto-sans-syriac", UnicodeScript.Syriac)]
-    public void ALayoutOfRightToLeftTextIsAsWideAsTheReferenceShaperMakesIt(string id, UnicodeScript script)
+    [InlineData("fonts/noto-sans-thai", UnicodeScript.Thai)]
+    [InlineData("fonts/noto-sans-lao", UnicodeScript.Lao)]
+    [InlineData("fonts/noto-sans-cjk-kr-regular", UnicodeScript.Hangul)]
+    public void ALayoutIsAsWideAsTheReferenceShaperMakesIt(string id, UnicodeScript script)
     {
         // The whole way from a string to a line: the direction, the script and the runs are found by the layout, where
         // the other test gives them to the shaper. At the size of the em, the width of the line is the advance of the

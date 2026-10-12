@@ -390,6 +390,13 @@ glyphs and positions in a `GlyphBuffer`; `LayoutApplier` (`Internals/Text/OpenTy
     model, not to this one.
   - `HebrewShaper`: the precomposed letters for a font that does not place points, and the meteg between the points
     of a vowel.
+  - `ThaiShaper` (Thai and Lao): the sara am, decomposed before normalization, its ring moved before the marks above
+    the consonant that precede it in the text (not the ones normalization would put there later).
+  - `HangulShaper`: composition and decomposition of syllable blocks from what the font has, a feature per position
+    for the blocks drawn with letters, tone marks. It does the work of normalization for its letters, which
+    normalization then leaves alone. The dotted circle of a tone mark keeps the class of the mark, so that the marks
+    around them are ordered as if it were not there.
+  - Tibetan has no model of its own: Windows and the reference shaper both shape it with the universal model.
   - `ShapingCombiningClass` orders marks for shaping (Hebrew points, Arabic vowel marks); every script goes through
     it, and composition is blocked by these classes, not by the canonical ones.
 - **Normalization** follows the text: a character without marks is kept when the font has it and decomposed (as far

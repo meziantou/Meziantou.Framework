@@ -112,9 +112,22 @@ internal static class TextShaper
         Span<uint> scripts = stackalloc uint[OpenTypeScript.MaxTagCount];
         scripts = scripts[..OpenTypeScript.GetTags(script, scripts)];
         var shaper = GetShaper(script);
-        var shaperPlan = shaper == ScriptShaperKind.Arabic
-            ? ArabicShaper.GetPlan(script, face.Gsub is { } substitutions && HasFeature(substitutions, face.GsubData.Span, scripts, language, ArabicShaper.RequiredAlternates))
-            : ShaperPlan.Default;
+        var shaperPlan = shaper switch
+        {
+            ScriptShaperKind.Arabic => ArabicShaper.GetPlan(script, face.Gsub is { } substitutions && HasFeature(substitutions, face.GsubData.Span, scripts, language, ArabicShaper.RequiredAlternates)),
+            ScriptShaperKind.Hangul => HangulShaper.Plan,
+            _ => ShaperPlan.Default,
+        };
+
+        // What a model does to the characters themselves, before they are put in the form the font has.
+        if (shaper == ScriptShaperKind.Thai)
+        {
+            ThaiShaper.DecomposeSaraAm(buffer);
+        }
+        else if (shaper == ScriptShaperKind.Hangul)
+        {
+            HangulShaper.ComposeSyllables(buffer, face);
+        }
 
         // A font that positions the points of Hebrew needs no precomposed letter.
         var plan = new FeaturePlan(features, FirstShaperBit + shaperPlan.PerGlyphCount);
@@ -225,6 +238,8 @@ internal static class TextShaper
         {
             UnicodeScript.Arabic or UnicodeScript.Syriac => ScriptShaperKind.Arabic,
             UnicodeScript.Hebrew => ScriptShaperKind.Hebrew,
+            UnicodeScript.Hangul => ScriptShaperKind.Hangul,
+            UnicodeScript.Thai or UnicodeScript.Lao => ScriptShaperKind.Thai,
             _ => ScriptShaperKind.Default,
         };
     }
@@ -255,7 +270,8 @@ internal static class TextShaper
         }
     }
 
-    private static void SetCharacterProperties(ref GlyphInfo info, int codePoint)
+    /// <summary>Gives a character of a buffer the properties of a code point; its cluster is kept.</summary>
+    internal static void SetCharacterProperties(ref GlyphInfo info, int codePoint)
     {
         info.CodePoint = codePoint;
         info.Glyph = codePoint;
@@ -357,8 +373,9 @@ internal static class TextShaper
                 }
             }
 
+            // The blocks of Hangul were composed and decomposed by their model: the letters stay letters.
             var codePoint = buffer.Info[i].CodePoint;
-            var isComplete = i < marksEnd && !isKept;
+            var isComplete = i < marksEnd && !isKept && shaper != ScriptShaperKind.Hangul;
             if (!isComplete && face.MapCodePoint(codePoint) != 0)
                 continue;
 
@@ -400,23 +417,27 @@ internal static class TextShaper
                 end++;
             }
 
-            var moved = false;
+            // A mark that moves takes the marks it passes into its cluster first, with what shares their clusters:
+            // the characters of a cluster stay together.
             for (var i = start + 1; i < end; i++)
             {
-                var current = info[i];
                 var j = i;
-                while (j > start && info[j - 1].CombiningClass > current.CombiningClass)
+                while (j > start && info[j - 1].CombiningClass > info[i].CombiningClass)
                 {
-                    info[j] = info[j - 1];
                     j--;
-                    moved = true;
                 }
 
+                if (j == i)
+                    continue;
+
+                buffer.MergeClusters(j, i + 1);
+                var current = info[i];
+                info[j..i].CopyTo(info[(j + 1)..]);
                 info[j] = current;
             }
 
             // The order the script draws its marks in.
-            moved |= shaper switch
+            var moved = shaper switch
             {
                 ScriptShaperKind.Arabic => ArabicShaper.ReorderMarks(info[start..end]),
                 ScriptShaperKind.Hebrew => HebrewShaper.ReorderMarks(info[start..end]),
@@ -441,6 +462,9 @@ internal static class TextShaper
                 info[i].Flags |= GlyphInfo.Hidden;
             }
         }
+
+        if (shaper == ScriptShaperKind.Hangul)
+            return;
 
         // Compose a character and a mark when the font has the composed character and no other mark comes between.
         var starter = -1;
@@ -656,6 +680,10 @@ internal static class TextShaper
         {
             ArabicShaper.SetFormMasks(info, FirstShaperBit);
         }
+        else if (shaper == ScriptShaperKind.Hangul)
+        {
+            HangulShaper.SetMasks(info, FirstShaperBit);
+        }
 
         foreach (ref var glyph in info)
         {
@@ -843,7 +871,10 @@ internal static class TextShaper
             flags = ShaperFeatureFlags.ManualZeroWidthJoiner | ShaperFeatureFlags.ManualZeroWidthNonJoiner;
         }
 
-        return DefaultFeatures.AsSpan().Contains(tag) || plan.TryGetMask(tag, out _) ? shaper.FinalStage : -1;
+        if (plan.TryGetMask(tag, out _))
+            return shaper.FinalStage;
+
+        return DefaultFeatures.AsSpan().Contains(tag) && !shaper.IsDisabled(tag) ? shaper.FinalStage : -1;
     }
 
     private static void AddLookups(LayoutTable table, ReadOnlySpan<byte> data, int feature, uint mask, List<PlannedLookup> lookups, int substitutions, int stage, ShaperFeatureFlags flags)

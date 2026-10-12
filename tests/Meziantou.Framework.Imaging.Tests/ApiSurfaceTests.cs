@@ -4,6 +4,7 @@ using System.Runtime.Versioning;
 using Meziantou.Framework.Imaging.Drawing;
 using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.Metadata;
+using Meziantou.Framework.Imaging.Typography;
 
 namespace Meziantou.Framework.Imaging.Tests;
 
@@ -36,12 +37,16 @@ public sealed class ApiSurfaceTests
         typeof(LinearGradientBrush),
         typeof(RadialGradientBrush),
         typeof(VectorPath),
+        typeof(FontLoadOptions),
+        typeof(TextStyle),
+        typeof(TextLayoutOptions),
+        typeof(TextPathOptions),
     ];
 
     [Fact]
     public void PublicTypesAreInDocumentedNamespaces()
     {
-        string[] allowed = ["Meziantou.Framework.Imaging", "Meziantou.Framework.Imaging.Metadata", "Meziantou.Framework.Imaging.Formats", "Meziantou.Framework.Imaging.Drawing"];
+        string[] allowed = ["Meziantou.Framework.Imaging", "Meziantou.Framework.Imaging.Metadata", "Meziantou.Framework.Imaging.Formats", "Meziantou.Framework.Imaging.Drawing", "Meziantou.Framework.Imaging.Typography"];
         Assert.All(LibraryAssembly.GetExportedTypes(), type => Assert.Contains(type.Namespace, allowed));
     }
 
@@ -77,6 +82,12 @@ public sealed class ApiSurfaceTests
     [InlineData(typeof(IccColorTransform))]
     [InlineData(typeof(CicpColorDescription))]
     [InlineData(typeof(VectorPathBuilder))]
+    [InlineData(typeof(Font))]
+    [InlineData(typeof(FontCollection))]
+    [InlineData(typeof(TextLayout))]
+    [InlineData(typeof(RichText))]
+    [InlineData(typeof(RichTextBuilder))]
+    [InlineData(typeof(FontStack))]
     public void ConcreteTypesAreSealed(Type type) => Assert.True(type.IsSealed, $"{type} must be sealed");
 
     [Fact]
@@ -228,10 +239,11 @@ public sealed class ApiSurfaceTests
     [Fact]
     public void LibraryOnlyReferencesFrameworkAssemblies()
     {
-        // The package is fully managed: no native or third-party runtime dependency.
+        // The package is fully managed: no native or third-party runtime dependency. Its one dependency is the Unicode
+        // package of this repository, for the text algorithms of text layout.
         // 'netstandard' is a framework facade that code-coverage instrumentation (CI) may add to the instrumented assembly.
         Assert.All(LibraryAssembly.GetReferencedAssemblies(), name => Assert.True(
-            name.Name!.StartsWith("System", StringComparison.Ordinal) || name.Name.StartsWith("Microsoft.", StringComparison.Ordinal) || name.Name == "netstandard",
+            name.Name!.StartsWith("System", StringComparison.Ordinal) || name.Name.StartsWith("Microsoft.", StringComparison.Ordinal) || name.Name is "netstandard" or "Meziantou.Framework.Unicode",
             $"Unexpected dependency: {name}"));
     }
 

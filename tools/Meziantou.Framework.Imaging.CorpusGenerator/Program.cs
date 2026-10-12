@@ -29,6 +29,9 @@ const string Usage = """
         icc           ICC profiles and color conversion vectors (transicc of LittleCMS; any OS)
         icc-builtin   the source of the CMYK profile provided by the library, transcribed from the committed corpus
                       (no tool; any OS)
+        fonts         font files and the values independent font readers give for them: synthetic fonts built by
+                      Common/FontBuilder.cs, third-party fonts subset by hb-subset, their WOFF and WOFF2 forms
+                      (the HarfBuzz utilities and the woff2 tools of the pinned meziantou/prebuilt release; any OS)
 
     Verification (read-only, any tool versions):
         verify        re-decode the committed corpus with the ffmpeg, dwebp and anim_dump of the pinned meziantou/prebuilt release and
@@ -42,6 +45,8 @@ const string Usage = """
         --qoi-header <path>       path of the pinned qoi.h reference implementation (qoi only, required)
         --icc-profiles <dir>      profiles directory of the pinned checkout of saucecontrol/Compact-ICC-Profiles
                                   (icc only, required)
+        --fonts <dir>             directory of the pinned third-party font files, as downloaded from the sources
+                                  FontCorpus.cs lists (fonts only, required)
         --output <directory>      generate into this new or empty directory and keep it (to inspect the output)
     """;
 
@@ -50,6 +55,7 @@ var write = false;
 var acceptToolVersions = false;
 string? qoiHeader = null;
 string? iccProfiles = null;
+string? fonts = null;
 string? output = null;
 for (var i = 0; i < args.Length; i++)
 {
@@ -70,6 +76,9 @@ for (var i = 0; i < args.Length; i++)
         case "--icc-profiles" when i + 1 < args.Length:
             iccProfiles = args[++i];
             break;
+        case "--fonts" when i + 1 < args.Length:
+            fonts = args[++i];
+            break;
         case "--output" when i + 1 < args.Length:
             output = args[++i];
             break;
@@ -83,7 +92,7 @@ for (var i = 0; i < args.Length; i++)
     }
 }
 
-var options = new GeneratorOptions(write, acceptToolVersions, qoiHeader, output, iccProfiles);
+var options = new GeneratorOptions(write, acceptToolVersions, qoiHeader, output, iccProfiles, fonts);
 try
 {
     switch (generator)
@@ -122,6 +131,14 @@ try
             return IccCorpus.Run(options);
         case "icc-builtin":
             return IccCorpus.RunBuiltInProfile(options);
+        case "fonts":
+            if (fonts is null)
+            {
+                Console.Error.WriteLine("The fonts generator requires --fonts <directory of the pinned third-party font files>.");
+                return 2;
+            }
+
+            return FontCorpus.Run(options);
         case "verify":
             return CorpusVerifier.Run();
         default:

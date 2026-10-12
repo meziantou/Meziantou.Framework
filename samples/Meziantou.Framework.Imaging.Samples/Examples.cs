@@ -2,6 +2,7 @@ using System.Runtime.CompilerServices;
 using Meziantou.Framework.Imaging.Drawing;
 using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.Metadata;
+using Meziantou.Framework.Imaging.Typography;
 
 namespace Meziantou.Framework.Imaging.Samples;
 
@@ -642,6 +643,118 @@ internal static class Examples
         var converted = new byte[samples.Length / transform.SourceChannelCount * transform.DestinationChannelCount];
         transform.Convert(samples, converted);
         return converted;
+    }
+    // end-snippet
+
+    /// <summary>Load a font file and read its names and its metrics at a size.</summary>
+    // begin-snippet: load-font
+    public static string DescribeFont(string path)
+    {
+        // TrueType, OpenType, WOFF and WOFF2 are detected from the content of the file.
+        var font = Font.Load(path);
+        var metrics = font.GetMetrics(size: 16);
+        var hasEuro = font.ContainsGlyph(new Rune('€'));
+        return string.Create(
+            CultureInfo.InvariantCulture,
+            $"{font.FamilyName} {font.SubfamilyName}: {font.GlyphCount} glyphs, ascent {metrics.Ascent:0.##}, descent {metrics.Descent:0.##}, euro sign: {hasEuro}");
+    }
+    // end-snippet
+
+    /// <summary>Variable fonts: draw a word at five weights of one font file.</summary>
+    // begin-snippet: variable-font
+    public static void DrawWeights(string variableFontPath, string outputPath)
+    {
+        var font = Font.Load(variableFontPath);
+
+        // The axes say what can vary, and in what range
+        var weight = font.VariationAxes.First(axis => axis.Tag == "wght");
+
+        using var image = new Image<Rgba32>(220, 200, new Rgba32(255, 255, 255));
+        image.Draw(canvas =>
+        {
+            for (var i = 0; i < 5; i++)
+            {
+                // An instance is a font: it shares the data of the font it comes from
+                var value = weight.Minimum + ((weight.Maximum - weight.Minimum) * i / 4);
+                var instance = font.WithVariations(new FontVariationSetting("wght", value));
+                canvas.FillText(new Rgba32(0, 0, 0), "Variable", instance, size: 32, new PointD(10, i * 38));
+            }
+        });
+
+        image.Save(outputPath);
+    }
+    // end-snippet
+
+    /// <summary>Text: measure a text with a layout, then fill and outline it on an image of its size.</summary>
+    // begin-snippet: draw-text
+    public static void DrawLabel(string fontPath, string outputPath)
+    {
+        var font = Font.Load(fontPath);
+
+        // A layout holds the glyphs of a text and their positions: it measures the text and is what is drawn
+        var layout = TextLayout.Create("Hello, world!\nBonjour", font, size: 32);
+
+        const int Margin = 8;
+        using var image = new Image<Rgba32>((int)Math.Ceiling(layout.Width) + (2 * Margin), (int)Math.Ceiling(layout.Height) + (2 * Margin), new Rgba32(255, 255, 255));
+        var outline = new Pen(new Rgba32(0, 0, 0), 1) { LineJoin = LineJoin.Round };
+        image.Draw(canvas =>
+        {
+            // The origin is the top-left corner of the layout; its first baseline is layout.Baseline below
+            var origin = new PointD(Margin, Margin);
+            canvas.FillText(new Rgba32(30, 60, 160), layout, origin);
+            canvas.StrokeText(outline, layout, origin);
+
+            // A line under the first line of text, at its baseline
+            canvas.StrokeLine(outline, new PointD(Margin, Margin + layout.Baseline + 3), new PointD(Margin + layout.Width, Margin + layout.Baseline + 3));
+        });
+
+        image.Save(outputPath);
+    }
+    // end-snippet
+
+    /// <summary>Text: a wrapped and justified paragraph whose parts have their own style.</summary>
+    // begin-snippet: draw-paragraph
+    public static void DrawParagraph(string fontPath, string outputPath)
+    {
+        var font = Font.Load(fontPath);
+        var regular = new TextStyle(font, 18);
+        var emphasis = new TextStyle(font, 18) { Brush = new SolidBrush(new Rgba32(180, 30, 30)), Decorations = TextDecorations.Underline };
+
+        // A span is not a word or a line: the layout wraps the whole text, and shapes the letters of two spans together
+        var text = new RichTextBuilder()
+            .Append("Text is wrapped where ", regular)
+            .Append("Unicode", emphasis)
+            .Append(" allows a line to break, and each line is stretched to the width of the paragraph.", regular)
+            .Build();
+        var layout = TextLayout.Create(text, new TextLayoutOptions { MaxWidth = 300, Alignment = TextAlignment.Justify });
+
+        using var image = new Image<Rgba32>(320, (int)Math.Ceiling(layout.Height) + 20, new Rgba32(255, 255, 255));
+
+        // The brush of the call paints the spans that have none
+        image.Draw(canvas => canvas.FillText(new Rgba32(0, 0, 0), layout, new PointD(10, 10)));
+        image.Save(outputPath);
+    }
+    // end-snippet
+
+    /// <summary>Text: a line of text that follows a curve.</summary>
+    // begin-snippet: draw-text-on-path
+    public static void DrawTextOnPath(string fontPath, string outputPath)
+    {
+        var font = Font.Load(fontPath);
+        var layout = TextLayout.Create("Text follows the path it is given", font, size: 20);
+
+        // An arch: the text is centered on it, its baseline 4 pixels above the path
+        var arch = new VectorPathBuilder().MoveTo(20, 150).CubicBezierTo(100, 10, 300, 10, 380, 150).Build();
+        var options = new TextPathOptions { Alignment = TextPathAlignment.Center, BaselineOffset = 4 };
+
+        using var image = new Image<Rgba32>(400, 170, new Rgba32(255, 255, 255));
+        image.Draw(canvas =>
+        {
+            canvas.Stroke(new Pen(new Rgba32(200, 200, 200), 1), arch);
+            canvas.FillText(new Rgba32(30, 60, 160), layout, arch, options);
+        });
+
+        image.Save(outputPath);
     }
     // end-snippet
 }

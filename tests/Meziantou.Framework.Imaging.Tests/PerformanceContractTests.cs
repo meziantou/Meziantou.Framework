@@ -1,7 +1,9 @@
 using System.Runtime.CompilerServices;
+using Meziantou.Framework.Imaging.CorpusGenerator.Common;
 using Meziantou.Framework.Imaging.Drawing;
 using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.Internals;
+using Meziantou.Framework.Imaging.Typography;
 
 namespace Meziantou.Framework.Imaging.Tests;
 
@@ -75,6 +77,16 @@ public sealed class PerformanceContractTests
             new LinearGradientBrush(new PointD(0, 0), new PointD(64, 48), [new GradientStop(0, new Rgba32(255, 0, 0)), new GradientStop(0.5, new Rgba32(0, 255, 0, 80)), new GradientStop(1, new Rgba32(0, 0, 255))]) { SpreadMode = GradientSpreadMode.Reflect },
             new Pen(new RadialGradientBrush(new PointD(30, 20), 25, [new GradientStop(0, new Rgba32(0, 0, 0)), new GradientStop(1, new Rgba32(255, 255, 255))]), 3.5) { LineJoin = LineJoin.Round, LineCap = LineCap.Round },
             new VectorPathBuilder().MoveTo(4, 40).CubicBezierTo(20, -10, 40, 60, 60, 6).QuadraticBezierTo(30, 30, 8, 8).AddCircle(new PointD(32, 24), 15).Build(),
+            TextLayout.Create("OPQ\nR O", FontTestSupport.Load(FontSamples.Curves()), 14.5),
+            TextLayout.Create("ABCDEFG", FontTestSupport.Load(FontSamples.Charstrings()), 9.25),
+            TextLayout.Create("AB\u00C1H", FontTestSupport.Load(FontSamples.Boxes()), 12),
+            CreateRichLayout(),
+            TextLayout.Create("ABCDE FGH", FontTestSupport.WithVariations(FontTestSupport.Load(FontSamples.Variable(withAdvanceVariations: false)), "wght=775,wdth=150"), 8.5),
+            TextLayout.Create("ABCD", FontTestSupport.WithVariations(FontTestSupport.Load(FontSamples.VariableCharstrings()), "wght=650"), 11),
+            CreateColorLayout(),
+            TextLayout.Create("AB CA", FontTestSupport.Load(FontSamples.BitmapBoxes(useColorBitmapTables: true)), 16),
+            TextLayout.Create("ABCA", FontTestSupport.Load(FontSamples.BitmapBoxes()), 11.5),
+            new TextPathOptions { Side = TextPathSide.Right, Alignment = TextPathAlignment.Center, StartOffset = -7.5, BaselineOffset = 2.25, Overflow = TextPathOverflow.Clip },
             new StrongBox<long>(long.MaxValue));
 
         // Tiered compilation running concurrently can attribute a few bytes to this thread, and the many methods behind a
@@ -112,6 +124,63 @@ public sealed class PerformanceContractTests
             canvas.StrokeLine(state.Pen, new PointD(1, 1), new PointD(60, 44));
             canvas.StrokeBezier(state.Pen, new PointD(2, 2), new PointD(30, 46), new PointD(62, 3));
             canvas.StrokeBezier(state.Pen, new PointD(2, 46), new PointD(20, 0), new PointD(40, 47), new PointD(62, 20));
+
+            // Text: quadratic outlines, charstrings with subroutines, composite glyphs and kerning
+            canvas.FillText(state.Gradient, state.Text, new PointD(2.5, 3));
+            canvas.StrokeText(state.Pen, state.Text, new PointD(1, 10.5));
+            canvas.FillText(state.Solid, state.CffText, new PointD(4, 20));
+            canvas.StrokeText(state.Pen, state.CffText, new PointD(4, 30));
+            canvas.FillText(state.Solid, state.CompositeText, new PointD(0.5, 30.25));
+
+            // A wrapped and justified paragraph of several paints, a gradient among them, with decorations and two fonts
+            canvas.FillText(state.Solid, state.RichText, new PointD(1.25, 0.5));
+            canvas.StrokeText(state.Pen, state.RichText, new PointD(3, 2));
+
+            // Instances of variable fonts: the points of the glyphs are varied, and the charstrings blended, at each draw
+            canvas.FillText(state.Solid, state.VariableText, new PointD(1, 2));
+            canvas.StrokeText(state.Pen, state.VariableText, new PointD(2, 20));
+            canvas.FillText(state.Gradient, state.BlendedText, new PointD(3, 30));
+
+            // Color glyphs: layers, gradients, a clip within a clip and a composition, with the color of the text from a
+            // solid brush and from a gradient, at a point and along a path
+            canvas.FillText(state.Solid, state.ColorText, new PointD(2, 1.5));
+            canvas.FillText(state.Gradient, state.ColorText, new PointD(1, 20));
+            canvas.FillText(state.Gradient, state.ColorText, state.Path, state.PathOptions);
+
+            // Glyphs that are images: at the size of a strike and scaled, at a point and along a path
+            canvas.FillText(state.Solid, state.BitmapText, new PointD(3, 2));
+            canvas.FillText(state.Gradient, state.ScaledBitmapText, new PointD(1.25, 14.5));
+            canvas.FillText(state.Solid, state.ScaledBitmapText, state.Path, state.PathOptions);
+
+            // Along a path of curves and of two contours, on both sides: the path is measured in the scratch of the session
+            canvas.FillText(state.Solid, state.Text, state.Path);
+            canvas.FillText(state.Gradient, state.RichText, state.Path, state.PathOptions);
+            canvas.StrokeText(state.Pen, state.CffText, state.Path, state.PathOptions);
+        }
+
+        static TextLayout CreateColorLayout()
+        {
+            var line = new FontColorLine(1, (0, 0, 1), (0.5, 0xFFFF, 0.5), (1, 1, 1));
+            var font = FontTestSupport.Load(FontSamples.ColorPaints(
+                ('D', new FontColorPaint.Composite(
+                    new FontColorPaint.Glyph(3, new FontColorPaint.Sweep(line, 512, 384, 30, 300)),
+                    14,
+                    new FontColorPaint.Glyph(4, new FontColorPaint.Radial(line, 400, 300, 20, 600, 400, 300)))),
+                ('E', new FontColorPaint.Glyph(3, new FontColorPaint.Rotate(new FontColorPaint.Glyph(4, new FontColorPaint.Linear(line, 128, 0, 600, 200, 300, 700)), 30, 512, 384)))));
+            return TextLayout.Create("ADBE C", new TextStyle(font, 10.5) { ColorPaletteIndex = 1 });
+        }
+
+        static TextLayout CreateRichLayout()
+        {
+            var boxes = FontTestSupport.Load(FontSamples.Boxes());
+            var curves = FontTestSupport.Load(FontSamples.Curves());
+            var gradient = new LinearGradientBrush(new PointD(0, 0), new PointD(60, 40), [new GradientStop(0, new Rgba32(0, 0, 255)), new GradientStop(1, new Rgba32(255, 255, 0, 100))]);
+            var text = new RichTextBuilder()
+                .Append("AB A", new TextStyle(boxes, 9) { Brush = new SolidBrush(new Rgba32(200, 0, 0, 180)), Decorations = TextDecorations.Underline })
+                .Append("B OP ", new TextStyle(new FontStack(boxes, curves), 7.5) { Brush = gradient, Decorations = TextDecorations.Strikethrough, DecorationBrush = new SolidBrush(new Rgba32(0, 0, 0)) })
+                .Append("QA BA", new TextStyle(curves, 11) { LetterSpacing = 0.5 })
+                .Build();
+            return TextLayout.Create(text, new TextLayoutOptions { MaxWidth = 50, Alignment = TextAlignment.Justify });
         }
     }
 
@@ -276,5 +345,5 @@ public sealed class PerformanceContractTests
         return stream.ToArray();
     }
 
-    private sealed record DrawingState(SolidBrush Solid, GradientBrush Gradient, Pen Pen, VectorPath Path, StrongBox<long> Allocated);
+    private sealed record DrawingState(SolidBrush Solid, GradientBrush Gradient, Pen Pen, VectorPath Path, TextLayout Text, TextLayout CffText, TextLayout CompositeText, TextLayout RichText, TextLayout VariableText, TextLayout BlendedText, TextLayout ColorText, TextLayout BitmapText, TextLayout ScaledBitmapText, TextPathOptions PathOptions, StrongBox<long> Allocated);
 }

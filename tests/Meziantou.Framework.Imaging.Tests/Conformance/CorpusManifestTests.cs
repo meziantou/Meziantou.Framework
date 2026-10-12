@@ -43,6 +43,8 @@ public sealed class CorpusManifestTests
         AssertSameSet(FixtureManifestValidator.AllowedColorModels, Enum(defs, "expected", "colorModel"));
         AssertSameSet(FixtureManifestValidator.AllowedIccProfiles, Enum(defs, "expected", "iccProfile"));
         AssertSameSet(FixtureManifestValidator.AllowedCrossCheckResults, Enum(defs, "crossCheck", "result"));
+        AssertSameSet(FontEntry.AllowedFlavors, Enum(defs, "font", "flavor"));
+        AssertSameSet(FontEntry.AllowedModifications, Enum(defs, "font", "modification"));
         AssertSameSet(FixtureManifestValidator.AllowedAv1Subsamplings, Enum(defs, "av1Vector", "subsampling"));
         AssertSameSet(FixtureManifestValidator.AllowedAv1BitDepths.Select(depth => depth.ToString(CultureInfo.InvariantCulture)), defs.GetProperty("av1Vector").GetProperty("properties").GetProperty("bitDepth").GetProperty("enum").EnumerateArray().Select(item => item.GetInt32().ToString(CultureInfo.InvariantCulture)));
         Assert.StartsWith("^" + FixtureManifestValidator.Av1VectorPrefix, defs.GetProperty("av1Vector").GetProperty("properties").GetProperty("id").GetProperty("pattern").GetString());

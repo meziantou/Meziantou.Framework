@@ -26,6 +26,7 @@ Run("avif", SmokeTests.Avif);
 Run("jxl", SmokeTests.JpegXl);
 Run("processing", SmokeTests.Processing);
 Run("drawing", SmokeTests.Drawing);
+Run("text", SmokeTests.Text);
 Run("color", SmokeTests.ColorConversion);
 Run("streaming", SmokeTests.Streaming);
 Run("errors", SmokeTests.Errors);

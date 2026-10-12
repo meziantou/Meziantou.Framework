@@ -1,6 +1,6 @@
 {
   "$schema": "./manifest.schema.json",
-  "schemaVersion": 3,
+  "schemaVersion": 5,
   "generator": {
     "script": "tools/Meziantou.Framework.Imaging.CorpusGenerator/GoldenCorpus.cs",
     "command": "dotnet run --project tools/Meziantou.Framework.Imaging.CorpusGenerator -- golden --write",
@@ -84984,6 +84984,4784 @@
         "maxMeanAbsoluteError": 0.75,
         "justification": "Both systems estimate the black point from the round trip of a lightness ramp, sampled at 256 points by LittleCMS and at 101 by the library."
       }
+    }
+  ],
+  "fonts": [
+    {
+      "id": "fonts/colr-test-glyphs",
+      "file": {
+        "path": "fonts/color-fonts/test_glyphs-glyf_colr_1.ttf",
+        "sha256": "8aa611b1ca97044ac6f13dc982fde29256612f0a5acc6ef47ca541a7a5b99b28",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "Apache-2.0",
+        "author": "The googlefonts/color-fonts authors",
+        "source": "https://github.com/googlefonts/color-fonts/blob/0046ea4c3b69e9fbbe464c2594816894e3aa5e4b/fonts/test_glyphs-glyf_colr_1.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=12",
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=COLR",
+        "font.table=CPAL",
+        "font.table=glyf"
+      ],
+      "renderTool": "hb-raster 14.6.0 --logical --background=FFFFFF",
+      "renders": [
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs/00-000.png",
+            "sha256": "6cd168bab5122517c4d49eb38617b085d3721ea590dc5020f426def68b683be4",
+            "role": "font-render"
+          },
+          "text": "F0100 F0101 F0102 F0103 F0200 F0201 F0202 F0203",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs/00-001.png",
+            "sha256": "f6c8d2fd91c0f1e2f5e4dda6ffb8fad90bd7bfa7d0262e84a69e8d8b9cf8ca39",
+            "role": "font-render"
+          },
+          "text": "F0204 F0205 F0206 F0207 F0208 F0209 F020A F020B",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs/00-002.png",
+            "sha256": "b8693da9b90d3b60942975059a8c160b6475e4541eb29e48ad684be948e7dba4",
+            "role": "font-render"
+          },
+          "text": "F020C F020D F020E F020F F0210 F0211 F0212 F0213",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs/00-003.png",
+            "sha256": "1836e31cce4d1e218a62ae75a24f3cc86e474bb78f789738bb12f3fe04ec1d41",
+            "role": "font-render"
+          },
+          "text": "F0214 F0215 F0216 F0217 F0218 F0219 F021A F021B",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs/00-004.png",
+            "sha256": "429e196d127ae406bf7de55287a05838798d92d386855675f06fed92e57af07b",
+            "role": "font-render"
+          },
+          "text": "F021C F021D F021E F021F F0220 F0221 F0222 F0223",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs/00-005.png",
+            "sha256": "e9d2fff12cd88eb5820ca998a631c3b0bf91db67608552c50573d684a47bdb73",
+            "role": "font-render"
+          },
+          "text": "F0224 F0225 F0226 F0227 F0228 F0229 F022A F022B",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs/00-006.png",
+            "sha256": "437e05a0cc1951ae2cc95862e03150fc87c4dc9403ca3be0bcfc89edf98f3589",
+            "role": "font-render"
+          },
+          "text": "F022C F022D F022E F022F F0230 F0231 F0232 F0233",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs/00-007.png",
+            "sha256": "09855b1f9b432250745f158c46c115e13090b39bdba55c63bb36ec9ac4b3770e",
+            "role": "font-render"
+          },
+          "text": "F0234 F0235 F0236 F0237 F0238 F0239 F023A F023B",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs/00-008.png",
+            "sha256": "4bb59a36f076eedece6b85f31c3e75513b55bd674d2f2df59f44964cf24b85ef",
+            "role": "font-render"
+          },
+          "text": "F023C F023D F023E F023F F0240 F0241 F0242 F0243",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs/00-009.png",
+            "sha256": "919d199f93d59ed80ddb93d6e7f38fcc3c80218554bcbe67e4083de2fbb580e7",
+            "role": "font-render"
+          },
+          "text": "F0244 F0245 F0246 F0247 F0300 F0301 F0302 F0303",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs/00-010.png",
+            "sha256": "2847dfcce9ceb56a08bda103542449b21c6ea662329f76acc8e47c5261d9485e",
+            "role": "font-render"
+          },
+          "text": "F0304 F0305 F0500 F0501 F0502 F0503 F0504 F0505",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs/00-011.png",
+            "sha256": "5767e4e62007ed67a7707c9539d7558e7ab311c7dc802daa6d929342c92a5b86",
+            "role": "font-render"
+          },
+          "text": "F0600 F0601 F0602 F0603 F0700 F0701 F0702 F0703",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs/00-012.png",
+            "sha256": "00189168595470d6a54cf72474469c988d6b54cfe5536eded3433969b4471fdb",
+            "role": "font-render"
+          },
+          "text": "F0704 F0705 F0800 F0801 F0802 F0803 F0900 F0901",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs/00-013.png",
+            "sha256": "3d4201bc770c1a3cdadf6d7b6930b783e7923ec89a20121f789833638320a99b",
+            "role": "font-render"
+          },
+          "text": "F0902 F0903 F0904 F0905 F0906 F0A00 F0A01 F0A02",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs/00-014.png",
+            "sha256": "724f5c316370e453fe830a659d899a69f189716e5d4245ea226c7191d6431e93",
+            "role": "font-render"
+          },
+          "text": "F0A03 F0A04 F0A05 F0A06 F0A07 F0A08 F0A09 F0A0A",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs/00-015.png",
+            "sha256": "53553f997a27505ac1999bf9e90c8ea9f12888f50525404c686e43b814c9cbf5",
+            "role": "font-render"
+          },
+          "text": "F0A0B F0A0C F0A0D F0A0E F0A0F F0A10 F0A11 F0A12",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs/00-016.png",
+            "sha256": "1d73e87788854bdc086ef386980d475e1b3086d1f4c8ed7cdf16414b54675ba8",
+            "role": "font-render"
+          },
+          "text": "F0A13 F0A14 F0A15 F0A16 F0A17 F0A18 F0A19 F0A1A",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs/00-017.png",
+            "sha256": "b64bdf6f480a350d0dab2d7d73bf804cd7884a478d0198ff980f2f83811b5317",
+            "role": "font-render"
+          },
+          "text": "F0A1B F0B00 F0B01 F0B02 F0B03 F0B04 F0B05 F0B06",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs/00-018.png",
+            "sha256": "2416116b38e66452e202660bd650269ef474f63b95b7520acc1de412e15f5853",
+            "role": "font-render"
+          },
+          "text": "F0B07 F0C00 F0C01 F0C02 F0C03 F0C04 F0C05 F0C06",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs/00-019.png",
+            "sha256": "7350ae1d6fbe3d0e7fc30960aff94c96899f34ad6fd883635de45b0cbc7532d6",
+            "role": "font-render"
+          },
+          "text": "F0C07 F0C08 F0C09 F0C0A F0D00 F0E00 F0E01 F0F00",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs/00-020.png",
+            "sha256": "6aba222b6ea7d030aa0d82b89af33d01f7fa81351f15b7988619ff7bffed55ba",
+            "role": "font-render"
+          },
+          "text": "F0F01 F0F02 F0F03 F0F04 F0F05 F0F06 F1000 F1100",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs/00-021.png",
+            "sha256": "252da08b0b16cba4c062303a67fcf56c8ee0b331abd4355093bdb3f447b689b7",
+            "role": "font-render"
+          },
+          "text": "F1101 F1301 F1302 F1304 F1305 F1307 F1308 F130A",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs/00-022.png",
+            "sha256": "252da08b0b16cba4c062303a67fcf56c8ee0b331abd4355093bdb3f447b689b7",
+            "role": "font-render"
+          },
+          "text": "F130B F130D F130E F1310 F1311 F1313 F1314 F1316",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs/00-023.png",
+            "sha256": "3a7f5153c7b7fa4c6288309838b2a0d59880b8f99b335c4bb69accc720821c75",
+            "role": "font-render"
+          },
+          "text": "F1317 F1400 F1401 F1402 F1403 F1404 F1405 F1406",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs/00-024.png",
+            "sha256": "957f1b4cd71d476d3d5dc20004faf82f4cd98dad00645fc9a2de7c2dfea9a657",
+            "role": "font-render"
+          },
+          "text": "F1407 F1408 F1409 F140A F140B F140C F140D F140E",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs/00-025.png",
+            "sha256": "5c3bc301e8b351cf98b2cac08f9dc16d5549c632415cc579c2d19eefb82bc9c9",
+            "role": "font-render"
+          },
+          "text": "F140F FE001 FE002 FE003 FE004 FE005 FE006 FE007",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs/01-000.png",
+            "sha256": "4bd095e20d67b58a84529589b400c9197259bc8bc8762389789d5352a4658d09",
+            "role": "font-render"
+          },
+          "text": "F0B00 F0B01 F0B02 F0B03 F0B04 F0B05 F0B06 F0B07",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "foreground": "D02090"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs/02-000.png",
+            "sha256": "7de6b75997e7d3b17d9eb7962a5d447b4654405765ae1767863fa7fee0335d62",
+            "role": "font-render"
+          },
+          "text": "F0B00 F0B01 F0B02 F0B03 F0B04 F0B05 F0B06 F0B07",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "foreground": "2060C080"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs/03-000.png",
+            "sha256": "dfb431f2028e196638065ad802b8b23661feec5c3f8f36dad51622d08371f306",
+            "role": "font-render"
+          },
+          "text": "F0100 F0200 F0500 F0503 F0A03 F0E00 F0E01 F1000",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "palette": 1
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs/04-000.png",
+            "sha256": "20c7dbb0e92062c6b4e5203ab0829813e21869e4f2319cba9644992960c0977e",
+            "role": "font-render"
+          },
+          "text": "F0100 F0200 F0500 F0503 F0A03 F0E00 F0E01 F1000",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "palette": 2
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs/05-000.png",
+            "sha256": "6d10869d5254c249ce74f9757d9fb98fb9c1ea62f5e89d499e67f35af9145378",
+            "role": "font-render"
+          },
+          "text": "F0100 F0101 F0102 F0103 F0200 F0201 F0202 F0203 F0204 F0205 F0206 F0207 F0208 F0209 F020A F020B F020C F020D F020E F020F F0210 F0211 F0212 F0213 F0214 F0215 F0216 F0217 F0218 F0219 F021A F021B",
+          "size": 20,
+          "margin": 32,
+          "ascent": 20,
+          "descent": 4
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs/05-001.png",
+            "sha256": "fa2a9794687972b91864c308d226bf86af6cb621b73207a3e2cdd2a8bcee4443",
+            "role": "font-render"
+          },
+          "text": "F021C F021D F021E F021F F0220 F0221 F0222 F0223 F0224 F0225 F0226 F0227 F0228 F0229 F022A F022B F022C F022D F022E F022F F0230 F0231 F0232 F0233 F0234 F0235 F0236 F0237 F0238 F0239 F023A F023B",
+          "size": 20,
+          "margin": 32,
+          "ascent": 20,
+          "descent": 4
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs/05-002.png",
+            "sha256": "da685dfb054951f5949dbdccfe291cb8dadd2bab1840897ce9de71b12c3d3b1d",
+            "role": "font-render"
+          },
+          "text": "F023C F023D F023E F023F F0240 F0241 F0242 F0243 F0244 F0245 F0246 F0247 F0300 F0301 F0302 F0303 F0304 F0305 F0500 F0501 F0502 F0503 F0504 F0505 F0600 F0601 F0602 F0603 F0700 F0701 F0702 F0703",
+          "size": 20,
+          "margin": 32,
+          "ascent": 20,
+          "descent": 4
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs/05-003.png",
+            "sha256": "6139eb820854e582b55ce5ea5d8e219303c5910ac3a95aac852c0ad4a2401cea",
+            "role": "font-render"
+          },
+          "text": "F0704 F0705 F0800 F0801 F0802 F0803 F0900 F0901 F0902 F0903 F0904 F0905 F0906 F0A00 F0A01 F0A02 F0A03 F0A04 F0A05 F0A06 F0A07 F0A08 F0A09 F0A0A F0A0B F0A0C F0A0D F0A0E F0A0F F0A10 F0A11 F0A12",
+          "size": 20,
+          "margin": 32,
+          "ascent": 20,
+          "descent": 4
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs/05-004.png",
+            "sha256": "65d49e4d3a83a40dfc566c84c13f9cb81ce648180c73d9398b4c5b7771996fb7",
+            "role": "font-render"
+          },
+          "text": "F0A13 F0A14 F0A15 F0A16 F0A17 F0A18 F0A19 F0A1A F0A1B F0B00 F0B01 F0B02 F0B03 F0B04 F0B05 F0B06 F0B07 F0C00 F0C01 F0C02 F0C03 F0C04 F0C05 F0C06 F0C07 F0C08 F0C09 F0C0A F0D00 F0E00 F0E01 F0F00",
+          "size": 20,
+          "margin": 32,
+          "ascent": 20,
+          "descent": 4
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs/05-005.png",
+            "sha256": "a0553e470d883419c645cfbe2553d8a7efb13865d943cc9f4827070c6c9b2f94",
+            "role": "font-render"
+          },
+          "text": "F0F01 F0F02 F0F03 F0F04 F0F05 F0F06 F1000 F1100 F1101 F1301 F1302 F1304 F1305 F1307 F1308 F130A F130B F130D F130E F1310 F1311 F1313 F1314 F1316 F1317 F1400 F1401 F1402 F1403 F1404 F1405 F1406",
+          "size": 20,
+          "margin": 32,
+          "ascent": 20,
+          "descent": 4
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs/05-006.png",
+            "sha256": "1d3d64a2bdef15abd2857c245e615adb498b69cc91edfd69e03f8fc2073c162d",
+            "role": "font-render"
+          },
+          "text": "F1407 F1408 F1409 F140A F140B F140C F140D F140E F140F FE001 FE002 FE003 FE004 FE005 FE006 FE007",
+          "size": 20,
+          "margin": 32,
+          "ascent": 20,
+          "descent": 4
+        }
+      ]
+    },
+    {
+      "id": "fonts/colr-test-glyphs-variable",
+      "file": {
+        "path": "fonts/color-fonts/test_glyphs-glyf_colr_1_variable.ttf",
+        "sha256": "ad575a09d6748aebcb3b90ffd384c64d5c64b5fd9927967e7cd7cc0d70c98d34",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "Apache-2.0",
+        "author": "The googlefonts/color-fonts authors",
+        "source": "https://github.com/googlefonts/color-fonts/blob/0046ea4c3b69e9fbbe464c2594816894e3aa5e4b/fonts/test_glyphs-glyf_colr_1_variable.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=12",
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=COLR",
+        "font.table=CPAL",
+        "font.table=HVAR",
+        "font.table=STAT",
+        "font.table=fvar",
+        "font.table=glyf",
+        "font.table=gvar"
+      ],
+      "renderTool": "hb-raster 14.6.0 --logical --background=FFFFFF",
+      "renders": [
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/00-000.png",
+            "sha256": "6cd168bab5122517c4d49eb38617b085d3721ea590dc5020f426def68b683be4",
+            "role": "font-render"
+          },
+          "text": "F0100 F0101 F0102 F0103 F0200 F0201 F0202 F0203",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/00-001.png",
+            "sha256": "f6c8d2fd91c0f1e2f5e4dda6ffb8fad90bd7bfa7d0262e84a69e8d8b9cf8ca39",
+            "role": "font-render"
+          },
+          "text": "F0204 F0205 F0206 F0207 F0208 F0209 F020A F020B",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/00-002.png",
+            "sha256": "b8693da9b90d3b60942975059a8c160b6475e4541eb29e48ad684be948e7dba4",
+            "role": "font-render"
+          },
+          "text": "F020C F020D F020E F020F F0210 F0211 F0212 F0213",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/00-003.png",
+            "sha256": "1836e31cce4d1e218a62ae75a24f3cc86e474bb78f789738bb12f3fe04ec1d41",
+            "role": "font-render"
+          },
+          "text": "F0214 F0215 F0216 F0217 F0218 F0219 F021A F021B",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/00-004.png",
+            "sha256": "429e196d127ae406bf7de55287a05838798d92d386855675f06fed92e57af07b",
+            "role": "font-render"
+          },
+          "text": "F021C F021D F021E F021F F0220 F0221 F0222 F0223",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/00-005.png",
+            "sha256": "e9d2fff12cd88eb5820ca998a631c3b0bf91db67608552c50573d684a47bdb73",
+            "role": "font-render"
+          },
+          "text": "F0224 F0225 F0226 F0227 F0228 F0229 F022A F022B",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/00-006.png",
+            "sha256": "437e05a0cc1951ae2cc95862e03150fc87c4dc9403ca3be0bcfc89edf98f3589",
+            "role": "font-render"
+          },
+          "text": "F022C F022D F022E F022F F0230 F0231 F0232 F0233",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/00-007.png",
+            "sha256": "09855b1f9b432250745f158c46c115e13090b39bdba55c63bb36ec9ac4b3770e",
+            "role": "font-render"
+          },
+          "text": "F0234 F0235 F0236 F0237 F0238 F0239 F023A F023B",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/00-008.png",
+            "sha256": "4bb59a36f076eedece6b85f31c3e75513b55bd674d2f2df59f44964cf24b85ef",
+            "role": "font-render"
+          },
+          "text": "F023C F023D F023E F023F F0240 F0241 F0242 F0243",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/00-009.png",
+            "sha256": "919d199f93d59ed80ddb93d6e7f38fcc3c80218554bcbe67e4083de2fbb580e7",
+            "role": "font-render"
+          },
+          "text": "F0244 F0245 F0246 F0247 F0300 F0301 F0302 F0303",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/00-010.png",
+            "sha256": "2847dfcce9ceb56a08bda103542449b21c6ea662329f76acc8e47c5261d9485e",
+            "role": "font-render"
+          },
+          "text": "F0304 F0305 F0500 F0501 F0502 F0503 F0504 F0505",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/00-011.png",
+            "sha256": "5767e4e62007ed67a7707c9539d7558e7ab311c7dc802daa6d929342c92a5b86",
+            "role": "font-render"
+          },
+          "text": "F0600 F0601 F0602 F0603 F0700 F0701 F0702 F0703",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/00-012.png",
+            "sha256": "00189168595470d6a54cf72474469c988d6b54cfe5536eded3433969b4471fdb",
+            "role": "font-render"
+          },
+          "text": "F0704 F0705 F0800 F0801 F0802 F0803 F0900 F0901",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/00-013.png",
+            "sha256": "3d4201bc770c1a3cdadf6d7b6930b783e7923ec89a20121f789833638320a99b",
+            "role": "font-render"
+          },
+          "text": "F0902 F0903 F0904 F0905 F0906 F0A00 F0A01 F0A02",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/00-014.png",
+            "sha256": "724f5c316370e453fe830a659d899a69f189716e5d4245ea226c7191d6431e93",
+            "role": "font-render"
+          },
+          "text": "F0A03 F0A04 F0A05 F0A06 F0A07 F0A08 F0A09 F0A0A",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/00-015.png",
+            "sha256": "53553f997a27505ac1999bf9e90c8ea9f12888f50525404c686e43b814c9cbf5",
+            "role": "font-render"
+          },
+          "text": "F0A0B F0A0C F0A0D F0A0E F0A0F F0A10 F0A11 F0A12",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/00-016.png",
+            "sha256": "1d73e87788854bdc086ef386980d475e1b3086d1f4c8ed7cdf16414b54675ba8",
+            "role": "font-render"
+          },
+          "text": "F0A13 F0A14 F0A15 F0A16 F0A17 F0A18 F0A19 F0A1A",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/00-017.png",
+            "sha256": "b64bdf6f480a350d0dab2d7d73bf804cd7884a478d0198ff980f2f83811b5317",
+            "role": "font-render"
+          },
+          "text": "F0A1B F0B00 F0B01 F0B02 F0B03 F0B04 F0B05 F0B06",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/00-018.png",
+            "sha256": "2416116b38e66452e202660bd650269ef474f63b95b7520acc1de412e15f5853",
+            "role": "font-render"
+          },
+          "text": "F0B07 F0C00 F0C01 F0C02 F0C03 F0C04 F0C05 F0C06",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/00-019.png",
+            "sha256": "7350ae1d6fbe3d0e7fc30960aff94c96899f34ad6fd883635de45b0cbc7532d6",
+            "role": "font-render"
+          },
+          "text": "F0C07 F0C08 F0C09 F0C0A F0D00 F0E00 F0E01 F0F00",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/00-020.png",
+            "sha256": "6aba222b6ea7d030aa0d82b89af33d01f7fa81351f15b7988619ff7bffed55ba",
+            "role": "font-render"
+          },
+          "text": "F0F01 F0F02 F0F03 F0F04 F0F05 F0F06 F1000 F1100",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/00-021.png",
+            "sha256": "252da08b0b16cba4c062303a67fcf56c8ee0b331abd4355093bdb3f447b689b7",
+            "role": "font-render"
+          },
+          "text": "F1101 F1301 F1302 F1304 F1305 F1307 F1308 F130A",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/00-022.png",
+            "sha256": "252da08b0b16cba4c062303a67fcf56c8ee0b331abd4355093bdb3f447b689b7",
+            "role": "font-render"
+          },
+          "text": "F130B F130D F130E F1310 F1311 F1313 F1314 F1316",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/00-023.png",
+            "sha256": "3a7f5153c7b7fa4c6288309838b2a0d59880b8f99b335c4bb69accc720821c75",
+            "role": "font-render"
+          },
+          "text": "F1317 F1400 F1401 F1402 F1403 F1404 F1405 F1406",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/00-024.png",
+            "sha256": "957f1b4cd71d476d3d5dc20004faf82f4cd98dad00645fc9a2de7c2dfea9a657",
+            "role": "font-render"
+          },
+          "text": "F1407 F1408 F1409 F140A F140B F140C F140D F140E",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/00-025.png",
+            "sha256": "5c3bc301e8b351cf98b2cac08f9dc16d5549c632415cc579c2d19eefb82bc9c9",
+            "role": "font-render"
+          },
+          "text": "F140F FE001 FE002 FE003 FE004 FE005 FE006 FE007",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/01-000.png",
+            "sha256": "6f01fffcf7fbfa85d980aa9c2e00c578c2d415016c8f7bd3d5daa71adef5120a",
+            "role": "font-render"
+          },
+          "text": "F0100 F0101 F0102 F0103 F0200 F0201 F0202 F0203",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SWPS=45,SWPE=-30,SWC1=0.25,SWC2=-0.25,SWC3=0.5,SWC4=-0.5"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/01-001.png",
+            "sha256": "fa87c77c5916def4076ee99fbfaa13c826f7356ea735ea77670512faab56e19d",
+            "role": "font-render"
+          },
+          "text": "F0204 F0205 F0206 F0207 F0208 F0209 F020A F020B",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SWPS=45,SWPE=-30,SWC1=0.25,SWC2=-0.25,SWC3=0.5,SWC4=-0.5"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/01-002.png",
+            "sha256": "901df687af3e5fe9fa7da1544c545d7bda802c0b345b751d2c40138813c2b5d9",
+            "role": "font-render"
+          },
+          "text": "F020C F020D F020E F020F F0210 F0211 F0212 F0213",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SWPS=45,SWPE=-30,SWC1=0.25,SWC2=-0.25,SWC3=0.5,SWC4=-0.5"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/01-003.png",
+            "sha256": "2f9655a48b92cd48847df25f3b3901984afa1dd0a597f065b0c8e894ff8dc1f4",
+            "role": "font-render"
+          },
+          "text": "F0214 F0215 F0216 F0217 F0218 F0219 F021A F021B",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SWPS=45,SWPE=-30,SWC1=0.25,SWC2=-0.25,SWC3=0.5,SWC4=-0.5"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/01-004.png",
+            "sha256": "a2e8e69b71499690777ef0f46fd009e50b6ba6add381fcf4734abae371c0d3d9",
+            "role": "font-render"
+          },
+          "text": "F021C F021D F021E F021F F0220 F0221 F0222 F0223",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SWPS=45,SWPE=-30,SWC1=0.25,SWC2=-0.25,SWC3=0.5,SWC4=-0.5"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/01-005.png",
+            "sha256": "a03baf361b29f2f94ad57d7879403bcef8647ee1b2a2acebc579d25019d67d05",
+            "role": "font-render"
+          },
+          "text": "F0224 F0225 F0226 F0227 F0228 F0229 F022A F022B",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SWPS=45,SWPE=-30,SWC1=0.25,SWC2=-0.25,SWC3=0.5,SWC4=-0.5"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/01-006.png",
+            "sha256": "e9016f65d67f967b088f6c7901c3ee8275abf6fe63b4d7328bdc9ba9b0acccc4",
+            "role": "font-render"
+          },
+          "text": "F022C F022D F022E F022F F0230 F0231 F0232 F0233",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SWPS=45,SWPE=-30,SWC1=0.25,SWC2=-0.25,SWC3=0.5,SWC4=-0.5"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/01-007.png",
+            "sha256": "cfb4eb9569003faad39c69fd9e29523727be565b8b2f7371781ba8eb7eae6771",
+            "role": "font-render"
+          },
+          "text": "F0234 F0235 F0236 F0237 F0238 F0239 F023A F023B",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SWPS=45,SWPE=-30,SWC1=0.25,SWC2=-0.25,SWC3=0.5,SWC4=-0.5"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/01-008.png",
+            "sha256": "7dd459928f66a87d98fb67a21ae161c098b75654a815b4521d8787e0cf7edf76",
+            "role": "font-render"
+          },
+          "text": "F023C F023D F023E F023F F0240 F0241 F0242 F0243",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SWPS=45,SWPE=-30,SWC1=0.25,SWC2=-0.25,SWC3=0.5,SWC4=-0.5"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/01-009.png",
+            "sha256": "fb6d7eacc50e2928fdd0842d1523715e61f22ef0d6e304b29f3bdb4b8d401f2d",
+            "role": "font-render"
+          },
+          "text": "F0244 F0245 F0246 F0247 F0300 F0301 F0302 F0303",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SWPS=45,SWPE=-30,SWC1=0.25,SWC2=-0.25,SWC3=0.5,SWC4=-0.5"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/01-010.png",
+            "sha256": "2847dfcce9ceb56a08bda103542449b21c6ea662329f76acc8e47c5261d9485e",
+            "role": "font-render"
+          },
+          "text": "F0304 F0305 F0500 F0501 F0502 F0503 F0504 F0505",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SWPS=45,SWPE=-30,SWC1=0.25,SWC2=-0.25,SWC3=0.5,SWC4=-0.5"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/01-011.png",
+            "sha256": "5767e4e62007ed67a7707c9539d7558e7ab311c7dc802daa6d929342c92a5b86",
+            "role": "font-render"
+          },
+          "text": "F0600 F0601 F0602 F0603 F0700 F0701 F0702 F0703",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SWPS=45,SWPE=-30,SWC1=0.25,SWC2=-0.25,SWC3=0.5,SWC4=-0.5"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/01-012.png",
+            "sha256": "00189168595470d6a54cf72474469c988d6b54cfe5536eded3433969b4471fdb",
+            "role": "font-render"
+          },
+          "text": "F0704 F0705 F0800 F0801 F0802 F0803 F0900 F0901",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SWPS=45,SWPE=-30,SWC1=0.25,SWC2=-0.25,SWC3=0.5,SWC4=-0.5"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/01-013.png",
+            "sha256": "3d4201bc770c1a3cdadf6d7b6930b783e7923ec89a20121f789833638320a99b",
+            "role": "font-render"
+          },
+          "text": "F0902 F0903 F0904 F0905 F0906 F0A00 F0A01 F0A02",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SWPS=45,SWPE=-30,SWC1=0.25,SWC2=-0.25,SWC3=0.5,SWC4=-0.5"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/01-014.png",
+            "sha256": "724f5c316370e453fe830a659d899a69f189716e5d4245ea226c7191d6431e93",
+            "role": "font-render"
+          },
+          "text": "F0A03 F0A04 F0A05 F0A06 F0A07 F0A08 F0A09 F0A0A",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SWPS=45,SWPE=-30,SWC1=0.25,SWC2=-0.25,SWC3=0.5,SWC4=-0.5"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/01-015.png",
+            "sha256": "53553f997a27505ac1999bf9e90c8ea9f12888f50525404c686e43b814c9cbf5",
+            "role": "font-render"
+          },
+          "text": "F0A0B F0A0C F0A0D F0A0E F0A0F F0A10 F0A11 F0A12",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SWPS=45,SWPE=-30,SWC1=0.25,SWC2=-0.25,SWC3=0.5,SWC4=-0.5"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/01-016.png",
+            "sha256": "1d73e87788854bdc086ef386980d475e1b3086d1f4c8ed7cdf16414b54675ba8",
+            "role": "font-render"
+          },
+          "text": "F0A13 F0A14 F0A15 F0A16 F0A17 F0A18 F0A19 F0A1A",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SWPS=45,SWPE=-30,SWC1=0.25,SWC2=-0.25,SWC3=0.5,SWC4=-0.5"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/01-017.png",
+            "sha256": "b64bdf6f480a350d0dab2d7d73bf804cd7884a478d0198ff980f2f83811b5317",
+            "role": "font-render"
+          },
+          "text": "F0A1B F0B00 F0B01 F0B02 F0B03 F0B04 F0B05 F0B06",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SWPS=45,SWPE=-30,SWC1=0.25,SWC2=-0.25,SWC3=0.5,SWC4=-0.5"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/01-018.png",
+            "sha256": "2416116b38e66452e202660bd650269ef474f63b95b7520acc1de412e15f5853",
+            "role": "font-render"
+          },
+          "text": "F0B07 F0C00 F0C01 F0C02 F0C03 F0C04 F0C05 F0C06",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SWPS=45,SWPE=-30,SWC1=0.25,SWC2=-0.25,SWC3=0.5,SWC4=-0.5"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/01-019.png",
+            "sha256": "7350ae1d6fbe3d0e7fc30960aff94c96899f34ad6fd883635de45b0cbc7532d6",
+            "role": "font-render"
+          },
+          "text": "F0C07 F0C08 F0C09 F0C0A F0D00 F0E00 F0E01 F0F00",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SWPS=45,SWPE=-30,SWC1=0.25,SWC2=-0.25,SWC3=0.5,SWC4=-0.5"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/01-020.png",
+            "sha256": "6aba222b6ea7d030aa0d82b89af33d01f7fa81351f15b7988619ff7bffed55ba",
+            "role": "font-render"
+          },
+          "text": "F0F01 F0F02 F0F03 F0F04 F0F05 F0F06 F1000 F1100",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SWPS=45,SWPE=-30,SWC1=0.25,SWC2=-0.25,SWC3=0.5,SWC4=-0.5"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/01-021.png",
+            "sha256": "252da08b0b16cba4c062303a67fcf56c8ee0b331abd4355093bdb3f447b689b7",
+            "role": "font-render"
+          },
+          "text": "F1101 F1301 F1302 F1304 F1305 F1307 F1308 F130A",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SWPS=45,SWPE=-30,SWC1=0.25,SWC2=-0.25,SWC3=0.5,SWC4=-0.5"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/01-022.png",
+            "sha256": "252da08b0b16cba4c062303a67fcf56c8ee0b331abd4355093bdb3f447b689b7",
+            "role": "font-render"
+          },
+          "text": "F130B F130D F130E F1310 F1311 F1313 F1314 F1316",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SWPS=45,SWPE=-30,SWC1=0.25,SWC2=-0.25,SWC3=0.5,SWC4=-0.5"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/01-023.png",
+            "sha256": "3a7f5153c7b7fa4c6288309838b2a0d59880b8f99b335c4bb69accc720821c75",
+            "role": "font-render"
+          },
+          "text": "F1317 F1400 F1401 F1402 F1403 F1404 F1405 F1406",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SWPS=45,SWPE=-30,SWC1=0.25,SWC2=-0.25,SWC3=0.5,SWC4=-0.5"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/01-024.png",
+            "sha256": "957f1b4cd71d476d3d5dc20004faf82f4cd98dad00645fc9a2de7c2dfea9a657",
+            "role": "font-render"
+          },
+          "text": "F1407 F1408 F1409 F140A F140B F140C F140D F140E",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SWPS=45,SWPE=-30,SWC1=0.25,SWC2=-0.25,SWC3=0.5,SWC4=-0.5"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/01-025.png",
+            "sha256": "5c3bc301e8b351cf98b2cac08f9dc16d5549c632415cc579c2d19eefb82bc9c9",
+            "role": "font-render"
+          },
+          "text": "F140F FE001 FE002 FE003 FE004 FE005 FE006 FE007",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SWPS=45,SWPE=-30,SWC1=0.25,SWC2=-0.25,SWC3=0.5,SWC4=-0.5"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/02-000.png",
+            "sha256": "6cd168bab5122517c4d49eb38617b085d3721ea590dc5020f426def68b683be4",
+            "role": "font-render"
+          },
+          "text": "F0100 F0101 F0102 F0103 F0200 F0201 F0202 F0203",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SCOX=100,SCOY=-150,SCSX=0.5,SCSY=-0.75"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/02-001.png",
+            "sha256": "f6c8d2fd91c0f1e2f5e4dda6ffb8fad90bd7bfa7d0262e84a69e8d8b9cf8ca39",
+            "role": "font-render"
+          },
+          "text": "F0204 F0205 F0206 F0207 F0208 F0209 F020A F020B",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SCOX=100,SCOY=-150,SCSX=0.5,SCSY=-0.75"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/02-002.png",
+            "sha256": "b8693da9b90d3b60942975059a8c160b6475e4541eb29e48ad684be948e7dba4",
+            "role": "font-render"
+          },
+          "text": "F020C F020D F020E F020F F0210 F0211 F0212 F0213",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SCOX=100,SCOY=-150,SCSX=0.5,SCSY=-0.75"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/02-003.png",
+            "sha256": "1836e31cce4d1e218a62ae75a24f3cc86e474bb78f789738bb12f3fe04ec1d41",
+            "role": "font-render"
+          },
+          "text": "F0214 F0215 F0216 F0217 F0218 F0219 F021A F021B",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SCOX=100,SCOY=-150,SCSX=0.5,SCSY=-0.75"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/02-004.png",
+            "sha256": "429e196d127ae406bf7de55287a05838798d92d386855675f06fed92e57af07b",
+            "role": "font-render"
+          },
+          "text": "F021C F021D F021E F021F F0220 F0221 F0222 F0223",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SCOX=100,SCOY=-150,SCSX=0.5,SCSY=-0.75"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/02-005.png",
+            "sha256": "e9d2fff12cd88eb5820ca998a631c3b0bf91db67608552c50573d684a47bdb73",
+            "role": "font-render"
+          },
+          "text": "F0224 F0225 F0226 F0227 F0228 F0229 F022A F022B",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SCOX=100,SCOY=-150,SCSX=0.5,SCSY=-0.75"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/02-006.png",
+            "sha256": "437e05a0cc1951ae2cc95862e03150fc87c4dc9403ca3be0bcfc89edf98f3589",
+            "role": "font-render"
+          },
+          "text": "F022C F022D F022E F022F F0230 F0231 F0232 F0233",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SCOX=100,SCOY=-150,SCSX=0.5,SCSY=-0.75"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/02-007.png",
+            "sha256": "09855b1f9b432250745f158c46c115e13090b39bdba55c63bb36ec9ac4b3770e",
+            "role": "font-render"
+          },
+          "text": "F0234 F0235 F0236 F0237 F0238 F0239 F023A F023B",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SCOX=100,SCOY=-150,SCSX=0.5,SCSY=-0.75"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/02-008.png",
+            "sha256": "4bb59a36f076eedece6b85f31c3e75513b55bd674d2f2df59f44964cf24b85ef",
+            "role": "font-render"
+          },
+          "text": "F023C F023D F023E F023F F0240 F0241 F0242 F0243",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SCOX=100,SCOY=-150,SCSX=0.5,SCSY=-0.75"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/02-009.png",
+            "sha256": "b95174dc0f4cfc8e57ab34fa55e8fdc4256af7fdd3a92027d8790aaf2685adb6",
+            "role": "font-render"
+          },
+          "text": "F0244 F0245 F0246 F0247 F0300 F0301 F0302 F0303",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SCOX=100,SCOY=-150,SCSX=0.5,SCSY=-0.75"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/02-010.png",
+            "sha256": "b267f184ddc988952d9499789ba39ed483f2b0726350e98ba31ba598f5f08426",
+            "role": "font-render"
+          },
+          "text": "F0304 F0305 F0500 F0501 F0502 F0503 F0504 F0505",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SCOX=100,SCOY=-150,SCSX=0.5,SCSY=-0.75"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/02-011.png",
+            "sha256": "5767e4e62007ed67a7707c9539d7558e7ab311c7dc802daa6d929342c92a5b86",
+            "role": "font-render"
+          },
+          "text": "F0600 F0601 F0602 F0603 F0700 F0701 F0702 F0703",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SCOX=100,SCOY=-150,SCSX=0.5,SCSY=-0.75"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/02-012.png",
+            "sha256": "00189168595470d6a54cf72474469c988d6b54cfe5536eded3433969b4471fdb",
+            "role": "font-render"
+          },
+          "text": "F0704 F0705 F0800 F0801 F0802 F0803 F0900 F0901",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SCOX=100,SCOY=-150,SCSX=0.5,SCSY=-0.75"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/02-013.png",
+            "sha256": "3d4201bc770c1a3cdadf6d7b6930b783e7923ec89a20121f789833638320a99b",
+            "role": "font-render"
+          },
+          "text": "F0902 F0903 F0904 F0905 F0906 F0A00 F0A01 F0A02",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SCOX=100,SCOY=-150,SCSX=0.5,SCSY=-0.75"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/02-014.png",
+            "sha256": "724f5c316370e453fe830a659d899a69f189716e5d4245ea226c7191d6431e93",
+            "role": "font-render"
+          },
+          "text": "F0A03 F0A04 F0A05 F0A06 F0A07 F0A08 F0A09 F0A0A",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SCOX=100,SCOY=-150,SCSX=0.5,SCSY=-0.75"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/02-015.png",
+            "sha256": "53553f997a27505ac1999bf9e90c8ea9f12888f50525404c686e43b814c9cbf5",
+            "role": "font-render"
+          },
+          "text": "F0A0B F0A0C F0A0D F0A0E F0A0F F0A10 F0A11 F0A12",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SCOX=100,SCOY=-150,SCSX=0.5,SCSY=-0.75"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/02-016.png",
+            "sha256": "1d73e87788854bdc086ef386980d475e1b3086d1f4c8ed7cdf16414b54675ba8",
+            "role": "font-render"
+          },
+          "text": "F0A13 F0A14 F0A15 F0A16 F0A17 F0A18 F0A19 F0A1A",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SCOX=100,SCOY=-150,SCSX=0.5,SCSY=-0.75"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/02-017.png",
+            "sha256": "b64bdf6f480a350d0dab2d7d73bf804cd7884a478d0198ff980f2f83811b5317",
+            "role": "font-render"
+          },
+          "text": "F0A1B F0B00 F0B01 F0B02 F0B03 F0B04 F0B05 F0B06",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SCOX=100,SCOY=-150,SCSX=0.5,SCSY=-0.75"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/02-018.png",
+            "sha256": "2416116b38e66452e202660bd650269ef474f63b95b7520acc1de412e15f5853",
+            "role": "font-render"
+          },
+          "text": "F0B07 F0C00 F0C01 F0C02 F0C03 F0C04 F0C05 F0C06",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SCOX=100,SCOY=-150,SCSX=0.5,SCSY=-0.75"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/02-019.png",
+            "sha256": "7350ae1d6fbe3d0e7fc30960aff94c96899f34ad6fd883635de45b0cbc7532d6",
+            "role": "font-render"
+          },
+          "text": "F0C07 F0C08 F0C09 F0C0A F0D00 F0E00 F0E01 F0F00",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SCOX=100,SCOY=-150,SCSX=0.5,SCSY=-0.75"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/02-020.png",
+            "sha256": "6aba222b6ea7d030aa0d82b89af33d01f7fa81351f15b7988619ff7bffed55ba",
+            "role": "font-render"
+          },
+          "text": "F0F01 F0F02 F0F03 F0F04 F0F05 F0F06 F1000 F1100",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SCOX=100,SCOY=-150,SCSX=0.5,SCSY=-0.75"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/02-021.png",
+            "sha256": "252da08b0b16cba4c062303a67fcf56c8ee0b331abd4355093bdb3f447b689b7",
+            "role": "font-render"
+          },
+          "text": "F1101 F1301 F1302 F1304 F1305 F1307 F1308 F130A",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SCOX=100,SCOY=-150,SCSX=0.5,SCSY=-0.75"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/02-022.png",
+            "sha256": "252da08b0b16cba4c062303a67fcf56c8ee0b331abd4355093bdb3f447b689b7",
+            "role": "font-render"
+          },
+          "text": "F130B F130D F130E F1310 F1311 F1313 F1314 F1316",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SCOX=100,SCOY=-150,SCSX=0.5,SCSY=-0.75"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/02-023.png",
+            "sha256": "3a7f5153c7b7fa4c6288309838b2a0d59880b8f99b335c4bb69accc720821c75",
+            "role": "font-render"
+          },
+          "text": "F1317 F1400 F1401 F1402 F1403 F1404 F1405 F1406",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SCOX=100,SCOY=-150,SCSX=0.5,SCSY=-0.75"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/02-024.png",
+            "sha256": "957f1b4cd71d476d3d5dc20004faf82f4cd98dad00645fc9a2de7c2dfea9a657",
+            "role": "font-render"
+          },
+          "text": "F1407 F1408 F1409 F140A F140B F140C F140D F140E",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SCOX=100,SCOY=-150,SCSX=0.5,SCSY=-0.75"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/02-025.png",
+            "sha256": "5c3bc301e8b351cf98b2cac08f9dc16d5549c632415cc579c2d19eefb82bc9c9",
+            "role": "font-render"
+          },
+          "text": "F140F FE001 FE002 FE003 FE004 FE005 FE006 FE007",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SCOX=100,SCOY=-150,SCSX=0.5,SCSY=-0.75"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/03-000.png",
+            "sha256": "6cd168bab5122517c4d49eb38617b085d3721ea590dc5020f426def68b683be4",
+            "role": "font-render"
+          },
+          "text": "F0100 F0101 F0102 F0103 F0200 F0201 F0202 F0203",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "GRX0=100,GRY0=-200,GRX1=-150,GRY1=250,GRX2=300,GRY2=100,GRR0=50,GRR1=-100"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/03-001.png",
+            "sha256": "f6c8d2fd91c0f1e2f5e4dda6ffb8fad90bd7bfa7d0262e84a69e8d8b9cf8ca39",
+            "role": "font-render"
+          },
+          "text": "F0204 F0205 F0206 F0207 F0208 F0209 F020A F020B",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "GRX0=100,GRY0=-200,GRX1=-150,GRY1=250,GRX2=300,GRY2=100,GRR0=50,GRR1=-100"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/03-002.png",
+            "sha256": "b8693da9b90d3b60942975059a8c160b6475e4541eb29e48ad684be948e7dba4",
+            "role": "font-render"
+          },
+          "text": "F020C F020D F020E F020F F0210 F0211 F0212 F0213",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "GRX0=100,GRY0=-200,GRX1=-150,GRY1=250,GRX2=300,GRY2=100,GRR0=50,GRR1=-100"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/03-003.png",
+            "sha256": "1836e31cce4d1e218a62ae75a24f3cc86e474bb78f789738bb12f3fe04ec1d41",
+            "role": "font-render"
+          },
+          "text": "F0214 F0215 F0216 F0217 F0218 F0219 F021A F021B",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "GRX0=100,GRY0=-200,GRX1=-150,GRY1=250,GRX2=300,GRY2=100,GRR0=50,GRR1=-100"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/03-004.png",
+            "sha256": "429e196d127ae406bf7de55287a05838798d92d386855675f06fed92e57af07b",
+            "role": "font-render"
+          },
+          "text": "F021C F021D F021E F021F F0220 F0221 F0222 F0223",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "GRX0=100,GRY0=-200,GRX1=-150,GRY1=250,GRX2=300,GRY2=100,GRR0=50,GRR1=-100"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/03-005.png",
+            "sha256": "e9d2fff12cd88eb5820ca998a631c3b0bf91db67608552c50573d684a47bdb73",
+            "role": "font-render"
+          },
+          "text": "F0224 F0225 F0226 F0227 F0228 F0229 F022A F022B",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "GRX0=100,GRY0=-200,GRX1=-150,GRY1=250,GRX2=300,GRY2=100,GRR0=50,GRR1=-100"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/03-006.png",
+            "sha256": "437e05a0cc1951ae2cc95862e03150fc87c4dc9403ca3be0bcfc89edf98f3589",
+            "role": "font-render"
+          },
+          "text": "F022C F022D F022E F022F F0230 F0231 F0232 F0233",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "GRX0=100,GRY0=-200,GRX1=-150,GRY1=250,GRX2=300,GRY2=100,GRR0=50,GRR1=-100"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/03-007.png",
+            "sha256": "09855b1f9b432250745f158c46c115e13090b39bdba55c63bb36ec9ac4b3770e",
+            "role": "font-render"
+          },
+          "text": "F0234 F0235 F0236 F0237 F0238 F0239 F023A F023B",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "GRX0=100,GRY0=-200,GRX1=-150,GRY1=250,GRX2=300,GRY2=100,GRR0=50,GRR1=-100"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/03-008.png",
+            "sha256": "4bb59a36f076eedece6b85f31c3e75513b55bd674d2f2df59f44964cf24b85ef",
+            "role": "font-render"
+          },
+          "text": "F023C F023D F023E F023F F0240 F0241 F0242 F0243",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "GRX0=100,GRY0=-200,GRX1=-150,GRY1=250,GRX2=300,GRY2=100,GRR0=50,GRR1=-100"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/03-009.png",
+            "sha256": "919d199f93d59ed80ddb93d6e7f38fcc3c80218554bcbe67e4083de2fbb580e7",
+            "role": "font-render"
+          },
+          "text": "F0244 F0245 F0246 F0247 F0300 F0301 F0302 F0303",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "GRX0=100,GRY0=-200,GRX1=-150,GRY1=250,GRX2=300,GRY2=100,GRR0=50,GRR1=-100"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/03-010.png",
+            "sha256": "16bb964abc1cc3f4ca703c41bde7bd73b292d599e16fce9b3cde3b9f0592bd27",
+            "role": "font-render"
+          },
+          "text": "F0304 F0305 F0500 F0501 F0502 F0600 F0601 F0602",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "GRX0=100,GRY0=-200,GRX1=-150,GRY1=250,GRX2=300,GRY2=100,GRR0=50,GRR1=-100"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/03-011.png",
+            "sha256": "3867498f0e33c517f9e2ead8792f000811880eafbaa9f3b66e988e75b4e6ee37",
+            "role": "font-render"
+          },
+          "text": "F0603 F0700 F0701 F0702 F0703 F0704 F0705 F0800",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "GRX0=100,GRY0=-200,GRX1=-150,GRY1=250,GRX2=300,GRY2=100,GRR0=50,GRR1=-100"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/03-012.png",
+            "sha256": "4ecd4cf7a627ff7e11e5cef13e9b86d62cb655d3204a4b33b604c332061649e5",
+            "role": "font-render"
+          },
+          "text": "F0801 F0802 F0803 F0900 F0901 F0902 F0903 F0904",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "GRX0=100,GRY0=-200,GRX1=-150,GRY1=250,GRX2=300,GRY2=100,GRR0=50,GRR1=-100"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/03-013.png",
+            "sha256": "5b6fd10b38e4ea33f2aa80793cf9a5fb7c52c7b134e8ae34efe105c7b8cf74f5",
+            "role": "font-render"
+          },
+          "text": "F0905 F0906 F0A00 F0A01 F0A02 F0A03 F0A04 F0A05",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "GRX0=100,GRY0=-200,GRX1=-150,GRY1=250,GRX2=300,GRY2=100,GRR0=50,GRR1=-100"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/03-014.png",
+            "sha256": "82befd5f6e7a316959e94385f53ed169a16b7bfbee5cc3933d342a2ed78978f7",
+            "role": "font-render"
+          },
+          "text": "F0A06 F0A07 F0A08 F0A09 F0A0A F0A0B F0A0C F0A0D",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "GRX0=100,GRY0=-200,GRX1=-150,GRY1=250,GRX2=300,GRY2=100,GRR0=50,GRR1=-100"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/03-015.png",
+            "sha256": "f209539b6ef7a255a60a3da7a05262935b27c4eeddc2d810582c7fb4fe9fcc44",
+            "role": "font-render"
+          },
+          "text": "F0A0E F0A0F F0A10 F0A11 F0A12 F0A13 F0A14 F0A15",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "GRX0=100,GRY0=-200,GRX1=-150,GRY1=250,GRX2=300,GRY2=100,GRR0=50,GRR1=-100"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/03-016.png",
+            "sha256": "57e73ebaae118ad81606434ae4f6014bb0b4e9908ca2e595a296fa7ff9400a70",
+            "role": "font-render"
+          },
+          "text": "F0A16 F0A17 F0A18 F0A19 F0A1A F0A1B F0B00 F0B01",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "GRX0=100,GRY0=-200,GRX1=-150,GRY1=250,GRX2=300,GRY2=100,GRR0=50,GRR1=-100"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/03-017.png",
+            "sha256": "bd399b760511ec3f30bb9153287ebee1236df6cfef9e3ea0463ad68416f57ce5",
+            "role": "font-render"
+          },
+          "text": "F0B02 F0B03 F0B04 F0B05 F0B06 F0B07 F0D00 F0E00",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "GRX0=100,GRY0=-200,GRX1=-150,GRY1=250,GRX2=300,GRY2=100,GRR0=50,GRR1=-100"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/03-018.png",
+            "sha256": "aba3bbe841b31c42615977c39f0a90a8876c7b9964f151b0cb57a37a9b23aae6",
+            "role": "font-render"
+          },
+          "text": "F0E01 F0F00 F0F01 F0F02 F0F03 F0F04 F0F05 F0F06",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "GRX0=100,GRY0=-200,GRX1=-150,GRY1=250,GRX2=300,GRY2=100,GRR0=50,GRR1=-100"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/03-019.png",
+            "sha256": "75ef8aaedc0a41d64c37a8e7fce0c827af56f0f58f69b4d0cdb2c9d7e1050a5c",
+            "role": "font-render"
+          },
+          "text": "F1000 F1100 F1101 F1301 F1302 F1304 F1305 F1307",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "GRX0=100,GRY0=-200,GRX1=-150,GRY1=250,GRX2=300,GRY2=100,GRR0=50,GRR1=-100"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/03-020.png",
+            "sha256": "252da08b0b16cba4c062303a67fcf56c8ee0b331abd4355093bdb3f447b689b7",
+            "role": "font-render"
+          },
+          "text": "F1308 F130A F130B F130D F130E F1310 F1311 F1313",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "GRX0=100,GRY0=-200,GRX1=-150,GRY1=250,GRX2=300,GRY2=100,GRR0=50,GRR1=-100"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/03-021.png",
+            "sha256": "3adc5f279fa0c71a3e8a58b08a5e1eeb3c0706c2dd183f91fbef69e110f89c3f",
+            "role": "font-render"
+          },
+          "text": "F1314 F1316 F1317 F1400 F1401 F1402 F1403 F1404",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "GRX0=100,GRY0=-200,GRX1=-150,GRY1=250,GRX2=300,GRY2=100,GRR0=50,GRR1=-100"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/03-022.png",
+            "sha256": "af6c4d178ae1cc41eab41cc8d753800fa29ecc7e6626f39b422549079d3c3e07",
+            "role": "font-render"
+          },
+          "text": "F1405 F1406 F1407 F1408 F1409 F140A F140B F140C",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "GRX0=100,GRY0=-200,GRX1=-150,GRY1=250,GRX2=300,GRY2=100,GRR0=50,GRR1=-100"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/03-023.png",
+            "sha256": "befcb78bd409888c8b7425482055325e256c25417278070b6f6be966518370d7",
+            "role": "font-render"
+          },
+          "text": "F140D F140E F140F FE001 FE002 FE003 FE004 FE005",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "GRX0=100,GRY0=-200,GRX1=-150,GRY1=250,GRX2=300,GRY2=100,GRR0=50,GRR1=-100"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/03-024.png",
+            "sha256": "f56c2b8385a7599bdeeaff11d3163a23df97ca653ef584d195bbd6e709cbb3b0",
+            "role": "font-render"
+          },
+          "text": "FE006 FE007",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "GRX0=100,GRY0=-200,GRX1=-150,GRY1=250,GRX2=300,GRY2=100,GRR0=50,GRR1=-100"
+        }
+      ]
+    },
+    {
+      "id": "fonts/colr-twemoji-smiley",
+      "file": {
+        "path": "fonts/color-fonts/twemoji_smiley-glyf_colr_1.ttf",
+        "sha256": "b462e4de616a38979b053a49b0b5a5f2dd72b6d5f55be43c5b1eb812fd438dbc",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "CC-BY-4.0",
+        "author": "Twitter, Inc and other contributors (Twemoji), built by the googlefonts/color-fonts project",
+        "source": "https://github.com/googlefonts/color-fonts/blob/0046ea4c3b69e9fbbe464c2594816894e3aa5e4b/fonts/twemoji_smiley-glyf_colr_1.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=12",
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=COLR",
+        "font.table=CPAL",
+        "font.table=glyf"
+      ],
+      "renderTool": "hb-raster 14.6.0 --logical --background=FFFFFF",
+      "renders": [
+        {
+          "file": {
+            "path": "fonts/renders/colr-twemoji-smiley/00-000.png",
+            "sha256": "a5ef6395dfcad8121150b1bb8fb338f8ba34300ca823b66866835d18eefd6ad0",
+            "role": "font-render"
+          },
+          "text": "263A 1F601 1F603 1F604 1F605 1F606 1F607 1F608",
+          "size": 96,
+          "margin": 32,
+          "ascent": 96,
+          "descent": 32
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-twemoji-smiley/00-001.png",
+            "sha256": "8433770adf5b79d78f2d10c9c058e942ab4a1da0aab3f6759ac31c592ad33462",
+            "role": "font-render"
+          },
+          "text": "1F60A 1F60D 1F60E 1F60F 1F619 1F642 1F970",
+          "size": 96,
+          "margin": 32,
+          "ascent": 96,
+          "descent": 32
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-twemoji-smiley/01-000.png",
+            "sha256": "41197ccefa778a476f34040392d9ed35bc7d4928a60097e5e422650f1cd4974d",
+            "role": "font-render"
+          },
+          "text": "263A 1F601 1F603 1F604 1F605 1F606 1F607 1F608 1F60A 1F60D 1F60E 1F60F 1F619 1F642 1F970",
+          "size": 40,
+          "margin": 32,
+          "ascent": 40,
+          "descent": 12
+        }
+      ]
+    },
+    {
+      "id": "fonts/colr-twemoji-smiley-cff2",
+      "file": {
+        "path": "fonts/color-fonts/twemoji_smiley-cff2_colr_1.otf",
+        "sha256": "217bfb5a2876029afa9f52affe9810f398ba48574518fc228ee8966640af8ae3",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "CC-BY-4.0",
+        "author": "Twitter, Inc and other contributors (Twemoji), built by the googlefonts/color-fonts project",
+        "source": "https://github.com/googlefonts/color-fonts/blob/0046ea4c3b69e9fbbe464c2594816894e3aa5e4b/fonts/twemoji_smiley-cff2_colr_1.otf"
+      },
+      "flavor": "otf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=12",
+        "font.cmap=4",
+        "font.table=CFF2",
+        "font.table=COLR",
+        "font.table=CPAL"
+      ],
+      "renderTool": "hb-raster 14.6.0 --logical --background=FFFFFF",
+      "renders": [
+        {
+          "file": {
+            "path": "fonts/renders/colr-twemoji-smiley-cff2/00-000.png",
+            "sha256": "aaed73ab05578505c979be127c436f4d79cf108078fab068cb778c07b6f39a06",
+            "role": "font-render"
+          },
+          "text": "263A 1F601 1F603 1F604 1F605 1F606 1F607 1F608",
+          "size": 96,
+          "margin": 32,
+          "ascent": 96,
+          "descent": 32
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-twemoji-smiley-cff2/00-001.png",
+            "sha256": "b1032033bf914ca1028d61c6ee22884bc9b60ed74d9b3e72668bc22c9e619dfd",
+            "role": "font-render"
+          },
+          "text": "1F60A 1F60D 1F60E 1F60F 1F619 1F642 1F970",
+          "size": 96,
+          "margin": 32,
+          "ascent": 96,
+          "descent": 32
+        }
+      ]
+    },
+    {
+      "id": "fonts/noto-naskh-arabic",
+      "file": {
+        "path": "fonts/noto-naskh-arabic/NotoNaskhArabic-Regular.subset.ttf",
+        "sha256": "7fc94a5ba8ca16e8c57e4a38c679a9b742181ce7810dc683646c63dd6103ed22",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "The Noto Project Authors (https://github.com/notofonts/arabic)",
+        "source": "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoNaskhArabic/unhinted/ttf/NotoNaskhArabic-Regular.ttf",
+        "tools": [
+          "hb-subset 14.6.0"
+        ],
+        "commands": [
+          "hb-subset --unicodes=20,21,28,29,2C,2E,30-39,3A,AB,BB,60C,61B,61C,61F,621-63A,640-65F,660-669,66A-66C,670,671,679,67E,686,688,691,698,6A9,6AF,6BA,6BE,6C1,6CC,6D2,6D4,6DC,6E3,6E7,6E8,6F0-6F9,8CA,200C-200F,25CC,FDF2,FE8D,FE8E,FEDF,FEE0,FEFB --layout-features=* --no-hinting --notdef-outline --output-file=NotoNaskhArabic-Regular.subset.ttf NotoNaskhArabic-Regular.ttf"
+        ]
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "subset",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB",
+        "font.table=glyf"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-naskh-arabic.json",
+        "sha256": "d85a5647c1de4fee1ac977820b8de3fcd9ce692eeae94cc3f72f4ebc928bb66f",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-naskh-arabic.json",
+        "sha256": "9fef52161fd0f7f3843e2c90adfb71ffed9dd364b24323f9f280224a0674f24f",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/noto-nastaliq-urdu",
+      "file": {
+        "path": "fonts/noto-nastaliq-urdu/NotoNastaliqUrdu-Regular.subset.ttf",
+        "sha256": "a200cadb64b8dd3701b3cb28480e17bc4aed215c417a3ea46066a6d40e4e0a78",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "The Noto Project Authors (https://github.com/notofonts/nastaliq)",
+        "source": "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoNastaliqUrdu/unhinted/ttf/NotoNastaliqUrdu-Regular.ttf",
+        "tools": [
+          "hb-subset 14.6.0"
+        ],
+        "commands": [
+          "hb-subset --unicodes=20,21,2E,30-39,60C,61B,61F,621-63A,640-652,654,655,670,679,67E,686,688,691,698,6A9,6AF,6BA,6BE,6C1,6C3,6CC,6D2,6D4,6F0-6F9,200C,200D --layout-features=* --no-hinting --notdef-outline --output-file=NotoNastaliqUrdu-Regular.subset.ttf NotoNastaliqUrdu-Regular.ttf"
+        ]
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "subset",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB",
+        "font.table=glyf"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-nastaliq-urdu.json",
+        "sha256": "b2926388b618031229a0e6570da002e779cf995e6aa057ceda0ea018235bcc69",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-nastaliq-urdu.json",
+        "sha256": "c0e248ef8292a2968e5c082663b579ca39cd9b40feee1af466b526f8c349d293",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/noto-sans-adlam",
+      "file": {
+        "path": "fonts/noto-sans-adlam/NotoSansAdlam-Regular.ttf",
+        "sha256": "e723b210127ffd4aa2f467c3d417d0764168296c9457ca42e498c7258956f2ce",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "The Noto Project Authors (https://github.com/notofonts/adlam)",
+        "source": "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansAdlam/unhinted/ttf/NotoSansAdlam-Regular.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=12",
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB",
+        "font.table=glyf"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-sans-adlam.json",
+        "sha256": "180f7b3f34025fe642f3cfc31f2f48ef2e3fd641315ec3b77786c3c9a840d446",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-sans-adlam.json",
+        "sha256": "b2e2136a881fcd12d0f69f14409b843193dec49039104211499ccc57206da5be",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/noto-sans-balinese",
+      "file": {
+        "path": "fonts/noto-sans-balinese/NotoSansBalinese-Regular.ttf",
+        "sha256": "cee58a184e7e00c4332087ac01870a69ac52fd5fa17ea3783ac728c945af1827",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "The Noto Project Authors (https://github.com/notofonts/balinese)",
+        "source": "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansBalinese/unhinted/ttf/NotoSansBalinese-Regular.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB",
+        "font.table=glyf"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-sans-balinese.json",
+        "sha256": "17332d70485de779339d0592238316b80b8ada27b121533c81063f53ed20163b",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-sans-balinese.json",
+        "sha256": "f8f6214034a018b94b0a7ad781a53d47c41053797a493bb9487bf2ae8b445dd5",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/noto-sans-bengali",
+      "file": {
+        "path": "fonts/noto-sans-bengali/NotoSansBengali-Regular.ttf",
+        "sha256": "7ba979b4d1d9d3c143c826660c7eba610b34f976bdd2e4f178209432d1cd56e4",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "The Noto Project Authors (https://github.com/notofonts/bengali)",
+        "source": "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansBengali/unhinted/ttf/NotoSansBengali-Regular.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB",
+        "font.table=glyf"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-sans-bengali.json",
+        "sha256": "68b703708a548e94c2de2bcd625723006bdc0f1082cb99825b10cfd8279e495f",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-sans-bengali.json",
+        "sha256": "376d1f7f27190d667923e081a6e06161ed07b20e34e113457bfec9a8200ed28a",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/noto-sans-cham",
+      "file": {
+        "path": "fonts/noto-sans-cham/NotoSansCham-Regular.ttf",
+        "sha256": "d48a34e02b4096eb3f2e008b74459789540598c2274d65fc53012517d0b08d92",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "The Noto Project Authors (https://github.com/notofonts/cham)",
+        "source": "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansCham/unhinted/ttf/NotoSansCham-Regular.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB",
+        "font.table=glyf"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-sans-cham.json",
+        "sha256": "d922dfde809c6fe5bc38c98c70a380f6cb348bf8cfb96f3b373a47e167726048",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-sans-cham.json",
+        "sha256": "801f8fb094684491a37f7113acb50b2a31b37bef76eb429346bb2b358e51237d",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/noto-sans-cjk-jp-regular",
+      "file": {
+        "path": "fonts/noto-sans-cjk/NotoSansCJKjp-Regular.subset.otf",
+        "sha256": "c50ed438c691430e9868ae2f13ce17b565bd5e907c521c48ba8900d15d126da8",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "Adobe (https://github.com/notofonts/noto-cjk)",
+        "source": "https://github.com/notofonts/noto-cjk/blob/f8d157532fbfaeda587e826d4cd5b21a49186f7c/Sans/OTF/Japanese/NotoSansCJKjp-Regular.otf",
+        "tools": [
+          "hb-subset 14.6.0"
+        ],
+        "commands": [
+          "hb-subset --unicodes=20-7E,3001,3002,300C,300D,3041-3096,30A1-30FA,30FC,4E00-4E1F,4EAC,56FD,65E5,6771,672C,8A9E,FF01-FF5E --layout-features=* --notdef-outline --output-file=NotoSansCJKjp-Regular.subset.otf NotoSansCJKjp-Regular.otf"
+        ]
+      },
+      "flavor": "otf",
+      "faceCount": 1,
+      "modification": "subset",
+      "features": [
+        "font.cmap=4",
+        "font.table=BASE",
+        "font.table=CFF",
+        "font.table=GPOS",
+        "font.table=GSUB"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-sans-cjk-jp-regular.json",
+        "sha256": "f58fee2969146a072f86975a6e5037d5aae317edc9f8e6e51e4416a78313ea80",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-sans-cjk-jp-regular.json",
+        "sha256": "775826ff2161f54a6a9c7fdfda82f0fae6dfd4dbe37486bdf7431aaa002e3bad",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/noto-sans-cjk-jp-regular-woff",
+      "file": {
+        "path": "fonts/noto-sans-cjk/NotoSansCJKjp-Regular.subset.woff",
+        "sha256": "93e8ce965a3c3c888bcbe480290752b9381070639a588f0acd9e76767e1c26d2",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "Adobe (https://github.com/notofonts/noto-cjk)",
+        "source": "https://github.com/notofonts/noto-cjk/blob/f8d157532fbfaeda587e826d4cd5b21a49186f7c/Sans/OTF/Japanese/NotoSansCJKjp-Regular.otf",
+        "tools": [
+          ".NET 10.0"
+        ]
+      },
+      "flavor": "woff",
+      "faceCount": 1,
+      "modification": "container",
+      "original": "fonts/noto-sans-cjk-jp-regular"
+    },
+    {
+      "id": "fonts/noto-sans-cjk-jp-variable",
+      "file": {
+        "path": "fonts/noto-sans-cjk-variable/NotoSansCJKjp-Variable.subset.otf",
+        "sha256": "8fd09f40f8c57370d905dcbe18eabb665e59f65a1e58b491a85b9671cf67312a",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "Adobe (https://github.com/notofonts/noto-cjk)",
+        "source": "https://github.com/notofonts/noto-cjk/blob/f8d157532fbfaeda587e826d4cd5b21a49186f7c/Sans/Variable/OTF/NotoSansCJKjp-VF.otf",
+        "tools": [
+          "hb-subset 14.6.0"
+        ],
+        "commands": [
+          "hb-subset --unicodes=20-7E,3001,3002,300C,300D,3042,3044,3046,304B,304C,306E,30A2,30AD,30B9,30C6,30C8,30FC,4E00-4E0F,4EAC,56FD,65E5,6771,672C,8A9E --layout-features=* --notdef-outline --output-file=NotoSansCJKjp-Variable.subset.otf NotoSansCJKjp-VF.otf"
+        ]
+      },
+      "flavor": "otf",
+      "faceCount": 1,
+      "modification": "subset",
+      "features": [
+        "font.cmap=4",
+        "font.table=BASE",
+        "font.table=CFF2",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB",
+        "font.table=HVAR",
+        "font.table=STAT",
+        "font.table=avar",
+        "font.table=fvar"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-sans-cjk-jp-variable.json",
+        "sha256": "7619eb5a48fe5bf399b01453a913448fd25d16d6b3f225702dfddf26e58bc28c",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-sans-cjk-jp-variable.json",
+        "sha256": "60ccd2e1a47f454464430fb662a2026db35d9eff00f3081b8213d1274cfffc67",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/noto-sans-cjk-kr-letters",
+      "file": {
+        "path": "fonts/noto-sans-cjk-kr/NotoSansCJKkr-Regular.letters.otf",
+        "sha256": "8e1c886da8f9e70327cb582ccee1198ae690e60744957a9ec2647db69e3a2e6d",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "Adobe (https://github.com/notofonts/noto-cjk)",
+        "source": "https://github.com/notofonts/noto-cjk/blob/f8d157532fbfaeda587e826d4cd5b21a49186f7c/Sans/OTF/Korean/NotoSansCJKkr-Regular.otf",
+        "tools": [
+          "hb-subset 14.6.0"
+        ],
+        "commands": [
+          "hb-subset --unicodes=20,2E,41,301,302E,302F,3099,25CC,200C,200D,1100-1116,115F,1160-1178,11A7-11C5,11EB,11F0,11F9,A960,A964,D7B0,D7B5,D7CB,D7DD,3131,314F --layout-features=* --notdef-outline --output-file=NotoSansCJKkr-Regular.letters.otf NotoSansCJKkr-Regular.otf"
+        ]
+      },
+      "flavor": "otf",
+      "faceCount": 1,
+      "modification": "subset",
+      "features": [
+        "font.cmap=4",
+        "font.table=BASE",
+        "font.table=CFF",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-sans-cjk-kr-letters.json",
+        "sha256": "955504ee37d90f792f5f70e7ae02d7525dcf4e0243b16068f5667345043b1b86",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-sans-cjk-kr-letters.json",
+        "sha256": "fbb3d1c77ec9fffa086f116078284c292ba47629fbdf59c35e74875dcab66b9c",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/noto-sans-cjk-kr-regular",
+      "file": {
+        "path": "fonts/noto-sans-cjk-kr/NotoSansCJKkr-Regular.subset.otf",
+        "sha256": "5c256d5b8d7fbe6df6ad89dd172d7a7cdaa690eebc05a6462bd0da62deaa28c4",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "Adobe (https://github.com/notofonts/noto-cjk)",
+        "source": "https://github.com/notofonts/noto-cjk/blob/f8d157532fbfaeda587e826d4cd5b21a49186f7c/Sans/OTF/Korean/NotoSansCJKkr-Regular.otf",
+        "tools": [
+          "hb-subset 14.6.0"
+        ],
+        "commands": [
+          "hb-subset --unicodes=20,2E,41,301,302E,302F,3099,25CC,200C,200D,1100-1116,115F,1160-1178,11A7-11C5,11EB,11F0,11F9,A960,A964,D7B0,D7B5,D7CB,D7DD,3131,314F,AC00-AC1C,AC12,AE00,B098,B2E4,D55C --layout-features=* --notdef-outline --output-file=NotoSansCJKkr-Regular.subset.otf NotoSansCJKkr-Regular.otf"
+        ]
+      },
+      "flavor": "otf",
+      "faceCount": 1,
+      "modification": "subset",
+      "features": [
+        "font.cmap=4",
+        "font.table=BASE",
+        "font.table=CFF",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-sans-cjk-kr-regular.json",
+        "sha256": "f23e359c4d37e0bfb17bf828da87c0c3b798d79bb439ba294428674adeef6157",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-sans-cjk-kr-regular.json",
+        "sha256": "468cb9d3da6599a7d1f57dab2a7fef12dfcecd9fe10ebb8f7e25fdef2de9e3ff",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/noto-sans-devanagari",
+      "file": {
+        "path": "fonts/noto-sans-devanagari/NotoSansDevanagari-Regular.ttf",
+        "sha256": "216921eded5a97435fa0638deca66496bf51f52fa3467f566deb9938c25a71de",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "The Noto Project Authors (https://github.com/notofonts/devanagari)",
+        "source": "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansDevanagari/unhinted/ttf/NotoSansDevanagari-Regular.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=12",
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB",
+        "font.table=glyf"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-sans-devanagari.json",
+        "sha256": "095ba10ad29802e5527c7605b76c72c0df5b6e5360554d9dcc2e9fb9c93ccbfa",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-sans-devanagari.json",
+        "sha256": "498f91bb548b869b1f59917748155dba58de5f931b68757f5fbc94966414be0e",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/noto-sans-devanagari-first-version",
+      "file": {
+        "path": "fonts/noto-sans-devanagari/NotoSansDevanagari-Regular.first-version.ttf",
+        "sha256": "56cf516b137e45ff3935d485c200c6d1636d72288ad6d44bcc6922d5369ff798",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "The Noto Project Authors (https://github.com/notofonts/devanagari)",
+        "source": "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansDevanagari/unhinted/ttf/NotoSansDevanagari-Regular.ttf",
+        "tools": [
+          "hb-subset 14.6.0"
+        ],
+        "commands": [
+          "hb-subset --unicodes=* --layout-features=* --no-hinting --notdef-outline --layout-scripts=deva,DFLT --output-file=NotoSansDevanagari-Regular.first-version.ttf NotoSansDevanagari-Regular.ttf"
+        ]
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "subset",
+      "features": [
+        "font.cmap=12",
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB",
+        "font.table=glyf"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-sans-devanagari-first-version.json",
+        "sha256": "086898f57d06f81ee827d5223021a5eab77d1dfa6cbc0e689f932b250d5d7ffb",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-sans-devanagari-first-version.json",
+        "sha256": "a6c25759722a564bcf914c17e5d94470ff487eae0b599a3ac4e230e5a4e31bc5",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/noto-sans-duployan",
+      "file": {
+        "path": "fonts/noto-sans-duployan/NotoSansDuployan-Regular.subset.ttf",
+        "sha256": "bd0c12b0cbeb2f67faaa572f94bd28717d1f7abb49d5b0e0a609cffdcace1624",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "David Corbett and Google LLC (https://github.com/notofonts/duployan)",
+        "source": "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansDuployan/unhinted/ttf/NotoSansDuployan-Regular.ttf",
+        "tools": [
+          "hb-subset 14.6.0"
+        ],
+        "commands": [
+          "hb-subset --unicodes=20,2E,41,25CC,200C,200D,1BC00-1BC0B,1BC21,1BC37,1BC3B,1BC40,1BC41,1BC44,1BC46,1BC5A,1BC68,1BC9D-1BCA3 --layout-features=* --no-hinting --notdef-outline --output-file=NotoSansDuployan-Regular.subset.ttf NotoSansDuployan-Regular.ttf"
+        ]
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "subset",
+      "features": [
+        "font.cmap=12",
+        "font.cmap=4",
+        "font.loca=long",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB",
+        "font.table=glyf"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-sans-duployan.json",
+        "sha256": "2260714010ce2c53ba5348d802e19b63622ca29fddfc8245bd9ef568b9b18431",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-sans-duployan.json",
+        "sha256": "c82c6088c34810993f58fbb3e0fa89b9415533b1bdc72e60b1b3364f62b1a18b",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/noto-sans-gujarati",
+      "file": {
+        "path": "fonts/noto-sans-gujarati/NotoSansGujarati-Regular.ttf",
+        "sha256": "18727143b8eadade0a59dca80959ef784bf8d55e07285d1b4096594dbf829f0a",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "The Noto Project Authors (https://github.com/notofonts/gujarati)",
+        "source": "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansGujarati/unhinted/ttf/NotoSansGujarati-Regular.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB",
+        "font.table=glyf"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-sans-gujarati.json",
+        "sha256": "342339fde42ca6d194c99777a7671765429b3be522b4e50101a9cce5a25a8194",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-sans-gujarati.json",
+        "sha256": "b548f2c9421ed9c11a07120489e4f933d3904b988a20a31f54dc353dfdc9a29b",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/noto-sans-gurmukhi",
+      "file": {
+        "path": "fonts/noto-sans-gurmukhi/NotoSansGurmukhi-Regular.ttf",
+        "sha256": "2454c944fda799d2861f11c03e492c453e33083dd1e8d99bd6baac8de71ad0f0",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "The Noto Project Authors (https://github.com/notofonts/gurmukhi)",
+        "source": "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansGurmukhi/unhinted/ttf/NotoSansGurmukhi-Regular.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB",
+        "font.table=glyf"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-sans-gurmukhi.json",
+        "sha256": "f7fb7511af782cd322e88dd5a0a89bc8da1555120faa1ce3883827357987fb0a",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-sans-gurmukhi.json",
+        "sha256": "d9d1bffe75b18dd9978912b7f73ba4292a93267d2ca06b3bbe368169c6c8dee1",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/noto-sans-hebrew",
+      "file": {
+        "path": "fonts/noto-sans-hebrew/NotoSansHebrew-Regular.ttf",
+        "sha256": "04272f5600d0ec816d31d0df73b23aa8d3501ea359ebe820da31c11ffcf00853",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "The Noto Project Authors (https://github.com/notofonts/hebrew)",
+        "source": "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansHebrew/unhinted/ttf/NotoSansHebrew-Regular.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB",
+        "font.table=glyf"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-sans-hebrew.json",
+        "sha256": "6b0021260d191051d6a764c4c2a968452e40306002d70e954d374a2119036df1",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-sans-hebrew.json",
+        "sha256": "acb49d7d248528a07bddc395aff55f6f4924e70a427fd2e50432a6693d0b23f2",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/noto-sans-hebrew-without-positioning",
+      "file": {
+        "path": "fonts/noto-sans-hebrew/NotoSansHebrew-Regular.without-gpos.ttf",
+        "sha256": "72f6f6b9b35730ba4f70edf998b230bd60929f497c4d600feab4e786200d17c8",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "The Noto Project Authors (https://github.com/notofonts/hebrew)",
+        "source": "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansHebrew/unhinted/ttf/NotoSansHebrew-Regular.ttf",
+        "tools": [
+          "hb-subset 14.6.0"
+        ],
+        "commands": [
+          "hb-subset --unicodes=* --layout-features=* --no-hinting --notdef-outline --drop-tables+=GPOS --output-file=NotoSansHebrew-Regular.without-gpos.ttf NotoSansHebrew-Regular.ttf"
+        ]
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "subset",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=GDEF",
+        "font.table=GSUB",
+        "font.table=glyf"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-sans-hebrew-without-positioning.json",
+        "sha256": "6b0021260d191051d6a764c4c2a968452e40306002d70e954d374a2119036df1",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-sans-hebrew-without-positioning.json",
+        "sha256": "c795cc27f34caeef660e57ec82ba5f30f3189b585a98e76c5afc0f8d302d49a3",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/noto-sans-javanese",
+      "file": {
+        "path": "fonts/noto-sans-javanese/NotoSansJavanese-Regular.ttf",
+        "sha256": "016f43b042c0b01e29688f71607e5d6fdb0effef6fc7aa3aa8eae6b4427fdca8",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "The Noto Project Authors (https://github.com/notofonts/javanese)",
+        "source": "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansJavanese/unhinted/ttf/NotoSansJavanese-Regular.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB",
+        "font.table=glyf"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-sans-javanese.json",
+        "sha256": "a6eee67c6f97a4918ea1265370ec44c14708c559afac78b2191ea25ba6d57f9f",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-sans-javanese.json",
+        "sha256": "04f35c38312a27e60338052eb1c475a379611a5d464fd2168e510675203cca9d",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/noto-sans-kaithi",
+      "file": {
+        "path": "fonts/noto-sans-kaithi/NotoSansKaithi-Regular.ttf",
+        "sha256": "ba33fd78d18df942260c53df4080254901aa7c3b69678c7571d680bf063a5e2d",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "The Noto Project Authors (https://github.com/notofonts/kaithi)",
+        "source": "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansKaithi/unhinted/ttf/NotoSansKaithi-Regular.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=12",
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB",
+        "font.table=glyf"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-sans-kaithi.json",
+        "sha256": "433d1d1a01e44c5657d93c8e9c4e650ac77894ef12930bb8a0f96cfe05dfd386",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-sans-kaithi.json",
+        "sha256": "ea00158f3d9cfd3448358388ae1b2e5c0a3c796258a1e0a04284a4552e2b19a6",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/noto-sans-kannada",
+      "file": {
+        "path": "fonts/noto-sans-kannada/NotoSansKannada-Regular.ttf",
+        "sha256": "2870274619c2a4abe5d6b11fcb7c4a372eba765b6b7881d459b0eb0a609a68eb",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "The Noto Project Authors (https://github.com/notofonts/kannada)",
+        "source": "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansKannada/unhinted/ttf/NotoSansKannada-Regular.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB",
+        "font.table=glyf"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-sans-kannada.json",
+        "sha256": "63c87e8f1760fdf9cd9500cd908dc6a769523c3b54c06ccdeb3c71478453e175",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-sans-kannada.json",
+        "sha256": "52479be20875ae0d73f11ed302bca1091fe8cf73c00ff99965d3374edfbaa6ed",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/noto-sans-khmer",
+      "file": {
+        "path": "fonts/noto-sans-khmer/NotoSansKhmer-Regular.ttf",
+        "sha256": "60c10dbfae33a44f1897cd939789bd173aedb7c7dc0a9af389a737e33cb7e548",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "The Noto Project Authors (https://github.com/notofonts/khmer)",
+        "source": "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansKhmer/unhinted/ttf/NotoSansKhmer-Regular.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB",
+        "font.table=glyf"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-sans-khmer.json",
+        "sha256": "449b4402708b0ba792bedc2dde3ded3f9ca6a3b54b408a93060efc072c0cfd1d",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-sans-khmer.json",
+        "sha256": "bbfb27c797188ca12b73bee7ea4eced81853ddd47b88ff083a9987993e56d5f5",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/noto-sans-lao",
+      "file": {
+        "path": "fonts/noto-sans-lao/NotoSansLao-Regular.ttf",
+        "sha256": "d3976b0ac08702c54999ff42eae295d1597fd73b44e0c57d7f4917524e18afbe",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "The Noto Project Authors (https://github.com/notofonts/lao)",
+        "source": "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansLao/unhinted/ttf/NotoSansLao-Regular.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB",
+        "font.table=glyf"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-sans-lao.json",
+        "sha256": "4366953f0d6ca809fe7c4732bd0a8ecc80bf895b4e3ea9a00618129ae30acd94",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-sans-lao.json",
+        "sha256": "368cc67925005f187392de9730b805fd5dcabe311a7b8cd9365194b694b6e513",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/noto-sans-lepcha",
+      "file": {
+        "path": "fonts/noto-sans-lepcha/NotoSansLepcha-Regular.ttf",
+        "sha256": "e3f52772d537a0156efa2dbfb7057f154485990df555ef15bd37e5046907dee6",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "The Noto Project Authors (https://github.com/notofonts/lepcha)",
+        "source": "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansLepcha/unhinted/ttf/NotoSansLepcha-Regular.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB",
+        "font.table=glyf"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-sans-lepcha.json",
+        "sha256": "5ffe4c34f876f3332b02163087c17b4f39e031fe32c5739212575299502333a0",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-sans-lepcha.json",
+        "sha256": "ef7b151bcb57ae0306b26cb8ea2071ff75664085c588bf41fa4c0d634794c3a1",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/noto-sans-malayalam",
+      "file": {
+        "path": "fonts/noto-sans-malayalam/NotoSansMalayalam-Regular.ttf",
+        "sha256": "cc39bb1f7d63b582a2aec1abf2469a43b805a3523a27e0a0eee8cd32702541d5",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "The Noto Project Authors (https://github.com/notofonts/malayalam)",
+        "source": "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansMalayalam/unhinted/ttf/NotoSansMalayalam-Regular.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB",
+        "font.table=glyf"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-sans-malayalam.json",
+        "sha256": "370d42e1537b2fc46f231739352e27ea5778c813ce6c5eef8eea228e16dc6323",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-sans-malayalam.json",
+        "sha256": "f6220f72d6d3591ac85e72e7e34930da2641676c530351985848ba7f506ac77e",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/noto-sans-malayalam-first-version",
+      "file": {
+        "path": "fonts/noto-sans-malayalam/NotoSansMalayalam-Regular.first-version.ttf",
+        "sha256": "d3202e663b794be1457becb6c62b88fe025cbab6ac598967227edf7b3a48ce36",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "The Noto Project Authors (https://github.com/notofonts/malayalam)",
+        "source": "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansMalayalam/unhinted/ttf/NotoSansMalayalam-Regular.ttf",
+        "tools": [
+          "hb-subset 14.6.0"
+        ],
+        "commands": [
+          "hb-subset --unicodes=* --layout-features=* --no-hinting --notdef-outline --layout-scripts=mlym --output-file=NotoSansMalayalam-Regular.first-version.ttf NotoSansMalayalam-Regular.ttf"
+        ]
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "subset",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB",
+        "font.table=glyf"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-sans-malayalam-first-version.json",
+        "sha256": "d4b255a965cfd9df5ef56ae78dafbcf4e2cf6459044d492e0be06bd49a1bb407",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-sans-malayalam-first-version.json",
+        "sha256": "98f6eafa9839220adb01d4a4e5461b54430a00df4576709f4806dad3c227fd66",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/noto-sans-mongolian",
+      "file": {
+        "path": "fonts/noto-sans-mongolian/NotoSansMongolian-Regular.ttf",
+        "sha256": "df8e76675870a47f7dd97ea7e224fcf870713f43ebe6fe4ae6c260d0ee838a0d",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "The Noto Project Authors (https://github.com/notofonts/mongolian)",
+        "source": "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansMongolian/unhinted/ttf/NotoSansMongolian-Regular.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=12",
+        "font.cmap=4",
+        "font.loca=long",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB",
+        "font.table=glyf"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-sans-mongolian.json",
+        "sha256": "a7bfd25e0abf03e3c9905d6c958f195e75f4e8073e3b7839e3107422116c4166",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-sans-mongolian.json",
+        "sha256": "8e7fd52c9b020a840e3f228d01bdb902c2ba3a4aa6fbf14cb1ac94045ad2aca4",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/noto-sans-myanmar",
+      "file": {
+        "path": "fonts/noto-sans-myanmar/NotoSansMyanmar-Regular.ttf",
+        "sha256": "f4be6ef43871516d8347c5217a2033991b8ecda2dd1200007c2fb431a66d64db",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "The Noto Project Authors (https://github.com/notofonts/myanmar)",
+        "source": "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansMyanmar/unhinted/ttf/NotoSansMyanmar-Regular.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB",
+        "font.table=glyf"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-sans-myanmar.json",
+        "sha256": "1bddfba0196a985073f2d60f3806f20cbd40c5a29c8f58dac5b508cfa47f337c",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-sans-myanmar.json",
+        "sha256": "d62aa70a1d9b862b15b591985fe64f9b86203fabf8519b7bdf047b3f25879803",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/noto-sans-newa",
+      "file": {
+        "path": "fonts/noto-sans-newa/NotoSansNewa-Regular.ttf",
+        "sha256": "b772e089e2298380589f8cdea1f53da9e8ad0aa3e2edbaaaeb8704cd5072309c",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "The Noto Project Authors (https://github.com/notofonts/newa)",
+        "source": "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansNewa/unhinted/ttf/NotoSansNewa-Regular.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=12",
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB",
+        "font.table=glyf"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-sans-newa.json",
+        "sha256": "ad6652dd33f39d67ea38a1c28affd17042b375b8169dfc2fc5646123d6a01caf",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-sans-newa.json",
+        "sha256": "707cbb66f186febce4dbf48f279c294127f8e2f26f5da008456c700ae725e51d",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/noto-sans-nko",
+      "file": {
+        "path": "fonts/noto-sans-nko/NotoSansNKo-Regular.ttf",
+        "sha256": "72107ca6885331147fb0ca4d7a71f96e6b3e989a75d66ef979a96966b28f8526",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "The Noto Project Authors (https://github.com/notofonts/nko)",
+        "source": "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansNKo/unhinted/ttf/NotoSansNKo-Regular.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB",
+        "font.table=glyf"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-sans-nko.json",
+        "sha256": "6f0b2330cb4501f61d9eb8b268a2e22613fe5f58b992ab2054255418a488cac3",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-sans-nko.json",
+        "sha256": "11252e9b9799b77ea3a92ebb208bcad7e5c5d66f90bcda95054e978325cd1e45",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/noto-sans-oriya",
+      "file": {
+        "path": "fonts/noto-sans-oriya/NotoSansOriya-Regular.ttf",
+        "sha256": "38ac5eae2e1666558b88c63bf584349d6f924cca6b3b8867811546734afeb251",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "The Noto Project Authors (https://github.com/notofonts/oriya)",
+        "source": "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansOriya/unhinted/ttf/NotoSansOriya-Regular.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB",
+        "font.table=glyf"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-sans-oriya.json",
+        "sha256": "bfa0f33a9f4de808a5ec3d079c37fc0e736f2ca04f508b2bcb46ebea3c6b916c",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-sans-oriya.json",
+        "sha256": "d899bb6064d173b054701d4f247a0042322ccc7c99a30a3f110d685c4e109721",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/noto-sans-regular",
+      "file": {
+        "path": "fonts/noto-sans/NotoSans-Regular.subset.ttf",
+        "sha256": "a1ad65bc06d8dea485be9235f88f251797c37f6917b77489c361f5db5cd0ee1d",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "The Noto Project Authors (https://github.com/notofonts/latin-greek-cyrillic)",
+        "source": "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSans/unhinted/ttf/NotoSans-Regular.ttf",
+        "tools": [
+          "hb-subset 14.6.0"
+        ],
+        "commands": [
+          "hb-subset --unicodes=20-7E,A0-FF,131,152,153,160,161,178,17D,17E,2C6,2DC,300-304,308,30A,327,2010-2014,2018-201E,2020-2022,2026,2030,2039,203A,20AC,2122,FB01,FB02 --layout-features=* --no-hinting --notdef-outline --output-file=NotoSans-Regular.subset.ttf NotoSans-Regular.ttf"
+        ]
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "subset",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB",
+        "font.table=glyf"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-sans-regular.json",
+        "sha256": "bf1324e1618e8327994c5e9dd832d2bf12ab62451367f1710587901683f64c07",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-sans-regular.json",
+        "sha256": "a10422eed2a32385b0cecc735d41ca07bd9227b483bd4f3c20a26e4cdca52e95",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/noto-sans-regular-cff",
+      "file": {
+        "path": "fonts/noto-sans-cff/NotoSans-Regular.subset.otf",
+        "sha256": "c1343a0b0a2eeb7f18dc60f59c3dc8dd385a8ae0cfe7fc13f069ed1d8acabd45",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "The Noto Project Authors (https://github.com/notofonts/latin-greek-cyrillic)",
+        "source": "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSans/unhinted/otf/NotoSans-Regular.otf",
+        "tools": [
+          "hb-subset 14.6.0"
+        ],
+        "commands": [
+          "hb-subset --unicodes=20-7E,A0-FF,131,152,153,160,161,178,17D,17E,2C6,2DC,300-304,308,30A,327,2010-2014,2018-201E,2020-2022,2026,2030,2039,203A,20AC,2122,FB01,FB02 --layout-features=* --no-hinting --notdef-outline --output-file=NotoSans-Regular.subset.otf NotoSans-Regular.otf"
+        ]
+      },
+      "flavor": "otf",
+      "faceCount": 1,
+      "modification": "subset",
+      "features": [
+        "font.cmap=4",
+        "font.table=CFF",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-sans-regular-cff.json",
+        "sha256": "731f6e6ea1222dd4cc132ea6ae1c8980d51802fb4b5622cfac3d1c2ebe34d7ba",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-sans-regular-cff.json",
+        "sha256": "d341c1d3dc2a5beea067646a461161703862e2488e879996f6063383ec5cce73",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/noto-sans-regular-cff-woff2",
+      "file": {
+        "path": "fonts/noto-sans-cff/NotoSans-Regular.subset.woff2",
+        "sha256": "e6127c0329e2117a7628d51cf72b517afaff72180cbfba63b2c018f0105ca90f",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "The Noto Project Authors (https://github.com/notofonts/latin-greek-cyrillic)",
+        "source": "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSans/unhinted/otf/NotoSans-Regular.otf",
+        "tools": [
+          "woff2 1.0.2+fb9c337"
+        ],
+        "commands": [
+          "woff2_compress NotoSans-Regular.subset.otf"
+        ]
+      },
+      "flavor": "woff2",
+      "faceCount": 1,
+      "modification": "container",
+      "original": "fonts/noto-sans-regular-cff"
+    },
+    {
+      "id": "fonts/noto-sans-regular-woff",
+      "file": {
+        "path": "fonts/noto-sans/NotoSans-Regular.subset.woff",
+        "sha256": "f37c0391af148357fcaa632daaae2d1aa2aeac0531cd1b7956aff4dc43c043c4",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "The Noto Project Authors (https://github.com/notofonts/latin-greek-cyrillic)",
+        "source": "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSans/unhinted/ttf/NotoSans-Regular.ttf",
+        "tools": [
+          ".NET 10.0"
+        ]
+      },
+      "flavor": "woff",
+      "faceCount": 1,
+      "modification": "container",
+      "original": "fonts/noto-sans-regular"
+    },
+    {
+      "id": "fonts/noto-sans-regular-woff2",
+      "file": {
+        "path": "fonts/noto-sans/NotoSans-Regular.subset.woff2",
+        "sha256": "57a36d3a8a73d027777aaf527b967aaea58f5ffcee45698b2f0cce44993cec30",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "The Noto Project Authors (https://github.com/notofonts/latin-greek-cyrillic)",
+        "source": "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSans/unhinted/ttf/NotoSans-Regular.ttf",
+        "tools": [
+          "woff2 1.0.2+fb9c337"
+        ],
+        "commands": [
+          "woff2_compress NotoSans-Regular.subset.ttf"
+        ]
+      },
+      "flavor": "woff2",
+      "faceCount": 1,
+      "modification": "container",
+      "original": "fonts/noto-sans-regular"
+    },
+    {
+      "id": "fonts/noto-sans-sinhala",
+      "file": {
+        "path": "fonts/noto-sans-sinhala/NotoSansSinhala-Regular.ttf",
+        "sha256": "9517c7789971e8d17f55ef61992faf526eb21e7910d2dda82f50d82b95255d0e",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "The Noto Project Authors (https://github.com/notofonts/sinhala)",
+        "source": "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansSinhala/unhinted/ttf/NotoSansSinhala-Regular.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=12",
+        "font.cmap=4",
+        "font.loca=long",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB",
+        "font.table=glyf"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-sans-sinhala.json",
+        "sha256": "b953705b91cfd707c511f6b870ed416564e708681753012f75a0b18412685d5b",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-sans-sinhala.json",
+        "sha256": "d793acae80b2d1a3e4f5ec3d9909edafe17e59a5414ba1e84fdce6c379a7f9f5",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/noto-sans-syriac",
+      "file": {
+        "path": "fonts/noto-sans-syriac/NotoSansSyriac-Regular.ttf",
+        "sha256": "1ec0391c549b5e63e4f8d810b4485a64c5551445bfb2bdbf309ce8368bef9d4c",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "The Noto Project Authors (https://github.com/notofonts/syriac)",
+        "source": "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansSyriac/unhinted/ttf/NotoSansSyriac-Regular.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB",
+        "font.table=glyf"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-sans-syriac.json",
+        "sha256": "ca604dc1075509b6b205b651fd3cf2ff3707849ec725abc321f49039fb3489b5",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-sans-syriac.json",
+        "sha256": "c1fcb7083fdf56646e57f02b1b765ab873376d4e1130fabe3027ce2b4d0225a9",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/noto-sans-tai-tham",
+      "file": {
+        "path": "fonts/noto-sans-tai-tham/NotoSansTaiTham-Regular.ttf",
+        "sha256": "f07591d877c315027d1e8945143c6aed351f43561af1b102364ad9ea70d47d2f",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "The Noto Project Authors (https://github.com/notofonts/tai-tham)",
+        "source": "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansTaiTham/unhinted/ttf/NotoSansTaiTham-Regular.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB",
+        "font.table=glyf"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-sans-tai-tham.json",
+        "sha256": "57eee69699af18974e18176d5bbf5763384504ccedbfccc920e910f066a971d1",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-sans-tai-tham.json",
+        "sha256": "23db1fdbdc3c0a13a205d33b10d3cd8bc8adbcd1bd57067b965a95ae0f754bb5",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/noto-sans-tamil",
+      "file": {
+        "path": "fonts/noto-sans-tamil/NotoSansTamil-Regular.ttf",
+        "sha256": "6634d9cc97a726e670df41281dd32b167a6b9b71f2036e19671ff08fdde0c292",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "The Noto Project Authors (https://github.com/notofonts/tamil)",
+        "source": "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansTamil/unhinted/ttf/NotoSansTamil-Regular.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=12",
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB",
+        "font.table=glyf"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-sans-tamil.json",
+        "sha256": "00accb810663684f746868a081579d16a5dbf9d744b645987afae8379f78add5",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-sans-tamil.json",
+        "sha256": "c0e3704f72c5a016c7ca8950bd9abe92362fa074a3bcf6a57d3c248aa96df3c0",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/noto-sans-telugu",
+      "file": {
+        "path": "fonts/noto-sans-telugu/NotoSansTelugu-Regular.ttf",
+        "sha256": "dcb86a5da09365a2d73d725e429403dca988e6d50c1b1d564579a25dbc18bd29",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "The Noto Project Authors (https://github.com/notofonts/telugu)",
+        "source": "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansTelugu/unhinted/ttf/NotoSansTelugu-Regular.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB",
+        "font.table=glyf"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-sans-telugu.json",
+        "sha256": "eba7dabf2306919bf207b74d12861cc988482dfebfe2460e928da255f2de2ac6",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-sans-telugu.json",
+        "sha256": "2a65f4f9b7a3f7a51581dadd3b586ec75eb40086469879351f6060a2e4be8b15",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/noto-sans-thai",
+      "file": {
+        "path": "fonts/noto-sans-thai/NotoSansThai-Regular.ttf",
+        "sha256": "d4303fe9c63ebb72759ca8b6d2040c8ae81689f7d08d7b91c656154382b49313",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "The Noto Project Authors (https://github.com/notofonts/thai)",
+        "source": "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansThai/unhinted/ttf/NotoSansThai-Regular.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB",
+        "font.table=glyf"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-sans-thai.json",
+        "sha256": "5a018eeed2454c2be55be514c5d8147ebb8e01ad405e8f70c33b21b7b1e954a5",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-sans-thai.json",
+        "sha256": "efe92e041e30d520612b20ad2d9d77ac9af597e6d43bf4fdbdf20947c3588734",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/noto-sans-variable",
+      "file": {
+        "path": "fonts/noto-sans-variable/NotoSans-Variable.subset.ttf",
+        "sha256": "d1d009e3d9f253d9c914f976bda8451127c517c0f4033d7a1166b4a211b0f345",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "The Noto Project Authors (https://github.com/notofonts/latin-greek-cyrillic)",
+        "source": "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSans/unhinted/variable-ttf/NotoSans%5Bwdth%2Cwght%5D.ttf",
+        "tools": [
+          "hb-subset 14.6.0"
+        ],
+        "commands": [
+          "hb-subset --unicodes=20-7E,C0,C1,C5,C9,D1,E0,E1,E5,E9,F1,FC,300-304,308,30A,327,2010-2014,2044,20AC,FB01,FB02 --layout-features=* --no-hinting --notdef-outline --output-file=NotoSans-Variable.subset.ttf NotoSans[wdth,wght].ttf"
+        ]
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "subset",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB",
+        "font.table=HVAR",
+        "font.table=MVAR",
+        "font.table=STAT",
+        "font.table=avar",
+        "font.table=fvar",
+        "font.table=glyf",
+        "font.table=gvar"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-sans-variable.json",
+        "sha256": "6a26e874ff1e27a2691f469eb7ddb50be696aa2ec706a556e56c1674daf7d0bf",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-sans-variable.json",
+        "sha256": "d551ab1c6b412a4b159a91996cbf6af1c430b1682c48c75edfaf41400896213e",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/noto-serif-tibetan",
+      "file": {
+        "path": "fonts/noto-serif-tibetan/NotoSerifTibetan-Regular.ttf",
+        "sha256": "7292b2c76cf5c9b81e5362d88e0cb0a16b9d92827f86f945203014b049fd2fc5",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "The Noto Project Authors (https://github.com/notofonts/tibetan)",
+        "source": "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSerifTibetan/unhinted/ttf/NotoSerifTibetan-Regular.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=long",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB",
+        "font.table=glyf"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-serif-tibetan.json",
+        "sha256": "43e25fd5bc35dd78155092f573f73d624ff9875eb238d9e6b435594426c1a00f",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-serif-tibetan.json",
+        "sha256": "16506f113296a8e841908f0537e59f2f6c2b4dafbb9382f6aebf72e280e092c3",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/sbix-twemoji-smiley",
+      "file": {
+        "path": "fonts/color-fonts/twemoji_smiley-sbix.ttf",
+        "sha256": "7767316e76003dff2415c0bec6d8972024d8f308349bb576abce7b26b5319c9f",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "CC-BY-4.0",
+        "author": "Twitter, Inc and other contributors (Twemoji), built by the googlefonts/color-fonts project",
+        "source": "https://github.com/googlefonts/color-fonts/blob/0046ea4c3b69e9fbbe464c2594816894e3aa5e4b/fonts/twemoji_smiley-sbix.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=12",
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=glyf",
+        "font.table=sbix"
+      ],
+      "renderTool": "hb-raster 14.6.0 --logical --background=FFFFFF",
+      "renders": [
+        {
+          "file": {
+            "path": "fonts/renders/sbix-twemoji-smiley/00-000.png",
+            "sha256": "15b46b028e91eb6bf123e1e5a333b27fcc1461748e1a512f83a137ad20bd42ee",
+            "role": "font-render"
+          },
+          "text": "263A 1F601 1F603 1F604 1F605 1F606 1F607 1F608",
+          "size": 109,
+          "margin": 32,
+          "ascent": 109,
+          "descent": 32,
+          "imageShift": -1
+        },
+        {
+          "file": {
+            "path": "fonts/renders/sbix-twemoji-smiley/00-001.png",
+            "sha256": "c61b368aae2209902b8958412a5d29c029518bec04774b2fcd0e7b8d4e7c7d21",
+            "role": "font-render"
+          },
+          "text": "1F60A 1F60D 1F60E 1F60F 1F619 1F642 1F970",
+          "size": 109,
+          "margin": 32,
+          "ascent": 109,
+          "descent": 32,
+          "imageShift": -1
+        }
+      ]
+    },
+    {
+      "id": "fonts/synthetic-bitmap-boxes",
+      "file": {
+        "path": "fonts/synthetic/bitmap-boxes.ttf",
+        "sha256": "844d337c7b3548cadb4ac5a3fc0b09a4cb46da57760e01dafbff8cc22c135889",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/Common/FontSamples.cs (BitmapBoxes)",
+        "tools": [
+          ".NET 10.0"
+        ]
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=glyf",
+        "font.table=sbix"
+      ],
+      "renderTool": "hb-raster 14.6.0 --logical --background=FFFFFF",
+      "renders": [
+        {
+          "file": {
+            "path": "fonts/renders/synthetic-bitmap-boxes/00-000.png",
+            "sha256": "8abfd42baf3e4d7e24cd148929058624a059ea0043b1cba6757fbb797a0dfc9f",
+            "role": "font-render"
+          },
+          "text": "0041 0042 0044",
+          "size": 16,
+          "margin": 32,
+          "ascent": 16,
+          "descent": 4,
+          "imageShift": -1
+        },
+        {
+          "file": {
+            "path": "fonts/renders/synthetic-bitmap-boxes/01-000.png",
+            "sha256": "6987b8f5b5d1fde1705c7e0079a7a2e8c01f655a7064a38d5e80b8e930978ea5",
+            "role": "font-render"
+          },
+          "text": "0041 0042 0044",
+          "size": 32,
+          "margin": 32,
+          "ascent": 32,
+          "descent": 8,
+          "imageShift": -1
+        }
+      ]
+    },
+    {
+      "id": "fonts/synthetic-boxes",
+      "file": {
+        "path": "fonts/synthetic/boxes.ttf",
+        "sha256": "552f9c23021f2140c6e4fb4b2748e23fb169205ecca4bc8841b3a0329eba39fe",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/Common/FontSamples.cs (Boxes)",
+        "tools": [
+          ".NET 10.0"
+        ]
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=12",
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=glyf",
+        "font.table=kern"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/synthetic-boxes.json",
+        "sha256": "4b735daf41fdb25f23c782119f5d6987348c61d097a1eb21c83cc2aaf3363b77",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/synthetic-boxes.json",
+        "sha256": "5fb5bfde448f39063cb959edac52101b026eeb3ac6c844fc952a588469b68525",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/synthetic-boxes-woff",
+      "file": {
+        "path": "fonts/synthetic/boxes.woff",
+        "sha256": "18d031e1078e08f9d0e549ee63fc6e7fb1072bbfa9715cec6ae0503810fd88a3",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/FontCorpus.cs (FontBuilder.WriteWoff of fonts/synthetic/boxes.ttf)",
+        "tools": [
+          ".NET 10.0"
+        ]
+      },
+      "flavor": "woff",
+      "faceCount": 1,
+      "modification": "container",
+      "original": "fonts/synthetic-boxes"
+    },
+    {
+      "id": "fonts/synthetic-boxes-woff2",
+      "file": {
+        "path": "fonts/synthetic/boxes.woff2",
+        "sha256": "600f2f5f3b7874891ce501082062aa491c100f252c92d3766e60996c1b225ebb",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/FontCorpus.cs (woff2_compress of fonts/synthetic/boxes.ttf)",
+        "tools": [
+          "woff2 1.0.2+fb9c337"
+        ],
+        "commands": [
+          "woff2_compress boxes.ttf"
+        ]
+      },
+      "flavor": "woff2",
+      "faceCount": 1,
+      "modification": "container",
+      "original": "fonts/synthetic-boxes"
+    },
+    {
+      "id": "fonts/synthetic-boxes-woff2-metrics",
+      "file": {
+        "path": "fonts/synthetic/boxes.metrics.woff2",
+        "sha256": "fe6339d83d06cd5f467886571ddf21e2c8448383e7a4bf3426623cb8672a219c",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/Common/FontWoff2Writer.cs (the glyphs and the horizontal metrics transformed)",
+        "tools": [
+          ".NET 10.0"
+        ]
+      },
+      "flavor": "woff2",
+      "faceCount": 1,
+      "modification": "container",
+      "original": "fonts/synthetic-boxes"
+    },
+    {
+      "id": "fonts/synthetic-charstrings",
+      "file": {
+        "path": "fonts/synthetic/charstrings.otf",
+        "sha256": "b836d693815e074903557557747428718f8ad65b3113a3009b341b9368dcd1bb",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/Common/FontSamples.cs (Charstrings)",
+        "tools": [
+          ".NET 10.0"
+        ]
+      },
+      "flavor": "otf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.table=CFF"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/synthetic-charstrings.json",
+        "sha256": "2476ecbbb34e0b84ce92d387a545920ded13ba1aa981a2d93abff38360e09e76",
+        "role": "font-vectors"
+      }
+    },
+    {
+      "id": "fonts/synthetic-charstrings-woff",
+      "file": {
+        "path": "fonts/synthetic/charstrings.woff",
+        "sha256": "375511624f482601eccb7eedfdde454017a6de4d0de21edd84a8373a39963ba5",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/FontCorpus.cs (FontBuilder.WriteWoff of fonts/synthetic/charstrings.otf)",
+        "tools": [
+          ".NET 10.0"
+        ]
+      },
+      "flavor": "woff",
+      "faceCount": 1,
+      "modification": "container",
+      "original": "fonts/synthetic-charstrings"
+    },
+    {
+      "id": "fonts/synthetic-charstrings-woff2",
+      "file": {
+        "path": "fonts/synthetic/charstrings.woff2",
+        "sha256": "6f725a9e09069b844e277550ca25d3a1a73633ef706183227574d4a75f6e8bc6",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/FontCorpus.cs (woff2_compress of fonts/synthetic/charstrings.otf)",
+        "tools": [
+          "woff2 1.0.2+fb9c337"
+        ],
+        "commands": [
+          "woff2_compress charstrings.otf"
+        ]
+      },
+      "flavor": "woff2",
+      "faceCount": 1,
+      "modification": "container",
+      "original": "fonts/synthetic-charstrings"
+    },
+    {
+      "id": "fonts/synthetic-cid",
+      "file": {
+        "path": "fonts/synthetic/cid.otf",
+        "sha256": "0367c40309cfb99d00c04b247a271ec8a02abbc4ae8823b82a4e22ee55855a4a",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/Common/FontSamples.cs (CidKeyed)",
+        "tools": [
+          ".NET 10.0"
+        ]
+      },
+      "flavor": "otf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.table=CFF"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/synthetic-cid.json",
+        "sha256": "92b552c08598e0055de4117d8b6f69164687c06c68b5ba71018728bba986307e",
+        "role": "font-vectors"
+      }
+    },
+    {
+      "id": "fonts/synthetic-collection",
+      "file": {
+        "path": "fonts/synthetic/collection.ttc",
+        "sha256": "ac3ea6b2d74bc98556d1967e8c1704af492bbe87ee631a245eb5531be0ff0e0d",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/Common/FontSamples.cs (Boxes and Curves)",
+        "tools": [
+          ".NET 10.0"
+        ]
+      },
+      "flavor": "ttc",
+      "faceCount": 2,
+      "modification": "none",
+      "features": [
+        "font.cmap=12",
+        "font.cmap=4",
+        "font.container=ttc",
+        "font.loca=long",
+        "font.loca=short",
+        "font.table=glyf",
+        "font.table=kern"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/synthetic-collection.json",
+        "sha256": "99dea85c98d6a518203c47d36d5a57a5e32316a9fcbb6705b46205568c3b539a",
+        "role": "font-vectors"
+      }
+    },
+    {
+      "id": "fonts/synthetic-collection-woff2",
+      "file": {
+        "path": "fonts/synthetic/collection.woff2",
+        "sha256": "f45d3f505e64c6fe2b8a5faa9c535616cb4a0af90e9294b3fc2052a961fa85f9",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/FontCorpus.cs (woff2_compress of fonts/synthetic/collection.ttc)",
+        "tools": [
+          "woff2 1.0.2+fb9c337"
+        ],
+        "commands": [
+          "woff2_compress collection.ttc"
+        ]
+      },
+      "flavor": "woff2",
+      "faceCount": 2,
+      "modification": "container",
+      "original": "fonts/synthetic-collection"
+    },
+    {
+      "id": "fonts/synthetic-color-bitmaps",
+      "file": {
+        "path": "fonts/synthetic/color-bitmaps.ttf",
+        "sha256": "b25ac4051db1654ac5176a2eeeaaed4df2af26a1f9a3d0b58b036b965ff604c6",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/Common/FontSamples.cs (BitmapBoxes with CBLC and CBDT tables)",
+        "tools": [
+          ".NET 10.0"
+        ]
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=CBDT",
+        "font.table=CBLC",
+        "font.table=glyf"
+      ],
+      "renderTool": "hb-raster 14.6.0 --logical --background=FFFFFF",
+      "renders": [
+        {
+          "file": {
+            "path": "fonts/renders/synthetic-color-bitmaps/00-000.png",
+            "sha256": "8abfd42baf3e4d7e24cd148929058624a059ea0043b1cba6757fbb797a0dfc9f",
+            "role": "font-render"
+          },
+          "text": "0041 0042 0044",
+          "size": 16,
+          "margin": 32,
+          "ascent": 16,
+          "descent": 4,
+          "imageShift": -1
+        },
+        {
+          "file": {
+            "path": "fonts/renders/synthetic-color-bitmaps/01-000.png",
+            "sha256": "6987b8f5b5d1fde1705c7e0079a7a2e8c01f655a7064a38d5e80b8e930978ea5",
+            "role": "font-render"
+          },
+          "text": "0041 0042 0044",
+          "size": 32,
+          "margin": 32,
+          "ascent": 32,
+          "descent": 8,
+          "imageShift": -1
+        }
+      ]
+    },
+    {
+      "id": "fonts/synthetic-color-boxes",
+      "file": {
+        "path": "fonts/synthetic/color-boxes.ttf",
+        "sha256": "8ccd3b75cf951cc13a4c1cf94a091f025e35976b207f6006bc92bd3a800f633d",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/Common/FontSamples.cs (ColorBoxes)",
+        "tools": [
+          ".NET 10.0"
+        ]
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=COLR",
+        "font.table=CPAL",
+        "font.table=glyf"
+      ],
+      "renderTool": "hb-raster 14.6.0 --logical --background=FFFFFF",
+      "renders": [
+        {
+          "file": {
+            "path": "fonts/renders/synthetic-color-boxes/00-000.png",
+            "sha256": "605451f5c5286df147b75eec1c53ac0eb2e4f64bb1f9e782696029ef591c1b19",
+            "role": "font-render"
+          },
+          "text": "0041 0042 0043",
+          "size": 64,
+          "margin": 32,
+          "ascent": 64,
+          "descent": 16
+        },
+        {
+          "file": {
+            "path": "fonts/renders/synthetic-color-boxes/01-000.png",
+            "sha256": "f402e9902298f62b1eff42f197d84ded8f7ea3d851347638d118817b5b6a9043",
+            "role": "font-render"
+          },
+          "text": "0041 0042 0043",
+          "size": 64,
+          "margin": 32,
+          "ascent": 64,
+          "descent": 16,
+          "palette": 1,
+          "foreground": "2060C0"
+        }
+      ]
+    },
+    {
+      "id": "fonts/synthetic-color-clips",
+      "file": {
+        "path": "fonts/synthetic/color-clips.ttf",
+        "sha256": "0c5f28a9d2690917bbe12113192715c6857ac376c77fc51a4109c2867998d9d6",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/Common/FontSamples.cs (ColorClips)",
+        "tools": [
+          ".NET 10.0"
+        ]
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=COLR",
+        "font.table=CPAL",
+        "font.table=glyf"
+      ],
+      "renderTool": "hb-raster 14.6.0 --logical --background=FFFFFF",
+      "renders": [
+        {
+          "file": {
+            "path": "fonts/renders/synthetic-color-clips/00-000.png",
+            "sha256": "6db9cffb2f50ab1ed302cb9228631db45782c6da2b60422dcaa4dc21e878ca41",
+            "role": "font-render"
+          },
+          "text": "0041 0042 0043 0044 0045 0046 0047 0048",
+          "size": 64,
+          "margin": 32,
+          "ascent": 64,
+          "descent": 16
+        },
+        {
+          "file": {
+            "path": "fonts/renders/synthetic-color-clips/00-001.png",
+            "sha256": "71be4de5ce0dbf9c0c01cdd634cae7fd1a7ff4d3909f82e8d6ba47a14d0bb97e",
+            "role": "font-render"
+          },
+          "text": "0049",
+          "size": 64,
+          "margin": 32,
+          "ascent": 64,
+          "descent": 16
+        }
+      ]
+    },
+    {
+      "id": "fonts/synthetic-color-gradients",
+      "file": {
+        "path": "fonts/synthetic/color-gradients.ttf",
+        "sha256": "224979fca542c2fe4b3a4e4a312de0bb375b03a41e3c850963e7a0268e33e6ef",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/Common/FontSamples.cs (ColorGradients)",
+        "tools": [
+          ".NET 10.0"
+        ]
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=COLR",
+        "font.table=CPAL",
+        "font.table=glyf"
+      ],
+      "renderTool": "hb-raster 14.6.0 --logical --background=FFFFFF",
+      "renders": [
+        {
+          "file": {
+            "path": "fonts/renders/synthetic-color-gradients/00-000.png",
+            "sha256": "08be78b72dc1b39a00a26bf2adacbc27ef355d197a1aaba340afa6148d8707e3",
+            "role": "font-render"
+          },
+          "text": "0041 0042 0043 0044 0045 0046 0047 0048",
+          "size": 64,
+          "margin": 32,
+          "ascent": 64,
+          "descent": 16,
+          "foreground": "0000FF"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/synthetic-color-gradients/00-001.png",
+            "sha256": "78c3822c6a7b47f119c6eb1a23b8a0bb04e1e8bdd95d2c6a0ae45167d926650c",
+            "role": "font-render"
+          },
+          "text": "0049 004B 004C 004E 004F 0050",
+          "size": 64,
+          "margin": 32,
+          "ascent": 64,
+          "descent": 16,
+          "foreground": "0000FF"
+        }
+      ]
+    },
+    {
+      "id": "fonts/synthetic-color-transforms",
+      "file": {
+        "path": "fonts/synthetic/color-transforms.ttf",
+        "sha256": "8e127df25e924d61f630744cebbeeb4a9cc15043d1d1b7695b1795f68129e22d",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/Common/FontSamples.cs (ColorTransforms)",
+        "tools": [
+          ".NET 10.0"
+        ]
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=COLR",
+        "font.table=CPAL",
+        "font.table=glyf"
+      ],
+      "renderTool": "hb-raster 14.6.0 --logical --background=FFFFFF",
+      "renders": [
+        {
+          "file": {
+            "path": "fonts/renders/synthetic-color-transforms/00-000.png",
+            "sha256": "828e28beab68ee1c6f5e8c3090b9066b26ee194131b0fea750b3d811d3ffb951",
+            "role": "font-render"
+          },
+          "text": "0041 0042 0043 0044 0045 0046 0047 0048",
+          "size": 64,
+          "margin": 32,
+          "ascent": 64,
+          "descent": 16,
+          "foreground": "0000FF"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/synthetic-color-transforms/00-001.png",
+            "sha256": "728054e491d28638764ed1d59adfb3b54e30bad4a2b3a56a1f36748f09baf148",
+            "role": "font-render"
+          },
+          "text": "0049 004A 004B 004C 004D 004E 004F 0050",
+          "size": 64,
+          "margin": 32,
+          "ascent": 64,
+          "descent": 16,
+          "foreground": "0000FF"
+        }
+      ]
+    },
+    {
+      "id": "fonts/synthetic-curves",
+      "file": {
+        "path": "fonts/synthetic/curves.ttf",
+        "sha256": "0084fb5c39955162d45c2898ed6727546cd11fcea26e3a30437d1fe4309e88cd",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/Common/FontSamples.cs (Curves)",
+        "tools": [
+          ".NET 10.0"
+        ]
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=12",
+        "font.loca=long",
+        "font.table=glyf"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/synthetic-curves.json",
+        "sha256": "e1aa1f03741fa03a9f702f155bd9e10b27d72224354a582da14b632872766be8",
+        "role": "font-vectors"
+      }
+    },
+    {
+      "id": "fonts/synthetic-curves-woff2",
+      "file": {
+        "path": "fonts/synthetic/curves.woff2",
+        "sha256": "93bbf2a319a5c4146acdde31f36beb3403bc8aeb23d6425e8ed1e4083ee098da",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/FontCorpus.cs (woff2_compress of fonts/synthetic/curves.ttf)",
+        "tools": [
+          "woff2 1.0.2+fb9c337"
+        ],
+        "commands": [
+          "woff2_compress curves.ttf"
+        ]
+      },
+      "flavor": "woff2",
+      "faceCount": 1,
+      "modification": "container",
+      "original": "fonts/synthetic-curves"
+    },
+    {
+      "id": "fonts/synthetic-deltas",
+      "file": {
+        "path": "fonts/synthetic/deltas.ttf",
+        "sha256": "4076cd66770052cab76cc381efd2b56ce2c5e41092986758879d7b4cbb746520",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/Common/FontSamples.cs (Deltas)",
+        "tools": [
+          ".NET 10.0"
+        ]
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=glyf"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/synthetic-deltas.json",
+        "sha256": "c5935905381c7744c13c96e70f54635ea1e113dcf810e5dd57ff774e27610a8d",
+        "role": "font-vectors"
+      }
+    },
+    {
+      "id": "fonts/synthetic-deltas-woff",
+      "file": {
+        "path": "fonts/synthetic/deltas.woff",
+        "sha256": "e07e873ffb541719715ed24123d692ab96630efdfee6a86c5fc17120e9c76542",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/FontCorpus.cs (FontBuilder.WriteWoff of fonts/synthetic/deltas.ttf)",
+        "tools": [
+          ".NET 10.0"
+        ]
+      },
+      "flavor": "woff",
+      "faceCount": 1,
+      "modification": "container",
+      "original": "fonts/synthetic-deltas"
+    },
+    {
+      "id": "fonts/synthetic-deltas-woff2",
+      "file": {
+        "path": "fonts/synthetic/deltas.woff2",
+        "sha256": "cacd9eda464a611a7d5b29cdad3b31d61dcf3931827517b02c28b476838833d7",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/FontCorpus.cs (woff2_compress of fonts/synthetic/deltas.ttf)",
+        "tools": [
+          "woff2 1.0.2+fb9c337"
+        ],
+        "commands": [
+          "woff2_compress deltas.ttf"
+        ]
+      },
+      "flavor": "woff2",
+      "faceCount": 1,
+      "modification": "container",
+      "original": "fonts/synthetic-deltas"
+    },
+    {
+      "id": "fonts/synthetic-deltas-woff2-boxes",
+      "file": {
+        "path": "fonts/synthetic/deltas.boxes.woff2",
+        "sha256": "70dfabbb42b559fbcf3bc0dc1df8e84fdb6c93f1d49608ae374084ef4ac54c91",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/Common/FontWoff2Writer.cs (every bounding box stored, the horizontal metrics transformed)",
+        "tools": [
+          ".NET 10.0"
+        ]
+      },
+      "flavor": "woff2",
+      "faceCount": 1,
+      "modification": "container",
+      "original": "fonts/synthetic-deltas"
+    },
+    {
+      "id": "fonts/synthetic-variable",
+      "file": {
+        "path": "fonts/synthetic/variable.ttf",
+        "sha256": "55bb0240b24b3defca71703548682a9eb856ca550a88e4bc2827ebc3ac257ceb",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/Common/FontSamples.cs (Variable)",
+        "tools": [
+          ".NET 10.0"
+        ]
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=HVAR",
+        "font.table=MVAR",
+        "font.table=avar",
+        "font.table=fvar",
+        "font.table=glyf",
+        "font.table=gvar"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/synthetic-variable.json",
+        "sha256": "b6f2fe6abb8688939b0b88fd704208b245d1f216ef328e2c879ab48a485a1632",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/synthetic-variable.json",
+        "sha256": "a958b8b5f2cc953766dfa7caf261452dfd5a6b8006fc8dc167c9326a5a818a3b",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/synthetic-variable-charstrings",
+      "file": {
+        "path": "fonts/synthetic/variable-charstrings.otf",
+        "sha256": "865d7eae287d198ef4ec97c95256b51a2301f6fa7689174f38c12a6806d4f420",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/Common/FontSamples.cs (VariableCharstrings)",
+        "tools": [
+          ".NET 10.0"
+        ]
+      },
+      "flavor": "otf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.table=CFF2",
+        "font.table=HVAR",
+        "font.table=fvar"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/synthetic-variable-charstrings.json",
+        "sha256": "32a229e1cd8d127f411a1780888d5abd5c006bb2bae7d2fc329995b94514c792",
+        "role": "font-vectors"
+      }
+    },
+    {
+      "id": "fonts/synthetic-variable-phantom",
+      "file": {
+        "path": "fonts/synthetic/variable.phantom.ttf",
+        "sha256": "bf64dbc8d52890c712559e8c3eaf5e392c643246aebe895065cc2f638e4e486b",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/Common/FontSamples.cs (Variable without HVAR)",
+        "tools": [
+          ".NET 10.0"
+        ]
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=MVAR",
+        "font.table=avar",
+        "font.table=fvar",
+        "font.table=glyf",
+        "font.table=gvar"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/synthetic-variable-phantom.json",
+        "sha256": "f45fc57b21ed9fe3ed85da938386d49d0ef431f5156eddc90c8f3cc66205fe73",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/synthetic-variable-phantom.json",
+        "sha256": "a958b8b5f2cc953766dfa7caf261452dfd5a6b8006fc8dc167c9326a5a818a3b",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/trt-avar",
+      "file": {
+        "path": "fonts/text-rendering-tests/TestAVAR.ttf",
+        "sha256": "5deb587e7abe1b175d740dfded516b93ebb4a6cb7ea9c65b784d3f4498d2c7cf",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "Unicode, Inc.",
+        "source": "https://github.com/harfbuzz/harfbuzz/blob/c7a7457b7385f33178e8cf87615ca077a810bbe7/test/shape/data/text-rendering-tests/fonts/TestAVAR.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=avar",
+        "font.table=fvar",
+        "font.table=glyf",
+        "font.table=gvar"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/trt-avar.json",
+        "sha256": "5a789c190c9a4cce2f0b45782451aa37fb8a6d5f7f25bfafaec34edf311d82aa",
+        "role": "font-vectors"
+      }
+    },
+    {
+      "id": "fonts/trt-cff2",
+      "file": {
+        "path": "fonts/text-rendering-tests/AdobeVFPrototype-Subset.otf",
+        "sha256": "0f7e3b59c2c44ba3683bd636b4f24541ec405f9132b4d37eef1baa78ebb559db",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "Adobe Systems Incorporated",
+        "source": "https://github.com/harfbuzz/harfbuzz/blob/c7a7457b7385f33178e8cf87615ca077a810bbe7/test/shape/data/text-rendering-tests/fonts/AdobeVFPrototype-Subset.otf"
+      },
+      "flavor": "otf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.cmap=6",
+        "font.table=BASE",
+        "font.table=CFF2",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB",
+        "font.table=HVAR",
+        "font.table=fvar"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/trt-cff2.json",
+        "sha256": "b7400608845a25236d6a4fc75435a9a52c4ef59221b78fd690aa79aaf87333b1",
+        "role": "font-vectors"
+      }
+    },
+    {
+      "id": "fonts/trt-gpos-four",
+      "file": {
+        "path": "fonts/text-rendering-tests/TestGPOSFour.ttf",
+        "sha256": "281f3412f17191e65fb4f29c60521e745c8d248bea091909a13d7c96c2392795",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "Unicode, Inc.",
+        "source": "https://github.com/harfbuzz/harfbuzz/blob/c7a7457b7385f33178e8cf87615ca077a810bbe7/test/shape/data/text-rendering-tests/fonts/TestGPOSFour.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=12",
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB",
+        "font.table=MVAR",
+        "font.table=avar",
+        "font.table=fvar",
+        "font.table=glyf",
+        "font.table=gvar"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/trt-gpos-four.json",
+        "sha256": "4e962f10510e3b433e9ab472d8ca04c7af18e6ed4af44443d1d526da967fde3d",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/trt-gpos-four.json",
+        "sha256": "0bca26891d3b5c74fc1715a4b58b44f6c15dc47615de06973026f9ba1bb08b15",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/trt-gvar-composite",
+      "file": {
+        "path": "fonts/text-rendering-tests/TestGVAR-Composite-0.ttf",
+        "sha256": "5be59bda5b4326b5c62f5b04a8d70fdc2a1a39ede56abb29385ab4b0f068ca95",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "CC0-1.0",
+        "author": "Jens Kutilek (a subset of the Normschrift font, dedicated to the public domain)",
+        "source": "https://github.com/harfbuzz/harfbuzz/blob/c7a7457b7385f33178e8cf87615ca077a810bbe7/test/shape/data/text-rendering-tests/fonts/TestGVAR-Composite-0.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=HVAR",
+        "font.table=MVAR",
+        "font.table=STAT",
+        "font.table=fvar",
+        "font.table=glyf",
+        "font.table=gvar"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/trt-gvar-composite.json",
+        "sha256": "3e0074ea77e618c379ec39816b84581e3cf4d79e6da9fcb18bb9a995727deb0e",
+        "role": "font-vectors"
+      }
+    },
+    {
+      "id": "fonts/trt-gvar-four",
+      "file": {
+        "path": "fonts/text-rendering-tests/TestGVARFour.ttf",
+        "sha256": "a749ef97d87e7bb6ab211e1e9ac262c8ab9bb0fb7e2cb7b2e9647dc78fe5676f",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "Unicode, Inc.",
+        "source": "https://github.com/harfbuzz/harfbuzz/blob/c7a7457b7385f33178e8cf87615ca077a810bbe7/test/shape/data/text-rendering-tests/fonts/TestGVARFour.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=GDEF",
+        "font.table=HVAR",
+        "font.table=fvar",
+        "font.table=glyf",
+        "font.table=gvar"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/trt-gvar-four.json",
+        "sha256": "b4def3238becb939e1fa5fac4e0d2706e94b338b2f29aa64dc8eac2682a83e0c",
+        "role": "font-vectors"
+      }
+    },
+    {
+      "id": "fonts/trt-gvar-nine",
+      "file": {
+        "path": "fonts/text-rendering-tests/TestGVARNine.ttf",
+        "sha256": "fa23bfa9bac087a09029802e83c424f09714a94cb547caac098da9d6285e4fbd",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "Apache-2.0",
+        "author": "Unicode, Inc. (text-rendering-tests)",
+        "source": "https://github.com/harfbuzz/harfbuzz/blob/c7a7457b7385f33178e8cf87615ca077a810bbe7/test/shape/data/text-rendering-tests/fonts/TestGVARNine.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.cmap=6",
+        "font.loca=short",
+        "font.table=fvar",
+        "font.table=glyf",
+        "font.table=gvar"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/trt-gvar-nine.json",
+        "sha256": "30dbfe1c012088b76c767e9163e901fe4a0f08d5145b10caeb1437f3397e90c6",
+        "role": "font-vectors"
+      }
+    },
+    {
+      "id": "fonts/trt-hvar-one",
+      "file": {
+        "path": "fonts/text-rendering-tests/TestHVAROne.otf",
+        "sha256": "2682f90cb31d6e5b0dd9e57b8638e297f4e542f3a30a80e620698ae12c6dfdfb",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "Unicode, Inc.",
+        "source": "https://github.com/harfbuzz/harfbuzz/blob/c7a7457b7385f33178e8cf87615ca077a810bbe7/test/shape/data/text-rendering-tests/fonts/TestHVAROne.otf"
+      },
+      "flavor": "otf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.table=CFF2",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=HVAR",
+        "font.table=fvar"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/trt-hvar-one.json",
+        "sha256": "c0598ebdc192d1941b737b931293a79fbad461e6a087e12dbfc6a4dde7081a51",
+        "role": "font-vectors"
+      }
+    },
+    {
+      "id": "fonts/trt-hvar-two",
+      "file": {
+        "path": "fonts/text-rendering-tests/TestHVARTwo.ttf",
+        "sha256": "dba292b3000989b54c6b61e2ace37addf32132a8dbd3e69215f02cdf09d90bed",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "Unicode, Inc.",
+        "source": "https://github.com/harfbuzz/harfbuzz/blob/c7a7457b7385f33178e8cf87615ca077a810bbe7/test/shape/data/text-rendering-tests/fonts/TestHVARTwo.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=GDEF",
+        "font.table=HVAR",
+        "font.table=fvar",
+        "font.table=glyf",
+        "font.table=gvar"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/trt-hvar-two.json",
+        "sha256": "35c0a960bd3a4c79d0a1ed9576dab14801ac5a724ef46d23fbe7ca187054e429",
+        "role": "font-vectors"
+      }
+    },
+    {
+      "id": "fonts/trt-rvrn",
+      "file": {
+        "path": "fonts/text-rendering-tests/TestRVRN.ttf",
+        "sha256": "3afdfa8efd4a1fdf2a79b98f9a832456d1d168236fbd22da0a60b3492e144d88",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "Unicode, Inc.",
+        "source": "https://github.com/harfbuzz/harfbuzz/blob/c7a7457b7385f33178e8cf87615ca077a810bbe7/test/shape/data/text-rendering-tests/fonts/TestRVRN.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=GSUB",
+        "font.table=HVAR",
+        "font.table=STAT",
+        "font.table=fvar",
+        "font.table=glyf",
+        "font.table=gvar"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/trt-rvrn.json",
+        "sha256": "e02430faf1a660b3892b61a148c8be6375d0475078285268a1edf070ed07d03e",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/trt-rvrn.json",
+        "sha256": "8f9d0d32373a4c1f8cdc85d5ae129987089c41e08479d4565618682f8b774987",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/trt-rvrn-cff2",
+      "file": {
+        "path": "fonts/text-rendering-tests/TestRVRN-CFF2.otf",
+        "sha256": "9734b58ae11a8a9a1a5759fe8d79f0856a29e155cfe891aa88e67d08620554b2",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "Unicode, Inc.",
+        "source": "https://github.com/harfbuzz/harfbuzz/blob/c7a7457b7385f33178e8cf87615ca077a810bbe7/test/shape/data/text-rendering-tests/fonts/TestRVRN-CFF2.otf"
+      },
+      "flavor": "otf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.table=CFF2",
+        "font.table=GSUB",
+        "font.table=HVAR",
+        "font.table=STAT",
+        "font.table=fvar"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/trt-rvrn-cff2.json",
+        "sha256": "0b2ff21a0a2e084a974da8725af4ea4f652787a47da8e74e582bdd9734b8821e",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/trt-rvrn-cff2.json",
+        "sha256": "8f9d0d32373a4c1f8cdc85d5ae129987089c41e08479d4565618682f8b774987",
+        "role": "shaping-vectors"
+      }
+    }
+  ],
+  "fontSuites": [
+    {
+      "id": "font-suites/aots",
+      "directory": "font-suites/aots",
+      "provenance": {
+        "origin": "external",
+        "license": "Apache-2.0",
+        "author": "Adobe Systems Incorporated (Annotated OpenType Specification), as distributed by the HarfBuzz project",
+        "source": "https://github.com/harfbuzz/harfbuzz/tree/c7a7457b7385f33178e8cf87615ca077a810bbe7/test/shape/data/aots"
+      },
+      "fileCount": 334,
+      "sha256": "934e916b1b32a88c673b0307865aff1ad22052f6d74619c5e2ca14ea545e92c3",
+      "description": "Fonts that each exercise one format of the cmap, class definition, coverage, GSUB or GPOS tables, and tests: a font, the options of hb-shape, characters, and the expected glyphs and positions."
     }
   ]
 }

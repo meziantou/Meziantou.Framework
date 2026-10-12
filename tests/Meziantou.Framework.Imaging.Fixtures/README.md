@@ -2,7 +2,7 @@
 
 Independent reference data for the conformance and interop tests, extended with each codec.
 
-- `manifest.json` — the versioned manifest (schema version 3: `manifest.schema.json`), **written by the reviewed generator**
+- `manifest.json` — the versioned manifest (schema version 5: `manifest.schema.json`), **written by the reviewed generator**
   `tools/Meziantou.Framework.Imaging.CorpusGenerator` (a .NET console app: the `golden` generator, `GoldenCorpus.cs`, writes
   the PNG, APNG, GIF and JPEG entries; WebP entries: `webp`, `WebPCorpus.cs`; QOI entries: `qoi`, `QoiCorpus.cs`; BMP entries:
   `bmp`, `BmpCorpus.cs`; TGA entries: `tga`, `TgaCorpus.cs`; Netpbm entries: `pnm`, `PnmCorpus.cs`; ICC profiles and
@@ -26,7 +26,10 @@ tests/Meziantou.Framework.Imaging.Fixtures/
   limit/avif/                         over-limit inputs that are not valid fixtures (an AVIF sequence with hidden frames)
   av1/                                raw AV1 OBU streams (*.obu): conformance vectors with plane digests, no raw references
   icc/profiles/   icc/vectors/        ICC profiles and colors converted between them (see Color management)
-  LICENSES/                           full texts of non-standard licenses (none yet)
+  fonts/<family>/   fonts/vectors/    font files and the values independent font readers give for them (see Fonts)
+  fonts/shaping/                      glyphs and positions the reference shaper gives for texts set in the fonts
+  font-suites/<suite>/                third-party suites of test fonts and expectations, stored as published
+  LICENSES/                           full texts of the licenses of third-party files (OFL-1.1, Apache-2.0, Unicode-3.0)
 ```
 
 - Fixture ids are lowercase paths without extension (`png/gray16-low-bit-gradient`); `format` is the container
@@ -118,6 +121,189 @@ Files are named `<input-name>.<role>.<layout>.raw` (`.raw.gz` when compressed) w
 AVIF fixtures that present the same pixels (one coded payload in several containers: the assembled layouts, the
 orientations) share their reference files, which are named after the first of them. 16-bit samples are always
 little-endian. Every frame and the poster provide the same layouts; 16-bit fixtures always include a 16-bit layout.
+
+## Fonts
+
+The `fonts` section of the manifest lists the font files of the text rendering tests. Fonts are not image fixtures:
+they have no expected pixels, and the generic conformance, hardening and fuzz suites never enumerate them. They are
+written by the `fonts` generator (`FontCorpus.cs`).
+
+| Field | Meaning |
+| --- | --- |
+| `file` | The font file and its SHA-256 |
+| `flavor` | `ttf` (TrueType outlines), `otf` (CFF outlines), `ttc` (collection), `woff`, `woff2` |
+| `faceCount` | The number of faces; more than one for a collection |
+| `modification` | `none` (the file as published, or the output of the generator), `subset` (glyphs and tables removed by the pinned `hb-subset`), `container` (the tables of `original` in another container) |
+| `reservedFontName` | The Reserved Font Name the license of the font declares, when there is one |
+| `original` | For a `container`: the id of the font it wraps |
+| `features` | Tags read from the file by the generator: `font.table=<tag>` for the tables that matter to a feature, `font.cmap=<format>`, `font.loca=short|long`, `font.container=ttc` |
+| `vectors` | The reference values of the font, a JSON file of `fonts/vectors/` |
+| `shaping` | The glyphs and positions the reference shaper gives for texts set in the font, a JSON file of `fonts/shaping/` |
+
+Three kinds of fonts are stored:
+
+- **Synthetic fonts** (`fonts/synthetic/`, `CC0-1.0`), built by `Common/FontBuilder.cs` from the descriptions of
+  `Common/FontSamples.cs`. Both files are compiled into the tests, which build the same fonts, and variants of them, in
+  memory: the geometry (coordinates that are multiples of 64 for the fonts drawn in text tests, charstrings of a few
+  operators for the CFF ones) makes the expected values of a test computable by hand. `FontCorpusTests` checks that the committed files are what the builder writes.
+- **Third-party fonts**, from the sources `FontCorpus.cs` lists with their pinned SHA-256. A font whose license allows a
+  modified copy is subset to the characters the tests need, with every layout feature kept; a font with a Reserved Font
+  Name is stored as published.
+- **Other containers** of these fonts: WOFF (written by `FontBuilder.WriteWoff`, since no pinned tool writes WOFF 1.0)
+  and WOFF2 (written by `woff2_compress`, the reference encoder). The reference encoder chooses what it transforms and
+  how it encodes each point, and it does not transform the horizontal metrics of these fonts: the WOFF2 files with a
+  variant in their name (`boxes.metrics.woff2`, `deltas.boxes.woff2`) are written by `Common/FontWoff2Writer.cs`
+  instead, with the transformations the reference encoder leaves out.
+
+The vectors of a font (`FontVectors` in the test harness) hold, for each face: the names, the units per em, the glyph
+count, the metrics the font declares (by OpenType metric tag), the character map, the advance of each glyph and the
+outline of each glyph as SVG path data in font units. They are read by the HarfBuzz utilities of the pinned
+meziantou/prebuilt release with **two independent implementations**, HarfBuzz's own font functions (`--font-funcs=ot`)
+and FreeType (`--font-funcs=ft`): a value is recorded only when both agree, and a disagreement stops the generator. The
+character map is the join of `hb-info --list-unicodes` and `--list-glyphs`, so that it does not go through shaping.
+
+A container has no vectors of its own: the generator reads it back through FreeType (`--face-loader=ft`, the only
+reader of the pinned tools that opens WOFF and WOFF2) and requires the advances and the outlines of the font it wraps;
+`woff2_decompress`, the reference decoder, must accept a WOFF2 file. The files written by `FontWoff2Writer` are
+therefore known to mean, for two independent decoders, the font they were made from. FreeType rebuilds the glyphs of
+a WOFF2 file in a buffer of the length the file declares for the glyph table and drops what does not fit: the writer
+declares the length of the table with each glyph padded to four bytes, as the reference encoder does.
+
+Two properties of the pinned readers shape the synthetic fonts. FreeType rounds the coordinates of a CFF outline to
+whole units and HarfBuzz does not, so the charstrings of the corpus only use whole numbers (fractions are tested with
+literals in `FontTests`). Both readers keep a contour of one point and always close a TrueType contour with a line to
+its first point, even a line without length: the library does the same, so that the recorded outlines compare exactly.
+
+| Font | Flavor | Faces | License | Covers |
+| --- | --- | --- | --- | --- |
+| `fonts/synthetic-boxes` | ttf | 1 | CC0-1.0 | Straight-edged glyphs, composite glyphs (offset, scale, `USE_MY_METRICS`), `cmap` formats 4 and 12, `kern`, compact glyph encoding, short `loca` |
+| `fonts/synthetic-curves` | ttf | 1 | CC0-1.0 | Quadratic contours: no on-curve point, a contour that starts off-curve, consecutive off-curve points, a hole; 16-bit glyph encoding, long `loca`, `cmap` format 12 only |
+| `fonts/synthetic-deltas` | ttf | 1 | CC0-1.0 | Points at every kind of distance from the previous one (each coordinate encoding of the glyph table and of WOFF2), instructions, the overlap flag, a composite with 16-bit offsets, contours of one and two points |
+| `fonts/synthetic-collection` | ttc | 2 | CC0-1.0 | The boxes and curves fonts in a collection |
+| `fonts/synthetic-charstrings` | otf | 1 | CC0-1.0 | CFF outlines: one glyph per group of Type 2 charstring operators (lines, curves, flex, hints and masks, widths, local and global subroutines, number encodings, empty and implicitly closed contours) |
+| `fonts/synthetic-cid` | otf | 1 | CC0-1.0 | A CID-keyed CFF font: two font DICTs whose local subroutines differ, a font DICT selector of format 3 |
+| `fonts/noto-sans-regular` | ttf | 1 | OFL-1.1 | Noto Sans Regular 2.015, subset to 232 characters (Basic Latin, Latin-1, combining marks, punctuation): 425 glyphs, `GDEF`, `GSUB`, `GPOS` |
+| `fonts/noto-sans-regular-cff` | otf | 1 | OFL-1.1 | The CFF flavor of the same font and the same characters: 421 glyphs, subroutines |
+| `fonts/noto-sans-cjk-jp-regular` | otf | 1 | OFL-1.1 | Noto Sans CJK JP Regular 2.004, subset to 408 characters (Basic Latin, kana, a few ideographs, fullwidth forms): 1,099 glyphs, a CID-keyed CFF table with several font DICTs, hints kept |
+| `fonts/synthetic-variable` | ttf | 1 | CC0-1.0 | A variable font of two axes: `fvar` with named instances, `avar`, `gvar` (deltas for every point, for some points with inferred deltas, shared and private point numbers, a region that starts away from the default, composite glyphs, phantom points), `HVAR` with a delta set index map and two subtables, `MVAR`, a glyph whose left side bearing is not the left of its outline |
+| `fonts/synthetic-variable-phantom` | ttf | 1 | CC0-1.0 | The same font without `HVAR`: the advances vary with the phantom points, and a glyph varies its origin |
+| `fonts/synthetic-variable-charstrings` | otf | 1 | CC0-1.0 | A variable font with CFF2 outlines: `blend` of one and of several values, `vsindex` in a private DICT and in a charstring, a blending subroutine, two font DICTs, a variation store of two subtables |
+| `fonts/noto-sans-variable` | ttf | 1 | OFL-1.1 | Noto Sans 2.015 variable (weight and width), subset to 123 characters (279 glyphs) with every variation table kept: `gvar`, `HVAR`, `MVAR`, `avar`, positions and anchors of `GPOS` that vary |
+| `fonts/noto-sans-cjk-jp-variable` | otf | 1 | OFL-1.1 | Noto Sans CJK JP 2.004 variable (weight), subset to 133 characters (566 glyphs): a CID-keyed `CFF2` table with several font DICTs, blended hints kept, `HVAR`, `avar` |
+| `fonts/noto-naskh-arabic` | ttf | 1 | OFL-1.1 | Noto Naskh Arabic 2.019, subset to 134 characters: the letters of Arabic, Persian and Urdu, the vowel marks and the marks that are reordered, both sets of digits, punctuation, the joiners and a few presentation forms, with the forms, the ligatures and the anchors of these letters |
+| `fonts/noto-nastaliq-urdu` | ttf | 1 | OFL-1.1 | Noto Nastaliq Urdu 4.000, subset to the letters of Urdu: cursive attachment, marks on letters that were moved, glyphs inserted to make room for dots, many contextual lookups |
+| `fonts/noto-sans-hebrew` | ttf | 1 | OFL-1.1 | Noto Sans Hebrew 3.001, stored as it is: letters, points, cantillation marks, precomposed letters, with anchors for the marks |
+| `fonts/noto-sans-hebrew-without-positioning` | ttf | 1 | OFL-1.1 | The same font without its `GPOS` table (`hb-subset --drop-tables+=GPOS`), as a font made before OpenType Layout: a letter and its point are then drawn with the precomposed letter |
+| `fonts/noto-sans-syriac` | ttf | 1 | OFL-1.1 | Noto Sans Syriac 3.000, stored as it is: the forms of the letters and of alaph (`fin2`, `fin3`, `med2`), marks, and the abbreviation mark that stretches (`stch`) |
+| `fonts/noto-sans-devanagari`, `-bengali`, `-gurmukhi`, `-gujarati`, `-oriya`, `-tamil`, `-telugu`, `-kannada`, `-malayalam` | ttf | 1 | OFL-1.1 | The Noto Sans font of each Indic script (versions 2.003 to 2.106), stored as they are: the features of the Indic shaping model under the script tag of the second version of the specifications (half forms, forms below and after the base, reph, conjuncts, presentation forms), anchors for the marks |
+| `fonts/noto-sans-devanagari-first-version`, `fonts/noto-sans-malayalam-first-version` | ttf | 1 | OFL-1.1 | The same fonts with the script tag of the first version of the specifications only (`hb-subset --layout-scripts`): the "old behavior" of the model |
+| `fonts/noto-sans-khmer` | ttf | 1 | OFL-1.1 | Noto Sans Khmer 2.004, stored as it is: the forms of the subscripts (`pref`, `blwf`, `abvf`, `pstf`, `cfar`), the parts of the split vowels, ligatures of the presentation features |
+| `fonts/noto-sans-myanmar` | ttf | 1 | OFL-1.1 | Noto Sans Myanmar 2.107, stored as it is: the features of the Myanmar shaping model under the tag `mym2` (kinzi, medials, stacked consonants), the letters of the extended blocks |
+| `fonts/noto-serif-tibetan` | ttf | 1 | OFL-1.1 | Noto Serif Tibetan 2.103, stored as it is: stacks of subjoined letters, vowel signs and marks placed by anchors, and more than two thousand substitution subtables, which a long text tries at each glyph |
+| `fonts/noto-sans-sinhala`, `-javanese`, `-balinese`, `-tai-tham`, `-cham`, `-newa`, `-kaithi`, `-lepcha` | ttf | 1 | OFL-1.1 | The Noto Sans font of scripts of the universal shaping model (versions 2.002 to 2.007), stored as they are: among them the features of the model (`rphf` in Sinhala, Newa and Kaithi; `pref` in Javanese, Cham and Newa; `akhn`, `half`, `blwf`, `abvf`, `pstf`, `vatu`, `cjct`), vowel signs Unicode decomposes, a glyph a font moves after the marks of its letter (Lepcha) |
+| `fonts/noto-sans-nko`, `-mongolian`, `-adlam` | ttf | 1 | OFL-1.1 | Noto Sans NKo 2.004, Mongolian 3.002 and Adlam 3.002, stored as they are: scripts of the universal model whose letters join (`isol`, `init`, `medi`, `fina`), two of them from right to left; the free variation selectors of Mongolian |
+| `fonts/noto-sans-duployan` | ttf | 1 | OFL-1.1 | Noto Sans Duployan 3.002, subset to a few letters, the marks and the format controls: each letter becomes many glyphs, connected by cursive attachments that several lookups make and remake, with marks attached before them; some six thousand subtables |
+| `fonts/noto-sans-thai`, `fonts/noto-sans-lao` | ttf | 1 | OFL-1.1 | Noto Sans Thai 2.002 and Noto Sans Lao 2.003, stored as they are: the marks above tall consonants and below consonants that have a tail, the sara am, ligatures of a ring and a tone mark |
+| `fonts/noto-sans-cjk-kr-regular` | otf | 1 | OFL-1.1 | Noto Sans CJK KR 2.004, subset to the letters of Hangul (the modern ones, a few of Old Hangul and of the extended blocks, the fillers), the tone marks and thirty syllables, with the glyphs the font has for a letter at each position of a block (`ljmo`, `vjmo`, `tjmo`); CFF outlines, hints kept |
+| `fonts/noto-sans-cjk-kr-letters` | otf | 1 | OFL-1.1 | The same subset without any syllable: every block is drawn with its letters |
+| `fonts/trt-*` | ttf, otf | 1 | OFL-1.1, Apache-2.0 or CC0-1.0 (see the manifest) | Ten fonts of the text-rendering-tests suite of the Unicode Consortium, stored as they are (`fonts/text-rendering-tests/`), each made for one feature: `avar`, `gvar` (also composite glyphs and regions between two values), `HVAR` with TrueType and with CFF2 outlines, `CFF2`, feature variations (`rvrn`) with both kinds of outlines, anchors of `GPOS` that vary |
+| `fonts/synthetic-color-boxes` | ttf | 1 | CC0-1.0 | A color font of rectangles: `COLR` version 0 (layers, a layer with the color of the text), `CPAL` version 1 with two palettes and their types |
+| `fonts/synthetic-color-transforms`, `-gradients`, `-clips` | ttf | 1 | CC0-1.0 | `COLR` version 1, one glyph per case: opacity, translation, scale, rotation, skew, matrix, nested clips, compositions; linear, radial and sweep gradients with each extend mode and the degenerate color lines; clip boxes, a glyph that paints another one, a glyph that paints itself |
+| `fonts/colr-test-glyphs`, `fonts/colr-test-glyphs-variable` | ttf | 1 | Apache-2.0 | The COLRv1 test glyphs of the googlefonts/color-fonts project, stored as they are: 220 glyphs, one per feature of the paints (every composition mode, extend modes of each gradient, transformations, clip boxes, the color of the text, cycles), and their variable form (18 axes that vary the fields of the paints) |
+| `fonts/colr-twemoji-smiley`, `fonts/colr-twemoji-smiley-cff2` | ttf, otf | 1 | CC-BY-4.0 | Fifteen emoji of the Twemoji set as `COLR` version 1 paints, with TrueType and with CFF2 outlines, from the same project |
+| `fonts/synthetic-bitmap-boxes`, `fonts/synthetic-color-bitmaps` | ttf | 1 | CC0-1.0 | Glyphs that are PNG images of a few flat colors, in strikes of 16 and 32 pixels per em: an `sbix` table (an image that stands for another glyph's, a glyph without image) and `CBLC` and `CBDT` tables; one glyph is an outline only |
+| `fonts/sbix-twemoji-smiley` | ttf | 1 | CC-BY-4.0 | The fifteen emoji of the same project as PNG images of an `sbix` table, in one strike of 109 pixels per em |
+| `fonts/*-woff`, `fonts/*-woff2` | woff, woff2 | as the original | as the original | WOFF of the boxes, deltas, charstrings, Noto Sans and Noto Sans CJK fonts; WOFF2 of the boxes, curves, deltas, charstrings, collection and both Noto Sans fonts |
+| `fonts/synthetic-boxes-woff2-metrics`, `fonts/synthetic-deltas-woff2-boxes` | woff2 | 1 | CC0-1.0 | Written by `FontWoff2Writer`: transformed horizontal metrics (both flags, then one), every bounding box stored |
+
+### Shaping vectors
+
+A variable font also has **instances** in its vectors: for values of its axes listed in `FontCorpus.cs`, the metrics,
+the advance of each glyph and the outline of each glyph. The advances are whole font units, on which the two readers
+must agree. The points of an instance are fractions of font units: HarfBuzz keeps them, with the precision of single
+precision numbers, where FreeType rounds the deltas of the offsets of components and gives whole units for CFF2
+outlines. The outlines recorded are those of HarfBuzz to three decimals (`hb-vector --precision=3`), once FreeType has
+drawn the same segments within two units; the tests accept a difference of 0.005 unit. The metrics of an instance are
+those of `hb-info`. A glyph whose origin varies is only in the font without `HVAR`: with that table, FreeType takes the
+side bearings from it and HarfBuzz from the phantom points.
+
+The fonts of the text-rendering-tests suite come from `test/shape/data/text-rendering-tests/fonts` of the checkout of
+HarfBuzz the AOTS suite comes from, copied to a `text-rendering-tests` directory of the fonts directory. Only the fonts
+whose own license (the one their `name` table declares, or the Apache-2.0 license of the suite when they declare none)
+is accepted by the corpus are stored; the fonts of the suite under another license are not.
+
+A color font has **renders** instead of outline vectors (`renders` of its entry, `FontRender` in the test harness):
+lines of its characters drawn by `hb-raster`, the rasterizer of the HarfBuzz utilities, as PNG files of
+`fonts/renders/`. A line is drawn in its box (`--logical`, with the ascent and the descent given by
+`--font-extents`, so that they are whole pixels) with a margin of 32 pixels, on a white background: the origin of its
+first glyph is at (margin, margin + ascent). The tests draw the same line at the same place and compare the images
+(`Conformance/ColorFontConformanceTests`): the two rasterizers anti-alias edges differently and the reference one
+works with 8-bit colors, so the test bounds the mean difference, the part of the pixels that differ by more than 24
+levels, and the size of a block of such pixels, which an edge never is. This is a cross-check of the whole pipeline,
+not an exact reference: the exact expectations are the literals of `ColorFontTests`, computed by hand on the
+synthetic color fonts, which `hb-raster` also draws.
+
+A few characters are left out of the lines (`CharactersWithoutReference` in `FontCorpus.cs`) because the reference
+renderer does not draw them as the OpenType specification says: it draws nothing for a sweep gradient that pads and
+whose angles are equal or whose stops are at one offset (the specification gives it two colors), and nothing for a
+glyph that paints the same glyph several times, which is not a cycle. These cases have literals in `ColorFontTests`.
+
+The fonts whose glyphs are images are drawn at the sizes of their strikes (`--font-ppem`, without which the reference
+renderer takes the largest strike), where a pixel of an image is a pixel of the render. The reference renderer draws
+an image one pixel higher than the specification places it (the row of an image that is on the baseline is drawn above
+it): a render records that shift (`imageShift`, in pixels, down when positive) and the test draws its line there. A
+line of these fonts has no glyph that is an outline, which the reference renderer does not shift.
+
+Regenerating the renders and the vectors runs the reference tools thousands of times. When
+`MEZIANTOU_FRAMEWORK_IMAGING_CORPUS_CACHE` names a directory, the generator keeps there the output of each command,
+keyed by its arguments and by the content of its input files, and reuses it; the variable is not set by default.
+
+The fonts of the googlefonts/color-fonts project (`fonts/color-fonts/`) come from its `fonts` directory at the commit
+`FontCorpus.cs` pins. The test glyphs are generated by a script of the project (Apache-2.0); the emoji are those of
+Twemoji (CC-BY-4.0, Twitter, Inc and other contributors).
+
+The `shaping` file of a font (`ShapingVectors` in the test harness) holds texts and what the OpenType shaper of
+HarfBuzz gives for them: `hb-shape --shapers=ot --font-funcs=ot --no-glyph-names`, with the features of the case and, for a variable font, the
+instance of the case (`--variations`). A text
+is stored as the hexadecimal code points of its characters, so that no invisible character is lost in an editor; a
+glyph is six numbers: the glyph identifier, the cluster (an index of character), the two offsets and the two advances,
+in font units. The texts are listed in `FontCorpus.cs`, chosen for what shaping does to them: kerning, ligatures, marks
+that compose or are attached, invisible characters, spaces and hyphens a font lacks, fractions, features turned on
+and off. `ShapingConformanceTests` compares the glyphs, the clusters, the place each glyph is drawn at and the
+advance of the text; how an adjustment is split between an advance and an offset is not compared.
+
+The reference shaper guesses the script of a text from its first letter and lays it out in the direction of that
+script; the test does the same, so a right-to-left text is compared in the order its glyphs are drawn in. The texts of
+Arabic, Urdu, Hebrew and Syriac are about what the shaping model of these scripts does: the forms of the letters and
+what joins or separates them, the order of the marks, the ligatures and what keeps them from forming, the forms of the
+Syriac alaph, the mark that stretches over a word, the precomposed Hebrew letters. Those of Thai and Lao are about the
+sara am and the order of the marks; those of Hangul about the letters that make a syllable or not, in a font that has
+the syllables and in one that does not, and about the tone marks. The Indic scripts share a set of cases written with
+the letters they have at the same place of their blocks (conjuncts, reph, joiners, the vowel sign drawn before its
+syllable, signs without a base, each feature of the model turned off), followed by the cases of each script. Those of
+Khmer are about the subscripts, the ro among them, the vowels with two parts and the register shifters; those of
+Myanmar about the kinzi, the medials, the marks whose order changes and the bases that are not letters. Those of the
+scripts of the universal model are about the classes of their characters (what a cluster can have, and in which order),
+the glyphs that are moved, the forms of the letters that join, and what is not a cluster. Several of them were found by
+shaping random sequences of the characters of a script with both shapers. For the font without positioning table, the
+glyphs and the clusters are compared and the positions are not: the reference shaper then places marks from the shape
+of the glyphs, by rules of its own.
+
+There is one reference shaper: the pinned tools have no other one. A difference with it is settled by the
+specifications, and a deliberate one is listed in the test with its reason.
+
+### Font suites
+
+The `fontSuites` section lists third-party suites of test fonts, each a directory stored as published and identified
+as a whole: the number of its files and the SHA-256 of their list (for each file, by ordinal order of its path, the
+path, a line feed, the SHA-256 of its content, a line feed).
+
+| Suite | License | Content |
+| --- | --- | --- |
+| `font-suites/aots` | Apache-2.0 | The Annotated OpenType Specification tests of Adobe, as the HarfBuzz project distributes them (`test/shape/data/aots` at the commit the manifest records): 205 fonts that each exercise one format of the `cmap`, class definition, coverage, `GSUB` or `GPOS` tables, and 128 files of tests (a font, the options of `hb-shape`, characters, the expected glyphs and positions). `ShapingSuiteTests` runs every test that is not commented out; the commented ones are the cases HarfBuzz itself does not pass |
+
+The generator copies a suite from a directory of the fonts directory (`aots`) and refuses a content whose hash is not
+the pinned one. The tools HarfBuzz keeps next to the suite (its test driver and build files) are not copied.
 
 ## Color management
 
@@ -1461,6 +1647,18 @@ tool version to see what changes; the interop CI job runs it on every build to d
   dotnet run --project tools/Meziantou.Framework.Imaging.CorpusGenerator -- icc-builtin          # check
   dotnet run --project tools/Meziantou.Framework.Imaging.CorpusGenerator -- icc-builtin --write  # replace, then review the diff
   ```
+- `fonts` (`FontCorpus.cs`; any OS; the HarfBuzz utilities `hb-info`, `hb-shape`, `hb-vector`, `hb-subset` and the
+  woff2 tools of the pinned meziantou/prebuilt release) writes the `fonts` section and the `fonts/` directory, and
+  keeps the rest of the corpus unchanged. It needs the third-party font files listed in `FontCorpus.cs`, downloaded
+  from their pinned sources into one directory given by `--fonts <directory>`; each file is checked against its pinned
+  SHA-256 before it is used. The same directory holds the font suites: `aots` is `test/shape/data/aots` of a checkout of
+  HarfBuzz at the commit pinned in the generator. The generator also records the shaping vectors. The WOFF files are compressed by the zlib of the runtime that runs the generator, which
+  the manifest records: they are reproducible with that runtime.
+
+  ```shell
+  dotnet run --project tools/Meziantou.Framework.Imaging.CorpusGenerator -- fonts --fonts <directory>          # check
+  dotnet run --project tools/Meziantou.Framework.Imaging.CorpusGenerator -- fonts --fonts <directory> --write  # replace, then review the diff
+  ```
 - To add fixtures for a feature: add a builder (or a case) to the generator, run it with `--write`, review the diff and
   the cross-check results in the manifest, update the [coverage matrix](#fixture-coverage-matrix), and reference the
   fixture ids from the feature's tests.
@@ -1517,7 +1715,21 @@ undiscriminating tolerances and error fixtures with expected pixels fail the bui
 
 ### Allowed fixture licenses
 
-`CC0-1.0`, `MIT`, `Unlicense`, `CC-BY-4.0`, `Libpng`, `Zlib`.
+`CC0-1.0`, `MIT`, `Unlicense`, `CC-BY-4.0`, `Libpng`, `Zlib`, `Apache-2.0`, `Unicode-3.0`, and `OFL-1.1` for font
+files only.
+
+The SIL Open Font License is accepted for the entries of the `fonts` section and for nothing else, because open fonts
+for most scripts exist under no other license. Its conditions are met as follows, and the validator enforces the ones
+it can check:
+
+- A font stays under the OFL, with its copyright notice (in its `name` table) and the license text
+  (`LICENSES/OFL-1.1.txt`). It is test data only: it is never embedded in a package or in a test assembly.
+- A font with a Reserved Font Name is stored exactly as published (`modification: none`): no subset, no other
+  container. A font without one may be subset by the pinned subsetter or stored in another container.
+- A third-party font always names its source, with the commit or the version it was taken from.
+
+`Apache-2.0` and `Unicode-3.0` are the licenses of the test suites and test fonts published for font implementations;
+their texts are in `LICENSES/`.
 
 Content created by contributors for this repository (hand-authored patterns, outputs of committed generators, and files
 produced by running third-party tools on such content) is contributed under `CC0-1.0` unless stated otherwise. Tool

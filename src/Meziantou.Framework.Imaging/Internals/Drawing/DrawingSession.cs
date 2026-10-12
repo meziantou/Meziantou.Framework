@@ -1,4 +1,5 @@
 using Meziantou.Framework.Imaging.Drawing;
+using Meziantou.Framework.Imaging.Typography;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -18,7 +19,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// (edges, sweep, gradient stops) grows to the largest call and is kept until the session ends.
 /// </para>
 /// </remarks>
-internal sealed class DrawingSession : IDisposable
+internal sealed partial class DrawingSession : IDisposable
 {
     private readonly Image _image;
     private readonly ImageFrame[] _frames;
@@ -31,6 +32,9 @@ internal sealed class DrawingSession : IDisposable
     private FillSink? _fillSink;
     private Stroker? _stroker;
     private GradientEvaluator? _gradient;
+    private GlyphPathSink? _glyphSink;
+    private GlyphScratch? _glyphScratch;
+    private PathMeasure? _pathMeasure;
     private bool _thumbnailRemoved;
 
     private DrawingSession(Image image, ImageFrame[] frames, PixelStorage[] storages, CancellationToken cancellationToken)
@@ -195,9 +199,114 @@ internal sealed class DrawingSession : IDisposable
         RenderStroke(pen);
     }
 
+    public void FillText(Brush brush, TextLayout layout, PointD origin)
+    {
+        ArgumentNullException.ThrowIfNull(brush);
+        ArgumentNullException.ThrowIfNull(layout);
+        DrawingGuard.Point(origin, nameof(origin));
+        var glyphSink = _glyphSink ??= new GlyphPathSink();
+        var scratch = _glyphScratch ??= new GlyphScratch(_image.Owner.Scope);
+        if (layout.BrushCount <= 1 && !layout.HasColorGlyphs)
+        {
+            layout.Emit(BeginFill(), glyphSink, scratch, origin.X, origin.Y, _edges, brush: -1);
+            Render(layout.BrushCount == 0 ? brush : layout.GetBrush(0) ?? brush, FillRule.NonZero);
+            return;
+        }
+
+        // A text of several paints is one shape per paint, and each color glyph is drawn on its own. Every rental of
+        // a call happens before its first pixel write: each shape is prepared once without being painted, so that the
+        // working storage has grown to the largest of them, then the shapes are painted in the order of the paints,
+        // and the color glyphs after them.
+        for (var i = 0; i < layout.BrushCount; i++)
+        {
+            layout.Emit(BeginFill(), glyphSink, scratch, origin.X, origin.Y, _edges, i, skipColorGlyphs: true);
+            Prepare(layout.GetBrush(i) ?? brush, FillRule.NonZero, out _, out _);
+        }
+
+        DrawColorGlyphs(brush, layout, origin.X, origin.Y, measure: null, options: null, paint: false);
+        for (var i = 0; i < layout.BrushCount; i++)
+        {
+            layout.Emit(BeginFill(), glyphSink, scratch, origin.X, origin.Y, _edges, i, skipColorGlyphs: true);
+            Render(layout.GetBrush(i) ?? brush, FillRule.NonZero);
+        }
+
+        DrawColorGlyphs(brush, layout, origin.X, origin.Y, measure: null, options: null, paint: true);
+    }
+
+    public void StrokeText(Pen pen, TextLayout layout, PointD origin)
+    {
+        ArgumentNullException.ThrowIfNull(pen);
+        ArgumentNullException.ThrowIfNull(layout);
+        DrawingGuard.Point(origin, nameof(origin));
+        var sink = BeginStroke(pen);
+        layout.Emit(sink, _glyphSink ??= new GlyphPathSink(), _glyphScratch ??= new GlyphScratch(_image.Owner.Scope), origin.X, origin.Y, edges: null, brush: -1);
+        RenderStroke(pen);
+    }
+
+    public void FillText(Brush brush, TextLayout layout, VectorPath path, TextPathOptions? options)
+    {
+        ArgumentNullException.ThrowIfNull(brush);
+        ArgumentNullException.ThrowIfNull(layout);
+        ArgumentNullException.ThrowIfNull(path);
+        options ??= TextPathOptions.Default;
+        var measure = Measure(path);
+        var glyphSink = _glyphSink ??= new GlyphPathSink();
+        var scratch = _glyphScratch ??= new GlyphScratch(_image.Owner.Scope);
+        if (layout.BrushCount <= 1 && !layout.HasColorGlyphs)
+        {
+            layout.EmitOnPath(BeginFill(), glyphSink, scratch, measure, options, _edges, brush: -1);
+            Render(layout.BrushCount == 0 ? brush : layout.GetBrush(0) ?? brush, FillRule.NonZero);
+            return;
+        }
+
+        // As for a text at a point: every shape is prepared before the first one is painted.
+        for (var i = 0; i < layout.BrushCount; i++)
+        {
+            layout.EmitOnPath(BeginFill(), glyphSink, scratch, measure, options, _edges, i, skipColorGlyphs: true);
+            Prepare(layout.GetBrush(i) ?? brush, FillRule.NonZero, out _, out _);
+        }
+
+        DrawColorGlyphs(brush, layout, 0, 0, measure, options, paint: false);
+        for (var i = 0; i < layout.BrushCount; i++)
+        {
+            layout.EmitOnPath(BeginFill(), glyphSink, scratch, measure, options, _edges, i, skipColorGlyphs: true);
+            Render(layout.GetBrush(i) ?? brush, FillRule.NonZero);
+        }
+
+        DrawColorGlyphs(brush, layout, 0, 0, measure, options, paint: true);
+    }
+
+    public void StrokeText(Pen pen, TextLayout layout, VectorPath path, TextPathOptions? options)
+    {
+        ArgumentNullException.ThrowIfNull(pen);
+        ArgumentNullException.ThrowIfNull(layout);
+        ArgumentNullException.ThrowIfNull(path);
+        var measure = Measure(path);
+        var sink = BeginStroke(pen);
+        layout.EmitOnPath(sink, _glyphSink ??= new GlyphPathSink(), _glyphScratch ??= new GlyphScratch(_image.Owner.Scope), measure, options ?? TextPathOptions.Default, edges: null, brush: -1);
+        RenderStroke(pen);
+    }
+
+    /// <summary>Flattens a path and measures its chords.</summary>
+    private PathMeasure Measure(VectorPath path)
+    {
+        var measure = _pathMeasure ??= new PathMeasure(_image.Owner.Scope);
+        measure.Reset();
+        PathFlattener.Flatten(path, measure);
+        return measure;
+    }
+
     public void Dispose()
     {
         IsActive = false;
+        _pathMeasure?.Dispose();
+        _pathMeasure = null;
+        _colorSurface?.Dispose();
+        _colorSurface = null;
+        _foregroundGradient?.Dispose();
+        _foregroundGradient = null;
+        _glyphScratch?.Dispose();
+        _glyphScratch = null;
         _gradient?.Dispose();
         _rasterizer?.Dispose();
         _edges?.Dispose();
@@ -268,28 +377,7 @@ internal sealed class DrawingSession : IDisposable
     /// <summary>Rasterizes the edges of the call and composites every row onto every frame.</summary>
     private void Render(Brush brush, FillRule fillRule)
     {
-        var edges = _edges!;
-        if (edges.Count == 0)
-            return;
-
-        DrawingColor color = default;
-        GradientEvaluator? gradient = null;
-        if (brush is SolidBrush solid)
-        {
-            color = _frames[0].ConvertDrawingColor(solid.Color);
-            if (color.Alpha == 0)
-                return;
-        }
-        else
-        {
-            gradient = _gradient ??= new GradientEvaluator(_image.Owner.Scope);
-            gradient.Prepare((GradientBrush)brush, _frames[0], Width);
-            if (gradient.IsTransparent)
-                return;
-        }
-
-        var rasterizer = _rasterizer!;
-        if (!rasterizer.Begin(edges, fillRule, _cancellationToken))
+        if (!Prepare(brush, fillRule, out var color, out var gradient))
             return;
 
         if (!_thumbnailRemoved)
@@ -299,6 +387,7 @@ internal sealed class DrawingSession : IDisposable
             _thumbnailRemoved = true;
         }
 
+        var rasterizer = _rasterizer!;
         while (rasterizer.MoveNext())
         {
             var y = rasterizer.Y;
@@ -310,5 +399,32 @@ internal sealed class DrawingSession : IDisposable
                 _frames[i].CompositePixels(_storages[i], y, x, coverage, source);
             }
         }
+    }
+
+    /// <summary>Prepares the paint and the sweep of the edges of the call: every rental happens here, and no pixel is changed.</summary>
+    /// <returns><see langword="false"/> when there is nothing to paint.</returns>
+    private bool Prepare(Brush brush, FillRule fillRule, out DrawingColor color, out GradientEvaluator? gradient)
+    {
+        color = default;
+        gradient = null;
+        var edges = _edges!;
+        if (edges.Count == 0)
+            return false;
+
+        if (brush is SolidBrush solid)
+        {
+            color = _frames[0].ConvertDrawingColor(solid.Color);
+            if (color.Alpha == 0)
+                return false;
+        }
+        else
+        {
+            gradient = _gradient ??= new GradientEvaluator(_image.Owner.Scope);
+            gradient.Prepare((GradientBrush)brush, _frames[0], Width);
+            if (gradient.IsTransparent)
+                return false;
+        }
+
+        return _rasterizer!.Begin(edges, fillRule, _cancellationToken);
     }
 }

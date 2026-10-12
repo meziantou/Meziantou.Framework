@@ -8,14 +8,15 @@ namespace Meziantou.Framework.Imaging.TestHarness.Fixtures;
 /// </summary>
 /// <remarks>
 /// Schema version 2 adds the expected displayed frames with exact raw-buffer layouts, timing/metadata
-/// expectations, reference provenance and cross-checks, comparison policies, and expected errors. The manifest is written
+/// expectations, reference provenance and cross-checks, comparison policies, and expected errors. Schema version 4 adds
+/// the fonts of the text rendering tests (<see cref="Fonts"/>). The manifest is written
 /// by the reviewed generator <c>tools/Meziantou.Framework.Imaging.CorpusGenerator</c>; it is authoritative for interpreting raw
 /// buffers, which carry no dimensions or timing.
 /// </remarks>
 public sealed class FixtureManifest
 {
     /// <summary>The schema version understood by this harness.</summary>
-    public const int CurrentSchemaVersion = 3;
+    public const int CurrentSchemaVersion = 5;
 
     /// <summary>Gets the optional reference to the JSON schema, for editors.</summary>
     [JsonPropertyName("$schema")]
@@ -47,4 +48,12 @@ public sealed class FixtureManifest
     /// <summary>Gets the reference color conversions between <see cref="ColorProfiles"/>.</summary>
     [JsonPropertyName("colorTransforms")]
     public IReadOnlyList<ColorTransformEntry>? ColorTransforms { get; init; }
+
+    /// <summary>Gets the font files of the text rendering tests, with the reference values recorded from independent font readers.</summary>
+    [JsonPropertyName("fonts")]
+    public IReadOnlyList<FontEntry>? Fonts { get; init; }
+
+    /// <summary>The third-party suites of test fonts, each a directory stored as published.</summary>
+    [JsonPropertyName("fontSuites")]
+    public IReadOnlyList<FontSuiteEntry>? FontSuites { get; init; }
 }

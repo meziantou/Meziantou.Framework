@@ -28,6 +28,12 @@
     <Compile Include="..\..\benchmarks\ImagingBenchmarks\Workloads\*.cs" LinkBase="Conformance\Benchmarks\Workloads" />
     <!-- The font builder and the synthetic fonts are shared with the corpus generator, which writes these fonts to the corpus -->
     <Compile Include="..\..\tools\Meziantou.Framework.Imaging.CorpusGenerator\Common\Font*.cs" LinkBase="Shared" />
+    <!--
+      The lists of the files each section of the manifest references, as the corpus generator computes them to keep the
+      sections a generator does not own (Conformance/CorpusManifestTests), with its manifest object type
+    -->
+    <Compile Include="..\..\tools\Meziantou.Framework.Imaging.CorpusGenerator\Infrastructure\CorpusDriver.Files.cs" LinkBase="Shared\CorpusGenerator" />
+    <Compile Include="..\..\tools\Meziantou.Framework.Imaging.CorpusGenerator\GlobalUsings.cs" LinkBase="Shared\CorpusGenerator" />
   </ItemGroup>
 
   <ItemGroup>

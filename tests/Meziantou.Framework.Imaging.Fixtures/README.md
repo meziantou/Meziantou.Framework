@@ -1536,6 +1536,13 @@ tool version to see what changes; the interop CI job runs it on every build to d
 
 - The generators are the subcommands of one .NET console app (`tools/Meziantou.Framework.Imaging.CorpusGenerator`) and
   never use the library under test.
+- A generator writes a whole corpus to a temporary directory: its own entries and files, and a copy of the files the
+  other sections of the committed manifest reference. `--write` then removes every committed file that is not in that
+  directory. The files each section references are listed in `Infrastructure/CorpusDriver.Files.cs`: a section that
+  gains a kind of file (the `renders` of a font, for instance) must be added there, or the next `--write` of another
+  generator deletes those files. A generator stops before comparing or writing when its manifest describes a file its
+  output does not have, or when its output has a file these lists do not name, and `CorpusManifestTests` checks the
+  lists against the committed corpus.
 - Requirements of `golden`: macOS (Apple ImageIO `sips`: JPEG cross-checks and PNG arbitration; `swift` from the Xcode
   command line tools runs `imageio_frames.swift` for the APNG cross-checks), the .NET SDK of `global.json` (the generator
   targets .NET 10 and has no dependency on the library), FFmpeg, libjpeg-turbo `cjpeg`/`djpeg`/`jpegtran` and LittleCMS

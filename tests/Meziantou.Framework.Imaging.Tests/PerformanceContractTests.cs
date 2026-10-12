@@ -124,6 +124,14 @@ public sealed class PerformanceContractTests
             canvas.StrokeLine(state.Pen, new PointD(1, 1), new PointD(60, 44));
             canvas.StrokeBezier(state.Pen, new PointD(2, 2), new PointD(30, 46), new PointD(62, 3));
             canvas.StrokeBezier(state.Pen, new PointD(2, 46), new PointD(20, 0), new PointD(40, 47), new PointD(62, 20));
+            canvas.FillRoundedRectangle(state.Gradient, new RectangleD(3.5, 2.25, 40, 30), 6.5);
+            canvas.StrokeRoundedRectangle(state.Pen, new Rectangle(5, 5, 20, 20), 100);
+            canvas.FillPie(state.Solid, new PointD(30, 20), 17.5, 20, 250);
+            canvas.StrokeArc(state.Pen, new PointD(30, 20), 17.5, -30, -400);
+            ReadOnlySpan<PointD> points = [new(2, 3), new(60, 10), new(20, 44), new(40, 1), new(5, 40)];
+            canvas.FillPolygon(state.Solid, points, FillRule.EvenOdd);
+            canvas.StrokePolygon(state.Pen, points);
+            canvas.StrokePolyline(state.Pen, points);
 
             // Text: quadratic outlines, charstrings with subroutines, composite glyphs and kerning
             canvas.FillText(state.Gradient, state.Text, new PointD(2.5, 3));

@@ -250,6 +250,11 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
 - A path is transformed exactly (`VectorPath.Transform`): the control points of its curves, and an ellipse as its
   center and two conjugate half-diameters (`PathCommand.EllipseAxes`), flattened like the circle it is the image of.
   Never replace an ellipse by Bézier curves. `AffineTransform` gets its sines and cosines from `DeterministicAngle`.
+- An arc is stored as pieces of at most a quarter turn (`ArcPiece`, `ArcGeometry`): the ellipse, the unit vectors of
+  both ends and the exact end point. Only the ends of the pieces come from angles (`DeterministicAngle`); the points
+  inside a piece come from bisection, as for round joins. The end point is given, never computed: a shape made of arcs
+  and segments (a rounded rectangle) has no gap and no segment of a few units of the last place, which a stroke would
+  turn into a spike. The shapes with arcs are written once over `IPathReceiver`, for the builder and for the sinks.
 - A stroke is a union of convex pieces with one orientation (`Stroker`): overlaps are harmless because the coverage is
   the area of the union. The 1/16 pixel flattening tolerance is public; the positions of the chord vertices are not.
 - Every rental of a draw call happens before its first pixel write (edges, then the sweep and gradient scratch in

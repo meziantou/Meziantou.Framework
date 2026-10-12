@@ -1099,6 +1099,13 @@ namespace Meziantou.Framework.Imaging.Drawing
         public void Stroke(Meziantou.Framework.Imaging.Drawing.Pen pen, Meziantou.Framework.Imaging.Drawing.VectorPath path) { }
         public void FillRectangle(Meziantou.Framework.Imaging.Drawing.Brush brush, Meziantou.Framework.Imaging.RectangleD rectangle) { }
         public void StrokeRectangle(Meziantou.Framework.Imaging.Drawing.Pen pen, Meziantou.Framework.Imaging.RectangleD rectangle) { }
+        public void FillRoundedRectangle(Meziantou.Framework.Imaging.Drawing.Brush brush, Meziantou.Framework.Imaging.RectangleD rectangle, double radius) { }
+        public void StrokeRoundedRectangle(Meziantou.Framework.Imaging.Drawing.Pen pen, Meziantou.Framework.Imaging.RectangleD rectangle, double radius) { }
+        public void FillPolygon(Meziantou.Framework.Imaging.Drawing.Brush brush, System.ReadOnlySpan<Meziantou.Framework.Imaging.PointD> points, Meziantou.Framework.Imaging.Drawing.FillRule fillRule = Meziantou.Framework.Imaging.Drawing.FillRule.NonZero) { }
+        public void StrokePolygon(Meziantou.Framework.Imaging.Drawing.Pen pen, System.ReadOnlySpan<Meziantou.Framework.Imaging.PointD> points) { }
+        public void StrokePolyline(Meziantou.Framework.Imaging.Drawing.Pen pen, System.ReadOnlySpan<Meziantou.Framework.Imaging.PointD> points) { }
+        public void FillPie(Meziantou.Framework.Imaging.Drawing.Brush brush, Meziantou.Framework.Imaging.PointD center, double radius, double startAngle, double sweepAngle) { }
+        public void StrokeArc(Meziantou.Framework.Imaging.Drawing.Pen pen, Meziantou.Framework.Imaging.PointD center, double radius, double startAngle, double sweepAngle) { }
         public void FillEllipse(Meziantou.Framework.Imaging.Drawing.Brush brush, Meziantou.Framework.Imaging.PointD center, double radiusX, double radiusY) { }
         public void StrokeEllipse(Meziantou.Framework.Imaging.Drawing.Pen pen, Meziantou.Framework.Imaging.PointD center, double radiusX, double radiusY) { }
         public void FillCircle(Meziantou.Framework.Imaging.Drawing.Brush brush, Meziantou.Framework.Imaging.PointD center, double radius) { }
@@ -1235,9 +1242,17 @@ namespace Meziantou.Framework.Imaging.Drawing
         public Meziantou.Framework.Imaging.Drawing.VectorPathBuilder QuadraticBezierTo(Meziantou.Framework.Imaging.PointD control, Meziantou.Framework.Imaging.PointD point) => throw null;
         public Meziantou.Framework.Imaging.Drawing.VectorPathBuilder CubicBezierTo(double control1X, double control1Y, double control2X, double control2Y, double x, double y) => throw null;
         public Meziantou.Framework.Imaging.Drawing.VectorPathBuilder CubicBezierTo(Meziantou.Framework.Imaging.PointD control1, Meziantou.Framework.Imaging.PointD control2, Meziantou.Framework.Imaging.PointD point) => throw null;
+        public Meziantou.Framework.Imaging.Drawing.VectorPathBuilder ArcTo(double radiusX, double radiusY, double rotation, bool largeArc, bool clockwise, double x, double y) => throw null;
+        public Meziantou.Framework.Imaging.Drawing.VectorPathBuilder ArcTo(double radiusX, double radiusY, double rotation, bool largeArc, bool clockwise, Meziantou.Framework.Imaging.PointD point) => throw null;
+        public Meziantou.Framework.Imaging.Drawing.VectorPathBuilder ArcTo(Meziantou.Framework.Imaging.PointD center, double radiusX, double radiusY, double startAngle, double sweepAngle) => throw null;
+        public Meziantou.Framework.Imaging.Drawing.VectorPathBuilder AddArc(Meziantou.Framework.Imaging.PointD center, double radiusX, double radiusY, double startAngle, double sweepAngle) => throw null;
+        public Meziantou.Framework.Imaging.Drawing.VectorPathBuilder AddPie(Meziantou.Framework.Imaging.PointD center, double radiusX, double radiusY, double startAngle, double sweepAngle) => throw null;
         public Meziantou.Framework.Imaging.Drawing.VectorPathBuilder Close() => throw null;
         public Meziantou.Framework.Imaging.Drawing.VectorPathBuilder AddRectangle(Meziantou.Framework.Imaging.RectangleD rectangle) => throw null;
+        public Meziantou.Framework.Imaging.Drawing.VectorPathBuilder AddRoundedRectangle(Meziantou.Framework.Imaging.RectangleD rectangle, double radius) => throw null;
+        public Meziantou.Framework.Imaging.Drawing.VectorPathBuilder AddRoundedRectangle(Meziantou.Framework.Imaging.RectangleD rectangle, double radiusX, double radiusY) => throw null;
         public Meziantou.Framework.Imaging.Drawing.VectorPathBuilder AddEllipse(Meziantou.Framework.Imaging.PointD center, double radiusX, double radiusY) => throw null;
+        public Meziantou.Framework.Imaging.Drawing.VectorPathBuilder AddEllipse(Meziantou.Framework.Imaging.PointD center, double radiusX, double radiusY, double rotation) => throw null;
         public Meziantou.Framework.Imaging.Drawing.VectorPathBuilder AddCircle(Meziantou.Framework.Imaging.PointD center, double radius) => throw null;
         public Meziantou.Framework.Imaging.Drawing.VectorPathBuilder AddPolygon(System.ReadOnlySpan<Meziantou.Framework.Imaging.PointD> points) => throw null;
         public Meziantou.Framework.Imaging.Drawing.VectorPath Build() => throw null;

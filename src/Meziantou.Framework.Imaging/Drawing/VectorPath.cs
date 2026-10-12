@@ -3,7 +3,7 @@ using Meziantou.Framework.Imaging.Internals;
 namespace Meziantou.Framework.Imaging.Drawing;
 
 /// <summary>
-/// An immutable sequence of contours made of straight segments and Bézier curves, built with a <see cref="VectorPathBuilder"/>
+/// An immutable sequence of contours made of straight segments, Bézier curves and arcs of ellipses, built with a <see cref="VectorPathBuilder"/>
 /// and drawn with <see cref="DrawingCanvas.Fill(Brush, VectorPath, FillRule)"/> or <see cref="DrawingCanvas.Stroke(Pen, VectorPath)"/>.
 /// </summary>
 /// <remarks>
@@ -27,7 +27,8 @@ public sealed class VectorPath
 
     /// <summary>
     /// Gets the smallest rectangle containing every point and control point of the path (a curve lies inside the box of
-    /// its control points). It does not account for the width of a stroke. Empty for an empty path.
+    /// its control points; the control point of an arc of a quarter turn at most is where the tangents at its ends
+    /// meet). It does not account for the width of a stroke. Empty for an empty path.
     /// </summary>
     public RectangleD Bounds { get; }
 
@@ -94,6 +95,19 @@ public sealed class VectorPath
                     AddVector(points, transform, source[index + 2], source[index + 3]);
                     AddVector(points, transform, source[index + 4], source[index + 5]);
                     index += 6;
+                    break;
+
+                case PathCommand.Arc or PathCommand.ArcContinuation:
+                    // The unit vectors of the ends of the arc are those of the circle the ellipse is the image of
+                    AddPoint(points, transform, source[index], source[index + 1]);
+                    AddVector(points, transform, source[index + 2], source[index + 3]);
+                    AddVector(points, transform, source[index + 4], source[index + 5]);
+                    points.Add(source[index + 6]);
+                    points.Add(source[index + 7]);
+                    points.Add(source[index + 8]);
+                    points.Add(source[index + 9]);
+                    AddPoint(points, transform, source[index + 10], source[index + 11]);
+                    index += ArcPiece.CoordinateCount;
                     break;
             }
         }
@@ -164,6 +178,14 @@ public sealed class VectorPath
                     // The ellipse is inside the parallelogram of its two half-diameters
                     Include(points[index], points[index + 1], Math.Abs(points[index + 2]) + Math.Abs(points[index + 4]), Math.Abs(points[index + 3]) + Math.Abs(points[index + 5]));
                     index += 6;
+                    break;
+
+                case PathCommand.Arc or PathCommand.ArcContinuation:
+                    // An arc is inside the triangle of its ends and of the point where their tangents meet
+                    new ArcPiece(points.Slice(index, ArcPiece.CoordinateCount), isContinuation: false).GetCorner(out var cornerX, out var cornerY);
+                    Include(cornerX, cornerY, 0, 0);
+                    Include(points[index + 10], points[index + 11], 0, 0);
+                    index += ArcPiece.CoordinateCount;
                     break;
             }
         }

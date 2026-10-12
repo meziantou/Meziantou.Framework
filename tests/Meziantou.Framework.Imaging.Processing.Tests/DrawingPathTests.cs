@@ -3,6 +3,7 @@ using Meziantou.Framework.Imaging.Drawing;
 namespace Meziantou.Framework.Imaging.Tests;
 
 /// <summary>Building paths: contours, the current point, bounds, validation, and the equivalence of the shortcuts of the canvas.</summary>
+[SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
 public sealed class DrawingPathTests
 {
     private static readonly Brush White = new SolidBrush(new Rgba32(255, 255, 255));
@@ -306,6 +307,410 @@ public sealed class DrawingPathTests
         using var image = new Image<Gray8>(12, 4, new Gray8(0));
         image.Draw(canvas => canvas.Fill(White, flat), Ct);
         Assert.Equal(new int[48], DrawingTestSupport.ReadSamples(image.Frames[0]));
+    }
+
+    [Fact]
+    public void AnArcBetweenTwoPointsFollowsItsFlags()
+    {
+        // From (0, 5) to (10, 5) with a radius of 5: half the circle around (5, 5). Clockwise on the image is over the top.
+        var over = Flatten(new VectorPathBuilder().MoveTo(0, 5).ArcTo(5, 5, 0, largeArc: false, clockwise: true, 10, 5).Build());
+        Assert.Equal((0d, 5d), over[0]);
+        Assert.Equal((10d, 5d), over[^1]);
+        Assert.Contains((5d, 0d), over);
+        Assert.All(over, point => Assert.Equal(5, Math.Sqrt(((point.X - 5) * (point.X - 5)) + ((point.Y - 5) * (point.Y - 5))), 1e-12));
+        Assert.All(over, point => Assert.True(point.Y <= 5));
+
+        var under = Flatten(new VectorPathBuilder().MoveTo(0, 5).ArcTo(5, 5, 0, largeArc: true, clockwise: false, new PointD(10, 5)).Build());
+        Assert.Equal((10d, 5d), under[^1]);
+        Assert.Contains((5d, 10d), under);
+        Assert.All(under, point => Assert.True(point.Y >= 5));
+
+        // With a radius of sqrt(50), two circles pass through (0, 0) and (10, 0): around (5, 5) and around (5, -5)
+        var radius = Math.Sqrt(50);
+        foreach (var (largeArc, clockwise, centerY, extremeY) in new[]
+        {
+            (false, true, 5d, 5 - radius),
+            (false, false, -5d, radius - 5),
+            (true, true, -5d, -5 - radius),
+            (true, false, 5d, 5 + radius),
+        })
+        {
+            var points = Flatten(new VectorPathBuilder().MoveTo(0, 0).ArcTo(radius, radius, 0, largeArc, clockwise, 10, 0).Build());
+            Assert.Equal((0d, 0d), points[0]);
+            Assert.Equal((10d, 0d), points[^1]);
+            Assert.All(points, point => Assert.Equal(radius, Math.Sqrt(((point.X - 5) * (point.X - 5)) + ((point.Y - centerY) * (point.Y - centerY))), 1e-9));
+            Assert.Equal(extremeY, clockwise ? points.Min(point => point.Y) : points.Max(point => point.Y), 1e-9);
+            Assert.Equal(largeArc, points.Any(point => point.X < -1) && points.Any(point => point.X > 11));
+        }
+    }
+
+    [Fact]
+    public void AnArcBetweenTwoPointsEnlargesRadiiThatAreTooSmallAndTurnsWithItsRotation()
+    {
+        // Radii of 1 cannot join two points 10 apart: they become 5
+        var enlarged = Flatten(new VectorPathBuilder().MoveTo(0, 5).ArcTo(1, 1, 0, largeArc: false, clockwise: true, 10, 5).Build());
+        Assert.Equal((10d, 5d), enlarged[^1]);
+        Assert.All(enlarged, point => Assert.Equal(5, Math.Sqrt(((point.X - 5) * (point.X - 5)) + ((point.Y - 5) * (point.Y - 5))), 1e-9));
+
+        // In proportion: radii of 1 and 2 become 5 and 10
+        var ellipse = Flatten(new VectorPathBuilder().MoveTo(0, 5).ArcTo(1, 2, 0, largeArc: false, clockwise: true, 10, 5).Build());
+        Assert.All(ellipse, point => Assert.Equal(1, (((point.X - 5) / 5) * ((point.X - 5) / 5)) + (((point.Y - 5) / 10) * ((point.Y - 5) / 10)), 1e-9));
+        Assert.Equal(-5, ellipse.Min(point => point.Y), 1e-9);
+
+        // An ellipse turned by a quarter turn is the ellipse whose radii are exchanged
+        var turned = Flatten(new VectorPathBuilder().MoveTo(1, 2).ArcTo(3, 7, 90, largeArc: true, clockwise: false, 4, 6).Build());
+        var exchanged = Flatten(new VectorPathBuilder().MoveTo(1, 2).ArcTo(7, 3, 0, largeArc: true, clockwise: false, 4, 6).Build());
+        Assert.HasCount(exchanged.Count, turned);
+        for (var i = 0; i < turned.Count; i++)
+        {
+            Assert.Equal(exchanged[i].X, turned[i].X, 1e-9);
+            Assert.Equal(exchanged[i].Y, turned[i].Y, 1e-9);
+        }
+
+        // Without a radius the arc is a straight segment; to the current point it is nothing
+        Assert.Equal([(1d, 2d), (4d, 6d)], Flatten(new VectorPathBuilder().MoveTo(1, 2).ArcTo(0, 5, 0, largeArc: false, clockwise: true, 4, 6).Build()));
+        Assert.Equal([(1d, 2d), (4d, 6d)], Flatten(new VectorPathBuilder().MoveTo(1, 2).ArcTo(5, 0, 30, largeArc: true, clockwise: true, 4, 6).Build()));
+        Assert.Equal([(1d, 2d)], Flatten(new VectorPathBuilder().MoveTo(1, 2).ArcTo(5, 5, 0, largeArc: true, clockwise: true, 1, 2).Build()));
+
+        // An arc continues the contour: the next segment starts at its end
+        Assert.Equal((7d, 7d), Flatten(new VectorPathBuilder().MoveTo(0, 5).ArcTo(5, 5, 0, largeArc: false, clockwise: true, 10, 5).LineTo(7, 7).Build())[^1]);
+    }
+
+    [Fact]
+    public void AnArcAroundACenterStartsAtItsFirstAngleAndTurnsClockwiseWhenItsSweepIsPositive()
+    {
+        // A quarter of the ellipse of radii 4 and 2 around (10, 10), from the right of the center to under it
+        var quarter = Flatten(new VectorPathBuilder().AddArc(new PointD(10, 10), 4, 2, 0, 90).Build());
+        Assert.Equal((14d, 10d), quarter[0]);
+        Assert.Equal((10d, 12d), quarter[^1]);
+        Assert.All(quarter, point => Assert.Equal(1, (((point.X - 10) / 4) * ((point.X - 10) / 4)) + (((point.Y - 10) / 2) * ((point.Y - 10) / 2)), 1e-12));
+        Assert.All(quarter, point => Assert.True(point.X >= 10 && point.Y >= 10));
+        Assert.Equal(RectangleD.FromLTRB(10, 10, 14, 12), new VectorPathBuilder().AddArc(new PointD(10, 10), 4, 2, 0, 90).Build().Bounds);
+
+        // The other way
+        var back = Flatten(new VectorPathBuilder().AddArc(new PointD(10, 10), 4, 2, 0, -90).Build());
+        Assert.Equal((10d, 8d), back[^1]);
+        Assert.All(back, point =>
+        {
+            Assert.True(point.X >= 10);
+            Assert.True(point.Y <= 10);
+        });
+
+        // A full turn, or more, is the whole ellipse and ends where it starts
+        var full = Flatten(new VectorPathBuilder().AddArc(new PointD(10, 10), 4, 2, 30, 360).Build());
+        Assert.Equal(full[0], full[^1]);
+        Assert.Equal(full, Flatten(new VectorPathBuilder().AddArc(new PointD(10, 10), 4, 2, 30, 900).Build()));
+        Assert.Equal(6, full.Min(point => point.X), 0.01);
+        Assert.Equal(14, full.Max(point => point.X), 0.01);
+        Assert.Equal(8, full.Min(point => point.Y), 0.01);
+        Assert.Equal(12, full.Max(point => point.Y), 0.01);
+
+        // An arc without sweep is its first point
+        Assert.Equal([(14d, 10d)], Flatten(new VectorPathBuilder().AddArc(new PointD(10, 10), 4, 2, 0, 0).Build()));
+
+        // ArcTo joins the current point to the start of the arc, and starts a contour when there is no current point
+        var joined = Flatten(new VectorPathBuilder().MoveTo(1, 1).ArcTo(new PointD(10, 10), 4, 2, 0, 90).Build());
+        Assert.Equal([(1d, 1d), (14d, 10d)], joined[..2]);
+        Assert.Equal(quarter, joined[1..]);
+        Assert.Equal(quarter, Flatten(new VectorPathBuilder().ArcTo(new PointD(10, 10), 4, 2, 0, 90).Build()));
+
+        // A pie is the center, the arc, and the two radii that join them
+        var pie = new VectorPathBuilder().AddPie(new PointD(10, 10), 4, 2, 0, 90).LineTo(0, 0).Build();
+        var slice = Flatten(pie);
+        Assert.Equal((10d, 10d), slice[0]);
+        Assert.Equal(quarter, slice[1..^2]);
+
+        // The contour is closed: the segment that follows starts a new contour at the center
+        Assert.Equal([(10d, 10d), (0d, 0d)], slice[^2..]);
+    }
+
+    [Fact]
+    public void TheChordsOfAnArcStayWithinTheToleranceOfTheArc()
+    {
+        var random = new Random(20261012);
+        for (var index = 0; index < 200; index++)
+        {
+            var scale = Math.Pow(10, random.Next(0, 4));
+            var radiusX = (0.05 + random.NextDouble()) * scale;
+            var radiusY = (0.05 + random.NextDouble()) * scale;
+            var start = (random.NextDouble() * 720) - 360;
+            var sweep = (random.NextDouble() * 720) - 360;
+            var rotation = random.Next(3) == 0 ? 0 : random.NextDouble() * 360;
+            var center = new PointD((random.NextDouble() - 0.5) * 100, (random.NextDouble() - 0.5) * 100);
+            var turn = AffineTransform.CreateRotation(rotation, center);
+            Assert.True(turn.TryInvert(out var inverse));
+            var path = new VectorPathBuilder().AddArc(center, radiusX, radiusY, start, sweep).Build().Transform(turn);
+            var points = Flatten(path);
+            var description = string.Create(CultureInfo.InvariantCulture, $"case {index}: radii {radiusX:R} {radiusY:R}, start {start:R}, sweep {sweep:R}, rotation {rotation:R}");
+
+            // The ends are where the angles say
+            var first = turn.Transform(new PointD(center.X + (radiusX * Math.Cos(start * Math.PI / 180)), center.Y + (radiusY * Math.Sin(start * Math.PI / 180))));
+            var last = turn.Transform(new PointD(center.X + (radiusX * Math.Cos((start + sweep) * Math.PI / 180)), center.Y + (radiusY * Math.Sin((start + sweep) * Math.PI / 180))));
+            Assert.True(first.DistanceTo(new PointD(points[0].X, points[0].Y)) <= 1e-9 * scale, description);
+            Assert.True(last.DistanceTo(new PointD(points[^1].X, points[^1].Y)) <= 1e-9 * scale, description);
+
+            var turned = 0d;
+            for (var i = 0; i < points.Count; i++)
+            {
+                // Every vertex is on the ellipse
+                var vertex = inverse.Transform(new PointD(points[i].X, points[i].Y));
+                var x = (vertex.X - center.X) / radiusX;
+                var y = (vertex.Y - center.Y) / radiusY;
+                Assert.True(Math.Abs((x * x) + (y * y) - 1) <= 1e-9, description);
+                if (i + 1 == points.Count)
+                    break;
+
+                // The angle from a vertex to the next one always has the sign of the sweep, and they add up to it
+                var next = inverse.Transform(new PointD(points[i + 1].X, points[i + 1].Y));
+                var nextX = (next.X - center.X) / radiusX;
+                var nextY = (next.Y - center.Y) / radiusY;
+                var step = Math.Atan2((x * nextY) - (y * nextX), (x * nextX) + (y * nextY)) * 180 / Math.PI;
+                Assert.True(step * Math.Sign(sweep) > 0, description);
+                turned += step;
+
+                // The middle of the chord, brought back onto the ellipse along the ray from the center
+                var angle = Math.Atan2(y + nextY, x + nextX);
+                var onArc = turn.Transform(new PointD(center.X + (radiusX * Math.Cos(angle)), center.Y + (radiusY * Math.Sin(angle))));
+                var middle = new PointD((points[i].X + points[i + 1].X) / 2, (points[i].Y + points[i + 1].Y) / 2);
+                Assert.True(onArc.DistanceTo(middle) <= Internals.PathFlattener.Tolerance, $"{description}, chord {i}: {onArc.DistanceTo(middle)}");
+            }
+
+            Assert.Equal(sweep, turned, 1e-6);
+        }
+    }
+
+    [Fact]
+    public void ARoundedRectangleIsStraightSidesJoinedByQuartersOfEllipses()
+    {
+        var path = new VectorPathBuilder().AddRoundedRectangle(new RectangleD(0, 0, 20, 10), 3).Build();
+        Assert.Equal(new RectangleD(0, 0, 20, 10), path.Bounds);
+        var points = Flatten(path);
+        Assert.Equal((3d, 0d), points[0]);
+        Assert.Equal((3d, 0d), points[^1]);
+        foreach (var corner in new[] { (3d, 0d), (17d, 0d), (20d, 3d), (20d, 7d), (17d, 10d), (3d, 10d), (0d, 7d), (0d, 3d) })
+        {
+            Assert.Contains(corner, points);
+        }
+
+        // Every vertex is on a straight side or on the circle of a corner
+        Assert.All(points, point =>
+        {
+            var dx = Math.Max(Math.Abs(point.X - 10) - 7, 0);
+            var dy = Math.Max(Math.Abs(point.Y - 5) - 2, 0);
+            Assert.Equal(3, dx == 0 || dy == 0 ? Math.Max(dx, dy) : Math.Sqrt((dx * dx) + (dy * dy)), 1e-12);
+        });
+
+        // Without radius it is the rectangle, bit for bit
+        var rectangle = RectangleD.FromLTRB(1.25, 0.5, 6.75, 5.125);
+        Assert.Equal(Flatten(new VectorPathBuilder().AddRectangle(rectangle).Build()), Flatten(new VectorPathBuilder().AddRoundedRectangle(rectangle, 0).Build()));
+        AssertSamePixels(canvas => canvas.Fill(White, new VectorPathBuilder().AddRectangle(rectangle).Build()), canvas => canvas.Fill(White, new VectorPathBuilder().AddRoundedRectangle(rectangle, 0, 2).Build()));
+
+        // The radii are limited to half the sides: the largest ones make an ellipse
+        var ellipse = Flatten(new VectorPathBuilder().AddRoundedRectangle(new RectangleD(2, 3, 8, 4), 100, 100).Build());
+        Assert.Equal((6d, 3d), ellipse[0]);
+        Assert.Equal((6d, 3d), ellipse[^1]);
+        Assert.All(ellipse, point => Assert.Equal(1, (((point.X - 6) / 4) * ((point.X - 6) / 4)) + (((point.Y - 5) / 2) * ((point.Y - 5) / 2)), 1e-12));
+        Assert.Equal(ellipse, Flatten(new VectorPathBuilder().AddRoundedRectangle(new RectangleD(2, 3, 8, 4), 4, 2).Build()));
+
+        // A single radius stays the radius of a circle: it is limited by the shortest side, and the largest one makes
+        // two half circles joined by the straight parts of the long sides
+        var pill = Flatten(new VectorPathBuilder().AddRoundedRectangle(new RectangleD(2, 3, 8, 4), 100).Build());
+        Assert.Equal((4d, 3d), pill[0]);
+        Assert.Contains((8d, 3d), pill);
+        Assert.Contains((10d, 5d), pill);
+        Assert.Contains((2d, 5d), pill);
+        Assert.All(pill, point =>
+        {
+            var dx = Math.Max(Math.Abs(point.X - 6) - 2, 0);
+            Assert.Equal(2, Math.Sqrt((dx * dx) + ((point.Y - 5) * (point.Y - 5))), 1e-12);
+        });
+        Assert.Equal(pill, Flatten(new VectorPathBuilder().AddRoundedRectangle(new RectangleD(2, 3, 8, 4), 2).Build()));
+
+        // The segment that follows starts a new contour at the first point
+        Assert.Equal([(3d, 0d), (30d, 30d)], Flatten(new VectorPathBuilder().AddRoundedRectangle(new RectangleD(0, 0, 20, 10), 3).LineTo(30, 30).Build())[^2..]);
+    }
+
+    [Theory]
+    [InlineData(4, LineJoin.Miter)]
+    [InlineData(5, LineJoin.Miter)]
+    [InlineData(2.5, LineJoin.Bevel)]
+    [InlineData(40, LineJoin.Round)]
+    public void TheStrokeOfARoundedRectangleStaysAroundItsOutline(double radius, LineJoin join)
+    {
+        // The corners meet the sides without a corner: no join may stick out, whatever the pen
+        var rectangle = new RectangleD(6.5, 7.25, 20, 10);
+        var pen = new Pen(White, 3) { LineJoin = join, MiterLimit = 100 };
+        using var image = new Image<Gray8>(34, 26, new Gray8(0));
+        image.Draw(canvas => canvas.StrokeRoundedRectangle(pen, rectangle, radius), Ct);
+        var effective = Math.Min(radius, 5);
+        var painted = 0;
+        for (var y = 0; y < image.Height; y++)
+        {
+            for (var x = 0; x < image.Width; x++)
+            {
+                // The distance from the center of the pixel to the outline
+                var qx = Math.Abs(x + 0.5 - 16.5) - (10 - effective);
+                var qy = Math.Abs(y + 0.5 - 12.25) - (5 - effective);
+                var outside = Math.Sqrt((Math.Max(qx, 0) * Math.Max(qx, 0)) + (Math.Max(qy, 0) * Math.Max(qy, 0)));
+                var distance = Math.Abs(outside + Math.Min(Math.Max(qx, qy), 0) - effective);
+                var value = image.Frames[0][x, y].Value;
+                painted += value;
+                if (distance > 1.5 + 0.8)
+                {
+                    Assert.Equal(0, value, $"pixel ({x}, {y}) at {distance} from the outline is painted");
+                }
+                else if (distance < 1.5 - 0.8)
+                {
+                    Assert.Equal(255, value, $"pixel ({x}, {y}) at {distance} from the outline is not fully painted");
+                }
+            }
+        }
+
+        // The area of the stroke: the length of the outline times the width of the pen
+        var length = (2 * (20 - (2 * effective))) + (2 * (10 - (2 * effective))) + (2 * Math.PI * effective);
+        Assert.Equal(length * 3, painted / 255.0, 1.5);
+    }
+
+    [Fact]
+    public void AnEllipseCanBeTurned()
+    {
+        var turned = new VectorPathBuilder().AddEllipse(new PointD(10, 12), 6, 2, 90).Build();
+        Assert.Equal(RectangleD.FromLTRB(8, 6, 12, 18), turned.Bounds);
+        var points = Flatten(turned);
+
+        // The contour starts at the end of the first radius, which the rotation brought under the center
+        Assert.Equal((10d, 18d), points[0]);
+        Assert.Equal((10d, 18d), points[^1]);
+        Assert.All(points, point => Assert.Equal(1, (((point.X - 10) / 2) * ((point.X - 10) / 2)) + (((point.Y - 12) / 6) * ((point.Y - 12) / 6)), 1e-12));
+
+        // Without rotation, it is the ellipse
+        Assert.Equal(Flatten(new VectorPathBuilder().AddEllipse(new PointD(10, 12), 6, 2).Build()), Flatten(new VectorPathBuilder().AddEllipse(new PointD(10, 12), 6, 2, 0).Build()));
+
+        // Any angle: the same as transforming the ellipse
+        var expected = Flatten(new VectorPathBuilder().AddEllipse(new PointD(10, 12), 6, 2).Build().Transform(AffineTransform.CreateRotation(33, new PointD(10, 12))));
+        var actual = Flatten(new VectorPathBuilder().AddEllipse(new PointD(10, 12), 6, 2, 33).LineTo(0, 0).Build());
+        Assert.Equal(expected.Count, actual.Count - 2);
+        for (var i = 0; i < expected.Count; i++)
+        {
+            Assert.Equal(expected[i].X, actual[i].X, 1e-12);
+            Assert.Equal(expected[i].Y, actual[i].Y, 1e-12);
+        }
+
+        // The segment that follows starts a new contour at the first point
+        Assert.Equal(actual[0], actual[^2]);
+    }
+
+    [Fact]
+    public void ArcsAreValidatedWhenThePathIsBuilt()
+    {
+        const double TooFar = 16777217;
+        foreach (var invalid in new[] { double.NaN, double.PositiveInfinity, double.NegativeInfinity })
+        {
+            Assert.Throws<ArgumentException>(() => new VectorPathBuilder().MoveTo(0, 0).ArcTo(invalid, 1, 0, false, false, 1, 1));
+            Assert.Throws<ArgumentException>(() => new VectorPathBuilder().MoveTo(0, 0).ArcTo(1, invalid, 0, false, false, 1, 1));
+            Assert.Throws<ArgumentException>(() => new VectorPathBuilder().MoveTo(0, 0).ArcTo(1, 1, invalid, false, false, 1, 1));
+            Assert.Throws<ArgumentException>(() => new VectorPathBuilder().MoveTo(0, 0).ArcTo(1, 1, 0, false, false, invalid, 1));
+            Assert.Throws<ArgumentException>(() => new VectorPathBuilder().MoveTo(0, 0).ArcTo(1, 1, 0, false, false, new PointD(1, invalid)));
+            Assert.Throws<ArgumentException>(() => new VectorPathBuilder().ArcTo(new PointD(invalid, 0), 1, 1, 0, 90));
+            Assert.Throws<ArgumentException>(() => new VectorPathBuilder().ArcTo(default, 1, 1, invalid, 90));
+            Assert.Throws<ArgumentException>(() => new VectorPathBuilder().AddArc(default, invalid, 1, 0, 90));
+            Assert.Throws<ArgumentException>(() => new VectorPathBuilder().AddArc(default, 1, 1, 0, invalid));
+            Assert.Throws<ArgumentException>(() => new VectorPathBuilder().AddPie(default, 1, invalid, 0, 90));
+            Assert.Throws<ArgumentException>(() => new VectorPathBuilder().AddRoundedRectangle(new RectangleD(0, 0, 1, 1), invalid));
+            Assert.Throws<ArgumentException>(() => new VectorPathBuilder().AddRoundedRectangle(new RectangleD(0, 0, 1, 1), 1, invalid));
+            Assert.Throws<ArgumentException>(() => new VectorPathBuilder().AddEllipse(default, 1, 1, invalid));
+        }
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => new VectorPathBuilder().MoveTo(0, 0).ArcTo(-1, 1, 0, false, false, 1, 1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new VectorPathBuilder().MoveTo(0, 0).ArcTo(1, 1, 0, false, false, TooFar, 1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new VectorPathBuilder().AddArc(default, 1, -1, 0, 90));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new VectorPathBuilder().AddArc(new PointD(16777216, 0), 1, 1, 0, 90));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new VectorPathBuilder().AddPie(new PointD(0, -16777216), 1, 1, 0, 90));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new VectorPathBuilder().ArcTo(default, TooFar, 1, 0, 90));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new VectorPathBuilder().AddRoundedRectangle(new RectangleD(0, 0, 1, 1), -1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new VectorPathBuilder().AddRoundedRectangle(new RectangleD(16777216, 0, 1, 1), 1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new VectorPathBuilder().AddEllipse(new PointD(16777216, 0), 1, 1, 45));
+        Assert.Throws<InvalidOperationException>(() => new VectorPathBuilder().ArcTo(1, 1, 0, false, false, 1, 1));
+
+        // An arc between two points at the limit may go beyond it: clockwise from the top to the bottom is by the right
+        var builder = new VectorPathBuilder().MoveTo(16777216, 0);
+        Assert.Throws<ArgumentOutOfRangeException>(() => builder.ArcTo(5, 5, 0, largeArc: false, clockwise: true, 16777216, 10));
+
+        // A rejected element leaves the builder as it was
+        Assert.Equal(new RectangleD(16777216, 0, 0, 0), builder.Build().Bounds);
+        Assert.Equal(RectangleD.FromLTRB(16777211, 0, 16777216, 10), builder.ArcTo(5, 5, 0, largeArc: false, clockwise: false, 16777216, 10).Build().Bounds);
+    }
+
+    [Fact]
+    public void TheArcAndPolygonShortcutsOfTheCanvasDrawTheSamePixelsAsAPath()
+    {
+        var rectangle = RectangleD.FromLTRB(1.25, 0.5, 6.75, 5.125);
+        var center = new PointD(4.2, 3.9);
+        var pen = new Pen(White, 1.25) { LineJoin = LineJoin.Round, LineCap = LineCap.Square };
+        PointD[] points = [new(0.5, 7), new(3, -2), new(6, 9), new(7.5, 1), new(1, 3)];
+        AssertSamePixels(canvas => canvas.FillRoundedRectangle(White, rectangle, 1.5), canvas => canvas.Fill(White, new VectorPathBuilder().AddRoundedRectangle(rectangle, 1.5).Build()));
+        AssertSamePixels(canvas => canvas.StrokeRoundedRectangle(pen, rectangle, 1.5), canvas => canvas.Stroke(pen, new VectorPathBuilder().AddRoundedRectangle(rectangle, 1.5).Build()));
+        AssertSamePixels(canvas => canvas.FillPolygon(White, points), canvas => canvas.Fill(White, new VectorPathBuilder().AddPolygon(points).Build()));
+        AssertSamePixels(canvas => canvas.FillPolygon(White, points, FillRule.EvenOdd), canvas => canvas.Fill(White, new VectorPathBuilder().AddPolygon(points).Build(), FillRule.EvenOdd));
+        AssertSamePixels(canvas => canvas.StrokePolygon(pen, points), canvas => canvas.Stroke(pen, new VectorPathBuilder().AddPolygon(points).Build()));
+        AssertSamePixels(canvas => canvas.StrokePolyline(pen, points), canvas => canvas.Stroke(pen, new VectorPathBuilder().MoveTo(points[0]).LineTo(points[1]).LineTo(points[2]).LineTo(points[3]).LineTo(points[4]).Build()));
+        AssertSamePixels(canvas => canvas.FillPie(White, center, 3.1, 20, 250), canvas => canvas.Fill(White, new VectorPathBuilder().AddPie(center, 3.1, 3.1, 20, 250).Build()));
+        AssertSamePixels(canvas => canvas.FillPie(White, center, 3.1, 20, -110), canvas => canvas.Fill(White, new VectorPathBuilder().AddPie(center, 3.1, 3.1, 20, -110).Build()));
+        AssertSamePixels(canvas => canvas.StrokeArc(pen, center, 3.1, 20, 250), canvas => canvas.Stroke(pen, new VectorPathBuilder().AddArc(center, 3.1, 3.1, 20, 250).Build()));
+
+        // A polygon of one point and a line of one point are a point
+        AssertSamePixels(canvas => canvas.StrokePolyline(pen, [center]), canvas => canvas.StrokeCircle(pen, center, 0));
+        AssertSamePixels(canvas => canvas.StrokePolygon(pen, [center]), canvas => canvas.StrokeCircle(pen, center, 0));
+    }
+
+    [Fact]
+    public void TheArcAndPolygonShortcutsOfTheCanvasValidateTheirArguments()
+    {
+        using var image = new Image<Gray8>(4, 4, new Gray8(0));
+        var pen = new Pen(White, 1);
+        image.Draw(
+            canvas =>
+            {
+                AssertThrows<ArgumentNullException>(canvas, static canvas => canvas.FillRoundedRectangle(null!, new RectangleD(0, 0, 1, 1), 1));
+                AssertThrows<ArgumentNullException>(canvas, static canvas => canvas.StrokeRoundedRectangle(null!, new RectangleD(0, 0, 1, 1), 1));
+                AssertThrows<ArgumentNullException>(canvas, static canvas => canvas.FillPolygon(null!, [default]));
+                AssertThrows<ArgumentNullException>(canvas, static canvas => canvas.StrokePolygon(null!, [default]));
+                AssertThrows<ArgumentNullException>(canvas, static canvas => canvas.StrokePolyline(null!, [default]));
+                AssertThrows<ArgumentNullException>(canvas, static canvas => canvas.FillPie(null!, default, 1, 0, 90));
+                AssertThrows<ArgumentNullException>(canvas, static canvas => canvas.StrokeArc(null!, default, 1, 0, 90));
+                AssertThrows<ArgumentException>(canvas, static canvas => canvas.FillPolygon(White, []));
+                AssertThrows<ArgumentException>(canvas, static canvas => canvas.FillPolygon(White, [default, new PointD(double.NaN, 0)]));
+                AssertThrows<ArgumentOutOfRangeException>(canvas, static canvas => canvas.FillPolygon(White, [new PointD(16777217, 0)]));
+                AssertThrows<ArgumentOutOfRangeException>(canvas, static canvas => canvas.FillPolygon(White, [default], (FillRule)2));
+                AssertThrows<ArgumentException>(canvas, static canvas => canvas.StrokePolygon(new Pen(White, 1), []));
+                AssertThrows<ArgumentException>(canvas, static canvas => canvas.StrokePolyline(new Pen(White, 1), []));
+                AssertThrows<ArgumentOutOfRangeException>(canvas, static canvas => canvas.FillRoundedRectangle(White, new RectangleD(0, 0, 1, 1), -1));
+                AssertThrows<ArgumentException>(canvas, static canvas => canvas.StrokeRoundedRectangle(new Pen(White, 1), new RectangleD(0, 0, 1, 1), double.NaN));
+                AssertThrows<ArgumentOutOfRangeException>(canvas, static canvas => canvas.FillPie(White, default, -1, 0, 90));
+                AssertThrows<ArgumentException>(canvas, static canvas => canvas.FillPie(White, default, 1, double.NaN, 90));
+                AssertThrows<ArgumentException>(canvas, static canvas => canvas.StrokeArc(new Pen(White, 1), default, 1, 0, double.PositiveInfinity));
+                AssertThrows<ArgumentException>(canvas, static canvas => canvas.StrokeArc(new Pen(White, 1), new PointD(double.NaN, 0), 1, 0, 90));
+            },
+            Ct);
+
+        // A rejected call draws nothing
+        Assert.Equal(new int[16], DrawingTestSupport.ReadSamples(image.Frames[0]));
+        _ = pen;
+
+        static void AssertThrows<TException>(DrawingCanvas canvas, DrawingAction action)
+            where TException : Exception
+        {
+            try
+            {
+                action(canvas);
+            }
+            catch (TException exception) when (exception.GetType() == typeof(TException))
+            {
+                return;
+            }
+
+            Assert.Fail($"{typeof(TException).Name} was not thrown.");
+        }
     }
 
     /// <summary>Gets the vertices of the single contour a path is flattened to.</summary>

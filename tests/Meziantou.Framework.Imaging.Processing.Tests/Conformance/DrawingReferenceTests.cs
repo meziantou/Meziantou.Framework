@@ -331,6 +331,31 @@ public sealed class DrawingReferenceTests
         }
     }
 
+    [Fact]
+    public void FilledArcsAreTheExactAreaOfTheirChords()
+    {
+        var path = new VectorPathBuilder()
+            .AddRoundedRectangle(new RectangleD(0.75, 1.5, 9.5, 6.25), 2.75, 1.5)
+            .AddPie(new PointD(6, 6.5), 5, 3.25, 20, 250)
+            .MoveTo(1, 10).ArcTo(4, 2.5, 30, largeArc: true, clockwise: false, 9, 11.5).ArcTo(new PointD(3, 3), 2, 2.5, 200, -300).Close()
+            .AddEllipse(new PointD(7, 4), 4, 1.25, 40)
+            .Build();
+        var recording = new RecordingSink();
+        PathFlattener.Flatten(path, recording);
+        var polygons = recording.Contours.Select(contour => (IReadOnlyList<(double X, double Y)>)contour.Points).ToList();
+        Assert.HasCount(4, polygons);
+        foreach (var evenOdd in new[] { false, true })
+        {
+            var areas = ReferenceCoverage.Compute(ReferenceCoverage.FromPolygons(polygons), 12, 12, evenOdd);
+            using var image = DrawingTestSupport.CreateRandom(PixelFormat.Rgba64, 12, 12, new Random(Seed).Next);
+            var before = DrawingTestSupport.ReadSamples(image.Frames[0]);
+            var color = new Rgba64(300, 60000, 20000, 43210);
+            image.Frames[0].Draw(canvas => canvas.Fill(new SolidBrush(color), path, evenOdd ? FillRule.EvenOdd : FillRule.NonZero), Ct);
+            var mismatch = DrawingTestSupport.Compare(image.Frames[0], before, areas, DrawingTestSupport.ToPaint(color, PixelFormat.Rgba64));
+            Assert.Null(mismatch);
+        }
+    }
+
     // -----------------------------------------------------------------------------------------------------------------
     // Gradients
     // -----------------------------------------------------------------------------------------------------------------

@@ -97,6 +97,92 @@ public readonly ref struct DrawingCanvas
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
     public void StrokeRectangle(Pen pen, RectangleD rectangle) => GetSession().StrokeRectangle(pen, rectangle);
 
+    /// <summary>Paints a rectangle whose corners are quarters of a circle.</summary>
+    /// <param name="brush">The paint. A color converts implicitly.</param>
+    /// <param name="rectangle">The rectangle. A <see cref="Rectangle"/> of pixels converts implicitly.</param>
+    /// <param name="radius">The radius of the corners. Must be zero or positive; it is limited to half the shortest side of the rectangle.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="brush"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">A coordinate or the radius is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The magnitude of a coordinate exceeds 16777216, or the radius is negative or exceeds 16777216.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. No pixel is changed by this call.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void FillRoundedRectangle(Brush brush, RectangleD rectangle, double radius) => GetSession().FillRoundedRectangle(brush, rectangle, radius);
+
+    /// <summary>Paints the outline of a rectangle whose corners are quarters of a circle. The stroke is centered on the outline.</summary>
+    /// <param name="pen">The stroke.</param>
+    /// <param name="rectangle">The rectangle. A <see cref="Rectangle"/> of pixels converts implicitly.</param>
+    /// <param name="radius">The radius of the corners. Must be zero or positive; it is limited to half the shortest side of the rectangle.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="pen"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">A coordinate or the radius is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The magnitude of a coordinate exceeds 16777216, or the radius is negative or exceeds 16777216.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. No pixel is changed by this call.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void StrokeRoundedRectangle(Pen pen, RectangleD rectangle, double radius) => GetSession().StrokeRoundedRectangle(pen, rectangle, radius);
+
+    /// <summary>Paints the inside of the closed contour made of straight segments between consecutive points.</summary>
+    /// <param name="brush">The paint. A color converts implicitly.</param>
+    /// <param name="points">The vertices. At least one is required.</param>
+    /// <param name="fillRule">The rule deciding what is inside when the contour crosses itself.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="brush"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="points"/> is empty, or a coordinate is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The magnitude of a coordinate exceeds 16777216, or <paramref name="fillRule"/> is not a defined <see cref="FillRule"/>.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. No pixel is changed by this call.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void FillPolygon(Brush brush, ReadOnlySpan<PointD> points, FillRule fillRule = FillRule.NonZero) => GetSession().FillPolygon(brush, points, fillRule);
+
+    /// <summary>Paints the outline of the closed contour made of straight segments between consecutive points.</summary>
+    /// <param name="pen">The stroke.</param>
+    /// <param name="points">The vertices. At least one is required.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="pen"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="points"/> is empty, or a coordinate is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The magnitude of a coordinate exceeds 16777216.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. No pixel is changed by this call.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void StrokePolygon(Pen pen, ReadOnlySpan<PointD> points) => GetSession().StrokePoints(pen, points, close: true);
+
+    /// <summary>Paints the straight segments between consecutive points, with the caps of the pen at both ends.</summary>
+    /// <param name="pen">The stroke.</param>
+    /// <param name="points">The points. At least one is required.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="pen"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="points"/> is empty, or a coordinate is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The magnitude of a coordinate exceeds 16777216.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. No pixel is changed by this call.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void StrokePolyline(Pen pen, ReadOnlySpan<PointD> points) => GetSession().StrokePoints(pen, points, close: false);
+
+    /// <summary>Paints a slice of a disk: the part between two radii and the arc that joins them.</summary>
+    /// <param name="brush">The paint. A color converts implicitly.</param>
+    /// <param name="center">The center of the disk.</param>
+    /// <param name="radius">The radius. Must be zero or positive.</param>
+    /// <param name="startAngle">The angle of the first radius, in degrees from the positive x axis, clockwise on the image.</param>
+    /// <param name="sweepAngle">The angle of the slice, in degrees: positive to turn clockwise on the image, negative for the other way. Beyond 360 degrees either way, the slice is the whole disk.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="brush"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">A coordinate, the radius or an angle is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The magnitude of a coordinate exceeds 16777216, or the radius is negative or exceeds 16777216.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. No pixel is changed by this call.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void FillPie(Brush brush, PointD center, double radius, double startAngle, double sweepAngle) => GetSession().FillPie(brush, center, radius, startAngle, sweepAngle);
+
+    /// <summary>Paints an arc of a circle, with the caps of the pen at both ends.</summary>
+    /// <param name="pen">The stroke.</param>
+    /// <param name="center">The center of the circle.</param>
+    /// <param name="radius">The radius. Must be zero or positive.</param>
+    /// <param name="startAngle">The angle of the first point, in degrees from the positive x axis, clockwise on the image.</param>
+    /// <param name="sweepAngle">The angle of the arc, in degrees: positive to turn clockwise on the image, negative for the other way. Beyond 360 degrees either way, the arc is the whole circle.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="pen"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">A coordinate, the radius or an angle is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The magnitude of a coordinate exceeds 16777216, or the radius is negative or exceeds 16777216.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. No pixel is changed by this call.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void StrokeArc(Pen pen, PointD center, double radius, double startAngle, double sweepAngle) => GetSession().StrokeArc(pen, center, radius, startAngle, sweepAngle);
+
     /// <summary>Paints an ellipse whose axes are horizontal and vertical.</summary>
     /// <param name="brush">The paint. A color converts implicitly.</param>
     /// <param name="center">The center.</param>

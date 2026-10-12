@@ -136,6 +136,116 @@ internal sealed partial class DrawingSession : IDisposable
         RenderStroke(pen);
     }
 
+    public void FillRoundedRectangle(Brush brush, RectangleD rectangle, double radius)
+    {
+        ArgumentNullException.ThrowIfNull(brush);
+        DrawingGuard.Rectangle(rectangle, nameof(rectangle));
+        DrawingGuard.Length(radius, nameof(radius));
+        var sink = BeginFill();
+        var receiver = new SinkPathReceiver(sink);
+
+        // The corners stay circular: the radius is limited by the shortest side
+        radius = Math.Min(radius, Math.Min(rectangle.Width, rectangle.Height) / 2);
+        ArcGeometry.AppendRoundedRectangle(ref receiver, rectangle, radius, radius);
+        sink.End();
+        Render(brush, FillRule.NonZero);
+    }
+
+    public void StrokeRoundedRectangle(Pen pen, RectangleD rectangle, double radius)
+    {
+        ArgumentNullException.ThrowIfNull(pen);
+        DrawingGuard.Rectangle(rectangle, nameof(rectangle));
+        DrawingGuard.Length(radius, nameof(radius));
+        var sink = BeginStroke(pen);
+        var receiver = new SinkPathReceiver(sink);
+
+        // The corners stay circular: the radius is limited by the shortest side
+        radius = Math.Min(radius, Math.Min(rectangle.Width, rectangle.Height) / 2);
+        ArcGeometry.AppendRoundedRectangle(ref receiver, rectangle, radius, radius);
+        sink.End();
+        RenderStroke(pen);
+    }
+
+    public void FillPolygon(Brush brush, ReadOnlySpan<PointD> points, FillRule fillRule)
+    {
+        ArgumentNullException.ThrowIfNull(brush);
+        ValidatePoints(points, nameof(points));
+        if (fillRule is not (FillRule.NonZero or FillRule.EvenOdd))
+            throw new ArgumentOutOfRangeException(nameof(fillRule), fillRule, "The fill rule is not valid.");
+
+        var sink = BeginFill();
+        AddPoints(sink, points, close: true);
+        Render(brush, fillRule);
+    }
+
+    public void StrokePoints(Pen pen, ReadOnlySpan<PointD> points, bool close)
+    {
+        ArgumentNullException.ThrowIfNull(pen);
+        ValidatePoints(points, nameof(points));
+        var sink = BeginStroke(pen);
+        AddPoints(sink, points, close);
+        RenderStroke(pen);
+    }
+
+    public void FillPie(Brush brush, PointD center, double radius, double startAngle, double sweepAngle)
+    {
+        ArgumentNullException.ThrowIfNull(brush);
+        ValidateArc(center, radius, startAngle, sweepAngle);
+        var sink = BeginFill();
+        var receiver = new SinkPathReceiver(sink);
+        sink.MoveTo(center.X, center.Y);
+        ArcGeometry.AppendCenterArc(ref receiver, center.X, center.Y, radius, radius, startAngle, sweepAngle, lineToStart: true);
+        sink.Close(smooth: false);
+        sink.End();
+        Render(brush, FillRule.NonZero);
+    }
+
+    public void StrokeArc(Pen pen, PointD center, double radius, double startAngle, double sweepAngle)
+    {
+        ArgumentNullException.ThrowIfNull(pen);
+        ValidateArc(center, radius, startAngle, sweepAngle);
+        var sink = BeginStroke(pen);
+        var receiver = new SinkPathReceiver(sink);
+        ArcGeometry.AppendCenterArc(ref receiver, center.X, center.Y, radius, radius, startAngle, sweepAngle, lineToStart: false);
+        sink.End();
+        RenderStroke(pen);
+    }
+
+    private static void ValidateArc(PointD center, double radius, double startAngle, double sweepAngle)
+    {
+        DrawingGuard.Point(center, nameof(center));
+        DrawingGuard.Length(radius, nameof(radius));
+        DrawingGuard.Angle(startAngle, nameof(startAngle));
+        DrawingGuard.Angle(sweepAngle, nameof(sweepAngle));
+    }
+
+    private static void ValidatePoints(ReadOnlySpan<PointD> points, string paramName)
+    {
+        if (points.IsEmpty)
+            throw new ArgumentException("At least one point is required.", paramName);
+
+        foreach (var point in points)
+        {
+            DrawingGuard.Point(point, paramName);
+        }
+    }
+
+    private static void AddPoints(PathSink sink, ReadOnlySpan<PointD> points, bool close)
+    {
+        sink.MoveTo(points[0].X, points[0].Y);
+        foreach (var point in points[1..])
+        {
+            sink.LineTo(point.X, point.Y, smooth: false);
+        }
+
+        if (close)
+        {
+            sink.Close(smooth: false);
+        }
+
+        sink.End();
+    }
+
     public void FillEllipse(Brush brush, PointD center, double radiusX, double radiusY)
     {
         ArgumentNullException.ThrowIfNull(brush);

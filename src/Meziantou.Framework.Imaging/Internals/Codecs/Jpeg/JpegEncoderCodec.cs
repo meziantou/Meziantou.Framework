@@ -95,8 +95,7 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
         private int _mcuX;
         private bool _rowLoaded;
         private bool _frameWritten;
-        private ulong _bitBuffer;
-        private int _bitCount;
+        private JpegBitWriter _bits;
 
         public Session(ImageEncoderSessionOptions options)
             : base(options)
@@ -392,12 +391,12 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
             }
 
             // Pad the last byte with 1-bits (T.81 F.1.2.3)
-            if (_bitCount > 0)
+            if (_bits.PendingBitCount > 0)
             {
                 var span = output.GetSpan(2);
                 var position = 0;
-                var padding = 8 - _bitCount;
-                WriteBits(span, ref position, (1u << padding) - 1, padding);
+                var padding = 8 - _bits.PendingBitCount;
+                _bits.WriteBits(span, ref position, (1u << padding) - 1, padding);
                 output.Advance(position);
             }
 
@@ -543,7 +542,7 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
             // DC: difference with the previous block of the component, size category then the additional bits (T.81 F.1.2.1)
             var difference = coefficients[0] - _predictions[component];
             _predictions[component] = coefficients[0];
-            WriteValue(destination, ref position, dc, symbolHigh: 0, difference);
+            _bits.WriteValue(destination, ref position, dc, symbolHigh: 0, difference);
 
             // AC: run lengths of zeros (ZRL for 16), EOB after the last nonzero coefficient (T.81 F.1.2.2)
             var run = 0;
@@ -558,56 +557,17 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
 
                 while (run > 15)
                 {
-                    WriteSymbol(destination, ref position, ac, 0xF0);
+                    _bits.WriteSymbol(destination, ref position, ac, 0xF0);
                     run -= 16;
                 }
 
-                WriteValue(destination, ref position, ac, run, value);
+                _bits.WriteValue(destination, ref position, ac, run, value);
                 run = 0;
             }
 
             if (run > 0)
             {
-                WriteSymbol(destination, ref position, ac, 0x00);
-            }
-        }
-
-        /// <summary>Writes the symbol <c>(symbolHigh &lt;&lt; 4) | SSSS</c> for a value, then its SSSS additional bits (negative values as <c>value - 1</c>).</summary>
-        private void WriteValue(Span<byte> destination, ref int position, JpegHuffmanEncoder table, int symbolHigh, int value)
-        {
-            var magnitude = (uint)Math.Abs(value);
-            var size = magnitude == 0 ? 0 : 32 - BitOperations.LeadingZeroCount(magnitude);
-            WriteSymbol(destination, ref position, table, (symbolHigh << 4) | size);
-            if (size > 0)
-            {
-                var bits = value < 0 ? (uint)(value - 1) & ((1u << size) - 1) : (uint)value;
-                WriteBits(destination, ref position, bits, size);
-            }
-        }
-
-        private void WriteSymbol(Span<byte> destination, ref int position, JpegHuffmanEncoder table, int symbol)
-        {
-            var length = table.GetLength(symbol);
-            if (length == 0)
-                throw new InvalidOperationException(string.Create(CultureInfo.InvariantCulture, $"The Huffman table has no code for the symbol 0x{symbol:X2}."));
-
-            WriteBits(destination, ref position, table.GetCode(symbol), length);
-        }
-
-        /// <summary>Appends bits (most significant first), emitting whole bytes with a stuffed zero after each 0xFF (T.81 F.1.2.3).</summary>
-        private void WriteBits(Span<byte> destination, ref int position, uint bits, int length)
-        {
-            _bitBuffer = (_bitBuffer << length) | bits;
-            _bitCount += length;
-            while (_bitCount >= 8)
-            {
-                _bitCount -= 8;
-                var value = (byte)(_bitBuffer >> _bitCount);
-                destination[position++] = value;
-                if (value == 0xFF)
-                {
-                    destination[position++] = 0;
-                }
+                _bits.WriteSymbol(destination, ref position, ac, 0x00);
             }
         }
     }

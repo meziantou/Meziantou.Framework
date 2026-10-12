@@ -20,6 +20,9 @@ internal sealed class JpegXlFrameDecoder
     private readonly AllocationScope _scope;
     private readonly CancellationToken _cancellationToken;
     private readonly JpegXlBitReader _reader = new();
+    private bool _captureJpegCoefficients;
+    private JpegCoefficientStore? _jpegCoefficients;
+    private ushort[][]? _jpegQuantization;
 
     private JpegXlFrameDecoder(JpegXlImageHeader image, JpegXlFrameHeader frame, JpegXlToc toc, byte[] data, JpegXlImageBuffer? lfFrame, AllocationScope scope, CancellationToken cancellationToken)
     {
@@ -86,6 +89,28 @@ internal sealed class JpegXlFrameDecoder
         return new JpegXlFrameDecoder(image, frame, toc, data, lfFrame, scope, cancellationToken).Decode(passCount);
     }
 
+    /// <summary>
+    /// Reads the quantized coefficients of a frame that holds a recompressed JPEG file: a VarDCT frame of 8x8 DCTs whose
+    /// quantization tables are stored by their values. No sample is computed.
+    /// </summary>
+    /// <param name="image">The image header.</param>
+    /// <param name="frame">The frame header.</param>
+    /// <param name="toc">The table of contents of the frame.</param>
+    /// <param name="data">The sections of the frame.</param>
+    /// <param name="quantization">Receives the quantization table of each channel, in the order of the rows of a JPEG block.</param>
+    /// <param name="scope">The scope of the coefficients and of the working memory.</param>
+    /// <param name="cancellationToken">The token checked between sections.</param>
+    /// <returns>The coefficients of each channel; the caller disposes them.</returns>
+    /// <exception cref="InvalidImageContentException">The frame does not hold the coefficients of a JPEG file.</exception>
+    public static JpegCoefficientStore DecodeJpegCoefficients(JpegXlImageHeader image, JpegXlFrameHeader frame, JpegXlToc toc, byte[] data, out ushort[][] quantization, AllocationScope scope, CancellationToken cancellationToken)
+    {
+        EnsureSupported(frame);
+        var decoder = new JpegXlFrameDecoder(image, frame, toc, data, lfFrame: null, scope, cancellationToken) { _captureJpegCoefficients = true };
+        decoder.Decode(frame.PassCount)?.Dispose();
+        quantization = decoder._jpegQuantization!;
+        return decoder._jpegCoefficients!;
+    }
+
     private JpegXlDecodedFrame? Decode(int passCount)
     {
         var frame = _frame;
@@ -101,7 +126,10 @@ internal sealed class JpegXlFrameDecoder
         try
         {
             var modular = owned = new JpegXlModularImage(_image.BitDepth.BitsPerSample);
-            varDct = frame.IsModular ? null : new JpegXlVarDctDecoder(_image, frame, _lfFrame, _scope, _cancellationToken);
+            varDct = frame.IsModular ? null : new JpegXlVarDctDecoder(_image, frame, _lfFrame, _scope, _cancellationToken, _captureJpegCoefficients);
+            if (_captureJpegCoefficients && (varDct is null || (frame.Flags & (JpegXlFrameHeader.FlagNoise | JpegXlFrameHeader.FlagPatches | JpegXlFrameHeader.FlagSplines | JpegXlFrameHeader.FlagUseLfFrame)) != 0 || frame.Upsampling != 1 || !frame.IsFullFrame || frame.Width != _image.Width || frame.Height != _image.Height))
+                throw JpegXlFormat.Invalid("the frame that the JPEG reconstruction data describe does not hold the coefficients of a JPEG file.");
+
 
             // LfGlobal: the parameters of the LF dequantization, what a VarDCT frame adds, then the global Modular data
             float[] lfQuant = [1f / 4096, 1f / 512, 1f / 256];
@@ -189,7 +217,11 @@ internal sealed class JpegXlFrameDecoder
             BeginSection(1 + lfGroupCount);
             if (varDct is not null)
             {
-                varDct.FinishLf();
+                if (!_captureJpegCoefficients)
+                {
+                    varDct.FinishLf();
+                }
+
                 varDct.ReadHfGlobal(_reader, (tableIndex, tableWidth, tableHeight) => ReadRawQuantTable(tree, tableIndex, tableWidth, tableHeight, lfGroupCount));
             }
 
@@ -211,7 +243,22 @@ internal sealed class JpegXlFrameDecoder
                     EndSection();
                 }
 
-                varDct?.FinishGroup();
+                if (_captureJpegCoefficients)
+                {
+                    varDct!.CaptureJpegGroup();
+                }
+                else
+                {
+                    varDct?.FinishGroup();
+                }
+            }
+
+            if (_captureJpegCoefficients)
+            {
+                // The coefficients are what the caller asked for: no sample is computed
+                _jpegQuantization = varDct!.JpegQuantization;
+                _jpegCoefficients = varDct.DetachJpegCoefficients();
+                return null;
             }
 
             varDct?.UpsampleChroma();

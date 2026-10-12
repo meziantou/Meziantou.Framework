@@ -555,6 +555,35 @@ namespace Meziantou.Framework.Imaging
         public InvalidImageContentException(string? message, Meziantou.Framework.Imaging.ImageFormat format, System.Exception? innerException = null) { }
     }
 
+    public sealed class JpegXlTranscodeOptions
+    {
+        public static Meziantou.Framework.Imaging.JpegXlTranscodeOptions Default { get => throw null; }
+        public Meziantou.Framework.Imaging.ImageConfiguration Configuration { get => throw null; init { } }
+        public int Effort { get => throw null; init { } }
+    }
+
+    public static class JpegXlTranscoder
+    {
+        public static bool HasJpegReconstructionData(System.ReadOnlySpan<byte> jpegXl, Meziantou.Framework.Imaging.JpegXlTranscodeOptions? options = null) => throw null;
+        public static bool HasJpegReconstructionData(System.IO.Stream jpegXl, Meziantou.Framework.Imaging.JpegXlTranscodeOptions? options = null) => throw null;
+        public static bool HasJpegReconstructionData(string jpegXlPath, Meziantou.Framework.Imaging.JpegXlTranscodeOptions? options = null) => throw null;
+        public static System.Threading.Tasks.Task<bool> HasJpegReconstructionDataAsync(System.IO.Stream jpegXl, Meziantou.Framework.Imaging.JpegXlTranscodeOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static void RecompressJpeg(System.ReadOnlySpan<byte> jpeg, System.IO.Stream destination, Meziantou.Framework.Imaging.JpegXlTranscodeOptions? options = null) { }
+        public static void RecompressJpeg(System.IO.Stream jpeg, System.IO.Stream destination, Meziantou.Framework.Imaging.JpegXlTranscodeOptions? options = null) { }
+        public static void RecompressJpeg(string jpegPath, string destinationPath, Meziantou.Framework.Imaging.JpegXlTranscodeOptions? options = null) { }
+        public static System.Threading.Tasks.Task RecompressJpegAsync(System.IO.Stream jpeg, System.IO.Stream destination, Meziantou.Framework.Imaging.JpegXlTranscodeOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static System.Threading.Tasks.Task RecompressJpegAsync(string jpegPath, string destinationPath, Meziantou.Framework.Imaging.JpegXlTranscodeOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static void ReconstructJpeg(System.ReadOnlySpan<byte> jpegXl, System.IO.Stream destination, Meziantou.Framework.Imaging.JpegXlTranscodeOptions? options = null) { }
+        public static void ReconstructJpeg(System.IO.Stream jpegXl, System.IO.Stream destination, Meziantou.Framework.Imaging.JpegXlTranscodeOptions? options = null) { }
+        public static void ReconstructJpeg(string jpegXlPath, string destinationPath, Meziantou.Framework.Imaging.JpegXlTranscodeOptions? options = null) { }
+        public static System.Threading.Tasks.Task ReconstructJpegAsync(System.IO.Stream jpegXl, System.IO.Stream destination, Meziantou.Framework.Imaging.JpegXlTranscodeOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static System.Threading.Tasks.Task ReconstructJpegAsync(string jpegXlPath, string destinationPath, Meziantou.Framework.Imaging.JpegXlTranscodeOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static bool TryReconstructJpeg(System.ReadOnlySpan<byte> jpegXl, System.IO.Stream destination, Meziantou.Framework.Imaging.JpegXlTranscodeOptions? options = null) => throw null;
+        public static bool TryReconstructJpeg(System.IO.Stream jpegXl, System.IO.Stream destination, Meziantou.Framework.Imaging.JpegXlTranscodeOptions? options = null) => throw null;
+        public static bool TryReconstructJpeg(string jpegXlPath, string destinationPath, Meziantou.Framework.Imaging.JpegXlTranscodeOptions? options = null) => throw null;
+        public static System.Threading.Tasks.Task<bool> TryReconstructJpegAsync(System.IO.Stream jpegXl, System.IO.Stream destination, Meziantou.Framework.Imaging.JpegXlTranscodeOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
+    }
+
     public ref struct PixelAccessor<TPixel> where TPixel : unmanaged
     {
         public int Width { get => throw null; }

@@ -73,6 +73,11 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
     private readonly int _quantLf;
     private readonly float[] _lfStep = new float[3];
     private readonly float[] _hfScale = new float[3];
+    private readonly int[] _horizontalShift = new int[3];
+    private readonly int[] _verticalShift = new int[3];
+
+    // The quantization table of each channel of a recompressed JPEG file, in the layout of the coefficients of the frame
+    private ushort[][]? _jpegQuantization;
 
     private readonly Av1PooledArray<int>?[] _coefficients = new Av1PooledArray<int>?[3];
     private readonly Av1PooledArray<int>?[] _lf = new Av1PooledArray<int>?[3];
@@ -94,7 +99,7 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
     /// <param name="image">The image header that was written, as the decoder reads it: an image stored in XYB.</param>
     /// <param name="frame">The frame header that was written, as the decoder reads it: a VarDCT frame that covers the image.</param>
     /// <param name="format">The pixel format of the frame.</param>
-    /// <param name="quality">The quality, from 0 to 100.</param>
+    /// <param name="quality">The quality, from 0 to 100; -1 for a frame that holds the coefficients of a JPEG file (<see cref="EncodeJpegCoefficients"/>).</param>
     /// <param name="effort">The effort, from 0 to 9.</param>
     /// <param name="scope">The scope of the working memory.</param>
     /// <param name="cancellationToken">The token checked between groups.</param>
@@ -111,8 +116,28 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
         _cancellationToken = cancellationToken;
         _width = (int)frame.CodedWidth;
         _height = (int)frame.CodedHeight;
-        _blocksWide = (_width + 7) / 8;
-        _blocksHigh = (_height + 7) / 8;
+
+        // The channels of a YCbCr frame may be subsampled, as the ones of the JPEG file it holds: the frame is then made of
+        // whole minimum coded units
+        ReadOnlySpan<int> horizontalFactors = [0, 1, 1, 0];
+        ReadOnlySpan<int> verticalFactors = [0, 1, 0, 1];
+        ReadOnlySpan<int> modes = [frame.ChromaSubsampling.First, frame.ChromaSubsampling.Second, frame.ChromaSubsampling.Third];
+        var maxHorizontal = 0;
+        var maxVertical = 0;
+        foreach (var mode in modes)
+        {
+            maxHorizontal = Math.Max(maxHorizontal, horizontalFactors[mode]);
+            maxVertical = Math.Max(maxVertical, verticalFactors[mode]);
+        }
+
+        for (var c = 0; c < 3; c++)
+        {
+            _horizontalShift[c] = maxHorizontal - horizontalFactors[modes[c]];
+            _verticalShift[c] = maxVertical - verticalFactors[modes[c]];
+        }
+
+        _blocksWide = ((_width + (8 << maxHorizontal) - 1) / (8 << maxHorizontal)) << maxHorizontal;
+        _blocksHigh = ((_height + (8 << maxVertical) - 1) / (8 << maxVertical)) << maxVertical;
         _tilesWide = (_blocksWide + ColorTileBlocks - 1) / ColorTileBlocks;
         _tilesHigh = (_blocksHigh + ColorTileBlocks - 1) / ColorTileBlocks;
         _groupColumns = (int)frame.GroupColumns;
@@ -121,6 +146,15 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
         _passCount = frame.PassCount;
 
         // The quantization: a step is a value of the dequantization matrix divided by "scale * factor / 65536"
+        if (quality < 0)
+        {
+            // The coefficients of a JPEG file are stored as they are: the quantization of the frame is neutral, and the steps
+            // are the quantization tables of the file
+            _globalScale = 65536;
+            _quantLf = 1;
+            return;
+        }
+
         var distance = GetDistance(quality);
         _globalScale = Math.Clamp((int)MathF.Round(65536f * HfScaleAtDistance1 / (distance * NominalQuantField), MidpointRounding.AwayFromZero), 1, 8193 + 65535);
         _quantLf = Math.Clamp((int)MathF.Round(65536f * LfScaleAtDistance1 / (GetLfDistance(distance) * _globalScale), MidpointRounding.AwayFromZero), 1, 65536);
@@ -209,6 +243,74 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
         WriteSections(lease, writer, sizes, writeExtraChannels);
     }
 
+    /// <summary>
+    /// Encodes a frame that holds the quantized coefficients of a JPEG file (ISO/IEC 18181-2, annex A): every block is an
+    /// 8x8 DCT, the quantization tables of the file are stored by their values, the LF image holds the DC coefficients,
+    /// and nothing predicts the chroma from the luma, so that a decoder reads the coefficients back as they are.
+    /// </summary>
+    /// <param name="coefficients">The coefficients of the components of the file.</param>
+    /// <param name="channelComponents">For each channel of the frame (Cb, Y, Cr; or red, green, blue), its component in <paramref name="coefficients"/>, or -1 for a channel a grayscale file does not have.</param>
+    /// <param name="quantization">The quantization table of each channel, in the order of the rows of a JPEG block.</param>
+    /// <param name="dcOffset">What is added to the DC coefficients of each channel.</param>
+    /// <param name="writer">Receives the sections.</param>
+    /// <param name="sizes">Receives the size of each section, in bytes.</param>
+    public void EncodeJpegCoefficients(JpegCoefficientStore coefficients, ReadOnlySpan<int> channelComponents, ReadOnlySpan<ushort[]> quantization, ReadOnlySpan<int> dcOffset, LsbBitWriter writer, List<int> sizes)
+    {
+        ArgumentNullException.ThrowIfNull(coefficients);
+        ArgumentNullException.ThrowIfNull(writer);
+        ArgumentNullException.ThrowIfNull(sizes);
+        AllocateFrame(clear: true);
+
+        // The tables of the frame are the transposition of the ones of JPEG, like the blocks
+        _jpegQuantization = [new ushort[64], new ushort[64], new ushort[64]];
+        for (var c = 0; c < 3; c++)
+        {
+            for (var k = 0; k < 64; k++)
+            {
+                _jpegQuantization[c][((k & 7) * 8) + (k >> 3)] = quantization[c][k];
+            }
+        }
+
+        var blockInfo = _blockInfo!.Span;
+        var quantField = _quantField!.Span;
+        blockInfo.Fill(BlockFirst + JpegXlVarDctTables.TransformDct8);
+        quantField.Fill(1);
+        for (var group = 0; group < _groupCount; group++)
+        {
+            _cancellationToken.ThrowIfCancellationRequested();
+            GetGroupRectangle(group, out var groupX, out var groupY, out var groupWidth, out var groupHeight);
+            var groupOffset = _groupOffsets!.Span[group];
+            for (var c = 0; c < 3; c++)
+            {
+                var component = channelComponents[c];
+                if (component < 0)
+                    continue;
+
+                var hs = _horizontalShift[c];
+                var vs = _verticalShift[c];
+                var lf = _lf[c]!.Span;
+                var target = _coefficients[c]!.Span;
+                for (var y = 0; y < groupHeight; y += 1 << vs)
+                {
+                    for (var x = 0; x < groupWidth; x += 1 << hs)
+                    {
+                        var channelX = (groupX + x) >> hs;
+                        var channelY = (groupY + y) >> vs;
+                        var block = coefficients.GetBlock(component, channelX, channelY);
+                        lf[(channelY * (_blocksWide >> hs)) + channelX] = block[0] + dcOffset[c];
+                        var offset = groupOffset + (((y * groupWidth) + x) * 64);
+                        for (var k = 1; k < 64; k++)
+                        {
+                            target[offset + ((k & 7) * 8) + (k >> 3)] = block[k];
+                        }
+                    }
+                }
+            }
+        }
+
+        WriteSections(default, writer, sizes, writeExtraChannels: null);
+    }
+
     public void Dispose()
     {
         for (var c = 0; c < 3; c++)
@@ -254,12 +356,27 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
 
     private void Allocate()
     {
+        AllocateFrame(clear: false);
+        for (var c = 0; c < 3; c++)
+        {
+            _samples[c] = Av1PooledArray<float>.Rent(_scope, GroupSize * GroupSize, clear: false);
+        }
+
+        _work = Av1PooledArray<float>.Rent(_scope, (long)JpegXlForwardTransform.MaxSize * JpegXlForwardTransform.MaxSize, clear: false);
+        _tileCoefficients = Av1PooledArray<float>.Rent(_scope, 3L * ColorTileBlocks * ColorTileBlocks * 64, clear: false);
+        _tileLuma = Av1PooledArray<float>.Rent(_scope, (long)ColorTileBlocks * ColorTileBlocks * 64, clear: false);
+        _matrices = JpegXlDequantMatrices.CreateDefault(_scope);
+        _color = new JpegXlForwardColor(_image, PixelFormats.GetBitsPerComponent(_format), _scope);
+    }
+
+    /// <summary>Rents what holds a frame once it is analyzed: the quantized values and what describes each block.</summary>
+    private void AllocateFrame(bool clear)
+    {
         var blockCount = (long)_blocksWide * _blocksHigh;
         for (var c = 0; c < 3; c++)
         {
-            _coefficients[c] = Av1PooledArray<int>.Rent(_scope, blockCount * 64, clear: false);
-            _lf[c] = Av1PooledArray<int>.Rent(_scope, blockCount, clear: false);
-            _samples[c] = Av1PooledArray<float>.Rent(_scope, GroupSize * GroupSize, clear: false);
+            _coefficients[c] = Av1PooledArray<int>.Rent(_scope, blockCount * 64, clear);
+            _lf[c] = Av1PooledArray<int>.Rent(_scope, (long)(_blocksWide >> _horizontalShift[c]) * (_blocksHigh >> _verticalShift[c]), clear);
         }
 
         _blockInfo = Av1PooledArray<byte>.Rent(_scope, blockCount, clear: true);
@@ -269,12 +386,7 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
         _groupOffsets = Av1PooledArray<int>.Rent(_scope, _groupCount, clear: false);
         _blockOffsets = Av1PooledArray<int>.Rent(_scope, GroupBlocks * GroupBlocks, clear: false);
         _nonZeros = Av1PooledArray<byte>.Rent(_scope, 3L * GroupBlocks * GroupBlocks, clear: false);
-        _work = Av1PooledArray<float>.Rent(_scope, (long)JpegXlForwardTransform.MaxSize * JpegXlForwardTransform.MaxSize, clear: false);
-        _tileCoefficients = Av1PooledArray<float>.Rent(_scope, 3L * ColorTileBlocks * ColorTileBlocks * 64, clear: false);
-        _tileLuma = Av1PooledArray<float>.Rent(_scope, (long)ColorTileBlocks * ColorTileBlocks * 64, clear: false);
-        _matrices = JpegXlDequantMatrices.CreateDefault(_scope);
         _orders = new JpegXlCoefficientOrders(1, _scope);
-        _color = new JpegXlForwardColor(_image, PixelFormats.GetBitsPerComponent(_format), _scope);
 
         // The coefficients of the groups follow each other, each group holding 64 values per block
         var offsets = _groupOffsets.Span;
@@ -504,12 +616,41 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
         var total = writer.Length;
         var extraChannelsAreGlobal = _width <= GroupSize && _height <= GroupSize;
 
-        // LfGlobal: the default LF dequantization, the quantizer, the default block contexts and chroma from luma parameters
-        writer.WriteBool(true);
+        // LfGlobal: the LF dequantization, the quantizer, the default block contexts and the chroma from luma parameters
+        if (_jpegQuantization is { } tables)
+        {
+            // The LF value of a block is its DC coefficient: its step is the one of the file, in units of the samples (a DC
+            // coefficient of JPEG is 8 times the mean of its block, whose samples go up to 255)
+            writer.WriteBool(false);
+            for (var c = 0; c < 3; c++)
+            {
+                writer.WriteF16(tables[c][0] * (128f / (8 * 255)));
+            }
+        }
+        else
+        {
+            writer.WriteBool(true);
+        }
+
         writer.WriteU32((uint)_globalScale, 1, 11, 2049, 11, 4097, 12, 8193, 16);
         writer.WriteU32((uint)_quantLf, 16, 0, 1, 5, 1, 8, 1, 16);
         writer.WriteBool(true);
-        writer.WriteBool(true);
+        if (_jpegQuantization is not null)
+        {
+            // Nothing predicts the chroma from the luma: the default unit of the factors, base factors of 0 (the default
+            // predicts B from Y), and LF factors of 0
+            writer.WriteBool(false);
+            writer.WriteU32(84, 84, 0, 256, 0, 2, 8, 258, 16);
+            writer.WriteF16(0);
+            writer.WriteF16(0);
+            writer.WriteBits(128, 8);
+            writer.WriteBits(128, 8);
+        }
+        else
+        {
+            writer.WriteBool(true);
+        }
+
         if (writeExtraChannels is null || extraChannelsAreGlobal)
         {
             // No global tree: the global Modular data, if any, hold their own
@@ -535,8 +676,40 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
             EndSection();
         }
 
-        // HfGlobal: the default dequantization matrices, one preset, then for each pass the natural orders and the entropy code
-        writer.WriteBool(true);
+        // HfGlobal: the dequantization matrices, one preset, then for each pass the natural orders and the entropy code
+        if (_jpegQuantization is { } quantization)
+        {
+            // The table of the 8x8 DCT is stored by its values, as an image of three channels; the inverse of a value is
+            // divided by the number that brings a coefficient of JPEG to the unit of the samples. The other tables are
+            // the ones of the standard: no block uses them
+            writer.WriteBool(false);
+            writer.WriteBits(7, 3);
+            writer.WriteF16(1f / (8 * 255));
+            using (var image = new JpegXlModularImage(8))
+            {
+                for (var c = 0; c < 3; c++)
+                {
+                    image.AddChannel(8, 8, 0, 0);
+                    image.Channels[c].Allocate(_scope);
+                    for (var k = 0; k < 64; k++)
+                    {
+                        image.Channels[c].Samples[k] = quantization[c][k];
+                    }
+                }
+
+                JpegXlModularEncoder.Encode(writer, image, colorChannelCount: 0, _effort, _scope, _cancellationToken);
+            }
+
+            for (var i = 1; i < JpegXlVarDctTables.QuantTableCount; i++)
+            {
+                writer.WriteBits(0, 3);
+            }
+        }
+        else
+        {
+            writer.WriteBool(true);
+        }
+
         writer.WriteBits(0, JpegXlHybridUintConfig.CeilingLog2(_groupCount));
         var builders = new JpegXlEntropyCodeBuilder?[_passCount];
         try
@@ -628,12 +801,14 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
             ReadOnlySpan<int> order = [1, 0, 2];
             for (var i = 0; i < 3; i++)
             {
-                image.AddChannel(width, height, 0, 0);
+                var hs = _horizontalShift[order[i]];
+                var vs = _verticalShift[order[i]];
+                image.AddChannel(width >> hs, height >> vs, 0, 0);
                 image.Channels[i].Allocate(_scope);
                 var source = _lf[order[i]]!.Span;
-                for (var y = 0; y < height; y++)
+                for (var y = 0; y < height >> vs; y++)
                 {
-                    source.Slice(((y0 + y) * _blocksWide) + x0, width).CopyTo(image.Channels[i].GetRow(y));
+                    source.Slice((((y0 >> vs) + y) * (_blocksWide >> hs)) + (x0 >> hs), width >> hs).CopyTo(image.Channels[i].GetRow(y));
                 }
             }
 
@@ -685,7 +860,7 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
         var next = 0;
         for (var y = 0; y < height; y++)
         {
-            metadata.Channels[3].GetRow(y).Fill(Sharpness);
+            metadata.Channels[3].GetRow(y).Fill(_jpegQuantization is null ? Sharpness : 0);
             for (var x = 0; x < width; x++)
             {
                 var position = ((y0 + y) * _blocksWide) + x0 + x;
@@ -752,9 +927,15 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
                 var rows = Math.Min(blocksWide, blocksHigh) * 8;
                 foreach (var c in channelOrder)
                 {
+                    // A subsampled channel has a block where its samples start
+                    var channelX = x >> _horizontalShift[c];
+                    var channelY = y >> _verticalShift[c];
+                    if ((channelX << _horizontalShift[c]) != x || (channelY << _verticalShift[c]) != y)
+                        continue;
+
                     var blockContext = blockContextMap[JpegXlCoefficientContexts.GetBlockContextIndex(c, order, 1, 0, 1, 0)];
                     var channelNonZeros = nonZeros.Slice(c * GroupBlocks * GroupBlocks, GroupBlocks * GroupBlocks);
-                    var predicted = JpegXlCoefficientContexts.PredictNonZeros(channelNonZeros, x, y);
+                    var predicted = JpegXlCoefficientContexts.PredictNonZeros(channelNonZeros, channelX, channelY);
                     var block = _coefficients[c]!.Span.Slice(groupOffset + offsets[(y * GroupBlocks) + x], size);
                     var coefficientOrder = orders.GetOrder(0, order, c);
                     var nonZeroCount = 0;
@@ -768,7 +949,7 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
                     var stored = JpegXlCoefficientContexts.GetStoredNonZeros(nonZeroCount, blockCount, logBlockCount);
                     for (var by = 0; by < blocksHigh; by++)
                     {
-                        channelNonZeros.Slice((y * GroupBlocks) + x + (by * GroupBlocks), blocksWide).Fill(stored);
+                        channelNonZeros.Slice((channelY * GroupBlocks) + channelX + (by * GroupBlocks), blocksWide).Fill(stored);
                     }
 
                     if (nonZeroCount == 0)

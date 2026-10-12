@@ -39,6 +39,22 @@ internal abstract class JpegXlDecodeObserver : IImageDecodeObserver
     {
     }
 
+    /// <summary>Gets a value indicating whether the frames are to be given to <see cref="OnFrame"/>: otherwise the parsing stops at the first frame.</summary>
+    public virtual bool WantsFrames => true;
+
+    /// <summary>Gets a value indicating whether the JPEG reconstruction data of the container are to be given to <see cref="OnJpegReconstructionData"/>; they are skipped otherwise.</summary>
+    public virtual bool WantsJpegReconstructionData => false;
+
+    /// <summary>Called with the payload of the <c>jbrd</c> box of the container.</summary>
+    public virtual void OnJpegReconstructionData(ReadOnlySpan<byte> payload)
+    {
+    }
+
+    /// <summary>Called with the payload of the <c>Exif</c> box or of the <c>xml </c> box of the container, decompressed, whatever it holds.</summary>
+    public virtual void OnMetadataBox(uint type, ReadOnlySpan<byte> payload)
+    {
+    }
+
     public virtual void OnEnd(JpegXlStructureParser structure)
     {
     }

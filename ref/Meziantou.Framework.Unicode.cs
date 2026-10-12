@@ -30,6 +30,27 @@ namespace Meziantou.Framework
         public int MaxWordLength { get => throw null; init { } }
     }
 
+    public sealed class LineBreakDictionary
+    {
+        public int WordCount { get => throw null; }
+        public static Meziantou.Framework.LineBreakDictionary Load(string path, Meziantou.Framework.LineBreakDictionaryOptions? options = null) => throw null;
+        public static Meziantou.Framework.LineBreakDictionary Load(System.IO.Stream stream, Meziantou.Framework.LineBreakDictionaryOptions? options = null) => throw null;
+        public static System.Threading.Tasks.Task<Meziantou.Framework.LineBreakDictionary> LoadAsync(string path, Meziantou.Framework.LineBreakDictionaryOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static System.Threading.Tasks.Task<Meziantou.Framework.LineBreakDictionary> LoadAsync(System.IO.Stream stream, Meziantou.Framework.LineBreakDictionaryOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static Meziantou.Framework.LineBreakDictionary Parse(System.ReadOnlySpan<char> words, Meziantou.Framework.LineBreakDictionaryOptions? options = null) => throw null;
+        public static Meziantou.Framework.LineBreakDictionary Parse(System.ReadOnlySpan<byte> utf8Words, Meziantou.Framework.LineBreakDictionaryOptions? options = null) => throw null;
+        public bool Contains(System.ReadOnlySpan<char> word) => throw null;
+        public int FindBreaks(System.ReadOnlySpan<char> text, System.Span<int> breakPositions) => throw null;
+    }
+
+    public sealed class LineBreakDictionaryOptions
+    {
+        public static Meziantou.Framework.LineBreakDictionaryOptions Default { get => throw null; }
+        public int MaxWordCount { get => throw null; init { } }
+        public int MaxWordLength { get => throw null; init { } }
+        public long MaxInputLength { get => throw null; init { } }
+    }
+
     public static class Unicode
     {
         public static System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.UnicodeCharacterInfo> AllCharacters { get => throw null; }
@@ -49,6 +70,7 @@ namespace Meziantou.Framework
         public static Meziantou.Framework.UnicodeGraphemeClusterEnumerator EnumerateGraphemeClusters(System.ReadOnlySpan<char> text) => throw null;
         public static Meziantou.Framework.UnicodeWordEnumerator EnumerateWordBoundaries(System.ReadOnlySpan<char> text) => throw null;
         public static Meziantou.Framework.UnicodeLineBreakEnumerator EnumerateLineBreaks(System.ReadOnlySpan<char> text, Meziantou.Framework.UnicodeLineBreakStrictness strictness = Meziantou.Framework.UnicodeLineBreakStrictness.Strict, Meziantou.Framework.UnicodeWordBreakBehavior wordBreak = Meziantou.Framework.UnicodeWordBreakBehavior.Normal) => throw null;
+        public static Meziantou.Framework.UnicodeLineBreakEnumerator EnumerateLineBreaks(System.ReadOnlySpan<char> text, Meziantou.Framework.LineBreakDictionary? dictionary, Meziantou.Framework.UnicodeLineBreakStrictness strictness = Meziantou.Framework.UnicodeLineBreakStrictness.Strict, Meziantou.Framework.UnicodeWordBreakBehavior wordBreak = Meziantou.Framework.UnicodeWordBreakBehavior.Normal) => throw null;
         public static Meziantou.Framework.UnicodeScriptRunEnumerator EnumerateScriptRuns(System.ReadOnlySpan<char> text) => throw null;
     }
 

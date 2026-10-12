@@ -1519,6 +1519,7 @@ namespace Meziantou.Framework.Imaging.Typography
     {
         public static Meziantou.Framework.Imaging.Typography.FontLoadOptions Default { get => throw null; }
         public Meziantou.Framework.Imaging.ImageConfiguration Configuration { get => throw null; init { } }
+        public bool UseEmbeddedBitmaps { get => throw null; init { } }
     }
 
     public readonly struct FontMetrics : System.IEquatable<Meziantou.Framework.Imaging.Typography.FontMetrics>
@@ -1556,6 +1557,14 @@ namespace Meziantou.Framework.Imaging.Typography
         public FontStack(Meziantou.Framework.Imaging.Typography.Font primary, params System.ReadOnlySpan<Meziantou.Framework.Imaging.Typography.Font> fallbacks) { }
         public static implicit operator Meziantou.Framework.Imaging.Typography.FontStack(Meziantou.Framework.Imaging.Typography.Font font) => throw null;
         public static Meziantou.Framework.Imaging.Typography.FontStack FromFont(Meziantou.Framework.Imaging.Typography.Font font) => throw null;
+    }
+
+    [System.Flags]
+    public enum FontSynthesis
+    {
+        None = 0,
+        Bold = 1,
+        Oblique = 2,
     }
 
     public sealed class FontVariationAxis
@@ -1651,6 +1660,7 @@ namespace Meziantou.Framework.Imaging.Typography
         public Meziantou.Framework.Imaging.Typography.TextWrapping Wrapping { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Typography.TextWordBreak WordBreak { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Typography.TextLineBreak LineBreak { get => throw null; init { } }
+        public Meziantou.Framework.LineBreakDictionary? LineBreakDictionary { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Typography.TextOverflowWrap OverflowWrap { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Typography.TextHyphenation Hyphenation { get => throw null; init { } }
         public string? HyphenCharacter { get => throw null; init { } }
@@ -1711,6 +1721,8 @@ namespace Meziantou.Framework.Imaging.Typography
         public double Size { get => throw null; }
         public Meziantou.Framework.Imaging.Drawing.Brush? Brush { get => throw null; init { } }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Imaging.Typography.FontFeature> Features { get => throw null; init { } }
+        public string? Language { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Typography.FontSynthesis Synthesis { get => throw null; init { } }
         public double LetterSpacing { get => throw null; init { } }
         public double WordSpacing { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Typography.TextDecorations Decorations { get => throw null; init { } }

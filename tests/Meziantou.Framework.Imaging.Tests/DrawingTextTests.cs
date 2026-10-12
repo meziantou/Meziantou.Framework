@@ -348,6 +348,234 @@ public sealed class DrawingTextTests
         Assert.Throws<InvalidImageContentException>(() => TextLayout.Create("aab", font, 16));
     }
 
+    [Theory]
+    [InlineData(1, 1)]
+    [InlineData(1, 2)]
+    [InlineData(3, 6)]
+    [InlineData(4, 7)]
+    [InlineData(2, 5)]
+    [InlineData(5, 5)]
+    [InlineData(3, 2)]
+    public void ABitmapWithoutColorsIsDrawnPixelForPixelAtItsSize(int indexFormat, int imageFormat)
+    {
+        var builder = FontSamples.MonochromeBoxes(indexFormat, imageFormat);
+        var outlines = FontTestSupport.Load(builder);
+        var font = FontTestSupport.Load(builder, new FontLoadOptions { UseEmbeddedBitmaps = true });
+        Assert.False(font.HasColorGlyphs);
+
+        // Without the option, a glyph is its outline at every size: A is a full square of 12 pixels.
+        Assert.Equal(Fill(new RectangleD(2, 1, 12, 12)), Render(PixelFormat.Gray8, 40, 24, canvas => canvas.FillText(White, "A", outlines, 16, new PointD(0, 0))));
+
+        // With it, at 16 pixels per em: the bitmap of A, the border of that square, 2 pixels from the origin and on the
+        // baseline, which is at 13.
+        RectangleD[] border = [new(2, 1, 12, 1), new(2, 12, 12, 1), new(2, 2, 1, 10), new(13, 2, 1, 10)];
+        Assert.Equal(Fill(border), Render(PixelFormat.Gray8, 40, 24, canvas => canvas.FillText(White, "A", font, 16, new PointD(0, 0))));
+
+        // B: a checkerboard of 6 by 8 pixels, 1 pixel from the origin. The index formats for bitmaps of one size give B
+        // the bitmap of A.
+        var checkerboard = new List<RectangleD>();
+        for (var y = 0; y < 8; y++)
+        {
+            for (var x = 0; x < 6; x++)
+            {
+                if (((x + y) & 1) == 0)
+                {
+                    checkerboard.Add(new RectangleD(1 + x, 5 + y, 1, 1));
+                }
+            }
+        }
+
+        Assert.Equal(Fill(indexFormat is 2 or 5 ? border : [.. checkerboard]), Render(PixelFormat.Gray8, 40, 24, canvas => canvas.FillText(White, "B", font, 16, new PointD(0, 0))));
+
+        // C has no bitmap: its outline.
+        Assert.Equal(Fill(new RectangleD(0, 0, 12, 16)), Render(PixelFormat.Gray8, 40, 24, canvas => canvas.FillText(White, "C", font, 16, new PointD(0, 0))));
+
+        // At 12 pixels per em, the other strike: the two diagonals of a square of 9 pixels, 1 pixel from the origin.
+        // The baseline of the line is at 9.75: the text is drawn a quarter of a pixel lower.
+        var diagonals = new List<RectangleD>();
+        for (var i = 0; i < 9; i++)
+        {
+            diagonals.Add(new RectangleD(1 + i, 1 + i, 1, 1));
+            if (i != 4)
+            {
+                diagonals.Add(new RectangleD(1 + i, 9 - i, 1, 1));
+            }
+        }
+
+        Assert.Equal(Fill([.. diagonals]), Render(PixelFormat.Gray8, 40, 24, canvas => canvas.FillText(White, "A", font, 12, new PointD(0, 0.25))));
+
+        // At a size no strike is made for, and at a size that is not a whole number of pixels: the outlines.
+        foreach (var size in (double[])[17, 16.5, 8])
+        {
+            Assert.Equal(
+                Render(PixelFormat.Gray8, 40, 24, canvas => canvas.FillText(White, "AB", outlines, size, new PointD(0, 0))),
+                Render(PixelFormat.Gray8, 40, 24, canvas => canvas.FillText(White, "AB", font, size, new PointD(0, 0))));
+        }
+
+        // Between two pixels, each pixel of the bitmap covers half of two pixels of the image, like a rectangle.
+        Assert.Equal(
+            Fill([.. border.Select(rectangle => new RectangleD(rectangle.X + 0.5, rectangle.Y, rectangle.Width, rectangle.Height))]),
+            Render(PixelFormat.Gray8, 40, 24, canvas => canvas.FillText(White, "A", font, 16, new PointD(0.5, 0))));
+
+        // The pixels are the outline of the glyph: the path of the layout, its bounds, and what a stroke follows.
+        var layout = TextLayout.Create("A", font, 16);
+        Assert.Equal(new RectangleD(2, 1, 12, 12), layout.InkBounds);
+        Assert.Equal(Fill(border), Render(PixelFormat.Gray8, 40, 24, canvas => canvas.Fill(White, layout.ToPath(new PointD(0, 0)))));
+        Assert.Equal(
+            Render(PixelFormat.Gray8, 40, 24, canvas => canvas.Stroke(new Pen(White, 1), layout.ToPath(new PointD(4, 4)))),
+            Render(PixelFormat.Gray8, 40, 24, canvas => canvas.StrokeText(new Pen(White, 1), layout, new PointD(4, 4))));
+
+        static int[] Fill(params RectangleD[] rectangles)
+        {
+            return Render(PixelFormat.Gray8, 40, 24, canvas =>
+            {
+                foreach (var rectangle in rectangles)
+                {
+                    canvas.FillRectangle(White, rectangle);
+                }
+            });
+        }
+    }
+
+    [Fact]
+    public void ABitmapThatCannotBeUsedLeavesTheOutline()
+    {
+        var options = new FontLoadOptions { UseEmbeddedBitmaps = true };
+        var outline = Render(PixelFormat.Gray8, 40, 24, canvas => canvas.FillRectangle(White, new RectangleD(2, 1, 12, 12)));
+
+        // Strikes of several bits per pixel, a location table of a version that is not known, and a font without data table.
+        var font = FontTestSupport.Load(FontSamples.MonochromeBoxes(bitDepth: 8), options);
+        Assert.Equal(outline, Render(PixelFormat.Gray8, 40, 24, canvas => canvas.FillText(White, "A", font, 16, new PointD(0, 0))));
+        var tables = FontSamples.MonochromeBoxes().BuildTables();
+        var locations = (byte[])tables["EBLC"].Clone();
+        locations[1] = 9;
+        font = Font.Load(FontBuilder.WriteSfnt(new SortedDictionary<string, byte[]>(tables, StringComparer.Ordinal) { ["EBLC"] = locations }), options);
+        Assert.Equal(outline, Render(PixelFormat.Gray8, 40, 24, canvas => canvas.FillText(White, "A", font, 16, new PointD(0, 0))));
+        var withoutData = new SortedDictionary<string, byte[]>(tables, StringComparer.Ordinal);
+        withoutData.Remove("EBDT");
+        font = Font.Load(FontBuilder.WriteSfnt(withoutData), options);
+        Assert.Equal(outline, Render(PixelFormat.Gray8, 40, 24, canvas => canvas.FillText(White, "A", font, 16, new PointD(0, 0))));
+
+        // A data table that is cut: an error when a text is laid out at the size of the strike, not at another size.
+        var truncated = Font.Load(FontBuilder.WriteSfnt(new SortedDictionary<string, byte[]>(tables, StringComparer.Ordinal) { ["EBDT"] = tables["EBDT"][..^8] }), options);
+        Assert.Throws<InvalidImageContentException>(() => TextLayout.Create("AB", truncated, 16));
+        Assert.Equal(23.375, TextLayout.Create("AB", truncated, 17).Width);
+
+        // The work of a glyph is bounded: a checkerboard is a rectangle per pixel.
+        var limited = FontTestSupport.Load(FontSamples.MonochromeBoxes(), new FontLoadOptions { UseEmbeddedBitmaps = true, Configuration = new ImageConfiguration { Limits = new ImageResourceLimits { MaxGlyphComplexity = 20 } } });
+        Assert.Throws<ImageResourceLimitException>(() => TextLayout.Create("B", limited, 16));
+    }
+
+    [Fact]
+    public void ASyntheticObliqueSlantsTheGlyphsAroundTheBaseline()
+    {
+        // A is the square from 2 to 14 pixels of its origin, 12 pixels up from the baseline, which is at 13: each point
+        // moves right by a quarter of its height, so the top of the square moves by 3 pixels.
+        var oblique = new TextStyle(Boxes, 16) { Synthesis = FontSynthesis.Oblique };
+        var layout = TextLayout.Create("A", oblique);
+        var slanted = new VectorPathBuilder().MoveTo(2, 13).LineTo(5, 1).LineTo(17, 1).LineTo(14, 13).Close().Build();
+        var expected = Render(PixelFormat.Gray8, 80, 40, canvas => canvas.Fill(White, slanted));
+        Assert.Equal(expected, Render(PixelFormat.Gray8, 80, 40, canvas => canvas.FillText(White, layout, new PointD(0, 0))));
+
+        // The advance does not change, and the bounds are those of the slanted glyph.
+        Assert.Equal(16, layout.Width);
+        Assert.Equal(new RectangleD(2, 1, 15, 12), layout.InkBounds);
+
+        // The path of the layout and a stroke follow the slanted outline.
+        Assert.Equal(expected, Render(PixelFormat.Gray8, 80, 40, canvas => canvas.Fill(White, layout.ToPath(new PointD(0, 0)))));
+        var pen = new Pen(White, 1);
+        Assert.Equal(
+            Render(PixelFormat.Gray8, 80, 40, canvas => canvas.Stroke(pen, slanted)),
+            Render(PixelFormat.Gray8, 80, 40, canvas => canvas.StrokeText(pen, layout, new PointD(0, 0))));
+
+        // Along a straight path from left to right, the text is the text drawn at a point: slanted, then placed.
+        var path = new VectorPathBuilder().MoveTo(10, 23).LineTo(70, 23).Build();
+        Assert.Equal(
+            Render(PixelFormat.Gray8, 80, 40, canvas => canvas.FillText(White, layout, new PointD(10, 10))),
+            Render(PixelFormat.Gray8, 80, 40, canvas => canvas.FillText(White, layout, path)));
+
+        // A glyph that is placed above the baseline moves with the slant: C is a box from the descent to the ascent,
+        // and its part under the baseline moves left.
+        var descending = new VectorPathBuilder().MoveTo(-0.75, 16).LineTo(3.25, 0).LineTo(15.25, 0).LineTo(11.25, 16).Close().Build();
+        Assert.Equal(
+            Render(PixelFormat.Gray8, 80, 40, canvas => canvas.Fill(White, descending)),
+            Render(PixelFormat.Gray8, 80, 40, canvas => canvas.FillText(White, TextLayout.Create("C", oblique), new PointD(0, 0))));
+    }
+
+    [Fact]
+    public void ASyntheticBoldThickensTheGlyphsOfAFilledText()
+    {
+        // At 48 pixels per em the bold is 2 pixels wide: every edge moves out by 1 pixel, and a glyph takes 2 pixels
+        // more, in the middle of which it is drawn. A is the square from 6 to 42 pixels of its origin, 36 pixels up from
+        // the baseline, which is at 39: thickened, from 5 to 43 and from -1 to 37, drawn 1 pixel further.
+        var bold = new TextStyle(Boxes, 48) { Synthesis = FontSynthesis.Bold };
+        var layout = TextLayout.Create("A", bold);
+        Assert.Equal(Fill(new RectangleD(6, 2, 38, 38)), Render(PixelFormat.Gray8, 120, 60, canvas => canvas.FillText(White, layout, new PointD(0, 0))));
+        Assert.Equal(50, layout.Width);
+
+        // A glyph whose outline starts on the left of the image is thickened like any other, and so is what follows it.
+        Assert.Equal(Fill(new RectangleD(-4, 2, 38, 38)), Render(PixelFormat.Gray8, 120, 60, canvas => canvas.FillText(White, layout, new PointD(-10, 0))));
+        Assert.Equal(Fill(new RectangleD(-44, 2, 38, 38), new RectangleD(6, 2, 38, 38)), Render(PixelFormat.Gray8, 120, 60, canvas => canvas.FillText(White, TextLayout.Create("AA", bold), new PointD(-50, 0))));
+
+        // The bounds contain the tip of the sharpest corner the stroke keeps, which is one width away from the outline.
+        Assert.Equal(new RectangleD(5, 1, 40, 40), layout.InkBounds);
+
+        // Each glyph takes more room: two letters, the second one 50 pixels after the first one.
+        Assert.Equal(100, TextLayout.Create("AA", bold).Width);
+        Assert.Equal(Fill(new RectangleD(6, 2, 38, 38), new RectangleD(56, 2, 38, 38)), Render(PixelFormat.Gray8, 120, 60, canvas => canvas.FillText(White, TextLayout.Create("AA", bold), new PointD(0, 0))));
+        Assert.Equal(2, TextLayout.Create("AA", bold, new TextLayoutOptions { MaxWidth = 99, OverflowWrap = TextOverflowWrap.Anywhere }).LineCount);
+        Assert.Equal(1, TextLayout.Create("AA", new TextStyle(Boxes, 48), new TextLayoutOptions { MaxWidth = 99, OverflowWrap = TextOverflowWrap.Anywhere }).LineCount);
+
+        // A mark stays on its letter: the acute accent of a font without the composed character, a box from 30 to 18
+        // pixels before the end of the letter and from 39 to 45 pixels above the baseline, moves and grows with it.
+        var builder = FontSamples.Boxes();
+        builder.CharacterMap.Remove(0x00C1);
+        var withMark = TextLayout.Create("A\u0301", new TextStyle(FontTestSupport.Load(builder), 48) { Synthesis = FontSynthesis.Bold });
+        Assert.Equal(50, withMark.Width);
+        Assert.Equal(Fill(new RectangleD(6, 12, 38, 38), new RectangleD(18, 3, 14, 8)), Render(PixelFormat.Gray8, 120, 60, canvas => canvas.FillText(White, withMark, new PointD(0, 10))));
+
+        // The bold is a way to fill: the path of the layout and a stroke have the outlines of the font, where the
+        // glyphs are placed.
+        Assert.Equal(Fill(new RectangleD(7, 3, 36, 36)), Render(PixelFormat.Gray8, 120, 60, canvas => canvas.Fill(White, layout.ToPath(new PointD(0, 0)))));
+        var pen = new Pen(White, 1);
+        Assert.Equal(
+            Render(PixelFormat.Gray8, 120, 60, canvas => canvas.StrokeRectangle(pen, new RectangleD(7, 3, 36, 36))),
+            Render(PixelFormat.Gray8, 120, 60, canvas => canvas.StrokeText(pen, layout, new PointD(0, 0))));
+
+        // Along a straight path, the thickened text is the one drawn at a point.
+        var path = new VectorPathBuilder().MoveTo(10, 49).LineTo(110, 49).Build();
+        Assert.Equal(
+            Render(PixelFormat.Gray8, 120, 60, canvas => canvas.FillText(White, layout, new PointD(10, 10))),
+            Render(PixelFormat.Gray8, 120, 60, canvas => canvas.FillText(White, layout, path)));
+
+        // Both at once: the slanted glyph is thickened. In the row of pixels 18.5 pixels above the baseline, the sides
+        // of the slanted square are at 11.625 and 47.625, and the stroke adds about one pixel to each.
+        var both = TextLayout.Create("A", new TextStyle(Boxes, 48) { Synthesis = FontSynthesis.Bold | FontSynthesis.Oblique });
+        var pixels = Render(PixelFormat.Gray8, 120, 60, canvas => canvas.FillText(White, both, new PointD(0, 0)));
+        Assert.Equal(50, both.Width);
+        Assert.Equal((0, 255, 255, 0), (pixels[(20 * 120) + 9], pixels[(20 * 120) + 11], pixels[(20 * 120) + 47], pixels[(20 * 120) + 49]));
+        Assert.True(pixels[(20 * 120) + 10] is > 0 and < 255 && pixels[(20 * 120) + 48] is > 0 and < 255);
+
+        // A text of two styles: each part has its synthesis, and they are not shaped together (no kerning between them).
+        var text = new RichTextBuilder().Append("A", bold).Append("B", new TextStyle(Boxes, 48)).Build();
+        Assert.Equal(50 + 24, TextLayout.Create(text).Width);
+        Assert.Equal(48 + 24 - 6, TextLayout.Create("AB", new TextStyle(Boxes, 48)).Width);
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => new TextStyle(Boxes, 16) { Synthesis = (FontSynthesis)4 });
+        Assert.Equal(FontSynthesis.None, new TextStyle(Boxes, 16).Synthesis);
+
+        static int[] Fill(params RectangleD[] rectangles)
+        {
+            return Render(PixelFormat.Gray8, 120, 60, canvas =>
+            {
+                foreach (var rectangle in rectangles)
+                {
+                    canvas.FillRectangle(White, rectangle);
+                }
+            });
+        }
+    }
+
     [Fact]
     public void ArgumentsAreValidated()
     {

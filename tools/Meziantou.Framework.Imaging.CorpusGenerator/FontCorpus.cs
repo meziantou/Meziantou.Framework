@@ -58,6 +58,13 @@ internal static partial class FontCorpus
         new("fonts/synthetic-collection", "fonts/synthetic/collection.ttc", static () => FontBuilder.WriteCollection([FontSamples.Boxes().BuildTables(), FontSamples.Curves().BuildTables()]), nameof(FontSamples.Boxes) + " and " + nameof(FontSamples.Curves), "ttc", 2),
         new("fonts/synthetic-variable", "fonts/synthetic/variable.ttf", static () => FontSamples.Variable().Build(), nameof(FontSamples.Variable), "ttf", 1),
         new("fonts/synthetic-variable-phantom", "fonts/synthetic/variable.phantom.ttf", static () => FontSamples.Variable(withAdvanceVariations: false).Build(), nameof(FontSamples.Variable) + " without HVAR", "ttf", 1),
+        new("fonts/synthetic-arabic-forms", "fonts/synthetic/arabic-forms.ttf", static () => FontSamples.ArabicForms().Build(), nameof(FontSamples.ArabicForms), "ttf", 1),
+        new("fonts/synthetic-thai-forms", "fonts/synthetic/thai-forms.ttf", static () => FontSamples.ThaiForms().Build(), nameof(FontSamples.ThaiForms), "ttf", 1),
+        new("fonts/synthetic-thai-forms-mac", "fonts/synthetic/thai-forms.mac.ttf", static () => FontSamples.ThaiForms(useMacCodePoints: true).Build(), nameof(FontSamples.ThaiForms) + " with the code points of the fonts of Mac OS", "ttf", 1),
+        new("fonts/synthetic-marks", "fonts/synthetic/marks.ttf", static () => FontSamples.Marks().Build(), nameof(FontSamples.Marks), "ttf", 1),
+        new("fonts/synthetic-monochrome-boxes", "fonts/synthetic/monochrome-boxes.ttf", static () => FontSamples.MonochromeBoxes().Build(), nameof(FontSamples.MonochromeBoxes), "ttf", 1),
+        new("fonts/synthetic-languages", "fonts/synthetic/languages.ttf", static () => FontSamples.Languages().Build(), nameof(FontSamples.Languages), "ttf", 1),
+        new("fonts/synthetic-variable-axes", "fonts/synthetic/variable.axes.ttf", static () => FontSamples.Variable(withAxisVariations: true).Build(), nameof(FontSamples.Variable) + " with version 2 of the avar table", "ttf", 1),
         new("fonts/synthetic-variable-charstrings", "fonts/synthetic/variable-charstrings.otf", static () => FontSamples.VariableCharstrings().Build(), nameof(FontSamples.VariableCharstrings), "otf", 1),
 
         // The color fonts have no outline vectors: the reference tool draws their glyphs with their paints. They have
@@ -78,6 +85,9 @@ internal static partial class FontCorpus
     {
         ["fonts/synthetic-variable"] = SyntheticInstances,
         ["fonts/synthetic-variable-phantom"] = SyntheticInstances,
+
+        // Where the deltas of the axes apply fully, partly, not at all, and where their sum leaves the range of an axis.
+        ["fonts/synthetic-variable-axes"] = ["wght=900,wdth=200", "wdth=50", "wght=900,wdth=50", "wght=650,wdth=150", "wght=100,wdth=75", "wght=900", "wdth=200", "wght=775,wdth=125"],
         ["fonts/synthetic-variable-charstrings"] = ["wght=900", "wght=100", "wght=650", "wght=250", "wght=525"],
         ["fonts/noto-sans-variable"] = ["wght=900", "wght=100,wdth=62.5", "wght=555,wdth=77", "wght=650,wdth=81.25", "wght=250"],
         ["fonts/noto-sans-cjk-jp-variable"] = ["wght=400", "wght=900", "wght=555", "wght=250"],
@@ -581,6 +591,21 @@ internal static partial class FontCorpus
         ColorFont("colr-twemoji-smiley", "twemoji_smiley-glyf_colr_1.ttf", "b462e4de616a38979b053a49b0b5a5f2dd72b6d5f55be43c5b1eb812fd438dbc", "CC-BY-4.0", "Twitter, Inc and other contributors (Twemoji), built by the googlefonts/color-fonts project"),
         ColorFont("sbix-twemoji-smiley", "twemoji_smiley-sbix.ttf", "7767316e76003dff2415c0bec6d8972024d8f308349bb576abce7b26b5319c9f", "CC-BY-4.0", "Twitter, Inc and other contributors (Twemoji), built by the googlefonts/color-fonts project"),
         ColorFont("colr-twemoji-smiley-cff2", "twemoji_smiley-cff2_colr_1.otf", "217bfb5a2876029afa9f52affe9810f398ba48574518fc228ee8966640af8ae3", "CC-BY-4.0", "Twitter, Inc and other contributors (Twemoji), built by the googlefonts/color-fonts project"),
+
+        // An emoji font, subset to the characters of each kind of emoji sequence: characters that are emoji or text by
+        // default, the skin tone modifiers, people and what joins them, four regional indicators, the keycap, the tags
+        // of a subdivision flag. The subset keeps the ligatures of the sequences these characters make.
+        new(
+            "fonts/noto-color-emoji",
+            "fonts/noto-color-emoji/Noto-COLRv1.subset.ttf",
+            "Noto-COLRv1.ttf",
+            "b8e25ea68db82f9e4d0aee921f4420be2be39887bd5c893a2ad98710531f9d0c",
+            "https://github.com/googlefonts/noto-emoji/blob/e20cbc2bbec1926686be9f9bee7d1d2cfa1fea0e/2D/fonts/Noto-COLRv1.ttf",
+            "Google Inc. (https://github.com/googlefonts/noto-emoji)",
+            "OFL-1.1",
+            ReservedFontName: null,
+            Unicodes: "20,23,2A,30-39,A9,200D,20E3,2122,263A,2764,261D,2640,FE0E,FE0F,1F1EB,1F1F7,1F1FA,1F1F8,1F308,1F3F3,1F3F4,1F3FB-1F3FF,1F44D,1F466-1F469,1F48B,1F600,1F642,1F680,E0062,E0065,E0067,E006E,E007F",
+            HasOutlineVectors: false),
     ];
 
     // The lines of text the reference renderer draws with the color fonts: every character of the font unless texts
@@ -619,6 +644,24 @@ internal static partial class FontCorpus
             new(Size: 100, Ascent: 100, Descent: 20, PerLine: 8, Variations: "GRX0=100,GRY0=-200,GRX1=-150,GRY1=250,GRX2=300,GRY2=100,GRR0=50,GRR1=-100", Exclude: ["F0503", "F0504", "F0505", "F0C00", "F0C01", "F0C02", "F0C03", "F0C04", "F0C05", "F0C06", "F0C07", "F0C08", "F0C09", "F0C0A"]),
         ],
         ["fonts/colr-twemoji-smiley"] = [new(Size: 96, Ascent: 96, Descent: 32, PerLine: 8), new(Size: 40, Ascent: 40, Descent: 12, PerLine: 16)],
+
+        // Emoji and emoji sequences, each drawn with one glyph: characters alone and with their selector, a skin tone,
+        // a family and a kiss joined by zero width joiners, two flags of regional indicators, keycaps, a flag joined to
+        // a rainbow and a flag with tags.
+        ["fonts/noto-color-emoji"] =
+        [
+            new(
+                Size: 64,
+                Ascent: 64,
+                Descent: 16,
+                PerLine: 8,
+                Texts:
+                [
+                    "1F600 1F642 1F680 2764 FE0F 263A FE0F 1F308",
+                    "1F44D 1F44D 1F3FD 1F468 200D 1F469 200D 1F467 200D 1F466 1F469 200D 2764 FE0F 200D 1F48B 200D 1F468",
+                    "1F1EB 1F1F7 1F1FA 1F1F8 0031 FE0F 20E3 0023 FE0F 20E3 1F3F3 FE0F 200D 1F308 1F3F4 E0067 E0062 E0065 E006E E0067 E007F",
+                ]),
+        ],
         ["fonts/colr-twemoji-smiley-cff2"] = [new(Size: 96, Ascent: 96, Descent: 32, PerLine: 8)],
     };
 
@@ -1459,8 +1502,93 @@ internal static partial class FontCorpus
         ("\u072B\u0720\u0721\u0710 \u0713\u0720", "ss02,salt"),
     ];
 
+    // Emoji sequences (Unicode Technical Standard #51): what the font draws with one glyph, and what is left of a
+    // sequence the font does not have.
+    private static readonly ShapingText[] EmojiShapingCases =
+    [
+        // Characters alone, with the emoji and the text presentation selectors.
+        ("\U0001F600 \U0001F642\U0001F680", null),
+        ("\u2764 \u2764\uFE0F \u2764\uFE0E \u263A\uFE0F \u00A9\uFE0F \u2122", null),
+
+        // A skin tone on a character that takes one, alone, and on a character that does not.
+        ("\U0001F44D\U0001F3FB \U0001F44D\U0001F3FF \U0001F3FD \U0001F600\U0001F3FD \u261D\U0001F3FE", null),
+
+        // Sequences joined by zero width joiners: families, a kiss with its heart, people with skin tones; a sequence
+        // the font does not have, and a joiner that joins nothing.
+        ("\U0001F468\u200D\U0001F469\u200D\U0001F467\u200D\U0001F466 \U0001F469\u200D\U0001F467", null),
+        ("\U0001F469\u200D\u2764\uFE0F\u200D\U0001F48B\u200D\U0001F468 \U0001F469\u200D\u2764\u200D\U0001F48B\u200D\U0001F468", null),
+        ("\U0001F469\U0001F3FD\u200D\u2764\uFE0F\u200D\U0001F48B\u200D\U0001F468\U0001F3FB", null),
+        ("\U0001F600\u200D\U0001F680 \U0001F468\u200D A\u200D\U0001F469", null),
+
+        // Flags: pairs of regional indicators, a pair that is no flag, an odd one; a flag joined to a rainbow; a flag
+        // with tags, and its tags without the cancel tag.
+        ("\U0001F1EB\U0001F1F7\U0001F1FA\U0001F1F8 \U0001F1F7\U0001F1F7 \U0001F1EB\U0001F1F7\U0001F1FA", null),
+        ("\U0001F3F3\uFE0F\u200D\U0001F308 \U0001F3F3\u200D\U0001F308 \U0001F3F3", null),
+        ("\U0001F3F4\U000E0067\U000E0062\U000E0065\U000E006E\U000E0067\U000E007F \U0001F3F4\U000E0067\U000E0062 \U0001F3F4", null),
+
+        // Keycaps, with and without the selector, and a digit alone.
+        ("1\uFE0F\u20E3 #\uFE0F\u20E3 *\u20E3 12 \u20E3", null),
+    ];
+
+    // A font without positioning table: where the reference shaper places a mark of each kind of combining class, on a
+    // letter whose ink is not in the middle of its advance, on a narrow letter, on a letter with a descender and on a
+    // space; marks that stack, marks of several classes, a mark the font draws low or high, a mark that has an advance,
+    // a mark without letter, and marks around characters without visible form.
+    private static readonly ShapingText[] MarksShapingCases =
+    [
+        ("A\u0300 A\u0301 A\u0315 A\u031B A\u0321 A\u0316 A\u0334 A\u0345", null),
+        ("A\u035C A\u0361A A\u302A A\u3099 A\u093C A\u0C55 A\u0711", null),
+        ("A\u0EB8 A\u0EC8 A\u0F71 A\u0F72 A\u0F74 A\u0E38 A\u0E3A A\u0E48", null),
+        ("i\u0301 i\u0316 i\u0315 i\u302A p\u0301 p\u0316 p\u0321 \u0020\u0301 \u0020\u0316", null),
+        ("A\u0301\u0301\u0301 A\u0316\u0316 A\u0301\u0316\u0301\u0316 A\u0321\u0316 A\u0315\u0301 A\u031B\u0301", null),
+        ("A\u0302 A\u0317 A\u0323 A\u0308 A\u0302\u0301 A\u0317\u0316 A\u0323\u0316 A\u0308\u0301", null),
+        ("\u0301A AA\u0301 A\u200D\u0301 A\u034F\u0301\u0316 A\u0301\u200C\u0301", null),
+
+        // Hebrew and Arabic, from right to left: the points, the dagesh, the dots of shin and sin, accents; the vowel
+        // marks and the shadda.
+        ("\u05D0\u05B0 \u05D0\u05B9 \u05D0\u05BC \u05D0\u05BF \u05D0\u05C1 \u05D0\u05C2 \u05D0\u05AE \u05D0\u059A", null),
+        ("\u05D0\u05B0\u05BC\u05C1 \u05D0\u05BC\u05B0 \u05D0\u05B9\u05AE \u05D0\u05D0\u05B0", null),
+        ("\u0628\u064B \u0628\u064D \u0628\u0651 \u0628\u0670 \u0628\u0651\u064B \u0628\u064D\u0651 \u0628\u0628\u064B", null),
+
+        // Thai: the marks stay where the font draws them.
+        ("\u0E01\u0E38 \u0E01\u0E48 \u0E01\u0E3A \u0E01\u0E38\u0E48", null),
+    ];
+
+    // A font of Arabic without substitution table: the forms of the letters, the ligatures of lam and alef, with marks
+    // on them, letters that do not join, joiners, and letters the font has no form for.
+    private static readonly ShapingText[] ArabicFormsShapingCases =
+    [
+        ("\u0628 \u0628\u0628 \u0628\u0628\u0628 \u0627\u0628 \u0628\u0627 \u0621\u0628 \u0628\u0621", null),
+        ("\u0644\u0627 \u0628\u0644\u0627 \u0644\u0622 \u0644\u0623 \u0644\u0625 \u0628\u0644\u0622 \u0644\u0627\u0644\u0627", null),
+        ("\u0644\u064E\u0627 \u0644\u0627\u064E \u0644\u064E\u0627\u064B \u0628\u0644\u0651\u064E\u0622\u064C \u0644\u200D\u0627 \u0644\u200C\u0627", null),
+        ("\u0628\u064E\u0628\u0650 \u0628\u0651\u064E \u0627\u064B \u0628\u0640\u0628 \u0640\u0628 \u0628\u200D \u200D\u0628 \u0628\u200C\u0628", null),
+        ("\u067E\u067E\u067E \u0686\u0698\u06AF \u06CC\u06CC\u06CC \u0649\u0649\u0649 \u06A9\u06C1\u06D2 \u0671\u0679\u0679", null),
+        ("\u0627\u0644\u0644\u0647 \u0626\u062C \u0645\u062D\u0645\u062F \u0633\u0644\u0627\u0645 \u0639\u0631\u0628\u064A", null),
+        ("\uFE8F\u0628 \u0628\uFEFB A\u0628B 12\u0628", null),
+    ];
+
+    // A font of Thai without substitution table, with the forms of its marks in the private use area: each kind of
+    // consonant (usual, with an ascender, with a descender that goes or stays) with a vowel above, a vowel below, a
+    // tone mark, and both; the sara am; several marks at one place; marks on what is no consonant.
+    private static readonly ShapingText[] ThaiFormsShapingCases =
+    [
+        ("\u0E01\u0E48 \u0E01\u0E34 \u0E01\u0E34\u0E48 \u0E01\u0E38 \u0E01\u0E38\u0E48 \u0E01\u0E4C \u0E01\u0E31\u0E49", null),
+        ("\u0E1B\u0E48 \u0E1B\u0E34 \u0E1B\u0E34\u0E48 \u0E1B\u0E38 \u0E1B\u0E38\u0E48 \u0E1D\u0E31\u0E49 \u0E1F\u0E4D \u0E1F\u0E47", null),
+        ("\u0E0D\u0E38 \u0E0D\u0E39 \u0E10\u0E3A \u0E0D\u0E48 \u0E0D\u0E34 \u0E10\u0E38\u0E48 \u0E0D \u0E10", null),
+        ("\u0E0E\u0E38 \u0E0F\u0E39 \u0E0E\u0E3A \u0E0E\u0E48 \u0E0F\u0E34\u0E49 \u0E0E\u0E38\u0E48", null),
+        ("\u0E01\u0E33 \u0E01\u0E48\u0E33 \u0E1B\u0E33 \u0E1B\u0E49\u0E33 \u0E19\u0E49\u0E33", null),
+        ("\u0E01\u0E48\u0E49 \u0E1B\u0E48\u0E49\u0E4A \u0E1B\u0E34\u0E47\u0E48 \u0E01\u0E38\u0E39 \u0E0D\u0E38\u0E3A \u0E01\u0E3A\u0E38", null),
+        ("\u0E32\u0E38 \u0E32\u0E48 \u0020\u0E38 \u0020\u0E48 \u0E51\u0E39 A\u0E48 \u0E2C\u0E48 \u0E2C\u0E38", null),
+        ("\u0E20\u0E32\u0E29\u0E32\u0E44\u0E17\u0E22 \u0E1B\u0E39\u0E48 \u0E1F\u0E49\u0E32 \u0E0D\u0E35\u0E48\u0E1B\u0E38\u0E48\u0E19 \u0E01\u0E0F\u0E38", null),
+    ];
+
     private static readonly Dictionary<string, ShapingText[]> ShapingCases = new(StringComparer.Ordinal)
     {
+        ["fonts/synthetic-thai-forms"] = ThaiFormsShapingCases,
+        ["fonts/synthetic-thai-forms-mac"] = ThaiFormsShapingCases,
+        ["fonts/synthetic-marks"] = MarksShapingCases,
+        ["fonts/synthetic-arabic-forms"] = ArabicFormsShapingCases,
+        ["fonts/noto-color-emoji"] = EmojiShapingCases,
         ["fonts/noto-naskh-arabic"] = ArabicShapingCases,
         ["fonts/noto-nastaliq-urdu"] = UrduShapingCases,
         ["fonts/noto-sans-devanagari"] = DevanagariShapingCases,
@@ -1500,10 +1628,12 @@ internal static partial class FontCorpus
         ["fonts/noto-sans-cjk-jp-variable"] = VariableCjkShapingCases,
         ["fonts/synthetic-variable"] = VariableBoxesShapingCases,
         ["fonts/synthetic-variable-phantom"] = VariableBoxesShapingCases,
+        ["fonts/synthetic-variable-axes"] = VariableBoxesShapingCases,
         ["fonts/noto-sans-regular"] = LatinShapingCases,
         ["fonts/noto-sans-regular-cff"] = LatinShapingCases,
         ["fonts/noto-sans-cjk-jp-regular"] = CjkShapingCases,
         ["fonts/synthetic-boxes"] = BoxesShapingCases,
+        ["fonts/synthetic-languages"] = CreateLanguageShapingCases(),
         ["fonts/trt-rvrn"] = RvrnShapingCases,
         ["fonts/trt-rvrn-cff2"] = RvrnShapingCases,
         ["fonts/trt-gpos-four"] = MarkVariationShapingCases,
@@ -2078,7 +2208,7 @@ internal static partial class FontCorpus
         var fontFile = work / "shaping.font";
         File.WriteAllBytes(fontFile, font);
         var results = new List<object?>();
-        foreach (var (text, features, variations) in cases)
+        foreach (var (text, features, variations, language) in cases)
         {
             var codePoints = text.EnumerateRunes().Select(rune => rune.Value.ToString("X4", CultureInfo.InvariantCulture)).ToList();
             List<string> arguments = ["--shapers=ot", "--font-funcs=ot", "--output-format=json", "--no-glyph-names"];
@@ -2090,6 +2220,11 @@ internal static partial class FontCorpus
             if (variations is not null)
             {
                 arguments.Add("--variations=" + variations);
+            }
+
+            if (language is not null)
+            {
+                arguments.Add("--language=" + language);
             }
 
             arguments.Add("--unicodes=" + string.Join(',', codePoints.Select(codePoint => "U+" + codePoint)));
@@ -2112,6 +2247,11 @@ internal static partial class FontCorpus
             if (variations is not null)
             {
                 result["variations"] = variations;
+            }
+
+            if (language is not null)
+            {
+                result["language"] = language;
             }
 
             result["glyphs"] = glyphs;
@@ -2279,8 +2419,8 @@ internal static partial class FontCorpus
     [GeneratedRegex(@"\(HarfBuzz\) (?<version>\S+)", RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 10_000)]
     private static partial Regex HarfBuzzVersionRegex();
 
-    /// <summary>A text to shape, with the features and the instance of a variable font it is shaped with.</summary>
-    private sealed record ShapingText(string Text, string? Features, string? Variations = null)
+    /// <summary>A text to shape, with the features, the instance of a variable font and the language it is shaped with.</summary>
+    private sealed record ShapingText(string Text, string? Features, string? Variations = null, string? Language = null)
     {
         public static implicit operator ShapingText((string Text, string? Features) value) => new(value.Text, value.Features);
     }

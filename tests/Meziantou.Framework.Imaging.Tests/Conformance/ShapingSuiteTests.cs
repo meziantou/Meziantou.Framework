@@ -53,7 +53,7 @@ public sealed class ShapingSuiteTests
             {
                 var buffer = new GlyphBuffer(ImageResourceLimits.Default);
                 TextShaper.AddText(buffer, text);
-                TextShaper.Shape(buffer, font.Face, UnicodeScript.Common, language: 0, isRightToLeft: false, ParseFeatures(fields[1]));
+                TextShaper.Shape(buffer, font.Face, UnicodeScript.Common, languages: [], isRightToLeft: false, ParseFeatures(fields[1]));
                 actual = Format(buffer, withPositions);
             }
             catch (Exception exception) when (exception is InvalidImageContentException or UnsupportedImageFeatureException)

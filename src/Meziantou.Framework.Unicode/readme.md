@@ -126,9 +126,9 @@ foreach (UnicodeLineBreak lineBreak in Unicode.EnumerateLineBreaks("A long line\
 - `UnicodeWordBreakBehavior`: `Normal`, `BreakAll` (a line can break between any two letters), `KeepAll` (no break
   between letters or ideographs).
 
-No dictionary is used: Thai, Lao, Khmer and the other scripts written without spaces only break at spaces and at
-zero width spaces. A soft hyphen (U+00AD) is a break opportunity like any other; the caller recognizes it by the
-character before the break.
+Without a dictionary, Thai, Lao, Khmer and the other scripts written without spaces only break at spaces and at
+zero width spaces: see [Line breaking with a dictionary](#line-breaking-with-a-dictionary). A soft hyphen (U+00AD) is
+a break opportunity like any other; the caller recognizes it by the character before the break.
 
 `Unicode.EnumerateScriptRuns` splits a text into runs of one script, for shaping and font selection
 ([UAX #24](https://www.unicode.org/reports/tr24/)): combining marks follow their base, spaces and punctuation follow
@@ -140,6 +140,64 @@ foreach (UnicodeScriptRun run in Unicode.EnumerateScriptRuns("gamma (γ) is"))
     // "gamma (" Latin, "γ" Greek, ") is" Latin
 }
 ```
+
+## Line breaking with a dictionary
+
+Thai, Lao, Khmer, Myanmar and a few other scripts are written without spaces between words. Their characters have the
+line breaking class `Complex_Context` (SA), and [UAX #14](https://www.unicode.org/reports/tr14/) leaves them to a
+dictionary: without one, a sentence has no break opportunity. `LineBreakDictionary` segments such text into the words
+of a list that you provide. No word list is included in this package: [ICU](https://github.com/unicode-org/icu)
+publishes word lists for Thai, Lao, Khmer and Burmese (`thaidict.txt`, `laodict.txt`, `khmerdict.txt`,
+`burmesedict.txt` in `icu4c/source/data/brkitr/dictionaries`) under the Unicode License; its `LICENSE` file has
+additional notices for some of them.
+
+```csharp
+// The word list, as plain text: one word per line
+var dictionary = LineBreakDictionary.Load("thaidict.txt");
+
+// The line break opportunities of a text: those of UAX #14, and those before the words of the dictionary
+foreach (UnicodeLineBreak lineBreak in Unicode.EnumerateLineBreaks("Hello ภาษาไทย!", dictionary))
+{
+    // 6 (after the space), 10 (before "ไทย"), 14 (the end of the text)
+}
+
+// The words of a run of text of the script of the dictionary
+Span<int> positions = stackalloc int[16];
+var count = dictionary.FindBreaks("ภาษาไทย", positions); // 1 position: 4
+```
+
+- The word list is plain text, in UTF-8 when it is read from a file or a stream: one word per line, `#` starts a
+  comment, blank lines are ignored, and so is what follows the first tab of a line (a frequency, for instance). A
+  word is kept as written, without normalization or case mapping: pass the text in the normalization form of the
+  list. A list that exceeds a limit of `LineBreakDictionaryOptions` (word count, word length, input length) is
+  rejected with a `FormatException`, so that a list from an untrusted source cannot exhaust memory.
+- A dictionary is immutable and thread-safe. `FindBreaks` and the enumeration do not allocate, and their cost is
+  proportional to the length of the text.
+
+`FindBreaks` segments the text it is given, and `Unicode.EnumerateLineBreaks` each run of the text, as follows:
+
+- A run is a maximal sequence of consecutive `Complex_Context` characters that starts with a letter: the combining
+  marks before the first letter belong to the character before them. Spaces, digits, punctuation, zero width spaces
+  and the letters of the other scripts are not in a run.
+- A word of the dictionary is only found between two boundaries of the run: its start, its end, and the grapheme
+  cluster boundaries that are not before a combining mark (rule LB9 of UAX #14). A line never breaks inside a
+  grapheme cluster, nor before a mark.
+- The words that are found must not overlap. Among the ways to choose them, the one that leaves the fewest UTF-16
+  code units uncovered is taken, then the one with the fewest words. When several remain, at the first position where
+  two of them differ the one with the longer word at that position is taken, a word being preferred to an uncovered
+  character: `ตากลม` is `ตาก` + `ลม`, not `ตา` + `กลม`, when the four words are in the list.
+- A line can break before each word that is found, except at the start of the run. The characters that are in no word
+  give no break: they stay with what precedes them, as the repetition mark U+0E46 or an unknown suffix do, and a run
+  without any word of the list has no break.
+- The breaks at the start and at the end of a run are those of UAX #14, where a `Complex_Context` character is a letter
+  or a combining mark. A break of the dictionary is not mandatory.
+- `UnicodeWordBreakBehavior.KeepAll` keeps the breaks of the dictionary, as `word-break: keep-all` does in CSS: they
+  are between words. With `BreakAll`, or `UnicodeLineBreakStrictness.Anywhere`, a line already breaks between any two
+  letters or grapheme clusters, and the dictionary is not used.
+- A run longer than 1,024 UTF-16 code units is segmented piece by piece, so that the memory is bounded: the rule is
+  applied to the longest part of its first 1,024 code units that ends at a boundary, the words and the uncovered
+  characters that start in the first 512 code units are kept, and the rule is applied again to what follows them. A
+  grapheme cluster longer than 1,024 code units is in no word.
 
 ## Hyphenation
 

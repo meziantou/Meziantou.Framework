@@ -5,7 +5,11 @@ namespace Meziantou.Framework.Imaging.CorpusGenerator.Infrastructure;
 /// <param name="Output">Generates into this (new or empty) directory and keeps it, instead of a temporary directory.</param>
 /// <param name="IccProfiles">The directory of the pinned checkout of the external ICC profiles (icc generator).</param>
 /// <param name="Fonts">The directory of the pinned third-party font files (fonts generator).</param>
-internal sealed record GeneratorOptions(bool Write, bool AcceptToolVersions, string? QoiHeader, string? Output = null, string? IccProfiles = null, string? Fonts = null);
+/// <param name="LanguageRegistry">The saved page of the registry of language system tags of OpenType (language-tags generator).</param>
+/// <param name="Iso639">The code list of ISO 639-2 (language-tags generator).</param>
+/// <param name="LanguageSubtags">The language subtag registry of BCP 47 (language-tags generator).</param>
+/// <param name="UnicodeData">The file UnicodeData.txt of the Unicode Character Database (arabic-forms generator).</param>
+internal sealed record GeneratorOptions(bool Write, bool AcceptToolVersions, string? QoiHeader, string? Output = null, string? IccProfiles = null, string? Fonts = null, string? LanguageRegistry = null, string? Iso639 = null, string? LanguageSubtags = null, string? UnicodeData = null);
 
 /// <summary>Regenerates (a part of) the corpus in a temporary directory, then reports the differences with the committed
 /// corpus (check) or replaces it (write).</summary>

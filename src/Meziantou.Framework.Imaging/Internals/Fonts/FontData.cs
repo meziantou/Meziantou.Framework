@@ -10,16 +10,20 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </remarks>
 internal sealed class FontData
 {
-    public FontData(byte[] bytes, ImageConfiguration configuration)
+    public FontData(byte[] bytes, ImageConfiguration configuration, bool useEmbeddedBitmaps = false)
     {
         Bytes = bytes;
         Configuration = configuration;
+        UseEmbeddedBitmaps = useEmbeddedBitmaps;
     }
 
     public byte[] Bytes { get; }
 
     /// <summary>Gets the configuration the font was loaded with.</summary>
     public ImageConfiguration Configuration { get; }
+
+    /// <summary>Gets a value indicating whether the bitmaps without colors of the font replace its outlines at the sizes they are made for.</summary>
+    public bool UseEmbeddedBitmaps { get; }
 
     /// <summary>Gets the limits of the configuration the font was loaded with: they bound the work of decoding a glyph and the size of a text.</summary>
     public ImageResourceLimits Limits => Configuration.Limits;

@@ -1238,6 +1238,993 @@ public sealed class UnicodeTests
         Assert.Throws<ArgumentOutOfRangeException>("wordBreak", () => { _ = Unicode.EnumerateLineBreaks("a", wordBreak: (UnicodeWordBreakBehavior)3); });
     }
 
+    // Thai: phasa (language), thai, sawatdi (hello), khrap (a polite particle), chan (I), kin (to eat), khao (rice),
+    // ta (eye), tak (to dry), klom (round), lom (wind), nam (water), di (good).
+    private const string ThaiPhasa = "\u0E20\u0E32\u0E29\u0E32";
+    private const string ThaiThai = "\u0E44\u0E17\u0E22";
+    private const string ThaiSawatdi = "\u0E2A\u0E27\u0E31\u0E2A\u0E14\u0E35";
+    private const string ThaiKhrap = "\u0E04\u0E23\u0E31\u0E1A";
+    private const string ThaiChan = "\u0E09\u0E31\u0E19";
+    private const string ThaiKin = "\u0E01\u0E34\u0E19";
+    private const string ThaiKhao = "\u0E02\u0E49\u0E32\u0E27";
+    private const string ThaiTa = "\u0E15\u0E32";
+    private const string ThaiTak = "\u0E15\u0E32\u0E01";
+    private const string ThaiKlom = "\u0E01\u0E25\u0E21";
+    private const string ThaiLom = "\u0E25\u0E21";
+    private const string ThaiNam = "\u0E19\u0E49\u0E33";
+    private const string ThaiDi = "\u0E14\u0E35";
+
+    // Lao: phasa (language), lao, sabai (well), di (good).
+    private const string LaoPhasa = "\u0E9E\u0EB2\u0EAA\u0EB2";
+    private const string LaoLao = "\u0EA5\u0EB2\u0EA7";
+    private const string LaoSabai = "\u0EAA\u0EB0\u0E9A\u0EB2\u0E8D";
+    private const string LaoDi = "\u0E94\u0EB5";
+
+    // Khmer: pheasa (language), khmer.
+    private const string KhmerPheasa = "\u1797\u17B6\u179F\u17B6";
+    private const string KhmerKhmer = "\u1781\u17D2\u1798\u17C2\u179A";
+
+    // Myanmar: myanma, sa (writing), kyezu (thanks), tin, pa, te (the three other words of "thank you").
+    private const string MyanmarMyanma = "\u1019\u103C\u1014\u103A\u1019\u102C";
+    private const string MyanmarSa = "\u1005\u102C";
+    private const string MyanmarKyezu = "\u1000\u103B\u1031\u1038\u1007\u1030\u1038";
+    private const string MyanmarTin = "\u1010\u1004\u103A";
+    private const string MyanmarPa = "\u1015\u102B";
+    private const string MyanmarTe = "\u1010\u101A\u103A";
+
+    [Theory]
+    [InlineData(ThaiPhasa + "\n" + ThaiThai, ThaiPhasa + ThaiThai, new[] { 4 })]
+    [InlineData(ThaiSawatdi + "\n" + ThaiKhrap, ThaiSawatdi + ThaiKhrap, new[] { 6 })]
+    [InlineData(ThaiChan + "\n" + ThaiKin + "\n" + ThaiKhao, ThaiChan + ThaiKin + ThaiKhao, new[] { 3, 6 })]
+    [InlineData(LaoPhasa + "\n" + LaoLao, LaoPhasa + LaoLao, new[] { 4 })]
+    [InlineData(LaoSabai + "\n" + LaoDi, LaoSabai + LaoDi, new[] { 5 })]
+    [InlineData(LaoSabai + "\n" + LaoDi + "\n" + LaoPhasa + "\n" + LaoLao, LaoSabai + LaoDi + LaoPhasa + LaoLao, new[] { 5, 7, 11 })]
+    [InlineData(KhmerPheasa + "\n" + KhmerKhmer, KhmerPheasa + KhmerKhmer, new[] { 4 })]
+    [InlineData(KhmerPheasa + "\n" + KhmerKhmer, KhmerKhmer + KhmerPheasa + KhmerKhmer, new[] { 5, 9 })]
+    [InlineData(MyanmarMyanma + "\n" + MyanmarSa, MyanmarMyanma + MyanmarSa, new[] { 6 })]
+    [InlineData(MyanmarKyezu + "\n" + MyanmarTin + "\n" + MyanmarPa + "\n" + MyanmarTe, MyanmarKyezu + MyanmarTin + MyanmarPa + MyanmarTe, new[] { 7, 10, 12 })]
+    // A text that is one word, that has no word, or that is empty has no break.
+    [InlineData(ThaiPhasa + "\n" + ThaiThai, ThaiPhasa, new int[0])]
+    [InlineData(ThaiPhasa + "\n" + ThaiThai, ThaiKhrap, new int[0])]
+    [InlineData(ThaiPhasa + "\n" + ThaiThai, "", new int[0])]
+    // The characters that are in no word stay with what precedes them: an unknown suffix, an unknown word between
+    // two words, and the repetition mark U+0E46. An unknown prefix is followed by a break.
+    [InlineData(ThaiPhasa + "\n" + ThaiThai, ThaiPhasa + ThaiThai + "\u0E01\u0E02", new[] { 4 })]
+    [InlineData(ThaiPhasa + "\n" + ThaiThai, ThaiPhasa + "\u0E01\u0E02" + ThaiThai, new[] { 6 })]
+    [InlineData(ThaiPhasa + "\n" + ThaiThai, "\u0E01\u0E02" + ThaiPhasa + ThaiThai, new[] { 2, 6 })]
+    [InlineData(ThaiPhasa + "\n" + ThaiThai, "\u0E01\u0E02\u0E04", new int[0])]
+    [InlineData(ThaiDi + "\n" + ThaiKhrap, ThaiDi + "\u0E46" + ThaiKhrap, new[] { 3 })]
+    // Two segmentations in two words: the longer first word wins ("tak lom", not "ta klom").
+    [InlineData(ThaiTa + "\n" + ThaiTak + "\n" + ThaiKlom + "\n" + ThaiLom, ThaiTa + ThaiKlom, new[] { 3 })]
+    // The words are code units: a position counts both code units of a character outside the BMP (Ahom).
+    [InlineData("\U00011700\U00011701\n\U00011700", "\U00011700\U00011701\U00011700\U00011700", new[] { 4, 6 })]
+    // The text is segmented whatever its script.
+    [InlineData("in\nput\ninput", "inputinput", new[] { 5 })]
+    public void FindBreaks_ReturnsTheStartOfEachWord(string words, string text, int[] expected)
+    {
+        var dictionary = LineBreakDictionary.Parse(words);
+
+        Assert.Equal(expected, FindDictionaryBreaks(dictionary, text));
+        Assert.Equal(expected, FindBreaksExhaustively(text, [.. words.Split('\n')]));
+    }
+
+    [Theory]
+    // The fewest uncovered characters first: the longest match "abc" would leave "d" uncovered.
+    [InlineData("abc ab cd", "abcd", new[] { 2 })]
+    [InlineData("abc ab", "abcd", new int[0])]
+    // Then the fewest words.
+    [InlineData("a b c d ab cd", "abcd", new[] { 2 })]
+    [InlineData("a b c d ab cd abcd", "abcd", new int[0])]
+    [InlineData("a b c d", "abcd", new[] { 1, 2, 3 })]
+    [InlineData("ab a bcde c de", "abcde", new[] { 1 })]
+    // Then the longer word at the first difference.
+    [InlineData("ab c a bc", "abc", new[] { 2 })]
+    [InlineData("a bc abc d ab cd", "abcd", new[] { 3 })]
+    // A word is preferred to an uncovered character: "ab" then "c" uncovered, not "a" uncovered then "bc".
+    [InlineData("ab bc", "abc", new int[0])]
+    [InlineData("ab bc", "abcbc", new[] { 3 })]
+    [InlineData("ab ba bac", "ababac", new[] { 3 })]
+    [InlineData("ab ba bac", "ababab", new[] { 2, 4 })]
+    // The end of the text decides its start: the first word is "da" so that "bac" covers the end.
+    [InlineData("d da ab ba bac", "dabab", new[] { 1, 3 })]
+    [InlineData("d da ab ba bac", "dabac", new[] { 2 })]
+    [InlineData("d da ab ba bac", "dababababab", new[] { 1, 3, 5, 7, 9 })]
+    [InlineData("d da ab ba bac", "dababababac", new[] { 2, 4, 6, 8 })]
+    // A word can be in the text more than once, and overlap another one.
+    [InlineData("aa", "aaaaa", new[] { 2 })]
+    [InlineData("aa aaa", "aaaaa", new[] { 3 })]
+    [InlineData("aa aaa", "aaaaaaa", new[] { 3, 5 })]
+    public void FindBreaks_ChoosesTheSegmentation(string words, string text, int[] expected)
+    {
+        words = ToThaiLetters(words).Replace(' ', '\n');
+        text = ToThaiLetters(text);
+        var dictionary = LineBreakDictionary.Parse(words);
+
+        Assert.Equal(expected, FindDictionaryBreaks(dictionary, text));
+        Assert.Equal(expected, FindBreaksExhaustively(text, [.. words.Split('\n')]));
+    }
+
+    [Theory]
+    // A word cannot end before a combining mark: the first letter carries U+0E31.
+    [InlineData("\u0E01\n\u0E31\u0E01", "\u0E01\u0E31\u0E01", new[] { 2 })]
+    [InlineData("\u0E01", "\u0E01\u0E31\u0E01\u0E01", new[] { 2, 3 })]
+    // U+0E33 is a letter for the line breaking rules, and it is in the grapheme cluster of the letter before it.
+    [InlineData("\u0E19\u0E49\n\u0E33\u0E15\u0E32", ThaiNam + ThaiTa, new int[0])]
+    [InlineData("\u0E19\n\u0E33\n" + ThaiTa, ThaiNam + ThaiTa, new[] { 3 })]
+    [InlineData(ThaiNam + "\n" + ThaiTa, ThaiNam + ThaiTa, new[] { 3 })]
+    // A Khmer consonant, the sign coeng and the next consonant are one grapheme cluster.
+    [InlineData(KhmerPheasa + "\n\u1781\n\u1798\u17C2\u179A", KhmerPheasa + KhmerKhmer, new int[0])]
+    [InlineData(KhmerPheasa + "\n\u1781\u17D2\u1798\u17C2\n\u179A", KhmerPheasa + KhmerKhmer, new[] { 4, 8 })]
+    // U+102C is a combining mark that starts a grapheme cluster: no word ends before it.
+    [InlineData("\u1019\n\u102C\u1019", "\u1019\u102C\u1019", new[] { 2 })]
+    [InlineData("\u1019\n\u1019\u102C", "\u1019\u102C\u1019\u1019\u102C", new[] { 2, 3 })]
+    // The uncovered characters are counted in UTF-16 code units: the last letter and its mark are two.
+    [InlineData("\u0E01\u0E02\n\u0E02\u0E04\u0E31", "\u0E01\u0E02\u0E04\u0E31", new[] { 1 })]
+    // A combining mark of another script, and a zero width joiner.
+    [InlineData("a\nb", "aa\u0301b", new[] { 3 })]
+    [InlineData("a\nb", "aa\u200Db", new[] { 3 })]
+    public void FindBreaks_DoesNotBreakInsideAGraphemeClusterNorBeforeAMark(string words, string text, int[] expected)
+    {
+        var dictionary = LineBreakDictionary.Parse(words);
+
+        Assert.Equal(expected, FindDictionaryBreaks(dictionary, text));
+        Assert.Equal(expected, FindBreaksExhaustively(text, [.. words.Split('\n')]));
+    }
+
+    [Fact]
+    public void FindBreaks_SegmentsALongTextPieceByPiece()
+    {
+        var dictionary = LineBreakDictionary.Parse(ThaiPhasa + "\n" + ThaiThai);
+
+        // 3,500 code units: the pieces are joined without losing or adding a break.
+        var text = string.Concat(Enumerable.Repeat(ThaiPhasa + ThaiThai, 500));
+        var expected = new List<int>();
+        for (var i = 0; i < 500; i++)
+        {
+            if (i > 0)
+            {
+                expected.Add(i * 7);
+            }
+
+            expected.Add((i * 7) + 4);
+        }
+
+        Assert.Equal(expected.ToArray(), FindDictionaryBreaks(dictionary, text));
+        Assert.Equal(expected.Append(text.Length).ToArray(), GetLineBreakIndexes(text, dictionary));
+
+        // A text of 1,024 code units is segmented as a whole, and its end decides its start: "e", "da", 508 times
+        // "ba", "bac", "d" and "d" leave no character uncovered, when "e", "d" and "ab" would leave "ac".
+        dictionary = LineBreakDictionary.Parse(ToThaiLetters("e d da ab ba bac").Replace(' ', '\n'));
+        text = ToThaiLetters("ed" + string.Concat(Enumerable.Repeat("ab", 509)) + "acdd");
+        expected.Clear();
+        for (var i = 1; i <= 1019; i += 2)
+        {
+            expected.Add(i);
+        }
+
+        expected.Add(1022);
+        expected.Add(1023);
+        Assert.HasCount(1024, text);
+        Assert.Equal(expected.ToArray(), FindDictionaryBreaks(dictionary, text));
+        Assert.Equal(expected.Append(text.Length).ToArray(), GetLineBreakIndexes(text, dictionary));
+
+        // A longer text is not. Its first 1,024 code units are "e", "d" and 511 times "ab": the words that start in
+        // the first 512 code units are kept. The text that follows them is short enough to be segmented as a whole:
+        // 344 times "ab", "a" that is uncovered, "bac" and "d".
+        text = ToThaiLetters("ed" + string.Concat(Enumerable.Repeat("ab", 600)) + "acd");
+        expected.Clear();
+        expected.Add(1);
+        for (var i = 2; i <= 1198; i += 2)
+        {
+            expected.Add(i);
+        }
+
+        expected.Add(1201);
+        expected.Add(1204);
+        Assert.HasCount(1205, text);
+        Assert.Equal(expected.ToArray(), FindDictionaryBreaks(dictionary, text));
+        Assert.Equal(expected.Append(text.Length).ToArray(), GetLineBreakIndexes(text, dictionary));
+    }
+
+    [Fact]
+    public void FindBreaks_LeavesAGraphemeClusterLongerThanAPieceUncovered()
+    {
+        var dictionary = LineBreakDictionary.Parse(ThaiPhasa + "\n" + ThaiThai + "\n\u0E01");
+        var cluster = "\u0E01" + new string('\u0E31', 1500);
+
+        var text = ThaiPhasa + cluster + ThaiThai;
+        Assert.Equal(new[] { 1505 }, FindDictionaryBreaks(dictionary, text));
+        Assert.Equal(new[] { 1505, 1508 }, GetLineBreakIndexes(text, dictionary));
+
+        text = cluster + ThaiPhasa + ThaiThai;
+        Assert.Equal(new[] { 1501, 1505 }, FindDictionaryBreaks(dictionary, text));
+        Assert.Equal(new[] { 1501, 1505, 1508 }, GetLineBreakIndexes(text, dictionary));
+
+        // The cluster fits in a piece, but not in the first one.
+        text = string.Concat(Enumerable.Repeat(ThaiPhasa + ThaiThai, 100)) + "\u0E01" + new string('\u0E31', 900) + ThaiThai;
+        var breaks = FindDictionaryBreaks(dictionary, text);
+        Assert.HasCount(200, breaks);
+        Assert.Equal(new[] { 693, 697, 1601 }, breaks[^3..]);
+        Assert.Equal(breaks.Append(text.Length).ToArray(), GetLineBreakIndexes(text, dictionary));
+
+        // The sign coeng joins the Khmer consonants around it: 541 of them are one grapheme cluster, and the word
+        // that is the end of the cluster is not found in it.
+        text = string.Concat(Enumerable.Repeat("\u1780\u17D2", 540)) + "\u1780";
+        dictionary = LineBreakDictionary.Parse(text.AsSpan(1024));
+        Assert.Equal(text.Length, Unicode.GetGraphemeClusterLength(text));
+        Assert.Equal(new[] { text.Length }, FindDictionaryBreaks(dictionary, text + text[1024..]));
+        Assert.Empty(FindDictionaryBreaks(dictionary, text));
+        Assert.Equal(new[] { text.Length }, GetLineBreakIndexes(text, dictionary));
+    }
+
+    [Fact]
+    public void FindBreaks_AgreesWithAnExhaustiveSearch()
+    {
+        // Letters, a nonspacing mark, a letter that extends a grapheme cluster (U+0E33), a Myanmar consonant, the
+        // sign that stacks it under another (U+1039), and a combining mark that starts a grapheme cluster (U+102C).
+        string[] alphabet = ["\u0E01", "\u0E02", "\u0E04", "\u0E31", "\u0E33", "\u1019", "\u1039", "\u102C"];
+        var state = 12345u;
+        var count = 0;
+        for (var iteration = 0; iteration < 4000; iteration++)
+        {
+            var text = RandomText(ref state, alphabet, 1 + NextRandom(ref state, 10));
+            var words = new HashSet<string>(StringComparer.Ordinal);
+            var wordCount = NextRandom(ref state, 9);
+            for (var i = 0; i < wordCount; i++)
+            {
+                if (NextRandom(ref state, 2) == 0)
+                {
+                    words.Add(RandomText(ref state, alphabet, 1 + NextRandom(ref state, 4)));
+                }
+                else
+                {
+                    var start = NextRandom(ref state, text.Length);
+                    words.Add(text.Substring(start, 1 + NextRandom(ref state, Math.Min(5, text.Length - start))));
+                }
+            }
+
+            var dictionary = LineBreakDictionary.Parse(string.Join('\n', words));
+            var expected = FindBreaksExhaustively(text, words);
+            var actual = FindDictionaryBreaks(dictionary, text);
+            if (!expected.AsSpan().SequenceEqual(actual))
+            {
+                Assert.Fail($"'{Escape(text)}' with [{string.Join(' ', words.Select(Escape))}]: expected {string.Join(' ', expected)}, actual {string.Join(' ', actual)}");
+            }
+
+            count += expected.Length;
+        }
+
+        Assert.True(count > 1500, $"Only {count} breaks were compared");
+    }
+
+    [Fact]
+    public void FindBreaks_AgreesWithTheRuleAppliedPieceByPiece()
+    {
+        // Texts longer than a piece, with words short enough to be found everywhere. A space ends a run for the
+        // enumerator, and is a character like another for FindBreaks.
+        string[] alphabet = ["\u0E01", "\u0E02", "\u0E04", "\u0E01", "\u0E02", "\u0E31", "\u0E33", "\u1019", "\u1039", "\u102C"];
+        var state = 777u;
+        var count = 0;
+        for (var iteration = 0; iteration < 40; iteration++)
+        {
+            var builder = new StringBuilder();
+            var length = 1000 + NextRandom(ref state, 3000);
+            var spaces = NextRandom(ref state, 3);
+            for (var i = 0; i < length; i++)
+            {
+                builder.Append(spaces != 0 && NextRandom(ref state, 1500) == 0 ? " " : alphabet[NextRandom(ref state, alphabet.Length)]);
+            }
+
+            var text = builder.ToString();
+            var words = new HashSet<string>(StringComparer.Ordinal);
+            var wordCount = 4 + NextRandom(ref state, 30);
+            for (var i = 0; i < wordCount; i++)
+            {
+                words.Add(RandomText(ref state, alphabet, 1 + NextRandom(ref state, 4)));
+            }
+
+            var dictionary = LineBreakDictionary.Parse(string.Join('\n', words));
+            var expected = FindBreaksPieceByPiece(text, words);
+            var actual = FindDictionaryBreaks(dictionary, text);
+            if (!expected.AsSpan().SequenceEqual(actual))
+            {
+                Assert.Fail($"Iteration {iteration}: expected {string.Join(' ', expected.Except(actual).Take(10))}, unexpected {string.Join(' ', actual.Except(expected).Take(10))}");
+            }
+
+            // The breaks of the enumerator are those of the annex and those of each run.
+            var expectedLineBreaks = new SortedSet<int>(GetLineBreakIndexes(text, dictionary: null));
+            foreach (var (start, end) in GetComplexContextRuns(text))
+            {
+                expectedLineBreaks.UnionWith(FindBreaksPieceByPiece(text[start..end], words).Select(index => start + index));
+            }
+
+            Assert.Equal(expectedLineBreaks.ToArray(), GetLineBreakIndexes(text, dictionary));
+            Assert.Equal(expectedLineBreaks.ToArray(), GetLineBreakIndexes(text, dictionary, UnicodeLineBreakStrictness.Normal, UnicodeWordBreakBehavior.KeepAll));
+            count += actual.Length;
+        }
+
+        Assert.True(count > 10000, $"Only {count} breaks were compared");
+    }
+
+    [Fact]
+    public void FindBreaks_ThrowsWhenTheDestinationIsTooSmall()
+    {
+        var dictionary = LineBreakDictionary.Parse(ThaiChan + "\n" + ThaiKin + "\n" + ThaiKhao);
+        var text = ThaiChan + ThaiKin + ThaiKhao;
+
+        var positions = new int[2];
+        Assert.Equal(2, dictionary.FindBreaks(text, positions));
+        Assert.Equal(new[] { 3, 6 }, positions);
+
+        Assert.Throws<ArgumentException>("breakPositions", () => { dictionary.FindBreaks(text, new int[1]); });
+        Assert.Throws<ArgumentException>("breakPositions", () => { dictionary.FindBreaks(text, []); });
+        Assert.Equal(0, dictionary.FindBreaks(ThaiChan, []));
+        Assert.Equal(0, LineBreakDictionary.Parse("").FindBreaks(text, []));
+    }
+
+    [Fact]
+    public void FindBreaks_DoesNotAllocate()
+    {
+        var dictionary = LineBreakDictionary.Parse(ThaiPhasa + "\n" + ThaiThai + "\n" + ThaiSawatdi + "\n" + ThaiKhrap);
+        var shortText = ThaiSawatdi + ThaiKhrap + ThaiPhasa + ThaiThai;
+        var longText = string.Concat(Enumerable.Repeat(shortText, 200));
+        var mixedText = "Hello " + shortText + ", " + longText + " (" + shortText + ")";
+        var positions = new int[longText.Length];
+        dictionary.FindBreaks(shortText, positions);
+        dictionary.FindBreaks(longText, positions);
+        var count = 0;
+        foreach (var lineBreak in Unicode.EnumerateLineBreaks(mixedText, dictionary))
+        {
+            count += lineBreak.Index;
+        }
+
+        // Tiered compilation running concurrently can occasionally attribute a few bytes to this thread: best of several rounds
+        var allocated = long.MaxValue;
+        for (var round = 0; round < 5 && allocated != 0; round++)
+        {
+            var before = GC.GetAllocatedBytesForCurrentThread();
+            for (var i = 0; i < 20; i++)
+            {
+                dictionary.FindBreaks(shortText, positions);
+                dictionary.FindBreaks(longText, positions);
+                foreach (var lineBreak in Unicode.EnumerateLineBreaks(mixedText, dictionary))
+                {
+                    count += lineBreak.Index;
+                }
+            }
+
+            allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+        }
+
+        Assert.Equal(0, allocated);
+        Assert.True(count > 0);
+    }
+
+    [Theory]
+    [InlineData(ThaiPhasa + ThaiThai, new[] { 4, 7 }, new[] { 7 })]
+    // The rules of the annex decide the start and the end of a run: spaces, letters of another script, digits and punctuation.
+    [InlineData("Hello " + ThaiSawatdi + ThaiKhrap + " world", new[] { 6, 12, 17, 22 }, new[] { 6, 17, 22 })]
+    [InlineData("Hello " + ThaiPhasa + ThaiThai + "!", new[] { 6, 10, 14 }, new[] { 6, 14 })]
+    [InlineData("abc" + ThaiPhasa + ThaiThai + "abc", new[] { 7, 13 }, new[] { 13 })]
+    [InlineData(ThaiPhasa + "123" + ThaiThai, new[] { 10 }, new[] { 10 })]
+    [InlineData(ThaiPhasa + "\u0E51" + ThaiThai, new[] { 8 }, new[] { 8 })]
+    [InlineData("(" + ThaiPhasa + ThaiThai + ")", new[] { 5, 9 }, new[] { 9 })]
+    [InlineData(ThaiPhasa + ThaiThai + ", " + ThaiThai + ThaiPhasa, new[] { 4, 9, 12, 16 }, new[] { 9, 16 })]
+    [InlineData(ThaiPhasa + ThaiThai + "\n" + ThaiPhasa + ThaiThai, new[] { 4, 8, 12, 15 }, new[] { 8, 15 })]
+    [InlineData(ThaiPhasa + "-" + ThaiThai + ThaiPhasa, new[] { 5, 8, 12 }, new[] { 5, 12 })]
+    // A zero width space still gives a break, and ends a run: "phasa" is not found across it.
+    [InlineData(ThaiPhasa + ThaiThai + "\u200B" + ThaiSawatdi + ThaiKhrap, new[] { 4, 8, 14, 18 }, new[] { 8, 18 })]
+    [InlineData("\u0E20\u0E32\u200B\u0E29\u0E32" + ThaiThai, new[] { 3, 5, 8 }, new[] { 3, 8 })]
+    // A word joiner and a no-break space end a run too, and the start of a run is never a break of the dictionary.
+    [InlineData(ThaiPhasa + "\u2060" + ThaiThai + ThaiPhasa, new[] { 8, 12 }, new[] { 12 })]
+    [InlineData(ThaiPhasa + "\u00A0" + ThaiThai + ThaiPhasa, new[] { 8, 12 }, new[] { 12 })]
+    // The characters that are in no word stay with what precedes them.
+    [InlineData(ThaiPhasa + ThaiThai + "\u0E01\u0E02 " + ThaiDi + "\u0E46" + ThaiKhrap, new[] { 4, 10, 13, 17 }, new[] { 10, 17 })]
+    [InlineData("\u0E01\u0E02\u0E04 " + ThaiNam, new[] { 4, 7 }, new[] { 4, 7 })]
+    // A combining mark of another script ends a run: the letter after it is the start of the next run.
+    [InlineData(ThaiPhasa + "\u0301" + ThaiThai + ThaiPhasa, new[] { 8, 12 }, new[] { 12 })]
+    // A Complex_Context mark that follows a character of another class belongs to that character: the run starts at the first letter.
+    [InlineData("a\u0E31" + ThaiPhasa + ThaiThai, new[] { 6, 9 }, new[] { 9 })]
+    [InlineData("(\u0E31" + ThaiPhasa + ThaiThai, new[] { 6, 9 }, new[] { 9 })]
+    [InlineData(" \u0E31" + ThaiPhasa + ThaiThai, new[] { 1, 6, 9 }, new[] { 1, 9 })]
+    [InlineData("\u0E31" + ThaiPhasa + ThaiThai, new[] { 5, 8 }, new[] { 8 })]
+    // The other scripts.
+    [InlineData(LaoSabai + LaoDi + " " + LaoPhasa + LaoLao, new[] { 5, 8, 12, 15 }, new[] { 8, 15 })]
+    [InlineData(KhmerPheasa + KhmerKhmer + "\u17D4", new[] { 4, 10 }, new[] { 10 })]
+    [InlineData(MyanmarKyezu + MyanmarTin + MyanmarPa + MyanmarTe + "\u104B" + MyanmarMyanma + MyanmarSa, new[] { 7, 10, 12, 16, 22, 24 }, new[] { 16, 24 })]
+    public void EnumerateLineBreaks_WithADictionary_BreaksBeforeTheWords(string text, int[] expectedIndexes, int[] expectedWithoutDictionary)
+    {
+        var dictionary = LineBreakDictionary.Parse(string.Join('\n', ThaiPhasa, ThaiThai, ThaiSawatdi, ThaiKhrap, ThaiDi, ThaiNam, LaoPhasa, LaoLao, LaoSabai, LaoDi, KhmerPheasa, KhmerKhmer, MyanmarMyanma, MyanmarSa, MyanmarKyezu, MyanmarTin, MyanmarPa, MyanmarTe));
+
+        Assert.Equal(expectedWithoutDictionary, GetLineBreakIndexes(text, dictionary: null));
+        Assert.Equal(expectedIndexes, GetLineBreakIndexes(text, dictionary));
+
+        // A break of the dictionary is not mandatory.
+        var mandatory = new List<int>();
+        foreach (var lineBreak in Unicode.EnumerateLineBreaks(text))
+        {
+            if (lineBreak.IsMandatory)
+            {
+                mandatory.Add(lineBreak.Index);
+            }
+        }
+
+        var mandatoryWithDictionary = new List<int>();
+        foreach (var lineBreak in Unicode.EnumerateLineBreaks(text, dictionary))
+        {
+            if (lineBreak.IsMandatory)
+            {
+                mandatoryWithDictionary.Add(lineBreak.Index);
+            }
+        }
+
+        Assert.Equal(mandatory.ToArray(), mandatoryWithDictionary.ToArray());
+    }
+
+    [Theory]
+    [InlineData(ThaiPhasa + ThaiThai, UnicodeLineBreakStrictness.Normal, UnicodeWordBreakBehavior.Normal, new[] { 4, 7 }, new[] { 7 })]
+    // The breaks of the dictionary are between words: they are kept when a line does not break inside a word.
+    [InlineData(ThaiPhasa + ThaiThai, UnicodeLineBreakStrictness.Strict, UnicodeWordBreakBehavior.KeepAll, new[] { 4, 7 }, new[] { 7 })]
+    [InlineData("\u65E5\u672C" + ThaiPhasa + ThaiThai + "\u65E5\u672C", UnicodeLineBreakStrictness.Strict, UnicodeWordBreakBehavior.KeepAll, new[] { 6, 11 }, new[] { 11 })]
+    [InlineData("\u65E5\u672C" + ThaiPhasa + ThaiThai + "\u65E5\u672C", UnicodeLineBreakStrictness.Strict, UnicodeWordBreakBehavior.Normal, new[] { 1, 2, 6, 9, 10, 11 }, new[] { 1, 2, 9, 10, 11 })]
+    // A line already breaks between any two letters, or any two grapheme clusters: the dictionary changes nothing.
+    [InlineData(ThaiPhasa + ThaiThai, UnicodeLineBreakStrictness.Strict, UnicodeWordBreakBehavior.BreakAll, new[] { 1, 2, 3, 4, 5, 6, 7 }, new[] { 1, 2, 3, 4, 5, 6, 7 })]
+    [InlineData(ThaiSawatdi + ThaiKhrap, UnicodeLineBreakStrictness.Strict, UnicodeWordBreakBehavior.BreakAll, new[] { 1, 3, 4, 6, 7, 9, 10 }, new[] { 1, 3, 4, 6, 7, 9, 10 })]
+    [InlineData(ThaiSawatdi + ThaiKhrap, UnicodeLineBreakStrictness.Anywhere, UnicodeWordBreakBehavior.Normal, new[] { 1, 3, 4, 6, 7, 9, 10 }, new[] { 1, 3, 4, 6, 7, 9, 10 })]
+    [InlineData(ThaiNam + ThaiTa, UnicodeLineBreakStrictness.Anywhere, UnicodeWordBreakBehavior.KeepAll, new[] { 3, 4, 5 }, new[] { 3, 4, 5 })]
+    public void EnumerateLineBreaks_WithADictionary_CombinesWithTheTailoring(string text, UnicodeLineBreakStrictness strictness, UnicodeWordBreakBehavior wordBreak, int[] expectedIndexes, int[] expectedWithoutDictionary)
+    {
+        var dictionary = LineBreakDictionary.Parse(string.Join('\n', ThaiPhasa, ThaiThai, ThaiSawatdi, ThaiKhrap, ThaiNam, ThaiTa));
+
+        Assert.Equal(expectedWithoutDictionary, GetLineBreakIndexes(text, dictionary: null, strictness, wordBreak));
+        Assert.Equal(expectedIndexes, GetLineBreakIndexes(text, dictionary, strictness, wordBreak));
+    }
+
+    [Fact]
+    public void EnumerateLineBreaks_WithADictionary_AddsTheBreaksOfEachRun()
+    {
+        // The alphabet of FindBreaks_AgreesWithAnExhaustiveSearch, and characters of the other line breaking classes.
+        string[] alphabet = ["\u0E01", "\u0E02", "\u0E04", "\u0E31", "\u0E33", "\u1019", "\u1039", "\u102C", "\u0E01", "\u0E02", "a", " ", "1", ",", "(", ")", "-", "\n", "\u200B", "\u200D", "\u0301", "\u00A0", "\u65E5", "\u0E46"];
+        var empty = LineBreakDictionary.Parse("# no word\n");
+        var state = 2024u;
+        var count = 0;
+        for (var iteration = 0; iteration < 3000; iteration++)
+        {
+            // Two characters out of three are among the first eight of the alphabet, so that the runs are long enough to have several words.
+            var builder = new StringBuilder();
+            var length = 1 + NextRandom(ref state, 20);
+            for (var i = 0; i < length; i++)
+            {
+                builder.Append(alphabet[NextRandom(ref state, NextRandom(ref state, 3) == 0 ? alphabet.Length : 8)]);
+            }
+
+            var text = builder.ToString();
+            var words = new HashSet<string>(StringComparer.Ordinal);
+            var wordCount = NextRandom(ref state, 9);
+            for (var i = 0; i < wordCount; i++)
+            {
+                var start = NextRandom(ref state, text.Length);
+                var word = text.Substring(start, 1 + NextRandom(ref state, Math.Min(4, text.Length - start)));
+                if (NextRandom(ref state, 2) == 0)
+                {
+                    word = RandomText(ref state, alphabet.AsSpan(0, 8), 1 + NextRandom(ref state, 3));
+                }
+
+                if (!word.AsSpan().ContainsAny("\n#") && word.AsSpan().Trim().Length == word.Length)
+                {
+                    words.Add(word);
+                }
+            }
+
+            var dictionary = LineBreakDictionary.Parse(string.Join('\n', words));
+            Assert.Equal(words.Count, dictionary.WordCount);
+
+            // The breaks of the dictionary: those of each run, found by the exhaustive search.
+            var dictionaryBreaks = new List<int>();
+            foreach (var (start, end) in GetComplexContextRuns(text))
+            {
+                var run = text[start..end];
+                var expected = FindBreaksExhaustively(run, words);
+                Assert.Equal(expected, FindDictionaryBreaks(dictionary, run));
+                dictionaryBreaks.AddRange(expected.Select(index => start + index));
+            }
+
+            var clusterBoundaries = new HashSet<int>();
+            foreach (var cluster in Unicode.EnumerateGraphemeClusters(text))
+            {
+                clusterBoundaries.Add(cluster.End.Value);
+            }
+
+            foreach (var strictness in Enum.GetValues<UnicodeLineBreakStrictness>())
+            {
+                foreach (var wordBreak in Enum.GetValues<UnicodeWordBreakBehavior>())
+                {
+                    var withoutDictionary = new List<UnicodeLineBreak>();
+                    foreach (var lineBreak in Unicode.EnumerateLineBreaks(text, strictness, wordBreak))
+                    {
+                        withoutDictionary.Add(lineBreak);
+                    }
+
+                    // No dictionary and a dictionary without a word change nothing.
+                    Assert.Equal(withoutDictionary, GetLineBreaks(text, dictionary: null, strictness, wordBreak));
+                    Assert.Equal(withoutDictionary, GetLineBreaks(text, empty, strictness, wordBreak));
+
+                    var actual = GetLineBreaks(text, dictionary, strictness, wordBreak);
+                    var expected = new SortedDictionary<int, bool>();
+                    foreach (var lineBreak in withoutDictionary)
+                    {
+                        expected.Add(lineBreak.Index, lineBreak.IsMandatory);
+                    }
+
+                    if (strictness is not UnicodeLineBreakStrictness.Anywhere && wordBreak is not UnicodeWordBreakBehavior.BreakAll)
+                    {
+                        foreach (var index in dictionaryBreaks)
+                        {
+                            expected.TryAdd(index, value: false);
+                        }
+
+                        count += dictionaryBreaks.Count;
+                    }
+
+                    if (!expected.Select(item => (item.Key, item.Value)).SequenceEqual(actual.Select(item => (item.Index, item.IsMandatory))))
+                    {
+                        Assert.Fail($"'{Escape(text)}' with [{string.Join(' ', words.Select(Escape))}], {strictness}, {wordBreak}: expected {string.Join(' ', expected.Keys)}, actual {string.Join(' ', actual.Select(item => item.Index))}");
+                    }
+
+                    // The breaks are in order and after the start of the text, and the last one is the end of the
+                    // text. A break of the dictionary is at a grapheme cluster boundary of the text; a break of the
+                    // annex is not always: a line breaks between a space and the spacing mark that follows it.
+                    var previous = 0;
+                    foreach (var lineBreak in actual)
+                    {
+                        Assert.True(lineBreak.Index > previous);
+                        if (!withoutDictionary.Contains(lineBreak))
+                        {
+                            Assert.Contains(lineBreak.Index, clusterBoundaries);
+                        }
+
+                        previous = lineBreak.Index;
+                    }
+
+                    Assert.Equal(text.Length, previous);
+                    Assert.True(actual[^1].IsMandatory);
+                }
+            }
+        }
+
+        Assert.True(count > 2000, $"Only {count} breaks of a dictionary were compared");
+    }
+
+    [Fact]
+    public void EnumerateLineBreaks_WithADictionary_ValidatesArguments()
+    {
+        var dictionary = LineBreakDictionary.Parse("a");
+        Assert.Throws<ArgumentOutOfRangeException>("strictness", () => { _ = Unicode.EnumerateLineBreaks("a", dictionary, (UnicodeLineBreakStrictness)3); });
+        Assert.Throws<ArgumentOutOfRangeException>("strictness", () => { _ = Unicode.EnumerateLineBreaks("a", dictionary: null, (UnicodeLineBreakStrictness)(-1)); });
+        Assert.Throws<ArgumentOutOfRangeException>("wordBreak", () => { _ = Unicode.EnumerateLineBreaks("a", dictionary, wordBreak: (UnicodeWordBreakBehavior)3); });
+        Assert.Empty(GetLineBreakIndexes("", dictionary));
+    }
+
+    [Fact]
+    public void LineBreakDictionary_Parse_ReadsOneWordPerLine()
+    {
+        // A byte order mark, comments, blank lines, the three line endings, columns after a tab, and white space around a word.
+        var words = "\uFEFF# A comment\r\n\r\nabc\t12\tabd\r\n  def  \nghi # A comment\n\n\tjkl\n#mno\npqr\rstu\n abc \nv w\n" + ThaiPhasa + "\t3\ne\u0301";
+        var dictionary = LineBreakDictionary.Parse(words);
+
+        Assert.Equal(8, dictionary.WordCount);
+        foreach (var word in new[] { "abc", "def", "ghi", "pqr", "stu", "v w", ThaiPhasa, "e\u0301" })
+        {
+            Assert.True(dictionary.Contains(word), word);
+        }
+
+        // A word is kept as written: a prefix of a word, another case and another normalization form are not in the dictionary.
+        foreach (var word in new[] { "", "ab", "abcd", "ABC", "12", "abd", "jkl", "mno", "#mno", "A", "comment", "v", "w", "\u00E9", "e", "\uFEFF", ThaiThai })
+        {
+            Assert.False(dictionary.Contains(word), word);
+        }
+
+        Assert.Equal(0, LineBreakDictionary.Parse("").WordCount);
+        Assert.Equal(0, LineBreakDictionary.Parse("\uFEFF").WordCount);
+        Assert.Equal(0, LineBreakDictionary.Parse("# A comment\n\n \t a\r\n").WordCount);
+
+        // Only the first character of the text can be a byte order mark.
+        Assert.True(LineBreakDictionary.Parse("\uFEFF\uFEFFa\n\uFEFFb").Contains("\uFEFFa"));
+        Assert.True(LineBreakDictionary.Parse("\uFEFF\uFEFFa\n\uFEFFb").Contains("\uFEFFb"));
+    }
+
+    [Fact]
+    public void LineBreakDictionary_Parse_AppliesTheLimits()
+    {
+        var threeWords = new LineBreakDictionaryOptions { MaxWordCount = 3 };
+        Assert.Equal(3, LineBreakDictionary.Parse("a\nb\n\n# c\nc", threeWords).WordCount);
+        Assert.Throws<FormatException>(() => LineBreakDictionary.Parse("a\nb\nc\nd", threeWords));
+
+        // A word that is in the list twice counts twice.
+        Assert.Equal(2, LineBreakDictionary.Parse("a\nb\na", threeWords).WordCount);
+        Assert.Throws<FormatException>(() => LineBreakDictionary.Parse("a\nb\na\nb", threeWords));
+
+        // The length of a word is a number of UTF-16 code units, without the white space around the word.
+        var fourCodeUnits = new LineBreakDictionaryOptions { MaxWordLength = 4 };
+        Assert.True(LineBreakDictionary.Parse("  abcd  \t12345", fourCodeUnits).Contains("abcd"));
+        Assert.Throws<FormatException>(() => LineBreakDictionary.Parse("abcde", fourCodeUnits));
+        Assert.True(LineBreakDictionary.Parse("\U00011700\U00011701", fourCodeUnits).Contains("\U00011700\U00011701"));
+        Assert.Throws<FormatException>(() => LineBreakDictionary.Parse("a\U00011700\U00011701", fourCodeUnits));
+        Assert.Equal(1, LineBreakDictionary.Parse(new string('a', 128)).WordCount);
+        Assert.Throws<FormatException>(() => LineBreakDictionary.Parse(new string('a', 129)));
+        Assert.Equal(1, LineBreakDictionary.Parse(new string('a', 255), new LineBreakDictionaryOptions { MaxWordLength = 255 }).WordCount);
+
+        // The length of the input is a number of UTF-16 code units, or of bytes.
+        var tenUnits = new LineBreakDictionaryOptions { MaxInputLength = 10 };
+        Assert.Equal(2, LineBreakDictionary.Parse("abcd\nefghi", tenUnits).WordCount);
+        Assert.Throws<FormatException>(() => LineBreakDictionary.Parse("abcd\nefghij", tenUnits));
+        Assert.Equal(1, LineBreakDictionary.Parse(ThaiPhasa + ThaiSawatdi, tenUnits).WordCount);
+        Assert.Equal(2, LineBreakDictionary.Parse("abcd\nefghi"u8, tenUnits).WordCount);
+        Assert.Throws<FormatException>(() => LineBreakDictionary.Parse("abcd\nefghij"u8, tenUnits));
+        Assert.Throws<FormatException>(() => LineBreakDictionary.Parse(Encoding.UTF8.GetBytes(ThaiPhasa), tenUnits));
+
+        using var accepted = new MemoryStream("abcd\nefghi"u8.ToArray());
+        Assert.Equal(2, LineBreakDictionary.Load(accepted, tenUnits).WordCount);
+        using var rejected = new MemoryStream("abcd\nefghij"u8.ToArray());
+        Assert.Throws<FormatException>(() => LineBreakDictionary.Load(rejected, tenUnits));
+    }
+
+    [Fact]
+    public void LineBreakDictionary_Parse_RejectsInvalidText()
+    {
+        Assert.Throws<FormatException>(() => LineBreakDictionary.Parse([(byte)'a', 0xFF, (byte)'b']));
+        Assert.Throws<FormatException>(() => LineBreakDictionary.Parse([(byte)'a', 0xC3]));
+        Assert.Throws<FormatException>(() => LineBreakDictionary.Parse([0xED, 0xA0, 0x80]));
+
+        var highSurrogate = "a" + (char)0xD805;
+        var lowSurrogate = (char)0xDF00 + "a";
+        Assert.Throws<FormatException>(() => LineBreakDictionary.Parse(highSurrogate));
+        Assert.Throws<FormatException>(() => LineBreakDictionary.Parse(highSurrogate + "a"));
+        Assert.Throws<FormatException>(() => LineBreakDictionary.Parse(lowSurrogate));
+        Assert.Throws<FormatException>(() => LineBreakDictionary.Parse("a\n" + lowSurrogate + highSurrogate));
+
+        // A comment and the columns after a tab are not read.
+        Assert.Equal(2, LineBreakDictionary.Parse("a # " + highSurrogate + "\nb\t" + lowSurrogate).WordCount);
+    }
+
+    [Fact]
+    public async Task LineBreakDictionary_Load_ReadsUtf8FilesAndStreams()
+    {
+        byte[] words = [0xEF, 0xBB, 0xBF, .. Encoding.UTF8.GetBytes("# Thai\r\n" + ThaiPhasa + "\t10\r\n" + ThaiThai + "\r\n")];
+        var directory = Path.Combine(Path.GetTempPath(), "line-break-dictionary-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        try
+        {
+            var path = Path.Combine(directory, "words.txt");
+            await File.WriteAllBytesAsync(path, words, TestContext.Current.CancellationToken);
+
+            Check(LineBreakDictionary.Load(path));
+            Check(await LineBreakDictionary.LoadAsync(path, cancellationToken: TestContext.Current.CancellationToken));
+
+            using var stream = new MemoryStream(words);
+            Check(LineBreakDictionary.Load(stream));
+
+            // The stream is left open.
+            stream.Position = 0;
+            Check(await LineBreakDictionary.LoadAsync(stream, cancellationToken: TestContext.Current.CancellationToken));
+            Check(LineBreakDictionary.Parse(words));
+
+            var oneWord = new LineBreakDictionaryOptions { MaxWordCount = 1 };
+            stream.Position = 0;
+            Assert.Throws<FormatException>(() => LineBreakDictionary.Load(path, oneWord));
+            Assert.Throws<FormatException>(() => LineBreakDictionary.Load(stream, oneWord));
+            await Assert.ThrowsAsync<FormatException>(() => LineBreakDictionary.LoadAsync(path, oneWord, TestContext.Current.CancellationToken));
+            stream.Position = 0;
+            await Assert.ThrowsAsync<FormatException>(() => LineBreakDictionary.LoadAsync(stream, oneWord, TestContext.Current.CancellationToken));
+
+            var tooShort = new LineBreakDictionaryOptions { MaxInputLength = words.Length - 1 };
+            var longEnough = new LineBreakDictionaryOptions { MaxInputLength = words.Length };
+            stream.Position = 0;
+            Check(await LineBreakDictionary.LoadAsync(stream, longEnough, TestContext.Current.CancellationToken));
+            Check(LineBreakDictionary.Load(path, longEnough));
+            stream.Position = 0;
+            await Assert.ThrowsAsync<FormatException>(() => LineBreakDictionary.LoadAsync(stream, tooShort, TestContext.Current.CancellationToken));
+            await Assert.ThrowsAsync<FormatException>(() => LineBreakDictionary.LoadAsync(path, tooShort, TestContext.Current.CancellationToken));
+            Assert.Throws<FormatException>(() => LineBreakDictionary.Load(path, tooShort));
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+
+        static void Check(LineBreakDictionary dictionary)
+        {
+            Assert.Equal(2, dictionary.WordCount);
+            Assert.Equal(new[] { 4 }, FindDictionaryBreaks(dictionary, ThaiPhasa + ThaiThai));
+        }
+    }
+
+    [Fact]
+    public async Task LineBreakDictionary_Load_ValidatesArguments()
+    {
+        Assert.Throws<ArgumentNullException>("path", () => LineBreakDictionary.Load((string)null!));
+        Assert.Throws<ArgumentNullException>("stream", () => LineBreakDictionary.Load((Stream)null!));
+        await Assert.ThrowsAsync<ArgumentNullException>("path", () => LineBreakDictionary.LoadAsync((string)null!, cancellationToken: TestContext.Current.CancellationToken));
+        await Assert.ThrowsAsync<ArgumentNullException>("stream", () => LineBreakDictionary.LoadAsync((Stream)null!, cancellationToken: TestContext.Current.CancellationToken));
+
+        using var canceled = new CancellationTokenSource();
+        await canceled.CancelAsync();
+        using var stream = new MemoryStream("a\nb"u8.ToArray());
+        var isCanceled = false;
+        try
+        {
+            await LineBreakDictionary.LoadAsync(stream, cancellationToken: canceled.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            isCanceled = true;
+        }
+
+        Assert.True(isCanceled);
+    }
+
+    [Fact]
+    public void LineBreakDictionaryOptions_ValidateTheirValues()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => new LineBreakDictionaryOptions { MaxWordCount = 0 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new LineBreakDictionaryOptions { MaxWordLength = 0 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new LineBreakDictionaryOptions { MaxWordLength = 256 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new LineBreakDictionaryOptions { MaxInputLength = 0 });
+
+        var options = LineBreakDictionaryOptions.Default;
+        Assert.Equal(500_000, options.MaxWordCount);
+        Assert.Equal(128, options.MaxWordLength);
+        Assert.Equal(8 * 1024 * 1024, options.MaxInputLength);
+    }
+
+    private static int[] FindDictionaryBreaks(LineBreakDictionary dictionary, string text)
+    {
+        var positions = new int[text.Length];
+        var count = dictionary.FindBreaks(text, positions);
+        return positions[..count];
+    }
+
+    private static List<UnicodeLineBreak> GetLineBreaks(string text, LineBreakDictionary? dictionary, UnicodeLineBreakStrictness strictness = UnicodeLineBreakStrictness.Strict, UnicodeWordBreakBehavior wordBreak = UnicodeWordBreakBehavior.Normal)
+    {
+        var result = new List<UnicodeLineBreak>();
+        foreach (var lineBreak in Unicode.EnumerateLineBreaks(text, dictionary, strictness, wordBreak))
+        {
+            result.Add(lineBreak);
+        }
+
+        return result;
+    }
+
+    private static int[] GetLineBreakIndexes(string text, LineBreakDictionary? dictionary, UnicodeLineBreakStrictness strictness = UnicodeLineBreakStrictness.Strict, UnicodeWordBreakBehavior wordBreak = UnicodeWordBreakBehavior.Normal)
+    {
+        return [.. GetLineBreaks(text, dictionary, strictness, wordBreak).Select(lineBreak => lineBreak.Index)];
+    }
+
+    /// <summary>Replaces the letters a to z with Thai consonants: each of them is a grapheme cluster of the class Complex_Context.</summary>
+    private static string ToThaiLetters(string text)
+    {
+        return string.Create(text.Length, text, (span, value) =>
+        {
+            for (var i = 0; i < value.Length; i++)
+            {
+                span[i] = char.IsAsciiLetterLower(value[i]) ? (char)(0x0E01 + value[i] - 'a') : value[i];
+            }
+        });
+    }
+
+    /// <summary>Determines whether rule LB9 attaches a character to the character before it: the classes CM and ZWJ, and the marks of the class SA (LB1).</summary>
+    private static bool IsLineBreakCombiningMark(int codePoint)
+    {
+        return UnicodeProperties.GetLineBreakClass(codePoint) switch
+        {
+            UnicodeLineBreakClass.CombiningMark or UnicodeLineBreakClass.ZWJ => true,
+            UnicodeLineBreakClass.ComplexContext => UnicodeProperties.GetGeneralCategory(codePoint) is UnicodeCategory.NonSpacingMark or UnicodeCategory.SpacingCombiningMark,
+            _ => false,
+        };
+    }
+
+    /// <summary>Applies the documented rule of <see cref="LineBreakDictionary"/> by trying every segmentation of a short text.</summary>
+    private static int[] FindBreaksExhaustively(string text, HashSet<string> words)
+    {
+        var boundaries = new List<int>();
+        foreach (var cluster in Unicode.EnumerateGraphemeClusters(text))
+        {
+            var start = cluster.Start.Value;
+            if (start == 0 || !IsLineBreakCombiningMark(char.ConvertToUtf32(text, start)))
+            {
+                boundaries.Add(start);
+            }
+        }
+
+        boundaries.Add(text.Length);
+
+        // A segmentation is the length of the word that starts at each index of the text, or 0. The uncovered
+        // code units, then the words, are counted, and at the first index where two segmentations differ the
+        // longer word wins.
+        var wordLengths = new int[text.Length];
+        var segmentations = new List<(int Uncovered, int WordCount, int[] WordLengths)>();
+        Search(boundary: 0, uncovered: 0, wordCount: 0);
+        var best = segmentations[0];
+        foreach (var segmentation in segmentations)
+        {
+            var isPreferred = segmentation.Uncovered != best.Uncovered ? segmentation.Uncovered < best.Uncovered
+                : segmentation.WordCount != best.WordCount ? segmentation.WordCount < best.WordCount
+                : segmentation.WordLengths.AsSpan().SequenceCompareTo(best.WordLengths) > 0;
+            if (isPreferred)
+            {
+                best = segmentation;
+            }
+        }
+
+        var result = new List<int>();
+        for (var i = 1; i < text.Length; i++)
+        {
+            if (best.WordLengths[i] != 0)
+            {
+                result.Add(i);
+            }
+        }
+
+        return [.. result];
+
+        void Search(int boundary, int uncovered, int wordCount)
+        {
+            if (boundary == boundaries.Count - 1)
+            {
+                segmentations.Add((uncovered, wordCount, [.. wordLengths]));
+                return;
+            }
+
+            var start = boundaries[boundary];
+            Search(boundary + 1, uncovered + boundaries[boundary + 1] - start, wordCount);
+            for (var end = boundary + 1; end < boundaries.Count; end++)
+            {
+                if (words.Contains(text[start..boundaries[end]]))
+                {
+                    wordLengths[start] = boundaries[end] - start;
+                    Search(end, uncovered, wordCount + 1);
+                    wordLengths[start] = 0;
+                }
+            }
+        }
+    }
+
+    /// <summary>Applies the documented rule of <see cref="LineBreakDictionary"/> to a text of any length: the best segmentation of each piece, found by dynamic programming over the boundaries of the piece.</summary>
+    private static int[] FindBreaksPieceByPiece(string text, HashSet<string> words)
+    {
+        const int PieceLength = 1024;
+        const int KeptLength = 512;
+        var maxWordLength = words.Max(word => word.Length);
+        var result = new List<int>();
+        var pieceStart = 0;
+        while (pieceStart < text.Length)
+        {
+            // The boundaries of the piece: the grapheme cluster boundaries of the rest of the text that are not before a combining mark.
+            var rest = text[pieceStart..];
+            var boundaries = new List<int> { 0 };
+            var isLastPiece = true;
+            var firstClusterLength = 0;
+            while (boundaries[^1] < rest.Length)
+            {
+                var next = boundaries[^1] + Unicode.GetGraphemeClusterLength(rest.AsSpan(boundaries[^1]));
+                while (next < rest.Length && IsLineBreakCombiningMark(char.ConvertToUtf32(rest, next)))
+                {
+                    next += Unicode.GetGraphemeClusterLength(rest.AsSpan(next));
+                }
+
+                if (boundaries.Count == 1)
+                {
+                    firstClusterLength = next;
+                }
+
+                if (next > PieceLength)
+                {
+                    isLastPiece = false;
+                    break;
+                }
+
+                boundaries.Add(next);
+            }
+
+            if (boundaries.Count == 1)
+            {
+                // A cluster longer than a piece is uncovered.
+                pieceStart += firstClusterLength;
+                continue;
+            }
+
+            // The best segmentation from each boundary to the end of the piece.
+            var last = boundaries.Count - 1;
+            var costs = new (int Uncovered, int WordCount)[boundaries.Count];
+            var choices = new int[boundaries.Count];
+            for (var i = last - 1; i >= 0; i--)
+            {
+                costs[i] = (costs[i + 1].Uncovered + boundaries[i + 1] - boundaries[i], costs[i + 1].WordCount);
+                choices[i] = -1;
+                for (var j = i + 1; j <= last && boundaries[j] - boundaries[i] <= maxWordLength; j++)
+                {
+                    // A word is preferred to an uncovered cluster of the same cost, and a longer word to a shorter one.
+                    var cost = (costs[j].Uncovered, WordCount: costs[j].WordCount + 1);
+                    if (words.Contains(rest[boundaries[i]..boundaries[j]]) && cost.CompareTo(costs[i]) <= 0)
+                    {
+                        costs[i] = cost;
+                        choices[i] = j;
+                    }
+                }
+            }
+
+            var boundary = 0;
+            while (boundary < last && (isLastPiece || boundaries[boundary] < KeptLength))
+            {
+                if (choices[boundary] < 0)
+                {
+                    boundary++;
+                }
+                else
+                {
+                    if (pieceStart + boundaries[boundary] > 0)
+                    {
+                        result.Add(pieceStart + boundaries[boundary]);
+                    }
+
+                    boundary = choices[boundary];
+                }
+            }
+
+            pieceStart += boundaries[boundary];
+        }
+
+        return [.. result];
+    }
+
+    /// <summary>Finds the runs of Complex_Context characters as the documentation of the enumerator specifies them: from their first letter.</summary>
+    private static List<(int Start, int End)> GetComplexContextRuns(string text)
+    {
+        var runs = new List<(int Start, int End)>();
+        var start = -1;
+        for (var index = 0; index <= text.Length; index++)
+        {
+            var isComplexContext = index < text.Length && UnicodeProperties.GetLineBreakClass(text[index]) is UnicodeLineBreakClass.ComplexContext;
+            if (isComplexContext)
+            {
+                if (start < 0 && !IsLineBreakCombiningMark(text[index]))
+                {
+                    start = index;
+                }
+            }
+            else
+            {
+                if (start >= 0)
+                {
+                    runs.Add((start, index));
+                }
+
+                start = -1;
+            }
+        }
+
+        return runs;
+    }
+
+    private static int NextRandom(ref uint state, int exclusiveMaximum)
+    {
+        state = (state * 1664525) + 1013904223;
+        return (int)((state >> 8) % (uint)exclusiveMaximum);
+    }
+
+    private static string RandomText(ref uint state, ReadOnlySpan<string> alphabet, int length)
+    {
+        var builder = new StringBuilder();
+        for (var i = 0; i < length; i++)
+        {
+            builder.Append(alphabet[NextRandom(ref state, alphabet.Length)]);
+        }
+
+        return builder.ToString();
+    }
+
+    private static string Escape(string text) => string.Concat(text.Select(c => c is >= ' ' and <= '~' ? c.ToString() : $"\\u{(int)c:X4}"));
+
     [Theory]
     [InlineData("caf\u00E9", NormalizationForm.FormD, "cafe\u0301")]
     [InlineData("cafe\u0301", NormalizationForm.FormC, "caf\u00E9")]

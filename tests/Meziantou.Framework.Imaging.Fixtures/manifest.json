@@ -86924,6 +86924,83 @@
       ]
     },
     {
+      "id": "fonts/noto-color-emoji",
+      "file": {
+        "path": "fonts/noto-color-emoji/Noto-COLRv1.subset.ttf",
+        "sha256": "454f767b1e400812b522bf2a17a23b2fb87e06aa4c6052db87cd34d0a595d45f",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "Google Inc. (https://github.com/googlefonts/noto-emoji)",
+        "source": "https://github.com/googlefonts/noto-emoji/blob/e20cbc2bbec1926686be9f9bee7d1d2cfa1fea0e/2D/fonts/Noto-COLRv1.ttf",
+        "tools": [
+          "hb-subset 14.6.0"
+        ],
+        "commands": [
+          "hb-subset --unicodes=20,23,2A,30-39,A9,200D,20E3,2122,263A,2764,261D,2640,FE0E,FE0F,1F1EB,1F1F7,1F1FA,1F1F8,1F308,1F3F3,1F3F4,1F3FB-1F3FF,1F44D,1F466-1F469,1F48B,1F600,1F642,1F680,E0062,E0065,E0067,E006E,E007F --layout-features=* --no-hinting --notdef-outline --output-file=Noto-COLRv1.subset.ttf Noto-COLRv1.ttf"
+        ]
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "subset",
+      "features": [
+        "font.cmap=12",
+        "font.cmap=14",
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=COLR",
+        "font.table=CPAL",
+        "font.table=GSUB",
+        "font.table=glyf"
+      ],
+      "renderTool": "hb-raster 14.6.0 --logical --background=FFFFFF",
+      "renders": [
+        {
+          "file": {
+            "path": "fonts/renders/noto-color-emoji/00-000.png",
+            "sha256": "8e6af07c0aa4fd004eac3b5a1be560d69f8a5239d3c90a638dc86ff97be5f97f",
+            "role": "font-render"
+          },
+          "text": "1F600 1F642 1F680 2764 FE0F 263A FE0F 1F308",
+          "size": 64,
+          "margin": 32,
+          "ascent": 64,
+          "descent": 16
+        },
+        {
+          "file": {
+            "path": "fonts/renders/noto-color-emoji/00-001.png",
+            "sha256": "c6cbf7a2c6409f17c15b4568dc3f3733b934d998877e0646a4129ee2c22d3273",
+            "role": "font-render"
+          },
+          "text": "1F44D 1F44D 1F3FD 1F468 200D 1F469 200D 1F467 200D 1F466 1F469 200D 2764 FE0F 200D 1F48B 200D 1F468",
+          "size": 64,
+          "margin": 32,
+          "ascent": 64,
+          "descent": 16
+        },
+        {
+          "file": {
+            "path": "fonts/renders/noto-color-emoji/00-002.png",
+            "sha256": "8d5d6c23aaeb9a20d43af2b8d377aa9d7f2a517b2500209d3189dd2e44c66811",
+            "role": "font-render"
+          },
+          "text": "1F1EB 1F1F7 1F1FA 1F1F8 0031 FE0F 20E3 0023 FE0F 20E3 1F3F3 FE0F 200D 1F308 1F3F4 E0067 E0062 E0065 E006E E0067 E007F",
+          "size": 64,
+          "margin": 32,
+          "ascent": 64,
+          "descent": 16
+        }
+      ],
+      "shaping": {
+        "path": "fonts/shaping/noto-color-emoji.json",
+        "sha256": "a011e768f903f944311dbdcaea69566c7e83048925350127cd8ef354d8042306",
+        "role": "shaping-vectors"
+      }
+    },
+    {
       "id": "fonts/noto-naskh-arabic",
       "file": {
         "path": "fonts/noto-naskh-arabic/NotoNaskhArabic-Regular.subset.ttf",
@@ -88561,6 +88638,41 @@
       ]
     },
     {
+      "id": "fonts/synthetic-arabic-forms",
+      "file": {
+        "path": "fonts/synthetic/arabic-forms.ttf",
+        "sha256": "a8b5ed7c55276d00935a9320420c818d05febf57ef8e785b819653857e758fac",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/Common/FontSamples.cs (ArabicForms)",
+        "tools": [
+          ".NET 10.0"
+        ]
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=glyf"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/synthetic-arabic-forms.json",
+        "sha256": "da3ab6b268e38552184ecf63def8fc7ab383742a17a5baf5f327b9bd1a83f440",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/synthetic-arabic-forms.json",
+        "sha256": "92a3eb805190c1451a07c3e610c3f97af8fcb37fd2f5d12197281c6cd51a07f3",
+        "role": "shaping-vectors"
+      }
+    },
+    {
       "id": "fonts/synthetic-bitmap-boxes",
       "file": {
         "path": "fonts/synthetic/bitmap-boxes.ttf",
@@ -89308,6 +89420,180 @@
       "original": "fonts/synthetic-deltas"
     },
     {
+      "id": "fonts/synthetic-languages",
+      "file": {
+        "path": "fonts/synthetic/languages.ttf",
+        "sha256": "c2c3ec1920aa2f1201576056d6eb54d97d43b98c7d44db42c6b35397e92e2e7d",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/Common/FontSamples.cs (Languages)",
+        "tools": [
+          ".NET 10.0"
+        ]
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=12",
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=GSUB",
+        "font.table=glyf"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/synthetic-languages.json",
+        "sha256": "0709f75599a52164510691423a03a6e12fab260a28c9a801d2e0893c01c8a774",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/synthetic-languages.json",
+        "sha256": "b4d3d7ee3ebba3abfd65a531b7c4b16927fb02edc2000d4f4c6315f0ef5adb10",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/synthetic-marks",
+      "file": {
+        "path": "fonts/synthetic/marks.ttf",
+        "sha256": "654c3dd24539c203321dbe049247e636fc94b9d357e8ed6a2435cf6deb5bb39a",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/Common/FontSamples.cs (Marks)",
+        "tools": [
+          ".NET 10.0"
+        ]
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=glyf"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/synthetic-marks.json",
+        "sha256": "528f9375fb4f3929d6f0a32ca0613c7c961b49412f713d2b5fd30329296ae108",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/synthetic-marks.json",
+        "sha256": "a48084ba449f0c4c8d820b97c4c5fd40cf6d764d1073eae1cd8984c2499b2c9b",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/synthetic-monochrome-boxes",
+      "file": {
+        "path": "fonts/synthetic/monochrome-boxes.ttf",
+        "sha256": "5838e753abd838c6b6050f662b8fc476d85c9a73c6fe22a03de47f36095058b0",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/Common/FontSamples.cs (MonochromeBoxes)",
+        "tools": [
+          ".NET 10.0"
+        ]
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=12",
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=glyf",
+        "font.table=kern"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/synthetic-monochrome-boxes.json",
+        "sha256": "3dced7cad588e632b39e20ed3917faadb3a2693867e48db77cecab5abdd9a488",
+        "role": "font-vectors"
+      }
+    },
+    {
+      "id": "fonts/synthetic-thai-forms",
+      "file": {
+        "path": "fonts/synthetic/thai-forms.ttf",
+        "sha256": "741f36d129c654d3aa41bef48294790084f5f40b0484f1b26de4007879ae6786",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/Common/FontSamples.cs (ThaiForms)",
+        "tools": [
+          ".NET 10.0"
+        ]
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=glyf"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/synthetic-thai-forms.json",
+        "sha256": "1a2ceaede22594e82bf378616fe0ac4385615dc779b7816c77257734050b9cf8",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/synthetic-thai-forms.json",
+        "sha256": "be36d090596dd83217e2a29174723d580a40f876365db382f2236ef98224265b",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/synthetic-thai-forms-mac",
+      "file": {
+        "path": "fonts/synthetic/thai-forms.mac.ttf",
+        "sha256": "fed581b3dd9463f7ac4272c5e102300195922861b5ae41ece71303f1a136288c",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/Common/FontSamples.cs (ThaiForms with the code points of the fonts of Mac OS)",
+        "tools": [
+          ".NET 10.0"
+        ]
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=glyf"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/synthetic-thai-forms-mac.json",
+        "sha256": "57d23ae181dd96741dc022ccef4556558ae72cc8a2511f75426b992a637809ef",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/synthetic-thai-forms-mac.json",
+        "sha256": "5821598f8e5487bef2614a63a60c8753e606345173ce4a09d017d98b974eb1b6",
+        "role": "shaping-vectors"
+      }
+    },
+    {
       "id": "fonts/synthetic-variable",
       "file": {
         "path": "fonts/synthetic/variable.ttf",
@@ -89344,6 +89630,46 @@
       "shaping": {
         "path": "fonts/shaping/synthetic-variable.json",
         "sha256": "a958b8b5f2cc953766dfa7caf261452dfd5a6b8006fc8dc167c9326a5a818a3b",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/synthetic-variable-axes",
+      "file": {
+        "path": "fonts/synthetic/variable.axes.ttf",
+        "sha256": "f560fafa9fb1344a33f9de059bff234bfdae0c848ec5333bf6abe258798e89b1",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/Common/FontSamples.cs (Variable with version 2 of the avar table)",
+        "tools": [
+          ".NET 10.0"
+        ]
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=HVAR",
+        "font.table=MVAR",
+        "font.table=avar",
+        "font.table=fvar",
+        "font.table=glyf",
+        "font.table=gvar"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/synthetic-variable-axes.json",
+        "sha256": "f4f1a6abc318f9f579a84d2e07e7a75b087311e9bc93f1847e55ceda7ec60ebc",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/synthetic-variable-axes.json",
+        "sha256": "2f9214786a739b8ec465bc5d7965690d80e2567629671ca72dcf4da96012353e",
         "role": "shaping-vectors"
       }
     },

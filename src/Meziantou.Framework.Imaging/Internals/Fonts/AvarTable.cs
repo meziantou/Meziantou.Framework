@@ -2,9 +2,17 @@ namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>Applies the <c>avar</c> table: the mapping of the normalized value of each axis that a font can add to the default one.</summary>
 /// <remarks>
+/// <para>
 /// OpenType specification, "avar - Axis Variations Table". Each axis has a list of pairs (from, to), sorted by their
-/// first value; a value between two pairs is interpolated between them. Version 2 of the table, which adds a mapping
-/// that depends on several axes, is not applied: its version 1 part is.
+/// first value; a value between two pairs is interpolated between them.
+/// </para>
+/// <para>
+/// Version 2 of the table ("avar - Axis Variations Table Version 2", the proposal the Open Font Format adopted) adds
+/// to the value of each axis a delta that depends on the values of all the axes: an item variation store whose items
+/// are the axes, through an optional delta set index map. The deltas are computed from the values the pairs give,
+/// all of them before any is changed, rounded to the nearest 2.14 number and added; the result is kept between -1
+/// and 1.
+/// </para>
 /// </remarks>
 internal static class AvarTable
 {
@@ -28,6 +36,49 @@ internal static class AvarTable
             {
                 coordinates[axis] = MapValue(maps, count, coordinates[axis]);
             }
+        }
+    }
+
+    /// <summary>
+    /// Applies what version 2 of the table adds to the coordinates of an instance, in place: the deltas of its variation
+    /// store. The coordinates are the 2.14 numbers that <see cref="Map"/> gives, once rounded.
+    /// </summary>
+    public static void AddDeltas(ReadOnlySpan<byte> table, Span<int> coordinates)
+    {
+        if (table.Length < 8 || FontBinary.UInt16(table, 0) != 2)
+            return;
+
+        // The pairs of each axis, then the positions of the index map and of the store.
+        var axisCount = FontBinary.UInt16(table, 6);
+        var position = 8;
+        for (var axis = 0; axis < axisCount; axis++)
+        {
+            position += 2 + (FontBinary.UInt16(table, position) * 4);
+        }
+
+        var indexMap = FontBinary.Offset32(table, position);
+        var store = FontBinary.Offset32(table, position + 4);
+        if (store == 0)
+            return;
+
+        var scalars = ItemVariationStore.ComputeScalars(table, store, coordinates);
+        Span<int> deltas = coordinates.Length <= 64 ? stackalloc int[coordinates.Length] : new int[coordinates.Length];
+        for (var axis = 0; axis < coordinates.Length; axis++)
+        {
+            // Without index map, the item of an axis is the one of its index in the first subtable.
+            var outer = axis >> 16;
+            var inner = axis & 0xFFFF;
+            if (indexMap != 0)
+            {
+                ItemVariationStore.ReadIndexMap(table, indexMap, axis, out outer, out inner);
+            }
+
+            deltas[axis] = (int)Math.Round(ItemVariationStore.GetDelta(table, store, outer, inner, scalars), MidpointRounding.AwayFromZero);
+        }
+
+        for (var axis = 0; axis < coordinates.Length; axis++)
+        {
+            coordinates[axis] = Math.Clamp(coordinates[axis] + deltas[axis], -FontInstance.TableOne, FontInstance.TableOne);
         }
     }
 

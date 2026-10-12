@@ -149,6 +149,44 @@ public sealed class TextLayoutTests
     }
 
     [Fact]
+    public void TextWithoutSpacesIsBrokenBetweenTheWordsOfADictionary()
+    {
+        // Six Thai consonants, each drawn as a box of 16 pixels: ko kai, kho khai, kho khuat, kho khwai, kho khon and
+        // kho rakhang. The dictionary has the words made of the first two, of the next three and of the last one.
+        var builder = FontSamples.Boxes();
+        for (var character = 0x0E01; character <= 0x0E06; character++)
+        {
+            builder.CharacterMap[character] = FontSamples.BoxA;
+        }
+
+        var style = new TextStyle(FontTestSupport.Load(builder), 16);
+        const string Text = "\u0E01\u0E02\u0E03\u0E04\u0E05\u0E06";
+        var dictionary = LineBreakDictionary.Parse("\u0E01\u0E02\n\u0E03\u0E04\u0E05\n\u0E06\n");
+
+        // Without a dictionary, the text has no place to break at: it overflows, or is cut anywhere.
+        Assert.Equal(1, TextLayout.Create(Text, style, new TextLayoutOptions { MaxWidth = 50 }).LineCount);
+        Assert.Equal(2, TextLayout.Create(Text, style, new TextLayoutOptions { MaxWidth = 50, OverflowWrap = TextOverflowWrap.Anywhere }).LineCount);
+
+        // With it, a line ends before a word: two words do not fit 50 pixels, a word of three letters fits.
+        var layout = TextLayout.Create(Text, style, new TextLayoutOptions { MaxWidth = 50, LineBreakDictionary = dictionary });
+        Assert.Equal(3, layout.LineCount);
+        Assert.Equal((0, 2), (layout.Lines[0].Start, layout.Lines[0].Length));
+        Assert.Equal((2, 3), (layout.Lines[1].Start, layout.Lines[1].Length));
+        Assert.Equal((5, 1), (layout.Lines[2].Start, layout.Lines[2].Length));
+        Assert.Equal(48, layout.Width);
+
+        // Wider: the first two words on a line.
+        layout = TextLayout.Create(Text, style, new TextLayoutOptions { MaxWidth = 80, LineBreakDictionary = dictionary });
+        Assert.Equal(2, layout.LineCount);
+        Assert.Equal((0, 5), (layout.Lines[0].Start, layout.Lines[0].Length));
+
+        // The dictionary changes nothing to a text of another script, nor to a text that is not wrapped.
+        Assert.Equal(1, TextLayout.Create("AAAAAA", style, new TextLayoutOptions { MaxWidth = 50, LineBreakDictionary = dictionary }).LineCount);
+        Assert.Equal(1, TextLayout.Create(Text, style, new TextLayoutOptions { LineBreakDictionary = dictionary }).LineCount);
+        Assert.Null(TextLayoutOptions.Default.LineBreakDictionary);
+    }
+
+    [Fact]
     public void LinesAreAlignedInTheWidthOfTheLayout()
     {
         // Two lines of 32 and 8 pixels, in 40 pixels.
@@ -399,6 +437,30 @@ public sealed class TextLayoutTests
     }
 
     [Fact]
+    public void TheLanguageOfAStyleSelectsTheLanguageSystemOfTheFont()
+    {
+        // The font has a language system for Serbian, whose feature replaces A by four A; its default language system
+        // has no feature.
+        var font = FontTestSupport.Load(FontSamples.Languages(["SRB "]));
+        Assert.Equal(16, TextLayout.Create("A", new TextStyle(font, 16)).Width);
+        Assert.Equal(64, TextLayout.Create("A", new TextStyle(font, 16) { Language = "sr" }).Width);
+        Assert.Equal(64, TextLayout.Create("A", new TextStyle(font, 16) { Language = "SR-Cyrl-RS" }).Width);
+        Assert.Equal("sr-Latn", new TextStyle(font, 16) { Language = "sr-Latn" }.Language);
+
+        // A language the font has no language system for, or the registry of OpenType no tag for, changes nothing.
+        Assert.Equal(16, TextLayout.Create("A", new TextStyle(font, 16) { Language = "fr" }).Width);
+        Assert.Equal(16, TextLayout.Create("A", new TextStyle(font, 16) { Language = "und" }).Width);
+
+        // Each span is shaped in its own language.
+        var text = new RichTextBuilder()
+            .Append("A", new TextStyle(font, 16) { Language = "sr" })
+            .Append("A", new TextStyle(font, 16))
+            .Append("A", new TextStyle(font, 16) { Language = "srp" })
+            .Build();
+        Assert.Equal(64 + 16 + 64, TextLayout.Create(text).Width);
+    }
+
+    [Fact]
     public void TextThatDoesNotFitIsCutAndTrimmed()
     {
         var style = new TextStyle(Extended, 16);
@@ -489,6 +551,63 @@ public sealed class TextLayoutTests
     }
 
     [Fact]
+    public void AnEmojiIsDrawnWithAFontOfItsPresentation()
+    {
+        // Two fonts that have the same characters: a font without colors, whose glyphs are 8 pixels wide, and a font
+        // with color glyphs, 16 pixels wide. U+2764 (heavy black heart), U+261D (index pointing up), the copyright sign
+        // and the digits are emoji characters that are text by default; U+1F600 (grinning face) is an emoji by default.
+        int[] characters = [0x2764, 0x261D, 0x00A9, '1', 0x1F600, 0x1F3FD, 0x1F468, 0x1F469];
+        var textBuilder = new FontBuilder { CmapFormats = FontCmapFormats.Format12, UnitsPerEm = 1024, Ascender = 832, Descender = -192, FamilyName = "Text" };
+        textBuilder.AddGlyph(FontGlyph.Rectangle(256, 0, 0, 128, 128));
+        textBuilder.AddGlyph(FontGlyph.Rectangle(512, 0, 0, 512, 512), 'A');
+        var colorBuilder = FontSamples.ColorBoxes();
+        colorBuilder.CmapFormats = FontCmapFormats.Format12;
+        foreach (var character in characters)
+        {
+            textBuilder.CharacterMap[character] = 1;
+            colorBuilder.CharacterMap[character] = FontSamples.ColorA;
+        }
+
+        var text = FontTestSupport.Load(textBuilder);
+        var color = FontTestSupport.Load(colorBuilder);
+        Assert.False(text.HasColorGlyphs);
+        Assert.True(color.HasColorGlyphs);
+        var textFirst = new TextStyle(new FontStack(text, color), 16);
+        var colorFirst = new TextStyle(new FontStack(color, text), 16);
+
+        // Without a selector, a character that is text by default is drawn with the first font that has it.
+        Assert.Equal(8, TextLayout.Create("\u2764", textFirst).Width);
+        Assert.Equal(16, TextLayout.Create("\u2764", colorFirst).Width);
+        Assert.Equal(8, TextLayout.Create("\u00A9", textFirst).Width);
+        Assert.Equal(8, TextLayout.Create("1", textFirst).Width);
+
+        // The emoji presentation selector asks for a font with colors, the text presentation selector for one without.
+        Assert.Equal(16, TextLayout.Create("\u2764\uFE0F", textFirst).Width);
+        Assert.Equal(16, TextLayout.Create("\u00A9\uFE0F", textFirst).Width);
+        Assert.Equal(8, TextLayout.Create("\u2764\uFE0E", colorFirst).Width);
+        Assert.Equal(8, TextLayout.Create("\U0001F600\uFE0E", colorFirst).Width);
+
+        // A character that is an emoji by default, and the emoji sequences (a skin tone, characters joined by a zero
+        // width joiner), are drawn with a font that has colors. These fonts have no ligature: each character of a
+        // sequence has its glyph.
+        Assert.Equal(16, TextLayout.Create("\U0001F600", textFirst).Width);
+        Assert.Equal(32, TextLayout.Create("\u261D\U0001F3FD", textFirst).Width);
+        Assert.Equal(8, TextLayout.Create("\u261D", textFirst).Width);
+        Assert.Equal(32, TextLayout.Create("\U0001F468\u200D\U0001F469", textFirst).Width);
+
+        // Each cluster has its font: a letter, an emoji, a letter.
+        Assert.Equal(8 + 16 + 8, TextLayout.Create("A\U0001F600A", textFirst).Width);
+
+        // The presentation is a preference, not a requirement: without a font of that kind that has the character, the
+        // stack is searched in its order.
+        Assert.Equal(8, TextLayout.Create("\U0001F600", new TextStyle(new FontStack(text, Boxes), 16)).Width);
+        Assert.Equal(16, TextLayout.Create("\u2764\uFE0E", new TextStyle(new FontStack(color, Boxes), 16)).Width);
+
+        // A selector after a character that is no emoji says nothing.
+        Assert.Equal(8, TextLayout.Create("A\uFE0F", textFirst).Width);
+    }
+
+    [Fact]
     public void TheOptionsShapeTheLinesOfTheLayout()
     {
         // The distance between tabulation stops, in spaces of 8 pixels.
@@ -540,7 +659,12 @@ public sealed class TextLayoutTests
         Assert.Throws<ArgumentOutOfRangeException>(() => new TextStyle(Boxes, 16) { WordSpacing = 1e9 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new TextStyle(Boxes, 16) { Decorations = (TextDecorations)8 });
         Assert.Throws<ArgumentNullException>(() => new TextStyle(Boxes, 16) { Features = null! });
+        Assert.Throws<ArgumentException>(() => new TextStyle(Boxes, 16) { Language = "" });
+        Assert.Throws<ArgumentException>(() => new TextStyle(Boxes, 16) { Language = "en_US" });
+        Assert.Throws<ArgumentException>(() => new TextStyle(Boxes, 16) { Language = "en-" });
         var style = new TextStyle(Boxes, 16);
+        Assert.Null(style.Language);
+        Assert.Null(new TextStyle(Boxes, 16) { Language = null }.Language);
         Assert.Empty(style.Features);
         Assert.Null(style.Brush);
         Assert.Equal(TextDecorations.None, style.Decorations);

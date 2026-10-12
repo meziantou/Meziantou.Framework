@@ -689,6 +689,11 @@ internal static class SmokeTests
         var syllables = TextLayout.Create("\u0E01\u0E48\u0E33 \u1100\u1161\u11A8", boxes, 16);
         Check(!syllables.Lines[0].IsRightToLeft && syllables.HasMissingGlyphs && syllables.Width == 6 * 8, "text: syllables");
 
+        // Khmer and Myanmar: a consonant with a subscript ro and a vowel with two parts, a vowel without consonant, then
+        // a consonant and the vowel drawn before it. The marks of these scripts keep their advance: nine times 8 pixels.
+        var stacked = TextLayout.Create("\u1780\u17D2\u179A\u17BE \u17C1 \u1000\u1031", boxes, 16);
+        Check(!stacked.Lines[0].IsRightToLeft && stacked.HasMissingGlyphs && stacked.Width == 9 * 8, "text: stacked syllables");
+
         // CFF outlines, stroked, through the overload that lays out the text
         var cff = Font.Load(SmokeFonts.CharstringsOtf);
         using var stroked = new Image<Rgba32>(64, 16);

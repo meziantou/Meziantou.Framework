@@ -101,6 +101,8 @@ public sealed class ShapingConformanceTests
     [InlineData("fonts/noto-sans-telugu", UnicodeScript.Telugu)]
     [InlineData("fonts/noto-sans-kannada", UnicodeScript.Kannada)]
     [InlineData("fonts/noto-sans-malayalam", UnicodeScript.Malayalam)]
+    [InlineData("fonts/noto-sans-khmer", UnicodeScript.Khmer)]
+    [InlineData("fonts/noto-sans-myanmar", UnicodeScript.Myanmar)]
     public void ALayoutIsAsWideAsTheReferenceShaperMakesIt(string id, UnicodeScript script)
     {
         // The whole way from a string to a line: the direction, the script and the runs are found by the layout, where

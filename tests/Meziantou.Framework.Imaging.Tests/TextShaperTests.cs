@@ -484,22 +484,9 @@ public sealed class TextShaperTests
         // nuktas and joiners, then vowel signs, then modifiers and Vedic signs; a vowel syllable (V) starts with a vowel
         // letter; a stand-alone cluster (S) with a generic base; a symbol (Y) is a sign that stands by itself; what
         // has no base is a broken cluster (B), and the rest is not Indic (O). Each syllable is given with its length.
-        var info = text.Split(' ').Select(item => new GlyphInfo { CodePoint = int.Parse(item, NumberStyles.HexNumber, CultureInfo.InvariantCulture) }).ToArray();
+        var info = ParseCodePoints(text);
         IndicShaper.FindSyllables(info);
-        var result = new List<string>();
-        for (var start = 0; start < info.Length;)
-        {
-            var end = start + 1;
-            while (end < info.Length && info[end].Syllable == info[start].Syllable)
-            {
-                end++;
-            }
-
-            result.Add(string.Create(CultureInfo.InvariantCulture, $"{"CVSYBO"[info[start].Syllable & 0x0F]}{end - start}"));
-            start = end;
-        }
-
-        Assert.Equal(expected, string.Join(' ', result));
+        Assert.Equal(expected, FormatSyllables(info, "CVSYBO"));
     }
 
     [Theory]
@@ -546,6 +533,172 @@ public sealed class TextShaperTests
         shaper.ReorderBeforeBasicForms(buffer);
         shaper.ReorderAfterBasicForms(buffer);
         Assert.Equal(expected, string.Join(' ', buffer.Info.ToArray().Select(glyph => glyph.CodePoint.ToString("X4", CultureInfo.InvariantCulture))));
+    }
+
+    [Theory]
+    [InlineData("1780", "C1")]
+    [InlineData("1780 17D2 1798 17C2", "C4")]
+    [InlineData("179F 17D2 178F 17D2 179A 17B8", "C6")]
+    [InlineData("1780 17D2", "C2")]
+    [InlineData("179F 17CA 17B8", "C3")]
+    [InlineData("1780 200C 17CA 17B7", "C4")]
+    [InlineData("1780 17BB 17C6", "C3")]
+    [InlineData("1780 17B6 17C6", "C3")]
+    [InlineData("1780 17C7 17B6", "C2 B1")]
+    [InlineData("1780 17C1 17C1", "C2 B1")]
+    [InlineData("17A5 17C6", "C2")]
+    [InlineData("25CC 17C1", "C2")]
+    [InlineData("00A0 17B7", "C2")]
+    [InlineData("17C1", "B1")]
+    [InlineData("17D2 1780", "B2")]
+    [InlineData("0041 1780 0020 17D4", "O1 C1 O1 O1")]
+    public void AKhmerTextIsCutIntoSyllables(string text, string expected)
+    {
+        // "Cons + {COENG + (Cons | IndV)} + [PreV | BlwV] + [RegShift] + [AbvV] + {AbvS} + [PstV] + [PstS]": a
+        // consonant, an independent vowel or a generic base (C), subscripts written with the coeng, a register
+        // shifter, one vowel of each place and the signs, those drawn after the syllable last. What has no base is a
+        // broken cluster (B) and the rest is not Khmer (O).
+        var info = ParseCodePoints(text);
+        KhmerShaper.FindSyllables(info);
+        Assert.Equal(expected, FormatSyllables(info, "CBO"));
+    }
+
+    [Theory]
+    [InlineData("1780 17B8", "1780 17B8")]
+    [InlineData("1780 17C1", "17C1 1780")]
+    [InlineData("1780 17D2 1780 17C2", "17C2 1780 17D2 1780")]
+    [InlineData("1780 17D2 179A", "17D2 179A 1780")]
+    [InlineData("1780 17D2 1798 17D2 179A 17C1", "17C1 17D2 179A 1780 17D2 1798")]
+    [InlineData("17C1", "17C1 25CC")]
+    [InlineData("17D2 1780", "25CC 17D2 1780")]
+    public void TheCharactersOfAKhmerSyllableAreReordered(string text, string expected)
+    {
+        // A vowel drawn before the syllable goes to its start, and so does the subscript ro with its coeng, whatever
+        // subscripts are written before it; a syllable without base gets a dotted circle.
+        var buffer = CreateBuffer(text, out var font);
+        KhmerShaper.FindSyllables(buffer.Info);
+        KhmerShaper.Reorder(buffer, font.Face, firstBit: 5, hasCfar: false);
+        Assert.Equal(expected, FormatCodePoints(buffer));
+    }
+
+    [Theory]
+    [InlineData(0x17BE)]
+    [InlineData(0x17BF)]
+    [InlineData(0x17C0)]
+    [InlineData(0x17C4)]
+    [InlineData(0x17C5)]
+    public void AKhmerVowelWithTwoPartsIsDrawnWithTheVowelBeforeTheSyllable(int vowel)
+    {
+        // The part on the left is the vowel e; the vowel itself follows the consonant, for a feature of the font to
+        // turn it into the part that remains.
+        var builder = FontSamples.Boxes();
+        builder.CharacterMap[0x1780] = FontSamples.BoxA;
+        builder.CharacterMap[vowel] = FontSamples.BoxA;
+        builder.CharacterMap[0x17C1] = FontSamples.BoxB;
+        var font = FontTestSupport.Load(builder);
+
+        Assert.Equal($"{FontSamples.BoxB}=0 {FontSamples.BoxA}=0 {FontSamples.BoxA}=0", Clusters(font, char.ConvertFromUtf32(0x1780) + char.ConvertFromUtf32(vowel), UnicodeScript.Khmer));
+    }
+
+    [Theory]
+    [InlineData("1000", "C1")]
+    [InlineData("1019 103C 1014 103A", "C2 C2")]
+    [InlineData("1004 103A 1039 1002 101C", "C4 C1")]
+    [InlineData("1000 1039 1000 1031", "C4")]
+    [InlineData("1000 103B 103D 103E 1031 102D 102F 1036 1037 1038", "C10")]
+    [InlineData("1000 102C 1038", "C3")]
+    [InlineData("1000 103B 103B", "C2 B1")]
+    [InlineData("1040 102D", "C2")]
+    [InlineData("25CC 1031", "C2")]
+    [InlineData("1000 FE00 1031", "C3")]
+    [InlineData("1000 200D", "C2")]
+    [InlineData("200D 1031", "O1 B1")]
+    [InlineData("1031", "B1")]
+    [InlineData("1039 1000", "B2")]
+    [InlineData("0041 1000 0020 002E", "O1 C1 O1 O1")]
+    public void AMyanmarTextIsCutIntoSyllables(string text, string expected)
+    {
+        // A syllable (C) is an optional kinzi (nga, asat, stacker), a base, the consonants stacked under it, the
+        // medials in their order (ya, ra, wa, ha), the vowels (before, above, below), the anusvara, the dot below,
+        // the vowels after the base and the tones. What has no base is a broken cluster (B) and the rest is not
+        // Myanmar (O); a joiner does not start a syllable.
+        var info = ParseCodePoints(text);
+        MyanmarShaper.FindSyllables(info);
+        Assert.Equal(expected, FormatSyllables(info, "CBO"));
+    }
+
+    [Theory]
+    [InlineData("1000 102D", "1000 102D")]
+    [InlineData("1000 1031", "1031 1000")]
+    [InlineData("1000 103C", "103C 1000")]
+    [InlineData("1000 103C 1031", "1031 103C 1000")]
+    [InlineData("1000 1039 1000 1031", "1031 1000 1039 1000")]
+    [InlineData("1004 103A 1039 1000", "1000 1004 103A 1039")]
+    [InlineData("1004 103A 1039 1000 103C 1031", "1031 103C 1000 1004 103A 1039")]
+    [InlineData("1000 102F 1036", "1000 1036 102F")]
+    [InlineData("1000 1036 102F", "1000 1036 25CC 102F")]
+    [InlineData("1031", "1031 25CC")]
+    public void TheCharactersOfAMyanmarSyllableAreReordered(string text, string expected)
+    {
+        // The vowel e and the medial ra are drawn on the left of the base, the vowel first; the kinzi is written
+        // before the base and drawn above it, so it goes after it; an anusvara written after a vowel below is put
+        // before it, and a vowel below written after an anusvara is not of its syllable; a syllable without base gets a
+        // dotted circle.
+        var buffer = CreateBuffer(text, out var font);
+        MyanmarShaper.FindSyllables(buffer.Info);
+        MyanmarShaper.Reorder(buffer, font.Face);
+        Assert.Equal(expected, FormatCodePoints(buffer));
+    }
+
+    private static GlyphInfo[] ParseCodePoints(string text)
+    {
+        return text.Split(' ').Select(item => new GlyphInfo { CodePoint = int.Parse(item, NumberStyles.HexNumber, CultureInfo.InvariantCulture) }).ToArray();
+    }
+
+    /// <summary>Gives each syllable as the letter of its kind and its length.</summary>
+    private static string FormatSyllables(GlyphInfo[] info, string kinds)
+    {
+        var result = new List<string>();
+        for (var start = 0; start < info.Length;)
+        {
+            var end = start + 1;
+            while (end < info.Length && info[end].Syllable == info[start].Syllable)
+            {
+                end++;
+            }
+
+            result.Add(string.Create(CultureInfo.InvariantCulture, $"{kinds[info[start].Syllable & 0x0F]}{end - start}"));
+            start = end;
+        }
+
+        return string.Join(' ', result);
+    }
+
+    /// <summary>Creates the glyphs of a text given as code points, with a font that has a box for each and for the dotted circle.</summary>
+    private static GlyphBuffer CreateBuffer(string text, out Font font)
+    {
+        var codePoints = ParseCodePoints(text);
+        var builder = FontSamples.Boxes();
+        foreach (var item in codePoints)
+        {
+            builder.CharacterMap[item.CodePoint] = FontSamples.BoxA;
+        }
+
+        builder.CharacterMap[0x25CC] = FontSamples.BoxA;
+        font = FontTestSupport.Load(builder);
+        var buffer = new GlyphBuffer(ImageResourceLimits.Default);
+        foreach (var item in codePoints)
+        {
+            buffer.Add(item.CodePoint, 0);
+            buffer.Info[^1].Mask = 1;
+        }
+
+        return buffer;
+    }
+
+    private static string FormatCodePoints(GlyphBuffer buffer)
+    {
+        return string.Join(' ', buffer.Info.ToArray().Select(glyph => glyph.CodePoint.ToString("X4", CultureInfo.InvariantCulture)));
     }
 
     /// <summary>Shapes a text in the order of its characters and gives the glyphs with their clusters.</summary>

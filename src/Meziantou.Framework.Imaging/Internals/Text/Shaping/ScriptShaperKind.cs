@@ -20,4 +20,10 @@ internal enum ScriptShaperKind
 
     /// <summary>The Indic scripts: syllables whose characters are reordered around a base consonant.</summary>
     Indic,
+
+    /// <summary>Khmer: subscript letters written with a coeng, and vowels drawn before the syllable.</summary>
+    Khmer,
+
+    /// <summary>Myanmar: a kinzi, stacked and medial consonants, and vowels drawn before the syllable.</summary>
+    Myanmar,
 }

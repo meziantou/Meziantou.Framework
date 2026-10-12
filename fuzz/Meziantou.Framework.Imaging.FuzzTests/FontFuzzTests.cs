@@ -422,7 +422,9 @@ public sealed class FontFuzzTests
     // a precomposed letter with a mark, the mark that stretches over a word; the vowel of Thai and Lao that is
     // decomposed, with and without marks above its consonant; the letters and syllables of Hangul, with tone marks; for
     // each Indic script, conjuncts, a reph, a vowel sign drawn before its syllable, joiners after a halant, a nukta, a
-    // vowel letter followed by a vowel sign, and signs without a base.
+    // vowel letter followed by a vowel sign, and signs without a base; for Khmer, subscripts with the ro among them, the
+    // vowels with two parts, a register shifter and what has no base; for Myanmar, a kinzi, medials, the vowel drawn
+    // before the syllable, marks whose order changes, and what has no base.
     private static readonly (UnicodeScript Script, string Text)[] ScriptTexts =
     [
         (UnicodeScript.Arabic, "\u0628\u064E\u0651\u0633\u0654\u0650\u0645\u0020\u0644\u0627\u0020\u0644\u200D\u0627\u0020\u0628\u200C\u0628\u0640\u0622\u0655\u0020\u06AF\u0654\u064F"),
@@ -436,6 +438,8 @@ public sealed class FontFuzzTests
         (UnicodeScript.Telugu, "\u0C15\u0C4D\u0C37\u0C3F \u0C30\u0C4D\u0C15\u0C4B\u0C02 \u0C15\u0C4D\u200D\u0C24\u0C3F \u0C15\u0C3C\u0C4D\u0C2F\u0C41 \u0C05\u0C3E \u0C3F\u0C4D \u0C24\u0C4D\u0C30\u0C4D\u0C2F\u0C3E \u0C15\u0C4D\u200C\u0C15\u0C4D"),
         (UnicodeScript.Kannada, "\u0C95\u0CCD\u0CB7\u0CBF \u0CB0\u0CCD\u0C95\u0CCB\u0C82 \u0C95\u0CCD\u200D\u0CA4\u0CBF \u0C95\u0CBC\u0CCD\u0CAF\u0CC1 \u0C85\u0CBE \u0CBF\u0CCD \u0CA4\u0CCD\u0CB0\u0CCD\u0CAF\u0CBE \u0C95\u0CCD\u200C\u0C95\u0CCD"),
         (UnicodeScript.Malayalam, "\u0D15\u0D4D\u0D37\u0D3F \u0D30\u0D4D\u0D15\u0D4B\u0D02 \u0D15\u0D4D\u200D\u0D24\u0D3F \u0D15\u0D3C\u0D4D\u0D2F\u0D41 \u0D05\u0D3E \u0D3F\u0D4D \u0D24\u0D4D\u0D30\u0D4D\u0D2F\u0D3E \u0D15\u0D4D\u200C\u0D15\u0D4D"),
+        (UnicodeScript.Khmer, "\u179F\u17D2\u178F\u17D2\u179A\u17B8 \u1780\u17BE\u1784\u17C4 \u179F\u17CA\u17B8 \u1784\u17D2\u179A\u17D2\u1782\u17C6 \u17C1\u17D2 \u17D2\u1780 \u1780\u200C\u17D2\u1780\u17C7"),
+        (UnicodeScript.Myanmar, "\u1021\u1004\u103A\u1039\u1002\u101C\u102D\u1015\u103A \u1000\u103C\u103D\u1031\u102C \u1000\u102F\u1036\u1037 \u1015\u1005\u1039\u1005\u100A\u103A\u1038 \u1031\u103A \u1039\u1000 \u1040\u102D\u200D\u1031"),
         (UnicodeScript.Thai, "\u0E01\u0E48\u0E33 \u0E19\u0E49\u0E33\u0E33 \u0E1B\u0E38\u0E3A\u0E48 \u0E33"),
         (UnicodeScript.Lao, "\u0E81\u0EC8\u0EB3 \u0E99\u0EC9\u0EB3 \u0EAB\u0EBC\u0EB8\u0EC8 \u0EB3"),
         (UnicodeScript.Hangul, "\u1100\u1161\u11A8 \uAC00\u11A8\u302E \u1113\u1161\u11C3\u302F \u302E \uAC01\u11EB\u115F\u1160"),

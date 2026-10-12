@@ -360,6 +360,26 @@ internal static partial class FontCorpus
             Unicodes: "*",
             LayoutScripts: "mlym"),
         new(
+            "fonts/noto-sans-khmer",
+            "fonts/noto-sans-khmer/NotoSansKhmer-Regular.ttf",
+            "NotoSansKhmer-Regular.ttf",
+            "60c10dbfae33a44f1897cd939789bd173aedb7c7dc0a9af389a737e33cb7e548",
+            "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansKhmer/unhinted/ttf/NotoSansKhmer-Regular.ttf",
+            "The Noto Project Authors (https://github.com/notofonts/khmer)",
+            "OFL-1.1",
+            ReservedFontName: null,
+            Unicodes: null),
+        new(
+            "fonts/noto-sans-myanmar",
+            "fonts/noto-sans-myanmar/NotoSansMyanmar-Regular.ttf",
+            "NotoSansMyanmar-Regular.ttf",
+            "f4be6ef43871516d8347c5217a2033991b8ecda2dd1200007c2fb431a66d64db",
+            "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansMyanmar/unhinted/ttf/NotoSansMyanmar-Regular.ttf",
+            "The Noto Project Authors (https://github.com/notofonts/myanmar)",
+            "OFL-1.1",
+            ReservedFontName: null,
+            Unicodes: null),
+        new(
             "fonts/noto-sans-thai",
             "fonts/noto-sans-thai/NotoSansThai-Regular.ttf",
             "NotoSansThai-Regular.ttf",
@@ -965,6 +985,45 @@ internal static partial class FontCorpus
         ("\u0D7A \u0D7B\u0D3E \u0D7C\u0D4D\u0D15 \u0D28\u0D4D\u200D \u0D30\u0D4D\u200D \u0D4E\u0D15 \u0D4E\u0D15\u0D3F \u0D4E \u0D30\u0D4D\u0D15 \u0D07\u0D57 \u0D0E\u0D46 \u0D12\u0D3E \u0D15\u0D00 \u0D04\u0D3E \u0D15\u0D3B \u0D15\u0D3C \u0D54 \u0D15\u0D4D\u200C\u0D15", null),
     ];
 
+    // Khmer: words, the vowels with two parts, the subscript ro with other subscripts before and after it, the register
+    // shifters, the robat, the signs, what is not a syllable, digits and punctuation, and the syllables of the first
+    // lines without each group of features of the model.
+    private static readonly ShapingText[] KhmerShapingCases =
+    [
+        ("\u1797\u17B6\u179F\u17B6\u1781\u17D2\u1798\u17C2\u179A \u1780\u1798\u17D2\u1796\u17BB\u1787\u17B6 \u179F\u17D2\u179A\u17B8 \u179F\u17D2\u178F\u17D2\u179A\u17B8", null),
+        ("\u1780\u17BE \u1780\u17BF \u1780\u17C0 \u1780\u17C4 \u1780\u17C5 \u1780\u17C1 \u1780\u17C2 \u1780\u17C3 \u1780\u17B6 \u1780\u17B7 \u1780\u17BB", null),
+        ("\u1784\u17D2\u179A\u17D2\u1782 \u1784\u17D2\u1782\u17D2\u179A \u1780\u17D2\u179A \u1780\u17D2\u179A\u17C1 \u1780\u17D2\u179A\u17BE \u1780\u17D2\u1780\u17D2\u1780\u17D2\u179A \u1780\u17D2\u179A\u17D2\u179A", null),
+        ("\u179F\u17CA\u17B8 \u1784\u17C9\u17B7 \u17A2\u200C\u17CA\u17B7 \u17A2\u17BB\u17CA\u17C7 \u1780\u17CC \u1780\u17C9 \u1780\u200D\u17C9", null),
+        ("\u1780\u17C6 \u1780\u17CB \u1780\u17C7 \u1780\u17C8 \u1780\u17BB\u17C6 \u1780\u17B6\u17C6 \u1780\u17D0 \u1780\u17DD \u1780\u17D3 \u1780\u17C6\u17C7", null),
+        ("\u17D2\u1780 \u17B6 \u17C1 \u17BE \u17C6 \u17D2 \u1780\u17D2 \u1780\u17B6\u17B6 \u1780\u17C1\u17C1 \u25CC\u17C1 \u00A0\u17B7 \u17D9\u17D2\u1780", null),
+        ("\u17E1\u17E2\u17E3 \u17A5 \u17AB\u17C1 \u17B1\u17D2\u1780 \u1780\u17D4 \u17D5\u17D6 \u17DB\u17E1\u17E0 A\u1780. \u1780\u17B4 \u1780\u200C\u17D2\u1780", null),
+        ("\u179F\u17D2\u179A\u17B8 \u1784\u17D2\u179A\u17D2\u1782 \u1780\u17BE \u179F\u17CA\u17B8", "-pref"),
+        ("\u179F\u17D2\u179A\u17B8 \u1784\u17D2\u179A\u17D2\u1782 \u1780\u17BE \u179F\u17CA\u17B8", "-blwf,-abvf,-pstf"),
+        ("\u179F\u17D2\u179A\u17B8 \u1784\u17D2\u179A\u17D2\u1782 \u1780\u17BE \u179F\u17CA\u17B8", "-cfar"),
+        ("\u179F\u17D2\u179A\u17B8 \u1784\u17D2\u179A\u17D2\u1782 \u1780\u17BE \u179F\u17CA\u17B8", "-pres,-abvs,-blws,-psts,-clig"),
+        ("\u179F\u17D2\u179A\u17B8 \u1780\u17C4", "liga"),
+    ];
+
+    // Myanmar: words, the medial consonants and the vowel drawn before the syllable, the marks whose order changes
+    // (the anusvara and the vowels below), the kinzi, tones, what is not a syllable, digits, letters of the extended
+    // blocks, joiners, and syllables without each group of features of the model.
+    private static readonly ShapingText[] MyanmarShapingCases =
+    [
+        ("\u1019\u103C\u1014\u103A\u1019\u102C \u1000\u103B\u103D\u1014\u103A\u102F\u1015\u103A \u1021\u1004\u103A\u1039\u1002\u101C\u102D\u1015\u103A \u1015\u1005\u1039\u1005\u100A\u103A\u1038", null),
+        ("\u1000\u103C\u103D\u1031 \u1000\u103B\u103D\u103E \u1000\u1031 \u1000\u1031\u102C \u1000\u1031\u1031 \u1000\u103C\u1031 \u1000\u1039\u1000\u1031 \u1000\u103C\u1031\u102C\u103A", null),
+        ("\u1000\u102F\u1036 \u1000\u1036\u102F \u1000\u102D\u102F \u1000\u102F\u102D \u1000\u102D\u1036 \u1000\u1037 \u1000\u1037\u103A \u1000\u103A\u1037 \u1000\u1036\u1037 \u1000\u102F\u1036\u1037", null),
+        ("\u1004\u103A\u1039\u1000 \u1004\u103A\u1039\u1000\u1031 \u1004\u103A\u1039\u1000\u103C \u1004\u103A\u1039 \u101B\u103A\u1039\u1000 \u105A\u103A\u1039\u1000 \u1004\u103A\u1000 \u1004\u1039\u1000", null),
+        ("\u1000\u1038 \u1000\u102C\u1038 \u1000\u1038\u102C \u1000\u1087 \u1000\u1063 \u1000\u1064\u1036 \u1000\u109A \u1000\uAA7B \u1000\uAA7D\u102C \u1000\u102F\uAA7C", null),
+        ("\u1031 \u103A \u1039\u1000 \u103C \u1036 \u1000\u1039 \u1000\u103B\u103B \u1000\u103E\u103D \u25CC\u1031 \u00A0\u102D \u104A\u1031 \u104B\u1031 -\u103C", null),
+        ("\u1041\u1042\u1043 \u1040\u102D \u1021 \u1025\u102E \u1029 \u104E\u1004\u103A\u1038 \u103F \u1050\u1056 \u1075\u1085 \uAA60\uAA7A \uA9E0\uA9E5 \u1000\uFE00\u1031", null),
+        ("\u1000\u200D \u1000\u200C\u1031 \u200D\u1031 \u1000\u1039\u200D\u1000 \u1000\u103A\u200C A\u1000. \u1000 \u1031", null),
+        ("\u1021\u1004\u103A\u1039\u1002 \u1000\u103C\u1031 \u1015\u1005\u1039\u1005", "-rphf"),
+        ("\u1021\u1004\u103A\u1039\u1002 \u1000\u103C\u1031 \u1015\u1005\u1039\u1005", "-pref"),
+        ("\u1021\u1004\u103A\u1039\u1002 \u1000\u103C\u1031 \u1015\u1005\u1039\u1005", "-blwf,-pstf"),
+        ("\u1021\u1004\u103A\u1039\u1002 \u1000\u103C\u1031 \u1015\u1005\u1039\u1005", "-pres,-abvs,-blws,-psts"),
+        ("\u1021\u1004\u103A\u1039\u1002 \u1000\u103C\u1031 \u1015\u1005\u1039\u1005", "-liga,-mark,-mkmk"),
+    ];
+
     // Hebrew: letters and final forms, the points in the order of a normalized text and in the order they are typed
     // in, a meteg between the parts of a vowel, cantillation marks, the precomposed letters (which a font that
     // positions the points draws as a letter and its points, and a font that does not draws as they are), the
@@ -1031,6 +1090,8 @@ internal static partial class FontCorpus
         ["fonts/noto-sans-malayalam"] = MalayalamShapingCases,
         ["fonts/noto-sans-devanagari-first-version"] = DevanagariShapingCases,
         ["fonts/noto-sans-malayalam-first-version"] = MalayalamShapingCases,
+        ["fonts/noto-sans-khmer"] = KhmerShapingCases,
+        ["fonts/noto-sans-myanmar"] = MyanmarShapingCases,
         ["fonts/noto-sans-thai"] = ThaiShapingCases,
         ["fonts/noto-sans-lao"] = LaoShapingCases,
         ["fonts/noto-sans-cjk-kr-regular"] = HangulShapingCases,

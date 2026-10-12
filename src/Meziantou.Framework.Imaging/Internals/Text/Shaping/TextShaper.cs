@@ -63,6 +63,7 @@ internal static class TextShaper
     // lookups are applied before every other one, whatever their place in the lookup list.
     private static readonly uint Rvrn = ShapingFeature.ToTag("rvrn");
     private static readonly uint Mark = ShapingFeature.ToTag("mark");
+    private static readonly uint Cfar = ShapingFeature.ToTag("cfar");
 
     private static readonly uint[] LeftToRightFeatures = [ShapingFeature.ToTag("ltra"), ShapingFeature.ToTag("ltrm")];
     private static readonly uint[] RightToLeftFeatures = [ShapingFeature.ToTag("rtla"), Rtlm];
@@ -118,6 +119,8 @@ internal static class TextShaper
             ScriptShaperKind.Arabic => ArabicShaper.GetPlan(script, face.Gsub is { } substitutions && HasFeature(substitutions, face.GsubData.Span, scripts, language, ArabicShaper.RequiredAlternates)),
             ScriptShaperKind.Hangul => HangulShaper.Plan,
             ScriptShaperKind.Indic => IndicShaper.Plan,
+            ScriptShaperKind.Khmer => KhmerShaper.Plan,
+            ScriptShaperKind.Myanmar => MyanmarShaper.Plan,
             _ => ShaperPlan.Default,
         };
 
@@ -179,7 +182,16 @@ internal static class TextShaper
                 hasStretching = true;
             }
 
-            if (indic is not null && stage == IndicShaper.InitialReorderingStage)
+            if (shaper == ScriptShaperKind.Khmer && stage == KhmerShaper.ReorderingStage)
+            {
+                var hasCfar = face.Gsub is { } table && HasFeature(table, face.GsubData.Span, scripts, language, Cfar) && !(plan.TryGetMask(Cfar, out var cfarMask) && cfarMask == 0);
+                KhmerShaper.Reorder(buffer, face, FirstShaperBit, hasCfar);
+            }
+            else if (shaper == ScriptShaperKind.Myanmar && stage == MyanmarShaper.ReorderingStage)
+            {
+                MyanmarShaper.Reorder(buffer, face);
+            }
+            else if (indic is not null && stage == IndicShaper.InitialReorderingStage)
             {
                 indic.ReorderBeforeBasicForms(buffer);
             }
@@ -196,6 +208,19 @@ internal static class TextShaper
         for (var i = 0; i < info.Length; i++)
         {
             positions[i].XAdvance = info[i].ShaperData is > 0 and <= SpaceEm5 ? GetSpaceAdvance(face, info[i].ShaperData) : face.GetAdvanceWidth(info[i].Glyph);
+        }
+
+        // Myanmar: the marks have no advance before the font places them, so that what it adds to one stays.
+        var marksHaveNoAdvanceBeforePositioning = shaper == ScriptShaperKind.Myanmar;
+        if (marksHaveNoAdvanceBeforePositioning)
+        {
+            for (var i = 0; i < info.Length; i++)
+            {
+                if (info[i].IsMark)
+                {
+                    positions[i].XAdvance = 0;
+                }
+            }
         }
 
         var hasKerningFeature = false;
@@ -219,7 +244,7 @@ internal static class TextShaper
         // A mark does not move the pen. Without positioning lookups, a mark that has an advance is drawn before the pen
         // it would have moved, over the glyph it follows. The fonts of Hangul and of the Indic scripts give their marks
         // the advance they are to have: a vowel sign written after its consonant is a mark that takes room.
-        var marksHaveNoAdvance = shaper is not (ScriptShaperKind.Hangul or ScriptShaperKind.Indic);
+        var marksHaveNoAdvance = shaper is not (ScriptShaperKind.Hangul or ScriptShaperKind.Indic or ScriptShaperKind.Khmer or ScriptShaperKind.Myanmar);
         for (var i = 0; i < info.Length; i++)
         {
             if (info[i].IsMark && marksHaveNoAdvance)
@@ -270,6 +295,15 @@ internal static class TextShaper
 
             case UnicodeScript.Thai or UnicodeScript.Lao:
                 return ScriptShaperKind.Thai;
+
+            case UnicodeScript.Khmer:
+                return ScriptShaperKind.Khmer;
+
+            case UnicodeScript.Myanmar:
+                // The tag of the first version of the Myanmar model is the one of fonts that need no model.
+                return scriptTag is 0 or OpenTypeScript.Default || scriptTag == ShapingFeature.ToTag("dflt") || scriptTag == ShapingFeature.ToTag("latn") || scriptTag == ShapingFeature.ToTag("mymr")
+                    ? ScriptShaperKind.Default
+                    : ScriptShaperKind.Myanmar;
 
             case UnicodeScript.Devanagari or UnicodeScript.Bengali or UnicodeScript.Gurmukhi or UnicodeScript.Gujarati or UnicodeScript.Oriya
                 or UnicodeScript.Tamil or UnicodeScript.Telugu or UnicodeScript.Kannada or UnicodeScript.Malayalam:
@@ -466,11 +500,12 @@ internal static class TextShaper
             // model decomposes every character: "the shaping engine decomposes two- or three-part matras into their
             // constituent parts before any repositioning", each part having its own place in the syllable.
             var codePoint = buffer.Info[i].CodePoint;
-            var isComplete = shaper == ScriptShaperKind.Indic ? !(i < marksEnd && isKept) : i < marksEnd && !isKept && shaper != ScriptShaperKind.Hangul;
+            var isSyllabic = shaper is ScriptShaperKind.Indic or ScriptShaperKind.Khmer or ScriptShaperKind.Myanmar;
+            var isComplete = isSyllabic ? !(i < marksEnd && isKept) : i < marksEnd && !isKept && shaper != ScriptShaperKind.Hangul;
             if (!isComplete && face.MapCodePoint(codePoint) != 0)
                 continue;
 
-            var count = (i < marksEnd && isKept) || (shaper == ScriptShaperKind.Indic && codePoint is 0x0931 or 0x09DC or 0x09DD or 0x0B94) ? 0 : Decompose(face, codePoint, parts, 0, isComplete);
+            var count = (i < marksEnd && isKept) || (shaper == ScriptShaperKind.Indic && codePoint is 0x0931 or 0x09DC or 0x09DD or 0x0B94) ? 0 : Decompose(face, codePoint, parts, 0, isComplete, shaper);
             if (count > 0)
             {
                 buffer.Resize(i, 1, count);
@@ -565,7 +600,7 @@ internal static class TextShaper
             ref var current = ref buffer.Info[i];
             var isMark = current.Category is UnicodeCategory.NonSpacingMark or UnicodeCategory.SpacingCombiningMark or UnicodeCategory.EnclosingMark;
             // Indic: the parts of a matra are not composed again, and one letter Unicode never composes is.
-            if (shaper == ScriptShaperKind.Indic && starter >= 0 && IsMark(buffer.Info[starter].Category))
+            if (shaper is ScriptShaperKind.Indic or ScriptShaperKind.Khmer && starter >= 0 && IsMark(buffer.Info[starter].Category))
             {
                 isMark = false;
             }
@@ -614,16 +649,24 @@ internal static class TextShaper
     /// <see langword="true"/> to decompose as far as the font has the parts; <see langword="false"/> to stop at the
     /// first character the font has.
     /// </param>
-    private static int Decompose(FontFace face, int codePoint, Span<int> parts, int depth, bool isComplete)
+    /// <param name="shaper">The shaping model of the script, which can have decompositions of its own.</param>
+    private static int Decompose(FontFace face, int codePoint, Span<int> parts, int depth, bool isComplete, ScriptShaperKind shaper)
     {
-        if (depth > UnicodeNormalization.MaxCanonicalDecompositionLength || !UnicodeNormalization.TryDecomposeCanonical(codePoint, out var first, out var second))
+        if (depth > UnicodeNormalization.MaxCanonicalDecompositionLength)
             return 0;
+
+        // Khmer: a vowel with two parts is the vowel drawn before the syllable and itself.
+        if (!(shaper == ScriptShaperKind.Khmer && depth == 0 && KhmerShaper.TryDecompose(codePoint, out var first, out var second))
+            && !UnicodeNormalization.TryDecomposeCanonical(codePoint, out first, out second))
+        {
+            return 0;
+        }
 
         if (second >= 0 && face.MapCodePoint(second) == 0)
             return 0;
 
         // The first part can be decomposed again.
-        var count = !isComplete && face.MapCodePoint(first) != 0 ? 0 : Decompose(face, first, parts, depth + 1, isComplete);
+        var count = !isComplete && face.MapCodePoint(first) != 0 ? 0 : Decompose(face, first, parts, depth + 1, isComplete, shaper);
         if (count == 0)
         {
             if (face.MapCodePoint(first) == 0)
@@ -791,6 +834,14 @@ internal static class TextShaper
         else if (shaper == ScriptShaperKind.Indic)
         {
             IndicShaper.FindSyllables(info);
+        }
+        else if (shaper == ScriptShaperKind.Khmer)
+        {
+            KhmerShaper.FindSyllables(info);
+        }
+        else if (shaper == ScriptShaperKind.Myanmar)
+        {
+            MyanmarShaper.FindSyllables(info);
         }
 
         foreach (ref var glyph in info)

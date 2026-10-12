@@ -83523,6 +83523,41 @@
       }
     },
     {
+      "id": "fonts/noto-sans-khmer",
+      "file": {
+        "path": "fonts/noto-sans-khmer/NotoSansKhmer-Regular.ttf",
+        "sha256": "60c10dbfae33a44f1897cd939789bd173aedb7c7dc0a9af389a737e33cb7e548",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "The Noto Project Authors (https://github.com/notofonts/khmer)",
+        "source": "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansKhmer/unhinted/ttf/NotoSansKhmer-Regular.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB",
+        "font.table=glyf"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-sans-khmer.json",
+        "sha256": "449b4402708b0ba792bedc2dde3ded3f9ca6a3b54b408a93060efc072c0cfd1d",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-sans-khmer.json",
+        "sha256": "bbfb27c797188ca12b73bee7ea4eced81853ddd47b88ff083a9987993e56d5f5",
+        "role": "shaping-vectors"
+      }
+    },
+    {
       "id": "fonts/noto-sans-lao",
       "file": {
         "path": "fonts/noto-sans-lao/NotoSansLao-Regular.ttf",
@@ -83630,6 +83665,41 @@
       "shaping": {
         "path": "fonts/shaping/noto-sans-malayalam-first-version.json",
         "sha256": "98f6eafa9839220adb01d4a4e5461b54430a00df4576709f4806dad3c227fd66",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/noto-sans-myanmar",
+      "file": {
+        "path": "fonts/noto-sans-myanmar/NotoSansMyanmar-Regular.ttf",
+        "sha256": "f4be6ef43871516d8347c5217a2033991b8ecda2dd1200007c2fb431a66d64db",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "The Noto Project Authors (https://github.com/notofonts/myanmar)",
+        "source": "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansMyanmar/unhinted/ttf/NotoSansMyanmar-Regular.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB",
+        "font.table=glyf"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-sans-myanmar.json",
+        "sha256": "1bddfba0196a985073f2d60f3806f20cbd40c5a29c8f58dac5b508cfa47f337c",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-sans-myanmar.json",
+        "sha256": "d62aa70a1d9b862b15b591985fe64f9b86203fabf8519b7bdf047b3f25879803",
         "role": "shaping-vectors"
       }
     },

@@ -214,8 +214,12 @@ internal sealed partial class LayoutApplier
         index = last - (positions.Length - 1) + 1;
     }
 
-    /// <summary>Gets the number of components a glyph stands for: those of a ligature, or one.</summary>
-    private static int GetComponentCount(in GlyphInfo info) => IsLigatureItself(info) ? Math.Max((int)info.LigatureComponent, 1) : 1;
+    /// <summary>
+    /// Gets the number of components a glyph stands for: those of a ligature the font classifies as one, or one. A
+    /// ligature the font makes a mark or a base of (a subscript letter, a consonant with its sign) is one component of
+    /// the ligatures it enters.
+    /// </summary>
+    private static int GetComponentCount(in GlyphInfo info) => IsLigatureItself(info) && info.IsLigature ? Math.Max((int)info.LigatureComponent, 1) : 1;
 
     /// <summary>Determines whether a glyph is a ligature formed by a lookup, whose component field is a count, not a rank.</summary>
     private static bool IsLigatureItself(in GlyphInfo info) => info.LigatureId != 0 && (info.Props & GlyphInfo.LigatureWithComponents) != 0;

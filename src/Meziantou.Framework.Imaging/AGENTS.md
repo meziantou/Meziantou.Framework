@@ -409,6 +409,13 @@ glyphs and positions in a `GlyphBuffer`; `LayoutApplier` (`Internals/Text/OpenTy
     mask of its feature. Marks keep their advance in these scripts and in Hangul.
   - A font whose substitution table has the script only as `DFLT` or `latn`, or under a tag that ends with 3, is not
     shaped with the Indic model (`GetShaper`).
+  - `KhmerShaper` and `MyanmarShaper` are the same kind of model with their own categories and grammar, and no
+    question asked to the font: the base is the first consonant. Khmer reorders before any feature and applies the
+    forms of its subscripts in one stage, to what follows the first character of each syllable; the vowels with two
+    parts are decomposed by the model (the pre-base vowel, then the vowel itself), not by Unicode. Myanmar reorders
+    after `locl` and `ccmp` by giving each character a place and sorting, and zeroes the advance of its marks before
+    positioning. A Myanmar font with the tag `mymr` only is shaped with the default model, as the reference shaper
+    does. These syllabic models decompose every character before shaping and do not compose onto marks.
   - `ShapingCombiningClass` orders marks for shaping (Hebrew points, Arabic vowel marks); every script goes through
     it, and composition is blocked by these classes, not by the canonical ones.
 - **Normalization** follows the text: a character without marks is kept when the font has it and decomposed (as far

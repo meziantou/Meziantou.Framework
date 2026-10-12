@@ -225,8 +225,16 @@ internal sealed partial class LayoutApplier
         positions[0] = index;
         // The glyphs a rule replaces are a sequence a zero width non-joiner breaks, as it breaks a ligature; the glyphs
         // around them are seen through it.
-        if (!MatchForward(index, inputCount - 1, kind, input, inputBase, isContext: false, positions[1..inputCount], out var last)
-            || !MatchBackward(index, backtrackCount, kind, backtrack, backtrackBase)
+        if (!MatchForward(index, inputCount - 1, kind, input, inputBase, isContext: false, positions[1..inputCount], out var last))
+            return false;
+
+        if (_isQuery)
+        {
+            // A rule with a context is not a rule for the sequence alone.
+            if (!_ignoresContext && (backtrackCount != 0 || lookaheadCount != 0))
+                return false;
+        }
+        else if (!MatchBackward(index, backtrackCount, kind, backtrack, backtrackBase)
             || !MatchForward(last, lookaheadCount, kind, lookahead, lookaheadBase, isContext: true, default, out _))
         {
             return false;
@@ -303,8 +311,13 @@ internal sealed partial class LayoutApplier
                 if (IsSkipped(candidate))
                     continue;
 
-                if (Matches(data, kind, value, valuesBase, candidate.Glyph))
+                // A glyph the rule replaces is one the feature applies to; a glyph of another syllable is not seen
+                // by a feature that works inside a syllable.
+                if ((isContext || (candidate.Mask & _mask) != 0) && (_syllable < 0 || candidate.Syllable == _syllable)
+                    && Matches(data, kind, value, valuesBase, candidate.Glyph))
+                {
                     break;
+                }
 
                 if (!IsTransparent(candidate, isContext))
                     return false;
@@ -339,7 +352,7 @@ internal sealed partial class LayoutApplier
                 if (IsSkipped(candidate))
                     continue;
 
-                if (Matches(data, kind, value, valuesBase, candidate.Glyph))
+                if ((_syllable < 0 || candidate.Syllable == _syllable) && Matches(data, kind, value, valuesBase, candidate.Glyph))
                     break;
 
                 if (!IsTransparent(candidate, isContext: true))

@@ -19,6 +19,12 @@ internal struct GlyphInfo
     /// <summary>The glyph is one of several glyphs a substitution put in place of one.</summary>
     public const int Multiplied = 0x20;
 
+    /// <summary>
+    /// The glyph is a ligature with components, whatever its class is: its component field is their number, where the
+    /// one of a mark is the component the mark follows.
+    /// </summary>
+    public const int LigatureWithComponents = 0x40;
+
     /// <summary>The character is default ignorable: it has no visible form of its own.</summary>
     public const int DefaultIgnorable = 0x01;
 
@@ -78,6 +84,18 @@ internal struct GlyphInfo
 
     /// <summary>A value of the shaper of the script: for a space the font does not have, the width it stands for.</summary>
     public byte ShaperData;
+
+    /// <summary>
+    /// The syllable the glyph belongs to, for the scripts shaped syllable by syllable: a number that differs from the
+    /// ones of the neighboring syllables, 0 outside of them.
+    /// </summary>
+    public byte Syllable;
+
+    /// <summary>The place of the glyph in its syllable, for the scripts whose syllables are reordered.</summary>
+    public byte SyllablePosition;
+
+    /// <summary>What the character is in a syllable, for the scripts shaped syllable by syllable.</summary>
+    public byte SyllableCategory;
 
     public readonly bool IsMark => (Props & MarkGlyph) != 0;
 

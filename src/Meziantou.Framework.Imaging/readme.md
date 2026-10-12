@@ -992,7 +992,7 @@ public static void DrawTextOnPath(string fontPath, string outputPath)
   - the `GSUB` table substitutes glyphs (ligatures, contextual and localized forms, composition) and the `GPOS` table
     positions them (kerning, marks on their base or on a component of a ligature, marks on marks, cursive
     connection), with the features a client applies by default to horizontal text: `ccmp`, `locl`, `rlig`, `calt`,
-    `clig`, `liga`, `rclm`, the direction features (`ltra`, `ltrm`, `rtla`, `rtlm`), `mark`, `mkmk`, `abvm`, `blwm`,
+    `clig`, `liga`, `rclt`, the direction features (`ltra`, `ltrm`, `rtla`, `rtlm`), `mark`, `mkmk`, `abvm`, `blwm`,
     `curs`, `dist`, `kern`, and `frac`, `numr`, `dnom` around a fraction slash (`1⁄2`);
   - a font without `GPOS` kerning is kerned by its `kern` table; a mark does not move the pen;
   - spaces of a fixed width and the non-breaking hyphen that a font lacks are made from its space and its hyphen;
@@ -1012,7 +1012,19 @@ public static void DrawTextOnPath(string fontPath, string outputPath)
   - **Hangul**: letters (jamo) that make a syllable the font has are drawn with the glyph of the syllable, and a
     syllable followed by a trailing consonant with the glyph of both; the other blocks (Old Hangul, or a font without
     the syllable) are drawn with their letters, shaped by position (`ljmo`, `vjmo`, `tjmo`). A tone mark of Middle
-    Korean is drawn before its syllable, or on a dotted circle when it has none.
+    Korean is drawn before its syllable, or on a dotted circle when it has none;
+  - the **Indic scripts** (Devanagari, Bengali, Gurmukhi, Gujarati, Oriya, Tamil, Telugu, Kannada, Malayalam) are
+    shaped syllable by syllable, as the specifications of Microsoft for these scripts describe: the base consonant
+    of a syllable is found from what the font does with its consonants (half forms, forms below and after the
+    base); a vowel sign that is drawn before the syllable is moved there, and a two-part vowel sign is drawn with
+    its parts; a ra and a halant at the start of a syllable become a reph, placed where the script puts it; the
+    features of the font are applied in the order of the specifications (`nukt`, `akhn`, `rphf`, `rkrf`, `pref`,
+    `blwf`, `abvf`, `half`, `pstf`, `vatu`, `cjct`, then `init`, `pres`, `abvs`, `blws`, `psts`, `haln`), inside each
+    syllable. A zero width joiner after a halant asks for a half form and a zero width non-joiner for a visible
+    halant. A vowel sign or a mark without a consonant is drawn on a dotted circle, and so is a vowel sign after a
+    vowel letter it would be mistaken for another letter with. A font made for the first version of the
+    specifications (the script tags without a digit) is shaped as that version asks. `liga` is not applied to these
+    scripts unless the caller asks for it.
 
   Control characters are not drawn and format characters (joiners, variation selectors, the soft hyphen where the line
   is not broken) are invisible. A character no font of the stack has is drawn with the missing glyph of the primary
@@ -1047,9 +1059,9 @@ public static void DrawTextOnPath(string fontPath, string outputPath)
 - **Limits.** `MaxTextLength` (UTF-16 code units), `MaxTextGlyphs`, `MaxTextLines` and `MaxGlyphComplexity`, from the
   configuration the primary font of the first span was loaded with.
 
-What text layout does not do yet: the scripts whose syllables are reordered (the Indic scripts, Khmer, Myanmar,
-Tibetan and the others of the universal shaping model) are not shaped correctly; Thai, Lao, Khmer and Myanmar have no
-dictionary to break their lines. A Thai font made before OpenType Layout, with its marks in the private use area, is
+What text layout does not do yet: Khmer, Myanmar, Tibetan, Sinhala and the other scripts of the universal shaping
+model are not shaped correctly, nor is an Indic font made for that model (the script tags that end with 3); Thai, Lao,
+Khmer and Myanmar have no dictionary to break their lines. A Thai font made before OpenType Layout, with its marks in the private use area, is
 drawn without them. A font that only has the Arabic presentation forms, without substitution table, is not joined; the marks of
 a font without positioning table are drawn where its glyphs put them. Letter spacing is added between the letters of
 every script, including those that join. Justification does not lengthen Arabic words (kashida). The language of a
@@ -1946,6 +1958,6 @@ Everything below is rejected explicitly (never decoded or encoded approximately)
 | AVIF encoding | An image of a sequence is predicted from the previous image only, with one motion vector per block and the regular interpolation filter: no compound prediction (two references), global, warped or overlapped motion, switchable interpolation filter, temporal motion vector prediction, or scene change detection (an image that differs from the previous one is coded with intra blocks, not as a key frame). Not used: intra block copy (content that repeats in an image, such as the characters of a text, is not predicted from the image itself: a lossless screenshot can be larger than its PNG), the split of the transform blocks of an inter block (it has the largest transform of its size), quantizer deltas, quantization matrices, loop restoration, CDEF strengths per block (one pair per frame), super-resolution and film grain. No grid, layered (progressive) or premultiplied-alpha output; no `clap`, `pasp`, mastering display or content light level box; no orientation for an image sequence. An image sequence of one image cannot store animation settings (it is read back as a still image): a single frame with animation settings is rejected. An image sequence needs a seekable destination and its frame count. The level of the stream is the lowest one whose picture size holds the image; the other limits of a level are not checked |
 | AVIF decoding | Rejected with `UnsupportedImageFeatureException`: premultiplied alpha, `iden`/`iovl` derived images, fragmented files, edit lists that do not play the whole track, image sequences whose images change size, clean apertures that do not select whole samples or that follow a rotation, grid tiles that declare other transformations than their grid, large scale tile streams, and the other matrix coefficients (constant luminance, ICtCp, SMPTE 2085, chromaticity-derived). Not read: gain maps, depth maps, thumbnails, the images that are not the primary item, the `tkhd` matrix and the other transformations of an image sequence (its images are returned as stored), mastering display and content light level boxes. A layered image is returned at its full quality only: its lower layers are not exposed as a progressive rendering. HDR samples are returned as stored: no tone mapping |
 | JPEG XL | Decoding, rejected with `UnsupportedImageFeatureException` (also from `Identify` when the image header tells): floating-point samples and samples of more than 16 bits, premultiplied alpha, CMYK (a black channel) and spot colors, an XYB image whose ICC profile is not sRGB (it needs a color conversion to that profile), the PQ or HLG transfer function with primaries or a white point that CICP cannot express, a Modular frame stored as YCbCr with subsampled channels, restoration filters on a grayscale Modular frame, an upsampled frame with patches or splines whose extra channels have another resolution. Ignored: the preview frame, frame names, the intrinsic size, the JPEG reconstruction data (`jbrd`: a recompressed JPEG file is decoded to pixels, the JPEG file is not rebuilt), `jumb` and unknown boxes; depth, selection mask, thermal and the other extra channels than alpha are decoded and dropped. Samples of 1 to 16 bits other than 8 and 16 are scaled exactly to 8 or 16 bits. A lossy frame is decoded in floating point: the result is within a few sixteen-bit units of the reference decoders, not bit-exact. Encoding: lossless only (no lossy output), full frames that replace the image (no layers, blending, patches or cropped frames), frame durations in whole milliseconds, no frame of an animation without duration; an EXIF orientation is written to the image header |
-| Text | Horizontal text only; no shaping model for the scripts that reorder syllables (Indic scripts, Khmer, Myanmar, Tibetan), no Arabic joining for a font without substitution table and no dictionary line breaking for the scripts that need one; no language-specific forms; greedy line breaking; no AAT (`morx`, `kerx`) shaping, no device adjustment of positions (hinting); no hinting and no subpixel (LCD) rendering; no system font: every font is given by the caller; along a path, glyphs are turned but not warped; see [Text](#text) |
+| Text | Horizontal text only; no shaping model for Khmer, Myanmar, Tibetan, Sinhala and the other scripts of the universal shaping model, no Arabic joining for a font without substitution table and no dictionary line breaking for the scripts that need one; no language-specific forms; greedy line breaking; no AAT (`morx`, `kerx`) shaping, no device adjustment of positions (hinting); no hinting and no subpixel (LCD) rendering; no system font: every font is given by the caller; along a path, glyphs are turned but not warped; see [Text](#text) |
 | Fonts | No system font, no SVG glyph, no monochrome bitmap glyph, no Type 1 font, no hinting; variable fonts without version 2 of `avar`; see [Fonts](#fonts) |
 | API | No public allocator, custom pixel type, codec plug-in or image-processor interface; implementation types are internal |

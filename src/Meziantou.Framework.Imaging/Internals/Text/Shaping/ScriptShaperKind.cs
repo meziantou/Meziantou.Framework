@@ -17,4 +17,7 @@ internal enum ScriptShaperKind
 
     /// <summary>Thai and Lao: the vowel written with a ring above the consonant and a letter after it.</summary>
     Thai,
+
+    /// <summary>The Indic scripts: syllables whose characters are reordered around a base consonant.</summary>
+    Indic,
 }

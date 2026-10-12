@@ -307,7 +307,7 @@ internal sealed partial class LayoutApplier
 
             baseIndex = LayoutCommon.GetCoverage(data, baseCoverage, info[target].Glyph);
         }
-        while (baseIndex < 0 && (info[target].Props & GlyphInfo.Multiplied) != 0 && info[target].LigatureComponent > 1 && !IsFirstOfItsSequence(target));
+        while (baseIndex < 0 && (info[target].Props & GlyphInfo.Multiplied) != 0 && GetSequenceRank(info[target]) > 0 && !IsFirstOfItsSequence(target));
 
         if (baseIndex < 0)
             return false;
@@ -321,12 +321,21 @@ internal sealed partial class LayoutApplier
         return Attach(subtable + FontBinary.UInt16(data, subtable + 8), mark, classCount, bases, bases + 2 + (baseIndex * classCount * 2), target, ref index);
     }
 
-    /// <summary>Determines whether a glyph of a multiplied sequence has no glyph of the same sequence before it.</summary>
+    /// <summary>
+    /// Determines whether a glyph of a multiplied sequence has no glyph of the same sequence before it that could carry
+    /// the marks: a mark before it does not.
+    /// </summary>
     private bool IsFirstOfItsSequence(int index)
     {
+        // The glyph before is the one before it in the sequence when it has the rank just before: a sequence that
+        // lost a glyph in between (to a ligature) is two sequences.
         var info = _buffer.Info;
-        return index == 0 || (info[index - 1].Props & GlyphInfo.Multiplied) == 0 || info[index - 1].Cluster != info[index].Cluster || info[index - 1].LigatureComponent >= info[index].LigatureComponent;
+        return index == 0 || info[index - 1].IsMark || (info[index - 1].Props & GlyphInfo.Multiplied) == 0
+            || info[index - 1].LigatureId != info[index].LigatureId || GetSequenceRank(info[index - 1]) + 1 != GetSequenceRank(info[index]);
     }
+
+    /// <summary>Gets the rank of a glyph in the sequence that replaced one glyph, from 0; the glyphs of a ligature that was replaced have no rank.</summary>
+    private static int GetSequenceRank(in GlyphInfo info) => IsLigatureItself(info) ? 0 : Math.Max(info.LigatureComponent - 1, 0);
 
     /// <summary>Type 5: a mark is placed on an anchor of the component of the ligature it follows.</summary>
     private bool ApplyMarkToLigature(int subtable, ref int index)

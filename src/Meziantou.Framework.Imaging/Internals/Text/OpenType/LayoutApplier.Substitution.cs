@@ -65,13 +65,20 @@ internal sealed partial class LayoutApplier
         // The parts of a ligature that is taken apart are bases; the glyphs of the sequence remember their rank, so
         // that a mark is only attached to the first of them.
         var impliedClass = _buffer.Info[index].IsLigature ? GlyphInfo.BaseGlyph : 0;
+
+        // The glyphs of a glyph that is a ligature, or that follows a component of one, keep what ties them to it;
+        // the others are numbered in their sequence.
+        var isTiedToLigature = _buffer.Info[index].LigatureId != 0;
         _buffer.Resize(index, 1, count);
         for (var i = 0; i < count; i++)
         {
             ref var info = ref _buffer.Info[index + i];
             SetGlyph(ref info, FontBinary.UInt16(data, sequence + 2 + (i * 2)), GlyphInfo.Multiplied, impliedClass);
-            info.LigatureId = 0;
-            info.LigatureComponent = (byte)Math.Min(i + 1, byte.MaxValue);
+            if (!isTiedToLigature)
+            {
+                info.Props &= unchecked((byte)~GlyphInfo.LigatureWithComponents);
+                info.LigatureComponent = (byte)Math.Min(i + 1, byte.MaxValue);
+            }
         }
 
         index += count;
@@ -187,6 +194,7 @@ internal sealed partial class LayoutApplier
         SetGlyph(ref target, ligature, GlyphInfo.Ligated, isLigature ? GlyphInfo.LigatureGlyph : 0);
         if (isLigature)
         {
+            target.Props |= GlyphInfo.LigatureWithComponents;
             target.LigatureId = id;
             target.LigatureComponent = (byte)Math.Min(componentsBefore, byte.MaxValue);
 
@@ -210,7 +218,7 @@ internal sealed partial class LayoutApplier
     private static int GetComponentCount(in GlyphInfo info) => IsLigatureItself(info) ? Math.Max((int)info.LigatureComponent, 1) : 1;
 
     /// <summary>Determines whether a glyph is a ligature formed by a lookup, whose component field is a count, not a rank.</summary>
-    private static bool IsLigatureItself(in GlyphInfo info) => info.LigatureId != 0 && (info.Props & GlyphInfo.Ligated) != 0 && !info.IsMark;
+    private static bool IsLigatureItself(in GlyphInfo info) => info.LigatureId != 0 && (info.Props & GlyphInfo.LigatureWithComponents) != 0;
 
     /// <summary>
     /// Type 8: one glyph becomes another one when the glyphs before and after it are the expected ones. The lookup is

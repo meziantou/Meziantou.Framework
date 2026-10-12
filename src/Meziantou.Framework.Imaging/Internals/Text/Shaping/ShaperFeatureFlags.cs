@@ -20,4 +20,7 @@ internal enum ShaperFeatureFlags
 
     /// <summary>The glyphs the feature puts in place of one are the parts of a glyph that stretches.</summary>
     Stretching = 8,
+
+    /// <summary>The lookups of the feature work inside a syllable: they do not match glyphs of two syllables.</summary>
+    PerSyllable = 16,
 }

@@ -25,6 +25,10 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// (class 9), which is drawn under them. Microsoft, "Developing OpenType Fonts for Thai Script": the classes of
 /// marks below the base. The marks of Lao are in that order already.
 /// </para>
+/// <para>
+/// <b>Telugu.</b> The length marks (classes 84 and 91) are the second part of a vowel sign: they stay next to its
+/// first part, before a nukta (class 7) or a halant (class 9), which the canonical order puts between the two.
+/// </para>
 /// </remarks>
 internal static class ShapingCombiningClass
 {
@@ -35,6 +39,8 @@ internal static class ShapingCombiningClass
     public const int FrontAbove = 26;
 
     private const int ThaiVowelBelow = 103;
+    private const int TeluguLengthMark = 84;
+    private const int TeluguAiLengthMark = 91;
 
     public const int Shadda = 27;
     public const int Patah = 20;
@@ -63,6 +69,12 @@ internal static class ShapingCombiningClass
         if (combiningClass is >= 27 and <= 35)
             return (byte)(27 + ArabicOrder.IndexOf(combiningClass));
 
-        return combiningClass == ThaiVowelBelow ? (byte)3 : combiningClass;
+        return combiningClass switch
+        {
+            ThaiVowelBelow => 3,
+            TeluguLengthMark => 4,
+            TeluguAiLengthMark => 5,
+            _ => combiningClass,
+        };
     }
 }

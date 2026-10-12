@@ -49,6 +49,12 @@ internal sealed partial class LayoutApplier
     private int _markSet;
     private uint _mask;
     private ShaperFeatureFlags _featureFlags;
+    private int _syllable;
+
+    // A question about a sequence of glyphs, not the shaping of a text: the flags of the lookups are not applied and,
+    // unless a rule may have no context, the context of the rules is not looked at.
+    private bool _isQuery;
+    private bool _ignoresContext;
     private int _nesting;
 
     public LayoutApplier(GlyphBuffer buffer, FontFace face)
@@ -106,8 +112,11 @@ internal sealed partial class LayoutApplier
         _flag = lookup.Flag;
         _markSet = lookup.MarkFilteringSet;
         _mask = mask;
+        _syllable = -1;
         if (lookup.SubtableCount == 0)
             return;
+
+        var isPerSyllable = flags.HasFlag(ShaperFeatureFlags.PerSyllable);
 
         if (!_isPositioning && GetEffectiveType(data, lookup) == SubstitutionReverseChain)
         {
@@ -118,6 +127,7 @@ internal sealed partial class LayoutApplier
                 if ((info.Mask & mask) != 0 && !IsSkipped(info))
                 {
                     var position = i;
+                    _syllable = isPerSyllable ? info.Syllable : -1;
                     ApplySubtables(lookup, ref position);
                 }
             }
@@ -129,10 +139,59 @@ internal sealed partial class LayoutApplier
         while (current < _buffer.Length)
         {
             ref var info = ref _buffer.Info[current];
+            _syllable = isPerSyllable ? info.Syllable : -1;
             if ((info.Mask & mask) == 0 || IsSkipped(info) || !ApplySubtables(lookup, ref current))
             {
                 current++;
             }
+        }
+    }
+
+    /// <summary>
+    /// Asks whether a substitution lookup would replace a sequence of glyphs as a whole: whether it has a rule whose
+    /// input is exactly the sequence. The buffer of the applier is a scratch one: it receives the sequence.
+    /// </summary>
+    /// <param name="index">The index of the lookup in the lookup list.</param>
+    /// <param name="glyphs">The glyphs.</param>
+    /// <param name="withoutContext">
+    /// <see langword="true"/> when only the rules that have no context count; <see langword="false"/> when a rule
+    /// counts whatever its context is.
+    /// </param>
+    public bool WouldSubstitute(int index, ReadOnlySpan<int> glyphs, bool withoutContext)
+    {
+        var data = _data.Span;
+        var lookup = _table!.GetLookup(data, index);
+        if (lookup.SubtableCount == 0 || glyphs.IsEmpty)
+            return false;
+
+        _buffer.Clear();
+        _buffer.StartShaping();
+        foreach (var glyph in glyphs)
+        {
+            _buffer.Add(0, 0);
+            ref var info = ref _buffer.Info[^1];
+            info.Glyph = glyph;
+            info.Mask = uint.MaxValue;
+        }
+
+        _flag = 0;
+        _markSet = 0;
+        _mask = uint.MaxValue;
+        _syllable = -1;
+        _featureFlags = ShaperFeatureFlags.None;
+        _nesting = 0;
+        _isQuery = true;
+        _ignoresContext = !withoutContext;
+        try
+        {
+            // The rule that applies at the first glyph must take every glyph of the sequence.
+            var position = 0;
+            return ApplySubtables(lookup, ref position) && position >= _buffer.Length;
+        }
+        finally
+        {
+            _isQuery = false;
+            _ignoresContext = false;
         }
     }
 
@@ -242,6 +301,9 @@ internal sealed partial class LayoutApplier
 
     private bool IsSkipped(in GlyphInfo info, int flag)
     {
+        if (_isQuery)
+            return false;
+
         // The bits of the three classes are the bits of the flags that ignore them.
         if ((info.Props & flag & (LayoutLookup.IgnoreBaseGlyphs | LayoutLookup.IgnoreLigatures | LayoutLookup.IgnoreMarks)) != 0)
             return true;
@@ -320,7 +382,14 @@ internal sealed partial class LayoutApplier
     {
         info.Glyph = glyph;
         info.Flags |= GlyphInfo.Substituted;
-        var kept = (info.Props & (GlyphInfo.Ligated | GlyphInfo.Multiplied)) | history;
+        var kept = (info.Props & (GlyphInfo.Ligated | GlyphInfo.Multiplied | GlyphInfo.LigatureWithComponents)) | history;
+
+        // A glyph that was one of several and is now a ligature is a ligature: what it was before is forgotten.
+        if ((history & GlyphInfo.Ligated) != 0)
+        {
+            kept &= ~GlyphInfo.Multiplied;
+        }
+
         if (_gdef is { HasGlyphClasses: true })
         {
             info.Props = (byte)(kept | _gdef.GetGlyphClass(_gdefData.Span, glyph));

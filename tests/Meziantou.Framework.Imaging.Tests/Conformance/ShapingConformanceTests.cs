@@ -91,6 +91,16 @@ public sealed class ShapingConformanceTests
     [InlineData("fonts/noto-sans-thai", UnicodeScript.Thai)]
     [InlineData("fonts/noto-sans-lao", UnicodeScript.Lao)]
     [InlineData("fonts/noto-sans-cjk-kr-regular", UnicodeScript.Hangul)]
+    [InlineData("fonts/noto-sans-devanagari", UnicodeScript.Devanagari)]
+    [InlineData("fonts/noto-sans-devanagari-first-version", UnicodeScript.Devanagari)]
+    [InlineData("fonts/noto-sans-bengali", UnicodeScript.Bengali)]
+    [InlineData("fonts/noto-sans-gurmukhi", UnicodeScript.Gurmukhi)]
+    [InlineData("fonts/noto-sans-gujarati", UnicodeScript.Gujarati)]
+    [InlineData("fonts/noto-sans-oriya", UnicodeScript.Oriya)]
+    [InlineData("fonts/noto-sans-tamil", UnicodeScript.Tamil)]
+    [InlineData("fonts/noto-sans-telugu", UnicodeScript.Telugu)]
+    [InlineData("fonts/noto-sans-kannada", UnicodeScript.Kannada)]
+    [InlineData("fonts/noto-sans-malayalam", UnicodeScript.Malayalam)]
     public void ALayoutIsAsWideAsTheReferenceShaperMakesIt(string id, UnicodeScript script)
     {
         // The whole way from a string to a line: the direction, the script and the runs are found by the layout, where

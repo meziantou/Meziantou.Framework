@@ -83042,6 +83042,41 @@
       }
     },
     {
+      "id": "fonts/noto-sans-bengali",
+      "file": {
+        "path": "fonts/noto-sans-bengali/NotoSansBengali-Regular.ttf",
+        "sha256": "7ba979b4d1d9d3c143c826660c7eba610b34f976bdd2e4f178209432d1cd56e4",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "The Noto Project Authors (https://github.com/notofonts/bengali)",
+        "source": "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansBengali/unhinted/ttf/NotoSansBengali-Regular.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB",
+        "font.table=glyf"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-sans-bengali.json",
+        "sha256": "68b703708a548e94c2de2bcd625723006bdc0f1082cb99825b10cfd8279e495f",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-sans-bengali.json",
+        "sha256": "376d1f7f27190d667923e081a6e06161ed07b20e34e113457bfec9a8200ed28a",
+        "role": "shaping-vectors"
+      }
+    },
+    {
       "id": "fonts/noto-sans-cjk-jp-regular",
       "file": {
         "path": "fonts/noto-sans-cjk/NotoSansCJKjp-Regular.subset.otf",
@@ -83230,6 +83265,154 @@
       }
     },
     {
+      "id": "fonts/noto-sans-devanagari",
+      "file": {
+        "path": "fonts/noto-sans-devanagari/NotoSansDevanagari-Regular.ttf",
+        "sha256": "216921eded5a97435fa0638deca66496bf51f52fa3467f566deb9938c25a71de",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "The Noto Project Authors (https://github.com/notofonts/devanagari)",
+        "source": "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansDevanagari/unhinted/ttf/NotoSansDevanagari-Regular.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=12",
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB",
+        "font.table=glyf"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-sans-devanagari.json",
+        "sha256": "095ba10ad29802e5527c7605b76c72c0df5b6e5360554d9dcc2e9fb9c93ccbfa",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-sans-devanagari.json",
+        "sha256": "498f91bb548b869b1f59917748155dba58de5f931b68757f5fbc94966414be0e",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/noto-sans-devanagari-first-version",
+      "file": {
+        "path": "fonts/noto-sans-devanagari/NotoSansDevanagari-Regular.first-version.ttf",
+        "sha256": "56cf516b137e45ff3935d485c200c6d1636d72288ad6d44bcc6922d5369ff798",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "The Noto Project Authors (https://github.com/notofonts/devanagari)",
+        "source": "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansDevanagari/unhinted/ttf/NotoSansDevanagari-Regular.ttf",
+        "tools": [
+          "hb-subset 14.6.0"
+        ],
+        "commands": [
+          "hb-subset --unicodes=* --layout-features=* --no-hinting --notdef-outline --layout-scripts=deva,DFLT --output-file=NotoSansDevanagari-Regular.first-version.ttf NotoSansDevanagari-Regular.ttf"
+        ]
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "subset",
+      "features": [
+        "font.cmap=12",
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB",
+        "font.table=glyf"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-sans-devanagari-first-version.json",
+        "sha256": "086898f57d06f81ee827d5223021a5eab77d1dfa6cbc0e689f932b250d5d7ffb",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-sans-devanagari-first-version.json",
+        "sha256": "a6c25759722a564bcf914c17e5d94470ff487eae0b599a3ac4e230e5a4e31bc5",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/noto-sans-gujarati",
+      "file": {
+        "path": "fonts/noto-sans-gujarati/NotoSansGujarati-Regular.ttf",
+        "sha256": "18727143b8eadade0a59dca80959ef784bf8d55e07285d1b4096594dbf829f0a",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "The Noto Project Authors (https://github.com/notofonts/gujarati)",
+        "source": "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansGujarati/unhinted/ttf/NotoSansGujarati-Regular.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB",
+        "font.table=glyf"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-sans-gujarati.json",
+        "sha256": "342339fde42ca6d194c99777a7671765429b3be522b4e50101a9cce5a25a8194",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-sans-gujarati.json",
+        "sha256": "b548f2c9421ed9c11a07120489e4f933d3904b988a20a31f54dc353dfdc9a29b",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/noto-sans-gurmukhi",
+      "file": {
+        "path": "fonts/noto-sans-gurmukhi/NotoSansGurmukhi-Regular.ttf",
+        "sha256": "2454c944fda799d2861f11c03e492c453e33083dd1e8d99bd6baac8de71ad0f0",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "The Noto Project Authors (https://github.com/notofonts/gurmukhi)",
+        "source": "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansGurmukhi/unhinted/ttf/NotoSansGurmukhi-Regular.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB",
+        "font.table=glyf"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-sans-gurmukhi.json",
+        "sha256": "f7fb7511af782cd322e88dd5a0a89bc8da1555120faa1ce3883827357987fb0a",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-sans-gurmukhi.json",
+        "sha256": "d9d1bffe75b18dd9978912b7f73ba4292a93267d2ca06b3bbe368169c6c8dee1",
+        "role": "shaping-vectors"
+      }
+    },
+    {
       "id": "fonts/noto-sans-hebrew",
       "file": {
         "path": "fonts/noto-sans-hebrew/NotoSansHebrew-Regular.ttf",
@@ -83305,6 +83488,41 @@
       }
     },
     {
+      "id": "fonts/noto-sans-kannada",
+      "file": {
+        "path": "fonts/noto-sans-kannada/NotoSansKannada-Regular.ttf",
+        "sha256": "2870274619c2a4abe5d6b11fcb7c4a372eba765b6b7881d459b0eb0a609a68eb",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "The Noto Project Authors (https://github.com/notofonts/kannada)",
+        "source": "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansKannada/unhinted/ttf/NotoSansKannada-Regular.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB",
+        "font.table=glyf"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-sans-kannada.json",
+        "sha256": "63c87e8f1760fdf9cd9500cd908dc6a769523c3b54c06ccdeb3c71478453e175",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-sans-kannada.json",
+        "sha256": "52479be20875ae0d73f11ed302bca1091fe8cf73c00ff99965d3374edfbaa6ed",
+        "role": "shaping-vectors"
+      }
+    },
+    {
       "id": "fonts/noto-sans-lao",
       "file": {
         "path": "fonts/noto-sans-lao/NotoSansLao-Regular.ttf",
@@ -83336,6 +83554,117 @@
       "shaping": {
         "path": "fonts/shaping/noto-sans-lao.json",
         "sha256": "368cc67925005f187392de9730b805fd5dcabe311a7b8cd9365194b694b6e513",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/noto-sans-malayalam",
+      "file": {
+        "path": "fonts/noto-sans-malayalam/NotoSansMalayalam-Regular.ttf",
+        "sha256": "cc39bb1f7d63b582a2aec1abf2469a43b805a3523a27e0a0eee8cd32702541d5",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "The Noto Project Authors (https://github.com/notofonts/malayalam)",
+        "source": "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansMalayalam/unhinted/ttf/NotoSansMalayalam-Regular.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB",
+        "font.table=glyf"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-sans-malayalam.json",
+        "sha256": "370d42e1537b2fc46f231739352e27ea5778c813ce6c5eef8eea228e16dc6323",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-sans-malayalam.json",
+        "sha256": "f6220f72d6d3591ac85e72e7e34930da2641676c530351985848ba7f506ac77e",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/noto-sans-malayalam-first-version",
+      "file": {
+        "path": "fonts/noto-sans-malayalam/NotoSansMalayalam-Regular.first-version.ttf",
+        "sha256": "d3202e663b794be1457becb6c62b88fe025cbab6ac598967227edf7b3a48ce36",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "The Noto Project Authors (https://github.com/notofonts/malayalam)",
+        "source": "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansMalayalam/unhinted/ttf/NotoSansMalayalam-Regular.ttf",
+        "tools": [
+          "hb-subset 14.6.0"
+        ],
+        "commands": [
+          "hb-subset --unicodes=* --layout-features=* --no-hinting --notdef-outline --layout-scripts=mlym --output-file=NotoSansMalayalam-Regular.first-version.ttf NotoSansMalayalam-Regular.ttf"
+        ]
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "subset",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB",
+        "font.table=glyf"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-sans-malayalam-first-version.json",
+        "sha256": "d4b255a965cfd9df5ef56ae78dafbcf4e2cf6459044d492e0be06bd49a1bb407",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-sans-malayalam-first-version.json",
+        "sha256": "98f6eafa9839220adb01d4a4e5461b54430a00df4576709f4806dad3c227fd66",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/noto-sans-oriya",
+      "file": {
+        "path": "fonts/noto-sans-oriya/NotoSansOriya-Regular.ttf",
+        "sha256": "38ac5eae2e1666558b88c63bf584349d6f924cca6b3b8867811546734afeb251",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "The Noto Project Authors (https://github.com/notofonts/oriya)",
+        "source": "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansOriya/unhinted/ttf/NotoSansOriya-Regular.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB",
+        "font.table=glyf"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-sans-oriya.json",
+        "sha256": "bfa0f33a9f4de808a5ec3d079c37fc0e736f2ca04f508b2bcb46ebea3c6b916c",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-sans-oriya.json",
+        "sha256": "d899bb6064d173b054701d4f247a0042322ccc7c99a30a3f110d685c4e109721",
         "role": "shaping-vectors"
       }
     },
@@ -83521,6 +83850,77 @@
       "shaping": {
         "path": "fonts/shaping/noto-sans-syriac.json",
         "sha256": "c1fcb7083fdf56646e57f02b1b765ab873376d4e1130fabe3027ce2b4d0225a9",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/noto-sans-tamil",
+      "file": {
+        "path": "fonts/noto-sans-tamil/NotoSansTamil-Regular.ttf",
+        "sha256": "6634d9cc97a726e670df41281dd32b167a6b9b71f2036e19671ff08fdde0c292",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "The Noto Project Authors (https://github.com/notofonts/tamil)",
+        "source": "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansTamil/unhinted/ttf/NotoSansTamil-Regular.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=12",
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB",
+        "font.table=glyf"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-sans-tamil.json",
+        "sha256": "00accb810663684f746868a081579d16a5dbf9d744b645987afae8379f78add5",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-sans-tamil.json",
+        "sha256": "8586855f0675b1859a7b4c069f6317e275557946bb6e0413845b9b8139df6cfb",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/noto-sans-telugu",
+      "file": {
+        "path": "fonts/noto-sans-telugu/NotoSansTelugu-Regular.ttf",
+        "sha256": "dcb86a5da09365a2d73d725e429403dca988e6d50c1b1d564579a25dbc18bd29",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "The Noto Project Authors (https://github.com/notofonts/telugu)",
+        "source": "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansTelugu/unhinted/ttf/NotoSansTelugu-Regular.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB",
+        "font.table=glyf"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-sans-telugu.json",
+        "sha256": "eba7dabf2306919bf207b74d12861cc988482dfebfe2460e928da255f2de2ac6",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-sans-telugu.json",
+        "sha256": "2a65f4f9b7a3f7a51581dadd3b586ec75eb40086469879351f6060a2e4be8b15",
         "role": "shaping-vectors"
       }
     },

@@ -397,6 +397,18 @@ glyphs and positions in a `GlyphBuffer`; `LayoutApplier` (`Internals/Text/OpenTy
     normalization then leaves alone. The dotted circle of a tone mark keeps the class of the mark, so that the marks
     around them are ordered as if it were not there.
   - Tibetan has no model of its own: Windows and the reference shaper both shape it with the universal model.
+  - `IndicShaper` (nine scripts; Sinhala belongs to the universal model): the steps of the Microsoft
+    specifications, with their names in the comments. `IndicCategories` derives what a character is from
+    Indic_Syllabic_Category and Indic_Positional_Category, with a short list of exceptions, each one found by
+    comparing with the reference shaper; `SyllablePattern` compiles the syllable grammar, written as text, into an
+    automaton (reuse it for the other syllabic models). The model has an instance per run (`IndicShaper` object):
+    what the font does with a consonant and a halant is asked with `LayoutApplier.WouldSubstitute` on a scratch
+    buffer and remembered for the run. The reordering runs between stages (`InitialReorderingStage`,
+    `FinalReorderingStage`), whether the font has lookups in them or not. The features of the model work inside a
+    syllable (`ShaperFeatureFlags.PerSyllable`, `GlyphInfo.Syllable`) and a rule only replaces glyphs that have the
+    mask of its feature. Marks keep their advance in these scripts and in Hangul.
+  - A font whose substitution table has the script only as `DFLT` or `latn`, or under a tag that ends with 3, is not
+    shaped with the Indic model (`GetShaper`).
   - `ShapingCombiningClass` orders marks for shaping (Hebrew points, Arabic vowel marks); every script goes through
     it, and composition is blocked by these classes, not by the canonical ones.
 - **Normalization** follows the text: a character without marks is kept when the font has it and decomposed (as far
@@ -405,10 +417,15 @@ glyphs and positions in a `GlyphBuffer`; `LayoutApplier` (`Internals/Text/OpenTy
 - **What a lookup sees through** (`LayoutApplier.IsTransparent`): characters without visible form, with three
   exceptions. The zero width non-joiner separates the glyphs a substitution replaces (the components of a ligature,
   the input of a contextual rule) and is seen through around them and by positioning. The zero width joiner is seen
-  through, except by the features of a shaping model that say otherwise and by the features that place marks
-  (`mark`, `mkmk`, `abvm`, `blwm`): a joiner between a letter and a mark keeps the mark off the letter. A combining
+  through, except by the features of a shaping model that say otherwise and by `mark` and `mkmk`: a joiner between
+  a letter and a mark keeps the mark off the letter (`abvm` and `blwm` see through it). A combining
   grapheme joiner that kept two marks from being reordered separates them for substitutions. The glyphs of these
   characters are the ones of the font until the positions are made, and are hidden afterward.
+- **Ligature bookkeeping** (`GlyphInfo.Props`, `LigatureId`, `LigatureComponent`): a real ligature has
+  `LigatureWithComponents` (a base with its marks, or marks together, are not one); becoming a ligature clears
+  `Multiplied`; the glyphs that replace a glyph tied to a ligature keep its identifier instead of being numbered.
+  Mark attachment depends on all three: a glyph of a multiplied sequence carries marks when it is the first one, when
+  a mark precedes it, when the sequence lost the glyph before it, or when the lookup has it as a base.
 - **Marks on marks.** A mark is placed vertically when it is attached, from the position its target has at that
   point of the lookups; horizontally it follows its target to the end. A later lookup that moves the target
   vertically does not move the mark: the reference shaper does the same, and the fonts are made with it. Cursive

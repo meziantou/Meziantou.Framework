@@ -27,7 +27,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </list>
 /// <para>
 /// The features applied to every run are the ones the OpenType specification asks a client to apply by default for
-/// horizontal text: <c>ccmp</c>, <c>locl</c>, <c>rlig</c>, <c>calt</c>, <c>clig</c>, <c>liga</c>, <c>rclm</c>, the
+/// horizontal text: <c>ccmp</c>, <c>locl</c>, <c>rlig</c>, <c>calt</c>, <c>clig</c>, <c>liga</c>, <c>rclt</c>, the
 /// direction features (<c>ltra</c>, <c>ltrm</c>, <c>rtla</c>, <c>rtlm</c>), the fraction features around a fraction
 /// slash, and for positioning <c>abvm</c>, <c>blwm</c>, <c>mark</c>, <c>mkmk</c>, <c>curs</c>, <c>dist</c>,
 /// <c>kern</c>.
@@ -72,11 +72,11 @@ internal static class TextShaper
         ShapingFeature.ToTag("abvm"), ShapingFeature.ToTag("blwm"), ShapingFeature.ToTag("ccmp"), ShapingFeature.ToTag("locl"),
         ShapingFeature.ToTag("mark"), ShapingFeature.ToTag("mkmk"), ShapingFeature.ToTag("rlig"),
         ShapingFeature.ToTag("calt"), ShapingFeature.ToTag("clig"), ShapingFeature.ToTag("curs"), ShapingFeature.ToTag("dist"),
-        Kern, ShapingFeature.ToTag("liga"), ShapingFeature.ToTag("rclm"), Rvrn,
+        Kern, ShapingFeature.ToTag("liga"), ShapingFeature.ToTag("rclt"), Rvrn,
     ];
 
     // The features that place marks.
-    private static readonly uint[] MarkFeatures = [ShapingFeature.ToTag("abvm"), ShapingFeature.ToTag("blwm"), Mark, ShapingFeature.ToTag("mkmk")];
+    private static readonly uint[] MarkFeatures = [Mark, ShapingFeature.ToTag("mkmk")];
 
     /// <summary>Adds the characters of a text to a buffer, each with the index of its first UTF-16 code unit as cluster.</summary>
     public static void AddText(GlyphBuffer buffer, ReadOnlySpan<char> text, int clusterOffset = 0)
@@ -111,11 +111,13 @@ internal static class TextShaper
 
         Span<uint> scripts = stackalloc uint[OpenTypeScript.MaxTagCount];
         scripts = scripts[..OpenTypeScript.GetTags(script, scripts)];
-        var shaper = GetShaper(script);
+        var scriptTag = face.Gsub?.FindScriptTag(face.GsubData.Span, scripts) ?? 0;
+        var shaper = GetShaper(script, scriptTag);
         var shaperPlan = shaper switch
         {
             ScriptShaperKind.Arabic => ArabicShaper.GetPlan(script, face.Gsub is { } substitutions && HasFeature(substitutions, face.GsubData.Span, scripts, language, ArabicShaper.RequiredAlternates)),
             ScriptShaperKind.Hangul => HangulShaper.Plan,
+            ScriptShaperKind.Indic => IndicShaper.Plan,
             _ => ShaperPlan.Default,
         };
 
@@ -127,6 +129,10 @@ internal static class TextShaper
         else if (shaper == ScriptShaperKind.Hangul)
         {
             HangulShaper.ComposeSyllables(buffer, face);
+        }
+        else if (shaper == ScriptShaperKind.Indic)
+        {
+            IndicShaper.SeparateVowelSequences(buffer, script);
         }
 
         // A font that positions the points of Hebrew needs no precomposed letter.
@@ -141,31 +147,46 @@ internal static class TextShaper
         applier.SetGlyphClasses();
         var hasFractions = false;
         var hasStretching = false;
-        if (face.Gsub is { } gsub)
+        var lookups = face.Gsub is { } gsub ? CollectLookups(gsub, face.GsubData.Span, scripts, language, isRightToLeft, plan, shaperPlan, coordinates, out hasFractions, out _) : [];
+        SetMasks(buffer, plan, hasFractions, shaper);
+        IndicShaper? indic = null;
+        if (shaper == ScriptShaperKind.Indic)
         {
-            var lookups = CollectLookups(gsub, face.GsubData.Span, scripts, language, isRightToLeft, plan, shaperPlan, coordinates, out hasFractions, out _);
-            SetMasks(buffer, plan, hasFractions, shaper);
-            applier.Begin(gsub, face.GsubData, isPositioning: false, isRightToLeft);
-            var isStretchingStage = false;
-            for (var i = 0; i < lookups.Count; i++)
-            {
-                var lookup = lookups[i];
-                applier.ApplyLookup(lookup.Index, lookup.Mask, lookup.Flags);
-
-                // The parts of the stretching glyphs are the glyphs the stage of their feature made, before another
-                // stage makes others.
-                isStretchingStage |= lookup.Flags.HasFlag(ShaperFeatureFlags.Stretching);
-                if (isStretchingStage && (i + 1 == lookups.Count || lookups[i + 1].Stage != lookup.Stage))
-                {
-                    ArabicShaper.RecordStretching(buffer.Info);
-                    hasStretching = true;
-                    isStretchingStage = false;
-                }
-            }
+            indic = CreateIndicShaper(face, script, scriptTag, scripts, language, coordinates, plan);
         }
-        else
+
+        if (face.Gsub is { } substitutionTable)
         {
-            SetMasks(buffer, plan, hasFractions, shaper);
+            applier.Begin(substitutionTable, face.GsubData, isPositioning: false, isRightToLeft);
+        }
+
+        // Stage after stage: the lookups of a stage, then what the model of the script does between two stages.
+        var next = 0;
+        for (var stage = 0; stage <= shaperPlan.FinalStage; stage++)
+        {
+            var isStretchingStage = false;
+            for (; next < lookups.Count && lookups[next].Stage <= stage; next++)
+            {
+                applier.ApplyLookup(lookups[next].Index, lookups[next].Mask, lookups[next].Flags);
+                isStretchingStage |= lookups[next].Flags.HasFlag(ShaperFeatureFlags.Stretching);
+            }
+
+            // The parts of the stretching glyphs are the glyphs the stage of their feature made, before another stage
+            // makes others.
+            if (isStretchingStage)
+            {
+                ArabicShaper.RecordStretching(buffer.Info);
+                hasStretching = true;
+            }
+
+            if (indic is not null && stage == IndicShaper.InitialReorderingStage)
+            {
+                indic.ReorderBeforeBasicForms(buffer);
+            }
+            else if (indic is not null && stage == IndicShaper.FinalReorderingStage)
+            {
+                indic.ReorderAfterBasicForms(buffer);
+            }
         }
 
         // The positions: the advance of each glyph, then what the font adds to it.
@@ -181,12 +202,12 @@ internal static class TextShaper
         var hasPositioning = false;
         if (face.Gpos is { } gpos)
         {
-            var lookups = CollectLookups(gpos, face.GposData.Span, scripts, language, isRightToLeft, plan, shaperPlan, coordinates, out _, out hasKerningFeature);
-            hasPositioning = lookups.Count > 0;
+            var positioningLookups = CollectLookups(gpos, face.GposData.Span, scripts, language, isRightToLeft, plan, shaperPlan, coordinates, out _, out hasKerningFeature);
+            hasPositioning = positioningLookups.Count > 0;
             applier.Begin(gpos, face.GposData, isPositioning: true, isRightToLeft);
-            foreach (var lookup in lookups)
+            foreach (var lookup in positioningLookups)
             {
-                applier.ApplyLookup(lookup.Index, lookup.Mask, lookup.Flags);
+                applier.ApplyLookup(lookup.Index, lookup.Mask, lookup.Flags & ~ShaperFeatureFlags.PerSyllable);
             }
         }
 
@@ -196,10 +217,12 @@ internal static class TextShaper
         }
 
         // A mark does not move the pen. Without positioning lookups, a mark that has an advance is drawn before the pen
-        // it would have moved, over the glyph it follows.
+        // it would have moved, over the glyph it follows. The fonts of Hangul and of the Indic scripts give their marks
+        // the advance they are to have: a vowel sign written after its consonant is a mark that takes room.
+        var marksHaveNoAdvance = shaper is not (ScriptShaperKind.Hangul or ScriptShaperKind.Indic);
         for (var i = 0; i < info.Length; i++)
         {
-            if (info[i].IsMark)
+            if (info[i].IsMark && marksHaveNoAdvance)
             {
                 if (!hasPositioning && !isRightToLeft)
                 {
@@ -232,16 +255,82 @@ internal static class TextShaper
         }
     }
 
-    private static ScriptShaperKind GetShaper(UnicodeScript script)
+    private static ScriptShaperKind GetShaper(UnicodeScript script, uint scriptTag)
     {
-        return script switch
+        switch (script)
         {
-            UnicodeScript.Arabic or UnicodeScript.Syriac => ScriptShaperKind.Arabic,
-            UnicodeScript.Hebrew => ScriptShaperKind.Hebrew,
-            UnicodeScript.Hangul => ScriptShaperKind.Hangul,
-            UnicodeScript.Thai or UnicodeScript.Lao => ScriptShaperKind.Thai,
-            _ => ScriptShaperKind.Default,
-        };
+            case UnicodeScript.Arabic or UnicodeScript.Syriac:
+                return ScriptShaperKind.Arabic;
+
+            case UnicodeScript.Hebrew:
+                return ScriptShaperKind.Hebrew;
+
+            case UnicodeScript.Hangul:
+                return ScriptShaperKind.Hangul;
+
+            case UnicodeScript.Thai or UnicodeScript.Lao:
+                return ScriptShaperKind.Thai;
+
+            case UnicodeScript.Devanagari or UnicodeScript.Bengali or UnicodeScript.Gurmukhi or UnicodeScript.Gujarati or UnicodeScript.Oriya
+                or UnicodeScript.Tamil or UnicodeScript.Telugu or UnicodeScript.Kannada or UnicodeScript.Malayalam:
+                // The model is the one the font was made for: a font that has the script under its own tag was made
+                // for the Indic model (the tag with a 3 is the one of the universal model), and a font that only has
+                // a default script was made for no model at all.
+                return scriptTag is 0 or OpenTypeScript.Default || scriptTag == ShapingFeature.ToTag("dflt") || scriptTag == ShapingFeature.ToTag("latn") || (scriptTag & 0xFF) == '3'
+                    ? ScriptShaperKind.Default
+                    : ScriptShaperKind.Indic;
+
+            default:
+                return ScriptShaperKind.Default;
+        }
+    }
+
+    private static IndicShaper CreateIndicShaper(FontFace face, UnicodeScript script, uint scriptTag, ReadOnlySpan<uint> scripts, uint language, ReadOnlySpan<int> coordinates, FeaturePlan plan)
+    {
+        // The lookups of the features that tell what the font does with a consonant. A feature the caller turns off is
+        // a feature the font does not have.
+        var names = new[] { "rphf", "pref", "blwf", "pstf", "vatu" };
+        var lookups = new Dictionary<string, int[]>(StringComparer.Ordinal);
+        foreach (var name in names)
+        {
+            var tag = ShapingFeature.ToTag(name);
+            var isOff = plan.TryGetMask(tag, out var mask) && mask == 0;
+            lookups[name] = face.Gsub is { } table && !isOff ? GetFeatureLookups(table, face.GsubData.Span, scripts, language, tag, coordinates) : [];
+        }
+
+        return new IndicShaper(face, script, scriptTag, FirstShaperBit, name => lookups[name]);
+    }
+
+    /// <summary>Gets the lookups of a feature of a layout table for the script and the language of a run.</summary>
+    private static int[] GetFeatureLookups(LayoutTable table, ReadOnlySpan<byte> data, ReadOnlySpan<uint> scripts, uint language, uint tag, ReadOnlySpan<int> coordinates)
+    {
+        var system = table.FindLanguageSystem(data, scripts, language);
+        if (system == 0)
+            return [];
+
+        var substitutions = table.FindFeatureSubstitutions(data, coordinates);
+        var result = new List<int>();
+        var lookupCount = table.GetLookupCount(data);
+        var count = LayoutTable.GetFeatureCount(data, system);
+        for (var i = 0; i < count; i++)
+        {
+            var feature = LayoutTable.GetFeatureIndex(data, system, i);
+            if (table.GetFeatureTag(data, feature) != tag)
+                continue;
+
+            var featureLookups = table.GetFeatureLookupCount(data, feature, substitutions);
+            for (var j = 0; j < featureLookups; j++)
+            {
+                var lookup = table.GetFeatureLookup(data, feature, j, substitutions);
+                if (lookup < lookupCount && !result.Contains(lookup))
+                {
+                    result.Add(lookup);
+                }
+            }
+        }
+
+        result.Sort();
+        return [.. result];
     }
 
     /// <summary>Determines whether a layout table has a feature for the script and the language of a run.</summary>
@@ -373,13 +462,15 @@ internal static class TextShaper
                 }
             }
 
-            // The blocks of Hangul were composed and decomposed by their model: the letters stay letters.
+            // The blocks of Hangul were composed and decomposed by their model: the letters stay letters. The Indic
+            // model decomposes every character: "the shaping engine decomposes two- or three-part matras into their
+            // constituent parts before any repositioning", each part having its own place in the syllable.
             var codePoint = buffer.Info[i].CodePoint;
-            var isComplete = i < marksEnd && !isKept && shaper != ScriptShaperKind.Hangul;
+            var isComplete = shaper == ScriptShaperKind.Indic ? !(i < marksEnd && isKept) : i < marksEnd && !isKept && shaper != ScriptShaperKind.Hangul;
             if (!isComplete && face.MapCodePoint(codePoint) != 0)
                 continue;
 
-            var count = i < marksEnd && isKept ? 0 : Decompose(face, codePoint, parts, 0, isComplete);
+            var count = (i < marksEnd && isKept) || (shaper == ScriptShaperKind.Indic && codePoint is 0x0931 or 0x09DC or 0x09DD or 0x0B94) ? 0 : Decompose(face, codePoint, parts, 0, isComplete);
             if (count > 0)
             {
                 buffer.Resize(i, 1, count);
@@ -473,8 +564,21 @@ internal static class TextShaper
         {
             ref var current = ref buffer.Info[i];
             var isMark = current.Category is UnicodeCategory.NonSpacingMark or UnicodeCategory.SpacingCombiningMark or UnicodeCategory.EnclosingMark;
+            // Indic: the parts of a matra are not composed again, and one letter Unicode never composes is.
+            if (shaper == ScriptShaperKind.Indic && starter >= 0 && IsMark(buffer.Info[starter].Category))
+            {
+                isMark = false;
+            }
+
+            var composite = 0;
+            var isIndicLetter = shaper == ScriptShaperKind.Indic && starter >= 0 && buffer.Info[starter].CodePoint == 0x09AF && current.CodePoint == 0x09BC;
+            if (isIndicLetter)
+            {
+                composite = 0x09DF;
+            }
+
             if (starter >= 0 && isMark && (i == starter + 1 || lastClass < current.CombiningClass)
-                && (UnicodeNormalization.TryComposeCanonical(buffer.Info[starter].CodePoint, current.CodePoint, out var composite)
+                && (isIndicLetter || UnicodeNormalization.TryComposeCanonical(buffer.Info[starter].CodePoint, current.CodePoint, out composite)
                     || (composesPresentationForms && HebrewShaper.TryCompose(buffer.Info[starter].CodePoint, current.CodePoint, out composite)))
                 && face.MapCodePoint(composite) != 0)
             {
@@ -683,6 +787,10 @@ internal static class TextShaper
         else if (shaper == ScriptShaperKind.Hangul)
         {
             HangulShaper.SetMasks(info, FirstShaperBit);
+        }
+        else if (shaper == ScriptShaperKind.Indic)
+        {
+            IndicShaper.FindSyllables(info);
         }
 
         foreach (ref var glyph in info)

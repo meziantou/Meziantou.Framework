@@ -195,6 +195,8 @@ its first point, even a line without length: the library does the same, so that 
 | `fonts/noto-sans-hebrew` | ttf | 1 | OFL-1.1 | Noto Sans Hebrew 3.001, stored as it is: letters, points, cantillation marks, precomposed letters, with anchors for the marks |
 | `fonts/noto-sans-hebrew-without-positioning` | ttf | 1 | OFL-1.1 | The same font without its `GPOS` table (`hb-subset --drop-tables+=GPOS`), as a font made before OpenType Layout: a letter and its point are then drawn with the precomposed letter |
 | `fonts/noto-sans-syriac` | ttf | 1 | OFL-1.1 | Noto Sans Syriac 3.000, stored as it is: the forms of the letters and of alaph (`fin2`, `fin3`, `med2`), marks, and the abbreviation mark that stretches (`stch`) |
+| `fonts/noto-sans-devanagari`, `-bengali`, `-gurmukhi`, `-gujarati`, `-oriya`, `-tamil`, `-telugu`, `-kannada`, `-malayalam` | ttf | 1 | OFL-1.1 | The Noto Sans font of each Indic script (versions 2.003 to 2.106), stored as they are: the features of the Indic shaping model under the script tag of the second version of the specifications (half forms, forms below and after the base, reph, conjuncts, presentation forms), anchors for the marks |
+| `fonts/noto-sans-devanagari-first-version`, `fonts/noto-sans-malayalam-first-version` | ttf | 1 | OFL-1.1 | The same fonts with the script tag of the first version of the specifications only (`hb-subset --layout-scripts`): the "old behavior" of the model |
 | `fonts/noto-sans-thai`, `fonts/noto-sans-lao` | ttf | 1 | OFL-1.1 | Noto Sans Thai 2.002 and Noto Sans Lao 2.003, stored as they are: the marks above tall consonants and below consonants that have a tail, the sara am, ligatures of a ring and a tone mark |
 | `fonts/noto-sans-cjk-kr-regular` | otf | 1 | OFL-1.1 | Noto Sans CJK KR 2.004, subset to the letters of Hangul (the modern ones, a few of Old Hangul and of the extended blocks, the fillers), the tone marks and thirty syllables, with the glyphs the font has for a letter at each position of a block (`ljmo`, `vjmo`, `tjmo`); CFF outlines, hints kept |
 | `fonts/noto-sans-cjk-kr-letters` | otf | 1 | OFL-1.1 | The same subset without any syllable: every block is drawn with its letters |
@@ -270,7 +272,9 @@ Arabic, Urdu, Hebrew and Syriac are about what the shaping model of these script
 what joins or separates them, the order of the marks, the ligatures and what keeps them from forming, the forms of the
 Syriac alaph, the mark that stretches over a word, the precomposed Hebrew letters. Those of Thai and Lao are about the
 sara am and the order of the marks; those of Hangul about the letters that make a syllable or not, in a font that has
-the syllables and in one that does not, and about the tone marks. Several of them were found by
+the syllables and in one that does not, and about the tone marks. The Indic scripts share a set of cases written with
+the letters they have at the same place of their blocks (conjuncts, reph, joiners, the vowel sign drawn before its
+syllable, signs without a base, each feature of the model turned off), followed by the cases of each script. Several of them were found by
 shaping random sequences of the characters of a script with both shapers. For the font without positioning table, the
 glyphs and the clusters are compared and the positions are not: the reference shaper then places marks from the shape
 of the glyphs, by rules of its own.

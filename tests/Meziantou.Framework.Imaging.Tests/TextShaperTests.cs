@@ -423,6 +423,131 @@ public sealed class TextShaperTests
         Assert.Equal("2=0 3=1", Clusters(font, "\u1100\u1161", UnicodeScript.Latin));
     }
 
+    [Theory]
+    [InlineData("A", "A", 1)]
+    [InlineData("A", "B", 0)]
+    [InlineData("A B", "A B C", 2)]
+    [InlineData("A B? C", "A C", 2)]
+    [InlineData("A B? C", "A B C", 3)]
+    [InlineData("A B? C", "A B B C", 0)]
+    [InlineData("A (B | C)* A", "A B C C B A A", 6)]
+    [InlineData("A (B | C)* A", "A A", 2)]
+    [InlineData("A B*", "A B B B C", 4)]
+    [InlineData("A B+", "A C", 0)]
+    [InlineData("A B{1,2}", "A B B B", 3)]
+    [InlineData("A B{0,2} C", "A B B B C", 0)]
+    [InlineData("A B{2,3} C", "A B B B C", 5)]
+    [InlineData("A pair*", "A B C B C B", 5)]
+    [InlineData("A pair{0,1} B", "A B C B", 4)]
+    [InlineData("A | A B | A B C", "A B C", 3)]
+    [InlineData("(A | A B) C?", "A B", 2)]
+    [InlineData("A? B?", "C", 0)]
+    public void ASyllablePatternMatchesTheLongestSequence(string pattern, string text, int expected)
+    {
+        // The categories A, B and C are the values 1, 2 and 3; "pair" is the pattern "B C".
+        var categories = new Dictionary<string, ulong>(StringComparer.Ordinal) { ["A"] = 1UL << 1, ["B"] = 1UL << 2, ["C"] = 1UL << 3 };
+        var patterns = new Dictionary<string, string>(StringComparer.Ordinal) { ["pair"] = "B C" };
+        var compiled = SyllablePattern.Compile(pattern, categories, patterns);
+        var info = text.Split(' ').Select(name => new GlyphInfo { SyllableCategory = (byte)(name[0] - 'A' + 1) }).ToArray();
+        Assert.Equal(expected, compiled.Match(info, 0, new int[compiled.StateCount * 2]));
+    }
+
+    [Theory]
+    [InlineData("0915", "C1")]
+    [InlineData("0915 093F 0915 093F", "C2 C2")]
+    [InlineData("0915 094D 0937 093F", "C4")]
+    [InlineData("0915 094D 0937 094D 0924 094D 0930 093F 0902", "C9")]
+    [InlineData("0930 094D 0915 093F", "C4")]
+    [InlineData("0915 093C 094D 200D 0937", "C5")]
+    [InlineData("0915 094D 200C 0937", "C3 C1")]
+    [InlineData("0915 094D", "C2")]
+    [InlineData("0915 0902 0903 0951 0952", "C5")]
+    [InlineData("0905 0902", "V2")]
+    [InlineData("0930 094D 0907", "V3")]
+    [InlineData("0905 094D 0915", "V3")]
+    [InlineData("00A0 093F", "S2")]
+    [InlineData("25CC 094D 0930", "S3")]
+    [InlineData("093D 0902", "Y2")]
+    [InlineData("093F", "B1")]
+    [InlineData("094D 0915", "B2")]
+    [InlineData("0915 093E 093E", "C3")]
+    [InlineData("0915 0902 093E", "C2 B1")]
+    [InlineData("0915 0902 0902 0902", "C3 B1")]
+    [InlineData("0915 093C 093C 093C", "C3 B1")]
+    [InlineData("0041 0915 0020 0964", "O1 C1 O1 O1")]
+    [InlineData("0A15 0A02 0A40", "C3")]
+    [InlineData("0A15 0A02 0A3E", "C2 B1")]
+    [InlineData("0D4E 0D15 0D3F", "C3")]
+    public void AnIndicTextIsCutIntoSyllables(string text, string expected)
+    {
+        // The patterns of the specifications: a consonant syllable (C) is consonants joined by halants, with their
+        // nuktas and joiners, then vowel signs, then modifiers and Vedic signs; a vowel syllable (V) starts with a vowel
+        // letter; a stand-alone cluster (S) with a generic base; a symbol (Y) is a sign that stands by itself; what
+        // has no base is a broken cluster (B), and the rest is not Indic (O). Each syllable is given with its length.
+        var info = text.Split(' ').Select(item => new GlyphInfo { CodePoint = int.Parse(item, NumberStyles.HexNumber, CultureInfo.InvariantCulture) }).ToArray();
+        IndicShaper.FindSyllables(info);
+        var result = new List<string>();
+        for (var start = 0; start < info.Length;)
+        {
+            var end = start + 1;
+            while (end < info.Length && info[end].Syllable == info[start].Syllable)
+            {
+                end++;
+            }
+
+            result.Add(string.Create(CultureInfo.InvariantCulture, $"{"CVSYBO"[info[start].Syllable & 0x0F]}{end - start}"));
+            start = end;
+        }
+
+        Assert.Equal(expected, string.Join(' ', result));
+    }
+
+    [Theory]
+    [InlineData(UnicodeScript.Devanagari, "0915 093F", "093F 0915")]
+    [InlineData(UnicodeScript.Devanagari, "0915 094D 0937 093F", "0915 094D 093F 0937")]
+    [InlineData(UnicodeScript.Devanagari, "0915 094D 200D 0937 093F", "093F 0915 094D 200D 0937")]
+    [InlineData(UnicodeScript.Devanagari, "0915 094D 0937 094D 0924 093F", "0915 094D 0937 094D 093F 0924")]
+    [InlineData(UnicodeScript.Devanagari, "0915 0902 0941", "0915 0902 25CC 0941")]
+    [InlineData(UnicodeScript.Devanagari, "0915 093F 093C", "093F 093C 0915")]
+    [InlineData(UnicodeScript.Devanagari, "093F", "093F 25CC")]
+    [InlineData(UnicodeScript.Devanagari, "0902 0915", "25CC 0902 0915")]
+    [InlineData(UnicodeScript.Bengali, "0995 09C7 09BE", "09C7 0995 09BE")]
+    [InlineData(UnicodeScript.Bengali, "0995 09CD 09A4 09C7 09BE", "0995 09CD 09C7 09A4 09BE")]
+    [InlineData(UnicodeScript.Tamil, "0B95 0BC6 0BBE", "0BC6 0B95 0BBE")]
+    [InlineData(UnicodeScript.Tamil, "0B95 0BCD 0BB7 0BC6", "0B95 0BCD 0BC6 0BB7")]
+    [InlineData(UnicodeScript.Oriya, "0B15 0B40 0B01", "0B15 0B01 0B40")]
+    [InlineData(UnicodeScript.Telugu, "0C15 0C4D 0C15 0C3F", "0C15 0C4D 0C15 0C3F")]
+    [InlineData(UnicodeScript.Malayalam, "0D15 0D4D 0D15 0D46", "0D15 0D4D 0D46 0D15")]
+    public void TheCharactersOfAnIndicSyllableAreReordered(UnicodeScript script, string text, string expected)
+    {
+        // A font without any feature of the model: no consonant has a half form, a form below or after the base, or a
+        // reph, so the base is the last consonant and the halants stay visible. What is left is the reordering of the
+        // specifications: a vowel sign drawn before the syllable goes before it, then next to the base, after the last
+        // visible halant (unless a zero width joiner follows that halant, which asks for a half form the sign stays
+        // in front of); a nukta stays with what it follows; a vowel sign after a modifier is not of the syllable, and
+        // a syllable without base gets a dotted circle; the candrabindu of Oriya is before the vowel signs.
+        var codePoints = text.Split(' ').Select(item => int.Parse(item, NumberStyles.HexNumber, CultureInfo.InvariantCulture)).ToArray();
+        var builder = FontSamples.Boxes();
+        foreach (var codePoint in codePoints.Append(0x25CC).Append(script == UnicodeScript.Devanagari ? 0x094D : 0))
+        {
+            builder.CharacterMap[codePoint] = FontSamples.BoxA;
+        }
+
+        var font = FontTestSupport.Load(builder);
+        var buffer = new GlyphBuffer(ImageResourceLimits.Default);
+        foreach (var codePoint in codePoints)
+        {
+            buffer.Add(codePoint, 0);
+            buffer.Info[^1].Mask = 1;
+        }
+
+        IndicShaper.FindSyllables(buffer.Info);
+        var shaper = new IndicShaper(font.Face, script, ShapingFeature.ToTag("xxx2"), firstBit: 5, _ => []);
+        shaper.ReorderBeforeBasicForms(buffer);
+        shaper.ReorderAfterBasicForms(buffer);
+        Assert.Equal(expected, string.Join(' ', buffer.Info.ToArray().Select(glyph => glyph.CodePoint.ToString("X4", CultureInfo.InvariantCulture))));
+    }
+
     /// <summary>Shapes a text in the order of its characters and gives the glyphs with their clusters.</summary>
     private static string Clusters(Font font, string text, UnicodeScript script)
     {

@@ -151,6 +151,20 @@ internal sealed class LayoutTable
         return defaultSystem == 0 ? 0 : script + defaultSystem;
     }
 
+    /// <summary>Finds the tag the table has for a script: the first of the tags of the script it has, or 0.</summary>
+    /// <param name="table">The table.</param>
+    /// <param name="scripts">The tags of the script, by order of preference.</param>
+    public uint FindScriptTag(ReadOnlySpan<byte> table, ReadOnlySpan<uint> scripts)
+    {
+        foreach (var tag in scripts)
+        {
+            if (FindRecord(table, _scripts, tag) != 0)
+                return tag;
+        }
+
+        return 0;
+    }
+
     /// <summary>Gets the feature a language system requires, or <see cref="NoFeature"/>.</summary>
     public static int GetRequiredFeature(ReadOnlySpan<byte> table, int languageSystem) => FontBinary.UInt16(table, languageSystem + 2);
 

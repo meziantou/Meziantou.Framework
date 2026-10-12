@@ -37,6 +37,9 @@ internal sealed class TextLayoutEngine
 {
     private const int SoftHyphen = 0x00AD;
 
+    /// <summary>The fewest characters of the text after a line that are shaped again for the next line.</summary>
+    private const int MinShapingLength = 64;
+
     private readonly string _text;
     private readonly TextSpan[] _spans;
     private readonly TextLayoutOptions _options;
@@ -299,6 +302,7 @@ internal sealed class TextLayoutEngine
     /// <summary>Shapes an item and records the advance of each of its characters.</summary>
     private void Shape(Paragraph paragraph, Item item, string? suffix = null)
     {
+        item.IsPending = false;
         item.GlyphStart = paragraph.Glyphs.Count;
         item.GlyphCount = 0;
         paragraph.Advances.AsSpan(item.Start - paragraph.Start, item.End - item.Start).Clear();
@@ -700,6 +704,34 @@ internal sealed class TextLayoutEngine
             SplitAt(paragraph, contentEnd);
         }
 
+        // The text after the line is shaped from its start, for the next line to be found; a part of the line that
+        // was shaped for an earlier line, or not yet, is shaped with the rest of its run: a line is shaped as a whole.
+        for (var i = 0; i < paragraph.Items.Count; i++)
+        {
+            var item = paragraph.Items[i];
+            if (item.Start == to && item.IsPending)
+            {
+                ShapeStart(paragraph, i);
+                break;
+            }
+
+            if (item.Start < from || item.End > to || item.Start >= item.End)
+                continue;
+
+            var isMerged = false;
+            while (i + 1 < paragraph.Items.Count && paragraph.Items[i + 1] is var next && next.Start == item.End && next.End <= to && next.Start != contentEnd && next.Start < next.End && IsSameRun(item, next))
+            {
+                item.End = next.End;
+                paragraph.Items.RemoveAt(i + 1);
+                isMerged = true;
+            }
+
+            if (isMerged || item.IsPending)
+            {
+                Shape(paragraph, item);
+            }
+        }
+
         var items = new List<Item>();
         foreach (var item in paragraph.Items)
         {
@@ -843,9 +875,74 @@ internal sealed class TextLayoutEngine
             item.End = position;
             paragraph.Items.Insert(i + 1, second);
             Shape(paragraph, item);
-            Shape(paragraph, second);
+            ShapeStart(paragraph, i + 1);
             return;
         }
+    }
+
+    /// <summary>
+    /// Shapes the start of an item whose text is the one of the lines to come: far enough for the next line to be
+    /// found with the advances its characters have at the start of a line. The rest of the item keeps the advances
+    /// of the last time it was shaped, and is shaped again when a line gets to it.
+    /// </summary>
+    /// <remarks>
+    /// Shaping the whole rest of a paragraph after each of its lines would make the time of a layout grow with the
+    /// square of the length of the paragraph.
+    /// </remarks>
+    private void ShapeStart(Paragraph paragraph, int index)
+    {
+        // The rest of the text that was left for later is part of the item again.
+        var item = paragraph.Items[index];
+        while (index + 1 < paragraph.Items.Count && paragraph.Items[index + 1] is { IsPending: true } next && next.Start == item.End && IsSameRun(item, next))
+        {
+            item.End = next.End;
+            paragraph.Items.RemoveAt(index + 1);
+        }
+
+        var end = FindShapingEnd(paragraph, item);
+        if (end < item.End)
+        {
+            paragraph.Items.Insert(index + 1, new Item { Start = end, End = item.End, Style = item.Style, Font = item.Font, Level = item.Level, Script = item.Script, IsPending = true });
+            item.End = end;
+        }
+
+        Shape(paragraph, item);
+    }
+
+    private static bool IsSameRun(Item first, Item second)
+    {
+        return ReferenceEquals(first.Style, second.Style) && ReferenceEquals(first.Font, second.Font) && first.Level == second.Level && first.Script == second.Script
+            && !first.IsTabulation && !second.IsTabulation;
+    }
+
+    /// <summary>
+    /// Finds where the part of an item that is shaped for the next line ends: after a space, where a line can end,
+    /// once the text is twice as wide as a line and at least <see cref="MinShapingLength"/> characters long.
+    /// </summary>
+    private int FindShapingEnd(Paragraph paragraph, Item item)
+    {
+        if (!_wraps || item.IsTabulation || item.End - item.Start < 2 * MinShapingLength)
+            return item.End;
+
+        // The advances are the ones of the last time these characters were shaped, in a longer text.
+        var target = 2 * Math.Max(_options.MaxWidth, 0);
+        var width = 0.0;
+        var position = item.Start;
+        for (; position < item.End && (width < target || position - item.Start < MinShapingLength); position++)
+        {
+            width += paragraph.Advances[position - paragraph.Start];
+        }
+
+        // A place a line can end at, after a space: the text is not shaped differently around it.
+        var breaks = System.Runtime.InteropServices.CollectionsMarshal.AsSpan(paragraph.Breaks);
+        var first = breaks.BinarySearch(position);
+        for (var i = first < 0 ? ~first : first; i < breaks.Length && breaks[i] < item.End - MinShapingLength; i++)
+        {
+            if (_text[breaks[i] - 1] == ' ')
+                return breaks[i];
+        }
+
+        return item.End;
     }
 
     private static Item? FindItem(Paragraph paragraph, int position)
@@ -1109,6 +1206,12 @@ internal sealed class TextLayoutEngine
         public byte Level;
         public UnicodeScript Script;
         public bool IsTabulation;
+
+        /// <summary>
+        /// The item is text of lines to come that was not shaped again when the line before it was made: it has no
+        /// glyph, and its characters have the advances of the last time they were shaped.
+        /// </summary>
+        public bool IsPending;
         public int GlyphStart;
         public int GlyphCount;
     }

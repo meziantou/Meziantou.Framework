@@ -639,4 +639,27 @@ public sealed class TextLayoutTests
         image.Draw(action, Ct);
         return DrawingTestSupport.ReadSamples(image.Frames[0]);
     }
+    [Fact]
+    public void ALongParagraphIsBrokenLineAfterLine()
+    {
+        // 600 words of 22 pixels (A is 16 pixels wide, B is 8, and the pair is kerned by 2), with spaces of 8 pixels:
+        // five words and the four spaces between them are 142 pixels wide. After each line, only the start of the
+        // text that follows is shaped again, far enough for the next line: every line is the same, to the last one.
+        var text = string.Concat(Enumerable.Repeat("AB ", 599)) + "AB";
+        var layout = TextLayout.Create(text, new TextStyle(Boxes, 16), new TextLayoutOptions { MaxWidth = 142 });
+
+        Assert.HasCount(120, layout.Lines);
+        for (var i = 0; i < layout.Lines.Count; i++)
+        {
+            Assert.Equal(i * 15, layout.Lines[i].Start);
+            Assert.Equal(i == 119 ? 14 : 15, layout.Lines[i].Length);
+            Assert.Equal(142, layout.Lines[i].Width);
+        }
+
+        // One pixel less, and a line has four words.
+        layout = TextLayout.Create(text, new TextStyle(Boxes, 16), new TextLayoutOptions { MaxWidth = 141 });
+        Assert.HasCount(150, layout.Lines);
+        Assert.Equal(112, layout.Lines[149].Width);
+        Assert.Equal(149 * 12, layout.Lines[149].Start);
+    }
 }

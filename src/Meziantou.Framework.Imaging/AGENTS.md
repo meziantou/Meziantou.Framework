@@ -299,7 +299,10 @@ directory and the fixed-size tables, `CmapTable` maps characters, `GlyfOutlineRe
 - **The steps of a paragraph**: levels, items (one level, script, font and shaping style each), shaping, lines, display
   order. An item is cut where shaping could differ, never where only the paint differs. A line break inside an item
   cuts it, and both parts are shaped again: no ligature or kerning pair spans two lines. The advance of each character
-  (`Paragraph.Advances`) is what line breaking measures; it is refreshed whenever an item is shaped.
+  (`Paragraph.Advances`) is what line breaking measures; it is refreshed whenever an item is shaped. Of the text
+  after a line, only the start is shaped again (`ShapeStart`: two line widths, cut after a space), and the rest is a
+  pending item that keeps its advances: shaping the whole rest after each line made a layout quadratic. A line is
+  still shaped as a whole: `BuildLine` merges the parts of a run that such a cut separated.
 - **Lines follow each other in the text and cover it** (`TextLine.Start` and `Length`), whatever cut them: a width, a
   line break, a trimming. `IsTruncated` is the only way text is left out. `TextLayoutFuzzTests` checks it on random
   texts and options.
@@ -501,6 +504,7 @@ glyphs and positions in a `GlyphBuffer`; `LayoutApplier` (`Internals/Text/OpenTy
   dotnet run -c Release --project benchmarks/ImagingBenchmarks -f net10.0 -- webp-quality 512 3
   dotnet run -c Release --project benchmarks/ImagingBenchmarks -f net10.0 -- profile PngBenchmarks.SaveLarge8 20
   dotnet run -c Release --project benchmarks/ImagingBenchmarks -f net10.0 -- profile PngBenchmarks.SaveLarge8 50x
+  dotnet run -c Release --project benchmarks/ImagingBenchmarks -f net10.0 -- profile TextBenchmarks.LayoutTibetan 200x
   dotnet run eng/compare-benchmarks.cs -- <baseline>/results <current>/results
   ```
 

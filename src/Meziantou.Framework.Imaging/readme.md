@@ -957,6 +957,23 @@ public static void DrawTextOnPath(string fontPath, string outputPath)
 }
 ```
 
+| | Supported |
+| --- | --- |
+| Text analysis | Paragraphs, grapheme clusters, the places a line can end at (UAX #14), bidirectional text (UAX #9), script runs (UAX #24), soft hyphens and hyphenation patterns given by the caller: the algorithms of `Meziantou.Framework.Unicode` |
+| OpenType Layout | The `GDEF` table, every type and format of `GSUB` lookup (1 to 8) and of `GPOS` lookup (1 to 9), feature variations, the `kern` table |
+| Scripts whose fonts do all the work | Latin, Greek, Cyrillic, Armenian, Georgian, Han, Hiragana, Katakana, Bopomofo, Ethiopic, Thaana, Cherokee and the other scripts that need no analysis of the text: the default features of the font are applied |
+| Scripts that join | Arabic (with Persian, Urdu and the other languages written with it) and Syriac; in the universal model, N'Ko, Mongolian, Adlam, Mandaic, Manichaean, Psalter Pahlavi, Hanifi Rohingya, Sogdian, Old Uyghur, Chorasmian and Phags-pa |
+| Scripts with a model of their own | Hebrew; Thai and Lao; Hangul; Devanagari, Bengali, Gurmukhi, Gujarati, Oriya, Tamil, Telugu, Kannada and Malayalam; Khmer; Myanmar |
+| Scripts of the universal model | The scripts registered for the Universal Shaping Engine: Tibetan, Sinhala, Javanese, Balinese, Sundanese, Batak, Buginese, Cham, Tai Tham, Tai Le, Tai Viet, Lepcha, Limbu, Meetei Mayek, Newa, Kaithi, Sharada, Grantha, Chakma, Brahmi, Kharoshthi, Tifinagh, Duployan, Egyptian Hieroglyphs and the others |
+| Drawing | Filled and stroked text, at a point or along a path; color glyphs and bitmap glyphs; rich text with decorations, letter and word spacing; synthetic bold and oblique on request |
+
+The glyphs, the clusters and the positions are compared with those of a reference shaper (HarfBuzz) for fonts of
+every script that has a model here, and of some eighty scripts of the universal model: the texts of the test corpus,
+and several hundred thousand generated sequences of the characters of each font while the models were written. The
+scripts added to the universal model by the latest versions of Unicode (Beria Erfe, Garay, Gurung Khema, Kirat Rai,
+Ol Onal, Sidetic, Sunuwar, Tai Yo, Todhri, Tolong Siki, Tulu Tigalari and a few others) are shaped from the properties
+of their characters and were not compared with a font.
+
 - **Paragraphs and lines.** A paragraph ends at a line break of the text (line feed, carriage return with or without
   a line feed, vertical tab, form feed, U+0085, U+2028, U+2029); a line break at the end starts an empty line. With
   `MaxWidth`, the lines of a paragraph are wrapped where the Unicode line breaking algorithm (UAX #14) allows it;
@@ -1082,7 +1099,10 @@ public static void DrawTextOnPath(string fontPath, string outputPath)
   position, its width, its baseline), and `InkBounds` contains everything that is drawn.
 - **Cost.** Creating a layout allocates (its glyphs and positions) and decodes each distinct glyph once, which validates
   the font data the text uses: drawing a layout then only fails on a limit of the image or on cancellation, and
-  allocates nothing. `FillText(brush, text, font, size, origin)` creates a layout on each call; create the layout
+  allocates nothing. The time to create a layout grows with the length of the text and with the number of lookups
+  of the font: every lookup of a feature is tried at every glyph, and a font of a complex script can have thousands
+  (on a recent laptop, a paragraph of 500 characters takes under a millisecond with a Latin or an Arabic font, and
+  ten to twenty times more with a Devanagari or a Tibetan font). `FillText(brush, text, font, size, origin)` creates a layout on each call; create the layout
   yourself to measure a text or to draw it more than once. Layouts, styles, options and rich texts are immutable and
   thread-safe.
 - **Limits.** `MaxTextLength` (UTF-16 code units), `MaxTextGlyphs`, `MaxTextLines` and `MaxGlyphComplexity`, from the

@@ -112,7 +112,8 @@ public sealed class TextLayoutFuzzTests
             for (var span = 0; span < spanCount; span++)
             {
                 var text = new StringBuilder();
-                var length = random.Next(0, 24);
+                // Now and then a long span: of the text after a line, only the start is shaped again for the next one.
+                var length = random.Chance(4) ? random.Next(150, 700) : random.Next(0, 24);
                 for (var i = 0; i < length; i++)
                 {
                     text.Append(random.Pick(Alphabet));

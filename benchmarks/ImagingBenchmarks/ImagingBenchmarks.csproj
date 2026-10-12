@@ -26,4 +26,12 @@
     <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Imaging.Fixtures\av1\lr-switchable-chroma-444-384x216.obu" LogicalName="av1/lr-switchable-chroma-444-384x216.obu" />
     <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Imaging.Fixtures\av1\inter-alt-ref-420-8bit-176x144.obu" LogicalName="av1/inter-alt-ref-420-8bit-176x144.obu" />
   </ItemGroup>
+
+  <ItemGroup>
+    <!-- The text workloads use fonts of the test corpus -->
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Imaging.Fixtures\fonts\noto-sans\NotoSans-Regular.subset.ttf" LogicalName="fonts/NotoSans-Regular.subset.ttf" />
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Imaging.Fixtures\fonts\noto-naskh-arabic\NotoNaskhArabic-Regular.subset.ttf" LogicalName="fonts/NotoNaskhArabic-Regular.subset.ttf" />
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Imaging.Fixtures\fonts\noto-sans-devanagari\NotoSansDevanagari-Regular.ttf" LogicalName="fonts/NotoSansDevanagari-Regular.ttf" />
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Imaging.Fixtures\fonts\noto-serif-tibetan\NotoSerifTibetan-Regular.ttf" LogicalName="fonts/NotoSerifTibetan-Regular.ttf" />
+  </ItemGroup>
 </Project>

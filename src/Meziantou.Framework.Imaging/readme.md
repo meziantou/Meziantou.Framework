@@ -699,7 +699,8 @@ convert implicitly). The origin is the top-left corner, and integer coordinates 
 `(x, y)` covers the square from `(x, y)` to `(x + 1, y + 1)`. A rectangle on integer coordinates is filled exactly, and
 a one-pixel horizontal line is crisp when it runs through the middle of a row (`y + 0.5`). Shapes are clipped to the
 canvas. A coordinate must be finite (`ArgumentException`) and no larger than 16,777,216 in magnitude
-(`ArgumentOutOfRangeException`).
+(`ArgumentOutOfRangeException`). `PointD` has the usual arithmetic (`+`, `-`, `*`, `/`, `DistanceTo`) and `RectangleD`
+the usual helpers (`Center`, `Contains`, `Intersect`, `Union`, `Offset`, `Inflate`).
 
 **Brushes**. A `SolidBrush` paints one color (an `Rgba32` or `Rgba64` converts implicitly to a brush). A
 `LinearGradientBrush` (between two points) and a `RadialGradientBrush` (around a center, up to a radius) paint the color

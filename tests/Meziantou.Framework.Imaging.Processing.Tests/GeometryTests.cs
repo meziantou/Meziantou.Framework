@@ -154,4 +154,89 @@ public sealed class GeometryTests
         Assert.Throws<ArgumentOutOfRangeException>(() => RectangleD.FromLTRB(0, 2, 1, 1));
         Assert.Throws<ArgumentOutOfRangeException>(() => RectangleD.FromLTRB(0, 0, double.NaN, 1));
     }
+
+    [Fact]
+    public void PointDArithmeticWorksOnBothCoordinates()
+    {
+        var a = new PointD(1.5, -2);
+        var b = new PointD(0.25, 4);
+        Assert.Equal(new PointD(1.75, 2), a + b);
+        Assert.Equal(new PointD(1.25, -6), a - b);
+        Assert.Equal(new PointD(-1.5, 2), -a);
+        Assert.Equal(new PointD(3, -4), a * 2);
+        Assert.Equal(new PointD(3, -4), 2 * a);
+        Assert.Equal(new PointD(0.75, -1), a / 2);
+        Assert.Equal(a + b, PointD.Add(a, b));
+        Assert.Equal(a - b, PointD.Subtract(a, b));
+        Assert.Equal(-a, PointD.Negate(a));
+        Assert.Equal(a * 2, PointD.Multiply(a, 2));
+        Assert.Equal(a / 2, PointD.Divide(a, 2));
+        Assert.Equal(new PointD(2.5, 1), a.Offset(1, 3));
+    }
+
+    [Fact]
+    public void PointDDistanceIsTheLengthOfTheSegment()
+    {
+        Assert.Equal(5, new PointD(1, 1).DistanceTo(new PointD(4, 5)));
+        Assert.Equal(5, new PointD(4, 5).DistanceTo(new PointD(1, 1)));
+        Assert.Equal(0, new PointD(2.5, -1).DistanceTo(new PointD(2.5, -1)));
+    }
+
+    [Fact]
+    public void RectangleDExposesItsLocationAndItsCenter()
+    {
+        var rectangle = new RectangleD(1, 2, 4, 3);
+        Assert.Equal(new PointD(1, 2), rectangle.Location);
+        Assert.Equal(new PointD(3, 3.5), rectangle.Center);
+    }
+
+    [Fact]
+    public void RectangleDContainsItsLeftAndTopSidesOnly()
+    {
+        var rectangle = new RectangleD(1, 2, 4, 3);
+        Assert.True(rectangle.Contains(new PointD(1, 2)));
+        Assert.True(rectangle.Contains(new PointD(4.999, 4.999)));
+        Assert.False(rectangle.Contains(new PointD(5, 3)));
+        Assert.False(rectangle.Contains(new PointD(3, 5)));
+        Assert.False(rectangle.Contains(new PointD(0.999, 3)));
+        Assert.False(rectangle.Contains(new PointD(double.NaN, 3)));
+
+        Assert.True(rectangle.Contains(rectangle));
+        Assert.True(rectangle.Contains(new RectangleD(2, 3, 3, 2)));
+        Assert.False(rectangle.Contains(new RectangleD(2, 3, 3.5, 2)));
+    }
+
+    [Fact]
+    public void RectangleDIntersectAndUnion()
+    {
+        var a = new RectangleD(0, 0, 4, 4);
+        var b = new RectangleD(2.5, 1, 4, 1.5);
+        Assert.Equal(new RectangleD(2.5, 1, 1.5, 1.5), RectangleD.Intersect(a, b));
+        Assert.Equal(new RectangleD(0, 0, 6.5, 4), RectangleD.Union(a, b));
+        Assert.True(a.IntersectsWith(b));
+
+        // Rectangles that only touch have no area in common
+        var touching = new RectangleD(4, 0, 2, 2);
+        Assert.Equal(RectangleD.Empty, RectangleD.Intersect(a, touching));
+        Assert.False(a.IntersectsWith(touching));
+
+        // A rectangle without area still counts for its position in a union
+        Assert.Equal(new RectangleD(0, 0, 10, 4), RectangleD.Union(a, new RectangleD(6, 2, 4, 0)));
+    }
+
+    [Fact]
+    public void RectangleDOffsetAndInflate()
+    {
+        var rectangle = new RectangleD(1, 2, 4, 3);
+        Assert.Equal(new RectangleD(1.5, 0, 4, 3), rectangle.Offset(0.5, -2));
+        Assert.Equal(new RectangleD(0, 1.5, 6, 4), rectangle.Inflate(1, 0.5));
+        Assert.Equal(new RectangleD(0.5, 1.5, 5, 4), rectangle.Inflate(0.5));
+        Assert.Equal(new RectangleD(2, 2.5, 2, 2), rectangle.Inflate(-1, -0.5));
+
+        // A side does not move past the center
+        Assert.Equal(new RectangleD(3, 3.5, 0, 0), rectangle.Inflate(-10));
+        Assert.Equal(new RectangleD(3, 1, 0, 5), rectangle.Inflate(-2.5, 1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => rectangle.Inflate(double.PositiveInfinity));
+        Assert.Throws<ArgumentOutOfRangeException>(() => rectangle.Inflate(double.NaN, 0));
+    }
 }

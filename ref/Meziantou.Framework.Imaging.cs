@@ -677,6 +677,13 @@ namespace Meziantou.Framework.Imaging
         public PointD(double x, double y) { }
         public void Deconstruct(out double x, out double y) => throw null;
         public static Meziantou.Framework.Imaging.PointD FromPoint(Meziantou.Framework.Imaging.Point point) => throw null;
+        public Meziantou.Framework.Imaging.PointD Offset(double dx, double dy) => throw null;
+        public double DistanceTo(Meziantou.Framework.Imaging.PointD other) => throw null;
+        public static Meziantou.Framework.Imaging.PointD Add(Meziantou.Framework.Imaging.PointD left, Meziantou.Framework.Imaging.PointD right) => throw null;
+        public static Meziantou.Framework.Imaging.PointD Subtract(Meziantou.Framework.Imaging.PointD left, Meziantou.Framework.Imaging.PointD right) => throw null;
+        public static Meziantou.Framework.Imaging.PointD Negate(Meziantou.Framework.Imaging.PointD value) => throw null;
+        public static Meziantou.Framework.Imaging.PointD Multiply(Meziantou.Framework.Imaging.PointD left, double right) => throw null;
+        public static Meziantou.Framework.Imaging.PointD Divide(Meziantou.Framework.Imaging.PointD left, double right) => throw null;
         public bool Equals(Meziantou.Framework.Imaging.PointD other) => throw null;
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
         public override int GetHashCode() => throw null;
@@ -684,6 +691,12 @@ namespace Meziantou.Framework.Imaging
         public static implicit operator Meziantou.Framework.Imaging.PointD(Meziantou.Framework.Imaging.Point point) => throw null;
         public static bool operator ==(Meziantou.Framework.Imaging.PointD left, Meziantou.Framework.Imaging.PointD right) => throw null;
         public static bool operator !=(Meziantou.Framework.Imaging.PointD left, Meziantou.Framework.Imaging.PointD right) => throw null;
+        public static Meziantou.Framework.Imaging.PointD operator +(Meziantou.Framework.Imaging.PointD left, Meziantou.Framework.Imaging.PointD right) => throw null;
+        public static Meziantou.Framework.Imaging.PointD operator -(Meziantou.Framework.Imaging.PointD left, Meziantou.Framework.Imaging.PointD right) => throw null;
+        public static Meziantou.Framework.Imaging.PointD operator -(Meziantou.Framework.Imaging.PointD value) => throw null;
+        public static Meziantou.Framework.Imaging.PointD operator *(Meziantou.Framework.Imaging.PointD left, double right) => throw null;
+        public static Meziantou.Framework.Imaging.PointD operator *(double left, Meziantou.Framework.Imaging.PointD right) => throw null;
+        public static Meziantou.Framework.Imaging.PointD operator /(Meziantou.Framework.Imaging.PointD left, double right) => throw null;
     }
 
     public readonly struct Rectangle : System.IEquatable<Meziantou.Framework.Imaging.Rectangle>
@@ -727,9 +740,19 @@ namespace Meziantou.Framework.Imaging
         public double Right { get => throw null; }
         public double Bottom { get => throw null; }
         public bool IsEmpty { get => throw null; }
+        public Meziantou.Framework.Imaging.PointD Location { get => throw null; }
+        public Meziantou.Framework.Imaging.PointD Center { get => throw null; }
         public RectangleD(double x, double y, double width, double height) { }
         public static Meziantou.Framework.Imaging.RectangleD FromLTRB(double left, double top, double right, double bottom) => throw null;
         public static Meziantou.Framework.Imaging.RectangleD FromRectangle(Meziantou.Framework.Imaging.Rectangle rectangle) => throw null;
+        public static Meziantou.Framework.Imaging.RectangleD Intersect(Meziantou.Framework.Imaging.RectangleD a, Meziantou.Framework.Imaging.RectangleD b) => throw null;
+        public static Meziantou.Framework.Imaging.RectangleD Union(Meziantou.Framework.Imaging.RectangleD a, Meziantou.Framework.Imaging.RectangleD b) => throw null;
+        public bool Contains(Meziantou.Framework.Imaging.PointD point) => throw null;
+        public bool Contains(Meziantou.Framework.Imaging.RectangleD rectangle) => throw null;
+        public bool IntersectsWith(Meziantou.Framework.Imaging.RectangleD rectangle) => throw null;
+        public Meziantou.Framework.Imaging.RectangleD Offset(double dx, double dy) => throw null;
+        public Meziantou.Framework.Imaging.RectangleD Inflate(double dx, double dy) => throw null;
+        public Meziantou.Framework.Imaging.RectangleD Inflate(double distance) => throw null;
         public bool Equals(Meziantou.Framework.Imaging.RectangleD other) => throw null;
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
         public override int GetHashCode() => throw null;

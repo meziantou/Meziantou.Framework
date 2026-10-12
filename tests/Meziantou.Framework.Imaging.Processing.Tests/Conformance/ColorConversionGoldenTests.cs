@@ -1,3 +1,4 @@
+using Meziantou.Framework.Imaging.Internals;
 using Meziantou.Framework.Imaging.Metadata;
 using Meziantou.Framework.Imaging.TestHarness.Fixtures;
 
@@ -26,7 +27,7 @@ public sealed class ColorConversionGoldenTests
     {
         var profiles = Manifest.ColorProfiles ?? [];
         var features = profiles.SelectMany(profile => profile.Features ?? []).ToHashSet(StringComparer.Ordinal);
-        foreach (var feature in new[] { "icc.version=2", "icc.version=4", "icc.model=matrix", "icc.model=monochrome", "icc.model=lut8", "icc.model=lut16", "icc.model=lutAToB", "icc.pcs=lab", "icc.pcs=xyz", "icc.curve=parametric", "icc.curve=sampled", "icc.curve=gamma", "icc.space=gray", "icc.space=rgb", "icc.space=cmyk" })
+        foreach (var feature in new[] { "icc.version=2", "icc.version=4", "icc.model=matrix", "icc.model=monochrome", "icc.model=lut8", "icc.model=lut16", "icc.model=lutAToB", "icc.pcs=lab", "icc.pcs=xyz", "icc.curve=parametric", "icc.curve=sampled", "icc.curve=gamma", "icc.curve=identity", "icc.space=gray", "icc.space=rgb", "icc.space=cmyk" })
         {
             Assert.Contains(feature, features);
         }
@@ -58,6 +59,52 @@ public sealed class ColorConversionGoldenTests
         Assert.Contains(transforms, transform => transform.BlackPointCompensation && Has(transform.Source, "icc.black-point"));
         Assert.Contains(transforms, transform => transform.BlackPointCompensation && Has(transform.Destination, "icc.black-point"));
         Assert.Contains(transforms, transform => transform.BlackPointCompensation && Has(transform.Destination, "icc.black-point") && Has(transform.Destination, "icc.direction=both"));
+    }
+
+    [Fact]
+    public void ExternalProfilesAreTheWholeCollectionAsSourcesAndDestinations()
+    {
+        // Compact ICC Profiles at the commit pinned by the generator, which rejects a checkout with another set of profiles
+        var external = (Manifest.ColorProfiles ?? []).Where(profile => profile.Provenance.Origin == "external").ToList();
+        Assert.HasCount(44, external);
+
+        // Each one is converted from its device values and to them. The CMYK input profile has no table from the
+        // connection space: it cannot be a destination
+        var transforms = Manifest.ColorTransforms ?? [];
+        foreach (var profile in external)
+        {
+            Assert.Contains(transforms, transform => transform.Source == profile.Id);
+            if (profile.Features!.Contains("icc.class=input", StringComparer.Ordinal))
+            {
+                Assert.DoesNotContain(transforms, transform => transform.Destination == profile.Id);
+            }
+            else
+            {
+                Assert.Contains(transforms, transform => transform.Destination == profile.Id);
+            }
+        }
+    }
+
+    [Fact]
+    public void OnlyTheSrgbProfilesOfTheCollectionAreRecognizedAsSrgb()
+    {
+        // The linear-light working space linearizes with the sRGB transfer function, without any ICC transform: it takes
+        // every sRGB and sGray profile (parametric, and sampled with 20, 42 and 182 points) and no other one, in
+        // particular neither scRGB (the same primaries, linear samples) nor Rec. 709 (close primaries, another curve)
+        var root = FixtureRoot.GetDirectory();
+        var recognized = new List<string>();
+        foreach (var entry in (Manifest.ColorProfiles ?? []).Where(profile => profile.Provenance.Origin == "external"))
+        {
+            var profile = LoadProfile(root, entry.Id);
+            var isSrgb = SrgbProfileRecognition.IsSrgb(profile, profile.ColorSpace == IccProfileColorSpace.Gray ? PixelFormat.Gray8 : PixelFormat.Rgb24);
+            Assert.Equal(entry.Id.StartsWith("icc/srgb-", StringComparison.Ordinal) || entry.Id.StartsWith("icc/sgrey-", StringComparison.Ordinal), isSrgb);
+            if (isSrgb)
+            {
+                recognized.Add(entry.Id);
+            }
+        }
+
+        Assert.Equal(["icc/sgrey-v2-magic", "icc/sgrey-v2-micro", "icc/sgrey-v2-nano", "icc/sgrey-v4", "icc/srgb-v2-magic", "icc/srgb-v2-micro", "icc/srgb-v2-nano", "icc/srgb-v4"], recognized.Order(StringComparer.Ordinal));
     }
 
     [Fact]

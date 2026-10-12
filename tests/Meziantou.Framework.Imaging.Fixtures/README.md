@@ -128,9 +128,11 @@ The `colorProfiles` and `colorTransforms` sections of the manifest are the refer
   (`icc.version`, `icc.model`, `icc.pcs`, `icc.curve`, `icc.space`, `icc.class`, `icc.direction=both` for tables in both
   directions, `icc.media-white` and `icc.black-point` for a media white that is not the illuminant and a black that is
   not black). Two origins:
-  - *external*: [Compact-ICC-Profiles](https://github.com/saucecontrol/Compact-ICC-Profiles) (`CC0-1.0`) at a pinned
-    commit, stored unmodified: matrix-based RGB profiles of versions 2 and 4 with parametric, sampled and gamma curves,
-    monochrome profiles, and a CMYK input profile with one `lut16Type` table.
+  - *external*: the whole [Compact-ICC-Profiles](https://github.com/saucecontrol/Compact-ICC-Profiles) collection
+    (`CC0-1.0`, 44 profiles) at a pinned commit, stored unmodified: matrix-based RGB profiles of versions 2 and 4 with
+    parametric, sampled, gamma and identity curves, monochrome profiles, and a CMYK input profile with one `lut16Type`
+    table. Each one is the source and the destination of at least one conversion, except the CMYK profile, which has no
+    table to be a destination; the generator rejects a checkout that has a profile the corpus does not list.
   - *generated* (`synthetic-*`): built by `Common/IccProfileBuilder.cs` of the generator, a file without any dependency
     on the library that the test projects also compile (`IccTestProfiles`). They provide what no profile under an
     allowed license does: `lut8Type`, `lutAToBType` and `lutBToAType` tables, tables in both directions (including to

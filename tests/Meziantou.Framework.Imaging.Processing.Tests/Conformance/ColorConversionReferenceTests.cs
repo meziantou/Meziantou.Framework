@@ -1,5 +1,6 @@
 using Meziantou.Framework.Imaging.Metadata;
 using Meziantou.Framework.Imaging.TestHarness.Color;
+using Meziantou.Framework.Imaging.TestHarness.Fixtures;
 
 namespace Meziantou.Framework.Imaging.Tests.Conformance;
 
@@ -15,6 +16,8 @@ namespace Meziantou.Framework.Imaging.Tests.Conformance;
 /// </remarks>
 public sealed class ColorConversionReferenceTests
 {
+    private static readonly FixtureManifest Manifest = FixtureManifestLoader.Load(FixtureRoot.GetDirectory() / FixtureRoot.ManifestFileName);
+
     private static readonly (string Name, Func<IccProfile> Create)[] Profiles =
     [
         ("srgb", () => IccProfile.Srgb),
@@ -158,6 +161,46 @@ public sealed class ColorConversionReferenceTests
             var convertedWords = new ushort[words.Length / 4 * transform.DestinationChannelCount];
             transform.Convert(words, convertedWords);
             Assert.Empty(reference.Compare(words, convertedWords));
+        }
+    }
+
+    public static TheoryData<string> ExternalProfileCases() => [.. (Manifest.ColorProfiles ?? []).Where(profile => profile.Provenance.Origin == "external").Select(profile => profile.Id)];
+
+    [Theory]
+    [MemberData(nameof(ExternalProfileCases))]
+    public void ExternalProfilesOfTheCorpusMatchTheReference(string id)
+    {
+        // The Compact ICC Profiles collection, as files written by another producer than the builders of the tests:
+        // version 2 and 4 headers, sampled curves of 20 to 209 points, gamma and identity curves, parametric curves.
+        // Each profile is a source and a destination; the CMYK input profile has no table to be a destination
+        var entry = Manifest.ColorProfiles!.Single(profile => profile.Id == id);
+        var profile = new IccProfile(new MetadataBlob(File.ReadAllBytes(FixtureRoot.GetDirectory() / entry.File.Path)));
+        var pairs = new List<(IccProfile Source, IccProfile Destination)> { (profile, IccProfile.Srgb), (profile, IccProfile.SrgbGray) };
+        if (!entry.Features!.Contains("icc.class=input", StringComparer.Ordinal))
+        {
+            pairs.Add((IccProfile.Srgb, profile));
+            pairs.Add((IccProfile.SrgbGray, profile));
+        }
+
+        foreach (var (intent, blackPointCompensation) in new[] { (IccRenderingIntent.Perceptual, true), (IccRenderingIntent.RelativeColorimetric, false), (IccRenderingIntent.AbsoluteColorimetric, false) })
+        {
+            foreach (var (source, destination) in pairs)
+            {
+                var transform = IccColorTransform.Create(source, destination, new IccColorTransformOptions { Intent = intent, BlackPointCompensation = blackPointCompensation });
+                var reference = ReferenceIccTransform.Create(source.Data.Span, destination.Data.Span, (int)intent, blackPointCompensation);
+                Assert.Equal(reference.SourceChannelCount, transform.SourceChannelCount);
+                Assert.Equal(reference.DestinationChannelCount, transform.DestinationChannelCount);
+
+                var words = CreateSamples(transform.SourceChannelCount, steps: 3, randomColors: 40, ushort.MaxValue).Select(value => (ushort)value).ToArray();
+                var convertedWords = new ushort[words.Length / transform.SourceChannelCount * transform.DestinationChannelCount];
+                transform.Convert(words, convertedWords);
+                Assert.Empty(reference.Compare(words, convertedWords));
+
+                var bytes = CreateSamples(transform.SourceChannelCount, steps: 2, randomColors: 30, byte.MaxValue).Select(value => (byte)value).ToArray();
+                var convertedBytes = new byte[bytes.Length / transform.SourceChannelCount * transform.DestinationChannelCount];
+                transform.Convert(bytes, convertedBytes);
+                Assert.Empty(reference.Compare(bytes, convertedBytes));
+            }
         }
     }
 

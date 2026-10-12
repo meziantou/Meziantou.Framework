@@ -11,6 +11,9 @@ public sealed class MetadataWritePlanTests
 {
     private static readonly Size Canvas = new(4, 3);
 
+    // No format stores a content light level, a mastering display color volume or the shape of the pixels yet
+    private static readonly ImageFormat[] FormatsWithoutHighDynamicRangeFields = [.. Enum.GetValues<ImageFormat>().Where(format => format is not ImageFormat.Unknown)];
+
     [Fact]
     public void ValidIccProfilePassesValidation()
     {
@@ -282,6 +285,29 @@ public sealed class MetadataWritePlanTests
                     _ = MetadataWritePlan.Create(metadata, format, handling, Canvas);
                 }
             }
+        }
+    }
+
+    [Fact]
+    public void LightLevelsMasteringDisplayAndPixelShapeAreUnsupportedMetadataWhereNoFieldStoresThem()
+    {
+        var lightLevel = new ImageMetadata { ContentLightLevel = new ContentLightLevel(1000, 400) };
+        var display = new ImageMetadata { MasteringDisplay = new MasteringDisplayColorVolume(35400, 14600, 8500, 39850, 6550, 2300, 15635, 16450, 10_000_000, 50) };
+        var wide = new ImageMetadata { PixelAspectRatio = new PixelAspectRatio(2, 1) };
+        foreach (var format in FormatsWithoutHighDynamicRangeFields)
+        {
+            AssertUnsupported(lightLevel, format, "content light level");
+            AssertUnsupported(display, format, "mastering display color volume");
+            AssertUnsupported(wide, format, "pixel aspect ratio");
+
+            var plan = MetadataWritePlan.Create(new ImageMetadata { ContentLightLevel = lightLevel.ContentLightLevel, MasteringDisplay = display.MasteringDisplay, PixelAspectRatio = wide.PixelAspectRatio }, format, MetadataHandling.DiscardUnsupported, Canvas);
+            Assert.Null(plan.ContentLightLevel);
+            Assert.Null(plan.MasteringDisplay);
+            Assert.Null(plan.PixelAspectRatio);
+
+            // Square pixels are what a format without a field for their shape stores: nothing is lost
+            var square = MetadataWritePlan.Create(new ImageMetadata { PixelAspectRatio = new PixelAspectRatio(3, 3) }, format, MetadataHandling.Strict, Canvas);
+            Assert.Null(square.PixelAspectRatio);
         }
     }
 

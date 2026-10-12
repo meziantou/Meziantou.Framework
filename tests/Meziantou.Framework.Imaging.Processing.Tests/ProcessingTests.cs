@@ -124,6 +124,38 @@ public sealed class ProcessingTests
     }
 
     [Fact]
+    public void OperationsThatSwapTheAxesSwapThePixelAspectRatio()
+    {
+        // A pixel twice as wide as it is high is twice as high as it is wide once the image is turned by a quarter
+        using var image = Build<Rgba32>(Source3X2);
+        image.Metadata.PixelAspectRatio = new PixelAspectRatio(2, 1);
+        image.Rotate(RotateMode.Rotate90, Ct);
+        Assert.Equal(new PixelAspectRatio(1, 2), image.Metadata.PixelAspectRatio);
+        image.Rotate(RotateMode.Rotate270, Ct);
+        Assert.Equal(new PixelAspectRatio(2, 1), image.Metadata.PixelAspectRatio);
+
+        // Half turns, flips and crops keep the axes
+        image.Rotate(RotateMode.Rotate180, Ct);
+        image.Flip(FlipMode.Horizontal, Ct);
+        image.Crop(new Rectangle(0, 0, 2, 2), Ct);
+        Assert.Equal(new PixelAspectRatio(2, 1), image.Metadata.PixelAspectRatio);
+
+        // The orientations that transpose do it too; a failed operation changes nothing
+        image.Metadata.Orientation = ExifOrientation.RightTop;
+        image.AutoOrient(Ct);
+        Assert.Equal(new PixelAspectRatio(1, 2), image.Metadata.PixelAspectRatio);
+
+        using var canceled = new CancellationTokenSource();
+        canceled.Cancel();
+        Assert.Throws<OperationCanceledException>(() => image.Rotate(RotateMode.Rotate90, canceled.Token));
+        Assert.Equal(new PixelAspectRatio(1, 2), image.Metadata.PixelAspectRatio);
+
+        using var square = Build<Rgba32>(Source3X2);
+        square.Rotate(RotateMode.Rotate90, Ct);
+        Assert.Null(square.Metadata.PixelAspectRatio);
+    }
+
+    [Fact]
     public void RotateNoneDoesNothing()
     {
         using var image = Build<Gray8>(Source3X2);

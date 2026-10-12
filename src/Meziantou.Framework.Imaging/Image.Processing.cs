@@ -24,7 +24,11 @@ public abstract partial class Image
     {
         Owner.EnsureCanModify(operation);
         cancellationToken.ThrowIfCancellationRequested();
+
+        // A transposition swaps the axes of the pixels too: the ratio is computed before the transaction and published after it
+        var pixelAspectRatio = transform.Transpose ? _metadata.PixelAspectRatio?.Transpose() : _metadata.PixelAspectRatio;
         ReplaceGeometry(transform.GetOutputSize(region.Size), normalizeOrientation, operation, new TransformFiller(region, transform), cancellationToken);
+        _metadata.PixelAspectRatio = pixelAspectRatio;
     }
 
     /// <summary>

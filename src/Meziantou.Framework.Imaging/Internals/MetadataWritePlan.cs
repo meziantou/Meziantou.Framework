@@ -35,11 +35,13 @@ internal sealed class MetadataWritePlan
 
     private static readonly MetadataWritePlan Empty = new(null, null, null, [], null, ColorTransferFunction.Srgb);
 
-    private MetadataWritePlan(IccProfile? iccProfile, byte[]? exif, XmpProfile? xmpProfile, IReadOnlyList<ImageTextEntry> textEntries, ImageResolution? resolution, ColorTransferFunction transferFunction, ExifOrientation orientation = ExifOrientation.TopLeft, CicpColorDescription? cicp = null)
+    private MetadataWritePlan(IccProfile? iccProfile, byte[]? exif, XmpProfile? xmpProfile, IReadOnlyList<ImageTextEntry> textEntries, ImageResolution? resolution, ColorTransferFunction transferFunction, ExifOrientation orientation = ExifOrientation.TopLeft, CicpColorDescription? cicp = null, ContentLightLevel? contentLightLevel = null, MasteringDisplayColorVolume? masteringDisplay = null, PixelAspectRatio? pixelAspectRatio = null)
     {
-        Cicp = cicp;
         TransferFunction = transferFunction;
         Cicp = cicp;
+        ContentLightLevel = contentLightLevel;
+        MasteringDisplay = masteringDisplay;
+        PixelAspectRatio = pixelAspectRatio;
         IccProfile = iccProfile;
         Exif = exif;
         XmpProfile = xmpProfile;
@@ -60,6 +62,15 @@ internal sealed class MetadataWritePlan
     /// for JPEG XL, which stores the ones its enumerated color encoding expresses, when no ICC profile is written.
     /// </summary>
     public CicpColorDescription? Cicp { get; }
+
+    /// <summary>Gets the content light level to write, or <see langword="null"/>.</summary>
+    public ContentLightLevel? ContentLightLevel { get; }
+
+    /// <summary>Gets the mastering display color volume to write, or <see langword="null"/>.</summary>
+    public MasteringDisplayColorVolume? MasteringDisplay { get; }
+
+    /// <summary>Gets the pixel aspect ratio to write, or <see langword="null"/> (square pixels included, when the format has no field for them).</summary>
+    public PixelAspectRatio? PixelAspectRatio { get; }
 
     /// <summary>Gets the ICC profile to write, or <see langword="null"/>.</summary>
     public IccProfile? IccProfile { get; }
@@ -272,8 +283,29 @@ internal sealed class MetadataWritePlan
             }
         }
 
+        // The light levels and the mastering display describe high dynamic range samples: dropping them changes how the
+        // samples are displayed, like dropping the color description they complete
+        var contentLightLevel = capabilities.ContentLightLevel ? metadata.ContentLightLevel : null;
+        if (metadata.ContentLightLevel is not null && !capabilities.ContentLightLevel)
+        {
+            context.Unsupported("content light level");
+        }
+
+        var masteringDisplay = capabilities.MasteringDisplay ? metadata.MasteringDisplay : null;
+        if (metadata.MasteringDisplay is not null && !capabilities.MasteringDisplay)
+        {
+            context.Unsupported("mastering display color volume");
+        }
+
+        // Pixels are square in a format that has no field for their shape: only another ratio would be lost
+        var pixelAspectRatio = capabilities.PixelAspectRatio ? metadata.PixelAspectRatio : null;
+        if (metadata.PixelAspectRatio is { IsSquare: false } && !capabilities.PixelAspectRatio)
+        {
+            context.Unsupported("pixel aspect ratio");
+        }
+
         var orientation = capabilities.NativeOrientation ? metadata.Orientation : ExifOrientation.TopLeft;
-        return new MetadataWritePlan(icc, exif, xmp, text, resolution, transferFunction, orientation, storedCicp);
+        return new MetadataWritePlan(icc, exif, xmp, text, resolution, transferFunction, orientation, storedCicp, contentLightLevel, masteringDisplay, pixelAspectRatio);
     }
 
     private static bool ContainsKeyword(List<ImageTextEntry> entries, string keyword)
@@ -342,8 +374,11 @@ internal sealed class MetadataWritePlan
         // JPEG XL stores the orientation, the linear transfer function and an enumerable CICP description in its image header
         private static readonly FormatCapabilities JpegXl = new(icc: true, exif: true, xmp: true, resolution: false, TextSupport.None, linearTransfer: true, nativeOrientation: true, enumeratedCicp: true);
 
-        private FormatCapabilities(bool icc, bool exif, bool xmp, bool resolution, TextSupport text, bool linearTransfer = false, bool nativeOrientation = false, bool cicp = false, bool enumeratedCicp = false)
+        private FormatCapabilities(bool icc, bool exif, bool xmp, bool resolution, TextSupport text, bool linearTransfer = false, bool nativeOrientation = false, bool cicp = false, bool enumeratedCicp = false, bool contentLightLevel = false, bool masteringDisplay = false, bool pixelAspectRatio = false)
         {
+            ContentLightLevel = contentLightLevel;
+            MasteringDisplay = masteringDisplay;
+            PixelAspectRatio = pixelAspectRatio;
             Cicp = cicp;
             EnumeratedCicp = enumeratedCicp;
             LinearTransfer = linearTransfer;
@@ -389,6 +424,15 @@ internal sealed class MetadataWritePlan
 
         /// <summary>Gets a value indicating whether the format stores any CICP color description (AVIF).</summary>
         public bool Cicp { get; }
+
+        /// <summary>Gets a value indicating whether the format stores a content light level (the AVIF <c>clli</c> box).</summary>
+        public bool ContentLightLevel { get; }
+
+        /// <summary>Gets a value indicating whether the format stores a mastering display color volume (the AVIF <c>mdcv</c> box).</summary>
+        public bool MasteringDisplay { get; }
+
+        /// <summary>Gets a value indicating whether the format stores the aspect ratio of the pixels (the AVIF <c>pasp</c> box).</summary>
+        public bool PixelAspectRatio { get; }
 
         /// <summary>
         /// Gets a value indicating whether the format stores at most one text entry per keyword (the ANI <c>INFO</c> list has

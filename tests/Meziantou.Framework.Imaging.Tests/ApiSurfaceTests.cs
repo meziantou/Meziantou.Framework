@@ -76,6 +76,9 @@ public sealed class ApiSurfaceTests
     [InlineData(typeof(IccProfile))]
     [InlineData(typeof(IccColorTransform))]
     [InlineData(typeof(CicpColorDescription))]
+    [InlineData(typeof(ContentLightLevel))]
+    [InlineData(typeof(MasteringDisplayColorVolume))]
+    [InlineData(typeof(PixelAspectRatio))]
     [InlineData(typeof(VectorPathBuilder))]
     public void ConcreteTypesAreSealed(Type type) => Assert.True(type.IsSealed, $"{type} must be sealed");
 
@@ -115,6 +118,28 @@ public sealed class ApiSurfaceTests
 
         // ...attached to the mutable metadata container by a nullable read-write property
         var property = GetDeclaredProperty(typeof(ImageMetadata), nameof(ImageMetadata.Cicp));
+        Assert.Equal(type, property.PropertyType);
+        Assert.NotNull(property.GetGetMethod());
+        Assert.NotNull(property.GetSetMethod());
+        Assert.Equal(NullabilityState.Nullable, new NullabilityInfoContext().Create(property).ReadState);
+    }
+
+    [Theory]
+    [InlineData(typeof(ContentLightLevel), nameof(ImageMetadata.ContentLightLevel))]
+    [InlineData(typeof(MasteringDisplayColorVolume), nameof(ImageMetadata.MasteringDisplay))]
+    [InlineData(typeof(PixelAspectRatio), nameof(ImageMetadata.PixelAspectRatio))]
+    public void HighDynamicRangeAndPixelShapeLabelsHaveTheirPublicShape(Type type, string propertyName)
+    {
+        // Immutable values with value equality...
+        Assert.Equal("Meziantou.Framework.Imaging.Metadata", type.Namespace);
+        Assert.True(type.IsPublic && type.IsSealed && type.IsClass);
+        Assert.True(typeof(IEquatable<>).MakeGenericType(type).IsAssignableFrom(type));
+        Assert.Single(type.GetConstructors());
+        Assert.All(type.GetProperties(BindingFlags.Instance | BindingFlags.Public), property => Assert.Null(property.GetSetMethod(nonPublic: false)));
+        Assert.Empty(type.GetFields(BindingFlags.Instance | BindingFlags.Public));
+
+        // ...attached to the mutable metadata container by a nullable read-write property
+        var property = GetDeclaredProperty(typeof(ImageMetadata), propertyName);
         Assert.Equal(type, property.PropertyType);
         Assert.NotNull(property.GetGetMethod());
         Assert.NotNull(property.GetSetMethod());

@@ -15,7 +15,8 @@ namespace Meziantou.Framework.Imaging.CorpusGenerator;
 /// <remarks>
 /// <para>
 /// The profiles come from a checkout of https://github.com/saucecontrol/Compact-ICC-Profiles (CC0-1.0) at the pinned
-/// commit, given by --icc-profiles; each file is checked against its pinned SHA-256 before it is copied.
+/// commit, given by --icc-profiles; each file is checked against its pinned SHA-256 before it is copied. The corpus holds
+/// the whole collection: a profile of the checkout that is not listed here is an error.
 /// </para>
 /// <para>
 /// The external profiles are matrix-based, plus one CMYK input profile with a single table. The tag types, directions and
@@ -84,6 +85,43 @@ internal static partial class IccCorpus
         new("icc/sgrey-v2-nano", "sGrey-v2-nano.icc", "ac2805b9e07b6fa3ba7406aa48e84d87041097da66220cc2a385e17bb2893cc1", 1, ["icc.version=2", "icc.model=monochrome", "icc.curve=sampled", "icc.space=gray"]),
         new("icc/cgats001-compat-v2-micro", "CGATS001Compat-v2-micro.icc", "73e1ba37d2bad5bab2a964f40a9eed96209666efc067c3322626214bbef234a0", 4, ["icc.version=2", "icc.model=lut16", "icc.pcs=lab", "icc.space=cmyk", "icc.class=input"]),
 
+        // The other profiles of the collection: the corpus holds every profile of the pinned commit
+        new("icc/adobe-compat-v4", "AdobeCompat-v4.icc", "1e35b53d118eba6835a7bac06137ea87cd5ad6eee97b20a88b29ab6356b00e43", 3, ["icc.version=4", "icc.model=matrix", "icc.curve=parametric", "icc.space=rgb"]),
+        new("icc/apple-compat-v2", "AppleCompat-v2.icc", "5109111a394a7c4dd6fde725718d88af47e8d7336ff3adda67307825c561cb7b", 3, ["icc.version=2", "icc.model=matrix", "icc.curve=gamma", "icc.space=rgb"]),
+        new("icc/apple-compat-v4", "AppleCompat-v4.icc", "d7b8fa8fa9c1a804fdc62ff166adfa49fa714b219463f11b3486190a8ad7b137", 3, ["icc.version=4", "icc.model=matrix", "icc.curve=parametric", "icc.space=rgb"]),
+        new("icc/colormatch-compat-v2", "ColorMatchCompat-v2.icc", "26281f1e1afca151a4fcd0731e83a9d139f8bf5ae17f5a34f0dab49daa6c8e35", 3, ["icc.version=2", "icc.model=matrix", "icc.curve=gamma", "icc.space=rgb"]),
+        new("icc/colormatch-compat-v4", "ColorMatchCompat-v4.icc", "f65c9a6e2ec5595f9961570b7f6f779e88150d3a308353fc04b2e3889a45b200", 3, ["icc.version=4", "icc.model=matrix", "icc.curve=parametric", "icc.space=rgb"]),
+        new("icc/dci-p3-v4", "DCI-P3-v4.icc", "58ac463ea778e9b70692971dd4ba9071363a03aba77043894162b1ad6c051da7", 3, ["icc.version=4", "icc.model=matrix", "icc.curve=parametric", "icc.space=rgb"]),
+        new("icc/display-p3-v2-magic", "DisplayP3-v2-magic.icc", "fa7905dea9d49e775f4e367966e6fc3411e843b44ea91fd7908104b7943a1446", 3, ["icc.version=2", "icc.model=matrix", "icc.curve=sampled", "icc.space=rgb"]),
+        new("icc/display-p3-v2-micro", "DisplayP3-v2-micro.icc", "cdb9ed06df5cc3be0c24f097407a490daee8ffce764fa8ff1dd66c8b5a591eb7", 3, ["icc.version=2", "icc.model=matrix", "icc.curve=sampled", "icc.space=rgb"]),
+        new("icc/display-p3-compat-v2-magic", "DisplayP3Compat-v2-magic.icc", "4564e3575b10133dfe34097696ce54eb0c4bb7ad5278d999f7ef68938ba8d372", 3, ["icc.version=2", "icc.model=matrix", "icc.curve=sampled", "icc.space=rgb"]),
+        new("icc/display-p3-compat-v2-micro", "DisplayP3Compat-v2-micro.icc", "a917f04df365b7331e614a32ea309975006e851b5a39ecb9ace8f07172e9ef6e", 3, ["icc.version=2", "icc.model=matrix", "icc.curve=sampled", "icc.space=rgb"]),
+        new("icc/display-p3-compat-v4", "DisplayP3Compat-v4.icc", "231752984cd4a5278e1b8d2390fe496767d4511fc81f54e1a5c69ae9ab4c42b5", 3, ["icc.version=4", "icc.model=matrix", "icc.curve=parametric", "icc.space=rgb"]),
+        new("icc/prophoto-v2-magic", "ProPhoto-v2-magic.icc", "59d1ef4f6b882d0d923bdaed86268f55dd30a8d102f4882aad9c2bbe9fb340c9", 3, ["icc.version=2", "icc.model=matrix", "icc.curve=sampled", "icc.space=rgb"]),
+        new("icc/prophoto-v2-micro", "ProPhoto-v2-micro.icc", "00b0ac58f99189b071bfca63b5434fd9f48ad08c92b17e6ce525e54b9d1a8319", 3, ["icc.version=2", "icc.model=matrix", "icc.curve=sampled", "icc.space=rgb"]),
+        new("icc/rec2020-g24-v4", "Rec2020-g24-v4.icc", "b03c9218e82ab12fc4fcac7f5a0fb10ff53ebc7ad8387ae68a6d8cf5d4dfbaa3", 3, ["icc.version=4", "icc.model=matrix", "icc.curve=parametric", "icc.space=rgb"]),
+        new("icc/rec2020-v2-magic", "Rec2020-v2-magic.icc", "aefd0745fc9267d7387e6f10c6e739a354664b179194b02effc880c63f74ec8c", 3, ["icc.version=2", "icc.model=matrix", "icc.curve=sampled", "icc.space=rgb"]),
+        new("icc/rec2020-v2-micro", "Rec2020-v2-micro.icc", "5fa064e6456b9b719e445f07038442fac6e9c5153e187f36e1ba4bcf23fb975b", 3, ["icc.version=2", "icc.model=matrix", "icc.curve=sampled", "icc.space=rgb"]),
+        new("icc/rec2020-compat-v2-magic", "Rec2020Compat-v2-magic.icc", "9b4e2cbd2bcd0b55b30cf660e6ee79775f714565bf055f1545081ce17a7d592a", 3, ["icc.version=2", "icc.model=matrix", "icc.curve=sampled", "icc.space=rgb"]),
+        new("icc/rec2020-compat-v2-micro", "Rec2020Compat-v2-micro.icc", "9e8ca28a47dc1b00d0ce54ee603fe1972bdfdf1ca10a9a3a329cd2f69de52296", 3, ["icc.version=2", "icc.model=matrix", "icc.curve=sampled", "icc.space=rgb"]),
+        new("icc/rec2020-compat-v4", "Rec2020Compat-v4.icc", "a141684281e5c90a3d49e1eb415ae105b1f68144d32828281d77bf782a625600", 3, ["icc.version=4", "icc.model=matrix", "icc.curve=parametric", "icc.space=rgb"]),
+        new("icc/rec601-ntsc-v2-magic", "Rec601NTSC-v2-magic.icc", "04a6d6e440afca339b07f3299e5bba5e287f5a50e86be8cc24913715d4482d5c", 3, ["icc.version=2", "icc.model=matrix", "icc.curve=sampled", "icc.space=rgb"]),
+        new("icc/rec601-ntsc-v2-micro", "Rec601NTSC-v2-micro.icc", "ef7effc339d96ea821281d29e384eecf712228508d14181a91aedbcb6c811d79", 3, ["icc.version=2", "icc.model=matrix", "icc.curve=sampled", "icc.space=rgb"]),
+        new("icc/rec601-ntsc-v4", "Rec601NTSC-v4.icc", "b6b9331eb72e6f4e4d0409b84097ffac73956e335ac204f9431e89e7b9f5a28a", 3, ["icc.version=4", "icc.model=matrix", "icc.curve=parametric", "icc.space=rgb"]),
+        new("icc/rec601-pal-v2-magic", "Rec601PAL-v2-magic.icc", "7d8958f9d5c20e6638f576e5e765bc6d84e50d74e0ad9e5a7df8ccef05b481db", 3, ["icc.version=2", "icc.model=matrix", "icc.curve=sampled", "icc.space=rgb"]),
+        new("icc/rec601-pal-v2-micro", "Rec601PAL-v2-micro.icc", "b73d6b86c9eb2db0a7ae0c8610d2b7dedd7dea87a1ce416e31c5add1ac771aac", 3, ["icc.version=2", "icc.model=matrix", "icc.curve=sampled", "icc.space=rgb"]),
+        new("icc/rec601-pal-v4", "Rec601PAL-v4.icc", "08b294eb3cac434e7bd2e5e36e5eca383674a29c096d0cbd85f849e127b0f2ce", 3, ["icc.version=4", "icc.model=matrix", "icc.curve=parametric", "icc.space=rgb"]),
+        new("icc/rec709-v2-magic", "Rec709-v2-magic.icc", "e56de34050a2e31a76688a85381e834bfbdb486d2a972cbfd9eeee600f9a2e7b", 3, ["icc.version=2", "icc.model=matrix", "icc.curve=sampled", "icc.space=rgb"]),
+        new("icc/rec709-v2-micro", "Rec709-v2-micro.icc", "c7e7388df3307495b97ba9985cd285b4c09426a0c365427176ae45e709ef49ec", 3, ["icc.version=2", "icc.model=matrix", "icc.curve=sampled", "icc.space=rgb"]),
+        new("icc/rec709-v4", "Rec709-v4.icc", "cf2a17aedc5fab20b207ee7bc42cea1d0bbf6f9f089a93973e370b2d45f7e700", 3, ["icc.version=4", "icc.model=matrix", "icc.curve=parametric", "icc.space=rgb"]),
+        new("icc/scrgb-v2", "scRGB-v2.icc", "8ae25bd986ea0dc396540762a6aa8c7fbeab7ac777cfdf242fa7c35874f4b383", 3, ["icc.version=2", "icc.model=matrix", "icc.curve=identity", "icc.space=rgb"]),
+        new("icc/sgrey-v2-magic", "sGrey-v2-magic.icc", "4110169287e5f1b5149ca9f1da1814d32943905bba8030e849d1a3b729a19481", 1, ["icc.version=2", "icc.model=monochrome", "icc.curve=sampled", "icc.space=gray"]),
+        new("icc/sgrey-v2-micro", "sGrey-v2-micro.icc", "010676406dbfc641776154fd3603adef7bace317a26027a33066891975621820", 1, ["icc.version=2", "icc.model=monochrome", "icc.curve=sampled", "icc.space=gray"]),
+        new("icc/srgb-v2-magic", "sRGB-v2-magic.icc", "af4efe28f6d311799865f325ba39184a2e978b113ca74124d60af7de22b105f4", 3, ["icc.version=2", "icc.model=matrix", "icc.curve=sampled", "icc.space=rgb"]),
+        new("icc/srgb-v2-nano", "sRGB-v2-nano.icc", "72c1355ac9fa7c7e626e1faa30bd4ef89e57a3d039df249f9ca3f0aed98b3c58", 3, ["icc.version=2", "icc.model=matrix", "icc.curve=sampled", "icc.space=rgb"]),
+        new("icc/widegamut-compat-v2", "WideGamutCompat-v2.icc", "61ab00ecf840cd97125df967d598b7870d1fe47ffcd4e9b90ba0d597df091e36", 3, ["icc.version=2", "icc.model=matrix", "icc.curve=gamma", "icc.space=rgb"]),
+        new("icc/widegamut-compat-v4", "WideGamutCompat-v4.icc", "518f6ef4d919c6f812ab84738c59afa4edb3e96de7cabc40d02006fa83d33f92", 3, ["icc.version=4", "icc.model=matrix", "icc.curve=parametric", "icc.space=rgb"]),
+
         // Synthetic profiles (Common/IccProfileBuilder.cs): the tag types, directions and media the external profiles lack
         new("icc/synthetic-rgb-lab-lut8", IccProfileBuilder.RgbLabLut8, nameof(IccProfileBuilder.RgbLabLut8), 3, ["icc.version=4", "icc.model=lut8", "icc.pcs=lab", "icc.space=rgb", "icc.direction=both"]),
         new("icc/synthetic-rgb-xyz-lut16", IccProfileBuilder.RgbXyzLut16, nameof(IccProfileBuilder.RgbXyzLut16), 3, ["icc.version=4", "icc.model=lut16", "icc.pcs=xyz", "icc.space=rgb", "icc.direction=both"]),
@@ -111,6 +149,79 @@ internal static partial class IccCorpus
         new("icc/cgats001-to-srgb-v4", "icc/cgats001-compat-v2-micro", "icc/srgb-v4", 1, false, 3, 0.5, GridPointJustification),
         new("icc/cgats001-to-display-p3-v4-perceptual", "icc/cgats001-compat-v2-micro", "icc/display-p3-v4", 0, false, 3, 0.5, GridPointJustification),
         new("icc/cgats001-to-sgrey-v4", "icc/cgats001-compat-v2-micro", "icc/sgrey-v4", 1, false, 3, 0.5, GridPointJustification),
+
+        // The other profiles of the collection, each as a source and as a destination, with sRGB
+        new("icc/adobe-compat-v4-to-srgb-v4", "icc/adobe-compat-v4", "icc/srgb-v4", 1, false, 2, 0.5, RoundingJustification),
+        new("icc/srgb-v4-to-adobe-compat-v4", "icc/srgb-v4", "icc/adobe-compat-v4", 1, false, 2, 0.5, RoundingJustification),
+        new("icc/apple-compat-v2-to-srgb-v4", "icc/apple-compat-v2", "icc/srgb-v4", 1, false, 2, 0.5, RoundingJustification),
+        new("icc/srgb-v4-to-apple-compat-v2", "icc/srgb-v4", "icc/apple-compat-v2", 1, false, 2, 0.5, RoundingJustification),
+        new("icc/apple-compat-v4-to-srgb-v4", "icc/apple-compat-v4", "icc/srgb-v4", 1, false, 2, 0.5, RoundingJustification),
+        new("icc/srgb-v4-to-apple-compat-v4", "icc/srgb-v4", "icc/apple-compat-v4", 1, false, 2, 0.5, RoundingJustification),
+        new("icc/colormatch-compat-v2-to-srgb-v4", "icc/colormatch-compat-v2", "icc/srgb-v4", 1, false, 2, 0.5, RoundingJustification),
+        new("icc/srgb-v4-to-colormatch-compat-v2", "icc/srgb-v4", "icc/colormatch-compat-v2", 1, false, 2, 0.5, RoundingJustification),
+        new("icc/colormatch-compat-v4-to-srgb-v4", "icc/colormatch-compat-v4", "icc/srgb-v4", 1, false, 2, 0.5, RoundingJustification),
+        new("icc/srgb-v4-to-colormatch-compat-v4", "icc/srgb-v4", "icc/colormatch-compat-v4", 1, false, 2, 0.5, RoundingJustification),
+        new("icc/dci-p3-v4-to-srgb-v4", "icc/dci-p3-v4", "icc/srgb-v4", 1, false, 2, 0.5, RoundingJustification),
+        new("icc/srgb-v4-to-dci-p3-v4", "icc/srgb-v4", "icc/dci-p3-v4", 1, false, 2, 0.5, RoundingJustification),
+        new("icc/display-p3-v2-magic-to-srgb-v4", "icc/display-p3-v2-magic", "icc/srgb-v4", 1, false, 9, 0.5, SampledCurveJustification),
+        new("icc/srgb-v4-to-display-p3-v2-magic", "icc/srgb-v4", "icc/display-p3-v2-magic", 1, false, 11, 1.0, SampledCurveJustification),
+        new("icc/display-p3-v2-micro-to-srgb-v4", "icc/display-p3-v2-micro", "icc/srgb-v4", 1, false, 9, 0.75, SampledCurveJustification),
+        new("icc/srgb-v4-to-display-p3-v2-micro", "icc/srgb-v4", "icc/display-p3-v2-micro", 1, false, 9, 1.0, SampledCurveJustification),
+        new("icc/display-p3-compat-v2-magic-to-srgb-v4", "icc/display-p3-compat-v2-magic", "icc/srgb-v4", 1, false, 11, 0.5, SampledCurveJustification),
+        new("icc/srgb-v4-to-display-p3-compat-v2-magic", "icc/srgb-v4", "icc/display-p3-compat-v2-magic", 1, false, 11, 0.75, SampledCurveJustification),
+        new("icc/display-p3-compat-v2-micro-to-srgb-v4", "icc/display-p3-compat-v2-micro", "icc/srgb-v4", 1, false, 9, 0.75, SampledCurveJustification),
+        new("icc/srgb-v4-to-display-p3-compat-v2-micro", "icc/srgb-v4", "icc/display-p3-compat-v2-micro", 1, false, 11, 1.0, SampledCurveJustification),
+        new("icc/display-p3-compat-v4-to-srgb-v4", "icc/display-p3-compat-v4", "icc/srgb-v4", 1, false, 2, 0.5, RoundingJustification),
+        new("icc/srgb-v4-to-display-p3-compat-v4", "icc/srgb-v4", "icc/display-p3-compat-v4", 1, false, 2, 0.5, RoundingJustification),
+        new("icc/prophoto-v2-magic-to-srgb-v4", "icc/prophoto-v2-magic", "icc/srgb-v4", 1, false, 9, 0.5, SampledCurveJustification),
+        new("icc/srgb-v4-to-prophoto-v2-magic", "icc/srgb-v4", "icc/prophoto-v2-magic", 1, false, 12, 0.75, SampledCurveJustification),
+        new("icc/prophoto-v2-micro-to-srgb-v4", "icc/prophoto-v2-micro", "icc/srgb-v4", 1, false, 14, 0.5, SampledCurveJustification),
+        new("icc/srgb-v4-to-prophoto-v2-micro", "icc/srgb-v4", "icc/prophoto-v2-micro", 1, false, 24, 0.75, SampledCurveJustification),
+        new("icc/rec2020-g24-v4-to-srgb-v4", "icc/rec2020-g24-v4", "icc/srgb-v4", 1, false, 2, 0.5, RoundingJustification),
+        new("icc/srgb-v4-to-rec2020-g24-v4", "icc/srgb-v4", "icc/rec2020-g24-v4", 1, false, 2, 0.5, RoundingJustification),
+        new("icc/rec2020-v2-magic-to-srgb-v4", "icc/rec2020-v2-magic", "icc/srgb-v4", 1, false, 9, 0.5, SampledCurveJustification),
+        new("icc/srgb-v4-to-rec2020-v2-magic", "icc/srgb-v4", "icc/rec2020-v2-magic", 1, false, 5, 0.75, SampledCurveJustification),
+        new("icc/rec2020-v2-micro-to-srgb-v4", "icc/rec2020-v2-micro", "icc/srgb-v4", 1, false, 9, 0.5, SampledCurveJustification),
+        new("icc/srgb-v4-to-rec2020-v2-micro", "icc/srgb-v4", "icc/rec2020-v2-micro", 1, false, 5, 0.75, SampledCurveJustification),
+        new("icc/rec2020-compat-v2-magic-to-srgb-v4", "icc/rec2020-compat-v2-magic", "icc/srgb-v4", 1, false, 8, 0.5, SampledCurveJustification),
+        new("icc/srgb-v4-to-rec2020-compat-v2-magic", "icc/srgb-v4", "icc/rec2020-compat-v2-magic", 1, false, 5, 0.75, SampledCurveJustification),
+        new("icc/rec2020-compat-v2-micro-to-srgb-v4", "icc/rec2020-compat-v2-micro", "icc/srgb-v4", 1, false, 8, 0.5, SampledCurveJustification),
+        new("icc/srgb-v4-to-rec2020-compat-v2-micro", "icc/srgb-v4", "icc/rec2020-compat-v2-micro", 1, false, 5, 0.75, SampledCurveJustification),
+        new("icc/rec2020-compat-v4-to-srgb-v4", "icc/rec2020-compat-v4", "icc/srgb-v4", 1, false, 2, 0.5, RoundingJustification),
+        new("icc/srgb-v4-to-rec2020-compat-v4", "icc/srgb-v4", "icc/rec2020-compat-v4", 1, false, 2, 0.5, RoundingJustification),
+        new("icc/rec601-ntsc-v2-magic-to-srgb-v4", "icc/rec601-ntsc-v2-magic", "icc/srgb-v4", 1, false, 6, 0.5, SampledCurveJustification),
+        new("icc/srgb-v4-to-rec601-ntsc-v2-magic", "icc/srgb-v4", "icc/rec601-ntsc-v2-magic", 1, false, 5, 0.75, SampledCurveJustification),
+        new("icc/rec601-ntsc-v2-micro-to-srgb-v4", "icc/rec601-ntsc-v2-micro", "icc/srgb-v4", 1, false, 8, 0.5, SampledCurveJustification),
+        new("icc/srgb-v4-to-rec601-ntsc-v2-micro", "icc/srgb-v4", "icc/rec601-ntsc-v2-micro", 1, false, 5, 0.75, SampledCurveJustification),
+        new("icc/rec601-ntsc-v4-to-srgb-v4", "icc/rec601-ntsc-v4", "icc/srgb-v4", 1, false, 2, 0.5, RoundingJustification),
+        new("icc/srgb-v4-to-rec601-ntsc-v4", "icc/srgb-v4", "icc/rec601-ntsc-v4", 1, false, 2, 0.5, RoundingJustification),
+        new("icc/rec601-pal-v2-magic-to-srgb-v4", "icc/rec601-pal-v2-magic", "icc/srgb-v4", 1, false, 9, 0.75, SampledCurveJustification),
+        new("icc/srgb-v4-to-rec601-pal-v2-magic", "icc/srgb-v4", "icc/rec601-pal-v2-magic", 1, false, 5, 0.75, SampledCurveJustification),
+        new("icc/rec601-pal-v2-micro-to-srgb-v4", "icc/rec601-pal-v2-micro", "icc/srgb-v4", 1, false, 8, 0.5, SampledCurveJustification),
+        new("icc/srgb-v4-to-rec601-pal-v2-micro", "icc/srgb-v4", "icc/rec601-pal-v2-micro", 1, false, 5, 0.75, SampledCurveJustification),
+        new("icc/rec601-pal-v4-to-srgb-v4", "icc/rec601-pal-v4", "icc/srgb-v4", 1, false, 2, 0.5, RoundingJustification),
+        new("icc/srgb-v4-to-rec601-pal-v4", "icc/srgb-v4", "icc/rec601-pal-v4", 1, false, 2, 0.5, RoundingJustification),
+        new("icc/rec709-v2-magic-to-srgb-v4", "icc/rec709-v2-magic", "icc/srgb-v4", 1, false, 9, 0.75, SampledCurveJustification),
+        new("icc/srgb-v4-to-rec709-v2-magic", "icc/srgb-v4", "icc/rec709-v2-magic", 1, false, 5, 0.75, SampledCurveJustification),
+        new("icc/rec709-v2-micro-to-srgb-v4", "icc/rec709-v2-micro", "icc/srgb-v4", 1, false, 9, 0.5, SampledCurveJustification),
+        new("icc/srgb-v4-to-rec709-v2-micro", "icc/srgb-v4", "icc/rec709-v2-micro", 1, false, 5, 0.75, SampledCurveJustification),
+        new("icc/rec709-v4-to-srgb-v4", "icc/rec709-v4", "icc/srgb-v4", 1, false, 2, 0.5, RoundingJustification),
+        new("icc/srgb-v4-to-rec709-v4", "icc/srgb-v4", "icc/rec709-v4", 1, false, 2, 0.5, RoundingJustification),
+        new("icc/scrgb-v2-to-srgb-v4", "icc/scrgb-v2", "icc/srgb-v4", 1, false, 2, 0.5, RoundingJustification),
+        new("icc/srgb-v4-to-scrgb-v2", "icc/srgb-v4", "icc/scrgb-v2", 1, false, 2, 0.5, RoundingJustification),
+        new("icc/sgrey-v2-magic-to-srgb-v4", "icc/sgrey-v2-magic", "icc/srgb-v4", 1, false, 9, 1.0, SampledCurveJustification),
+        new("icc/srgb-v4-to-sgrey-v2-magic", "icc/srgb-v4", "icc/sgrey-v2-magic", 1, false, 6, 0.75, SampledCurveJustification),
+        new("icc/sgrey-v2-micro-to-srgb-v4", "icc/sgrey-v2-micro", "icc/srgb-v4", 1, false, 11, 1.0, SampledCurveJustification),
+        new("icc/srgb-v4-to-sgrey-v2-micro", "icc/srgb-v4", "icc/sgrey-v2-micro", 1, false, 6, 0.75, SampledCurveJustification),
+        new("icc/srgb-v2-magic-to-srgb-v4", "icc/srgb-v2-magic", "icc/srgb-v4", 1, false, 9, 0.75, SampledCurveJustification),
+        new("icc/srgb-v4-to-srgb-v2-magic", "icc/srgb-v4", "icc/srgb-v2-magic", 1, false, 11, 0.75, SampledCurveJustification),
+        new("icc/srgb-v2-nano-to-srgb-v4", "icc/srgb-v2-nano", "icc/srgb-v4", 1, false, 9, 0.75, SampledCurveJustification),
+        new("icc/srgb-v4-to-srgb-v2-nano", "icc/srgb-v4", "icc/srgb-v2-nano", 1, false, 33, 0.5, SampledCurveJustification),
+        new("icc/widegamut-compat-v2-to-srgb-v4", "icc/widegamut-compat-v2", "icc/srgb-v4", 1, false, 2, 0.5, RoundingJustification),
+        new("icc/srgb-v4-to-widegamut-compat-v2", "icc/srgb-v4", "icc/widegamut-compat-v2", 1, false, 2, 0.5, RoundingJustification),
+        new("icc/widegamut-compat-v4-to-srgb-v4", "icc/widegamut-compat-v4", "icc/srgb-v4", 1, false, 2, 0.5, RoundingJustification),
+        new("icc/srgb-v4-to-widegamut-compat-v4", "icc/srgb-v4", "icc/widegamut-compat-v4", 1, false, 2, 0.5, RoundingJustification),
+        new("icc/srgb-v4-to-prophoto-v4", "icc/srgb-v4", "icc/prophoto-v4", 1, false, 2, 0.5, RoundingJustification),
 
         // Table-based profiles in both directions: lut8Type and lut16Type (CIELAB and CIEXYZ connection spaces, the matrix
         // of a lut16Type), lutAToBType and lutBToAType with every element, monochrome tables
@@ -170,6 +281,14 @@ internal static partial class IccCorpus
         var manifest = CorpusDriver.LoadCommittedManifest();
         CorpusDriver.CopyCommittedFiles(outDir, CorpusDriver.Fixtures(manifest));
         CorpusDriver.CopyCommittedAv1Vectors(outDir, manifest);
+
+        // The corpus holds the whole collection: a profile added by another commit needs its entry and its conversions
+        var external = Profiles.Where(profile => profile.Build is null).Select(profile => profile.FileName).ToHashSet(StringComparer.Ordinal);
+        foreach (var file in Directory.EnumerateFiles(profilesDirectory, "*.icc"))
+        {
+            if (!external.Contains(Path.GetFileName(file)))
+                throw new FatalException($"{Path.GetFileName(file)} of the collection is not a profile of the corpus (commit {ProfilesCommit} of {ProfilesRepository}).");
+        }
 
         var profileEntries = new List<object?>();
         var paths = new Dictionary<string, string>(StringComparer.Ordinal);

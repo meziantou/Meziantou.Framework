@@ -43,7 +43,8 @@ public sealed class ShapingConformanceTests
             var text = testCase.Characters;
             var key = id + ";" + testCase.Text + ";" + testCase.Features + (testCase.Variations is null ? "" : ";" + testCase.Variations);
             var face = (testCase.Variations is null ? font : FontTestSupport.WithVariations(font, testCase.Variations)).Face;
-            var expected = Format(testCase.Glyphs.Select(glyph => (glyph[0], glyph[1], glyph[2], glyph[3], glyph[4], glyph[5])));
+            var withPositions = !FontsWithoutReferencePositions.ContainsKey(id);
+            var expected = Format(testCase.Glyphs.Select(glyph => (glyph[0], glyph[1], glyph[2], glyph[3], glyph[4], glyph[5])), withPositions);
 
             // The reference clusters are indices of characters; the ones of the library are indices of UTF-16 code units.
             var characterIndices = new int[text.Length + 1];
@@ -58,7 +59,7 @@ public sealed class ShapingConformanceTests
             var script = GetScript(text);
 
             // The reference shaper lays a text out in the direction of its script, and gives the glyphs from left to right.
-            var isRightToLeft = script is UnicodeScript.Arabic or UnicodeScript.Hebrew;
+            var isRightToLeft = script is UnicodeScript.Arabic or UnicodeScript.Hebrew or UnicodeScript.Syriac;
             TextShaper.Shape(buffer, face, script, language: 0, isRightToLeft, ParseFeatures(testCase.Features));
             var glyphs = new List<(int, int, int, int, int, int)>();
             for (var i = 0; i < buffer.Length; i++)
@@ -67,7 +68,7 @@ public sealed class ShapingConformanceTests
                 glyphs.Add((buffer.Info[i].Glyph, characterIndices[buffer.Info[i].Cluster], position.XOffset, position.YOffset, position.XAdvance, position.YAdvance));
             }
 
-            var actual = Format(glyphs);
+            var actual = Format(glyphs, withPositions);
             var isKnown = KnownDivergences.ContainsKey(key);
             if (!string.Equals(expected, actual, StringComparison.Ordinal) && !isKnown)
             {
@@ -80,6 +81,41 @@ public sealed class ShapingConformanceTests
         }
 
         Assert.Empty(failures, $"{failures.Count} of {vectors.Cases.Count} texts differ:\n  " + string.Join("\n  ", failures));
+    }
+
+    [Theory]
+    [InlineData("fonts/noto-naskh-arabic", UnicodeScript.Arabic)]
+    [InlineData("fonts/noto-nastaliq-urdu", UnicodeScript.Arabic)]
+    [InlineData("fonts/noto-sans-hebrew", UnicodeScript.Hebrew)]
+    [InlineData("fonts/noto-sans-syriac", UnicodeScript.Syriac)]
+    public void ALayoutOfRightToLeftTextIsAsWideAsTheReferenceShaperMakesIt(string id, UnicodeScript script)
+    {
+        // The whole way from a string to a line: the direction, the script and the runs are found by the layout, where
+        // the other test gives them to the shaper. At the size of the em, the width of the line is the advance of the
+        // text in font units.
+        var root = FixtureRoot.GetDirectory();
+        var entry = LoadFonts().Single(font => font.Id == id);
+        var font = Font.Load(root / entry.File.Path);
+        var vectors = ShapingVectors.Load(root / entry.Shaping!.Path);
+        var count = 0;
+        foreach (var testCase in vectors.Cases)
+        {
+            // The texts of one run: letters of the script with their marks, and spaces between words.
+            var text = testCase.Characters;
+            var runes = text.EnumerateRunes().ToArray();
+            if (testCase.Features is not null || testCase.Variations is not null
+                || UnicodeScripts.GetScript(runes[0].Value) != script || UnicodeScripts.GetScript(runes[^1].Value) is var last && last != script && last != UnicodeScript.Inherited
+                || runes.Any(rune => rune.Value != ' ' && UnicodeScripts.GetScript(rune.Value) is var runeScript && runeScript != script && runeScript != UnicodeScript.Inherited))
+            {
+                continue;
+            }
+
+            var layout = TextLayout.Create(text, font, font.UnitsPerEm);
+            Assert.Equal(testCase.Glyphs.Sum(glyph => glyph[4]), layout.Width, 1e-6, testCase.Text);
+            count++;
+        }
+
+        Assert.True(count >= 4, $"Only {count} texts of {id} are one run of {script}");
     }
 
     [Fact]
@@ -95,22 +131,41 @@ public sealed class ShapingConformanceTests
     private static readonly Dictionary<string, string> KnownDivergences = new(StringComparer.Ordinal);
 
     /// <summary>
+    /// The fonts whose glyphs and clusters are compared, and not the positions, with the reason.
+    /// </summary>
+    private static readonly Dictionary<string, string> FontsWithoutReferencePositions = new(StringComparer.Ordinal)
+    {
+        // The font has no positioning table: the reference shaper then places each mark from the shape of the glyphs
+        // (above or below the letter, by the combining class of the mark), which no specification describes and the
+        // library does not do. What the font decides (the glyphs, among them the precomposed letters) is compared.
+        ["fonts/noto-sans-hebrew-without-positioning"] = "the reference shaper places the marks of a font without positioning table by heuristics",
+    };
+
+    /// <summary>
     /// Formats glyphs as a caller sees them: each glyph with its cluster and the place it is drawn at from the start of
     /// the text, then the advance of the text.
     /// </summary>
-    private static string Format(IEnumerable<(int Glyph, int Cluster, int XOffset, int YOffset, int XAdvance, int YAdvance)> glyphs)
+    private static string Format(IEnumerable<(int Glyph, int Cluster, int XOffset, int YOffset, int XAdvance, int YAdvance)> glyphs, bool withPositions)
     {
         var result = new StringBuilder();
         var x = 0;
         var y = 0;
         foreach (var glyph in glyphs)
         {
-            result.Append(CultureInfo.InvariantCulture, $"{glyph.Glyph}={glyph.Cluster}@{x + glyph.XOffset},{y + glyph.YOffset}|");
+            if (withPositions)
+            {
+                result.Append(CultureInfo.InvariantCulture, $"{glyph.Glyph}={glyph.Cluster}@{x + glyph.XOffset},{y + glyph.YOffset}|");
+            }
+            else
+            {
+                result.Append(CultureInfo.InvariantCulture, $"{glyph.Glyph}={glyph.Cluster}|");
+            }
+
             x += glyph.XAdvance;
             y += glyph.YAdvance;
         }
 
-        return result.Append(CultureInfo.InvariantCulture, $"+{x},{y}").ToString();
+        return withPositions ? result.Append(CultureInfo.InvariantCulture, $"+{x},{y}").ToString() : result.ToString();
     }
 
     /// <summary>Gets the script the reference shaper guesses for a text: the script of its first character that has one.</summary>

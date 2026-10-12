@@ -82960,6 +82960,88 @@
       ]
     },
     {
+      "id": "fonts/noto-naskh-arabic",
+      "file": {
+        "path": "fonts/noto-naskh-arabic/NotoNaskhArabic-Regular.subset.ttf",
+        "sha256": "7fc94a5ba8ca16e8c57e4a38c679a9b742181ce7810dc683646c63dd6103ed22",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "The Noto Project Authors (https://github.com/notofonts/arabic)",
+        "source": "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoNaskhArabic/unhinted/ttf/NotoNaskhArabic-Regular.ttf",
+        "tools": [
+          "hb-subset 14.6.0"
+        ],
+        "commands": [
+          "hb-subset --unicodes=20,21,28,29,2C,2E,30-39,3A,AB,BB,60C,61B,61C,61F,621-63A,640-65F,660-669,66A-66C,670,671,679,67E,686,688,691,698,6A9,6AF,6BA,6BE,6C1,6CC,6D2,6D4,6DC,6E3,6E7,6E8,6F0-6F9,8CA,200C-200F,25CC,FDF2,FE8D,FE8E,FEDF,FEE0,FEFB --layout-features=* --no-hinting --notdef-outline --output-file=NotoNaskhArabic-Regular.subset.ttf NotoNaskhArabic-Regular.ttf"
+        ]
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "subset",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB",
+        "font.table=glyf"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-naskh-arabic.json",
+        "sha256": "d85a5647c1de4fee1ac977820b8de3fcd9ce692eeae94cc3f72f4ebc928bb66f",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-naskh-arabic.json",
+        "sha256": "9fef52161fd0f7f3843e2c90adfb71ffed9dd364b24323f9f280224a0674f24f",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/noto-nastaliq-urdu",
+      "file": {
+        "path": "fonts/noto-nastaliq-urdu/NotoNastaliqUrdu-Regular.subset.ttf",
+        "sha256": "a200cadb64b8dd3701b3cb28480e17bc4aed215c417a3ea46066a6d40e4e0a78",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "The Noto Project Authors (https://github.com/notofonts/nastaliq)",
+        "source": "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoNastaliqUrdu/unhinted/ttf/NotoNastaliqUrdu-Regular.ttf",
+        "tools": [
+          "hb-subset 14.6.0"
+        ],
+        "commands": [
+          "hb-subset --unicodes=20,21,2E,30-39,60C,61B,61F,621-63A,640-652,654,655,670,679,67E,686,688,691,698,6A9,6AF,6BA,6BE,6C1,6C3,6CC,6D2,6D4,6F0-6F9,200C,200D --layout-features=* --no-hinting --notdef-outline --output-file=NotoNastaliqUrdu-Regular.subset.ttf NotoNastaliqUrdu-Regular.ttf"
+        ]
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "subset",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB",
+        "font.table=glyf"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-nastaliq-urdu.json",
+        "sha256": "b2926388b618031229a0e6570da002e779cf995e6aa057ceda0ea018235bcc69",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-nastaliq-urdu.json",
+        "sha256": "c0e248ef8292a2968e5c082663b579ca39cd9b40feee1af466b526f8c349d293",
+        "role": "shaping-vectors"
+      }
+    },
+    {
       "id": "fonts/noto-sans-cjk-jp-regular",
       "file": {
         "path": "fonts/noto-sans-cjk/NotoSansCJKjp-Regular.subset.otf",
@@ -83062,6 +83144,81 @@
       "shaping": {
         "path": "fonts/shaping/noto-sans-cjk-jp-variable.json",
         "sha256": "60ccd2e1a47f454464430fb662a2026db35d9eff00f3081b8213d1274cfffc67",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/noto-sans-hebrew",
+      "file": {
+        "path": "fonts/noto-sans-hebrew/NotoSansHebrew-Regular.ttf",
+        "sha256": "04272f5600d0ec816d31d0df73b23aa8d3501ea359ebe820da31c11ffcf00853",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "The Noto Project Authors (https://github.com/notofonts/hebrew)",
+        "source": "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansHebrew/unhinted/ttf/NotoSansHebrew-Regular.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB",
+        "font.table=glyf"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-sans-hebrew.json",
+        "sha256": "6b0021260d191051d6a764c4c2a968452e40306002d70e954d374a2119036df1",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-sans-hebrew.json",
+        "sha256": "acb49d7d248528a07bddc395aff55f6f4924e70a427fd2e50432a6693d0b23f2",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/noto-sans-hebrew-without-positioning",
+      "file": {
+        "path": "fonts/noto-sans-hebrew/NotoSansHebrew-Regular.without-gpos.ttf",
+        "sha256": "72f6f6b9b35730ba4f70edf998b230bd60929f497c4d600feab4e786200d17c8",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "The Noto Project Authors (https://github.com/notofonts/hebrew)",
+        "source": "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansHebrew/unhinted/ttf/NotoSansHebrew-Regular.ttf",
+        "tools": [
+          "hb-subset 14.6.0"
+        ],
+        "commands": [
+          "hb-subset --unicodes=* --layout-features=* --no-hinting --notdef-outline --drop-tables+=GPOS --output-file=NotoSansHebrew-Regular.without-gpos.ttf NotoSansHebrew-Regular.ttf"
+        ]
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "subset",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=GDEF",
+        "font.table=GSUB",
+        "font.table=glyf"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-sans-hebrew-without-positioning.json",
+        "sha256": "6b0021260d191051d6a764c4c2a968452e40306002d70e954d374a2119036df1",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-sans-hebrew-without-positioning.json",
+        "sha256": "c795cc27f34caeef660e57ec82ba5f30f3189b585a98e76c5afc0f8d302d49a3",
         "role": "shaping-vectors"
       }
     },
@@ -83214,6 +83371,41 @@
       "faceCount": 1,
       "modification": "container",
       "original": "fonts/noto-sans-regular"
+    },
+    {
+      "id": "fonts/noto-sans-syriac",
+      "file": {
+        "path": "fonts/noto-sans-syriac/NotoSansSyriac-Regular.ttf",
+        "sha256": "1ec0391c549b5e63e4f8d810b4485a64c5551445bfb2bdbf309ce8368bef9d4c",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "The Noto Project Authors (https://github.com/notofonts/syriac)",
+        "source": "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansSyriac/unhinted/ttf/NotoSansSyriac-Regular.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB",
+        "font.table=glyf"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-sans-syriac.json",
+        "sha256": "ca604dc1075509b6b205b651fd3cf2ff3707849ec725abc321f49039fb3489b5",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-sans-syriac.json",
+        "sha256": "c1fcb7083fdf56646e57f02b1b765ab873376d4e1130fabe3027ce2b4d0225a9",
+        "role": "shaping-vectors"
+      }
     },
     {
       "id": "fonts/noto-sans-variable",

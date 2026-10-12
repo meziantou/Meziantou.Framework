@@ -133,9 +133,17 @@ internal sealed class GlyphBuffer
         }
     }
 
-    /// <summary>Removes a glyph; its characters join the cluster of a neighbor, so that no character is lost.</summary>
+    /// <summary>Removes a glyph, and its position when the positions exist; its characters join the cluster of a neighbor, so that no character is lost.</summary>
     public void Delete(int index)
     {
+        if (_positions.Length == Length)
+        {
+            var positions = new GlyphPosition[Length - 1];
+            _positions.AsSpan(0, index).CopyTo(positions);
+            _positions.AsSpan(index + 1).CopyTo(positions.AsSpan(index));
+            _positions = positions;
+        }
+
         var cluster = _info[index].Cluster;
         if (index + 1 < Length && _info[index + 1].Cluster == cluster)
         {
@@ -159,6 +167,29 @@ internal sealed class GlyphBuffer
         }
 
         Resize(index, 1, 0);
+    }
+
+    /// <summary>Inserts copies of a positioned glyph after it.</summary>
+    /// <exception cref="ImageResourceLimitException">The glyphs exceed <see cref="ImageResourceLimits.MaxTextGlyphs"/>.</exception>
+    public void Repeat(int index, int copies)
+    {
+        if (copies <= 0)
+            return;
+
+        var newLength = (long)Length + copies;
+        EnsureCapacity(newLength);
+        var positions = new GlyphPosition[(int)newLength];
+        _positions.AsSpan(0, index + 1).CopyTo(positions);
+        _positions.AsSpan(index + 1, Length - index - 1).CopyTo(positions.AsSpan(index + 1 + copies));
+        Array.Copy(_info, index + 1, _info, index + 1 + copies, Length - index - 1);
+        for (var i = 1; i <= copies; i++)
+        {
+            _info[index + i] = _info[index];
+            positions[index + i] = positions[index];
+        }
+
+        _positions = positions;
+        Length = (int)newLength;
     }
 
     /// <summary>Reverses the order of the glyphs, and of their positions when they exist.</summary>

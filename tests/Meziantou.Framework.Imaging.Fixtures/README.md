@@ -190,6 +190,11 @@ its first point, even a line without length: the library does the same, so that 
 | `fonts/synthetic-variable-charstrings` | otf | 1 | CC0-1.0 | A variable font with CFF2 outlines: `blend` of one and of several values, `vsindex` in a private DICT and in a charstring, a blending subroutine, two font DICTs, a variation store of two subtables |
 | `fonts/noto-sans-variable` | ttf | 1 | OFL-1.1 | Noto Sans 2.015 variable (weight and width), subset to 123 characters (279 glyphs) with every variation table kept: `gvar`, `HVAR`, `MVAR`, `avar`, positions and anchors of `GPOS` that vary |
 | `fonts/noto-sans-cjk-jp-variable` | otf | 1 | OFL-1.1 | Noto Sans CJK JP 2.004 variable (weight), subset to 133 characters (566 glyphs): a CID-keyed `CFF2` table with several font DICTs, blended hints kept, `HVAR`, `avar` |
+| `fonts/noto-naskh-arabic` | ttf | 1 | OFL-1.1 | Noto Naskh Arabic 2.019, subset to 134 characters: the letters of Arabic, Persian and Urdu, the vowel marks and the marks that are reordered, both sets of digits, punctuation, the joiners and a few presentation forms, with the forms, the ligatures and the anchors of these letters |
+| `fonts/noto-nastaliq-urdu` | ttf | 1 | OFL-1.1 | Noto Nastaliq Urdu 4.000, subset to the letters of Urdu: cursive attachment, marks on letters that were moved, glyphs inserted to make room for dots, many contextual lookups |
+| `fonts/noto-sans-hebrew` | ttf | 1 | OFL-1.1 | Noto Sans Hebrew 3.001, stored as it is: letters, points, cantillation marks, precomposed letters, with anchors for the marks |
+| `fonts/noto-sans-hebrew-without-positioning` | ttf | 1 | OFL-1.1 | The same font without its `GPOS` table (`hb-subset --drop-tables+=GPOS`), as a font made before OpenType Layout: a letter and its point are then drawn with the precomposed letter |
+| `fonts/noto-sans-syriac` | ttf | 1 | OFL-1.1 | Noto Sans Syriac 3.000, stored as it is: the forms of the letters and of alaph (`fin2`, `fin3`, `med2`), marks, and the abbreviation mark that stretches (`stch`) |
 | `fonts/trt-*` | ttf, otf | 1 | OFL-1.1, Apache-2.0 or CC0-1.0 (see the manifest) | Ten fonts of the text-rendering-tests suite of the Unicode Consortium, stored as they are (`fonts/text-rendering-tests/`), each made for one feature: `avar`, `gvar` (also composite glyphs and regions between two values), `HVAR` with TrueType and with CFF2 outlines, `CFF2`, feature variations (`rvrn`) with both kinds of outlines, anchors of `GPOS` that vary |
 | `fonts/synthetic-color-boxes` | ttf | 1 | CC0-1.0 | A color font of rectangles: `COLR` version 0 (layers, a layer with the color of the text), `CPAL` version 1 with two palettes and their types |
 | `fonts/synthetic-color-transforms`, `-gradients`, `-clips` | ttf | 1 | CC0-1.0 | `COLR` version 1, one glyph per case: opacity, translation, scale, rotation, skew, matrix, nested clips, compositions; linear, radial and sweep gradients with each extend mode and the degenerate color lines; clip boxes, a glyph that paints another one, a glyph that paints itself |
@@ -255,6 +260,15 @@ in font units. The texts are listed in `FontCorpus.cs`, chosen for what shaping 
 that compose or are attached, invisible characters, spaces and hyphens a font lacks, fractions, features turned on
 and off. `ShapingConformanceTests` compares the glyphs, the clusters, the place each glyph is drawn at and the
 advance of the text; how an adjustment is split between an advance and an offset is not compared.
+
+The reference shaper guesses the script of a text from its first letter and lays it out in the direction of that
+script; the test does the same, so a right-to-left text is compared in the order its glyphs are drawn in. The texts of
+Arabic, Urdu, Hebrew and Syriac are about what the shaping model of these scripts does: the forms of the letters and
+what joins or separates them, the order of the marks, the ligatures and what keeps them from forming, the forms of the
+Syriac alaph, the mark that stretches over a word, the precomposed Hebrew letters. Several of them were found by
+shaping random sequences of the characters of a script with both shapers. For the font without positioning table, the
+glyphs and the clusters are compared and the positions are not: the reference shaper then places marks from the shape
+of the glyphs, by rules of its own.
 
 There is one reference shaper: the pinned tools have no other one. A difference with it is settled by the
 specifications, and a deliberate one is listed in the test with its reason.

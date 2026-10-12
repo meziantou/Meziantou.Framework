@@ -294,18 +294,21 @@ internal sealed partial class LayoutApplier
             return false;
 
         // The base is the nearest glyph before the mark that is not a mark. Of the glyphs one glyph was replaced by,
-        // only the first one carries the marks.
+        // the first one carries the marks: the others are passed over, unless the font makes one of them a base of
+        // the mark (a letter a substitution put a spacing glyph before).
+        var baseCoverage = subtable + FontBinary.UInt16(data, subtable + 4);
         var target = index;
+        int baseIndex;
         do
         {
             target = PreviousGlyph(target, LayoutLookup.IgnoreMarks);
+            if (target < 0)
+                return false;
+
+            baseIndex = LayoutCommon.GetCoverage(data, baseCoverage, info[target].Glyph);
         }
-        while (target >= 0 && (info[target].Props & GlyphInfo.Multiplied) != 0 && info[target].LigatureComponent > 1 && !IsFirstOfItsSequence(target));
+        while (baseIndex < 0 && (info[target].Props & GlyphInfo.Multiplied) != 0 && info[target].LigatureComponent > 1 && !IsFirstOfItsSequence(target));
 
-        if (target < 0)
-            return false;
-
-        var baseIndex = LayoutCommon.GetCoverage(data, subtable + FontBinary.UInt16(data, subtable + 4), info[target].Glyph);
         if (baseIndex < 0)
             return false;
 
@@ -422,11 +425,13 @@ internal sealed partial class LayoutApplier
         ReadAnchor(data, markArray + FontBinary.UInt16(data, markArray + 4 + (markIndex * 4)), out var markX, out var markY);
         ReadAnchor(data, anchorBase + anchor, out var targetX, out var targetY);
 
-        // The offset is from the origin of the other glyph; the advances between the two glyphs are taken out when the
-        // positions are completed.
+        // Horizontally, the offset is from the origin of the other glyph: the advances between the two glyphs are
+        // taken out when the positions are completed, and the mark follows the other glyph if a later lookup moves
+        // it. Vertically, the mark is placed now, from where the other glyph is at this point of the lookups: a
+        // lookup works with the positions the lookups before it made.
         ref var position = ref _buffer.Positions[index];
         position.XOffset = targetX - markX;
-        position.YOffset = targetY - markY;
+        position.YOffset = targetY - markY + _buffer.Positions[target].YOffset;
         position.AttachmentType = GlyphPosition.MarkAttachment;
         position.AttachmentChain = target - index;
         index++;
@@ -453,14 +458,30 @@ internal sealed partial class LayoutApplier
     /// Completes the positions after the lookups: the offset of an attached glyph, which the lookups give from the
     /// glyph it is attached to, becomes an offset from the pen.
     /// </summary>
+    /// <remarks>
+    /// A glyph attached to the exit of another one (cursive attachment) is moved vertically with it, glyph after glyph
+    /// along the word. A mark is moved horizontally with the glyph that carries it; vertically it was placed when it
+    /// was attached, and is only moved by what moves that glyph now: the cursive attachments of the word.
+    /// </remarks>
     public static void FinishPositions(Span<GlyphPosition> positions, bool isRightToLeft)
     {
-        for (var i = 0; i < positions.Length; i++)
+        var hasAttachments = false;
+        foreach (ref readonly var position in positions)
         {
-            Resolve(positions, i, depth: 0, isRightToLeft);
+            hasAttachments |= position.AttachmentChain != 0;
         }
 
-        static void Resolve(Span<GlyphPosition> positions, int index, int depth, bool isRightToLeft)
+        if (!hasAttachments)
+            return;
+
+        // How far each glyph was moved vertically by this step.
+        var moves = new int[positions.Length];
+        for (var i = 0; i < positions.Length; i++)
+        {
+            Resolve(positions, moves, i, depth: 0, isRightToLeft);
+        }
+
+        static void Resolve(Span<GlyphPosition> positions, int[] moves, int index, int depth, bool isRightToLeft)
         {
             ref var position = ref positions[index];
             var chain = position.AttachmentChain;
@@ -474,15 +495,17 @@ internal sealed partial class LayoutApplier
             if ((uint)parent >= (uint)positions.Length || depth > MaxSequenceLength)
                 return;
 
-            Resolve(positions, parent, depth + 1, isRightToLeft);
+            Resolve(positions, moves, parent, depth + 1, isRightToLeft);
             if (type == GlyphPosition.CursiveAttachment)
             {
+                moves[index] = positions[parent].YOffset;
                 position.YOffset += positions[parent].YOffset;
                 return;
             }
 
+            moves[index] = moves[parent];
             position.XOffset += positions[parent].XOffset;
-            position.YOffset += positions[parent].YOffset;
+            position.YOffset += moves[parent];
 
             // The pen has moved from the origin of the parent to the mark: by the advances of the glyphs from the
             // parent to the mark in a left-to-right run, where the parent is before the mark; back by the advances of

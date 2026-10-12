@@ -377,12 +377,48 @@ glyphs and positions in a `GlyphBuffer`; `LayoutApplier` (`Internals/Text/OpenTy
   through `FontBinary` like any other: a reference outside the table is `InvalidImageContentException`, raised when the
   layout is created.
 - A feature value lives in bits of the mask of each glyph, so a feature can differ along a run without splitting it.
+- **Shaping models** (`ScriptShaperKind`, `ShaperPlan`). A script that needs more than the lookups of the font has a
+  model: an analysis of the characters that chooses the glyphs each of its features applies to (one mask bit per
+  feature, after the bits of the default features), and its features in **stages**. The lookups of a stage are
+  applied together in the order of the lookup list, and a stage sees the result of the stages before it; a feature
+  belongs to the first stage that names it; the features every script has and those of the caller are the last
+  stage. Stage 0 is `rvrn`, stage 1 the direction and fraction features. A feature the language system requires is
+  applied in the stage of its tag, or in stage 0.
+  - `ArabicShaper` (Arabic and Syriac): forms from the Joining_Type and Joining_Group properties, the stages of the
+    Microsoft specifications, the order of marks of UTR #53, and the stretching glyphs of `stch`. A font with `rclt`
+    gets `calt` in the last stage. The other joining scripts (N'Ko, Mongolian, Adlam, ...) belong to the universal
+    model, not to this one.
+  - `HebrewShaper`: the precomposed letters for a font that does not place points, and the meteg between the points
+    of a vowel.
+  - `ShapingCombiningClass` orders marks for shaping (Hebrew points, Arabic vowel marks); every script goes through
+    it, and composition is blocked by these classes, not by the canonical ones.
+- **Normalization** follows the text: a character without marks is kept when the font has it and decomposed (as far
+  as needed) when it does not; a character followed by marks is decomposed as far as the font allows, with its marks,
+  then ordered and composed again. A run without any mark is neither ordered nor composed.
+- **What a lookup sees through** (`LayoutApplier.IsTransparent`): characters without visible form, with three
+  exceptions. The zero width non-joiner separates the glyphs a substitution replaces (the components of a ligature,
+  the input of a contextual rule) and is seen through around them and by positioning. The zero width joiner is seen
+  through, except by the features of a shaping model that say otherwise and by the features that place marks
+  (`mark`, `mkmk`, `abvm`, `blwm`): a joiner between a letter and a mark keeps the mark off the letter. A combining
+  grapheme joiner that kept two marks from being reordered separates them for substitutions. The glyphs of these
+  characters are the ones of the font until the positions are made, and are hidden afterward.
+- **Marks on marks.** A mark is placed vertically when it is attached, from the position its target has at that
+  point of the lookups; horizontally it follows its target to the end. A later lookup that moves the target
+  vertically does not move the mark: the reference shaper does the same, and the fonts are made with it. Cursive
+  attachments, which are resolved at the end, do move the marks of the glyphs they move.
+- A mark is attached to the first of the glyphs one glyph was replaced by, unless a later one is a base of the mark
+  in the lookup (nastaliq fonts insert a spacing glyph before a letter).
 - Tests have three sources: the Annotated OpenType Specification tests of Adobe (`Conformance/ShapingSuiteTests`, the
   `font-suites/aots` directory of the corpus: every format of every lookup, with the results the specification
   gives), the glyphs and positions `hb-shape` gives for texts set in the fonts of the corpus
   (`Conformance/ShapingConformanceTests`: glyphs, clusters, the place each glyph is drawn at, the advance of the text),
   and literals computed by hand (`TextShaperTests`). A deliberate difference with a reference is an entry of the
   `KnownDivergences` map of the test, with its reason; an entry that no longer differs fails the test.
+- **Compare random texts before trusting a shaping model.** The corpus has the cases someone thought of. Shaping
+  thousands of random sequences of the letters, marks, joiners and punctuation of a script with several fonts, with
+  the library and with `hb-shape --shapers=ot` (same script and direction), found what the written cases did not:
+  when a character is decomposed, when a joiner blocks a mark, which glyph of a multiplied sequence is a base. Add
+  the text that differs to the cases of `FontCorpus.cs` once it is understood.
 
 ## Performance work
 

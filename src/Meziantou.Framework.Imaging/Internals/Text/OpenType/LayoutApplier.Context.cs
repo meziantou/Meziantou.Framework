@@ -223,7 +223,9 @@ internal sealed partial class LayoutApplier
 
         Span<int> positions = stackalloc int[MaxSequenceLength];
         positions[0] = index;
-        if (!MatchForward(index, inputCount - 1, kind, input, inputBase, isContext: true, positions[1..inputCount], out var last)
+        // The glyphs a rule replaces are a sequence a zero width non-joiner breaks, as it breaks a ligature; the glyphs
+        // around them are seen through it.
+        if (!MatchForward(index, inputCount - 1, kind, input, inputBase, isContext: false, positions[1..inputCount], out var last)
             || !MatchBackward(index, backtrackCount, kind, backtrack, backtrackBase)
             || !MatchForward(last, lookaheadCount, kind, lookahead, lookaheadBase, isContext: true, default, out _))
         {

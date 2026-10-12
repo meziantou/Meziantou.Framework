@@ -161,6 +161,182 @@ public sealed class TextShaperTests
         Assert.Equal(new[] { "mym2", "mymr", "DFLT", "dflt", "latn" }, Tags(UnicodeScript.Myanmar));
     }
 
+    [Theory]
+    [InlineData("0628 0633 0645", "init medi fina")]
+    [InlineData("0627 0628", "isol isol")]
+    [InlineData("0628 0627 0628", "init fina isol")]
+    [InlineData("0628 064E 0651 0628", "init . . fina")]
+    [InlineData("0628 200C 0628", "isol . isol")]
+    [InlineData("0628 200D 0020 200D 0628", "init . . . fina")]
+    [InlineData("0628 0640 0628 0020 0640 0627", "init . fina . . fina")]
+    [InlineData("0628 200F 0628 061C 0628", "init . medi . fina")]
+    [InlineData("0020 0628 0020 0627 0020", ". isol . isol .")]
+    [InlineData("0710", "isol")]
+    [InlineData("0712 0710", "init fina")]
+    [InlineData("0712 0710 0712", "init med2 isol")]
+    [InlineData("0715 0710", "isol fin3")]
+    [InlineData("072A 0710 0020 0716 0710", "isol fin3 . isol fin3")]
+    [InlineData("0717 0710", "isol fin2")]
+    [InlineData("0715 0710 0712", "isol isol isol")]
+    [InlineData("0710 0710", "isol fin2")]
+    [InlineData("0717 0710 0710", "isol isol fin2")]
+    [InlineData("0712 0710 0710", "init med2 fin2")]
+    [InlineData("0715 0730 0710", "isol . fin3")]
+    [InlineData("0717 200C 0710", "isol . isol")]
+    public void LettersTakeTheFormTheirNeighborsAskFor(string text, string expected)
+    {
+        // The joining types are the ones of Unicode: beh, seen and meem join on both sides, alef on its right side
+        // only; marks and format characters are transparent, a zero width joiner and a tatweel join on both sides, a
+        // zero width non-joiner and a space on none. In Syriac, beth joins on both sides; he, dalath, rish and alaph on
+        // their right side only, and an alaph has a form of its own in the middle of a word (med2), at the end of a word
+        // after a letter that does not join it (fin2) and after dalath or rish (fin3).
+        string[] names = ["isol", "fina", "fin2", "fin3", "medi", "med2", "init"];
+        var info = text.Split(' ').Select(item => new GlyphInfo { CodePoint = int.Parse(item, NumberStyles.HexNumber, CultureInfo.InvariantCulture) }).ToArray();
+        ArabicShaper.SetFormMasks(info, firstBit: 5);
+        var forms = info.Select(glyph =>
+        {
+            var isLetter = UnicodeProperties.GetGeneralCategory(glyph.CodePoint) == UnicodeCategory.OtherLetter;
+            var bits = glyph.Mask >> 5;
+            return !isLetter ? "." : bits == 0 ? "none" : System.Numerics.BitOperations.IsPow2(bits) ? names[System.Numerics.BitOperations.Log2(bits)] : "several";
+        });
+        Assert.Equal(expected, string.Join(' ', forms));
+    }
+
+    [Fact]
+    public void TheMarksOfALetterAreInTheOrderTheyAreDrawnIn()
+    {
+        // A font without layout tables: the glyphs are the characters, in the order shaping gives them.
+        var builder = FontSamples.Boxes();
+        builder.CharacterMap[0x0628] = FontSamples.BoxA;
+        builder.CharacterMap[0x064E] = FontSamples.BoxB;
+        builder.CharacterMap[0x0650] = FontSamples.BoxC;
+        builder.CharacterMap[0x0651] = FontSamples.TriangleD;
+        builder.CharacterMap[0x0654] = FontSamples.FrameE;
+        builder.CharacterMap[0x0655] = FontSamples.OverlapF;
+        builder.CharacterMap[0x0652] = FontSamples.Boxa;
+        var font = FontTestSupport.Load(builder);
+
+        // Arabic: the shadda (class 33) comes before the vowel marks (fatha 30, kasra 32), whatever the order of the
+        // text; the canonical order of Unicode puts it after them.
+        Assert.Equal("2 5 3", Glyphs(font, "\u0628\u064E\u0651", UnicodeScript.Arabic));
+        Assert.Equal("2 5 3", Glyphs(font, "\u0628\u0651\u064E", UnicodeScript.Arabic));
+        Assert.Equal("2 5 3 4 8", Glyphs(font, "\u0628\u0652\u0650\u064E\u0651", UnicodeScript.Arabic));
+
+        // The hamza below (class 220) and the hamza above (230) modify the letter: they come first, in that order
+        // (Unicode Technical Report #53). Fatha, kasra, shadda, hamza below, hamza above is the canonical order.
+        Assert.Equal("2 6 3", Glyphs(font, "\u0628\u064E\u0654", UnicodeScript.Arabic));
+        Assert.Equal("2 7 4", Glyphs(font, "\u0628\u0650\u0655", UnicodeScript.Arabic));
+        Assert.Equal("2 7 6 5 3 4", Glyphs(font, "\u0628\u0651\u0650\u0655\u064E\u0654", UnicodeScript.Arabic));
+
+        // The marks of two letters are not mixed.
+        Assert.Equal("2 5 3 2 6 3", Glyphs(font, "\u0628\u064E\u0651\u0628\u064E\u0654", UnicodeScript.Arabic));
+    }
+
+    [Fact]
+    public void HebrewPointsAreOrderedAndComposedForAFontThatCannotPlaceThem()
+    {
+        var builder = FontSamples.Boxes();
+        builder.CharacterMap[0x05E9] = FontSamples.BoxA;
+        builder.CharacterMap[0x05C1] = FontSamples.BoxB;
+        builder.CharacterMap[0x05BC] = FontSamples.BoxC;
+        builder.CharacterMap[0x05B7] = FontSamples.TriangleD;
+        builder.CharacterMap[0x05B0] = FontSamples.FrameE;
+        builder.CharacterMap[0x05BD] = FontSamples.OverlapF;
+        var font = FontTestSupport.Load(builder);
+
+        // The dot of the shin, then the dagesh, then the vowel: the order fonts expect. The canonical order of Unicode
+        // is the vowel (patah, class 17), the dagesh (21), the dot (24).
+        Assert.Equal("2 3 4 5", Glyphs(font, "\u05E9\u05BC\u05C1\u05B7", UnicodeScript.Hebrew));
+        Assert.Equal("2 3 4 5", Glyphs(font, "\u05E9\u05B7\u05C1\u05BC", UnicodeScript.Hebrew));
+
+        // A meteg (7) after the two points of a vowel, patah (5) and sheva (6), is drawn between them.
+        Assert.Equal("2 5 7 6", Glyphs(font, "\u05E9\u05B7\u05B0\u05BD", UnicodeScript.Hebrew));
+        Assert.Equal("2 5 7", Glyphs(font, "\u05E9\u05B7\u05BD", UnicodeScript.Hebrew));
+
+        // A precomposed letter the font does not have is its letter and its points, in the order of its
+        // decomposition: nothing orders the marks of a text that has none.
+        Assert.Equal("2 4 3", Glyphs(font, "\uFB2C", UnicodeScript.Hebrew));
+        Assert.Equal("2 3 4 5", Glyphs(font, "\uFB2C\u05B7", UnicodeScript.Hebrew));
+
+        // A font that has the precomposed letters and no table to place a point: the letter and its points are drawn
+        // with the precomposed letter. Unicode never composes these letters, which is why a text does not have them.
+        builder.CharacterMap[0xFB2A] = FontSamples.Boxa;
+        builder.CharacterMap[0xFB2C] = FontSamples.ScaledH;
+        font = FontTestSupport.Load(builder);
+        Assert.Equal("8", Glyphs(font, "\u05E9\u05C1", UnicodeScript.Hebrew));
+        Assert.Equal("11", Glyphs(font, "\u05E9\u05BC\u05C1", UnicodeScript.Hebrew));
+        Assert.Equal("11 5", Glyphs(font, "\u05E9\u05B7\u05C1\u05BC", UnicodeScript.Hebrew));
+        Assert.Equal("8 11", Glyphs(font, "\uFB2A\uFB2C", UnicodeScript.Hebrew));
+
+        // The other scripts do not compose them, and a caller that turns the placement of marks off gets them as a font
+        // without that feature does.
+        Assert.Equal("2 3", Glyphs(font, "\u05E9\u05C1", UnicodeScript.Latin));
+    }
+
+    [Fact]
+    public void AStretchingGlyphFillsTheWidthOfTheWordItEncloses()
+    {
+        // In the order the glyphs are drawn in, from left to right: the letters of a word, then the parts of the glyph
+        // that encloses it, the mark that precedes the word in the text. B (512 units) is a part drawn once, C (768)
+        // a part that repeats.
+        static GlyphBuffer Create(int letters)
+        {
+            var buffer = new GlyphBuffer(ImageResourceLimits.Default);
+            for (var i = 0; i < letters; i++)
+            {
+                buffer.Add(0x0712, letters - i);
+                buffer.Info[i].Glyph = FontSamples.BoxA;
+                buffer.Info[i].Category = UnicodeCategory.OtherLetter;
+            }
+
+            foreach (var (glyph, data) in new[] { (FontSamples.BoxB, ArabicShaper.StretchFixed), (FontSamples.BoxC, ArabicShaper.StretchRepeating), (FontSamples.BoxB, ArabicShaper.StretchFixed) })
+            {
+                buffer.Add(0x070F, 0);
+                buffer.Info[^1].Glyph = glyph;
+                buffer.Info[^1].ShaperData = data;
+            }
+
+            buffer.CreatePositions();
+            for (var i = 0; i < buffer.Length; i++)
+            {
+                buffer.Positions[i].XAdvance = i < letters ? 1024 : 0;
+            }
+
+            return buffer;
+        }
+
+        // Two letters, 2048 units: the parts drawn once take 1024 of them, and the repeating part, 768 units wide,
+        // fills the 1024 that remain with two copies that overlap by 512. From the end of the word: B at -512, C at
+        // -1280 and -1536, B at -2048, the start of the word.
+        var buffer = Create(letters: 2);
+        ArabicShaper.ApplyStretching(buffer, Boxes.Face);
+        Assert.Equal("2=2+1024|2=1+1024|3=0@-2048,0+0|4=0@-1536,0+0|4=0@-1280,0+0|3=0@-512,0+0", Format(buffer));
+
+        // Five letters, 5120 units: 4096 remain, which six copies fill (five would leave 256 units empty); they
+        // overlap by (6 x 768 - 4096) / 5 = 102 units each, the division rounded down: each copy is 666 units after the
+        // one before it, and the glyph is 2 units wider than the word.
+        buffer = Create(letters: 5);
+        ArabicShaper.ApplyStretching(buffer, Boxes.Face);
+        Assert.Equal(
+            "2=5+1024|2=4+1024|2=3+1024|2=2+1024|2=1+1024|3=0@-5122,0+0|4=0@-4610,0+0|4=0@-3944,0+0|4=0@-3278,0+0|4=0@-2612,0+0|4=0@-1946,0+0|4=0@-1280,0+0|3=0@-512,0+0",
+            Format(buffer));
+
+        // No letter: the parts are drawn once. The glyph is 2304 units wide and half of the 1024 units the parts drawn
+        // once lack are left after it.
+        buffer = Create(letters: 0);
+        ArabicShaper.ApplyStretching(buffer, Boxes.Face);
+        Assert.Equal("3=0@-2304,0+0|4=0@-1792,0+0|3=0@-1024,0+0", Format(buffer));
+    }
+
+    /// <summary>Shapes a text in the order of its characters and gives the identifiers of the glyphs.</summary>
+    private static string Glyphs(Font font, string text, UnicodeScript script)
+    {
+        var buffer = new GlyphBuffer(ImageResourceLimits.Default);
+        TextShaper.AddText(buffer, text);
+        TextShaper.Shape(buffer, font.Face, script, language: 0, isRightToLeft: false, []);
+        return string.Join(' ', buffer.Info.ToArray().Select(glyph => glyph.Glyph));
+    }
+
     private static GlyphBuffer Shape(Font font, string text, params ShapingFeature[] features)
     {
         var buffer = new GlyphBuffer(ImageResourceLimits.Default);

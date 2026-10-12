@@ -177,6 +177,69 @@ internal static partial class FontCorpus
             Unicodes: "20-7E,3001,3002,300C,300D,3042,3044,3046,304B,304C,306E,30A2,30AD,30B9,30C6,30C8,30FC,4E00-4E0F,4EAC,56FD,65E5,6771,672C,8A9E",
             KeepHinting: true),
 
+        new(
+            "fonts/noto-naskh-arabic",
+            "fonts/noto-naskh-arabic/NotoNaskhArabic-Regular.subset.ttf",
+            "NotoNaskhArabic-Regular.ttf",
+            "56353fb25c9c1fbcdc6f3faa9f9b5552d4914316dbc811a13e7211570b4c9669",
+            "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoNaskhArabic/unhinted/ttf/NotoNaskhArabic-Regular.ttf",
+            "The Noto Project Authors (https://github.com/notofonts/arabic)",
+            "OFL-1.1",
+            ReservedFontName: null,
+
+            // The letters of Arabic, Persian and Urdu, the vowel marks and the marks of the Quran that are reordered,
+            // both sets of digits, punctuation, the joiners, and a few presentation forms. The subset keeps the
+            // forms, the ligatures and the anchors of these letters.
+            Unicodes: "20,21,28,29,2C,2E,30-39,3A,AB,BB,60C,61B,61C,61F,621-63A,640-65F,660-669,66A-66C,670,671,679,67E,686,688,691,698,6A9,6AF,6BA,6BE,6C1,6CC,6D2,6D4,6DC,6E3,6E7,6E8,6F0-6F9,8CA,200C-200F,25CC,FDF2,FE8D,FE8E,FEDF,FEE0,FEFB"),
+        new(
+            "fonts/noto-nastaliq-urdu",
+            "fonts/noto-nastaliq-urdu/NotoNastaliqUrdu-Regular.subset.ttf",
+            "NotoNastaliqUrdu-Regular.ttf",
+            "6decda3b03f6366dbd75e3a22544d248ca686b582f897fae8a7dc027302812e3",
+            "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoNastaliqUrdu/unhinted/ttf/NotoNastaliqUrdu-Regular.ttf",
+            "The Noto Project Authors (https://github.com/notofonts/nastaliq)",
+            "OFL-1.1",
+            ReservedFontName: null,
+
+            // The letters of Urdu, in the hanging style: each word descends to the baseline, a letter attached to
+            // the next one (cursive attachment), with the marks on letters that were moved, and glyphs the font
+            // inserts to make room for the dots.
+            Unicodes: "20,21,2E,30-39,60C,61B,61F,621-63A,640-652,654,655,670,679,67E,686,688,691,698,6A9,6AF,6BA,6BE,6C1,6C3,6CC,6D2,6D4,6F0-6F9,200C,200D"),
+        new(
+            "fonts/noto-sans-hebrew",
+            "fonts/noto-sans-hebrew/NotoSansHebrew-Regular.ttf",
+            "NotoSansHebrew-Regular.ttf",
+            "04272f5600d0ec816d31d0df73b23aa8d3501ea359ebe820da31c11ffcf00853",
+            "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansHebrew/unhinted/ttf/NotoSansHebrew-Regular.ttf",
+            "The Noto Project Authors (https://github.com/notofonts/hebrew)",
+            "OFL-1.1",
+            ReservedFontName: null,
+            Unicodes: null),
+        new(
+            "fonts/noto-sans-hebrew-without-positioning",
+            "fonts/noto-sans-hebrew/NotoSansHebrew-Regular.without-gpos.ttf",
+            "NotoSansHebrew-Regular.ttf",
+            "04272f5600d0ec816d31d0df73b23aa8d3501ea359ebe820da31c11ffcf00853",
+            "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansHebrew/unhinted/ttf/NotoSansHebrew-Regular.ttf",
+            "The Noto Project Authors (https://github.com/notofonts/hebrew)",
+            "OFL-1.1",
+            ReservedFontName: null,
+
+            // The same font without its positioning table, as a font made before OpenType Layout: a shaper then draws
+            // a letter and its point with the precomposed letter, which the font has.
+            Unicodes: "*",
+            DropTables: "GPOS"),
+        new(
+            "fonts/noto-sans-syriac",
+            "fonts/noto-sans-syriac/NotoSansSyriac-Regular.ttf",
+            "NotoSansSyriac-Regular.ttf",
+            "1ec0391c549b5e63e4f8d810b4485a64c5551445bfb2bdbf309ce8368bef9d4c",
+            "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansSyriac/unhinted/ttf/NotoSansSyriac-Regular.ttf",
+            "The Noto Project Authors (https://github.com/notofonts/syriac)",
+            "OFL-1.1",
+            ReservedFontName: null,
+            Unicodes: null),
+
         // Fonts of the text-rendering-tests suite of the Unicode Consortium, as the HarfBuzz project distributes them:
         // each one was made for one feature of a font format. They are stored as they are. Only the fonts whose own
         // license is one the corpus accepts are used.
@@ -396,8 +459,117 @@ internal static partial class FontCorpus
         new("\u0634\u0652", null, "wght=900"),
     ];
 
+    // Arabic: the forms of the letters and what joins them (the tatweel, the zero width joiner) or not (the zero width
+    // non-joiner, a letter that joins on one side), the lam-alef ligatures and what keeps them from forming, the order
+    // of the marks of a letter, both sets of digits, punctuation that is mirrored, presentation forms, and the
+    // features of the script turned off or on.
+    private static readonly ShapingText[] ArabicShapingCases =
+    [
+        ("\u0627\u0644\u0633\u0644\u0627\u0645 \u0639\u0644\u064A\u0643\u0645", null),
+        ("\u0628\u0633\u0645 \u0627\u0644\u0644\u0647 \u0627\u0644\u0631\u062D\u0645\u0646 \u0627\u0644\u0631\u062D\u064A\u0645", null),
+        ("\u0628\u0650\u0633\u0652\u0645\u0650 \u0671\u0644\u0644\u0651\u064E\u0647\u0650 \u0671\u0644\u0631\u0651\u064E\u062D\u0652\u0645\u064E\u0670\u0646\u0650", null),
+        ("\u0645\u062D\u0645\u062F \u0641\u0627\u0631\u0633\u06CC \u06AF\u0686\u067E\u0698 \u0627\u0631\u062F\u0648 \u06C1\u06D2 \u0679\u0688\u0691 \u06BE\u06BA", null),
+        ("\u0628 \u0628\u0628 \u0628\u0628\u0628 \u0627\u0628 \u0628\u0627 \u0627\u0628\u0627 \u062F\u0628\u062F \u0621\u0628\u0621", null),
+        ("\u0628\u0651\u064E \u0628\u064E\u0651 \u0628\u064B\u0651 \u0628\u0650\u0651 \u0628\u0652\u0670", null),
+        ("\u0628\u064E\u0654 \u0628\u0650\u0655 \u0628\u0651\u0650\u0655\u064E\u0654 \u0628\u064E\u06E7\u06DC \u0628\u0650\u06E3\u08CA", null),
+        ("\u0644\u0627 \u0644\u0623 \u0644\u0625 \u0644\u0622 \u0628\u0644\u0627 \u0644\u0671 \u0644\u064E\u0627 \u0644\u0627\u064E \u0644\u0651\u064E\u0627\u064B", null),
+        ("\u0644\u200D\u0627 \u0644\u200C\u0627 \u0644\u200D\u200D\u0627 \u0644\u0640\u0627", null),
+        ("\u0628\u200D \u200D\u0628 \u0628\u200C\u0628 \u0628\u200D\u200C\u200D\u0628 \u200D\u0628\u200D", null),
+        ("\u0628\u0640\u0628 \u0640\u0628 \u0628\u0640 \u0640\u0640 \u0627\u0640\u0627", null),
+        ("\u0628\u200F\u0628 \u0628\u200E\u0628 \u0628\u061C\u0628 \u0628\u034F\u0628 \u0628\u064E\u200D\u0628", null),
+        ("\u0627\u0653 \u0622 \u0627\u0654 \u0623 \u0648\u0654 \u064A\u0654 \u0627\u0655 \u0644\u0627\u0653", null),
+        ("\u0661\u0662\u0663 \u06F4\u06F5\u06F6 123 \u060C\u061B\u061F (\u0628) \u00AB\u0628\u00BB 1,5 \u066A\u066B\u066C", null),
+        ("\uFEFB \uFE8D\uFE8E \uFEDF\uFEE0\uFE8E \uFDF2", null),
+        ("\u0627\u0644\u0644\u0647 \u0644\u0644\u0647 \u0641\u0644\u0644\u0647 \u0628\u0627\u0644\u0644\u0647", null),
+        ("\u25CC\u064E \u064E\u0628  \u0651\u064E", null),
+        ("\u0628\u0633\u0645 \u0627\u0644\u0644\u0647 \u0644\u0627 \u0641\u064A", "-liga"),
+        ("\u0628\u0633\u0645 \u0627\u0644\u0644\u0647 \u0644\u0627 \u0641\u064A", "-rlig"),
+        ("\u0628\u0633\u0645 \u0627\u0644\u0644\u0647 \u0644\u0627 \u0641\u064A \u0644\u0645\u062D", "dlig"),
+        ("\u0628\u0628\u0628 \u0644\u0627", "-init"),
+        ("\u0628\u0628\u0628 \u0644\u0627", "-medi,-fina"),
+        ("\u0628\u0628\u0628 \u0644\u0627", "init"),
+        ("\u0628\u0628\u0628 \u0644\u0627 \u0628\u064E", "-ccmp"),
+        ("\u0661\u0662\u0663 123", "pnum"),
+        ("\u0628\u0650\u0651\u064E\u0652\u064B\u064C\u064D\u064E\u064F\u0650", null),
+        ("\u0633\u0644\u0627\u0645 abc 123", null),
+        ("\u0688\u200D\u064C \u200D\u064D\u06E7 \u060C\u0653\u200D\u0653\u06BE", null),
+        ("\u0622\u0655 \u0623\u064E \u0624\u0651\u064F \u0626\u0650 \u0644\u0622\u064E", null),
+        ("\u06AF\u0654\u064F \u062E\u0654\u0658", null),
+        ("\u0628\u0654\u064F \u0628\u064E\u034F\u0651 \u0628\u0651\u034F\u064E", null),
+    ];
+
+    // Urdu in the hanging style: words whose letters are attached one to the next and go down to the baseline, marks
+    // on these letters, the dots of the letters and the glyphs the font inserts for them, digits and punctuation.
+    private static readonly ShapingText[] UrduShapingCases =
+    [
+        ("\u0627\u0631\u062F\u0648 \u0632\u0628\u0627\u0646 \u067E\u0627\u06A9\u0633\u062A\u0627\u0646", null),
+        ("\u0646\u0633\u062A\u0639\u0644\u06CC\u0642 \u06C1\u06D2 \u06A9\u06CC\u0627 \u062D\u0627\u0644 \u06C1\u06D2\u061F", null),
+        ("\u0628\u0650\u0633\u0652\u0645\u0650 \u0627\u0644\u0644\u0651\u0670\u06C1\u0650 \u0645\u064F\u062D\u064E\u0645\u0651\u064E\u062F", null),
+        ("\u0628\u0628\u0628\u0628\u0628 \u067E\u06BE\u0644 \u0679\u06BE\u0646\u0688 \u062C\u06BE\u06CC\u0644 \u0645\u0686\u06BE\u0644\u06CC", null),
+        ("\u06F1\u06F2\u06F3 123 \u060C\u061B\u06D4 \u0628\u200C\u0628 \u0628\u200D \u200D\u0628 \u0628\u0640\u0628", null),
+        ("\u062B\u06C1\u0654 \u0624\u0638\u062D \u0626\u0653 \u0628\u0650\u0625\u0631\u062B \u06BA\u06AF\u0645\u0634\u0641\u0653", null),
+        ("\u0646\u0633\u062A\u0639\u0644\u06CC\u0642 \u06C1\u06D2", "-curs"),
+        ("\u0646\u0633\u062A\u0639\u0644\u06CC\u0642 \u06C1\u06D2", "-mark,-mkmk"),
+    ];
+
+    // Hebrew: letters and final forms, the points in the order of a normalized text and in the order they are typed
+    // in, a meteg between the parts of a vowel, cantillation marks, the precomposed letters (which a font that
+    // positions the points draws as a letter and its points, and a font that does not draws as they are), the
+    // ligatures of Yiddish, and punctuation.
+    private static readonly ShapingText[] HebrewShapingCases =
+    [
+        ("\u05E9\u05DC\u05D5\u05DD \u05E2\u05D5\u05DC\u05DD \u05DA\u05DD\u05DF\u05E3\u05E5", null),
+        ("\u05E9\u05C1\u05B8\u05DC\u05D5\u05B9\u05DD \u05D1\u05BC\u05B0\u05E8\u05B5\u05D0\u05E9\u05C1\u05B4\u05D9\u05EA", null),
+        ("\u05D1\u05B0\u05BC\u05E8\u05B5\u05D0\u05E9\u05B4\u05C1\u05D9\u05EA \u05D1\u05B7\u05BC \u05D1\u05BC\u05B7", null),
+        ("\u05E9\u05BC\u05C1 \u05E9\u05C1\u05BC \u05E9\u05BC\u05C2 \u05E9\u05C2\u05BC \u05E9\u05C1 \u05E9\u05C2", null),
+        ("\u05D0\u05B7\u05B0\u05BD \u05D0\u05B8\u05B4\u05BD \u05D0\u05B7\u05BD \u05D0\u05B8\u05B0\u05A5 \u05DC\u05B8\u05BD\u05DE\u05B8\u05BC\u05D4", null),
+        ("\u05D1\u05B0\u05BC\u05E8\u05B5\u05D0\u05E9\u05B4\u05C1\u0596\u05D9\u05EA \u05D1\u05B8\u05BC\u05E8\u05B8\u05A3\u05D0 \u05D0\u05B1\u05DC\u05B9\u05D4\u05B4\u0591\u05D9\u05DD", null),
+        ("\uFB2A \uFB2B \uFB2C \uFB2D \uFB2E \uFB2F \uFB30 \uFB31 \uFB35 \uFB4A \uFB4B \uFB4C \uFB4D \uFB4E \uFB1D \uFB1F", null),
+        ("\u05D9\u05B4 \u05F2\u05B7 \u05D0\u05B7 \u05D0\u05B8 \u05D5\u05B9 \u05D1\u05BF \u05DB\u05BF \u05E4\u05BF \u05D5\u05BC \u05EA\u05BC", null),
+        ("\u05D0\u05DC \uFB4F \u05F0\u05F1\u05F2 \u05F3\u05F4 \u05BE \u05C0 \u05C3 \u20AA", null),
+        ("\u05D0\u05DC \uFB4F", "dlig"),
+        ("\u05D1\u05BC\u05B0\u05E8\u05B5\u05D0\u05E9\u05C1\u05B4\u05D9\u05EA \u05E9\u05C1\u05B8\u05DC\u05D5\u05B9\u05DD", "-ccmp"),
+        ("\u05D1\u05BC\u05B0\u05E8\u05B5\u05D0\u05E9\u05C1\u05B4\u05D9\u05EA \u05E9\u05C1\u05B8\u05DC\u05D5\u05B9\u05DD", "-mark,-kern"),
+        ("\u25CC\u05B7 \u05B7\u05D0 \u05D0\u200D\u05B7 \u05D0\u034F\u05B7\u05BC \u05D0\u200C\u05D1", null),
+        ("\u05D4\u05B2\u05BD \u05D4\u05B2\u200D\u05BD \u05D4\u05B3\u05BD \u05D9\u05B0\u05E8\u05D5\u05BC\u05E9\u05C1\u05B8\u05DC\u05B7\u05B4\u05DD", null),
+        ("\uFB2A\u05B7 \uFB2C\u05B8 \uFB4B\u05BC \uFB31\u05B0 \uFB2E\u05BD \u05D1\u05B7\u034F\u05BC", null),
+    ];
+
+    // Syriac: the forms of the letters, the forms of alaph (joined in the middle and at the end of a word; not joined
+    // after dalath or rish, after another letter that does not join it, and at the start of a word), the marks, the
+    // joiners, and the abbreviation mark, which stretches over the letters that follow it.
+    private static readonly ShapingText[] SyriacShapingCases =
+    [
+        ("\u072B\u0720\u0721\u0710 \u0725\u0720\u0721\u0710", null),
+        ("\u0712 \u0712\u0712 \u0712\u0712\u0712 \u0715\u0712\u0715 \u0717\u0718\u0719", null),
+        ("\u0710 \u0710\u0712 \u0712\u0710 \u0712\u0710\u0712 \u0715\u0710 \u072A\u0710 \u0716\u0710 \u0717\u0710 \u0718\u0710 \u0710\u0710", null),
+        ("\u0715\u0710\u0712 \u0717\u0710\u0712 \u0712\u0710\u0710 \u0715\u0710\u0710 \u0717\u0710\u0710\u0710 \u072F\u0710 \u0712\u0711\u0710", null),
+        ("\u0712\u0730\u0710 \u0715\u0308\u0710 \u0717\u200D\u0710 \u0717\u200C\u0710 \u0712\u200C\u0710 \u0710\u200D \u0640\u0710 \u0710\u0640", null),
+        ("\u0712\u0741\u0730 \u0712\u0730\u0741 \u072A\u0308 \u0715\u0742\u0733 \u0720\u0747\u0738 \u0712\u0323\u0307", null),
+        ("\u0720\u0710 \u0720\u0710\u0720 \u0713\u0714\u071B\u071C \u072D\u072E\u072F \u074D\u074E\u074F", null),
+        ("\u0712\u200D \u200D\u0712 \u0712\u200C\u0712 \u0712\u0640\u0712 \u0712\u200F\u0712", null),
+        ("\u070F\u072B\u0718\u0712", null),
+        ("\u070F\u072B", null),
+        ("\u070F", null),
+        ("\u0712 \u070F\u072B\u0718\u0712\u0718\u0712 \u0712", null),
+        ("\u070F\u072B\u0718\u0712\u0730\u0718\u0712\u0718\u0712\u0718\u0712\u0718 \u070F\u0712\u0712.", null),
+        ("\u070F\u0661\u0662\u0663 \u070F\u0712 \u070F \u0712", null),
+        ("\u0700 \u0701 \u0702 \u0703 \u0709 \u070A \u070D (\u0712) [\u0712] \u0661\u0662\u0663 \u060C\u061B\u061F", null),
+        ("\u072B\u0720\u0721\u0710 \u0720\u0710 \u0712\u0710\u0712", "-rlig"),
+        ("\u072B\u0720\u0721\u0710 \u0712\u0710\u0712 \u0715\u0710 \u0717\u0710", "-fina,-med2"),
+        ("\u072B\u0720\u0721\u0710 \u0712\u0710\u0712 \u0715\u0710 \u0717\u0710", "-fin2,-fin3"),
+        ("\u070F\u072B\u0718\u0712", "-stch"),
+        ("\u072B\u0720\u0721\u0710 \u0713\u0720", "ss01"),
+        ("\u072B\u0720\u0721\u0710 \u0713\u0720", "ss02,salt"),
+    ];
+
     private static readonly Dictionary<string, ShapingText[]> ShapingCases = new(StringComparer.Ordinal)
     {
+        ["fonts/noto-naskh-arabic"] = ArabicShapingCases,
+        ["fonts/noto-nastaliq-urdu"] = UrduShapingCases,
+        ["fonts/noto-sans-hebrew"] = HebrewShapingCases,
+        ["fonts/noto-sans-hebrew-without-positioning"] = HebrewShapingCases,
+        ["fonts/noto-sans-syriac"] = SyriacShapingCases,
         ["fonts/noto-sans-variable"] = VariableLatinShapingCases,
         ["fonts/noto-sans-cjk-jp-variable"] = VariableCjkShapingCases,
         ["fonts/synthetic-variable"] = VariableBoxesShapingCases,
@@ -499,9 +671,14 @@ internal static partial class FontCorpus
                     var input = work / font.FileName;
                     var output = work / ("subset-" + font.FileName);
                     File.WriteAllBytes(input, source);
-                    string[] arguments = font.KeepHinting
+                    List<string> arguments = font.KeepHinting
                         ? ["--unicodes=" + font.Unicodes, "--layout-features=*", "--notdef-outline"]
                         : ["--unicodes=" + font.Unicodes, "--layout-features=*", "--no-hinting", "--notdef-outline"];
+                    if (font.DropTables is not null)
+                    {
+                        arguments.Add("--drop-tables+=" + font.DropTables);
+                    }
+
                     Proc.Run([tools.HbSubset, .. arguments, "--output-file=" + output, input]);
                     data = File.ReadAllBytes(output);
                     modification = "subset";
@@ -1184,7 +1361,7 @@ internal static partial class FontCorpus
 
     private sealed record SyntheticFont(string Id, string Path, Func<byte[]> Build, string Function, string Flavor, int FaceCount, bool HasOutlineVectors = true);
 
-    private sealed record ExternalFont(string Id, string Path, string FileName, string Sha256, string Source, string Author, string License, string? ReservedFontName, string? Unicodes, bool KeepHinting = false, bool HasOutlineVectors = true);
+    private sealed record ExternalFont(string Id, string Path, string FileName, string Sha256, string Source, string Author, string License, string? ReservedFontName, string? Unicodes, bool KeepHinting = false, bool HasOutlineVectors = true, string? DropTables = null);
 
     private sealed class Tools
     {

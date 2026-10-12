@@ -678,6 +678,12 @@ internal static class SmokeTests
         var hebrew = TextLayout.Create("\u05D0\u05D1 AB", new TextStyle(boxes, 16), new TextLayoutOptions { Direction = TextDirection.RightToLeft });
         Check(hebrew.Lines[0].IsRightToLeft && hebrew.HasMissingGlyphs, "text: direction");
 
+        // The shaping models of Arabic, Hebrew and Syriac: joining forms, the order of the marks, a precomposed letter,
+        // the forms of alaph. The font has none of these characters: each of the nine letters and two spaces is 8 pixels
+        // wide (the missing glyph, the space), and the marks do not move the pen.
+        var joined = TextLayout.Create("\u0628\u064E\u0651\u0644\u0627 \u05E9\u05BC\u05C1\uFB2C \u070F\u0712\u0710\u0710", boxes, 16);
+        Check(joined.Lines[0].IsRightToLeft && joined.HasMissingGlyphs && joined.Width == 11 * 8, "text: shaping models");
+
         // CFF outlines, stroked, through the overload that lays out the text
         var cff = Font.Load(SmokeFonts.CharstringsOtf);
         using var stroked = new Image<Rgba32>(64, 16);

@@ -48,6 +48,7 @@ internal sealed partial class LayoutApplier
     private int _flag;
     private int _markSet;
     private uint _mask;
+    private ShaperFeatureFlags _featureFlags;
     private int _nesting;
 
     public LayoutApplier(GlyphBuffer buffer, FontFace face)
@@ -96,8 +97,10 @@ internal sealed partial class LayoutApplier
     /// The bits of the mask of a glyph that hold the value of the feature of the lookup: the lookup applies at the glyphs
     /// where they are not zero.
     /// </param>
-    public void ApplyLookup(int index, uint mask)
+    /// <param name="flags">How the feature of the lookup treats the zero width joiners.</param>
+    public void ApplyLookup(int index, uint mask, ShaperFeatureFlags flags = ShaperFeatureFlags.None)
     {
+        _featureFlags = flags;
         var data = _data.Span;
         var lookup = _table!.GetLookup(data, index);
         _flag = lookup.Flag;
@@ -264,12 +267,23 @@ internal sealed partial class LayoutApplier
     /// <see langword="true"/> for the sequences of contextual lookups, which see through the zero width non-joiner;
     /// <see langword="false"/> for the components of a ligature, which it separates.
     /// </param>
+    /// <remarks>
+    /// The zero width joiner is passed over everywhere, unless the feature of the lookup is one in which it also
+    /// separates glyphs (<see cref="ShaperFeatureFlags.ManualZeroWidthJoiner"/>): the ligatures of the scripts whose
+    /// letters join, and the placement of marks. Positioning always sees through the zero width non-joiner.
+    /// </remarks>
     private bool IsTransparent(in GlyphInfo info, bool isContext)
     {
         if (!info.IsIgnorable)
             return false;
 
-        return _isPositioning || isContext || (info.Flags & GlyphInfo.ZeroWidthNonJoiner) == 0;
+        if ((info.Flags & GlyphInfo.ZeroWidthNonJoiner) != 0)
+            return _isPositioning || (isContext && !_featureFlags.HasFlag(ShaperFeatureFlags.ManualZeroWidthNonJoiner));
+
+        if ((info.Flags & GlyphInfo.ZeroWidthJoiner) != 0)
+            return isContext || !_featureFlags.HasFlag(ShaperFeatureFlags.ManualZeroWidthJoiner);
+
+        return _isPositioning || (info.Flags & GlyphInfo.Hidden) == 0;
     }
 
     /// <summary>Finds the next glyph the lookup does not skip, or the length of the buffer.</summary>
@@ -280,7 +294,7 @@ internal sealed partial class LayoutApplier
         {
             index++;
         }
-        while (index < info.Length && (IsSkipped(info[index]) || IsTransparent(info[index], isContext: true)));
+        while (index < info.Length && (IsSkipped(info[index]) || IsTransparent(info[index], isContext: false)));
 
         return Math.Min(index, info.Length);
     }
@@ -293,7 +307,7 @@ internal sealed partial class LayoutApplier
         {
             index--;
         }
-        while (index >= 0 && (IsSkipped(info[index], flag) || IsTransparent(info[index], isContext: true)));
+        while (index >= 0 && (IsSkipped(info[index], flag) || IsTransparent(info[index], isContext: false)));
 
         return index;
     }

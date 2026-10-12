@@ -44,9 +44,14 @@ internal static class TextShaper
     // The feature that mirrors a glyph in a right-to-left run, for the characters Unicode does not mirror itself.
     private const uint MirrorMask = 0x10;
 
+    // The first bit of the features a shaping model applies to the glyphs it chooses; the features the caller sets
+    // come after them.
+    private const int FirstShaperBit = 5;
+
     private const int FractionSlash = 0x2044;
     private const int ZeroWidthNonJoiner = 0x200C;
     private const int ZeroWidthJoiner = 0x200D;
+    private const int CombiningGraphemeJoiner = 0x034F;
 
     private static readonly uint Frac = ShapingFeature.ToTag("frac");
     private static readonly uint Numr = ShapingFeature.ToTag("numr");
@@ -57,6 +62,7 @@ internal static class TextShaper
     // The required variation alternates: the glyphs a variable font replaces in a part of its variation space. Its
     // lookups are applied before every other one, whatever their place in the lookup list.
     private static readonly uint Rvrn = ShapingFeature.ToTag("rvrn");
+    private static readonly uint Mark = ShapingFeature.ToTag("mark");
 
     private static readonly uint[] LeftToRightFeatures = [ShapingFeature.ToTag("ltra"), ShapingFeature.ToTag("ltrm")];
     private static readonly uint[] RightToLeftFeatures = [ShapingFeature.ToTag("rtla"), Rtlm];
@@ -68,6 +74,9 @@ internal static class TextShaper
         ShapingFeature.ToTag("calt"), ShapingFeature.ToTag("clig"), ShapingFeature.ToTag("curs"), ShapingFeature.ToTag("dist"),
         Kern, ShapingFeature.ToTag("liga"), ShapingFeature.ToTag("rclm"), Rvrn,
     ];
+
+    // The features that place marks.
+    private static readonly uint[] MarkFeatures = [ShapingFeature.ToTag("abvm"), ShapingFeature.ToTag("blwm"), Mark, ShapingFeature.ToTag("mkmk")];
 
     /// <summary>Adds the characters of a text to a buffer, each with the index of its first UTF-16 code unit as cluster.</summary>
     public static void AddText(GlyphBuffer buffer, ReadOnlySpan<char> text, int clusterOffset = 0)
@@ -100,33 +109,51 @@ internal static class TextShaper
             Mirror(buffer, face);
         }
 
-        Normalize(buffer, face);
-        MapGlyphs(buffer, face);
-
         Span<uint> scripts = stackalloc uint[OpenTypeScript.MaxTagCount];
         scripts = scripts[..OpenTypeScript.GetTags(script, scripts)];
+        var shaper = GetShaper(script);
+        var shaperPlan = shaper == ScriptShaperKind.Arabic
+            ? ArabicShaper.GetPlan(script, face.Gsub is { } substitutions && HasFeature(substitutions, face.GsubData.Span, scripts, language, ArabicShaper.RequiredAlternates))
+            : ShaperPlan.Default;
+
+        // A font that positions the points of Hebrew needs no precomposed letter.
+        var plan = new FeaturePlan(features, FirstShaperBit + shaperPlan.PerGlyphCount);
+        var composesPresentationForms = shaper == ScriptShaperKind.Hebrew
+            && ((plan.TryGetMask(Mark, out var markMask) && markMask == 0) || !(face.Gpos is { } positioning && HasFeature(positioning, face.GposData.Span, scripts, language, Mark)));
+        Normalize(buffer, face, shaper, composesPresentationForms);
+        MapGlyphs(buffer, face);
 
         ReadOnlySpan<int> coordinates = face.Instance is null ? default : face.Instance.Coordinates;
         var applier = new LayoutApplier(buffer, face);
         applier.SetGlyphClasses();
-        var plan = new FeaturePlan(features);
         var hasFractions = false;
+        var hasStretching = false;
         if (face.Gsub is { } gsub)
         {
-            var lookups = CollectLookups(gsub, face.GsubData.Span, scripts, language, isRightToLeft, plan, coordinates, out hasFractions, out _);
-            SetMasks(buffer, plan, hasFractions);
+            var lookups = CollectLookups(gsub, face.GsubData.Span, scripts, language, isRightToLeft, plan, shaperPlan, coordinates, out hasFractions, out _);
+            SetMasks(buffer, plan, hasFractions, shaper);
             applier.Begin(gsub, face.GsubData, isPositioning: false, isRightToLeft);
-            foreach (var lookup in lookups)
+            var isStretchingStage = false;
+            for (var i = 0; i < lookups.Count; i++)
             {
-                applier.ApplyLookup(lookup.Index, lookup.Mask);
+                var lookup = lookups[i];
+                applier.ApplyLookup(lookup.Index, lookup.Mask, lookup.Flags);
+
+                // The parts of the stretching glyphs are the glyphs the stage of their feature made, before another
+                // stage makes others.
+                isStretchingStage |= lookup.Flags.HasFlag(ShaperFeatureFlags.Stretching);
+                if (isStretchingStage && (i + 1 == lookups.Count || lookups[i + 1].Stage != lookup.Stage))
+                {
+                    ArabicShaper.RecordStretching(buffer.Info);
+                    hasStretching = true;
+                    isStretchingStage = false;
+                }
             }
         }
         else
         {
-            SetMasks(buffer, plan, hasFractions);
+            SetMasks(buffer, plan, hasFractions, shaper);
         }
-
-        HideIgnorables(buffer, face);
 
         // The positions: the advance of each glyph, then what the font adds to it.
         buffer.CreatePositions();
@@ -134,19 +161,19 @@ internal static class TextShaper
         var positions = buffer.Positions;
         for (var i = 0; i < info.Length; i++)
         {
-            positions[i].XAdvance = info[i].ShaperData != 0 ? GetSpaceAdvance(face, info[i].ShaperData) : face.GetAdvanceWidth(info[i].Glyph);
+            positions[i].XAdvance = info[i].ShaperData is > 0 and <= SpaceEm5 ? GetSpaceAdvance(face, info[i].ShaperData) : face.GetAdvanceWidth(info[i].Glyph);
         }
 
         var hasKerningFeature = false;
         var hasPositioning = false;
         if (face.Gpos is { } gpos)
         {
-            var lookups = CollectLookups(gpos, face.GposData.Span, scripts, language, isRightToLeft, plan, coordinates, out _, out hasKerningFeature);
+            var lookups = CollectLookups(gpos, face.GposData.Span, scripts, language, isRightToLeft, plan, shaperPlan, coordinates, out _, out hasKerningFeature);
             hasPositioning = lookups.Count > 0;
             applier.Begin(gpos, face.GposData, isPositioning: true, isRightToLeft);
             foreach (var lookup in lookups)
             {
-                applier.ApplyLookup(lookup.Index, lookup.Mask);
+                applier.ApplyLookup(lookup.Index, lookup.Mask, lookup.Flags);
             }
         }
 
@@ -177,11 +204,46 @@ internal static class TextShaper
 
         LayoutApplier.FinishPositions(buffer.Positions, isRightToLeft);
 
+        // The font saw the glyphs it has for the characters without visible form: a lookup can tell a joiner from a
+        // space. They are hidden once it is done.
+        HideIgnorables(buffer, face);
+
         // The glyphs of a right-to-left run were shaped in the order of the text: they are drawn in the other order.
         if (isRightToLeft)
         {
             buffer.Reverse();
+            if (hasStretching)
+            {
+                ArabicShaper.ApplyStretching(buffer, face);
+            }
         }
+    }
+
+    private static ScriptShaperKind GetShaper(UnicodeScript script)
+    {
+        return script switch
+        {
+            UnicodeScript.Arabic or UnicodeScript.Syriac => ScriptShaperKind.Arabic,
+            UnicodeScript.Hebrew => ScriptShaperKind.Hebrew,
+            _ => ScriptShaperKind.Default,
+        };
+    }
+
+    /// <summary>Determines whether a layout table has a feature for the script and the language of a run.</summary>
+    private static bool HasFeature(LayoutTable table, ReadOnlySpan<byte> data, ReadOnlySpan<uint> scripts, uint language, uint tag)
+    {
+        var system = table.FindLanguageSystem(data, scripts, language);
+        if (system == 0)
+            return false;
+
+        var count = LayoutTable.GetFeatureCount(data, system);
+        for (var i = 0; i < count; i++)
+        {
+            if (table.GetFeatureTag(data, LayoutTable.GetFeatureIndex(data, system, i)) == tag)
+                return true;
+        }
+
+        return false;
     }
 
     /// <summary>Gives each character its general category, its combining class and what it is for shaping.</summary>
@@ -198,7 +260,7 @@ internal static class TextShaper
         info.CodePoint = codePoint;
         info.Glyph = codePoint;
         info.Category = UnicodeProperties.GetGeneralCategory(codePoint);
-        info.CombiningClass = UnicodeProperties.GetCanonicalCombiningClass(codePoint);
+        info.CombiningClass = ShapingCombiningClass.Get((byte)UnicodeProperties.GetCanonicalCombiningClass(codePoint));
         var flags = 0;
 
         // The fillers of Hangul are default ignorable for Unicode and are letters for a font: they take part in the
@@ -268,17 +330,39 @@ internal static class TextShaper
     }
 
     /// <summary>Puts the characters in the form the font has glyphs for.</summary>
-    private static void Normalize(GlyphBuffer buffer, FontFace face)
+    /// <remarks>
+    /// A character the font does not have is decomposed into characters it has, the marks are put in the order of
+    /// shaping, and a character and a mark are composed when the font has the composed character.
+    /// </remarks>
+    private static void Normalize(GlyphBuffer buffer, FontFace face, ScriptShaperKind shaper, bool composesPresentationForms)
     {
-        // Decompose the characters the font does not have into parts it has.
+        // A character that has marks is decomposed as far as the font has the parts, and so are its marks: the marks
+        // are then ordered and composed with it again whatever the form of the text was. A character without marks is
+        // only decomposed when the font does not have it.
         Span<int> parts = stackalloc int[UnicodeNormalization.MaxCanonicalDecompositionLength + 1];
+        var marksEnd = 0;
+        var isKept = false;
+        var hasMarks = false;
         for (var i = 0; i < buffer.Length; i++)
         {
+            if (i >= marksEnd && i + 1 < buffer.Length && IsMark(buffer.Info[i + 1].Category))
+            {
+                hasMarks = true;
+
+                // A variation selector chooses a glyph of the character it follows: such a character is kept as it is.
+                isKept = false;
+                for (marksEnd = i + 1; marksEnd < buffer.Length && IsMark(buffer.Info[marksEnd].Category); marksEnd++)
+                {
+                    isKept |= IsVariationSelector(buffer.Info[marksEnd].CodePoint);
+                }
+            }
+
             var codePoint = buffer.Info[i].CodePoint;
-            if (face.MapCodePoint(codePoint) != 0)
+            var isComplete = i < marksEnd && !isKept;
+            if (!isComplete && face.MapCodePoint(codePoint) != 0)
                 continue;
 
-            var count = Decompose(face, codePoint, parts, 0);
+            var count = i < marksEnd && isKept ? 0 : Decompose(face, codePoint, parts, 0, isComplete);
             if (count > 0)
             {
                 buffer.Resize(i, 1, count);
@@ -287,14 +371,23 @@ internal static class TextShaper
                     SetCharacterProperties(ref buffer.Info[i + j], parts[j]);
                 }
 
+                marksEnd += i < marksEnd ? count - 1 : 0;
                 i += count - 1;
                 continue;
             }
 
-            ReplaceMissingCharacter(ref buffer.Info[i], face);
+            if (face.MapCodePoint(codePoint) == 0)
+            {
+                ReplaceMissingCharacter(ref buffer.Info[i], face);
+            }
         }
 
-        // Put the marks of each character in canonical order: by combining class, the order of equal classes kept.
+        // A text without a character that has marks has nothing to order nor to compose: the parts of the characters
+        // the font does not have stay in the order of their decomposition, the canonical order of Unicode.
+        if (!hasMarks)
+            return;
+
+        // Put the marks of each character in the order of shaping: by combining class, the order of equal classes kept.
         var info = buffer.Info;
         for (var start = 0; start < info.Length; start++)
         {
@@ -322,12 +415,31 @@ internal static class TextShaper
                 info[j] = current;
             }
 
+            // The order the script draws its marks in.
+            moved |= shaper switch
+            {
+                ScriptShaperKind.Arabic => ArabicShaper.ReorderMarks(info[start..end]),
+                ScriptShaperKind.Hebrew => HebrewShaper.ReorderMarks(info[start..end]),
+                _ => false,
+            };
+
             if (moved)
             {
                 buffer.MergeClusters(start, end);
             }
 
             start = end - 1;
+        }
+
+        // A combining grapheme joiner between two marks keeps them in the order of the text. Where it changed nothing,
+        // it is a character without visible form like the others, which the lookups see through; where it kept two
+        // marks apart, the substitutions see it between them.
+        for (var i = 1; i + 1 < info.Length; i++)
+        {
+            if (info[i].CodePoint == CombiningGraphemeJoiner && info[i + 1].CombiningClass != 0 && info[i - 1].CombiningClass > info[i + 1].CombiningClass)
+            {
+                info[i].Flags |= GlyphInfo.Hidden;
+            }
         }
 
         // Compose a character and a mark when the font has the composed character and no other mark comes between.
@@ -338,7 +450,8 @@ internal static class TextShaper
             ref var current = ref buffer.Info[i];
             var isMark = current.Category is UnicodeCategory.NonSpacingMark or UnicodeCategory.SpacingCombiningMark or UnicodeCategory.EnclosingMark;
             if (starter >= 0 && isMark && (i == starter + 1 || lastClass < current.CombiningClass)
-                && UnicodeNormalization.TryComposeCanonical(buffer.Info[starter].CodePoint, current.CodePoint, out var composite)
+                && (UnicodeNormalization.TryComposeCanonical(buffer.Info[starter].CodePoint, current.CodePoint, out var composite)
+                    || (composesPresentationForms && HebrewShaper.TryCompose(buffer.Info[starter].CodePoint, current.CodePoint, out composite)))
                 && face.MapCodePoint(composite) != 0)
             {
                 buffer.MergeClusters(starter, i + 1);
@@ -362,8 +475,18 @@ internal static class TextShaper
         }
     }
 
+    private static bool IsMark(UnicodeCategory category) => category is UnicodeCategory.NonSpacingMark or UnicodeCategory.SpacingCombiningMark or UnicodeCategory.EnclosingMark;
+
     /// <summary>Decomposes a character into characters the font has; returns their number, or 0 when the font lacks one of them.</summary>
-    private static int Decompose(FontFace face, int codePoint, Span<int> parts, int depth)
+    /// <param name="face">The font.</param>
+    /// <param name="codePoint">The character.</param>
+    /// <param name="parts">Receives the characters.</param>
+    /// <param name="depth">The number of decompositions that led to the character.</param>
+    /// <param name="isComplete">
+    /// <see langword="true"/> to decompose as far as the font has the parts; <see langword="false"/> to stop at the
+    /// first character the font has.
+    /// </param>
+    private static int Decompose(FontFace face, int codePoint, Span<int> parts, int depth, bool isComplete)
     {
         if (depth > UnicodeNormalization.MaxCanonicalDecompositionLength || !UnicodeNormalization.TryDecomposeCanonical(codePoint, out var first, out var second))
             return 0;
@@ -371,8 +494,8 @@ internal static class TextShaper
         if (second >= 0 && face.MapCodePoint(second) == 0)
             return 0;
 
-        // The first part can be decomposed again: it is, as far as needed to reach a character the font has.
-        var count = face.MapCodePoint(first) != 0 ? 0 : Decompose(face, first, parts, depth + 1);
+        // The first part can be decomposed again.
+        var count = !isComplete && face.MapCodePoint(first) != 0 ? 0 : Decompose(face, first, parts, depth + 1, isComplete);
         if (count == 0)
         {
             if (face.MapCodePoint(first) == 0)
@@ -525,10 +648,15 @@ internal static class TextShaper
     /// Gives each glyph the mask of the features that apply to it: all of them, and around a fraction slash the
     /// features that make the digits before it a numerator and the digits after it a denominator.
     /// </summary>
-    private static void SetMasks(GlyphBuffer buffer, FeaturePlan plan, bool hasFractions)
+    private static void SetMasks(GlyphBuffer buffer, FeaturePlan plan, bool hasFractions, ScriptShaperKind shaper)
     {
         var info = buffer.Info;
         plan.SetMasks(info);
+        if (shaper == ScriptShaperKind.Arabic)
+        {
+            ArabicShaper.SetFormMasks(info, FirstShaperBit);
+        }
+
         foreach (ref var glyph in info)
         {
             if (glyph.ShaperData == NeedsMirroring)
@@ -588,6 +716,7 @@ internal static class TextShaper
         uint language,
         bool isRightToLeft,
         FeaturePlan plan,
+        ShaperPlan shaper,
         ReadOnlySpan<int> coordinates,
         out bool hasFractions,
         out bool hasKerning)
@@ -603,10 +732,12 @@ internal static class TextShaper
         // instance: a range can contain it.
         var substitutions = table.FindFeatureSubstitutions(data, coordinates);
 
+        // The feature the language system requires is applied with the features of its name, or else first.
         var required = LayoutTable.GetRequiredFeature(data, system);
-        if (required != LayoutTable.NoFeature && table.GetFeatureTag(data, required) != 0)
+        if (required != LayoutTable.NoFeature && table.GetFeatureTag(data, required) is not 0 and var requiredTag)
         {
-            AddLookups(table, data, required, GlobalMask, lookups, substitutions);
+            var stage = GetStage(requiredTag, plan, shaper, isRightToLeft, out var flags, out _);
+            AddLookups(table, data, required, GlobalMask, lookups, substitutions, stage < 0 ? 0 : stage, flags);
         }
 
         // The fraction features need each other: a numerator without a fraction bar is not a fraction.
@@ -630,30 +761,31 @@ internal static class TextShaper
             if (tag == 0)
                 continue;
 
+            var stage = GetStage(tag, plan, shaper, isRightToLeft, out var flags, out var shaperMask);
             if (plan.TryGetMask(tag, out var mask))
             {
                 // A feature the caller names: it applies where its value is not zero.
                 if (mask != 0)
                 {
                     hasKerning |= tag == Kern;
-                    AddLookups(table, data, feature, mask, lookups, substitutions);
+                    AddLookups(table, data, feature, mask, lookups, substitutions, stage, flags);
                 }
             }
             else if (tag == Frac || tag == Numr || tag == Dnom)
             {
                 if (hasFractions)
                 {
-                    AddLookups(table, data, feature, tag == Frac ? FractionMask : tag == Numr ? NumeratorMask : DenominatorMask, lookups, substitutions);
+                    AddLookups(table, data, feature, tag == Frac ? FractionMask : tag == Numr ? NumeratorMask : DenominatorMask, lookups, substitutions, stage, flags);
                 }
             }
             else if (isRightToLeft && tag == Rtlm)
             {
-                AddLookups(table, data, feature, MirrorMask, lookups, substitutions);
+                AddLookups(table, data, feature, MirrorMask, lookups, substitutions, stage, flags);
             }
-            else if (DefaultFeatures.AsSpan().Contains(tag) || (isRightToLeft ? RightToLeftFeatures : LeftToRightFeatures).AsSpan().Contains(tag))
+            else if (stage >= 0)
             {
                 hasKerning |= tag == Kern;
-                AddLookups(table, data, feature, GlobalMask, lookups, substitutions);
+                AddLookups(table, data, feature, shaperMask, lookups, substitutions, stage, flags);
             }
         }
 
@@ -665,7 +797,7 @@ internal static class TextShaper
         {
             if (unique > 0 && lookups[unique - 1].Stage == lookups[i].Stage && lookups[unique - 1].Index == lookups[i].Index)
             {
-                lookups[unique - 1] = lookups[unique - 1] with { Mask = lookups[unique - 1].Mask | lookups[i].Mask };
+                lookups[unique - 1] = lookups[unique - 1] with { Mask = lookups[unique - 1].Mask | lookups[i].Mask, Flags = lookups[unique - 1].Flags | lookups[i].Flags };
             }
             else
             {
@@ -677,9 +809,45 @@ internal static class TextShaper
         return lookups;
     }
 
-    private static void AddLookups(LayoutTable table, ReadOnlySpan<byte> data, int feature, uint mask, List<PlannedLookup> lookups, int substitutions)
+    /// <summary>Gets the stage a feature is applied in, or -1 for a feature that is only applied when the caller asks for it.</summary>
+    /// <param name="tag">The tag of the feature.</param>
+    /// <param name="plan">The features the caller sets.</param>
+    /// <param name="shaper">The features of the shaping model of the script.</param>
+    /// <param name="isRightToLeft">The direction of the run.</param>
+    /// <param name="flags">How the feature is applied.</param>
+    /// <param name="mask">The bits of the glyphs the feature applies to, when the caller does not set it.</param>
+    private static int GetStage(uint tag, FeaturePlan plan, ShaperPlan shaper, bool isRightToLeft, out ShaperFeatureFlags flags, out uint mask)
     {
-        var stage = table.GetFeatureTag(data, feature) == Rvrn ? 0 : 1;
+        flags = ShaperFeatureFlags.None;
+        mask = GlobalMask;
+        if (tag == Rvrn)
+            return 0;
+
+        if (shaper.TryGet(tag, out var feature, out var perGlyphIndex))
+        {
+            flags = feature.Flags;
+            if (flags.HasFlag(ShaperFeatureFlags.PerGlyph))
+            {
+                mask = 1u << (FirstShaperBit + perGlyphIndex);
+            }
+
+            return feature.Stage;
+        }
+
+        if (tag == Frac || tag == Numr || tag == Dnom || (isRightToLeft ? RightToLeftFeatures : LeftToRightFeatures).AsSpan().Contains(tag))
+            return 1;
+
+        // A zero width joiner between a letter and a mark keeps the mark from being placed on the letter.
+        if (MarkFeatures.AsSpan().Contains(tag))
+        {
+            flags = ShaperFeatureFlags.ManualZeroWidthJoiner | ShaperFeatureFlags.ManualZeroWidthNonJoiner;
+        }
+
+        return DefaultFeatures.AsSpan().Contains(tag) || plan.TryGetMask(tag, out _) ? shaper.FinalStage : -1;
+    }
+
+    private static void AddLookups(LayoutTable table, ReadOnlySpan<byte> data, int feature, uint mask, List<PlannedLookup> lookups, int substitutions, int stage, ShaperFeatureFlags flags)
+    {
         var count = table.GetFeatureLookupCount(data, feature, substitutions);
         var lookupCount = table.GetLookupCount(data);
         for (var i = 0; i < count; i++)
@@ -688,7 +856,7 @@ internal static class TextShaper
             var lookup = table.GetFeatureLookup(data, feature, i, substitutions);
             if (lookup < lookupCount)
             {
-                lookups.Add(new PlannedLookup(stage, lookup, mask));
+                lookups.Add(new PlannedLookup(stage, lookup, mask, flags));
             }
         }
     }
@@ -749,7 +917,7 @@ internal static class TextShaper
     }
 
     [StructLayout(LayoutKind.Auto)]
-    private readonly record struct PlannedLookup(int Stage, int Index, uint Mask);
+    private readonly record struct PlannedLookup(int Stage, int Index, uint Mask, ShaperFeatureFlags Flags);
 
     /// <summary>
     /// The features the caller sets, and where the mask of a glyph holds the value of each one. A feature that is on
@@ -758,16 +926,15 @@ internal static class TextShaper
     /// </summary>
     private sealed class FeaturePlan
     {
-        // The first bit after the ones of the default and fraction features.
-        private const int FirstShift = 5;
-
         private readonly List<(uint Tag, uint Mask)> _masks = [];
         private readonly ShapingFeature[] _features;
 
-        public FeaturePlan(ReadOnlySpan<ShapingFeature> features)
+        /// <param name="features">The features the caller sets.</param>
+        /// <param name="firstBit">The first bit after the ones of the default features, of the fractions and of the shaping model.</param>
+        public FeaturePlan(ReadOnlySpan<ShapingFeature> features, int firstBit)
         {
             _features = features.ToArray();
-            var shift = FirstShift;
+            var shift = firstBit;
             foreach (var feature in _features)
             {
                 if (TryGetMask(feature.Tag, out _))

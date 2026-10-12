@@ -361,36 +361,70 @@ public sealed class FontFuzzTests
     {
         foreach (var font in collection)
         {
-            var buffer = new GlyphBuffer(Options.Configuration.Limits);
-            try
-            {
-                TextShaper.AddText(buffer, SuiteText);
-                TextShaper.Shape(buffer, font.Face, UnicodeScript.Common, language: 0, isRightToLeft: false, SuiteFeatures);
-            }
-            catch (Exception exception) when (exception is InvalidImageContentException or UnsupportedImageFeatureException or ImageResourceLimitException)
-            {
-                continue;
-            }
-            catch (Exception exception)
-            {
-                return FuzzFailure.FromException("shape", exception);
-            }
+            if (CheckShaping(font, SuiteText, UnicodeScript.Common, isRightToLeft: false, SuiteFeatures) is { } failure)
+                return failure;
 
-            if (buffer.Positions.Length != buffer.Length)
-                return FuzzFailure.Property("shape-positions", "The glyphs of a shaped run have no positions.");
-
-            foreach (ref readonly var info in buffer.Info)
+            // The scripts that have a shaping model of their own, for the fonts that have their letters.
+            foreach (var (script, text) in ScriptTexts)
             {
-                if ((uint)info.Glyph >= (uint)font.GlyphCount && info.Glyph > ushort.MaxValue)
-                    return FuzzFailure.Property("shape-glyph", $"The shaper gave the glyph {info.Glyph}.");
+                bool hasScript;
+                try
+                {
+                    hasScript = font.Face.MapCodePoint(text[0]) != 0;
+                }
+                catch (Exception exception) when (exception is InvalidImageContentException or UnsupportedImageFeatureException or ImageResourceLimitException)
+                {
+                    continue;
+                }
 
-                if ((uint)info.Cluster >= (uint)SuiteText.Length)
-                    return FuzzFailure.Property("shape-cluster", $"The shaper gave the cluster {info.Cluster} for a text of {SuiteText.Length} characters.");
+                if (hasScript && CheckShaping(font, text, script, isRightToLeft: true, []) is { } scriptFailure)
+                    return scriptFailure;
             }
         }
 
         return null;
     }
+
+    private static FuzzFailure? CheckShaping(Font font, string text, UnicodeScript script, bool isRightToLeft, ShapingFeature[] features)
+    {
+        var buffer = new GlyphBuffer(Options.Configuration.Limits);
+        try
+        {
+            TextShaper.AddText(buffer, text);
+            TextShaper.Shape(buffer, font.Face, script, language: 0, isRightToLeft, features);
+        }
+        catch (Exception exception) when (exception is InvalidImageContentException or UnsupportedImageFeatureException or ImageResourceLimitException)
+        {
+            return null;
+        }
+        catch (Exception exception)
+        {
+            return FuzzFailure.FromException("shape", exception);
+        }
+
+        if (buffer.Positions.Length != buffer.Length)
+            return FuzzFailure.Property("shape-positions", "The glyphs of a shaped run have no positions.");
+
+        foreach (ref readonly var info in buffer.Info)
+        {
+            if ((uint)info.Glyph >= (uint)font.GlyphCount && info.Glyph > ushort.MaxValue)
+                return FuzzFailure.Property("shape-glyph", $"The shaper gave the glyph {info.Glyph}.");
+
+            if ((uint)info.Cluster >= (uint)text.Length)
+                return FuzzFailure.Property("shape-cluster", $"The shaper gave the cluster {info.Cluster} for a text of {text.Length} characters.");
+        }
+
+        return null;
+    }
+
+    // A text per script: letters in each form, marks in an order that is not the one of shaping, joiners, a lam-alef,
+    // a precomposed letter with a mark, and the mark that stretches over a word.
+    private static readonly (UnicodeScript Script, string Text)[] ScriptTexts =
+    [
+        (UnicodeScript.Arabic, "\u0628\u064E\u0651\u0633\u0654\u0650\u0645\u0020\u0644\u0627\u0020\u0644\u200D\u0627\u0020\u0628\u200C\u0628\u0640\u0622\u0655\u0020\u06AF\u0654\u064F"),
+        (UnicodeScript.Hebrew, "\u05E9\u05BC\u05C1\u05B8\u05DC\u05D5\u05B9\u05DD\u0020\uFB2C\u05B7\u0020\u05D0\u05B7\u05B0\u05BD\u200D\u05B7"),
+        (UnicodeScript.Syriac, "\u0712\u0710\u0712\u0020\u0715\u0710\u0020\u070F\u072B\u0718\u0712\u0730\u0020\u0717\u200D\u0710\u0710"),
+    ];
 
     /// <summary>
     /// Lays out a text with each font and draws it: a layout is refused with a documented exception or is created, and

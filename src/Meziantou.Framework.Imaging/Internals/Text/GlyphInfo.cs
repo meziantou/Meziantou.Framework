@@ -31,6 +31,12 @@ internal struct GlyphInfo
     /// <summary>The glyph was produced by a substitution: it no longer stands for an ignorable character.</summary>
     public const int Substituted = 0x08;
 
+    /// <summary>
+    /// The character has no visible form and still separates the glyphs around it for the substitutions: a combining
+    /// grapheme joiner that keeps two marks in the order of the text.
+    /// </summary>
+    public const int Hidden = 0x10;
+
     /// <summary>The identifier of the glyph; before the characters are mapped, their code point.</summary>
     public int Glyph;
 

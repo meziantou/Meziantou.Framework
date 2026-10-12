@@ -986,14 +986,26 @@ public static void DrawTextOnPath(string fontPath, string outputPath)
 - **Shaping.** Each run of one script, direction and font is shaped with the OpenType Layout tables of the font:
   - the characters are put in the form the font has glyphs for: a character the font lacks is decomposed into parts
     it has, and a character and its marks use the composed glyph when the font has it, so `é` typed as one character
-    or as `e` and a combining accent gives the same result; a variation sequence selects its glyph;
+    or as `e` and a combining accent gives the same result; a variation sequence selects its glyph. The marks of a
+    character are put in the order they are drawn in, which for Arabic and Hebrew is not the canonical order of
+    Unicode;
   - the `GSUB` table substitutes glyphs (ligatures, contextual and localized forms, composition) and the `GPOS` table
     positions them (kerning, marks on their base or on a component of a ligature, marks on marks, cursive
     connection), with the features a client applies by default to horizontal text: `ccmp`, `locl`, `rlig`, `calt`,
     `clig`, `liga`, `rclm`, the direction features (`ltra`, `ltrm`, `rtla`, `rtlm`), `mark`, `mkmk`, `abvm`, `blwm`,
     `curs`, `dist`, `kern`, and `frac`, `numr`, `dnom` around a fraction slash (`1⁄2`);
   - a font without `GPOS` kerning is kerned by its `kern` table; a mark does not move the pen;
-  - spaces of a fixed width and the non-breaking hyphen that a font lacks are made from its space and its hyphen.
+  - spaces of a fixed width and the non-breaking hyphen that a font lacks are made from its space and its hyphen;
+  - the scripts whose letters join, **Arabic** (with Persian, Urdu and the other languages written with it) and
+    **Syriac**, are shaped as their fonts are made for: each letter takes the isolated, initial, medial or final form
+    its neighbors ask for (`isol`, `init`, `medi`, `fina`, and the forms of the Syriac alaph, `med2`, `fin2`,
+    `fin3`), marks and format characters do not interrupt a word, a tatweel or a zero width joiner joins and a zero
+    width non-joiner separates, and the features are applied in the stages of the Arabic and Syriac specifications
+    (composition, forms, required ligatures such as lam-alef, alternates, then the other ligatures). A zero width
+    joiner between two letters keeps them from forming a ligature. The hanging style (nastaliq) is drawn with the
+    cursive attachments of its fonts. The Syriac abbreviation mark stretches over the word that follows it (`stch`);
+  - **Hebrew** points and cantillation marks are placed by the font; a font that has no feature to place them (or a
+    caller that turns `mark` off) gets the precomposed letters of the Alphabetic Presentation Forms block instead.
 
   Control characters are not drawn and format characters (joiners, variation selectors, the soft hyphen where the line
   is not broken) are invisible. A character no font of the stack has is drawn with the missing glyph of the primary
@@ -1028,9 +1040,12 @@ public static void DrawTextOnPath(string fontPath, string outputPath)
 - **Limits.** `MaxTextLength` (UTF-16 code units), `MaxTextGlyphs`, `MaxTextLines` and `MaxGlyphComplexity`, from the
   configuration the primary font of the first span was loaded with.
 
-What text layout does not do yet: the scripts that need more than the lookups of the font to be shaped (Arabic
-joining, the reordering of Indic and Southeast Asian scripts, which also have no dictionary to break their lines) are
-not shaped correctly. The language of a text cannot be given. Lines are broken one after the other, each as full as
+What text layout does not do yet: the scripts whose syllables are reordered (the Indic and Southeast Asian scripts,
+which also have no dictionary to break their lines) and Hangul written with separate letters are not shaped
+correctly. A font that only has the Arabic presentation forms, without substitution table, is not joined; the marks of
+a font without positioning table are drawn where its glyphs put them. Letter spacing is added between the letters of
+every script, including those that join. Justification does not lengthen Arabic words (kashida). The language of a
+text cannot be given. Lines are broken one after the other, each as full as
 possible, not by optimizing the whole paragraph. Text is horizontal. Along a path, the glyphs are placed and turned,
 not bent to the curve, and the length of a path is not exposed.
 
@@ -1923,6 +1938,6 @@ Everything below is rejected explicitly (never decoded or encoded approximately)
 | AVIF encoding | An image of a sequence is predicted from the previous image only, with one motion vector per block and the regular interpolation filter: no compound prediction (two references), global, warped or overlapped motion, switchable interpolation filter, temporal motion vector prediction, or scene change detection (an image that differs from the previous one is coded with intra blocks, not as a key frame). Not used: intra block copy (content that repeats in an image, such as the characters of a text, is not predicted from the image itself: a lossless screenshot can be larger than its PNG), the split of the transform blocks of an inter block (it has the largest transform of its size), quantizer deltas, quantization matrices, loop restoration, CDEF strengths per block (one pair per frame), super-resolution and film grain. No grid, layered (progressive) or premultiplied-alpha output; no `clap`, `pasp`, mastering display or content light level box; no orientation for an image sequence. An image sequence of one image cannot store animation settings (it is read back as a still image): a single frame with animation settings is rejected. An image sequence needs a seekable destination and its frame count. The level of the stream is the lowest one whose picture size holds the image; the other limits of a level are not checked |
 | AVIF decoding | Rejected with `UnsupportedImageFeatureException`: premultiplied alpha, `iden`/`iovl` derived images, fragmented files, edit lists that do not play the whole track, image sequences whose images change size, clean apertures that do not select whole samples or that follow a rotation, grid tiles that declare other transformations than their grid, large scale tile streams, and the other matrix coefficients (constant luminance, ICtCp, SMPTE 2085, chromaticity-derived). Not read: gain maps, depth maps, thumbnails, the images that are not the primary item, the `tkhd` matrix and the other transformations of an image sequence (its images are returned as stored), mastering display and content light level boxes. A layered image is returned at its full quality only: its lower layers are not exposed as a progressive rendering. HDR samples are returned as stored: no tone mapping |
 | JPEG XL | Decoding, rejected with `UnsupportedImageFeatureException` (also from `Identify` when the image header tells): floating-point samples and samples of more than 16 bits, premultiplied alpha, CMYK (a black channel) and spot colors, an XYB image whose ICC profile is not sRGB (it needs a color conversion to that profile), the PQ or HLG transfer function with primaries or a white point that CICP cannot express, a Modular frame stored as YCbCr with subsampled channels, restoration filters on a grayscale Modular frame, an upsampled frame with patches or splines whose extra channels have another resolution. Ignored: the preview frame, frame names, the intrinsic size, the JPEG reconstruction data (`jbrd`: a recompressed JPEG file is decoded to pixels, the JPEG file is not rebuilt), `jumb` and unknown boxes; depth, selection mask, thermal and the other extra channels than alpha are decoded and dropped. Samples of 1 to 16 bits other than 8 and 16 are scaled exactly to 8 or 16 bits. A lossy frame is decoded in floating point: the result is within a few sixteen-bit units of the reference decoders, not bit-exact. Encoding: lossless only (no lossy output), full frames that replace the image (no layers, blending, patches or cropped frames), frame durations in whole milliseconds, no frame of an animation without duration; an EXIF orientation is written to the image header |
-| Text | Horizontal text only; no shaping beyond the lookups of the font (Arabic joining, Indic and Southeast Asian reordering) and no dictionary line breaking for the scripts that need one; no language-specific forms; greedy line breaking; no AAT (`morx`, `kerx`) shaping, no device adjustment of positions (hinting); no hinting and no subpixel (LCD) rendering; no system font: every font is given by the caller; along a path, glyphs are turned but not warped; see [Text](#text) |
+| Text | Horizontal text only; no shaping model for the scripts that reorder syllables (Indic and Southeast Asian scripts) nor for Hangul letters, no Arabic joining for a font without substitution table and no dictionary line breaking for the scripts that need one; no language-specific forms; greedy line breaking; no AAT (`morx`, `kerx`) shaping, no device adjustment of positions (hinting); no hinting and no subpixel (LCD) rendering; no system font: every font is given by the caller; along a path, glyphs are turned but not warped; see [Text](#text) |
 | Fonts | No system font, no SVG glyph, no monochrome bitmap glyph, no Type 1 font, no hinting; variable fonts without version 2 of `avar`; see [Fonts](#fonts) |
 | API | No public allocator, custom pixel type, codec plug-in or image-processor interface; implementation types are internal |

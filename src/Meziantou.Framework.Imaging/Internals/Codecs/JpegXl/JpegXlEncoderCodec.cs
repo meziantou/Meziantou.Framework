@@ -619,7 +619,8 @@ internal sealed class JpegXlEncoderCodec : ImageEncoderCodec
                 }
             }
 
-            JpegXlModularEncoder.Encode(writer, image, colorChannelCount: 0, _encoder.Effort, scope, CancellationToken);
+            // The alpha channel of a lossy frame: often constant, which a prefix code writes with one bit per sample
+            JpegXlModularEncoder.Encode(writer, image, colorChannelCount: 0, _encoder.Effort, scope, CancellationToken, useAns: true);
         }
 
         private static void EndSection(LsbBitWriter writer, List<int> sizes, ref int total)

@@ -177,7 +177,7 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
     private static float HfScaleAtDistance1 => 0.8f;
 
     /// <summary>The scale of the quantization of the LF image at distance 1.</summary>
-    private static float LfScaleAtDistance1 => 1.0f;
+    private static float LfScaleAtDistance1 => 2.0f;
 
     /// <summary>
     /// Gets the distance of a quality: the factor by which the quantization steps are multiplied, 1 being a quality at which
@@ -697,7 +697,7 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
                     }
                 }
 
-                JpegXlModularEncoder.Encode(writer, image, colorChannelCount: 0, _effort, _scope, _cancellationToken);
+                JpegXlModularEncoder.Encode(writer, image, colorChannelCount: 0, _effort, _scope, _cancellationToken, useAns: true);
             }
 
             for (var i = 1; i < JpegXlVarDctTables.QuantTableCount; i++)
@@ -714,15 +714,13 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
         var builders = new JpegXlEntropyCodeBuilder?[_passCount];
         try
         {
-            var maxClusters = _effort switch
-            {
-                < 3 => 16,
-                < 6 => 64,
-                _ => JpegXlEntropyCode.MaxClusters,
-            };
+            // The contexts are clustered in one pass, in their order: a cluster that is not available when a context needs it
+            // makes it share a distribution that does not fit. Fewer than 64 clusters cost several times the size of the file
+            // for a few percent of the time
+            var maxClusters = _effort < 6 ? 64 : JpegXlEntropyCode.MaxClusters;
             for (var pass = 0; pass < _passCount; pass++)
             {
-                var builder = builders[pass] = new JpegXlEntropyCodeBuilder(JpegXlVarDctTables.ContextsPerBlockContext * BlockContextCount, CoefficientConfig, maxClusters, useAns: _effort >= 1, _scope);
+                var builder = builders[pass] = new JpegXlEntropyCodeBuilder(JpegXlVarDctTables.ContextsPerBlockContext * BlockContextCount, CoefficientConfig, maxClusters, useAns: true, _scope);
                 for (var group = 0; group < _groupCount; group++)
                 {
                     _cancellationToken.ThrowIfCancellationRequested();
@@ -812,7 +810,7 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
                 }
             }
 
-            JpegXlModularEncoder.Encode(writer, image, colorChannelCount: 0, _effort, _scope, _cancellationToken);
+            JpegXlModularEncoder.Encode(writer, image, colorChannelCount: 0, _effort, _scope, _cancellationToken, useAns: true);
         }
 
         var blockInfo = _blockInfo!.Span;
@@ -873,7 +871,7 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
             }
         }
 
-        JpegXlModularEncoder.Encode(writer, metadata, colorChannelCount: 0, _effort, _scope, _cancellationToken);
+        JpegXlModularEncoder.Encode(writer, metadata, colorChannelCount: 0, _effort, _scope, _cancellationToken, useAns: true);
     }
 
     /// <summary>

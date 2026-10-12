@@ -45,7 +45,12 @@ internal static class JpegXlModularEncoder
     /// <param name="effort">The compression effort, from 0 to 9.</param>
     /// <param name="scope">The scope of the working memory.</param>
     /// <param name="cancellationToken">The token checked between rows.</param>
-    public static void Encode(LsbBitWriter writer, JpegXlModularImage image, int colorChannelCount, int effort, AllocationScope scope, CancellationToken cancellationToken)
+    /// <param name="useAns">
+    /// <see langword="true"/> to write the residuals with the ANS coder at every effort. A prefix code spends one bit at
+    /// least on each sample: a channel that is constant, or nearly so, as the alpha channel of an opaque image and the
+    /// fields of a lossy frame, is many times larger with it.
+    /// </param>
+    public static void Encode(LsbBitWriter writer, JpegXlModularImage image, int colorChannelCount, int effort, AllocationScope scope, CancellationToken cancellationToken, bool useAns = false)
     {
         var colorTransform = NoColorTransform;
         if (colorChannelCount == 3)
@@ -73,7 +78,7 @@ internal static class JpegXlModularEncoder
             writer.WriteU32(0, 0, 0, 1, 0, 2, 4, 18, 8);
         }
 
-        EncodeChannels(writer, image.Channels, effort, scope, cancellationToken);
+        EncodeChannels(writer, image.Channels, effort, scope, cancellationToken, useAns);
     }
 
     /// <summary>
@@ -120,7 +125,8 @@ internal static class JpegXlModularEncoder
     /// <param name="effort">The compression effort, from 0 to 9.</param>
     /// <param name="scope">The scope of the working memory.</param>
     /// <param name="cancellationToken">The token checked between channels.</param>
-    public static void EncodeChannels(LsbBitWriter writer, IReadOnlyList<JpegXlModularChannel> channels, int effort, AllocationScope scope, CancellationToken cancellationToken)
+    /// <param name="useAns"><see langword="true"/> to write the residuals with the ANS coder at every effort.</param>
+    public static void EncodeChannels(LsbBitWriter writer, IReadOnlyList<JpegXlModularChannel> channels, int effort, AllocationScope scope, CancellationToken cancellationToken, bool useAns = false)
     {
         // The residuals of one channel
         var sampleCount = 0;
@@ -154,7 +160,7 @@ internal static class JpegXlModularEncoder
 
         WriteTree(writer, predictors, contexts, scope);
 
-        using var stream = new JpegXlEntropyEncoder(contexts.Length, SampleConfig, scope, useAns: effort >= SearchEffort);
+        using var stream = new JpegXlEntropyEncoder(contexts.Length, SampleConfig, scope, useAns: useAns || effort >= SearchEffort);
         for (var c = 0; c < channels.Count; c++)
         {
             cancellationToken.ThrowIfCancellationRequested();

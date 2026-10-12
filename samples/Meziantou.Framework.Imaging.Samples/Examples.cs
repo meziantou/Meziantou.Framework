@@ -461,15 +461,19 @@ internal static class Examples
     }
     // end-snippet
 
-    /// <summary>JPEG XL output: lossless files, 16-bit samples and animations included, and what a JPEG XL file declares.</summary>
+    /// <summary>JPEG XL output: lossless files, 16-bit samples and animations included, lossy and progressive files, and what a JPEG XL file declares.</summary>
     // begin-snippet: save-jpegxl
-    public static string SaveJpegXl(string inputPath, string jxlPath, string animatedPath, string animatedJxlPath)
+    public static string SaveJpegXl(string inputPath, string jxlPath, string lossyPath, string animatedPath, string animatedJxlPath)
     {
-        // Every pixel format is stored as it is: no bit depth reduction, no flattening, and the colors of fully
-        // transparent pixels are kept. The effort changes the size and the encoding time, never the pixels.
         using (var image = Image.Load(inputPath))
         {
+            // Lossless by default: every pixel format is stored as it is (no bit depth reduction, no flattening, and the
+            // colors of fully transparent pixels are kept). The effort changes the size and the encoding time, never the pixels.
             image.Save(jxlPath, new JpegXlEncoder { Effort = 7 });
+
+            // Lossy on request: the quality sets the quantization, and the alpha channel stays exact. A progressive file
+            // can be shown before it is complete.
+            image.Save(lossyPath, new JpegXlEncoder { Compression = JpegXlCompression.Lossy, Quality = 90, Progressive = true });
         }
 
         // Frames are written as they come: the destination does not need to be seekable, whatever the frame count.
@@ -481,6 +485,49 @@ internal static class Examples
         // Lossy (VarDCT) and lossless (Modular) files are decoded, whatever wrote them.
         var info = Image.Identify(jxlPath);
         return $"{info.Format} {info.Size.Width}x{info.Size.Height} {info.PixelFormat}, {info.BitsPerComponent} bits";
+    }
+    // end-snippet
+
+    /// <summary>Progressive reading: the renderings of a frame before it is complete.</summary>
+    // begin-snippet: progressive-read
+    public static int ShowWhileReading(Stream input, Action<Image<Rgba32>, FrameRefinement> show)
+    {
+        using var reader = Image.OpenReader<Rgba32>(input);
+        using var image = new Image<Rgba32>(reader.Info.Width, reader.Info.Height);
+        var renderings = 0;
+
+        // Each call writes a full image: coarse at first (Downsampling 8, then 4, 2), then the frame itself (IsFinal).
+        // A file that is not progressive, or another format, gives its frame at once. An input that ends early gives the
+        // renderings it has, then throws: truncation is never a clean end.
+        while (reader.ReadFrameRefinementInto(image) is { } refinement)
+        {
+            show(image, refinement);
+            renderings++;
+            if (refinement.IsFinal)
+                break;
+        }
+
+        return renderings;
+    }
+    // end-snippet
+
+    /// <summary>A JPEG file stored in a JPEG XL file and rebuilt, without decoding its pixels.</summary>
+    // begin-snippet: transcode-jpeg
+    public static bool RecompressJpeg(string jpegPath, string jxlPath, string rebuiltPath)
+    {
+        // No pixel is decoded: the JPEG XL file holds the coefficients of the JPEG file. A file that cannot be stored
+        // exactly (four components, a sampling factor of 4, arithmetic coding) throws; nothing is approximated.
+        JpegXlTranscoder.RecompressJpeg(jpegPath, jxlPath);
+
+        // The file is an image like any other...
+        using (var image = Image.Load(jxlPath))
+        {
+            _ = image.PixelFormat;
+        }
+
+        // ...and gives the JPEG file back, byte for byte. A JPEG XL file made from pixels returns false.
+        return JpegXlTranscoder.TryReconstructJpeg(jxlPath, rebuiltPath)
+            && File.ReadAllBytes(jpegPath).AsSpan().SequenceEqual(File.ReadAllBytes(rebuiltPath));
     }
     // end-snippet
 

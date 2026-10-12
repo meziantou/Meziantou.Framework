@@ -1,4 +1,5 @@
 using Meziantou.Framework.Imaging.TestHarness.ExternalTools;
+using Meziantou.Framework.Imaging.TestHarness.Golden;
 using Meziantou.Prebuilt;
 
 namespace Meziantou.Framework.Imaging.InteropTests;
@@ -211,5 +212,33 @@ public sealed class LibJxlToolTests
 
         var decoded = await jxl.DecodeAsync(jxlPath, XunitCancellationToken);
         Assert.Equal([0, 85, 170, 255], Enumerable.Range(0, 4).Select(pixel => (int)decoded.Rgba.Span[pixel * 4]));
+    }
+
+    /// <summary>
+    /// The plumbing of JPEG bitstream reconstruction: a JPEG file recompressed by cjxl comes back, byte for byte, from djxl
+    /// and from jxl-oxide. jxl-oxide does not rebuild every file (not a file with several scans, for example): the tests
+    /// that use it compare with what it does on the file of cjxl.
+    /// </summary>
+    [Fact]
+    public async Task AJpegFileRecompressedByCjxlIsRebuiltByBothDecoders()
+    {
+        var jxl = await RequiredTools.LibJxlAsync();
+        var oxide = await RequiredTools.JxlOxideAsync();
+        var directory = InteropSettings.GetArtifactsDirectory(nameof(AJpegFileRecompressedByCjxlIsRebuiltByBothDecoders));
+        var fixture = GoldenCorpus.Default.Get("jpeg/baseline-444-detail");
+        var jpeg = fixture.ReadInput();
+        var path = directory / "baseline-444-detail.jxl";
+        await jxl.EncodeAsync(fixture.InputPath, path, ["--lossless_jpeg=1"], XunitCancellationToken);
+
+        Assert.True((await jxl.GetInfoAsync(path, XunitCancellationToken)).HasJpegReconstruction);
+        Assert.Equal(jpeg, await jxl.ReconstructJpegAsync(path, XunitCancellationToken));
+        Assert.Equal(jpeg, await oxide.TryReconstructJpegAsync(path, XunitCancellationToken));
+
+        // A file with several scans, which cjxl recompresses and djxl rebuilds
+        var multiscan = GoldenCorpus.Default.Get("jpeg/multiscan-components-separate");
+        var multiscanPath = directory / "multiscan-components-separate.jxl";
+        await jxl.EncodeAsync(multiscan.InputPath, multiscanPath, ["--lossless_jpeg=1"], XunitCancellationToken);
+        Assert.Equal(multiscan.ReadInput(), await jxl.ReconstructJpegAsync(multiscanPath, XunitCancellationToken));
+        Assert.Null(await oxide.TryReconstructJpegAsync(multiscanPath, XunitCancellationToken));
     }
 }

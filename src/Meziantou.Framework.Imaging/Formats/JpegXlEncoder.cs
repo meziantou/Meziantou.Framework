@@ -1,10 +1,11 @@
 namespace Meziantou.Framework.Imaging.Formats;
 
 /// <summary>
-/// Immutable JPEG XL encoder settings. The output is lossless (Modular coding): every pixel format is stored as it is,
-/// 16-bit samples and the color of fully transparent pixels included. An image is written as a bare codestream, or in the
-/// JPEG XL container when it has EXIF or XMP metadata or when it needs level 10 of the format (16-bit samples, more than
-/// 262,144 pixels per side or 268,435,456 pixels, an ICC profile above 4 MiB).
+/// Immutable JPEG XL encoder settings. The output is lossless by default (Modular coding): every pixel format is stored
+/// as it is, 16-bit samples and the color of fully transparent pixels included. <see cref="Compression"/> selects the
+/// lossy coding (VarDCT), controlled by <see cref="Quality"/>; its alpha channel stays lossless. An image is written as a
+/// bare codestream, or in the JPEG XL container when it has EXIF or XMP metadata or when it needs level 10 of the format
+/// (16-bit samples, more than 262,144 pixels per side or 268,435,456 pixels, an ICC profile above 4 MiB).
 /// </summary>
 /// <remarks>
 /// <para>
@@ -15,7 +16,12 @@ namespace Meziantou.Framework.Imaging.Formats;
 /// <para>
 /// The ICC profile is stored in the codestream, byte for byte; without a profile, the linear transfer function and a CICP
 /// color description that the format can enumerate are stored as its color encoding. The orientation is stored in the
-/// image header.
+/// image header. Lossy output stores the samples in the XYB color space, which a decoder converts back to the color
+/// encoding of the image: it requires an enumerated encoding or an sRGB profile, and throws
+/// <see cref="UnsupportedImageFeatureException"/> for another profile and for the PQ and HLG transfer functions.
+/// </para>
+/// <para>
+/// A JPEG file is recompressed without loss by <see cref="JpegXlTranscoder"/>, not by this encoder, which stores pixels.
 /// </para>
 /// </remarks>
 public sealed class JpegXlEncoder : ImageEncoder
@@ -63,17 +69,23 @@ public sealed class JpegXlEncoder : ImageEncoder
     /// a lower resolution, then refine it. Defaults to <see langword="false"/>.
     /// </summary>
     /// <remarks>
-    /// The decoded pixels are those of a file that is not progressive; the file is slightly larger.
+    /// Lossy output is written in three passes after the image at one eighth of its resolution; lossless output is squeezed,
+    /// each resolution in the sections of its pass. The decoded pixels are those of a file that is not progressive; the file
+    /// is larger (a few percent for lossy output, more for lossless output). <see cref="ImageReader{TPixel}.ReadFrameRefinementInto"/>
+    /// reads such a file stage by stage.
     /// </remarks>
     public bool Progressive { get; init; }
 
     /// <summary>
     /// Gets the compression effort, from 0 (fastest, largest output) to 9 (slowest, smallest output). Defaults to 5. The effort
-    /// never changes the decoded pixels.
+    /// never changes the decoded pixels of lossless output; for lossy output it changes the decisions of the encoder, not
+    /// the quantization that <see cref="Quality"/> sets.
     /// </summary>
     /// <remarks>
-    /// Efforts 0 to 2 use prefix codes and fixed choices; from 3 on, the samples are coded with ANS and the color transform
-    /// and the predictor are searched; from 7 on, the weighted predictor is also tried.
+    /// Lossless output: efforts 0 to 2 use prefix codes and fixed choices; from 3 on, the samples are coded with ANS and the
+    /// color transform and the predictor are searched; from 7 on, the weighted predictor is also tried. Lossy output is
+    /// always coded with ANS: from 3 on, each tile has its own factors of the chroma from luma prediction and the
+    /// predictor of the alpha channel is searched; from 6 on, the contexts of the coefficients have more distributions.
     /// </remarks>
     /// <exception cref="ArgumentOutOfRangeException">The value is not between 0 and 9.</exception>
     public int Effort

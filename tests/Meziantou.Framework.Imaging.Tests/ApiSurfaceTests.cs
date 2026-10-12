@@ -148,6 +148,44 @@ public sealed class ApiSurfaceTests
         Assert.Equal(1, (int)JpegXlCompression.Lossy);
     }
 
+    [Fact]
+    public void JpegXlProgressiveReadingAndTranscodingHaveTheirPublicShape()
+    {
+        // A description the reader creates: get-only, no public constructor
+        var refinement = typeof(FrameRefinement);
+        Assert.Equal("Meziantou.Framework.Imaging", refinement.Namespace);
+        Assert.True(refinement.IsPublic && refinement.IsSealed);
+        Assert.Empty(refinement.GetConstructors());
+        Assert.Equal(
+            [nameof(FrameRefinement.CompletedPasses), nameof(FrameRefinement.Downsampling), nameof(FrameRefinement.IsFinal)],
+            refinement.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly).Select(property => property.Name).Order(StringComparer.Ordinal));
+        Assert.All(refinement.GetProperties(), property => property.GetSetMethod() is null);
+        Assert.Equal(typeof(FrameRefinement), typeof(ImageReader<Rgb24>).GetMethod(nameof(ImageReader<>.ReadFrameRefinementInto))!.ReturnType);
+        Assert.Equal(typeof(ValueTask<FrameRefinement?>), typeof(ImageReader<Rgb24>).GetMethod(nameof(ImageReader<>.ReadFrameRefinementIntoAsync))!.ReturnType);
+
+        // The conversions between files are static: they neither take nor give an image
+        var transcoder = typeof(JpegXlTranscoder);
+        Assert.Equal("Meziantou.Framework.Imaging", transcoder.Namespace);
+        Assert.True(transcoder.IsPublic && transcoder.IsAbstract && transcoder.IsSealed);
+        Assert.Equal(
+            [
+                nameof(JpegXlTranscoder.HasJpegReconstructionData), nameof(JpegXlTranscoder.HasJpegReconstructionDataAsync),
+                nameof(JpegXlTranscoder.RecompressJpeg), nameof(JpegXlTranscoder.RecompressJpegAsync),
+                nameof(JpegXlTranscoder.ReconstructJpeg), nameof(JpegXlTranscoder.ReconstructJpegAsync),
+                nameof(JpegXlTranscoder.TryReconstructJpeg), nameof(JpegXlTranscoder.TryReconstructJpegAsync),
+            ],
+            transcoder.GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.DeclaredOnly).Select(method => method.Name).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal));
+        Assert.All(transcoder.GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.DeclaredOnly), method => !method.GetParameters().Any(parameter => typeof(Image).IsAssignableFrom(parameter.ParameterType)) && !typeof(Image).IsAssignableFrom(method.ReturnType));
+
+        // Immutable options, like the other ones
+        var options = typeof(JpegXlTranscodeOptions);
+        Assert.True(options.IsPublic && options.IsSealed);
+        Assert.NotNull(options.GetConstructor(Type.EmptyTypes));
+        Assert.Equal(
+            [nameof(JpegXlTranscodeOptions.Configuration), nameof(JpegXlTranscodeOptions.Effort)],
+            options.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly).Select(property => property.Name).Order(StringComparer.Ordinal));
+    }
+
     [Theory]
     [InlineData(typeof(UnknownImageFormatException))]
     [InlineData(typeof(InvalidImageContentException))]

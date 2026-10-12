@@ -4,7 +4,7 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework.Imaging.Tests</RootNamespace>
     <ImagingTestFixtureFormats>jxl</ImagingTestFixtureFormats>
-    <ImagingTestEncoders>jxl</ImagingTestEncoders>
+    <ImagingTestEncoders>jxl;jxl-lossy;jxl-progressive</ImagingTestEncoders>
   </PropertyGroup>
 
   <ItemGroup>

@@ -662,7 +662,8 @@ internal sealed class JpegXlStructureParser : ImageParser<ImageInfo>
         };
 
         // The frames of an animation are only counted by a full scan: a frame without duration is a layer of the next one
-        int? frameCount = !header.HasAnimation ? 1 : mode == ImageIdentifyMode.Header ? null : _frameCount;
+        // An observer that stops at a layer, before any frame is shown, has not counted the frames either
+        int? frameCount = !header.HasAnimation ? 1 : mode == ImageIdentifyMode.Header || _frameCount == 0 ? null : _frameCount;
         return new ImageInfo(
             ImageFormat.JpegXl,
             Size,

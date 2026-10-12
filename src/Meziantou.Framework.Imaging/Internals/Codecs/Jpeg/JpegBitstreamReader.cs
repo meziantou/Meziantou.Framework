@@ -169,6 +169,13 @@ internal sealed class JpegBitstreamReader : IDisposable
         if (_coefficients is null || model.Scans.Count == 0)
             throw Invalid("it has no frame or no scan.");
 
+        // A component that no scan codes is not an image: a decoder has nothing to show for it
+        for (var c = 0; c < model.Components.Count; c++)
+        {
+            if (!model.Scans.Exists(scan => scan.SpectralStart == 0 && scan.Components.Exists(component => component.Component == c)))
+                throw Invalid("a component is not coded by any scan.");
+        }
+
         // The padding bits are only recorded when one of them is zero
         if (_paddingBits.Contains(0))
         {

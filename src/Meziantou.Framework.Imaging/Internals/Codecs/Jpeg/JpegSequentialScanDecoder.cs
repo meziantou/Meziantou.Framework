@@ -6,8 +6,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </summary>
 /// <remarks>
 /// Validation (all <see cref="InvalidImageContentException"/>), besides the scan structure of <see cref="JpegScanDecoder"/>:
-/// invalid Huffman codes, DC categories above 11 and AC magnitudes above 10 (8-bit precision), coefficient runs past the
-/// 63rd AC coefficient and DC values outside 16 bits.
+/// invalid Huffman codes, DC categories above 11 and AC magnitudes above 10 (15 and 14 for 12-bit samples), coefficient
+/// runs past the 63rd AC coefficient and DC values outside 16 bits.
 /// </remarks>
 internal sealed class JpegSequentialScanDecoder : JpegScanDecoder
 {
@@ -32,8 +32,8 @@ internal sealed class JpegSequentialScanDecoder : JpegScanDecoder
 
         // DC: difference from the prediction (T.81 F.2.2.1)
         var category = reader.DecodeHuffman(scanComponent.DcTable!);
-        if (category > 11)
-            throw Invalid("The JPEG DC coefficient category is greater than 11.");
+        if (category > MaxDcCategory)
+            throw Invalid(string.Create(CultureInfo.InvariantCulture, $"The JPEG DC coefficient category is greater than {MaxDcCategory}."));
 
         var dc = scanComponent.Predictor + (category == 0 ? 0 : reader.ReceiveExtend(category));
         if (dc is < short.MinValue or > short.MaxValue)
@@ -64,8 +64,8 @@ internal sealed class JpegSequentialScanDecoder : JpegScanDecoder
             if (k > 63)
                 throw Invalid("The JPEG AC coefficients run past the end of the block.");
 
-            if (size > 10)
-                throw Invalid("The JPEG AC coefficient magnitude category is greater than 10.");
+            if (size > MaxAcCategory)
+                throw Invalid(string.Create(CultureInfo.InvariantCulture, $"The JPEG AC coefficient magnitude category is greater than {MaxAcCategory}."));
 
             var natural = zigZag[k];
             block[natural] = reader.ReceiveExtend(size) * (double)quantization[natural];
@@ -73,17 +73,6 @@ internal sealed class JpegSequentialScanDecoder : JpegScanDecoder
             k++;
         }
 
-        var component = scanComponent.Component;
-        var samples = component.Samples.AsSpan(component.GetRowOffset(blockRow * 8) + (blockColumn * 8));
-        if (hasAc)
-        {
-            block[0] = dc * (double)quantization[0];
-            JpegIdct.Transform(block, samples, component.Stride);
-            Array.Clear(block);
-        }
-        else
-        {
-            JpegIdct.TransformDcOnly((long)dc * quantization[0], samples, component.Stride);
-        }
+        TransformBlock(scanComponent, blockRow, blockColumn, block, dc, hasAc);
     }
 }

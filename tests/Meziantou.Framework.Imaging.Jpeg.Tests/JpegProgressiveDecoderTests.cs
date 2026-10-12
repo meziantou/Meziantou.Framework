@@ -93,6 +93,101 @@ public sealed class JpegProgressiveDecoderTests
     }
 
     [Theory]
+    [InlineData("gray", 9, 7)]
+    [InlineData("gray", 37, 21)]
+    [InlineData("4:4:4", 17, 9)]
+    [InlineData("4:2:2", 37, 21)]
+    [InlineData("4:2:0", 9, 7)]
+    [InlineData("4:2:0", 37, 21)]
+    [InlineData("4:1:1", 17, 9)]
+    [InlineData("mixed-chroma", 37, 21)]
+    public void TwelveBitFramesDecodeToTheContractScaledToSixteenBits(string layout, int width, int height)
+    {
+        // The coefficients of 12-bit samples have four more bits: the same progressions refine them
+        var sampling = Layouts[layout];
+        var image = JpegTestImage.CreateRandom(width, height, sampling, seed: (width * 41) + height + layout.Length, precision: 12);
+        var expected = image.GetExpectedPixels();
+        var gray = sampling.Length == 1;
+        var encodings = new (string Name, JpegTestEncodeOptions Options)[]
+        {
+            ("standard progression, fixed tables", Progressive(gray ? GrayStandard : ColorStandard)),
+            ("spectral selection only, long codes, restart 1", Progressive(gray ? GraySpectral : ColorSpectral, restartInterval: 1, huffman: JpegTestHuffmanStyle.Skewed)),
+            ("successive approximation from bit 5, separate DC scans, tables before each scan, EOB runs of at most 3, restart 3", Progressive(gray ? GrayDeep : ColorDeep, restartInterval: 3, huffman: JpegTestHuffmanStyle.Skewed, maxEndOfBandRun: 3, tablesBeforeEachScan: true)),
+        };
+
+        foreach (var (name, options) in encodings)
+        {
+            var data = image.Encode(options);
+            Assert.Equal(12, data[FindSegment(data, 0xC2) + 4]);
+            Assert.Equal(12, Image.Identify(data).BitsPerComponent);
+            using var decoded = Image.Load(data);
+            Assert.Equal(gray ? PixelFormat.Gray16 : PixelFormat.Rgba64, decoded.PixelFormat);
+            AssertPixels(expected, decoded, $"12-bit {layout} {width}x{height}, {name}");
+        }
+    }
+
+    [Theory]
+    [InlineData("gray", 9, 7, 8)]
+    [InlineData("gray", 37, 21, 12)]
+    [InlineData("4:4:4", 17, 9, 8)]
+    [InlineData("4:2:2", 37, 21, 8)]
+    [InlineData("4:2:0", 1, 1, 8)]
+    [InlineData("4:2:0", 9, 7, 12)]
+    [InlineData("4:2:0", 37, 21, 8)]
+    [InlineData("4:1:1", 17, 9, 12)]
+    [InlineData("mixed-chroma", 37, 21, 8)]
+    public void ArithmeticCodedFramesDecodeToTheContract(string layout, int width, int height, int precision)
+    {
+        // The scans of a progressive frame, arithmetic coded (SOF10): no end-of-band run, but an end-of-block decision that
+        // a refinement scan only makes past the coefficients the previous scans made nonzero
+        var sampling = Layouts[layout];
+        var image = JpegTestImage.CreateRandom(width, height, sampling, seed: (width * 47) + height + layout.Length + precision, precision: precision);
+        var expected = image.GetExpectedPixels();
+        var gray = sampling.Length == 1;
+        var encodings = new (string Name, JpegTestEncodeOptions Options)[]
+        {
+            ("standard progression", Arithmetic(gray ? GrayStandard : ColorStandard)),
+            ("spectral selection only, restart 1, final zero bytes omitted", Arithmetic(gray ? GraySpectral : ColorSpectral, restartInterval: 1, discardFinalZeros: true)),
+            ("successive approximation from bit 5, separate DC scans, DC bounds 2-5 and 0-0, AC thresholds 1 and 63, restart 3", Arithmetic(gray ? GrayDeep : ColorDeep, restartInterval: 3, dcConditioning: [(2, 5), (0, 0)], acConditioning: [1, 63])),
+        };
+
+        foreach (var (name, options) in encodings)
+        {
+            var data = image.Encode(options);
+            Assert.Equal(precision, data[FindSegment(data, 0xCA) + 4]);
+            Assert.Equal(precision, Image.Identify(data, new ImageIdentifyOptions { Mode = ImageIdentifyMode.FullScan }).BitsPerComponent);
+            using var decoded = Image.Load(data);
+            Assert.Equal(image.PixelFormat, decoded.PixelFormat);
+            AssertPixels(expected, decoded, $"arithmetic {precision}-bit {layout} {width}x{height}, {name}");
+        }
+    }
+
+    [Theory]
+    [InlineData("4:2:0", "0,1,2: 0 0 0 2; 0: 1 5 0 1; 1: 1 63 0 0")]
+    [InlineData("gray", "0: 0 0 0 1; 0: 1 9 0 3; 0: 10 63 0 0; 0: 1 9 3 2")]
+    public void ArithmeticCodedPartialProgressionsAndInksDecodeLikeTheHuffmanCodedOnes(string layout, string script)
+    {
+        var image = JpegTestImage.CreateRandom(37, 21, Layouts[layout], seed: 3);
+        var scans = JpegTestProgressiveScan.ParseScript(script);
+        var expected = Approximate(image, scans).GetExpectedPixels();
+        using (var decoded = Image.Load(image.Encode(new JpegTestEncodeOptions { Arithmetic = true, Progression = scans, RestartInterval = 2 })))
+        {
+            AssertPixels(expected, decoded, script);
+        }
+
+        // The progression of every coefficient is validated from the scan headers, whatever the entropy coding
+        var twice = image.Encode(new JpegTestEncodeOptions { Arithmetic = true, Progression = [.. scans, scans[^1]] });
+        Assert.Throws<InvalidImageContentException>(() => Image.Identify(twice, new ImageIdentifyOptions { Mode = ImageIdentifyMode.FullScan }));
+
+        var options = new ImageDecodeOptions { CmykConversion = CmykConversionOptions.Default };
+        var inks = JpegTestImage.CreateRandom(27, 19, [(2, 2), (1, 1), (1, 1), (2, 2)], seed: 49, inks: JpegTestInkCoding.Ycck);
+        var progression = JpegTestProgressiveScan.ParseScript("0,1,2,3: 0 0 0 1; 3: 1 63 0 1; 0: 1 5 0 2; 2: 1 63 0 1; 1: 1 63 0 1; 0: 6 63 0 2; 0: 1 63 2 1; 0,1,2,3: 0 0 1 0; 3: 1 63 1 0; 2: 1 63 1 0; 1: 1 63 1 0; 0: 1 63 1 0");
+        using var huffman = Image.Load(inks.Encode(new JpegTestEncodeOptions { Progression = progression }), options);
+        using var arithmetic = Image.Load(inks.Encode(new JpegTestEncodeOptions { Arithmetic = true, Progression = progression, RestartInterval = 2 }), options);
+        AssertPixels(GetBytes(huffman), arithmetic, "YCCK");
+    }
+
+    [Theory]
     [InlineData("Cmyk", "0,1,2,3: 0 0 0 1; 3: 1 63 0 1; 0: 1 5 0 2; 2: 1 63 0 1; 1: 1 63 0 1; 0: 6 63 0 2; 0: 1 63 2 1; 0,1,2,3: 0 0 1 0; 3: 1 63 1 0; 2: 1 63 1 0; 1: 1 63 1 0; 0: 1 63 1 0")]
     [InlineData("Ycck", "0,1,2,3: 0 0 0 1; 3: 1 63 0 1; 0: 1 5 0 2; 2: 1 63 0 1; 1: 1 63 0 1; 0: 6 63 0 2; 0: 1 63 2 1; 0,1,2,3: 0 0 1 0; 3: 1 63 1 0; 2: 1 63 1 0; 1: 1 63 1 0; 0: 1 63 1 0")]
     [InlineData("Ycck", "3: 0 0 0 0; 0,1,2: 0 0 0 0; 0: 1 63 0 0; 1: 1 63 0 0; 2: 1 63 0 0; 3: 1 9 0 0; 3: 10 63 0 0")]
@@ -333,21 +428,24 @@ public sealed class JpegProgressiveDecoderTests
     public void CorruptedBytesFailOnlyWithImageExceptions()
     {
         var image = JpegTestImage.CreateRandom(16, 8, Layouts["4:2:2"], seed: 6, acDensity: 0.15);
-        var data = image.Encode(Progressive(ColorStandard, restartInterval: 1, huffman: JpegTestHuffmanStyle.Skewed));
-        for (var position = 2; position < data.Length; position++)
+        foreach (var options in new[] { Progressive(ColorStandard, restartInterval: 1, huffman: JpegTestHuffmanStyle.Skewed), Arithmetic(ColorStandard, restartInterval: 1, acConditioning: [5, 12]) })
         {
-            foreach (var mask in new byte[] { 0x01, 0x10, 0x80, 0xFF })
+            var data = image.Encode(options);
+            for (var position = 2; position < data.Length; position++)
             {
-                var corrupt = data.ToArray();
-                corrupt[position] ^= mask;
-                try
+                foreach (var mask in new byte[] { 0x01, 0x10, 0x80, 0xFF })
                 {
-                    using var decoded = Image.Load(corrupt);
-                    Assert.Equal(PixelFormat.Rgb24, decoded.PixelFormat);
-                }
-                catch (ImageException)
-                {
-                    // Malformed, unsupported or over a limit: explicit
+                    var corrupt = data.ToArray();
+                    corrupt[position] ^= mask;
+                    try
+                    {
+                        using var decoded = Image.Load(corrupt);
+                        Assert.Equal(PixelFormat.Rgb24, decoded.PixelFormat);
+                    }
+                    catch (ImageException)
+                    {
+                        // Malformed, unsupported or over a limit: explicit
+                    }
                 }
             }
         }
@@ -360,8 +458,14 @@ public sealed class JpegProgressiveDecoderTests
         // Scans of tens of kilobytes with stuffing, long codes, EOB runs and restart markers: fed piece by piece
         var image = JpegTestImage.CreateRandom(181, 133, Layouts["4:2:0"], seed: 8, acDensity: 0.6);
         var data = image.Encode(Progressive(ColorStandard, restartInterval: 7, huffman: JpegTestHuffmanStyle.Skewed));
-        using var decoded = await InputVariants.LoadAsync<Rgb24>(variant, data, ImageFormat.Jpeg, options: null, XunitCancellationToken);
-        AssertPixels(image.GetExpectedPixels(), decoded, variant.ToString());
+        using (var decoded = await InputVariants.LoadAsync<Rgb24>(variant, data, ImageFormat.Jpeg, options: null, XunitCancellationToken))
+        {
+            AssertPixels(image.GetExpectedPixels(), decoded, variant.ToString());
+        }
+
+        var arithmetic = image.Encode(Arithmetic(ColorStandard, restartInterval: 7, discardFinalZeros: true));
+        using var decodedArithmetic = await InputVariants.LoadAsync<Rgb24>(variant, arithmetic, ImageFormat.Jpeg, options: null, XunitCancellationToken);
+        AssertPixels(image.GetExpectedPixels(), decodedArithmetic, variant + " (arithmetic coding)");
     }
 
     [Fact]
@@ -538,6 +642,17 @@ public sealed class JpegProgressiveDecoderTests
 
         return image.Approximate((component, k) => low[component][k]);
     }
+
+    private static JpegTestEncodeOptions Arithmetic(string script, int restartInterval = 0, bool discardFinalZeros = false, (int Lower, int Upper)[]? dcConditioning = null, int[]? acConditioning = null)
+        => new()
+        {
+            Arithmetic = true,
+            Progression = JpegTestProgressiveScan.ParseScript(script),
+            RestartInterval = restartInterval,
+            DiscardFinalZeros = discardFinalZeros,
+            DcConditioning = dcConditioning,
+            AcConditioning = acConditioning ?? (dcConditioning is null ? null : [5, 5]),
+        };
 
     private static JpegTestEncodeOptions Progressive(string script, int restartInterval = 0, JpegTestHuffmanStyle huffman = JpegTestHuffmanStyle.Fixed, int maxEndOfBandRun = 0x7FFF, bool tablesBeforeEachScan = false)
         => new()

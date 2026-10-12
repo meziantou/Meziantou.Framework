@@ -57,6 +57,16 @@ internal sealed class GradientEvaluator : IDisposable
     /// <summary>Converts the stops of a brush to the pixel format of a frame and rents the row of colors.</summary>
     /// <exception cref="ImageResourceLimitException">The scratch exceeds the allocation limit.</exception>
     public void Prepare(GradientBrush brush, ImageFrame frame, int width)
+        => Prepare(brush, frame, width, (1 << PixelFormats.GetBitsPerComponent(frame.PixelFormat)) - 1);
+
+    /// <summary>
+    /// Prepares the evaluation of a gradient whose colors are not converted to the samples of a frame: 16-bit red,
+    /// green, blue and alpha values, for what composes colors before it writes them to a frame.
+    /// </summary>
+    /// <exception cref="ImageResourceLimitException">The scratch exceeds the allocation limit.</exception>
+    public void PrepareColors(GradientBrush brush, int width) => Prepare(brush, frame: null, width, ushort.MaxValue);
+
+    private void Prepare(GradientBrush brush, ImageFrame? frame, int width, int max)
     {
         var stops = brush.StopSpan;
         if (stops.Length > _stopCapacity)
@@ -71,12 +81,12 @@ internal sealed class GradientEvaluator : IDisposable
         _colors ??= ResampleWeights.Rent<ushort>(_scope, 4L * width);
         _stopCount = stops.Length;
         _spreadMode = brush.SpreadMode;
-        _max = (1 << PixelFormats.GetBitsPerComponent(frame.PixelFormat)) - 1;
+        _max = max;
         var values = Stops;
         var transparent = true;
         for (var i = 0; i < stops.Length; i++)
         {
-            var color = frame.ConvertDrawingColor(stops[i].Color);
+            var color = frame is null ? new DrawingColor(stops[i].Color.R, stops[i].Color.G, stops[i].Color.B, stops[i].Color.A) : frame.ConvertDrawingColor(stops[i].Color);
             var entry = values.Slice(i * ValuesPerStop, ValuesPerStop);
             entry[0] = stops[i].Offset;
             entry[1] = color.Alpha;

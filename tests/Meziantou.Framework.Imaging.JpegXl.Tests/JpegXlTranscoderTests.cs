@@ -43,9 +43,10 @@ public sealed class JpegXlTranscoderTests
         var jpeg = GoldenCorpus.Default.Get(id).ReadInput();
         using var recompressed = new MemoryStream();
 
-        // What a JPEG XL frame cannot hold is refused, never approximated: a sampling factor of 4, and a file that changes
-        // its restart interval between scans
-        if (id is "jpeg/baseline-411-odd" or "jpeg/progressive-411-separate-dc" or "jpeg/progressive-420-odd-restart-rows-deep")
+        // What a JPEG XL frame cannot hold is refused, never approximated: a sampling factor of 4, a file that changes its
+        // restart interval between scans, arithmetic coding and samples of 12 bits
+        if (id is "jpeg/baseline-411-odd" or "jpeg/progressive-411-separate-dc" or "jpeg/progressive-420-odd-restart-rows-deep"
+            || id.Contains("arithmetic", StringComparison.Ordinal) || id.Contains("precision12", StringComparison.Ordinal))
         {
             var exception = Assert.Throws<UnsupportedImageFeatureException>(() => JpegXlTranscoder.RecompressJpeg(jpeg, recompressed));
             Assert.Equal(ImageFormat.Jpeg, exception.Format);

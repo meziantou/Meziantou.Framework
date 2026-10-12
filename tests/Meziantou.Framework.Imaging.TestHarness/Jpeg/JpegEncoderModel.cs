@@ -148,7 +148,8 @@ public static class JpegEncoderModel
     /// <summary>
     /// Compares decoded coefficients with the model: each must equal the model value rounded to nearest (ties away from
     /// zero) and clamped to the baseline range, except within <paramref name="tieWindow"/> of a rounding boundary, where
-    /// either neighbor is accepted (single-precision sample storage moves coefficients by far less than 1e-3).
+    /// either neighbor is accepted (single-precision sample storage moves coefficients by far less than 1e-3). The AC
+    /// coefficients of the blocks a progressive file does not code (<see cref="ReferenceJpegBlocks.AcBlocksX"/>) must be zero.
     /// </summary>
     /// <param name="expected">The model coefficients.</param>
     /// <param name="actual">The decoded coefficients.</param>
@@ -181,6 +182,18 @@ public static class JpegEncoderModel
                 var dc = i % 64 == 0;
                 var rounded = Math.Clamp((int)Math.Round(exact, MidpointRounding.AwayFromZero), dc ? -1024 : -1023, 1023);
                 var value = coefficients[i];
+                if (!dc && (i / 64 % model.BlocksX >= grid.AcBlocksX || i / 64 / model.BlocksX >= grid.AcBlocksY))
+                {
+                    // Not coded: the block holds no sample of the image
+                    if (value != 0)
+                    {
+                        mismatches++;
+                        first ??= string.Create(CultureInfo.InvariantCulture, $"Component {c}, block {i / 64 % model.BlocksX},{i / 64 / model.BlocksX}, coefficient (u {i % 8}, v {i % 64 / 8}): {value} in a block whose AC coefficients are not coded.");
+                    }
+
+                    continue;
+                }
+
                 if (value == rounded)
                     continue;
 

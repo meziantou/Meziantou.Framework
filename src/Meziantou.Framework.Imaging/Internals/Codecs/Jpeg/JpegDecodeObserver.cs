@@ -1,7 +1,7 @@
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
-/// The pixel-decoding side of JPEG loading (baseline and progressive). <see cref="JpegStructureParser"/> walks the
+/// The pixel-decoding side of JPEG loading (sequential and progressive frames, Huffman or arithmetic coded). <see cref="JpegStructureParser"/> walks the
 /// markers in <see cref="StructureWalk.Decode"/> mode (bounded segments, frame header, scan headers, entropy-coded segment
 /// boundaries, metadata, unsupported modes, limits) and calls these hooks; the observer parses the tables, decodes the
 /// entropy-coded data and builds the image with a <see cref="DecodedImageBuilder"/>.

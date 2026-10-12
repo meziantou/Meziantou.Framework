@@ -4,32 +4,31 @@ using System.Runtime.InteropServices;
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
-/// The bits of the entropy-coded data of a JPEG scan (ITU-T T.81, section F.1.2): most significant bit first, a zero byte
-/// stuffed after each byte 0xFF. The bytes are written to a span the caller provides; the bits of an incomplete byte stay
-/// in the writer.
+/// The bit accumulator of an entropy-coded JPEG segment (ITU-T T.81 section F.1.2.3): bits are appended most significant
+/// first, whole bytes are emitted with a stuffed zero byte after each <c>0xFF</c>, and the last byte is completed with 1-bits.
 /// </summary>
 [StructLayout(LayoutKind.Auto)]
 internal struct JpegBitWriter
 {
-    private ulong _bitBuffer;
-    private int _bitCount;
+    private ulong _buffer;
+    private int _count;
 
     /// <summary>Gets the number of bits of the incomplete byte: 0 to 7.</summary>
-    public readonly int PendingBitCount => _bitCount;
+    public readonly int PendingBitCount => _count;
 
-    /// <summary>Appends bits, emitting whole bytes with a stuffed zero after each 0xFF.</summary>
-    /// <param name="destination">Receives the bytes: two for each eight bits, at most.</param>
-    /// <param name="position">The position in <paramref name="destination"/>, advanced.</param>
-    /// <param name="bits">The bits, in the low bits of the value.</param>
-    /// <param name="length">The number of bits, at most 32.</param>
-    public void WriteBits(Span<byte> destination, ref int position, uint bits, int length)
+    /// <summary>Appends bits, emitting the whole bytes.</summary>
+    /// <param name="destination">The destination; two bytes per completed byte must be available.</param>
+    /// <param name="position">The write position in <paramref name="destination"/>, advanced.</param>
+    /// <param name="bits">The bits, right-aligned.</param>
+    /// <param name="length">The number of bits, 0 to 32.</param>
+    public void Write(Span<byte> destination, ref int position, uint bits, int length)
     {
-        _bitBuffer = (_bitBuffer << length) | bits;
-        _bitCount += length;
-        while (_bitCount >= 8)
+        _buffer = (_buffer << length) | bits;
+        _count += length;
+        while (_count >= 8)
         {
-            _bitCount -= 8;
-            var value = (byte)(_bitBuffer >> _bitCount);
+            _count -= 8;
+            var value = (byte)(_buffer >> _count);
             destination[position++] = value;
             if (value == 0xFF)
             {
@@ -46,7 +45,7 @@ internal struct JpegBitWriter
         if (length == 0)
             throw new InvalidOperationException(string.Create(CultureInfo.InvariantCulture, $"The Huffman table has no code for the symbol 0x{symbol:X2}."));
 
-        WriteBits(destination, ref position, table.GetCode(symbol), length);
+        Write(destination, ref position, table.GetCode(symbol), length);
     }
 
     /// <summary>Writes the symbol <c>(symbolHigh &lt;&lt; 4) | SSSS</c> for a value, then its SSSS additional bits (negative values as <c>value - 1</c>).</summary>
@@ -58,14 +57,26 @@ internal struct JpegBitWriter
         if (size > 0)
         {
             var bits = value < 0 ? (uint)(value - 1) & ((1u << size) - 1) : (uint)value;
-            WriteBits(destination, ref position, bits, size);
+            Write(destination, ref position, bits, size);
         }
     }
 
-    /// <summary>Forgets the bits of the incomplete byte: the start of a scan.</summary>
+    /// <summary>Forgets the bits of the incomplete byte: the start of a scan whose previous one was not completed here.</summary>
     public void Reset()
     {
-        _bitBuffer = 0;
-        _bitCount = 0;
+        _buffer = 0;
+        _count = 0;
+    }
+
+    /// <summary>Completes the last byte with 1-bits at the end of an entropy-coded segment.</summary>
+    /// <param name="destination">The destination; two bytes must be available.</param>
+    /// <param name="position">The write position in <paramref name="destination"/>, advanced.</param>
+    public void Pad(Span<byte> destination, ref int position)
+    {
+        if (_count > 0)
+        {
+            var padding = 8 - _count;
+            Write(destination, ref position, (1u << padding) - 1, padding);
+        }
     }
 }

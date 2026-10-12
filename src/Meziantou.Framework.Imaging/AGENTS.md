@@ -2,8 +2,8 @@
 
 A fully managed image library: PNG/APNG, GIF, JPEG, WebP, QOI, BMP, TGA, Netpbm, TIFF, ICO/CUR, ANI, AVIF (with its
 own AV1 decoder and encoder) and JPEG XL (lossless and lossy, progressive) decoding and encoding, lossless JPEG
-recompression (`JpegXlTranscoder`), animation-aware processing, vector drawing, ICC color conversion, and
-bounded-memory streaming readers and writers.
+recompression (`JpegXlTranscoder`), animation-aware processing, vector drawing, font files (TrueType, OpenType, WOFF,
+WOFF2), ICC color conversion, and bounded-memory streaming readers and writers.
 
 These instructions complete the repository-level `AGENTS.md`. The user guide is [readme.md](readme.md): it states what
 the library guarantees to its callers (support matrix, limitations, defaults). Keep the code, the XML documentation and
@@ -13,15 +13,18 @@ the library guarantees to its callers (support matrix, limitations, defaults). K
 
 - Target frameworks are exactly `net10.0;net11.0` for the library and every test, sample and benchmark project. Do not
   add older targets or compatibility shims.
-- Fully managed, no package dependency and no native dependency. The library is trimmable and NativeAOT-compatible
+- Fully managed, no native dependency, and one package dependency: `Meziantou.Framework.Unicode`, the Unicode
+  algorithms text layout needs (properties, normalization, scripts, segmentation, bidi), which is itself fully managed
+  and independent of ICU. Nothing else (`ApiSurfaceTests`). The library is trimmable and NativeAOT-compatible
   (`IsTrimmable`, `IsAotCompatible`): no reflection-based code.
 - Write implementations from the format specifications. Never copy or port code from other image libraries
-  (System.Drawing, libpng, libjpeg, giflib, libwebp, libavif, libaom, dav1d, stb, ...). Those libraries are test oracles
-  only: their output is compared with ours, their source is never read to write ours.
+  (System.Drawing, libpng, libjpeg, giflib, libwebp, libavif, libaom, dav1d, stb, ...) or from font libraries (FreeType,
+  HarfBuzz, the woff2 reference code, fontTools, ...). Those libraries are test oracles only: their output is compared
+  with ours, their source is never read to write ours.
 - No public allocator, custom pixel type, codec plug-in or image-processor interface. Implementation types are `internal`
   and live under `Internals/`.
-- Public namespaces: `Meziantou.Framework.Imaging`, `.Metadata`, `.Formats` (encoder settings) and `.Drawing` (brushes,
-  pens, paths, the canvas). The base types of the model (`Image`, `ImageFrame`, `ImageFrameCollection`, `ImageEncoder`,
+- Public namespaces: `Meziantou.Framework.Imaging`, `.Metadata`, `.Formats` (encoder settings), `.Drawing` (brushes,
+  pens, paths, the canvas) and `.Typography` (fonts). The base types of the model (`Image`, `ImageFrame`, `ImageFrameCollection`, `ImageEncoder`,
   `AutoCropAnalysis`, `Brush`, `GradientBrush`) cannot be derived outside the library.
 - Every public member has XML documentation (`DisableDocumentationWarnings` is `false`).
 - `Meziantou.Framework.FullPath` is used by the tests, benchmarks and tools, never by the library.
@@ -256,6 +259,271 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
   (`DrawingFuzzTests`). The references never reuse the flattening or stroking of the library: curves are checked
   against the true curve, strokes against the predicate, and the pieces the library emits are then filled exactly.
 
+## Fonts
+
+`Font` and `FontCollection` (`Typography/`) are thin public types over `Internals/Fonts`: `FontLoader` reads the file
+and expands the containers (`WoffReader`, `Woff2Reader` and `Woff2GlyfTransform`), `FontFace` validates the table
+directory and the fixed-size tables, `CmapTable` maps characters, `GlyfOutlineReader` and `CffTable` with
+`CffCharstringInterpreter` decode outlines into an `OutlineSink`.
+
+- Written from the OpenType specification, the WOFF 1.0 and 2.0 recommendations and Adobe Technical Notes #5176 (CFF)
+  and #5177 (Type 2 charstrings); cite the section in the code.
+- **A font is not an image.** No `ImageFormat` member, no codec, no `Font*Exception`: the errors are the four content
+  exceptions with `ImageFormat.Unknown` (`FontErrors`), as for ICC profiles. An unsupported feature is named
+  `"Font: <feature>"`.
+- **A font is immutable, thread-safe and not disposable.** It keeps one exact garbage-collected `byte[]` (`FontData`,
+  like `MetadataBlob`), shared by the faces of a collection, bounded by `MaxFontBytes` before it is allocated; tables are
+  read in place, never copied. It has no cache and no state: the working storage of a glyph is a caller-owned
+  `GlyphScratch` charged to an allocation scope, and a `GlyphBudget` per glyph.
+- **Untrusted input.** Every read goes through `FontBinary` (bounds-checked, `InvalidImageContentException`), table sizes
+  use 64-bit arithmetic, and nothing is sized from a declared length before it is checked against a limit. Anything that
+  can expand (composite glyphs, subroutines, later paint graphs and lookups) charges `GlyphBudget` per elementary
+  operation: recursion depth alone does not bound the work. Outline coordinates are bounded (`FontErrors.MaxCoordinate`)
+  so that no value that is not a number leaves a reader. Only the documented exceptions may escape (`FontFuzzTests`).
+- **Validate eagerly what every use needs** (directory, required tables, headers, the structure of `cmap` and of the CFF
+  INDEX and DICT structures) and lazily what one glyph needs (its data, its charstring).
+- A compressed container is expanded to an sfnt in memory, then read as one. The temporary storage of the expansion is
+  rented from an allocation scope; the font itself is not (it outlives every scope). `ZLibStream` and `BrotliDecoder`
+  are given known-size destinations and must fill them exactly; a decompressor error of any type is malformed content.
+- **Outlines are what the reference readers emit.** A TrueType contour is always closed by a line to its first point and
+  a contour of one point is kept; a CFF contour is closed by a line only when its last point is another one, and a
+  contour that draws nothing is not emitted. A TrueType outline is moved so that its origin (the left of its bounding
+  box minus its left side bearing, or the origin of the component whose metrics a composite glyph uses) is at zero. The
+  recorded outlines of the default instances compare as strings: keep that exact.
+- **Variable fonts.** `FontFace.WithCoordinates` gives the face of an instance: a shallow copy of the default face with
+  a `FontInstance` (the values of the axes, their normalized coordinates, and the scalar of each region of each item
+  variation store, computed once) and the metrics `MVAR` varies. Nothing else is cached; `Font.WithVariations` is the
+  public form.
+  - Normalization follows "Coordinate scales and normalization" in its order: normalize as 16.16, map with `avar` at
+    that precision, then round to 2.14 (add 2, drop two bits). Rounding before `avar`, or keeping 16.16 coordinates,
+    both differ from the reference readers by a visible fraction of a unit.
+  - Outlines are not rounded (`gvar` deltas, inferred deltas, the offsets of components, `blend` in CFF2); what is a
+    whole number of font units in the font stays one in an instance: advances (`HVAR`, else the phantom points of
+    `gvar`), `MVAR` metrics and `GPOS` deltas are rounded with `ItemVariationStore.Round` (halves upward).
+  - `GvarTable.AddDeltas` reads the packed points and deltas as streams, without storing them, into sums that live in
+    the work stack of `GlyphScratch` (`RentWork`; spans of it do not survive another rental). Tuple variations charge
+    `GlyphBudget` per tuple and per point.
+  - The charstrings of `CFF2` are run by the same interpreter as CFF (`blend`, `vsindex`, no width); the tag of the
+    table says which format it is, never its version byte.
+  - The shaper applies `rvrn` before every other feature and resolves feature variations for every instance,
+    including the default one (a condition can contain it).
+  - The instance values of the corpus are the outlines HarfBuzz gives to three decimals (`--precision=3`), once
+    FreeType has drawn the same segments within two units; the tests accept 0.005 unit, the precision of the single
+    precision numbers of HarfBuzz. Advances and metrics are exact. `FontVariationTests` has the literals, computed by
+    hand from `FontSamples.Variable` and `VariableCharstrings`.
+- Tests have three sources: literals computed by hand on fonts built in memory (`FontTests`, with `Common/FontBuilder.cs`,
+  `FontCffWriter.cs`, `FontCharstring.cs` and `FontWoff2Writer.cs` of the corpus generator, linked into the tests), the
+  values HarfBuzz and FreeType both give for the fonts of the corpus (`Conformance/FontConformanceTests`: names,
+  metrics, the whole character map, every advance and outline; a container must give the tables of its original font),
+  and mutation fuzzing (`FontFuzzTests`). The test-side writers are not oracles: a file they write is a fixture only
+  after the corpus generator has read it back with the reference decoders.
+
+## Text
+
+`TextLayoutEngine` (`Internals/Text/Layout`) turns a text, its spans and `TextLayoutOptions` into the content of a
+`TextLayout`: lines, glyphs, positions and decorations. `DrawingSession.FillText` and `StrokeText` draw a layout through
+`GlyphPathSink` into the sinks of the drawing pipeline.
+
+- **A layout is the only thing that is measured and drawn.** There is no separate measuring code: `Width`, `Height`,
+  `Lines` and `InkBounds` come from the positions that are drawn. A layout is immutable and thread-safe, holds exact
+  managed arrays (like `VectorPath`) and no pooled storage; so are `TextStyle`, `TextLayoutOptions`, `RichText` and
+  `FontStack`.
+- **Validate at layout, not at draw.** Creating a layout decodes each distinct glyph once, so the errors of the font
+  data surface there; drawing a layout then only fails on a limit of the image or on cancellation. Do not add a failure
+  mode to `FillText` that `TextLayout.Create` could have reported.
+- **The Unicode algorithms are those of `Meziantou.Framework.Unicode`**: line breaking (UAX #14), bidirectional levels
+  and reordering (UAX #9), script runs (UAX #24), grapheme clusters and words (UAX #29), hyphenation. Do not
+  reimplement or approximate one here; a missing piece belongs in that package, with its conformance tests.
+- **The steps of a paragraph**: levels, items (one level, script, font and shaping style each), shaping, lines, display
+  order. An item is cut where shaping could differ, never where only the paint differs. A line break inside an item
+  cuts it, and both parts are shaped again: no ligature or kerning pair spans two lines. The advance of each character
+  (`Paragraph.Advances`) is what line breaking measures; it is refreshed whenever an item is shaped. Of the text
+  after a line, only the start is shaped again (`ShapeStart`: two line widths, cut after a space), and the rest is a
+  pending item that keeps its advances: shaping the whole rest after each line made a layout quadratic. A line is
+  still shaped as a whole: `BuildLine` merges the parts of a run that such a cut separated.
+- **Lines follow each other in the text and cover it** (`TextLine.Start` and `Length`), whatever cut them: a width, a
+  line break, a trimming. `IsTruncated` is the only way text is left out. `TextLayoutFuzzTests` checks it on random
+  texts and options.
+- **Transform, then flatten.** The control points of an outline are transformed to pixels with `Affine2D` (one fixed
+  order of operations), then flattened by the unchanged `PathFlattener` with the tolerance of every other curve. No
+  hinting, no snapping, no rounding of advances: a run is positioned in whole font units, then scaled once.
+  `TextLayout.ToPath` uses the same transform, and filling or stroking that path must stay bit-identical to
+  `FillText` and `StrokeText` of a layout of one paint (`DrawingTextTests.DrawingALayoutIsDrawingItsPath`).
+- **One shape per paint, one orientation per glyph.** The glyphs and decorations of one paint are rasterized in one
+  sweep, so overlaps are painted once. TrueType and CFF outlines turn in opposite directions: `Emit` reverses the
+  edges of a glyph whose signed area is negative (`EdgeBuilder.NegateDirections`), otherwise overlapping glyphs of two
+  conventions would cancel under the nonzero rule; decorations are emitted in the same orientation. A layout of several
+  paints prepares every shape before painting the first one (`DrawingSession.Prepare`), which keeps "every rental
+  happens before the first pixel write".
+- **Text on a path** (`TextLayout.EmitOnPath`, `PathMeasure`). The path is flattened by `PathFlattener` into chords;
+  `PathMeasure` keeps each chord with its unit direction and the distance of its start. A glyph is placed rigidly at the
+  anchor of its cluster (`TextLayoutData.Anchors`: the middle of the advance of the cluster, so a base and its marks,
+  or the glyphs of a ligature, turn together) with the rotation `(dx, dy, -dy, dx)` of the chord under the anchor: only
+  `+ - * /` and `Math.Sqrt`, never a trigonometric function. The text is on the left of the direction; `Side.Right` is
+  the reversed path, not a mirror. A single closed contour wraps; several contours are concatenated; beyond the ends
+  the first and last chords continue (`Extend`) or the cluster is dropped (`Clip`). Decorations are cut into one
+  quadrilateral per chord, and more than one turn around a closed path is one turn (the work is bounded by the number
+  of chords, not by the length of the text). The literals are whole-pixel rectangles on axis-aligned paths and a 3-4-5
+  slope (`DrawingTextTests`).
+- **Color glyphs** (`ColrTable`, `ColorGlyph`, `ColorSurface`, `DrawingSession.ColorGlyphs.cs`). The graph of paints
+  of a glyph is walked once, when a layout is created (`TextLayout.Measure`), and written as a flat display list with
+  the transformations resolved: fills of an outline or of the clip, clips (an outline, a box), layers and their
+  composition. The walk validates everything the glyph refers to, charges `GlyphBudget` per paint, and leaves out a
+  paint that refers to a glyph or a layer that is being painted. Drawing runs the list on a `ColorSurface`: layers of
+  premultiplied single precision colors and clip masks over the box of the glyph on the canvas, filled row by row
+  from the unchanged `CoverageRasterizer`, then composited onto the frames as a paint with a color per pixel.
+  - `FillText` prepares every color glyph (`paint: false`: the surface of the largest one, the sweep of every
+    outline) before any shape of the call is painted, then paints them after the shapes of the brushes.
+  - Angles go through `DeterministicAngle` (series and square roots, in half turns), never `Math.Sin`, `Cos` or
+    `Atan2`: the rule against trigonometric functions in drawing holds for the paints.
+  - The degenerate cases are those of the specification, not of a renderer: equal sweep angles or stops at one
+    offset give two colors when the color line pads and nothing when it repeats or reflects.
+  - A bitmap glyph (`SbixTable`, `CblcTable`, `ColorImage`) is a display list of one op, `FillImage`, whose paint is
+    the image: decoded with the PNG decoder of the library under the limits of the font, scaled down once at layout
+    time (`Resize`) when the strike is larger than the text, sampled bilinearly at draw time. The key of a color glyph
+    in a layout is (font, glyph, palette) for paints and (font, glyph, size) for images. `FontFace.IsColorGlyph` is
+    about `COLR` only: use `TryGetBitmapGlyph` for images.
+  - Tests: literals on `FontSamples.ColorBoxes`, `ColorTransforms`, `ColorGradients` and `ColorClips` (rectangles on
+    whole pixels, gradient values at pixel centers; `ColorFontTests`), and the images `hb-raster` draws for the fonts
+    of the corpus (`Conformance/ColorFontConformanceTests`: two rasterizers do not give the same edge pixels, so
+    the comparison is statistical). The glyphs the reference renderer does not draw as the specification says are
+    listed in `FontCorpus.CharactersWithoutReference` with the reason, and are covered by literals. `hb-raster`
+    needs `--font-ppem` to choose the strike of a bitmap font (without it, the largest), and draws an image one pixel
+    higher than an outline (`FontRender.ImageShift`): a line of a bitmap font has no outline glyph for that reason.
+    The literals of the bitmap glyphs are on `FontSamples.BitmapBoxes` (both table families, every index and image
+    format).
+- **The layout overloads allocate nothing** once the scratch of the session has grown (`PerformanceContractTests`). The
+  overload that takes a string creates a layout and is the documented exception.
+- Tests: literals on the boxes font (rectangles on whole pixels at 16 pixels per em, compared with `FillRectangle`;
+  `DrawingTextTests`, `TextLayoutTests`), layout against path on the fonts of the corpus, `FontFuzzTests`, which lays
+  out and draws with every mutated font, and `TextLayoutFuzzTests`. A defect the fuzzers find becomes a literal test.
+
+### Shaping
+
+`TextShaper` (`Internals/Text/Shaping`) turns the characters of a run (one font, script, language and direction) into
+glyphs and positions in a `GlyphBuffer`; `LayoutApplier` (`Internals/Text/OpenType`) applies the lookups of `GSUB` and
+`GPOS`, with `GdefTable`, `LayoutTable` and `LayoutCommon` for the tables they share.
+
+- Written from the OpenType specification (GSUB, GPOS, GDEF and the common table formats) and, for what a script
+  needs, from the script development specifications of Microsoft. HarfBuzz is the oracle and is never the source: where
+  the specification leaves a behavior to the client (what a lookup sees through, how marks follow a ligature, the
+  default features), write the rule in the terms of the specification and of Unicode, and let the corpus decide.
+- **Everything is an integer in font units** until `TextLayout` scales it. Positions are an advance and an offset per
+  glyph; an attached glyph records what it is attached to, and `FinishPositions` resolves the chains once.
+- **Clusters are the contract with the rest of the layout**: every glyph has the index of the first character of its
+  cluster, a cluster never splits what shaping tied together (a ligature, a character and its marks), and clusters never
+  decrease along a run. Merge clusters whenever glyphs are merged, reordered or removed.
+- **Bounds.** The buffer refuses to grow beyond `MaxTextGlyphs`. A pass of a lookup over the glyphs is what shaping
+  is: it is not charged, and the subtables of the lookups of one run are limited in number instead (a font can have
+  several thousand, tried at each glyph; it cannot have millions by pointing every offset at one table). What a rule
+  adds to that, the lookups it applies, is charged to the operation budget of the buffer, which is in proportion
+  with the text. Nested lookups are limited in depth; sequences are limited in length. A layout table is read
+  through `FontBinary` like any other: a reference outside the table is `InvalidImageContentException`, raised when the
+  layout is created.
+- A feature value lives in bits of the mask of each glyph, so a feature can differ along a run without splitting it.
+- **Shaping models** (`ScriptShaperKind`, `ShaperPlan`). A script that needs more than the lookups of the font has a
+  model: an analysis of the characters that chooses the glyphs each of its features applies to (one mask bit per
+  feature, after the bits of the default features), and its features in **stages**. The lookups of a stage are
+  applied together in the order of the lookup list, and a stage sees the result of the stages before it; a feature
+  belongs to the first stage that names it; the features every script has and those of the caller are the last
+  stage. Stage 0 is `rvrn`, stage 1 the direction and fraction features. A feature the language system requires is
+  applied in the stage of its tag, or in stage 0.
+  - `ArabicShaper` (Arabic and Syriac): forms from the Joining_Type and Joining_Group properties, the stages of the
+    Microsoft specifications, the order of marks of UTR #53, and the stretching glyphs of `stch`. A font with `rclt`
+    gets `calt` in the last stage. The other joining scripts (N'Ko, Mongolian, Adlam, ...) belong to the universal
+    model, not to this one.
+  - `HebrewShaper`: the precomposed letters for a font that does not place points, and the meteg between the points
+    of a vowel.
+  - `ThaiShaper` (Thai and Lao): the sara am, decomposed before normalization, its ring moved before the marks above
+    the consonant that precede it in the text (not the ones normalization would put there later).
+  - `HangulShaper`: composition and decomposition of syllable blocks from what the font has, a feature per position
+    for the blocks drawn with letters, tone marks. It does the work of normalization for its letters, which
+    normalization then leaves alone. The dotted circle of a tone mark keeps the class of the mark, so that the marks
+    around them are ordered as if it were not there.
+  - Tibetan has no model of its own: Windows and the reference shaper both shape it with the universal model.
+  - `IndicShaper` (nine scripts; Sinhala belongs to the universal model): the steps of the Microsoft
+    specifications, with their names in the comments. `IndicCategories` derives what a character is from
+    Indic_Syllabic_Category and Indic_Positional_Category, with a short list of exceptions, each one found by
+    comparing with the reference shaper; `SyllablePattern` compiles the syllable grammar, written as text, into an
+    automaton (reuse it for the other syllabic models). The model has an instance per run (`IndicShaper` object):
+    what the font does with a consonant and a halant is asked with `LayoutApplier.WouldSubstitute` on a scratch
+    buffer and remembered for the run. The reordering runs between stages (`InitialReorderingStage`,
+    `FinalReorderingStage`), whether the font has lookups in them or not. The features of the model work inside a
+    syllable (`ShaperFeatureFlags.PerSyllable`, `GlyphInfo.Syllable`) and a rule only replaces glyphs that have the
+    mask of its feature. Marks keep their advance in these scripts and in Hangul.
+  - A font whose substitution table has the script only as `DFLT` or `latn`, or under a tag that ends with 3, is not
+    shaped with the Indic model (`GetShaper`).
+  - `KhmerShaper` and `MyanmarShaper` are the same kind of model with their own categories and grammar, and no
+    question asked to the font: the base is the first consonant. Khmer reorders before any feature and applies the
+    forms of its subscripts in one stage, to what follows the first character of each syllable; the vowels with two
+    parts are decomposed by the model (the pre-base vowel, then the vowel itself), not by Unicode. Myanmar reorders
+    after `locl` and `ccmp` by giving each character a place and sorting, and zeroes the advance of its marks before
+    positioning. A Myanmar font with the tag `mymr` only is shaped with the default model, as the reference shaper
+    does. These syllabic models decompose every character before shaping and do not compose onto marks.
+  - `UniversalShaper`: the model of the scripts registered for the Universal Shaping Engine, and of an Indic font
+    whose script tag ends with 3. The class of a character is derived at run time from Indic_Syllabic_Category,
+    Indic_Positional_Category, General_Category and Joining_Type, with the values of the two data files of the
+    specification transcribed in `GetSyllabicCategory` and `GetPositionalCategory` (update them when the files are
+    updated for a new version of Unicode) and a few classes of its own (the al-lakuna, the sakot). The cluster
+    schemas are `SyllablePattern`s; the joiners and the variation selectors are taken out before matching. The
+    glyphs `rphf` and `pref` make are found with `GlyphInfo.Substituted`, which the model clears between its stages
+    (an ignorable glyph a feature replaced is ignorable again after that, as in the reference shaper). The forms
+    of the joining scripts come from `ArabicShaper.SetFormMasks`. Two things are the reference shaper's and not the
+    specification's: a symbol cluster (a space, a digit) joins its neighbors for the topographical features of a
+    script that does not join, which the specification leaves unspecified; a code point that is no character is a
+    symbol. One thing is the specification's and not the reference shaper's: U+2015, U+2022 and U+25FB to U+25FE
+    are generic bases (`KnownDivergences` in the conformance tests).
+  - `GetShaper`: a model is not used for a font that has features for a default script only (`DFLT`, `dflt`,
+    `latn`); a font without the script and without default script, or without substitution table, gets the model.
+  - `ShapingCombiningClass` orders marks for shaping (Hebrew points, Arabic vowel marks, the vowel signs of
+    Tibetan, and three marks by their code point); every script goes through it, and composition is blocked by
+    these classes, not by the canonical ones.
+- **Normalization** follows the text: a character without marks is kept when the font has it and decomposed (as far
+  as needed) when it does not; a character followed by marks is decomposed as far as the font allows, with its marks,
+  then ordered and composed again. A run without any mark is neither ordered nor composed.
+- **What a lookup sees through** (`LayoutApplier.IsTransparent`): characters without visible form, with three
+  exceptions. The zero width non-joiner separates the glyphs a substitution replaces (the components of a ligature,
+  the input of a contextual rule) and is seen through around them and by positioning. The zero width joiner is seen
+  through, except by the features of a shaping model that say otherwise and by `mark` and `mkmk`: a joiner between
+  a letter and a mark keeps the mark off the letter (`abvm` and `blwm` see through it). A combining
+  grapheme joiner that kept two marks from being reordered separates them for substitutions. The glyphs of these
+  characters are the ones of the font until the positions are made, and are hidden afterward. The free variation
+  selectors of Mongolian and the tag characters are `Hidden` from the start: substitutions see them. The fillers of
+  Hangul and the format controls of the shorthands (U+1BCA0 to U+1BCA3) are not ignorable at all.
+- **Ligature bookkeeping** (`GlyphInfo.Props`, `LigatureId`, `LigatureComponent`): a real ligature has
+  `LigatureWithComponents` (a base with its marks, or marks together, are not one); becoming a ligature clears
+  `Multiplied`; the glyphs that replace a glyph tied to a ligature keep its identifier instead of being numbered.
+  Mark attachment depends on all three: a glyph of a multiplied sequence carries marks when it is the first one, when
+  a mark precedes it, when the sequence lost the glyph before it, or when the lookup has it as a base.
+- **Where a mark is placed.** A mark is placed vertically when it is attached, from where its target is at that
+  point of the lookups, the glyphs a cursive attachment connects the target to included
+  (`GetVerticalOffset`); horizontally it follows its target to the end. A later lookup that moves the target
+  vertically (another mark lookup, a cursive attachment made afterward) does not move the mark: the reference
+  shaper does the same, and the fonts are made with it.
+- **Cursive chains.** A glyph follows one other glyph. When a lookup connects a glyph that already followed
+  another one, the links of its old chain are reversed (`ReverseCursiveChain`), so that what was connected stays
+  connected; two glyphs that would follow each other are separated.
+- In a mark-to-ligature lookup, the glyphs a substitution put after another one are passed over when the ligature
+  is looked for.
+- A mark is attached to the first of the glyphs one glyph was replaced by, unless a later one is a base of the mark
+  in the lookup (nastaliq fonts insert a spacing glyph before a letter).
+- Tests have three sources: the Annotated OpenType Specification tests of Adobe (`Conformance/ShapingSuiteTests`, the
+  `font-suites/aots` directory of the corpus: every format of every lookup, with the results the specification
+  gives), the glyphs and positions `hb-shape` gives for texts set in the fonts of the corpus
+  (`Conformance/ShapingConformanceTests`: glyphs, clusters, the place each glyph is drawn at, the advance of the text),
+  and literals computed by hand (`TextShaperTests`). A deliberate difference with a reference is an entry of the
+  `KnownDivergences` map of the test, with its reason; an entry that no longer differs fails the test.
+- **Compare random texts before trusting a shaping model.** The corpus has the cases someone thought of. Shaping
+  thousands of random sequences of the letters, marks, joiners and punctuation of a script with several fonts, with
+  the library and with `hb-shape --shapers=ot` (same script and direction), found what the written cases did not:
+  when a character is decomposed, when a joiner blocks a mark, which glyph of a multiplied sequence is a base. Add
+  the text that differs to the cases of `FontCorpus.cs` once it is understood. For a new script, build the texts
+  from the characters the font has: each one alone, around a letter, after a halant, a joiner and a space, the
+  pairs of marks, then random sequences; and give them to `hb-shape` in one call (`--text-file`).
+- The reference shaper numbers the syllables of a run from 1 to 15 and starts again; it shows no dotted circle for a
+  syllable without base that has the number of the last one it showed a circle for. The library shows it. Keep the
+  lines of the corpus that have such syllables short, so that the two agree, rather than listing a divergence.
+
 ## Performance work
 
 - Remove unnecessary decodes, conversions and copies before micro-optimizing. Profile first and keep the evidence.
@@ -275,6 +543,7 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
   dotnet run -c Release --project benchmarks/ImagingBenchmarks -f net10.0 -- jxl-quality 512 3
   dotnet run -c Release --project benchmarks/ImagingBenchmarks -f net10.0 -- profile PngBenchmarks.SaveLarge8 20
   dotnet run -c Release --project benchmarks/ImagingBenchmarks -f net10.0 -- profile PngBenchmarks.SaveLarge8 50x
+  dotnet run -c Release --project benchmarks/ImagingBenchmarks -f net10.0 -- profile TextBenchmarks.LayoutTibetan 200x
   dotnet run eng/compare-benchmarks.cs -- <baseline>/results <current>/results
   ```
 
@@ -345,6 +614,15 @@ dotnet publish tests/Meziantou.Framework.Imaging.AotSmoke -c Release -f net11.0 
   stages: the samples decoded by `djpeg` from files the generator regroups scan by scan, then the decimal reference of
   the harness for the colors, with LittleCMS and Apple ColorSync as cross-checks.
   `JpegDecoderConformanceTests` pins each tolerance to the measured disagreement (`LibraryInkMeasurements`).
+- **Arithmetic-coded JPEG fixtures.** `cjpeg -arithmetic` writes them and `djpeg` is the reference, but libjpeg-turbo
+  is the only arithmetic decoder at hand: FFmpeg has none and Apple ImageIO does not use one of its own. The
+  cross-check is FFmpeg on the file `jpegtran` rewrites with Huffman codes (the same coefficients), so the fixtures with
+  chroma subsampling have even dimensions. The unit tests decode the streams of the test-side arithmetic encoder
+  (`JpegTestArithmeticCoder`), itself checked against `djpeg` when it was written.
+- **12-bit JPEG fixtures.** `cjpeg -precision 12` writes them and `djpeg` gives their 12-bit samples, which the
+  generator scales to 16 bits like the library; the errors are on the 8-bit scale, so three units of a 12-bit sample
+  count as one. FFmpeg and Apple ImageIO upsample their chroma very differently and neither reads 12-bit RGB samples as
+  RGB: they bound the tolerance, the measured disagreement with `djpeg` sets it (`LibraryJpegMeasurements`).
 - **AV1 vectors.** `tests/Meziantou.Framework.Imaging.Fixtures/av1` holds raw AV1 streams with, in the manifest, the
   SHA-256 of every plane of every output frame. A digest is recorded only when two independent decoders (dav1d and
   libaom, through the pinned ffmpeg) agree byte for byte. `Av1DecoderConformanceTests` compares the planes of the
@@ -397,7 +675,8 @@ dotnet publish tests/Meziantou.Framework.Imaging.AotSmoke -c Release -f net11.0 
   The coverage tables of the fixtures README are checked against the manifest (`FixtureCoverageMatrixTests`): update them
   when fixtures or feature tags change.
 - **Fuzzing.** The default budget is small and deterministic. Longer campaigns are opt-in through
-  `MEZIANTOU_FRAMEWORK_IMAGING_FUZZ_ITERATIONS`, `_FUZZ_DURATION_SECONDS`, `_FUZZ_SEED` and `_FUZZ_CASE_TIMEOUT_SECONDS`.
+  `MEZIANTOU_FRAMEWORK_IMAGING_FUZZ_ITERATIONS`, `_FUZZ_DURATION_SECONDS`, `_FUZZ_SEED`, `_FUZZ_CASE_TIMEOUT_SECONDS`
+  and, for the font fuzzer, `_FUZZ_SEED_FILTER` (a text the identifier of the seeds contains, such as `variable`).
   A failure is minimized and committed to `FuzzRegressions/` with an entry in `regressions.json`.
 - Failed golden comparisons write expected/actual/difference previews to `MEZIANTOU_FRAMEWORK_IMAGING_TEST_ARTIFACTS`
   (default: `TestArtifacts` next to the test assembly). Interop outputs go to

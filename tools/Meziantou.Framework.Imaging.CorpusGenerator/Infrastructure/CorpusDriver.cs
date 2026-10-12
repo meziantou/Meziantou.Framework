@@ -4,17 +4,15 @@ namespace Meziantou.Framework.Imaging.CorpusGenerator.Infrastructure;
 
 /// <param name="Output">Generates into this (new or empty) directory and keeps it, instead of a temporary directory.</param>
 /// <param name="IccProfiles">The directory of the pinned checkout of the external ICC profiles (icc generator).</param>
-internal sealed record GeneratorOptions(bool Write, bool AcceptToolVersions, string? QoiHeader, string? Output = null, string? IccProfiles = null);
+/// <param name="Fonts">The directory of the pinned third-party font files (fonts generator).</param>
+internal sealed record GeneratorOptions(bool Write, bool AcceptToolVersions, string? QoiHeader, string? Output = null, string? IccProfiles = null, string? Fonts = null);
 
 /// <summary>Regenerates (a part of) the corpus in a temporary directory, then reports the differences with the committed
 /// corpus (check) or replaces it (write).</summary>
-internal static class CorpusDriver
+internal static partial class CorpusDriver
 {
-    private static readonly string[] InfrastructureFiles = ["README.md", "manifest.json", "manifest.schema.json"];
-
-    /// <summary>The manifest section of the AV1 conformance vectors (AvifCorpus): raw OBU streams with plane digests, kept
-    /// apart from the fixtures because they have no pixel reference.</summary>
-    public const string Av1VectorsKey = "av1Vectors";
+    /// <summary>The version of the manifest schema every generator writes.</summary>
+    public const int SchemaVersion = 5;
 
     public static FullPath RepoRoot { get; } = FindRepositoryRoot();
 
@@ -36,33 +34,6 @@ internal static class CorpusDriver
     public static void WriteManifest(FullPath outDir, Obj manifest) =>
         File.WriteAllText(outDir / "manifest.json", PyJson.Dumps(manifest) + "\n", new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
 
-    public static List<Obj> Fixtures(Obj manifest) => [.. ((List<object?>)manifest["fixtures"]!).Cast<Obj>()];
-
-    /// <summary>Every file a list of manifest entries references (inputs and raw references).</summary>
-    public static SortedSet<string> ManifestFiles(IEnumerable<Obj> fixtures)
-    {
-        var paths = new SortedSet<string>(StringComparer.Ordinal);
-        foreach (var fixture in fixtures)
-        {
-            paths.Add((string)((Obj)fixture["input"]!)["path"]!);
-            var expected = fixture.TryGetValue("expected", out var value) && value is Obj e ? e : [];
-            var frames = expected.TryGetValue("frames", out var f) && f is List<object?> list ? list.Cast<Obj>().ToList() : [];
-            if (expected.TryGetValue("poster", out var poster) && poster is Obj posterEntry)
-                frames.Add(posterEntry);
-            foreach (var frame in frames)
-            {
-                foreach (var buffer in ((List<object?>)frame["buffers"]!).Cast<Obj>())
-                    paths.Add((string)buffer["path"]!);
-            }
-
-            // The converted pixels of a CMYK JPEG, which is only loaded with a color conversion
-            if (fixture.TryGetValue("inkConversion", out var conversion) && conversion is Obj inkConversion)
-                paths.Add((string)((Obj)inkConversion["buffer"]!)["path"]!);
-        }
-
-        return paths;
-    }
-
     /// <summary>Copies the committed files of these fixtures to the output directory (when not already generated).</summary>
     public static void CopyCommittedFiles(FullPath outDir, IEnumerable<Obj> fixtures)
     {
@@ -75,41 +46,6 @@ internal static class CorpusDriver
                 File.Copy(CorpusDir / path, target);
             }
         }
-    }
-
-    /// <summary>The input files of the AV1 conformance vectors a manifest lists.</summary>
-    public static SortedSet<string> Av1VectorFiles(Obj manifest)
-    {
-        var paths = new SortedSet<string>(StringComparer.Ordinal);
-        if (manifest.TryGetValue(Av1VectorsKey, out var value) && value is Obj section)
-        {
-            foreach (var entry in ((List<object?>)section["entries"]!).Cast<Obj>())
-                paths.Add((string)((Obj)entry["input"]!)["path"]!);
-        }
-
-        return paths;
-    }
-
-    /// <summary>The sections of the manifest owned by the icc generator.</summary>
-    public static readonly string[] ColorSections = ["colorProfiles", "colorTransforms"];
-
-    /// <summary>Every file the color management sections of a manifest reference (profiles and vectors).</summary>
-    public static SortedSet<string> ColorFiles(Obj manifest)
-    {
-        var paths = new SortedSet<string>(StringComparer.Ordinal);
-        if (manifest.TryGetValue("colorProfiles", out var profiles) && profiles is List<object?> profileList)
-        {
-            foreach (var profile in profileList.Cast<Obj>())
-                paths.Add((string)((Obj)profile["file"]!)["path"]!);
-        }
-
-        if (manifest.TryGetValue("colorTransforms", out var transforms) && transforms is List<object?> transformList)
-        {
-            foreach (var transform in transformList.Cast<Obj>())
-                paths.Add((string)((Obj)transform["vectors"]!)["path"]!);
-        }
-
-        return paths;
     }
 
     /// <summary>Copies the committed AV1 conformance vectors to the output directory: AvifCorpus owns them, the other
@@ -146,6 +82,28 @@ internal static class CorpusDriver
         }
     }
 
+    /// <summary>The other generators keep the font section of the committed manifest, and its files, unchanged (the fonts
+    /// generator owns them).</summary>
+    public static void PreserveFonts(FullPath outDir, Obj manifest)
+    {
+        var committed = LoadCommittedManifest();
+        if (committed.TryGetValue(FontsKey, out var value))
+            manifest[FontsKey] = value;
+
+        if (committed.TryGetValue(FontSuitesKey, out var suites))
+            manifest[FontSuitesKey] = suites;
+
+        foreach (var path in FontFiles(committed, CorpusDir))
+        {
+            var target = outDir / path;
+            if (!File.Exists(target))
+            {
+                target.CreateParentDirectory();
+                File.Copy(CorpusDir / path, target);
+            }
+        }
+    }
+
     /// <summary>The generators of one format family replace only their own entries: every other fixture and file of the
     /// committed corpus is kept unchanged (the other generators own them), and so are the AV1 conformance vectors.</summary>
     public static void MergeIntoCommittedManifest(FullPath outDir, IReadOnlyList<Obj> fixtures, Func<Obj, bool> owns)
@@ -155,22 +113,29 @@ internal static class CorpusDriver
         CopyCommittedFiles(outDir, others);
         CopyCommittedAv1Vectors(outDir, committed);
         PreserveColorSections(outDir, committed);
+        PreserveFonts(outDir, committed);
         committed["fixtures"] = others.Concat(fixtures).OrderBy(f => (string)f["id"]!, StringComparer.Ordinal).Cast<object?>().ToList();
         WriteManifest(outDir, committed);
     }
 
-    public static SortedSet<string> CorpusFiles(FullPath directory)
+    /// <summary>Stops before the output is compared or written when it is not a whole corpus: the write pass removes the
+    /// committed files that are not in the output, so a file of another section that was not kept would be deleted.</summary>
+    private static void CheckOutput(FullPath outDir, SortedSet<string> generated)
     {
-        var result = new SortedSet<string>(StringComparer.Ordinal);
-        foreach (var file in Directory.EnumerateFiles(directory, "*", SearchOption.AllDirectories))
-        {
-            var relative = FullPath.FromPath(file).MakePathRelativeTo(directory).Replace('\\', '/');
-            if ((relative != "manifest.json" && InfrastructureFiles.Contains(relative)) || relative.StartsWith("LICENSES/", StringComparison.Ordinal) || relative.EndsWith("/README.md", StringComparison.Ordinal))
-                continue;
-            result.Add(relative);
-        }
+        var manifest = (Obj)PyJson.Loads(File.ReadAllText(outDir / "manifest.json", Encoding.UTF8))!;
 
-        return result;
+        // A section kept from the committed manifest whose files were not all copied
+        var missing = DescribedFiles(manifest).Where(path => !generated.Contains(path)).ToList();
+        if (missing.Count > 0)
+            throw new FatalException($"The manifest describes {missing.Count} files that the generator neither wrote nor kept ({Sample(missing)}). The lists of CorpusDriver.Files.cs must name every file of a section.");
+
+        // A file the lists do not name: the generator of every other section would not keep it
+        var referenced = ReferencedFiles(manifest, outDir);
+        var unlisted = generated.Where(path => path != "manifest.json" && !referenced.Contains(path)).ToList();
+        if (unlisted.Count > 0)
+            throw new FatalException($"The generator wrote {unlisted.Count} files that the lists of CorpusDriver.Files.cs do not name ({Sample(unlisted)}): the other generators would remove them.");
+
+        static string Sample(List<string> paths) => string.Join(", ", paths.Take(3)) + (paths.Count > 3 ? ", ..." : "");
     }
 
     /// <summary>Generates into a temporary directory, prints the summary and the differences, then checks or writes.</summary>
@@ -188,6 +153,7 @@ internal static class CorpusDriver
         {
             var count = generate(temp);
             var generated = CorpusFiles(temp);
+            CheckOutput(temp, generated);
             var committed = CorpusFiles(CorpusDir);
             var changed = generated.Intersect(committed).Where(f => !File.ReadAllBytes(temp / f).AsSpan().SequenceEqual(File.ReadAllBytes(CorpusDir / f))).ToList();
             var added = generated.Except(committed).ToList();

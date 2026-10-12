@@ -45,8 +45,9 @@ internal static class SyntheticImages
     {
         var builder = new JpegBuilder().StartOfImage().Jfif().QuantizationTable().Frame(frameMarker, precision, width, height, components).HuffmanTable();
 
-        // A progressive frame starts with a DC scan (Ss = Se = 0), a sequential scan covers the 64 coefficients
-        return builder.Scan(components, end: frameMarker == 0xC2 ? (byte)0 : (byte)63).EntropyData([0x12, 0xFF, 0x00, 0x34, 0xFF, 0xD0, 0x56]).EndOfImage().ToArray();
+        // A progressive frame (SOF2, or SOF10 with arithmetic coding) starts with a DC scan (Ss = Se = 0), a sequential scan
+        // covers the 64 coefficients
+        return builder.Scan(components, end: frameMarker is 0xC2 or 0xCA ? (byte)0 : (byte)63).EntropyData([0x12, 0xFF, 0x00, 0x34, 0xFF, 0xD0, 0x56]).EndOfImage().ToArray();
     }
 
     public static byte[] Zlib(ReadOnlySpan<byte> data)

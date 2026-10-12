@@ -259,7 +259,9 @@ internal static class FuzzOracle
         {
             ImageFormat.Png => [new PngEncoder { CompressionLevel = System.IO.Compression.CompressionLevel.Fastest, Interlaced = (variant & 16) != 0 }, new PngEncoder { MetadataHandling = MetadataHandling.Strip }],
             ImageFormat.Gif => [new GifEncoder { Interlaced = (variant & 16) != 0 }, new GifEncoder { MetadataHandling = MetadataHandling.Strip }],
-            _ => [new JpegEncoder { Quality = 1 + (variant % 100) }, new JpegEncoder { MetadataHandling = MetadataHandling.Strip }],
+
+            // Either process; the 16-bit pixels of a 12-bit file are reduced to the 8 bits the encoder writes
+            _ => [new JpegEncoder { Quality = 1 + (variant % 100), Process = (variant & 16) != 0 ? JpegEncodingProcess.Progressive : JpegEncodingProcess.Baseline, AllowBitDepthReduction = true }, new JpegEncoder { MetadataHandling = MetadataHandling.Strip, AllowBitDepthReduction = true }],
         };
         byte[]? encoded = null;
         foreach (var encoder in encoders)

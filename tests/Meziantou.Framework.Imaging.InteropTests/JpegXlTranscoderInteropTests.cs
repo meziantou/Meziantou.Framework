@@ -18,8 +18,13 @@ public sealed class JpegXlTranscoderInteropTests
 {
     public static TheoryData<string> JpegFixtures => [.. GoldenCorpus.Default.GetIds(format: "jpeg", kind: FixtureKinds.Valid)];
 
-    /// <summary>A sampling factor of 4, or a restart interval that changes between scans: a JPEG XL file cannot describe them.</summary>
-    private static bool IsRefusedByTheLibrary(string id) => id is "jpeg/baseline-411-odd" or "jpeg/progressive-411-separate-dc" or "jpeg/progressive-420-odd-restart-rows-deep";
+    /// <summary>
+    /// A sampling factor of 4, a restart interval that changes between scans, arithmetic coding or samples of 12 bits: a
+    /// JPEG XL file cannot describe them.
+    /// </summary>
+    private static bool IsRefusedByTheLibrary(string id)
+        => id is "jpeg/baseline-411-odd" or "jpeg/progressive-411-separate-dc" or "jpeg/progressive-420-odd-restart-rows-deep"
+            || id.Contains("arithmetic", StringComparison.Ordinal) || id.Contains("precision12", StringComparison.Ordinal);
 
     /// <summary>cjxl 0.12.0 also refuses a file whose metadata it cannot place in the reconstruction data; the library recompresses it.</summary>
     private static bool IsRefusedByCjxl(string id) => IsRefusedByTheLibrary(id) || id is "jpeg/metadata-icc-exif-dpcm";
@@ -100,33 +105,37 @@ public sealed class JpegXlTranscoderInteropTests
     }
 
     /// <summary>
-    /// Files of the JPEG encoder of the library, through both chains: recompressed by the library and rebuilt by djxl,
+    /// Files of the JPEG encoder of the library, baseline and progressive, through both chains: recompressed by the library and rebuilt by djxl,
     /// recompressed by cjxl and rebuilt by the library. The recompressed file of the library also decodes to the pixels
     /// the reference decoders show.
     /// </summary>
     [Theory]
-    [InlineData("photo-rgb8", JpegChromaSubsampling.Ratio444, 85)]
-    [InlineData("photo-rgb8", JpegChromaSubsampling.Ratio422, 85)]
-    [InlineData("photo-rgb8", JpegChromaSubsampling.Ratio420, 85)]
-    [InlineData("photo-rgb8", JpegChromaSubsampling.Ratio444, 100)]
-    [InlineData("photo-rgb8", JpegChromaSubsampling.Ratio420, 20)]
-    [InlineData("photo-gray8", JpegChromaSubsampling.Auto, 85)]
-    [InlineData("large-rgb8", JpegChromaSubsampling.Ratio420, 75)]
-    [InlineData("text-rgb8", JpegChromaSubsampling.Ratio444, 90)]
-    [InlineData("smooth-rgb8", JpegChromaSubsampling.Ratio422, 50)]
-    [InlineData("smooth-gray8", JpegChromaSubsampling.Auto, 95)]
-    public async Task FilesOfTheJpegEncoderGoThroughBothChains(string patternName, JpegChromaSubsampling subsampling, int quality)
+    [InlineData("photo-rgb8", JpegChromaSubsampling.Ratio444, 85, JpegEncodingProcess.Baseline)]
+    [InlineData("photo-rgb8", JpegChromaSubsampling.Ratio422, 85, JpegEncodingProcess.Baseline)]
+    [InlineData("photo-rgb8", JpegChromaSubsampling.Ratio420, 85, JpegEncodingProcess.Baseline)]
+    [InlineData("photo-rgb8", JpegChromaSubsampling.Ratio444, 100, JpegEncodingProcess.Baseline)]
+    [InlineData("photo-rgb8", JpegChromaSubsampling.Ratio420, 20, JpegEncodingProcess.Baseline)]
+    [InlineData("photo-gray8", JpegChromaSubsampling.Auto, 85, JpegEncodingProcess.Baseline)]
+    [InlineData("large-rgb8", JpegChromaSubsampling.Ratio420, 75, JpegEncodingProcess.Baseline)]
+    [InlineData("text-rgb8", JpegChromaSubsampling.Ratio444, 90, JpegEncodingProcess.Baseline)]
+    [InlineData("smooth-rgb8", JpegChromaSubsampling.Ratio422, 50, JpegEncodingProcess.Baseline)]
+    [InlineData("smooth-gray8", JpegChromaSubsampling.Auto, 95, JpegEncodingProcess.Baseline)]
+    [InlineData("photo-rgb8", JpegChromaSubsampling.Ratio444, 85, JpegEncodingProcess.Progressive)]
+    [InlineData("photo-rgb8", JpegChromaSubsampling.Ratio420, 60, JpegEncodingProcess.Progressive)]
+    [InlineData("photo-gray8", JpegChromaSubsampling.Auto, 90, JpegEncodingProcess.Progressive)]
+    [InlineData("text-rgb8", JpegChromaSubsampling.Ratio422, 75, JpegEncodingProcess.Progressive)]
+    public async Task FilesOfTheJpegEncoderGoThroughBothChains(string patternName, JpegChromaSubsampling subsampling, int quality, JpegEncodingProcess process)
     {
         var jxl = await RequiredTools.LibJxlAsync();
         var pattern = JpegXlPattern.Get(patternName);
         var directory = InteropSettings.GetArtifactsDirectory(nameof(FilesOfTheJpegEncoderGoThroughBothChains));
-        var name = $"{patternName}-{subsampling}-q{quality}";
+        var name = $"{patternName}-{subsampling}-q{quality}-{process}";
         var jpegPath = directory / (name + ".jpg");
         var libraryPath = directory / (name + ".library.jxl");
         var referencePath = directory / (name + ".cjxl.jxl");
         using (var image = CreateImage(pattern))
         {
-            await image.SaveAsync(jpegPath, new JpegEncoder { Quality = quality, ChromaSubsampling = subsampling, AllowBitDepthReduction = true }, XunitCancellationToken);
+            await image.SaveAsync(jpegPath, new JpegEncoder { Quality = quality, ChromaSubsampling = subsampling, Process = process, AllowBitDepthReduction = true }, XunitCancellationToken);
         }
 
         var jpeg = await File.ReadAllBytesAsync(jpegPath, XunitCancellationToken);

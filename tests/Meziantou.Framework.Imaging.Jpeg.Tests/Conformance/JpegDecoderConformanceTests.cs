@@ -48,6 +48,40 @@ public sealed class JpegDecoderConformanceTests
         }
 
         Assert.Contains(BaselineIds, id => GoldenCorpus.Default.Get(id).Entry.HasFeature("jpeg.restartInterval=3"));
+
+        // 12-bit samples: gray and color, with and without chroma subsampling, sequential and progressive, restart intervals
+        var deep = GoldenCorpus.Default.GetIds(format: "jpeg", kind: FixtureKinds.Valid).Select(GoldenCorpus.Default.Get).Where(fixture => fixture.Entry.HasFeature("jpeg.precision=12")).ToList();
+        Assert.All(deep, fixture => Assert.Equal(12, fixture.Expected.BitsPerComponent));
+        foreach (var feature in new[] { "jpeg.process=extended", "jpeg.process=progressive", "jpeg.components=1", "jpeg.components=3", "jpeg.sampling=4:4:4", "jpeg.sampling=4:2:2", "jpeg.sampling=4:2:0" })
+        {
+            Assert.Contains(deep, fixture => fixture.Entry.HasFeature(feature));
+        }
+
+        Assert.Contains(deep, fixture => fixture.Entry.Features!.Any(feature => feature.StartsWith("jpeg.restartInterval=", StringComparison.Ordinal)));
+    }
+
+    [Fact]
+    public void ArithmeticFixturesCoverTheDecoderFeatures()
+    {
+        // Sequential (SOF9) and progressive (SOF10) frames, gray and color, with and without chroma subsampling, restart
+        // intervals (the statistics start again), first scans and refinements of the DC and AC coefficients
+        var fixtures = GoldenCorpus.Default.GetIds(format: "jpeg", kind: FixtureKinds.Valid).Select(GoldenCorpus.Default.Get).Where(fixture => fixture.Entry.Features!.Any(feature => feature.StartsWith("jpeg.process=arithmetic-", StringComparison.Ordinal))).ToList();
+        foreach (var process in new[] { "jpeg.process=arithmetic-sequential", "jpeg.process=arithmetic-progressive" })
+        {
+            var ofProcess = fixtures.Where(fixture => fixture.Entry.HasFeature(process)).ToList();
+            Assert.Contains(ofProcess, fixture => fixture.Entry.HasFeature("jpeg.components=1"));
+            Assert.Contains(ofProcess, fixture => fixture.Entry.HasFeature("jpeg.sampling=4:2:0"));
+            Assert.Contains(ofProcess, fixture => fixture.Entry.Features!.Any(feature => feature.StartsWith("jpeg.restartInterval=", StringComparison.Ordinal)));
+        }
+
+        var features = fixtures.SelectMany(fixture => fixture.Entry.Features ?? []).ToHashSet(StringComparer.Ordinal);
+        foreach (var feature in new[] { "jpeg.sampling=4:4:4", "jpeg.sampling=4:2:2", "jpeg.progressive=dc-refinement", "jpeg.progressive=ac-refinement", "jpeg.progressive=spectral-selection", "jpeg.progressive=successive-approximation" })
+        {
+            Assert.Contains(feature, features);
+        }
+
+        // An arithmetic-coded file has no Huffman table, and no fixture is rejected for its entropy coding any more
+        Assert.DoesNotContain(GoldenCorpus.Default.GetIds(format: "jpeg", kind: FixtureKinds.Unsupported).Select(GoldenCorpus.Default.Get), fixture => fixture.Entry.Features!.Any(feature => feature.StartsWith("jpeg.process=arithmetic-", StringComparison.Ordinal)));
     }
 
     [Fact]
@@ -77,10 +111,17 @@ public sealed class JpegDecoderConformanceTests
     public void ToleranceIsTheMeasuredDisagreementWithTheReference(string id)
     {
         var fixture = GoldenCorpus.Default.Get(id);
-        using var image = Image.Load(fixture.ReadInput()); // Gray8 or Rgb24: the profile of the fixture labels it
+        using var image = Image.Load(fixture.ReadInput()); // Gray8 or Rgb24, Gray16 or Rgba64 for 12-bit samples: the profile of the fixture labels it
         var actual = Assert.Single(ImageSnapshots.Capture(image).Frames).Pixels;
         var expected = fixture.GetFrame(0, actual.Layout);
-        var (max, mean, location) = Measure(expected, actual);
+        var (sampleMax, sampleMean, location) = Measure(expected, actual);
+
+        // Like every tolerance of the corpus, the errors are on the 8-bit scale: 257 units of a 16-bit sample, the maximum
+        // rounded up so that any difference counts
+        var deep = fixture.Expected.BitsPerComponent == 12;
+        Assert.Equal(deep, actual.Layout.BytesPerSample == 2);
+        var max = deep ? (sampleMax + 256) / 257 : sampleMax;
+        var mean = deep ? sampleMean / 257 : sampleMean;
         TestContext.Current.TestOutputHelper?.WriteLine(string.Create(CultureInfo.InvariantCulture, $"{id}: max {max} at {location}, mean {mean:F4}"));
 
         var policy = fixture.Policy;
@@ -99,9 +140,10 @@ public sealed class JpegDecoderConformanceTests
         Assert.True(policy.MaxAbsoluteError == expectedMax && Math.Abs(policy.MaxMeanAbsoluteError - expectedMean) < 1e-9,
             string.Create(CultureInfo.InvariantCulture, $"The policy of '{id}' (max {policy.MaxAbsoluteError}, mean {policy.MaxMeanAbsoluteError}) is not the one derived from the measured disagreement (max {max} at {location}, mean {mean:F4}: max {expectedMax}, mean {expectedMean}). Update LibraryJpegMeasurements in tools/Meziantou.Framework.Imaging.CorpusGenerator/GoldenCorpus.Jpeg.cs after reviewing the change."));
 
-        // Alpha is exact and the decoder never exceeds three units: one IDCT rounding unit on each of the luma and chroma
-        // samples, amplified by the color conversion (e.g. 1 + 1.772 for B = Y + 1.772 Cb)
-        Assert.True(max <= 3, $"Maximum error {max} at {location}.");
+        // Alpha is exact and the decoder never exceeds three units of a sample: one IDCT rounding unit on each of the luma and
+        // chroma samples, amplified by the color conversion (e.g. 1 + 1.772 for B = Y + 1.772 Cb). A unit of a 12-bit sample
+        // is 65535 / 4095 units of the 16-bit sample it is scaled to
+        Assert.True(sampleMax <= (deep ? (3 * 65535 / 4095) + 1 : 3), $"Maximum error {sampleMax} at {location}.");
     }
 
     [Fact]
@@ -180,7 +222,8 @@ public sealed class JpegDecoderConformanceTests
         return new IccProfile(new MetadataBlob(File.ReadAllBytes(FixtureRoot.GetDirectory() / entry.File.Path)));
     }
 
-    private static IEnumerable<string> GetIds(bool progressive) => GoldenCorpus.Default.GetIds(format: "jpeg", kind: FixtureKinds.Valid).Where(id => GoldenCorpus.Default.Get(id).Entry.HasFeature("jpeg.process=progressive") == progressive);
+    // Progressive frames, Huffman coded (SOF2) or arithmetic coded (SOF10); the others are sequential
+    private static IEnumerable<string> GetIds(bool progressive) => GoldenCorpus.Default.GetIds(format: "jpeg", kind: FixtureKinds.Valid).Where(id => (GoldenCorpus.Default.Get(id).Entry.HasFeature("jpeg.process=progressive") || GoldenCorpus.Default.Get(id).Entry.HasFeature("jpeg.process=arithmetic-progressive")) == progressive);
 
     private static (int Max, double Mean, string Location) Measure(RawPixelBuffer expected, RawPixelBuffer actual)
     {

@@ -7,9 +7,9 @@ progressive) decoding and encoding, lossless JPEG recompression, animation-aware
 conversion, and bounded-memory streaming.
 
 - Static PNG, animated PNG (APNG), GIF, baseline/progressive JPEG, WebP (still and animated, lossless and lossy), QOI,
-  BMP, TGA, Netpbm (PBM/PGM/PPM/PAM), TIFF/BigTIFF, ICO/CUR and ANI decoding; PNG, APNG, GIF, baseline JPEG, WebP
-  (lossless and lossy, still and animated), QOI, BMP, TGA, Netpbm, TIFF/BigTIFF, ICO/CUR and ANI encoding (unsupported
-  modes, such as arithmetic JPEG, embedded JPEG or PNG in BMP, premultiplied-alpha TGA or planar TIFF, are rejected
+  BMP, TGA, Netpbm (PBM/PGM/PPM/PAM), TIFF/BigTIFF, ICO/CUR and ANI decoding; PNG, APNG, GIF, baseline and progressive
+  JPEG, WebP (lossless and lossy, still and animated), QOI, BMP, TGA, Netpbm, TIFF/BigTIFF, ICO/CUR and ANI encoding (unsupported
+  modes, such as lossless JPEG, embedded JPEG or PNG in BMP, premultiplied-alpha TGA or planar TIFF, are rejected
   explicitly; a CMYK JPEG or TIFF is loaded with an explicit color conversion)
 - JPEG XL decoding and encoding, fully managed: lossy (VarDCT) and lossless (Modular) files, alpha, animations and
   layers; lossless output of every pixel format at its own depth, lossy output controlled by a quality, progressive
@@ -27,6 +27,9 @@ conversion, and bounded-memory streaming.
   grayscale and convolution matrices (sharpen, blur, edge detection) applied to all frames
 - Antialiased vector drawing on a frame or on every frame: filled and stroked rectangles, ellipses and paths with
   Bézier curves, solid colors, linear and radial gradients, with exact pixel coverage
+- Text drawn from font files with the same rasterizer, measured by the layout that is drawn
+- Font files read without any system library: TrueType and OpenType (TrueType and CFF outlines), font collections,
+  WOFF and WOFF2, with their names, metrics, character map and glyph outlines
 - ICC color management on request: convert an image to another color profile, or convert sample buffers between two
   profiles: matrix- and table-based grayscale, RGB and CMYK profiles of versions 2 and 4, the four rendering intents
   and black point compensation (profiles are never applied implicitly)
@@ -51,6 +54,8 @@ compiled and run by the test suite.
   - [Pixel formats, precision and alpha](#pixel-formats-precision-and-alpha)
   - [Processing](#processing)
   - [Drawing](#drawing)
+  - [Fonts](#fonts)
+  - [Text](#text)
   - [Metadata, color profiles and orientation](#metadata-color-profiles-and-orientation)
   - [Color management](#color-management)
   - [Loading, identification and limits](#loading-identification-and-limits)
@@ -130,7 +135,7 @@ frame.Save("first.jpg", new JpegEncoder { Quality = 85, BackgroundColor = new Rg
 | `net10.0`, `net11.0` | Supported targets, built and tested on both runtimes |
 | x64, arm64 (Windows, Linux, macOS) | Tested on Linux and Windows x64, macOS arm64, and Linux and Windows arm64 where hosted runners are available |
 | Older .NET, .NET Standard, .NET Framework | Not supported (no assets) |
-| Native dependencies | None (fully managed) |
+| Dependencies | One package, `Meziantou.Framework.Unicode` (the Unicode algorithms of text layout, fully managed, no ICU); no native dependency |
 | Trimming / NativeAOT | Supported: the library is marked trimmable and AOT-compatible (analyzers on every build), and a NativeAOT smoke app (every format, streaming, processing, errors; trim/AOT warnings as errors) is published and run for both frameworks |
 
 ## Supported formats
@@ -140,9 +145,9 @@ decoded or encoded approximately; see [Format reference](#format-reference) and 
 
 | Format | Decoding | Encoding | `Save(path)` extensions |
 | --- | --- | --- | --- |
-| PNG / APNG | Every color type and bit depth, palettes, Adam7, APNG animations and poster frames | Gray, RGB and RGBA at 8/16 bits, Adam7, APNG with full-canvas frames and posters | `.png` (APNG when animated), `.apng` |
+| PNG / APNG | Every color type and bit depth, palettes, Adam7, APNG animations and poster frames | Gray, RGB and RGBA at 8/16 bits, exact palettes at 1/2/4/8 bits, Adam7, APNG with full-canvas frames and posters | `.png` (APNG when animated), `.apng` |
 | GIF | GIF87a/89a, animations, interlacing, transparency, comments | GIF89a, deterministic quantization per frame, optional dithering, animations with unknown frame counts | `.gif` |
-| JPEG | Baseline, extended sequential and progressive Huffman, 8-bit; gray, YCbCr, RGB, and CMYK/YCCK with a color conversion; any integral sampling | Baseline 8-bit Huffman, gray or YCbCr, 4:4:4/4:2:2/4:2:0 | `.jpg`, `.jpeg` |
+| JPEG | Baseline, extended sequential and progressive, Huffman or arithmetic coded, 8-bit or 12-bit samples; gray, YCbCr, RGB, and CMYK/YCCK with a color conversion; any integral sampling | Baseline or progressive 8-bit Huffman, gray or YCbCr, 4:4:4/4:2:2/4:2:0 | `.jpg`, `.jpeg` |
 | WebP | Lossless, lossy, alpha, animations, ICC/EXIF/XMP | Lossless and lossy, alpha, animations (seekable destination) | `.webp` (lossless by default) |
 | QOI | Every chunk form, 3 or 4 channels, colorspace label | Lossless 8-bit RGB/RGBA | `.qoi` |
 | BMP | Windows headers up to V5 and OS/2 1.x/2.x headers, 1/4/8/16/24/32-bit, bit fields, RLE4/RLE8/RLE24 | 24-bit or 32-bit with an alpha mask by default; 1/4/8-bit indexed, RLE4/RLE8, 16-bit and top-down on request | `.bmp`, `.dib` |
@@ -443,7 +448,7 @@ split into row bands, with results identical to the sequential ones.
 **Working formats**. Six pixel types: `Rgba32`, `Bgra32`, `Rgb24`, `Rgba64`, `Gray8`,
 `Gray16` (sequential `Pack = 1` layouts, straight alpha, 16-bit components in native endianness; `PixelFormats` describes
 them). Untyped `Load` picks the format that preserves the source: for example 16-bit PNGs load as `Gray16`/`Rgba64`,
-palettes and transparency as `Rgba32`, JPEG as `Gray8`/`Rgb24`, GIF as `Rgba32` (`ImageInfo.PixelFormat` tells it before
+palettes and transparency as `Rgba32`, JPEG as `Gray8`/`Rgb24` (`Gray16`/`Rgba64` for 12-bit samples), GIF as `Rgba32` (`ImageInfo.PixelFormat` tells it before
 decoding). Typed `Load<TPixel>` and `CloneAs<TPixel>` convert explicitly between any two formats: 8 to 16 bits is exact
 (`v * 257`), 16 to 8 bits rounds to nearest, color to gray uses Rec. 709 luma on the encoded values. A 16-bit path never
 goes through 8 bits.
@@ -464,6 +469,7 @@ goes through 8 bits.
 | 16-bit precision, when loading or converting | Request the narrower type explicitly (`Load<Rgba32>`, `CloneAs<Gray8>`) |
 | Colors beyond 256 per frame, when encoding GIF | Lossy by design: deterministic quantization (`MaxColors`), optional `Dithering` |
 | Colors beyond the palette, when encoding indexed BMP (2, 16 or 256 entries, or `MaxColors`) | `BmpEncoder.AllowColorReduction` (the same deterministic quantization, optional `Dithering`); an image whose colors fit is always stored exactly |
+| Colors beyond 256, or 16-bit samples that 8 bits cannot represent, when encoding indexed PNG (`PngPixelLayout.Indexed`) | None: the image is rejected, never quantized, dithered or rounded |
 | A color profile that cannot label the converted pixels | `PixelConversionOptions.DiscardIncompatibleColorProfile` |
 | Metadata the output format cannot store | `ImageEncoder.MetadataHandling` (see [Metadata](#metadata-color-profiles-and-orientation)) |
 
@@ -641,7 +647,7 @@ public static void SharpenAndDetectEdges(string inputPath, string sharpenedPath,
 }
 ```
 
-There is no HDR processing, text rendering or custom processor.
+There is no HDR processing or custom processor.
 
 ### Drawing
 
@@ -752,6 +758,372 @@ pens and paths and use the overloads with a state and a static callback. The tim
 of its edges and with the number of points where they cross each other, which the exact area depends on. One family of
 shapes has millions of crossings: a pen far wider than the bends of a long curve it follows. Pass a `CancellationToken`
 when shapes come from untrusted input; it is checked by every shape, every 64 rows and every few thousand crossings.
+
+### Fonts
+
+`Font` and `FontCollection` (namespace `Meziantou.Framework.Imaging.Typography`) read font files. Nothing comes from the
+operating system: no installed font is used, and a font is always a file, a stream or bytes given by the caller.
+
+<!-- snippet: load-font -->
+```csharp
+public static string DescribeFont(string path)
+{
+    // TrueType, OpenType, WOFF and WOFF2 are detected from the content of the file.
+    var font = Font.Load(path);
+    var metrics = font.GetMetrics(size: 16);
+    var hasEuro = font.ContainsGlyph(new Rune('€'));
+    return string.Create(
+        CultureInfo.InvariantCulture,
+        $"{font.FamilyName} {font.SubfamilyName}: {font.GlyphCount} glyphs, ascent {metrics.Ascent:0.##}, descent {metrics.Descent:0.##}, euro sign: {hasEuro}");
+}
+```
+
+| | Supported |
+| --- | --- |
+| Containers | TrueType and OpenType files (`.ttf`, `.otf`), font collections (`.ttc`, `.otc`), WOFF 1.0 and WOFF 2.0 (with the transformed glyph, location and horizontal metrics tables, and collections); detected from the content, never from the extension |
+| Outlines | TrueType (`glyf`: simple and composite glyphs, scaled, rotated and placed by matching points), CFF version 1 (`CFF `: Type 2 charstrings, subroutines, CID-keyed fonts) and CFF version 2 (`CFF2`) |
+| Variable fonts | The axes and the named instances (`fvar`), the mapping of the axes (`avar` version 1), and what an instance varies: TrueType outlines (`gvar`), CFF2 outlines (the `blend` operator), advances (`HVAR`, or the phantom points of the glyphs), metrics (`MVAR`), the positions and anchors of `GPOS` (the variation store of `GDEF`) and the features a font replaces in a part of its variation space (feature variations, `rvrn`) |
+| Color glyphs | The layers of version 0 of the `COLR` table and the paints of its version 1 (solid colors, linear, radial and sweep gradients, transformations, clips, clip boxes, the 28 composition modes, and their variations in a variable font), with the palettes of the `CPAL` table; glyphs that are PNG images, in the `sbix` table and in the `CBLC` and `CBDT` tables (index subtables of formats 1 to 5, images of formats 17, 18 and 19) |
+| Character maps | Unicode subtables of formats 0, 4, 6, 12 and 13, variation sequences (format 14), and the Macintosh Roman subtable for ASCII when a font has no Unicode one |
+| Names | The typographic family and subfamily when the font has them, the legacy ones otherwise; Windows and Unicode platform names, then Macintosh Roman |
+| Metrics | In font units (`Font.Metrics`) or scaled to a size in pixels (`Font.GetMetrics`): ascent, descent, line gap, cap height, x-height, underline and strikethrough. The ascent, descent and line gap come from the table the font designates (`hhea`, or the typographic values of `OS/2` when the font sets `USE_TYPO_METRICS` or has an empty `hhea`) |
+
+A variable font is one file for a whole family: its axes (`Font.VariationAxes`) say what varies, such as the weight or
+the width, and `Font.WithVariations` gives the font of an instance.
+
+<!-- snippet: variable-font -->
+```csharp
+public static void DrawWeights(string variableFontPath, string outputPath)
+{
+    var font = Font.Load(variableFontPath);
+
+    // The axes say what can vary, and in what range
+    var weight = font.VariationAxes.First(axis => axis.Tag == "wght");
+
+    using var image = new Image<Rgba32>(220, 200, new Rgba32(255, 255, 255));
+    image.Draw(canvas =>
+    {
+        for (var i = 0; i < 5; i++)
+        {
+            // An instance is a font: it shares the data of the font it comes from
+            var value = weight.Minimum + ((weight.Maximum - weight.Minimum) * i / 4);
+            var instance = font.WithVariations(new FontVariationSetting("wght", value));
+            canvas.FillText(new Rgba32(0, 0, 0), "Variable", instance, size: 32, new PointD(10, i * 38));
+        }
+    });
+
+    image.Save(outputPath);
+}
+```
+
+- **Instances.** A font is loaded at its default instance. `WithVariations` takes the value of some axes, by their tag
+  (`wght`, `wdth`, `slnt`, `ital`, `opsz`, or a tag of the font); an axis that is not named is at its default, a value
+  outside the range of its axis is brought to its nearest end, and a tag the font does not have is ignored.
+  `NamedInstances` lists the instances the font names ("Light", "Bold Condensed"), which `WithVariations` also
+  accepts, and `Variations` gives the values of a font. An instance is a `Font`: it shares the bytes of the font it
+  comes from, is as immutable, and can be used wherever a font is; `Weight` is the value of its weight axis. A font
+  that does not vary has no axis and is its only instance.
+- **What an instance is.** The values are normalized and mapped as the OpenType specification describes, and the
+  glyphs are varied when they are used: their points are not rounded to font units, so an instance is as smooth as
+  the default one. The advances, the metrics and the positions of the layout tables of an instance are whole font
+  units. An instance costs a few small arrays when it is created (no glyph is read), and its glyphs cost more to
+  decode than those of the default instance; that work counts in `MaxGlyphComplexity`.
+- **Color glyphs.** `Font.HasColorGlyphs` says that a font has glyphs with their own colors, such as emoji, and
+  `Font.ColorPalettes` gives its palettes. `FillText` draws these glyphs with their colors: each one is drawn on a
+  surface of its own, layer after layer, then composited over the image like any other paint. The edges of its shapes
+  have the exact coverage of every shape of the drawing API, gradients are evaluated at the center of each pixel, and
+  no function of the platform is involved (the angles of sweep gradients and of rotations are computed by the
+  library), so the pixels are the same everywhere. The colors of a palette are drawn as the colors of a brush are:
+  as sample values, without color management.
+  - The brush of the text is the color of the parts of a glyph the font leaves to the text ("foreground"); it can be a
+    gradient. `TextStyle.ColorPaletteIndex` selects another palette of the font.
+  - A color glyph is drawn after the glyphs that are not, in the order of the text. `StrokeText` and
+    `TextLayout.ToPath` use the outline the font gives to the glyph itself, which can be empty.
+  - A glyph the font gives as an image (`sbix`, `CBDT`) is taken from the smallest strike that is at least as large
+    as the size of the text, or from the largest one. Its image is decoded when the layout is created, with the PNG
+    decoder and the limits of the library, and scaled down to the size of the text with the default filter of
+    `Resize`; an image smaller than the text is enlarged when it is drawn, by bilinear interpolation. At the size of
+    its strike, at a whole position, the pixels of the image are the pixels drawn. A glyph that has both paints and
+    an image is drawn with its paints; a glyph without image in the strike is drawn with its outline.
+  - A graph of paints that refers to itself is cut where it would never end. A gradient the font defines without
+    length, or whose color line repeats over a length of zero, is not drawn, as the specification says.
+  - The surface of a glyph is rented from the allocation scope of the image (16 bytes per pixel of the box of the
+    glyph, per layer it composes): a glyph that needs more than the image allows fails with
+    `ImageResourceLimitException` before any pixel of the text is drawn.
+- **A glyph is drawn from its origin.** The outline of a TrueType glyph is placed by its left side bearing, as a
+  TrueType rasterizer does: a font whose side bearings are not the left of its outlines is drawn where its metrics
+  say.
+- **A font is immutable and thread-safe**, and is not disposable: it keeps the bytes of its file (the expanded font for
+  WOFF and WOFF2) in one array for its lifetime and has no cache. The fonts of a collection share that array.
+  `Font.Load` on a collection gives its first font; `FontCollection.Load` gives them all, and a file that holds one font
+  is a collection of one.
+- **Loading validates what every use needs**: the table directory, the required tables (`head`, `hhea`, `maxp`,
+  `hmtx`, `cmap`, and `loca` with `glyf`), the structure of the character map and of the CFF table. The data of a glyph
+  is validated when the glyph is used.
+- **A font is untrusted input.** The bytes read are bounded by `MaxEncodedBytes`, the bytes a font keeps by
+  `MaxFontBytes` (256 MiB by default; checked before a WOFF or WOFF2 file is expanded), and the work to produce one
+  glyph by `MaxGlyphComplexity` (1,000,000 points, components and charstring operators by default): glyphs made of
+  glyphs, or subroutines that call subroutines, can describe an outline that is exponentially larger than the file.
+  The limits are those of `FontLoadOptions.Configuration`.
+- **Errors** are the exceptions of the library with `ImageFormat.Unknown`: `UnknownImageFormatException` when the data
+  is not a font, `InvalidImageContentException` for a malformed font, `UnsupportedImageFeatureException` for the
+  features below, `ImageResourceLimitException` for a limit.
+- **Not supported**: version 2 of the `avar` table (its version 1 part is applied), the variation of the vertical
+  metrics and of the hinting values (`VVAR`, `cvar`), glyphs in SVG (`SVG `: their outlines are drawn), the images of an `sbix` table that are not PNG files (JPEG, TIFF)
+  and the bitmaps without colors of the `EBDT` table (their outlines are drawn too), PostScript Type 1 fonts, Type 1
+  charstrings and the deprecated `seac` form of `endchar` in a CFF table, the font matrix of a CFF table (the units of
+  the `head` table are used), and hinting: instructions and hints are skipped. A WOFF or WOFF2 file is expanded in
+  memory; its metadata and private blocks are not read. Table checksums are not verified.
+
+### Text
+
+A `TextLayout` is a text laid out: its lines, its glyphs and their positions. It measures the text (`Width`,
+`Height`, `Baseline`, `Lines`, `InkBounds`) and is what `DrawingCanvas.FillText` and `StrokeText` draw, so that what is
+measured is what is drawn. The text types are in the `Meziantou.Framework.Imaging.Typography` namespace.
+
+<!-- snippet: draw-text -->
+```csharp
+public static void DrawLabel(string fontPath, string outputPath)
+{
+    var font = Font.Load(fontPath);
+
+    // A layout holds the glyphs of a text and their positions: it measures the text and is what is drawn
+    var layout = TextLayout.Create("Hello, world!\nBonjour", font, size: 32);
+
+    const int Margin = 8;
+    using var image = new Image<Rgba32>((int)Math.Ceiling(layout.Width) + (2 * Margin), (int)Math.Ceiling(layout.Height) + (2 * Margin), new Rgba32(255, 255, 255));
+    var outline = new Pen(new Rgba32(0, 0, 0), 1) { LineJoin = LineJoin.Round };
+    image.Draw(canvas =>
+    {
+        // The origin is the top-left corner of the layout; its first baseline is layout.Baseline below
+        var origin = new PointD(Margin, Margin);
+        canvas.FillText(new Rgba32(30, 60, 160), layout, origin);
+        canvas.StrokeText(outline, layout, origin);
+
+        // A line under the first line of text, at its baseline
+        canvas.StrokeLine(outline, new PointD(Margin, Margin + layout.Baseline + 3), new PointD(Margin + layout.Width, Margin + layout.Baseline + 3));
+    });
+
+    image.Save(outputPath);
+}
+```
+
+A text of one font is `TextLayout.Create(text, font, size)`. A `TextStyle` holds everything else about how a text is
+set, a `RichText` gives each part of a text its own style, and `TextLayoutOptions` say how the text is wrapped and
+aligned:
+
+<!-- snippet: draw-paragraph -->
+```csharp
+public static void DrawParagraph(string fontPath, string outputPath)
+{
+    var font = Font.Load(fontPath);
+    var regular = new TextStyle(font, 18);
+    var emphasis = new TextStyle(font, 18) { Brush = new SolidBrush(new Rgba32(180, 30, 30)), Decorations = TextDecorations.Underline };
+
+    // A span is not a word or a line: the layout wraps the whole text, and shapes the letters of two spans together
+    var text = new RichTextBuilder()
+        .Append("Text is wrapped where ", regular)
+        .Append("Unicode", emphasis)
+        .Append(" allows a line to break, and each line is stretched to the width of the paragraph.", regular)
+        .Build();
+    var layout = TextLayout.Create(text, new TextLayoutOptions { MaxWidth = 300, Alignment = TextAlignment.Justify });
+
+    using var image = new Image<Rgba32>(320, (int)Math.Ceiling(layout.Height) + 20, new Rgba32(255, 255, 255));
+
+    // The brush of the call paints the spans that have none
+    image.Draw(canvas => canvas.FillText(new Rgba32(0, 0, 0), layout, new PointD(10, 10)));
+    image.Save(outputPath);
+}
+```
+
+A layout can also follow a path: `FillText` and `StrokeText` take a `VectorPath` and `TextPathOptions` instead of an
+origin.
+
+<!-- snippet: draw-text-on-path -->
+```csharp
+public static void DrawTextOnPath(string fontPath, string outputPath)
+{
+    var font = Font.Load(fontPath);
+    var layout = TextLayout.Create("Text follows the path it is given", font, size: 20);
+
+    // An arch: the text is centered on it, its baseline 4 pixels above the path
+    var arch = new VectorPathBuilder().MoveTo(20, 150).CubicBezierTo(100, 10, 300, 10, 380, 150).Build();
+    var options = new TextPathOptions { Alignment = TextPathAlignment.Center, BaselineOffset = 4 };
+
+    using var image = new Image<Rgba32>(400, 170, new Rgba32(255, 255, 255));
+    image.Draw(canvas =>
+    {
+        canvas.Stroke(new Pen(new Rgba32(200, 200, 200), 1), arch);
+        canvas.FillText(new Rgba32(30, 60, 160), layout, arch, options);
+    });
+
+    image.Save(outputPath);
+}
+```
+
+| | Supported |
+| --- | --- |
+| Text analysis | Paragraphs, grapheme clusters, the places a line can end at (UAX #14), bidirectional text (UAX #9), script runs (UAX #24), soft hyphens and hyphenation patterns given by the caller: the algorithms of `Meziantou.Framework.Unicode` |
+| OpenType Layout | The `GDEF` table, every type and format of `GSUB` lookup (1 to 8) and of `GPOS` lookup (1 to 9), feature variations, the `kern` table |
+| Scripts whose fonts do all the work | Latin, Greek, Cyrillic, Armenian, Georgian, Han, Hiragana, Katakana, Bopomofo, Ethiopic, Thaana, Cherokee and the other scripts that need no analysis of the text: the default features of the font are applied |
+| Scripts that join | Arabic (with Persian, Urdu and the other languages written with it) and Syriac; in the universal model, N'Ko, Mongolian, Adlam, Mandaic, Manichaean, Psalter Pahlavi, Hanifi Rohingya, Sogdian, Old Uyghur, Chorasmian and Phags-pa |
+| Scripts with a model of their own | Hebrew; Thai and Lao; Hangul; Devanagari, Bengali, Gurmukhi, Gujarati, Oriya, Tamil, Telugu, Kannada and Malayalam; Khmer; Myanmar |
+| Scripts of the universal model | The scripts registered for the Universal Shaping Engine: Tibetan, Sinhala, Javanese, Balinese, Sundanese, Batak, Buginese, Cham, Tai Tham, Tai Le, Tai Viet, Lepcha, Limbu, Meetei Mayek, Newa, Kaithi, Sharada, Grantha, Chakma, Brahmi, Kharoshthi, Tifinagh, Duployan, Egyptian Hieroglyphs and the others |
+| Drawing | Filled and stroked text, at a point or along a path; color glyphs and bitmap glyphs; rich text with decorations (underline, strikethrough, overline), letter and word spacing. Bold and italic are fonts: the bold or italic file of a family, or an instance of a variable font; no bold or oblique is synthesized from a regular font |
+
+The glyphs, the clusters and the positions are compared with those of a reference shaper (HarfBuzz) for fonts of
+every script that has a model here, and of some eighty scripts of the universal model: the texts of the test corpus,
+and several hundred thousand generated sequences of the characters of each font while the models were written. The
+scripts added to the universal model by the latest versions of Unicode (Beria Erfe, Garay, Gurung Khema, Kirat Rai,
+Ol Onal, Sidetic, Sunuwar, Tai Yo, Todhri, Tolong Siki, Tulu Tigalari and a few others) are shaped from the properties
+of their characters and were not compared with a font.
+
+- **Paragraphs and lines.** A paragraph ends at a line break of the text (line feed, carriage return with or without
+  a line feed, vertical tab, form feed, U+0085, U+2028, U+2029); a line break at the end starts an empty line. With
+  `MaxWidth`, the lines of a paragraph are wrapped where the Unicode line breaking algorithm (UAX #14) allows it;
+  `WordBreak` and `LineBreak` select its variants, and `OverflowWrap` lets a word that is wider than the layout be cut
+  between two characters. The white space that ends a wrapped line hangs: it does not count in the width of the line.
+  A line is as tall as its fonts ask (the largest ascent and descent, each with half of the line gap), or as
+  `LineHeight` says.
+- **Hyphenation.** A word is broken at a soft hyphen (U+00AD), and the line then ends with a hyphen. With
+  `Hyphenation = Automatic`, a word is also broken where the patterns of its style allow it: `TextStyle.Hyphenator` is
+  a `Hyphenator` of `Meziantou.Framework.Unicode`, loaded from TeX hyphenation patterns. No pattern is provided with
+  the library.
+- **Direction.** Each paragraph is ordered by the Unicode Bidirectional Algorithm (UAX #9): left-to-right and
+  right-to-left text can be mixed, mirrored characters are mirrored, and each line is put in display order.
+  `Direction` imposes the base direction of the paragraphs; by default it is the one of their first strong character.
+  `Alignment` is relative to it: `Start` is the left of a left-to-right paragraph and the right of a right-to-left one.
+- **Alignment.** Lines are aligned in `MaxWidth`, or in the width of the widest line without it. `Justify` stretches
+  each line to that width by widening its spaces, except the last line of a paragraph. `FirstLineIndent` indents the
+  first line of each paragraph, and `TabSize` sets the tabulation stops.
+- **Fitting.** `MaxLines` and `MaxHeight` cut the text (the first line is always kept); `Trimming` ends the last line
+  with an ellipsis after the last character or the last word that leaves room for it, and also trims a line that is
+  wider than `MaxWidth` when lines are not wrapped. `IsTruncated` says that a part of the text is not in the layout.
+- **Styles.** A `TextStyle` has a `FontStack` (a font, then the fonts used for the characters the ones before lack; a
+  `Font` converts to a stack of one font; an instance of a variable font is a font) and a size, and optionally a brush, OpenType features to turn on or off
+  (`new FontFeature("liga", 0)`, `new FontFeature("smcp")`), letter and word spacing, decorations (underline,
+  strikethrough, overline, drawn with the metrics of the font) and hyphenation patterns. Spans that only differ by
+  what is painted are shaped together: letters of two colors still kern and join.
+- **Shaping.** Each run of one script, direction and font is shaped with the OpenType Layout tables of the font:
+  - the characters are put in the form the font has glyphs for: a character the font lacks is decomposed into parts
+    it has, and a character and its marks use the composed glyph when the font has it, so `é` typed as one character
+    or as `e` and a combining accent gives the same result; a variation sequence selects its glyph. The marks of a
+    character are put in the order they are drawn in, which for Arabic and Hebrew is not the canonical order of
+    Unicode;
+  - the `GSUB` table substitutes glyphs (ligatures, contextual and localized forms, composition) and the `GPOS` table
+    positions them (kerning, marks on their base or on a component of a ligature, marks on marks, cursive
+    connection), with the features a client applies by default to horizontal text: `ccmp`, `locl`, `rlig`, `calt`,
+    `clig`, `liga`, `rclt`, the direction features (`ltra`, `ltrm`, `rtla`, `rtlm`), `mark`, `mkmk`, `abvm`, `blwm`,
+    `curs`, `dist`, `kern`, and `frac`, `numr`, `dnom` around a fraction slash (`1⁄2`);
+  - a font without `GPOS` kerning is kerned by its `kern` table; a mark does not move the pen;
+  - spaces of a fixed width and the non-breaking hyphen that a font lacks are made from its space and its hyphen;
+  - the scripts whose letters join, **Arabic** (with Persian, Urdu and the other languages written with it) and
+    **Syriac**, are shaped as their fonts are made for: each letter takes the isolated, initial, medial or final form
+    its neighbors ask for (`isol`, `init`, `medi`, `fina`, and the forms of the Syriac alaph, `med2`, `fin2`,
+    `fin3`), marks and format characters do not interrupt a word, a tatweel or a zero width joiner joins and a zero
+    width non-joiner separates, and the features are applied in the stages of the Arabic and Syriac specifications
+    (composition, forms, required ligatures such as lam-alef, alternates, then the other ligatures). A zero width
+    joiner between two letters keeps them from forming a ligature. The hanging style (nastaliq) is drawn with the
+    cursive attachments of its fonts. The Syriac abbreviation mark stretches over the word that follows it (`stch`);
+  - **Hebrew** points and cantillation marks are placed by the font; a font that has no feature to place them (or a
+    caller that turns `mark` off) gets the precomposed letters of the Alphabetic Presentation Forms block instead;
+  - **Thai** and **Lao**: the sara am is drawn as its two parts, a ring above the consonant and a vowel after it, and
+    the ring goes under the tone mark or the vowel that is already above the consonant; the marks below a consonant
+    are in the order they are stacked in;
+  - **Hangul**: letters (jamo) that make a syllable the font has are drawn with the glyph of the syllable, and a
+    syllable followed by a trailing consonant with the glyph of both; the other blocks (Old Hangul, or a font without
+    the syllable) are drawn with their letters, shaped by position (`ljmo`, `vjmo`, `tjmo`). A tone mark of Middle
+    Korean is drawn before its syllable, or on a dotted circle when it has none;
+  - the **Indic scripts** (Devanagari, Bengali, Gurmukhi, Gujarati, Oriya, Tamil, Telugu, Kannada, Malayalam) are
+    shaped syllable by syllable, as the specifications of Microsoft for these scripts describe: the base consonant
+    of a syllable is found from what the font does with its consonants (half forms, forms below and after the
+    base); a vowel sign that is drawn before the syllable is moved there, and a two-part vowel sign is drawn with
+    its parts; a ra and a halant at the start of a syllable become a reph, placed where the script puts it; the
+    features of the font are applied in the order of the specifications (`nukt`, `akhn`, `rphf`, `rkrf`, `pref`,
+    `blwf`, `abvf`, `half`, `pstf`, `vatu`, `cjct`, then `init`, `pres`, `abvs`, `blws`, `psts`, `haln`), inside each
+    syllable. A zero width joiner after a halant asks for a half form and a zero width non-joiner for a visible
+    halant. A vowel sign or a mark without a consonant is drawn on a dotted circle, and so is a vowel sign after a
+    vowel letter it would be mistaken for another letter with. A font made for the first version of the
+    specifications (the script tags without a digit) is shaped as that version asks. `liga` is not applied to these
+    scripts unless the caller asks for it;
+  - **Khmer**: a syllable is a consonant, the letters written under it (each with the coeng) and its vowel and signs.
+    A vowel drawn before the syllable is moved there, a vowel with two parts is drawn with both, and the subscript
+    ro, which is drawn on the left of the syllable, goes to its start. The forms of the subscripts (`pref`, `blwf`,
+    `abvf`, `pstf`, `cfar`) are applied together inside each syllable, then the presentation forms (`pres`, `abvs`,
+    `blws`, `psts`, `clig`). A vowel or a sign without a consonant is drawn on a dotted circle. `liga` is not
+    applied unless the caller asks for it;
+  - **Myanmar** (Burmese and the other languages of the script, with the extended blocks): the kinzi, written before
+    the consonant it is drawn above, is moved after it; the vowel e and the medial ra are moved to the left of the
+    syllable; an anusvara written after a vowel below is put before it. The features of the font are applied in the
+    order of the specification (`rphf`, `pref`, `blwf`, `pstf`, then `pres`, `abvs`, `blws`, `psts`), inside each
+    syllable. A font that only has the script under the tag of the first version of the specification (`mymr`) is
+    not reordered: its features are applied as those of a simple script;
+  - the scripts of the **universal shaping model** (Tibetan, Sinhala, Javanese, Balinese, Tai Tham, Cham, Lepcha,
+    Newa, Kaithi, Mongolian, N'Ko, Adlam, Duployan and some eighty others, the scripts registered for the
+    "Universal Shaping Engine" of Microsoft): the class of each character comes from its Unicode properties, and the
+    text is cut into clusters of a base with its stacked or subjoined consonants, its vowels, their modifiers and
+    its final consonants, each in the order above, below, after. The features of the font are applied in the order
+    of the specification (`locl`, `ccmp`, `nukt`, `akhn`; `rphf`; `pref`; `rkrf`, `abvf`, `blwf`, `half`, `pstf`,
+    `vatu`, `cjct`), inside each cluster; then the reph goes after the base and what is drawn before the base (a
+    vowel, the glyph `pref` made) to the start of the cluster, or after the last halant that is still there. The
+    letters of the scripts that join (Mongolian, N'Ko, Adlam, Mandaic...) take their form (`isol`, `init`, `medi`,
+    `fina`) from their neighbors as Arabic letters do, and a free variation selector of Mongolian chooses the form
+    of its letter; in the other scripts the form is the place of the cluster among the clusters around it. Then
+    come `abvs`, `blws`, `haln`, `pres` and `psts`. A cluster without base is drawn on a dotted circle. An Indic font
+    made for this model (the script tags that end with 3) is shaped with it.
+
+  A font that has no feature for the script of a text, only for a default script (`DFLT`, `latn`), was made for no
+  model: its features are applied as those of a simple script. A font without substitution table at all is shaped
+  with the model of the script.
+
+  Control characters are not drawn and format characters (joiners, variation selectors, the soft hyphen where the line
+  is not broken) are invisible. A character no font of the stack has is drawn with the missing glyph of the primary
+  font, and `HasMissingGlyphs` says so: nothing throws.
+- **Rendering.** The outlines are scaled to the size and placed at fractions of a pixel, then filled or stroked like any
+  path: exact coverage, the same compositing, the same flattening tolerance. Nothing is snapped to the pixel grid and
+  the hinting of the font is not applied, so the same text gives the same pixels on every platform. The glyphs and the
+  decorations of one paint are one shape: where glyphs overlap, the brush is applied once. The brush of `FillText`
+  paints the spans that have none; `StrokeText` strokes every outline with its pen. `TextLayout.ToPath` gives the
+  outlines as a `VectorPath`; filling or stroking it changes the same pixels to the same values as a layout of one
+  paint.
+- **On a path.** The baseline of the first line follows the path, from its start, and the text stands on the left of
+  its direction: above a path drawn from left to right. Each character, with its marks, is placed whole where the
+  middle of its advance falls on the path and is turned to the direction of the path there; a glyph is never bent. The
+  other lines of the layout, the decorations and the offsets of the glyphs keep their distance to the first baseline,
+  across the path. `TextPathOptions` move the text along the path (`Alignment`, `StartOffset`) and away from it
+  (`BaselineOffset`), put it on the other side (`Side = Right`: the path is followed from its end, as if it were
+  reversed) and say what happens beyond the ends of an open path: by default (`Overflow = Extend`) the text continues
+  straight, in the direction the path has at that end; with `Clip`, a character whose middle is not on the path is not
+  drawn. A path of one closed contour has no end: the text goes around it. The contours of a path follow each other,
+  without the gap between them, and a path without any segment draws nothing. A path is measured along the same
+  segments that are drawn for it, and the direction is the one of the segment: no trigonometric function is involved,
+  so the pixels are the same on every platform. A decoration is cut where the direction of the path changes. On a
+  tight curve, neighboring characters overlap or part; give letter spacing to the style when that matters.
+- **Measuring.** `Width` and `Height` are the size of the text, `Lines` gives each line (its part of the text, its
+  position, its width, its baseline), and `InkBounds` contains everything that is drawn.
+- **Cost.** Creating a layout allocates (its glyphs and positions) and decodes each distinct glyph once, which validates
+  the font data the text uses: drawing a layout then only fails on a limit of the image or on cancellation, and
+  allocates nothing. The time to create a layout grows with the length of the text and with the number of lookups
+  of the font: every lookup of a feature is tried at every glyph, and a font of a complex script can have thousands
+  (on a recent laptop, a paragraph of 500 characters takes under a millisecond with a Latin or an Arabic font, and
+  ten to twenty times more with a Devanagari or a Tibetan font). `FillText(brush, text, font, size, origin)` creates a layout on each call; create the layout
+  yourself to measure a text or to draw it more than once. Layouts, styles, options and rich texts are immutable and
+  thread-safe.
+- **Limits.** `MaxTextLength` (UTF-16 code units), `MaxTextGlyphs`, `MaxTextLines` and `MaxGlyphComplexity`, from the
+  configuration the primary font of the first span was loaded with.
+
+What text layout does not do yet: Thai, Lao, Khmer and Myanmar have no dictionary to break their lines. A Thai font made before OpenType Layout, with its marks in the private use area, is
+drawn without them. A font that only has the Arabic presentation forms, without substitution table, is not joined; the marks of
+a font without positioning table are drawn where its glyphs put them. Letter spacing is added between the letters of
+every script, including those that join. Justification does not lengthen Arabic words (kashida). The language of a
+text cannot be given. Lines are broken one after the other, each as full as
+possible, not by optimizing the whole paragraph. Text is horizontal. Along a path, the glyphs are placed and turned,
+not bent to the curve, and the length of a path is not exposed.
+
+The glyphs and positions are checked against the Annotated OpenType Specification tests of Adobe for every format of
+the lookups, and against the OpenType shaper of HarfBuzz for texts set in the fonts of the test corpus; line breaking
+and bidirectional ordering are the algorithms of `Meziantou.Framework.Unicode`, which pass the conformance tests of
+the Unicode Consortium.
 
 ### Metadata, color profiles and orientation
 
@@ -984,7 +1356,8 @@ public static string Describe(Stream stream)
 ```
 
 **Limits versus prefix selection.** `ImageResourceLimits` (canvas width/height, pixels per frame, frames, total pixels,
-encoded bytes, metadata bytes, live allocations) are safety bounds: exceeding one throws `ImageResourceLimitException`
+encoded bytes, metadata bytes, live allocations, and for fonts the bytes of a font and the complexity of a glyph) are
+safety bounds: exceeding one throws `ImageResourceLimitException`
 (`Kind`, `Limit`, `Requested`) and is never turned into a successful truncation. `FrameLimit` (decode and reader options)
 is deliberate prefix selection: decoding stops after that many displayed frames and the rest of the input is neither
 examined nor validated. Limits are inclusive and enforced before allocating or consuming.
@@ -1048,7 +1421,7 @@ output.
 | Output | `ExpectedFrameCount` |
 | --- | --- |
 | PNG (static) | Required, 1 |
-| APNG | Required (the count precedes the image data and seeking is never used) |
+| APNG | Required (the count precedes the image data and seeking is never used). With `PngPixelLayout.Indexed`, the palette also precedes the image data: it holds the colors of the first image written (the poster, or the first frame), and every later frame must use them |
 | GIF | Optional: unknown counts are supported with fixed memory (local palettes, no global prepass) |
 | WebP | Optional; an animation (any count other than 1) needs a seekable destination |
 | JPEG XL | Optional; any count, without seeking (a frame is written when the next one, or the completion, tells whether it is the last) |
@@ -1143,7 +1516,7 @@ Content errors derive from `ImageException`:
 | --- | --- |
 | `UnknownImageFormatException` | The signature is not recognized. |
 | `InvalidImageContentException` (`Format`) | Malformed, inconsistent or truncated data; also a malformed caller-supplied EXIF/ICC/XMP payload at save time. |
-| `UnsupportedImageFeatureException` (`Format`, `Feature`) | A valid but unsupported feature (arithmetic JPEG, a CMYK JPEG loaded without `CmykConversion`, GIF plain text...), or an operation that would lose animation, alpha, precision, metadata, a cursor hotspot, a poster or a profile without an explicit setting, or a duration/play count the output cannot represent. |
+| `UnsupportedImageFeatureException` (`Format`, `Feature`) | A valid but unsupported feature (lossless JPEG, a CMYK JPEG loaded without `CmykConversion`, GIF plain text...), or an operation that would lose animation, alpha, precision, metadata, a cursor hotspot, a poster or a profile without an explicit setting, or a duration/play count the output cannot represent. |
 | `ImageResourceLimitException` (`Kind`, `Limit`, `Requested`) | A configured limit was exceeded. |
 
 Other failures use the standard exceptions: `ArgumentException` (invalid arguments, mismatched frames),
@@ -1191,13 +1564,43 @@ bounded memory unless stated otherwise.
 `PngEncoder.AnimationMode`: `Auto` writes an APNG for animated images (several frames,
 a poster or animation settings), `Animated` and the `.apng` extension always do; the static mode rejects animated images.
 
+`PngEncoder.PixelLayout`: `Auto` (the default) follows the pixel format and never writes a palette. `Indexed` writes
+indexed color: a palette of the distinct colors of the file, each with its own alpha, and indexes at the smallest bit depth
+that addresses it (1, 2, 4 or 8 bits). It is exact or it fails: an image with more than 256 distinct combinations of color
+and alpha (fully transparent pixels keep their color, so they count too), or with 16-bit samples that are not exactly
+8-bit values, is rejected before anything is written. The frames and the poster of an animation share the palette:
+`Save` collects the colors of all of them first, while a sequential writer takes the palette from the first image it is
+given. The palette order is deterministic (alpha, then red, green and blue), and an indexed file loads as `Rgba32`.
+
+<!-- snippet: save-png-indexed -->
+```csharp
+public static bool SaveIndexedPng(string inputPath, string outputPath)
+{
+    using var image = Image.Load(inputPath);
+    try
+    {
+        // One palette (PLTE, plus tRNS when a color is not opaque) for the colors of every frame, and 1-, 2-, 4- or
+        // 8-bit indexes. The pixels are stored exactly, alpha included: nothing is ever reduced.
+        image.Save(outputPath, new PngEncoder { PixelLayout = PngPixelLayout.Indexed });
+        return true;
+    }
+    catch (UnsupportedImageFeatureException exception) when (exception.Feature is "Color reduction" or "Bit depth reduction")
+    {
+        // More than 256 colors, or 16-bit samples that 8 bits cannot represent: the save failed before it wrote
+        // anything. The default layout follows the pixel format and stores every image.
+        image.Save(outputPath, new PngEncoder());
+        return false;
+    }
+}
+```
+
 | Feature | Decoding | Encoding |
 | --- | --- | --- |
 | Grayscale 1/2/4/8/16-bit | Sub-byte samples scaled exactly to `Gray8`; 16-bit kept in `Gray16`; a `tRNS` key gives `Rgba32`/`Rgba64` | `Gray8` → gray 8, `Gray16` → gray 16 (all 16 bits kept) |
 | RGB / RGBA 8/16-bit, gray+alpha | 16-bit precision preserved, gray+alpha expanded to RGBA | `Rgb24` → RGB 8, `Rgba32`/`Bgra32` → RGBA 8, `Rgba64` → RGBA 16; fixed mapping, no data-dependent reduction; RGB 16 and gray+alpha are not produced |
-| Palette + `tRNS` | 1/2/4/8-bit, partial `tRNS`, out-of-range indices rejected | Not supported (re-encoded as RGB/RGBA) |
+| Palette + `tRNS` | 1/2/4/8-bit, partial `tRNS`, out-of-range indices rejected | `PngPixelLayout.Indexed`, from any pixel format: exact palette of at most 256 colors with per-entry alpha (`tRNS` only for the entries that are not opaque), smallest bit depth, one palette per file; never selected automatically and never reducing colors |
 | Adam7 interlacing | Empty passes, pass rows scattered directly into the frame (no intermediate image) | Option; pass rows gathered from the frame storage, empty passes have no scanline |
-| Filters | All five; invalid types rejected | Adaptive minimum-sum-of-absolute-differences heuristic, or one fixed type for every scanline |
+| Filters | All five; invalid types rejected | Adaptive minimum-sum-of-absolute-differences heuristic, or one fixed type for every scanline; indexed output uses type 0 (None) instead of the heuristic, as the specification recommends |
 | zlib datastream | Truncation, extra data, Adler-32 and expansion (bounded by the image size) validated; streamed with bounded memory | BCL zlib at the four `CompressionLevel` values; `IDAT` chunks of at most 32 KiB, streamed in bounded bands |
 | Metadata (`iCCP`, `eXIf`, XMP `iTXt`, `tEXt`/`zTXt`/`iTXt`, `pHYs`) | Bounded; metadata after `IDAT` included | Written before `IDAT`; typed orientation and canvas reconciled into EXIF; incompatible ICC profiles and invalid text entries follow `MetadataHandling`; long texts compressed |
 | APNG animations | Full-canvas displayed frames from one compositor (SOURCE/OVER blending with an exact rounding contract at 8 and 16 bits, NONE/BACKGROUND/PREVIOUS disposal; BACKGROUND clears to transparent black), every color type and bit depth, Adam7 frame regions, partial rectangles, split `fdAT` chunks, exact rational delays, total plays; control-data errors are never reported as a clean end or a still image | Every displayed frame written as a full-canvas `SOURCE` frame with freshly computed control data, so decoded delta/disposal/blend data never survives an edit; exact delays (`RequireExact`, default) or `RoundToNearest` (nearest 16-bit fraction, ties to the longer delay); writers require `ExpectedFrameCount` and stream to non-seekable outputs |
@@ -1228,15 +1631,34 @@ a poster or animation settings), `Animated` and the `.apng` extension always do;
 
 | Feature | Decoding | Encoding |
 | --- | --- | --- |
-| Sequential Huffman, 8-bit | Baseline (SOF0) and extended sequential (SOF1): 8/16-bit DQT, DHT identifiers 0-3, tables redefined between scans, interleaved or non-interleaved scans, double-precision IDCT with documented rounding; streamed with three MCU rows of decoder state (full planes for multi-scan frames) | Baseline (SOF0) only: one interleaved scan, Annex K typical Huffman tables (no optimized tables), Annex K quantization tables scaled by `Quality` 1-100 (default 90), double-precision forward DCT with documented rounding, no restart markers; streamed by MCU rows |
-| Progressive Huffman (SOF2), 8-bit | DC and AC first and refinement scans, spectral selection, EOB runs, successive approximation, restart intervals, partial progressions, every sampling layout and color model of the sequential decoder; scan parameters validated from the scan headers (also by a full `Identify`). Not row-streamed: the 16-bit coefficients of the whole image (about 2 bytes per sample and component) are kept until the end of the image | Not supported |
+| Sequential Huffman | Baseline (SOF0) and extended sequential (SOF1): 8/16-bit DQT, DHT identifiers 0-3, tables redefined between scans, interleaved or non-interleaved scans, double-precision IDCT with documented rounding; streamed with three MCU rows of decoder state (full planes for multi-scan frames) | Baseline (SOF0), the default `JpegEncoder.Process`: one interleaved scan, Annex K typical Huffman tables (no optimized tables), Annex K quantization tables scaled by `Quality` 1-100 (default 90), double-precision forward DCT with documented rounding, no restart markers; streamed by MCU rows |
+| Progressive Huffman (SOF2) | DC and AC first and refinement scans, spectral selection, EOB runs, successive approximation, restart intervals, partial progressions, every sampling layout and color model of the sequential decoder; scan parameters validated from the scan headers (also by a full `Identify`). Not row-streamed: the 16-bit coefficients of the whole image (about 2 bytes per sample and component) are kept until the end of the image | `JpegEncodingProcess.Progressive`: the quantized coefficients of the baseline output (so the same decoded pixels), in ten scans for a color image and six for a grayscale one: the DC coefficients without their lowest bit, the AC coefficients 1-5 of the luminance without their two lowest bits, the chrominance (Cr, then Cb) without its lowest bit, the AC coefficients 6-63 of the luminance, then the missing bits (luminance bit 1, DC bit 0, chrominance bit 0, luminance bit 0). The Huffman tables of each scan are computed from its own symbols (each scan is coded twice), which the end-of-band runs require and which usually makes the file smaller than the baseline one; no restart markers. Not streamed by MCU rows: the 16-bit coefficients of the whole image are kept until the last scan and charged to the writer |
+| 12-bit samples | Extended sequential and progressive frames with a sample precision of 12 bits (a baseline frame that declares 12 bits is read as an extended sequential one, as common decoders do): DC differences of up to 15 bits and AC coefficients of up to 14 bits, the same inverse DCT, upsampling filters and color conversion at the precision of the samples (level shift and chroma center 2048, range 0-4095), then each sample `s` scaled to 16 bits as `(s * 65535 + 2047) / 4095`, so that 0 and 4095 are exact. `ImageInfo.BitsPerComponent` is 12; grayscale loads as `Gray16`, the other color models as opaque `Rgba64` (there is no 16-bit RGB format); CMYK and YCCK inks are scaled, then converted by the 16-bit ICC conversion. Decodes like libjpeg-turbo within three units of a 12-bit sample | Not supported |
+| Arithmetic coding | Sequential (SOF9) and progressive (SOF10) frames, of 8-bit or 12-bit samples and every color model, sampling layout and scan structure of the Huffman-coded frames (they hold the same coefficients, so they decode to the same pixels): DC and AC conditioning tables (DAC: bounds `0 <= L <= U <= 15`, threshold `1 <= Kx <= 63`, the defaults `L = 0`, `U = 1`, `Kx = 5` otherwise), statistics that start again at each restart marker; a scan uses the conditioning defined when it starts. Invalid conditioning tables, magnitudes beyond those of the sample precision and runs of zeros past the end of a block or of a band are `InvalidImageContentException`. Entropy-coded data that ends early is not detected: an encoder may omit the final zero bytes of a segment, so the missing bytes read as zeros (T.81 D.2.6) and decode to something, as in other decoders; a file that is cut is still invalid (no EOI marker). The decoder buffers up to 4 KiB per block of an MCU before decoding it, since arithmetic coding has no small bound on the size of a block | Not supported |
 | Color models | Grayscale (`Gray8`), JFIF full-range YCbCr and RGB (Adobe transform 0 or `R`,`G`,`B` identifiers) to `Rgb24`; CMYK and YCCK (four components) to `Rgb24` through the ICC conversion of `CmykConversionOptions`, see [Color management](#color-management) | The layout follows the pixel format, never the data: gray formats → one grayscale component, color formats → JFIF full-range YCbCr (BT.601); JFIF APP0 always written, no Adobe APP14. Non-opaque pixels require `BackgroundColor`; `Rgba64`/`Gray16` require `AllowBitDepthReduction` |
 | Chroma subsampling | 4:4:4, 4:2:2, 4:2:0, 4:4:0, 4:1:1 and any integral sampling ratio (libjpeg-turbo-compatible triangle filters for factor 2, replication otherwise) | `Auto` (= 4:2:0 for color), 4:4:4, 4:2:2, 4:2:0; box-filter downsampling, canvas padded to whole MCUs by edge replication; ignored for gray formats |
 | Restart markers | Sequential and progressive scans, sequence checked | Not written |
 | Metadata (EXIF, XMP, ICC, JFIF density, COM) | Bounded; ICC reassembled from APP2 chunks; segments after the scans included | APP1 EXIF (orientation and dimensions reconciled; at most 65,527 bytes), APP1 standard XMP (at most 65,504 bytes), APP2 ICC in up to 255 chunks, JFIF density, COM for `Comment` entries; anything else follows `MetadataHandling` (`Strip` writes only the JFIF segment) |
 | Animated images, posters | — | Rejected with `UnsupportedImageFeatureException` before any output; export a frame with `CloneFrame` |
 | CMYK/YCCK (four components) | Identified; loaded only with `CmykConversion`, otherwise `UnsupportedImageFeatureException` | Not supported |
-| Arithmetic, lossless, hierarchical, 12/16-bit, non-integral sampling | Not supported (`UnsupportedImageFeatureException`, also from `Identify`) | Not supported |
+| Lossless, hierarchical, sample precisions other than 8 and 12 bits, non-integral sampling | Not supported (`UnsupportedImageFeatureException`, also from `Identify`) | Not supported |
+
+A progressive file holds the same picture as a baseline one in several scans of increasing precision, so a viewer can
+show the whole image before the end of a download:
+
+<!-- snippet: save-progressive-jpeg -->
+```csharp
+public static void SaveProgressiveJpeg(string sourcePath, string jpegPath)
+{
+    using var image = Image.Load<Rgb24>(sourcePath);
+    image.Save(jpegPath, new JpegEncoder
+    {
+        Quality = 85,
+        Process = JpegEncodingProcess.Progressive,
+        MetadataHandling = MetadataHandling.DiscardUnsupported,
+    });
+}
+```
 
 ### WebP
 
@@ -1461,13 +1883,14 @@ the offsets of the strips it describes.
   data. The encoder writes `WhiteIsZero` pages; Group 3 is written in one dimension, with an end-of-line code before
   each row and no fill bits, and Group 4 strips end with the end-of-facsimile-block sequence.
 - **JPEG.** A strip or a tile is a JPEG datastream, decoded by the JPEG decoder of the library with everything it
-  supports ([JPEG](#jpeg): baseline, extended sequential and progressive frames, any integral sampling) and written by
+  supports for 8-bit samples ([JPEG](#jpeg): baseline, extended sequential and progressive frames, Huffman or
+  arithmetic coded, any integral sampling; a datastream of 12-bit samples is rejected, as the samples of a JPEG page are bytes) and written by
   its encoder. The photometric interpretation of the page says what the components are, whatever the datastream would
   mean as a JPEG file: YCbCr components are converted to RGB as in a JFIF file (the page must use the full-range ITU-R
   BT.601 samples of JFIF: other `YCbCrCoefficients` or `ReferenceBlackWhite` values are rejected), and grayscale, RGB and
   CMYK components are the stored samples. The frame of a datastream must be as wide as its strip or tile, hold at
   least the rows of the page it covers and at most the rows of a strip or tile. An encoded JPEG page is exactly what `JpegEncoder` writes with the same quality
-  and subsampling, in one strip: at most 65,535 pixels per side, 8-bit samples, no alpha (a pixel that is not opaque is
+  and subsampling and the baseline process, in one strip: at most 65,535 pixels per side, 8-bit samples, no alpha (a pixel that is not opaque is
   rejected).
 - **YCbCr without JPEG** (uncompressed, Deflate, LZW or PackBits data units). With the luma coefficients of
   `YCbCrCoefficients` (ITU-R BT.601 by default) and the black and white pairs of `ReferenceBlackWhite`:
@@ -1715,8 +2138,8 @@ Everything below is rejected explicitly (never decoded or encoded approximately)
 
 | Area | Behavior |
 | --- | --- |
-| JPEG decoding | Lossless (SOF3), hierarchical (SOF5–7, SOF13–15, DHP, EXP), arithmetic coding (SOF9–11, DAC), JPEG-LS, 12/16-bit precision, heights defined by DNL, other component counts than 1, 3 or 4, non-integral sampling ratios: `UnsupportedImageFeatureException` (also from `Identify`). CMYK/YCCK (four components): identified, but loaded only with `CmykConversion` (an ICC conversion to RGB; `UnsupportedImageFeatureException` otherwise, and for a file without CMYK profile when no profile is assumed). Scaled and region decoding: not available |
-| JPEG encoding | Baseline 8-bit Huffman only: no progressive, arithmetic, lossless, 12-bit, RGB, CMYK, restart markers or optimized Huffman tables. One frame: animated images and posters are rejected (export one with `CloneFrame`); alpha requires `BackgroundColor`; `Rgba64`/`Gray16` require `AllowBitDepthReduction` |
+| JPEG decoding | Lossless (SOF3, SOF11), hierarchical (SOF5–7, SOF13–15, DHP, EXP), JPEG-LS, sample precisions other than 8 and 12 bits, heights defined by DNL, other component counts than 1, 3 or 4, non-integral sampling ratios: `UnsupportedImageFeatureException` (also from `Identify`). CMYK/YCCK (four components): identified, but loaded only with `CmykConversion` (an ICC conversion to RGB; `UnsupportedImageFeatureException` otherwise, and for a file without CMYK profile when no profile is assumed). Scaled and region decoding: not available |
+| JPEG encoding | Baseline or progressive 8-bit Huffman only: no arithmetic, lossless, 12-bit, RGB, CMYK or restart markers; the progression of the progressive process is fixed, and the baseline process has no optimized Huffman tables. One frame: animated images and posters are rejected (export one with `CloneFrame`); alpha requires `BackgroundColor`; `Rgba64`/`Gray16` require `AllowBitDepthReduction` |
 | GIF decoding | Plain-text extensions (they require text rendering) are `UnsupportedImageFeatureException`; other unknown extensions (XMP and ICC application extensions included) are skipped; the background color index is never painted (cleared areas are transparent black) |
 | GIF encoding | Lossy by design: at most 256 colors per frame (deterministic quantization, optional dithering), one transparent index (alpha thresholded or flattened, never partial); full-canvas frames (no delta rectangles); comments only (no ICC, EXIF, XMP or resolution); at most 65,535 pixels per side, 655.35 s per frame and 65,536 plays |
 | WebP decoding | VP8 interframes and frames that are not shown (never produced by WebP encoders): `UnsupportedImageFeatureException`; the `ANIM` background color is a hint and is never painted (disposed areas are transparent black); metadata of simple-layout files and text/resolution do not exist in WebP |
@@ -1728,13 +2151,15 @@ Everything below is rejected explicitly (never decoded or encoded approximately)
 | TIFF | Decoding: old-style JPEG compression (6), L\*a\*b\* and transparency-mask photometric interpretations, planar storage of several samples, the reversed fill order for other data than bilevel, the floating-point predictor, signed and floating-point samples, sample widths other than 1, 2, 4, 8 and 16 bits (8 and 16 for RGB and CMYK, 8 for YCbCr, at most 8 for palette indexes), more than one extra sample, associated (premultiplied) or unspecified extra samples, alpha next to palette, YCbCr or packed grayscale samples, the uncompressed mode of the CCITT compressions, the LZW bit order of TIFF 5.0 drafts, and JPEG-compressed YCbCr data that is not the full-range BT.601 data of JFIF are all rejected with `UnsupportedImageFeatureException`; CMYK pages are loaded only with `CmykConversion`. Compressed data is never repaired (a damaged fax row is an error, not a white row). Subsampled chroma of pages that are not JPEG-compressed is replicated. No EXIF block, no sub-IFD, no unknown-tag round trip. Encoding: one page per `Image.Save` (use `ImageCollection.Save`), strips only, no predictor, no tiles, no CMYK, no thresholding and no color reduction (the bilevel and palette layouts store a page exactly or reject it; 16-bit palette colors that are all multiples of 256 without being all multiples of 257 are rejected, since readers take them for 8-bit colors), Group 3 in one dimension only, one strip per JPEG page (at most 65,535 pixels per side, 8-bit samples, opaque pixels), a seekable destination required |
 | ICO/CUR | Decoding: a top-down DIB payload, a DIB whose stored height is not doubled, an animated PNG payload, a representation larger than 256 pixels per side and the DIB variants an icon payload cannot use (run-length encoding, embedded codecs, OS/2 headers) are rejected. Encoding: 32-bit DIB or still PNG payloads only (16-bit pixels need a PNG payload: `IconPayloadFormat.Dib` is rejected for them), at most 256 pixels per side, no metadata; an icon cannot store a hotspot |
 | ANI | Decoding: raw bitmap frames (no icon flag), a frame without a representation of the canvas size and everything the ICO/CUR decoder rejects are `UnsupportedImageFeatureException`; the geometry fields and the sequence flag of the header are not used (the payloads and the `seq ` chunk are authoritative); an ICC profile or text inside a PNG frame is not retained; `Image.OpenReader` does not read it. Encoding: one representation per frame, at most 256 pixels per side, whole jiffies, an infinite play count only, a title and an author as the only metadata, a seekable destination, at most 4 GiB per file |
-| PNG/APNG | No palette output (paletted inputs are re-encoded as RGB/RGBA), no RGB 16-bit or gray+alpha output layouts (16-bit color is written as RGBA 16), no APNG delta-rectangle optimization, unknown critical chunks rejected, unknown ancillary chunks not round-tripped |
+| PNG/APNG | Palette output is opt-in and exact only (`PngPixelLayout.Indexed`: no color reduction or dithering, and a sequential writer cannot declare colors beyond its first image), no grayscale output below 8 bits, no RGB 16-bit or gray+alpha output layouts (16-bit color is written as RGBA 16), no APNG delta-rectangle optimization, unknown critical chunks rejected, unknown ancillary chunks not round-tripped |
 | Metadata | Profiles are preserved and labeled, never applied implicitly (colors are converted only by `ConvertColorProfile` and `IccColorTransform`); EXIF orientation is reported, applied only by `AutoOrient`; extended XMP in JPEG is not supported; per-format storage limits are listed in [Metadata, color profiles and orientation](#metadata-color-profiles-and-orientation); unsupported items follow `MetadataHandling` (`Strict` throws by default) |
 | Color management | ICC version 2 and 4 grayscale, RGB and CMYK profiles (matrix-based and table-based): no version 5 (iccMAX), device-link, abstract or named-color profile, no multi-process-element (`D2Bx`/`B2Dx`) tag, no other data color space; `ConvertColorProfile` keeps the pixel format (an RGB image cannot become grayscale or CMYK this way); no CMYK pixel format: a CMYK JPEG file or TIFF page is converted to RGB when it is loaded (`CmykConversionOptions`, RGB destination only) and CMYK cannot be written; no gamut mapping beyond per-channel clipping |
-| Drawing | No text, no image or pattern brush, no transform, no clipping region other than the canvas, no dashed stroke, no elliptical-arc path element, no blend mode other than source-over; always antialiased; blended on the encoded sample values (no linear-light option); sequential; gradients have no focal point and no rotation of their own; coordinates are limited to ±16,777,216 |
-| Processing | No HDR, text rendering or custom processors; `LinearSrgb` resizing and convolution accept untagged or recognized sRGB/sGray profiles only; convolution matrices have odd dimensions, no bias or divisor, no ready-made matrices and no separable fast path |
+| Drawing | No image or pattern brush, no transform, no clipping region other than the canvas, no dashed stroke, no elliptical-arc path element, no blend mode other than source-over; always antialiased; blended on the encoded sample values (no linear-light option); sequential; gradients have no focal point and no rotation of their own; coordinates are limited to ±16,777,216 |
+| Processing | No HDR or custom processors; `LinearSrgb` resizing and convolution accept untagged or recognized sRGB/sGray profiles only; convolution matrices have odd dimensions, no bias or divisor, no ready-made matrices and no separable fast path |
 | AVIF encoding | An image of a sequence is predicted from the previous image only, with one motion vector per block and the regular interpolation filter: no compound prediction (two references), global, warped or overlapped motion, switchable interpolation filter, temporal motion vector prediction, or scene change detection (an image that differs from the previous one is coded with intra blocks, not as a key frame). Not used: intra block copy (content that repeats in an image, such as the characters of a text, is not predicted from the image itself: a lossless screenshot can be larger than its PNG), the split of the transform blocks of an inter block (it has the largest transform of its size), quantizer deltas, quantization matrices, loop restoration, CDEF strengths per block (one pair per frame), super-resolution and film grain. No grid, layered (progressive) or premultiplied-alpha output; no `clap`, `pasp`, mastering display or content light level box; no orientation for an image sequence. An image sequence of one image cannot store animation settings (it is read back as a still image): a single frame with animation settings is rejected. An image sequence needs a seekable destination and its frame count. The level of the stream is the lowest one whose picture size holds the image; the other limits of a level are not checked |
 | AVIF decoding | Rejected with `UnsupportedImageFeatureException`: premultiplied alpha, `iden`/`iovl` derived images, fragmented files, edit lists that do not play the whole track, image sequences whose images change size, clean apertures that do not select whole samples or that follow a rotation, grid tiles that declare other transformations than their grid, large scale tile streams, and the other matrix coefficients (constant luminance, ICtCp, SMPTE 2085, chromaticity-derived). Not read: gain maps, depth maps, thumbnails, the images that are not the primary item, the `tkhd` matrix and the other transformations of an image sequence (its images are returned as stored), mastering display and content light level boxes. A layered image is returned at its full quality only: its lower layers are not exposed as a progressive rendering. HDR samples are returned as stored: no tone mapping |
 | JPEG XL | Decoding, rejected with `UnsupportedImageFeatureException` (also from `Identify` when the image header tells): floating-point samples and samples of more than 16 bits, premultiplied alpha, CMYK (a black channel) and spot colors, an XYB image whose ICC profile is not sRGB (it needs a color conversion to that profile), the PQ or HLG transfer function with primaries or a white point that CICP cannot express, a Modular frame stored as YCbCr with subsampled channels, restoration filters on a grayscale Modular frame, an upsampled frame with patches or splines whose extra channels have another resolution. Ignored: the preview frame, frame names, the intrinsic size, the JPEG reconstruction data (`jbrd`: `Image.Load` decodes a recompressed JPEG file to pixels, `JpegXlTranscoder` rebuilds the JPEG file), `jumb` and unknown boxes; depth, selection mask, thermal and the other extra channels than alpha are decoded and dropped. Samples of 1 to 16 bits other than 8 and 16 are scaled exactly to 8 or 16 bits. A lossy frame is decoded in floating point: the result is within a few sixteen-bit units of the reference decoders, not bit-exact. Progressive reading: whole stages only (the data of a section that is not complete are not shown), none for a frame of one section, for a Modular frame that is not squeezed, or for the frames that are not shown; an alpha channel that is not squeezed is opaque until it is decoded; the pixels of an intermediate rendering are not part of the contract. Encoding: full frames that replace the image (no layers, blending, patches or cropped frames), frame durations in whole milliseconds, no frame of an animation without duration; an EXIF orientation is written to the image header. Lossy encoding: 8x8 DCTs only (no larger or smaller transform), one quantization factor per frame (no adaptive quantization), no Gaborish filter, patches, splines or noise; an ICC profile that is not sRGB, and the PQ and HLG transfer functions, are rejected (use lossless output, or convert the image) |
 | JPEG recompression | `JpegXlTranscoder.RecompressJpeg` rejects with `UnsupportedImageFeatureException` what a JPEG XL frame cannot hold: four components (CMYK, YCCK), a sampling factor other than 1 or 2 (4:1:1), subsampled RGB components, arithmetic, lossless, hierarchical and 12-bit files, several restart intervals, a quantization table that no component uses or that is defined after the first scan, a Huffman table that uses the code of all ones, more than 65,535 bytes between two markers or 4,260,096 bytes after the end of image, and entropy-coded data that would not be rebuilt byte for byte (the output is always checked). The whole file is held in memory, with two bytes per coefficient. `ReconstructJpeg` needs the reconstruction data (`jbrd`) before the codestream, as every encoder writes them |
+| Text | Horizontal text only; no synthetic bold or oblique; no Arabic joining for a font without substitution table and no dictionary line breaking for the scripts that need one; no language-specific forms; greedy line breaking; no AAT (`morx`, `kerx`) shaping, no device adjustment of positions (hinting); no hinting and no subpixel (LCD) rendering; no system font: every font is given by the caller; along a path, glyphs are turned but not warped; see [Text](#text) |
+| Fonts | No system font, no SVG glyph, no monochrome bitmap glyph, no Type 1 font, no hinting; variable fonts without version 2 of `avar`; see [Fonts](#fonts) |
 | API | No public allocator, custom pixel type, codec plug-in or image-processor interface; implementation types are internal |

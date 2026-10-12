@@ -463,7 +463,7 @@ internal sealed class JpegBitstreamWriter : IDisposable
         var position = 0;
         if (scan.SuccessiveHigh != 0)
         {
-            _bits.WriteBits(span, ref position, (uint)((block[0] >> scan.SuccessiveLow) & 1), 1);
+            _bits.Write(span, ref position, (uint)((block[0] >> scan.SuccessiveLow) & 1), 1);
         }
         else
         {
@@ -519,7 +519,7 @@ internal sealed class JpegBitstreamWriter : IDisposable
 
                 var size = 32 - BitOperations.LeadingZeroCount((uint)magnitude);
                 _bits.WriteSymbol(span, ref position, ac, (run << 4) | size);
-                _bits.WriteBits(span, ref position, (uint)(value < 0 ? ~magnitude : magnitude) & ((1u << size) - 1), size);
+                _bits.Write(span, ref position, (uint)(value < 0 ? ~magnitude : magnitude) & ((1u << size) - 1), size);
             }
             catch (InvalidOperationException)
             {
@@ -648,12 +648,12 @@ internal sealed class JpegBitstreamWriter : IDisposable
         _bits.WriteSymbol(span, ref position, table, symbol);
         if (signBit >= 0)
         {
-            _bits.WriteBits(span, ref position, (uint)signBit, 1);
+            _bits.Write(span, ref position, (uint)signBit, 1);
         }
 
         foreach (var bit in _blockCorrectionBits)
         {
-            _bits.WriteBits(span, ref position, bit, 1);
+            _bits.Write(span, ref position, bit, 1);
         }
 
         _blockCorrectionBits.Clear();
@@ -681,12 +681,12 @@ internal sealed class JpegBitstreamWriter : IDisposable
 
         if (size > 0)
         {
-            _bits.WriteBits(span, ref position, (uint)_endOfBandRun & ((1u << size) - 1), size);
+            _bits.Write(span, ref position, (uint)_endOfBandRun & ((1u << size) - 1), size);
         }
 
         foreach (var bit in _correctionBits)
         {
-            _bits.WriteBits(span, ref position, bit, 1);
+            _bits.Write(span, ref position, bit, 1);
         }
 
         _length += position;
@@ -716,7 +716,7 @@ internal sealed class JpegBitstreamWriter : IDisposable
 
         var span = GetSpan(2);
         var position = 0;
-        _bits.WriteBits(span, ref position, padding, count);
+        _bits.Write(span, ref position, padding, count);
         _length += position;
     }
 

@@ -23,7 +23,17 @@ public static partial class FixtureManifestValidator
         "CC-BY-4.0",
         "Libpng",
         "Zlib",
+        "Apache-2.0",
+        "Unicode-3.0",
+        FontLicense,
     };
+
+    /// <summary>
+    /// The SIL Open Font License, which is only accepted for the font files of <see cref="FixtureManifest.Fonts"/>: its
+    /// conditions are those of a font (it must stay under the same license, and a font with a Reserved Font Name is only
+    /// stored unmodified), and the tests never embed a font in the package.
+    /// </summary>
+    public const string FontLicense = "OFL-1.1";
 
     /// <summary>The accepted values of <see cref="FixtureProvenance.Origin"/>.</summary>
     public static IReadOnlySet<string> AllowedOrigins { get; } = new HashSet<string>(StringComparer.Ordinal) { "hand-authored", "generated", "external" };
@@ -52,7 +62,7 @@ public static partial class FixtureManifestValidator
     /// <summary>The accepted keys of <see cref="DecodeOptionsDefinition.Limits"/> (library <c>ImageResourceLimits</c> properties).</summary>
     public static IReadOnlySet<string> AllowedLimits { get; } = new HashSet<string>(StringComparer.Ordinal)
     {
-        "MaxWidth", "MaxHeight", "MaxFramePixels", "MaxFrames", "MaxTotalPixels", "MaxEncodedBytes", "MaxMetadataBytes", "MaxLiveAllocationBytes",
+        "MaxWidth", "MaxHeight", "MaxFramePixels", "MaxFrames", "MaxTotalPixels", "MaxEncodedBytes", "MaxMetadataBytes", "MaxLiveAllocationBytes", "MaxFontBytes", "MaxGlyphComplexity", "MaxTextLength", "MaxTextGlyphs", "MaxTextLines",
     };
 
     /// <summary>The accepted values of <see cref="FixtureCrossCheck.Result"/>.</summary>
@@ -152,6 +162,7 @@ public static partial class FixtureManifestValidator
         }
 
         ValidateColorSections(manifest, root, ids, referencedFiles, errors);
+        ValidateFonts(manifest, root, ids, referencedFiles, errors);
 
         if (Directory.Exists(root))
         {
@@ -493,8 +504,9 @@ public static partial class FixtureManifestValidator
             errors.Add($"{name}: invalid colorModel '{expected.ColorModel}' (allowed: {string.Join(", ", AllowedColorModels)}).");
         }
 
-        // AV1 samples are 8, 10 or 12 bits wide; JPEG XL samples have any width, the fixtures use the same ones
-        if (expected.BitsPerComponent is not null and not (1 or 2 or 4 or 8 or 16) && !(entry.Format is "avif" or "jxl" && expected.BitsPerComponent is 10 or 12))
+        // AV1 samples are 8, 10 or 12 bits wide; JPEG XL samples have any width, the fixtures use the same ones; JPEG
+        // samples are 8 or 12 bits wide
+        if (expected.BitsPerComponent is not null and not (1 or 2 or 4 or 8 or 16) && !(entry.Format is "avif" or "jxl" && expected.BitsPerComponent is 10 or 12) && !(entry.Format is "jpeg" && expected.BitsPerComponent is 12))
         {
             errors.Add($"{name}: invalid bitsPerComponent {expected.BitsPerComponent}.");
         }
@@ -1120,8 +1132,140 @@ public static partial class FixtureManifestValidator
         }
     }
 
-    private static void ValidateProvenance(string name, FixtureProvenance provenance, List<string> errors)
+    /// <summary>Validates the fonts: identity, provenance, files, and the conditions of the font licenses.</summary>
+    private static void ValidateFonts(FixtureManifest manifest, FullPath root, HashSet<string> ids, HashSet<string> referencedFiles, List<string> errors)
     {
+        var fonts = new Dictionary<string, FontEntry>(StringComparer.Ordinal);
+        foreach (var font in manifest.Fonts ?? [])
+        {
+            fonts.TryAdd(font.Id, font);
+        }
+
+        foreach (var font in manifest.Fonts ?? [])
+        {
+            var name = $"Font '{font.Id}'";
+            if (!IdRegex().IsMatch(font.Id))
+            {
+                errors.Add($"{name}: invalid id (allowed: lowercase letters, digits, '-', '_', '.', '/').");
+            }
+
+            if (!ids.Add(font.Id))
+            {
+                errors.Add($"{name}: duplicate id.");
+            }
+
+            if (font.Features is { } features && (features.Any(string.IsNullOrWhiteSpace) || features.Distinct(StringComparer.Ordinal).Count() != features.Count))
+            {
+                errors.Add($"{name}: features must be non-empty and unique.");
+            }
+
+            if (!FontEntry.AllowedFlavors.Contains(font.Flavor))
+            {
+                errors.Add($"{name}: invalid flavor '{font.Flavor}' (allowed: {string.Join(", ", FontEntry.AllowedFlavors)}).");
+            }
+
+            if (!FontEntry.AllowedModifications.Contains(font.Modification))
+            {
+                errors.Add($"{name}: invalid modification '{font.Modification}' (allowed: {string.Join(", ", FontEntry.AllowedModifications)}).");
+            }
+
+            if (font.FaceCount < 1 || (font.FaceCount > 1 && font.Flavor is not ("ttc" or "woff2")))
+            {
+                errors.Add($"{name}: faceCount must be 1, or more for a collection.");
+            }
+
+            // A font under a license with a Reserved Font Name cannot be modified without being renamed: it is stored
+            // as published. Changing its container changes the file, so that is not allowed either.
+            if (font.ReservedFontName is not null && font.Modification != "none")
+            {
+                errors.Add($"{name}: a font with the Reserved Font Name '{font.ReservedFontName}' must be stored unmodified.");
+            }
+
+            if (font.Modification == "container")
+            {
+                if (font.Original is null || font.Original == font.Id || !fonts.TryGetValue(font.Original, out var original))
+                {
+                    errors.Add($"{name}: a font in another container must name the font it comes from ('original').");
+                }
+                else if (original.ReservedFontName is not null)
+                {
+                    errors.Add($"{name}: the font '{original.Id}' has the Reserved Font Name '{original.ReservedFontName}' and must only be stored unmodified.");
+                }
+            }
+            else if (font.Original is not null)
+            {
+                errors.Add($"{name}: 'original' is only for a font in another container.");
+            }
+
+            ValidateProvenance(name, font.Provenance, errors, isFont: true);
+            ValidateFile(name, font.File, root, referencedFiles, errors);
+            if (font.Vectors is { } vectors)
+            {
+                ValidateFile(name, vectors, root, referencedFiles, errors);
+            }
+
+            if (font.Shaping is { } shaping)
+            {
+                ValidateFile(name, shaping, root, referencedFiles, errors);
+            }
+
+            foreach (var render in font.Renders ?? [])
+            {
+                ValidateFile(name, render.File, root, referencedFiles, errors);
+                if (render.Size <= 0 || render.Margin < 0 || render.Ascent < 0 || render.Descent < 0 || string.IsNullOrWhiteSpace(render.Text))
+                {
+                    errors.Add($"{name}: the render '{render.File.Path}' needs a text, a size, a margin, an ascent and a descent.");
+                }
+            }
+        }
+
+        // A suite is one entry for a whole directory: its files are identified together.
+        foreach (var suite in manifest.FontSuites ?? [])
+        {
+            var name = $"Font suite '{suite.Id}'";
+            if (!IdRegex().IsMatch(suite.Id) || !ids.Add(suite.Id))
+            {
+                errors.Add($"{name}: invalid or duplicate id.");
+            }
+
+            ValidateProvenance(name, suite.Provenance, errors, isFont: true);
+            if (suite.Provenance.Origin != "external")
+            {
+                errors.Add($"{name}: a font suite is a third-party directory ('origin' must be 'external').");
+            }
+
+            if (string.IsNullOrWhiteSpace(suite.Description))
+            {
+                errors.Add($"{name}: 'description' is required.");
+            }
+
+            var directory = root / suite.Directory;
+            if (suite.Directory.Contains("..", StringComparison.Ordinal) || Path.IsPathRooted(suite.Directory) || !Directory.Exists(directory))
+            {
+                errors.Add($"{name}: the directory '{suite.Directory}' does not exist in the corpus.");
+                continue;
+            }
+
+            var hash = FontSuiteEntry.ComputeHash(directory, out var fileCount);
+            if (fileCount != suite.FileCount || !string.Equals(hash, suite.Sha256, StringComparison.Ordinal))
+            {
+                errors.Add($"{name}: the directory has {fileCount} files with the hash {hash}; the manifest declares {suite.FileCount} files with the hash {suite.Sha256}.");
+            }
+
+            foreach (var file in Directory.EnumerateFiles(directory, "*", SearchOption.AllDirectories))
+            {
+                referencedFiles.Add(FullPath.FromPath(file).MakePathRelativeTo(root).Replace('\\', '/'));
+            }
+        }
+    }
+
+    private static void ValidateProvenance(string name, FixtureProvenance provenance, List<string> errors, bool isFont = false)
+    {
+        if (!isFont && provenance.License == FontLicense)
+        {
+            errors.Add($"{name}: the license '{FontLicense}' is only accepted for font files. See tests/Meziantou.Framework.Imaging.Fixtures/README.md.");
+        }
+
         if (!AllowedOrigins.Contains(provenance.Origin))
         {
             errors.Add($"{name}: invalid provenance origin '{provenance.Origin}' (allowed: {string.Join(", ", AllowedOrigins)}).");

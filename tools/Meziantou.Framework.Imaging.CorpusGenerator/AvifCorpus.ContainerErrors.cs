@@ -245,11 +245,6 @@ internal static partial class AvifCorpus
 
         Unsupported(context, "clap-fractional", ErrorSource, builder => builder.GetItem(1).Associations.Add((builder.AddProperty(AvifFileBuilder.CleanAperture(5, 2, 4, 1, 0, 1, 0, 1)), true)),
             "clap", "The clean aperture is 5/2 samples wide: not a whole number of samples.");
-        Unsupported(context, "clap-after-irot", "irot-1", builder =>
-        {
-            var item = builder.GetItem(1);
-            item.Associations.Add((builder.AddProperty(AvifFileBuilder.CleanAperture(4, 1, 4, 1, 0, 1, 0, 1)), true));
-        }, "clap", "The clap property is associated after the irot property: the aperture applies to the rotated image.");
         Unsupported(context, "essential-unknown-property", ErrorSource, builder => builder.GetItem(1).Associations.Add((builder.AddProperty(AvifFileBuilder.Box("zzzz", [1, 2, 3])), true)),
             "essential-property", "An unknown property is marked essential: a reader that does not know it must not present the item.");
         Unsupported(context, "matrix-ictcp", ErrorSource, builder => ReplaceProperty(builder, builder.GetItem(1), "colr", AvifFileBuilder.ColorNclx(9, 16, 14, fullRange: true)),

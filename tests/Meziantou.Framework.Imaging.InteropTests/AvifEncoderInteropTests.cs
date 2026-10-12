@@ -405,6 +405,37 @@ public sealed class AvifEncoderInteropTests
     }
 
     [Theory]
+    [InlineData(AvifCompression.Lossless, AvifChromaSubsampling.Auto, 3, 1, 7, 5, false)]
+    [InlineData(AvifCompression.Lossless, AvifChromaSubsampling.Auto, 0, 2, 12, 6, true)]
+    [InlineData(AvifCompression.Lossy, AvifChromaSubsampling.Ratio420, 2, 2, 5, 3, true)]
+    [InlineData(AvifCompression.Lossy, AvifChromaSubsampling.Ratio444, 1, 3, 9, 4, false)]
+    public async Task TheCleanApertureIsAppliedByAvifDec(AvifCompression compression, AvifChromaSubsampling subsampling, int x, int y, int width, int height, bool transparent)
+    {
+        var libavif = await RequiredTools.LibAvifAsync();
+        using var image = CreateImage(12, 8, monochrome: false, bitDepth: 8, seed: 41, transparent);
+        var aperture = new Rectangle(x, y, width, height);
+        var path = await SaveAsync(image, new AvifEncoder { Compression = compression, ChromaSubsampling = subsampling, Quality = 90, CleanAperture = aperture }, $"clap-{compression}-{subsampling}-{x}-{y}-{width}x{height}");
+
+        // libavif derives the same rectangle from the property, and decodes the samples that it selects
+        var info = await libavif.GetInfoAsync(path, XunitCancellationToken);
+        Assert.Equal((12, 8), (info.Width, info.Height));
+        Assert.Equal((x, y, width, height), info.CleanApertureCrop);
+        var decoded = await libavif.DecodeAsync(path, XunitCancellationToken);
+        Assert.Equal((width, height), (decoded.Width, decoded.Height));
+
+        // The library reads its own file as avifdec does
+        using var loaded = Image.Load(path);
+        Assert.Equal((width, height), (loaded.Width, loaded.Height));
+        if (compression is AvifCompression.Lossless)
+        {
+            using var expected = image.Clone();
+            expected.Crop(aperture, XunitCancellationToken);
+            AssertSamples(ImageSnapshots.CaptureFrame(expected.Frames[0]), decoded.Pixels, $"aperture {aperture} decoded by avifdec {libavif.Version}");
+            AssertSamples(ImageSnapshots.CaptureFrame(expected.Frames[0]), ImageSnapshots.CaptureFrame(loaded.Frames[0]), $"aperture {aperture} decoded by the library");
+        }
+    }
+
+    [Theory]
     [InlineData(false)]
     [InlineData(true)]
     public async Task LightLevelsMasteringDisplayAndPixelShapeAreReportedByOtherReaders(bool isSequence)

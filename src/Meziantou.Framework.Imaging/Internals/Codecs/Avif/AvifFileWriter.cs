@@ -46,6 +46,9 @@ internal static class AvifFileWriter
         public ContentLightLevel? ContentLightLevel { get; init; }
 
         public MasteringDisplayColorVolume? MasteringDisplay { get; init; }
+
+        /// <summary>Gets the part of the image that readers show, or <see langword="null"/> for the whole image.</summary>
+        public Rectangle? CleanAperture { get; init; }
     }
 
     /// <summary>
@@ -712,7 +715,16 @@ internal static class AvifFileWriter
             color[colorCount++] = (byte)index;
         }
 
-        // The transformations apply to the alpha plane as they do to the color image
+        // The transformations apply to the alpha plane as they do to the color image, in the order of their association:
+        // the clean aperture, the rotation, then the mirroring (ISO/IEC 23000-22, section 7.3.6.7)
+        var apertureIndex = 0;
+        if (image.CleanAperture is { } aperture)
+        {
+            AvifCleanAperture.Write(writer, new Size(image.Width, image.Height), aperture);
+            apertureIndex = ++index;
+            color[colorCount++] = (byte)(index | Essential);
+        }
+
         var (angle, axis) = GetTransformations(image.Orientation);
         if (angle is not 0)
         {
@@ -748,6 +760,9 @@ internal static class AvifFileWriter
             alpha[alphaCount++] = (byte)++index;
             if (pixelAspectRatioIndex is not 0)
                 alpha[alphaCount++] = (byte)pixelAspectRatioIndex;
+
+            if (apertureIndex is not 0)
+                alpha[alphaCount++] = (byte)(apertureIndex | Essential);
 
             if (rotationIndex is not 0)
                 alpha[alphaCount++] = (byte)(rotationIndex | Essential);

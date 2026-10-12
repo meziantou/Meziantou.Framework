@@ -3474,6 +3474,245 @@
       }
     },
     {
+      "id": "avif/clap-after-irot",
+      "kind": "valid",
+      "format": "avif",
+      "input": {
+        "path": "avif/clap-after-irot.avif",
+        "sha256": "7b5d288ca0a6818d61110cb1ca1b49d504bff8d2fde47c2303c6660df83d6fd8",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/AvifCorpus.Container.cs (BuildStills)",
+        "tools": [
+          "libavif 1.4.2 avifenc (aom 3.14.1) (payloads)",
+          "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "payloadsOf": "avif/irot-1"
+        }
+      },
+      "features": [
+        "avif.bitDepth=8",
+        "avif.clap",
+        "avif.colr=nclx",
+        "avif.irot=1",
+        "avif.lossless",
+        "avif.majorBrand=avif",
+        "avif.matrix=0",
+        "avif.range=full",
+        "avif.subsampling=4:4:4",
+        "avif.transformOrder=association"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "Planes of the items decoded identically by both decoders, scaled without matrix.",
+        "decoder": "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+        "backend": "ReferenceAvif and ReferenceYuvConverter (test harness)",
+        "command": "av1Vectors.decoders[].command",
+        "crossChecks": [
+          {
+            "decoder": "libavif 1.4.2 avifdec (dav1d 1.5.3)",
+            "command": "avifdec -j 1 {input} {output}.png",
+            "result": "differs",
+            "notes": "avifdec applies the transformations in the order of MIAF (the clean aperture, the rotation, then the mirroring), whatever the order of their association: it presents other samples of this file, which is not compared."
+          },
+          {
+            "decoder": "libavif 1.4.2 avifdec (dav1d 1.5.3), on avif/irot-1",
+            "command": "avifdec -j 1 {input} {output}.png",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "result": "exact",
+            "notes": "The same payloads in the layout avifdec reads; the references are the same files."
+          }
+        ]
+      },
+      "expected": {
+        "width": 4,
+        "height": 4,
+        "pixelFormat": "Rgb24",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 8,
+        "orientation": 8,
+        "iccProfile": "none",
+        "cicp": {
+          "colorPrimaries": 1,
+          "transferCharacteristics": 13,
+          "matrixCoefficients": 0,
+          "fullRange": true
+        },
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "avif/clap-after-irot.frame-0.rgba8.raw",
+                "sha256": "77e1c86569f83c52e5987768865da00bda12d170ed6b4360e89f6a1449462dd4",
+                "layout": "rgba8",
+                "width": 4,
+                "height": 4,
+                "rowBytes": 16,
+                "byteLength": 64,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "avif/clap-after-irot.frame-0.rgb8.raw",
+                "sha256": "d985ce76057b40a083bc8cbcb61714132dffcd538721b3c86399306589ed6438",
+                "layout": "rgb8",
+                "width": 4,
+                "height": 4,
+                "rowBytes": 12,
+                "byteLength": 48,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      },
+      "notes": "The clap property is associated after the irot property: the aperture, 4x4 in the center of the rotated image (6x8), selects the samples (2, 1) to (5, 4) of the coded image."
+    },
+    {
+      "id": "avif/clap-between-imir-irot",
+      "kind": "valid",
+      "format": "avif",
+      "input": {
+        "path": "avif/clap-between-imir-irot.avif",
+        "sha256": "8d6da8dcf56e863468eb516f5fef25d91f22e46c2847f08d59498a47c1c3330f",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/AvifCorpus.Container.cs (BuildStills)",
+        "tools": [
+          "libavif 1.4.2 avifenc (aom 3.14.1) (payloads)",
+          "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "payloadsOf": "avif/imir-1"
+        }
+      },
+      "features": [
+        "avif.bitDepth=8",
+        "avif.clap",
+        "avif.colr=nclx",
+        "avif.imir=1",
+        "avif.irot=3",
+        "avif.lossless",
+        "avif.majorBrand=avif",
+        "avif.matrix=0",
+        "avif.range=full",
+        "avif.subsampling=4:4:4",
+        "avif.transformOrder=association"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "Planes of the items decoded identically by both decoders, scaled without matrix.",
+        "decoder": "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+        "backend": "ReferenceAvif and ReferenceYuvConverter (test harness)",
+        "command": "av1Vectors.decoders[].command",
+        "crossChecks": [
+          {
+            "decoder": "libavif 1.4.2 avifdec (dav1d 1.5.3)",
+            "command": "avifdec -j 1 {input} {output}.png",
+            "result": "differs",
+            "notes": "avifdec applies the transformations in the order of MIAF (the clean aperture, the rotation, then the mirroring), whatever the order of their association: it presents other samples of this file, which is not compared."
+          },
+          {
+            "decoder": "libavif 1.4.2 avifdec (dav1d 1.5.3), on avif/imir-1",
+            "command": "avifdec -j 1 {input} {output}.png",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "result": "exact",
+            "notes": "The same payloads in the layout avifdec reads; the references are the same files."
+          }
+        ]
+      },
+      "expected": {
+        "width": 5,
+        "height": 4,
+        "pixelFormat": "Rgb24",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 8,
+        "orientation": 7,
+        "iccProfile": "none",
+        "cicp": {
+          "colorPrimaries": 1,
+          "transferCharacteristics": 13,
+          "matrixCoefficients": 0,
+          "fullRange": true
+        },
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "avif/clap-between-imir-irot.frame-0.rgba8.raw",
+                "sha256": "fd3b2e4ccf39173b911130fa6c585f6dce7be35b844824201d4462fd41ac52ed",
+                "layout": "rgba8",
+                "width": 5,
+                "height": 4,
+                "rowBytes": 20,
+                "byteLength": 80,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "avif/clap-between-imir-irot.frame-0.rgb8.raw",
+                "sha256": "41a5f4430408f7a353fff269fa1159f190692d013242ab9c22acdf04989816e1",
+                "layout": "rgb8",
+                "width": 5,
+                "height": 4,
+                "rowBytes": 15,
+                "byteLength": 60,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      },
+      "notes": "The properties are associated in the order imir, clap, irot: the aperture, 5x4 at (2, 1) of the mirrored image, selects the samples (1, 1) to (5, 4) of the coded image."
+    },
+    {
       "id": "avif/clap-irot",
       "kind": "valid",
       "format": "avif",
@@ -28491,34 +28730,6 @@
         "format": "Avif"
       },
       "notes": "The ipco box declares 100 bytes more than its iprp container holds."
-    },
-    {
-      "id": "invalid/avif/clap-after-irot",
-      "kind": "unsupported",
-      "format": "avif",
-      "input": {
-        "path": "invalid/avif/clap-after-irot.avif",
-        "sha256": "7b5d288ca0a6818d61110cb1ca1b49d504bff8d2fde47c2303c6660df83d6fd8",
-        "role": "encoded"
-      },
-      "provenance": {
-        "origin": "hand-authored",
-        "license": "CC0-1.0",
-        "author": "Meziantou.Framework.Imaging contributors",
-        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/AvifCorpus.Container.cs (BuildUnsupported)",
-        "tools": [
-          "libavif 1.4.2 avifenc (aom 3.14.1) (payloads)",
-          ".NET 10.0"
-        ]
-      },
-      "expectedError": {
-        "exception": "UnsupportedImageFeatureException",
-        "format": "Avif"
-      },
-      "features": [
-        "avif.unsupported=clap"
-      ],
-      "notes": "The clap property is associated after the irot property: the aperture applies to the rotated image."
     },
     {
       "id": "invalid/avif/clap-fractional",

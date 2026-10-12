@@ -325,6 +325,27 @@ internal static partial class AvifCorpus
             new Img(5, 4, "rgb", 8, CommonCorpus.Grid(5, 4, (x, y) => oriented.Pixels[((y + 1) * 8) + x + 2])));
         Still(context, "clap-420", Png(smooth), "-q 70 -y 420 --cicp 1/13/6 --crop 2,2,4,4", ["avif.clap", "avif.subsampling=4:2:0"]);
 
+        // Transformations that are not in the order of MIAF: they apply in the order of their association, so the aperture
+        // is a part of the image as the transformations before it present it. The pixels stay as they are coded, and the
+        // expected rectangles are derived by hand.
+        // A quarter turn anti-clockwise shows the 8x6 image as 6 columns and 8 rows, the column c of the result being
+        // the row c of the image and the row r of the result its column 7 - r. The centered 4x4 aperture is the columns
+        // 1 to 4 and the rows 2 to 5 of the result: the rows 1 to 4 and the columns 5 down to 2 of the image
+        var afterRotation = Assembled(context, "clap-after-irot", "irot-1", builder => builder.GetItem(1).Associations.Add((builder.AddProperty(AvifFileBuilder.CleanAperture(4, 1, 4, 1, 0, 1, 0, 1)), true)),
+            ["avif.clap", "avif.irot=1", "avif.transformOrder=association"], "The clap property is associated after the irot property: the aperture, 4x4 in the center of the rotated image (6x8), selects the samples (2, 1) to (5, 4) of the coded image.", "BuildStills");
+        AssertDecodesTo("clap-after-irot", afterRotation, new Img(4, 4, "rgb", 8, CommonCorpus.Grid(4, 4, (x, y) => oriented.Pixels[((y + 1) * 8) + x + 2])));
+
+        // The column c of the mirrored image is the column 7 - c of the image. The aperture, 5x4 at (2, 1) of the mirrored
+        // image (its center is half a sample right of the center), is the columns 5 down to 1 and the rows 1 to 4 of
+        // the image; the rotation that follows only changes the orientation
+        var afterMirror = Assembled(context, "clap-between-imir-irot", "imir-1", builder =>
+        {
+            var item = builder.GetItem(1);
+            item.Associations.Add((builder.AddProperty(AvifFileBuilder.CleanAperture(5, 1, 4, 1, 1, 2, 0, 1)), true));
+            item.Associations.Add((builder.AddProperty(AvifFileBuilder.Rotation(3)), true));
+        }, ["avif.clap", "avif.imir=1", "avif.irot=3", "avif.transformOrder=association"], "The properties are associated in the order imir, clap, irot: the aperture, 5x4 at (2, 1) of the mirrored image, selects the samples (1, 1) to (5, 4) of the coded image.", "BuildStills");
+        AssertDecodesTo("clap-between-imir-irot", afterMirror, new Img(5, 4, "rgb", 8, CommonCorpus.Grid(5, 4, (x, y) => oriented.Pixels[((y + 1) * 8) + x + 1])));
+
         // Metadata: the Exif orientation (6) is not the orientation of the image, which its irot property gives (avifenc
         // derives irot and imir from the Exif orientation unless they are given)
         var exif = CommonCorpus.ExifTiff(littleEndian: true, orientation: 6, software: "corpus generator");

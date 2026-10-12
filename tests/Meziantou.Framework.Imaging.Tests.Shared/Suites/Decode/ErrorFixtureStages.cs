@@ -118,7 +118,6 @@ internal static class ErrorFixtureStages
         "invalid/avif/alpha-different-size",
         "invalid/avif/box-size-too-small",
         "invalid/avif/child-box-exceeds-parent",
-        "invalid/avif/clap-after-irot",
         "invalid/avif/clap-fractional",
         "invalid/avif/derived-iden",
         "invalid/avif/derived-iovl",

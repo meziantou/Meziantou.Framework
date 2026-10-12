@@ -986,6 +986,7 @@ namespace Meziantou.Framework.Imaging.Formats
         public int? BitDepth { get => throw null; init { } }
         public bool AllowBitDepthReduction { get => throw null; init { } }
         public bool ClearTransparentColors { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Rectangle? CleanAperture { get => throw null; init { } }
         public int KeyFrameInterval { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Formats.FrameDurationRounding DurationRounding { get => throw null; init { } }
     }

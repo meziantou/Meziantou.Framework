@@ -807,7 +807,6 @@ public sealed class AvifDecoderConformanceTests
         Assert.Equal("iden", Read("invalid/avif/derived-iden").PrimaryItem!.Type);
         Assert.Equal("iovl", Read("invalid/avif/derived-iovl").PrimaryItem!.Type);
         Assert.Null(Read("invalid/avif/clap-fractional").PrimaryItem!.CleanAperture!.GetRectangle(8, 8));
-        Assert.Equal(["irot", "clap"], Read("invalid/avif/clap-after-irot").PrimaryItem!.Transforms.Select(property => property.Type).ToArray());
         Assert.Equal(14, Read("invalid/avif/matrix-ictcp").PrimaryItem!.Nclx!.MatrixCoefficients);
         Assert.Contains(Read("invalid/avif/essential-unknown-property").PrimaryItem!.Associations, association => association is { IsEssential: true, Property.Type: "zzzz" });
         var alpha = Read("invalid/avif/alpha-different-size");

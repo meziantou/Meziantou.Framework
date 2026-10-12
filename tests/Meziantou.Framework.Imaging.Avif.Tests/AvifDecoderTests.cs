@@ -175,6 +175,84 @@ public sealed class AvifDecoderTests
     }
 
     [Theory]
+    // An 8x6 image. A quarter turn anti-clockwise presents it as 6x8; an aperture of 2x5 of that presentation is 5 columns
+    // and 2 rows of the coded image
+    [InlineData(1, null, 2u, 5u, 5, 2, ExifOrientation.LeftBottom)]
+    [InlineData(3, null, 2u, 5u, 5, 2, ExifOrientation.RightTop)]
+    [InlineData(2, null, 2u, 5u, 2, 5, ExifOrientation.BottomRight)] // a half turn keeps the axes
+    [InlineData(null, 0, 2u, 5u, 2, 5, ExifOrientation.BottomLeft)] // and so does a mirroring
+    [InlineData(null, 1, 2u, 5u, 2, 5, ExifOrientation.TopRight)]
+    [InlineData(1, 1, 2u, 5u, 5, 2, ExifOrientation.RightBottom)]
+    public void CleanApertureAfterATransformationIsAPartOfThePresentedImage(int? rotation, int? mirror, uint apertureWidth, uint apertureHeight, int expectedWidth, int expectedHeight, ExifOrientation expectedOrientation)
+    {
+        // ISO/IEC 23008-12, section 6.5.1: the properties apply in the order of their association. MIAF requires the
+        // aperture first; a file that does otherwise is read as it is written
+        var builder = Still();
+        var item = builder.GetItem(1);
+        if (rotation is { } turns)
+            item.Associations.Add((builder.AddProperty(AvifFileBuilder.Rotation(turns)), true));
+
+        if (mirror is { } axis)
+            item.Associations.Add((builder.AddProperty(AvifFileBuilder.Mirror(axis)), true));
+
+        // Centered in the presented image (an offset of a half sample where the difference of the sizes is odd)
+        var presentedWidth = rotation is 1 or 3 ? 6 : 8;
+        var presentedHeight = rotation is 1 or 3 ? 8 : 6;
+        item.Associations.Add((builder.AddProperty(AvifFileBuilder.CleanAperture(apertureWidth, 1, apertureHeight, 1, (int)((presentedWidth - apertureWidth) % 2), 2, (int)((presentedHeight - apertureHeight) % 2), 2)), true));
+        var data = builder.Build();
+        var info = Image.Identify(data);
+
+        // The pixels stay as they are coded: the size is the one of the coded samples that the aperture shows
+        Assert.Equal((expectedWidth, expectedHeight), (info.Width, info.Height));
+        Assert.Equal(expectedOrientation, info.Metadata.Orientation);
+        var presented = ReferenceAvif.Parse(data).PrimaryItem!;
+        Assert.False(presented.HasMiafTransformOrder);
+        Assert.Equal((expectedWidth, expectedHeight), (presented.GetPresentedRectangle(8, 6)!.Value.Width, presented.GetPresentedRectangle(8, 6)!.Value.Height));
+    }
+
+    [Fact]
+    public void ThePresentedRectangleOfTheReferenceReaderFollowsTheOrderOfTheAssociations()
+    {
+        // A quarter turn anti-clockwise shows the 8x6 image as 6 columns and 8 rows: the column c of the result is the row c
+        // of the image, and the row r of the result its column 7 - r. The centered 4x4 aperture is the columns 1 to 4 and
+        // the rows 2 to 5 of the result: the rows 1 to 4 and the columns 5 down to 2 of the image
+        var rotated = Still();
+        rotated.GetItem(1).Associations.Add((rotated.AddProperty(AvifFileBuilder.Rotation(1)), true));
+        rotated.GetItem(1).Associations.Add((rotated.AddProperty(AvifFileBuilder.CleanAperture(4, 1, 4, 1, 0, 1, 0, 1)), true));
+        Assert.Equal((2, 1, 4, 4), ReferenceAvif.Parse(rotated.Build()).PrimaryItem!.GetPresentedRectangle(8, 6));
+
+        // The column c of the mirrored image is the column 7 - c of the image: the aperture 5x4 at (2, 1) of the mirrored
+        // image is the columns 5 down to 1 and the rows 1 to 4 of the image, whatever follows
+        var mirrored = Still();
+        mirrored.GetItem(1).Associations.Add((mirrored.AddProperty(AvifFileBuilder.Mirror(1)), true));
+        mirrored.GetItem(1).Associations.Add((mirrored.AddProperty(AvifFileBuilder.CleanAperture(5, 1, 4, 1, 1, 2, 0, 1)), true));
+        mirrored.GetItem(1).Associations.Add((mirrored.AddProperty(AvifFileBuilder.Rotation(3)), true));
+        Assert.Equal((1, 1, 5, 4), ReferenceAvif.Parse(mirrored.Build()).PrimaryItem!.GetPresentedRectangle(8, 6));
+
+        // In the order of MIAF, the aperture is the one of the coded image; two apertures compose
+        var plain = Still();
+        plain.GetItem(1).Associations.Add((plain.AddProperty(AvifFileBuilder.CleanAperture(5, 1, 4, 1, 1, 2, 0, 1)), true));
+        plain.GetItem(1).Associations.Add((plain.AddProperty(AvifFileBuilder.Rotation(1)), true));
+        var item = ReferenceAvif.Parse(plain.Build()).PrimaryItem!;
+        Assert.True(item.HasMiafTransformOrder);
+        Assert.Equal((2, 1, 5, 4), item.GetPresentedRectangle(8, 6));
+        Assert.Equal(item.CleanAperture!.GetRectangle(8, 6), item.GetPresentedRectangle(8, 6));
+
+        // An aperture that does not select whole samples has no rectangle
+        var fractional = Still();
+        fractional.GetItem(1).Associations.Add((fractional.AddProperty(AvifFileBuilder.Rotation(1)), true));
+        fractional.GetItem(1).Associations.Add((fractional.AddProperty(AvifFileBuilder.CleanAperture(5, 2, 4, 1, 0, 1, 0, 1)), true));
+        Assert.Null(ReferenceAvif.Parse(fractional.Build()).PrimaryItem!.GetPresentedRectangle(8, 6));
+        Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(fractional.Build()));
+
+        // An aperture that is inside the coded image but not inside the rotated one is invalid
+        var outside = Still();
+        outside.GetItem(1).Associations.Add((outside.AddProperty(AvifFileBuilder.Rotation(1)), true));
+        outside.GetItem(1).Associations.Add((outside.AddProperty(AvifFileBuilder.CleanAperture(8, 1, 4, 1, 0, 1, 0, 1)), true));
+        Assert.Throws<InvalidImageContentException>(() => Image.Identify(outside.Build()));
+    }
+
+    [Theory]
     [InlineData(5u, 2u, 4u, 1u, 0, 1u, 0, 1u)] // 5/2 samples wide
     [InlineData(5u, 1u, 4u, 1u, 0, 1u, 0, 1u)] // left = (8 - 5) / 2 = 3/2
     [InlineData(4u, 1u, 4u, 1u, 1, 3u, 0, 1u)] // left = 2 + 1/3

@@ -131,7 +131,8 @@ internal sealed class AvifImagePlan
         return false;
     }
 
-    // The transformative properties apply in the order of their association (ISO/IEC 23008-12, section 6.5)
+    // The transformative properties apply in the order of their association (ISO/IEC 23008-12, section 6.5): MIAF orders
+    // them clap, irot, imir, and the files that do otherwise are read as they are written
     private void ReadPrimaryProperties(AvifMetaBox meta, ReadOnlySpan<byte> payload, AvifItem primary)
     {
         var size = Color.Size;
@@ -147,11 +148,15 @@ internal sealed class AvifImagePlan
                     ReadColorInformation(ref reader, offset);
                     break;
                 case AvifFormat.Clap:
-                    if (!orientation.IsIdentity)
-                        throw AvifFormat.Unsupported("The clean aperture of the AVIF image applies after its rotation.", "clean aperture after a rotation");
-
-                    crop = ReadCleanAperture(ref reader, crop);
+                {
+                    // The aperture is a part of the image as the transformations before it present it. The pixels stay as
+                    // they are coded: the aperture selects the samples that it shows, and the orientation is unchanged
+                    var presented = orientation.GetOutputSize(new Size(crop.Width, crop.Height));
+                    var aperture = orientation.MapRectangleToSource(new Size(crop.Width, crop.Height), AvifCleanAperture.Read(ref reader, presented));
+                    crop = new Rectangle(crop.X + aperture.X, crop.Y + aperture.Y, aperture.Width, aperture.Height);
                     break;
+                }
+
                 case AvifFormat.Irot:
                     // Anti-clockwise, by multiples of 90 degrees
                     orientation = orientation.Then((reader.ReadByte() & 3) switch
@@ -208,39 +213,5 @@ internal sealed class AvifImagePlan
         {
             IccProfile = (offset + reader.Position, reader.Remaining);
         }
-    }
-
-    // ISO/IEC 14496-12, section 12.1.4 "Clean Aperture Box": only whole sample rectangles are supported
-    private static Rectangle ReadCleanAperture(ref AvifBoxReader reader, Rectangle current)
-    {
-        long widthN = reader.ReadUInt32();
-        long widthD = reader.ReadUInt32();
-        long heightN = reader.ReadUInt32();
-        long heightD = reader.ReadUInt32();
-        long horizontalOffsetN = reader.ReadInt32();
-        long horizontalOffsetD = reader.ReadUInt32();
-        long verticalOffsetN = reader.ReadInt32();
-        long verticalOffsetD = reader.ReadUInt32();
-        if (widthD is 0 || heightD is 0 || horizontalOffsetD is 0 || verticalOffsetD is 0 || widthN is 0 || heightN is 0)
-            throw AvifFormat.Invalid("the clean aperture is not valid.");
-
-        if (widthN % widthD is not 0 || heightN % heightD is not 0)
-            throw AvifFormat.Unsupported("The clean aperture of the AVIF image is not a whole number of samples.", "fractional clean aperture");
-
-        var width = widthN / widthD;
-        var height = heightN / heightD;
-
-        // The center of the aperture is at (size - 1) / 2 + offset: left = (size - width) / 2 + offset
-        var left2N = ((current.Width - width) * horizontalOffsetD) + (2 * horizontalOffsetN);
-        var top2N = ((current.Height - height) * verticalOffsetD) + (2 * verticalOffsetN);
-        if (left2N % (2 * horizontalOffsetD) is not 0 || top2N % (2 * verticalOffsetD) is not 0)
-            throw AvifFormat.Unsupported("The clean aperture of the AVIF image is not a whole number of samples.", "fractional clean aperture");
-
-        var left = left2N / (2 * horizontalOffsetD);
-        var top = top2N / (2 * verticalOffsetD);
-        if (left < 0 || top < 0 || width > current.Width - left || height > current.Height - top)
-            throw AvifFormat.Invalid("the clean aperture is outside the image.");
-
-        return new Rectangle(current.X + (int)left, current.Y + (int)top, (int)width, (int)height);
     }
 }

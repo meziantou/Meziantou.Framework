@@ -1062,6 +1062,22 @@ public sealed class ReferenceAvif
     /// <param name="VerticalOffsetDenominator">The denominator of the vertical offset.</param>
     public sealed record CleanAperture(uint WidthNumerator, uint WidthDenominator, uint HeightNumerator, uint HeightDenominator, int HorizontalOffsetNumerator, uint HorizontalOffsetDenominator, int VerticalOffsetNumerator, uint VerticalOffsetDenominator)
     {
+        /// <summary>Parses the payload of a <c>clap</c> box: four fractions of 32-bit terms.</summary>
+        /// <param name="payload">The payload.</param>
+        /// <returns>The aperture.</returns>
+        /// <exception cref="InvalidDataException">The box is truncated.</exception>
+        public static CleanAperture Parse(ReadOnlySpan<byte> payload)
+        {
+            if (payload.Length < 32)
+                throw new InvalidDataException("The 'clap' box is truncated.");
+
+            return new CleanAperture(
+                BinaryPrimitives.ReadUInt32BigEndian(payload), BinaryPrimitives.ReadUInt32BigEndian(payload[4..]),
+                BinaryPrimitives.ReadUInt32BigEndian(payload[8..]), BinaryPrimitives.ReadUInt32BigEndian(payload[12..]),
+                BinaryPrimitives.ReadInt32BigEndian(payload[16..]), BinaryPrimitives.ReadUInt32BigEndian(payload[20..]),
+                BinaryPrimitives.ReadInt32BigEndian(payload[24..]), BinaryPrimitives.ReadUInt32BigEndian(payload[28..]));
+        }
+
         /// <summary>
         /// Computes the rectangle of the aperture in an image: its center is at <c>(size - 1) / 2 + offset</c>, so its left
         /// edge is at <c>(size - apertureSize) / 2 + offset</c>.
@@ -1210,20 +1226,100 @@ public sealed class ReferenceAvif
         public int Orientation => ComposeOrientation(Transforms);
 
         /// <summary>Gets the clean aperture (<c>clap</c>), or <see langword="null"/>.</summary>
-        public CleanAperture? CleanAperture
+        public CleanAperture? CleanAperture => Find("clap") is { } property ? ReferenceAvif.CleanAperture.Parse(property.Payload.Span) : null;
+
+        /// <summary>
+        /// Gets a value indicating whether the transformative properties are associated in the order MIAF requires
+        /// (ISO/IEC 23000-22, section 7.3.6.7): the clean aperture, the rotation, then the mirroring. The properties of a file
+        /// that does otherwise still apply in the order of their association (ISO/IEC 23008-12, section 6.5.1).
+        /// </summary>
+        public bool HasMiafTransformOrder
         {
             get
             {
-                if (Find("clap") is not { } property)
-                    return null;
-
-                var span = property.Payload.Span;
-                return new CleanAperture(
-                    BinaryPrimitives.ReadUInt32BigEndian(span), BinaryPrimitives.ReadUInt32BigEndian(span[4..]),
-                    BinaryPrimitives.ReadUInt32BigEndian(span[8..]), BinaryPrimitives.ReadUInt32BigEndian(span[12..]),
-                    BinaryPrimitives.ReadInt32BigEndian(span[16..]), BinaryPrimitives.ReadUInt32BigEndian(span[20..]),
-                    BinaryPrimitives.ReadInt32BigEndian(span[24..]), BinaryPrimitives.ReadUInt32BigEndian(span[28..]));
+                var order = Transforms.Select(property => Array.IndexOf(["clap", "irot", "imir"], property.Type)).ToList();
+                return order.SequenceEqual(order.Order());
             }
+        }
+
+        /// <summary>
+        /// Computes the samples of the coded image that the transformative properties present, applied in the order of
+        /// their association: a grid that holds the position of every coded sample is cropped, turned and mirrored as each
+        /// property says, and what is left of it is a rectangle of the coded image.
+        /// </summary>
+        /// <param name="imageWidth">The width of the coded image.</param>
+        /// <param name="imageHeight">The height of the coded image.</param>
+        /// <returns>The rectangle of the coded image, or <see langword="null"/> when a clean aperture does not select whole samples.</returns>
+        /// <exception cref="InvalidDataException">A clean aperture is not inside the image it applies to.</exception>
+        public (int X, int Y, int Width, int Height)? GetPresentedRectangle(int imageWidth, int imageHeight)
+        {
+            if (imageWidth < 1 || imageHeight < 1 || (long)imageWidth * imageHeight > 1 << 24)
+                throw new ArgumentOutOfRangeException(nameof(imageWidth), imageWidth, "The image is empty or too large for the grid of its samples.");
+
+            var (width, height) = (imageWidth, imageHeight);
+            var grid = new (int X, int Y)[width * height];
+            for (var y = 0; y < height; y++)
+            {
+                for (var x = 0; x < width; x++)
+                {
+                    grid[(y * width) + x] = (x, y);
+                }
+            }
+
+            foreach (var property in Transforms)
+            {
+                var (sourceWidth, sourceHeight, source) = (width, height, grid);
+                Func<int, int, (int X, int Y)> at;
+                if (property.Type == "clap")
+                {
+                    if (ReferenceAvif.CleanAperture.Parse(property.Payload.Span).GetRectangle(width, height) is not { } aperture)
+                        return null;
+
+                    if (aperture.X < 0 || aperture.Y < 0 || aperture.Width < 1 || aperture.Height < 1 || aperture.X + aperture.Width > width || aperture.Y + aperture.Height > height)
+                        throw new InvalidDataException("The clean aperture is not inside the image.");
+
+                    (width, height) = (aperture.Width, aperture.Height);
+                    at = (x, y) => source[((y + aperture.Y) * sourceWidth) + x + aperture.X];
+                }
+                else if (property.Type == "irot" && (property.Payload.Span[0] & 1) != 0)
+                {
+                    // A quarter turn anti-clockwise brings the right column to the top row; three of them bring the left
+                    // column to the top row
+                    (width, height) = (sourceHeight, sourceWidth);
+                    at = (property.Payload.Span[0] & 3) == 1
+                        ? (x, y) => source[(x * sourceWidth) + sourceWidth - 1 - y]
+                        : (x, y) => source[((sourceHeight - 1 - x) * sourceWidth) + y];
+                }
+                else if (property.Type == "irot")
+                {
+                    at = (property.Payload.Span[0] & 3) == 0
+                        ? (x, y) => source[(y * sourceWidth) + x]
+                        : (x, y) => source[((sourceHeight - 1 - y) * sourceWidth) + sourceWidth - 1 - x];
+                }
+                else
+                {
+                    // imir: 0 exchanges the top and the bottom, 1 the left and the right
+                    at = (property.Payload.Span[0] & 1) == 0
+                        ? (x, y) => source[((sourceHeight - 1 - y) * sourceWidth) + x]
+                        : (x, y) => source[(y * sourceWidth) + sourceWidth - 1 - x];
+                }
+
+                grid = new (int X, int Y)[width * height];
+                for (var y = 0; y < height; y++)
+                {
+                    for (var x = 0; x < width; x++)
+                    {
+                        grid[(y * width) + x] = at(x, y);
+                    }
+                }
+            }
+
+            var (left, top) = (grid.Min(position => position.X), grid.Min(position => position.Y));
+            var (right, bottom) = (grid.Max(position => position.X), grid.Max(position => position.Y));
+            if ((long)(right - left + 1) * (bottom - top + 1) != grid.Length || grid.Distinct().Count() != grid.Length)
+                throw new InvalidDataException("The presented samples are not a rectangle of the coded image.");
+
+            return (left, top, right - left + 1, bottom - top + 1);
         }
 
         /// <summary>Gets the first associated property of a type.</summary>

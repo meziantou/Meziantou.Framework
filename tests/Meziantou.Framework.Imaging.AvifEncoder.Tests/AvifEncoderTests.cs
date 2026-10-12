@@ -29,6 +29,7 @@ public sealed class AvifEncoderTests
         Assert.Null(encoder.BitDepth);
         Assert.False(encoder.AllowBitDepthReduction);
         Assert.False(encoder.ClearTransparentColors);
+        Assert.Null(encoder.CleanAperture);
         Assert.Equal(0, encoder.KeyFrameInterval);
         Assert.Equal(FrameDurationRounding.RequireExact, encoder.DurationRounding);
         Assert.Equal(MetadataHandling.Strict, encoder.MetadataHandling);
@@ -43,6 +44,11 @@ public sealed class AvifEncoderTests
         Assert.Throws<ArgumentOutOfRangeException>(() => new AvifEncoder { BitDepth = 16 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new AvifEncoder { KeyFrameInterval = -1 });
         Assert.Equal(12, new AvifEncoder { KeyFrameInterval = 12 }.KeyFrameInterval);
+        Assert.Throws<ArgumentOutOfRangeException>(() => new AvifEncoder { CleanAperture = new Rectangle(0, 0, 0, 1) });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new AvifEncoder { CleanAperture = new Rectangle(0, 0, 1, 0) });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new AvifEncoder { CleanAperture = new Rectangle(-1, 0, 1, 1) });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new AvifEncoder { CleanAperture = new Rectangle(0, -1, 1, 1) });
+        Assert.Equal(new Rectangle(1, 2, 3, 4), new AvifEncoder { CleanAperture = new Rectangle(1, 2, 3, 4) }.CleanAperture);
         foreach (var bitDepth in new int?[] { null, 8, 10, 12 })
         {
             Assert.Equal(bitDepth, new AvifEncoder { BitDepth = bitDepth }.BitDepth);
@@ -291,6 +297,82 @@ public sealed class AvifEncoderTests
         using var decoded = Image.Load<Rgba32>(data);
         Assert.Equal(orientation, decoded.Metadata.Orientation);
         Assert.Equal(GetBytes(image), GetBytes(decoded));
+    }
+
+    [Theory]
+    // ISO/IEC 14496-12, section 12.1.4: the size of the aperture, then the offset of its center from the center of the
+    // image, as fractions. For a 9x6 image: (1, 2, 5, 3) is centered at 3 + 1/2 - 4 = -1/2 and 3 + 1 - 5/2 = 1/2... written
+    // as the numerators and denominators below, computed by hand from left + (width - 9) / 2 and top + (height - 6) / 2
+    [InlineData(1, 2, 5, 3, -1, 1, 1, 2)] // 1 + (5 - 9) / 2 = -1; 2 + (3 - 6) / 2 = 1/2
+    [InlineData(0, 0, 4, 6, -5, 2, 0, 1)] // 0 + (4 - 9) / 2 = -5/2; 0
+    [InlineData(4, 1, 5, 5, 2, 1, 1, 2)] // 4 + (5 - 9) / 2 = 2; 1 + (5 - 6) / 2 = 1/2
+    [InlineData(8, 5, 1, 1, 4, 1, 5, 2)] // the last sample: 8 + (1 - 9) / 2 = 4; 5 + (1 - 6) / 2 = 5/2
+    public void TheCleanApertureIsAPropertyThatHidesTheRestOfTheImage(int x, int y, int width, int height, int horizontalOffsetNumerator, uint horizontalOffsetDenominator, int verticalOffsetNumerator, uint verticalOffsetDenominator)
+    {
+        using var image = CreateImage(9, 6, seed: 21, transparent: true);
+        image.Metadata.Orientation = ExifOrientation.RightTop;
+        var aperture = new Rectangle(x, y, width, height);
+        var data = Encode(image, new AvifEncoder { CleanAperture = aperture });
+        var reader = ReferenceAvif.Parse(data);
+        var item = reader.PrimaryItem;
+        Assert.NotNull(item);
+
+        // The whole image is coded; the aperture is a property a reader must apply, before the rotation
+        Assert.Equal((9, 6), item.Size);
+        Assert.Equal(new ReferenceAvif.CleanAperture((uint)width, 1, (uint)height, 1, horizontalOffsetNumerator, horizontalOffsetDenominator, verticalOffsetNumerator, verticalOffsetDenominator), item.CleanAperture);
+        Assert.Equal((x, y, width, height), item.CleanAperture!.GetRectangle(9, 6));
+        Assert.Equal(["clap", "irot"], item.Transforms.Select(property => property.Type));
+        Assert.True(item.HasMiafTransformOrder);
+        Assert.All(item.Associations.Where(association => association.Property.Type is "clap"), association => Assert.True(association.IsEssential));
+
+        // The alpha plane has the same aperture
+        var alpha = reader.AlphaItem;
+        Assert.NotNull(alpha);
+        Assert.Equal(["clap", "irot"], alpha.Transforms.Select(property => property.Type));
+        Assert.Equal(item.Find("clap")!.Index, alpha.Find("clap")!.Index);
+
+        // Loading the file gives the aperture, with the orientation of the image
+        using var decoded = Image.Load<Rgba32>(data);
+        Assert.Equal((width, height), (decoded.Width, decoded.Height));
+        Assert.Equal(ExifOrientation.RightTop, decoded.Metadata.Orientation);
+        using var expected = image.Clone();
+        expected.Crop(aperture, TestContext.Current.CancellationToken);
+        Assert.Equal(GetBytes(expected), GetBytes(decoded));
+    }
+
+    [Fact]
+    public void TheCleanApertureMustSelectWholeSamplesOfEveryPlaneOfAStillImage()
+    {
+        using var image = CreateImage(8, 6, seed: 22, transparent: false);
+
+        // The whole image is no aperture
+        var whole = ReferenceAvif.Parse(Encode(image, new AvifEncoder { CleanAperture = new Rectangle(0, 0, 8, 6) })).PrimaryItem;
+        Assert.NotNull(whole);
+        Assert.Null(whole.CleanAperture);
+
+        // Outside the image
+        Assert.Throws<ArgumentException>(() => Encode(image, new AvifEncoder { CleanAperture = new Rectangle(4, 0, 5, 6) }));
+        Assert.Throws<ArgumentException>(() => Encode(image, new AvifEncoder { CleanAperture = new Rectangle(0, 3, 8, 4) }));
+
+        // With subsampled chroma, the aperture starts on a chroma sample: an even column, and an even row for 4:2:0
+        static AvifEncoder Lossy(Rectangle aperture, AvifChromaSubsampling subsampling = AvifChromaSubsampling.Auto) => new() { Compression = AvifCompression.Lossy, ChromaSubsampling = subsampling, CleanAperture = aperture };
+        var exception = Assert.Throws<UnsupportedImageFeatureException>(() => Encode(image, Lossy(new Rectangle(1, 0, 4, 4))));
+        Assert.Equal(ImageFormat.Avif, exception.Format);
+        Assert.Throws<UnsupportedImageFeatureException>(() => Encode(image, Lossy(new Rectangle(0, 1, 4, 4))));
+        Assert.Throws<UnsupportedImageFeatureException>(() => Encode(image, Lossy(new Rectangle(1, 0, 4, 4), AvifChromaSubsampling.Ratio422)));
+        Assert.Equal((0, 1, 4, 4), ReferenceAvif.Parse(Encode(image, Lossy(new Rectangle(0, 1, 4, 4), AvifChromaSubsampling.Ratio422))).PrimaryItem!.CleanAperture!.GetRectangle(8, 6));
+        Assert.Equal((1, 1, 4, 4), ReferenceAvif.Parse(Encode(image, Lossy(new Rectangle(1, 1, 4, 4), AvifChromaSubsampling.Ratio444))).PrimaryItem!.CleanAperture!.GetRectangle(8, 6));
+        Assert.Equal((2, 2, 3, 3), ReferenceAvif.Parse(Encode(image, Lossy(new Rectangle(2, 2, 3, 3)))).PrimaryItem!.CleanAperture!.GetRectangle(8, 6));
+
+        // The lossless coding and the gray pixel formats have no subsampled plane
+        Assert.Equal((1, 1, 4, 4), ReferenceAvif.Parse(Encode(image, new AvifEncoder { CleanAperture = new Rectangle(1, 1, 4, 4) })).PrimaryItem!.CleanAperture!.GetRectangle(8, 6));
+        using var gray = image.CloneAs<Gray8>();
+        Assert.Equal((1, 1, 4, 4), ReferenceAvif.Parse(Encode(gray, Lossy(new Rectangle(1, 1, 4, 4)))).PrimaryItem!.CleanAperture!.GetRectangle(8, 6));
+
+        // An image sequence has no clean aperture
+        using var second = CreateImage(8, 6, seed: 23, transparent: false);
+        image.AppendFrame(second.Frames[0]);
+        Assert.Throws<UnsupportedImageFeatureException>(() => Encode(image, new AvifEncoder { CleanAperture = new Rectangle(0, 0, 4, 4) }));
     }
 
     [Theory]

@@ -317,6 +317,9 @@ internal static partial class AvifCorpus
         /// <summary>The pixels of the lower spatial layers that are decoded and not returned, for every coded item or sample.</summary>
         public required long LowerLayerPixels { get; init; }
 
+        /// <summary>Whether the transformations are associated in the order of MIAF (clap, irot, imir), which libavif assumes.</summary>
+        public bool HasMiafTransformOrder { get; init; } = true;
+
         /// <summary>Whether a tool that applies the transformations of the file shows other pixels than the stored ones.</summary>
         public bool IsTransformed => Orientation != 1;
     }
@@ -630,23 +633,21 @@ internal static partial class AvifCorpus
 
         var nclx = primary.Nclx;
         var (matrix, fullRange, cicp) = ResolveColor(nclx, color);
-        var crop = (0, 0, color.Width, color.Height);
-        if (primary.CleanAperture is { } aperture)
-        {
-            crop = aperture.GetRectangle(color.Width, color.Height) ?? throw new ToolException("the clean aperture is not a whole number of samples.");
-            Py.Assert(primary.Transforms[0].Type == "clap", "clap must come first");
+        // The transformations apply in the order of their association: the samples that they present are a rectangle of
+        // the coded image, which stays as it is coded (the rotation and the mirroring are the orientation of the image)
+        var crop = primary.GetPresentedRectangle(color.Width, color.Height) ?? throw new ToolException("the clean aperture is not a whole number of samples.");
+        if (primary.CleanAperture is not null)
             features.Add("avif.clap");
-        }
 
         foreach (var transform in primary.Transforms.Where(t => t.Type is "irot" or "imir"))
         {
             features.Add(Inv($"avif.{transform.Type}={transform.Payload.Span[0] & 3}"));
         }
 
-        // MIAF orders the transformations clap, irot, imir; a valid fixture follows it (the other order is covered by the
-        // unit tests: HEIF applies the properties in association order, libavif in the MIAF order)
-        var order = primary.Transforms.Select(t => t.Type).ToList();
-        Py.Assert(order.SequenceEqual(order.OrderBy(type => Array.IndexOf(["clap", "irot", "imir"], type))), "transformations must be in the MIAF order");
+        // MIAF orders the transformations clap, irot, imir. HEIF applies the properties in the order of their association,
+        // which is what a file that does otherwise gets (libavif applies them in the MIAF order whatever the file says)
+        if (!primary.HasMiafTransformOrder)
+            features.Add("avif.transformOrder=association");
 
         if (grid is not null)
         {
@@ -688,6 +689,7 @@ internal static partial class AvifCorpus
             ContentLightLevel = primary.ContentLightLevel,
             MasteringDisplay = primary.MasteringDisplay,
             PixelAspectRatio = primary.PixelAspectRatio,
+            HasMiafTransformOrder = primary.HasMiafTransformOrder,
             Frames = [ToFrame(color, alpha, matrix, fullRange, crop)],
             PixelFormat = PixelFormatOf(color, alpha),
             ColorModel = ColorModelOf(color, alpha is not null, matrix),
@@ -1263,6 +1265,13 @@ internal static partial class AvifCorpus
             ["decoder"] = tools.AvifdecLabel,
             ["command"] = CommonCorpus.Display(command, tools, [(path.Value, "{input}"), (output.Value, "{output}.png")]),
         };
+        if (!reference.HasMiafTransformOrder)
+        {
+            check["result"] = "differs";
+            check["notes"] = "avifdec applies the transformations in the order of MIAF (the clean aperture, the rotation, then the mirroring), whatever the order of their association: it presents other samples of this file, which is not compared.";
+            return check;
+        }
+
         var result = Proc.Exec(command);
         if (result.ExitCode != 0)
         {

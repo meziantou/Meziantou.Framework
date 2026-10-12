@@ -49,6 +49,7 @@ internal sealed class AvifEncoderCodec : ImageEncoderCodec
         private readonly byte[]? _exif;
         private readonly byte[]? _xmp;
         private readonly ExifOrientation _orientation;
+        private readonly Rectangle? _cleanAperture;
         private readonly PixelAspectRatio? _pixelAspectRatio;
         private readonly ContentLightLevel? _contentLightLevel;
         private readonly MasteringDisplayColorVolume? _masteringDisplay;
@@ -138,6 +139,8 @@ internal sealed class AvifEncoderCodec : ImageEncoderCodec
 
                 _orientation = ExifOrientation.TopLeft;
             }
+
+            _cleanAperture = ResolveCleanAperture(_encoder, _width, _height, subsamplingX, subsamplingY, _isSequence);
 
             // Every buffer whose size is known is rented before any output, so that a limit failure leaves no output
             try
@@ -334,6 +337,26 @@ internal sealed class AvifEncoderCodec : ImageEncoderCodec
             return 12;
         }
 
+        // The clean aperture selects whole samples of every plane (ISO/IEC 23000-22, section 7.3.6.7): inside the image,
+        // and on a chroma sample when the chroma planes are subsampled
+        private static Rectangle? ResolveCleanAperture(AvifEncoder encoder, int width, int height, int subsamplingX, int subsamplingY, bool isSequence)
+        {
+            if (encoder.CleanAperture is not { } aperture)
+                return null;
+
+            if (isSequence)
+                throw new UnsupportedImageFeatureException("An AVIF image sequence has no clean aperture: crop the image, or remove AvifEncoder.CleanAperture.", ImageFormat.Avif, "Clean aperture of an image sequence");
+
+            if (aperture.Right > width || aperture.Bottom > height)
+                throw new ArgumentException($"The clean aperture ({aperture}) is not inside the image ({width}x{height}).", nameof(encoder));
+
+            if ((subsamplingX is not 0 && (aperture.X & 1) is not 0) || (subsamplingY is not 0 && (aperture.Y & 1) is not 0))
+                throw new UnsupportedImageFeatureException($"The clean aperture ({aperture}) of an AVIF image with subsampled chroma starts on a chroma sample: its left coordinate must be even{(subsamplingY is not 0 ? ", and its top coordinate too" : "")}. Move the aperture, or select AvifChromaSubsampling.Ratio444.", ImageFormat.Avif, "Clean aperture between chroma samples");
+
+            // The whole image is no aperture
+            return aperture.X is 0 && aperture.Y is 0 && aperture.Width == width && aperture.Height == height ? null : aperture;
+        }
+
         // Converts a band of rows of the frame to the planes of the encoders
         private void ConvertRows()
         {
@@ -419,6 +442,7 @@ internal sealed class AvifEncoderCodec : ImageEncoderCodec
                         PixelAspectRatio = _pixelAspectRatio,
                         ContentLightLevel = _contentLightLevel,
                         MasteringDisplay = _masteringDisplay,
+                        CleanAperture = _cleanAperture,
                     },
                     _isSequence ? _movieReservation : -1);
 

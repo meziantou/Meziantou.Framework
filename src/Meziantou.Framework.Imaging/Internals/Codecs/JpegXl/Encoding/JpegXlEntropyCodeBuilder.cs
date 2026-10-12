@@ -350,7 +350,7 @@ internal sealed class JpegXlEntropyCodeBuilder : IDisposable
         using var coded = new LsbBitWriter(scope);
         coded.WriteBool(false);
         coded.WriteBool(true);
-        using (var stream = new JpegXlEntropyEncoder(1, new JpegXlHybridUintConfig(4, 2, 0), scope, useAns: true))
+        using (var stream = new JpegXlEntropyEncoder(1, new JpegXlHybridUintConfig(4, 2, 0), scope, JpegXlEntropyCoding.Ans))
         {
             Span<byte> order = stackalloc byte[JpegXlEntropyCode.MaxClusters];
             for (var i = 0; i < order.Length; i++)

@@ -10,7 +10,10 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <remarks>
 /// A prefix code spends at least one bit per value; the ANS coder spends a fraction of a bit on a value that is almost
 /// certain, and nothing on the values of a cluster that only holds one token. Its state is written in the reverse order of
-/// the values, so a stream is only written once it is complete.
+/// the values, so a stream is only written once it is complete. The description of a distribution is longer than the one
+/// of a prefix code: a stream of a few hundred values is smaller with prefix codes, a channel that is almost constant
+/// is many times smaller with the ANS coder. <see cref="JpegXlEntropyCoding.Smallest"/> computes both sizes from the
+/// counts of the tokens, which does not depend on the number of values.
 /// </remarks>
 internal sealed class JpegXlEntropyEncoder : IDisposable
 {
@@ -24,11 +27,18 @@ internal sealed class JpegXlEntropyEncoder : IDisposable
 
     private const int RefillFlag = 1 << 16;
 
+    /// <summary>
+    /// For each probability d from 2 to 4096, 2^64 / d rounded up. The high 64 bits of its product by a 32-bit state are
+    /// the quotient of the state by d: the product exceeds state * 2^64 / d by less than state * d, which is less than
+    /// 2^44, when reaching the next quotient takes 2^64 / d at least.
+    /// </summary>
+    private static readonly ulong[] Reciprocals = CreateReciprocals();
+
     private readonly AllocationScope _scope;
     private readonly int _contextCount;
     private readonly int _clusterCount;
     private readonly JpegXlHybridUintConfig _config;
-    private readonly bool _useAns;
+    private readonly JpegXlEntropyCoding _coding;
     private readonly uint[][] _histograms;
     private Av1PooledArray<ulong>? _values;
     private int _count;
@@ -37,8 +47,8 @@ internal sealed class JpegXlEntropyEncoder : IDisposable
     /// <param name="contextCount">The number of contexts of the stream.</param>
     /// <param name="config">The hybrid integer configuration of every cluster.</param>
     /// <param name="scope">The scope of the working memory.</param>
-    /// <param name="useAns"><see langword="true"/> to write the values with the ANS coder; <see langword="false"/> to write them with prefix codes.</param>
-    public JpegXlEntropyEncoder(int contextCount, JpegXlHybridUintConfig config, AllocationScope scope, bool useAns = false)
+    /// <param name="coding">How the tokens are written.</param>
+    public JpegXlEntropyEncoder(int contextCount, JpegXlHybridUintConfig config, AllocationScope scope, JpegXlEntropyCoding coding = JpegXlEntropyCoding.PrefixCodes)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(contextCount, 1);
         ArgumentNullException.ThrowIfNull(scope);
@@ -46,11 +56,11 @@ internal sealed class JpegXlEntropyEncoder : IDisposable
         _contextCount = contextCount;
         _clusterCount = Math.Min(contextCount, MaxClusters);
         _config = config;
-        _useAns = useAns;
+        _coding = coding;
 
         // The largest token of a 32-bit value: the split, then one group of tokens per number of raw bits
         var alphabetSize = (1 << config.SplitExponent) + ((32 - config.SplitExponent) << (config.MsbInToken + config.LsbInToken));
-        if (useAns && (alphabetSize > 1 << AnsLogAlphabetSize || config.SplitExponent > AnsLogAlphabetSize))
+        if (coding != JpegXlEntropyCoding.PrefixCodes && (alphabetSize > 1 << AnsLogAlphabetSize || config.SplitExponent > AnsLogAlphabetSize))
             throw new ArgumentException("The tokens of the configuration do not fit the alphabet of the ANS coder.", nameof(config));
 
         _histograms = new uint[_clusterCount][];
@@ -98,9 +108,15 @@ internal sealed class JpegXlEntropyEncoder : IDisposable
         }
 
         // Prefix codes or ANS, and the same configuration of hybrid integers for every cluster
-        writer.WriteBool(!_useAns);
+        var useAns = _coding switch
+        {
+            JpegXlEntropyCoding.PrefixCodes => false,
+            JpegXlEntropyCoding.Ans => true,
+            _ => IsAnsSmaller(),
+        };
+        writer.WriteBool(!useAns);
         var logAlphabetSize = JpegXlPrefixCode.MaxLength;
-        if (_useAns)
+        if (useAns)
         {
             logAlphabetSize = AnsLogAlphabetSize;
             writer.WriteBits(AnsLogAlphabetSize - 5, 2);
@@ -111,7 +127,7 @@ internal sealed class JpegXlEntropyEncoder : IDisposable
             WriteConfig(writer, _config, logAlphabetSize);
         }
 
-        if (_useAns)
+        if (useAns)
         {
             WriteAnsValues(writer);
             return;
@@ -158,6 +174,62 @@ internal sealed class JpegXlEntropyEncoder : IDisposable
         _values = null;
     }
 
+    /// <summary>
+    /// Compares the size of the stream with the ANS coder and with prefix codes: what describes the codes, then the tokens.
+    /// The raw bits of the values are the same in both.
+    /// </summary>
+    private bool IsAnsSmaller()
+    {
+        const int BucketCount = 1 << AnsLogAlphabetSize;
+        using var description = new LsbBitWriter(_scope);
+        var alphabetSize = _histograms[0].Length;
+        Span<byte> lengths = stackalloc byte[alphabetSize];
+        Span<ushort> codes = stackalloc ushort[alphabetSize];
+        long prefixBits = 0;
+        foreach (var histogram in _histograms)
+        {
+            WriteConfig(description, _config, JpegXlPrefixCode.MaxLength);
+            var size = histogram.Length;
+            while (size > 1 && histogram[size - 1] == 0)
+            {
+                size--;
+            }
+
+            WriteVarLenUint16(description, size - 1);
+            if (size > 1)
+            {
+                WritePrefixCode(description, histogram.AsSpan(0, size), lengths[..size], codes[..size]);
+                for (var token = 0; token < size; token++)
+                {
+                    prefixBits += (long)histogram[token] * lengths[token];
+                }
+            }
+        }
+
+        prefixBits += description.BitCount;
+
+        // The alphabet size, the state of the coder, and the information of each token for the probabilities that are written
+        var start = description.BitCount;
+        Span<int> distribution = stackalloc int[BucketCount];
+        var ansBits = 2.0 + 32;
+        foreach (var histogram in _histograms)
+        {
+            WriteConfig(description, _config, AnsLogAlphabetSize);
+            Normalize(histogram, distribution);
+            WriteDistribution(description, distribution);
+            for (var token = 0; token < histogram.Length; token++)
+            {
+                if (histogram[token] != 0)
+                {
+                    ansBits += histogram[token] * (JpegXlAnsDistribution.LogTableSize - Math.Log2(distribution[token]));
+                }
+            }
+        }
+
+        ansBits += description.BitCount - start;
+        return ansBits < prefixBits;
+    }
+
     /// <summary>Writes the distribution of each cluster, the state of the coder, then the values.</summary>
     private void WriteAnsValues(LsbBitWriter writer)
     {
@@ -180,6 +252,17 @@ internal sealed class JpegXlEntropyEncoder : IDisposable
         var values = _values is null ? default : _values.Span[.._count];
         using var refills = Av1PooledArray<int>.Rent(_scope, Math.Max(1, _count), clear: false);
         WriteAnsStream(writer, values, distributions.Span, starts.Span, positions.Span, refills.Span);
+    }
+
+    private static ulong[] CreateReciprocals()
+    {
+        var result = new ulong[JpegXlAnsDistribution.TableSize + 1];
+        for (var divisor = 2; divisor < result.Length; divisor++)
+        {
+            result[divisor] = (ulong.MaxValue / (ulong)divisor) + 1;
+        }
+
+        return result;
     }
 
     /// <summary>Writes the configuration of the hybrid integers of a cluster.</summary>
@@ -242,6 +325,7 @@ internal sealed class JpegXlEntropyEncoder : IDisposable
         const int TableSize = JpegXlAnsDistribution.TableSize;
         const int BucketCount = 1 << AnsLogAlphabetSize;
         var state = JpegXlAnsDistribution.InitialState;
+        var reciprocals = Reciprocals;
         for (var i = values.Length - 1; i >= 0; i--)
         {
             var cluster = (int)(values[i] >> 56);
@@ -255,7 +339,10 @@ internal sealed class JpegXlEntropyEncoder : IDisposable
             }
 
             refills[i] = refill;
-            var (quotient, remainder) = Math.DivRem(state, frequency);
+
+            // The quotient by a probability, without a division: the high half of the product by its reciprocal
+            var quotient = frequency == 1 ? state : (uint)Math.BigMul(state, reciprocals[(int)frequency], out _);
+            var remainder = state - (quotient * frequency);
             state = (quotient << JpegXlAnsDistribution.LogTableSize) + positions[(cluster * TableSize) + starts[(cluster * BucketCount) + token] + (int)remainder];
         }
 

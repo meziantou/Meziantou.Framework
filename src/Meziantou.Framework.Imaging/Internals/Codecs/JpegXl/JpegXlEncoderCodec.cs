@@ -14,7 +14,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// Lossless layout: grayscale pixel formats are one gray channel, the others three color channels; a pixel format with
 /// alpha adds an alpha channel of the same depth. Every frame is a regular Modular frame that covers the image and
 /// replaces it, in groups of 256 samples: a frame of one group is a single section, otherwise each group is a section
-/// that holds its own tree and prefix codes, so that a frame is compressed group by group.
+/// that holds its own tree and its own codes, so that a frame is compressed group by group.
 /// </description></item>
 /// <item><description>
 /// Lossy layout: the image is stored in XYB and every frame is a VarDCT frame (<see cref="JpegXlVarDctEncoder"/>); the
@@ -619,8 +619,7 @@ internal sealed class JpegXlEncoderCodec : ImageEncoderCodec
                 }
             }
 
-            // The alpha channel of a lossy frame: often constant, which a prefix code writes with one bit per sample
-            JpegXlModularEncoder.Encode(writer, image, colorChannelCount: 0, _encoder.Effort, scope, CancellationToken, useAns: true);
+            JpegXlModularEncoder.Encode(writer, image, colorChannelCount: 0, _encoder.Effort, scope, CancellationToken);
         }
 
         private static void EndSection(LsbBitWriter writer, List<int> sizes, ref int total)

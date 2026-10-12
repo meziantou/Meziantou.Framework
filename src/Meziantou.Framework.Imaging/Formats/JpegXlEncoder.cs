@@ -82,10 +82,11 @@ public sealed class JpegXlEncoder : ImageEncoder
     /// the quantization that <see cref="Quality"/> sets.
     /// </summary>
     /// <remarks>
-    /// Lossless output: efforts 0 to 2 use prefix codes and fixed choices; from 3 on, the samples are coded with ANS and the
-    /// color transform and the predictor are searched; from 7 on, the weighted predictor is also tried. Lossy output is
-    /// always coded with ANS: from 3 on, each tile has its own factors of the chroma from luma prediction and the
-    /// predictor of the alpha channel is searched; from 6 on, the contexts of the coefficients have more distributions.
+    /// Lossless output: efforts 0 to 2 use a fixed color transform and a fixed predictor; from 3 on, the color transform and
+    /// the predictor are searched; from 7 on, the weighted predictor is also tried. At every effort, each group of samples
+    /// is written with prefix codes or with ANS, whichever is smaller. Lossy output: from 3 on, each tile has its own
+    /// factors of the chroma from luma prediction and the predictor of the alpha channel is searched; from 6 on, the
+    /// contexts of the coefficients have more distributions.
     /// </remarks>
     /// <exception cref="ArgumentOutOfRangeException">The value is not between 0 and 9.</exception>
     public int Effort

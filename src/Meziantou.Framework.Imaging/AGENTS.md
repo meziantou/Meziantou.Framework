@@ -156,11 +156,13 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   inverted from, what the decoder computes (`JpegXlForwardTransform`, `JpegXlForwardColor`), and a coefficient is
   written with the context derivation the decoder reads it with (`JpegXlCoefficientContexts`). The blocks of a VarDCT
   frame do not predict each other, so the encoder does not reconstruct what it writes; its decisions use float32 in a
-  fixed order. `JpegXlEntropyCodeBuilder` clusters the contexts of the streams that share a code; the lossless encoder
-  keeps `JpegXlEntropyEncoder`, whose bytes must not change. Everything in a lossy frame is written with ANS at every
-  effort, the Modular sub-streams included (LF image, block fields, alpha channel): a prefix code spends one bit per
-  sample at least, which made an opaque alpha channel larger than the colors (`jxl-quality` shows the sizes per effort). A change of the encoder is checked by the interop tests
-  (djxl and jxl-oxide must read the file like the decoder of the library does).
+  fixed order. `JpegXlEntropyCodeBuilder` clusters the contexts of the streams that share a code. Every Modular
+  sub-stream, of a lossless frame or of a lossy one (LF image, block fields, alpha channel), goes through
+  `JpegXlEntropyEncoder`, which writes the smaller of prefix codes and ANS at every effort
+  (`JpegXlEntropyCoding.Smallest`, decided from the token counts): a prefix code spends one bit per sample at least,
+  which made a constant channel larger than the colors, and the description of an ANS distribution is longer than a
+  small group. The effort only selects what is searched; `jxl-quality` shows the sizes per effort. A change of the
+  encoder is checked by the interop tests (djxl and jxl-oxide must read the file like the decoder of the library does).
 - **Progressive reading.** `ImageReader.ReadFrameRefinementInto` is the only way to see a frame before it is complete.
   The walker stops at the lengths the decoder asks for (the end of the sections of a stage); an intermediate rendering
   decodes the sections again from the buffered payload (`JpegXlFrameDecoder.DecodePartial`), never changes the state of

@@ -697,7 +697,7 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
                     }
                 }
 
-                JpegXlModularEncoder.Encode(writer, image, colorChannelCount: 0, _effort, _scope, _cancellationToken, useAns: true);
+                JpegXlModularEncoder.Encode(writer, image, colorChannelCount: 0, _effort, _scope, _cancellationToken);
             }
 
             for (var i = 1; i < JpegXlVarDctTables.QuantTableCount; i++)
@@ -810,7 +810,7 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
                 }
             }
 
-            JpegXlModularEncoder.Encode(writer, image, colorChannelCount: 0, _effort, _scope, _cancellationToken, useAns: true);
+            JpegXlModularEncoder.Encode(writer, image, colorChannelCount: 0, _effort, _scope, _cancellationToken);
         }
 
         var blockInfo = _blockInfo!.Span;
@@ -871,7 +871,7 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
             }
         }
 
-        JpegXlModularEncoder.Encode(writer, metadata, colorChannelCount: 0, _effort, _scope, _cancellationToken, useAns: true);
+        JpegXlModularEncoder.Encode(writer, metadata, colorChannelCount: 0, _effort, _scope, _cancellationToken);
     }
 
     /// <summary>

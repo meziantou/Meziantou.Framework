@@ -51,6 +51,12 @@ internal sealed class AvifStructureParser : ImageParser<ImageInfo>
     private CicpColorDescription? _nclx;
     private int? _bitstreamMatrix;
     private int _nextFrame;
+
+    // The images that were shown so far, and how the next image of the track is shown (read once: the timeline is sequential)
+    private long _shownFrames;
+    private bool _hasFrameTiming;
+    private bool _isFrameShown;
+    private FrameDuration _frameDuration;
     private bool _isProbingHeader;
     private AvifItem? _sequenceExif;
     private AvifItem? _sequenceXmp;
@@ -927,6 +933,15 @@ internal sealed class AvifStructureParser : ImageParser<ImageInfo>
         var maxSamples = _walk is StructureWalk.Header ? 1 : (int)Math.Min(_context.Limits.MaxFrames + 1L, int.MaxValue);
 
         var movie = AvifMovieBox.Parse(payload, _context.Scope, maxSamples);
+        if (movie.Timeline is not null && maxSamples > 1 && movie.Color.LocatedSampleCount < movie.SampleCount)
+        {
+            // An edit list that selects parts of the media may show images that are not the first ones of the track,
+            // after images that it leaves out: every sample is located (their tables are charged to the scope), and the
+            // frame limit applies to the images that are shown
+            movie.Dispose();
+            movie = AvifMovieBox.Parse(payload, _context.Scope, int.MaxValue);
+        }
+
         _movie = movie;
         var color = movie.Color;
         _context.Limits.EnsureCanvasWithinLimits(color.Size.Width, color.Size.Height);
@@ -1099,16 +1114,25 @@ internal sealed class AvifStructureParser : ImageParser<ImageInfo>
 
         while (true)
         {
-            if (_nextFrame >= movie.FrameCount)
+            // The images of the track are read in their order. The ones that the edit list leaves out are decoded too:
+            // the images that follow may refer to them, and a file is read to the last of its samples, so that one that is
+            // cut short never reads as a whole one
+            if (_nextFrame >= movie.SampleCount)
             {
                 _result = CreateInfo(ImageIdentifyMode.FullScan);
                 _state = State.Done;
                 return true;
             }
 
+            if (!_hasFrameTiming)
+            {
+                _isFrameShown = movie.TryGetNextDuration(_nextFrame, out _frameDuration);
+                _hasFrameTiming = true;
+            }
+
             // The metadata items are adopted as soon as their data went by, and the last image waits for them: the images
             // that follow their data have them, at the latest the last one
-            if (!TryAdoptSequenceMetadata() && _nextFrame == movie.FrameCount - 1)
+            if (!TryAdoptSequenceMetadata() && _isFrameShown && _shownFrames == movie.FrameCount - 1)
                 return false;
 
             // The samples beyond the frame limit of the operation are not located: the limit was reported before
@@ -1120,13 +1144,16 @@ internal sealed class AvifStructureParser : ImageParser<ImageInfo>
             if (!color.IsComplete || alpha is { IsComplete: false })
                 return false;
 
-            var duration = new FrameDuration(movie.Color.GetSampleDuration(_nextFrame), movie.Color.Timescale);
-            var proceed = _observer!.OnSequenceFrame(this, color.Buffer, alpha?.Buffer, duration);
+            var proceed = _observer!.OnSequenceFrame(this, color.Buffer, alpha?.Buffer, _frameDuration, _isFrameShown);
             Release(color);
             if (alpha is not null)
                 Release(alpha);
 
             _nextFrame++;
+            _hasFrameTiming = false;
+            if (_isFrameShown)
+                _shownFrames++;
+
             if (!proceed)
             {
                 _result = CreateInfo(ImageIdentifyMode.FullScan);

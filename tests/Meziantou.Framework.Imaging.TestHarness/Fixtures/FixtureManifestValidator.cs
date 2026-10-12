@@ -643,6 +643,11 @@ public static partial class FixtureManifestValidator
     {
         if (frame.EncodedDelay is not { } delay)
         {
+            // An image that the edit list of an AVIF track shows for a part of its duration has no delay field of its
+            // own: its duration is derived from the edits, and the fixture says so
+            if (entry.Format is "avif" && entry.HasFeature("avif.seq.partialDurations"))
+                return;
+
             if (expected.Animation is not null && (entry.Format is "png" or "webp" or "avif" or "jxl" || duration != RationalDuration.Zero))
             {
                 errors.Add($"{frameName}: frames of animated inputs must record the encoded delay field (encodedDelay).");

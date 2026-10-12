@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.IO.Compression;
+using System.Numerics;
 using System.Text;
 using System.Text.RegularExpressions;
 using Meziantou.Framework.Imaging.CorpusGenerator.Common;
@@ -119,6 +120,7 @@ internal static partial class AvifCorpus
         ["avif/sequence-8-frames-444-slow"] = (0, 0.0),
         ["avif/sequence-8-frames-alpha-lossy"] = (1, 0.0002), // one unit on a few samples
         ["avif/sequence-alpha-10bit"] = (1, 0.0),
+        ["avif/sequence-alpha-edit-offset"] = (0, 0.0),
         ["avif/sequence-alpha-repeat-2"] = (0, 0.0),
         ["avif/sequence-co64-stz2"] = (0, 0.0),
         ["avif/sequence-ffmpeg"] = (0, 0.0),
@@ -285,7 +287,8 @@ internal static partial class AvifCorpus
     /// <param name="OperatingPoints">The <c>operating_point_idc</c> of each operating point of the sequence header.</param>
     private sealed record PayloadLayers(int Count, bool IsScaled, List<int> OperatingPoints);
 
-    private sealed record Timing(uint SampleDelta, uint Timescale);
+    /// <summary>The time an image is shown for, in seconds, and the duration of its sample when it is shown for all of it.</summary>
+    private sealed record Timing(long Numerator, long Denominator, uint? SampleDelta, uint Timescale);
 
     /// <summary>Everything the manifest records about a valid input, derived from its bytes.</summary>
     private sealed class AvifReference
@@ -839,7 +842,21 @@ internal static partial class AvifCorpus
         // Frames that are decoded without being shown (the alternate reference frames libaom codes with a lookahead; a
         // later sample then only shows one of them again): they count toward MaxTotalPixels, so their number is recorded,
         // for the color and the alpha tracks together
-        var hiddenFrames = payload.HiddenFrames + (alphaPayload?.HiddenFrames ?? 0);
+
+        // The images that the edit list of the track shows, and for how long. The images that it leaves out are decoded
+        // like the frames of the bitstream that are not shown: the images that follow may refer to them
+        var presentation = track.GetPresentation(file.MovieTimescale);
+        Py.Assert(presentation.Count > 0, "the edit list shows an image");
+        var shown = presentation.Select(image => image.SampleIndex).ToList();
+        var leftOut = (track.Samples.Count - shown.Count) * (alphaPayload is null ? 1 : 2);
+        if (track.EditList is { Entries.Count: > 1 } severalEdits)
+            features.Add(Inv($"avif.seq.edits={severalEdits.Entries.Count}"));
+        if (presentation.Count != track.Samples.Count)
+            features.Add(Inv($"avif.seq.imagesLeftOut={track.Samples.Count - presentation.Count}"));
+        if (presentation.Any(image => image.Numerator * track.Timescale != track.Samples[image.SampleIndex].Duration * image.Denominator))
+            features.Add("avif.seq.partialDurations");
+
+        var hiddenFrames = payload.HiddenFrames + (alphaPayload?.HiddenFrames ?? 0) + leftOut;
         if (hiddenFrames > 0)
         {
             Py.Assert(payload.CodedSizes.Concat(alphaPayload?.CodedSizes ?? []).All(size => size == (track.Width, track.Height)), "the hidden frames have the size of the images");
@@ -898,7 +915,7 @@ internal static partial class AvifCorpus
             Py.Assert(transformedAlpha.Orientation == 1 || transformedAlpha.Orientation == track.Orientation, "the alpha track has the matrix of the color track or none");
         }
 
-        var frames = payload.Frames.Select((frame, i) => ToFrame(frame, alphaPayload?.Frames[i], matrix, fullRange, crop, file.IsPremultiplied, cicp?.ColorPrimaries ?? 2, cicp?.TransferCharacteristics ?? 2)).ToList();
+        var frames = shown.Select(i => ToFrame(payload.Frames[i], alphaPayload?.Frames[i], matrix, fullRange, crop, file.IsPremultiplied, cicp?.ColorPrimaries ?? 2, cicp?.TransferCharacteristics ?? 2)).ToList();
         AddPresentationFeatures(features, track.ContentLightLevel, track.MasteringDisplay, track.PixelAspectRatio);
         return new AvifReference
         {
@@ -915,11 +932,17 @@ internal static partial class AvifCorpus
             Exif = exif,
             Xmp = xmp,
             IsMatrixed = !first.Color.Monochrome && matrix != 0,
-            Timings = [.. track.Samples.Select(sample => new Timing(sample.Duration, track.Timescale))],
+            Timings = [.. presentation.Select(image =>
+            {
+                var sample = track.Samples[image.SampleIndex];
+                var isWhole = image.Numerator * track.Timescale == sample.Duration * image.Denominator;
+                var divisor = BigInteger.Max(BigInteger.GreatestCommonDivisor(image.Numerator, image.Denominator), 1);
+                return new Timing((long)(image.Numerator / divisor), (long)(image.Denominator / divisor), isWhole ? sample.Duration : null, track.Timescale);
+            })],
             IsSequence = true,
             ColorTrack = track,
             Features = features,
-            HiddenFrames = payload.HiddenFrames + (alphaPayload?.HiddenFrames ?? 0),
+            HiddenFrames = hiddenFrames,
             LowerLayerPixels = payload.LowerLayerPixels + (alphaPayload?.LowerLayerPixels ?? 0),
         };
     }
@@ -1102,9 +1125,11 @@ internal static partial class AvifCorpus
             if (reference.IsSequence)
             {
                 var timing = reference.Timings[i];
-                frame["duration"] = CommonCorpus.Normalize(timing.SampleDelta, timing.Timescale);
-                if (reference.Frames.Count > 1)
-                    frame["encodedDelay"] = new Obj { ["sampleDelta"] = (long)timing.SampleDelta, ["timescale"] = (long)timing.Timescale };
+                frame["duration"] = CommonCorpus.Normalize(timing.Numerator, timing.Denominator);
+
+                // The duration of the sample is the encoded field of an image that is shown for all of it
+                if (reference.Frames.Count > 1 && timing.SampleDelta is { } sampleDelta)
+                    frame["encodedDelay"] = new Obj { ["sampleDelta"] = (long)sampleDelta, ["timescale"] = (long)timing.Timescale };
             }
             else
             {
@@ -1125,7 +1150,7 @@ internal static partial class AvifCorpus
                 ["editList"] = track.EditList is not { } edits ? null : new Obj
                 {
                     ["repeating"] = edits.IsRepeating,
-                    ["segmentDuration"] = edits.Entries[0].SegmentDuration is { } segment ? (long)segment : null,
+                    ["segmentDuration"] = edits.TotalSegmentDuration is { } segment ? (long)segment : null,
                     ["trackDuration"] = track.Duration is { } duration ? (long)duration : null,
                 },
             };

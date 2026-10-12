@@ -31,8 +31,33 @@ internal sealed class AvifMovieBox : IDisposable
     /// </summary>
     public bool IsPremultiplied { get; private set; }
 
-    /// <summary>Gets the number of images of the sequence.</summary>
-    public long FrameCount => Color.SampleCount;
+    /// <summary>Gets the number of images of the sequence: the images of the color track that are shown.</summary>
+    public long FrameCount => Timeline?.PresentedCount ?? Color.SampleCount;
+
+    /// <summary>Gets the number of images of the color track, which are decoded in their order whether they are shown or not.</summary>
+    public long SampleCount => Color.SampleCount;
+
+    /// <summary>
+    /// Gets the presentation of the images of the color track through its edit list, or <see langword="null"/> when every
+    /// image is shown for its duration: a track without edit list, or whose only edit plays the media from its start.
+    /// </summary>
+    public AvifEditTimeline? Timeline { get; private set; }
+
+    /// <summary>
+    /// Gets how the next image of the color track is shown. The images are read in their order: the first call is about
+    /// the first image, whose index is given for the tracks without edit timeline.
+    /// </summary>
+    /// <param name="index">The index of the image in the track.</param>
+    /// <param name="duration">Receives the time the image is shown for.</param>
+    /// <returns><see langword="false"/> when the edit list of the track leaves the image out.</returns>
+    public bool TryGetNextDuration(int index, out FrameDuration duration)
+    {
+        if (Timeline is { } timeline)
+            return timeline.TryGetNext(Color, out duration);
+
+        duration = new FrameDuration(Color.GetSampleDuration(index), Color.Timescale);
+        return true;
+    }
 
     /// <summary>
     /// Gets the number of times the sequence is played, or <see langword="null"/> when it repeats forever. The edit list of the
@@ -126,17 +151,15 @@ internal sealed class AvifMovieBox : IDisposable
         if (color.Timescale is 0)
             throw AvifFormat.Invalid("the time scale of the image sequence is zero.");
 
-        // The edit of an image sequence plays every image: an edit that ends before the last image starts selects a part of
-        // the track. The duration of the edit is in units of the time scale of the movie
-        if (color.HasEditList && color.SegmentDuration is not (0 or ulong.MaxValue) && _timescale is not 0)
+        // The usual edit list of an image sequence has one edit that plays the media from its start: every image is shown
+        // for its duration. The duration of the edit, which is in units of the time scale of the movie, is rounded by the
+        // writers: an edit that reaches the last image plays the whole media (it also does when it ends where the last
+        // image starts and that image has no duration). Any other edit list selects parts of the media
+        if (color.HasEditList && !PlaysWholeMedia(color))
         {
-            // An edit that ends where the last image starts plays it when the image has no duration: the edit then covers
-            // the whole media
-            var lastImageStart = color.MediaDuration - Math.Min(color.MediaDuration, color.LastSampleDuration);
-            var editEnd = (UInt128)color.SegmentDuration * color.Timescale;
-            var lastStart = (UInt128)lastImageStart * _timescale;
-            if (editEnd < lastStart || (editEnd == lastStart && color.LastSampleDuration is not 0))
-                throw AvifFormat.Unsupported("The AVIF image sequence has an edit list that does not play the whole track.", "edit list");
+            Timeline = AvifEditTimeline.Create(color, _timescale);
+            if (Timeline.PresentedCount is 0)
+                throw AvifFormat.Invalid("the edit list of the image sequence shows no image.");
         }
 
         foreach (var track in _tracks)
@@ -146,6 +169,11 @@ internal sealed class AvifMovieBox : IDisposable
 
             if (track.SampleCount != color.SampleCount)
                 throw AvifFormat.Invalid("the alpha track does not have the number of images of the color track.");
+
+            // The alpha plane of an image is shown with it: an alpha track with an edit list of its own must select the
+            // same images for the same times
+            if (track.HasEditList && (!color.HasEditList || track.Timescale != color.Timescale || !track.Edits.SequenceEqual(color.Edits)))
+                throw AvifFormat.Unsupported("The alpha track of the AVIF image sequence does not have the edit list of the color track.", "alpha track with another edit list");
 
             if (track.Size != color.Size)
                 throw AvifFormat.Unsupported("The alpha plane of the AVIF image sequence does not have the size of the color images.", "alpha plane of a different size");
@@ -206,6 +234,21 @@ internal sealed class AvifMovieBox : IDisposable
     // ISO/IEC 14496-12, section 8.3.1 "Track Box"
     private static void ParseTrack(AvifBoxReader reader, int baseOffset, AvifTrack track, AllocationScope scope, int maxSamples)
     {
+        // The edit list is read first, wherever it is in the track: an edit list that selects parts of the media needs
+        // the duration of every sample, which is otherwise kept for the located samples only
+        var edits = reader;
+        while (edits.TryReadBox(out var type, out _, out var box))
+        {
+            if (type is not AvifFormat.Edts)
+                continue;
+
+            while (box.TryReadBox(out var editType, out _, out var edit))
+            {
+                if (editType is AvifFormat.Elst)
+                    ParseEditList(edit, track);
+            }
+        }
+
         while (reader.TryReadBox(out var type, out var offset, out var box))
         {
             switch (type)
@@ -254,14 +297,6 @@ internal sealed class AvifMovieBox : IDisposable
                     }
 
                     break;
-                case AvifFormat.Edts:
-                    while (box.TryReadBox(out var editType, out _, out var edit))
-                    {
-                        if (editType is AvifFormat.Elst)
-                            ParseEditList(edit, track);
-                    }
-
-                    break;
                 case AvifFormat.Meta:
                     track.Meta = (baseOffset + offset, box.Remaining);
                     break;
@@ -274,36 +309,68 @@ internal sealed class AvifMovieBox : IDisposable
         }
     }
 
-    // ISO/IEC 14496-12, section 8.6.6 "Edit List Box": the only edit of an image sequence plays the whole track, once or
-    // repeatedly
+    // Returns whether the edit list is the one edit that plays the media from its start to its last image at least
+    private bool PlaysWholeMedia(AvifTrack track)
+    {
+        if (track.Edits.Count is not 1 || track.Edits[0].MediaTime is not 0)
+            return false;
+
+        if (track.SegmentDuration is 0 or ulong.MaxValue || _timescale is 0)
+            return true;
+
+        var lastImageStart = track.MediaDuration - Math.Min(track.MediaDuration, track.LastSampleDuration);
+        var editEnd = (UInt128)track.SegmentDuration * track.Timescale;
+        var lastStart = (UInt128)lastImageStart * _timescale;
+        return editEnd > lastStart || (editEnd == lastStart && track.LastSampleDuration is 0);
+    }
+
+    // ISO/IEC 14496-12, section 8.6.6 "Edit List Box": each edit plays a part of the media, at its normal rate. The edit
+    // list of an image sequence repeats when its flag says so (AV1 Image File Format, section 3.2)
     private static void ParseEditList(AvifBoxReader reader, AvifTrack track)
     {
         var (version, flags) = reader.ReadFullBoxHeader();
         var entryCount = reader.ReadUInt32();
-        if (entryCount is not 1)
-            throw AvifFormat.Unsupported("The AVIF image sequence has an edit list that does not play the whole track.", "edit list");
+        if (entryCount is 0)
+            return;
 
-        ulong segmentDuration;
-        long mediaTime;
-        if (version is 1)
+        ulong total = 0;
+        var hasOpenEdit = false;
+        for (uint i = 0; i < entryCount; i++)
         {
-            segmentDuration = reader.ReadUInt64();
-            mediaTime = (long)reader.ReadUInt64();
-        }
-        else
-        {
-            var duration = reader.ReadUInt32();
-            segmentDuration = duration is uint.MaxValue ? ulong.MaxValue : duration;
-            mediaTime = reader.ReadInt32();
-        }
+            ulong segmentDuration;
+            long mediaTime;
+            if (version is 1)
+            {
+                segmentDuration = reader.ReadUInt64();
+                mediaTime = (long)reader.ReadUInt64();
+            }
+            else
+            {
+                var duration = reader.ReadUInt32();
+                segmentDuration = duration is uint.MaxValue ? ulong.MaxValue : duration;
+                mediaTime = reader.ReadInt32();
+            }
 
-        var mediaRate = reader.ReadUInt32();
-        if (mediaTime is not 0 || mediaRate is not 0x00010000)
-            throw AvifFormat.Unsupported("The AVIF image sequence has an edit list that does not play the whole track.", "edit list");
+            // A media time of -1 is an empty edit, which shows nothing for its duration: an image sequence has no way to
+            // show nothing. The media rate is 1; 0 would hold an image for the duration of the edit
+            var mediaRate = reader.ReadUInt32();
+            if (mediaTime is -1)
+                throw AvifFormat.Unsupported("The AVIF image sequence has an edit list with an empty edit.", "edit list");
+
+            if (mediaTime < 0)
+                throw AvifFormat.Invalid("the media time of an edit is negative.");
+
+            if (mediaRate is not 0x00010000)
+                throw AvifFormat.Unsupported("The AVIF image sequence has an edit list that does not play the media at its normal rate.", "edit list");
+
+            track.Edits.Add((segmentDuration, mediaTime));
+            hasOpenEdit |= segmentDuration is 0 or ulong.MaxValue;
+            total = segmentDuration > ulong.MaxValue - total ? ulong.MaxValue : total + segmentDuration;
+        }
 
         track.HasEditList = true;
         track.IsRepeating = (flags & 1) is not 0;
-        track.SegmentDuration = segmentDuration;
+        track.SegmentDuration = hasOpenEdit ? ulong.MaxValue : total;
     }
 
     // ISO/IEC 14496-12, section 8.4.1 "Media Box"
@@ -450,8 +517,9 @@ internal sealed class AvifMovieBox : IDisposable
             if (count is 0)
                 continue;
 
-            // Only the durations of the located samples are kept; the others take part in the duration of the track
-            if (covered < located)
+            // Only the durations of the located samples are kept; the others take part in the duration of the track.
+            // An edit list that may select parts of the media needs them all: a run is no larger than its entry in the box
+            if (covered < located || track.Edits.Count > 1 || track.Edits is [{ MediaTime: not 0 } or { SegmentDuration: not (0 or ulong.MaxValue) }])
                 track.Durations.Add((count, delta));
 
             covered += count;

@@ -1075,7 +1075,29 @@ public sealed class ReferenceAvif
     /// <summary>An edit list (<c>elst</c>).</summary>
     /// <param name="IsRepeating">Whether the flag that repeats the edits is set (flags and 1).</param>
     /// <param name="Entries">The edits.</param>
-    public sealed record EditList(bool IsRepeating, IReadOnlyList<Edit> Entries);
+    public sealed record EditList(bool IsRepeating, IReadOnlyList<Edit> Entries)
+    {
+        /// <summary>
+        /// Gets the duration of one play of the edits, in units of the time scale of the movie: the sum of their durations,
+        /// or <see langword="null"/> when one of them has none (every bit of its field is set).
+        /// </summary>
+        public ulong? TotalSegmentDuration
+        {
+            get
+            {
+                ulong total = 0;
+                foreach (var entry in Entries)
+                {
+                    if (entry.SegmentDuration is not { } duration)
+                        return null;
+
+                    total = checked(total + duration);
+                }
+
+                return Entries.Count == 0 ? null : total;
+            }
+        }
+    }
 
     /// <summary>The fields of an AV1 codec configuration record (AV1 Codec ISO Media File Format Binding, section 2.3).</summary>
     /// <param name="SequenceProfile">The <c>seq_profile</c> field.</param>
@@ -1572,12 +1594,106 @@ public sealed class ReferenceAvif
                 if (!edits.IsRepeating)
                     return 1;
 
-                if (Duration is not { } duration || edits.Entries.Count == 0 || edits.Entries[0].SegmentDuration is not { } segment || segment == 0)
+                if (Duration is not { } duration || edits.TotalSegmentDuration is not { } segment || segment == 0)
                     return null;
 
                 var plays = (new BigInteger(duration) + segment - 1) / segment;
                 return plays > int.MaxValue ? null : (int)BigInteger.Max(plays, 1);
             }
+        }
+
+        /// <summary>
+        /// Computes the images that the track shows and the time each one is shown for, through its edit list (ISO/IEC
+        /// 14496-12, section 8.6.6): each edit plays the media from its media time, for its duration (which is in units
+        /// of the time scale of the movie; an edit without duration plays the media to its end), and an image is shown
+        /// for the time that the edits cover of its interval. An image without duration is shown when its time is in an
+        /// edit, ends included. A track without edit list shows every image for its duration, and so does the usual edit
+        /// list of an image sequence, whose rounded duration is not held against it: one edit that starts with the
+        /// media and reaches its last image (or ends where that image starts when the image has no duration).
+        /// </summary>
+        /// <param name="movieTimescale">The time scale of the movie.</param>
+        /// <returns>The index of each image that is shown, in order, with its duration in seconds as a fraction.</returns>
+        /// <exception cref="InvalidDataException">An edit is empty, is not played at the normal rate, or the edits are not in the order of the media.</exception>
+        public IReadOnlyList<(int SampleIndex, BigInteger Numerator, BigInteger Denominator)> GetPresentation(uint movieTimescale)
+        {
+            var result = new List<(int SampleIndex, BigInteger Numerator, BigInteger Denominator)>();
+            var starts = new List<BigInteger>();
+            BigInteger time = 0;
+            foreach (var sample in _samples)
+            {
+                starts.Add(time);
+                time += sample.Duration;
+            }
+
+            var mediaEnd = time;
+            var entries = EditList?.Entries ?? [];
+            if (entries.Any(entry => entry.MediaTime < 0 || entry.MediaRateInteger != 1 || entry.MediaRateFraction != 0))
+                throw new InvalidDataException("An edit is empty or is not played at the normal rate.");
+
+            var playsWholeMedia = entries.Count == 0;
+            if (entries.Count == 1 && entries[0].MediaTime == 0)
+            {
+                var lastStart = _samples.Count == 0 ? 0 : starts[^1];
+                var lastDuration = _samples.Count == 0 ? 0 : _samples[^1].Duration;
+                if (entries[0].SegmentDuration is not { } segment || segment == 0 || movieTimescale == 0)
+                {
+                    playsWholeMedia = true;
+                }
+                else
+                {
+                    // Compared in units of 1 / (movie time scale x media time scale) second
+                    var editEnd = new BigInteger(segment) * Timescale;
+                    var lastImage = lastStart * movieTimescale;
+                    playsWholeMedia = editEnd > lastImage || (editEnd == lastImage && lastDuration == 0);
+                }
+            }
+
+            if (playsWholeMedia)
+            {
+                for (var i = 0; i < _samples.Count; i++)
+                {
+                    result.Add((i, _samples[i].Duration, Timescale));
+                }
+
+                return result;
+            }
+
+            // The intervals of the edits, in seconds times (movie time scale x media time scale)
+            var edits = new List<(BigInteger Start, BigInteger End)>();
+            foreach (var entry in entries)
+            {
+                var start = new BigInteger(entry.MediaTime) * movieTimescale;
+                var end = entry.SegmentDuration is { } duration && duration != 0 ? start + (new BigInteger(duration) * Timescale) : BigInteger.Max(start, mediaEnd * movieTimescale);
+                if (edits.Count > 0 && start < edits[^1].End)
+                    throw new InvalidDataException("The edits are not in the order of the media.");
+
+                edits.Add((start, end));
+            }
+
+            var unit = new BigInteger(movieTimescale) * Timescale;
+            for (var i = 0; i < _samples.Count; i++)
+            {
+                var (start, end) = (starts[i] * movieTimescale, (starts[i] + _samples[i].Duration) * movieTimescale);
+                BigInteger covered = 0;
+                var isShown = false;
+                foreach (var edit in edits)
+                {
+                    if (start == end)
+                    {
+                        isShown |= edit.Start <= start && start <= edit.End;
+                    }
+                    else if (BigInteger.Max(edit.Start, start) < BigInteger.Min(edit.End, end))
+                    {
+                        covered += BigInteger.Min(edit.End, end) - BigInteger.Max(edit.Start, start);
+                        isShown = true;
+                    }
+                }
+
+                if (isShown)
+                    result.Add((i, covered, unit));
+            }
+
+            return result;
         }
 
         /// <summary>Returns the first box of the visual sample entry of a type.</summary>

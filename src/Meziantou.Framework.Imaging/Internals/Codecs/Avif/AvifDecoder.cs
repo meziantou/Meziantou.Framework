@@ -51,13 +51,15 @@ internal sealed class AvifDecoder : AvifDecodeObserver
         sink.EndImage();
     }
 
-    public override bool OnSequenceFrame(AvifStructureParser structure, WebPPayloadBuffer color, WebPPayloadBuffer? alpha, FrameDuration duration)
+    public override bool OnSequenceFrame(AvifStructureParser structure, WebPPayloadBuffer color, WebPPayloadBuffer? alpha, FrameDuration duration, bool isShown)
     {
         ArgumentNullException.ThrowIfNull(structure);
         ArgumentNullException.ThrowIfNull(color);
         var movie = structure.Movie ?? throw new InvalidOperationException("The AVIF file is not an image sequence.");
         var sink = _sink!;
-        sink.BeginFrame(duration);
+        if (isShown)
+            sink.BeginFrame(duration);
+
         _colorDecoder ??= new Av1Decoder(_context.Scope, _context.Tracker);
         using var colorImage = DecodeSample(_colorDecoder, color, movie.Color);
         structure.SetBitstreamColorDescription(colorImage.Sequence);
@@ -68,6 +70,15 @@ internal sealed class AvifDecoder : AvifDecodeObserver
             {
                 _alphaDecoder ??= new Av1Decoder(_context.Scope, _context.Tracker);
                 alphaImage = DecodeSample(_alphaDecoder, alpha, movie.Alpha!);
+            }
+
+            if (!isShown)
+            {
+                // An image that the edit list leaves out: it is decoded for the images that refer to it, and counts
+                // toward the pixel limit like a frame of the bitstream that is not shown
+                var pixels = (long)movie.Color.Size.Width * movie.Color.Size.Height;
+                _context.Tracker?.ChargeHiddenPixels(alpha is null ? pixels : 2 * pixels);
+                return true;
             }
 
             WriteFrame(structure, colorImage, alphaImage, movie.Color.Size, movie.Color.Crop);

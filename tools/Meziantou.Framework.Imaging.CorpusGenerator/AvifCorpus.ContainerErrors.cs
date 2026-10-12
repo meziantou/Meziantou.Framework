@@ -216,6 +216,22 @@ internal static partial class AvifCorpus
             foreach (var track in builder.Tracks)
                 track.SampleEntryType = "hvc1";
         }, "A file with the avis brand whose only tracks are not coded with AV1 (hvc1 sample entries): it has no image sequence to present.");
+        Invalid(context, "sequence-edit-negative-media-time", SequenceSource, builder =>
+        {
+            foreach (var track in builder.Tracks)
+            {
+                var edit = track.EditList!.Entries[0];
+                track.EditList.Entries[0] = (edit.SegmentDuration, -2, edit.MediaRateInteger, edit.MediaRateFraction);
+            }
+        }, "The media time of the edit is -2: a media time is positive, or -1 for an empty edit.");
+        Invalid(context, "sequence-edit-shows-nothing", SequenceSource, builder =>
+        {
+            foreach (var track in builder.Tracks)
+            {
+                var edit = track.EditList!.Entries[0];
+                track.EditList.Entries[0] = (4, 60, edit.MediaRateInteger, edit.MediaRateFraction);
+            }
+        }, "The edit starts at the media time 60, after the last image (the media lasts 6 units): it shows no image.");
         Invalid(context, "sequence-missing-chunk-offsets", SequenceSource, builder => builder.OmittedBoxes.Add("stco"),
             "The sample tables of the tracks have no chunk offset box: the samples cannot be located.");
         var sequence = ErrorBuilder(context, SequenceSource).Build();
@@ -284,25 +300,31 @@ internal static partial class AvifCorpus
             builder.ExtraBoxes["moof"] = AvifFileBuilder.Box("moof", AvifFileBuilder.FullBox("mfhd", 0, 0, AvifFileBuilder.U32(1)));
             builder.Layout.Insert(builder.Layout.IndexOf(AvifFileBuilder.MovieBox), "moof");
         }, "fragmented", "The file has a movie fragment box (moof).");
-        Unsupported(context, "sequence-edit-list-offset", SequenceSource, builder =>
-        {
-            foreach (var track in builder.Tracks)
+        // Edit lists that do not play the media forward at its rate (the images last 2, 3 and 1 units of the time scale of
+        // the media, which is the one of the movie)
+        void RejectedEdits(string name, (ulong Duration, long MediaTime, short Rate)[] edits, string notes) =>
+            Unsupported(context, name, SequenceSource, builder =>
             {
-                var edit = track.EditList!.Entries[0];
-                track.EditList.Entries[0] = (edit.SegmentDuration, 1, edit.MediaRateInteger, edit.MediaRateFraction);
-            }
-        }, "edit-list", "The edit starts at media time 1: it does not play the whole track.");
+                Py.Assert(builder.Tracks.All(track => track.Timescale == builder.MovieTimescale && track.Samples.Select(sample => sample.Duration).SequenceEqual(new uint[] { 2, 3, 1 })), "durations");
+                foreach (var track in builder.Tracks)
+                {
+                    track.EditList!.Entries.Clear();
+                    foreach (var (duration, mediaTime, rate) in edits)
+                        track.EditList.Entries.Add((duration, mediaTime, rate, 0));
+                }
+            }, "edit-list", notes);
 
-        Unsupported(context, "sequence-edit-ends-before-last-image", SequenceSource, builder =>
+        RejectedEdits("sequence-edit-empty", [(2, -1, 1), (6, 0, 1)], "The first edit is an empty one (its media time is -1): nothing is shown for 2 units before the images.");
+        RejectedEdits("sequence-edit-rate", [(6, 0, 2)], "The edit plays the media at twice its rate.");
+        RejectedEdits("sequence-edit-dwell", [(6, 0, 0)], "The media rate of the edit is 0: the image at its media time is held for the duration of the edit.");
+        RejectedEdits("sequence-edits-out-of-order", [(3, 2, 1), (2, 0, 1)], "The second edit plays the start of the media, which the first edit comes after: the images are not shown in their order.");
+        RejectedEdits("sequence-edits-overlap", [(4, 0, 1), (4, 3, 1)], "The second edit starts at the media time 3, before the end of the first one: a part of the second image is shown twice.");
+        Unsupported(context, "sequence-alpha-edit-differs", "sequence-alpha-repeat-2", builder =>
         {
-            // The images last 2, 3 and 1 units of the time scale of the media, which is the one of the movie
-            Py.Assert(builder.Tracks.All(track => track.Timescale == builder.MovieTimescale && track.Samples.Select(sample => sample.Duration).SequenceEqual(new uint[] { 2, 3, 1 })), "durations");
-            foreach (var track in builder.Tracks)
-            {
-                var edit = track.EditList!.Entries[0];
-                track.EditList.Entries[0] = (2, edit.MediaTime, edit.MediaRateInteger, edit.MediaRateFraction);
-            }
-        }, "edit-list", "The edit lasts 2 units, the duration of the first image of three (2, 3 and 1 units): it ends before the last image starts, so it does not play the whole track.");
+            var alpha = builder.Tracks.Single(track => track.HandlerType == "auxv");
+            var edit = alpha.EditList!.Entries[0];
+            alpha.EditList.Entries[0] = (edit.SegmentDuration, 10, edit.MediaRateInteger, edit.MediaRateFraction);
+        }, "alpha-edit-list", "The edit of the alpha track starts at the media time 10 and the edit of the color track at 0: the alpha planes are not shown with their images.");
         Unsupported(context, "sequence-matrix-constant-luminance-unspecified-transfer", SequenceSource, builder =>
         {
             var boxes = builder.Tracks.Single(track => track.HandlerType == "pict").SampleEntryBoxes;

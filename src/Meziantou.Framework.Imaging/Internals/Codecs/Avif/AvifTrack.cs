@@ -38,8 +38,18 @@ internal sealed class AvifTrack : IDisposable
     /// <summary>Gets or sets a value indicating whether the edit list repeats.</summary>
     public bool IsRepeating { get; set; }
 
-    /// <summary>Gets or sets the duration of the edit, which is one play of the track, in units of the time scale of the movie.</summary>
+    /// <summary>
+    /// Gets or sets the duration of the edits, which is one play of the track, in units of the time scale of the movie;
+    /// 0 or <see cref="ulong.MaxValue"/> when an edit has no duration of its own and plays the media to its end.
+    /// </summary>
     public ulong SegmentDuration { get; set; }
+
+    /// <summary>
+    /// Gets the edits of the edit list, in the order of the list: the duration of each, in units of the time scale of the
+    /// movie (0 or <see cref="ulong.MaxValue"/>: to the end of the media), and the time of the media it starts at, in
+    /// units of <see cref="Timescale"/>.
+    /// </summary>
+    public List<(ulong SegmentDuration, long MediaTime)> Edits { get; } = [];
 
     /// <summary>Gets or sets a value indicating whether the samples are coded with AV1 (an <c>av01</c> sample entry).</summary>
     public bool HasAv1SampleEntry { get; set; }

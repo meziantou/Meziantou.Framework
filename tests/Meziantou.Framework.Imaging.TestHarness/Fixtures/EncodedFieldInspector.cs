@@ -123,11 +123,16 @@ public static class EncodedFieldInspector
 
             if (xmp is not null)
                 result.Xmp = file.ReadItemData(xmp);
-            if (track.Samples.Count > 1)
+
+            // The images that the edit list shows: the duration of the sample is the encoded field of an image that is
+            // shown for all of it, and an image that is shown for a part of it has no field of its own
+            var presentation = track.GetPresentation(file.MovieTimescale);
+            if (presentation.Count > 1)
             {
-                foreach (var sample in track.Samples)
+                foreach (var image in presentation)
                 {
-                    result.FrameDelays.Add(new EncodedDelayExpectation { SampleDelta = sample.Duration, Timescale = track.Timescale });
+                    var sample = track.Samples[image.SampleIndex];
+                    result.FrameDelays.Add(image.Numerator * track.Timescale == sample.Duration * image.Denominator ? new EncodedDelayExpectation { SampleDelta = sample.Duration, Timescale = track.Timescale } : null);
                 }
 
                 if (track.EditList is { Entries.Count: > 0 } edits)
@@ -135,7 +140,7 @@ public static class EncodedFieldInspector
                     result.EditList = new EditListExpectation
                     {
                         Repeating = edits.IsRepeating,
-                        SegmentDuration = edits.Entries[0].SegmentDuration is { } segment ? checked((long)segment) : null,
+                        SegmentDuration = edits.TotalSegmentDuration is { } segment ? checked((long)segment) : null,
                         TrackDuration = track.Duration is { } duration ? checked((long)duration) : null,
                     };
                 }

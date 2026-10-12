@@ -105,6 +105,15 @@ public sealed class AvifDecoderConformanceTests
         Assert.Contains(fixtures, fixture => fixture.Expected.Cicp is { TransferCharacteristics: 18, MatrixCoefficients: 14, FullRange: false } && fixture.Entry.HasFeature("avif.sequence"));
         Assert.Contains(fixtures, fixture => fixture.Expected.Cicp is { ColorPrimaries: 12, MatrixCoefficients: 13 });
 
+        // Edit lists that select parts of the media: several edits, an image that is left out before one that refers to
+        // it, images shown for a part of their duration (with a time scale of the movie that is not the one of the
+        // media), a sequence of one image, and a sequence with alpha
+        Assert.Contains(fixtures, fixture => fixture.Entry.HasFeature("avif.seq.edits=2") && HasFeatureKey(fixture, "avif.seq.imagesLeftOut") && fixture.Entry.HasFeature("avif.seq.interFrames"));
+        Assert.Contains(fixtures, fixture => fixture.Entry.HasFeature("avif.seq.edits=3") && fixture.Entry.HasFeature("avif.seq.partialDurations"));
+        Assert.Contains(fixtures, fixture => HasFeatureKey(fixture, "avif.seq.imagesLeftOut") && fixture.Expected.FrameCount == 1);
+        Assert.Contains(fixtures, fixture => fixture.Entry.HasFeature("avif.seq.partialDurations") && fixture.Entry.HasFeature("avif.alpha"));
+        Assert.Contains(fixtures, fixture => fixture.Entry.HasFeature("avif.seq.partialDurations") && fixture.Expected.Frames.Any(frame => frame.Duration is "2/15" or "7/30"));
+
         // Identity derivations: of a grid, with an alpha plane (derived the same way, or coded under an untransformed
         // derivation), with transformations on the derivation and on its input, and described by its input
         Assert.Contains(fixtures, fixture => HasFeatureKey(fixture, "avif.iden") && HasFeatureKey(fixture, "avif.grid"));
@@ -265,19 +274,24 @@ public sealed class AvifDecoderConformanceTests
             orientation = track.Orientation;
             Assert.Equal(orientation != 1, fixture.Entry.Features?.Any(feature => feature.StartsWith("avif.seq.matrix=", StringComparison.Ordinal)) ?? false);
 
-            // One image per sample, the duration of each sample over the time scale of the media, the plays of the edit list
-            Assert.Equal(track.Samples.Count, expected.FrameCount);
-            Assert.Equal(track.Samples.Count, image.Frames.Count);
-            Assert.Equal(track.Samples.Count, info.FrameCount);
-            for (var i = 0; i < track.Samples.Count; i++)
+            // One image per sample that the edit list shows, for the time that the edits cover of it (every sample, for
+            // its duration over the time scale of the media, without edit list), and the plays of the edit list
+            var presentation = track.GetPresentation(file.MovieTimescale);
+            Assert.Equal(presentation.Count != track.Samples.Count, HasFeatureKey(fixture, "avif.seq.imagesLeftOut"));
+            Assert.Equal(presentation.Any(shown => shown.Numerator * track.Timescale != track.Samples[shown.SampleIndex].Duration * shown.Denominator), fixture.Entry.HasFeature("avif.seq.partialDurations"));
+            Assert.Equal(presentation.Count, expected.FrameCount);
+            Assert.Equal(presentation.Count, image.Frames.Count);
+            Assert.Equal(presentation.Count, info.FrameCount);
+            for (var i = 0; i < presentation.Count; i++)
             {
-                var duration = new FrameDuration(track.Samples[i].Duration, track.Timescale);
+                var divisor = System.Numerics.BigInteger.Max(System.Numerics.BigInteger.GreatestCommonDivisor(presentation[i].Numerator, presentation[i].Denominator), 1);
+                var duration = new FrameDuration((long)(presentation[i].Numerator / divisor), (long)(presentation[i].Denominator / divisor));
                 Assert.Equal(duration, image.Frames[i].Metadata.Duration);
                 Assert.Equal(RationalDuration.Create(duration.Numerator, duration.Denominator), fixture.GetDuration(i));
             }
 
-            Assert.Equal(track.Samples.Count > 1, image.Animation is not null);
-            if (track.Samples.Count > 1)
+            Assert.Equal(presentation.Count > 1, image.Animation is not null);
+            if (presentation.Count > 1)
             {
                 Assert.Equal(track.TotalPlays, expected.Animation!.TotalPlays);
                 Assert.Equal(track.TotalPlays, image.Animation!.TotalPlays);
@@ -304,7 +318,7 @@ public sealed class AvifDecoderConformanceTests
             var header = Image.Identify(data);
             Assert.Null(header.Metadata.ExifProfile);
             Assert.Null(header.Metadata.XmpProfile);
-            Assert.Equal(track.Samples.Count, header.FrameCount);
+            Assert.Equal(presentation.Count, header.FrameCount);
         }
         else
         {
@@ -873,18 +887,27 @@ public sealed class AvifDecoderConformanceTests
         var alpha = Read("invalid/avif/alpha-different-size");
         Assert.NotEqual(alpha.PrimaryItem!.Size, alpha.AlphaItem!.Size);
         Assert.False(Read("invalid/avif/ftyp-without-avif-brand").HasBrand("avif"));
-        Assert.Equal(1, Read("invalid/avif/sequence-edit-list-offset").Tracks[0].EditList!.Entries[0].MediaTime);
         Assert.All(Read("invalid/avif/sequence-no-av1-track").Tracks, track => Assert.Equal("hvc1", track.SampleEntryType));
         Assert.Equal(3, Read("invalid/avif/grid-tile-count-mismatch").GetGridTiles(Read("invalid/avif/grid-tile-count-mismatch").PrimaryItem!).Count);
 
-        // Image sequences: the edit ends when the second image of three starts; the sample entry declares constant luminance without transfer characteristics; a
-        // metadata item of the track, or of the meta box of the file that precedes the moov box, is located after the end
-        // of the file
-        var edit = Read("invalid/avif/sequence-edit-ends-before-last-image").ColorTrack!;
-        Assert.Equal(3, edit.Samples.Count);
-        Assert.Equal((ulong)edit.Samples[0].Duration, edit.EditList!.Entries[0].SegmentDuration);
-        Assert.True(edit.EditList.Entries[0].SegmentDuration < (ulong)(edit.Samples[0].Duration + edit.Samples[1].Duration));
-        Assert.Equal(edit.Timescale, Read("invalid/avif/sequence-edit-ends-before-last-image").MovieTimescale);
+        // Image sequences: edit lists that do not play the media forward at its rate (an empty edit, a rate of 2 and of 0,
+        // edits that are not in the order of the media or that overlap, a negative media time), and an alpha track whose
+        // edit is not the one of the color track; the sample entry declares constant luminance without transfer
+        // characteristics; a metadata item of the track, or of the meta box of the file that precedes the moov box, is
+        // located after the end of the file
+        Assert.Equal(-1, Read("invalid/avif/sequence-edit-empty").ColorTrack!.EditList!.Entries[0].MediaTime);
+        Assert.Equal(-2, Read("invalid/avif/sequence-edit-negative-media-time").ColorTrack!.EditList!.Entries[0].MediaTime);
+        Assert.Equal(2, Read("invalid/avif/sequence-edit-rate").ColorTrack!.EditList!.Entries[0].MediaRateInteger);
+        Assert.Equal(0, Read("invalid/avif/sequence-edit-dwell").ColorTrack!.EditList!.Entries[0].MediaRateInteger);
+        Assert.Equal([2L, 0L], Read("invalid/avif/sequence-edits-out-of-order").ColorTrack!.EditList!.Entries.Select(entry => entry.MediaTime));
+        Assert.Equal([0L, 3L], Read("invalid/avif/sequence-edits-overlap").ColorTrack!.EditList!.Entries.Select(entry => entry.MediaTime));
+        foreach (var id in new[] { "invalid/avif/sequence-edits-out-of-order", "invalid/avif/sequence-edits-overlap", "invalid/avif/sequence-edit-empty", "invalid/avif/sequence-edit-rate", "invalid/avif/sequence-edit-dwell", "invalid/avif/sequence-edit-negative-media-time" })
+        {
+            Assert.Throws<InvalidDataException>(() => Read(id).ColorTrack!.GetPresentation(Read(id).MovieTimescale));
+        }
+
+        var differentEdits = Read("invalid/avif/sequence-alpha-edit-differs");
+        Assert.NotEqual(differentEdits.ColorTrack!.EditList!.Entries[0].MediaTime, differentEdits.AlphaTrack!.EditList!.Entries[0].MediaTime);
         var constantLuminance = Read("invalid/avif/sequence-matrix-constant-luminance-unspecified-transfer").ColorTrack!.Nclx!;
         Assert.Equal((2, 10), (constantLuminance.TransferCharacteristics, constantLuminance.MatrixCoefficients));
         foreach (var id in new[] { "invalid/avif/sequence-track-metadata-outside-file", "invalid/avif/sequence-file-metadata-outside-file" })

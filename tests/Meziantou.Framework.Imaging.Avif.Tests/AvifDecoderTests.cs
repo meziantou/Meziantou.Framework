@@ -672,28 +672,35 @@ public sealed class AvifDecoderTests
     }
 
     [Fact]
-    public void EditListsThatDoNotPlayTheWholeTrackAreNotSupported()
+    public void EditListsThatDoNotPlayTheMediaForwardAreNotSupported()
     {
-        // Two edits; an edit that starts after the first sample; an empty edit; a rate other than 1
-        Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(Sequence(configure: track =>
-        {
-            track.EditList = Edits(repeating: false, 150);
-            track.EditList.Entries.Add((150, 0, 1, 0));
-        }).Build()));
-        Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(Sequence(configure: track => track.EditList = Edits(repeating: false, 300, mediaTime: 100)).Build()));
+        // An empty edit; a rate other than 1; edits that are not in the order of the media, or that overlap
         Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(Sequence(configure: track => track.EditList = Edits(repeating: false, 300, version: 0, mediaTime: -1)).Build()));
         Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(Sequence(configure: track => track.EditList = Edits(repeating: false, 300, rate: 2)).Build()));
         Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(Sequence(configure: track => track.EditList = Edits(repeating: false, 300, rate: 0, rateFraction: 0x4000)).Build()));
+        Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(Sequence(configure: track =>
+        {
+            track.EditList = Edits(repeating: false, 150, mediaTime: 100);
+            track.EditList.Entries.Add((100, 0, 1, 0));
+        }).Build()));
+        Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(Sequence(configure: track =>
+        {
+            track.EditList = Edits(repeating: false, 150);
+            track.EditList.Entries.Add((150, 149, 1, 0));
+        }).Build()));
+
+        // A media time below -1 is not one, and an edit list that shows no image is not a sequence
+        Assert.Throws<InvalidImageContentException>(() => Image.Identify(Sequence(configure: track => track.EditList = Edits(repeating: false, 300, mediaTime: -2)).Build()));
+        Assert.Throws<InvalidImageContentException>(() => Image.Identify(Sequence(configure: track => track.EditList = Edits(repeating: false, 300, mediaTime: 5000)).Build()));
     }
 
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void EditThatEndsBeforeTheLastImageDoesNotPlayTheWholeTrack(bool repeating)
+    public void EditThatEndsBeforeTheLastImageShowsThePartOfTheTrackItCovers(bool repeating)
     {
         // Three images of 100 units; the edit presents the first 100 units of the media, that is the first image only
-        // (ISO/IEC 14496-12, section 8.6.6: segment_duration is the duration of the edit). The reader has no way to present
-        // one image out of three as "the sequence": such an edit list is one of those that are not supported
+        // (ISO/IEC 14496-12, section 8.6.6: segment_duration is the duration of the edit)
         var data = Sequence(frames: 3, track =>
         {
             track.Duration = 300;
@@ -702,7 +709,46 @@ public sealed class AvifDecoderTests
         var track = ReferenceAvif.Parse(data).ColorTrack!;
         Assert.Equal(300L, track.Samples.Sum(sample => (long)sample.Duration));
         Assert.Equal(100UL, track.EditList!.Entries[0].SegmentDuration);
-        Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(data));
+        Assert.Equal([0], track.GetPresentation(1000).Select(shown => shown.SampleIndex));
+        Assert.Equal(1, Image.Identify(data).FrameCount);
+        Assert.Null(Image.Identify(data).Animation);
+    }
+
+    /// <summary>
+    /// The images that an edit list shows and the time each one is shown for: three images of 100 units of a time scale
+    /// of 1000, and a movie whose time scale is 1000 too. The expected values are counted by hand from the intervals.
+    /// </summary>
+    [Fact]
+    public void EditListsShowImagesForTheTimeTheirEditsCover()
+    {
+        // Two edits, [0, 150) and [150, 300): together they are the whole media
+        AssertFrames([(150, 0), (150, 150)], 3);
+
+        // An edit that starts inside the first image, at 100/3 of it: three images, the first one shown less
+        AssertFrames([(300, 33)], 3);
+
+        // [50, 120) and [250, 300): the first image for 50 units, the second for 20, the third for 50
+        AssertFrames([(70, 50), (50, 250)], 3);
+
+        // [100, 200): the second image only; [200, 500): the third one, to the end of the media
+        AssertFrames([(100, 100)], 1);
+        AssertFrames([(300, 200)], 1);
+
+        // The count of a header identification, which does not walk the samples, against the independent reader
+        void AssertFrames((ulong Duration, long MediaTime)[] edits, int expected)
+        {
+            var data = Sequence(frames: 3, track =>
+            {
+                track.Duration = 300;
+                track.EditList = Edits(repeating: false, edits[0].Duration, mediaTime: edits[0].MediaTime);
+                foreach (var (duration, mediaTime) in edits.Skip(1))
+                {
+                    track.EditList.Entries.Add((duration, mediaTime, 1, 0));
+                }
+            }).Build();
+            Assert.Equal(expected, ReferenceAvif.Parse(data).ColorTrack!.GetPresentation(1000).Count);
+            Assert.Equal(expected, Image.Identify(data).FrameCount);
+        }
     }
 
     [Fact]

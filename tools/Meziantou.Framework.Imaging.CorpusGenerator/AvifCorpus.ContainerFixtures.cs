@@ -785,6 +785,8 @@ internal static partial class AvifCorpus
         var frames = Enumerable.Range(0, 3).Select(i => Moving(8, 8, i)).ToList();
         Sequence(context, "sequence-lossless-infinite", frames, "-l --timescale 10", [2, 3, 1], ["avif.seq.editList=repeat-indefinite", "avif.lossless"],
             "Durations of 2, 3 and 1 tenths of a second; avifenc repeats forever by default (a repeating edit list and an indefinite track duration).");
+        Sequence(context, "sequence-lossless-6-images", [.. Enumerable.Range(0, 6).Select(i => Moving(8, 8, 11 + (3 * i)))], "-l --timescale 10 --repetition-count 0", [2, 3, 1, 4, 2, 3], ["avif.seq.editList=once", "avif.lossless"],
+            "Six images of 2, 3, 1, 4, 2 and 3 tenths of a second, played once: the source of the edit lists that select parts of a track.");
         Sequence(context, "sequence-alpha-repeat-2", [WithAlpha(Moving(8, 8, 0)), WithAlpha(Moving(8, 8, 2))], "-q 70 --qalpha 70 -y 444 --cicp 1/13/6 --timescale 1000 --repetition-count 2", [40, 1000],
             ["avif.seq.editList=repeat", "avif.alpha"], "Two repetitions: three plays.");
         Sequence(context, "sequence-10bit-once", [DeepColor(8, 8, 10), Shift(DeepColor(8, 8, 10))], "-q 70 -d 10 -y 420 --cicp 9/16/9 -r limited --timescale 30000 --repetition-count 0", [1001, 1001],
@@ -816,6 +818,36 @@ internal static partial class AvifCorpus
             var alpha = builder.Tracks.Single(track => track.HandlerType == "auxv");
             color.References.Add(("prem", [alpha.Id]));
         }, ["avif.sequence", "avif.premultiplied", "avif.alpha"], "The color track has a prem reference to its alpha track: the colors of every image are divided by its alpha (the samples are not multiplied by it, so most colors are clipped).", "BuildSequences");
+
+        // Edit lists that select parts of the media (ISO/IEC 14496-12, section 8.6.6): an image is shown for the time that
+        // the edits cover of it, and an image that no edit covers is not shown. The images that are left out before the
+        // last one that is shown are decoded: the images that follow refer to them (the sequences have inter frames)
+        const string Edited = "sequence-lossless-6-images";
+        void Edits(string name, string source, uint movieTimescale, (ulong Duration, long MediaTime)[] edits, string[] requires, string notes) =>
+            Assembled(context, name, source, builder =>
+            {
+                builder.MovieTimescale = movieTimescale;
+                foreach (var track in builder.Tracks)
+                {
+                    var list = track.EditList!;
+                    list.Entries.Clear();
+                    foreach (var (duration, mediaTime) in edits)
+                        list.Entries.Add((duration, mediaTime, 1, 0));
+                }
+            }, ["avif.sequence", .. requires], notes, "BuildSequences");
+
+        Edits("sequence-edit-offset", "sequence-lossless-infinite", 10, [(6, 1)], ["avif.seq.partialDurations"],
+            "The edit starts at the media time 1, inside the first image (2, 3 and 1 tenths of a second): that image is shown for one tenth, and the other ones for their duration.");
+        Edits("sequence-edit-ends-before-last-image", "sequence-lossless-infinite", 10, [(2, 0)], ["avif.seq.imagesLeftOut=2"],
+            "The edit lasts 2 units, the duration of the first image of three: the two other images are not shown, and the sequence is one image.");
+        Edits("sequence-edits-skip-image", Edited, 10, [(5, 0), (6, 6)], ["avif.seq.edits=2", "avif.seq.imagesLeftOut=2", "avif.seq.interFrames"],
+            "Two edits: the media times 0 to 5 (the first two images) and 6 to 12 (the fourth and the fifth). The third image is not shown but the fourth one refers to it; the sixth one follows the last edit and is not shown either.");
+        Edits("sequence-edits-partial", Edited, 20, [(6, 1), (18, 6)], ["avif.seq.edits=2", "avif.seq.imagesLeftOut=1", "avif.seq.partialDurations"],
+            "The time scale of the movie is twice the one of the media. Two edits: the media times 1 to 4 (the end of the first image and two thirds of the second) and 6 to 15 (the last three images, whole).");
+        Edits("sequence-edits-fraction", Edited, 3, [(1, 0), (1, 5), (ulong.MaxValue, 10)], ["avif.seq.edits=3", "avif.seq.partialDurations"],
+            "The time scale of the movie is 3 and the one of the media 10: an edit of one unit lasts ten thirds of a media unit, so the second and the fourth images are shown for 2/15 s and 7/30 s; the last edit has no duration and plays the media from the time 10 to its end.");
+        Edits("sequence-alpha-edit-offset", "sequence-alpha-repeat-2", 1000, [(1030, 10)], ["avif.alpha", "avif.seq.partialDurations"],
+            "The color track and the alpha track have the same edit, which starts 10 ms inside the first image (40 ms and 1 s): the image and its alpha plane are shown for 30 ms.");
 
         // The colr box of the sample entry declares ICtCp with the HLG transfer characteristics: every image of the track
         // is converted through the transfer function

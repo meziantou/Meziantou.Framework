@@ -129,6 +129,14 @@ public sealed class TimingAndMetadataConformanceTests
             var expected = ToFrameDuration(fixture.GetDuration(i));
             var raw = fields.FrameDelays[i];
             FrameDuration actual;
+            if (raw is null && fixture.Entry.Format == "avif")
+            {
+                // An image that the edit list of the track shows for a part of its duration has no delay field: its
+                // duration is derived from the edits (AvifDecoderConformanceTests compares it with the manifest)
+                Assert.True(fixture.Entry.HasFeature("avif.seq.partialDurations"));
+                continue;
+            }
+
             if (raw is null)
             {
                 actual = default; // a GIF frame without Graphic Control Extension has no delay: valid zero duration

@@ -28,7 +28,6 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// 16-bit samples; static, shared, never charged to an image scope).
 /// </para>
 /// </remarks>
-[SuppressMessage("Design", "MA0182:Unused internal type", Justification = "Shared color infrastructure; consumed by the color conversions and the codecs and covered by unit tests.")]
 internal static class CicpTransfer
 {
     /// <summary>The linear transfer characteristics.</summary>
@@ -201,7 +200,7 @@ internal static class CicpTransfer
         if (!IsSupported(code))
             throw new ArgumentOutOfRangeException(nameof(code), code, "The transfer characteristics are not supported.");
 
-        return Decode8Tables[curve] ??= CreateTable(code, byte.MaxValue);
+        return GetOrCreateTable(Decode8Tables, curve, code, byte.MaxValue);
     }
 
     /// <summary>Gets the linear value of every 16-bit sample: <c>Decode(code, v / 65535)</c>.</summary>
@@ -215,11 +214,25 @@ internal static class CicpTransfer
         if (!IsSupported(code))
             throw new ArgumentOutOfRangeException(nameof(code), code, "The transfer characteristics are not supported.");
 
-        return Decode16Tables[curve] ??= CreateTable(code, ushort.MaxValue);
+        return GetOrCreateTable(Decode16Tables, curve, code, ushort.MaxValue);
     }
 
     // The functions of Rec. ITU-R BT.709, BT.601, IEC 61966-2-4, BT.1361 and BT.2020 are one function on [0, 1]
     private static int GetCurve(byte code) => code is 6 or 11 or 12 or 14 or 15 ? 1 : code;
+
+    // Threads that need a table at the same time may each compute it: the first one that is published is the table of
+    // every caller, so that a table is one instance for the life of the process
+    private static double[] GetOrCreateTable(double[]?[] tables, int curve, byte code, int max)
+    {
+        var table = Volatile.Read(ref tables[curve]);
+        if (table is null)
+        {
+            var created = CreateTable(code, max);
+            table = Interlocked.CompareExchange(ref tables[curve], created, null) ?? created;
+        }
+
+        return table;
+    }
 
     private static double[] CreateTable(byte code, int max)
     {

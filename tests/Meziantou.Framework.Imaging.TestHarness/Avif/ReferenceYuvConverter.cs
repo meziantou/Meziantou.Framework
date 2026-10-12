@@ -1,4 +1,5 @@
 using System.Numerics;
+using Meziantou.Framework.Imaging.TestHarness.Color;
 
 namespace Meziantou.Framework.Imaging.TestHarness.Avif;
 
@@ -32,7 +33,10 @@ namespace Meziantou.Framework.Imaging.TestHarness.Avif;
 /// as BT.601), 11 (SMPTE ST 2085, whose two constants are the decimal numbers of the recommendation) and 12
 /// (chromaticity-derived non-constant luminance: K<sub>R</sub> and K<sub>B</sub> are the luminance of the red and blue
 /// primaries, computed here as fractions by inverting the matrix of the chromaticities of table 2, which is another
-/// route than the two closed-form equations of section 8.3).
+/// route than the two closed-form equations of section 8.3). The constant luminance coefficients (10: BT.2020; 13:
+/// chromaticity-derived) and ICtCp (14, for the PQ and HLG transfer characteristics) are not a matrix of the coded
+/// samples: they go through the transfer characteristics function, which <see cref="ReferenceCicpTransfer"/> evaluates
+/// in <see cref="decimal"/> arithmetic, and the matrices of ICtCp are inverted as fractions.
 /// </remarks>
 public static class ReferenceYuvConverter
 {
@@ -47,8 +51,8 @@ public static class ReferenceYuvConverter
 
     /// <summary>Gets a value indicating whether the converter implements matrix coefficients.</summary>
     /// <param name="matrixCoefficients">The code point of ITU-T H.273.</param>
-    /// <returns><see langword="true"/> for 0, 1, 2, 4 to 9, 11 and 12.</returns>
-    public static bool IsSupportedMatrix(int matrixCoefficients) => matrixCoefficients is 0 or 1 or 2 or (>= 4 and <= 9) or 11 or 12;
+    /// <returns><see langword="true"/> for 0, 1, 2 and 4 to 14.</returns>
+    public static bool IsSupportedMatrix(int matrixCoefficients) => matrixCoefficients is 0 or 1 or 2 or (>= 4 and <= 14);
 
     /// <summary>
     /// Computes the K<sub>R</sub> and K<sub>B</sub> of color primaries (ITU-T H.273, table 2) as exact fractions of one
@@ -117,17 +121,24 @@ public static class ReferenceYuvConverter
     /// <param name="matrixCoefficients">The matrix coefficients that apply to the image.</param>
     /// <param name="fullRange">Whether the samples use the full range.</param>
     /// <param name="outputMaximum">The maximum of the output samples: 255 or 65535.</param>
-    /// <param name="colorPrimaries">The color primaries that apply to the image, from which the chromaticity-derived matrix coefficients (12) are computed.</param>
+    /// <param name="colorPrimaries">The color primaries that apply to the image, from which the chromaticity-derived matrix coefficients (12 and 13) are computed.</param>
+    /// <param name="transferCharacteristics">The transfer characteristics that apply to the image, which the constant luminance (10 and 13) and ICtCp (14) matrix coefficients go through.</param>
     /// <returns>Three samples per pixel, rows in order.</returns>
-    /// <exception cref="NotSupportedException">The matrix coefficients are not implemented, or they are derived from primaries that have no chromaticities.</exception>
+    /// <exception cref="NotSupportedException">
+    /// The matrix coefficients are not implemented, they are derived from primaries that have no chromaticities, or they
+    /// need transfer characteristics that have no function (ICtCp: other ones than PQ and HLG).
+    /// </exception>
     /// <exception cref="ArgumentException">The identity matrix is used with subsampled chroma, or a plane does not have its size.</exception>
-    public static int[] ConvertToRgb(ReadOnlySpan<ushort> y, ReadOnlySpan<ushort> u, ReadOnlySpan<ushort> v, int width, int height, int bitDepth, int subsamplingX, int subsamplingY, int chromaSamplePosition, int matrixCoefficients, bool fullRange, int outputMaximum, int colorPrimaries = 2)
+    public static int[] ConvertToRgb(ReadOnlySpan<ushort> y, ReadOnlySpan<ushort> u, ReadOnlySpan<ushort> v, int width, int height, int bitDepth, int subsamplingX, int subsamplingY, int chromaSamplePosition, int matrixCoefficients, bool fullRange, int outputMaximum, int colorPrimaries = 2, int transferCharacteristics = 2)
     {
         if (!IsSupportedMatrix(matrixCoefficients))
             throw new NotSupportedException($"The matrix coefficients {matrixCoefficients.ToString(CultureInfo.InvariantCulture)} are not implemented.");
 
-        if (matrixCoefficients == 12 && GetLuminanceWeights(colorPrimaries) is null)
+        if (matrixCoefficients is 12 or 13 && GetLuminanceWeights(colorPrimaries) is null)
             throw new NotSupportedException($"The color primaries {colorPrimaries.ToString(CultureInfo.InvariantCulture)} have no chromaticities to derive the matrix coefficients from.");
+
+        if ((matrixCoefficients is 10 or 13 && !ReferenceCicpTransfer.IsSupported(transferCharacteristics)) || (matrixCoefficients == 14 && transferCharacteristics is not (16 or 18)))
+            throw new NotSupportedException($"The matrix coefficients {matrixCoefficients.ToString(CultureInfo.InvariantCulture)} have no conversion with the transfer characteristics {transferCharacteristics.ToString(CultureInfo.InvariantCulture)}.");
 
         if (matrixCoefficients == 0 && (subsamplingX != 0 || subsamplingY != 0))
             throw new ArgumentException("The identity matrix requires 4:4:4 samples.", nameof(matrixCoefficients));
@@ -154,7 +165,8 @@ public static class ReferenceYuvConverter
             2 or 5 or 6 => (2990, 1140, 10000),
             7 => (2120, 870, 10000),
             9 => (2627, 593, 10000),
-            12 => GetLuminanceWeights(colorPrimaries)!.Value,
+            10 => (2627, 593, 10000),
+            12 or 13 => GetLuminanceWeights(colorPrimaries)!.Value,
             _ => (BigInteger.Zero, BigInteger.Zero, new BigInteger(10000)),
         };
         var kg = Denominator - kr - kb;
@@ -179,6 +191,20 @@ public static class ReferenceYuvConverter
             BigInteger green;
             BigInteger blue;
             BigInteger denominator;
+            if (matrixCoefficients is 10 or 13 or 14)
+            {
+                // The conversions that go through the transfer characteristics, on the normalized E'Y, E'PB and E'PR
+                var normalized = matrixCoefficients == 14
+                    ? ConvertIctcp((decimal)luma / (decimal)lumaRange, (decimal)cb / (decimal)chromaRange, (decimal)cr / (decimal)chromaRange, transferCharacteristics)
+                    : ConvertConstantLuminance((decimal)luma / (decimal)lumaRange, (decimal)cb / (decimal)chromaRange, (decimal)cr / (decimal)chromaRange, (decimal)kr / (decimal)Denominator, (decimal)kb / (decimal)Denominator, transferCharacteristics);
+                for (var channel = 0; channel < 3; channel++)
+                {
+                    result[(3 * i) + channel] = RoundClipped(normalized[channel], outputMaximum);
+                }
+
+                continue;
+            }
+
             if (matrixCoefficients == 11)
             {
                 // SMPTE ST 2085 (section 8.3, MatrixCoefficients equal to 11): E'Y = E'G, E'PB = (0.986566 E'B - E'Y) / 2 and
@@ -305,6 +331,55 @@ public static class ReferenceYuvConverter
     }
 
     // round(clip(numerator / denominator, 0, 1) * maximum), halves up; the denominator is positive
+    // ITU-T H.273, section 8.3, MatrixCoefficients 10 and 13: E'Y = (KR R + KG G + KB B)', where the prime is the transfer
+    // characteristics function and R, G and B are linear; E'PB = (E'B - E'Y) / (2 NB) when it is negative and
+    // (E'B - E'Y) / (2 PB) otherwise, with NB = (1 - KB)' and PB = 1 - KB'; E'PR likewise with KR
+    private static decimal[] ConvertConstantLuminance(decimal ey, decimal epb, decimal epr, decimal kr, decimal kb, int transfer)
+    {
+        var nb = ReferenceCicpTransfer.Encode(transfer, 1 - kb);
+        var pb = 1 - ReferenceCicpTransfer.Encode(transfer, kb);
+        var nr = ReferenceCicpTransfer.Encode(transfer, 1 - kr);
+        var pr = 1 - ReferenceCicpTransfer.Encode(transfer, kr);
+        var eb = ey + (2 * (epb < 0 ? nb : pb) * epb);
+        var er = ey + (2 * (epr < 0 ? nr : pr) * epr);
+        var luminance = ReferenceCicpTransfer.Decode(transfer, ey);
+        var green = (luminance - (kr * ReferenceCicpTransfer.Decode(transfer, er)) - (kb * ReferenceCicpTransfer.Decode(transfer, eb))) / (1 - kr - kb);
+        return [er, ReferenceCicpTransfer.Encode(transfer, green), eb];
+    }
+
+    // ITU-T H.273, section 8.3, MatrixCoefficients 14 (Rec. ITU-R BT.2100): L, M and S are linear combinations of the linear
+    // R, G and B; I, CT and CP are linear combinations of L', M' and S'. The two matrices, over 4096, are inverted as
+    // fractions (Cramer's rule) before any rounding
+    private static decimal[] ConvertIctcp(decimal i, decimal ct, decimal cp, int transfer)
+    {
+        long[] rgbToLms = [1688, 2146, 262, 683, 2951, 462, 99, 309, 3688];
+        long[] lmsToIctcp = transfer == 18
+            ? [2048, 2048, 0, 3625, -7465, 3840, 9500, -9212, -288]
+            : [2048, 2048, 0, 6610, -13613, 7003, 17933, -17390, -543];
+        var encoded = Solve(lmsToIctcp, [i, ct, cp]);
+        var lms = encoded.Select(value => ReferenceCicpTransfer.Decode(transfer, value)).ToArray();
+        return [.. Solve(rgbToLms, lms).Select(value => ReferenceCicpTransfer.Encode(transfer, value))];
+
+        // The solution x of (m / 4096) x = b
+        static decimal[] Solve(long[] m, decimal[] b)
+        {
+            var determinant = Determinant(m[0], m[1], m[2], m[3], m[4], m[5], m[6], m[7], m[8]);
+            return
+            [
+                4096 * Determinant(b[0], m[1], m[2], b[1], m[4], m[5], b[2], m[7], m[8]) / determinant,
+                4096 * Determinant(m[0], b[0], m[2], m[3], b[1], m[5], m[6], b[2], m[8]) / determinant,
+                4096 * Determinant(m[0], m[1], b[0], m[3], m[4], b[1], m[6], m[7], b[2]) / determinant,
+            ];
+        }
+
+        static decimal Determinant(decimal a, decimal b, decimal c, decimal d, decimal e, decimal f, decimal g, decimal h, decimal k)
+            => (a * ((e * k) - (f * h))) - (b * ((d * k) - (f * g))) + (c * ((d * h) - (e * g)));
+    }
+
+    // The nearest sample to a normalized value, which is clipped; a half rounds up
+    private static int RoundClipped(decimal value, int maximum)
+        => value <= 0 ? 0 : value >= 1 ? maximum : (int)Math.Floor((value * maximum) + 0.5m);
+
     private static int RoundClipped(BigInteger numerator, BigInteger denominator, int maximum)
     {
         if (numerator.Sign <= 0)

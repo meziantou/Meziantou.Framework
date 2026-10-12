@@ -241,8 +241,12 @@ internal static partial class AvifCorpus
             "clap", "The clean aperture is 5/2 samples wide: not a whole number of samples.");
         Unsupported(context, "essential-unknown-property", ErrorSource, builder => builder.GetItem(1).Associations.Add((builder.AddProperty(AvifFileBuilder.Box("zzzz", [1, 2, 3])), true)),
             "essential-property", "An unknown property is marked essential: a reader that does not know it must not present the item.");
-        Unsupported(context, "matrix-ictcp", ErrorSource, builder => ReplaceProperty(builder, builder.GetItem(1), "colr", AvifFileBuilder.ColorNclx(9, 16, 14, fullRange: true)),
-            "matrix", "The colr box declares the ICtCp matrix coefficients (14).");
+        Unsupported(context, "matrix-reserved", ErrorSource, builder => ReplaceProperty(builder, builder.GetItem(1), "colr", AvifFileBuilder.ColorNclx(1, 13, 3, fullRange: true)),
+            "matrix", "The colr box declares the matrix coefficients 3, which are reserved.");
+        Unsupported(context, "matrix-ictcp-sdr-transfer", ErrorSource, builder => ReplaceProperty(builder, builder.GetItem(1), "colr", AvifFileBuilder.ColorNclx(9, 13, 14, fullRange: true)),
+            "matrix", "The colr box declares the ICtCp matrix coefficients (14) with the sRGB transfer characteristics: ICtCp is defined for PQ and for HLG only.");
+        Unsupported(context, "matrix-chromaticity-unspecified-primaries", ErrorSource, builder => ReplaceProperty(builder, builder.GetItem(1), "colr", AvifFileBuilder.ColorNclx(2, 13, 13, fullRange: true)),
+            "matrix", "The colr box declares the chromaticity-derived constant luminance matrix coefficients (13) and unspecified color primaries: there are no chromaticities to derive them from.");
         Unsupported(context, "alpha-different-size", "lossless-rgba8", builder => ReplaceProperty(builder, builder.GetItem(2), "ispe", AvifFileBuilder.ImageSize(6, 9)),
             "alpha-size", "The alpha auxiliary image declares 6x9 and the color image 12x9.");
 
@@ -272,12 +276,12 @@ internal static partial class AvifCorpus
                 track.EditList.Entries[0] = (2, edit.MediaTime, edit.MediaRateInteger, edit.MediaRateFraction);
             }
         }, "edit-list", "The edit lasts 2 units, the duration of the first image of three (2, 3 and 1 units): it ends before the last image starts, so it does not play the whole track.");
-        Unsupported(context, "sequence-matrix-ictcp", SequenceSource, builder =>
+        Unsupported(context, "sequence-matrix-constant-luminance-unspecified-transfer", SequenceSource, builder =>
         {
             var boxes = builder.Tracks.Single(track => track.HandlerType == "pict").SampleEntryBoxes;
             var index = Enumerable.Range(0, boxes.Count).Single(i => PropertyType(boxes[i]) == "colr");
-            boxes[index] = AvifFileBuilder.ColorNclx(9, 16, 14, fullRange: true);
-        }, "matrix", "The colr box of the sample entry of the track declares the ICtCp matrix coefficients (14).");
+            boxes[index] = AvifFileBuilder.ColorNclx(9, 2, 10, fullRange: true);
+        }, "matrix", "The colr box of the sample entry of the track declares the BT.2020 constant luminance matrix coefficients (10) and unspecified transfer characteristics: the luminance has no function to go through.");
         Unsupported(context, "grid-tile-transform-differs", "grid-2x1-transformed", builder =>
         {
             var tile = builder.GetItem(ReferenceAvif.Parse(context.Inputs["grid-2x1-transformed"]).GetGridTiles(ReferenceAvif.Parse(context.Inputs["grid-2x1-transformed"]).PrimaryItem!)[1].Id);

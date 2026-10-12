@@ -41,7 +41,7 @@ public sealed class AvifDecoderConformanceTests
             "avif.majorBrand=avif", "avif.majorBrand=avis", "avif.majorBrand=mif1",
             "avif.bitDepth=8", "avif.bitDepth=10", "avif.bitDepth=12",
             "avif.subsampling=4:4:4", "avif.subsampling=4:2:2", "avif.subsampling=4:2:0", "avif.subsampling=4:0:0",
-            "avif.matrix=0", "avif.matrix=1", "avif.matrix=2", "avif.matrix=4", "avif.matrix=5", "avif.matrix=6", "avif.matrix=7", "avif.matrix=8", "avif.matrix=9", "avif.range=full", "avif.range=limited",
+            "avif.matrix=0", "avif.matrix=1", "avif.matrix=2", "avif.matrix=4", "avif.matrix=5", "avif.matrix=6", "avif.matrix=7", "avif.matrix=8", "avif.matrix=9", "avif.matrix=10", "avif.matrix=11", "avif.matrix=12", "avif.matrix=13", "avif.matrix=14", "avif.range=full", "avif.range=limited",
             "avif.colr=nclx", "avif.colr=icc", "avif.colr=none", "avif.chromaSamplePosition=vertical", "avif.chromaSamplePosition=colocated",
             "avif.lossless", "avif.filmGrain", "avif.alpha", "avif.grid=2x2", "avif.grid=2x1", "avif.grid=3x1", "avif.grid=1x3", "avif.grid=3x2", "avif.gridTileTransforms", "avif.clap",
             "avif.irot=0", "avif.irot=1", "avif.irot=2", "avif.irot=3", "avif.imir=0", "avif.imir=1",
@@ -90,6 +90,20 @@ public sealed class AvifDecoderConformanceTests
             Assert.Contains(fixtures, fixture => fixture.Entry.HasFeature(string.Create(CultureInfo.InvariantCulture, $"avif.matrix={matrix}")) && fixture.Entry.HasFeature("avif.range=full"));
             Assert.Contains(fixtures, fixture => fixture.Entry.HasFeature(string.Create(CultureInfo.InvariantCulture, $"avif.matrix={matrix}")) && fixture.Entry.HasFeature("avif.range=limited"));
         }
+
+        // The matrices that go through the transfer characteristics: on a pattern coded without loss and on planes whose
+        // colors leave the gamut, and ICtCp with each of the two transfer characteristics it is defined for
+        foreach (var matrix in new[] { 10, 14 })
+        {
+            var tag = string.Create(CultureInfo.InvariantCulture, $"avif.matrix={matrix}");
+            Assert.Contains(fixtures, fixture => fixture.Entry.HasFeature(tag) && fixture.Entry.HasFeature("avif.lossless"));
+            Assert.Contains(fixtures, fixture => fixture.Entry.HasFeature(tag) && fixture.Entry.HasFeature("avif.subsampling=4:2:0"));
+        }
+
+        Assert.Contains(fixtures, fixture => fixture.Expected.Cicp is { TransferCharacteristics: 16, MatrixCoefficients: 14 });
+        Assert.Contains(fixtures, fixture => fixture.Expected.Cicp is { TransferCharacteristics: 18, MatrixCoefficients: 14 });
+        Assert.Contains(fixtures, fixture => fixture.Expected.Cicp is { TransferCharacteristics: 18, MatrixCoefficients: 14, FullRange: false } && fixture.Entry.HasFeature("avif.sequence"));
+        Assert.Contains(fixtures, fixture => fixture.Expected.Cicp is { ColorPrimaries: 12, MatrixCoefficients: 13 });
 
         foreach (var matrix in new[] { 1, 4, 5, 6, 7, 8, 9 })
         {
@@ -830,7 +844,9 @@ public sealed class AvifDecoderConformanceTests
         Assert.Equal("iden", Read("invalid/avif/derived-iden").PrimaryItem!.Type);
         Assert.Equal("iovl", Read("invalid/avif/derived-iovl").PrimaryItem!.Type);
         Assert.Null(Read("invalid/avif/clap-fractional").PrimaryItem!.CleanAperture!.GetRectangle(8, 8));
-        Assert.Equal(14, Read("invalid/avif/matrix-ictcp").PrimaryItem!.Nclx!.MatrixCoefficients);
+        Assert.Equal(3, Read("invalid/avif/matrix-reserved").PrimaryItem!.Nclx!.MatrixCoefficients);
+        Assert.Equal((13, 14), (Read("invalid/avif/matrix-ictcp-sdr-transfer").PrimaryItem!.Nclx!.TransferCharacteristics, Read("invalid/avif/matrix-ictcp-sdr-transfer").PrimaryItem!.Nclx!.MatrixCoefficients));
+        Assert.Equal((2, 13), (Read("invalid/avif/matrix-chromaticity-unspecified-primaries").PrimaryItem!.Nclx!.ColorPrimaries, Read("invalid/avif/matrix-chromaticity-unspecified-primaries").PrimaryItem!.Nclx!.MatrixCoefficients));
         Assert.Contains(Read("invalid/avif/essential-unknown-property").PrimaryItem!.Associations, association => association is { IsEssential: true, Property.Type: "zzzz" });
         var alpha = Read("invalid/avif/alpha-different-size");
         Assert.NotEqual(alpha.PrimaryItem!.Size, alpha.AlphaItem!.Size);
@@ -839,7 +855,7 @@ public sealed class AvifDecoderConformanceTests
         Assert.All(Read("invalid/avif/sequence-no-av1-track").Tracks, track => Assert.Equal("hvc1", track.SampleEntryType));
         Assert.Equal(3, Read("invalid/avif/grid-tile-count-mismatch").GetGridTiles(Read("invalid/avif/grid-tile-count-mismatch").PrimaryItem!).Count);
 
-        // Image sequences: the edit ends when the second image of three starts; the sample entry declares ICtCp; a
+        // Image sequences: the edit ends when the second image of three starts; the sample entry declares constant luminance without transfer characteristics; a
         // metadata item of the track, or of the meta box of the file that precedes the moov box, is located after the end
         // of the file
         var edit = Read("invalid/avif/sequence-edit-ends-before-last-image").ColorTrack!;
@@ -847,7 +863,8 @@ public sealed class AvifDecoderConformanceTests
         Assert.Equal((ulong)edit.Samples[0].Duration, edit.EditList!.Entries[0].SegmentDuration);
         Assert.True(edit.EditList.Entries[0].SegmentDuration < (ulong)(edit.Samples[0].Duration + edit.Samples[1].Duration));
         Assert.Equal(edit.Timescale, Read("invalid/avif/sequence-edit-ends-before-last-image").MovieTimescale);
-        Assert.Equal(14, Read("invalid/avif/sequence-matrix-ictcp").ColorTrack!.Nclx!.MatrixCoefficients);
+        var constantLuminance = Read("invalid/avif/sequence-matrix-constant-luminance-unspecified-transfer").ColorTrack!.Nclx!;
+        Assert.Equal((2, 10), (constantLuminance.TransferCharacteristics, constantLuminance.MatrixCoefficients));
         foreach (var id in new[] { "invalid/avif/sequence-track-metadata-outside-file", "invalid/avif/sequence-file-metadata-outside-file" })
         {
             var file = Read(id);

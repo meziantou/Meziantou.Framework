@@ -147,17 +147,96 @@ public sealed class AvifContainerConformanceTests
     }
 
     [Theory]
-    [InlineData(2)] // unspecified
-    [InlineData(3)] // reserved
-    [InlineData(13)]
-    [InlineData(255)]
-    public void TheChromaticityDerivedMatrixNeedsPrimariesThatHaveChromaticities(int primaries)
+    [InlineData(2, 12)] // unspecified
+    [InlineData(3, 12)] // reserved
+    [InlineData(13, 12)]
+    [InlineData(255, 12)]
+    [InlineData(2, 13)]
+    [InlineData(3, 13)]
+    public void TheChromaticityDerivedMatricesNeedPrimariesThatHaveChromaticities(int primaries, int matrix)
     {
         var builder = AvifFileBuilder.From(GoldenCorpus.Default.Get(MatrixSources[0]).ReadInput());
-        ReplaceProperty(builder, builder.GetItem(1), "colr", AvifFileBuilder.ColorNclx(primaries, 13, 12, fullRange: true));
+        ReplaceProperty(builder, builder.GetItem(1), "colr", AvifFileBuilder.ColorNclx(primaries, 13, matrix, fullRange: true));
         var data = builder.Build();
         var exception = Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(data));
         Assert.Equal(ImageFormat.Avif, exception.Format);
+        Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(data).Dispose());
+    }
+
+    public static TheoryData<string, int, int, int, bool> TransferMatrixCases
+    {
+        get
+        {
+            var data = new TheoryData<string, int, int, int, bool>();
+            foreach (var source in MatrixSources)
+            {
+                foreach (var fullRange in new[] { true, false })
+                {
+                    // Constant luminance, for every transfer characteristics that have a function: BT.2020 and, for
+                    // two sets of primaries, chromaticity-derived
+                    foreach (var transfer in new[] { 1, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18 })
+                    {
+                        data.Add(source, 9, transfer, 10, fullRange);
+                        data.Add(source, transfer % 2 == 0 ? 12 : 1, transfer, 13, fullRange);
+                    }
+
+                    // ICtCp, for the two transfer characteristics it is defined for
+                    data.Add(source, 9, 16, 14, fullRange);
+                    data.Add(source, 9, 18, 14, fullRange);
+                }
+            }
+
+            return data;
+        }
+    }
+
+    /// <summary>
+    /// The matrix coefficients that go through the transfer characteristics (constant luminance and ICtCp), against the
+    /// <see cref="decimal"/> conversion of the harness: the library computes in double precision, and its samples are the
+    /// nearest ones to the exact values. A sample whose exact value is within a billionth of a rounding boundary could
+    /// differ by one unit: none of these does.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(TransferMatrixCases))]
+    public void ColorBoxConvertsWithTheMatricesThatGoThroughTheTransferFunction(string id, int primaries, int transfer, int matrix, bool fullRange)
+    {
+        var builder = AvifFileBuilder.From(GoldenCorpus.Default.Get(id).ReadInput());
+        ReplaceProperty(builder, builder.GetItem(1), "colr", AvifFileBuilder.ColorNclx(primaries, transfer, matrix, fullRange));
+        var data = builder.Build();
+
+        using var image = Image.Load(data);
+        Assert.Equal(new CicpColorDescription((byte)primaries, (byte)transfer, (byte)matrix, fullRange), image.Metadata.Cicp);
+        Assert.Equal(image.Metadata.Cicp, Image.Identify(data).Metadata.Cicp);
+        var actual = ImageSnapshots.Capture(image).Frames[0].Pixels;
+        var expected = ConvertPrimaryItem(data, matrix, fullRange, actual.Layout.MaxSampleValue, primaries, transfer);
+        for (var i = 0; i < actual.Width * actual.Height; i++)
+        {
+            for (var channel = 0; channel < 3; channel++)
+            {
+                if (expected[(3 * i) + channel] != actual.GetSample(i % actual.Width, i / actual.Width, channel))
+                    Assert.Fail(string.Create(CultureInfo.InvariantCulture, $"{id} with primaries {primaries}, transfer characteristics {transfer} and matrix coefficients {matrix}, {(fullRange ? "full" : "limited")} range: the channel {channel} of the pixel {i} is {actual.GetSample(i % actual.Width, i / actual.Width, channel)} and the exact conversion gives {expected[(3 * i) + channel]}."));
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData(10, 2)] // unspecified
+    [InlineData(10, 3)] // reserved
+    [InlineData(10, 19)]
+    [InlineData(13, 2)]
+    [InlineData(13, 0)]
+    [InlineData(14, 2)]
+    [InlineData(14, 1)] // ICtCp is defined for PQ and for HLG
+    [InlineData(14, 13)]
+    [InlineData(14, 17)]
+    public void TheMatricesThatGoThroughTheTransferFunctionNeedIt(int matrix, int transfer)
+    {
+        var builder = AvifFileBuilder.From(GoldenCorpus.Default.Get(MatrixSources[0]).ReadInput());
+        ReplaceProperty(builder, builder.GetItem(1), "colr", AvifFileBuilder.ColorNclx(9, transfer, matrix, fullRange: true));
+        var data = builder.Build();
+        var exception = Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(data));
+        Assert.Equal(ImageFormat.Avif, exception.Format);
+        Assert.Equal("matrix coefficients", exception.Feature);
         Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(data).Dispose());
     }
 
@@ -753,7 +832,7 @@ public sealed class AvifContainerConformanceTests
     /// Decodes the primary item with the AV1 decoder of the library and converts its planes with the exact-rational
     /// converter of the harness. The items of these tests have no alpha plane, grid, clean aperture or film grain.
     /// </summary>
-    private static int[] ConvertPrimaryItem(byte[] data, int matrix, bool fullRange, int outputMaximum, int primaries = 2)
+    private static int[] ConvertPrimaryItem(byte[] data, int matrix, bool fullRange, int outputMaximum, int primaries = 2, int transfer = 2)
     {
         var file = ReferenceAvif.Parse(data);
         var payload = file.ReadItemData(file.PrimaryItem!);
@@ -778,7 +857,7 @@ public sealed class AvifContainerConformanceTests
 
             var sequence = frame.Sequence;
             var luma = frame.GetPlane(0);
-            return ReferenceYuvConverter.ConvertToRgb(planes[0], planes[1], planes[2], luma.Width, luma.Height, sequence.BitDepth, sequence.SubsamplingX, sequence.SubsamplingY, sequence.ChromaSamplePosition, matrix, fullRange, outputMaximum, primaries);
+            return ReferenceYuvConverter.ConvertToRgb(planes[0], planes[1], planes[2], luma.Width, luma.Height, sequence.BitDepth, sequence.SubsamplingX, sequence.SubsamplingY, sequence.ChromaSamplePosition, matrix, fullRange, outputMaximum, primaries, transfer);
         }
         finally
         {

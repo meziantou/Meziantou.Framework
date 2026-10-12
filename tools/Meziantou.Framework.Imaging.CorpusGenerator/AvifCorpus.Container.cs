@@ -61,8 +61,13 @@ internal static partial class AvifCorpus
         ["avif/layered-lsel-0-420"] = (0, 0.0),
         ["avif/layered-progressive-420"] = (0, 0.0),
         ["avif/layered-progressive-alpha"] = (0, 0.0),
+        ["avif/lossless-444-bt2020-constant-luminance-10bit"] = (0, 0.0),
+        ["avif/lossless-444-chromaticity-constant-luminance-p3"] = (0, 0.0),
+        ["avif/lossless-444-ictcp-hlg-12bit"] = (0, 0.0),
+        ["avif/lossless-444-ictcp-pq-12bit"] = (0, 0.0),
         ["avif/lossy-420-alpha"] = (0, 0.0),
         ["avif/lossy-420-alpha-12bit"] = (1, 0.0001), // one unit on a few samples
+        ["avif/lossy-420-bt2020-constant-luminance"] = (0, 0.0),
         ["avif/lossy-420-bt2020-limited"] = (0, 0.0),
         ["avif/lossy-420-bt2020-limited-10bit"] = (1, 0.0), // one unit of a 16-bit sample: 1/257 on the 8-bit scale
         ["avif/lossy-420-bt470bg-full"] = (0, 0.0),
@@ -80,6 +85,7 @@ internal static partial class AvifCorpus
         ["avif/lossy-420-chroma-vertical"] = (0, 0.0),
         ["avif/lossy-420-chromaticity-p3-limited-10bit"] = (0, 0.0),
         ["avif/lossy-420-fcc-limited-10bit"] = (0, 0.0),
+        ["avif/lossy-420-ictcp-pq"] = (0, 0.0),
         ["avif/lossy-420-pasp-clli"] = (0, 0.0),
         ["avif/lossy-420-smpte2085"] = (0, 0.0),
         ["avif/lossy-420-smpte240m-full-odd"] = (0, 0.0),
@@ -117,6 +123,7 @@ internal static partial class AvifCorpus
         ["avif/sequence-ffmpeg"] = (0, 0.0),
         ["avif/sequence-ffmpeg-svt"] = (1, 0.0002), // one unit on a few samples
         ["avif/sequence-hdr-boxes"] = (0, 0.0),
+        ["avif/sequence-ictcp-hlg"] = (0, 0.0),
         ["avif/sequence-matrix-mirror-clap"] = (0, 0.0),
         ["avif/sequence-mdat-first"] = (0, 0.0),
         ["avif/sequence-no-edit-list"] = (0, 0.0),
@@ -493,7 +500,7 @@ internal static partial class AvifCorpus
     }
 
     /// <summary>Converts the planes of a color image and of its alpha plane to a frame, then keeps a rectangle of it.</summary>
-    private static Img ToFrame(PlaneImage color, PlaneImage? alpha, int matrix, bool fullRange, (int X, int Y, int Width, int Height) crop, bool isPremultiplied = false, int primaries = 2)
+    private static Img ToFrame(PlaneImage color, PlaneImage? alpha, int matrix, bool fullRange, (int X, int Y, int Width, int Height) crop, bool isPremultiplied = false, int primaries = 2, int transfer = 2)
     {
         var deep = color.Color.BitDepth > 8 || alpha?.Color.BitDepth > 8;
         var maximum = deep ? 65535 : 255;
@@ -510,7 +517,7 @@ internal static partial class AvifCorpus
         else
         {
             rgb = ReferenceYuvConverter.ConvertToRgb(color.Planes[0], color.Planes[1], color.Planes[2], width, height, color.Color.BitDepth, color.Color.SubsamplingX, color.Color.SubsamplingY,
-                color.ChromaSamplePosition, matrix, fullRange, maximum, primaries);
+                color.ChromaSamplePosition, matrix, fullRange, maximum, primaries, transfer);
         }
 
         if (alpha is not null)
@@ -706,7 +713,7 @@ internal static partial class AvifCorpus
             MasteringDisplay = primary.MasteringDisplay,
             PixelAspectRatio = primary.PixelAspectRatio,
             HasMiafTransformOrder = primary.HasMiafTransformOrder,
-            Frames = [ToFrame(color, alpha, matrix, fullRange, crop, file.IsPremultiplied, cicp?.ColorPrimaries ?? 2)],
+            Frames = [ToFrame(color, alpha, matrix, fullRange, crop, file.IsPremultiplied, cicp?.ColorPrimaries ?? 2, cicp?.TransferCharacteristics ?? 2)],
             PixelFormat = PixelFormatOf(color, alpha),
             ColorModel = ColorModelOf(color, alpha is not null, matrix),
             BitsPerComponent = color.Color.BitDepth,
@@ -860,7 +867,7 @@ internal static partial class AvifCorpus
             Py.Assert(transformedAlpha.Orientation == 1 || transformedAlpha.Orientation == track.Orientation, "the alpha track has the matrix of the color track or none");
         }
 
-        var frames = payload.Frames.Select((frame, i) => ToFrame(frame, alphaPayload?.Frames[i], matrix, fullRange, crop, file.IsPremultiplied, cicp?.ColorPrimaries ?? 2)).ToList();
+        var frames = payload.Frames.Select((frame, i) => ToFrame(frame, alphaPayload?.Frames[i], matrix, fullRange, crop, file.IsPremultiplied, cicp?.ColorPrimaries ?? 2, cicp?.TransferCharacteristics ?? 2)).ToList();
         AddPresentationFeatures(features, track.ContentLightLevel, track.MasteringDisplay, track.PixelAspectRatio);
         return new AvifReference
         {

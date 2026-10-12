@@ -948,23 +948,31 @@ public sealed class AvifDecoderInteropTests
     }
 
     /// <summary>
-    /// The matrix coefficients the library documents as unsupported (BT.2020 constant luminance, chromaticity-derived
-    /// constant luminance, ICtCp): avifenc labels the planes of a Y4M source with them without converting anything, avifdec
-    /// reads the file, and the library rejects it instead of converting with another matrix.
+    /// The matrix coefficients that go through the transfer characteristics (BT.2020 constant luminance, chromaticity-derived
+    /// constant luminance, ICtCp): avifenc labels the planes of a Y4M source with them without converting anything and
+    /// avifdec reads the description of the file, but libavif has no conversion for them. The library reads the file and
+    /// converts it; its pixels are compared with the exact conversion of the harness in the conformance tests.
     /// </summary>
     [Theory]
     [InlineData(10)]
     [InlineData(13)]
     [InlineData(14)]
-    public async Task UnsupportedMatrixCoefficientsAreRejected(int matrix)
+    public async Task TheMatricesThatGoThroughTheTransferFunctionAreReadFromAFileOfAvifEnc(int matrix)
     {
         var avif = await RequiredTools.LibAvifAsync();
         var path = await EncodeLabeledPlanesAsync(avif, matrix);
         var info = await avif.GetInfoAsync(path, XunitCancellationToken);
-        Assert.Equal((64, 64, matrix), (info.Width, info.Height, info.MatrixCoefficients));
+        Assert.Equal((64, 64, 9, 16, matrix), (info.Width, info.Height, info.ColorPrimaries, info.TransferCharacteristics, info.MatrixCoefficients));
 
-        var exception = Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(path).Dispose());
-        Assert.Equal(ImageFormat.Avif, exception.Format);
+        using var image = Image.Load(path);
+        Assert.Equal((64, 64), (image.Width, image.Height));
+        Assert.Equal(new CicpColorDescription(9, 16, (byte)matrix, fullRange: info.FullRange), image.Metadata.Cicp);
+        Assert.Equal(image.Metadata.Cicp, Image.Identify(path).Metadata.Cicp);
+
+        // The planes of the test pattern are not the conversion of colors: what is asserted is that they are converted,
+        // into colors that are not all the same
+        var pixels = ImageSnapshots.CaptureFrame(image.Frames[0]);
+        Assert.NotEqual((pixels.GetSample(0, 0, 0), pixels.GetSample(0, 0, 1), pixels.GetSample(0, 0, 2)), (pixels.GetSample(40, 40, 0), pixels.GetSample(40, 40, 1), pixels.GetSample(40, 40, 2)));
     }
 
     /// <summary>

@@ -3,6 +3,7 @@ using System.Text;
 using Meziantou.Framework.Imaging.CorpusGenerator.Common;
 using Meziantou.Framework.Imaging.CorpusGenerator.Infrastructure;
 using Meziantou.Framework.Imaging.TestHarness.Avif;
+using Meziantou.Framework.Imaging.TestHarness.Color;
 
 namespace Meziantou.Framework.Imaging.CorpusGenerator;
 
@@ -100,6 +101,103 @@ internal static partial class AvifCorpus
             return alpha ? color.Append(cx == cy ? 0 : 255 - (40 * ((cx + cy) % 4))) : color;
         });
         return new Img(w, h, alpha ? "rgba" : "rgb", 8, pixels);
+    }
+
+    /// <summary>
+    /// A YUV4MPEG2 frame of full-range 4:4:4 samples that are the R'G'B' pattern, converted with the equations of ITU-T
+    /// H.273 for the constant luminance (10 and 13) and ICtCp (14) matrix coefficients: the forward conversion, in
+    /// <see cref="decimal"/> arithmetic, of which the decoders compute the inverse. avifenc keeps the planes.
+    /// </summary>
+    private static byte[] Y4mThroughTransfer(Img pattern, int bits, int primaries, int transfer, int matrix)
+    {
+        var (w, h) = (pattern.Width, pattern.Height);
+        var patternMaximum = (decimal)((1 << pattern.Depth) - 1);
+        var maximum = (1 << bits) - 1;
+        var planes = new int[3][];
+        for (var plane = 0; plane < 3; plane++)
+            planes[plane] = new int[w * h];
+
+        for (var i = 0; i < w * h; i++)
+        {
+            var pixel = pattern.Pixels[i];
+            var (r, g, b) = (pixel[0] / patternMaximum, pixel[1] / patternMaximum, pixel[2] / patternMaximum);
+            var (linearR, linearG, linearB) = (ReferenceCicpTransfer.Decode(transfer, r), ReferenceCicpTransfer.Decode(transfer, g), ReferenceCicpTransfer.Decode(transfer, b));
+            decimal ey;
+            decimal epb;
+            decimal epr;
+            if (matrix == 14)
+            {
+                // Rec. ITU-R BT.2100, table 7: L, M and S from the linear colors, then I, CT and CP from L', M' and S'
+                var l = ReferenceCicpTransfer.Encode(transfer, ((1688 * linearR) + (2146 * linearG) + (262 * linearB)) / 4096);
+                var m = ReferenceCicpTransfer.Encode(transfer, ((683 * linearR) + (2951 * linearG) + (462 * linearB)) / 4096);
+                var s = ReferenceCicpTransfer.Encode(transfer, ((99 * linearR) + (309 * linearG) + (3688 * linearB)) / 4096);
+                ey = (l + m) / 2;
+                (epb, epr) = transfer == 18
+                    ? (((3625 * l) - (7465 * m) + (3840 * s)) / 4096, ((9500 * l) - (9212 * m) - (288 * s)) / 4096)
+                    : (((6610 * l) - (13613 * m) + (7003 * s)) / 4096, ((17933 * l) - (17390 * m) - (543 * s)) / 4096);
+            }
+            else
+            {
+                // ITU-T H.273, equations of the constant luminance: the luminance is encoded, not the colors
+                var (kr, kb) = matrix == 10 ? (0.2627m, 0.0593m) : LuminanceWeights(primaries);
+                ey = ReferenceCicpTransfer.Encode(transfer, (kr * linearR) + ((1 - kr - kb) * linearG) + (kb * linearB));
+                epb = b - ey <= 0 ? (b - ey) / (2 * ReferenceCicpTransfer.Encode(transfer, 1 - kb)) : (b - ey) / (2 * (1 - ReferenceCicpTransfer.Encode(transfer, kb)));
+                epr = r - ey <= 0 ? (r - ey) / (2 * ReferenceCicpTransfer.Encode(transfer, 1 - kr)) : (r - ey) / (2 * (1 - ReferenceCicpTransfer.Encode(transfer, kr)));
+            }
+
+            planes[0][i] = Quantize(ey * maximum);
+            planes[1][i] = Quantize((epb * maximum) + (1 << (bits - 1)));
+            planes[2][i] = Quantize((epr * maximum) + (1 << (bits - 1)));
+        }
+
+        var builder = new ByteBuilder().Ascii(Inv($"YUV4MPEG2 W{w} H{h} F1:1 Ip A1:1 C444{(bits == 8 ? "" : Inv($"p{bits}"))} XCOLORRANGE=FULL\nFRAME\n"));
+        foreach (var plane in planes)
+        {
+            foreach (var sample in plane)
+            {
+                if (bits == 8)
+                    builder.U8(sample);
+                else
+                    builder.U16LE(sample);
+            }
+        }
+
+        return builder.ToArray();
+
+        int Quantize(decimal value) => (int)Math.Clamp(Math.Floor(value + 0.5m), 0, maximum);
+
+        static (decimal Kr, decimal Kb) LuminanceWeights(int primaries)
+        {
+            var (kr, kb, denominator) = ReferenceYuvConverter.GetLuminanceWeights(primaries) ?? throw new ToolException("the primaries have no chromaticities.");
+            return ((decimal)kr / (decimal)denominator, (decimal)kb / (decimal)denominator);
+        }
+    }
+
+    /// <summary>The pattern with its samples moved to a part of the range.</summary>
+    private static Img Confine(Img pattern, int low, int high) =>
+        new(pattern.Width, pattern.Height, "rgb", pattern.Depth, pattern.Pixels.Select(pixel => new Px(low + (pixel[0] * (high - low) / 255), low + (pixel[1] * (high - low) / 255), low + (pixel[2] * (high - low) / 255))));
+
+    /// <summary>
+    /// A still image whose planes are a pattern converted through the transfer characteristics, coded without loss: the
+    /// conversion of the planes gives the pattern back, up to the quantization of the planes.
+    /// </summary>
+    private static void StillThroughTransfer(ContainerContext context, string name, Img pattern, int bits, int primaries, int transfer, int matrix, int tolerance, string[] requires, string notes)
+    {
+        var depth = bits == 8 ? "" : Inv($" -d {bits}");
+        var reference = Still(context, name, Y4mThroughTransfer(pattern, bits, primaries, transfer, matrix), Inv($"-q 100{depth} --cicp {primaries}/{transfer}/{matrix}"), requires, sourceName: "source.y4m", notes: notes);
+        var decoded = reference.Frames[0];
+        var scale = decoded.Depth == pattern.Depth ? 1 : 257;
+        var worst = 0;
+        for (var i = 0; i < pattern.Pixels.Count; i++)
+        {
+            for (var channel = 0; channel < 3; channel++)
+                worst = Math.Max(worst, Math.Abs(decoded.Pixels[i][channel] - (pattern.Pixels[i][channel] * scale)));
+        }
+
+        // The planes are rounded to their depth, and the conversion amplifies that where the transfer function is steep:
+        // the bound of each fixture is about twice the difference that was measured (78, 1, 31 and 22)
+        if (worst > tolerance)
+            throw new FatalException(Inv($"avif/{name}: the planes do not convert back to their source pattern (a sample is {worst} away, more than {tolerance})."));
     }
 
     /// <summary>A YUV4MPEG2 frame of full-range 4:2:0 samples: avifenc keeps the planes and the chroma sample position.</summary>
@@ -214,6 +312,25 @@ internal static partial class AvifCorpus
             notes: "Chromaticity-derived matrix coefficients with the Display P3 primaries, in limited range.");
         Still(context, "lossy-420-smpte2085", Y4m(8, 6, "420mpeg2"), "-q 70 --cicp 9/16/11", ["avif.matrix=11", "avif.subsampling=4:2:0"], sourceName: "source.y4m",
             notes: "SMPTE ST 2085 matrix coefficients (Y'D'zD'x): the planes of a y4m source that avifenc labels without converting them.");
+
+        // The matrix coefficients that go through the transfer characteristics: constant luminance (10: BT.2020; 13: of the
+        // primaries) and ICtCp (14: PQ and HLG). No tool converts them: avifenc labels the planes of a y4m source, which are
+        // either a pattern converted with the forward equations and coded without loss, or arbitrary planes coded with loss
+        var transferPattern = CommonCorpus.PatternSmoothColor(8, 6);
+        StillThroughTransfer(context, "lossless-444-bt2020-constant-luminance-10bit", transferPattern, 10, 9, 14, 10, 128, ["avif.matrix=10", "avif.lossless", "avif.bitDepth=10"],
+            "BT.2020 constant luminance matrix coefficients: the luma is the transfer characteristics function of the luminance. The planes are a pattern converted with the forward equations of ITU-T H.273.");
+        StillThroughTransfer(context, "lossless-444-chromaticity-constant-luminance-p3", CommonCorpus.PatternDetailColor(8, 6, 3), 8, 12, 13, 13, 2, ["avif.matrix=13", "avif.lossless"],
+            "Chromaticity-derived constant luminance matrix coefficients with the Display P3 primaries and the sRGB transfer characteristics. The planes are a pattern converted with the forward equations of ITU-T H.273.");
+        // (ICtCp: a channel that is much darker than the other ones gets the rounding of the planes multiplied by the
+        // slope of the transfer function of the bright ones, so the pattern keeps away from black and has 12-bit planes)
+        StillThroughTransfer(context, "lossless-444-ictcp-pq-12bit", Confine(transferPattern, 128, 224), 12, 9, 16, 14, 64, ["avif.matrix=14", "avif.lossless", "avif.bitDepth=12"],
+            "ICtCp with the PQ transfer characteristics (Rec. ITU-R BT.2100). The planes are a pattern converted with the forward equations.");
+        StillThroughTransfer(context, "lossless-444-ictcp-hlg-12bit", Confine(CommonCorpus.PatternSmoothColor(6, 8), 128, 224), 12, 9, 18, 14, 64, ["avif.matrix=14", "avif.lossless", "avif.bitDepth=12"],
+            "ICtCp with the HLG transfer characteristics (Rec. ITU-R BT.2100), whose coefficients are not the ones of PQ. The planes are a pattern converted with the forward equations.");
+        Still(context, "lossy-420-bt2020-constant-luminance", Y4m(8, 6, "420mpeg2"), "-q 70 --cicp 9/14/10", ["avif.matrix=10", "avif.subsampling=4:2:0"], sourceName: "source.y4m",
+            notes: "BT.2020 constant luminance matrix coefficients on arbitrary 4:2:0 planes, which include colors outside of the gamut: they are clipped.");
+        Still(context, "lossy-420-ictcp-pq", Y4m(8, 6, "420paldv"), "-q 70 --cicp 9/16/14", ["avif.matrix=14", "avif.subsampling=4:2:0"], sourceName: "source.y4m",
+            notes: "ICtCp with the PQ transfer characteristics on arbitrary 4:2:0 planes, which include colors outside of the gamut: they are clipped.");
 
         // Premultiplied alpha, as avifenc writes it (-p: a prem reference from the color image to its alpha plane): the
         // colors are divided by the alpha once they are converted. Lossless content is exact; the lossy image is matrixed
@@ -618,6 +735,15 @@ internal static partial class AvifCorpus
             var alpha = builder.Tracks.Single(track => track.HandlerType == "auxv");
             color.References.Add(("prem", [alpha.Id]));
         }, ["avif.sequence", "avif.premultiplied", "avif.alpha"], "The color track has a prem reference to its alpha track: the colors of every image are divided by its alpha (the samples are not multiplied by it, so most colors are clipped).", "BuildSequences");
+
+        // The colr box of the sample entry declares ICtCp with the HLG transfer characteristics: every image of the track
+        // is converted through the transfer function
+        Assembled(context, "sequence-ictcp-hlg", "sequence-10bit-once", builder =>
+        {
+            var boxes = builder.Tracks.Single(track => track.HandlerType == "pict").SampleEntryBoxes;
+            var index = Enumerable.Range(0, boxes.Count).Single(i => PropertyType(boxes[i]) == "colr");
+            boxes[index] = AvifFileBuilder.ColorNclx(9, 18, 14, fullRange: false);
+        }, ["avif.sequence", "avif.matrix=14", "avif.range=limited", "avif.bitDepth=10"], "The colr box of the sample entry declares the ICtCp matrix coefficients with the HLG transfer characteristics, in limited range: the planes of a sequence of other colors, most of which are outside of the gamut and are clipped.", "BuildSequences");
 
         // The boxes of the visual sample entry that describe how the samples are presented
         Assembled(context, "sequence-hdr-boxes", "sequence-10bit-once", builder =>

@@ -1033,16 +1033,71 @@ public sealed class AvifDecoderTests
         Assert.Equal([2, 2, 1, 0], ReferenceYuvConverter.UpsampleChroma([2, 0], 4, 1, 1, 0, 0));
     }
 
+    /// <summary>
+    /// The conversions that go through the transfer characteristics, against a calculation that does not share anything
+    /// with the harness: the equations of ITU-T H.273 evaluated with the <c>decimal</c> module of Python at 50 digits
+    /// (its own <c>ln</c>, <c>exp</c> and power functions, and a Gaussian elimination for the matrices of ICtCp and for
+    /// the luminance of the primaries). The samples include neutral colors (which every matrix keeps), colors outside of
+    /// the gamut (which are clipped) and the ends of the range.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(TransferMatrixLiterals))]
+    public void ReferenceConverterMatchesAnIndependentCalculationOfTheMatricesThatGoThroughTheTransferFunction(int matrix, int primaries, int transfer, bool fullRange, int bitDepth, int[] expected)
+    {
+        ushort[][] samples = bitDepth == 8
+            ? [[128, 128, 128], [200, 90, 160], [60, 180, 100], [235, 128, 128], [16, 128, 128], [120, 40, 230], [255, 255, 255], [0, 0, 0]]
+            : [[512, 512, 512], [800, 360, 640], [240, 720, 400], [940, 512, 512], [64, 512, 512], [480, 160, 920]];
+        Assert.HasCount(3 * samples.Length, expected);
+        for (var i = 0; i < samples.Length; i++)
+        {
+            var actual = ReferenceYuvConverter.ConvertToRgb([samples[i][0]], [samples[i][1]], [samples[i][2]], 1, 1, bitDepth, 0, 0, 0, matrix, fullRange, bitDepth == 8 ? 255 : 65535, primaries, transfer);
+            Assert.Equal(expected.AsSpan(3 * i, 3).ToArray(), actual);
+        }
+    }
+
+    public static TheoryData<int, int, int, bool, int, int[]> TransferMatrixLiterals => new()
+    {
+        // BT.2020 constant luminance, with the transfer characteristics of BT.2020 (10-bit)
+        { 10, 9, 14, true, 8, [128, 128, 128, 232, 192, 126, 12, 61, 142, 235, 235, 235, 16, 16, 16, 221, 48, 0, 255, 255, 255, 0, 0, 0] },
+        { 10, 9, 14, true, 10, [32800, 32800, 32800, 59399, 49099, 32355, 3047, 15636, 36454, 60218, 60218, 60218, 4100, 4100, 4100, 56725, 12327, 0] },
+        { 10, 9, 14, false, 8, [130, 130, 130, 250, 204, 130, 0, 50, 145, 255, 255, 255, 0, 0, 0, 236, 18, 0, 255, 255, 255, 0, 0, 0] },
+        { 10, 9, 14, false, 10, [33516, 33516, 33516, 64366, 52551, 33490, 0, 12796, 37234, 65535, 65535, 65535, 0, 0, 0, 60779, 4541, 0] },
+
+        // Chromaticity-derived constant luminance, with the Display P3 primaries and the sRGB transfer characteristics
+        { 13, 12, 13, true, 8, [128, 128, 128, 231, 195, 127, 10, 55, 132, 235, 235, 235, 16, 16, 16, 219, 55, 0, 255, 255, 255, 0, 0, 0] },
+        { 13, 12, 13, true, 10, [32800, 32800, 32800, 59190, 49991, 32470, 2580, 14067, 33712, 60218, 60218, 60218, 4100, 4100, 4100, 56060, 13983, 0] },
+        { 13, 12, 13, false, 8, [130, 130, 130, 250, 208, 131, 0, 40, 133, 255, 255, 255, 0, 0, 0, 234, 17, 0, 255, 255, 255, 0, 0, 0] },
+        { 13, 12, 13, false, 10, [33516, 33516, 33516, 64127, 53564, 33620, 0, 10362, 34103, 65535, 65535, 65535, 0, 0, 0, 60019, 4448, 0] },
+
+        // ICtCp with PQ
+        { 14, 9, 16, true, 8, [128, 128, 128, 214, 194, 161, 48, 44, 100, 235, 235, 235, 16, 16, 16, 153, 65, 0, 255, 202, 255, 0, 20, 0] },
+        { 14, 9, 16, true, 10, [32800, 32800, 32800, 54816, 49804, 41240, 12381, 11300, 25720, 60218, 60218, 60218, 4100, 4100, 4100, 39272, 16870, 0] },
+        { 14, 9, 16, false, 8, [130, 130, 130, 230, 207, 169, 40, 0, 97, 255, 255, 255, 0, 0, 0, 157, 0, 0, 255, 255, 255, 0, 0, 0] },
+        { 14, 9, 16, false, 10, [33516, 33516, 33516, 59021, 53303, 43323, 10307, 0, 24920, 65535, 65535, 65535, 0, 0, 0, 40399, 0, 0] },
+
+        // ICtCp with HLG, whose coefficients are other ones
+        { 14, 9, 18, true, 8, [128, 128, 128, 226, 188, 126, 31, 52, 136, 235, 235, 235, 16, 16, 16, 182, 64, 0, 255, 137, 255, 0, 41, 0] },
+        { 14, 9, 18, true, 10, [32800, 32800, 32800, 57836, 48296, 32337, 7907, 13440, 34776, 60218, 60218, 60218, 4100, 4100, 4100, 46781, 16388, 0] },
+        { 14, 9, 18, false, 8, [130, 130, 130, 243, 200, 127, 13, 39, 137, 255, 255, 255, 0, 0, 0, 188, 48, 0, 255, 234, 255, 0, 20, 0] },
+        { 14, 9, 18, false, 10, [33516, 33516, 33516, 62380, 51474, 32679, 3357, 9956, 35209, 65535, 65535, 65535, 0, 0, 0, 48428, 12450, 0] },
+    };
+
     [Fact]
     public void ReferenceConverterRejectsWhatTheLibraryRejects()
     {
         Assert.False(ReferenceYuvConverter.IsSupportedMatrix(3));
-        Assert.False(ReferenceYuvConverter.IsSupportedMatrix(10));
-        Assert.False(ReferenceYuvConverter.IsSupportedMatrix(13));
-        Assert.False(ReferenceYuvConverter.IsSupportedMatrix(14));
-        Assert.True(ReferenceYuvConverter.IsSupportedMatrix(11));
-        Assert.True(ReferenceYuvConverter.IsSupportedMatrix(12));
-        Assert.Throws<NotSupportedException>(() => ReferenceYuvConverter.ConvertToRgb([0], [0], [0], 1, 1, 8, 0, 0, 0, 14, fullRange: true, 255));
+        Assert.False(ReferenceYuvConverter.IsSupportedMatrix(15));
+        for (var matrix = 4; matrix <= 14; matrix++)
+        {
+            Assert.True(ReferenceYuvConverter.IsSupportedMatrix(matrix));
+        }
+
+        // The matrices that go through the transfer characteristics need them, ICtCp needs PQ or HLG, and the
+        // chromaticity-derived ones need primaries
+        Assert.Throws<NotSupportedException>(() => ReferenceYuvConverter.ConvertToRgb([0], [0], [0], 1, 1, 8, 0, 0, 0, 3, fullRange: true, 255));
+        Assert.Throws<NotSupportedException>(() => ReferenceYuvConverter.ConvertToRgb([0], [0], [0], 1, 1, 8, 0, 0, 0, 10, fullRange: true, 255, colorPrimaries: 9));
+        Assert.Throws<NotSupportedException>(() => ReferenceYuvConverter.ConvertToRgb([0], [0], [0], 1, 1, 8, 0, 0, 0, 13, fullRange: true, 255, colorPrimaries: 2, transferCharacteristics: 13));
+        Assert.Throws<NotSupportedException>(() => ReferenceYuvConverter.ConvertToRgb([0], [0], [0], 1, 1, 8, 0, 0, 0, 14, fullRange: true, 255, colorPrimaries: 9, transferCharacteristics: 13));
         Assert.Throws<ArgumentException>(() => ReferenceYuvConverter.ConvertToRgb([0, 0], [0], [0], 2, 1, 8, 1, 0, 0, 0, fullRange: true, 255));
     }
 

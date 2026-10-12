@@ -9683,6 +9683,402 @@
       "notes": "The major brand is mif1 and avif is a compatible brand; the meta box has a 64-bit size; the size field of the mdat box is 0 (it extends to the end of the file)."
     },
     {
+      "id": "avif/lossless-444-bt2020-constant-luminance-10bit",
+      "kind": "valid",
+      "format": "avif",
+      "input": {
+        "path": "avif/lossless-444-bt2020-constant-luminance-10bit.avif",
+        "sha256": "40994e9b5bb3f5ad83dba564d505ac26c8417c776ad7f2699b8b66e1332d6ebb",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/AvifCorpus.Container.cs (BuildStills)",
+        "tools": [
+          "libavif 1.4.2 avifenc (aom 3.14.1)",
+          "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+          ".NET 10.0"
+        ],
+        "commands": [
+          "avifenc -j 1 -s 6 -q 100 -d 10 --cicp 9/14/10 source.y4m {output}.avif"
+        ]
+      },
+      "features": [
+        "avif.bitDepth=10",
+        "avif.colr=nclx",
+        "avif.lossless",
+        "avif.majorBrand=avif",
+        "avif.matrix=10",
+        "avif.range=full",
+        "avif.subsampling=4:4:4"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "Planes of the items decoded identically by both decoders, converted with exact rationals (matrix, range and chroma position of the file).",
+        "decoder": "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+        "backend": "ReferenceAvif and ReferenceYuvConverter (test harness)",
+        "command": "av1Vectors.decoders[].command",
+        "crossChecks": [
+          {
+            "decoder": "libavif 1.4.2 avifdec (dav1d 1.5.3)",
+            "command": "avifdec -j 1 -d 16 {input} {output}.png",
+            "result": "differs",
+            "notes": "avifdec rejects the file: Conversion to RGB failed: {output}.png"
+          }
+        ]
+      },
+      "expected": {
+        "width": 8,
+        "height": 6,
+        "pixelFormat": "Rgba64",
+        "colorModel": "YCbCr",
+        "bitsPerComponent": 10,
+        "orientation": 1,
+        "iccProfile": "none",
+        "cicp": {
+          "colorPrimaries": 9,
+          "transferCharacteristics": 14,
+          "matrixCoefficients": 10,
+          "fullRange": true
+        },
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "avif/lossless-444-bt2020-constant-luminance-10bit.frame-0.rgba16le.raw",
+                "sha256": "ebb04dcb49458bac2b05289b73dc99725f38e83b57b85800b22de66067ec3d54",
+                "layout": "rgba16le",
+                "width": 8,
+                "height": 6,
+                "rowBytes": 64,
+                "byteLength": 384,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      },
+      "notes": "BT.2020 constant luminance matrix coefficients: the luma is the transfer characteristics function of the luminance. The planes are a pattern converted with the forward equations of ITU-T H.273."
+    },
+    {
+      "id": "avif/lossless-444-chromaticity-constant-luminance-p3",
+      "kind": "valid",
+      "format": "avif",
+      "input": {
+        "path": "avif/lossless-444-chromaticity-constant-luminance-p3.avif",
+        "sha256": "7bd4919e538c6b01ad4ad3cbb4cdfed7d70b7e16cbc3daf29324bde80ea02f38",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/AvifCorpus.Container.cs (BuildStills)",
+        "tools": [
+          "libavif 1.4.2 avifenc (aom 3.14.1)",
+          "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+          ".NET 10.0"
+        ],
+        "commands": [
+          "avifenc -j 1 -s 6 -q 100 --cicp 12/13/13 source.y4m {output}.avif"
+        ]
+      },
+      "features": [
+        "avif.bitDepth=8",
+        "avif.colr=nclx",
+        "avif.lossless",
+        "avif.majorBrand=avif",
+        "avif.matrix=13",
+        "avif.range=full",
+        "avif.subsampling=4:4:4"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "Planes of the items decoded identically by both decoders, converted with exact rationals (matrix, range and chroma position of the file).",
+        "decoder": "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+        "backend": "ReferenceAvif and ReferenceYuvConverter (test harness)",
+        "command": "av1Vectors.decoders[].command",
+        "crossChecks": [
+          {
+            "decoder": "libavif 1.4.2 avifdec (dav1d 1.5.3)",
+            "command": "avifdec -j 1 {input} {output}.png",
+            "result": "differs",
+            "notes": "avifdec rejects the file: Conversion to RGB failed: {output}.png"
+          }
+        ]
+      },
+      "expected": {
+        "width": 8,
+        "height": 6,
+        "pixelFormat": "Rgb24",
+        "colorModel": "YCbCr",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "cicp": {
+          "colorPrimaries": 12,
+          "transferCharacteristics": 13,
+          "matrixCoefficients": 13,
+          "fullRange": true
+        },
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "avif/lossless-444-chromaticity-constant-luminance-p3.frame-0.rgba8.raw",
+                "sha256": "af2d6ed05b47fcece8832ea7c2e80a782c1902dddc13a4a8223d9d6285ad66e5",
+                "layout": "rgba8",
+                "width": 8,
+                "height": 6,
+                "rowBytes": 32,
+                "byteLength": 192,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "avif/lossless-444-chromaticity-constant-luminance-p3.frame-0.rgb8.raw",
+                "sha256": "da4b66667dfb38b1bc12bf650675dadd3e41b42c64070e69fece83039bcce6e9",
+                "layout": "rgb8",
+                "width": 8,
+                "height": 6,
+                "rowBytes": 24,
+                "byteLength": 144,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      },
+      "notes": "Chromaticity-derived constant luminance matrix coefficients with the Display P3 primaries and the sRGB transfer characteristics. The planes are a pattern converted with the forward equations of ITU-T H.273."
+    },
+    {
+      "id": "avif/lossless-444-ictcp-hlg-12bit",
+      "kind": "valid",
+      "format": "avif",
+      "input": {
+        "path": "avif/lossless-444-ictcp-hlg-12bit.avif",
+        "sha256": "58c9017b573e33ac768f849876bdaf948ccbd03ff76324c069148c2aa5ba946f",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/AvifCorpus.Container.cs (BuildStills)",
+        "tools": [
+          "libavif 1.4.2 avifenc (aom 3.14.1)",
+          "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+          ".NET 10.0"
+        ],
+        "commands": [
+          "avifenc -j 1 -s 6 -q 100 -d 12 --cicp 9/18/14 source.y4m {output}.avif"
+        ]
+      },
+      "features": [
+        "avif.bitDepth=12",
+        "avif.colr=nclx",
+        "avif.lossless",
+        "avif.majorBrand=avif",
+        "avif.matrix=14",
+        "avif.range=full",
+        "avif.subsampling=4:4:4"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "Planes of the items decoded identically by both decoders, converted with exact rationals (matrix, range and chroma position of the file).",
+        "decoder": "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+        "backend": "ReferenceAvif and ReferenceYuvConverter (test harness)",
+        "command": "av1Vectors.decoders[].command",
+        "crossChecks": [
+          {
+            "decoder": "libavif 1.4.2 avifdec (dav1d 1.5.3)",
+            "command": "avifdec -j 1 -d 16 {input} {output}.png",
+            "result": "differs",
+            "notes": "avifdec rejects the file: Conversion to RGB failed: {output}.png"
+          }
+        ]
+      },
+      "expected": {
+        "width": 6,
+        "height": 8,
+        "pixelFormat": "Rgba64",
+        "colorModel": "YCbCr",
+        "bitsPerComponent": 12,
+        "orientation": 1,
+        "iccProfile": "none",
+        "cicp": {
+          "colorPrimaries": 9,
+          "transferCharacteristics": 18,
+          "matrixCoefficients": 14,
+          "fullRange": true
+        },
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "avif/lossless-444-ictcp-hlg-12bit.frame-0.rgba16le.raw",
+                "sha256": "7e7ba567af3184a169d63f47dddf5da31d75eaf4a0bc462e58d1e8ec16cef32d",
+                "layout": "rgba16le",
+                "width": 6,
+                "height": 8,
+                "rowBytes": 48,
+                "byteLength": 384,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      },
+      "notes": "ICtCp with the HLG transfer characteristics (Rec. ITU-R BT.2100), whose coefficients are not the ones of PQ. The planes are a pattern converted with the forward equations."
+    },
+    {
+      "id": "avif/lossless-444-ictcp-pq-12bit",
+      "kind": "valid",
+      "format": "avif",
+      "input": {
+        "path": "avif/lossless-444-ictcp-pq-12bit.avif",
+        "sha256": "b4cf1d1b376862b345c441d810cae10b7c0d0904f03b24d2dd5b8ccb91081184",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/AvifCorpus.Container.cs (BuildStills)",
+        "tools": [
+          "libavif 1.4.2 avifenc (aom 3.14.1)",
+          "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+          ".NET 10.0"
+        ],
+        "commands": [
+          "avifenc -j 1 -s 6 -q 100 -d 12 --cicp 9/16/14 source.y4m {output}.avif"
+        ]
+      },
+      "features": [
+        "avif.bitDepth=12",
+        "avif.colr=nclx",
+        "avif.lossless",
+        "avif.majorBrand=avif",
+        "avif.matrix=14",
+        "avif.range=full",
+        "avif.subsampling=4:4:4"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "Planes of the items decoded identically by both decoders, converted with exact rationals (matrix, range and chroma position of the file).",
+        "decoder": "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+        "backend": "ReferenceAvif and ReferenceYuvConverter (test harness)",
+        "command": "av1Vectors.decoders[].command",
+        "crossChecks": [
+          {
+            "decoder": "libavif 1.4.2 avifdec (dav1d 1.5.3)",
+            "command": "avifdec -j 1 -d 16 {input} {output}.png",
+            "result": "differs",
+            "notes": "avifdec rejects the file: Conversion to RGB failed: {output}.png"
+          }
+        ]
+      },
+      "expected": {
+        "width": 8,
+        "height": 6,
+        "pixelFormat": "Rgba64",
+        "colorModel": "YCbCr",
+        "bitsPerComponent": 12,
+        "orientation": 1,
+        "iccProfile": "none",
+        "cicp": {
+          "colorPrimaries": 9,
+          "transferCharacteristics": 16,
+          "matrixCoefficients": 14,
+          "fullRange": true
+        },
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "avif/lossless-444-ictcp-pq-12bit.frame-0.rgba16le.raw",
+                "sha256": "4db12da678025b06c3d52d3bb21dad240c17a08d3dfc46fe672a795a8a3e84f3",
+                "layout": "rgba16le",
+                "width": 8,
+                "height": 6,
+                "rowBytes": 64,
+                "byteLength": 384,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      },
+      "notes": "ICtCp with the PQ transfer characteristics (Rec. ITU-R BT.2100). The planes are a pattern converted with the forward equations."
+    },
+    {
       "id": "avif/lossless-gray-alpha8",
       "kind": "valid",
       "format": "avif",
@@ -11053,6 +11449,114 @@
         "maxMeanAbsoluteError": 0.02,
         "justification": "Exact-rational reference; the library rounds its matrix coefficients to 16 fractional bits (measured: max 1, mean 0.0001). Allowed: 1 and the measured mean + 0.01; the cross-checks would justify max 2, mean 0.5."
       }
+    },
+    {
+      "id": "avif/lossy-420-bt2020-constant-luminance",
+      "kind": "valid",
+      "format": "avif",
+      "input": {
+        "path": "avif/lossy-420-bt2020-constant-luminance.avif",
+        "sha256": "3be6deee2adee1faa198c642f3e02bfb2e80c8835187efa10a8b9481a3bbf0f6",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/AvifCorpus.Container.cs (BuildStills)",
+        "tools": [
+          "libavif 1.4.2 avifenc (aom 3.14.1)",
+          "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+          ".NET 10.0"
+        ],
+        "commands": [
+          "avifenc -j 1 -s 6 -q 70 --cicp 9/14/10 source.y4m {output}.avif"
+        ]
+      },
+      "features": [
+        "avif.bitDepth=8",
+        "avif.chromaSamplePosition=vertical",
+        "avif.colr=nclx",
+        "avif.majorBrand=avif",
+        "avif.matrix=10",
+        "avif.range=full",
+        "avif.subsampling=4:2:0"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "Planes of the items decoded identically by both decoders, converted with exact rationals (matrix, range and chroma position of the file).",
+        "decoder": "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+        "backend": "ReferenceAvif and ReferenceYuvConverter (test harness)",
+        "command": "av1Vectors.decoders[].command",
+        "crossChecks": [
+          {
+            "decoder": "libavif 1.4.2 avifdec (dav1d 1.5.3)",
+            "command": "avifdec -j 1 {input} {output}.png",
+            "result": "differs",
+            "notes": "avifdec rejects the file: Conversion to RGB failed: {output}.png"
+          }
+        ]
+      },
+      "expected": {
+        "width": 8,
+        "height": 6,
+        "pixelFormat": "Rgb24",
+        "colorModel": "YCbCr",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "cicp": {
+          "colorPrimaries": 9,
+          "transferCharacteristics": 14,
+          "matrixCoefficients": 10,
+          "fullRange": true
+        },
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "avif/lossy-420-bt2020-constant-luminance.frame-0.rgba8.raw",
+                "sha256": "b6cda22d0b812169433e6b097f2dfcd69a8ab31bc14a65919d722df4de69a423",
+                "layout": "rgba8",
+                "width": 8,
+                "height": 6,
+                "rowBytes": 32,
+                "byteLength": 192,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "avif/lossy-420-bt2020-constant-luminance.frame-0.rgb8.raw",
+                "sha256": "50c5a794a7fe22358918dbfd9945113ff5b61c461ea5130f59b9f78bfdcb56f9",
+                "layout": "rgb8",
+                "width": 8,
+                "height": 6,
+                "rowBytes": 24,
+                "byteLength": 144,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      },
+      "notes": "BT.2020 constant luminance matrix coefficients on arbitrary 4:2:0 planes, which include colors outside of the gamut: they are clipped."
     },
     {
       "id": "avif/lossy-420-bt2020-limited",
@@ -12873,6 +13377,114 @@
         "maxMeanAbsoluteError": 0.01,
         "justification": "Exact-rational reference; the library rounds its matrix coefficients to 16 fractional bits (measured: max 0, mean 0.0). Allowed: 1 and the measured mean + 0.01; the cross-checks would justify max 2, mean 0.5."
       }
+    },
+    {
+      "id": "avif/lossy-420-ictcp-pq",
+      "kind": "valid",
+      "format": "avif",
+      "input": {
+        "path": "avif/lossy-420-ictcp-pq.avif",
+        "sha256": "ffe947136f3082f45a4899a2418965f68a1023b671477ebce44ca64a69ee4d3b",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/AvifCorpus.Container.cs (BuildStills)",
+        "tools": [
+          "libavif 1.4.2 avifenc (aom 3.14.1)",
+          "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+          ".NET 10.0"
+        ],
+        "commands": [
+          "avifenc -j 1 -s 6 -q 70 --cicp 9/16/14 source.y4m {output}.avif"
+        ]
+      },
+      "features": [
+        "avif.bitDepth=8",
+        "avif.chromaSamplePosition=colocated",
+        "avif.colr=nclx",
+        "avif.majorBrand=avif",
+        "avif.matrix=14",
+        "avif.range=full",
+        "avif.subsampling=4:2:0"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "Planes of the items decoded identically by both decoders, converted with exact rationals (matrix, range and chroma position of the file).",
+        "decoder": "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+        "backend": "ReferenceAvif and ReferenceYuvConverter (test harness)",
+        "command": "av1Vectors.decoders[].command",
+        "crossChecks": [
+          {
+            "decoder": "libavif 1.4.2 avifdec (dav1d 1.5.3)",
+            "command": "avifdec -j 1 {input} {output}.png",
+            "result": "differs",
+            "notes": "avifdec rejects the file: Conversion to RGB failed: {output}.png"
+          }
+        ]
+      },
+      "expected": {
+        "width": 8,
+        "height": 6,
+        "pixelFormat": "Rgb24",
+        "colorModel": "YCbCr",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "cicp": {
+          "colorPrimaries": 9,
+          "transferCharacteristics": 16,
+          "matrixCoefficients": 14,
+          "fullRange": true
+        },
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "avif/lossy-420-ictcp-pq.frame-0.rgba8.raw",
+                "sha256": "cf7ba587dcef967683b66daaf7315c507299e1f2da6277df47aff6b0c2a1ecbd",
+                "layout": "rgba8",
+                "width": 8,
+                "height": 6,
+                "rowBytes": 32,
+                "byteLength": 192,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "avif/lossy-420-ictcp-pq.frame-0.rgb8.raw",
+                "sha256": "221c74f08304f714476b85658bbde1dcc7d3ca2f1dd08d154491b0f97f5b9efb",
+                "layout": "rgb8",
+                "width": 8,
+                "height": 6,
+                "rowBytes": 24,
+                "byteLength": 144,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      },
+      "notes": "ICtCp with the PQ transfer characteristics on arbitrary 4:2:0 planes, which include colors outside of the gamut: they are clipped."
     },
     {
       "id": "avif/lossy-420-pasp-clli",
@@ -21469,6 +22081,149 @@
         "mode": "exact"
       },
       "notes": "Written by avifenc --icc: the profile is in the sample entry of the track."
+    },
+    {
+      "id": "avif/sequence-ictcp-hlg",
+      "kind": "valid",
+      "format": "avif",
+      "input": {
+        "path": "avif/sequence-ictcp-hlg.avif",
+        "sha256": "7d06e10a236ca01e8f45300e990618e45cc4c6f9a5ca9557025e681040936b27",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/AvifCorpus.Container.cs (BuildSequences)",
+        "tools": [
+          "libavif 1.4.2 avifenc (aom 3.14.1) (payloads)",
+          "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "payloadsOf": "avif/sequence-10bit-once"
+        }
+      },
+      "features": [
+        "avif.bitDepth=10",
+        "avif.colr=nclx",
+        "avif.majorBrand=avis",
+        "avif.matrix=14",
+        "avif.range=limited",
+        "avif.seq.chunkOffsets=stco",
+        "avif.seq.editList=once",
+        "avif.seq.interFrames",
+        "avif.seq.sampleSizes=stsz",
+        "avif.sequence",
+        "avif.subsampling=4:2:0"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "Planes of the samples decoded identically by both decoders, converted with exact rationals (matrix, range and chroma position of the file).",
+        "decoder": "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+        "backend": "ReferenceAvif and ReferenceYuvConverter (test harness)",
+        "command": "av1Vectors.decoders[].command",
+        "crossChecks": [
+          {
+            "decoder": "libavif 1.4.2 avifdec (dav1d 1.5.3)",
+            "command": "avifdec -j 1 -d 16 --index all {input} {output}.png",
+            "result": "differs",
+            "notes": "avifdec rejects the file: Conversion to RGB failed: /var/folders/l_/m8fk0x1s07ngvkcrk8mhhpqh0000gn/T/mfi-corpus-scratch-faTTdA/206-sequence-ictcp-hlg/avifdec-0000000000.png"
+          },
+          {
+            "decoder": "libavif 1.4.2 avifdec (dav1d 1.5.3), on avif/sequence-10bit-once",
+            "command": "avifdec -j 1 -d 16 --index all {input} {output}.png",
+            "maxAbsoluteError": 1,
+            "meanAbsoluteError": 0.091,
+            "result": "differs",
+            "notes": "The same payloads in the layout avifdec reads; the references are the same files."
+          }
+        ]
+      },
+      "expected": {
+        "width": 8,
+        "height": 8,
+        "pixelFormat": "Rgba64",
+        "colorModel": "YCbCr",
+        "bitsPerComponent": 10,
+        "orientation": 1,
+        "iccProfile": "none",
+        "cicp": {
+          "colorPrimaries": 9,
+          "transferCharacteristics": 18,
+          "matrixCoefficients": 14,
+          "fullRange": false
+        },
+        "animation": {
+          "totalPlays": 1,
+          "editList": {
+            "repeating": false,
+            "segmentDuration": 2002,
+            "trackDuration": 2002
+          }
+        },
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 2,
+        "frames": [
+          {
+            "duration": "1001/30000",
+            "encodedDelay": {
+              "sampleDelta": 1001,
+              "timescale": 30000
+            },
+            "buffers": [
+              {
+                "path": "avif/sequence-ictcp-hlg.frame-0.rgba16le.raw",
+                "sha256": "552933bfc536c8256036ad1de459ca02b479319d7a8bc150906de758f72f1eb0",
+                "layout": "rgba16le",
+                "width": 8,
+                "height": 8,
+                "rowBytes": 64,
+                "byteLength": 512,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          },
+          {
+            "duration": "1001/30000",
+            "encodedDelay": {
+              "sampleDelta": 1001,
+              "timescale": 30000
+            },
+            "buffers": [
+              {
+                "path": "avif/sequence-ictcp-hlg.frame-1.rgba16le.raw",
+                "sha256": "c2474085026bb3c7a499b5193882358088cf7c2a6af344aa7fd32add82d05dd8",
+                "layout": "rgba16le",
+                "width": 8,
+                "height": 8,
+                "rowBytes": 64,
+                "byteLength": 512,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "tolerance",
+        "maxAbsoluteError": 1,
+        "maxMeanAbsoluteError": 0.01,
+        "justification": "Exact-rational reference; the library rounds its matrix coefficients to 16 fractional bits (measured: max 0, mean 0.0). Allowed: 1 and the measured mean + 0.01; the cross-checks would justify max 2, mean 0.5."
+      },
+      "notes": "The colr box of the sample entry declares the ICtCp matrix coefficients with the HLG transfer characteristics, in limited range: the planes of a sequence of other colors, most of which are outside of the gamut and are clipped."
     },
     {
       "id": "avif/sequence-layered",
@@ -30290,12 +31045,12 @@
       "notes": "An a1op property selects operating point 2 of avif/layered-3-quality-rgb, which holds the first layer only, and an lsel property layer 1: the operating point does not have the layer, although the bitstream does."
     },
     {
-      "id": "invalid/avif/matrix-ictcp",
+      "id": "invalid/avif/matrix-chromaticity-unspecified-primaries",
       "kind": "unsupported",
       "format": "avif",
       "input": {
-        "path": "invalid/avif/matrix-ictcp.avif",
-        "sha256": "fecd9d1357c6e605b06256228a2c49be421e892beff8c5f67c36d5cd8f28ae29",
+        "path": "invalid/avif/matrix-chromaticity-unspecified-primaries.avif",
+        "sha256": "9fe6ea1ac338eda05615cb350a1b252c06936c01068edd1059ce2b80f29f8648",
         "role": "encoded"
       },
       "provenance": {
@@ -30315,7 +31070,63 @@
       "features": [
         "avif.unsupported=matrix"
       ],
-      "notes": "The colr box declares the ICtCp matrix coefficients (14)."
+      "notes": "The colr box declares the chromaticity-derived constant luminance matrix coefficients (13) and unspecified color primaries: there are no chromaticities to derive them from."
+    },
+    {
+      "id": "invalid/avif/matrix-ictcp-sdr-transfer",
+      "kind": "unsupported",
+      "format": "avif",
+      "input": {
+        "path": "invalid/avif/matrix-ictcp-sdr-transfer.avif",
+        "sha256": "ccbf96f9a18bc8c50c410392d41ac826856db59b51a217b98e81bdc2aca88973",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/AvifCorpus.Container.cs (BuildUnsupported)",
+        "tools": [
+          "libavif 1.4.2 avifenc (aom 3.14.1) (payloads)",
+          ".NET 10.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "UnsupportedImageFeatureException",
+        "format": "Avif"
+      },
+      "features": [
+        "avif.unsupported=matrix"
+      ],
+      "notes": "The colr box declares the ICtCp matrix coefficients (14) with the sRGB transfer characteristics: ICtCp is defined for PQ and for HLG only."
+    },
+    {
+      "id": "invalid/avif/matrix-reserved",
+      "kind": "unsupported",
+      "format": "avif",
+      "input": {
+        "path": "invalid/avif/matrix-reserved.avif",
+        "sha256": "98e088061d4a670fa14b73ed27871d6005b56a6fd0c702b7087304760d5b7a87",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/AvifCorpus.Container.cs (BuildUnsupported)",
+        "tools": [
+          "libavif 1.4.2 avifenc (aom 3.14.1) (payloads)",
+          ".NET 10.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "UnsupportedImageFeatureException",
+        "format": "Avif"
+      },
+      "features": [
+        "avif.unsupported=matrix"
+      ],
+      "notes": "The colr box declares the matrix coefficients 3, which are reserved."
     },
     {
       "id": "invalid/avif/missing-av1c",
@@ -30551,12 +31362,12 @@
       "notes": "The file has a movie fragment box (moof)."
     },
     {
-      "id": "invalid/avif/sequence-matrix-ictcp",
+      "id": "invalid/avif/sequence-matrix-constant-luminance-unspecified-transfer",
       "kind": "unsupported",
       "format": "avif",
       "input": {
-        "path": "invalid/avif/sequence-matrix-ictcp.avif",
-        "sha256": "4b9e1e638c2d5572905d7fabeb8a282afdb7ef9ecc6ad3f9262c015aaae9af3b",
+        "path": "invalid/avif/sequence-matrix-constant-luminance-unspecified-transfer.avif",
+        "sha256": "0a70ef40cc1717614330044430a46a162efddab0b540971bf7cef2f439a2ed1f",
         "role": "encoded"
       },
       "provenance": {
@@ -30576,7 +31387,7 @@
       "features": [
         "avif.unsupported=matrix"
       ],
-      "notes": "The colr box of the sample entry of the track declares the ICtCp matrix coefficients (14)."
+      "notes": "The colr box of the sample entry of the track declares the BT.2020 constant luminance matrix coefficients (10) and unspecified transfer characteristics: the luminance has no function to go through."
     },
     {
       "id": "invalid/avif/sequence-missing-chunk-offsets",

@@ -10,7 +10,6 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// exactly. The unspecified code point (2) and the reserved ones have no chromaticities: the caller decides what an
 /// undescribed image is.
 /// </remarks>
-[SuppressMessage("Design", "MA0182:Unused internal type", Justification = "Shared color infrastructure; consumed by the color conversions and the codecs and covered by unit tests.")]
 internal static class CicpPrimaries
 {
     /// <summary>The primaries of Rec. ITU-R BT.709 and of sRGB.</summary>

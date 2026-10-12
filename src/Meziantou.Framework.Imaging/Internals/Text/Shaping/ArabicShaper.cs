@@ -22,7 +22,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// also keeps them from forming a ligature: the features of the model do not look through it.
 /// </para>
 /// </remarks>
-internal static class ArabicShaper
+internal static partial class ArabicShaper
 {
     /// <summary>The value of <see cref="GlyphInfo.ShaperData"/> of the parts of a stretching glyph that are drawn once.</summary>
     public const byte StretchFixed = 0x20;
@@ -170,6 +170,142 @@ internal static class ArabicShaper
         {
             info[previous].Mask |= 1u << bits[previousForm];
         }
+    }
+
+    /// <summary>
+    /// Gives the letters of a font that has no substitution for Arabic the glyphs of their presentation forms: the
+    /// characters of the Arabic Presentation Forms blocks, which a font made before OpenType Layout has instead.
+    /// </summary>
+    /// <param name="buffer">The glyphs of the run, in the order of the text, each with the bit of the feature of its form.</param>
+    /// <param name="face">The font.</param>
+    /// <param name="firstBit">The bit of the first form in the masks of the glyphs.</param>
+    /// <remarks>
+    /// <para>
+    /// The Unicode Standard has a character for each form of each letter ("Arabic Presentation Forms-A" and
+    /// "Arabic Presentation Forms-B"), whose compatibility decomposition is the letter, tagged with the form. A letter
+    /// in a form is drawn with the glyph of that character when the font has it, and with its own glyph otherwise.
+    /// </para>
+    /// <para>
+    /// A lam and the alef that follows it are drawn with their ligature, which Arabic requires: the lam is in its
+    /// initial form (the ligature is then isolated) or in its medial form (the ligature is final), and the marks
+    /// between the two letters follow the ligature. A zero width joiner between them does not keep them apart, as it
+    /// does with the ligatures of a font: the reference shaper makes the ligature across it.
+    /// </para>
+    /// </remarks>
+    public static void ApplyPresentationForms(GlyphBuffer buffer, FontFace face, int firstBit)
+    {
+        for (var i = 0; i < buffer.Length; i++)
+        {
+            var info = buffer.Info;
+            var form = GetPresentationForm(info[i].Mask, firstBit);
+            if (form < 0 || info[i].CodePoint > 0xFFFF)
+                continue;
+
+            // The ligature of a letter that joins the next one, with that letter.
+            if (form is PresentationInitial or PresentationMedial)
+            {
+                // The marks between the two letters are passed over, and so is a zero width joiner: the letters it
+                // joins are still a lam and an alef that join.
+                var next = i + 1;
+                while (next < info.Length && (info[next].CodePoint == 0x200D || UnicodeProperties.GetJoiningType(info[next].CodePoint) == UnicodeJoiningType.Transparent))
+                {
+                    next++;
+                }
+
+                if (next < info.Length && info[next].CodePoint <= 0xFFFF
+                    && TryFindLigature(info[i].CodePoint, info[next].CodePoint, form == PresentationInitial ? PresentationIsolated : PresentationFinal, out var ligature)
+                    && face.MapCodePoint(ligature) is not 0 and var ligatureGlyph)
+                {
+                    // The marks between the two letters follow the first component of the ligature.
+                    var id = buffer.AllocateLigatureId();
+                    for (var mark = i + 1; mark < next; mark++)
+                    {
+                        info[mark].LigatureId = id;
+                        info[mark].LigatureComponent = 1;
+                    }
+
+                    info[i].Glyph = ligatureGlyph;
+                    info[i].Props = (byte)((info[i].Props & ~GlyphInfo.ClassMask) | GlyphInfo.LigatureGlyph | GlyphInfo.Ligated | GlyphInfo.LigatureWithComponents);
+                    info[i].LigatureId = id;
+                    info[i].LigatureComponent = 2;
+                    buffer.MergeClusters(i, next + 1);
+                    buffer.Delete(next);
+                    continue;
+                }
+            }
+
+            if (TryFindForm(info[i].CodePoint, form, out var character) && face.MapCodePoint(character) is not 0 and var glyph)
+            {
+                info[i].Glyph = glyph;
+            }
+        }
+    }
+
+    private const int PresentationIsolated = 0;
+    private const int PresentationFinal = 1;
+    private const int PresentationInitial = 2;
+    private const int PresentationMedial = 3;
+
+    /// <summary>Gets the form of a letter, as the table of the presentation forms numbers it, from the bit of its feature; -1 for a character without form.</summary>
+    private static int GetPresentationForm(uint mask, int firstBit)
+    {
+        if ((mask & (1u << (firstBit + Isolated))) != 0)
+            return PresentationIsolated;
+
+        if ((mask & (1u << (firstBit + Final))) != 0)
+            return PresentationFinal;
+
+        if ((mask & (1u << (firstBit + Initial))) != 0)
+            return PresentationInitial;
+
+        return (mask & (1u << (firstBit + Medial))) != 0 ? PresentationMedial : -1;
+    }
+
+    private static bool TryFindForm(int letter, int form, out int character)
+    {
+        var table = PresentationForms;
+        var key = (letter << 8) | form;
+        var low = 0;
+        var high = PresentationFormCount - 1;
+        while (low <= high)
+        {
+            var middle = (low + high) >>> 1;
+            var record = table.Slice(middle * 5, 5);
+            var value = (record[0] << 16) | (record[1] << 8) | record[2];
+            if (value == key)
+            {
+                character = (record[3] << 8) | record[4];
+                return true;
+            }
+
+            if (value < key)
+            {
+                low = middle + 1;
+            }
+            else
+            {
+                high = middle - 1;
+            }
+        }
+
+        character = 0;
+        return false;
+    }
+
+    private static bool TryFindLigature(int first, int second, int form, out int character)
+    {
+        var table = PresentationLigatures;
+        for (var i = 0; i < table.Length; i += 7)
+        {
+            if (((table[i] << 8) | table[i + 1]) == first && ((table[i + 2] << 8) | table[i + 3]) == second && table[i + 4] == form)
+            {
+                character = (table[i + 5] << 8) | table[i + 6];
+                return true;
+            }
+        }
+
+        character = 0;
+        return false;
     }
 
     private static bool JoinsNext(UnicodeJoiningType type) => type is UnicodeJoiningType.DualJoining or UnicodeJoiningType.LeftJoining or UnicodeJoiningType.JoinCausing;

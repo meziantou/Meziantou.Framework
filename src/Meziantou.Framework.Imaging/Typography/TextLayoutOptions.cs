@@ -83,6 +83,18 @@ public sealed class TextLayoutOptions
         }
     }
 
+    /// <summary>
+    /// Gets the words of the languages that are written without spaces between words (Thai, Lao, Khmer, Burmese), or
+    /// <see langword="null"/> (the default).
+    /// </summary>
+    /// <remarks>
+    /// The Unicode line breaking algorithm leaves the text of these scripts to a dictionary: without one, a line of
+    /// such text is only broken at a space, or anywhere when <see cref="OverflowWrap"/> allows it. With one, a line can
+    /// also end before each word the dictionary finds, as <see cref="LineBreakDictionary"/> specifies. A dictionary
+    /// can hold the words of several languages. No word list is provided with the library.
+    /// </remarks>
+    public LineBreakDictionary? LineBreakDictionary { get; init; }
+
     /// <summary>Gets what happens to a word that is wider than <see cref="MaxWidth"/>. <see cref="TextOverflowWrap.Normal"/> by default.</summary>
     public TextOverflowWrap OverflowWrap
     {

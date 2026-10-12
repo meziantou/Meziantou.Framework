@@ -779,8 +779,9 @@ public static string DescribeFont(string path)
 | --- | --- |
 | Containers | TrueType and OpenType files (`.ttf`, `.otf`), font collections (`.ttc`, `.otc`), WOFF 1.0 and WOFF 2.0 (with the transformed glyph, location and horizontal metrics tables, and collections); detected from the content, never from the extension |
 | Outlines | TrueType (`glyf`: simple and composite glyphs, scaled, rotated and placed by matching points), CFF version 1 (`CFF `: Type 2 charstrings, subroutines, CID-keyed fonts) and CFF version 2 (`CFF2`) |
-| Variable fonts | The axes and the named instances (`fvar`), the mapping of the axes (`avar` version 1), and what an instance varies: TrueType outlines (`gvar`), CFF2 outlines (the `blend` operator), advances (`HVAR`, or the phantom points of the glyphs), metrics (`MVAR`), the positions and anchors of `GPOS` (the variation store of `GDEF`) and the features a font replaces in a part of its variation space (feature variations, `rvrn`) |
-| Color glyphs | The layers of version 0 of the `COLR` table and the paints of its version 1 (solid colors, linear, radial and sweep gradients, transformations, clips, clip boxes, the 28 composition modes, and their variations in a variable font), with the palettes of the `CPAL` table; glyphs that are PNG images, in the `sbix` table and in the `CBLC` and `CBDT` tables (index subtables of formats 1 to 5, images of formats 17, 18 and 19) |
+| Variable fonts | The axes and the named instances (`fvar`), the mapping of the axes (`avar` versions 1 and 2), and what an instance varies: TrueType outlines (`gvar`), CFF2 outlines (the `blend` operator), advances (`HVAR`, or the phantom points of the glyphs), metrics (`MVAR`), the positions and anchors of `GPOS` (the variation store of `GDEF`) and the features a font replaces in a part of its variation space (feature variations, `rvrn`) |
+| Color glyphs | The layers of version 0 of the `COLR` table and the paints of its version 1 (solid colors, linear, radial and sweep gradients, transformations, clips, clip boxes, the 28 composition modes, and their variations in a variable font), with the palettes of the `CPAL` table; glyphs that are images, in the `sbix` table (PNG, JPEG and TIFF) and in the `CBLC` and `CBDT` tables (PNG; index subtables of formats 1 to 5, images of formats 17, 18 and 19) |
+| Bitmaps without colors | On request (`FontLoadOptions.UseEmbeddedBitmaps`): the strikes of one bit per pixel of the `EBLC` and `EBDT` tables (index subtables of formats 1 to 5, images of formats 1, 2, 5, 6 and 7), drawn at the size they are made for |
 | Character maps | Unicode subtables of formats 0, 4, 6, 12 and 13, variation sequences (format 14), and the Macintosh Roman subtable for ASCII when a font has no Unicode one |
 | Names | The typographic family and subfamily when the font has them, the legacy ones otherwise; Windows and Unicode platform names, then Macintosh Roman |
 | Metrics | In font units (`Font.Metrics`) or scaled to a size in pixels (`Font.GetMetrics`): ascent, descent, line gap, cap height, x-height, underline and strikethrough. The ascent, descent and line gap come from the table the font designates (`hhea`, or the typographic values of `OS/2` when the font sets `USE_TYPO_METRICS` or has an empty `hhea`) |
@@ -837,8 +838,9 @@ public static void DrawWeights(string variableFontPath, string outputPath)
   - A color glyph is drawn after the glyphs that are not, in the order of the text. `StrokeText` and
     `TextLayout.ToPath` use the outline the font gives to the glyph itself, which can be empty.
   - A glyph the font gives as an image (`sbix`, `CBDT`) is taken from the smallest strike that is at least as large
-    as the size of the text, or from the largest one. Its image is decoded when the layout is created, with the PNG
-    decoder and the limits of the library, and scaled down to the size of the text with the default filter of
+    as the size of the text, or from the largest one. Its image is decoded when the layout is created, with the
+    decoder of its format (PNG, or in an `sbix` table JPEG or TIFF) and the limits of the library; data that is not
+    in the format the font gives for it is an error. The image is scaled down to the size of the text with the default filter of
     `Resize`; an image smaller than the text is enlarged when it is drawn, by bilinear interpolation. At the size of
     its strike, at a whole position, the pixels of the image are the pixels drawn. A glyph that has both paints and
     an image is drawn with its paints; a glyph without image in the strike is drawn with its outline.
@@ -865,9 +867,22 @@ public static void DrawWeights(string variableFontPath, string outputPath)
 - **Errors** are the exceptions of the library with `ImageFormat.Unknown`: `UnknownImageFormatException` when the data
   is not a font, `InvalidImageContentException` for a malformed font, `UnsupportedImageFeatureException` for the
   features below, `ImageResourceLimitException` for a limit.
-- **Not supported**: version 2 of the `avar` table (its version 1 part is applied), the variation of the vertical
-  metrics and of the hinting values (`VVAR`, `cvar`), glyphs in SVG (`SVG `: their outlines are drawn), the images of an `sbix` table that are not PNG files (JPEG, TIFF)
-  and the bitmaps without colors of the `EBDT` table (their outlines are drawn too), PostScript Type 1 fonts, Type 1
+- **Axes that depend on each other.** Version 2 of the `avar` table adds to the value of an axis a delta that depends
+  on the values of all the axes: a font can keep its bold condensed style at the weight a designer chose for it, or
+  drive several axes from one. The deltas are applied after the mapping of each axis (version 1), all from the same
+  values, and the result stays in the range of the axis. `Font.Variations` still gives the values that were asked for.
+- **Bitmaps without colors.** Some fonts, mostly fonts of Chinese, Japanese and Korean made for screens of low
+  resolution, have for a few sizes a drawing of each glyph made pixel by pixel (the `EBLC` and `EBDT` tables). They
+  are not used by default: a glyph is drawn from its outline at every size. A font loaded with
+  `FontLoadOptions.UseEmbeddedBitmaps` uses them for a text whose size, in pixels per em, is exactly the size of a
+  strike of one bit per pixel. Each pixel of a bitmap is then a square of the outline of the glyph: the text is
+  filled, stroked, measured and placed on a path like any other, with any brush, and a glyph drawn at a whole
+  position has exactly the pixels of its bitmap. At another size, and for a glyph the strike does not have, the
+  outline is drawn. The advances stay those of the outlines. Strikes of several bits per pixel, and glyphs made of
+  other glyphs (image formats 8 and 9), are not used.
+- **Not supported**: the variation of the vertical
+  metrics and of the hinting values (`VVAR`, `cvar`), glyphs in SVG (`SVG `: their outlines are drawn), fonts
+  without outlines (bitmap-only fonts), PostScript Type 1 fonts, Type 1
   charstrings and the deprecated `seac` form of `endchar` in a CFF table, the font matrix of a CFF table (the units of
   the `head` table are used), and hinting: instructions and hints are skipped. A WOFF or WOFF2 file is expanded in
   memory; its metadata and private blocks are not read. Table checksums are not verified.
@@ -966,7 +981,8 @@ public static void DrawTextOnPath(string fontPath, string outputPath)
 | Scripts that join | Arabic (with Persian, Urdu and the other languages written with it) and Syriac; in the universal model, N'Ko, Mongolian, Adlam, Mandaic, Manichaean, Psalter Pahlavi, Hanifi Rohingya, Sogdian, Old Uyghur, Chorasmian and Phags-pa |
 | Scripts with a model of their own | Hebrew; Thai and Lao; Hangul; Devanagari, Bengali, Gurmukhi, Gujarati, Oriya, Tamil, Telugu, Kannada and Malayalam; Khmer; Myanmar |
 | Scripts of the universal model | The scripts registered for the Universal Shaping Engine: Tibetan, Sinhala, Javanese, Balinese, Sundanese, Batak, Buginese, Cham, Tai Tham, Tai Le, Tai Viet, Lepcha, Limbu, Meetei Mayek, Newa, Kaithi, Sharada, Grantha, Chakma, Brahmi, Kharoshthi, Tifinagh, Duployan, Egyptian Hieroglyphs and the others |
-| Drawing | Filled and stroked text, at a point or along a path; color glyphs and bitmap glyphs; rich text with decorations (underline, strikethrough, overline), letter and word spacing. Bold and italic are fonts: the bold or italic file of a family, or an instance of a variable font; no bold or oblique is synthesized from a regular font |
+| Drawing | Filled and stroked text, at a point or along a path; color glyphs and bitmap glyphs; rich text with decorations (underline, strikethrough, overline), letter and word spacing. Bold and italic are fonts: the bold or italic file of a family, or an instance of a variable font; when there is none, `TextStyle.Synthesis` thickens or slants the glyphs of any font |
+| Fonts made before OpenType Layout | The marks of a font without positioning table are placed from the shapes of the glyphs; the letters of an Arabic font without substitution table take the presentation forms the font has as characters, with the ligatures of lam and alef; the marks of a Thai font without substitution table take the forms the font has in the private use area |
 
 The glyphs, the clusters and the positions are compared with those of a reference shaper (HarfBuzz) for fonts of
 every script that has a model here, and of some eighty scripts of the universal model: the texts of the test corpus,
@@ -982,6 +998,13 @@ of their characters and were not compared with a font.
   between two characters. The white space that ends a wrapped line hangs: it does not count in the width of the line.
   A line is as tall as its fonts ask (the largest ascent and descent, each with half of the line gap), or as
   `LineHeight` says.
+- **Scripts without spaces.** Thai, Lao, Khmer and Burmese are written without spaces between words, and the Unicode
+  algorithm leaves their lines to a dictionary: without one, such text is only broken at a space, or anywhere with
+  `OverflowWrap`. `TextLayoutOptions.LineBreakDictionary` is a `LineBreakDictionary` of
+  `Meziantou.Framework.Unicode`, loaded from a list of words: a line can then also end before each word the
+  dictionary finds (the text is cut into the fewest words, the characters of no word staying with the word before
+  them), never inside a grapheme cluster. One dictionary can hold the words of several languages. No word list is
+  provided with the library; the ICU project publishes some.
 - **Hyphenation.** A word is broken at a soft hyphen (U+00AD), and the line then ends with a hyphen. With
   `Hyphenation = Automatic`, a word is also broken where the patterns of its style allow it: `TextStyle.Hyphenator` is
   a `Hyphenator` of `Meziantou.Framework.Unicode`, loaded from TeX hyphenation patterns. No pattern is provided with
@@ -999,8 +1022,48 @@ of their characters and were not compared with a font.
 - **Styles.** A `TextStyle` has a `FontStack` (a font, then the fonts used for the characters the ones before lack; a
   `Font` converts to a stack of one font; an instance of a variable font is a font) and a size, and optionally a brush, OpenType features to turn on or off
   (`new FontFeature("liga", 0)`, `new FontFeature("smcp")`), letter and word spacing, decorations (underline,
-  strikethrough, overline, drawn with the metrics of the font) and hyphenation patterns. Spans that only differ by
-  what is painted are shaped together: letters of two colors still kern and join.
+  strikethrough, overline, drawn with the metrics of the font), a language, a synthesis and hyphenation patterns.
+  Spans that only differ by what is painted are shaped together: letters of two colors still kern and join.
+- **Fonts of a character.** A character and the marks and selectors that follow it are drawn with the first font of
+  the stack that has all of them. An emoji is first looked for in the fonts of its presentation (Unicode Technical
+  Standard #51): the fonts that have color glyphs for a character that is an emoji by default (U+1F600), that is
+  followed by the emoji presentation selector (U+FE0F), or that starts an emoji sequence (a skin tone, characters
+  joined by a zero width joiner); the fonts without color glyphs for a character followed by the text presentation
+  selector (U+FE0E). A character that is text by default and has no selector, such as a digit or the copyright
+  sign, is looked for in the order of the stack like any character. The presentation is a preference: when no font
+  of that kind has the character, the stack is searched in its order, and a color font is not drawn without its
+  colors.
+- **Synthetic bold and oblique.** `TextStyle.Synthesis` makes a replacement for a bold or an italic font the caller
+  does not have, by geometry alone. `Oblique` slants every outline to the right around the baseline, by a quarter
+  of the height (about 14 degrees); marks follow their letter, advances do not change and decorations stay straight.
+  `Bold` thickens the glyphs of a filled text: each glyph is filled together with a stroke of its outline, 1/24 of
+  the size wide, whose corners stay sharp unless they are sharper than 60 degrees, so every edge moves out by 1/48
+  of the size; each glyph that takes room takes 1/24 of the size more and is drawn in the middle of it. The bold is a
+  way to fill: `StrokeText` and `TextLayout.ToPath` use the outlines of the font, slanted but not thickened, and
+  `InkBounds` contains the thickened glyphs. Glyphs a font draws with its own colors are drawn as they are. A bold
+  or italic font, or an instance of a variable font, is always a better choice when there is one.
+- **Language.** `TextStyle.Language` is the language of the text, as a BCP 47 language tag (`"sr"`, `"tr"`,
+  `"zh-Hant"`). A font can draw the same characters differently for different languages (the Cyrillic letters of
+  Serbian and Bulgarian, the ideographs of Chinese, Japanese and Korean, the ligatures around the dotless i of
+  Turkish), with a language system of its OpenType Layout tables for each one. The language selects that language
+  system: the first one the font has among the tags the registry of OpenType gives for the language, or else the
+  default language system of the font, as without a language.
+  - A tag of the registry is for one or several ISO 639 codes, and a code can have several tags: the tag of fewer
+    languages is tried first (`ga` is Irish, then Irish Traditional). A language of a macrolanguage also has the
+    tags of the macrolanguage (`arb`, Standard Arabic, is drawn as `ar`), and a deprecated subtag those of the subtag
+    that replaces it (`iw` is `he`).
+  - The script, the region and the variants of the tag count where the registry has a tag for a written form:
+    Chinese (`zh` and `zh-Hans` are simplified, `zh-Hant` and `zh-TW` traditional, `zh-HK` and `zh-MO` the forms of
+    Hong Kong and Macao, then traditional; `yue` is `zh-HK` and `lzh` is traditional unless the tag says otherwise;
+    `zh-Bopo` and `zh-Latn` are phonetic), polytonic Greek (`el-polyton`), the forms of Syriac (`syr-Syre`,
+    `syr-Syrj`, `syr-Syrn`), Khutsuri Georgian (`ka-Geok`), phonetic transcriptions (the variants `fonipa`,
+    `fonnapa` and `fonupa`), and the Romanian of Moldova (`ro-MD`).
+  - The tag is not checked against the registry of language subtags: a language the registry of OpenType has no tag
+    for changes nothing. That is the case of a macrolanguage without tag of its own (`sh`; `no` is taken as Bokmål
+    and `qu` as the Quechua of Cusco), of the tags kept from older standards (`i-klingon`) and of private use
+    subtags.
+  - The language only selects the language system: it does not choose fonts, and does not change where lines
+    break.
 - **Shaping.** Each run of one script, direction and font is shaped with the OpenType Layout tables of the font:
   - the characters are put in the form the font has glyphs for: a character the font lacks is decomposed into parts
     it has, and a character and its marks use the composed glyph when the font has it, so `é` typed as one character
@@ -1013,6 +1076,16 @@ of their characters and were not compared with a font.
     `clig`, `liga`, `rclt`, the direction features (`ltra`, `ltrm`, `rtla`, `rtlm`), `mark`, `mkmk`, `abvm`, `blwm`,
     `curs`, `dist`, `kern`, and `frac`, `numr`, `dnom` around a fraction slash (`1⁄2`);
   - a font without `GPOS` kerning is kerned by its `kern` table; a mark does not move the pen;
+  - a variation sequence the font has (a character and a variation selector, with a glyph of its own or with the
+    glyph of the character) is one character: its selector leaves no glyph;
+  - the marks of a font that has no positioning table at all are placed from the shapes of the glyphs, as no
+    specification describes and as the reference shaper does: a mark goes where its Unicode combining class says
+    (above, below, attached, on a side; for the Hebrew, Arabic, Syriac, Lao and Tibetan classes, where the mark
+    goes in its script), centered in the advance of its letter or aligned with an end of it, a sixteenth of the em
+    from its ink; the marks of one class stack, and the marks on a ligature are placed on the part of the component
+    they follow. A mark below that the font draws lower stays there, and a mark above that the font draws higher
+    is brought down by half of the distance. The fonts of the scripts that have a model of their own are not
+    concerned, nor those of Thai and Lao;
   - spaces of a fixed width and the non-breaking hyphen that a font lacks are made from its space and its hyphen;
   - the scripts whose letters join, **Arabic** (with Persian, Urdu and the other languages written with it) and
     **Syriac**, are shaped as their fonts are made for: each letter takes the isolated, initial, medial or final form
@@ -1021,12 +1094,20 @@ of their characters and were not compared with a font.
     width non-joiner separates, and the features are applied in the stages of the Arabic and Syriac specifications
     (composition, forms, required ligatures such as lam-alef, alternates, then the other ligatures). A zero width
     joiner between two letters keeps them from forming a ligature. The hanging style (nastaliq) is drawn with the
-    cursive attachments of its fonts. The Syriac abbreviation mark stretches over the word that follows it (`stch`);
+    cursive attachments of its fonts. The Syriac abbreviation mark stretches over the word that follows it (`stch`).
+    An Arabic font without substitution for the script, as fonts were made before OpenType Layout, has the forms
+    of its letters as characters (the Arabic Presentation Forms blocks): each letter is drawn with the character
+    of its form when the font has it, and a lam with the alef that follows it with their ligature;
   - **Hebrew** points and cantillation marks are placed by the font; a font that has no feature to place them (or a
     caller that turns `mark` off) gets the precomposed letters of the Alphabetic Presentation Forms block instead;
   - **Thai** and **Lao**: the sara am is drawn as its two parts, a ring above the consonant and a vowel after it, and
     the ring goes under the tone mark or the vowel that is already above the consonant; the marks below a consonant
-    are in the order they are stacked in;
+    are in the order they are stacked in. A Thai font without substitution for the script, as fonts were made before
+    OpenType Layout, has other forms of its marks as characters of the private use area (at the code points of the
+    fonts of Windows or of Mac OS): a tone mark without vowel above is drawn with its lower form, a mark above a
+    consonant with an ascender (po pla, fo fa, fo fan) with its form on the left, a vowel below do chada or to patak
+    with its lower form, and yo ying and tho than lose their descender before a vowel below, when the font has
+    these characters;
   - **Hangul**: letters (jamo) that make a syllable the font has are drawn with the glyph of the syllable, and a
     syllable followed by a trailing consonant with the glyph of both; the other blocks (Old Hangul, or a font without
     the syllable) are drawn with their letters, shaped by position (`ljmo`, `vjmo`, `tjmo`). A tone mark of Middle
@@ -1109,11 +1190,9 @@ of their characters and were not compared with a font.
 - **Limits.** `MaxTextLength` (UTF-16 code units), `MaxTextGlyphs`, `MaxTextLines` and `MaxGlyphComplexity`, from the
   configuration the primary font of the first span was loaded with.
 
-What text layout does not do yet: Thai, Lao, Khmer and Myanmar have no dictionary to break their lines. A Thai font made before OpenType Layout, with its marks in the private use area, is
-drawn without them. A font that only has the Arabic presentation forms, without substitution table, is not joined; the marks of
-a font without positioning table are drawn where its glyphs put them. Letter spacing is added between the letters of
-every script, including those that join. Justification does not lengthen Arabic words (kashida). The language of a
-text cannot be given. Lines are broken one after the other, each as full as
+What text layout does not do yet: letter spacing is added between the letters of
+every script, including those that join. Justification does not lengthen Arabic words (kashida). The advances of a
+bitmap strike are not used. Lines are broken one after the other, each as full as
 possible, not by optimizing the whole paragraph. Text is horizontal. Along a path, the glyphs are placed and turned,
 not bent to the curve, and the length of a path is not exposed.
 
@@ -2095,6 +2174,6 @@ Everything below is rejected explicitly (never decoded or encoded approximately)
 | AVIF encoding | An image of a sequence is predicted from the previous image only, with one motion vector per block and the regular interpolation filter: no compound prediction (two references), global, warped or overlapped motion, switchable interpolation filter, temporal motion vector prediction, or scene change detection (an image that differs from the previous one is coded with intra blocks, not as a key frame). Not used: intra block copy (content that repeats in an image, such as the characters of a text, is not predicted from the image itself: a lossless screenshot can be larger than its PNG), the split of the transform blocks of an inter block (it has the largest transform of its size), quantizer deltas, quantization matrices, loop restoration, CDEF strengths per block (one pair per frame), super-resolution and film grain. No grid, layered (progressive) or premultiplied-alpha output; no `clap`, `pasp`, mastering display or content light level box; no orientation for an image sequence. An image sequence of one image cannot store animation settings (it is read back as a still image): a single frame with animation settings is rejected. An image sequence needs a seekable destination and its frame count. The level of the stream is the lowest one whose picture size holds the image; the other limits of a level are not checked |
 | AVIF decoding | Rejected with `UnsupportedImageFeatureException`: premultiplied alpha, `iden`/`iovl` derived images, fragmented files, edit lists that do not play the whole track, image sequences whose images change size, clean apertures that do not select whole samples or that follow a rotation, grid tiles that declare other transformations than their grid, large scale tile streams, and the other matrix coefficients (constant luminance, ICtCp, SMPTE 2085, chromaticity-derived). Not read: gain maps, depth maps, thumbnails, the images that are not the primary item, the `tkhd` matrix and the other transformations of an image sequence (its images are returned as stored), mastering display and content light level boxes. A layered image is returned at its full quality only: its lower layers are not exposed as a progressive rendering. HDR samples are returned as stored: no tone mapping |
 | JPEG XL | Decoding, rejected with `UnsupportedImageFeatureException` (also from `Identify` when the image header tells): floating-point samples and samples of more than 16 bits, premultiplied alpha, CMYK (a black channel) and spot colors, an XYB image whose ICC profile is not sRGB (it needs a color conversion to that profile), the PQ or HLG transfer function with primaries or a white point that CICP cannot express, a Modular frame stored as YCbCr with subsampled channels, restoration filters on a grayscale Modular frame, an upsampled frame with patches or splines whose extra channels have another resolution. Ignored: the preview frame, frame names, the intrinsic size, the JPEG reconstruction data (`jbrd`: a recompressed JPEG file is decoded to pixels, the JPEG file is not rebuilt), `jumb` and unknown boxes; depth, selection mask, thermal and the other extra channels than alpha are decoded and dropped. Samples of 1 to 16 bits other than 8 and 16 are scaled exactly to 8 or 16 bits. A lossy frame is decoded in floating point: the result is within a few sixteen-bit units of the reference decoders, not bit-exact. Encoding: lossless only (no lossy output), full frames that replace the image (no layers, blending, patches or cropped frames), frame durations in whole milliseconds, no frame of an animation without duration; an EXIF orientation is written to the image header |
-| Text | Horizontal text only; no synthetic bold or oblique; no Arabic joining for a font without substitution table and no dictionary line breaking for the scripts that need one; no language-specific forms; greedy line breaking; no AAT (`morx`, `kerx`) shaping, no device adjustment of positions (hinting); no hinting and no subpixel (LCD) rendering; no system font: every font is given by the caller; along a path, glyphs are turned but not warped; see [Text](#text) |
-| Fonts | No system font, no SVG glyph, no monochrome bitmap glyph, no Type 1 font, no hinting; variable fonts without version 2 of `avar`; see [Fonts](#fonts) |
+| Text | Horizontal text only; a synthetic bold is not in the path of a layout nor in a stroked text; no word list is provided for the scripts that need a dictionary to break their lines; greedy line breaking; no AAT (`morx`, `kerx`) shaping, no device adjustment of positions (hinting); no hinting and no subpixel (LCD) rendering; no system font: every font is given by the caller; along a path, glyphs are turned but not warped; see [Text](#text) |
+| Fonts | No system font, no SVG glyph, no font without outlines, no bitmap glyph of several bits per pixel without colors, no Type 1 font, no hinting; see [Fonts](#fonts) |
 | API | No public allocator, custom pixel type, codec plug-in or image-processor interface; implementation types are internal |

@@ -40,6 +40,12 @@ internal readonly struct Affine2D
     /// </summary>
     public static Affine2D ForGlyph(double scale, double originX, double originY) => new(scale, 0, 0, -scale, originX, originY);
 
+    /// <summary>
+    /// Creates the transformation of a slanted glyph: an upright glyph whose points move right by <paramref name="shear"/>
+    /// times their height above the baseline. Without shear, it is the transformation of an upright glyph, bit for bit.
+    /// </summary>
+    public static Affine2D ForGlyph(double scale, double originX, double originY, double shear) => new(scale, 0, shear * scale, -scale, originX, originY);
+
     /// <summary>Gets the transformation that applies six numbers (xx, yx, xy, yy, dx, dy) first, then this one.</summary>
     public Affine2D Then(ReadOnlySpan<double> inner) => new(
         (A * inner[0]) + (C * inner[1]),

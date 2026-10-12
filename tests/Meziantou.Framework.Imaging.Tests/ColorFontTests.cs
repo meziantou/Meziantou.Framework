@@ -507,6 +507,159 @@ public sealed class ColorFontTests
             Draw(48, 20, canvas => canvas.FillText(Black, "D", font, 16, new PointD(0, 0))));
     }
 
+    // The image of A of the bitmap boxes font, without its blue row: 12 by 12 red pixels with a green square of 4
+    // pixels in the middle, encoded by cjpeg of libjpeg-turbo (-quality 100 -sample 1x1 -optimize). Its djpeg decodes
+    // the red as (254, 0, 0) and the green as (0, 255, 1), and one pixel of the square as (1, 255, 2).
+    private static ReadOnlySpan<byte> JpegImageOfA =>
+    [
+        0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 0x4A, 0x46, 0x49, 0x46, 0x00, 0x01, 0x01, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0xFF, 0xDB, 0x00, 0x43,
+        0x00, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
+        0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
+        0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0xFF, 0xDB, 0x00, 0x43, 0x01, 0x01, 0x01,
+        0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
+        0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
+        0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0xFF, 0xC0, 0x00, 0x11, 0x08, 0x00, 0x0C, 0x00, 0x0C, 0x03,
+        0x01, 0x11, 0x00, 0x02, 0x11, 0x01, 0x03, 0x11, 0x01, 0xFF, 0xC4, 0x00, 0x16, 0x00, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x08, 0x09, 0xFF, 0xC4, 0x00, 0x21, 0x10, 0x00, 0x00, 0x05, 0x02, 0x07, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x08, 0x14, 0x15, 0x16, 0x05, 0x13, 0x17, 0x23, 0x26, 0x43, 0x46, 0x64, 0x65, 0xFF, 0xC4, 0x00, 0x17,
+        0x01, 0x01, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x09, 0x07, 0x0A, 0xFF, 0xC4, 0x00,
+        0x2A, 0x11, 0x00, 0x00, 0x03, 0x06, 0x01, 0x0D, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x15, 0x17, 0x07, 0x09, 0x13,
+        0x14, 0x16, 0x18, 0x45, 0x04, 0x12, 0x19, 0x22, 0x24, 0x25, 0x28, 0x42, 0x47, 0x63, 0x64, 0x65, 0x67, 0xFF, 0xDA, 0x00, 0x0C, 0x03, 0x01, 0x00,
+        0x02, 0x11, 0x03, 0x11, 0x00, 0x3F, 0x00, 0xCF, 0x32, 0xF2, 0x5E, 0x71, 0xEA, 0x5F, 0xAB, 0xE2, 0x91, 0x48, 0xFF, 0x00, 0x1F, 0x7D, 0x5E, 0xFA,
+        0xF7, 0xED, 0xD1, 0xD2, 0xA5, 0x67, 0xEC, 0xDF, 0x53, 0xB3, 0x67, 0x36, 0x2A, 0xB4, 0xA6, 0x94, 0x9E, 0x12, 0xEE, 0x53, 0x83, 0x83, 0x2C, 0x48,
+        0xBE, 0x5C, 0xBE, 0x43, 0xC0, 0xCB, 0x63, 0x46, 0x9D, 0xED, 0x43, 0x85, 0xCF, 0x9F, 0xA9, 0xD1, 0x23, 0xEA, 0x1F, 0x51, 0xA1, 0xFE, 0xDA, 0xB8,
+        0x6A, 0xB8, 0x7B, 0x87, 0x59, 0x3A, 0xC8, 0x92, 0xD2, 0x09, 0x2A, 0x57, 0xF2, 0xB6, 0x9B, 0x50, 0x54, 0x0A, 0x6F, 0xA4, 0x2A, 0x24, 0xC4, 0x8C,
+        0xB6, 0x09, 0xAC, 0x6A, 0x42, 0xEA, 0x00, 0x00, 0x00, 0x0F, 0xFF, 0xD9,
+    ];
+
+    [Fact]
+    public void AnImageOfAnSbixTableIsAPngAJpegOrATiffFile()
+    {
+        // A TIFF image: the pixels of the PNG image of the font, in one uncompressed strip.
+        var builder = FontSamples.BitmapBoxes();
+        var image = builder.BitmapStrikes[0].Glyphs[0];
+        var rgba = new byte[12 * 12 * 4];
+        for (var y = 0; y < 12; y++)
+        {
+            for (var x = 0; x < 12; x++)
+            {
+                var (red, green, blue, alpha) = x is >= 4 and < 8 && y is >= 4 and < 8 ? (0, 255, 0, 255) : y == 11 ? (0, 0, 255, 128) : (255, 0, 0, 255);
+                rgba[(((y * 12) + x) * 4) + 0] = (byte)red;
+                rgba[(((y * 12) + x) * 4) + 1] = (byte)green;
+                rgba[(((y * 12) + x) * 4) + 2] = (byte)blue;
+                rgba[(((y * 12) + x) * 4) + 3] = (byte)alpha;
+            }
+        }
+
+        builder.BitmapStrikes[0].Glyphs[0] = image with { Type = "tiff", Data = WriteTiff(12, 12, rgba) };
+        var expected = Draw(20, 20, canvas => canvas.FillText(Black, "A", FontTestSupport.Load(FontSamples.BitmapBoxes()), 16, new PointD(0, 0)));
+        Assert.Equal(expected, Draw(20, 20, canvas => canvas.FillText(Black, "A", FontTestSupport.Load(builder), 16, new PointD(0, 0))));
+
+        // A JPEG image, which has no opacity: 2 pixels from the origin, on the baseline at 13.
+        builder.BitmapStrikes[0].Glyphs[0] = image with { Type = "jpg ", Data = JpegImageOfA.ToArray() };
+        var font = FontTestSupport.Load(builder);
+        Assert.True(font.HasColorGlyphs);
+        var pixels = Draw(20, 20, canvas => canvas.FillText(Black, "A", font, 16, new PointD(0, 0)));
+        for (var y = 0; y < 20; y++)
+        {
+            for (var x = 0; x < 20; x++)
+            {
+                var actual = GetPixel(pixels, 20, x, y);
+                if (x is < 2 or >= 14 || y is < 1 or >= 13)
+                {
+                    Assert.Equal(White, actual);
+                }
+                else if (x is >= 6 and < 10 && y is >= 5 and < 9)
+                {
+                    AssertColor(0.5, 255, 1.5, actual);
+                }
+                else
+                {
+                    AssertColor(254, 0, 0, actual);
+                }
+            }
+        }
+
+        // The data is the image the font says it is: a PNG image under the type of a JPEG image is an error, like a
+        // JPEG image that is cut.
+        builder.BitmapStrikes[0].Glyphs[0] = image with { Type = "jpg " };
+        var exception = Assert.Throws<InvalidImageContentException>(() => TextLayout.Create("A", FontTestSupport.Load(builder), 16));
+        Assert.Contains("format the font gives", exception.Message, StringComparison.Ordinal);
+        builder.BitmapStrikes[0].Glyphs[0] = image with { Type = "jpg ", Data = JpegImageOfA[..200].ToArray() };
+        Assert.Throws<InvalidImageContentException>(() => TextLayout.Create("A", FontTestSupport.Load(builder), 16));
+    }
+
+    /// <summary>
+    /// Writes a TIFF image of 8-bit red, green, blue and alpha samples: "TIFF Revision 6.0", a baseline RGB image in one
+    /// uncompressed strip, with one extra sample that is an opacity the colors are not multiplied by.
+    /// </summary>
+    /// <param name="width">The width, in pixels.</param>
+    /// <param name="height">The height, in pixels.</param>
+    /// <param name="rgba">The pixels, row by row from the top: four bytes each, with a color that is not multiplied by its opacity.</param>
+    private static byte[] WriteTiff(int width, int height, ReadOnlySpan<byte> rgba)
+    {
+        if (rgba.Length != width * height * 4)
+            throw new ArgumentException("The pixels are four bytes each", nameof(rgba));
+
+        // The header, the directory of eleven fields, the four values of BitsPerSample, then the pixels.
+        const int FieldCount = 11;
+        const int BitsOffset = 8 + 2 + (FieldCount * 12) + 4;
+        const int PixelsOffset = BitsOffset + 8;
+        var data = new List<byte>();
+        void UInt16(int value)
+        {
+            data.Add((byte)value);
+            data.Add((byte)(value >> 8));
+        }
+
+        void UInt32(int value)
+        {
+            UInt16(value & 0xFFFF);
+            UInt16(value >> 16);
+        }
+
+        void Field(int tag, int type, int count, int value)
+        {
+            UInt16(tag);
+            UInt16(type);
+            UInt32(count);
+            if (type == 3 && count == 1)
+            {
+                UInt16(value);
+                UInt16(0);
+            }
+            else
+            {
+                UInt32(value);
+            }
+        }
+
+        // Little-endian, version 42, the directory at 8.
+        data.AddRange("II"u8.ToArray());
+        UInt16(42);
+        UInt32(8);
+        UInt16(FieldCount);
+        Field(256, 3, 1, width);
+        Field(257, 3, 1, height);
+        Field(258, 3, 4, BitsOffset);
+        Field(259, 3, 1, 1);
+        Field(262, 3, 1, 2);
+        Field(273, 4, 1, PixelsOffset);
+        Field(277, 3, 1, 4);
+        Field(278, 3, 1, height);
+        Field(279, 4, 1, rgba.Length);
+        Field(284, 3, 1, 1);
+        Field(338, 3, 1, 2);
+        UInt32(0);
+        for (var i = 0; i < 4; i++)
+        {
+            UInt16(8);
+        }
+
+        data.AddRange(rgba);
+        return [.. data];
+    }
+
     [Fact]
     public void AnImageIsScaledToTheSizeOfTheText()
     {
@@ -564,9 +717,9 @@ public sealed class ColorFontTests
         var exception = Assert.Throws<InvalidImageContentException>(() => TextLayout.Create("A", FontTestSupport.Load(builder), 16));
         Assert.Contains("image of a glyph", exception.Message, StringComparison.Ordinal);
 
-        // An image of another type than PNG, a glyph that refers to itself, and a glyph that refers to a glyph the font
-        // does not have: the glyph is drawn with its outline.
-        foreach (var replacement in (FontBitmapGlyph[])[image with { Type = "jpg " }, image with { DuplicateOf = FontSamples.BitmapA }, image with { DuplicateOf = 200 }])
+        // An image of a type the specification does not have, a glyph that refers to itself, and a glyph that refers to
+        // a glyph the font does not have: the glyph is drawn with its outline.
+        foreach (var replacement in (FontBitmapGlyph[])[image with { Type = "pdf " }, image with { DuplicateOf = FontSamples.BitmapA }, image with { DuplicateOf = 200 }])
         {
             builder.BitmapStrikes[0].Glyphs[0] = replacement;
             AssertGlyph(FontTestSupport.Load(builder), "A", Black, 0, (Black, Outer));

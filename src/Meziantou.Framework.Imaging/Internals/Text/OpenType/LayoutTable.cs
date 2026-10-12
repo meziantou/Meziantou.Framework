@@ -121,9 +121,12 @@ internal sealed class LayoutTable
     /// <summary>Finds the language system of a script and a language.</summary>
     /// <param name="table">The table.</param>
     /// <param name="scripts">The tags of the script, by order of preference.</param>
-    /// <param name="language">The tag of the language, or 0 for the default language system of the script.</param>
+    /// <param name="languages">
+    /// The tags of the language, by order of preference; the default language system of the script is used when the
+    /// script has none of them, or when there is no tag.
+    /// </param>
     /// <returns>The position of the language system, or 0 when the table has none for the script.</returns>
-    public int FindLanguageSystem(ReadOnlySpan<byte> table, ReadOnlySpan<uint> scripts, uint language)
+    public int FindLanguageSystem(ReadOnlySpan<byte> table, ReadOnlySpan<uint> scripts, ReadOnlySpan<uint> languages)
     {
         var script = 0;
         foreach (var tag in scripts)
@@ -137,13 +140,16 @@ internal sealed class LayoutTable
             return 0;
 
         // The language systems: the default one, then a sorted list of the others.
-        if (language != 0)
+        if (!languages.IsEmpty)
         {
             var count = FontBinary.UInt16(table, script + 2);
-            for (var i = 0; i < count; i++)
+            foreach (var language in languages)
             {
-                if (FontBinary.UInt32(table, script + 4 + (i * 6)) == language)
-                    return script + FontBinary.UInt16(table, script + 8 + (i * 6));
+                for (var i = 0; i < count; i++)
+                {
+                    if (FontBinary.UInt32(table, script + 4 + (i * 6)) == language)
+                        return script + FontBinary.UInt16(table, script + 8 + (i * 6));
+                }
             }
         }
 

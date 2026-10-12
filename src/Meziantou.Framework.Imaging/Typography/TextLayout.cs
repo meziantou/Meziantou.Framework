@@ -82,6 +82,11 @@ public sealed class TextLayout
         Height = data.Height;
         IsTruncated = data.IsTruncated;
         HasMissingGlyphs = data.HasMissingGlyphs;
+        foreach (var run in _runs)
+        {
+            HasEmboldenedGlyphs |= run.EmboldenWidth > 0;
+        }
+
         InkBounds = Measure(out _colorGlyphs, out _colorIndexes);
     }
 
@@ -234,9 +239,9 @@ public sealed class TextLayout
             using var scratch = new GlyphScratch(AllocationScope.Create(face.Data.Configuration, "TextLayout"));
             for (var i = run.Start; i < run.Start + run.Count; i++)
             {
-                sink.Begin(Affine2D.ForGlyph(scale, origin.X + _positions[i * 2], origin.Y + _positions[(i * 2) + 1]));
+                sink.Begin(Affine2D.ForGlyph(scale, origin.X + _positions[i * 2], origin.Y + _positions[(i * 2) + 1], run.Shear));
                 var budget = new GlyphBudget(face.Data.Limits);
-                face.DecodeOutline(_glyphs[i], sink, scratch, ref budget);
+                face.DecodeOutline(_glyphs[i], run.Size, sink, scratch, ref budget);
             }
         }
 
@@ -247,6 +252,9 @@ public sealed class TextLayout
 
         return builder.Build();
     }
+
+    /// <summary>Gets a value indicating whether glyphs of the layout are thickened by a synthetic bold when they are filled.</summary>
+    internal bool HasEmboldenedGlyphs { get; }
 
     /// <summary>Gets a paint of the layout; <see langword="null"/> is the brush of the draw call.</summary>
     internal Brush? GetBrush(int index) => _brushes[index];
@@ -263,8 +271,14 @@ public sealed class TextLayout
     /// </param>
     /// <param name="brush">The paint whose glyphs and decorations are sent, or -1 for all of them.</param>
     /// <param name="skipColorGlyphs">Whether the glyphs the font draws with its own colors are left out: they are drawn on their own.</param>
-    internal void Emit(PathSink target, GlyphPathSink glyphSink, GlyphScratch scratch, double originX, double originY, EdgeBuilder? edges, int brush, bool skipColorGlyphs = false)
+    /// <param name="emboldener">
+    /// The stroker of the fill, which shares its edges, or <see langword="null"/> for a stroke: it adds to the glyphs
+    /// of a synthetic bold the stroke of their outline.
+    /// </param>
+    /// <returns><see langword="true"/> when the stroke of a synthetic bold covers the whole frame: the edges are then meaningless.</returns>
+    internal bool Emit(PathSink target, GlyphPathSink glyphSink, GlyphScratch scratch, double originX, double originY, EdgeBuilder? edges, int brush, bool skipColorGlyphs = false, Stroker? emboldener = null)
     {
+        var coversFrame = false;
         foreach (var run in _runs)
         {
             if (brush >= 0 && run.Brush != brush)
@@ -273,22 +287,37 @@ public sealed class TextLayout
             var face = _fonts[run.Font].Face;
             var scale = run.Size / face.UnitsPerEm;
             var limits = face.Data.Limits;
+            var isEmboldened = emboldener is not null && run.EmboldenWidth > 0;
+            if (isEmboldened)
+            {
+                emboldener!.Configure(run.EmboldenWidth, LineJoin.Miter, GlyphRun.BoldMiterLimit);
+            }
+
             for (var i = run.Start; i < run.Start + run.Count; i++)
             {
-                // A color glyph is not a shape of the paint of the text: it is drawn on its own.
-                if (skipColorGlyphs && _colorIndexes is not null && _colorIndexes[i] >= 0)
+                // A color glyph is not a shape of the paint of the text: it is drawn on its own, and is never thickened.
+                var isColorGlyph = _colorIndexes is not null && _colorIndexes[i] >= 0;
+                if (isColorGlyph && skipColorGlyphs)
                     continue;
 
                 var first = edges?.Count ?? 0;
-                glyphSink.Begin(target, Affine2D.ForGlyph(scale, originX + _positions[i * 2], originY + _positions[(i * 2) + 1]));
+                var transform = Affine2D.ForGlyph(scale, originX + _positions[i * 2], originY + _positions[(i * 2) + 1], run.Shear);
+                glyphSink.Begin(target, transform);
                 var budget = new GlyphBudget(limits);
-                face.DecodeOutline(_glyphs[i], glyphSink, scratch, ref budget);
+                face.DecodeOutline(_glyphs[i], run.Size, glyphSink, scratch, ref budget);
 
                 // The contours of the glyph are complete: each one was closed. TrueType and CFF outlines turn in opposite
                 // directions; the ones that turn the other way are reversed.
                 if (edges is not null && glyphSink.SignedArea < 0)
                 {
                     edges.NegateDirections(first);
+                }
+
+                if (isEmboldened && !isColorGlyph)
+                {
+                    // The fill of the glyph is complete before the edges of its stroke follow it.
+                    target.End();
+                    coversFrame |= Embolden(emboldener!, face, i, run.Size, transform, glyphSink, scratch);
                 }
             }
         }
@@ -309,6 +338,22 @@ public sealed class TextLayout
         }
 
         target.End();
+        return coversFrame;
+    }
+
+    /// <summary>
+    /// Thickens a glyph that was just filled: its outline is sent again, to a stroker that adds the pieces of its
+    /// stroke to the edges of the fill. The pieces have the orientation the glyphs of a fill are given, so the stroke
+    /// and the glyph add up, and what is filled is the glyph grown by half the width of the stroke.
+    /// </summary>
+    /// <returns><see langword="true"/> when a piece of the stroke covers the whole frame.</returns>
+    private bool Embolden(Stroker emboldener, FontFace face, int glyph, double size, in Affine2D transform, GlyphPathSink glyphSink, GlyphScratch scratch)
+    {
+        glyphSink.Begin(emboldener, transform);
+        var budget = new GlyphBudget(face.Data.Limits);
+        face.DecodeOutline(_glyphs[glyph], size, glyphSink, scratch, ref budget);
+        emboldener.End();
+        return emboldener.CoversFrame;
     }
 
     /// <summary>
@@ -326,13 +371,14 @@ public sealed class TextLayout
     /// horizontal path has the points of the same text drawn at a point.
     /// </para>
     /// </remarks>
-    internal void EmitOnPath(PathSink target, GlyphPathSink glyphSink, GlyphScratch scratch, PathMeasure measure, TextPathOptions options, EdgeBuilder? edges, int brush, bool skipColorGlyphs = false)
+    internal bool EmitOnPath(PathSink target, GlyphPathSink glyphSink, GlyphScratch scratch, PathMeasure measure, TextPathOptions options, EdgeBuilder? edges, int brush, bool skipColorGlyphs = false, Stroker? emboldener = null)
     {
+        var coversFrame = false;
         var length = measure.Length;
         if (!(length > 0))
         {
             target.End();
-            return;
+            return false;
         }
 
         var shift = options.StartOffset + options.Alignment switch
@@ -352,21 +398,41 @@ public sealed class TextLayout
             var face = _fonts[run.Font].Face;
             var scale = run.Size / face.UnitsPerEm;
             var limits = face.Data.Limits;
+            var isEmboldened = emboldener is not null && run.EmboldenWidth > 0;
+            if (isEmboldened)
+            {
+                emboldener!.Configure(run.EmboldenWidth, LineJoin.Miter, GlyphRun.BoldMiterLimit);
+            }
+
             for (var i = run.Start; i < run.Start + run.Count; i++)
             {
-                if (skipColorGlyphs && _colorIndexes is not null && _colorIndexes[i] >= 0)
+                var isColorGlyph = _colorIndexes is not null && _colorIndexes[i] >= 0;
+                if (isColorGlyph && skipColorGlyphs)
                     continue;
 
                 if (!TryGetGlyphTransformOnPath(i, scale, measure, options, out var transform))
                     continue;
 
+                // A slanted glyph is slanted before it is placed and turned.
+                if (run.Shear != 0)
+                {
+                    transform = transform.Then([1, 0, run.Shear, 1, 0, 0]);
+                }
+
                 var first = edges?.Count ?? 0;
                 glyphSink.Begin(target, transform);
                 var budget = new GlyphBudget(limits);
-                face.DecodeOutline(_glyphs[i], glyphSink, scratch, ref budget);
+                face.DecodeOutline(_glyphs[i], run.Size, glyphSink, scratch, ref budget);
                 if (edges is not null && glyphSink.SignedArea < 0)
                 {
                     edges.NegateDirections(first);
+                }
+
+                if (isEmboldened && !isColorGlyph)
+                {
+                    // The fill of the glyph is complete before the edges of its stroke follow it.
+                    target.End();
+                    coversFrame |= Embolden(emboldener!, face, i, run.Size, transform, glyphSink, scratch);
                 }
             }
         }
@@ -442,6 +508,7 @@ public sealed class TextLayout
         }
 
         target.End();
+        return coversFrame;
 
         static void AddCorner(PathSink target, double x, double y, double directionX, double directionY, double along, double across, bool isFirst)
         {
@@ -529,7 +596,7 @@ public sealed class TextLayout
         var bottom = double.NegativeInfinity;
 
         // The bounds of each distinct glyph of a font, in font units: four values, or none for a glyph without outline.
-        var bounds = new Dictionary<(int Font, int Glyph), (double MinX, double MinY, double MaxX, double MaxY)?>();
+        var bounds = new Dictionary<(int Font, int Glyph, double Size), (double MinX, double MinY, double MaxX, double MaxY)?>();
         var sink = new GlyphBoundsSink();
         foreach (var run in _runs)
         {
@@ -538,13 +605,13 @@ public sealed class TextLayout
             using var scratch = new GlyphScratch(AllocationScope.Create(face.Data.Configuration, "TextLayout"));
             for (var i = run.Start; i < run.Start + run.Count; i++)
             {
-                if (!bounds.TryGetValue((run.Font, _glyphs[i]), out var glyphBounds))
+                if (!bounds.TryGetValue((run.Font, _glyphs[i], run.Size), out var glyphBounds))
                 {
                     sink.Reset();
                     var budget = new GlyphBudget(face.Data.Limits);
-                    face.DecodeOutline(_glyphs[i], sink, scratch, ref budget);
+                    face.DecodeOutline(_glyphs[i], run.Size, sink, scratch, ref budget);
                     glyphBounds = sink.IsEmpty ? null : (sink.MinX, sink.MinY, sink.MaxX, sink.MaxY);
-                    bounds.Add((run.Font, _glyphs[i]), glyphBounds);
+                    bounds.Add((run.Font, _glyphs[i], run.Size), glyphBounds);
                 }
 
                 // A glyph the font draws with its own colors: its display list is built once, which validates what it
@@ -597,12 +664,17 @@ public sealed class TextLayout
                 if (glyphBounds is not { } box)
                     continue;
 
-                // The corners, placed as the points of the outline are: the y axis of a font goes up.
-                var transform = Affine2D.ForGlyph(scale, _positions[i * 2], _positions[(i * 2) + 1]);
-                left = Math.Min(left, transform.TransformX(box.MinX, box.MinY));
-                right = Math.Max(right, transform.TransformX(box.MaxX, box.MinY));
-                top = Math.Min(top, transform.TransformY(box.MinX, box.MaxY));
-                bottom = Math.Max(bottom, transform.TransformY(box.MinX, box.MinY));
+                // The corners, placed as the points of the outline are: the y axis of a font goes up. A glyph the font
+                // draws with its own colors is neither slanted nor thickened. The box of a slanted glyph is the box of
+                // its slanted box; the stroke of a thickened glyph stays within its width of the outline, at the tip of
+                // the sharpest corner it keeps.
+                var isOutline = colorIndexes is null || colorIndexes[i] < 0;
+                var transform = Affine2D.ForGlyph(scale, _positions[i * 2], _positions[(i * 2) + 1], isOutline ? run.Shear : 0);
+                var margin = isOutline ? run.EmboldenWidth * (GlyphRun.BoldMiterLimit / 2) : 0;
+                left = Math.Min(left, Math.Min(transform.TransformX(box.MinX, box.MinY), transform.TransformX(box.MinX, box.MaxY)) - margin);
+                right = Math.Max(right, Math.Max(transform.TransformX(box.MaxX, box.MinY), transform.TransformX(box.MaxX, box.MaxY)) + margin);
+                top = Math.Min(top, transform.TransformY(box.MinX, box.MaxY) - margin);
+                bottom = Math.Max(bottom, transform.TransformY(box.MinX, box.MinY) + margin);
             }
         }
 

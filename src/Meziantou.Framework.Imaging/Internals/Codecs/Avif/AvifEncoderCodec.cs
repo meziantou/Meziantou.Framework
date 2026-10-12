@@ -133,16 +133,8 @@ internal sealed class AvifEncoderCodec : ImageEncoderCodec
             _contentLightLevel = metadata.ContentLightLevel;
             _masteringDisplay = metadata.MasteringDisplay;
             _orientation = metadata.Orientation;
-            if (_isSequence && _orientation is not ExifOrientation.TopLeft)
-            {
-                // The transformations are properties of an item: a track has none
-                if (_encoder.MetadataHandling is MetadataHandling.Strict)
-                    throw new UnsupportedImageFeatureException("The Avif format cannot store the orientation of an image sequence. Apply it with AutoOrient, remove it, or set the encoder's MetadataHandling to DiscardUnsupported or Strip.", ImageFormat.Avif, "Metadata: orientation of an image sequence");
 
-                _orientation = ExifOrientation.TopLeft;
-            }
-
-            _cleanAperture = ResolveCleanAperture(_encoder, _width, _height, subsamplingX, subsamplingY, _isSequence);
+            _cleanAperture = ResolveCleanAperture(_encoder, _width, _height, subsamplingX, subsamplingY);
 
             // Every buffer whose size is known is rented before any output, so that a limit failure leaves no output
             try
@@ -341,13 +333,10 @@ internal sealed class AvifEncoderCodec : ImageEncoderCodec
 
         // The clean aperture selects whole samples of every plane (ISO/IEC 23000-22, section 7.3.6.7): inside the image,
         // and on a chroma sample when the chroma planes are subsampled
-        private static Rectangle? ResolveCleanAperture(AvifEncoder encoder, int width, int height, int subsamplingX, int subsamplingY, bool isSequence)
+        private static Rectangle? ResolveCleanAperture(AvifEncoder encoder, int width, int height, int subsamplingX, int subsamplingY)
         {
             if (encoder.CleanAperture is not { } aperture)
                 return null;
-
-            if (isSequence)
-                throw new UnsupportedImageFeatureException("An AVIF image sequence has no clean aperture: crop the image, or remove AvifEncoder.CleanAperture.", ImageFormat.Avif, "Clean aperture of an image sequence");
 
             if (aperture.Right > width || aperture.Bottom > height)
                 throw new ArgumentException($"The clean aperture ({aperture}) is not inside the image ({width}x{height}).", nameof(encoder));
@@ -522,6 +511,8 @@ internal sealed class AvifEncoderCodec : ImageEncoderCodec
                     ContentLightLevel = _contentLightLevel,
                     MasteringDisplay = _masteringDisplay,
                     IsPremultiplied = _premultiplyAlpha,
+                    Orientation = _orientation,
+                    CleanAperture = _cleanAperture,
                 },
                 colorSizes,
                 alphaSizes,

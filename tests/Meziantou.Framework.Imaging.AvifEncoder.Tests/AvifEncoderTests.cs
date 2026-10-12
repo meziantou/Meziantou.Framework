@@ -453,10 +453,92 @@ public sealed class AvifEncoderTests
         using var gray = image.CloneAs<Gray8>();
         Assert.Equal((1, 1, 4, 4), ReferenceAvif.Parse(Encode(gray, Lossy(new Rectangle(1, 1, 4, 4)))).PrimaryItem!.CleanAperture!.GetRectangle(8, 6));
 
-        // An image sequence has no clean aperture
-        using var second = CreateImage(8, 6, seed: 23, transparent: false);
+    }
+
+    [Theory]
+    // ISO/IEC 14496-12, section 8.3.2: the matrix { a, b, u, c, d, v, x, y, w } maps the point (p, q) of an image to
+    // (a p + c q + x, b p + d q + y). For images of 9x6, derived by hand: the translation brings the turned or mirrored
+    // image back to positive coordinates (9 where a column is mirrored along the width, 6 where a row is)
+    [InlineData(ExifOrientation.TopLeft, 1, 0, 0, 1, 0, 0)]
+    [InlineData(ExifOrientation.TopRight, -1, 0, 0, 1, 9, 0)]
+    [InlineData(ExifOrientation.BottomRight, -1, 0, 0, -1, 9, 6)]
+    [InlineData(ExifOrientation.BottomLeft, 1, 0, 0, -1, 0, 6)]
+    [InlineData(ExifOrientation.LeftTop, 0, 1, 1, 0, 0, 0)]
+    [InlineData(ExifOrientation.RightTop, 0, 1, -1, 0, 6, 0)] // a quarter turn clockwise: p' = 6 - q, q' = p
+    [InlineData(ExifOrientation.RightBottom, 0, -1, -1, 0, 6, 9)]
+    [InlineData(ExifOrientation.LeftBottom, 0, -1, 1, 0, 0, 9)] // a quarter turn anti-clockwise: p' = q, q' = 9 - p
+    public void TheOrientationOfASequenceIsTheMatrixOfItsTrackHeaders(ExifOrientation orientation, int a, int b, int c, int d, int x, int y)
+    {
+        const int One = 0x00010000;
+        using var image = CreateImage(9, 6, seed: 61, transparent: true);
+        using var second = CreateImage(9, 6, seed: 62, transparent: true);
         image.AppendFrame(second.Frames[0]);
-        Assert.Throws<UnsupportedImageFeatureException>(() => Encode(image, new AvifEncoder { CleanAperture = new Rectangle(0, 0, 4, 4) }));
+        image.Frames[0].Metadata.Duration = new FrameDuration(1, 10);
+        image.Frames[1].Metadata.Duration = new FrameDuration(1, 10);
+        image.Metadata.Orientation = orientation;
+        var data = Encode(image, new AvifEncoder());
+        var reader = ReferenceAvif.Parse(data);
+
+        // Both tracks have the matrix: the orientation of the color images is the one of their alpha planes
+        int[] expected = [a * One, b * One, 0, c * One, d * One, 0, x * One, y * One, 0x40000000];
+        var color = reader.ColorTrack;
+        var alpha = reader.AlphaTrack;
+        Assert.NotNull(color);
+        Assert.NotNull(alpha);
+        Assert.Equal(expected, color.Matrix);
+        Assert.Equal(expected, alpha.Matrix);
+        Assert.Equal((int)orientation, color.Orientation);
+        Assert.Equal((9u * One, 6u * One), (color.HeaderWidth, color.HeaderHeight));
+
+        // The first image, which is the primary item of the file, has the orientation as its properties
+        Assert.Equal((int)orientation, reader.PrimaryItem!.Orientation);
+
+        // The pixels are stored as they are, and the orientation is read back
+        using var decoded = Image.Load<Rgba32>(data);
+        Assert.Equal(2, decoded.Frames.Count);
+        Assert.Equal((9, 6), (decoded.Width, decoded.Height));
+        Assert.Equal(orientation, decoded.Metadata.Orientation);
+        Assert.Equal(GetBytes(image, 1), GetBytes(decoded, 1));
+        Assert.Equal(orientation, Image.Identify(data).Metadata.Orientation);
+    }
+
+    [Fact]
+    public void TheCleanApertureOfASequenceIsABoxOfItsSampleEntries()
+    {
+        using var image = CreateImage(9, 6, seed: 63, transparent: true);
+        using var second = CreateImage(9, 6, seed: 64, transparent: true);
+        image.AppendFrame(second.Frames[0]);
+        image.Frames[0].Metadata.Duration = new FrameDuration(1, 10);
+        image.Frames[1].Metadata.Duration = new FrameDuration(1, 10);
+        image.Metadata.Orientation = ExifOrientation.BottomRight;
+        var aperture = new Rectangle(1, 2, 5, 3);
+        var data = Encode(image, new AvifEncoder { CleanAperture = aperture });
+        var reader = ReferenceAvif.Parse(data);
+
+        // The images are coded whole, and the tracks show the aperture. The track headers keep the size of the coded
+        // images, which libavif and FFmpeg take for the size the aperture applies to, and the half turn moves that size
+        // back to positive coordinates
+        const int One = 0x00010000;
+        foreach (var track in new[] { reader.ColorTrack!, reader.AlphaTrack! })
+        {
+            Assert.Equal((9, 6), (track.Width, track.Height));
+            Assert.Equal((1, 2, 5, 3), track.CleanAperture!.GetRectangle(9, 6));
+            Assert.Equal((9u * One, 6u * One), (track.HeaderWidth, track.HeaderHeight));
+            Assert.Equal([-One, 0, 0, 0, -One, 0, 9 * One, 6 * One, 0x40000000], track.Matrix);
+        }
+
+        // The first image has the aperture as a property
+        Assert.Equal((1, 2, 5, 3), reader.PrimaryItem!.CleanAperture!.GetRectangle(9, 6));
+
+        using var decoded = Image.Load<Rgba32>(data);
+        Assert.Equal((5, 3), (decoded.Width, decoded.Height));
+        Assert.Equal(ExifOrientation.BottomRight, decoded.Metadata.Orientation);
+        using var expected = image.Clone();
+        expected.Crop(aperture, TestContext.Current.CancellationToken);
+        for (var frame = 0; frame < 2; frame++)
+        {
+            Assert.Equal(GetBytes(expected, frame), GetBytes(decoded, frame));
+        }
     }
 
     [Theory]

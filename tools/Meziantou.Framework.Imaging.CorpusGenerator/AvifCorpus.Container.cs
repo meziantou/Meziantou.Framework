@@ -114,6 +114,7 @@ internal static partial class AvifCorpus
         ["avif/sequence-ffmpeg"] = (0, 0.0),
         ["avif/sequence-ffmpeg-svt"] = (1, 0.0002), // one unit on a few samples
         ["avif/sequence-hdr-boxes"] = (0, 0.0),
+        ["avif/sequence-matrix-mirror-clap"] = (0, 0.0),
         ["avif/sequence-mdat-first"] = (0, 0.0),
         ["avif/sequence-no-edit-list"] = (0, 0.0),
         ["avif/sequence-premultiplied"] = (0, 0.0),
@@ -838,7 +839,25 @@ internal static partial class AvifCorpus
         if (track.Samples.Skip(1).Any(sample => sample.Offset < track.Samples[0].Offset))
             features.Add("avif.seq.samplesOutOfOrder");
 
-        var frames = payload.Frames.Select((frame, i) => ToFrame(frame, alphaPayload?.Frames[i], matrix, fullRange, (0, 0, frame.Width, frame.Height), file.IsPremultiplied)).ToList();
+        // The clean aperture of the sample entry is the part of the samples that is shown, and the matrix of the track header
+        // the orientation of the images, which stay as they are coded. The alpha track has the same ones or none
+        var crop = (0, 0, track.Width, track.Height);
+        if (track.CleanAperture is { } aperture)
+        {
+            crop = aperture.GetRectangle(track.Width, track.Height) ?? throw new ToolException("the clean aperture is not a whole number of samples.");
+            features.Add("avif.seq.clap");
+        }
+
+        if (track.Orientation != 1)
+            features.Add(Inv($"avif.seq.matrix={track.Orientation}"));
+
+        if (file.AlphaTrack is { } transformedAlpha)
+        {
+            Py.Assert(transformedAlpha.CleanAperture is null || transformedAlpha.CleanAperture.GetRectangle(track.Width, track.Height) == crop, "the alpha track has the clean aperture of the color track or none");
+            Py.Assert(transformedAlpha.Orientation == 1 || transformedAlpha.Orientation == track.Orientation, "the alpha track has the matrix of the color track or none");
+        }
+
+        var frames = payload.Frames.Select((frame, i) => ToFrame(frame, alphaPayload?.Frames[i], matrix, fullRange, crop, file.IsPremultiplied)).ToList();
         AddPresentationFeatures(features, track.ContentLightLevel, track.MasteringDisplay, track.PixelAspectRatio);
         return new AvifReference
         {
@@ -849,7 +868,7 @@ internal static partial class AvifCorpus
             PixelFormat = PixelFormatOf(first, alphaPayload?.Frames[0]),
             ColorModel = ColorModelOf(first, alphaPayload is not null, matrix),
             BitsPerComponent = first.Color.BitDepth,
-            Orientation = 1,
+            Orientation = track.Orientation,
             Cicp = cicp,
             Icc = icc,
             Exif = exif,
@@ -1294,7 +1313,9 @@ internal static partial class AvifCorpus
             return check;
         }
 
-        var oriented = reference.Frames.Select(frame => Orient(frame, reference.Orientation)).ToList();
+        // avifdec applies the irot and imir properties of an item; it does not read the matrix of a track header
+        var appliedOrientation = reference.IsSequence ? 1 : reference.Orientation;
+        var oriented = reference.Frames.Select(frame => Orient(frame, appliedOrientation)).ToList();
         var (pixelFormat, bytesPerPixel, sample, layout) = deep ? ("rgba64le", 8, 2, "rgba16le") : ("rgba", 4, 1, "rgba8");
         var files = reference.IsSequence
             ? Enumerable.Range(0, reference.Frames.Count).Select(i => scratch / Inv($"avifdec-{i:D10}.png")).ToList()
@@ -1310,7 +1331,11 @@ internal static partial class AvifCorpus
         var expected = oriented.Select(frame => RgbaRaw(frame, layout)).ToList();
         Record(check, expected, decoded, sample, reference.IsMatrixed ? "Independent conversion (its own chroma upsampling and rounding)." : "Its own sample scaling.");
         if (reference.IsTransformed)
-            check["notes"] = (check.TryGetValue("notes", out var text) ? text + " " : "") + Inv($"Compared with the reference displayed with orientation {reference.Orientation} (avifdec applies irot and imir).");
+        {
+            check["notes"] = (check.TryGetValue("notes", out var text) ? text + " " : "") + (reference.IsSequence
+                ? Inv($"Compared with the images as they are stored: avifdec does not read the matrix of the track header (orientation {reference.Orientation}).")
+                : Inv($"Compared with the reference displayed with orientation {reference.Orientation} (avifdec applies irot and imir)."));
+        }
         return check;
     }
 

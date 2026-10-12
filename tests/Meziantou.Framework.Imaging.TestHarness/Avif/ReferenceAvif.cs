@@ -306,20 +306,27 @@ public sealed class ReferenceAvif
             matrix = ((step.A * matrix.A) + (step.B * matrix.C), (step.A * matrix.B) + (step.B * matrix.D), (step.C * matrix.A) + (step.D * matrix.C), (step.C * matrix.B) + (step.D * matrix.D));
         }
 
-        // The EXIF orientations as the transformation that displays the stored samples (TIFF 6.0, tag 274)
-        return matrix switch
-        {
-            (1, 0, 0, 1) => 1,
-            (-1, 0, 0, 1) => 2,
-            (-1, 0, 0, -1) => 3,
-            (1, 0, 0, -1) => 4,
-            (0, 1, 1, 0) => 5,
-            (0, -1, 1, 0) => 6,
-            (0, -1, -1, 0) => 7,
-            (0, 1, -1, 0) => 8,
-            _ => throw new InvalidOperationException("The composition of quarter turns and mirrors is one of eight orientations."),
-        };
+        return GetOrientation(matrix) ?? throw new InvalidOperationException("The composition of quarter turns and mirrors is one of eight orientations.");
     }
+
+    /// <summary>
+    /// Returns the EXIF orientation of the transformation that displays the stored samples (TIFF 6.0, tag 274), given as
+    /// the matrix (a b; c d) of x' = a x + b y, y' = c x + d y that maps the offset of a stored sample from the center of
+    /// the image, y pointing down, to its displayed offset; <see langword="null"/> when the matrix is not one of the eight
+    /// compositions of quarter turns and mirrors.
+    /// </summary>
+    private static int? GetOrientation((int A, int B, int C, int D) matrix) => matrix switch
+    {
+        (1, 0, 0, 1) => 1,
+        (-1, 0, 0, 1) => 2,
+        (-1, 0, 0, -1) => 3,
+        (1, 0, 0, -1) => 4,
+        (0, 1, 1, 0) => 5,
+        (0, -1, 1, 0) => 6,
+        (0, -1, -1, 0) => 7,
+        (0, 1, -1, 0) => 8,
+        _ => null,
+    };
 
     private void ReadTopLevel()
     {
@@ -616,6 +623,18 @@ public sealed class ReferenceAvif
                         track.Duration = duration == uint.MaxValue ? null : duration;
                     }
 
+                    // Two reserved words, the layer, the alternate group, the volume and a reserved field, then the matrix
+                    // and the size of the track
+                    reader.Skip(16);
+                    var matrix = new int[9];
+                    for (var i = 0; i < matrix.Length; i++)
+                    {
+                        matrix[i] = unchecked((int)reader.U32());
+                    }
+
+                    track.Matrix = matrix;
+                    track.HeaderWidth = reader.U32();
+                    track.HeaderHeight = reader.U32();
                     break;
                 }
 
@@ -1410,6 +1429,40 @@ public sealed class ReferenceAvif
 
         /// <summary>Gets the boxes of the visual sample entry, in file order: the configuration, the color information and whatever else describes the samples.</summary>
         public IReadOnlyList<SampleEntryBox> SampleEntryBoxes => _sampleEntryBoxes;
+
+        /// <summary>
+        /// Gets the matrix of the track header (ISO/IEC 14496-12, section 8.3.2), as it is stored: { a, b, u, c, d, v, x, y, w }
+        /// maps the point (p, q) of an image to the point (a p + c q + x, b p + d q + y) of the presentation; a, b, c, d, x
+        /// and y are 16.16 fixed-point numbers, u, v and w 2.30 ones.
+        /// </summary>
+        public IReadOnlyList<int> Matrix { get; internal set; } = [0x00010000, 0, 0, 0, 0x00010000, 0, 0, 0, 0x40000000];
+
+        /// <summary>Gets the width of the track header, a 16.16 fixed-point number.</summary>
+        public uint HeaderWidth { get; internal set; }
+
+        /// <summary>Gets the height of the track header, a 16.16 fixed-point number.</summary>
+        public uint HeaderHeight { get; internal set; }
+
+        /// <summary>
+        /// Gets the EXIF orientation that is equivalent to the matrix of the track header when the matrix turns the images
+        /// by quarter turns or mirrors them (a, b, c and d are 0, 1 or -1; u and v are 0; w is 1; whatever the translation),
+        /// and 1 for any other matrix, which places the track in a presentation without describing the images.
+        /// </summary>
+        public int Orientation
+        {
+            get
+            {
+                const int One = 0x00010000;
+                if (Matrix[2] != 0 || Matrix[5] != 0 || Matrix[8] != 0x40000000 || new[] { Matrix[0], Matrix[1], Matrix[3], Matrix[4] }.Any(value => value != 0 && value != One && value != -One))
+                    return 1;
+
+                // The displayed offset of a sample is (a p + c q, b p + d q)
+                return GetOrientation((Matrix[0] / One, Matrix[3] / One, Matrix[1] / One, Matrix[4] / One)) ?? 1;
+            }
+        }
+
+        /// <summary>Gets the first clean aperture of the sample entry (<c>clap</c>), or <see langword="null"/>.</summary>
+        public CleanAperture? CleanAperture => FindSampleEntryBox("clap") is { } box ? ReferenceAvif.CleanAperture.Parse(box.Payload.Span) : null;
 
         /// <summary>Gets the first <c>clli</c> box of the sample entry, or <see langword="null"/>.</summary>
         public ContentLightLevel? ContentLightLevel => FindSampleEntryBox("clli") is { } box ? ReferenceAvif.ContentLightLevel.Parse(box.Payload.Span) : null;

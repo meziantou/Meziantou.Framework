@@ -149,6 +149,7 @@ public sealed class AvifFileBuilder
                 Duration = track.Duration ?? ulong.MaxValue,
                 SampleSizeBox = track.SampleSizeBox,
                 ChunkOffsetBox = track.ChunkOffsetBox,
+                Matrix = track.Orientation == 1 ? null : [.. track.Matrix],
             };
             copy.SampleEntryBoxes.Add(Box("av1C", track.ConfigurationRecord.ToArray()));
             if (track.Nclx is { } nclx)
@@ -596,8 +597,8 @@ public sealed class AvifFileBuilder
             var boxes = new List<byte[]>
             {
                 track.HeaderVersion == 1
-                    ? FullBox("tkhd", 1, 1, U64(0), U64(0), U32(track.Id), U32(0), U64(track.Duration), new byte[16], identity, U32((uint)track.Width << 16), U32((uint)track.Height << 16))
-                    : FullBox("tkhd", 0, 1, U32(0), U32(0), U32(track.Id), U32(0), U32(track.Duration == ulong.MaxValue ? uint.MaxValue : (uint)track.Duration), new byte[16], identity, U32((uint)track.Width << 16), U32((uint)track.Height << 16)),
+                    ? FullBox("tkhd", 1, 1, U64(0), U64(0), U32(track.Id), U32(0), U64(track.Duration), new byte[16], track.Matrix is { } matrix1 ? Concat([.. matrix1.Select(value => U32(unchecked((uint)value)))]) : identity, U32((uint)track.Width << 16), U32((uint)track.Height << 16))
+                    : FullBox("tkhd", 0, 1, U32(0), U32(0), U32(track.Id), U32(0), U32(track.Duration == ulong.MaxValue ? uint.MaxValue : (uint)track.Duration), new byte[16], track.Matrix is { } matrix0 ? Concat([.. matrix0.Select(value => U32(unchecked((uint)value)))]) : identity, U32((uint)track.Width << 16), U32((uint)track.Height << 16)),
             };
             if (track.References.Count > 0)
                 boxes.Add(Box("tref", [.. track.References.Select(reference => Box(reference.Type, [.. reference.TrackIds.Select(U32)]))]));
@@ -855,6 +856,12 @@ public sealed class AvifFileBuilder
 
         /// <summary>Gets or sets the edit list; <see langword="null"/> writes no <c>edts</c> box.</summary>
         public EditList? EditList { get; set; }
+
+        /// <summary>
+        /// Gets or sets the nine values of the matrix of the track header { a, b, u, c, d, v, x, y, w } (16.16 fixed point; 2.30
+        /// for u, v and w), or <see langword="null"/> for the identity.
+        /// </summary>
+        public int[]? Matrix { get; set; }
 
         /// <summary>Gets the track references.</summary>
         public IList<(string Type, uint[] TrackIds)> References { get; } = [];

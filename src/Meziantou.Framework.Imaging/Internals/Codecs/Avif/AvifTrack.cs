@@ -47,6 +47,21 @@ internal sealed class AvifTrack : IDisposable
     /// <summary>Gets or sets the size of the samples that the sample entry declares.</summary>
     public Size Size { get; set; }
 
+    /// <summary>
+    /// Gets or sets the part of the samples that the clean aperture of the sample entry (<c>clap</c>) shows, or
+    /// <see langword="null"/> for the whole samples.
+    /// </summary>
+    public Rectangle? CleanAperture { get; set; }
+
+    /// <summary>Gets the part of the samples that is shown: the clean aperture, or the whole samples.</summary>
+    public Rectangle Crop => CleanAperture ?? new Rectangle(0, 0, Size.Width, Size.Height);
+
+    /// <summary>
+    /// Gets or sets the orientation that the matrix of the track header describes: one of the eight orientations for a
+    /// matrix that turns or mirrors the images by quarter turns, <see cref="ExifOrientation.TopLeft"/> for any other one.
+    /// </summary>
+    public ExifOrientation Orientation { get; set; } = ExifOrientation.TopLeft;
+
     /// <summary>Gets or sets the bit depth that the AV1 configuration record declares.</summary>
     public int BitDepth { get; set; }
 

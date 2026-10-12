@@ -582,6 +582,24 @@ internal static partial class AvifCorpus
         Sequence(context, "sequence-10bit-once", [DeepColor(8, 8, 10), Shift(DeepColor(8, 8, 10))], "-q 70 -d 10 -y 420 --cicp 9/16/9 -r limited --timescale 30000 --repetition-count 0", [1001, 1001],
             ["avif.seq.editList=once", "avif.bitDepth=10"], "No repetition: an edit list that does not repeat, played once. The duration of a frame is 1001/30000 s.");
 
+        // The matrix of the track header is the orientation of the images, and the clean aperture of the sample entry the
+        // part of them that is shown: the samples stay as they are coded. A quarter turn clockwise maps the point (p, q)
+        // to (h - q, p), and a mirror of the columns to (w - p, q), in 16.16 fixed point
+        Assembled(context, "sequence-matrix-quarter-turn", "sequence-lossless-infinite", builder =>
+        {
+            var track = builder.Tracks[0];
+            track.Matrix = [0, 0x00010000, 0, -0x00010000, 0, 0, track.Height << 16, 0, 0x40000000];
+        }, ["avif.sequence", "avif.seq.matrix=6"], "The matrix of the track header turns the images a quarter turn clockwise: the orientation is 6, and the images are returned as they are stored.", "BuildSequences");
+        Assembled(context, "sequence-matrix-mirror-clap", "sequence-alpha-repeat-2", builder =>
+        {
+            var aperture = AvifFileBuilder.CleanAperture(5, 1, 4, 1, 1, 2, 0, 1);
+            foreach (var track in builder.Tracks)
+            {
+                track.Matrix = [-0x00010000, 0, 0, 0, 0x00010000, 0, track.Width << 16, 0, 0x40000000];
+                track.SampleEntryBoxes.Add(aperture);
+            }
+        }, ["avif.sequence", "avif.seq.matrix=2", "avif.seq.clap", "avif.alpha"], "Both tracks have a clean aperture of 5x4 at (2, 2) in their sample entry and a matrix that mirrors the columns: the images are the aperture of the samples, and the orientation is 2.", "BuildSequences");
+
         // A prem track reference: the colors of the color track are multiplied by the alpha of the alpha track. The samples
         // are those of a sequence whose colors are not, so that most colors are above their alpha and are clipped
         Assembled(context, "sequence-premultiplied", "sequence-alpha-repeat-2", builder =>

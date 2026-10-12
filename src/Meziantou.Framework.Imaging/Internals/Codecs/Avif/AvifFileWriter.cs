@@ -266,6 +266,12 @@ internal static class AvifFileWriter
 
         /// <summary>Gets a value indicating whether the color samples are multiplied by the alpha of their pixel; ignored without alpha track.</summary>
         public bool IsPremultiplied { get; init; }
+
+        /// <summary>Gets the orientation of the images, which the matrix of the track headers stores.</summary>
+        public ExifOrientation Orientation { get; init; } = ExifOrientation.TopLeft;
+
+        /// <summary>Gets the part of the images that readers show, or <see langword="null"/> for the whole images.</summary>
+        public Rectangle? CleanAperture { get; init; }
     }
 
     /// <summary>
@@ -368,7 +374,10 @@ internal static class AvifFileWriter
         writer.WriteUInt16(0); // alternate_group
         writer.WriteUInt16(0); // volume
         writer.WriteUInt16(0);
-        WriteUnityMatrix(writer);
+
+        // The size of the track is the size of the coded images, with or without clean aperture: libavif and FFmpeg take
+        // it for the size of the images that the aperture and the matrix then apply to
+        WriteOrientationMatrix(writer, movie.Orientation, movie.Width, movie.Height);
         writer.WriteUInt32((uint)movie.Width << 16);
         writer.WriteUInt32((uint)movie.Height << 16);
         writer.EndBox(box);
@@ -468,6 +477,11 @@ internal static class AvifFileWriter
         writer.WriteUInt16(0x0018); // depth
         writer.WriteUInt16(0xFFFF); // pre_defined
         WriteConfiguration(writer, sequence);
+
+        // The clean aperture of the color images is the one of their alpha planes
+        if (movie.CleanAperture is { } aperture)
+            AvifCleanAperture.Write(writer, new Size(movie.Width, movie.Height), aperture);
+
         if (isAlpha)
         {
             // ISO/IEC 23008-12, section 7.5.3 "Auxiliary video track"
@@ -583,6 +597,37 @@ internal static class AvifFileWriter
         foreach (var value in matrix)
         {
             writer.WriteUInt32(value);
+        }
+    }
+
+    // ISO/IEC 14496-12, section 8.3.2 "Track Header Box": the matrix { a, b, u, c, d, v, x, y, w } maps the point (p, q) of
+    // an image to the point (a p + c q + x, b p + d q + y) of the presentation. The eight orientations are the matrices
+    // whose a, b, c and d are 0, 1 or -1; the translation brings the result back to positive coordinates (it is left out
+    // when a 16.16 number cannot hold the size of the image: a reader then moves the result itself)
+    private static void WriteOrientationMatrix(AvifBoxWriter writer, ExifOrientation orientation, int width, int height)
+    {
+        var (a, b, c, d) = orientation switch
+        {
+            ExifOrientation.TopRight => (-1, 0, 0, 1),
+            ExifOrientation.BottomRight => (-1, 0, 0, -1),
+            ExifOrientation.BottomLeft => (1, 0, 0, -1),
+            ExifOrientation.LeftTop => (0, 1, 1, 0),
+            ExifOrientation.RightTop => (0, 1, -1, 0),
+            ExifOrientation.RightBottom => (0, -1, -1, 0),
+            ExifOrientation.LeftBottom => (0, -1, 1, 0),
+            _ => (1, 0, 0, 1),
+        };
+
+        // The columns that are mirrored end at the width of the image, the rows at its height
+        var x = (a < 0 ? width : 0) + (c < 0 ? height : 0);
+        var y = (b < 0 ? width : 0) + (d < 0 ? height : 0);
+        if (x > short.MaxValue || y > short.MaxValue)
+            (x, y) = (0, 0);
+
+        ReadOnlySpan<int> matrix = [a << 16, b << 16, 0, c << 16, d << 16, 0, x << 16, y << 16, 0x40000000];
+        foreach (var value in matrix)
+        {
+            writer.WriteUInt32(unchecked((uint)value));
         }
     }
 

@@ -749,6 +749,137 @@ public sealed class AvifDecoderTests
         Assert.Throws<InvalidImageContentException>(() => Image.Identify(WithAlpha((_, alpha) => alpha.Samples.RemoveAt(2)).Build()));
     }
 
+    [Theory]
+    // ISO/IEC 14496-12, section 8.3.2: the matrix maps the point (p, q) of an image to (a p + c q + x, b p + d q + y).
+    // The orientations are derived by hand from the definition of the EXIF tag (where the row 0 and the column 0 of the
+    // stored image are displayed)
+    [InlineData(1, 0, 0, 1, ExifOrientation.TopLeft)]
+    [InlineData(-1, 0, 0, 1, ExifOrientation.TopRight)] // p' = -p: the column 0 is the right side
+    [InlineData(-1, 0, 0, -1, ExifOrientation.BottomRight)] // a half turn
+    [InlineData(1, 0, 0, -1, ExifOrientation.BottomLeft)] // q' = -q: the row 0 is the bottom
+    [InlineData(0, 1, 1, 0, ExifOrientation.LeftTop)] // p' = q, q' = p: the row 0 is the left side, the column 0 the top
+    [InlineData(0, 1, -1, 0, ExifOrientation.RightTop)] // p' = -q, q' = p: the row 0 is the right side, a quarter turn clockwise
+    [InlineData(0, -1, -1, 0, ExifOrientation.RightBottom)] // p' = -q, q' = -p
+    [InlineData(0, -1, 1, 0, ExifOrientation.LeftBottom)] // p' = q, q' = -p: a quarter turn anti-clockwise
+    public void TheMatrixOfTheTrackHeaderIsTheOrientationOfASequence(int a, int b, int c, int d, ExifOrientation expected)
+    {
+        const int One = 0x00010000;
+        foreach (var version in new[] { 0, 1 })
+        {
+            // Whatever the translation, which only moves the result
+            foreach (var (x, y) in new[] { (0, 0), (8 * One, 6 * One), (-3 * One, 7) })
+            {
+                var data = Sequence(configure: track =>
+                {
+                    track.HeaderVersion = version;
+                    track.Matrix = [a * One, b * One, 0, c * One, d * One, 0, x, y, 0x40000000];
+                }).Build();
+                var info = Image.Identify(data);
+                Assert.Equal(expected, info.Metadata.Orientation);
+                Assert.Equal((8, 6), (info.Width, info.Height)); // reported, never applied
+                Assert.Equal((int)expected, ReferenceAvif.Parse(data).ColorTrack!.Orientation);
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData(0x00020000, 0, 0, 0x00020000, 0, 0, 0x40000000)] // twice the size
+    [InlineData(0x00010000, 0x00008000, 0, 0x00010000, 0, 0, 0x40000000)] // a shear
+    [InlineData(0x0000B505, 0x0000B505, -0x0000B505, 0x0000B505, 0, 0, 0x40000000)] // a turn of 45 degrees
+    [InlineData(0, 0x00010000, 0, 0, 0, 0, 0x40000000)] // no inverse
+    [InlineData(0, 0x00010000, -0x00010000, 0, 0x00010000, 0, 0x40000000)] // a projective term
+    [InlineData(0, 0x00010000, -0x00010000, 0, 0, 0, 0x20000000)] // a divisor of one half
+    public void AMatrixThatIsNotAQuarterTurnOrAMirrorIsNotAnOrientation(int a, int b, int c, int d, int u, int v, int w)
+    {
+        // Such a matrix places the track in the presentation of a player: the images are returned as they are stored
+        var data = Sequence(configure: track => track.Matrix = [a, b, u, c, d, v, 0, 0, w]).Build();
+        Assert.Equal(ExifOrientation.TopLeft, Image.Identify(data).Metadata.Orientation);
+        Assert.Equal(1, ReferenceAvif.Parse(data).ColorTrack!.Orientation);
+    }
+
+    [Fact]
+    public void TheCleanApertureOfTheSampleEntryCropsTheImagesOfASequence()
+    {
+        // 8x6 images; an aperture of 5x4 whose center is half a sample right of the center: left = (8 - 5) / 2 + 1/2 = 2, top = 1
+        var data = Sequence(configure: track => track.SampleEntryBoxes.Add(AvifFileBuilder.CleanAperture(5, 1, 4, 1, 1, 2, 0, 1))).Build();
+        var info = Image.Identify(data);
+        Assert.Equal((5, 4), (info.Width, info.Height));
+        Assert.Equal(3, info.FrameCount);
+        Assert.Equal((2, 1, 5, 4), ReferenceAvif.Parse(data).ColorTrack!.CleanAperture!.GetRectangle(8, 6));
+
+        // The aperture applies before the matrix of the track header, which stays the orientation
+        var rotated = Sequence(configure: track =>
+        {
+            track.SampleEntryBoxes.Add(AvifFileBuilder.CleanAperture(5, 1, 4, 1, 1, 2, 0, 1));
+            track.Matrix = [0, 0x00010000, 0, -0x00010000, 0, 0, 0, 0, 0x40000000];
+        }).Build();
+        info = Image.Identify(rotated);
+        Assert.Equal((5, 4), (info.Width, info.Height));
+        Assert.Equal(ExifOrientation.RightTop, info.Metadata.Orientation);
+
+        // An aperture that does not select whole samples is not supported; one that is not inside the images is invalid
+        Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(Sequence(configure: track => track.SampleEntryBoxes.Add(AvifFileBuilder.CleanAperture(5, 2, 4, 1, 0, 1, 0, 1))).Build()));
+        Assert.Throws<InvalidImageContentException>(() => Image.Identify(Sequence(configure: track => track.SampleEntryBoxes.Add(AvifFileBuilder.CleanAperture(9, 1, 4, 1, 1, 2, 0, 1))).Build()));
+        Assert.Throws<InvalidImageContentException>(() => Image.Identify(Sequence(configure: track => track.SampleEntryBoxes.Add(AvifFileBuilder.CleanAperture(5, 1, 4, 0, 1, 2, 0, 1))).Build()));
+    }
+
+    [Fact]
+    public void TheAlphaTrackHasTheTransformationsOfTheColorTrackOrNone()
+    {
+        int[] quarterTurn = [0, 0x00010000, 0, -0x00010000, 0, 0, 0, 0, 0x40000000];
+        int[] halfTurn = [-0x00010000, 0, 0, 0, -0x00010000, 0, 0, 0, 0x40000000];
+        var aperture = AvifFileBuilder.CleanAperture(5, 1, 4, 1, 1, 2, 0, 1);
+        static AvifFileBuilder WithAlpha(Action<AvifFileBuilder.Track, AvifFileBuilder.Track> change)
+        {
+            var builder = Sequence();
+            var alpha = new AvifFileBuilder.Track(2, "auxv", 8, 6) { Timescale = 1000, Duration = 300 };
+            alpha.SampleEntryBoxes.Add(AvifFileBuilder.Av1Configuration(0, 0, 8, monochrome: true, 1, 1));
+            alpha.SampleEntryBoxes.Add(AvifFileBuilder.FullBox("auxi", 0, 0, System.Text.Encoding.UTF8.GetBytes(ReferenceAvif.AlphaAuxiliaryType), [0]));
+            alpha.References.Add(("auxl", [1]));
+            for (var i = 0; i < 3; i++)
+            {
+                alpha.Samples.Add((Payload, 100));
+            }
+
+            builder.Tracks.Add(alpha);
+            change(builder.Tracks[0], alpha);
+            return builder;
+        }
+
+        // The same transformations on both tracks, or on the color track only
+        var both = Image.Identify(WithAlpha((color, alpha) =>
+        {
+            color.Matrix = quarterTurn;
+            alpha.Matrix = quarterTurn;
+            color.SampleEntryBoxes.Add(aperture);
+            alpha.SampleEntryBoxes.Add(aperture);
+        }).Build());
+        Assert.Equal((5, 4), (both.Width, both.Height));
+        Assert.Equal(ExifOrientation.RightTop, both.Metadata.Orientation);
+        Assert.Equal(PixelFormat.Rgba32, both.PixelFormat);
+        var colorOnly = Image.Identify(WithAlpha((color, _) =>
+        {
+            color.Matrix = quarterTurn;
+            color.SampleEntryBoxes.Add(aperture);
+        }).Build());
+        Assert.Equal((5, 4), (colorOnly.Width, colorOnly.Height));
+        Assert.Equal(ExifOrientation.RightTop, colorOnly.Metadata.Orientation);
+
+        // Other ones are not supported
+        Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(WithAlpha((color, alpha) =>
+        {
+            color.Matrix = quarterTurn;
+            alpha.Matrix = halfTurn;
+        }).Build()));
+        Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(WithAlpha((_, alpha) => alpha.Matrix = halfTurn).Build()));
+        Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(WithAlpha((_, alpha) => alpha.SampleEntryBoxes.Add(aperture)).Build()));
+        Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(WithAlpha((color, alpha) =>
+        {
+            color.SampleEntryBoxes.Add(aperture);
+            alpha.SampleEntryBoxes.Add(AvifFileBuilder.CleanAperture(4, 1, 4, 1, 0, 1, 0, 1));
+        }).Build()));
+    }
+
     [Fact]
     public void SequenceWithoutUsableTrackIsInvalid()
     {

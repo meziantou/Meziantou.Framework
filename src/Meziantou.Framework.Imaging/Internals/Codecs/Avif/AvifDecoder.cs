@@ -70,8 +70,7 @@ internal sealed class AvifDecoder : AvifDecodeObserver
                 alphaImage = DecodeSample(_alphaDecoder, alpha, movie.Alpha!);
             }
 
-            var size = movie.Color.Size;
-            WriteFrame(structure, colorImage, alphaImage, size, new Rectangle(0, 0, size.Width, size.Height));
+            WriteFrame(structure, colorImage, alphaImage, movie.Color.Size, movie.Color.Crop);
         }
         finally
         {

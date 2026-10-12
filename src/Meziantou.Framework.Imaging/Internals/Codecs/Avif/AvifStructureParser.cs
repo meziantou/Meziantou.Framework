@@ -84,7 +84,7 @@ internal sealed class AvifStructureParser : ImageParser<ImageInfo>
     public AvifMovieBox? Movie => _movie;
 
     /// <summary>Gets the size of the images that the file presents.</summary>
-    public Size CanvasSize => _movie?.Color.Size ?? Plan.Size;
+    public Size CanvasSize => _movie is { } movie ? new Size(movie.Color.Crop.Width, movie.Color.Crop.Height) : Plan.Size;
 
     /// <summary>Gets the pixel format of an untyped load, which is also the layout of the rows that the decoder produces.</summary>
     public PixelFormat PixelFormat => _movie is { } movie
@@ -935,6 +935,7 @@ internal sealed class AvifStructureParser : ImageParser<ImageInfo>
             AvifYuvConverter.EnsureSupported(nclx.MatrixCoefficients, color.IsMonochrome, color.SubsamplingX, color.SubsamplingY);
 
         _metadata.Metadata.Cicp = color.Nclx;
+        _metadata.Metadata.Orientation = color.Orientation;
         _metadata.Metadata.PixelAspectRatio = color.PixelAspectRatio;
         _metadata.Metadata.ContentLightLevel = color.ContentLightLevel;
         _metadata.Metadata.MasteringDisplay = color.MasteringDisplay;

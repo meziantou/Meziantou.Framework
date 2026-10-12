@@ -26,7 +26,8 @@ namespace Meziantou.Framework.Imaging.Formats;
 /// <para>
 /// Metadata (subject to <see cref="ImageEncoder.MetadataHandling"/>): the CICP color description (<c>colr</c> box, with the
 /// matrix coefficients and the range that the encoder used), the ICC profile, EXIF and XMP items, the orientation
-/// (<c>irot</c> and <c>imir</c> properties), the content light level, the mastering display color volume and the pixel
+/// (<c>irot</c> and <c>imir</c> properties of a still image, the matrix of the track headers of an image sequence), the
+/// content light level, the mastering display color volume and the pixel
 /// aspect ratio (<c>clli</c>, <c>mdcv</c> and <c>pasp</c> boxes). AVIF has no text or resolution field.
 /// </para>
 /// </remarks>
@@ -143,15 +144,15 @@ public sealed class AvifEncoder : ImageEncoder
     public bool PremultiplyAlpha { get; init; }
 
     /// <summary>
-    /// Gets the clean aperture of a still image: the rectangle of the image that readers show, or <see langword="null"/>
-    /// (the default) for the whole image. Every pixel is encoded; the ones outside the rectangle stay in the file and are
-    /// hidden (<c>clap</c> property), so that loading the file gives the rectangle.
+    /// Gets the clean aperture of the image: the rectangle that readers show, or <see langword="null"/> (the default) for
+    /// the whole image. Every pixel is encoded; the ones outside the rectangle stay in the file and are hidden
+    /// (<c>clap</c> property of a still image, <c>clap</c> box of the tracks of an image sequence), so that loading the
+    /// file gives the rectangle.
     /// </summary>
     /// <remarks>
     /// The rectangle is in the coordinates of the stored pixels, before the orientation of the image. It must be inside
     /// the image. With subsampled chroma (<see cref="ChromaSubsampling"/>), its left coordinate must be even, and its top
-    /// coordinate too for 4:2:0: the aperture then selects whole chroma samples, which the format requires. An image
-    /// sequence has no clean aperture.
+    /// coordinate too for 4:2:0: the aperture then selects whole chroma samples, which the format requires.
     /// </remarks>
     /// <exception cref="ArgumentOutOfRangeException">The rectangle is empty, or its left or top coordinate is negative.</exception>
     public Rectangle? CleanAperture

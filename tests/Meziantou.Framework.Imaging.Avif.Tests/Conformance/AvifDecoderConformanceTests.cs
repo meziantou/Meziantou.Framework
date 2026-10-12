@@ -230,6 +230,19 @@ public sealed class AvifDecoderConformanceTests
             alphaBitDepth = file.AlphaTrack?.Configuration?.BitDepth ?? 0;
             size = (track.Width, track.Height);
 
+            // The clean aperture of the sample entry is the part of the samples that is shown, and the matrix of the track
+            // header the orientation of the images
+            if (track.CleanAperture is { } trackAperture)
+            {
+                var rectangle = trackAperture.GetRectangle(track.Width, track.Height);
+                Assert.NotNull(rectangle);
+                size = (rectangle.Value.Width, rectangle.Value.Height);
+                Assert.True(fixture.Entry.HasFeature("avif.seq.clap"));
+            }
+
+            orientation = track.Orientation;
+            Assert.Equal(orientation != 1, fixture.Entry.Features?.Any(feature => feature.StartsWith("avif.seq.matrix=", StringComparison.Ordinal)) ?? false);
+
             // One image per sample, the duration of each sample over the time scale of the media, the plays of the edit list
             Assert.Equal(track.Samples.Count, expected.FrameCount);
             Assert.Equal(track.Samples.Count, image.Frames.Count);

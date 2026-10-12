@@ -150,6 +150,11 @@ internal sealed class AvifMovieBox : IDisposable
             if (track.Size != color.Size)
                 throw AvifFormat.Unsupported("The alpha plane of the AVIF image sequence does not have the size of the color images.", "alpha plane of a different size");
 
+            // The clean aperture and the orientation of the color images apply to their alpha planes, whose track declares
+            // the same ones or none
+            if ((track.CleanAperture is { } alphaAperture && alphaAperture != color.Crop) || (track.Orientation is not ExifOrientation.TopLeft && track.Orientation != color.Orientation))
+                throw AvifFormat.Unsupported("The alpha track of the AVIF image sequence is not transformed as the color track.", "alpha plane with other transformations");
+
             Alpha = track;
             break;
         }
@@ -162,6 +167,40 @@ internal sealed class AvifMovieBox : IDisposable
 
             IsPremultiplied = true;
         }
+    }
+
+    // ISO/IEC 14496-12, section 8.3.2 "Track Header Box": the matrix { a, b, u, c, d, v, x, y, w } maps a point (p, q) of
+    // the images to the point (a p + c q + x, b p + d q + y) of the presentation, in 16.16 fixed point (2.30 for u, v and
+    // w, which are 0, 0 and 1). The eight matrices whose a, b, c and d are 0, 1 or -1 turn the images by quarter turns
+    // and mirror them: they are the eight orientations, whatever the translation that brings the result back to positive
+    // coordinates. Any other matrix places the track in the presentation of a player, like the width and the height of
+    // the box: it does not describe the images, which are returned as they are stored
+    private static ExifOrientation ReadOrientation(ref AvifBoxReader reader)
+    {
+        const int One = 0x00010000;
+        var a = reader.ReadInt32();
+        var b = reader.ReadInt32();
+        var u = reader.ReadInt32();
+        var c = reader.ReadInt32();
+        var d = reader.ReadInt32();
+        var v = reader.ReadInt32();
+        reader.ReadInt32();
+        reader.ReadInt32();
+        var w = reader.ReadInt32();
+        if (u is not 0 || v is not 0 || w is not 0x40000000)
+            return ExifOrientation.TopLeft;
+
+        return (a, b, c, d) switch
+        {
+            (-One, 0, 0, One) => ExifOrientation.TopRight, // the columns are mirrored
+            (-One, 0, 0, -One) => ExifOrientation.BottomRight, // a half turn
+            (One, 0, 0, -One) => ExifOrientation.BottomLeft, // the rows are mirrored
+            (0, One, One, 0) => ExifOrientation.LeftTop, // the columns become the rows
+            (0, One, -One, 0) => ExifOrientation.RightTop, // a quarter turn clockwise
+            (0, -One, -One, 0) => ExifOrientation.RightBottom,
+            (0, -One, One, 0) => ExifOrientation.LeftBottom, // a quarter turn anti-clockwise
+            _ => ExifOrientation.TopLeft,
+        };
     }
 
     // ISO/IEC 14496-12, section 8.3.1 "Track Box"
@@ -185,6 +224,13 @@ internal sealed class AvifMovieBox : IDisposable
                     {
                         var duration = box.ReadUInt32();
                         track.Duration = duration is uint.MaxValue ? ulong.MaxValue : duration;
+                    }
+
+                    // Two reserved words, the layer, the alternate group, the volume and a reserved field, then the matrix
+                    if (box.Remaining >= 16 + 36)
+                    {
+                        box.ReadBytes(16);
+                        track.Orientation = ReadOrientation(ref box);
                     }
 
                     break;
@@ -547,6 +593,11 @@ internal sealed class AvifMovieBox : IDisposable
                     case AvifFormat.Auxi:
                         child.ReadFullBoxHeader();
                         track.AuxiliaryType = child.ReadCString().ToArray();
+                        break;
+                    case AvifFormat.Clap:
+                        // The first aperture is the one of the samples, whose size the sample entry gives
+                        var aperture = AvifCleanAperture.Read(ref child, track.Size);
+                        track.CleanAperture ??= aperture;
                         break;
                     case AvifFormat.Pasp:
                         var pixelAspectRatio = AvifPresentationBoxes.ReadPixelAspectRatio(ref child);

@@ -116,7 +116,7 @@ public static class EncodedFieldInspector
             display = track.MasteringDisplay;
             pixelAspectRatio = track.PixelAspectRatio;
             result.Icc = track.IccProfile;
-            result.TransformOrientation = 1;
+            result.TransformOrientation = track.Orientation;
             var (exif, xmp) = file.FindSequenceMetadata();
             if (exif is not null)
                 result.Exif = file.ReadExifPayload(exif);

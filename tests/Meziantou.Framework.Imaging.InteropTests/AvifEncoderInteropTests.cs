@@ -405,6 +405,99 @@ public sealed class AvifEncoderInteropTests
     }
 
     [Theory]
+    // The display matrix FFmpeg reads from the track header of images of 12x8, in 16.16 fixed point (the last column in
+    // 2.30), and the angle it derives from it, which is anti-clockwise: a quarter turn clockwise is -90. The matrices
+    // are derived by hand from the EXIF definitions: (a, b, c, d) of p' = a p + c q + x, q' = b p + d q + y
+    [InlineData(ExifOrientation.TopLeft, null, null)]
+    [InlineData(ExifOrientation.TopRight, new[] { -65536, 0, 0, 0, 65536, 0, 786432, 0, 1073741824 }, null)]
+    [InlineData(ExifOrientation.BottomRight, new[] { -65536, 0, 0, 0, -65536, 0, 786432, 524288, 1073741824 }, 180)]
+    [InlineData(ExifOrientation.BottomLeft, new[] { 65536, 0, 0, 0, -65536, 0, 0, 524288, 1073741824 }, null)]
+    [InlineData(ExifOrientation.LeftTop, new[] { 0, 65536, 0, 65536, 0, 0, 0, 0, 1073741824 }, null)]
+    [InlineData(ExifOrientation.RightTop, new[] { 0, 65536, 0, -65536, 0, 0, 524288, 0, 1073741824 }, -90)]
+    [InlineData(ExifOrientation.RightBottom, new[] { 0, -65536, 0, -65536, 0, 0, 524288, 786432, 1073741824 }, null)]
+    [InlineData(ExifOrientation.LeftBottom, new[] { 0, -65536, 0, 65536, 0, 0, 0, 786432, 1073741824 }, 90)]
+    public async Task TheOrientationOfASequenceIsTheDisplayMatrixFFmpegReads(ExifOrientation orientation, int[]? expectedMatrix, int? rotation)
+    {
+        var ffmpeg = await RequiredTools.FFmpegAsync();
+        using var image = CreateImage(12, 8, monochrome: false, bitDepth: 8, seed: 71, transparent: false);
+        using var second = CreateImage(12, 8, monochrome: false, bitDepth: 8, seed: 72, transparent: false);
+        image.AppendFrame(second.Frames[0]);
+        image.Frames[0].Metadata.Duration = new FrameDuration(1, 10);
+        image.Frames[1].Metadata.Duration = new FrameDuration(1, 10);
+        image.Metadata.Orientation = orientation;
+        var path = await SaveAsync(image, new AvifEncoder(), $"sequence-orientation-{orientation}");
+
+        // The streams of the two images are the tracks: the color track, then the alpha track, which has the same matrix
+        using var probe = await ffmpeg.ProbeStreamsAsync(path, XunitCancellationToken);
+        var tracks = probe.RootElement.GetProperty("streams").EnumerateArray().Where(candidate => candidate.GetProperty("nb_frames").GetString() == "2").ToArray();
+        Assert.HasCount(2, tracks);
+        foreach (var track in tracks)
+        {
+            var sideData = track.TryGetProperty("side_data_list", out var list) ? list.EnumerateArray().Where(data => data.GetProperty("side_data_type").GetString() == "Display Matrix").ToArray() : [];
+            if (expectedMatrix is null)
+            {
+                Assert.Empty(sideData);
+                continue;
+            }
+
+            var matrix = Assert.Single(sideData);
+            var values = matrix.GetProperty("displaymatrix").GetString()!
+                .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .SelectMany(line => line[(line.IndexOf(':', StringComparison.Ordinal) + 1)..].Split(' ', StringSplitOptions.RemoveEmptyEntries))
+                .Select(value => int.Parse(value, CultureInfo.InvariantCulture))
+                .ToArray();
+            Assert.Equal(expectedMatrix, values);
+
+            // A half turn is 180 degrees either way
+            if (rotation is { } angle)
+                Assert.Equal(Math.Abs(angle) is 180 ? 180 : angle, Math.Abs(angle) is 180 ? Math.Abs(matrix.GetProperty("rotation").GetInt32()) : matrix.GetProperty("rotation").GetInt32());
+        }
+
+        // The library reads the orientation of its own file
+        Assert.Equal(orientation, Image.Identify(path).Metadata.Orientation);
+    }
+
+    [Fact]
+    public async Task TheCleanApertureOfASequenceIsReadByOtherReaders()
+    {
+        var libavif = await RequiredTools.LibAvifAsync();
+        var ffmpeg = await RequiredTools.FFmpegAsync();
+        using var image = CreateImage(12, 8, monochrome: false, bitDepth: 8, seed: 81, transparent: true);
+        using var second = CreateImage(12, 8, monochrome: false, bitDepth: 8, seed: 82, transparent: true);
+        image.AppendFrame(second.Frames[0]);
+        image.Frames[0].Metadata.Duration = new FrameDuration(1, 10);
+        image.Frames[1].Metadata.Duration = new FrameDuration(1, 10);
+        var aperture = new Rectangle(3, 1, 7, 5);
+        var path = await SaveAsync(image, new AvifEncoder { CleanAperture = aperture }, "sequence-clap");
+        // libavif derives the rectangle from the box of the sample entry, and decodes the samples that it selects
+        var info = await libavif.GetInfoAsync(path, XunitCancellationToken);
+        Assert.Equal((12, 8), (info.Width, info.Height));
+        Assert.Equal((3, 1, 7, 5), info.CleanApertureCrop);
+        var decoded = await libavif.DecodeAllFramesAsync(path, XunitCancellationToken);
+        using var loaded = Image.Load(path);
+        Assert.HasCount(2, decoded);
+        Assert.Equal((7, 5, 2), (loaded.Width, loaded.Height, loaded.Frames.Count));
+        using var expected = image.Clone();
+        expected.Crop(aperture, XunitCancellationToken);
+        for (var frame = 0; frame < 2; frame++)
+        {
+            AssertSamples(ImageSnapshots.CaptureFrame(expected.Frames[frame]), decoded[frame].Pixels, $"frame {frame} of the aperture decoded by avifdec {libavif.Version}");
+            AssertSamples(ImageSnapshots.CaptureFrame(expected.Frames[frame]), ImageSnapshots.CaptureFrame(loaded.Frames[frame]), $"frame {frame} of the aperture decoded by the library");
+        }
+
+        // FFmpeg reads the same aperture as the cropping of the frames of both tracks, whose pixels stay square
+        using var probe = await ffmpeg.ProbeStreamsAsync(path, XunitCancellationToken);
+        var tracks = probe.RootElement.GetProperty("streams").EnumerateArray().Where(candidate => candidate.GetProperty("nb_frames").GetString() == "2").ToArray();
+        Assert.HasCount(2, tracks);
+        foreach (var track in tracks)
+        {
+            var cropping = track.GetProperty("side_data_list").EnumerateArray().Single(data => data.GetProperty("side_data_type").GetString() == "Frame Cropping");
+            Assert.Equal((3, 2, 1, 2), (cropping.GetProperty("crop_left").GetInt32(), cropping.GetProperty("crop_right").GetInt32(), cropping.GetProperty("crop_top").GetInt32(), cropping.GetProperty("crop_bottom").GetInt32()));
+            Assert.Equal("1:1", track.GetProperty("sample_aspect_ratio").GetString());
+        }
+    }
+
+    [Theory]
     [InlineData(false)]
     [InlineData(true)]
     public async Task PremultipliedAlphaIsReadByAvifDec(bool isSequence)

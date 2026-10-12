@@ -155,13 +155,17 @@ internal static class FixtureTraits
     /// <summary>
     /// Gets the size that the canvas limits apply to. It is the size of the image, except for an AVIF image with a clean
     /// aperture: every frame of the bitstream is checked against the canvas limits (a documented rule), and the coded
-    /// image, whose size is the <c>ispe</c> property of the primary item, is larger than the aperture that is presented.
+    /// image, whose size is the <c>ispe</c> property of the primary item or the size of the sample entry of a sequence,
+    /// is larger than the aperture that is presented.
     /// </summary>
     public static (int Width, int Height) GetLimitedCanvas(GoldenFixture fixture)
     {
         ArgumentNullException.ThrowIfNull(fixture);
         if (fixture.Entry.HasFeature("avif.clap") && ReferenceAvif.Parse(fixture.ReadInput()).PrimaryItem?.Size is var (width, height))
             return ((int)width, (int)height);
+
+        if (fixture.Entry.HasFeature("avif.seq.clap") && ReferenceAvif.Parse(fixture.ReadInput()).ColorTrack is { } track)
+            return (track.Width, track.Height);
 
         return (fixture.Expected.Width, fixture.Expected.Height);
     }

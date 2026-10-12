@@ -21499,6 +21499,339 @@
       "notes": "Durations of 2, 3 and 1 tenths of a second; avifenc repeats forever by default (a repeating edit list and an indefinite track duration)."
     },
     {
+      "id": "avif/sequence-matrix-mirror-clap",
+      "kind": "valid",
+      "format": "avif",
+      "input": {
+        "path": "avif/sequence-matrix-mirror-clap.avif",
+        "sha256": "a7ac64093bb98b6a620e5bf2b8e9c12267677f7140062cc741ec2d91b44d290b",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/AvifCorpus.Container.cs (BuildSequences)",
+        "tools": [
+          "libavif 1.4.2 avifenc (aom 3.14.1) (payloads)",
+          "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "payloadsOf": "avif/sequence-alpha-repeat-2"
+        }
+      },
+      "features": [
+        "avif.alpha",
+        "avif.bitDepth=8",
+        "avif.colr=nclx",
+        "avif.majorBrand=avis",
+        "avif.matrix=6",
+        "avif.range=full",
+        "avif.seq.chunkOffsets=stco",
+        "avif.seq.clap",
+        "avif.seq.editList=repeat",
+        "avif.seq.interFrames",
+        "avif.seq.matrix=2",
+        "avif.seq.sampleSizes=stsz",
+        "avif.sequence",
+        "avif.subsampling=4:4:4"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "Planes of the samples decoded identically by both decoders, converted with exact rationals (matrix, range and chroma position of the file).",
+        "decoder": "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+        "backend": "ReferenceAvif and ReferenceYuvConverter (test harness)",
+        "command": "av1Vectors.decoders[].command",
+        "crossChecks": [
+          {
+            "decoder": "libavif 1.4.2 avifdec (dav1d 1.5.3)",
+            "command": "avifdec -j 1 --index all {input} {output}.png",
+            "maxAbsoluteError": 1,
+            "meanAbsoluteError": 0.1167,
+            "result": "differs",
+            "notes": "Independent conversion (its own chroma upsampling and rounding). Alpha is identical. Compared with the images as they are stored: avifdec does not read the matrix of the track header (orientation 2)."
+          }
+        ]
+      },
+      "expected": {
+        "width": 5,
+        "height": 4,
+        "pixelFormat": "Rgba32",
+        "colorModel": "YCbCr",
+        "bitsPerComponent": 8,
+        "orientation": 2,
+        "iccProfile": "none",
+        "cicp": {
+          "colorPrimaries": 1,
+          "transferCharacteristics": 13,
+          "matrixCoefficients": 6,
+          "fullRange": true
+        },
+        "animation": {
+          "totalPlays": 3,
+          "editList": {
+            "repeating": true,
+            "segmentDuration": 1040,
+            "trackDuration": 3120
+          }
+        },
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 2,
+        "frames": [
+          {
+            "duration": "1/25",
+            "encodedDelay": {
+              "sampleDelta": 40,
+              "timescale": 1000
+            },
+            "buffers": [
+              {
+                "path": "avif/sequence-matrix-mirror-clap.frame-0.rgba8.raw",
+                "sha256": "0f731842a56c540f0728294774ebbae5c997d33e8caf1895e231fa53ce9f70eb",
+                "layout": "rgba8",
+                "width": 5,
+                "height": 4,
+                "rowBytes": 20,
+                "byteLength": 80,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          },
+          {
+            "duration": "1/1",
+            "encodedDelay": {
+              "sampleDelta": 1000,
+              "timescale": 1000
+            },
+            "buffers": [
+              {
+                "path": "avif/sequence-matrix-mirror-clap.frame-1.rgba8.raw",
+                "sha256": "1b7227b76b206bdf5b03e68ae0e340543bedd384b5d326d20787480e2127387b",
+                "layout": "rgba8",
+                "width": 5,
+                "height": 4,
+                "rowBytes": 20,
+                "byteLength": 80,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "tolerance",
+        "maxAbsoluteError": 1,
+        "maxMeanAbsoluteError": 0.01,
+        "justification": "Exact-rational reference; the library rounds its matrix coefficients to 16 fractional bits (measured: max 0, mean 0.0). Allowed: 1 and the measured mean + 0.01; the cross-checks would justify max 2, mean 0.5."
+      },
+      "notes": "Both tracks have a clean aperture of 5x4 at (2, 2) in their sample entry and a matrix that mirrors the columns: the images are the aperture of the samples, and the orientation is 2."
+    },
+    {
+      "id": "avif/sequence-matrix-quarter-turn",
+      "kind": "valid",
+      "format": "avif",
+      "input": {
+        "path": "avif/sequence-matrix-quarter-turn.avif",
+        "sha256": "3ddbc491b7e68847ff8dfd8e5df79dfab461ded443f28a002f456bb6ce081db4",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/AvifCorpus.Container.cs (BuildSequences)",
+        "tools": [
+          "libavif 1.4.2 avifenc (aom 3.14.1) (payloads)",
+          "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "payloadsOf": "avif/sequence-lossless-infinite"
+        }
+      },
+      "features": [
+        "avif.bitDepth=8",
+        "avif.colr=nclx",
+        "avif.lossless",
+        "avif.majorBrand=avis",
+        "avif.matrix=0",
+        "avif.range=full",
+        "avif.seq.chunkOffsets=stco",
+        "avif.seq.editList=repeat-indefinite",
+        "avif.seq.interFrames",
+        "avif.seq.matrix=6",
+        "avif.seq.sampleSizes=stsz",
+        "avif.sequence",
+        "avif.subsampling=4:4:4"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "Planes of the samples decoded identically by both decoders, scaled without matrix.",
+        "decoder": "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+        "backend": "ReferenceAvif and ReferenceYuvConverter (test harness)",
+        "command": "av1Vectors.decoders[].command",
+        "crossChecks": [
+          {
+            "decoder": "libavif 1.4.2 avifdec (dav1d 1.5.3)",
+            "command": "avifdec -j 1 --index all {input} {output}.png",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "result": "exact",
+            "notes": "Compared with the images as they are stored: avifdec does not read the matrix of the track header (orientation 6)."
+          }
+        ]
+      },
+      "expected": {
+        "width": 8,
+        "height": 8,
+        "pixelFormat": "Rgb24",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 8,
+        "orientation": 6,
+        "iccProfile": "none",
+        "cicp": {
+          "colorPrimaries": 1,
+          "transferCharacteristics": 13,
+          "matrixCoefficients": 0,
+          "fullRange": true
+        },
+        "animation": {
+          "totalPlays": null,
+          "editList": {
+            "repeating": true,
+            "segmentDuration": 6,
+            "trackDuration": null
+          }
+        },
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 3,
+        "frames": [
+          {
+            "duration": "1/5",
+            "encodedDelay": {
+              "sampleDelta": 2,
+              "timescale": 10
+            },
+            "buffers": [
+              {
+                "path": "avif/sequence-lossless-infinite.frame-0.rgba8.raw",
+                "sha256": "ad1d6bd9e3dd483f1c36930baeda573c090a2d4480772c1291367aac0967d20d",
+                "layout": "rgba8",
+                "width": 8,
+                "height": 8,
+                "rowBytes": 32,
+                "byteLength": 256,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "avif/sequence-lossless-infinite.frame-0.rgb8.raw",
+                "sha256": "27e6ee81eb6e562ac59ad96226fac5a3084ab9d6480b080b1b229ec3d88c1280",
+                "layout": "rgb8",
+                "width": 8,
+                "height": 8,
+                "rowBytes": 24,
+                "byteLength": 192,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          },
+          {
+            "duration": "3/10",
+            "encodedDelay": {
+              "sampleDelta": 3,
+              "timescale": 10
+            },
+            "buffers": [
+              {
+                "path": "avif/sequence-lossless-infinite.frame-1.rgba8.raw",
+                "sha256": "a9805b934b4b82d5cf94480ca43995dbc3150c9246399020f5dbfcc692f5e8b6",
+                "layout": "rgba8",
+                "width": 8,
+                "height": 8,
+                "rowBytes": 32,
+                "byteLength": 256,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "avif/sequence-lossless-infinite.frame-1.rgb8.raw",
+                "sha256": "97a163ce3cafef69e1ae21f9caeb281ce2ac6f7c5e328d5714072aa99f5c4ec8",
+                "layout": "rgb8",
+                "width": 8,
+                "height": 8,
+                "rowBytes": 24,
+                "byteLength": 192,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          },
+          {
+            "duration": "1/10",
+            "encodedDelay": {
+              "sampleDelta": 1,
+              "timescale": 10
+            },
+            "buffers": [
+              {
+                "path": "avif/sequence-lossless-infinite.frame-2.rgba8.raw",
+                "sha256": "b3246ff7b343f6a1c86f4e6d3bdccd85f6ecbeb1ef91e42becb772e40d1cc6cb",
+                "layout": "rgba8",
+                "width": 8,
+                "height": 8,
+                "rowBytes": 32,
+                "byteLength": 256,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "avif/sequence-lossless-infinite.frame-2.rgb8.raw",
+                "sha256": "246ece4abf46e9c81122119d085246d088e6e6d792810ded076563db4474802e",
+                "layout": "rgb8",
+                "width": 8,
+                "height": 8,
+                "rowBytes": 24,
+                "byteLength": 192,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      },
+      "notes": "The matrix of the track header turns the images a quarter turn clockwise: the orientation is 6, and the images are returned as they are stored."
+    },
+    {
       "id": "avif/sequence-mdat-first",
       "kind": "valid",
       "format": "avif",

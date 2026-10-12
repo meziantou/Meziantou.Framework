@@ -49,6 +49,9 @@ internal static class AvifFileWriter
 
         /// <summary>Gets the part of the image that readers show, or <see langword="null"/> for the whole image.</summary>
         public Rectangle? CleanAperture { get; init; }
+
+        /// <summary>Gets a value indicating whether the color samples are multiplied by the alpha of their pixel; ignored without alpha plane.</summary>
+        public bool IsPremultiplied { get; init; }
     }
 
     /// <summary>
@@ -156,6 +159,10 @@ internal static class AvifFileWriter
             if (hasAlpha)
                 WriteItemReference(writer, AvifFormat.Auxl, AlphaItemId, ColorItemId);
 
+            // ISO/IEC 23008-12, section 6.6.2.2: the color image refers to the alpha plane that its colors are multiplied by
+            if (hasAlpha && image.IsPremultiplied)
+                WriteItemReference(writer, AvifFormat.Prem, ColorItemId, AlphaItemId);
+
             if (hasExif)
                 WriteItemReference(writer, AvifFormat.Cdsc, exifItemId, ColorItemId);
 
@@ -256,6 +263,9 @@ internal static class AvifFileWriter
         public ContentLightLevel? ContentLightLevel { get; init; }
 
         public MasteringDisplayColorVolume? MasteringDisplay { get; init; }
+
+        /// <summary>Gets a value indicating whether the color samples are multiplied by the alpha of their pixel; ignored without alpha track.</summary>
+        public bool IsPremultiplied { get; init; }
     }
 
     /// <summary>
@@ -369,6 +379,15 @@ internal static class AvifFileWriter
             box = writer.BeginBox(AvifFormat.Tref);
             var reference = writer.BeginBox(AvifFormat.Auxl);
             writer.WriteUInt32(1);
+            writer.EndBox(reference);
+            writer.EndBox(box);
+        }
+        else if (movie.IsPremultiplied && movie.Alpha is not null)
+        {
+            // The color track refers to the alpha track that its colors are multiplied by
+            box = writer.BeginBox(AvifFormat.Tref);
+            var reference = writer.BeginBox(AvifFormat.Prem);
+            writer.WriteUInt32(2);
             writer.EndBox(reference);
             writer.EndBox(box);
         }

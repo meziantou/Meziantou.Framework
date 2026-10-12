@@ -96,6 +96,65 @@ public sealed class AvifDecoderTests
     }
 
     [Fact]
+    public void PremultipliedAlphaIsAReferenceFromThePrimaryItemToItsAlphaPlane()
+    {
+        static AvifFileBuilder WithAlpha()
+        {
+            var builder = Still(13, 7);
+            builder.AddItem(2, "av01", Payload,
+                builder.AddProperty(AvifFileBuilder.ImageSize(13, 7)),
+                -builder.AddProperty(AvifFileBuilder.Av1Configuration(0, 0, 8, monochrome: true, 1, 1)),
+                builder.AddProperty(AvifFileBuilder.AuxiliaryType(ReferenceAvif.AlphaAuxiliaryType)));
+            builder.References.Add(("auxl", 2, [1]));
+            return builder;
+        }
+
+        // ISO/IEC 23008-12, section 6.6.2.2: the color image refers to the alpha plane that its colors are multiplied by
+        var premultiplied = WithAlpha();
+        premultiplied.References.Add(("prem", 1, [2]));
+        var data = premultiplied.Build();
+        Assert.Equal(PixelFormat.Rgba32, Image.Identify(data).PixelFormat);
+        Assert.True(ReferenceAvif.Parse(data).IsPremultiplied);
+        Assert.False(ReferenceAvif.Parse(WithAlpha().Build()).IsPremultiplied);
+
+        // A reference to an item that is not the alpha plane of the image, or without any alpha plane, is invalid
+        var other = WithAlpha();
+        other.References.Add(("prem", 1, [3]));
+        Assert.Throws<InvalidImageContentException>(() => Image.Identify(other.Build()));
+        var opaque = Still(13, 7);
+        opaque.References.Add(("prem", 1, [2]));
+        Assert.Throws<InvalidImageContentException>(() => Image.Identify(opaque.Build()));
+
+        // The reference of another item to the primary item says nothing of the primary item
+        var reversed = WithAlpha();
+        reversed.References.Add(("prem", 2, [1]));
+        Assert.Equal(PixelFormat.Rgba32, Image.Identify(reversed.Build()).PixelFormat);
+        Assert.False(ReferenceAvif.Parse(reversed.Build()).IsPremultiplied);
+    }
+
+    [Theory]
+    // color * maximum / alpha, rounded to the nearest integer and clipped, computed by hand:
+    // 100 * 255 / 128 = 199.2; 1 * 255 / 2 = 127.5; 127 * 255 / 254 = 127.5; 3 * 255 / 7 = 109.3
+    [InlineData(100, 128, 255, 199)]
+    [InlineData(1, 2, 255, 128)] // a half rounds up
+    [InlineData(127, 254, 255, 128)]
+    [InlineData(3, 7, 255, 109)]
+    [InlineData(1, 1, 255, 255)]
+    [InlineData(0, 1, 255, 0)]
+    [InlineData(200, 100, 255, 255)] // a color above its alpha is clipped
+    [InlineData(77, 255, 255, 77)] // an opaque pixel is unchanged
+    [InlineData(77, 0, 255, 0)] // nothing is left of the color of a transparent pixel
+    [InlineData(0, 0, 255, 0)]
+    [InlineData(1000, 32768, 65535, 2000)] // 1000 * 65535 / 32768 = 1999.97
+    [InlineData(1, 65534, 65535, 1)] // 1.00002
+    [InlineData(32767, 65534, 65535, 32768)] // 32767.5: a half rounds up
+    [InlineData(40000, 65535, 65535, 40000)]
+    public void TheReferenceDivisionOfPremultipliedColorsIsRoundedToNearest(int color, int alpha, int maximum, int expected)
+    {
+        Assert.Equal(expected, ReferenceYuvConverter.Unpremultiply(color, alpha, maximum));
+    }
+
+    [Fact]
     public void AuxiliaryImageThatIsNotAlphaIsNotRead()
     {
         // A depth map is an auxiliary image too; only the alpha type gives the image an alpha channel
@@ -677,8 +736,15 @@ public sealed class AvifDecoderTests
         Assert.Equal(PixelFormat.Rgb24, Image.Identify(depth).PixelFormat);
         Assert.Null(ReferenceAvif.Parse(depth).AlphaTrack);
 
-        // Premultiplied alpha, an alpha plane of another size: not supported; another number of images: invalid
-        Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(WithAlpha((color, _) => color.References.Add(("prem", [2]))).Build()));
+        // Colors that are premultiplied by the alpha track are read; by a track that is not the alpha track, it is invalid
+        var premultiplied = WithAlpha((color, _) => color.References.Add(("prem", [2]))).Build();
+        Assert.Equal(PixelFormat.Rgba32, Image.Identify(premultiplied).PixelFormat);
+        Assert.True(ReferenceAvif.Parse(premultiplied).IsPremultiplied);
+        Assert.False(ReferenceAvif.Parse(data).IsPremultiplied);
+        Assert.Throws<InvalidImageContentException>(() => Image.Identify(WithAlpha((color, _) => color.References.Add(("prem", [7]))).Build()));
+        Assert.Throws<InvalidImageContentException>(() => Image.Identify(Sequence(configure: track => track.References.Add(("prem", [2]))).Build()));
+
+        // An alpha plane of another size: not supported; another number of images: invalid
         Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(WithAlpha((_, alpha) => alpha.Width = 4).Build()));
         Assert.Throws<InvalidImageContentException>(() => Image.Identify(WithAlpha((_, alpha) => alpha.Samples.RemoveAt(2)).Build()));
     }

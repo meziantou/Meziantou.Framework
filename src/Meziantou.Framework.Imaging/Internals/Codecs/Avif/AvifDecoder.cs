@@ -99,7 +99,7 @@ internal sealed class AvifDecoder : AvifDecodeObserver
         var nclx = structure.ContainerColorDescription;
         var matrix = nclx?.MatrixCoefficients ?? color.Sequence.MatrixCoefficients;
         var fullRange = nclx?.FullRange ?? color.Sequence.FullRange;
-        var converter = new AvifYuvConverter(color.Sequence, matrix, fullRange, alpha?.Sequence, structure.PixelFormat);
+        var converter = new AvifYuvConverter(color.Sequence, matrix, fullRange, alpha?.Sequence, structure.PixelFormat, alpha is not null && structure.IsPremultiplied);
         var width = codedSize.Width;
         var height = codedSize.Height;
         using var rows = Av1PooledArray<ushort>.Rent(_context.Scope, 2L * width, clear: false);

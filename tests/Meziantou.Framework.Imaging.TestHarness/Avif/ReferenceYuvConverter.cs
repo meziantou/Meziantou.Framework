@@ -158,6 +158,25 @@ public static class ReferenceYuvConverter
             : RoundClipped(sample - (16 * scale), 219 * scale, outputMaximum);
     }
 
+    /// <summary>
+    /// Divides a color that is multiplied by the alpha of its pixel (premultiplied alpha) by that alpha: the exact quotient
+    /// <c>color * outputMaximum / alpha</c>, rounded to the nearest integer (a half rounds up) and clipped to the output.
+    /// Nothing is left of the color of a fully transparent pixel, which is black.
+    /// </summary>
+    /// <param name="color">The converted color sample, 0 to <paramref name="outputMaximum"/>.</param>
+    /// <param name="alpha">The converted alpha sample, 0 to <paramref name="outputMaximum"/>.</param>
+    /// <param name="outputMaximum">The maximum of the samples: 255 or 65535.</param>
+    /// <returns>The color sample of straight alpha.</returns>
+    public static int Unpremultiply(int color, int alpha, int outputMaximum)
+    {
+        if (alpha == 0)
+            return 0;
+
+        // floor(color * maximum / alpha + 1/2), in integers
+        var quotient = ((2 * (BigInteger)color * outputMaximum) + alpha) / (2 * (BigInteger)alpha);
+        return (int)BigInteger.Min(quotient, outputMaximum);
+    }
+
     /// <summary>Upsamples a chroma plane to the resolution of the luma plane.</summary>
     /// <param name="plane">The chroma plane.</param>
     /// <param name="width">The width of the image.</param>

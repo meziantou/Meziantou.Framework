@@ -101,12 +101,13 @@ internal static partial class AvifCorpus
         ["avif/no-colr-bitstream-bt709"] = (0, 0.0),
         ["avif/no-colr-bt709-mdat-first"] = (0, 0.0),
         ["avif/no-colr-unspecified"] = (0, 0.0),
-        ["avif/sequence-8-frames-444-slow"] = (0, 0.0),
-        ["avif/sequence-8-frames-alpha-lossy"] = (1, 0.0002), // one unit on a few samples
+        ["avif/premultiplied-alpha-lossy-420"] = (0, 0.0),
         ["avif/sequence-10bit-once"] = (0, 0.0),
         ["avif/sequence-12-frames-420"] = (1, 0.0002), // one unit on a few samples
         ["avif/sequence-8-frames-420-10bit"] = (1, 0.0),
         ["avif/sequence-8-frames-422-key-frames"] = (0, 0.0),
+        ["avif/sequence-8-frames-444-slow"] = (0, 0.0),
+        ["avif/sequence-8-frames-alpha-lossy"] = (1, 0.0002), // one unit on a few samples
         ["avif/sequence-alpha-10bit"] = (1, 0.0),
         ["avif/sequence-alpha-repeat-2"] = (0, 0.0),
         ["avif/sequence-co64-stz2"] = (0, 0.0),
@@ -115,6 +116,7 @@ internal static partial class AvifCorpus
         ["avif/sequence-hdr-boxes"] = (0, 0.0),
         ["avif/sequence-mdat-first"] = (0, 0.0),
         ["avif/sequence-no-edit-list"] = (0, 0.0),
+        ["avif/sequence-premultiplied"] = (0, 0.0),
     };
 
     private static bool IsAvifFixture(Obj fixture) => (string?)fixture["format"] == "avif";
@@ -487,7 +489,7 @@ internal static partial class AvifCorpus
     }
 
     /// <summary>Converts the planes of a color image and of its alpha plane to a frame, then keeps a rectangle of it.</summary>
-    private static Img ToFrame(PlaneImage color, PlaneImage? alpha, int matrix, bool fullRange, (int X, int Y, int Width, int Height) crop)
+    private static Img ToFrame(PlaneImage color, PlaneImage? alpha, int matrix, bool fullRange, (int X, int Y, int Width, int Height) crop, bool isPremultiplied = false)
     {
         var deep = color.Color.BitDepth > 8 || alpha?.Color.BitDepth > 8;
         var maximum = deep ? 65535 : 255;
@@ -518,6 +520,15 @@ internal static partial class AvifCorpus
             {
                 var i = (y * width) + x;
                 var a = alpha is null ? maximum : ReferenceYuvConverter.ScaleSample(alpha.Planes[0][i], alpha.Color.BitDepth, alpha.FullRange, maximum);
+                if (isPremultiplied && alpha is not null)
+                {
+                    // The colors are divided by the alpha once they are converted
+                    for (var channel = 0; channel < 3; channel++)
+                    {
+                        rgb[(3 * i) + channel] = ReferenceYuvConverter.Unpremultiply(rgb[(3 * i) + channel], a, maximum);
+                    }
+                }
+
                 pixels.Add(model switch
                 {
                     "gray" => new Px(rgb[3 * i]),
@@ -627,8 +638,9 @@ internal static partial class AvifCorpus
         {
             (alpha, var alphaPayloads, _, _) = DecodeItem(tools, scratch, file, alphaItem, "alpha");
             payloads.AddRange(alphaPayloads);
-            Py.Assert(!file.ItemReferences.Any(reference => reference.Type == "prem"), "premultiplied alpha is not a valid fixture");
             features.Add("avif.alpha");
+            if (file.IsPremultiplied)
+                features.Add("avif.premultiplied");
         }
 
         var nclx = primary.Nclx;
@@ -690,7 +702,7 @@ internal static partial class AvifCorpus
             MasteringDisplay = primary.MasteringDisplay,
             PixelAspectRatio = primary.PixelAspectRatio,
             HasMiafTransformOrder = primary.HasMiafTransformOrder,
-            Frames = [ToFrame(color, alpha, matrix, fullRange, crop)],
+            Frames = [ToFrame(color, alpha, matrix, fullRange, crop, file.IsPremultiplied)],
             PixelFormat = PixelFormatOf(color, alpha),
             ColorModel = ColorModelOf(color, alpha is not null, matrix),
             BitsPerComponent = color.Color.BitDepth,
@@ -764,8 +776,9 @@ internal static partial class AvifCorpus
         {
             alphaPayload = DecodePayload(tools, scratch, "alpha", [.. alphaTrack.Samples.SelectMany(sample => ToTemporalUnit(file.ReadSample(sample)))]);
             Py.Assert(alphaPayload.Frames.Count == payload.Frames.Count, "one alpha plane per image");
-            Py.Assert(!track.References.Any(reference => reference.Type == "prem"), "premultiplied alpha is not a valid fixture");
             features.Add("avif.alpha");
+            if (file.IsPremultiplied)
+                features.Add("avif.premultiplied");
         }
 
         var first = payload.Frames[0];
@@ -825,7 +838,7 @@ internal static partial class AvifCorpus
         if (track.Samples.Skip(1).Any(sample => sample.Offset < track.Samples[0].Offset))
             features.Add("avif.seq.samplesOutOfOrder");
 
-        var frames = payload.Frames.Select((frame, i) => ToFrame(frame, alphaPayload?.Frames[i], matrix, fullRange, (0, 0, frame.Width, frame.Height))).ToList();
+        var frames = payload.Frames.Select((frame, i) => ToFrame(frame, alphaPayload?.Frames[i], matrix, fullRange, (0, 0, frame.Width, frame.Height), file.IsPremultiplied)).ToList();
         AddPresentationFeatures(features, track.ContentLightLevel, track.MasteringDisplay, track.PixelAspectRatio);
         return new AvifReference
         {

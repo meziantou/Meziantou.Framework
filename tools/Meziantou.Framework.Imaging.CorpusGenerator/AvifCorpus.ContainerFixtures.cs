@@ -205,6 +205,16 @@ internal static partial class AvifCorpus
         Still(context, "lossy-420-chroma-colocated", Y4m(8, 8, "420paldv"), "-q 70 --cicp 1/13/6", ["avif.chromaSamplePosition=colocated"], sourceName: "source.y4m");
         Still(context, "lossy-420-alpha", Png(WithAlpha(smooth)), "-q 70 --qalpha 70 -y 420 --cicp 1/13/6", ["avif.alpha", "avif.matrix=6", "avif.subsampling=4:2:0"]);
 
+        // Premultiplied alpha, as avifenc writes it (-p: a prem reference from the color image to its alpha plane): the
+        // colors are divided by the alpha once they are converted. Lossless content is exact; the lossy image is matrixed
+        var premultiplied = WithAlpha(CommonCorpus.PatternDetailColor(8, 6, 3));
+        Still(context, "premultiplied-alpha", Png(premultiplied), "-l -p", ["avif.premultiplied", "avif.alpha", "avif.lossless"],
+            notes: "Written by avifenc -p: a prem item reference declares that the colors are multiplied by the alpha of their pixel. The colors of the fully transparent pixels are black.");
+        Still(context, "premultiplied-alpha-10bit", Png(WithDeepAlpha(DeepColor(8, 6, 10), 10)), "-l -d 10 -p", ["avif.premultiplied", "avif.alpha", "avif.bitDepth=10"],
+            notes: "Premultiplied 10-bit colors: the division by the alpha is the one of the 16-bit samples.");
+        Still(context, "premultiplied-alpha-lossy-420", Png(WithAlpha(CommonCorpus.PatternSmoothColor(6, 8))), "-q 70 --qalpha 70 -y 420 --cicp 1/13/6 -p", ["avif.premultiplied", "avif.alpha", "avif.matrix=6", "avif.subsampling=4:2:0"],
+            notes: "Premultiplied colors that are matrixed and subsampled, under a lossy alpha plane: a color that the coding left above its alpha is clipped.");
+
         // The boxes that describe how the samples are presented and change no pixel: the shape of the pixels and the
         // light levels as avifenc writes them, then a mastering display, which no option of avifenc writes
         Still(context, "lossy-420-pasp-clli", Png(CommonCorpus.PatternSmoothColor(8, 6)), "-q 70 -y 420 --cicp 1/13/6 --pasp 4,3 --clli 1000,400", ["avif.pasp", "avif.clli"],
@@ -571,6 +581,15 @@ internal static partial class AvifCorpus
             ["avif.seq.editList=repeat", "avif.alpha"], "Two repetitions: three plays.");
         Sequence(context, "sequence-10bit-once", [DeepColor(8, 8, 10), Shift(DeepColor(8, 8, 10))], "-q 70 -d 10 -y 420 --cicp 9/16/9 -r limited --timescale 30000 --repetition-count 0", [1001, 1001],
             ["avif.seq.editList=once", "avif.bitDepth=10"], "No repetition: an edit list that does not repeat, played once. The duration of a frame is 1001/30000 s.");
+
+        // A prem track reference: the colors of the color track are multiplied by the alpha of the alpha track. The samples
+        // are those of a sequence whose colors are not, so that most colors are above their alpha and are clipped
+        Assembled(context, "sequence-premultiplied", "sequence-alpha-repeat-2", builder =>
+        {
+            var color = builder.Tracks.Single(track => track.HandlerType == "pict");
+            var alpha = builder.Tracks.Single(track => track.HandlerType == "auxv");
+            color.References.Add(("prem", [alpha.Id]));
+        }, ["avif.sequence", "avif.premultiplied", "avif.alpha"], "The color track has a prem reference to its alpha track: the colors of every image are divided by its alpha (the samples are not multiplied by it, so most colors are clipped).", "BuildSequences");
 
         // The boxes of the visual sample entry that describe how the samples are presented
         Assembled(context, "sequence-hdr-boxes", "sequence-10bit-once", builder =>

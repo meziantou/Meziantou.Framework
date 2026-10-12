@@ -893,30 +893,58 @@ public sealed class AvifDecoderInteropTests
     }
 
     /// <summary>
-    /// Files that libavif writes and reads and that the library documents as unsupported: loading them throws
-    /// <see cref="UnsupportedImageFeatureException"/>; they are never decoded approximately.
+    /// Premultiplied alpha, as avifenc writes it (<c>--premultiply</c>): the library divides the colors by the alpha of their
+    /// pixel once they are converted to the depth of the output, with an integer division rounded to nearest; avifdec
+    /// divides the 16-bit samples in floating point. Alpha is exact. The division multiplies what separates the two
+    /// decoders by <c>maximum / alpha</c>, so the pixels whose alpha is below a sixteenth of the range are only compared for
+    /// their alpha, and the bounds are the ones of the conversion times at most 16:
+    /// <list type="bullet">
+    /// <item><description>lossless 8-bit planes: the colors are exact before the division, and an 8-bit result is at most half an 8-bit step (128.5 units) from the 16-bit result of avifdec. Measured: 129.</description></item>
+    /// <item><description>lossless 10-bit planes: both sides produce 16-bit samples, and the single-precision scaling of avifdec is one unit off for some values (<see cref="ColorBound.Scaled16"/>). Measured: 7.</description></item>
+    /// <item><description>lossy 4:4:4 8-bit planes: the library rounds the converted color to 8 bits before the division, at most half an 8-bit step from the color avifdec divides (<see cref="ColorBound.Matrix8"/>), then both results are rounded. Measured: 1307 (5.1/255).</description></item>
+    /// </list>
     /// </summary>
     [Theory]
-    [InlineData("premultiplied-alpha")]
-    public async Task FilesDocumentedAsUnsupportedAreRejected(string name)
+    [InlineData("premultiplied-lossless-8", false, new[] { "--lossless", "--premultiply" }, 130)]
+    [InlineData("premultiplied-lossless-10", true, new[] { "--lossless", "--depth", "10", "--premultiply" }, 16)]
+    [InlineData("premultiplied-lossy-444-8", false, new[] { "--qcolor", "60", "--qalpha", "60", "--yuv", "444", "--premultiply" }, (16 * 129) + 130)]
+    public async Task PremultipliedAlphaIsDividedAsAvifDecDoes(string name, bool deep, string[] options, int maxColorError)
     {
         var avif = await RequiredTools.LibAvifAsync();
-        var (source, options) = name switch
-        {
-            "premultiplied-alpha" => (SourceKind.Rgba8, (string[])["--qcolor", "60", "--premultiply"]),
-            _ => throw new ArgumentOutOfRangeException(nameof(name), name, "Unknown case."),
-        };
-
-        var sourcePath = await SaveSourceAsync("unsupported-" + name, CreateSource(source, 64, 64, seed: 31));
-        var path = ArtifactPath("unsupported-" + name + ".avif");
+        var sourcePath = await SaveSourceAsync(name, CreateSource(deep ? SourceKind.Rgba16 : SourceKind.Rgba8, 64, 64, seed: 31));
+        var path = ArtifactPath(name + ".avif");
         await avif.EncodeAsync([.. options, sourcePath], path, XunitCancellationToken);
+        var info = await avif.GetInfoAsync(path, XunitCancellationToken);
+        Assert.Equal("Premultiplied", info.Alpha);
+        Assert.True(ReferenceAvif.Parse(await File.ReadAllBytesAsync(path, XunitCancellationToken)).IsPremultiplied);
 
-        // The file is valid for the reference decoder
         var reference = await avif.DecodeAsync(path, XunitCancellationToken);
-        Assert.Equal((64, 64), (reference.Width, reference.Height));
+        using var image = Image.Load(path);
+        Assert.Equal(info.BitDepth > 8 ? PixelFormat.Rgba64 : PixelFormat.Rgba32, image.PixelFormat);
+        var actual = ToRgba16(ImageSnapshots.CaptureFrame(image.Frames[0]));
+        Assert.Equal((reference.Width, reference.Height), (actual.Width, actual.Height));
+        var max = 0;
+        var compared = 0;
+        for (var y = 0; y < actual.Height; y++)
+        {
+            for (var x = 0; x < actual.Width; x++)
+            {
+                var alpha = actual.GetSample(x, y, 3);
+                Assert.Equal(reference.Pixels.GetSample(x, y, 3), alpha, message: $"{name}: alpha of pixel ({x}, {y}).");
+                if (alpha < 4096)
+                    continue;
 
-        var exception = Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(path).Dispose());
-        Assert.Equal(ImageFormat.Avif, exception.Format);
+                compared++;
+                for (var channel = 0; channel < 3; channel++)
+                {
+                    max = Math.Max(max, Math.Abs(reference.Pixels.GetSample(x, y, channel) - actual.GetSample(x, y, channel)));
+                }
+            }
+        }
+
+        TestContext.Current.TestOutputHelper?.WriteLine(string.Create(CultureInfo.InvariantCulture, $"{name}: {compared} pixels compared, max color difference {max} ({max / 257.0:F3}/255), bound {maxColorError}"));
+        Assert.True(compared > 1000, $"{name}: only {compared} pixels have enough alpha to be compared.");
+        Assert.True(max <= maxColorError, $"{name}: the largest color difference is {max} ({max / 257.0:F3}/255), over the bound of {maxColorError}.");
     }
 
     /// <summary>

@@ -51,6 +51,12 @@ internal sealed class AvifImagePlan
 
     public bool HasAlpha => Alpha is not null;
 
+    /// <summary>
+    /// Gets a value indicating whether the color samples are multiplied by the alpha of their pixel: a <c>prem</c>
+    /// reference from the primary item to its alpha plane (ISO/IEC 23008-12, section 6.6.2.2 "Alpha plane").
+    /// </summary>
+    public bool IsPremultiplied { get; private set; }
+
     /// <summary>Gets the largest bit depth of the color and alpha planes.</summary>
     public int BitDepth => Math.Max(Color.BitDepth, Alpha?.BitDepth ?? 0);
 
@@ -73,12 +79,9 @@ internal sealed class AvifImagePlan
         var plan = new AvifImagePlan();
         plan.Color = AvifCodedImage.Create(meta, payload, primary, limits);
 
-        // The alpha plane is an auxiliary image of the primary item; a premultiplied color image cannot be stored
+        // The alpha plane is an auxiliary image of the primary item
         foreach (var reference in meta.References)
         {
-            if (reference.Type is AvifFormat.Prem && (reference.FromItemId == primaryId || reference.ToItemIds.AsSpan().Contains(primaryId)))
-                throw AvifFormat.Unsupported("The AVIF image has premultiplied alpha.", "premultiplied alpha");
-
             if (reference.Type is not AvifFormat.Auxl || !reference.ToItemIds.AsSpan().Contains(primaryId) || plan.Alpha is not null)
                 continue;
 
@@ -92,6 +95,18 @@ internal sealed class AvifImagePlan
             // The transformations of the color image apply to its alpha plane, which declares the same ones or none
             if (plan.Alpha.Transforms.Count is not 0 && !AvifCodedImage.HasSameTransforms(plan.Color, plan.Alpha, payload))
                 throw AvifFormat.Unsupported("The alpha plane of the AVIF image is not transformed as the color image.", "alpha plane with other transformations");
+        }
+
+        // The colors of the primary item are premultiplied by the alpha plane that it refers to, which is its own
+        foreach (var reference in meta.References)
+        {
+            if (reference.Type is not AvifFormat.Prem || reference.FromItemId != primaryId)
+                continue;
+
+            if (plan.Alpha is not { } alpha || !reference.ToItemIds.AsSpan().Contains(alpha.Item.Id))
+                throw AvifFormat.Invalid("the image is premultiplied by an item that is not its alpha plane.");
+
+            plan.IsPremultiplied = true;
         }
 
         plan.ReadPrimaryProperties(meta, payload, primary);

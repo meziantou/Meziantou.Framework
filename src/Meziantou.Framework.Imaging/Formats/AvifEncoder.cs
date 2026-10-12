@@ -130,6 +130,19 @@ public sealed class AvifEncoder : ImageEncoder
     public bool ClearTransparentColors { get; init; }
 
     /// <summary>
+    /// Gets a value indicating whether the color of every pixel is stored multiplied by its alpha (premultiplied alpha).
+    /// Defaults to <see langword="false"/>: colors and alpha are stored independently.
+    /// </summary>
+    /// <remarks>
+    /// The multiplication is rounded to nearest at the precision of the pixels, then coded like any color, so it is the
+    /// consent to that rounding: a reader divides the colors by the alpha, which does not give the original color back for
+    /// the pixels that are nearly transparent, and nothing is left of the color of a fully transparent pixel
+    /// (<see cref="ClearTransparentColors"/> then changes nothing). The alpha values are unchanged. Lossless output codes
+    /// the multiplied samples exactly. Ignored when the image has no alpha.
+    /// </remarks>
+    public bool PremultiplyAlpha { get; init; }
+
+    /// <summary>
     /// Gets the clean aperture of a still image: the rectangle of the image that readers show, or <see langword="null"/>
     /// (the default) for the whole image. Every pixel is encoded; the ones outside the rectangle stay in the file and are
     /// hidden (<c>clap</c> property), so that loading the file gives the rectangle.

@@ -76,6 +76,22 @@ public sealed class ReferenceAvif
     /// <summary>Gets the alpha auxiliary image of the primary item, or <see langword="null"/>.</summary>
     public Item? AlphaItem => PrimaryItemId is { } id ? FindAuxiliary(id, AlphaAuxiliaryType) : null;
 
+    /// <summary>
+    /// Gets a value indicating whether the colors of the image that the file presents are multiplied by the alpha of their
+    /// pixel: a <c>prem</c> reference from the primary item to its alpha plane (ISO/IEC 23008-12, section 6.6.2.2), or
+    /// from the color track of an image sequence to its alpha track.
+    /// </summary>
+    public bool IsPremultiplied
+    {
+        get
+        {
+            if (IsSequence)
+                return ColorTrack is { } color && AlphaTrack is { } alphaTrack && color.References.Any(reference => reference.Type == "prem" && reference.TrackIds.Contains(alphaTrack.Id));
+
+            return PrimaryItemId is { } id && AlphaItem is { } alpha && ItemReferences.Any(reference => reference.Type == "prem" && reference.FromItemId == id && reference.ToItemIds.Contains(alpha.Id));
+        }
+    }
+
     /// <summary>Gets the first <c>pict</c> track that has AV1 samples: the image sequence of the file, or <see langword="null"/>.</summary>
     public Track? ColorTrack => _tracks.FirstOrDefault(track => track.HandlerType == "pict" && track.SampleEntryType == "av01" && track.Samples.Count > 0);
 

@@ -50,6 +50,7 @@ internal sealed class AvifEncoderCodec : ImageEncoderCodec
         private readonly byte[]? _xmp;
         private readonly ExifOrientation _orientation;
         private readonly Rectangle? _cleanAperture;
+        private readonly bool _premultiplyAlpha;
         private readonly PixelAspectRatio? _pixelAspectRatio;
         private readonly ContentLightLevel? _contentLightLevel;
         private readonly MasteringDisplayColorVolume? _masteringDisplay;
@@ -123,7 +124,8 @@ internal sealed class AvifEncoderCodec : ImageEncoderCodec
             }
 
             _colorDescription = new CicpColorDescription((byte)primaries, (byte)transfer, (byte)matrix, fullRange);
-            _converter = new AvifRgbConverter(_layout, bitDepth, subsamplingX, subsamplingY, matrix, fullRange, _encoder.ClearTransparentColors);
+            _premultiplyAlpha = _encoder.PremultiplyAlpha && PixelFormats.HasAlpha(_sourceFormat);
+            _converter = new AvifRgbConverter(_layout, bitDepth, subsamplingX, subsamplingY, matrix, fullRange, _encoder.ClearTransparentColors, _premultiplyAlpha);
             _icc = metadata.IccProfile?.Data.ToArray();
             _exif = metadata.Exif;
             _xmp = metadata.XmpProfile?.Data.ToArray();
@@ -443,6 +445,7 @@ internal sealed class AvifEncoderCodec : ImageEncoderCodec
                         ContentLightLevel = _contentLightLevel,
                         MasteringDisplay = _masteringDisplay,
                         CleanAperture = _cleanAperture,
+                        IsPremultiplied = _premultiplyAlpha,
                     },
                     _isSequence ? _movieReservation : -1);
 
@@ -518,6 +521,7 @@ internal sealed class AvifEncoderCodec : ImageEncoderCodec
                     PixelAspectRatio = _pixelAspectRatio,
                     ContentLightLevel = _contentLightLevel,
                     MasteringDisplay = _masteringDisplay,
+                    IsPremultiplied = _premultiplyAlpha,
                 },
                 colorSizes,
                 alphaSizes,

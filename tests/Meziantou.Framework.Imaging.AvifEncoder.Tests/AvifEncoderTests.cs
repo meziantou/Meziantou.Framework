@@ -30,6 +30,7 @@ public sealed class AvifEncoderTests
         Assert.False(encoder.AllowBitDepthReduction);
         Assert.False(encoder.ClearTransparentColors);
         Assert.Null(encoder.CleanAperture);
+        Assert.False(encoder.PremultiplyAlpha);
         Assert.Equal(0, encoder.KeyFrameInterval);
         Assert.Equal(FrameDurationRounding.RequireExact, encoder.DurationRounding);
         Assert.Equal(MetadataHandling.Strict, encoder.MetadataHandling);
@@ -297,6 +298,89 @@ public sealed class AvifEncoderTests
         using var decoded = Image.Load<Rgba32>(data);
         Assert.Equal(orientation, decoded.Metadata.Orientation);
         Assert.Equal(GetBytes(image), GetBytes(decoded));
+    }
+
+    [Theory]
+    [InlineData(false, AvifCompression.Lossless)]
+    [InlineData(true, AvifCompression.Lossless)]
+    public void PremultipliedAlphaMultipliesTheColorsAndRefersToTheAlphaPlane(bool isSequence, AvifCompression compression)
+    {
+        // Alphas 0, 255, 128, 1 and 254 over random colors
+        using var image = CreateImage(7, 5, seed: 33, transparent: true);
+        if (isSequence)
+        {
+            using var second = CreateImage(7, 5, seed: 34, transparent: true);
+            image.AppendFrame(second.Frames[0]);
+            image.Frames[0].Metadata.Duration = new FrameDuration(1, 10);
+            image.Frames[1].Metadata.Duration = new FrameDuration(1, 10);
+        }
+
+        var data = Encode(image, new AvifEncoder { Compression = compression, PremultiplyAlpha = true });
+        var reader = ReferenceAvif.Parse(data);
+
+        // ISO/IEC 23008-12, section 6.6.2.2: the color image refers to the alpha plane that its colors are multiplied by
+        var item = reader.PrimaryItem;
+        var alpha = reader.AlphaItem;
+        Assert.NotNull(item);
+        Assert.NotNull(alpha);
+        var reference = Assert.Single(reader.ItemReferences, candidate => candidate.Type == "prem");
+        Assert.Equal(item.Id, reference.FromItemId);
+        Assert.Equal([alpha.Id], reference.ToItemIds);
+        Assert.True(reader.IsPremultiplied);
+        if (isSequence)
+        {
+            var premultiplied = Assert.Single(reader.ColorTrack!.References, candidate => candidate.Type == "prem");
+            Assert.Equal([reader.AlphaTrack!.Id], premultiplied.TrackIds);
+            Assert.DoesNotContain(reader.AlphaTrack.References, candidate => candidate.Type == "prem");
+        }
+
+        // The color is multiplied by the alpha and rounded once, coded exactly, then divided by the alpha and rounded:
+        // an opaque pixel is unchanged, nothing is left of the color of a transparent pixel, and alpha is exact
+        using var decoded = Image.Load<Rgba32>(data);
+        for (var frame = 0; frame < image.Frames.Count; frame++)
+        {
+            var source = GetBytes(image, frame);
+            var actual = GetBytes(decoded, frame);
+            for (var i = 0; i < source.Length; i += 4)
+            {
+                var a = source[i + 3];
+                Assert.Equal(a, actual[i + 3]);
+                for (var channel = 0; channel < 3; channel++)
+                {
+                    var stored = ((source[i + channel] * a) + 127) / 255;
+                    var expected = a is 0 ? 0 : Math.Min(255, ((stored * 255) + (a / 2)) / a);
+                    Assert.Equal(expected, actual[i + channel]);
+                    if (a is 255)
+                        Assert.Equal(source[i + channel], actual[i + channel]);
+                }
+            }
+        }
+    }
+
+    [Fact]
+    public void PremultipliedAlphaIsNotDeclaredWithoutAnAlphaPlane()
+    {
+        // Colors and alpha are independent by default
+        using var transparent = CreateImage(7, 5, seed: 33, transparent: true);
+        var straight = ReferenceAvif.Parse(Encode(transparent, new AvifEncoder()));
+        Assert.DoesNotContain(straight.ItemReferences, reference => reference.Type == "prem");
+        Assert.False(straight.IsPremultiplied);
+
+        // An opaque still image has no alpha plane, and its colors are not changed
+        using var opaque = CreateImage(7, 5, seed: 35, transparent: false);
+        var data = Encode(opaque, new AvifEncoder { PremultiplyAlpha = true });
+        var reader = ReferenceAvif.Parse(data);
+        Assert.Null(reader.AlphaItem);
+        Assert.DoesNotContain(reader.ItemReferences, reference => reference.Type == "prem");
+        using var decoded = Image.Load<Rgba32>(data);
+        Assert.Equal(GetBytes(opaque), GetBytes(decoded));
+
+        // A gray pixel format has no alpha
+        using var gray = opaque.CloneAs<Gray8>();
+        Assert.DoesNotContain(ReferenceAvif.Parse(Encode(gray, new AvifEncoder { PremultiplyAlpha = true })).ItemReferences, reference => reference.Type == "prem");
+
+        // Clearing the transparent colors changes nothing: they are already black
+        Assert.Equal(Encode(transparent, new AvifEncoder { PremultiplyAlpha = true }), Encode(transparent, new AvifEncoder { PremultiplyAlpha = true, ClearTransparentColors = true }));
     }
 
     [Theory]

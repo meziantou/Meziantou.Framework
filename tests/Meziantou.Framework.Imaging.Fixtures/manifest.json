@@ -16053,6 +16053,308 @@
       "notes": "No colr box and a sequence header without color description: there is no color description at all, and the samples convert as BT.601."
     },
     {
+      "id": "avif/premultiplied-alpha",
+      "kind": "valid",
+      "format": "avif",
+      "input": {
+        "path": "avif/premultiplied-alpha.avif",
+        "sha256": "2e1beb9f6a1ff86b6229b42293b26087c260f3c53a9265cbf4cf879a8fc9a090",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/AvifCorpus.Container.cs (BuildStills)",
+        "tools": [
+          "libavif 1.4.2 avifenc (aom 3.14.1)",
+          "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+          ".NET 10.0"
+        ],
+        "commands": [
+          "avifenc -j 1 -s 6 -l -p source.png {output}.avif"
+        ]
+      },
+      "features": [
+        "avif.alpha",
+        "avif.bitDepth=8",
+        "avif.colr=nclx",
+        "avif.lossless",
+        "avif.majorBrand=avif",
+        "avif.matrix=0",
+        "avif.premultiplied",
+        "avif.range=full",
+        "avif.subsampling=4:4:4"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "Planes of the items decoded identically by both decoders, scaled without matrix.",
+        "decoder": "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+        "backend": "ReferenceAvif and ReferenceYuvConverter (test harness)",
+        "command": "av1Vectors.decoders[].command",
+        "crossChecks": [
+          {
+            "decoder": "libavif 1.4.2 avifdec (dav1d 1.5.3)",
+            "command": "avifdec -j 1 {input} {output}.png",
+            "maxAbsoluteError": 1,
+            "meanAbsoluteError": 0.0139,
+            "result": "differs",
+            "notes": "Its own sample scaling. Alpha is identical."
+          }
+        ]
+      },
+      "expected": {
+        "width": 8,
+        "height": 6,
+        "pixelFormat": "Rgba32",
+        "colorModel": "Rgba",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "cicp": {
+          "colorPrimaries": 1,
+          "transferCharacteristics": 13,
+          "matrixCoefficients": 0,
+          "fullRange": true
+        },
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "avif/premultiplied-alpha.frame-0.rgba8.raw",
+                "sha256": "1bc9f963558e6046e88e103da0c066ad1a5bbb93c660256dde44841bf25b73a5",
+                "layout": "rgba8",
+                "width": 8,
+                "height": 6,
+                "rowBytes": 32,
+                "byteLength": 192,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      },
+      "notes": "Written by avifenc -p: a prem item reference declares that the colors are multiplied by the alpha of their pixel. The colors of the fully transparent pixels are black."
+    },
+    {
+      "id": "avif/premultiplied-alpha-10bit",
+      "kind": "valid",
+      "format": "avif",
+      "input": {
+        "path": "avif/premultiplied-alpha-10bit.avif",
+        "sha256": "b67c4763e86a477bc39eed427552a4ca7ee330078893a39ff026b9b158cd746c",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/AvifCorpus.Container.cs (BuildStills)",
+        "tools": [
+          "libavif 1.4.2 avifenc (aom 3.14.1)",
+          "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+          ".NET 10.0"
+        ],
+        "commands": [
+          "avifenc -j 1 -s 6 -l -d 10 -p source.png {output}.avif"
+        ]
+      },
+      "features": [
+        "avif.alpha",
+        "avif.bitDepth=10",
+        "avif.colr=nclx",
+        "avif.lossless",
+        "avif.majorBrand=avif",
+        "avif.matrix=0",
+        "avif.premultiplied",
+        "avif.range=full",
+        "avif.subsampling=4:4:4"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "Planes of the items decoded identically by both decoders, scaled without matrix.",
+        "decoder": "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+        "backend": "ReferenceAvif and ReferenceYuvConverter (test harness)",
+        "command": "av1Vectors.decoders[].command",
+        "crossChecks": [
+          {
+            "decoder": "libavif 1.4.2 avifdec (dav1d 1.5.3)",
+            "command": "avifdec -j 1 -d 16 {input} {output}.png",
+            "maxAbsoluteError": 1,
+            "meanAbsoluteError": 0.0016,
+            "result": "differs",
+            "notes": "Its own sample scaling. Alpha is identical."
+          }
+        ]
+      },
+      "expected": {
+        "width": 8,
+        "height": 6,
+        "pixelFormat": "Rgba64",
+        "colorModel": "Rgba",
+        "bitsPerComponent": 10,
+        "orientation": 1,
+        "iccProfile": "none",
+        "cicp": {
+          "colorPrimaries": 1,
+          "transferCharacteristics": 13,
+          "matrixCoefficients": 0,
+          "fullRange": true
+        },
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "avif/premultiplied-alpha-10bit.frame-0.rgba16le.raw",
+                "sha256": "217b44f6a34b1ce4657cb9421328b0832ce13a14ff34e3ddae09e0d1d5504b4a",
+                "layout": "rgba16le",
+                "width": 8,
+                "height": 6,
+                "rowBytes": 64,
+                "byteLength": 384,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      },
+      "notes": "Premultiplied 10-bit colors: the division by the alpha is the one of the 16-bit samples."
+    },
+    {
+      "id": "avif/premultiplied-alpha-lossy-420",
+      "kind": "valid",
+      "format": "avif",
+      "input": {
+        "path": "avif/premultiplied-alpha-lossy-420.avif",
+        "sha256": "bb2aa6f02dfab9cb6560ed5859cb35a2532f0054a18de942dc3e07d0195e3d73",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/AvifCorpus.Container.cs (BuildStills)",
+        "tools": [
+          "libavif 1.4.2 avifenc (aom 3.14.1)",
+          "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+          ".NET 10.0"
+        ],
+        "commands": [
+          "avifenc -j 1 -s 6 -q 70 --qalpha 70 -y 420 --cicp 1/13/6 -p source.png {output}.avif"
+        ]
+      },
+      "features": [
+        "avif.alpha",
+        "avif.bitDepth=8",
+        "avif.colr=nclx",
+        "avif.majorBrand=avif",
+        "avif.matrix=6",
+        "avif.premultiplied",
+        "avif.range=full",
+        "avif.subsampling=4:2:0"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "Planes of the items decoded identically by both decoders, converted with exact rationals (matrix, range and chroma position of the file).",
+        "decoder": "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+        "backend": "ReferenceAvif and ReferenceYuvConverter (test harness)",
+        "command": "av1Vectors.decoders[].command",
+        "crossChecks": [
+          {
+            "decoder": "libavif 1.4.2 avifdec (dav1d 1.5.3)",
+            "command": "avifdec -j 1 {input} {output}.png",
+            "maxAbsoluteError": 4,
+            "meanAbsoluteError": 0.1597,
+            "result": "differs",
+            "notes": "Independent conversion (its own chroma upsampling and rounding). Alpha is identical."
+          }
+        ]
+      },
+      "expected": {
+        "width": 6,
+        "height": 8,
+        "pixelFormat": "Rgba32",
+        "colorModel": "YCbCr",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "cicp": {
+          "colorPrimaries": 1,
+          "transferCharacteristics": 13,
+          "matrixCoefficients": 6,
+          "fullRange": true
+        },
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "avif/premultiplied-alpha-lossy-420.frame-0.rgba8.raw",
+                "sha256": "6fb33a17cdc3ab9b4d18fccc5bb23a1ccdc22d2cfa17faa45ce1ec7e16b23243",
+                "layout": "rgba8",
+                "width": 6,
+                "height": 8,
+                "rowBytes": 24,
+                "byteLength": 192,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "tolerance",
+        "maxAbsoluteError": 1,
+        "maxMeanAbsoluteError": 0.01,
+        "justification": "Exact-rational reference; the library rounds its matrix coefficients to 16 fractional bits (measured: max 0, mean 0.0). Allowed: 1 and the measured mean + 0.01; the cross-checks would justify max 5, mean 0.5."
+      },
+      "notes": "Premultiplied colors that are matrixed and subsampled, under a lossy alpha plane: a color that the coding left above its alpha is clipped."
+    },
+    {
       "id": "avif/sequence-10bit-once",
       "kind": "valid",
       "format": "avif",
@@ -21468,6 +21770,145 @@
         "justification": "Exact-rational reference; the library rounds its matrix coefficients to 16 fractional bits (measured: max 0, mean 0.0). Allowed: 1 and the measured mean + 0.01; the cross-checks would justify max 2, mean 0.5."
       },
       "notes": "No edit list: the number of repetitions is not known, the sequence repeats forever."
+    },
+    {
+      "id": "avif/sequence-premultiplied",
+      "kind": "valid",
+      "format": "avif",
+      "input": {
+        "path": "avif/sequence-premultiplied.avif",
+        "sha256": "8bd15e317cde0a28a572a951a9234559935c5a970a7be3ab86911e7b6153c0b9",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/AvifCorpus.Container.cs (BuildSequences)",
+        "tools": [
+          "libavif 1.4.2 avifenc (aom 3.14.1) (payloads)",
+          "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "payloadsOf": "avif/sequence-alpha-repeat-2"
+        }
+      },
+      "features": [
+        "avif.alpha",
+        "avif.bitDepth=8",
+        "avif.colr=nclx",
+        "avif.majorBrand=avis",
+        "avif.matrix=6",
+        "avif.premultiplied",
+        "avif.range=full",
+        "avif.seq.chunkOffsets=stco",
+        "avif.seq.editList=repeat",
+        "avif.seq.interFrames",
+        "avif.seq.sampleSizes=stsz",
+        "avif.sequence",
+        "avif.subsampling=4:4:4"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "Planes of the samples decoded identically by both decoders, converted with exact rationals (matrix, range and chroma position of the file).",
+        "decoder": "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+        "backend": "ReferenceAvif and ReferenceYuvConverter (test harness)",
+        "command": "av1Vectors.decoders[].command",
+        "crossChecks": [
+          {
+            "decoder": "libavif 1.4.2 avifdec (dav1d 1.5.3)",
+            "command": "avifdec -j 1 --index all {input} {output}.png",
+            "maxAbsoluteError": 4,
+            "meanAbsoluteError": 0.2083,
+            "result": "differs",
+            "notes": "Independent conversion (its own chroma upsampling and rounding). Alpha is identical."
+          }
+        ]
+      },
+      "expected": {
+        "width": 8,
+        "height": 8,
+        "pixelFormat": "Rgba32",
+        "colorModel": "YCbCr",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "cicp": {
+          "colorPrimaries": 1,
+          "transferCharacteristics": 13,
+          "matrixCoefficients": 6,
+          "fullRange": true
+        },
+        "animation": {
+          "totalPlays": 3,
+          "editList": {
+            "repeating": true,
+            "segmentDuration": 1040,
+            "trackDuration": 3120
+          }
+        },
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 2,
+        "frames": [
+          {
+            "duration": "1/25",
+            "encodedDelay": {
+              "sampleDelta": 40,
+              "timescale": 1000
+            },
+            "buffers": [
+              {
+                "path": "avif/sequence-premultiplied.frame-0.rgba8.raw",
+                "sha256": "813030f30083331f97c4f7a29e21d61a936ef460ed4146781a90d95a8ee4c345",
+                "layout": "rgba8",
+                "width": 8,
+                "height": 8,
+                "rowBytes": 32,
+                "byteLength": 256,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          },
+          {
+            "duration": "1/1",
+            "encodedDelay": {
+              "sampleDelta": 1000,
+              "timescale": 1000
+            },
+            "buffers": [
+              {
+                "path": "avif/sequence-premultiplied.frame-1.rgba8.raw",
+                "sha256": "3d5d9b49986f38a88475510f956a05c7a655586414a8ec2adae39758e397cff9",
+                "layout": "rgba8",
+                "width": 8,
+                "height": 8,
+                "rowBytes": 32,
+                "byteLength": 256,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "tolerance",
+        "maxAbsoluteError": 1,
+        "maxMeanAbsoluteError": 0.01,
+        "justification": "Exact-rational reference; the library rounds its matrix coefficients to 16 fractional bits (measured: max 0, mean 0.0). Allowed: 1 and the measured mean + 0.01; the cross-checks would justify max 5, mean 0.5."
+      },
+      "notes": "The color track has a prem reference to its alpha track: the colors of every image are divided by its alpha (the samples are not multiplied by it, so most colors are clipped)."
     },
     {
       "id": "avif/sequence-track-meta-after-samples",
@@ -29346,34 +29787,6 @@
         "format": "Avif"
       },
       "notes": "The pitm box names item 99, which does not exist."
-    },
-    {
-      "id": "invalid/avif/premultiplied-alpha",
-      "kind": "unsupported",
-      "format": "avif",
-      "input": {
-        "path": "invalid/avif/premultiplied-alpha.avif",
-        "sha256": "2e1beb9f6a1ff86b6229b42293b26087c260f3c53a9265cbf4cf879a8fc9a090",
-        "role": "encoded"
-      },
-      "provenance": {
-        "origin": "hand-authored",
-        "license": "CC0-1.0",
-        "author": "Meziantou.Framework.Imaging contributors",
-        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/AvifCorpus.Container.cs (BuildUnsupported)",
-        "tools": [
-          "libavif 1.4.2 avifenc (aom 3.14.1)",
-          ".NET 10.0"
-        ]
-      },
-      "expectedError": {
-        "exception": "UnsupportedImageFeatureException",
-        "format": "Avif"
-      },
-      "features": [
-        "avif.unsupported=premultiplied-alpha"
-      ],
-      "notes": "Written by avifenc -p: a prem item reference declares that the color image is premultiplied by its alpha plane."
     },
     {
       "id": "invalid/avif/sequence-edit-ends-before-last-image",

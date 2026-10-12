@@ -133,7 +133,6 @@ internal static class ErrorFixtureStages
         "invalid/avif/missing-ispe",
         "invalid/avif/missing-pitm",
         "invalid/avif/missing-primary-item",
-        "invalid/avif/premultiplied-alpha",
         "invalid/avif/sequence-edit-ends-before-last-image",
         "invalid/avif/sequence-edit-list-offset",
         "invalid/avif/sequence-fragmented",

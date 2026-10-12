@@ -405,6 +405,60 @@ public sealed class AvifEncoderInteropTests
     }
 
     [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task PremultipliedAlphaIsReadByAvifDec(bool isSequence)
+    {
+        var libavif = await RequiredTools.LibAvifAsync();
+        using var image = CreateImage(24, 16, monochrome: false, bitDepth: 8, seed: 51, transparent: true);
+        if (isSequence)
+        {
+            using var second = CreateImage(24, 16, monochrome: false, bitDepth: 8, seed: 52, transparent: true);
+            image.AppendFrame(second.Frames[0]);
+            image.Frames[0].Metadata.Duration = new FrameDuration(1, 10);
+            image.Frames[1].Metadata.Duration = new FrameDuration(1, 10);
+        }
+
+        var path = await SaveAsync(image, new AvifEncoder { PremultiplyAlpha = true }, $"premultiplied-{(isSequence ? "sequence" : "still")}");
+        var info = await libavif.GetInfoAsync(path, XunitCancellationToken);
+        Assert.Equal("Premultiplied", info.Alpha);
+
+        // avifdec divides the colors by the alpha, as the library does when it reads its own file: alpha is exact, and an
+        // 8-bit color of the library is within half an 8-bit step of the 16-bit color of avifdec times maximum / alpha
+        // (the pixels whose alpha is below a sixteenth of the range are only compared for their alpha)
+        var decoded = await libavif.DecodeAllFramesAsync(path, XunitCancellationToken);
+        using var loaded = Image.Load(path);
+        Assert.HasCount(image.Frames.Count, decoded);
+        Assert.Equal(image.Frames.Count, loaded.Frames.Count);
+        for (var frame = 0; frame < decoded.Count; frame++)
+        {
+            var expected = decoded[frame].Pixels;
+            var actual = ImageSnapshots.CaptureFrame(loaded.Frames[frame]);
+            var scale = expected.Layout.MaxSampleValue / actual.Layout.MaxSampleValue;
+            var compared = 0;
+            for (var y = 0; y < actual.Height; y++)
+            {
+                for (var x = 0; x < actual.Width; x++)
+                {
+                    var alpha = actual.GetSample(x, y, 3);
+                    Assert.Equal(expected.GetSample(x, y, 3), alpha * scale, message: $"frame {frame}: alpha of pixel ({x}, {y}).");
+                    if (alpha * 16 < actual.Layout.MaxSampleValue)
+                        continue;
+
+                    compared++;
+                    for (var channel = 0; channel < 3; channel++)
+                    {
+                        var difference = Math.Abs(expected.GetSample(x, y, channel) - (actual.GetSample(x, y, channel) * scale));
+                        Assert.True(difference <= scale / 2 + 1, $"frame {frame}: pixel ({x}, {y}), channel {channel} differs by {difference} from avifdec {libavif.Version}.");
+                    }
+                }
+            }
+
+            Assert.True(compared > 100, $"frame {frame}: only {compared} pixels have enough alpha to be compared.");
+        }
+    }
+
+    [Theory]
     [InlineData(AvifCompression.Lossless, AvifChromaSubsampling.Auto, 3, 1, 7, 5, false)]
     [InlineData(AvifCompression.Lossless, AvifChromaSubsampling.Auto, 0, 2, 12, 6, true)]
     [InlineData(AvifCompression.Lossy, AvifChromaSubsampling.Ratio420, 2, 2, 5, 3, true)]

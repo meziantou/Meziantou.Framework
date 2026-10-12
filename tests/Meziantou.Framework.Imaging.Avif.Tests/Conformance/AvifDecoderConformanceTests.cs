@@ -797,7 +797,6 @@ public sealed class AvifDecoderConformanceTests
     public void ErrorFixturesAreWhatTheirNotesSay()
     {
         // The independent reader confirms the structural facts that the error fixtures are built on
-        Assert.Contains(Read("invalid/avif/premultiplied-alpha").ItemReferences, reference => reference.Type == "prem");
         Assert.True(Read("invalid/avif/sequence-fragmented").IsFragmented);
         Assert.Equal(2, Read("invalid/avif/two-meta-boxes").TopLevelBoxes.Count(box => box.Type == "meta"));
         Assert.Null(Read("invalid/avif/missing-pitm").PrimaryItemId);

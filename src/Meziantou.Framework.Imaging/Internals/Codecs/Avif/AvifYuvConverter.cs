@@ -25,6 +25,12 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// Samples that are not matrixed (monochrome, identity matrix and alpha in full range) are scaled by
 /// <c>(v * outputMax + max / 2) / max</c>, which is exactly reversible.
 /// </description></item>
+/// <item><description>
+/// Colors that are multiplied by the alpha of their pixel (premultiplied alpha) are divided by it once they are
+/// converted: <c>min(outputMax, (c * outputMax + a / 2) / a)</c>, a division rounded to nearest whose result is clipped
+/// when the color is above its alpha. A fully transparent pixel is transparent black (its color was multiplied by
+/// zero), and an opaque pixel is unchanged.
+/// </description></item>
 /// </list>
 /// </remarks>
 internal sealed class AvifYuvConverter
@@ -53,6 +59,7 @@ internal sealed class AvifYuvConverter
     private readonly bool _alphaFullRange;
     private readonly int _alphaOffset;
     private readonly long _cAlpha;
+    private readonly bool _isPremultiplied;
 
     /// <summary>Creates the converter of an image.</summary>
     /// <param name="sequence">The sequence header of the color image: its sample format.</param>
@@ -60,11 +67,13 @@ internal sealed class AvifYuvConverter
     /// <param name="fullRange">Whether the samples of the color image use the full range.</param>
     /// <param name="alpha">The sequence header of the alpha plane, or <see langword="null"/> for an opaque image.</param>
     /// <param name="layout">The pixel layout of the rows to produce.</param>
+    /// <param name="isPremultiplied">Whether the color samples are multiplied by the alpha of their pixel: the pixels that are produced are not.</param>
     /// <exception cref="UnsupportedImageFeatureException">The matrix coefficients are not supported.</exception>
     /// <exception cref="InvalidImageContentException">The identity matrix is used with subsampled chroma.</exception>
-    public AvifYuvConverter(Av1SequenceHeader sequence, int matrixCoefficients, bool fullRange, Av1SequenceHeader? alpha, PixelFormat layout)
+    public AvifYuvConverter(Av1SequenceHeader sequence, int matrixCoefficients, bool fullRange, Av1SequenceHeader? alpha, PixelFormat layout, bool isPremultiplied = false)
     {
         _layout = layout;
+        _isPremultiplied = isPremultiplied && alpha is not null;
         _outputMax = layout is PixelFormat.Rgba64 or PixelFormat.Gray16 ? 65535 : 255;
         _monochrome = sequence.Monochrome;
         _matrix = matrixCoefficients;
@@ -287,6 +296,13 @@ internal sealed class AvifYuvConverter
             if (!alpha.IsEmpty)
                 a = _alphaFullRange ? (int)((((long)alpha[x] * _outputMax) + (_alphaMax / 2)) / _alphaMax) : Clip(((_cAlpha * (alpha[x] - _alphaOffset)) + Half) >> 16);
 
+            if (_isPremultiplied && a != _outputMax)
+            {
+                r = Unpremultiply(r, a);
+                g = Unpremultiply(g, a);
+                b = Unpremultiply(b, a);
+            }
+
             switch (_layout)
             {
                 case PixelFormat.Gray8:
@@ -324,6 +340,10 @@ internal sealed class AvifYuvConverter
 
         return Clip(((_cY * (sample - _yOffset)) + Half) >> 16);
     }
+
+    // The color of a pixel from its color multiplied by its alpha: nothing is left of the color of a transparent pixel
+    private int Unpremultiply(int color, int alpha)
+        => alpha is 0 ? 0 : (int)Math.Min(_outputMax, (((long)color * _outputMax) + (alpha / 2)) / alpha);
 
     private int Clip(long value) => (int)Math.Clamp(value, 0, _outputMax);
 }

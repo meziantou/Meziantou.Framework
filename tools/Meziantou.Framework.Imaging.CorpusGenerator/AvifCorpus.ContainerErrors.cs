@@ -219,12 +219,6 @@ internal static partial class AvifCorpus
 
     private static void BuildUnsupported(ContainerContext context)
     {
-        // Premultiplied alpha, written by avifenc
-        var (premultiplied, _) = Avifenc(context, "premultiplied", new Dictionary<string, byte[]>(StringComparer.Ordinal) { ["source.png"] = Png(WithAlpha(CommonCorpus.PatternDetailColor(8, 6, 3))) }, "-l -p @source.png");
-        Py.Assert(ReferenceAvif.Parse(premultiplied).ItemReferences.Any(reference => reference.Type == "prem"), "prem reference");
-        AddAvifError(context, "invalid/avif/premultiplied-alpha", "unsupported", premultiplied, "UnsupportedImageFeatureException",
-            "Written by avifenc -p: a prem item reference declares that the color image is premultiplied by its alpha plane.", "avif.unsupported=premultiplied-alpha",
-            tools: [context.Tools.AvifencLabel, ToolSet.RuntimeLabel]);
 
         void Derived(string type, byte[] data)
         {

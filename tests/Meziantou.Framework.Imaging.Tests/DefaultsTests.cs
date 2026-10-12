@@ -77,6 +77,7 @@ public sealed class DefaultsTests
         Assert.False(avif.AllowBitDepthReduction);
         Assert.False(avif.ClearTransparentColors);
         Assert.Null(avif.CleanAperture);
+        Assert.False(avif.PremultiplyAlpha);
         Assert.Equal(0, avif.KeyFrameInterval);
         Assert.Equal(FrameDurationRounding.RequireExact, avif.DurationRounding);
         Assert.Equal(MetadataHandling.Strict, avif.MetadataHandling);

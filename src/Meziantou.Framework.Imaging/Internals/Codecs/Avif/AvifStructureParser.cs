@@ -91,6 +91,9 @@ internal sealed class AvifStructureParser : ImageParser<ImageInfo>
         ? DefaultPixelFormats.ForAvif(movie.Color.IsMonochrome, movie.Alpha is not null, Math.Max(movie.Color.BitDepth, movie.Alpha?.BitDepth ?? 0))
         : Plan.PixelFormat;
 
+    /// <summary>Gets a value indicating whether the color samples of the images are multiplied by the alpha of their pixel.</summary>
+    public bool IsPremultiplied => _movie?.IsPremultiplied ?? Plan.IsPremultiplied;
+
     /// <summary>Gets the color description that the container gives to the images, or <see langword="null"/>.</summary>
     public CicpColorDescription? ContainerColorDescription => _nclx;
 

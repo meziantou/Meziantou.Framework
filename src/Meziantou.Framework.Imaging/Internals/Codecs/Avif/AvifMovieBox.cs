@@ -25,6 +25,12 @@ internal sealed class AvifMovieBox : IDisposable
     /// <summary>Gets the track of the alpha planes, or <see langword="null"/> for an opaque sequence.</summary>
     public AvifTrack? Alpha { get; private set; }
 
+    /// <summary>
+    /// Gets a value indicating whether the color samples are multiplied by the alpha of their pixel: a <c>prem</c> track
+    /// reference from the color track to its alpha track.
+    /// </summary>
+    public bool IsPremultiplied { get; private set; }
+
     /// <summary>Gets the number of images of the sequence.</summary>
     public long FrameCount => Color.SampleCount;
 
@@ -138,9 +144,6 @@ internal sealed class AvifMovieBox : IDisposable
             if (ReferenceEquals(track, color) || !track.HasAv1SampleEntry || !track.AuxiliaryOf.Contains(color.Id) || !track.IsAlpha)
                 continue;
 
-            if (color.PremultipliedBy.Contains(track.Id))
-                throw AvifFormat.Unsupported("The AVIF image sequence has premultiplied alpha.", "premultiplied alpha");
-
             if (track.SampleCount != color.SampleCount)
                 throw AvifFormat.Invalid("the alpha track does not have the number of images of the color track.");
 
@@ -149,6 +152,15 @@ internal sealed class AvifMovieBox : IDisposable
 
             Alpha = track;
             break;
+        }
+
+        // The colors are premultiplied by the alpha track that the color track refers to, which is its own
+        if (color.PremultipliedBy.Count > 0)
+        {
+            if (Alpha is not { } alpha || !color.PremultipliedBy.Contains(alpha.Id))
+                throw AvifFormat.Invalid("the image sequence is premultiplied by a track that is not its alpha track.");
+
+            IsPremultiplied = true;
         }
     }
 

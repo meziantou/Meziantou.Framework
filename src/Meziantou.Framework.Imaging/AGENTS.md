@@ -315,6 +315,11 @@ dotnet publish tests/Meziantou.Framework.Imaging.AotSmoke -c Release -f net11.0 
   stages: the samples decoded by `djpeg` from files the generator regroups scan by scan, then the decimal reference of
   the harness for the colors, with LittleCMS and Apple ColorSync as cross-checks.
   `JpegDecoderConformanceTests` pins each tolerance to the measured disagreement (`LibraryInkMeasurements`).
+- **Arithmetic-coded JPEG fixtures.** `cjpeg -arithmetic` writes them and `djpeg` is the reference, but libjpeg-turbo
+  is the only arithmetic decoder at hand: FFmpeg has none and Apple ImageIO does not use one of its own. The
+  cross-check is FFmpeg on the file `jpegtran` rewrites with Huffman codes (the same coefficients), so the fixtures with
+  chroma subsampling have even dimensions. The unit tests decode the streams of the test-side arithmetic encoder
+  (`JpegTestArithmeticCoder`), itself checked against `djpeg` when it was written.
 - **12-bit JPEG fixtures.** `cjpeg -precision 12` writes them and `djpeg` gives their 12-bit samples, which the
   generator scales to 16 bits like the library; the errors are on the 8-bit scale, so three units of a 12-bit sample
   count as one. FFmpeg and Apple ImageIO upsample their chroma very differently and neither reads 12-bit RGB samples as

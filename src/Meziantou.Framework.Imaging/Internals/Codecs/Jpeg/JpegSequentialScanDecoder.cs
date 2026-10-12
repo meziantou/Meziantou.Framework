@@ -73,29 +73,6 @@ internal sealed class JpegSequentialScanDecoder : JpegScanDecoder
             k++;
         }
 
-        var component = scanComponent.Component;
-        var offset = component.GetRowOffset(blockRow * 8) + (blockColumn * 8);
-        if (hasAc)
-        {
-            block[0] = dc * (double)quantization[0];
-            if (component.Precision > 8)
-            {
-                JpegIdct.TransformDeep(block, component.DeepSamples[offset..], component.Stride, component.Precision);
-            }
-            else
-            {
-                JpegIdct.Transform(block, component.Samples.AsSpan(offset), component.Stride);
-            }
-
-            Array.Clear(block);
-        }
-        else if (component.Precision > 8)
-        {
-            JpegIdct.TransformDeepDcOnly((long)dc * quantization[0], component.DeepSamples[offset..], component.Stride, component.Precision);
-        }
-        else
-        {
-            JpegIdct.TransformDcOnly((long)dc * quantization[0], component.Samples.AsSpan(offset), component.Stride);
-        }
+        TransformBlock(scanComponent, blockRow, blockColumn, block, dc, hasAc);
     }
 }

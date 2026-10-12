@@ -7,7 +7,8 @@ namespace Meziantou.Framework.Imaging.Tests.Codecs;
 /// A JPEG test image defined by its quantized DCT coefficients, with an independent test-side Huffman encoder
 /// (DQT/DHT/SOF/SOS/DRI segments, DC prediction, run-length AC coding with ZRL/EOB, byte stuffing, restart markers,
 /// interleaved and non-interleaved scans; progressive scans of ITU-T T.81 G.1.2 written from the specification: DC first and
-/// refinement scans, AC first scans with EOB runs, AC refinement scans with correction bits) and the expected decoded pixels
+/// refinement scans, AC first scans with EOB runs, AC refinement scans with correction bits; or the same scans arithmetic
+/// coded, T.81 F.1.4 and G.1.3, with <see cref="JpegTestArithmeticCoder"/>) and the expected decoded pixels
 /// computed from the specifications: the direct
 /// two-dimensional inverse DCT of ITU-T T.81 A.3.3 evaluated in double precision, and the upsampling and color conversion
 /// contract of the library transcribed pixel by pixel. Nothing here uses the library decoder. The samples have 8 bits, or
@@ -464,9 +465,37 @@ internal sealed class JpegTestImage
 
         // A baseline frame only has 8-bit samples: deeper ones are written in an extended sequential frame by default
         var progression = options.Progression;
-        AddSegment(output, progression is null ? options.FrameMarker ?? (Precision > 8 ? (byte)0xC1 : (byte)0xC0) : (byte)0xC2, [.. sof]);
+        var frameMarker = progression is null ? options.FrameMarker ?? (Precision > 8 ? (byte)0xC1 : (byte)0xC0) : (byte)0xC2;
+        if (options.Arithmetic)
+        {
+            frameMarker = progression is null ? (byte)0xC9 : (byte)0xCA;
+        }
+
+        AddSegment(output, frameMarker, [.. sof]);
         var tables = Enumerable.Range(0, tableCount).Select(t => (Dc: HuffmanCode.Create(false, options.Huffman, options.HuffmanSeed + (2 * t), progression is not null, Precision), Ac: HuffmanCode.Create(true, options.Huffman, options.HuffmanSeed + (2 * t) + 1, progression is not null, Precision))).ToArray();
-        if (!options.TablesBeforeEachScan)
+        if (options.Arithmetic)
+        {
+            // No Huffman table; the conditioning that is not the default one is defined before the scans (T.81 B.2.4.3)
+            var dac = new List<byte>();
+            for (var t = 0; t < tableCount; t++)
+            {
+                if (options.DcConditioning is { } dcConditioning)
+                {
+                    dac.AddRange([(byte)t, (byte)((dcConditioning[t].Upper << 4) | dcConditioning[t].Lower)]);
+                }
+
+                if (options.AcConditioning is { } acConditioning)
+                {
+                    dac.AddRange([(byte)(0x10 | t), (byte)acConditioning[t]]);
+                }
+            }
+
+            if (dac.Count > 0)
+            {
+                AddSegment(output, 0xCC, [.. dac]);
+            }
+        }
+        else if (!options.TablesBeforeEachScan)
         {
             WriteHuffmanTables(output, tables);
         }
@@ -480,7 +509,7 @@ internal sealed class JpegTestImage
         {
             foreach (var scan in progression)
             {
-                if (options.TablesBeforeEachScan)
+                if (options.TablesBeforeEachScan && !options.Arithmetic)
                 {
                     WriteHuffmanTables(output, tables);
                 }
@@ -494,14 +523,21 @@ internal sealed class JpegTestImage
 
                 sos.AddRange([(byte)scan.Start, (byte)scan.End, (byte)((scan.High << 4) | scan.Low)]);
                 AddSegment(output, 0xDA, [.. sos]);
-                new ProgressiveScanWriter(this, output, scan, tables, options.MaxEndOfBandRun).Write(options.RestartInterval);
+                if (options.Arithmetic)
+                {
+                    new ArithmeticScanWriter(this, output, scan, sequential: false, options).Write(options.RestartInterval);
+                }
+                else
+                {
+                    new ProgressiveScanWriter(this, output, scan, tables, options.MaxEndOfBandRun).Write(options.RestartInterval);
+                }
             }
         }
 
         var scans = progression is not null ? [] : options.Scans ?? [[.. Enumerable.Range(0, Components.Length)]];
         foreach (var scan in scans)
         {
-            if (options.TablesBeforeEachScan)
+            if (options.TablesBeforeEachScan && !options.Arithmetic)
             {
                 WriteHuffmanTables(output, tables);
             }
@@ -515,7 +551,14 @@ internal sealed class JpegTestImage
 
             sos.AddRange([0, 63, 0]);
             AddSegment(output, 0xDA, [.. sos]);
-            EncodeScan(output, scan, tables, options.RestartInterval);
+            if (options.Arithmetic)
+            {
+                new ArithmeticScanWriter(this, output, new JpegTestProgressiveScan(scan, 0, 63, 0, 0), sequential: true, options).Write(options.RestartInterval);
+            }
+            else
+            {
+                EncodeScan(output, scan, tables, options.RestartInterval);
+            }
         }
 
         foreach (var segment in options.SegmentsAfterScans)
@@ -1094,6 +1137,307 @@ internal sealed class JpegTestImage
             if (size > 0)
             {
                 _writer.Write(value >= 0 ? value : value + (1 << size) - 1, size);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Writes the entropy-coded data of one arithmetic-coded scan, written from ITU-T T.81: a sequential scan (F.1.4: the
+    /// DC difference then the AC coefficients of each block) or a progressive one (G.1.3: DC first scans, DC refinements,
+    /// AC first scans and AC refinements). The statistics, the DC classes and the predictions start again at each restart
+    /// marker.
+    /// </summary>
+    private sealed class ArithmeticScanWriter
+    {
+        // Table F.4: the 15 magnitude category bins of a DC table; table F.5: the 14 of each half of an AC table. The bin
+        // of the bits of a category is 14 bins further
+        private const int DcCategoryBins = 20;
+        private const int AcLowCategoryBins = 189;
+        private const int AcHighCategoryBins = 217;
+
+        private readonly JpegTestImage _image;
+        private readonly List<byte> _output;
+        private readonly JpegTestProgressiveScan _scan;
+        private readonly bool _sequential;
+        private readonly JpegTestEncodeOptions _options;
+        private readonly int[] _predictions;
+        private readonly int[] _dcContexts;
+        private (int State, int Mps)[][] _dcStatistics = [];
+        private (int State, int Mps)[][] _acStatistics = [];
+        private JpegTestArithmeticCoder _coder;
+
+        public ArithmeticScanWriter(JpegTestImage image, List<byte> output, JpegTestProgressiveScan scan, bool sequential, JpegTestEncodeOptions options)
+        {
+            _image = image;
+            _output = output;
+            _scan = scan;
+            _sequential = sequential;
+            _options = options;
+            _predictions = new int[image.Components.Length];
+            _dcContexts = new int[image.Components.Length];
+            _coder = Start();
+        }
+
+        public void Write(int restartInterval)
+        {
+            var interleaved = _scan.Components.Length > 1;
+            var single = _image.Components[_scan.Components[0]];
+            var mcusX = interleaved ? _image.McusX : (single.Width + 7) / 8;
+            var mcusY = interleaved ? _image.McusY : (single.Height + 7) / 8;
+            var total = mcusX * mcusY;
+            var restartIndex = 0;
+            for (var mcu = 0; mcu < total; mcu++)
+            {
+                if (restartInterval > 0 && mcu > 0 && mcu % restartInterval == 0)
+                {
+                    _coder.Flush(_options.DiscardFinalZeros);
+                    _output.AddRange([0xFF, (byte)(0xD0 + (restartIndex & 7))]);
+                    restartIndex++;
+                    Array.Clear(_predictions);
+                    Array.Clear(_dcContexts);
+                    _coder = Start();
+                }
+
+                var mx = mcu % mcusX;
+                var my = mcu / mcusX;
+                foreach (var index in _scan.Components)
+                {
+                    var component = _image.Components[index];
+                    var h = interleaved ? component.H : 1;
+                    var v = interleaved ? component.V : 1;
+                    for (var by = 0; by < v; by++)
+                    {
+                        for (var bx = 0; bx < h; bx++)
+                        {
+                            WriteBlock(index, component.Blocks[((((my * v) + by) * component.BlocksX) + (mx * h)) + bx]);
+                        }
+                    }
+                }
+            }
+
+            _coder.Flush(_options.DiscardFinalZeros);
+        }
+
+        /// <summary>A new entropy-coded segment: every statistics bin is the state 0 with the more probable symbol 0.</summary>
+        private JpegTestArithmeticCoder Start()
+        {
+            _dcStatistics = [new (int, int)[49], new (int, int)[49]];
+            _acStatistics = [new (int, int)[245], new (int, int)[245]];
+            return new JpegTestArithmeticCoder(_output);
+        }
+
+        private void WriteBlock(int componentIndex, int[] block)
+        {
+            var table = _image.Components[componentIndex].QuantizationTable;
+            var low = _scan.Low;
+            if (_sequential)
+            {
+                WriteDcDifference(componentIndex, table, block[0]);
+                WriteAcCoefficients(table, block, 1, 63, 0);
+            }
+            else if (_scan.Start == 0)
+            {
+                if (_scan.High != 0)
+                {
+                    // One more bit of the DC value, with the fixed estimate (G.1.3.1)
+                    _coder.CodeFixed((block[0] >> low) & 1);
+                }
+                else
+                {
+                    WriteDcDifference(componentIndex, table, block[0] >> low);
+                }
+            }
+            else if (_scan.High == 0)
+            {
+                WriteAcCoefficients(table, block, _scan.Start, Math.Min(_scan.End, 63), low);
+            }
+            else
+            {
+                WriteAcRefinement(table, block, _scan.Start, Math.Min(_scan.End, 63), low);
+            }
+        }
+
+        /// <summary>
+        /// The difference of a DC value with the one of the previous block of the component (figure F.4): zero or not, the
+        /// sign, then the magnitude. The first bins are those of the class of the previous difference (zero, small or
+        /// large, positive or negative, with the bounds L and U of the table).
+        /// </summary>
+        private void WriteDcDifference(int componentIndex, int table, int value)
+        {
+            var statistics = _dcStatistics[table];
+            var context = _dcContexts[componentIndex];
+            var difference = value - _predictions[componentIndex];
+            _predictions[componentIndex] = value;
+            if (difference == 0)
+            {
+                _coder.Code(ref statistics[context], 0);
+                _dcContexts[componentIndex] = 0;
+                return;
+            }
+
+            _coder.Code(ref statistics[context], 1);
+            var negative = difference < 0;
+            _coder.Code(ref statistics[context + 1], negative ? 1 : 0);
+            var size = Math.Abs(difference) - 1;
+            ref var first = ref statistics[context + (negative ? 3 : 2)];
+            if (size == 0)
+            {
+                _coder.Code(ref first, 0);
+            }
+            else
+            {
+                _coder.Code(ref first, 1);
+                WriteMagnitude(statistics, DcCategoryBins, size, 2);
+            }
+
+            var (lower, upper) = _options.DcConditioning?[table] ?? (0, 1);
+            var magnitude = Math.Abs(difference);
+            var zero = lower == 0 ? 0 : 1 << (lower - 1);
+            _dcContexts[componentIndex] = magnitude <= zero ? 0 : (magnitude <= 1 << upper ? 4 : 12) + (negative ? 4 : 0);
+        }
+
+        /// <summary>
+        /// The AC coefficients of a band, each divided by <c>2^low</c> (figures F.5 and following): for the coefficient
+        /// <c>k</c>, the bin <c>3(k - 1)</c> tells whether the block ends here (only asked at the start of the band and
+        /// after a nonzero coefficient), the next one whether the coefficient is zero, the third one whether its magnitude
+        /// is above 1, then above 2; the sign has the fixed estimate.
+        /// </summary>
+        private void WriteAcCoefficients(int table, int[] block, int start, int end, int low)
+        {
+            var statistics = _acStatistics[table];
+            var threshold = _options.AcConditioning?[table] ?? 5;
+            var values = new int[64];
+            var last = start - 1;
+            for (var k = start; k <= end; k++)
+            {
+                var coefficient = block[ZigZag[k]];
+                values[k] = Math.Sign(coefficient) * (Math.Abs(coefficient) >> low);
+                if (values[k] != 0)
+                {
+                    last = k;
+                }
+            }
+
+            for (var k = start; k <= end; k++)
+            {
+                var bin = 3 * (k - 1);
+                if (k > last)
+                {
+                    _coder.Code(ref statistics[bin], 1); // end of block
+                    return;
+                }
+
+                _coder.Code(ref statistics[bin], 0);
+                while (values[k] == 0)
+                {
+                    _coder.Code(ref statistics[bin + 1], 0);
+                    bin += 3;
+                    k++;
+                }
+
+                _coder.Code(ref statistics[bin + 1], 1);
+                _coder.CodeFixed(values[k] < 0 ? 1 : 0);
+                var size = Math.Abs(values[k]) - 1;
+                if (size == 0)
+                {
+                    _coder.Code(ref statistics[bin + 2], 0);
+                }
+                else
+                {
+                    _coder.Code(ref statistics[bin + 2], 1);
+                    if (size == 1)
+                    {
+                        _coder.Code(ref statistics[bin + 2], 0);
+                    }
+                    else
+                    {
+                        _coder.Code(ref statistics[bin + 2], 1);
+                        WriteMagnitude(statistics, k <= threshold ? AcLowCategoryBins : AcHighCategoryBins, size, 4);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// The category of a magnitude minus one (is it at least <paramref name="bound"/>, twice that, and so on: one bin
+        /// each), then its bits below the leading one, in the bin 14 bins after the one that ended the category.
+        /// </summary>
+        private void WriteMagnitude((int State, int Mps)[] statistics, int bin, int size, int bound)
+        {
+            while (size >= bound)
+            {
+                _coder.Code(ref statistics[bin], 1);
+                bound <<= 1;
+                bin++;
+            }
+
+            _coder.Code(ref statistics[bin], 0);
+            bin += 14;
+            for (var bit = bound >> 2; bit != 0; bit >>= 1)
+            {
+                _coder.Code(ref statistics[bin], (size & bit) != 0 ? 1 : 0);
+            }
+        }
+
+        /// <summary>
+        /// One more bit of the AC coefficients of a band (G.1.3.3). The end of the block is only asked past the last
+        /// coefficient that the previous scans made nonzero; a coefficient that is already nonzero codes its bit in the
+        /// third bin, one that is still zero whether it becomes nonzero in the second bin, then its sign.
+        /// </summary>
+        private void WriteAcRefinement(int table, int[] block, int start, int end, int low)
+        {
+            var statistics = _acStatistics[table];
+            var last = start - 1;
+            var previousLast = start - 1;
+            for (var k = start; k <= end; k++)
+            {
+                var magnitude = Math.Abs(block[ZigZag[k]]) >> low;
+                if (magnitude != 0)
+                {
+                    last = k;
+                }
+
+                if (magnitude > 1)
+                {
+                    previousLast = k;
+                }
+            }
+
+            for (var k = start; k <= end; k++)
+            {
+                var bin = 3 * (k - 1);
+                if (k > previousLast)
+                {
+                    if (k > last)
+                    {
+                        _coder.Code(ref statistics[bin], 1); // end of block
+                        return;
+                    }
+
+                    _coder.Code(ref statistics[bin], 0);
+                }
+
+                while (true)
+                {
+                    var coefficient = block[ZigZag[k]];
+                    var magnitude = Math.Abs(coefficient) >> low;
+                    if (magnitude > 1)
+                    {
+                        _coder.Code(ref statistics[bin + 2], magnitude & 1);
+                        break;
+                    }
+
+                    if (magnitude == 1)
+                    {
+                        _coder.Code(ref statistics[bin + 1], 1);
+                        _coder.CodeFixed(coefficient < 0 ? 1 : 0);
+                        break;
+                    }
+
+                    _coder.Code(ref statistics[bin + 1], 0);
+                    bin += 3;
+                    k++;
+                }
             }
         }
     }

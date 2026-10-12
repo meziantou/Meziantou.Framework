@@ -16,7 +16,7 @@ public enum ImageFormat
     /// <summary>Graphics Interchange Format (GIF87a and GIF89a).</summary>
     Gif = 2,
 
-    /// <summary>JPEG (JFIF/EXIF) baseline and progressive Huffman-coded images.</summary>
+    /// <summary>JPEG (JFIF/EXIF) sequential and progressive images, Huffman coded or arithmetic coded.</summary>
     Jpeg = 3,
 
     /// <summary>WebP (RIFF container): lossy VP8 and lossless VP8L still images and animations.</summary>

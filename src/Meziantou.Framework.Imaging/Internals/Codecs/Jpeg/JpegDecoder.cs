@@ -3,9 +3,10 @@ using System.Buffers.Binary;
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
-/// The Huffman JPEG pixel decoder plugged into the <see cref="JpegStructureParser"/> marker walk, shared by eager loads
+/// The JPEG pixel decoder plugged into the <see cref="JpegStructureParser"/> marker walk, shared by eager loads
 /// and sequential readers: sequential frames (baseline SOF0 and extended
-/// sequential SOF1) and progressive frames (SOF2), of 8-bit or 12-bit samples. The walker validates the container (markers, segment lengths,
+/// sequential SOF1) and progressive frames (SOF2), of 8-bit or 12-bit samples, Huffman coded or arithmetic coded (SOF9
+/// and SOF10). The walker validates the container (markers, segment lengths,
 /// frame and scan headers, progressive scan parameters and coefficient progression, unsupported modes, metadata, limits);
 /// this observer parses the tables, decodes every scan and writes the rows through the frame sink.
 /// </summary>
@@ -15,6 +16,13 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// Tables: DQT (8- or 16-bit values, nonzero), DHT (class 0/1, identifiers 0-3, valid prefix codes) and DRI may appear before
 /// any scan; a scan uses the tables defined when it starts. Defects are <see cref="InvalidImageContentException"/> found by
 /// decoding only (identification does not parse table contents).
+/// </description></item>
+/// <item><description>
+/// Arithmetic coding: the scans of an arithmetic-coded frame use no Huffman table but the conditioning of DAC segments
+/// (class 0/1, identifiers 0-3; DC bounds <c>0 &lt;= L &lt;= U &lt;= 15</c>, AC threshold <c>1 &lt;= Kx &lt;= 63</c>), with the
+/// defaults <c>L = 0</c>, <c>U = 1</c> and <c>Kx = 5</c> for a table no segment defines (T.81 F.1.4.4.1.4 and F.1.4.4.2.1). The
+/// segments of the other entropy coding are validated and unused: DHT in an arithmetic-coded file, DAC in a
+/// Huffman-coded one.
 /// </description></item>
 /// <item><description>
 /// Streaming: when the first scan codes every component (always for grayscale and for usual baseline files), rows are
@@ -48,6 +56,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 internal sealed class JpegDecoder : JpegDecodeObserver
 {
     private const byte MarkerDht = 0xC4;
+    private const byte MarkerDac = 0xCC;
     private const byte MarkerSos = 0xDA;
     private const byte MarkerDqt = 0xDB;
     private const byte MarkerDri = 0xDD;
@@ -62,6 +71,10 @@ internal sealed class JpegDecoder : JpegDecodeObserver
     private readonly JpegHuffmanTable?[] _dcTables = new JpegHuffmanTable?[4];
     private readonly JpegHuffmanTable?[] _acTables = new JpegHuffmanTable?[4];
     private readonly ushort[]?[] _quantizationTables = new ushort[]?[4];
+
+    // The conditioning of the arithmetic coding tables: the bounds of the DC classes and the AC threshold
+    private readonly (int Lower, int Upper)[] _dcConditioning = [(0, 1), (0, 1), (0, 1), (0, 1)];
+    private readonly int[] _acConditioning = [5, 5, 5, 5];
     private int _restartInterval;
     private JpegStructureParser? _structure;
     private DecodedFrameSink? _sink;
@@ -73,6 +86,7 @@ internal sealed class JpegDecoder : JpegDecodeObserver
     private int _maxVertical;
     private bool _streaming;
     private bool _progressive;
+    private bool _arithmetic;
     private int _scanCount;
     private JpegEntropyReader? _reader;
     private JpegBandWriter? _writer;
@@ -120,6 +134,10 @@ internal sealed class JpegDecoder : JpegDecodeObserver
                 ParseHuffmanTables(payload);
                 break;
 
+            case MarkerDac:
+                ParseArithmeticConditioning(payload);
+                break;
+
             case MarkerDri:
                 // The walker checked the length
                 _restartInterval = BinaryPrimitives.ReadUInt16BigEndian(payload);
@@ -136,6 +154,7 @@ internal sealed class JpegDecoder : JpegDecodeObserver
         ArgumentNullException.ThrowIfNull(structure);
         _structure = structure;
         _progressive = structure.IsProgressive;
+        _arithmetic = structure.IsArithmetic;
         _precision = structure.Precision;
         _colorModel = structure.ColorModel;
 
@@ -360,6 +379,75 @@ internal sealed class JpegDecoder : JpegDecodeObserver
         }
     }
 
+    /// <summary>Parses the tables of a DAC segment (T.81 B.2.4.3): class 0 (DC) or 1 (AC), identifier 0-3 and the conditioning value.</summary>
+    private void ParseArithmeticConditioning(ReadOnlySpan<byte> payload)
+    {
+        if (payload.IsEmpty || payload.Length % 2 != 0)
+            throw Invalid("The JPEG DAC segment does not hold a whole number of conditioning tables.");
+
+        for (; !payload.IsEmpty; payload = payload[2..])
+        {
+            var tableClass = payload[0] >> 4;
+            var id = payload[0] & 0x0F;
+            var value = payload[1];
+            if (tableClass > 1)
+                throw Invalid("The JPEG arithmetic conditioning table class is not 0 (DC) or 1 (AC).");
+
+            if (id > 3)
+                throw Invalid("The JPEG arithmetic conditioning table identifier is greater than 3.");
+
+            if (tableClass == 0)
+            {
+                // The lower bound in the low bits, the upper one in the high bits
+                var lower = value & 0x0F;
+                var upper = value >> 4;
+                if (lower > upper)
+                    throw Invalid(string.Create(CultureInfo.InvariantCulture, $"The JPEG DC conditioning bounds are inverted (L = {lower}, U = {upper})."));
+
+                _dcConditioning[id] = (lower, upper);
+            }
+            else
+            {
+                if (value is < 1 or > 63)
+                    throw Invalid(string.Create(CultureInfo.InvariantCulture, $"The JPEG AC conditioning threshold {value} is not between 1 and 63."));
+
+                _acConditioning[id] = value;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Gets the conditioning of the components of an arithmetic-coded scan: the components that select the same table share
+    /// its statistics area.
+    /// </summary>
+    /// <param name="selectors">The table selectors of each component: the DC table in the high bits, the AC table in the low bits.</param>
+    /// <param name="dc">Whether the scan codes DC differences.</param>
+    /// <param name="ac">Whether the scan codes AC coefficients.</param>
+    private JpegArithmeticConditioning[] CreateArithmeticConditioning(ReadOnlySpan<byte> selectors, bool dc, bool ac)
+    {
+        var dcStatistics = new byte[]?[4];
+        var acStatistics = new byte[]?[4];
+        var result = new JpegArithmeticConditioning[selectors.Length];
+        for (var i = 0; i < selectors.Length; i++)
+        {
+            var dcId = selectors[i] >> 4;
+            var acId = selectors[i] & 0x0F;
+            if ((dc && dcId > 3) || (ac && acId > 3))
+                throw Invalid("A JPEG scan refers to an arithmetic conditioning table identifier greater than 3.");
+
+            // The selector of a table the scan does not use has no meaning
+            var (lower, upper) = dc ? _dcConditioning[dcId] : default;
+            result[i] = new JpegArithmeticConditioning(
+                dc ? dcStatistics[dcId] ??= new byte[JpegArithmeticConditioning.DcBinCount] : [],
+                ac ? acStatistics[acId] ??= new byte[JpegArithmeticConditioning.AcBinCount] : [],
+                lower,
+                upper,
+                ac ? _acConditioning[acId] : 0);
+        }
+
+        return result;
+    }
+
     private void StartScan(ReadOnlySpan<byte> payload)
     {
         if (_progressive)
@@ -371,6 +459,13 @@ internal sealed class JpegDecoder : JpegDecodeObserver
         // The walker validated the length, the component count and that every component exists once
         var count = payload[0];
         var scanComponents = new JpegScanDecoder.ScanComponent[count];
+        Span<byte> selectors = stackalloc byte[count];
+        for (var i = 0; i < count; i++)
+        {
+            selectors[i] = payload[2 + (2 * i)];
+        }
+
+        var conditioning = _arithmetic ? CreateArithmeticConditioning(selectors, dc: true, ac: true) : null;
         for (var i = 0; i < count; i++)
         {
             var id = payload[1 + (2 * i)];
@@ -379,6 +474,13 @@ internal sealed class JpegDecoder : JpegDecodeObserver
             if (component.IsDecoded)
                 throw Invalid(string.Create(CultureInfo.InvariantCulture, $"The JPEG component {id} is coded in several sequential scans."));
 
+            var quantization = _quantizationTables[component.QuantizationTable] ?? throw Invalid(string.Create(CultureInfo.InvariantCulture, $"The JPEG component {id} refers to the undefined quantization table {component.QuantizationTable}."));
+            if (conditioning is not null)
+            {
+                scanComponents[i] = new JpegScanDecoder.ScanComponent(component, dcTable: null, acTable: null, quantization) { Arithmetic = conditioning[i] };
+                continue;
+            }
+
             var dcId = tables >> 4;
             var acId = tables & 0x0F;
             if (dcId > 3 || acId > 3)
@@ -386,7 +488,6 @@ internal sealed class JpegDecoder : JpegDecodeObserver
 
             var dc = _dcTables[dcId] ?? throw Invalid(string.Create(CultureInfo.InvariantCulture, $"The JPEG scan refers to the undefined DC Huffman table {dcId}."));
             var ac = _acTables[acId] ?? throw Invalid(string.Create(CultureInfo.InvariantCulture, $"The JPEG scan refers to the undefined AC Huffman table {acId}."));
-            var quantization = _quantizationTables[component.QuantizationTable] ?? throw Invalid(string.Create(CultureInfo.InvariantCulture, $"The JPEG component {id} refers to the undefined quantization table {component.QuantizationTable}."));
             scanComponents[i] = new JpegScanDecoder.ScanComponent(component, dc, ac, quantization);
         }
 
@@ -399,13 +500,16 @@ internal sealed class JpegDecoder : JpegDecodeObserver
         _scanCount++;
         var reader = _reader ?? throw new InvalidOperationException("The JPEG decoder state is not allocated.");
         _scanComponents = scanComponents;
-        _scan = new JpegSequentialScanDecoder(scanComponents, reader, _mcusX, _mcusY, _restartInterval, _streaming ? OnMcuRowDecoded : null, _context.CancellationToken);
+        _scan = _arithmetic
+            ? new JpegArithmeticSequentialScanDecoder(scanComponents, reader, _mcusX, _mcusY, _restartInterval, _streaming ? OnMcuRowDecoded : null, _context.CancellationToken)
+            : new JpegSequentialScanDecoder(scanComponents, reader, _mcusX, _mcusY, _restartInterval, _streaming ? OnMcuRowDecoded : null, _context.CancellationToken);
     }
 
     /// <summary>
     /// Starts a progressive scan (T.81 G.1.1.1; the walker validated <c>Ss</c>, <c>Se</c>, <c>Ah</c>, <c>Al</c> and the
     /// coefficient progression). A DC first scan needs the DC tables of its components, a DC refinement none, an AC scan the
-    /// AC table of its only component; the quantization table of a component is latched at its first scan.
+    /// AC table of its only component; the quantization table of a component is latched at its first scan. An
+    /// arithmetic-coded scan needs the conditioning of the same tables instead.
     /// </summary>
     private void StartProgressiveScan(ReadOnlySpan<byte> payload)
     {
@@ -416,6 +520,13 @@ internal sealed class JpegDecoder : JpegDecodeObserver
         var high = parameters[2] >> 4;
         var low = parameters[2] & 0x0F;
         var scanComponents = new JpegScanDecoder.ScanComponent[count];
+        Span<byte> selectors = stackalloc byte[count];
+        for (var i = 0; i < count; i++)
+        {
+            selectors[i] = payload[2 + (2 * i)];
+        }
+
+        var conditioning = _arithmetic ? CreateArithmeticConditioning(selectors, dc: start == 0 && high == 0, ac: start > 0) : null;
         for (var i = 0; i < count; i++)
         {
             var id = payload[1 + (2 * i)];
@@ -423,7 +534,11 @@ internal sealed class JpegDecoder : JpegDecodeObserver
             var component = _components.First(component => component.Id == id);
             JpegHuffmanTable? dc = null;
             JpegHuffmanTable? ac = null;
-            if (start == 0 && high == 0)
+            if (conditioning is not null)
+            {
+                // No Huffman table
+            }
+            else if (start == 0 && high == 0)
             {
                 var dcId = tables >> 4;
                 if (dcId > 3)
@@ -441,7 +556,7 @@ internal sealed class JpegDecoder : JpegDecodeObserver
             }
 
             component.LatchedQuantization ??= _quantizationTables[component.QuantizationTable] ?? throw Invalid(string.Create(CultureInfo.InvariantCulture, $"The JPEG component {id} refers to the undefined quantization table {component.QuantizationTable}."));
-            scanComponents[i] = new JpegScanDecoder.ScanComponent(component, dc, ac, component.LatchedQuantization);
+            scanComponents[i] = new JpegScanDecoder.ScanComponent(component, dc, ac, component.LatchedQuantization) { Arithmetic = conditioning?[i] };
         }
 
         if (_scanCount == 0)
@@ -454,7 +569,9 @@ internal sealed class JpegDecoder : JpegDecodeObserver
 
         // Only a DC first scan makes a component decodable: its other coefficients may legitimately stay zero
         _scanComponents = start == 0 && high == 0 ? scanComponents : [];
-        _scan = new JpegProgressiveScanDecoder(scanComponents, reader, _mcusX, _mcusY, _restartInterval, start, end, high, low, _context.CancellationToken);
+        _scan = _arithmetic
+            ? new JpegArithmeticProgressiveScanDecoder(scanComponents, reader, _mcusX, _mcusY, _restartInterval, start, end, high, low, _context.CancellationToken)
+            : new JpegProgressiveScanDecoder(scanComponents, reader, _mcusX, _mcusY, _restartInterval, start, end, high, low, _context.CancellationToken);
     }
 
     private void AllocateProgressiveState()
@@ -465,7 +582,7 @@ internal sealed class JpegDecoder : JpegDecodeObserver
             component.AllocateCoefficients(scope, _mcusX, _mcusY, _context.Limits);
         }
 
-        _reader = new JpegEntropyReader(scope, Math.Max(EntropyBufferCapacity, 2 * JpegScanDecoder.GetRequiredBufferCapacity(10, _precision)));
+        _reader = new JpegEntropyReader(scope, Math.Max(EntropyBufferCapacity, 2 * JpegScanDecoder.GetRequiredBufferCapacity(10, _precision, _arithmetic)));
     }
 
     /// <summary>
@@ -558,7 +675,7 @@ internal sealed class JpegDecoder : JpegDecodeObserver
             component.AllocatePlane(scope, _mcusX, bandCount, _context.Limits);
         }
 
-        _reader = new JpegEntropyReader(scope, Math.Max(EntropyBufferCapacity, 2 * JpegScanDecoder.GetRequiredBufferCapacity(10, _precision)));
+        _reader = new JpegEntropyReader(scope, Math.Max(EntropyBufferCapacity, 2 * JpegScanDecoder.GetRequiredBufferCapacity(10, _precision, _arithmetic)));
         _writer = CreateRowWriter(scope);
     }
 

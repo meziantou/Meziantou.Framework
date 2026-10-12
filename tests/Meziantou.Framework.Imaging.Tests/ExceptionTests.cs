@@ -54,8 +54,8 @@ public sealed class ExceptionTests
         Assert.Equal(ImageFormat.Png, invalid.Format);
         Assert.Equal(ImageFormat.Unknown, new InvalidImageContentException("x").Format);
 
-        var unsupported = new UnsupportedImageFeatureException("arithmetic", ImageFormat.Jpeg, "JPEG arithmetic coding");
-        Assert.Equal((ImageFormat.Jpeg, "JPEG arithmetic coding"), (unsupported.Format, unsupported.Feature));
+        var unsupported = new UnsupportedImageFeatureException("lossless", ImageFormat.Jpeg, "JPEG lossless");
+        Assert.Equal((ImageFormat.Jpeg, "JPEG lossless"), (unsupported.Format, unsupported.Feature));
         Assert.Equal((ImageFormat.Unknown, (string?)null), (new UnsupportedImageFeatureException().Format, new UnsupportedImageFeatureException().Feature));
     }
 

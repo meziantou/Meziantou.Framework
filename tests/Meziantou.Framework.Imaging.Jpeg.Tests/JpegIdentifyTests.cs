@@ -15,6 +15,11 @@ public sealed class JpegIdentifyTests
     [InlineData((byte)0xC2, 3, PixelFormat.Rgb24, ImageColorModel.YCbCr)]
     [InlineData((byte)0xC0, 1, PixelFormat.Gray8, ImageColorModel.Grayscale)]
     [InlineData((byte)0xC2, 1, PixelFormat.Gray8, ImageColorModel.Grayscale)]
+
+    // The same sequential and progressive frames with arithmetic coding
+    [InlineData((byte)0xC9, 3, PixelFormat.Rgb24, ImageColorModel.YCbCr)]
+    [InlineData((byte)0xCA, 3, PixelFormat.Rgb24, ImageColorModel.YCbCr)]
+    [InlineData((byte)0xC9, 1, PixelFormat.Gray8, ImageColorModel.Grayscale)]
     public void SupportedFramesAreIdentifiedInBothModes(byte marker, int components, PixelFormat pixelFormat, ImageColorModel colorModel)
     {
         var data = SyntheticImages.Jpeg(marker, components, width: 17, height: 9);
@@ -41,6 +46,8 @@ public sealed class JpegIdentifyTests
     [InlineData((byte)0xC1, 1, PixelFormat.Gray16, ImageColorModel.Grayscale)]
     [InlineData((byte)0xC2, 1, PixelFormat.Gray16, ImageColorModel.Grayscale)]
     [InlineData((byte)0xC1, 4, PixelFormat.Rgba64, ImageColorModel.Cmyk)]
+    [InlineData((byte)0xC9, 3, PixelFormat.Rgba64, ImageColorModel.YCbCr)]
+    [InlineData((byte)0xCA, 1, PixelFormat.Gray16, ImageColorModel.Grayscale)]
 
     // A baseline frame has 8-bit samples by definition: with 12-bit ones, it is read as an extended sequential frame
     [InlineData((byte)0xC0, 3, PixelFormat.Rgba64, ImageColorModel.YCbCr)]
@@ -65,9 +72,9 @@ public sealed class JpegIdentifyTests
     [InlineData((byte)0xC3, 3, 8, "JPEG lossless")]
     [InlineData((byte)0xC5, 3, 8, "JPEG hierarchical")]
     [InlineData((byte)0xC7, 3, 8, "JPEG hierarchical")]
-    [InlineData((byte)0xC9, 3, 8, "JPEG arithmetic coding")]
-    [InlineData((byte)0xCA, 1, 8, "JPEG arithmetic coding")]
-    [InlineData((byte)0xCF, 3, 8, "JPEG arithmetic coding")]
+    [InlineData((byte)0xCB, 3, 8, "JPEG lossless")]
+    [InlineData((byte)0xCD, 3, 8, "JPEG hierarchical")]
+    [InlineData((byte)0xCF, 3, 8, "JPEG hierarchical")]
     [InlineData((byte)0xC1, 3, 10, "JPEG 10-bit precision")]
     [InlineData((byte)0xC1, 1, 4, "JPEG 4-bit precision")]
     [InlineData((byte)0xC2, 1, 16, "JPEG 16-bit precision")]
@@ -87,13 +94,18 @@ public sealed class JpegIdentifyTests
     }
 
     [Fact]
-    public void DnlHeightsAndArithmeticConditioningAreUnsupported()
+    public void DnlHeightsAreUnsupportedAndArithmeticConditioningIsATable()
     {
         var dnl = SyntheticImages.Jpeg(0xC0, 3, height: 0);
         Assert.Equal("JPEG DNL height", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(dnl)).Feature);
 
-        var dac = new SyntheticImages.JpegBuilder().StartOfImage().Segment(0xCC, [0, 0x11]).Frame(0xC0, 8, 8, 8, 1).Scan(1).EndOfImage().ToArray();
-        Assert.Equal("JPEG arithmetic coding", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(dac)).Feature);
+        // A DAC segment is a table like DHT and DQT: identification does not read its content, whatever the frame
+        foreach (var marker in new byte[] { 0xC0, 0xC9 })
+        {
+            var dac = new SyntheticImages.JpegBuilder().StartOfImage().Segment(0xCC, [0, 0x11]).Frame(marker, 8, 8, 8, 1).Scan(1).EndOfImage().ToArray();
+            Assert.Equal(ImageFormat.Jpeg, Image.Identify(dac).Format);
+            Assert.Equal(ImageFormat.Jpeg, Image.Identify(dac, FullScan).Format);
+        }
     }
 
     public static TheoryData<string, byte[]> InvalidHeaders => new()

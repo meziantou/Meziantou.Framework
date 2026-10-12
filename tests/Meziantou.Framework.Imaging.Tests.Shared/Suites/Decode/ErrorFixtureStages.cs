@@ -38,7 +38,6 @@ internal static class ErrorFixtureStages
         "invalid/gif/empty-logical-screen",
         "invalid/gif/graphic-control-wrong-size",
         "invalid/gif/no-image",
-        "invalid/jpeg/arithmetic-coding",
         "invalid/jpeg/lossless",
         "invalid/jpeg/non-integral-sampling",
         "invalid/jpeg/precision-16",

@@ -286,6 +286,193 @@ public sealed class JpegDecoderTests
         Assert.Null(reader.ReadFrame());
     }
 
+    public static TheoryData<string, int, int, int> ArithmeticLayoutCases
+    {
+        get
+        {
+            var data = new TheoryData<string, int, int, int>();
+            foreach (var layout in new[] { "gray", "4:4:4", "4:2:2", "4:2:0", "4:1:1", "mixed-chroma" })
+            {
+                foreach (var (width, height) in new[] { (1, 1), (9, 7), (37, 21) })
+                {
+                    data.Add(layout, width, height, 8);
+                    data.Add(layout, width, height, 12);
+                }
+            }
+
+            return data;
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(ArithmeticLayoutCases))]
+    public void ArithmeticCodedFramesDecodeToTheContract(string layout, int width, int height, int precision)
+    {
+        // The same coefficients as a Huffman-coded frame, coded as binary decisions (SOF9): the same pixels. A restart
+        // marker starts the statistics again, and each conditioning table changes the bins the decisions use
+        var sampling = Layouts[layout];
+        var image = JpegTestImage.CreateRandom(width, height, sampling, seed: (width * 43) + height + layout.Length + precision, precision: precision);
+        var expected = image.GetExpectedPixels();
+        var all = Enumerable.Range(0, sampling.Length).ToArray();
+        var encodings = new (string Name, JpegTestEncodeOptions Options)[]
+        {
+            ("default conditioning", new JpegTestEncodeOptions { Arithmetic = true }),
+            ("restart 1, final zero bytes omitted", new JpegTestEncodeOptions { Arithmetic = true, RestartInterval = 1, DiscardFinalZeros = true }),
+            ("DC bounds 2-5 and 0-0, AC thresholds 1 and 63, restart 3", new JpegTestEncodeOptions { Arithmetic = true, RestartInterval = 3, DcConditioning = [(2, 5), (0, 0)], AcConditioning = [1, 63] }),
+            ("one scan per component (reversed), DC bounds 1-1 and 3-15, AC thresholds 20 and 9, restart 2", new JpegTestEncodeOptions { Arithmetic = true, Scans = [.. all.Reverse().Select(index => new[] { index })], RestartInterval = 2, DcConditioning = [(1, 1), (3, 15)], AcConditioning = [20, 9], DiscardFinalZeros = true }),
+        };
+
+        foreach (var (name, options) in encodings)
+        {
+            var data = image.Encode(options);
+            Assert.Equal(precision, data[FindSegment(data, 0xC9) + 4]);
+            Assert.DoesNotContain((byte)0xC4, GetSegmentMarkers(data));
+            foreach (var mode in new[] { ImageIdentifyMode.Header, ImageIdentifyMode.FullScan })
+            {
+                var info = Image.Identify(data, new ImageIdentifyOptions { Mode = mode });
+                Assert.Equal(precision, info.BitsPerComponent);
+                Assert.Equal(image.PixelFormat, info.PixelFormat);
+                Assert.Equal(sampling.Length == 1 ? ImageColorModel.Grayscale : ImageColorModel.YCbCr, info.ColorModel);
+            }
+
+            using var decoded = Image.Load(data);
+            Assert.Equal(image.PixelFormat, decoded.PixelFormat);
+            AssertPixels(expected, decoded, $"arithmetic {precision}-bit {layout} {width}x{height}, {name}");
+        }
+    }
+
+    [Theory]
+    [InlineData("Cmyk")]
+    [InlineData("Ycck")]
+    public void ArithmeticCodedInksAndRgbSamplesDecodeLikeTheHuffmanCodedOnes(string inkCoding)
+    {
+        // The entropy coding does not change what the components are
+        var inks = JpegTestImage.CreateRandom(23, 18, InkLayouts["chroma-2x2"], seed: 71, inks: Enum.Parse<JpegTestInkCoding>(inkCoding));
+        using (var huffman = Image.Load(inks.Encode(), InkOptions))
+        using (var arithmetic = Image.Load(inks.Encode(new JpegTestEncodeOptions { Arithmetic = true, RestartInterval = 2 }), InkOptions))
+        {
+            Assert.Equal(PixelFormat.Rgb24, arithmetic.PixelFormat);
+            AssertPixels(GetBytes(huffman), arithmetic, inkCoding);
+        }
+
+        var rgb = JpegTestImage.CreateRandom(13, 11, Layouts["4:2:0"], seed: 5, rgb: true);
+        var data = rgb.Encode(new JpegTestEncodeOptions { Arithmetic = true });
+        Assert.Equal(ImageColorModel.Rgb, Image.Identify(data).ColorModel);
+        using var decoded = Image.Load(data);
+        AssertPixels(rgb.GetExpectedPixels(), decoded, "arithmetic Adobe RGB");
+    }
+
+    [Fact]
+    public void ArithmeticConditioningTablesAreValidatedAndTheLastDefinitionApplies()
+    {
+        var image = JpegTestImage.CreateRandom(24, 16, Layouts["4:2:0"], seed: 31);
+        var expected = image.GetExpectedPixels();
+        var conditioned = new JpegTestEncodeOptions { Arithmetic = true, DcConditioning = [(1, 3), (0, 2)], AcConditioning = [9, 30] };
+
+        // A scan uses the conditioning defined when it starts: the tables written before the frame header are replaced
+        byte[] others = [0x00, 0x74, 0x01, 0xF0, 0x10, 1, 0x11, 63, 0x02, 0x00, 0x13, 5];
+        using (var decoded = Image.Load(image.Encode(new JpegTestEncodeOptions { Arithmetic = true, DcConditioning = conditioned.DcConditioning, AcConditioning = conditioned.AcConditioning, SegmentsBeforeFrame = [JpegTestImage.Segment(0xCC, others)] })))
+        {
+            AssertPixels(expected, decoded, "DAC defined twice");
+        }
+
+        // Without the segment the decoder has the default conditioning, and reads other decisions from the same bytes
+        var data = image.Encode(conditioned);
+        var withoutSegment = Remove(data, FindSegment(data, 0xCC), 12);
+        try
+        {
+            using var decoded = Image.Load(withoutSegment);
+            Assert.NotEqual(expected, GetBytes(decoded));
+        }
+        catch (InvalidImageContentException)
+        {
+            // Or values that no block has
+        }
+
+        // The tables of the other entropy coding are read and unused
+        using (var decoded = Image.Load(image.Encode(new JpegTestEncodeOptions { Arithmetic = true, SegmentsBeforeFrame = [JpegTestImage.Segment(0xC4, Huffman(0x00, (1, 0))), JpegTestImage.Segment(0xC4, Huffman(0x13, (2, 0x00), (2, 0x11)))] })))
+        {
+            AssertPixels(expected, decoded, "DHT in an arithmetic-coded file");
+        }
+
+        using (var decoded = Image.Load(image.Encode(new JpegTestEncodeOptions { SegmentsBeforeFrame = [JpegTestImage.Segment(0xCC, others)] })))
+        {
+            AssertPixels(expected, decoded, "DAC in a Huffman-coded file");
+        }
+
+        // Defects of a table are found by decoding, whatever the entropy coding of the file
+        var defects = new (string Name, byte[] Payload)[]
+        {
+            ("empty", []),
+            ("half a table", [0x00]),
+            ("a table and a half", [0x00, 0x10, 0x10]),
+            ("class 2", [0x20, 0x10]),
+            ("identifier 4", [0x04, 0x10]),
+            ("AC identifier 4", [0x14, 5]),
+            ("L above U", [0x00, 0x12]),
+            ("Kx 0", [0x10, 0]),
+            ("Kx 64", [0x11, 64]),
+        };
+
+        foreach (var (name, payload) in defects)
+        {
+            foreach (var arithmetic in new[] { false, true })
+            {
+                var defective = image.Encode(new JpegTestEncodeOptions { Arithmetic = arithmetic, SegmentsBeforeFrame = [JpegTestImage.Segment(0xCC, payload)] });
+                Assert.Equal(ImageFormat.Jpeg, Image.Identify(defective, new ImageIdentifyOptions { Mode = ImageIdentifyMode.FullScan }).Format);
+                var exception = Assert.Throws<InvalidImageContentException>(() => Image.Load(defective));
+                Assert.Equal(ImageFormat.Jpeg, exception.Format);
+                Assert.False(string.IsNullOrEmpty(name));
+            }
+        }
+
+        // A scan cannot select a fifth table
+        var scan = FindSegment(data, 0xDA);
+        var selector = (byte[])data.Clone();
+        selector[scan + 6] = 0x40;
+        Assert.Contains("conditioning table identifier", Assert.Throws<InvalidImageContentException>(() => Image.Load(selector)).Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ArithmeticDataThatEndsEarlyReadsAsZeros()
+    {
+        // An encoder may omit the zero bytes that end a segment, so the decoder cannot tell a segment that is cut from a
+        // complete one: the missing bytes are zeros, which decode to some coefficients, or to values no block can have
+        var image = JpegTestImage.CreateRandom(24, 16, Layouts["4:2:0"], seed: 4, acDensity: 0.2);
+        var data = image.Encode(new JpegTestEncodeOptions { Arithmetic = true });
+        var scan = FindSegment(data, 0xDA);
+        var decodedCuts = 0;
+        for (var length = 8; length < data.Length; length++)
+        {
+            // A file that is cut has no EOI marker
+            Assert.Throws<InvalidImageContentException>(() => Image.Load(data.AsSpan(0, length)));
+            if (length <= scan + 14 || length >= data.Length - 2)
+                continue;
+
+            byte[] cut = [.. data.AsSpan(0, length), 0xFF, 0xD9];
+            try
+            {
+                using var decoded = Image.Load(cut);
+                Assert.Equal(new Size(24, 16), decoded.Size);
+                decodedCuts++;
+            }
+            catch (InvalidImageContentException)
+            {
+            }
+        }
+
+        Assert.True(decodedCuts > 0);
+
+        // The structure of the scan is still checked: a restart marker that is missing, or out of sequence
+        var restarts = JpegTestImage.CreateRandom(40, 24, Layouts["4:2:0"], seed: 9).Encode(new JpegTestEncodeOptions { Arithmetic = true, RestartInterval = 1 });
+        var markers = FindRestartMarkers(restarts);
+        Assert.HasCount(5, markers); // 3x2 MCUs
+        Assert.Contains("restart marker is missing", Assert.Throws<InvalidImageContentException>(() => Image.Load(Remove(restarts, markers[4], 2))).Message, StringComparison.Ordinal);
+        var renumbered = restarts.ToArray();
+        renumbered[markers[2] + 1] = 0xD4;
+        Assert.Contains("out of sequence", Assert.Throws<InvalidImageContentException>(() => Image.Load(renumbered)).Message, StringComparison.Ordinal);
+    }
+
     [Fact]
     public void RgbSamplesAreCopiedWithoutColorTransform()
     {
@@ -520,21 +707,24 @@ public sealed class JpegDecoderTests
     public void CorruptedBytesFailOnlyWithImageExceptions()
     {
         var image = JpegTestImage.CreateRandom(16, 8, Layouts["4:2:2"], seed: 6, acDensity: 0.15);
-        var data = image.Encode(new JpegTestEncodeOptions { RestartInterval = 1, Huffman = JpegTestHuffmanStyle.Skewed });
-        for (var position = 2; position < data.Length; position++)
+        foreach (var options in new[] { new JpegTestEncodeOptions { RestartInterval = 1, Huffman = JpegTestHuffmanStyle.Skewed }, new JpegTestEncodeOptions { Arithmetic = true, RestartInterval = 1, DcConditioning = [(0, 1), (1, 4)], AcConditioning = [5, 12] } })
         {
-            foreach (var mask in new byte[] { 0x01, 0x10, 0x80, 0xFF })
+            var data = image.Encode(options);
+            for (var position = 2; position < data.Length; position++)
             {
-                var corrupt = data.ToArray();
-                corrupt[position] ^= mask;
-                try
+                foreach (var mask in new byte[] { 0x01, 0x10, 0x80, 0xFF })
                 {
-                    using var decoded = Image.Load(corrupt);
-                    Assert.Equal(PixelFormat.Rgb24, decoded.PixelFormat);
-                }
-                catch (ImageException)
-                {
-                    // Malformed, unsupported or over a limit: explicit
+                    var corrupt = data.ToArray();
+                    corrupt[position] ^= mask;
+                    try
+                    {
+                        using var decoded = Image.Load(corrupt);
+                        Assert.Equal(PixelFormat.Rgb24, decoded.PixelFormat);
+                    }
+                    catch (ImageException)
+                    {
+                        // Malformed, unsupported or over a limit: explicit
+                    }
                 }
             }
         }
@@ -557,6 +747,13 @@ public sealed class JpegDecoderTests
         using (var decoded = await InputVariants.LoadAsync<Rgb24>(variant, separate, ImageFormat.Jpeg, options: null, XunitCancellationToken))
         {
             AssertPixels(expected, decoded, variant + " (separate scans)");
+        }
+
+        // Arithmetic coding has no bound of a few hundred bytes per block: the decoder waits for more bytes before an MCU
+        var arithmetic = image.Encode(new JpegTestEncodeOptions { Arithmetic = true, RestartInterval = 7, DiscardFinalZeros = true });
+        using (var decoded = await InputVariants.LoadAsync<Rgb24>(variant, arithmetic, ImageFormat.Jpeg, options: null, XunitCancellationToken))
+        {
+            AssertPixels(expected, decoded, variant + " (arithmetic coding)");
         }
     }
 
@@ -994,6 +1191,18 @@ public sealed class JpegDecoderTests
         }
 
         return result;
+    }
+
+    /// <summary>The markers of the segments before the first scan.</summary>
+    private static List<byte> GetSegmentMarkers(byte[] data)
+    {
+        var markers = new List<byte>();
+        for (var offset = 2; data[offset + 1] != 0xDA; offset += 2 + ((data[offset + 2] << 8) | data[offset + 3]))
+        {
+            markers.Add(data[offset + 1]);
+        }
+
+        return markers;
     }
 
     private static int FindSegment(byte[] data, byte marker)

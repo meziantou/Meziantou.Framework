@@ -61,6 +61,30 @@ public sealed class JpegDecoderConformanceTests
     }
 
     [Fact]
+    public void ArithmeticFixturesCoverTheDecoderFeatures()
+    {
+        // Sequential (SOF9) and progressive (SOF10) frames, gray and color, with and without chroma subsampling, restart
+        // intervals (the statistics start again), first scans and refinements of the DC and AC coefficients
+        var fixtures = GoldenCorpus.Default.GetIds(format: "jpeg", kind: FixtureKinds.Valid).Select(GoldenCorpus.Default.Get).Where(fixture => fixture.Entry.Features!.Any(feature => feature.StartsWith("jpeg.process=arithmetic-", StringComparison.Ordinal))).ToList();
+        foreach (var process in new[] { "jpeg.process=arithmetic-sequential", "jpeg.process=arithmetic-progressive" })
+        {
+            var ofProcess = fixtures.Where(fixture => fixture.Entry.HasFeature(process)).ToList();
+            Assert.Contains(ofProcess, fixture => fixture.Entry.HasFeature("jpeg.components=1"));
+            Assert.Contains(ofProcess, fixture => fixture.Entry.HasFeature("jpeg.sampling=4:2:0"));
+            Assert.Contains(ofProcess, fixture => fixture.Entry.Features!.Any(feature => feature.StartsWith("jpeg.restartInterval=", StringComparison.Ordinal)));
+        }
+
+        var features = fixtures.SelectMany(fixture => fixture.Entry.Features ?? []).ToHashSet(StringComparer.Ordinal);
+        foreach (var feature in new[] { "jpeg.sampling=4:4:4", "jpeg.sampling=4:2:2", "jpeg.progressive=dc-refinement", "jpeg.progressive=ac-refinement", "jpeg.progressive=spectral-selection", "jpeg.progressive=successive-approximation" })
+        {
+            Assert.Contains(feature, features);
+        }
+
+        // An arithmetic-coded file has no Huffman table, and no fixture is rejected for its entropy coding any more
+        Assert.DoesNotContain(GoldenCorpus.Default.GetIds(format: "jpeg", kind: FixtureKinds.Unsupported).Select(GoldenCorpus.Default.Get), fixture => fixture.Entry.Features!.Any(feature => feature.StartsWith("jpeg.process=arithmetic-", StringComparison.Ordinal)));
+    }
+
+    [Fact]
     public void ProgressiveFixturesCoverTheDecoderFeatures()
     {
         var fixtures = ProgressiveIds.Select(id => GoldenCorpus.Default.Get(id)).ToList();
@@ -198,7 +222,8 @@ public sealed class JpegDecoderConformanceTests
         return new IccProfile(new MetadataBlob(File.ReadAllBytes(FixtureRoot.GetDirectory() / entry.File.Path)));
     }
 
-    private static IEnumerable<string> GetIds(bool progressive) => GoldenCorpus.Default.GetIds(format: "jpeg", kind: FixtureKinds.Valid).Where(id => GoldenCorpus.Default.Get(id).Entry.HasFeature("jpeg.process=progressive") == progressive);
+    // Progressive frames, Huffman coded (SOF2) or arithmetic coded (SOF10); the others are sequential
+    private static IEnumerable<string> GetIds(bool progressive) => GoldenCorpus.Default.GetIds(format: "jpeg", kind: FixtureKinds.Valid).Where(id => (GoldenCorpus.Default.Get(id).Entry.HasFeature("jpeg.process=progressive") || GoldenCorpus.Default.Get(id).Entry.HasFeature("jpeg.process=arithmetic-progressive")) == progressive);
 
     private static (int Max, double Mean, string Location) Measure(RawPixelBuffer expected, RawPixelBuffer actual)
     {

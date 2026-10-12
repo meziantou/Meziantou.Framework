@@ -1175,6 +1175,55 @@ public sealed class AvifDecoderInteropTests
     }
 
     /// <summary>
+    /// Images that are built from other images (<c>iovl</c> overlays and grids of derived images), which no pinned tool
+    /// writes and which libavif does not read: the fixtures are assembled on committed payloads, and Apple ImageIO, which
+    /// builds them with its own reader, returns an opaque image: it shows neither the transparency of the canvas nor the
+    /// one that the layers leave. The pixels that the library returns opaque are compared: identical where a layer or a
+    /// tile covers them alone, and within two units where translucent layers are composited (ImageIO does not round an
+    /// exact source-over operation, which is what the reference of the fixture is). ImageIO does not judge the
+    /// transparent and translucent results, the 10-bit overlay (it returns another layout) and the lossy layers (its
+    /// chroma upsampling is its own).
+    /// </summary>
+    [Theory]
+    [InlineData("avif/grid-of-derived-images", 0, 100 * 52)]
+    [InlineData("avif/iovl-grid-and-iden-layers", 0, 128 * 128)]
+    [InlineData("avif/iovl-transparent-fill", 0, 21)]
+    [InlineData("avif/iovl-alpha-layers", 2, 20 * 14)]
+    public async Task BuiltImagesDecodeAsAppleImageIO(string id, int bound, int opaquePixels)
+    {
+        // Apple ImageIO exists only on macOS: skipped elsewhere locally; required (never skipped) in the CI interop job (macOS)
+        var (swift, script) = RequiredTools.AppleImageIO();
+        var path = ArtifactPath("imageio-" + id.Replace('/', '-') + ".avif");
+        await File.WriteAllBytesAsync(path, GoldenCorpus.Default.Get(id).ReadInput(), XunitCancellationToken);
+        var result = await ProcessRunner.RunAsync(swift, [script, "--binary-alpha", path], XunitCancellationToken);
+        if (result.ExitCode != 0)
+            Assert.Fail($"ImageIO failed on {id} (exit code {result.ExitCode}): {result.StandardError}");
+
+        using var image = Image.Load(path);
+        Assert.Equal(PixelFormat.Rgba32, image.PixelFormat);
+        var header = result.StandardError.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)[^1].Split(' ');
+        Assert.Equal(["frames", "1", image.Width.ToString(CultureInfo.InvariantCulture), image.Height.ToString(CultureInfo.InvariantCulture), "8"], header);
+        var expected = ToRgba16(RawPixelBuffer.Create(image.Width, image.Height, RawPixelLayout.Rgba8, result.StandardOutput.Span));
+        var actual = ToRgba16(ImageSnapshots.CaptureFrame(image.Frames[0]));
+        var compared = 0;
+        for (var i = 0; i < image.Width * image.Height; i++)
+        {
+            var (x, y) = (i % image.Width, i / image.Width);
+            if (actual.GetSample(x, y, 3) != 65535)
+                continue;
+
+            compared++;
+            for (var channel = 0; channel < 3; channel++)
+            {
+                var difference = Math.Abs(expected.GetSample(x, y, channel) - actual.GetSample(x, y, channel));
+                Assert.True(difference <= bound * 257, $"{id}: pixel ({x}, {y}) channel {channel} differs from Apple ImageIO by {difference / 257} units");
+            }
+        }
+
+        Assert.Equal(opaquePixels, compared);
+    }
+
+    /// <summary>
     /// Fragmented image sequences, which no pinned tool writes and which libavif does not read: the fixtures are assembled
     /// on the samples of a committed sequence, and FFmpeg, whose demuxer follows the movie fragments with its own reader,
     /// finds in them the frames of that sequence: the same number, with the same decoded content (the frame checksums of

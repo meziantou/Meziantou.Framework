@@ -58,6 +58,8 @@ internal static partial class AvifCorpus
         ["avif/grid-3x1-420"] = (0, 0.0),
         ["avif/hdr-mastering-display"] = (1, 0.0), // one unit of a 16-bit sample: 1/257 on the 8-bit scale
         ["avif/iden-color-from-input"] = (0, 0.0),
+        ["avif/iovl-layers-without-colr"] = (0, 0.0),
+        ["avif/iovl-lossy-matrixed"] = (0, 0.0),
         ["avif/layered-2-quality-420"] = (0, 0.0),
         ["avif/layered-3-scaled-422-10bit"] = (1, 0.0), // one unit of a 16-bit sample: 1/257 on the 8-bit scale
         ["avif/layered-lsel-0-420"] = (0, 0.0),
@@ -637,8 +639,33 @@ internal static partial class AvifCorpus
                 result.AddRange(file.GetGridTiles(item));
         }
 
-        // An identity derivation has no data: what is read is the coded image it presents
+        // An identity derivation has no data: what is read is the coded image it presents. An image that is built reads
+        // its coded images, their alpha planes, and the descriptors of its grids and of its overlays
         var primary = file.PrimaryItem!;
+        if (IsBuiltImage(file, primary))
+        {
+            void AddTree(ReferenceAvif.Item item)
+            {
+                if (item.Type is "iden" or "iovl" || (item.Type == "grid" && file.GetGridTiles(item).Any(tile => tile.Type != "av01")))
+                {
+                    if (item.Type != "iden")
+                        result.Add(item);
+
+                    foreach (var input in GetInputs(file, item))
+                        AddTree(input);
+                }
+                else
+                {
+                    AddImage(item);
+                    AddImage(file.FindAuxiliary(item.Id, ReferenceAvif.AlphaAuxiliaryType));
+                }
+            }
+
+            AddTree(primary);
+            result.AddRange(file.FindDescriptions(primary.Id).Where(item => item.Type == "Exif" || item.ContentType == "application/rdf+xml"));
+            return result;
+        }
+
         AddImage(file.GetIdentityChain(primary)[^1]);
         AddImage(file.AlphaItem is { } alphaItem ? file.GetIdentityChain(alphaItem)[^1] : null);
         result.AddRange(file.FindDescriptions(primary.Id).Where(item => item.Type == "Exif" || item.ContentType == "application/rdf+xml"));
@@ -648,6 +675,8 @@ internal static partial class AvifCorpus
     private static AvifReference DescribeStill(AvifFileTools tools, FullPath scratch, ReferenceAvif file, SortedSet<string> features)
     {
         var primary = file.PrimaryItem ?? throw new ToolException("the file has no primary item.");
+        if (IsBuiltImage(file, primary))
+            return DescribeBuiltStill(tools, scratch, file, features);
 
         // An identity derivation (iden) presents its input image with its own transformations after those of the input:
         // the coded image is the last item of the chain, and its samples go through the transformations of every item

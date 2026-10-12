@@ -26,8 +26,20 @@ internal sealed class AvifImagePlan
     /// <summary>Gets the orientation that the <c>irot</c> and <c>imir</c> properties of the primary item describe.</summary>
     public ExifOrientation Orientation { get; private set; } = ExifOrientation.TopLeft;
 
-    /// <summary>Gets the color image.</summary>
+    /// <summary>
+    /// Gets the color image: the coded image that is presented, or the first coded image of an image that is built from
+    /// several ones (<see cref="Root"/>).
+    /// </summary>
     public AvifCodedImage Color { get; private set; } = null!;
+
+    /// <summary>
+    /// Gets the tree of an image that is built from other images (an overlay, a grid of derived images, or an identity
+    /// derivation of one of them), or <see langword="null"/> for a coded image, whose planes are converted directly.
+    /// </summary>
+    public AvifImageNode? Root { get; private set; }
+
+    /// <summary>Gets the largest bit depth of the coded images of <see cref="Root"/>.</summary>
+    public int RootBitDepth { get; private set; }
 
     /// <summary>Gets the alpha plane, or <see langword="null"/> for an opaque image.</summary>
     public AvifCodedImage? Alpha { get; private set; }
@@ -53,7 +65,8 @@ internal sealed class AvifImagePlan
     /// <summary>Gets the XMP item that describes the primary item, or <see langword="null"/>.</summary>
     public AvifItem? Xmp { get; private set; }
 
-    public bool HasAlpha => Alpha is not null;
+    /// <summary>Gets a value indicating whether the image has an alpha channel: an image that is built always has one.</summary>
+    public bool HasAlpha => Alpha is not null || Root is not null;
 
     /// <summary>
     /// Gets a value indicating whether the color samples are multiplied by the alpha of their pixel: a <c>prem</c>
@@ -62,10 +75,10 @@ internal sealed class AvifImagePlan
     public bool IsPremultiplied { get; private set; }
 
     /// <summary>Gets the largest bit depth of the color and alpha planes.</summary>
-    public int BitDepth => Math.Max(Color.BitDepth, Alpha?.BitDepth ?? 0);
+    public int BitDepth => Root is not null ? RootBitDepth : Math.Max(Color.BitDepth, Alpha?.BitDepth ?? 0);
 
     /// <summary>Gets the pixel format of an untyped load, which is also the layout of the rows that the decoder produces.</summary>
-    public PixelFormat PixelFormat => DefaultPixelFormats.ForAvif(Color.IsMonochrome, HasAlpha, BitDepth);
+    public PixelFormat PixelFormat => Root is not null ? (RootBitDepth > 8 ? PixelFormat.Rgba64 : PixelFormat.Rgba32) : DefaultPixelFormats.ForAvif(Color.IsMonochrome, HasAlpha, BitDepth);
 
     /// <summary>Resolves the image of a <c>meta</c> box.</summary>
     /// <param name="meta">The parsed box.</param>
@@ -81,6 +94,12 @@ internal sealed class AvifImagePlan
             throw AvifFormat.Invalid("the primary item does not exist.");
 
         var plan = new AvifImagePlan();
+        if (!AvifImageNode.IsDirect(meta, primary))
+        {
+            plan.ReadTree(meta, payload, primary, limits);
+            return plan;
+        }
+
         var derivations = new List<AvifCodedImage>();
         plan.Color = ResolveImage(meta, payload, primary, limits, derivations);
         ReadTransforms(payload, plan.Color, derivations, out var crop, out var orientation);
@@ -144,7 +163,62 @@ internal sealed class AvifImagePlan
             plan.ReadDescriptions(meta, payload, plan.Color.Item);
 
         limits.EnsureCanvasWithinLimits(plan.Size.Width, plan.Size.Height);
+        plan.ReadMetadataItems(meta, primaryId);
+        return plan;
+    }
 
+    // An image that is built from other images: the transformations of the primary item apply to the image that is
+    // built, like those of a coded image (the clean aperture selects a part of it, the rotation and the mirroring are
+    // its orientation); the transformations of the other items are applied to the pixels they concern
+    private void ReadTree(AvifMetaBox meta, ReadOnlySpan<byte> payload, AvifItem primary, ImageResourceLimits limits)
+    {
+        var root = AvifImageNode.Create(meta, payload, primary, limits);
+        Root = root;
+        ReadTransforms(payload, root.Image, [], out var crop, out var orientation);
+        Crop = crop;
+        Size = new Size(crop.Width, crop.Height);
+        Orientation = orientation.ToExifOrientation();
+        limits.EnsureCanvasWithinLimits(Size.Width, Size.Height);
+
+        // The coded images: the first one stands for the image where a coded image is expected
+        var coded = new List<AvifImageNode>();
+        root.ForEachCoded(coded.Add);
+        Color = coded[0].Image;
+        foreach (var node in coded)
+        {
+            RootBitDepth = Math.Max(RootBitDepth, Math.Max(node.Image.BitDepth, node.Alpha?.BitDepth ?? 0));
+        }
+
+        // The colors of the image are described by the primary item, or else by the first image of the tree that is
+        // described. Nothing converts the colors of an input image: every description of the tree must be that one (an
+        // image without description is one of the image it is a part of)
+        ReadDescriptions(meta, payload, primary);
+        var nodes = new List<AvifImageNode>();
+        root.ForEach(nodes.Add);
+        foreach (var node in nodes)
+        {
+            if (Nclx is null && node.Nclx is { } first)
+                Nclx = first;
+
+            if (IccProfile.Length is 0)
+                IccProfile = node.IccProfile;
+
+            if (node.Nclx is { } description && Nclx is { } declared && (description.ColorPrimaries != declared.ColorPrimaries || description.TransferCharacteristics != declared.TransferCharacteristics))
+                throw AvifFormat.Unsupported("The images that the AVIF image is built from do not have the same color primaries and transfer characteristics.", "derived image of several color spaces");
+
+            if (node.IccProfile.Length is not 0 && !payload.Slice(node.IccProfile.Offset, node.IccProfile.Length).SequenceEqual(payload.Slice(IccProfile.Offset, IccProfile.Length)))
+                throw AvifFormat.Unsupported("The images that the AVIF image is built from do not have the same ICC profile.", "derived image of several color spaces");
+        }
+
+        // The pixels of the image are red, green and blue samples in full range, whatever its coded images are
+        if (Nclx is { } nclx)
+            Nclx = new CicpColorDescription(nclx.ColorPrimaries, nclx.TransferCharacteristics, 0, fullRange: true);
+
+        ReadMetadataItems(meta, primary.Id);
+    }
+
+    private void ReadMetadataItems(AvifMetaBox meta, uint primaryId)
+    {
         foreach (var reference in meta.References)
         {
             if (reference.Type is not AvifFormat.Cdsc || !reference.ToItemIds.AsSpan().Contains(primaryId) || !meta.Items.TryGetValue(reference.FromItemId, out var item))
@@ -152,15 +226,13 @@ internal sealed class AvifImagePlan
 
             if (item.Type is AvifFormat.Exif)
             {
-                plan.Exif ??= item;
+                Exif ??= item;
             }
             else if (item.IsXmp)
             {
-                plan.Xmp ??= item;
+                Xmp ??= item;
             }
         }
-
-        return plan;
     }
 
     /// <summary>
@@ -212,7 +284,7 @@ internal sealed class AvifImagePlan
         return AvifCodedImage.Create(meta, payload, item, limits);
     }
 
-    private static bool IsAlphaAuxiliary(AvifMetaBox meta, ReadOnlySpan<byte> payload, AvifItem item)
+    internal static bool IsAlphaAuxiliary(AvifMetaBox meta, ReadOnlySpan<byte> payload, AvifItem item)
     {
         foreach (var (index, _) in item.Properties)
         {

@@ -591,8 +591,9 @@ public sealed class AvifDecoderTests
         // No list of tiles
         Assert.Throws<InvalidImageContentException>(() => Image.Identify(Grid(builder => builder.References.Clear()).Build()));
 
-        // A tile that is not a coded image, and a tile with a transformation of its own
-        Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(Grid(builder => builder.GetItem(3).Type = "grid").Build()));
+        // A tile that is a grid without tiles, a tile of another codec, and a coded tile with a transformation of its own
+        Assert.Throws<InvalidImageContentException>(() => Image.Identify(Grid(builder => builder.GetItem(3).Type = "grid").Build()));
+        Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(Grid(builder => builder.GetItem(3).Type = "hvc1").Build()));
         Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(Grid(builder => builder.GetItem(3).Associations.Add((builder.AddProperty(AvifFileBuilder.Rotation(1)), true))).Build()));
 
         // Tiles of different bit depths

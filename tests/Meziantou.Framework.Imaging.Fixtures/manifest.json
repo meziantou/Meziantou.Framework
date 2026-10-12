@@ -5333,6 +5333,110 @@
       "notes": "Three columns and two rows of 16x16 tiles, coded one by one and assembled: smaller than the 64 samples MIAF asks for, so avifdec rejects the file."
     },
     {
+      "id": "avif/grid-of-derived-images",
+      "kind": "valid",
+      "format": "avif",
+      "input": {
+        "path": "avif/grid-of-derived-images.avif",
+        "sha256": "ef3eecd61f3b4c3fea00b3b06b3a2d0f3e30726e63f88d27fefd22c720aaac13",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/AvifCorpus.Container.cs (BuildDerivedImages)",
+        "tools": [
+          "libavif 1.4.2 avifenc (aom 3.14.1) (payloads)",
+          "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "payloadsOf": "avif/grid-2x2-lossless"
+        }
+      },
+      "features": [
+        "avif.alpha",
+        "avif.clap",
+        "avif.derived.grid",
+        "avif.derived.iden",
+        "avif.derived.inputPixels=8192",
+        "avif.imir=0",
+        "avif.majorBrand=avif"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "Planes of the items decoded identically by both decoders, scaled without matrix.",
+        "decoder": "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+        "backend": "ReferenceAvif and ReferenceYuvConverter (test harness)",
+        "command": "av1Vectors.decoders[].command",
+        "crossChecks": [
+          {
+            "decoder": "libavif 1.4.2 avifdec (dav1d 1.5.3)",
+            "command": "avifdec -j 1 {input} {output}.png",
+            "result": "differs",
+            "notes": "avifdec rejects the file: ERROR: Failed to parse image: Not implemented"
+          },
+          {
+            "decoder": "libavif 1.4.2 avifdec (dav1d 1.5.3), on avif/grid-2x2-lossless",
+            "command": "avifdec -j 1 {input} {output}.png",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "result": "exact",
+            "notes": "The same payloads in the layout avifdec reads; the references are the same files."
+          }
+        ]
+      },
+      "expected": {
+        "width": 100,
+        "height": 52,
+        "pixelFormat": "Rgba32",
+        "colorModel": "Rgba",
+        "bitsPerComponent": 8,
+        "orientation": 4,
+        "iccProfile": "none",
+        "cicp": {
+          "colorPrimaries": 1,
+          "transferCharacteristics": 13,
+          "matrixCoefficients": 0,
+          "fullRange": true
+        },
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "avif/grid-of-derived-images.frame-0.rgba8.raw.gz",
+                "sha256": "725456b1a008b1232c7cd2a48a179933edf93a2bfd9147be8a9443d935f5b766",
+                "layout": "rgba8",
+                "width": 100,
+                "height": 52,
+                "rowBytes": 400,
+                "byteLength": 20800,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "gzip"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      },
+      "notes": "A grid of 120x60 whose two tiles are identity derivations of 64x64 images, one mirrored and one turned: the tiles exceed the image. The grid is the primary item, with a clean aperture and a mirror that is its orientation."
+    },
+    {
       "id": "avif/hdr-mastering-display",
       "kind": "valid",
       "format": "avif",
@@ -6384,6 +6488,110 @@
       "notes": "Two nested identity derivations: the inner one keeps a clean aperture of 8x6 at (1, 2) of the coded image and the outer one, which is the primary item, turns it. The alpha plane of the primary item is an identity derivation of the coded alpha plane, with the same clean aperture and rotation."
     },
     {
+      "id": "avif/iden-of-iovl-10bit",
+      "kind": "valid",
+      "format": "avif",
+      "input": {
+        "path": "avif/iden-of-iovl-10bit.avif",
+        "sha256": "869d769d774c8627c881d1d033b7084e905ffcf86b6efd4734988d40173881a7",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/AvifCorpus.Container.cs (BuildDerivedImages)",
+        "tools": [
+          "libavif 1.4.2 avifenc (aom 3.14.1) (payloads)",
+          "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "payloadsOf": "avif/lossless-rgba10"
+        }
+      },
+      "features": [
+        "avif.alpha",
+        "avif.bitDepth=10",
+        "avif.derived.iden",
+        "avif.derived.inputPixels=256",
+        "avif.iovl",
+        "avif.irot=2",
+        "avif.majorBrand=avif"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "Planes of the items decoded identically by both decoders, scaled without matrix.",
+        "decoder": "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+        "backend": "ReferenceAvif and ReferenceYuvConverter (test harness)",
+        "command": "av1Vectors.decoders[].command",
+        "crossChecks": [
+          {
+            "decoder": "libavif 1.4.2 avifdec (dav1d 1.5.3)",
+            "command": "avifdec -j 1 -d 16 {input} {output}.png",
+            "result": "differs",
+            "notes": "avifdec rejects the file: ERROR: Failed to parse image: Invalid image grid"
+          },
+          {
+            "decoder": "libavif 1.4.2 avifdec (dav1d 1.5.3), on avif/lossless-rgba10",
+            "command": "avifdec -j 1 -d 16 {input} {output}.png",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "result": "exact",
+            "notes": "The same payloads in the layout avifdec reads; the references are the same files."
+          }
+        ]
+      },
+      "expected": {
+        "width": 13,
+        "height": 11,
+        "pixelFormat": "Rgba64",
+        "colorModel": "Rgba",
+        "bitsPerComponent": 10,
+        "orientation": 3,
+        "iccProfile": "none",
+        "cicp": {
+          "colorPrimaries": 1,
+          "transferCharacteristics": 13,
+          "matrixCoefficients": 0,
+          "fullRange": true
+        },
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "avif/iden-of-iovl-10bit.frame-0.rgba16le.raw",
+                "sha256": "750875afe2840d989b555870ffd40945069019bf137be9468c348987eaed4cce",
+                "layout": "rgba16le",
+                "width": 13,
+                "height": 11,
+                "rowBytes": 104,
+                "byteLength": 1144,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      },
+      "notes": "An identity derivation of an overlay of two 10-bit images with alpha on a white canvas. The overlay is mirrored, which moves its pixels; the rotation of the identity derivation, which is the primary item, is the orientation of the image."
+    },
+    {
       "id": "avif/identity-lossy-alpha",
       "kind": "valid",
       "format": "avif",
@@ -6699,6 +6907,729 @@
       "comparison": {
         "mode": "exact"
       }
+    },
+    {
+      "id": "avif/iovl-alpha-layers",
+      "kind": "valid",
+      "format": "avif",
+      "input": {
+        "path": "avif/iovl-alpha-layers.avif",
+        "sha256": "eb967769e0f5cdb657379fbb25466841cd02ab762dbbd0ebdeee831421f357c7",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/AvifCorpus.Container.cs (BuildDerivedImages)",
+        "tools": [
+          "libavif 1.4.2 avifenc (aom 3.14.1) (payloads)",
+          "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "payloadsOf": "avif/lossless-rgba8"
+        }
+      },
+      "features": [
+        "avif.alpha",
+        "avif.derived.inputPixels=864",
+        "avif.iovl",
+        "avif.majorBrand=avif"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "Planes of the items decoded identically by both decoders, scaled without matrix.",
+        "decoder": "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+        "backend": "ReferenceAvif and ReferenceYuvConverter (test harness)",
+        "command": "av1Vectors.decoders[].command",
+        "crossChecks": [
+          {
+            "decoder": "libavif 1.4.2 avifdec (dav1d 1.5.3)",
+            "command": "avifdec -j 1 {input} {output}.png",
+            "result": "differs",
+            "notes": "avifdec rejects the file: ERROR: Failed to parse image: Invalid image grid"
+          },
+          {
+            "decoder": "libavif 1.4.2 avifdec (dav1d 1.5.3), on avif/lossless-rgba8",
+            "command": "avifdec -j 1 {input} {output}.png",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "result": "exact",
+            "notes": "The same payloads in the layout avifdec reads; the references are the same files."
+          }
+        ]
+      },
+      "expected": {
+        "width": 20,
+        "height": 14,
+        "pixelFormat": "Rgba32",
+        "colorModel": "Rgba",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "cicp": {
+          "colorPrimaries": 1,
+          "transferCharacteristics": 13,
+          "matrixCoefficients": 0,
+          "fullRange": true
+        },
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "avif/iovl-alpha-layers.frame-0.rgba8.raw",
+                "sha256": "405a95db579be31c892daf0bb53cbb41138975fac45f01237a803d339497d530",
+                "layout": "rgba8",
+                "width": 20,
+                "height": 14,
+                "rowBytes": 80,
+                "byteLength": 1120,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      },
+      "notes": "An overlay of 20x14 filled with an opaque orange, and the same 12x9 image with an alpha plane four times: at (2, 1), over itself at (6, 4), and across the left and the top edges of the canvas at (-4, 8) and (15, -3)."
+    },
+    {
+      "id": "avif/iovl-black-fill-pq",
+      "kind": "valid",
+      "format": "avif",
+      "input": {
+        "path": "avif/iovl-black-fill-pq.avif",
+        "sha256": "4f1578aabb72101a6e5f3754ea0c4ae42346e745cb7d27d9e25571e65818c313",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/AvifCorpus.Container.cs (BuildDerivedImages)",
+        "tools": [
+          "libavif 1.4.2 avifenc (aom 3.14.1) (payloads)",
+          "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "payloadsOf": "avif/lossless-rgb8"
+        }
+      },
+      "features": [
+        "avif.alpha",
+        "avif.derived.inputPixels=108",
+        "avif.iovl",
+        "avif.majorBrand=avif"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "Planes of the items decoded identically by both decoders, scaled without matrix.",
+        "decoder": "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+        "backend": "ReferenceAvif and ReferenceYuvConverter (test harness)",
+        "command": "av1Vectors.decoders[].command",
+        "crossChecks": [
+          {
+            "decoder": "libavif 1.4.2 avifdec (dav1d 1.5.3)",
+            "command": "avifdec -j 1 {input} {output}.png",
+            "result": "differs",
+            "notes": "avifdec rejects the file: ERROR: Failed to parse image: Missing or empty image item"
+          },
+          {
+            "decoder": "libavif 1.4.2 avifdec (dav1d 1.5.3), on avif/lossless-rgb8",
+            "command": "avifdec -j 1 {input} {output}.png",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "result": "exact",
+            "notes": "The same payloads in the layout avifdec reads; the references are the same files."
+          }
+        ]
+      },
+      "expected": {
+        "width": 14,
+        "height": 11,
+        "pixelFormat": "Rgba32",
+        "colorModel": "Rgba",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "cicp": {
+          "colorPrimaries": 9,
+          "transferCharacteristics": 16,
+          "matrixCoefficients": 0,
+          "fullRange": true
+        },
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "avif/iovl-black-fill-pq.frame-0.rgba8.raw",
+                "sha256": "d1233a637ec944426e349f52c40b8a005ac3376698076abbb47aa1c0fbf91e3b",
+                "layout": "rgba8",
+                "width": 14,
+                "height": 11,
+                "rowBytes": 56,
+                "byteLength": 616,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      },
+      "notes": "An overlay of an image with the BT.2020 primaries and the PQ transfer characteristics on an opaque black canvas: black needs no conversion."
+    },
+    {
+      "id": "avif/iovl-grid-and-iden-layers",
+      "kind": "valid",
+      "format": "avif",
+      "input": {
+        "path": "avif/iovl-grid-and-iden-layers.avif",
+        "sha256": "7b51f930ff823730de6764dbd9b3505c2ef20d4d7a2deabd909d2cde1ac4d9e0",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/AvifCorpus.Container.cs (BuildDerivedImages)",
+        "tools": [
+          "libavif 1.4.2 avifenc (aom 3.14.1) (payloads)",
+          "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "payloadsOf": "avif/grid-2x2-lossless"
+        }
+      },
+      "features": [
+        "avif.alpha",
+        "avif.derived.iden",
+        "avif.derived.inputPixels=20480",
+        "avif.iovl",
+        "avif.majorBrand=avif"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "Planes of the items decoded identically by both decoders, scaled without matrix.",
+        "decoder": "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+        "backend": "ReferenceAvif and ReferenceYuvConverter (test harness)",
+        "command": "av1Vectors.decoders[].command",
+        "crossChecks": [
+          {
+            "decoder": "libavif 1.4.2 avifdec (dav1d 1.5.3)",
+            "command": "avifdec -j 1 {input} {output}.png",
+            "result": "differs",
+            "notes": "avifdec rejects the file: ERROR: Failed to parse image: Not implemented"
+          },
+          {
+            "decoder": "libavif 1.4.2 avifdec (dav1d 1.5.3), on avif/grid-2x2-lossless",
+            "command": "avifdec -j 1 {input} {output}.png",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "result": "exact",
+            "notes": "The same payloads in the layout avifdec reads; the references are the same files."
+          }
+        ]
+      },
+      "expected": {
+        "width": 150,
+        "height": 140,
+        "pixelFormat": "Rgba32",
+        "colorModel": "Rgba",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "cicp": {
+          "colorPrimaries": 1,
+          "transferCharacteristics": 13,
+          "matrixCoefficients": 0,
+          "fullRange": true
+        },
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "avif/iovl-grid-and-iden-layers.frame-0.rgba8.raw.gz",
+                "sha256": "d2ce0e872dbd16555bd38dd00209f99183fc4bd666075e3b17cca3133bf32bfe",
+                "layout": "rgba8",
+                "width": 150,
+                "height": 140,
+                "rowBytes": 600,
+                "byteLength": 84000,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "gzip"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      },
+      "notes": "An overlay of 150x140 filled with a half transparent green: a grid of four tiles at (10, 5), then an identity derivation of the first tile, turned a quarter turn and cropped to 40x30, at (90, 100)."
+    },
+    {
+      "id": "avif/iovl-icc-from-layers",
+      "kind": "valid",
+      "format": "avif",
+      "input": {
+        "path": "avif/iovl-icc-from-layers.avif",
+        "sha256": "e69789524eba10e341b97bc148910fc8956f3163196794feeef5249e9a05813a",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/AvifCorpus.Container.cs (BuildDerivedImages)",
+        "tools": [
+          "libavif 1.4.2 avifenc (aom 3.14.1) (payloads)",
+          "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "payloadsOf": "avif/lossless-rgb8"
+        }
+      },
+      "features": [
+        "avif.alpha",
+        "avif.derived.colr=icc",
+        "avif.derived.inputPixels=216",
+        "avif.iovl",
+        "avif.majorBrand=avif"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "Planes of the items decoded identically by both decoders, scaled without matrix.",
+        "decoder": "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+        "backend": "ReferenceAvif and ReferenceYuvConverter (test harness)",
+        "command": "av1Vectors.decoders[].command",
+        "crossChecks": [
+          {
+            "decoder": "libavif 1.4.2 avifdec (dav1d 1.5.3)",
+            "command": "avifdec -j 1 {input} {output}.png",
+            "result": "differs",
+            "notes": "avifdec rejects the file: ERROR: Failed to parse image: Invalid image grid"
+          },
+          {
+            "decoder": "libavif 1.4.2 avifdec (dav1d 1.5.3), on avif/lossless-rgb8",
+            "command": "avifdec -j 1 {input} {output}.png",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "result": "exact",
+            "notes": "The same payloads in the layout avifdec reads; the references are the same files."
+          }
+        ]
+      },
+      "expected": {
+        "width": 16,
+        "height": 12,
+        "pixelFormat": "Rgba32",
+        "colorModel": "Rgba",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "rgb",
+        "cicp": {
+          "colorPrimaries": 1,
+          "transferCharacteristics": 13,
+          "matrixCoefficients": 0,
+          "fullRange": true
+        },
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": {
+            "sha256": "582cd4ecc31eb15a2493a97a75d5039bb270f4eb6e3c58b812cbe980fdbeb650",
+            "length": 444
+          },
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "avif/iovl-icc-from-layers.frame-0.rgba8.raw",
+                "sha256": "690cc957eb76f7e07ca18eb02b83576f33623e3654011f7b54679b8a1872fa7f",
+                "layout": "rgba8",
+                "width": 16,
+                "height": 12,
+                "rowBytes": 64,
+                "byteLength": 768,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      },
+      "notes": "An overlay without colr box, on an opaque black canvas, of an image that has an ICC profile: the profile is the one of the image."
+    },
+    {
+      "id": "avif/iovl-layers-without-colr",
+      "kind": "valid",
+      "format": "avif",
+      "input": {
+        "path": "avif/iovl-layers-without-colr.avif",
+        "sha256": "4756b5052b60b8c2ec4f2053971e0a78aa147372a81ee9b7de826cb75a80de41",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/AvifCorpus.Container.cs (BuildDerivedImages)",
+        "tools": [
+          "libavif 1.4.2 avifenc (aom 3.14.1) (payloads)",
+          "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "payloadsOf": "avif/lossy-422-bt709-limited"
+        }
+      },
+      "features": [
+        "avif.alpha",
+        "avif.colr=none",
+        "avif.derived.inputPixels=128",
+        "avif.derived.matrix=1",
+        "avif.iovl",
+        "avif.majorBrand=avif"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "Planes of the items decoded identically by both decoders, converted with exact rationals (matrix, range and chroma position of the file).",
+        "decoder": "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+        "backend": "ReferenceAvif and ReferenceYuvConverter (test harness)",
+        "command": "av1Vectors.decoders[].command",
+        "crossChecks": [
+          {
+            "decoder": "libavif 1.4.2 avifdec (dav1d 1.5.3)",
+            "command": "avifdec -j 1 {input} {output}.png",
+            "result": "differs",
+            "notes": "avifdec rejects the file: ERROR: Failed to parse image: Invalid image grid"
+          },
+          {
+            "decoder": "libavif 1.4.2 avifdec (dav1d 1.5.3), on avif/lossy-422-bt709-limited",
+            "command": "avifdec -j 1 {input} {output}.png",
+            "maxAbsoluteError": 6,
+            "meanAbsoluteError": 0.9531,
+            "result": "differs",
+            "notes": "The same payloads in the layout avifdec reads; the references are the same files."
+          }
+        ]
+      },
+      "expected": {
+        "width": 10,
+        "height": 10,
+        "pixelFormat": "Rgba32",
+        "colorModel": "Rgba",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "cicp": {
+          "colorPrimaries": 1,
+          "transferCharacteristics": 13,
+          "matrixCoefficients": 0,
+          "fullRange": true
+        },
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "avif/iovl-layers-without-colr.frame-0.rgba8.raw",
+                "sha256": "3859687698661492d61fc1e9466035f61b4d74adee21e86207f47b2960b84cde",
+                "layout": "rgba8",
+                "width": 10,
+                "height": 10,
+                "rowBytes": 40,
+                "byteLength": 400,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "tolerance",
+        "maxAbsoluteError": 1,
+        "maxMeanAbsoluteError": 0.01,
+        "justification": "Exact-rational reference; the library rounds its matrix coefficients to 16 fractional bits (measured: max 0, mean 0.0). Allowed: 1 and the measured mean + 0.01; the cross-checks would justify max 7, mean 1.53."
+      },
+      "notes": "No colr box at all: the input image of the overlay is converted with the color description of its AV1 sequence header (BT.709, limited range), whose color primaries and transfer characteristics are those of the image."
+    },
+    {
+      "id": "avif/iovl-lossy-matrixed",
+      "kind": "valid",
+      "format": "avif",
+      "input": {
+        "path": "avif/iovl-lossy-matrixed.avif",
+        "sha256": "1face88eb96f34e8bec523affaec0654d885216402a4b9a9441cff8740fdf53b",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/AvifCorpus.Container.cs (BuildDerivedImages)",
+        "tools": [
+          "libavif 1.4.2 avifenc (aom 3.14.1) (payloads)",
+          "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "payloadsOf": "avif/lossy-420-alpha"
+        }
+      },
+      "features": [
+        "avif.alpha",
+        "avif.derived.inputPixels=256",
+        "avif.derived.matrix=6",
+        "avif.iovl",
+        "avif.majorBrand=avif"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "Planes of the items decoded identically by both decoders, converted with exact rationals (matrix, range and chroma position of the file).",
+        "decoder": "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+        "backend": "ReferenceAvif and ReferenceYuvConverter (test harness)",
+        "command": "av1Vectors.decoders[].command",
+        "crossChecks": [
+          {
+            "decoder": "libavif 1.4.2 avifdec (dav1d 1.5.3)",
+            "command": "avifdec -j 1 {input} {output}.png",
+            "result": "differs",
+            "notes": "avifdec rejects the file: ERROR: Failed to parse image: Invalid image grid"
+          },
+          {
+            "decoder": "libavif 1.4.2 avifdec (dav1d 1.5.3), on avif/lossy-420-alpha",
+            "command": "avifdec -j 1 {input} {output}.png",
+            "maxAbsoluteError": 1,
+            "meanAbsoluteError": 0.151,
+            "result": "differs",
+            "notes": "The same payloads in the layout avifdec reads; the references are the same files."
+          }
+        ]
+      },
+      "expected": {
+        "width": 12,
+        "height": 10,
+        "pixelFormat": "Rgba32",
+        "colorModel": "Rgba",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "cicp": {
+          "colorPrimaries": 1,
+          "transferCharacteristics": 13,
+          "matrixCoefficients": 0,
+          "fullRange": true
+        },
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "avif/iovl-lossy-matrixed.frame-0.rgba8.raw",
+                "sha256": "f660377d5456f257d350cfff04f87c70f76ef50cdeee341890675be002cec048",
+                "layout": "rgba8",
+                "width": 12,
+                "height": 10,
+                "rowBytes": 48,
+                "byteLength": 480,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "tolerance",
+        "maxAbsoluteError": 1,
+        "maxMeanAbsoluteError": 0.01,
+        "justification": "Exact-rational reference; the library rounds its matrix coefficients to 16 fractional bits (measured: max 0, mean 0.0). Allowed: 1 and the measured mean + 0.01; the cross-checks would justify max 2, mean 0.5."
+      },
+      "notes": "An overlay of a lossy 4:2:0 image with a lossy alpha plane, twice, on an opaque blue canvas: each image is converted with its matrix coefficients, then composited."
+    },
+    {
+      "id": "avif/iovl-transparent-fill",
+      "kind": "valid",
+      "format": "avif",
+      "input": {
+        "path": "avif/iovl-transparent-fill.avif",
+        "sha256": "1ffa4c006ccf54876ada3045de6e557e9b6b65157231492089cc5444d2c51ead",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/AvifCorpus.Container.cs (BuildDerivedImages)",
+        "tools": [
+          "libavif 1.4.2 avifenc (aom 3.14.1) (payloads)",
+          "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "payloadsOf": "avif/lossless-rgba8"
+        }
+      },
+      "features": [
+        "avif.alpha",
+        "avif.clap",
+        "avif.derived.inputPixels=216",
+        "avif.iovl",
+        "avif.irot=1",
+        "avif.majorBrand=avif"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "Planes of the items decoded identically by both decoders, scaled without matrix.",
+        "decoder": "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+        "backend": "ReferenceAvif and ReferenceYuvConverter (test harness)",
+        "command": "av1Vectors.decoders[].command",
+        "crossChecks": [
+          {
+            "decoder": "libavif 1.4.2 avifdec (dav1d 1.5.3)",
+            "command": "avifdec -j 1 {input} {output}.png",
+            "result": "differs",
+            "notes": "avifdec rejects the file: ERROR: Failed to parse image: Missing or empty image item"
+          },
+          {
+            "decoder": "libavif 1.4.2 avifdec (dav1d 1.5.3), on avif/lossless-rgba8",
+            "command": "avifdec -j 1 {input} {output}.png",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "result": "exact",
+            "notes": "The same payloads in the layout avifdec reads; the references are the same files."
+          }
+        ]
+      },
+      "expected": {
+        "width": 14,
+        "height": 10,
+        "pixelFormat": "Rgba32",
+        "colorModel": "Rgba",
+        "bitsPerComponent": 8,
+        "orientation": 8,
+        "iccProfile": "none",
+        "cicp": {
+          "colorPrimaries": 1,
+          "transferCharacteristics": 13,
+          "matrixCoefficients": 0,
+          "fullRange": true
+        },
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "avif/iovl-transparent-fill.frame-0.rgba8.raw",
+                "sha256": "e88c2422c5d456ad572c90bc2e4648143fa87a8690f72071bffd02837c730b1d",
+                "layout": "rgba8",
+                "width": 14,
+                "height": 10,
+                "rowBytes": 56,
+                "byteLength": 560,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      },
+      "notes": "An overlay whose fill color is fully transparent: the canvas is transparent black where no image is. The overlay is the primary item: its clean aperture keeps 14x10 at (2, 1) and its rotation is the orientation of the image."
     },
     {
       "id": "avif/irot-0",
@@ -25476,7 +26407,7 @@
             "decoder": "libavif 1.4.2 avifdec (dav1d 1.5.3)",
             "command": "avifdec -j 1 -d 16 --index all {input} {output}.png",
             "result": "differs",
-            "notes": "avifdec rejects the file: Conversion to RGB failed: /var/folders/l_/m8fk0x1s07ngvkcrk8mhhpqh0000gn/T/mfi-corpus-scratch-cl2Dy5/227-sequence-ictcp-hlg/avifdec-0000000000.png"
+            "notes": "avifdec rejects the file: Conversion to RGB failed: /var/folders/l_/m8fk0x1s07ngvkcrk8mhhpqh0000gn/T/mfi-corpus-scratch-aHFW5X/236-sequence-ictcp-hlg/avifdec-0000000000.png"
           },
           {
             "decoder": "libavif 1.4.2 avifdec (dav1d 1.5.3), on avif/sequence-10bit-once",
@@ -34247,32 +35178,29 @@
       "notes": "The clean aperture is 5/2 samples wide: not a whole number of samples."
     },
     {
-      "id": "invalid/avif/derived-iovl",
-      "kind": "unsupported",
+      "id": "invalid/avif/derived-loop",
+      "kind": "invalid",
       "format": "avif",
       "input": {
-        "path": "invalid/avif/derived-iovl.avif",
-        "sha256": "d8bf4c20673225c76998410d4e1cc36150d36b587043deab7473b8dd46971106",
+        "path": "invalid/avif/derived-loop.avif",
+        "sha256": "60ef6082cbac5bd233d7a72ece08a4c0371c64dbccb8ec63caa0b71de6a580d2",
         "role": "encoded"
       },
       "provenance": {
         "origin": "hand-authored",
         "license": "CC0-1.0",
         "author": "Meziantou.Framework.Imaging contributors",
-        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/AvifCorpus.Container.cs (BuildUnsupported)",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/AvifCorpus.Container.cs (BuildInvalid)",
         "tools": [
           "libavif 1.4.2 avifenc (aom 3.14.1) (payloads)",
           ".NET 10.0"
         ]
       },
       "expectedError": {
-        "exception": "UnsupportedImageFeatureException",
+        "exception": "InvalidImageContentException",
         "format": "Avif"
       },
-      "features": [
-        "avif.unsupported=derived-image"
-      ],
-      "notes": "The primary item is a derived image of type iovl whose input is the coded image."
+      "notes": "An input image of the overlay is an identity derivation of the overlay: the image is derived from itself."
     },
     {
       "id": "invalid/avif/essential-unknown-property",
@@ -34325,6 +35253,31 @@
         "exception": "UnknownImageFormatException"
       },
       "notes": "A HEIF file whose brands (mif1, heic) include neither avif nor avis: an ISO base media file that is not an AVIF image."
+    },
+    {
+      "id": "invalid/avif/grid-derived-tiles-differ",
+      "kind": "invalid",
+      "format": "avif",
+      "input": {
+        "path": "invalid/avif/grid-derived-tiles-differ.avif",
+        "sha256": "2032aac8c7079e335fcffa72871b2be77c0460b931dbab38dc17e25bfb1ba008",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/AvifCorpus.Container.cs (BuildInvalid)",
+        "tools": [
+          "libavif 1.4.2 avifenc (aom 3.14.1) (payloads)",
+          ".NET 10.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "InvalidImageContentException",
+        "format": "Avif"
+      },
+      "notes": "The two tiles of the grid are identity derivations of 64x64 and, once cropped, of 60x64: the tiles of a grid have the same size."
     },
     {
       "id": "invalid/avif/grid-size-mismatch",
@@ -34584,6 +35537,224 @@
         "format": "Avif"
       },
       "notes": "The identity derivation that is the primary item has two input images."
+    },
+    {
+      "id": "invalid/avif/iovl-alpha-plane",
+      "kind": "unsupported",
+      "format": "avif",
+      "input": {
+        "path": "invalid/avif/iovl-alpha-plane.avif",
+        "sha256": "48020175cb8e91be1602f654b6b9306eb36cf6f8d6330e7c4e0ae4c1d70fa50f",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/AvifCorpus.Container.cs (BuildUnsupported)",
+        "tools": [
+          "libavif 1.4.2 avifenc (aom 3.14.1) (payloads)",
+          ".NET 10.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "UnsupportedImageFeatureException",
+        "format": "Avif"
+      },
+      "features": [
+        "avif.unsupported=derived-image"
+      ],
+      "notes": "The alpha plane is an auxiliary image of the overlay, not of its input image."
+    },
+    {
+      "id": "invalid/avif/iovl-bitstream-other-color-space",
+      "kind": "unsupported",
+      "format": "avif",
+      "input": {
+        "path": "invalid/avif/iovl-bitstream-other-color-space.avif",
+        "sha256": "354678de16d5826d4c60d6d24c961e85684e3c7fdbdc5cb3500dc7e77c9a9c57",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/AvifCorpus.Container.cs (BuildUnsupported)",
+        "tools": [
+          "libavif 1.4.2 avifenc (aom 3.14.1) (payloads)",
+          ".NET 10.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "UnsupportedImageFeatureException",
+        "format": "Avif"
+      },
+      "features": [
+        "avif.unsupported=derived-image"
+      ],
+      "notes": "The overlay declares the Display P3 primaries, and its input image, which has no colr box, has the BT.709 ones of its AV1 sequence header: it would have to be converted."
+    },
+    {
+      "id": "invalid/avif/iovl-depth",
+      "kind": "unsupported",
+      "format": "avif",
+      "input": {
+        "path": "invalid/avif/iovl-depth.avif",
+        "sha256": "4eac823bd77aeca77b9024aeeac8273809ff4ae6222e5f8132cd19e14d5a1c27",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/AvifCorpus.Container.cs (BuildUnsupported)",
+        "tools": [
+          "libavif 1.4.2 avifenc (aom 3.14.1) (payloads)",
+          ".NET 10.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "UnsupportedImageFeatureException",
+        "format": "Avif"
+      },
+      "features": [
+        "avif.unsupported=derivation-depth"
+      ],
+      "notes": "The primary item is derived from the overlay through nine nested identity derivations: ten derivations between the image and its coded image, more than the eight that are followed."
+    },
+    {
+      "id": "invalid/avif/iovl-descriptor-truncated",
+      "kind": "invalid",
+      "format": "avif",
+      "input": {
+        "path": "invalid/avif/iovl-descriptor-truncated.avif",
+        "sha256": "27e8c3c8e210a60d94f4de406d034cd3e299dd864463de0fe6f7226ef3042007",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/AvifCorpus.Container.cs (BuildInvalid)",
+        "tools": [
+          "libavif 1.4.2 avifenc (aom 3.14.1) (payloads)",
+          ".NET 10.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "InvalidImageContentException",
+        "format": "Avif"
+      },
+      "notes": "The overlay has two input images and its descriptor one offset."
+    },
+    {
+      "id": "invalid/avif/iovl-fill-other-color-space",
+      "kind": "unsupported",
+      "format": "avif",
+      "input": {
+        "path": "invalid/avif/iovl-fill-other-color-space.avif",
+        "sha256": "791ef834c2bdfc513b297ee82c49f91e45f17b22290598f83ac4767277f5515e",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/AvifCorpus.Container.cs (BuildUnsupported)",
+        "tools": [
+          "libavif 1.4.2 avifenc (aom 3.14.1) (payloads)",
+          ".NET 10.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "UnsupportedImageFeatureException",
+        "format": "Avif"
+      },
+      "features": [
+        "avif.unsupported=derived-image"
+      ],
+      "notes": "The image of the overlay has the BT.2020 primaries and the PQ transfer characteristics, and the canvas is filled with an opaque red, which is an sRGB color: it would have to be converted."
+    },
+    {
+      "id": "invalid/avif/iovl-layers-color-spaces",
+      "kind": "unsupported",
+      "format": "avif",
+      "input": {
+        "path": "invalid/avif/iovl-layers-color-spaces.avif",
+        "sha256": "35160dbe788b85070ee67bc0c9f95ff85d0638cdabc6be4d653ef0bd23cff51f",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/AvifCorpus.Container.cs (BuildUnsupported)",
+        "tools": [
+          "libavif 1.4.2 avifenc (aom 3.14.1) (payloads)",
+          ".NET 10.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "UnsupportedImageFeatureException",
+        "format": "Avif"
+      },
+      "features": [
+        "avif.unsupported=derived-image"
+      ],
+      "notes": "The two input images of the overlay have other color primaries (BT.709 and Display P3): one of them would have to be converted."
+    },
+    {
+      "id": "invalid/avif/iovl-layers-icc-profiles",
+      "kind": "unsupported",
+      "format": "avif",
+      "input": {
+        "path": "invalid/avif/iovl-layers-icc-profiles.avif",
+        "sha256": "fd64017db16f17a0ed0d2e7953a04b9c4dade17e64db96d0f87dfaca7b8ee2ba",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/AvifCorpus.Container.cs (BuildUnsupported)",
+        "tools": [
+          "libavif 1.4.2 avifenc (aom 3.14.1) (payloads)",
+          ".NET 10.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "UnsupportedImageFeatureException",
+        "format": "Avif"
+      },
+      "features": [
+        "avif.unsupported=derived-image"
+      ],
+      "notes": "The two input images of the overlay have ICC profiles that are not the same bytes: one of them would have to be converted."
+    },
+    {
+      "id": "invalid/avif/iovl-size-mismatch",
+      "kind": "invalid",
+      "format": "avif",
+      "input": {
+        "path": "invalid/avif/iovl-size-mismatch.avif",
+        "sha256": "0b67f195ad0c49b408b599b7ad99f942ddb63f35dea606638fba7bba37e64530",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/AvifCorpus.Container.cs (BuildInvalid)",
+        "tools": [
+          "libavif 1.4.2 avifenc (aom 3.14.1) (payloads)",
+          ".NET 10.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "InvalidImageContentException",
+        "format": "Avif"
+      },
+      "notes": "The descriptor of the overlay declares a canvas of 9x8 and its ispe property 8x8."
     },
     {
       "id": "invalid/avif/ispe-mismatch",

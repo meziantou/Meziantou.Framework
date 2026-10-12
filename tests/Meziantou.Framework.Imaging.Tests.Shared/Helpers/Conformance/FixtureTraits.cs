@@ -112,7 +112,9 @@ internal static class FixtureTraits
         var hiddenFrames = GetFeatureValue(fixture, "avif.seq.hiddenFrames=");
         // JPEG XL: the frames that are decoded without being shown (reference frames, LF frames, layers) and what a shown
         // frame has beyond the image, as the corpus generator summed them from the frame headers (jxl.hiddenPixels)
-        return (hiddenFrames * fixture.Expected.Width * fixture.Expected.Height) + GetFeatureValue(fixture, "avif.layers.hiddenPixels=") + GetFeatureValue(fixture, "jxl.hiddenPixels=");
+        // The coded images of an image that is built from other images are decoded without being the image that is
+        // returned: the generator sums their pixels (avif.derived.inputPixels)
+        return GetFeatureValue(fixture, "avif.derived.inputPixels=") + (hiddenFrames * fixture.Expected.Width * fixture.Expected.Height) + GetFeatureValue(fixture, "avif.layers.hiddenPixels=") + GetFeatureValue(fixture, "jxl.hiddenPixels=");
 
         static long GetFeatureValue(GoldenFixture fixture, string prefix)
         {
@@ -149,6 +151,10 @@ internal static class FixtureTraits
         }
         else
         {
+            // An image that is built from other images has red, green, blue and alpha samples, whatever they are
+            if (file.IsBuiltImage(file.PrimaryItem!))
+                return false;
+
             // The color description of an identity derivation is its own, or else the one of its input
             var chain = file.GetIdentityChain(file.PrimaryItem!);
             if (chain.Any(item => item.Nclx is not null))
@@ -170,17 +176,44 @@ internal static class FixtureTraits
     /// aperture: every frame of the bitstream is checked against the canvas limits (a documented rule), and the coded
     /// image, whose size is the <c>ispe</c> property of the primary item (of the coded image that it is derived from,
     /// when it is an identity derivation) or the size of the sample entry of a sequence, is larger than the aperture that
-    /// is presented.
+    /// is presented. An image that is built from other images has several canvases: the ones of its coded images, of its
+    /// grids and of its overlays. Each limit applies to each of them, so the requirement of each limit is its largest
+    /// value, and the pixels are not the product of the two sides.
     /// </summary>
-    public static (int Width, int Height) GetLimitedCanvas(GoldenFixture fixture)
+    public static (int Width, int Height, long Pixels) GetLimitedCanvas(GoldenFixture fixture)
     {
         ArgumentNullException.ThrowIfNull(fixture);
+        if (fixture.Entry.Format == "avif" && ReferenceAvif.Parse(fixture.ReadInput()) is { PrimaryItem: { } root } built && built.IsBuiltImage(root))
+        {
+            var canvases = new List<(long Width, long Height)>();
+            Collect(root);
+            return ((int)canvases.Max(canvas => canvas.Width), (int)canvases.Max(canvas => canvas.Height), canvases.Max(canvas => canvas.Width * canvas.Height));
+
+            void Collect(ReferenceAvif.Item item)
+            {
+                // An identity derivation has no canvas of its own
+                if (item.Type != "iden")
+                {
+                    canvases.Add(item.Size!.Value);
+                }
+
+                // The tiles of a grid of coded images are smaller than the grid
+                if (item.Type != "av01" && (item.Type != "grid" || built.IsBuiltImage(item)))
+                {
+                    foreach (var id in built.ItemReferences.Where(reference => reference.Type == "dimg" && reference.FromItemId == item.Id).SelectMany(reference => reference.ToItemIds))
+                    {
+                        Collect(built.FindItem(id)!);
+                    }
+                }
+            }
+        }
+
         if (fixture.Entry.HasFeature("avif.clap") && ReferenceAvif.Parse(fixture.ReadInput()) is { PrimaryItem: { } primary } file && file.GetIdentityChain(primary)[^1].Size is var (width, height))
-            return ((int)width, (int)height);
+            return ((int)width, (int)height, width * height);
 
         if (fixture.Entry.HasFeature("avif.seq.clap") && ReferenceAvif.Parse(fixture.ReadInput()).ColorTrack is { } track)
-            return (track.Width, track.Height);
+            return (track.Width, track.Height, (long)track.Width * track.Height);
 
-        return (fixture.Expected.Width, fixture.Expected.Height);
+        return (fixture.Expected.Width, fixture.Expected.Height, (long)fixture.Expected.Width * fixture.Expected.Height);
     }
 }

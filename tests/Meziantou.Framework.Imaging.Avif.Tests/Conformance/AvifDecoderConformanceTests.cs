@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using Meziantou.Framework.Imaging.Internals;
 using Meziantou.Framework.Imaging.Metadata;
 using Meziantou.Framework.Imaging.TestHarness.Adapters;
@@ -128,6 +129,18 @@ public sealed class AvifDecoderConformanceTests
         Assert.Contains(fixtures, fixture => HasFeatureKey(fixture, "avif.iden") && fixture.Entry.HasFeature("avif.alpha") && !fixture.Entry.HasFeature("avif.clap"));
         Assert.Contains(fixtures, fixture => HasFeatureKey(fixture, "avif.iden") && fixture.Entry.HasFeature("avif.clap") && fixture.Entry.HasFeature("avif.irot=1") && fixture.Entry.HasFeature("avif.imir=1"));
         Assert.Contains(fixtures, fixture => HasFeatureKey(fixture, "avif.iden") && fixture.Entry.HasFeature("avif.matrix=6"));
+
+        // Images that are built from other images: overlays (alone, under an identity derivation, of a grid and of an
+        // identity derivation, at a higher bit depth, of coded images that a matrix converts, with transformations of
+        // their own) and grids of derived images
+        Assert.Contains(fixtures, fixture => fixture.Entry.HasFeature("avif.iovl") && !fixture.Entry.HasFeature("avif.derived.iden"));
+        Assert.Contains(fixtures, fixture => fixture.Entry.HasFeature("avif.iovl") && fixture.Entry.HasFeature("avif.derived.iden") && fixture.Entry.HasFeature("avif.bitDepth=10"));
+        Assert.Contains(fixtures, fixture => fixture.Entry.HasFeature("avif.iovl") && fixture.Entry.HasFeature("avif.derived.matrix=6"));
+        Assert.Contains(fixtures, fixture => fixture.Entry.HasFeature("avif.iovl") && fixture.Entry.HasFeature("avif.clap") && HasFeatureKey(fixture, "avif.irot"));
+        Assert.Contains(fixtures, fixture => fixture.Entry.HasFeature("avif.iovl") && fixture.Entry.HasFeature("avif.derived.colr=icc") && fixture.Expected.Profiles.Icc is not null);
+        Assert.Contains(fixtures, fixture => fixture.Entry.HasFeature("avif.iovl") && fixture.Entry.HasFeature("avif.colr=none") && fixture.Expected.Cicp is not null);
+        Assert.Contains(fixtures, fixture => fixture.Entry.HasFeature("avif.derived.grid") && fixture.Entry.HasFeature("avif.derived.iden") && fixture.Entry.HasFeature("avif.clap"));
+        Assert.All(fixtures.Where(fixture => fixture.Entry.HasFeature("avif.iovl") || fixture.Entry.HasFeature("avif.derived.grid")), fixture => Assert.True(HasFeatureKey(fixture, "avif.derived.inputPixels")));
 
         foreach (var matrix in new[] { 1, 4, 5, 6, 7, 8, 9 })
         {
@@ -331,6 +344,11 @@ public sealed class AvifDecoderConformanceTests
         else
         {
             Assert.NotNull(file.PrimaryItem);
+            if (file.IsBuiltImage(file.PrimaryItem))
+            {
+                AssertBuiltImage(fixture, file, image, info);
+                return;
+            }
 
             // An identity derivation presents its input image: the coded image is the last item of the chain
             var chain = file.GetIdentityChain(file.PrimaryItem);
@@ -404,6 +422,64 @@ public sealed class AvifDecoderConformanceTests
 
         // Color profiles and color descriptions are labels: neither changes the transfer function label
         Assert.Equal(ColorTransferFunction.Srgb, image.Metadata.TransferFunction);
+    }
+
+    // An image that is built from other images (an overlay, a grid of derived images): red, green, blue and alpha samples
+    // at the depth of its deepest coded image; the clean aperture of the primary item selects a part of the image that is
+    // built, and its rotation and mirroring are the orientation; the color description is the one of the primary item, or
+    // else the primaries and the transfer characteristics of its coded images
+    private static void AssertBuiltImage(GoldenFixture fixture, ReferenceAvif file, Image image, ImageInfo info)
+    {
+        var expected = fixture.Expected;
+        var primary = file.PrimaryItem!;
+        var coded = file.GetCodedImages(primary);
+        Assert.NotEmpty(coded);
+        Assert.True(fixture.Entry.HasFeature("avif.iovl") || fixture.Entry.HasFeature("avif.derived.grid"));
+        var depths = coded.SelectMany(item => new[] { item, file.FindAuxiliary(item.Id, ReferenceAvif.AlphaAuxiliaryType) }).Where(item => item is not null)
+            .Select(item => (item!.Type == "grid" ? file.GetGridTiles(item)[0] : item).Configuration!.BitDepth).ToList();
+        var pixelFormat = depths.Max() > 8 ? PixelFormat.Rgba64 : PixelFormat.Rgba32;
+        Assert.Equal(pixelFormat.ToString(), expected.PixelFormat);
+        Assert.Equal(pixelFormat, image.PixelFormat);
+        Assert.Equal(pixelFormat, info.PixelFormat);
+        Assert.Equal(depths.Max(), expected.BitsPerComponent);
+        Assert.Equal(depths.Max(), info.BitsPerComponent);
+        Assert.True(info.MayHaveTransparency);
+        Assert.Equal(ImageColorModel.Rgba, info.ColorModel);
+
+        var ispe = primary.Size!.Value;
+        var presented = ReferenceAvif.Item.Present(primary.Transforms, (int)ispe.Width, (int)ispe.Height);
+        Assert.NotNull(presented);
+        var size = (presented.Value.Rectangle.Width, presented.Value.Rectangle.Height);
+        Assert.Equal(size, (expected.Width, expected.Height));
+        Assert.Equal(size, (image.Width, image.Height));
+        Assert.Equal(size, (info.Width, info.Height));
+        Assert.Equal(primary.Orientation, expected.Orientation);
+        Assert.Equal((ExifOrientation)primary.Orientation, image.Metadata.Orientation);
+        Assert.Equal((ExifOrientation)primary.Orientation, info.Metadata.Orientation);
+        Assert.Single(image.Frames);
+        Assert.Null(image.Animation);
+
+        // The color description of the first image of the tree that has a colr box of type nclx, or else the one of the
+        // bitstream of the first coded image, which the manifest records from the reference decoders
+        var description = file.GetImageTree(primary).Select(item => item.Nclx).FirstOrDefault(value => value is not null);
+        Assert.Equal(description is null, fixture.Entry.HasFeature("avif.colr=none") || fixture.Entry.HasFeature("avif.colr=icc"));
+        var cicp = description is not null ? new CicpColorDescription((byte)description.ColorPrimaries, (byte)description.TransferCharacteristics, 0, fullRange: true)
+            : expected.Cicp is { } bitstream ? new CicpColorDescription((byte)bitstream.ColorPrimaries, (byte)bitstream.TransferCharacteristics, (byte)bitstream.MatrixCoefficients, bitstream.FullRange)
+            : null;
+        Assert.True(cicp is null or { MatrixCoefficients: 0, FullRange: true });
+        Assert.Equal(cicp, image.Metadata.Cicp);
+        Assert.Equal(cicp, info.Metadata.Cicp);
+        Assert.Equal(ColorTransferFunction.Srgb, image.Metadata.TransferFunction);
+
+        // The pixels of the coded images are counted like the frames of a bitstream that are not shown
+        long inputPixels = 0;
+        foreach (var item in coded)
+        {
+            var itemSize = item.Size!.Value;
+            inputPixels += itemSize.Width * itemSize.Height * (file.FindAuxiliary(item.Id, ReferenceAvif.AlphaAuxiliaryType) is null ? 1 : 2);
+        }
+
+        Assert.True(fixture.Entry.HasFeature(string.Create(CultureInfo.InvariantCulture, $"avif.derived.inputPixels={inputPixels}")));
     }
 
     [Theory]
@@ -901,7 +977,32 @@ public sealed class AvifDecoderConformanceTests
         Assert.Equal(("iden", "av01"), (untransformedAlpha.PrimaryItem!.Type, untransformedAlpha.AlphaItem!.Type));
         Assert.NotNull(untransformedAlpha.PrimaryItem.CleanAperture);
         Assert.Empty(untransformedAlpha.AlphaItem.Transforms);
-        Assert.Equal("iovl", Read("invalid/avif/derived-iovl").PrimaryItem!.Type);
+
+        // Images that are built from other images: an overlay whose descriptor declares another size than its ispe
+        // property or lacks an offset, a derivation that is its own input, a grid of derived tiles of two sizes; and what
+        // is not supported: a fill color that shows on an image that is not an sRGB one, an alpha plane for the overlay
+        // itself, input images of two color spaces, ten nested derivations
+        Assert.Equal(("iovl", (8L, 8L)), (Read("invalid/avif/iovl-size-mismatch").PrimaryItem!.Type, Read("invalid/avif/iovl-size-mismatch").PrimaryItem!.Size!.Value));
+        Assert.Equal((9, 8), (BinaryPrimitives.ReadUInt16BigEndian(Read("invalid/avif/iovl-size-mismatch").ReadItemData(Read("invalid/avif/iovl-size-mismatch").PrimaryItem!).AsSpan(10)), BinaryPrimitives.ReadUInt16BigEndian(Read("invalid/avif/iovl-size-mismatch").ReadItemData(Read("invalid/avif/iovl-size-mismatch").PrimaryItem!).AsSpan(12))));
+        var truncatedOverlay = Read("invalid/avif/iovl-descriptor-truncated");
+        Assert.HasCount(2, truncatedOverlay.ItemReferences.Single(reference => reference.Type == "dimg").ToItemIds);
+        Assert.HasCount(14 + 4, truncatedOverlay.ReadItemData(truncatedOverlay.PrimaryItem!));
+        var loop = Read("invalid/avif/derived-loop");
+        Assert.Contains(loop.ItemReferences, reference => reference.Type == "dimg" && reference.FromItemId == 11 && reference.ToItemIds.Contains(loop.PrimaryItemId!.Value));
+        Assert.True(Read("invalid/avif/grid-derived-tiles-differ").IsBuiltImage(Read("invalid/avif/grid-derived-tiles-differ").PrimaryItem!));
+        var visibleFill = Read("invalid/avif/iovl-fill-other-color-space");
+        Assert.Equal(0xFFFF, BinaryPrimitives.ReadUInt16BigEndian(visibleFill.ReadItemData(visibleFill.PrimaryItem!).AsSpan(8)));
+        Assert.Equal((9, 16), (visibleFill.GetCodedImages(visibleFill.PrimaryItem!)[0].Nclx!.ColorPrimaries, visibleFill.GetCodedImages(visibleFill.PrimaryItem!)[0].Nclx!.TransferCharacteristics));
+        var overlayAlpha = Read("invalid/avif/iovl-alpha-plane");
+        Assert.Equal("iovl", overlayAlpha.PrimaryItem!.Type);
+        Assert.NotNull(overlayAlpha.AlphaItem);
+        Assert.HasCount(2, Read("invalid/avif/iovl-layers-color-spaces").GetCodedImages(Read("invalid/avif/iovl-layers-color-spaces").PrimaryItem!).Select(item => item.Nclx!.ColorPrimaries).Distinct().ToList());
+        var profiles = Read("invalid/avif/iovl-layers-icc-profiles");
+        Assert.HasCount(2, profiles.GetCodedImages(profiles.PrimaryItem!).Select(item => Convert.ToHexString(item.IccProfile!.Value.Span)).Distinct(StringComparer.Ordinal).ToList());
+        var bitstreamColors = Read("invalid/avif/iovl-bitstream-other-color-space");
+        Assert.Equal(12, bitstreamColors.PrimaryItem!.Nclx!.ColorPrimaries);
+        Assert.Null(bitstreamColors.GetCodedImages(bitstreamColors.PrimaryItem!)[0].Nclx);
+        Assert.HasCount(10, Read("invalid/avif/iovl-depth").GetIdentityChain(Read("invalid/avif/iovl-depth").PrimaryItem!));
         Assert.Null(Read("invalid/avif/clap-fractional").PrimaryItem!.CleanAperture!.GetRectangle(8, 8));
         Assert.Equal(3, Read("invalid/avif/matrix-reserved").PrimaryItem!.Nclx!.MatrixCoefficients);
         Assert.Equal((13, 14), (Read("invalid/avif/matrix-ictcp-sdr-transfer").PrimaryItem!.Nclx!.TransferCharacteristics, Read("invalid/avif/matrix-ictcp-sdr-transfer").PrimaryItem!.Nclx!.MatrixCoefficients));

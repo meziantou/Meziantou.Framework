@@ -133,6 +133,32 @@ internal static partial class AvifCorpus
         }, "Two identity derivations are the input image of each other: the primary item is derived from itself.");
         Invalid(context, "iden-size-mismatch", ErrorSource, builder => WrapInIdentity(builder, 1, 2, 9, 8, describe: true),
             "The identity derivation declares 9x8 and its input image is 8x8.");
+        Invalid(context, "iovl-size-mismatch", ErrorSource, builder =>
+        {
+            AddDerivedItem(builder, 10, "iovl", OverlayDescriptor((0, 0, 0, 0), 9, 8, (0, 0)), 8, 8, [1]);
+            Present(builder, 10);
+        }, "The descriptor of the overlay declares a canvas of 9x8 and its ispe property 8x8.");
+        Invalid(context, "iovl-descriptor-truncated", ErrorSource, builder =>
+        {
+            AddDerivedItem(builder, 10, "iovl", OverlayDescriptor((0, 0, 0, 0), 8, 8, (0, 0)), 8, 8, [1, 1]);
+            Present(builder, 10);
+        }, "The overlay has two input images and its descriptor one offset.");
+        Invalid(context, "derived-loop", ErrorSource, builder =>
+        {
+            AddDerivedItem(builder, 10, "iovl", OverlayDescriptor((0, 0, 0, 0), 8, 8, (0, 0), (0, 0)), 8, 8, [1, 11]);
+            AddDerivedItem(builder, 11, "iden", [], 8, 8, [10]);
+            Present(builder, 10);
+        }, "An input image of the overlay is an identity derivation of the overlay: the image is derived from itself.");
+        Invalid(context, "grid-derived-tiles-differ", "grid-2x2-lossless", builder =>
+        {
+            var grid = builder.PrimaryItemId!.Value;
+            var tiles = builder.References.Single(reference => reference.Type == "dimg" && reference.FromItemId == grid).ToItemIds;
+            var next = builder.Items.Max(item => item.Id) + 1;
+            AddDerivedItem(builder, next, "iden", [], 64, 64, [tiles[0]]);
+            AddDerivedItem(builder, next + 1, "iden", [], 64, 64, [tiles[1]], ApertureOf(64, 64, 0, 0, 60, 64));
+            AddDerivedItem(builder, next + 2, "grid", AvifFileBuilder.GridDescriptor(1, 2, 120, 64), 120, 64, [next, next + 1]);
+            Present(builder, next + 2);
+        }, "The two tiles of the grid are identity derivations of 64x64 and, once cropped, of 60x64: the tiles of a grid have the same size.");
         Invalid(context, "two-meta-boxes", ErrorSource, builder => builder.Layout.Insert(2, AvifFileBuilder.MetaBox), "The file has two meta boxes at its top level (ISO/IEC 14496-12 allows at most one).");
         Invalid(context, "item-outside-file", ErrorSource, builder => builder.GetItem(1).ExtentOverride = [(4096, builder.GetItem(1).Data.Length)],
             "The extent of the primary item starts at offset 4096, after the end of the file.");
@@ -276,21 +302,59 @@ internal static partial class AvifCorpus
     private static void BuildUnsupported(ContainerContext context)
     {
 
-        void Derived(string type, byte[] data)
+        // Derived images that are not supported
+        Unsupported(context, "iovl-fill-other-color-space", ErrorSource, builder =>
         {
-            Unsupported(context, "derived-" + type, ErrorSource, builder =>
-            {
-                var coded = builder.GetItem(1);
-                coded.Id = 2;
-                var derived = builder.AddItem(1, type, data);
-                derived.Storage = data.Length == 0 ? AvifFileBuilder.ItemStorage.None : AvifFileBuilder.ItemStorage.ItemData;
-                foreach (var association in coded.Associations.Where(association => PropertyType(builder.Properties[association.PropertyIndex - 1]) is "ispe" or "colr" or "pixi"))
-                    derived.Associations.Add(association);
-                builder.References.Add(("dimg", 1, [2]));
-            }, "derived-image", $"The primary item is a derived image of type {type} whose input is the coded image.");
-        }
+            ReplaceProperty(builder, builder.GetItem(1), "colr", AvifFileBuilder.ColorNclx(9, 16, 9, fullRange: true));
+            AddDerivedItem(builder, 10, "iovl", OverlayDescriptor((0xFFFF, 0, 0, 0xFFFF), 12, 10, (2, 1)), 12, 10, [1]);
+            Present(builder, 10);
+        }, "derived-image", "The image of the overlay has the BT.2020 primaries and the PQ transfer characteristics, and the canvas is filled with an opaque red, which is an sRGB color: it would have to be converted.");
+        Unsupported(context, "iovl-alpha-plane", "lossless-rgba8", builder =>
+        {
+            AddDerivedItem(builder, 10, "iovl", OverlayDescriptor((0, 0, 0, 0), 12, 9, (0, 0)), 12, 9, [1]);
+            var index = Enumerable.Range(0, builder.References.Count).Single(i => builder.References[i].Type == "auxl");
+            builder.References[index] = ("auxl", 2, [10]);
+            Present(builder, 10);
+        }, "derived-image", "The alpha plane is an auxiliary image of the overlay, not of its input image.");
+        Unsupported(context, "iovl-layers-color-spaces", "grid-2x2-lossless", builder =>
+        {
+            var grid = builder.PrimaryItemId!.Value;
+            var tiles = builder.References.Single(reference => reference.Type == "dimg" && reference.FromItemId == grid).ToItemIds;
+            ReplaceProperty(builder, builder.GetItem(tiles[1]), "colr", AvifFileBuilder.ColorNclx(12, 13, 0, fullRange: true));
+            var next = builder.Items.Max(item => item.Id) + 1;
+            AddDerivedItem(builder, next, "iovl", OverlayDescriptor((0, 0, 0, 0), 100, 80, (0, 0), (30, 10)), 100, 80, [tiles[0], tiles[1]]);
+            Present(builder, next);
+        }, "derived-image", "The two input images of the overlay have other color primaries (BT.709 and Display P3): one of them would have to be converted.");
+        Unsupported(context, "iovl-layers-icc-profiles", "grid-2x2-lossless", builder =>
+        {
+            var grid = builder.PrimaryItemId!.Value;
+            var tiles = builder.References.Single(reference => reference.Type == "dimg" && reference.FromItemId == grid).ToItemIds;
 
-        Derived("iovl", AvifFileBuilder.Concat([0, 0], new byte[8], AvifFileBuilder.U16(8), AvifFileBuilder.U16(8), new byte[4]));
+            // The same profile, created one second later (the creation time is the bytes 24 to 35 of an ICC profile)
+            var profile = CommonCorpus.IccProfile("RGB ");
+            var other = (byte[])profile.Clone();
+            other[35] ^= 1;
+            builder.GetItem(tiles[0]).Associations.Add((builder.AddProperty(AvifFileBuilder.ColorProfile(profile)), false));
+            builder.GetItem(tiles[1]).Associations.Add((builder.AddProperty(AvifFileBuilder.ColorProfile(other)), false));
+            var next = builder.Items.Max(item => item.Id) + 1;
+            AddDerivedItem(builder, next, "iovl", OverlayDescriptor((0, 0, 0, 0), 100, 80, (0, 0), (30, 10)), 100, 80, [tiles[0], tiles[1]]);
+            Present(builder, next);
+        }, "derived-image", "The two input images of the overlay have ICC profiles that are not the same bytes: one of them would have to be converted.");
+        Unsupported(context, "iovl-bitstream-other-color-space", "lossy-422-bt709-limited", builder =>
+        {
+            RemoveProperty(builder, builder.GetItem(1), "colr");
+            var overlay = AddDerivedItem(builder, 10, "iovl", OverlayDescriptor((0, 0, 0, 0), 8, 8, (0, 0)), 8, 8, [1]);
+            overlay.Associations.Add((builder.AddProperty(AvifFileBuilder.ColorNclx(12, 13, 0, fullRange: true)), false));
+            Present(builder, 10);
+        }, "derived-image", "The overlay declares the Display P3 primaries, and its input image, which has no colr box, has the BT.709 ones of its AV1 sequence header: it would have to be converted.");
+        Unsupported(context, "iovl-depth", ErrorSource, builder =>
+        {
+            AddDerivedItem(builder, 10, "iovl", OverlayDescriptor((0, 0, 0, 0), 8, 8, (0, 0)), 8, 8, [1]);
+            for (uint i = 0; i < 9; i++)
+                AddDerivedItem(builder, 11 + i, "iden", [], 8, 8, [10 + i]);
+
+            Present(builder, 19);
+        }, "derivation-depth", "The primary item is derived from the overlay through nine nested identity derivations: ten derivations between the image and its coded image, more than the eight that are followed.");
 
         Unsupported(context, "clap-fractional", ErrorSource, builder => builder.GetItem(1).Associations.Add((builder.AddProperty(AvifFileBuilder.CleanAperture(5, 2, 4, 1, 0, 1, 0, 1)), true)),
             "clap", "The clean aperture is 5/2 samples wide: not a whole number of samples.");

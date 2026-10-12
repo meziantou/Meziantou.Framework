@@ -465,7 +465,8 @@ internal sealed class AvifStructureParser : ImageParser<ImageInfo>
 
         var metadata = _metadata.Metadata;
         _nclx = plan.Nclx;
-        if (plan.Nclx is { } nclx)
+        // (the coded images of an image that is built were checked with their own color description)
+        if (plan.Nclx is { } nclx && plan.Root is null)
             AvifYuvConverter.EnsureSupported(nclx.MatrixCoefficients, plan.Color.IsMonochrome, plan.Color.SubsamplingX, plan.Color.SubsamplingY, nclx.ColorPrimaries, nclx.TransferCharacteristics);
 
         metadata.Orientation = plan.Orientation;
@@ -476,14 +477,15 @@ internal sealed class AvifStructureParser : ImageParser<ImageInfo>
         if (plan.IccProfile.Length > 0)
         {
             _metadata.Charge(plan.IccProfile.Length);
-            _metadata.TryAdoptIccProfile(payload.Slice(plan.IccProfile.Offset, plan.IccProfile.Length).ToArray(), plan.Color.IsMonochrome);
+            _metadata.TryAdoptIccProfile(payload.Slice(plan.IccProfile.Offset, plan.IccProfile.Length).ToArray(), plan.Root is null && plan.Color.IsMonochrome);
         }
 
         if (_walk is StructureWalk.Header)
         {
             // Without 'colr' box, the color description is the one of the bitstream: the walk goes on to its first bytes
+            // (those of the first coded image of an image that is built from other images)
             var first = plan.Color.Tiles[0];
-            if (plan.Nclx is null && !plan.Color.IsMonochrome && first.HasLocation && first.Extents.Count > 0 && first.ConstructionMethod <= 1)
+            if (plan.Nclx is null && (plan.Root is not null || !plan.Color.IsMonochrome) && first.HasLocation && first.Extents.Count > 0 && first.ConstructionMethod <= 1)
             {
                 var (offset, length) = first.Extents[0];
                 if (first.ConstructionMethod is 1)
@@ -518,9 +520,24 @@ internal sealed class AvifStructureParser : ImageParser<ImageInfo>
     private void Schedule(AvifMetaBox meta, AvifImagePlan plan, ReadOnlySpan<byte> metaPayload)
     {
         var items = new List<AvifItem>();
-        AddImage(plan.Color);
-        if (plan.Alpha is not null)
-            AddImage(plan.Alpha);
+        if (plan.Root is { } root)
+        {
+            // An image that is built: every coded image with its alpha plane, and the descriptors of the grids and of the
+            // overlays
+            root.ForEachCoded(node =>
+            {
+                AddImage(node.Image);
+                if (node.Alpha is not null)
+                    AddImage(node.Alpha);
+            });
+            root.ForEachDescriptor(node => AddItem(node.Image.Item, isMetadata: false));
+        }
+        else
+        {
+            AddImage(plan.Color);
+            if (plan.Alpha is not null)
+                AddImage(plan.Alpha);
+        }
 
         if (plan.Exif is not null)
             AddItem(plan.Exif, isMetadata: true);
@@ -676,11 +693,61 @@ internal sealed class AvifStructureParser : ImageParser<ImageInfo>
 
         var plan = _plan!;
         AdoptItemMetadata(plan.Exif, plan.Xmp);
-        if (plan.Color.IsGrid)
-            plan.Color.ReadGridDescriptor(GetItemData(plan.Color.Item));
+        if (plan.Root is { } root)
+        {
+            root.ForEachCoded(node =>
+            {
+                if (node.Image.IsGrid)
+                    node.Image.ReadGridDescriptor(GetItemData(node.Image.Item));
 
-        if (plan.Alpha is { IsGrid: true } alpha)
-            alpha.ReadGridDescriptor(GetItemData(alpha.Item));
+                if (node.Alpha is { IsGrid: true } nodeAlpha)
+                    nodeAlpha.ReadGridDescriptor(GetItemData(nodeAlpha.Item));
+            });
+
+            // A coded image without color description in the boxes has the one of its bitstream, which converts its
+            // samples and which must be the one of the image, like a description of the boxes. When no box describes
+            // the image, it is described by the bitstream of its first coded image, which a header walk reads
+            var declared = plan.Nclx;
+            var isFirst = true;
+            root.ForEachCoded(node =>
+            {
+                var describesImage = isFirst && declared is null;
+                isFirst = false;
+                if (node.Nclx is not null)
+                    return;
+
+                var sequence = ReadSequenceHeader(GetItemData(node.Image.Tiles[0]), node.Image.OperatingPoints[0]);
+                AvifYuvConverter.EnsureSupported(sequence.MatrixCoefficients, sequence.Monochrome, sequence.SubsamplingX, sequence.SubsamplingY, sequence.ColorPrimaries, sequence.TransferCharacteristics);
+                if (!sequence.ColorDescriptionPresent)
+                    return;
+
+                if (describesImage)
+                    declared = new CicpColorDescription((byte)sequence.ColorPrimaries, (byte)sequence.TransferCharacteristics, 0, fullRange: true);
+
+                if (declared is null || sequence.ColorPrimaries != declared.ColorPrimaries || sequence.TransferCharacteristics != declared.TransferCharacteristics)
+                    throw AvifFormat.Unsupported("The images that the AVIF image is built from do not have the same color primaries and transfer characteristics.", "derived image of several color spaces");
+            });
+            _metadata.Metadata.Cicp ??= declared;
+
+            // The descriptors of the grids and of the overlays. The fill color of an overlay is an sRGB color: where it
+            // shows, the image must be an sRGB one, since nothing converts colors. Black is the same color in every
+            // color space, and a transparent canvas has no color
+            var isSrgb = _metadata.Metadata.IccProfile is { } profile ? SrgbProfileRecognition.IsSrgb(profile, PixelFormat.Rgba32) : declared is null || MetadataWritePlan.IsSrgbEquivalent(declared);
+            root.ForEachDescriptor(node =>
+            {
+                node.ReadDescriptor(GetItemData(node.Image.Item));
+                if (node.Kind is AvifImageNodeKind.Overlay && node.Fill[3] is not 0 && (node.Fill[0] | node.Fill[1] | node.Fill[2]) is not 0 && !isSrgb)
+                    throw AvifFormat.Unsupported("The canvas of the AVIF overlay is filled with an sRGB color and the image is not an sRGB one.", "overlay fill color in another color space");
+            });
+        }
+        else
+        {
+            if (plan.Color.IsGrid)
+                plan.Color.ReadGridDescriptor(GetItemData(plan.Color.Item));
+
+            if (plan.Alpha is { IsGrid: true } alpha)
+                alpha.ReadGridDescriptor(GetItemData(alpha.Item));
+        }
 
         if (_walk is StructureWalk.Decode)
         {
@@ -689,9 +756,21 @@ internal sealed class AvifStructureParser : ImageParser<ImageInfo>
         else
         {
             _context.Tracker.ChargeScannedFrame();
-            InspectCodedItems(plan.Color);
-            if (plan.Alpha is not null)
-                InspectCodedItems(plan.Alpha);
+            if (plan.Root is { } tree)
+            {
+                tree.ForEachCoded(node =>
+                {
+                    InspectCodedItems(node.Image);
+                    if (node.Alpha is not null)
+                        InspectCodedItems(node.Alpha);
+                });
+            }
+            else
+            {
+                InspectCodedItems(plan.Color);
+                if (plan.Alpha is not null)
+                    InspectCodedItems(plan.Alpha);
+            }
         }
 
         _result = CreateInfo(ImageIdentifyMode.FullScan);
@@ -792,7 +871,7 @@ internal sealed class AvifStructureParser : ImageParser<ImageInfo>
             // The operating point that the item selects must exist, as a load requires
             var sequence = ReadSequenceHeader(GetItemData(image.Tiles[i]), image.OperatingPoints[i]);
             EnsureMatchesConfiguration(image, sequence);
-            if (ReferenceEquals(image, _plan!.Color))
+            if (ReferenceEquals(image, _plan!.Color) && _plan.Root is null)
                 SetBitstreamColorDescription(sequence);
         }
     }
@@ -841,8 +920,13 @@ internal sealed class AvifStructureParser : ImageParser<ImageInfo>
         // Without 'colr' box, the matrix coefficients of the bitstream convert the samples
         AvifYuvConverter.EnsureSupported(sequence.MatrixCoefficients, sequence.Monochrome, sequence.SubsamplingX, sequence.SubsamplingY, sequence.ColorPrimaries, sequence.TransferCharacteristics);
         _bitstreamMatrix = sequence.MatrixCoefficients;
-        if (sequence.ColorDescriptionPresent)
-            _metadata.Metadata.Cicp ??= new CicpColorDescription((byte)sequence.ColorPrimaries, (byte)sequence.TransferCharacteristics, (byte)sequence.MatrixCoefficients, sequence.FullRange);
+        if (!sequence.ColorDescriptionPresent)
+            return;
+
+        // The pixels of an image that is built from other images are red, green and blue samples in full range
+        _metadata.Metadata.Cicp ??= _plan is { Root: not null }
+            ? new CicpColorDescription((byte)sequence.ColorPrimaries, (byte)sequence.TransferCharacteristics, 0, fullRange: true)
+            : new CicpColorDescription((byte)sequence.ColorPrimaries, (byte)sequence.TransferCharacteristics, (byte)sequence.MatrixCoefficients, sequence.FullRange);
     }
 
     /// <summary>Gets the data of a captured item.</summary>
@@ -940,15 +1024,20 @@ internal sealed class AvifStructureParser : ImageParser<ImageInfo>
         else
         {
             var plan = _plan!;
-            isMonochrome = plan.Color.IsMonochrome;
+            isMonochrome = plan.Root is null && plan.Color.IsMonochrome;
             hasAlpha = plan.HasAlpha;
-            bitDepth = plan.Color.BitDepth;
+            bitDepth = plan.Root is null ? plan.Color.BitDepth : plan.RootBitDepth;
         }
 
         // The matrix coefficients come from the 'colr' box, or else from the bitstream, which a header walk does not read
         var matrix = _nclx?.MatrixCoefficients ?? _bitstreamMatrix;
         ImageColorModel colorModel;
-        if (isMonochrome)
+        if (_plan is { Root: not null })
+        {
+            // An image that is built from other images is made of red, green and blue pixels with alpha
+            colorModel = ImageColorModel.Rgba;
+        }
+        else if (isMonochrome)
         {
             colorModel = hasAlpha ? ImageColorModel.GrayscaleAlpha : ImageColorModel.Grayscale;
         }
@@ -1021,6 +1110,7 @@ internal sealed class AvifStructureParser : ImageParser<ImageInfo>
             _movieData = null;
 
             // Without 'colr' box, the color description is the one of the bitstream: the walk goes on to its first bytes
+            // (those of the first coded image of an image that is built from other images)
             if (color.Nclx is null && !color.IsMonochrome && color.LocatedSampleCount > 0 && color.GetSampleOffset(0) >= _position)
             {
                 _captures.Add(new Capture(_context.Scope, item: null, color.GetSampleOffset(0), Math.Min(color.GetSampleSize(0), HeaderProbeLength), isItemData: false));

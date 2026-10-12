@@ -298,6 +298,52 @@ public sealed class ReferenceAvif
     }
 
     /// <summary>
+    /// Returns whether an item is built from other images: its tree of derivations (ISO/IEC 23008-12, section 6.6) has an
+    /// overlay (<c>iovl</c>), or a grid whose tiles are not all coded items. Such an image has red, green, blue and
+    /// alpha samples, whatever its coded images are.
+    /// </summary>
+    /// <param name="item">The item.</param>
+    /// <returns><see langword="false"/> for a coded image and for the identity derivations of one.</returns>
+    public bool IsBuiltImage(Item item)
+    {
+        ArgumentNullException.ThrowIfNull(item);
+        var leaf = GetIdentityChain(item)[^1];
+        return leaf.Type == "iovl" || (leaf.Type == "grid" && GetGridTiles(leaf).Any(tile => tile.Type != "av01"));
+    }
+
+    /// <summary>
+    /// Gets the items of the tree of derivations of an item: the item, then the tree of each of its input images, in the
+    /// order of its <c>dimg</c> reference. A coded image has no input: the tiles of a grid of coded images are not listed.
+    /// </summary>
+    /// <param name="item">The item.</param>
+    /// <returns>The items; one that several derivations use is listed for each of them.</returns>
+    public IReadOnlyList<Item> GetImageTree(Item item)
+    {
+        ArgumentNullException.ThrowIfNull(item);
+        if (item.Type != "iden" && !IsBuiltImage(item))
+            return [item];
+
+        var inputs = _meta.References.Where(reference => reference.Type == "dimg" && reference.FromItemId == item.Id).SelectMany(reference => reference.ToItemIds);
+        return [item, .. inputs.SelectMany(id => GetImageTree(FindItem(id) ?? throw new InvalidDataException("The input image of a derived image does not exist.")))];
+    }
+
+    /// <summary>
+    /// Gets the coded images that an item is built from, in the order of the <c>dimg</c> references of its derivations:
+    /// an image that several derivations use is listed for each of them.
+    /// </summary>
+    /// <param name="item">The item.</param>
+    /// <returns>The coded images: <c>av01</c> items, and grids whose tiles are all <c>av01</c> items.</returns>
+    public IReadOnlyList<Item> GetCodedImages(Item item)
+    {
+        ArgumentNullException.ThrowIfNull(item);
+        if (item.Type != "iden" && !IsBuiltImage(item))
+            return [item];
+
+        var inputs = _meta.References.Where(reference => reference.Type == "dimg" && reference.FromItemId == item.Id).SelectMany(reference => reference.ToItemIds);
+        return [.. inputs.SelectMany(id => GetCodedImages(FindItem(id) ?? throw new InvalidDataException("The input image of a derived image does not exist.")))];
+    }
+
+    /// <summary>
     /// Gets the transformative properties that the samples of the coded image of a chain of identity derivations go
     /// through, in the order they apply: those of the coded image, then those of each derivation up to the presented item.
     /// </summary>

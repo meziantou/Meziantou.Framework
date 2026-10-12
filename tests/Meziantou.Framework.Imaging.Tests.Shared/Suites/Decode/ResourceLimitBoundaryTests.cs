@@ -53,10 +53,10 @@ public sealed class ResourceLimitBoundaryTests
         Assert.Null(Run(context, data, ImageResourceLimits.Default));
 
         // The canvas limits apply to the coded image, which is larger than the image when a clean aperture crops it
-        var (limitedWidth, limitedHeight) = FixtureTraits.GetLimitedCanvas(fixture);
+        var (limitedWidth, limitedHeight, limitedPixels) = FixtureTraits.GetLimitedCanvas(fixture);
         AssertExactBoundary(context, data, ImageResourceLimitKind.Width, limitedWidth);
         AssertExactBoundary(context, data, ImageResourceLimitKind.Height, limitedHeight);
-        AssertExactBoundary(context, data, ImageResourceLimitKind.FramePixels, (long)limitedWidth * limitedHeight);
+        AssertExactBoundary(context, data, ImageResourceLimitKind.FramePixels, limitedPixels);
         if (full)
         {
             AssertExactBoundary(context, data, ImageResourceLimitKind.Frames, displayed + poster);

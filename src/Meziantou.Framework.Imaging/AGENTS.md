@@ -116,13 +116,20 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   are dropped, and a temporal unit with several spatial layers outputs the frame of its highest layer (what a player
   shows, and what `lsel`-less layered AVIF images present). `OutputAllLayers` is for conformance tests only.
   An `iden` item is resolved by `AvifImagePlan` into the transformations of the coded image it presents (no pixel
-  moves; the alpha plane of a derived image must be presented as its colors). The edit list of a track that selects
+  moves; the alpha plane of a derived image must be presented as its colors). An image that is built from other
+  images (an `iovl` item, a grid of derived images) is an `AvifImageNode` tree, rendered by `AvifDecoder.Derived.cs`
+  to straight RGBA surfaces: only that path moves or composites pixels, the direct path (a coded image or a grid of
+  coded images, through identity derivations) must stay as it is. Nothing converts colors there: every color
+  description of the tree is the same one or the file is rejected, and the structure parser validates the
+  descriptors and the fill colors before the first pixel is decoded. The edit list of a track that selects
   parts of the media is an `AvifEditTimeline` (exact intersections in units of the two time scales; the images that
   are left out are decoded and charged as hidden pixels, and every sample is located then). A fragmented sequence
   (`mvex`) is read by `AvifMovieFragment`: each `moof` box appends samples to `AvifTrack`, whose tables only hold the
   samples that are still to be read, and the walk ends with the input (`ParseStatus.NeedMoreDataOrEnd` at a box
   boundary). The independent readers are `ReferenceAvif.GetIdentityChain`, `Track.GetPresentation` and its own `moof`
-  reader; Apple ImageIO judges identity derivations and FFmpeg the fragments it can demux.
+  reader; Apple ImageIO judges identity derivations and the opaque results of built images, and FFmpeg the fragments
+  it can demux. The reference of a built image is the generator's own renderer (`AvifCorpus.ContainerDerived.cs`,
+  exact rational source-over on the planes of the reference decoders).
 - **AV1 encoder** (`Internals/Codecs/Avif/Av1/Encoding`, and the `Write` and `Encode` parts of `Av1TileCoder`). The
   specification only describes decoding: the encoder is written from it, never from another encoder.
   - The encoder shares the state and the processes of the decoder (`Av1FrameCodingState`, the prediction, the

@@ -143,11 +143,25 @@ internal sealed class AvifCodedImage
     /// has no coded item of its own.
     /// </summary>
     public static AvifCodedImage CreateIdentityDerivation(AvifMetaBox meta, ReadOnlySpan<byte> payload, AvifItem item, ImageResourceLimits limits)
+        => CreateDerivation(meta, payload, item, limits, enforceLimits: false);
+
+    /// <summary>
+    /// Reads the properties of a derived image item (<c>iden</c>, <c>iovl</c>, or a <c>grid</c> of derived images): its
+    /// size and its transformative properties. It has no coded item of its own.
+    /// </summary>
+    /// <param name="meta">The parsed box.</param>
+    /// <param name="payload">The payload of the box.</param>
+    /// <param name="item">The item.</param>
+    /// <param name="limits">The resource limits of the operation.</param>
+    /// <param name="enforceLimits">
+    /// Whether the size of the item is checked against the canvas limits. The size of an identity derivation is not one
+    /// that is decoded or allocated: it must be the size of its input, as the input is presented, and the limits apply
+    /// to the coded image and to the image that is returned.
+    /// </param>
+    public static AvifCodedImage CreateDerivation(AvifMetaBox meta, ReadOnlySpan<byte> payload, AvifItem item, ImageResourceLimits limits, bool enforceLimits)
     {
-        // The size of the derivation is not one that is decoded or allocated: it must be the size of its input, as the
-        // input is presented, and the limits apply to the coded image and to the image that is returned
         var image = new AvifCodedImage(item, []);
-        image.Size = ReadProperties(meta, payload, item, limits, isCodedItem: false, image, enforceLimits: false);
+        image.Size = ReadProperties(meta, payload, item, limits, isCodedItem: false, image, enforceLimits);
         return image;
     }
 

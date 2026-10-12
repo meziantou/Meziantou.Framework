@@ -154,11 +154,20 @@ public static class EncodedFieldInspector
             // of the coded image go through the transformations of every item of the chain
             var chain = file.GetIdentityChain(primary);
             nclx = chain.Select(item => item.Nclx).FirstOrDefault(value => value is not null);
+            if (file.IsBuiltImage(primary))
+            {
+                // An image that is built from other images has the color primaries and the transfer characteristics of
+                // its own colr box, or else of the first image of its tree that has one; its pixels are red, green and
+                // blue ones in full range
+                var description = file.GetImageTree(primary).Select(item => item.Nclx).FirstOrDefault(value => value is not null);
+                nclx = description is null ? null : new Avif.ReferenceAvif.ColorDescription(description.ColorPrimaries, description.TransferCharacteristics, 0, FullRange: true);
+            }
+
             lightLevel = chain.Select(item => item.ContentLightLevel).FirstOrDefault(value => value is not null);
             display = chain.Select(item => item.MasteringDisplay).FirstOrDefault(value => value is not null);
             pixelAspectRatio = chain.Select(item => item.PixelAspectRatio).FirstOrDefault(value => value is not null);
-            result.Icc = chain.Select(item => item.IccProfile).FirstOrDefault(value => value is not null);
-            result.TransformOrientation = Avif.ReferenceAvif.ComposeOrientation(Avif.ReferenceAvif.GetTransforms(chain));
+            result.Icc = (file.IsBuiltImage(primary) ? file.GetImageTree(primary) : chain).Select(item => item.IccProfile).FirstOrDefault(value => value is not null);
+            result.TransformOrientation = file.IsBuiltImage(primary) ? primary.Orientation : Avif.ReferenceAvif.ComposeOrientation(Avif.ReferenceAvif.GetTransforms(chain));
             foreach (var item in file.FindDescriptions(primary.Id))
             {
                 if (item.Type == "Exif")

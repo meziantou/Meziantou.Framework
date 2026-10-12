@@ -593,9 +593,110 @@ internal static partial class AvifCorpus
     private static byte[] ApertureOf(int imageWidth, int imageHeight, int x, int y, int width, int height) =>
         AvifFileBuilder.CleanAperture((uint)width, 1, (uint)height, 1, (2 * x) + width - imageWidth, 2, (2 * y) + height - imageHeight, 2);
 
+    /// <summary>
+    /// Adds a derived image item (ISO/IEC 23008-12, section 6.6): its size, its transformative properties, and its input
+    /// images. The data of a grid or of an overlay are its descriptor, stored in the <c>idat</c> box.
+    /// </summary>
+    private static AvifFileBuilder.Item AddDerivedItem(AvifFileBuilder builder, uint id, string type, byte[] data, uint width, uint height, uint[] inputs, params byte[][] transforms)
+    {
+        var item = builder.AddItem(id, type, data);
+        item.Storage = data.Length == 0 ? AvifFileBuilder.ItemStorage.None : AvifFileBuilder.ItemStorage.ItemData;
+        item.Associations.Add((builder.AddProperty(AvifFileBuilder.ImageSize(width, height)), false));
+        foreach (var transform in transforms)
+            item.Associations.Add((builder.AddProperty(transform), true));
+
+        builder.References.Add(("dimg", id, inputs));
+        return item;
+    }
+
+    /// <summary>
+    /// The descriptor of an overlay (section 6.6.2.2.2): version, flags, the fill color (red, green, blue and alpha, 16
+    /// bits each), the size of the canvas and the offset of each input image, in 16-bit fields.
+    /// </summary>
+    private static byte[] OverlayDescriptor((ushort R, ushort G, ushort B, ushort A) fill, ushort width, ushort height, params (int X, int Y)[] offsets) =>
+        AvifFileBuilder.Concat(
+            [0, 0], AvifFileBuilder.U16(fill.R), AvifFileBuilder.U16(fill.G), AvifFileBuilder.U16(fill.B), AvifFileBuilder.U16(fill.A), AvifFileBuilder.U16(width), AvifFileBuilder.U16(height),
+            AvifFileBuilder.Concat([.. offsets.Select(offset => AvifFileBuilder.Concat(AvifFileBuilder.U16(unchecked((ushort)(short)offset.X)), AvifFileBuilder.U16(unchecked((ushort)(short)offset.Y))))]));
+
+    /// <summary>Makes a derived item the primary item, and hides the images it is built from.</summary>
+    private static void Present(AvifFileBuilder builder, uint id)
+    {
+        builder.PrimaryItemId = id;
+        foreach (var item in builder.Items.Where(item => item.Id != id))
+            item.IsHidden = true;
+    }
+
     private static void BuildDerivedImages(ContainerContext context)
     {
         const string Function = nameof(BuildDerivedImages);
+
+        // Overlays (iovl): the input images are composited on a canvas, in their order, each at its offset. The image has
+        // red, green, blue and alpha samples, whatever its input images are
+        Assembled(context, "iovl-alpha-layers", "lossless-rgba8", builder =>
+        {
+            AddDerivedItem(builder, 10, "iovl", OverlayDescriptor((0xFFFF, 0x8000, 0x2000, 0xFFFF), 20, 14, (2, 1), (6, 4), (-4, 8), (15, -3)), 20, 14, [1, 1, 1, 1]);
+            Present(builder, 10);
+        }, ["avif.iovl", "avif.alpha"], "An overlay of 20x14 filled with an opaque orange, and the same 12x9 image with an alpha plane four times: at (2, 1), over itself at (6, 4), and across the left and the top edges of the canvas at (-4, 8) and (15, -3).", Function);
+        Assembled(context, "iovl-transparent-fill", "lossless-rgba8", builder =>
+        {
+            AddDerivedItem(builder, 10, "iovl", OverlayDescriptor((0x1234, 0x5678, 0x9ABC, 0), 18, 13, (3, 2)), 18, 13, [1], ApertureOf(18, 13, 2, 1, 14, 10), AvifFileBuilder.Rotation(1));
+            Present(builder, 10);
+        }, ["avif.iovl", "avif.clap", "avif.irot=1"], "An overlay whose fill color is fully transparent: the canvas is transparent black where no image is. The overlay is the primary item: its clean aperture keeps 14x10 at (2, 1) and its rotation is the orientation of the image.", Function);
+        Assembled(context, "iovl-grid-and-iden-layers", "grid-2x2-lossless", builder =>
+        {
+            var grid = builder.PrimaryItemId!.Value;
+            var tile = builder.References.Single(reference => reference.Type == "dimg" && reference.FromItemId == grid).ToItemIds[0];
+            var next = builder.Items.Max(item => item.Id) + 1;
+            AddDerivedItem(builder, next, "iden", [], 64, 64, [tile], AvifFileBuilder.Rotation(1), ApertureOf(64, 64, 8, 8, 40, 30));
+            AddDerivedItem(builder, next + 1, "iovl", OverlayDescriptor((0, 0xFFFF, 0, 0x8000), 150, 140, (10, 5), (90, 100)), 150, 140, [grid, next]);
+            Present(builder, next + 1);
+        }, ["avif.iovl", "avif.derived.iden"], "An overlay of 150x140 filled with a half transparent green: a grid of four tiles at (10, 5), then an identity derivation of the first tile, turned a quarter turn and cropped to 40x30, at (90, 100).", Function);
+        Assembled(context, "grid-of-derived-images", "grid-2x2-lossless", builder =>
+        {
+            var grid = builder.PrimaryItemId!.Value;
+            var tiles = builder.References.Single(reference => reference.Type == "dimg" && reference.FromItemId == grid).ToItemIds;
+            var next = builder.Items.Max(item => item.Id) + 1;
+            AddDerivedItem(builder, next, "iden", [], 64, 64, [tiles[0]], AvifFileBuilder.Mirror(1));
+            AddDerivedItem(builder, next + 1, "iden", [], 64, 64, [tiles[3]], AvifFileBuilder.Rotation(2));
+            AddDerivedItem(builder, next + 2, "grid", AvifFileBuilder.GridDescriptor(1, 2, 120, 60), 120, 60, [next, next + 1], ApertureOf(120, 60, 10, 4, 100, 52), AvifFileBuilder.Mirror(0));
+            Present(builder, next + 2);
+        }, ["avif.derived.grid", "avif.derived.iden", "avif.clap", "avif.imir=0"], "A grid of 120x60 whose two tiles are identity derivations of 64x64 images, one mirrored and one turned: the tiles exceed the image. The grid is the primary item, with a clean aperture and a mirror that is its orientation.", Function);
+        Assembled(context, "iden-of-iovl-10bit", "lossless-rgba10", builder =>
+        {
+            var source = ReferenceAvif.Parse(context.Inputs["lossless-rgba10"]).PrimaryItem!.Size!.Value;
+            var (width, height) = ((ushort)(source.Width + 5), (ushort)(source.Height + 3));
+            AddDerivedItem(builder, 10, "iovl", OverlayDescriptor((0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF), width, height, (0, 0), (5, 3)), width, height, [1, 1], AvifFileBuilder.Mirror(1));
+            AddDerivedItem(builder, 11, "iden", [], width, height, [10], AvifFileBuilder.Rotation(2));
+            Present(builder, 11);
+        }, ["avif.iovl", "avif.derived.iden", "avif.bitDepth=10", "avif.irot=2"], "An identity derivation of an overlay of two 10-bit images with alpha on a white canvas. The overlay is mirrored, which moves its pixels; the rotation of the identity derivation, which is the primary item, is the orientation of the image.", Function);
+        Assembled(context, "iovl-lossy-matrixed", "lossy-420-alpha", builder =>
+        {
+            AddDerivedItem(builder, 10, "iovl", OverlayDescriptor((0, 0, 0xFFFF, 0xFFFF), 12, 10, (1, 1), (3, 2)), 12, 10, [1, 1]);
+            Present(builder, 10);
+        }, ["avif.iovl"], "An overlay of a lossy 4:2:0 image with a lossy alpha plane, twice, on an opaque blue canvas: each image is converted with its matrix coefficients, then composited.", Function);
+
+        // The color description of an image that is built: the one of its own colr boxes, or else the one of its input
+        // images (their colr boxes, or else their bitstream). Black is the same color in every color space
+        Assembled(context, "iovl-icc-from-layers", "lossless-rgb8", builder =>
+        {
+            builder.GetItem(1).Associations.Add((builder.AddProperty(AvifFileBuilder.ColorProfile(CommonCorpus.IccProfile("RGB "))), false));
+            AddDerivedItem(builder, 10, "iovl", OverlayDescriptor((0, 0, 0, 0xFFFF), 16, 12, (0, 0), (4, 3)), 16, 12, [1, 1]);
+            Present(builder, 10);
+        }, ["avif.iovl"], "An overlay without colr box, on an opaque black canvas, of an image that has an ICC profile: the profile is the one of the image.", Function);
+        Assembled(context, "iovl-layers-without-colr", "lossy-422-bt709-limited", builder =>
+        {
+            var source = ReferenceAvif.Parse(context.Inputs["lossy-422-bt709-limited"]).PrimaryItem!.Size!.Value;
+            var (width, height) = ((ushort)(source.Width + 2), (ushort)(source.Height + 2));
+            RemoveProperty(builder, builder.GetItem(1), "colr");
+            AddDerivedItem(builder, 10, "iovl", OverlayDescriptor((0, 0, 0, 0), width, height, (0, 0), (2, 2)), width, height, [1, 1]);
+            Present(builder, 10);
+        }, ["avif.iovl"], "No colr box at all: the input image of the overlay is converted with the color description of its AV1 sequence header (BT.709, limited range), whose color primaries and transfer characteristics are those of the image.", Function);
+        Assembled(context, "iovl-black-fill-pq", "lossless-rgb8", builder =>
+        {
+            ReplaceProperty(builder, builder.GetItem(1), "colr", AvifFileBuilder.ColorNclx(9, 16, 0, fullRange: true));
+            AddDerivedItem(builder, 10, "iovl", OverlayDescriptor((0, 0, 0, 0xFFFF), 14, 11, (1, 1)), 14, 11, [1]);
+            Present(builder, 10);
+        }, ["avif.iovl"], "An overlay of an image with the BT.2020 primaries and the PQ transfer characteristics on an opaque black canvas: black needs no conversion.", Function);
 
         // Identity derivations: an iden item is its input image, transformed again. The pixels are those of the coded
         // image: the transformations of the whole chain select a part of them and give the orientation

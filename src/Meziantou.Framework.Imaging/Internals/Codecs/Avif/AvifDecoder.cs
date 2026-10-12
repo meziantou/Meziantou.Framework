@@ -11,7 +11,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// decoder of a coded item is released before the next one is decoded; an image sequence keeps one decoder for the color
 /// images and one for the alpha planes, whose state does not depend on the number of images.
 /// </remarks>
-internal sealed class AvifDecoder : AvifDecodeObserver
+internal sealed partial class AvifDecoder : AvifDecodeObserver
 {
     private readonly ImageDecodeRequest _request;
     private readonly ImageCodecContext _context;
@@ -43,6 +43,14 @@ internal sealed class AvifDecoder : AvifDecodeObserver
         var plan = structure.Plan;
         var sink = _sink!;
         sink.BeginFrame(FrameDuration.Zero);
+        if (plan.Root is { } root)
+        {
+            RenderDerivedImage(structure, plan, root);
+            sink.UpdateMetadata(structure.Metadata);
+            sink.EndImage();
+            return;
+        }
+
         using var color = DecodeImage(structure, plan.Color);
         structure.SetBitstreamColorDescription(color.Sequence);
         using var alpha = plan.Alpha is null ? null : DecodeImage(structure, plan.Alpha);

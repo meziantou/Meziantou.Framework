@@ -59,11 +59,14 @@ internal static class FontVariationWriter
         return writer.ToArray();
     }
 
-    /// <summary>Writes the <c>avar</c> table: the pairs of each axis.</summary>
-    public static byte[] WriteAvar(IReadOnlyList<FontAxisDefinition> axes)
+    /// <summary>
+    /// Writes the <c>avar</c> table: the pairs of each axis and, in version 2 of the table, a variation store whose
+    /// items are the axes, with an optional delta set index map.
+    /// </summary>
+    public static byte[] WriteAvar(IReadOnlyList<FontAxisDefinition> axes, FontVariationStore? store = null, byte[]? indexMap = null)
     {
         var writer = new FontWriter();
-        writer.UInt16(1);
+        writer.UInt16(store is null ? 1 : 2);
         writer.UInt16(0);
         writer.UInt16(0);
         writer.UInt16(axes.Count);
@@ -75,6 +78,16 @@ internal static class FontVariationWriter
                 writer.F2Dot14(from);
                 writer.F2Dot14(to);
             }
+        }
+
+        if (store is not null)
+        {
+            // The positions of the index map and of the store, which follow.
+            var end = writer.Length + 8;
+            writer.UInt32(indexMap is null ? 0 : (uint)end);
+            writer.UInt32((uint)(end + (indexMap?.Length ?? 0)));
+            writer.Bytes(indexMap ?? []);
+            writer.Bytes(WriteStore(store, axes.Count));
         }
 
         return writer.ToArray();

@@ -10,6 +10,9 @@ internal sealed class FontInstance
     /// <summary>The number of bits between a 2.14 number and a 16.16 number.</summary>
     public const int TableShift = 2;
 
+    /// <summary>The value 1 as a 2.14 fixed-point number: the largest normalized value of an axis.</summary>
+    public const int TableOne = One >> TableShift;
+
     public FontInstance(int[] userCoordinates, int[] coordinates)
     {
         UserCoordinates = userCoordinates;

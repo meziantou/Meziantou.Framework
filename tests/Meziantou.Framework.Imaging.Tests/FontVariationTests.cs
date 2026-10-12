@@ -121,6 +121,57 @@ public sealed class FontVariationTests
         }
     }
 
+    [Theory]
+
+    // Version 2 of the avar table: the normalized weight gets -0.25 where the weight and the width are both at their
+    // greatest and +0.5 where the width is the narrowest; the normalized width gets +0.125 in the first region.
+    // Heaviest and widest: the weight becomes 0.75, and the width stays at 1, the end of its range.
+    [InlineData("wght=900,wdth=200", "M85,0L85,700L982.5,700L982.5,0L85,0Z", 1068)]
+
+    // Narrowest: the weight, at its default, becomes 0.5. Heaviest and narrowest: it stays at 1.
+    [InlineData("wdth=50", "M90,0L90,700L330,700L330,0L90,0Z", 420)]
+    [InlineData("wght=900,wdth=50", "M80,0L80,700L360,700L360,0L80,0Z", 440)]
+
+    // Between: the pairs of the weight give 0.25, and the width is 0.5; the first region applies with their product,
+    // 0.125. The weight becomes 0.25 - 512/16384 and the width 0.5 + 256/16384.
+    [InlineData("wght=650,wdth=150", "M95.625,0L95.625,700L725.015,700L725.015,0L95.625,0Z", 821)]
+
+    // Lightest, and half way to the narrowest: the weight becomes -1 + 0.25.
+    [InlineData("wght=100,wdth=75", "M122.5,0L122.5,700L377.5,700L377.5,0L122.5,0Z", 470)]
+
+    // One axis away from its default: no region of the table applies.
+    [InlineData("wght=900", "M80,0L80,700L560,700L560,0L80,0Z", 640)]
+    [InlineData("wdth=200", "M100,0L100,700L900,700L900,0L100,0Z", 1000)]
+    public void TheValueOfAnAxisCanDependOnTheOtherAxes(string variations, string outline, int advance)
+    {
+        var instance = FontTestSupport.WithVariations(FontTestSupport.Load(FontSamples.Variable(withAxisVariations: true)), variations);
+        Assert.Equal(outline, FontTestSupport.GetOutline(instance, FontSamples.VariableA, decimals: 3));
+        Assert.Equal(advance, instance.Face.GetAdvanceWidth(FontSamples.VariableA));
+    }
+
+    [Fact]
+    public void TheItemsOfTheAxesAreInTheirOrderWithoutAnIndexMap()
+    {
+        // Without delta set index map, the first item of the store is the weight and the second one the width: the
+        // heaviest and widest instance keeps its weight, 1, and its width becomes 0.75.
+        var builder = FontSamples.Variable(withAxisVariations: true);
+        builder.AxisVariationMap = null;
+        var instance = FontTestSupport.WithVariations(FontTestSupport.Load(builder), "wght=900,wdth=200");
+        Assert.Equal("M80,0L80,700L897.5,700L897.5,0L80,0Z", FontTestSupport.GetOutline(instance, FontSamples.VariableA, decimals: 3));
+        Assert.Equal(978, instance.Face.GetAdvanceWidth(FontSamples.VariableA));
+
+        // A table of version 2 without store only has its pairs.
+        var tables = builder.BuildTables();
+        var avar = (byte[])tables["avar"].Clone();
+        avar.AsSpan(avar.Length - FontVariationWriter.WriteStore(builder.AxisVariations!, 2).Length - 4, 4).Clear();
+        var withoutStore = Font.Load(FontBuilder.WriteSfnt(new SortedDictionary<string, byte[]>(tables, StringComparer.Ordinal) { ["avar"] = avar }));
+        Assert.Equal(1090, FontTestSupport.WithVariations(withoutStore, "wght=900,wdth=200").Face.GetAdvanceWidth(FontSamples.VariableA));
+
+        // A store that is cut is an error when an instance is made, not when the font is loaded.
+        var truncated = Font.Load(FontBuilder.WriteSfnt(new SortedDictionary<string, byte[]>(tables, StringComparer.Ordinal) { ["avar"] = tables["avar"][..^10] }));
+        Assert.Throws<InvalidImageContentException>(() => FontTestSupport.WithVariations(truncated, "wght=900,wdth=200"));
+    }
+
     [Fact]
     public void ThePointsWithoutDeltaFollowTheOnesThatHaveOne()
     {

@@ -833,6 +833,22 @@ internal static class SmokeTests
         var clusters = TextLayout.Create("\u0F40\u0F72 \u0D9A\u0DD9 \u1820\u1820", boxes, 16);
         Check(!clusters.Lines[0].IsRightToLeft && clusters.HasMissingGlyphs && clusters.Width == 7 * 8, "text: clusters");
 
+        // A language, a synthetic bold and oblique, and a dictionary for the scripts without spaces: at 48 pixels per
+        // em, the bold adds 2 pixels to the advance of each letter, and the dictionary lets the line end between two
+        // words, each of one letter here.
+        var styled = new TextStyle(boxes, 48) { Language = "zh-Hant", Synthesis = FontSynthesis.Bold | FontSynthesis.Oblique };
+        var synthesized = TextLayout.Create("AA", styled);
+        Check(synthesized.Width == 100, "text: synthetic bold");
+        using (var bold = new Image<Rgba32>(110, 50))
+        {
+            bold.Draw(synthesized, static (canvas, layout) => canvas.FillText(new Rgba32(255, 255, 255), layout, new PointD(0, 0)));
+            Check(Pixels(bold.Frames[0]).Any(static value => value != 0), "text: synthetic bold drawn");
+        }
+
+        var dictionary = LineBreakDictionary.Parse("\u0E01\n");
+        var thai = TextLayout.Create("\u0E01\u0E01\u0E01", new TextStyle(boxes, 16), new TextLayoutOptions { MaxWidth = 10, LineBreakDictionary = dictionary });
+        Check(thai.LineCount == 3, "text: dictionary line breaks");
+
         // CFF outlines, stroked, through the overload that lays out the text
         var cff = Font.Load(SmokeFonts.CharstringsOtf);
         using var stroked = new Image<Rgba32>(64, 16);

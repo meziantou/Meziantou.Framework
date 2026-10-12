@@ -32,6 +32,11 @@ const string Usage = """
         fonts         font files and the values independent font readers give for them: synthetic fonts built by
                       Common/FontBuilder.cs, third-party fonts subset by hb-subset, their WOFF and WOFF2 forms
                       (the HarfBuzz utilities and the woff2 tools of the pinned meziantou/prebuilt release; any OS)
+        language-tags the source of the table of the language system tags of OpenType the library has, transcribed
+                      from the registry of the OpenType specification, the code list of ISO 639-2 and the language
+                      subtag registry of BCP 47 (no tool; any OS)
+        arabic-forms  the source of the table of the presentation forms of the Arabic letters the library has, transcribed
+                      from the Unicode Character Database (no tool; any OS)
 
     Verification (read-only, any tool versions):
         verify        re-decode the committed corpus with the ffmpeg, dwebp and anim_dump of the pinned meziantou/prebuilt release and
@@ -47,6 +52,13 @@ const string Usage = """
                                   (icc only, required)
         --fonts <dir>             directory of the pinned third-party font files, as downloaded from the sources
                                   FontCorpus.cs lists (fonts only, required)
+        --language-registry <file>
+                                  the page "Language system tags" of the OpenType specification, saved as HTML
+                                  (language-tags only, required)
+        --iso-639 <file>          the code list ISO-639-2_utf-8.txt of the Library of Congress (language-tags only,
+                                  required)
+        --language-subtags <file> the language subtag registry of IANA (language-tags only, required)
+        --unicode-data <file>     the file UnicodeData.txt of the pinned version of Unicode (arabic-forms only, required)
         --output <directory>      generate into this new or empty directory and keep it (to inspect the output)
     """;
 
@@ -56,6 +68,10 @@ var acceptToolVersions = false;
 string? qoiHeader = null;
 string? iccProfiles = null;
 string? fonts = null;
+string? languageRegistry = null;
+string? iso639 = null;
+string? languageSubtags = null;
+string? unicodeData = null;
 string? output = null;
 for (var i = 0; i < args.Length; i++)
 {
@@ -79,6 +95,18 @@ for (var i = 0; i < args.Length; i++)
         case "--fonts" when i + 1 < args.Length:
             fonts = args[++i];
             break;
+        case "--language-registry" when i + 1 < args.Length:
+            languageRegistry = args[++i];
+            break;
+        case "--iso-639" when i + 1 < args.Length:
+            iso639 = args[++i];
+            break;
+        case "--language-subtags" when i + 1 < args.Length:
+            languageSubtags = args[++i];
+            break;
+        case "--unicode-data" when i + 1 < args.Length:
+            unicodeData = args[++i];
+            break;
         case "--output" when i + 1 < args.Length:
             output = args[++i];
             break;
@@ -92,7 +120,7 @@ for (var i = 0; i < args.Length; i++)
     }
 }
 
-var options = new GeneratorOptions(write, acceptToolVersions, qoiHeader, output, iccProfiles, fonts);
+var options = new GeneratorOptions(write, acceptToolVersions, qoiHeader, output, iccProfiles, fonts, languageRegistry, iso639, languageSubtags, unicodeData);
 try
 {
     switch (generator)
@@ -139,6 +167,22 @@ try
             }
 
             return FontCorpus.Run(options);
+        case "language-tags":
+            if (languageRegistry is null || iso639 is null || languageSubtags is null)
+            {
+                Console.Error.WriteLine("The language-tags generator requires --language-registry <saved page of the registry>, --iso-639 <code list of ISO 639-2> and --language-subtags <language subtag registry>.");
+                return 2;
+            }
+
+            return LanguageTagTable.Run(options);
+        case "arabic-forms":
+            if (unicodeData is null)
+            {
+                Console.Error.WriteLine("The arabic-forms generator requires --unicode-data <UnicodeData.txt of the pinned version of Unicode>.");
+                return 2;
+            }
+
+            return ArabicFormTable.Run(options);
         case "verify":
             return CorpusVerifier.Run();
         default:

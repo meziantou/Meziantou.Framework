@@ -22,6 +22,8 @@ public sealed class FontFuzzTests
     // Small enough for a glyph that expands without end to be stopped quickly, large enough for the glyphs of the corpus.
     private static readonly FontLoadOptions Options = new()
     {
+        // The bitmaps without colors of a font are read like its other tables.
+        UseEmbeddedBitmaps = true,
         Configuration = new ImageConfiguration
         {
             Limits = new ImageResourceLimits { MaxFontBytes = 16 * 1024 * 1024, MaxGlyphComplexity = 50_000, MaxLiveAllocationBytes = 64 * 1024 * 1024 },
@@ -392,7 +394,7 @@ public sealed class FontFuzzTests
         try
         {
             TextShaper.AddText(buffer, text);
-            TextShaper.Shape(buffer, font.Face, script, language: 0, isRightToLeft, features);
+            TextShaper.Shape(buffer, font.Face, script, languages: [], isRightToLeft, features);
         }
         catch (Exception exception) when (exception is InvalidImageContentException or UnsupportedImageFeatureException or ImageResourceLimitException)
         {
@@ -462,12 +464,22 @@ public sealed class FontFuzzTests
     /// </summary>
     private static FuzzFailure? CheckText(List<Font> collection, bool withStroke)
     {
+        // Each font as it is, then slanted and thickened, in a language, at the sizes the bitmaps of the corpus are made for.
+        var styles = new List<TextStyle>();
         foreach (var font in collection)
         {
+            styles.Add(new TextStyle(font, 13.5));
+            styles.Add(new TextStyle(font, 16) { Synthesis = FontSynthesis.Bold | FontSynthesis.Oblique, Language = "sr" });
+            styles.Add(new TextStyle(font, 12) { Synthesis = FontSynthesis.Bold, Language = "zh-Hant" });
+        }
+
+        foreach (var style in styles)
+        {
+            var font = style.Fonts.Primary;
             TextLayout layout;
             try
             {
-                layout = TextLayout.Create(SampleText, font, 13.5);
+                layout = TextLayout.Create(SampleText, style);
             }
             catch (Exception exception) when (exception is InvalidImageContentException or UnsupportedImageFeatureException or ImageResourceLimitException)
             {

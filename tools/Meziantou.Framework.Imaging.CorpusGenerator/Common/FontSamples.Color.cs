@@ -248,6 +248,40 @@ internal static partial class FontSamples
         return font;
     }
 
+    /// <summary>
+    /// The boxes font with bitmaps without colors (the <c>EBLC</c> and <c>EBDT</c> tables) for two sizes, which do not
+    /// draw what the outlines draw.
+    /// </summary>
+    /// <remarks>
+    /// <list type="bullet">
+    /// <item><description>At 16 pixels per em, A: 12 by 12 pixels, 2 pixels from the origin, on the baseline; the pixels of its border, one pixel thick, are set. Its outline is the full square.</description></item>
+    /// <item><description>At 16 pixels per em, B: 6 by 8 pixels, 1 pixel from the origin, on the baseline; a checkerboard whose top left pixel is set.</description></item>
+    /// <item><description>At 12 pixels per em, A: 9 by 9 pixels, 1 pixel from the origin, on the baseline; its two diagonals are set.</description></item>
+    /// <item><description>C has no bitmap, and B has none at 12 pixels per em.</description></item>
+    /// </list>
+    /// </remarks>
+    /// <param name="indexFormat">The format of the index subtables; the formats 2 and 5 are for bitmaps of one size, so B has the bitmap of A in these fonts.</param>
+    /// <param name="imageFormat">The format of the bitmaps: 1, 2, 5, 6 or 7.</param>
+    /// <param name="bitDepth">The number of bits per pixel the strikes say they have.</param>
+    public static FontBuilder MonochromeBoxes(int indexFormat = 1, int imageFormat = 1, int bitDepth = 1)
+    {
+        var font = Boxes();
+        font.FamilyName = "Meziantou Monochrome Boxes";
+        font.PostScriptName = "MeziantouMonochromeBoxes-Regular";
+        var isByteAligned = imageFormat is 1 or 6;
+        var small = new FontBitmapStrike { PixelsPerEm = 12, IndexFormat = indexFormat, ImageFormat = imageFormat, BitDepth = bitDepth };
+        var large = new FontBitmapStrike { PixelsPerEm = 16, IndexFormat = indexFormat, ImageFormat = imageFormat, BitDepth = bitDepth };
+        var largeA = FontBitmapWriter.PackBits(12, 12, isByteAligned, static (x, y) => x is 0 or 11 || y is 0 or 11);
+        var largeB = FontBitmapWriter.PackBits(6, 8, isByteAligned, static (x, y) => ((x + y) & 1) == 0);
+        var smallA = FontBitmapWriter.PackBits(9, 9, isByteAligned, static (x, y) => x == y || x + y == 8);
+        large.Glyphs.Add(new FontBitmapGlyph(BoxA, 2, 0, 12, 12, largeA));
+        large.Glyphs.Add(indexFormat is 2 or 5 ? new FontBitmapGlyph(BoxB, 2, 0, 12, 12, largeA) : new FontBitmapGlyph(BoxB, 1, 0, 6, 8, largeB));
+        small.Glyphs.Add(new FontBitmapGlyph(BoxA, 1, 0, 9, 9, smallA));
+        font.MonochromeBitmapStrikes.Add(small);
+        font.MonochromeBitmapStrikes.Add(large);
+        return font;
+    }
+
     /// <summary>Makes a PNG image from the color of each pixel: red, green, blue and alpha.</summary>
     public static byte[] CreateBitmap(int width, int height, Func<int, int, (int R, int G, int B, int A)> getColor)
     {

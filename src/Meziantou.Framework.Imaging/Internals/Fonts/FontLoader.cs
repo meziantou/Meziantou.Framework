@@ -1,3 +1,5 @@
+using Meziantou.Framework.Imaging.Typography;
+
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
@@ -12,24 +14,26 @@ internal static class FontLoader
 {
     private const int ChunkLength = 64 * 1024;
 
-    public static FontFace[] Load(ReadOnlySpan<byte> data, ImageConfiguration configuration)
+    public static FontFace[] Load(ReadOnlySpan<byte> data, FontLoadOptions options)
     {
+        var configuration = options.Configuration;
         var limits = configuration.Limits;
         if (data.Length > limits.MaxEncodedBytes)
             throw new ImageResourceLimitException(ImageResourceLimitKind.EncodedBytes, limits.MaxEncodedBytes, data.Length);
 
         EnsureFontBytes(limits, data.Length);
-        return Parse(data.ToArray(), configuration);
+        return Parse(data.ToArray(), options);
     }
 
-    public static FontFace[] Load(string path, ImageConfiguration configuration)
+    public static FontFace[] Load(string path, FontLoadOptions options)
     {
         using var stream = ImageIO.OpenFile(path, asynchronous: false);
-        return Load(stream, configuration);
+        return Load(stream, options);
     }
 
-    public static FontFace[] Load(Stream stream, ImageConfiguration configuration)
+    public static FontFace[] Load(Stream stream, FontLoadOptions options)
     {
+        var configuration = options.Configuration;
         var limits = configuration.Limits;
         var buffer = new byte[GetInitialLength(stream, limits)];
         var length = 0;
@@ -48,21 +52,22 @@ internal static class FontLoader
             EnsureEncodedBytes(limits, length);
         }
 
-        return Parse(Trim(buffer, length), configuration);
+        return Parse(Trim(buffer, length), options);
     }
 
-    public static async Task<FontFace[]> LoadAsync(string path, ImageConfiguration configuration, CancellationToken cancellationToken)
+    public static async Task<FontFace[]> LoadAsync(string path, FontLoadOptions options, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
         var stream = ImageIO.OpenFile(path, asynchronous: true);
         await using (stream.ConfigureAwait(false))
         {
-            return await LoadAsync(stream, configuration, cancellationToken).ConfigureAwait(false);
+            return await LoadAsync(stream, options, cancellationToken).ConfigureAwait(false);
         }
     }
 
-    public static async Task<FontFace[]> LoadAsync(Stream stream, ImageConfiguration configuration, CancellationToken cancellationToken)
+    public static async Task<FontFace[]> LoadAsync(Stream stream, FontLoadOptions options, CancellationToken cancellationToken)
     {
+        var configuration = options.Configuration;
         cancellationToken.ThrowIfCancellationRequested();
         var limits = configuration.Limits;
         var buffer = new byte[GetInitialLength(stream, limits)];
@@ -82,7 +87,7 @@ internal static class FontLoader
             EnsureEncodedBytes(limits, length);
         }
 
-        return Parse(Trim(buffer, length), configuration);
+        return Parse(Trim(buffer, length), options);
     }
 
     private static int GetInitialLength(Stream stream, ImageResourceLimits limits)
@@ -128,8 +133,9 @@ internal static class FontLoader
     }
 
     /// <summary>Creates the faces of a font file. The faces keep the bytes of a font; a compressed container is expanded first.</summary>
-    private static FontFace[] Parse(byte[] bytes, ImageConfiguration configuration)
+    private static FontFace[] Parse(byte[] bytes, FontLoadOptions options)
     {
+        var configuration = options.Configuration;
         if (bytes.Length < 4)
             throw new UnknownImageFormatException("The data is not a font: it is shorter than a font signature.");
 
@@ -150,10 +156,10 @@ internal static class FontLoader
         switch (bytes.Length < 4 ? 0 : FontBinary.UInt32(bytes, 0))
         {
             case FontTags.TrueType or FontTags.AppleTrueType or FontTags.OpenTypeCff or FontTags.PostScriptType1:
-                return [new FontFace(new FontData(bytes, configuration), directoryOffset: 0)];
+                return [new FontFace(new FontData(bytes, configuration, options.UseEmbeddedBitmaps), directoryOffset: 0)];
 
             case FontTags.Collection:
-                return ParseCollection(new FontData(bytes, configuration));
+                return ParseCollection(new FontData(bytes, configuration, options.UseEmbeddedBitmaps));
 
             case FontTags.Woff or FontTags.Woff2:
                 throw FontErrors.Invalid("a WOFF file contains another WOFF file.");

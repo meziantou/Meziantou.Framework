@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using Meziantou.Framework.Imaging.Drawing;
+using Meziantou.Framework.Imaging.Internals;
 
 namespace Meziantou.Framework.Imaging.Typography;
 
@@ -46,6 +47,74 @@ public sealed class TextStyle
             field = new ReadOnlyCollection<FontFeature>([.. value]);
         }
     } = ReadOnlyCollection<FontFeature>.Empty;
+
+    /// <summary>
+    /// Gets the language of the text, as a BCP 47 language tag (<c>"sr"</c>, <c>"tr"</c>, <c>"zh-Hant"</c>), or
+    /// <see langword="null"/> (the default) when it is not known.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A font can draw the same characters differently for different languages: the Cyrillic letters of Serbian and
+    /// of Bulgarian, the ideographs of Chinese, Japanese and Korean, the letters around the dotless i of Turkish. It
+    /// does so with a language system of its OpenType Layout tables for each of these languages. The language of the
+    /// style selects the language system of each font: the first one the font has among the tags the registry of
+    /// OpenType gives for the language, or else its default language system, as without a language.
+    /// </para>
+    /// <para>
+    /// The tag is not checked against the registry of language subtags, and the casing of its subtags does not
+    /// matter. The language is found from the language subtag, and from the script, region and variant subtags where
+    /// they select a written form: <c>zh-Hans</c>, <c>zh-Hant</c>, <c>zh-HK</c>, <c>el-polyton</c>, <c>und-fonipa</c>.
+    /// A language the registry of OpenType has no tag for changes nothing.
+    /// </para>
+    /// <para>The language changes nothing else: neither the fonts that are chosen nor where lines break.</para>
+    /// </remarks>
+    /// <exception cref="ArgumentException">The value does not have the form of a BCP 47 language tag.</exception>
+    public string? Language
+    {
+        get;
+        init
+        {
+            if (value is not null && !OpenTypeLanguage.IsWellFormed(value))
+                throw new ArgumentException("The language is a BCP 47 language tag: subtags of one to eight letters and digits separated by hyphens.", nameof(value));
+
+            field = value;
+            LanguageTags = value is null ? [] : OpenTypeLanguage.GetTags(value);
+        }
+    }
+
+    /// <summary>Gets the tags of the language systems of <see cref="Language"/>, by order of preference.</summary>
+    internal uint[] LanguageTags { get; private init; } = [];
+
+    /// <summary>
+    /// Gets what is made from the glyphs of the fonts to imitate a bold or an italic font that the caller does not have.
+    /// <see cref="FontSynthesis.None"/> by default.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <see cref="FontSynthesis.Oblique"/> slants every outline to the right, around the baseline; the marks of a
+    /// letter follow it, the advances do not change and the decorations stay straight.
+    /// </para>
+    /// <para>
+    /// <see cref="FontSynthesis.Bold"/> thickens the glyphs of a filled text: each glyph is filled together with a
+    /// stroke of its outline, 1/24 of the size wide, whose corners are kept sharp unless they are sharper than 60
+    /// degrees. Each glyph that takes room takes 1/24 of the size more and is drawn in the middle of it. A stroked
+    /// text (<c>StrokeText</c>) and the path of a layout (<see cref="TextLayout.ToPath"/>) have the outlines of the
+    /// font, which the bold does not change.
+    /// </para>
+    /// <para>The glyphs a font draws with its own colors, such as emoji, are drawn as they are.</para>
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException">The value has an undefined flag.</exception>
+    public FontSynthesis Synthesis
+    {
+        get;
+        init
+        {
+            if ((value & ~(FontSynthesis.Bold | FontSynthesis.Oblique)) != FontSynthesis.None)
+                throw new ArgumentOutOfRangeException(nameof(value), value, "The synthesis is not valid.");
+
+            field = value;
+        }
+    }
 
     /// <summary>Gets the space added after each character, in pixels; negative to tighten. 0 by default.</summary>
     /// <remarks>

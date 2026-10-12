@@ -52,7 +52,7 @@ public sealed class FontCollection : IReadOnlyList<Font>
     public static FontCollection Load(string path, FontLoadOptions? options = null)
     {
         ArgumentException.ThrowIfNullOrEmpty(path);
-        return new FontCollection(FontLoader.Load(path, (options ?? FontLoadOptions.Default).Configuration));
+        return new FontCollection(FontLoader.Load(path, options ?? FontLoadOptions.Default));
     }
 
     /// <summary>Loads every face of a font file from a stream, read from its current position to its end.</summary>
@@ -69,7 +69,7 @@ public sealed class FontCollection : IReadOnlyList<Font>
     public static FontCollection Load(Stream stream, FontLoadOptions? options = null)
     {
         Font.ValidateReadableStream(stream);
-        return new FontCollection(FontLoader.Load(stream, (options ?? FontLoadOptions.Default).Configuration));
+        return new FontCollection(FontLoader.Load(stream, options ?? FontLoadOptions.Default));
     }
 
     /// <summary>Loads every face of a font file from its bytes.</summary>
@@ -81,7 +81,7 @@ public sealed class FontCollection : IReadOnlyList<Font>
     /// <exception cref="UnsupportedImageFeatureException">A font uses a feature that is not supported.</exception>
     /// <exception cref="ImageResourceLimitException">A configured limit is exceeded.</exception>
     public static FontCollection Load(ReadOnlySpan<byte> data, FontLoadOptions? options = null)
-        => new(FontLoader.Load(data, (options ?? FontLoadOptions.Default).Configuration));
+        => new(FontLoader.Load(data, options ?? FontLoadOptions.Default));
 
     /// <summary>Asynchronously loads every face of a font file, using asynchronous file I/O.</summary>
     /// <param name="path">The path of the file.</param>
@@ -93,7 +93,7 @@ public sealed class FontCollection : IReadOnlyList<Font>
     public static Task<FontCollection> LoadAsync(string path, FontLoadOptions? options = null, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrEmpty(path);
-        return LoadCoreAsync(FontLoader.LoadAsync(path, (options ?? FontLoadOptions.Default).Configuration, cancellationToken));
+        return LoadCoreAsync(FontLoader.LoadAsync(path, options ?? FontLoadOptions.Default, cancellationToken));
     }
 
     /// <summary>Asynchronously loads every face of a font file from a stream, read from its current position to its end.</summary>
@@ -107,7 +107,7 @@ public sealed class FontCollection : IReadOnlyList<Font>
     public static Task<FontCollection> LoadAsync(Stream stream, FontLoadOptions? options = null, CancellationToken cancellationToken = default)
     {
         Font.ValidateReadableStream(stream);
-        return LoadCoreAsync(FontLoader.LoadAsync(stream, (options ?? FontLoadOptions.Default).Configuration, cancellationToken));
+        return LoadCoreAsync(FontLoader.LoadAsync(stream, options ?? FontLoadOptions.Default, cancellationToken));
     }
 
     /// <summary>Returns an enumerator of the faces, in the order of the file.</summary>

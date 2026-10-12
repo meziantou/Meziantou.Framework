@@ -128,6 +128,12 @@ internal sealed class FontBuilder
     /// <summary>Gets or sets a value indicating whether the offsets of the <c>gvar</c> table are 32 bits.</summary>
     public bool UseLongVariationOffsets { get; set; }
 
+    /// <summary>Gets or sets the deltas of the normalized values of the axes, for version 2 of the <c>avar</c> table: by default, the item of an axis is its index in the first subtable.</summary>
+    public FontVariationStore? AxisVariations { get; set; }
+
+    /// <summary>Gets or sets the delta set index map of version 2 of the <c>avar</c> table, as written by <see cref="FontVariationWriter.WriteIndexMap"/>.</summary>
+    public byte[]? AxisVariationMap { get; set; }
+
     /// <summary>Gets or sets the deltas of the advances, for the <c>HVAR</c> table: by default, the item of a glyph is its index in the first subtable.</summary>
     public FontVariationStore? AdvanceVariations { get; set; }
 
@@ -160,6 +166,9 @@ internal sealed class FontBuilder
 
     /// <summary>Gets or sets a value indicating whether the strikes are written as <c>CBLC</c> and <c>CBDT</c> tables instead of an <c>sbix</c> table.</summary>
     public bool UseColorBitmapTables { get; set; }
+
+    /// <summary>Gets the strikes of bitmaps without colors of the font, written to the <c>EBLC</c> and <c>EBDT</c> tables.</summary>
+    public List<FontBitmapStrike> MonochromeBitmapStrikes { get; } = [];
 
     /// <summary>Gets names that are added to the <c>name</c> table, by identifier.</summary>
     public SortedDictionary<int, string> ExtraNames { get; } = [];
@@ -234,6 +243,11 @@ internal sealed class FontBuilder
             tables["kern"] = WriteKern();
         }
 
+        if (MonochromeBitmapStrikes.Count > 0)
+        {
+            (tables["EBLC"], tables["EBDT"]) = FontBitmapWriter.WriteMonochromeBitmaps(MonochromeBitmapStrikes);
+        }
+
         if (BitmapStrikes.Count > 0)
         {
             if (UseColorBitmapTables)
@@ -262,9 +276,9 @@ internal sealed class FontBuilder
             var names = new SortedDictionary<int, string>(ExtraNames);
             tables["fvar"] = FontVariationWriter.WriteFvar(Axes, NamedInstances, 256, names);
             tables["name"] = WriteName(names);
-            if (Axes.Any(axis => axis.Map.Count > 0))
+            if (Axes.Any(axis => axis.Map.Count > 0) || AxisVariations is not null)
             {
-                tables["avar"] = FontVariationWriter.WriteAvar(Axes);
+                tables["avar"] = FontVariationWriter.WriteAvar(Axes, AxisVariations, AxisVariationMap);
             }
 
             if (Glyphs.Any(glyph => glyph.Variations.Count > 0))

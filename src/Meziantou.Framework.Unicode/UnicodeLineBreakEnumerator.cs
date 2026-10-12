@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using LineBreak = Meziantou.Framework.UnicodeLineBreakClass;
 
@@ -5,10 +6,17 @@ namespace Meziantou.Framework;
 
 /// <summary>Enumerates the positions where a line can or must break. See <see cref="Unicode.EnumerateLineBreaks(ReadOnlySpan{char}, UnicodeLineBreakStrictness, UnicodeWordBreakBehavior)"/>.</summary>
 /// <remarks>
+/// <para>
 /// The rules are those of Unicode Standard Annex #14 revision 57 (Unicode 18.0.0). A rule reads the classes of the
 /// units around a position; a unit is a character with the combining marks and zero width joiners that follow it
 /// (rule LB9). The enumerator keeps the two units before the position, reads at most three units after it, and
 /// summarizes what the rules need from further back in a few counters, so the cost is linear.
+/// </para>
+/// <para>
+/// With a <see cref="LineBreakDictionary"/>, a run of Complex_Context characters is segmented piece by piece when the
+/// enumeration reaches it, and the enumerator only keeps the word starts of the current piece: the cost stays linear
+/// and nothing is allocated.
+/// </para>
 /// </remarks>
 public ref struct UnicodeLineBreakEnumerator
 {
@@ -20,10 +28,14 @@ public ref struct UnicodeLineBreakEnumerator
     private const byte FinalQuoteFlag = 4;
     private const byte UnassignedPictographicFlag = 8;
     private const byte DottedCircleFlag = 16;
+    private const byte ComplexContextFlag = 32;
 
     private readonly ReadOnlySpan<char> _text;
     private readonly UnicodeLineBreakStrictness _strictness;
     private readonly UnicodeWordBreakBehavior _wordBreak;
+
+    // The dictionary that segments the runs of Complex_Context characters, or null when it cannot add a break.
+    private readonly LineBreakDictionary? _dictionary;
 
     // The units after the position, read on demand.
     private Unit _next0;
@@ -47,16 +59,27 @@ public ref struct UnicodeLineBreakEnumerator
     // LB30a: the number of regional indicators that end at the previous unit.
     private int _regionalIndicators;
 
+    // The run of Complex_Context characters that the dictionary segments, and the piece of it that is segmented:
+    // _wordStarts has a bit for each index of the piece where a word of the dictionary starts.
+    private int _runStart;
+    private int _runEnd;
+    private int _pieceStart;
+    private int _pieceEnd;
+    private WordStarts _wordStarts;
+
     private int _position;
     private bool _isStarted;
     private bool _isCompleted;
     private UnicodeLineBreak _current;
 
-    internal UnicodeLineBreakEnumerator(ReadOnlySpan<char> text, UnicodeLineBreakStrictness strictness, UnicodeWordBreakBehavior wordBreak)
+    internal UnicodeLineBreakEnumerator(ReadOnlySpan<char> text, UnicodeLineBreakStrictness strictness, UnicodeWordBreakBehavior wordBreak, LineBreakDictionary? dictionary = null)
     {
         _text = text;
         _strictness = strictness;
         _wordBreak = wordBreak;
+
+        // A line already breaks between any two letters, or any two grapheme clusters, in the other modes.
+        _dictionary = dictionary is { WordCount: > 0 } && wordBreak is not UnicodeWordBreakBehavior.BreakAll && strictness is not UnicodeLineBreakStrictness.Anywhere ? dictionary : null;
         _previous = new Unit(StartOfText, 0, 0, endsWithJoiner: false);
         _beforePrevious = _previous;
         _beforeSpaces = StartOfText;
@@ -99,6 +122,11 @@ public ref struct UnicodeLineBreakEnumerator
 
             var index = _position;
             var decision = Decide(next);
+            if (decision is Decision.NoBreak && _dictionary is not null && next.Has(ComplexContextFlag) && IsWordStart(index))
+            {
+                decision = Decision.Break;
+            }
+
             Consume();
             if (decision is not Decision.NoBreak)
             {
@@ -332,6 +360,62 @@ public ref struct UnicodeLineBreakEnumerator
             or LineBreak.H2 or LineBreak.H3 or LineBreak.JL or LineBreak.JV or LineBreak.JT;
     }
 
+    /// <summary>Determines whether a word of the dictionary starts at the index of a Complex_Context letter, after the start of its run.</summary>
+    /// <remarks>
+    /// Between two letters of a run, with their marks, the rules of the annex only give LB28: no break. That is the
+    /// decision a word of the dictionary changes.
+    /// </remarks>
+    private bool IsWordStart(int index)
+    {
+        if (index >= _runEnd)
+        {
+            // The run is the Complex_Context characters around the index, from their first letter: a mark before
+            // that letter belongs to the character before it (LB9). The letter at the index starts a unit, and so
+            // does a letter before it, which is in the previous unit or is the start of a run that is known.
+            var start = index;
+            for (var i = index; i > 0;)
+            {
+                var tuple = UnicodeProperties.GetLineBreakTuple(Unicode.DecodeBefore(_text, i, out var length));
+                if ((LineBreak)(tuple & 0xFF) is not LineBreak.ComplexContext)
+                    break;
+
+                i -= length;
+                if ((tuple & 0x8000) == 0)
+                {
+                    start = i;
+                }
+            }
+
+            var end = index;
+            while (end < _text.Length)
+            {
+                var tuple = UnicodeProperties.GetLineBreakTuple(Unicode.DecodeAt(_text, end, out var length));
+                if ((LineBreak)(tuple & 0xFF) is not LineBreak.ComplexContext)
+                    break;
+
+                end += length;
+            }
+
+            _runStart = start;
+            _runEnd = end;
+            _pieceStart = start;
+            _pieceEnd = start;
+        }
+
+        if (index == _runStart)
+            return false;
+
+        while (index >= _pieceEnd)
+        {
+            _pieceStart = _pieceEnd;
+            _pieceEnd += _dictionary!.SegmentPiece(_text[_pieceStart.._runEnd], _wordStarts);
+        }
+
+        // A cluster that is longer than a piece has no word.
+        var offset = index - _pieceStart;
+        return offset < LineBreakDictionary.PieceLength && (_wordStarts[offset >> 6] & (1UL << (offset & 63))) != 0;
+    }
+
     /// <summary>Moves the position after the next unit and updates what the rules remember of the text before it.</summary>
     private void Consume()
     {
@@ -460,6 +544,11 @@ public ref struct UnicodeLineBreakEnumerator
             | ((properties & 0x18) == 0x18 ? UnassignedPictographicFlag : 0));
 
         var value = (LineBreak)(tuple & 0xFF);
+        if (value is LineBreak.ComplexContext)
+        {
+            flags |= ComplexContextFlag;
+        }
+
         return value switch
         {
             LineBreak.Ambiguous or LineBreak.Surrogate or LineBreak.Unknown => LineBreak.Alphabetic,
@@ -474,6 +563,12 @@ public ref struct UnicodeLineBreakEnumerator
         NoBreak,
         Break,
         MandatoryBreak,
+    }
+
+    [InlineArray(LineBreakDictionary.PieceLength / 64)]
+    private struct WordStarts
+    {
+        private ulong _element;
     }
 
     [StructLayout(LayoutKind.Auto)]

@@ -58,6 +58,11 @@ internal sealed class FontFace
     private readonly SbixTable? _sbix;
     private readonly int _sbixOffset;
     private readonly int _sbixLength;
+    private readonly CblcTable? _eblc;
+    private readonly int _eblcOffset;
+    private readonly int _eblcLength;
+    private readonly int _ebdtOffset;
+    private readonly int _ebdtLength;
     private readonly CblcTable? _cblc;
     private readonly int _cblcOffset;
     private readonly int _cblcLength;
@@ -232,6 +237,12 @@ internal sealed class FontFace
         if (_directory.TryFind(FontTags.Cblc, out _cblcOffset, out _cblcLength) && _directory.TryFind(FontTags.Cbdt, out _cbdtOffset, out _cbdtLength))
         {
             _cblc = CblcTable.Read(file.Slice(_cblcOffset, _cblcLength));
+        }
+
+        // The bitmaps without colors, for the font that was loaded to use them.
+        if (data.UseEmbeddedBitmaps && _directory.TryFind(FontTags.Eblc, out _eblcOffset, out _eblcLength) && _directory.TryFind(FontTags.Ebdt, out _ebdtOffset, out _ebdtLength))
+        {
+            _eblc = CblcTable.Read(file.Slice(_eblcOffset, _eblcLength));
         }
 
         // The variations: the axes, then the tables that vary the outlines, the advances and the metrics along them.
@@ -512,13 +523,16 @@ internal sealed class FontFace
             return root;
 
         // "Coordinate scales and normalization": the values are normalized as 16.16 numbers, mapped by the avar table,
-        // then rounded to 2.14 numbers.
+        // then rounded to 2.14 numbers, which version 2 of the table changes with the deltas of its variation store.
         var bytes = Data.Bytes.AsSpan();
-        AvarTable.Map(bytes.Slice(root._avarOffset, root._avarLength), coordinates);
+        var avar = bytes.Slice(root._avarOffset, root._avarLength);
+        AvarTable.Map(avar, coordinates);
         for (var i = 0; i < coordinates.Length; i++)
         {
             coordinates[i] = FontInstance.ToTableValue(coordinates[i]);
         }
+
+        AvarTable.AddDeltas(avar, coordinates);
 
         var instance = new FontInstance(user, coordinates);
         if (root._hvarStore != 0)
@@ -691,6 +705,79 @@ internal sealed class FontFace
                 _cff!.Decode(Data.Bytes.AsSpan(_cffOffset, _cffLength), glyphId, sink, ref budget, _instance is null ? default : _instance.OutlineScalars);
                 break;
         }
+    }
+
+    /// <summary>
+    /// Decodes the outline of a glyph as it is drawn at a size: the outline of the glyph, or, when the font was loaded
+    /// to use its bitmaps without colors and has one for the glyph at exactly this size, the squares of its pixels.
+    /// </summary>
+    /// <param name="glyphId">The glyph.</param>
+    /// <param name="size">The size the glyph is drawn at, in pixels per em.</param>
+    /// <param name="sink">The sink.</param>
+    /// <param name="scratch">The working storage of the outlines.</param>
+    /// <param name="budget">The budget of the glyph.</param>
+    /// <exception cref="InvalidImageContentException">The data of the glyph is malformed.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">The outlines of the font are in a format that is not supported.</exception>
+    /// <exception cref="ImageResourceLimitException">The glyph exceeds the complexity limit or the allocation limit.</exception>
+    public void DecodeOutline(int glyphId, double size, OutlineSink sink, GlyphScratch scratch, ref GlyphBudget budget)
+    {
+        if (_eblc is not null && (uint)glyphId < (uint)GlyphCount && size is >= 1 and <= 255 && size == Math.Floor(size))
+        {
+            var bytes = Data.Bytes.AsSpan();
+            var bits = bytes.Slice(_ebdtOffset, _ebdtLength);
+            if (_eblc.TryGetMonochromeGlyph(bytes.Slice(_eblcOffset, _eblcLength), bits, glyphId, (int)size, out var bitmap))
+            {
+                EmitBitmap(bits.Slice(bitmap.Offset, bitmap.Length), bitmap, sink, ref budget);
+                return;
+            }
+        }
+
+        DecodeOutline(glyphId, sink, scratch, ref budget);
+    }
+
+    /// <summary>
+    /// Emits a bitmap as an outline: a rectangle for each run of pixels of each row, in font units. The rectangles of
+    /// two rows share an edge and do not overlap: filled, they cover exactly the pixels of the bitmap.
+    /// </summary>
+    private void EmitBitmap(ReadOnlySpan<byte> bits, in MonochromeBitmap bitmap, OutlineSink sink, ref GlyphBudget budget)
+    {
+        var unit = (double)UnitsPerEm / bitmap.PixelsPerEm;
+        var rowBits = bitmap.IsByteAligned ? ((bitmap.Width + 7) / 8) * 8 : bitmap.Width;
+        for (var row = 0; row < bitmap.Height; row++)
+        {
+            budget.Charge(1);
+            var top = (bitmap.Top - row) * unit;
+            var bottom = (bitmap.Top - row - 1) * unit;
+            var first = row * rowBits;
+            for (var column = 0; column < bitmap.Width;)
+            {
+                if (!IsSet(bits, first + column))
+                {
+                    column++;
+                    continue;
+                }
+
+                var end = column + 1;
+                while (end < bitmap.Width && IsSet(bits, first + end))
+                {
+                    end++;
+                }
+
+                // In the direction of the contours of a TrueType outline.
+                budget.Charge(1);
+                var left = (bitmap.Left + column) * unit;
+                var right = (bitmap.Left + end) * unit;
+                sink.MoveTo(left, bottom);
+                sink.LineTo(left, top);
+                sink.LineTo(right, top);
+                sink.LineTo(right, bottom);
+                sink.LineTo(left, bottom);
+                sink.Close();
+                column = end;
+            }
+        }
+
+        static bool IsSet(ReadOnlySpan<byte> bits, int index) => (bits[index >> 3] & (0x80 >> (index & 7))) != 0;
     }
 
     private ReadOnlySpan<byte> GetRequiredTable(uint tag, int minimumLength)

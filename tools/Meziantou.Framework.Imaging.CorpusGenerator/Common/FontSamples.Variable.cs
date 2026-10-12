@@ -38,7 +38,13 @@ internal static partial class FontSamples
     /// </list>
     /// </remarks>
     /// <param name="withAdvanceVariations">Whether the font has an <c>HVAR</c> table; without it, the advances vary with the phantom points of the glyphs.</param>
-    public static FontBuilder Variable(bool withAdvanceVariations = true)
+    /// <param name="withAxisVariations">
+    /// Whether the <c>avar</c> table has version 2, in which the value of an axis depends on the other one. With "w+d+" the
+    /// region from the default to the heaviest weight and the widest width together, and "d-" the region to the narrowest
+    /// width: the normalized weight gets -0.25 in w+d+ and +0.5 in d-, and the normalized width gets +0.125 in w+d+. The
+    /// items of the store are the width, then the weight: a delta set index map gives the item of each axis.
+    /// </param>
+    public static FontBuilder Variable(bool withAdvanceVariations = true, bool withAxisVariations = false)
     {
         var font = new FontBuilder
         {
@@ -161,6 +167,20 @@ internal static partial class FontSamples
             store.Subtables.Add(second);
             font.AdvanceVariations = store;
             font.AdvanceVariationMap = FontVariationWriter.WriteIndexMap([(0, 0), (1, 0), (0, 1), (0, 2), (0, 3), (0, 0), (0, 4), (0, 1), (0, 0), (1, 0)]);
+        }
+
+        if (withAxisVariations)
+        {
+            // Deltas of normalized values, as 2.14 numbers.
+            var axes = new FontVariationStore();
+            axes.Regions.Add(new FontVariationRegion((0, 1, 1), (0, 1, 1)));
+            axes.Regions.Add(new FontVariationRegion((0, 0, 0), (-1, -1, 0)));
+            var axisItems = new FontVariationSubtable { Regions = [0, 1] };
+            axisItems.Items.Add([2048, 0]);
+            axisItems.Items.Add([-4096, 8192]);
+            axes.Subtables.Add(axisItems);
+            font.AxisVariations = axes;
+            font.AxisVariationMap = FontVariationWriter.WriteIndexMap([(0, 1), (0, 0)]);
         }
 
         var metrics = new FontVariationStore();

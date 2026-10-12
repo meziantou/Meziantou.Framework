@@ -20,4 +20,10 @@ internal enum PathCommand : byte
 
     /// <summary>A complete closed ellipse (center, then the two radii as a pair).</summary>
     Ellipse = 5,
+
+    /// <summary>
+    /// A complete closed ellipse whose axes are not horizontal and vertical: its center, then two conjugate
+    /// half-diameters as vectors. The contour starts at the end of the first one and turns toward the second one.
+    /// </summary>
+    EllipseAxes = 6,
 }

@@ -4,6 +4,38 @@
 
 namespace Meziantou.Framework.Imaging
 {
+    public readonly struct AffineTransform : System.IEquatable<Meziantou.Framework.Imaging.AffineTransform>
+    {
+        public static Meziantou.Framework.Imaging.AffineTransform Identity { get => throw null; }
+        public double M11 { get => throw null; }
+        public double M12 { get => throw null; }
+        public double M21 { get => throw null; }
+        public double M22 { get => throw null; }
+        public double OffsetX { get => throw null; }
+        public double OffsetY { get => throw null; }
+        public bool IsIdentity { get => throw null; }
+        public double Determinant { get => throw null; }
+        public AffineTransform(double m11, double m12, double m21, double m22, double offsetX, double offsetY) { }
+        public static Meziantou.Framework.Imaging.AffineTransform CreateTranslation(double dx, double dy) => throw null;
+        public static Meziantou.Framework.Imaging.AffineTransform CreateScale(double scaleX, double scaleY) => throw null;
+        public static Meziantou.Framework.Imaging.AffineTransform CreateScale(double scaleX, double scaleY, Meziantou.Framework.Imaging.PointD center) => throw null;
+        public static Meziantou.Framework.Imaging.AffineTransform CreateRotation(double degrees) => throw null;
+        public static Meziantou.Framework.Imaging.AffineTransform CreateRotation(double degrees, Meziantou.Framework.Imaging.PointD center) => throw null;
+        public static Meziantou.Framework.Imaging.AffineTransform CreateSkew(double degreesX, double degreesY) => throw null;
+        public Meziantou.Framework.Imaging.AffineTransform Then(Meziantou.Framework.Imaging.AffineTransform next) => throw null;
+        public static Meziantou.Framework.Imaging.AffineTransform Multiply(Meziantou.Framework.Imaging.AffineTransform first, Meziantou.Framework.Imaging.AffineTransform second) => throw null;
+        public bool TryInvert(out Meziantou.Framework.Imaging.AffineTransform inverse) => throw null;
+        public Meziantou.Framework.Imaging.PointD Transform(Meziantou.Framework.Imaging.PointD point) => throw null;
+        public Meziantou.Framework.Imaging.PointD TransformVector(Meziantou.Framework.Imaging.PointD vector) => throw null;
+        public bool Equals(Meziantou.Framework.Imaging.AffineTransform other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.Imaging.AffineTransform left, Meziantou.Framework.Imaging.AffineTransform right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Imaging.AffineTransform left, Meziantou.Framework.Imaging.AffineTransform right) => throw null;
+        public static Meziantou.Framework.Imaging.AffineTransform operator *(Meziantou.Framework.Imaging.AffineTransform left, Meziantou.Framework.Imaging.AffineTransform right) => throw null;
+    }
+
     public abstract class AutoCropAnalysis
     {
         public bool Success { get => throw null; }
@@ -1190,6 +1222,7 @@ namespace Meziantou.Framework.Imaging.Drawing
     {
         public bool IsEmpty { get => throw null; }
         public Meziantou.Framework.Imaging.RectangleD Bounds { get => throw null; }
+        public Meziantou.Framework.Imaging.Drawing.VectorPath Transform(Meziantou.Framework.Imaging.AffineTransform transform) => throw null;
     }
 
     public sealed class VectorPathBuilder

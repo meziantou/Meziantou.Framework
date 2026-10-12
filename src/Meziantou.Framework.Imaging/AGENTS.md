@@ -247,6 +247,9 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
 - Only `+ - * /` and `Math.Sqrt` in the geometry (no trigonometry, no fused multiply-add), and every order that
   influences a sum is total (events and crossings are sorted with a tie-break): results must not depend on the
   platform, the framework version or a sorting algorithm.
+- A path is transformed exactly (`VectorPath.Transform`): the control points of its curves, and an ellipse as its
+  center and two conjugate half-diameters (`PathCommand.EllipseAxes`), flattened like the circle it is the image of.
+  Never replace an ellipse by Bézier curves. `AffineTransform` gets its sines and cosines from `DeterministicAngle`.
 - A stroke is a union of convex pieces with one orientation (`Stroker`): overlaps are harmless because the coverage is
   the area of the union. The 1/16 pixel flattening tolerance is public; the positions of the chord vertices are not.
 - Every rental of a draw call happens before its first pixel write (edges, then the sweep and gradient scratch in

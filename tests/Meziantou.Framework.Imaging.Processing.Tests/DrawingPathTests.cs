@@ -205,6 +205,117 @@ public sealed class DrawingPathTests
         Assert.Equal([255, 255, 255, 255], DrawingTestSupport.ReadSamples(image.Frames[0]));
     }
 
+    [Fact]
+    public void ATransformedPathIsThePathOfTheTransformedPoints()
+    {
+        var path = new VectorPathBuilder().MoveTo(1, 1).LineTo(3, 1).QuadraticBezierTo(4, 2, 3, 3).CubicBezierTo(2.5, 4, 1.5, 4, 1, 3).Close().Build();
+        Assert.Same(path, path.Transform(AffineTransform.Identity));
+        Assert.Same(path, path.Transform(default));
+
+        // Every coefficient is exact in binary, so the transformed control points are those of the second path exactly
+        var transform = new AffineTransform(1.5, 0.25, -0.5, 1, 2, -0.5);
+        var expected = new VectorPathBuilder()
+            .MoveTo(transform.Transform(new PointD(1, 1)))
+            .LineTo(transform.Transform(new PointD(3, 1)))
+            .QuadraticBezierTo(transform.Transform(new PointD(4, 2)), transform.Transform(new PointD(3, 3)))
+            .CubicBezierTo(transform.Transform(new PointD(2.5, 4)), transform.Transform(new PointD(1.5, 4)), transform.Transform(new PointD(1, 3)))
+            .Close()
+            .Build();
+        var transformed = path.Transform(transform);
+        Assert.Equal(expected.Bounds, transformed.Bounds);
+        AssertSamePixels(canvas => canvas.Fill(White, expected), canvas => canvas.Fill(White, transformed));
+        AssertSamePixels(canvas => canvas.Stroke(new Pen(White, 1.25), expected), canvas => canvas.Stroke(new Pen(White, 1.25), transformed));
+
+        // The path itself is unchanged
+        Assert.Equal(RectangleD.FromLTRB(1, 1, 4, 4), path.Bounds);
+        Assert.True(new VectorPathBuilder().Build().Transform(transform).IsEmpty);
+    }
+
+    [Fact]
+    public void ATransformedEllipseStaysAnEllipse()
+    {
+        var ellipse = new VectorPathBuilder().AddEllipse(new PointD(2, 3), 1.5, 1).Build();
+
+        // Scaled and moved, with its axes still horizontal and vertical: the ellipse of the scaled radii, bit for bit
+        var scaled = ellipse.Transform(AffineTransform.CreateScale(2, 1.5).Then(AffineTransform.CreateTranslation(-0.5, 0.25)));
+        var expected = new VectorPathBuilder().AddEllipse(new PointD(3.5, 4.75), 3, 1.5).Build();
+        Assert.Equal(expected.Bounds, scaled.Bounds);
+        Assert.Equal(Flatten(expected), Flatten(scaled));
+
+        // Turned by a quarter turn: the same vertices as the ellipse whose radii are exchanged, from another start
+        var turned = Flatten(ellipse.Transform(AffineTransform.CreateRotation(90, new PointD(2, 3))));
+        var exchanged = Flatten(new VectorPathBuilder().AddEllipse(new PointD(2, 3), 1, 1.5).Build());
+        Assert.Equal((2d, 4.5d), turned[0]);
+        Assert.HasCount(exchanged.Count, turned);
+        Assert.Equal([.. exchanged.Distinct().Order()], [.. turned.Distinct().Order()]);
+
+        // Any transformation: the vertices are on the transformed ellipse, and the chords within the tolerance of it
+        foreach (var transform in new[]
+        {
+            AffineTransform.CreateRotation(30, new PointD(1, 1)),
+            AffineTransform.CreateSkew(40, -15).Then(AffineTransform.CreateScale(60, 25)),
+            AffineTransform.CreateScale(-900, 700),
+            new AffineTransform(3, 1, 1, 2, -4, 5),
+        })
+        {
+            Assert.True(transform.TryInvert(out var inverse));
+            var points = Flatten(ellipse.Transform(transform));
+            Assert.Equal(points[0], points[^1]);
+            var start = transform.Transform(new PointD(3.5, 3));
+            Assert.Equal(start.X, points[0].X, 1e-9);
+            Assert.Equal(start.Y, points[0].Y, 1e-9);
+            for (var i = 0; i + 1 < points.Count; i++)
+            {
+                var vertex = inverse.Transform(new PointD(points[i].X, points[i].Y));
+                Assert.Equal(1, (((vertex.X - 2) / 1.5) * ((vertex.X - 2) / 1.5)) + ((vertex.Y - 3) * (vertex.Y - 3)), 1e-9);
+
+                // The middle of a chord, brought back onto the ellipse along the ray from the center
+                var middle = inverse.Transform(new PointD((points[i].X + points[i + 1].X) / 2, (points[i].Y + points[i + 1].Y) / 2));
+                var angle = Math.Atan2(middle.Y - 3, (middle.X - 2) / 1.5);
+                var onEllipse = transform.Transform(new PointD(2 + (1.5 * Math.Cos(angle)), 3 + Math.Sin(angle)));
+                var chordMiddle = transform.Transform(middle);
+                Assert.True(onEllipse.DistanceTo(chordMiddle) <= Internals.PathFlattener.Tolerance, $"{transform}, chord {i}: {onEllipse.DistanceTo(chordMiddle)}");
+            }
+        }
+
+        // Transforming twice is transforming by the combination
+        var first = AffineTransform.CreateRotation(30);
+        var second = new AffineTransform(2, 0.5, -1, 3, 4, 5);
+        var twice = Flatten(ellipse.Transform(first).Transform(second));
+        var once = Flatten(ellipse.Transform(first.Then(second)));
+        Assert.HasCount(once.Count, twice);
+        for (var i = 0; i < once.Count; i++)
+        {
+            Assert.Equal(once[i].X, twice[i].X, 1e-9);
+            Assert.Equal(once[i].Y, twice[i].Y, 1e-9);
+        }
+    }
+
+    [Fact]
+    public void ATransformedPathMustStayWithinTheCoordinateLimit()
+    {
+        var path = new VectorPathBuilder().AddRectangle(new RectangleD(0, 0, 10, 10)).AddCircle(new PointD(5, 5), 3).Build();
+        Assert.Equal(RectangleD.FromLTRB(0, 0, 16777216, 10), path.Transform(AffineTransform.CreateScale(1677721.6, 1)).Bounds);
+        Assert.Throws<ArgumentOutOfRangeException>(() => path.Transform(AffineTransform.CreateScale(1677722, 1)));
+        Assert.Throws<ArgumentOutOfRangeException>(() => path.Transform(AffineTransform.CreateTranslation(0, -16777217)));
+        Assert.Throws<ArgumentOutOfRangeException>(() => path.Transform(AffineTransform.CreateScale(1e300, 1e300)));
+
+        // A transformation that flattens the plane gives a path without area
+        var flat = path.Transform(AffineTransform.CreateScale(1, 0));
+        Assert.Equal(new RectangleD(0, 0, 10, 0), flat.Bounds);
+        using var image = new Image<Gray8>(12, 4, new Gray8(0));
+        image.Draw(canvas => canvas.Fill(White, flat), Ct);
+        Assert.Equal(new int[48], DrawingTestSupport.ReadSamples(image.Frames[0]));
+    }
+
+    /// <summary>Gets the vertices of the single contour a path is flattened to.</summary>
+    private static List<(double X, double Y)> Flatten(VectorPath path)
+    {
+        var sink = new VertexSink();
+        Internals.PathFlattener.Flatten(path, sink);
+        return sink.Points;
+    }
+
     private static void AssertSamePixels(DrawingAction first, DrawingAction second)
     {
         using var left = new Image<Gray8>(8, 8, new Gray8(0));
@@ -214,5 +325,22 @@ public sealed class DrawingPathTests
         var expected = DrawingTestSupport.ReadSamples(left.Frames[0]);
         Assert.Contains(expected, sample => sample != 0);
         Assert.Equal(expected, DrawingTestSupport.ReadSamples(right.Frames[0]));
+    }
+
+    private sealed class VertexSink : Internals.PathSink
+    {
+        public List<(double X, double Y)> Points { get; } = [];
+
+        public override void MoveTo(double x, double y) => Points.Add((x, y));
+
+        public override void LineTo(double x, double y, bool smooth) => Points.Add((x, y));
+
+        public override void Close(bool smooth)
+        {
+        }
+
+        public override void End()
+        {
+        }
     }
 }

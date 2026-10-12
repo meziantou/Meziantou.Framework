@@ -1,5 +1,6 @@
 using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.TestHarness.Adapters;
+using Meziantou.Framework.Imaging.TestHarness.Fixtures;
 using Meziantou.Framework.Imaging.TestHarness.Golden;
 using Meziantou.Framework.Imaging.TestHarness.Pixels;
 using Meziantou.Framework.Imaging.TestHarness.Png;
@@ -11,6 +12,10 @@ namespace Meziantou.Framework.Imaging.Tests.Conformance;
 /// pixel format that holds them exactly: 8/16-bit RGBA, BGRA, RGB, gray 8/16), with fixed and adaptive filters, every
 /// compression level and Adam7. The output is decoded by the independent harness reader (<see cref="ReferencePng"/>) and
 /// compared exactly with the same reference; the IHDR color type and bit depth are checked against the pixel format.
+/// The indexed layout encodes the same references: the harness decides from the reference alone whether a palette can hold
+/// it exactly (<see cref="IndexedPngExpectation"/>), and then which palette, alpha values and bit depth the file must have;
+/// a reference that cannot be stored must be rejected before any output. The reader itself is checked against the paletted
+/// files of the corpus, which other software wrote.
 /// Tool-free: FFmpeg decodes the same outputs in <c>InteropTests/PngEncoderInteropTests</c>.
 /// </summary>
 public sealed class PngEncoderConformanceTests
@@ -25,6 +30,15 @@ public sealed class PngEncoderConformanceTests
         new PngEncoder { Filter = PngFilter.Up, Interlaced = true },
         new PngEncoder { Filter = PngFilter.Average },
     ];
+
+    private static readonly PngEncoder[] IndexedEncoders =
+    [
+        new PngEncoder { PixelLayout = PngPixelLayout.Indexed },
+        new PngEncoder { PixelLayout = PngPixelLayout.Indexed, Interlaced = true, Filter = PngFilter.Paeth, CompressionLevel = System.IO.Compression.CompressionLevel.SmallestSize },
+        new PngEncoder { PixelLayout = PngPixelLayout.Indexed, Filter = PngFilter.Sub, CompressionLevel = System.IO.Compression.CompressionLevel.NoCompression },
+    ];
+
+    public static TheoryData<string> PaletteFixtures => [.. GoldenCorpus.Default.GetIds(format: "png", kind: FixtureKinds.Valid, feature: "png.colorType=3").Where(id => id.StartsWith("png/", StringComparison.Ordinal))];
 
     public static TheoryData<string, string> Cases()
     {
@@ -75,4 +89,100 @@ public sealed class PngEncoderConformanceTests
             }
         }
     }
+
+    [Theory]
+    [MemberData(nameof(PaletteFixtures))]
+    public void ReferenceReaderAgreesWithTheCorpusPaletteImages(string id)
+    {
+        // The harness reader is the oracle of the indexed encoder tests: it must expand every paletted corpus file like the corpus
+        var fixture = GoldenCorpus.Default.Get(id);
+        var reference = ReferencePng.Parse(fixture.ReadInput());
+        Assert.Equal((byte)3, reference.ColorType);
+        var result = PixelBufferComparer.Compare(fixture.GetFrame(0, RawPixelLayout.Rgba8), reference.DecodePixels(), ComparisonPolicy.Exact, id);
+        Assert.True(result.IsMatch, result.Describe());
+    }
+
+    [Fact]
+    public void ReferenceReaderCoversEveryPaletteBitDepthAndRejectsPaletteErrors()
+    {
+        var depths = PaletteFixtures.Select(row => ReferencePng.Parse(GoldenCorpus.Default.Get(row.Data).ReadInput()).BitDepth).ToHashSet();
+        Assert.Equal([1, 2, 4, 8], depths.Order().Select(depth => (int)depth));
+
+        // An index beyond the palette fails when the pixels are expanded; a palette after the image data fails the structure check
+        var outOfRange = ReferencePng.Parse(GoldenCorpus.Default.Get("invalid/png/palette-index-out-of-range").ReadInput());
+        Assert.Throws<InvalidDataException>(() => outOfRange.DecodePixels());
+        Assert.Throws<InvalidDataException>(() => ReferencePng.Parse(GoldenCorpus.Default.Get("invalid/png/plte-after-idat").ReadInput()));
+    }
+
+    [Theory]
+    [MemberData(nameof(Cases))]
+    public void IndexedLayoutStoresTheCorpusReferencesExactlyOrRejectsThem(string id, string format)
+    {
+        var fixture = GoldenCorpus.Default.Get(id);
+        var pixelFormat = Enum.Parse<PixelFormat>(format);
+        foreach (var (name, expected) in EncoderSources.GetStills(fixture, pixelFormat))
+        {
+            using var image = EncoderSources.CreateImage(expected, pixelFormat);
+            var expectation = IndexedPngExpectation.Create(expected);
+            foreach (var encoder in IndexedEncoders)
+            {
+                var context = $"{id} {name} as {pixelFormat} (indexed, filter {encoder.Filter}, {encoder.CompressionLevel}, interlaced {encoder.Interlaced})";
+                using var stream = new MemoryStream();
+                if (!expectation.IsStorable)
+                {
+                    // More colors than a palette holds, or 16-bit samples it cannot represent: never reduced, nothing written
+                    var exception = Assert.Throws<UnsupportedImageFeatureException>(() => image.Save(stream, encoder));
+                    Assert.True(IsExpectedRejection(expectation, exception.Feature), $"{context}: rejected for '{exception.Feature}' ({expectation.ColorCount} colors, 8-bit exact {expectation.IsEightBitExact}).");
+                    Assert.Equal(0, stream.Length);
+                    continue;
+                }
+
+                image.Save(stream, encoder);
+                var reference = ReferencePng.Parse(stream.ToArray());
+                Assert.True(reference.ColorType == 3 && reference.BitDepth == expectation.BitDepth, $"{context}: color type {reference.ColorType}, bit depth {reference.BitDepth}.");
+                Assert.Equal(encoder.Interlaced ? 1 : 0, reference.InterlaceMethod);
+                Assert.Equal(expectation.Palette.ToArray(), reference.Palette.ToArray());
+                Assert.Equal(expectation.Transparency.ToArray(), reference.Transparency.ToArray());
+                Assert.True(reference.ArePaddingBitsZero(), context + ": padding bits are set.");
+                var result = PixelBufferComparer.Compare(IndexedPngExpectation.ToRgba8(expected), reference.DecodePixels(), ComparisonPolicy.Exact, context);
+                Assert.True(result.IsMatch, result.Describe());
+            }
+        }
+    }
+
+    [Fact]
+    public void CorpusCoversEveryIndexedOutcome()
+    {
+        var depths = new HashSet<int>();
+        var rejections = new HashSet<string>();
+        foreach (var (fixture, format) in EncoderSources.GetCases(GoldenCorpus.Default))
+        {
+            foreach (var (_, pixels) in EncoderSources.GetStills(fixture, format))
+            {
+                var expectation = IndexedPngExpectation.Create(pixels);
+                if (expectation.IsStorable)
+                {
+                    depths.Add(expectation.BitDepth);
+                }
+                else
+                {
+                    rejections.Add(expectation.IsEightBitExact ? "colors" : "precision");
+                }
+            }
+        }
+
+        Assert.Equal([1, 2, 4, 8], depths.Order());
+        Assert.Equal(["colors", "precision"], rejections.Order(StringComparer.Ordinal));
+    }
+
+    /// <summary>
+    /// The encoder reports the first pixel it cannot store, so a reference with both too many colors and inexact 16-bit
+    /// samples is rejected for either reason.
+    /// </summary>
+    private static bool IsExpectedRejection(IndexedPngExpectation expectation, string? feature) => feature switch
+    {
+        "Bit depth reduction" => !expectation.IsEightBitExact,
+        "Color reduction" => expectation.ColorCount > 256,
+        _ => false,
+    };
 }

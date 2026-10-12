@@ -46,15 +46,9 @@ public sealed class ApngEncoderConformanceTests
     [MemberData(nameof(ApngFixtures))]
     public void ReferenceReaderAgreesWithTheCorpusAnimations(string id)
     {
-        // The harness reader is the oracle of the encoder tests: it must read every non-palette corpus APNG like the corpus
+        // The harness reader is the oracle of the encoder tests: it must read every corpus APNG like the corpus
         var fixture = GoldenCorpus.Default.Get(id);
         var data = fixture.ReadInput();
-        if (data.AsSpan().IndexOf("PLTE"u8) >= 0)
-        {
-            Assert.Throws<InvalidDataException>(() => ReferencePng.Parse(data)); // palettes are outside the reader's scope
-            return;
-        }
-
         var reference = ReferencePng.Parse(data);
         if (reference is { ColorType: 2, BitDepth: 16 })
         {
@@ -112,27 +106,7 @@ public sealed class ApngEncoderConformanceTests
     {
         var fixture = GoldenCorpus.Default.Get(id);
         var pixelFormat = Enum.Parse<PixelFormat>(format);
-        var stills = EncoderSources.GetStills(fixture, pixelFormat);
-        var frames = stills.Where(still => still.Name != "poster").ToList();
-        using var image = EncoderSources.CreateImage(frames[0].Pixels, pixelFormat);
-        for (var i = 1; i < frames.Count; i++)
-        {
-            using var frame = EncoderSources.CreateImage(frames[i].Pixels, pixelFormat);
-            image.AppendFrame(frame.Frames[0]);
-        }
-
-        for (var i = 0; i < frames.Count; i++)
-        {
-            image.Frames[i].Metadata.Duration = fixture.Expected.Frames[i].Duration is null ? new FrameDuration(1, 10) : ToFrameDuration(fixture.GetDuration(i));
-        }
-
-        if (stills.FirstOrDefault(still => still.Name == "poster") is { Pixels: { } posterPixels })
-        {
-            using var poster = EncoderSources.CreateImage(posterPixels, pixelFormat);
-            image.SetPosterFrame(poster.Frames[0]);
-        }
-
-        image.Animation = new AnimationMetadata { TotalPlays = fixture.Expected.Animation?.TotalPlays };
+        using var image = CreateAnimation(fixture, pixelFormat, out var frames, out _);
         foreach (var encoder in Encoders)
         {
             using var stream = new MemoryStream();
@@ -145,6 +119,40 @@ public sealed class ApngEncoderConformanceTests
             for (var i = 0; i < frames.Count; i++)
             {
                 AssertSame(frames[i].Pixels, reference.DecodeDisplayedFrame(i), $"{context}, {frames[i].Name}");
+            }
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(Cases))]
+    public void CorpusReferencesEncodeAsIndexedAnimationsOrAreRejected(string id, string format)
+    {
+        // The frames and the poster share one palette: the harness decides from the references whether it can hold them
+        var fixture = GoldenCorpus.Default.Get(id);
+        var pixelFormat = Enum.Parse<PixelFormat>(format);
+        using var image = CreateAnimation(fixture, pixelFormat, out var frames, out var stills);
+        var expectation = IndexedPngExpectation.Create(stills.Select(still => still.Pixels));
+        foreach (var source in Encoders)
+        {
+            var encoder = new PngEncoder { AnimationMode = PngAnimationMode.Animated, PixelLayout = PngPixelLayout.Indexed, Interlaced = source.Interlaced, Filter = source.Filter, CompressionLevel = source.CompressionLevel };
+            var context = $"{id} as {pixelFormat} (indexed, filter {encoder.Filter}, {encoder.CompressionLevel}, interlaced {encoder.Interlaced})";
+            using var stream = new MemoryStream();
+            if (!expectation.IsStorable)
+            {
+                var exception = Assert.Throws<UnsupportedImageFeatureException>(() => image.Save(stream, encoder));
+                Assert.True(exception.Feature is "Color reduction" ? expectation.ColorCount > 256 : exception.Feature == "Bit depth reduction" && !expectation.IsEightBitExact, $"{context}: rejected for '{exception.Feature}'.");
+                Assert.Equal(0, stream.Length);
+                continue;
+            }
+
+            image.Save(stream, encoder);
+            var reference = ApngOutputVerifier.Verify(stream.ToArray(), image, context: context);
+            Assert.True(reference.ColorType == 3 && reference.BitDepth == expectation.BitDepth, $"{context}: color type {reference.ColorType}, bit depth {reference.BitDepth}.");
+            Assert.Equal(expectation.Palette.ToArray(), reference.Palette.ToArray());
+            Assert.Equal(expectation.Transparency.ToArray(), reference.Transparency.ToArray());
+            for (var i = 0; i < frames.Count; i++)
+            {
+                AssertSame(IndexedPngExpectation.ToRgba8(frames[i].Pixels), reference.DecodeDisplayedFrame(i), $"{context}, {frames[i].Name}");
             }
         }
     }
@@ -202,6 +210,33 @@ public sealed class ApngEncoderConformanceTests
         using var stream = new MemoryStream();
         image.Save(stream, new PngEncoder());
         ApngOutputVerifier.Verify(stream.ToArray(), image, context: id + " resized");
+    }
+
+    /// <summary>Imports the references of a fixture as an animation with the fixture's durations, poster and play count.</summary>
+    private static Image CreateAnimation(GoldenFixture fixture, PixelFormat pixelFormat, out List<(string Name, RawPixelBuffer Pixels)> frames, out IReadOnlyList<(string Name, RawPixelBuffer Pixels)> stills)
+    {
+        stills = EncoderSources.GetStills(fixture, pixelFormat);
+        frames = [.. stills.Where(still => still.Name != "poster")];
+        var image = EncoderSources.CreateImage(frames[0].Pixels, pixelFormat);
+        for (var i = 1; i < frames.Count; i++)
+        {
+            using var frame = EncoderSources.CreateImage(frames[i].Pixels, pixelFormat);
+            image.AppendFrame(frame.Frames[0]);
+        }
+
+        for (var i = 0; i < frames.Count; i++)
+        {
+            image.Frames[i].Metadata.Duration = fixture.Expected.Frames[i].Duration is null ? new FrameDuration(1, 10) : ToFrameDuration(fixture.GetDuration(i));
+        }
+
+        if (stills.FirstOrDefault(still => still.Name == "poster") is { Pixels: { } posterPixels })
+        {
+            using var poster = EncoderSources.CreateImage(posterPixels, pixelFormat);
+            image.SetPosterFrame(poster.Frames[0]);
+        }
+
+        image.Animation = new AnimationMetadata { TotalPlays = fixture.Expected.Animation?.TotalPlays };
+        return image;
     }
 
     private static void AssertSaved(GoldenFixture fixture, Image image, List<RawPixelBuffer> expectedFrames, RawPixelBuffer? poster, string step)

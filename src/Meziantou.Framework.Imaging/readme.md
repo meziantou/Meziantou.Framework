@@ -453,6 +453,10 @@ decoding). Typed `Load<TPixel>` and `CloneAs<TPixel>` convert explicitly between
 (`v * 257`), 16 to 8 bits rounds to nearest, color to gray uses Rec. 709 luma on the encoded values. A 16-bit path never
 goes through 8 bits.
 
+**Colors**. `Colors` has the named colors of CSS as `Rgba32` values (`Colors.CornflowerBlue`, `Colors.Transparent`), and
+`Rgba32.ParseHex` / `TryParseHex` read the hexadecimal notations of CSS (`#RGB`, `#RGBA`, `#RRGGBB`, `#RRGGBBAA`, with or
+without the `#`), which `ToHexString` writes back. An `Rgba32` converts implicitly to an `Rgba64`.
+
 **No silent loss**. Converting non-opaque pixels to a format without alpha throws
 `UnsupportedImageFeatureException` unless an opaque background is given; fully opaque pixels never need one. The controls:
 

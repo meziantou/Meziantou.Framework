@@ -1134,6 +1134,7 @@ namespace Meziantou.Framework.Imaging.Formats
     {
         public override Meziantou.Framework.Imaging.ImageFormat Format { get => throw null; }
         public Meziantou.Framework.Imaging.Formats.PngAnimationMode AnimationMode { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Formats.PngPixelLayout PixelLayout { get => throw null; init { } }
         public System.IO.Compression.CompressionLevel CompressionLevel { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Formats.PngFilter Filter { get => throw null; init { } }
         public bool Interlaced { get => throw null; init { } }
@@ -1148,6 +1149,12 @@ namespace Meziantou.Framework.Imaging.Formats
         Up = 3,
         Average = 4,
         Paeth = 5,
+    }
+
+    public enum PngPixelLayout
+    {
+        Auto = 0,
+        Indexed = 1,
     }
 
     public sealed class PnmEncoder : Meziantou.Framework.Imaging.Formats.ImageEncoder

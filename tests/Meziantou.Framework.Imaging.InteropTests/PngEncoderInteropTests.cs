@@ -18,7 +18,9 @@ namespace Meziantou.Framework.Imaging.InteropTests;
 /// the golden corpus, large streamed images, and metadata. Pixels are compared exactly with FFmpeg's decoding in the
 /// matching raw layout; the color type and bit depth are checked independently with ffprobe (decoded pixel format) and the
 /// harness chunk reader (<see cref="ReferencePng"/>), metadata with ffprobe (text tags, ICC side data) and the harness
-/// container walker (<see cref="EncodedFieldInspector"/>). Round trips through the library decoder are never used here.
+/// container walker (<see cref="EncodedFieldInspector"/>). Indexed output (palettes of every bit depth, with and without
+/// alpha values, from every storage type) is decoded by FFmpeg to RGBA and compared with the pixels expanded exactly to
+/// 8 bits. Round trips through the library decoder are never used here.
 /// </summary>
 public sealed class PngEncoderInteropTests
 {
@@ -108,6 +110,63 @@ public sealed class PngEncoderInteropTests
         }
     }
 
+    public static TheoryData<PixelFormat, int, int, bool> IndexedCases()
+    {
+        // The number of colors and the bit depth of the palette indexes
+        (int Colors, int BitDepth)[] palettes = [(2, 1), (4, 2), (16, 4), (200, 8)];
+        var data = new TheoryData<PixelFormat, int, int, bool>();
+        foreach (var format in AllFormats)
+        {
+            foreach (var (colors, bitDepth) in palettes)
+            {
+                data.Add(format, colors, bitDepth, false);
+                data.Add(format, colors, bitDepth, true);
+            }
+        }
+
+        return data;
+    }
+
+    [Theory]
+    [MemberData(nameof(IndexedCases))]
+    public async Task IndexedOutputDecodesExactlyWithFFmpeg(PixelFormat format, int colors, int bitDepth, bool interlaced)
+    {
+        var ffmpeg = await RequiredTools.FFmpegAsync();
+        using var image = CreateWithColors(format, 23, 17, colors, seed: (int)format);
+        var path = await EncodeToFileAsync(image, new PngEncoder { PixelLayout = PngPixelLayout.Indexed, Interlaced = interlaced }, $"indexed-{format}-{colors}-{(interlaced ? "adam7" : "progressive")}");
+        await AssertFFmpegDecodesIndexedExactlyAsync(ffmpeg, path, ImageSnapshots.CaptureFrame(image.Frames[0]), $"{format} with {colors} colors");
+
+        // FFmpeg decodes every palette bit depth to 8-bit indexes; the harness reader checks the IHDR fields directly
+        using var probe = await ffmpeg.ProbeAsync(path, XunitCancellationToken);
+        var stream = probe.RootElement.GetProperty("streams")[0];
+        Assert.Equal("png", stream.GetProperty("codec_name").GetString());
+        Assert.Equal("pal8", stream.GetProperty("pix_fmt").GetString());
+        var reference = ReferencePng.Parse(await File.ReadAllBytesAsync(path, XunitCancellationToken));
+        Assert.Equal((3, bitDepth, interlaced ? 1 : 0), (reference.ColorType, reference.BitDepth, reference.InterlaceMethod));
+    }
+
+    [Theory]
+    [MemberData(nameof(CorpusCases))]
+    public async Task IndexedCorpusReferencesDecodeExactlyWithFFmpeg(string id, string format)
+    {
+        var ffmpeg = await RequiredTools.FFmpegAsync();
+        var fixture = GoldenCorpus.Default.Get(id);
+        var pixelFormat = Enum.Parse<PixelFormat>(format);
+        var stills = EncoderSources.GetStills(fixture, pixelFormat);
+        for (var i = 0; i < stills.Count; i++)
+        {
+            // The references a palette cannot hold exactly are rejected (conformance tests): nothing to decode
+            var (name, expected) = stills[i];
+            if (!IndexedPngExpectation.Create(expected).IsStorable)
+                continue;
+
+            using var image = EncoderSources.CreateImage(expected, pixelFormat);
+            var encoder = new PngEncoder { PixelLayout = PngPixelLayout.Indexed, Interlaced = i % 2 == 1, Filter = i % 3 == 2 ? PngFilter.Paeth : PngFilter.Adaptive };
+            var path = await EncodeToFileAsync(image, encoder, $"indexed-{id.Replace('/', '-')}-{format}-{name.Replace(' ', '-')}");
+            await AssertFFmpegDecodesIndexedExactlyAsync(ffmpeg, path, expected, $"{id} {name} encoded as indexed {pixelFormat}");
+        }
+    }
+
     [Theory]
     [InlineData(PixelFormat.Rgba64, false)]
     [InlineData(PixelFormat.Rgb24, true)]
@@ -189,6 +248,78 @@ public sealed class PngEncoderInteropTests
         var decoded = Assert.Single(await ffmpeg.DecodeToRawFramesAsync(path, GetRawFormat(image.PixelFormat), image.Width, image.Height, XunitCancellationToken));
         var result = PixelBufferComparer.Compare(expected, RawPixelBuffer.Create(image.Width, image.Height, expected.Layout, decoded), ComparisonPolicy.Exact, $"{path.Name} decoded by ffmpeg {ffmpeg.Version}");
         Assert.True(result.IsMatch, result.Describe());
+    }
+
+    private static async Task AssertFFmpegDecodesIndexedExactlyAsync(FFmpegTool ffmpeg, FullPath path, RawPixelBuffer source, string context)
+    {
+        // The palette entries carry their alpha: FFmpeg expands the indexes to straight RGBA
+        var expected = IndexedPngExpectation.ToRgba8(source);
+        var decoded = Assert.Single(await ffmpeg.DecodeToRawFramesAsync(path, "rgba", source.Width, source.Height, XunitCancellationToken));
+        var result = PixelBufferComparer.Compare(expected, RawPixelBuffer.Create(source.Width, source.Height, RawPixelLayout.Rgba8, decoded), ComparisonPolicy.Exact, $"{context}, decoded by ffmpeg {ffmpeg.Version}");
+        Assert.True(result.IsMatch, result.Describe());
+    }
+
+    /// <summary>
+    /// Creates an image that has exactly <paramref name="colors"/> distinct colors, in runs: gray levels for the grayscale
+    /// pixel formats, otherwise colors that are fully transparent, partially transparent or opaque when the pixel format
+    /// has alpha. The samples of the 16-bit pixel formats are multiples of 257.
+    /// </summary>
+    internal static Image CreateWithColors(PixelFormat format, int width, int height, int colors, int seed)
+    {
+        var hasAlpha = format is PixelFormat.Rgba32 or PixelFormat.Bgra32 or PixelFormat.Rgba64;
+        var isGray = format is PixelFormat.Gray8 or PixelFormat.Gray16;
+        var bytesPerPixel = PixelFormats.GetBytesPerPixel(format);
+        var data = new byte[width * height * bytesPerPixel];
+        for (var i = 0; i < width * height; i++)
+        {
+            // Every color once, then runs of two to four pixels; multiplying by an odd number keeps the red samples distinct
+            var entry = i < colors ? i : ((i / ((i % 3) + 2)) + seed) % colors;
+            var red = (byte)((entry + seed) * 151);
+            var green = isGray ? red : (byte)(entry * 89);
+            var blue = isGray ? red : (byte)(255 - (entry * 3));
+            var alpha = !hasAlpha ? byte.MaxValue : (entry % 4) switch
+            {
+                0 => (byte)0,
+                1 => (byte)(1 + (entry % 254)),
+                _ => byte.MaxValue,
+            };
+
+            var pixel = data.AsSpan(i * bytesPerPixel, bytesPerPixel);
+            switch (format)
+            {
+                case PixelFormat.Gray8:
+                    pixel[0] = red;
+                    break;
+                case PixelFormat.Gray16:
+                    BitConverter.TryWriteBytes(pixel, (ushort)(red * 257));
+                    break;
+                case PixelFormat.Rgb24:
+                    (pixel[0], pixel[1], pixel[2]) = (red, green, blue);
+                    break;
+                case PixelFormat.Rgba32:
+                    (pixel[0], pixel[1], pixel[2], pixel[3]) = (red, green, blue, alpha);
+                    break;
+                case PixelFormat.Bgra32:
+                    (pixel[0], pixel[1], pixel[2], pixel[3]) = (blue, green, red, alpha);
+                    break;
+                default:
+                    BitConverter.TryWriteBytes(pixel, (ushort)(red * 257));
+                    BitConverter.TryWriteBytes(pixel[2..], (ushort)(green * 257));
+                    BitConverter.TryWriteBytes(pixel[4..], (ushort)(blue * 257));
+                    BitConverter.TryWriteBytes(pixel[6..], (ushort)(alpha * 257));
+                    break;
+            }
+        }
+
+        return format switch
+        {
+            PixelFormat.Rgba32 => Image.ImportPixelBytes<Rgba32>(data, width, height),
+            PixelFormat.Bgra32 => Image.ImportPixelBytes<Bgra32>(data, width, height),
+            PixelFormat.Rgb24 => Image.ImportPixelBytes<Rgb24>(data, width, height),
+            PixelFormat.Rgba64 => Image.ImportPixelBytes<Rgba64>(data, width, height),
+            PixelFormat.Gray8 => Image.ImportPixelBytes<Gray8>(data, width, height),
+            _ => Image.ImportPixelBytes<Gray16>(data, width, height),
+        };
     }
 
     private static async Task AssertProbedPixelFormatAsync(FFmpegTool ffmpeg, FullPath path, PixelFormat format, bool interlaced)

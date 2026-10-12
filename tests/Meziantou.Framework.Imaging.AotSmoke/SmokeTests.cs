@@ -29,6 +29,20 @@ internal static class SmokeTests
         using var gray = Image.ImportPixelData<Gray16>([.. Enumerable.Range(0, 64).Select(i => new Gray16((ushort)(i * 1031)))], 8, 8);
         using var gray16 = Image.Load<Gray16>(Encode(gray, new PngEncoder()));
         CheckEqual(gray, gray16, "16-bit gray PNG round trip");
+
+        // The indexed layout: sixteen colors are stored exactly as 4-bit indexes into a palette
+        using var fewColors = CreatePattern(seed: 3, colors: 16);
+        var indexed = Encode(fewColors, new PngEncoder { PixelLayout = PngPixelLayout.Indexed, Interlaced = true });
+        var indexedInfo = Image.Identify(indexed);
+        Check(indexedInfo.ColorModel == ImageColorModel.Indexed && indexedInfo.BitsPerComponent == 4, "PNG palette identification");
+        using (var decoded = Image.Load<Rgba32>(indexed))
+        {
+            CheckEqual(fewColors, decoded, "PNG palette round trip");
+        }
+
+        // It never reduces colors: more than 256 of them are rejected
+        using var manyColors = CreatePattern(seed: 1);
+        Expect<UnsupportedImageFeatureException>(() => Encode(manyColors, new PngEncoder { PixelLayout = PngPixelLayout.Indexed }));
     }
 
     public static void Apng()
@@ -40,6 +54,13 @@ internal static class SmokeTests
         Check(decoded.Frames.Count == 3 && decoded.Animation?.TotalPlays == 2, "APNG frames and plays");
         CheckEqual(animation, decoded, "APNG round trip");
         Check(decoded.Frames[1].Metadata.Duration == new FrameDuration(1, 10), "APNG duration");
+
+        // The indexed layout: one palette holds the colors of every frame
+        using var fewColors = CreateAnimation(frames: 3, colors: 16);
+        var indexed = Encode(fewColors, new PngEncoder { AnimationMode = PngAnimationMode.Animated, PixelLayout = PngPixelLayout.Indexed });
+        Check(Image.Identify(indexed).ColorModel == ImageColorModel.Indexed, "APNG palette identification");
+        using var indexedDecoded = Image.Load<Rgba32>(indexed);
+        CheckEqual(fewColors, indexedDecoded, "APNG palette round trip");
     }
 
     public static void Gif()

@@ -523,6 +523,133 @@ public sealed class ApngEncoderTests
         AssertRoundTripsThroughLibraryDecoder(png, decoded);
     }
 
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    [InlineData(true, true)]
+    public void IndexedAnimationsShareOnePaletteOfEveryFrameAndThePoster(bool poster, bool interlaced)
+    {
+        // Each image has its own colors; an eager save knows them all before it writes the palette
+        using var image = CreateIndexedAnimation(9, 5, frameCount: 3, poster, colorsPerImage: 6, seed: 20);
+        image.Animation = new AnimationMetadata { TotalPlays = 2 };
+        var png = Encode(image, new PngEncoder { PixelLayout = PngPixelLayout.Indexed, Interlaced = interlaced });
+        var reference = ApngOutputVerifier.Verify(png, image);
+
+        var stills = Enumerable.Range(0, image.Frames.Count).Select(index => ImageSnapshots.CaptureFrame(image.Frames[index])).ToList();
+        var firstImage = IndexedPngExpectation.Create(poster ? ImageSnapshots.CaptureFrame(image.PosterFrame!) : stills[0]);
+        if (poster)
+        {
+            stills.Add(ImageSnapshots.CaptureFrame(image.PosterFrame!));
+        }
+
+        var expectation = IndexedPngExpectation.Create(stills);
+        Assert.True(expectation.ColorCount > 16 && firstImage.ColorCount <= 16, "The union of the images must need a deeper palette than the first one.");
+        Assert.Equal((byte)3, reference.ColorType);
+        Assert.Equal(8, reference.BitDepth);
+        Assert.Equal(expectation.Palette.ToArray(), reference.Palette.ToArray());
+        Assert.Equal(expectation.Transparency.ToArray(), reference.Transparency.ToArray());
+
+        // One palette for the whole file, after acTL and before the first image and its fcTL
+        string[] expectedTypes = poster
+            ? ["IHDR", "acTL", .. expectation.PaletteChunkTypes, "IDAT", "fcTL", "fdAT", "fcTL", "fdAT", "fcTL", "fdAT", "IEND"]
+            : ["IHDR", "acTL", .. expectation.PaletteChunkTypes, "fcTL", "IDAT", "fcTL", "fdAT", "fcTL", "fdAT", "IEND"];
+        Assert.Equal(expectedTypes, reference.ChunkTypes);
+
+        // Supplementary: the library decodes the same frames
+        using var decoded = Image.Load<Rgba32>(png);
+        Assert.Equal(3, decoded.Frames.Count);
+        for (var i = 0; i < 3; i++)
+        {
+            var result = PixelBufferComparer.Compare(ImageSnapshots.CaptureFrame(image.Frames[i]), ImageSnapshots.CaptureFrame(decoded.Frames[i]), ComparisonPolicy.Exact, $"library decoder round trip, frame {i}");
+            Assert.True(result.IsMatch, result.Describe());
+        }
+    }
+
+    [Fact]
+    public void IndexedAnimationsNeverReduceTheColorsOfTheirImagesTogether()
+    {
+        // Every image fits a palette alone, their union does not: the eager save fails before the first byte
+        using var image = CreateIndexedAnimation(20, 10, frameCount: 2, poster: true, colorsPerImage: 100, seed: 30);
+        Assert.True(IndexedPngExpectation.Create(Enumerable.Range(0, image.Frames.Count).Select(index => ImageSnapshots.CaptureFrame(image.Frames[index])).Append(ImageSnapshots.CaptureFrame(image.PosterFrame!))).ColorCount > 256);
+        using var stream = new TestOutputStream();
+        var exception = Assert.Throws<UnsupportedImageFeatureException>(() => image.Save(stream, new PngEncoder { PixelLayout = PngPixelLayout.Indexed }));
+        Assert.Equal("Color reduction", exception.Feature);
+        Assert.Equal(0, stream.BytesWritten);
+
+        // Without the poster the two frames fit
+        image.RemovePosterFrame();
+        ApngOutputVerifier.Verify(Encode(image, new PngEncoder { PixelLayout = PngPixelLayout.Indexed }), image);
+    }
+
+    [Fact]
+    public void SequentialWritersTakeTheIndexedPaletteFromTheFirstImage()
+    {
+        var red = new Rgba32(255, 0, 0, 255);
+        var green = new Rgba32(0, 255, 0, 255);
+        var veil = new Rgba32(0, 0, 255, 100);
+        using var first = CreateFrame(3, red, green, veil, red, red, green);
+        using var second = CreateFrame(3, veil, veil, veil, green, green, green);
+        using var third = CreateFrame(3, green, red, green, red, green, red);
+        using var stream = new TestOutputStream();
+        using var writer = Image.CreateWriter<Rgba32>(stream, new ImageWriterOptions(3, 2) { Encoder = new PngEncoder { AnimationMode = PngAnimationMode.Animated, PixelLayout = PngPixelLayout.Indexed }, ExpectedFrameCount = 3 });
+
+        writer.WriteFrame(first.Frames[0]);
+        var written = stream.BytesWritten;
+
+        // A color that is not in the written palette: the same color with another alpha, then a new color
+        foreach (var color in (Rgba32[])[new Rgba32(0, 0, 255, 101), new Rgba32(1, 0, 0, 255)])
+        {
+            using var other = CreateFrame(3, red, green, veil, red, color, green);
+            var exception = Assert.Throws<UnsupportedImageFeatureException>(() => writer.WriteFrame(other.Frames[0]));
+            Assert.Equal("Color reduction", exception.Feature);
+            Assert.Contains("(1, 1)", exception.Message);
+            Assert.Equal(written, stream.BytesWritten); // nothing of the rejected frame was written
+            Assert.Equal(1, writer.FramesWritten);
+        }
+
+        writer.WriteFrame(second.Frames[0]);
+        writer.WriteFrame(third.Frames[0]);
+        writer.Complete();
+
+        using var expected = first.Clone();
+        expected.AppendFrame(second.Frames[0]);
+        expected.AppendFrame(third.Frames[0]);
+        expected.Animation = new AnimationMetadata(); // the writer default: infinite
+        var reference = ApngOutputVerifier.Verify(stream.ToArray(), expected);
+        Assert.Equal((3, 2), (reference.ColorType, reference.BitDepth));
+        Assert.Equal([0, 0, 255, 0, 255, 0, 255, 0, 0], reference.Palette.ToArray());
+        Assert.Equal([100], reference.Transparency.ToArray());
+    }
+
+    [Fact]
+    public void SequentialWritersDropTheColorsOfARejectedFirstIndexedImage()
+    {
+        // The poster holds too many colors: rejected, and none of its colors stays in the palette of the file
+        using var tooMany = PngEncoderTests.CreateWithColors<Rgba32>(20, 13, colors: 257, seed: 8);
+        using var image = PngEncoderTests.CreateWithColors<Rgba32>(20, 13, colors: 2, seed: 40);
+        using (var copy = image.Clone())
+        {
+            // The second frame uses the same two colors
+            image.AppendFrame(copy.Frames[0]);
+        }
+
+        image.Frames[0].Metadata.Duration = new FrameDuration(1, 10);
+        image.Frames[1].Metadata.Duration = new FrameDuration(1, 3);
+        using var stream = new TestOutputStream();
+        using var writer = Image.CreateWriter<Rgba32>(stream, new ImageWriterOptions(20, 13) { Encoder = new PngEncoder { AnimationMode = PngAnimationMode.Animated, PixelLayout = PngPixelLayout.Indexed }, ExpectedFrameCount = 2 });
+        Assert.Throws<UnsupportedImageFeatureException>(() => writer.WritePosterFrame(tooMany.Frames[0]));
+        Assert.Equal(0, stream.BytesWritten);
+
+        writer.WriteFrame(image.Frames[0]);
+        writer.WriteFrame(image.Frames[1]);
+        writer.Complete();
+        image.Animation = new AnimationMetadata();
+        var reference = ApngOutputVerifier.Verify(stream.ToArray(), image);
+        Assert.Equal((byte)1, reference.BitDepth);
+        Assert.Equal(IndexedPngExpectation.Create(ImageSnapshots.CaptureFrame(image.Frames[0])).Palette.ToArray(), reference.Palette.ToArray());
+    }
+
     private static void MakeOpaque(ImageFrame frame)
     {
         var bytesPerPixel = PixelFormats.GetBytesPerPixel(frame.PixelFormat);
@@ -565,6 +692,46 @@ public sealed class ApngEncoderTests
             image.SetPosterFrame(posterSource.Frames[0]);
         }
 
+        return image;
+    }
+
+    /// <summary>Creates an animation whose images each have their own seeded colors (durations 1/10, 1/3, 0, 1/10...).</summary>
+    private static Image<Rgba32> CreateIndexedAnimation(int width, int height, int frameCount, bool poster, int colorsPerImage, int seed)
+    {
+        var image = PngEncoderTests.CreateWithColors<Rgba32>(width, height, colorsPerImage, seed);
+        for (var i = 1; i < frameCount; i++)
+        {
+            using var frame = PngEncoderTests.CreateWithColors<Rgba32>(width, height, colorsPerImage, seed + (i * 1000));
+            image.AppendFrame(frame.Frames[0]);
+        }
+
+        FrameDuration[] durations = [new(1, 10), new(1, 3), FrameDuration.Zero];
+        for (var i = 0; i < frameCount; i++)
+        {
+            image.Frames[i].Metadata.Duration = durations[i % durations.Length];
+        }
+
+        if (poster)
+        {
+            using var posterSource = PngEncoderTests.CreateWithColors<Rgba32>(width, height, colorsPerImage, seed + 999_999);
+            image.SetPosterFrame(posterSource.Frames[0]);
+        }
+
+        return image;
+    }
+
+    private static Image<Rgba32> CreateFrame(int width, params Rgba32[] pixels)
+    {
+        var image = new Image<Rgba32>(width, pixels.Length / width);
+        image.Frames[0].ProcessPixelRows(rows =>
+        {
+            for (var y = 0; y < rows.Height; y++)
+            {
+                pixels.AsSpan(y * width, width).CopyTo(rows.GetRowSpan(y));
+            }
+        });
+
+        image.Frames[0].Metadata.Duration = new FrameDuration(1, 10);
         return image;
     }
 

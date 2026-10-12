@@ -43,18 +43,32 @@ internal sealed class PngEncoderCodec : ImageEncoderCodec
     /// durations fail in <see cref="ValidateFrame"/>, before anything of the frame is written.
     /// </summary>
     /// <remarks>
+    /// <para>
+    /// Indexed output (<see cref="PngPixelLayout.Indexed"/>) has one palette for the whole file, written after the metadata
+    /// chunks (<c>PLTE</c>, then <c>tRNS</c> when an entry is not opaque) and before the first image, so its colors must be
+    /// known before the header: <see cref="ValidateFrame"/> collects the colors of every image it is given until the first
+    /// one is begun (every frame and the poster for an eager save, which validates them all before it writes; the first
+    /// image for a sequential writer), and afterward only checks that a frame uses colors of the palette. A frame that
+    /// cannot be stored exactly (too many colors, a color missing from the written palette, a 16-bit sample that 8 bits
+    /// cannot represent) is rejected there and leaves the palette as it was. The bit depth is the smallest one that
+    /// addresses the palette.
+    /// </para>
+    /// <para>
     /// Animation frames are written as full-canvas <c>SOURCE</c> frames (offset 0, canvas size, <c>APNG_DISPOSE_OP_NONE</c>,
     /// <c>APNG_BLEND_OP_SOURCE</c>): every displayed frame replaces the whole canvas, so the output never depends on the
     /// delta, disposal or blending choices of a decoded source. The session keeps no pixels between frames: memory is the
-    /// datastream encoder's (a few scanlines, one chunk buffer, the deflater), whatever the number of frames.
+    /// datastream encoder's (a few scanlines, one chunk buffer, the deflater) and the palette of indexed output (256 colors
+    /// and one row of color keys), whatever the number of frames.
+    /// </para>
     /// </remarks>
     private sealed class Session : ImageEncoderSession
     {
-        private readonly PngEncodedLayout _layout;
         private readonly PngEncoder _encoder;
         private readonly bool _animated;
         private readonly int _expectedFrameCount;
         private readonly PngMetadataWriter _metadata;
+        private PngEncodedLayout _layout;
+        private PngIndexedRows? _indexedRows;
         private PngImageDataEncoder? _imageData;
         private ImageFrame? _frame;
         private Step _step;
@@ -77,9 +91,23 @@ internal sealed class PngEncoderCodec : ImageEncoderCodec
             if (!_animated && _expectedFrameCount != 1)
                 throw new ArgumentException("A static PNG has a single frame.", nameof(options));
 
+            // The indexed layout is replaced once the palette is final: its bit depth follows the number of colors
             _layout = PngEncodedLayout.Get(options.PixelFormat);
             _metadata = new PngMetadataWriter(options.Metadata, _encoder.CompressionLevel, options.Scope);
-            _imageData = new PngImageDataEncoder(options.Scope, options.PixelFormat, options.CanvasSize.Width, options.CanvasSize.Height, _encoder.Interlaced, _encoder.Filter, _encoder.CompressionLevel);
+            try
+            {
+                if (_encoder.PixelLayout == PngPixelLayout.Indexed)
+                {
+                    _indexedRows = new PngIndexedRows(options.Scope, options.PixelFormat, options.CanvasSize.Width);
+                }
+
+                _imageData = new PngImageDataEncoder(options.Scope, options.PixelFormat, options.CanvasSize.Width, options.CanvasSize.Height, _encoder.Interlaced, _encoder.Filter, _encoder.CompressionLevel, _indexedRows);
+            }
+            catch
+            {
+                _indexedRows?.Dispose();
+                throw;
+            }
         }
 
         private enum Step
@@ -100,6 +128,11 @@ internal sealed class PngEncoderCodec : ImageEncoderCodec
             if (_animated && !isPoster)
             {
                 _ = AnimationTiming.ToApngDelay(frame.Metadata.Duration, _encoder.DurationRounding);
+            }
+
+            if (_indexedRows is { } indexedRows)
+            {
+                ValidateColors(frame, indexedRows);
             }
         }
 
@@ -149,6 +182,14 @@ internal sealed class PngEncoderCodec : ImageEncoderCodec
             switch (_step)
             {
                 case Step.Header:
+                    if (_indexedRows is { } indexedRows)
+                    {
+                        // Every color known at this point is in the palette; later frames must use them
+                        indexedRows.Freeze();
+                        _layout = PngEncodedLayout.GetIndexed(Options.PixelFormat, PngIndexedRows.GetBitDepth(indexedRows.Count));
+                        _imageData!.SetIndexedLayout(_layout);
+                    }
+
                     PngChunkWriter.WriteSignature(output);
                     WriteHeader(output);
                     if (_animated)
@@ -165,6 +206,12 @@ internal sealed class PngEncoderCodec : ImageEncoderCodec
                     {
                         _metadata.Write(_metadataIndex++, output);
                         return false;
+                    }
+
+                    // The palette follows every metadata chunk (iCCP must precede PLTE) and precedes the first image
+                    if (_indexedRows is not null)
+                    {
+                        WritePalette(output, _indexedRows.Colors);
                     }
 
                     _step = Step.FrameControl;
@@ -224,6 +271,8 @@ internal sealed class PngEncoderCodec : ImageEncoderCodec
             _frame = null;
             _imageData?.Dispose();
             _imageData = null;
+            _indexedRows?.Dispose();
+            _indexedRows = null;
             base.Dispose(disposing);
         }
 
@@ -251,6 +300,68 @@ internal sealed class PngEncoderCodec : ImageEncoderCodec
             header[12] = _encoder.Interlaced ? (byte)1 : (byte)0;
             PngChunkWriter.Write(output, PngChunkWriter.Ihdr, header);
         }
+
+        /// <summary>
+        /// Writes <c>PLTE</c> and, when an entry is not opaque, <c>tRNS</c>. The entries are sorted by alpha first, so the
+        /// entries that are not opaque are the first ones and <c>tRNS</c> only stores their alpha values.
+        /// </summary>
+        private static void WritePalette(ImageOutputBuffer output, ReadOnlySpan<uint> colors)
+        {
+            Span<byte> palette = stackalloc byte[3 * ExactPaletteCollector.MaxColors];
+            Span<byte> transparency = stackalloc byte[ExactPaletteCollector.MaxColors];
+            var transparencyCount = 0;
+            for (var i = 0; i < colors.Length; i++)
+            {
+                var color = colors[i];
+                palette[3 * i] = (byte)(color >> 16);
+                palette[(3 * i) + 1] = (byte)(color >> 8);
+                palette[(3 * i) + 2] = (byte)color;
+                var alpha = (byte)(color >> 24);
+                if (alpha != byte.MaxValue)
+                {
+                    transparency[transparencyCount++] = alpha;
+                }
+            }
+
+            PngChunkWriter.Write(output, PngChunkWriter.Plte, palette[..(3 * colors.Length)]);
+            if (transparencyCount > 0)
+            {
+                PngChunkWriter.Write(output, PngChunkWriter.Trns, transparency[..transparencyCount]);
+            }
+        }
+
+        /// <summary>
+        /// Adds the colors of a frame to the palette, or checks them against it once the palette is written. A frame that
+        /// is rejected leaves the palette unchanged; a frame may be validated more than once.
+        /// </summary>
+        private void ValidateColors(ImageFrame frame, PngIndexedRows indexedRows)
+        {
+            var isFinal = indexedRows.IsFrozen;
+            var count = indexedRows.Count;
+            try
+            {
+                using var lease = frame.GetStorage().AcquireLease();
+                for (var y = 0; y < lease.Height; y++)
+                {
+                    var row = lease.GetRowBytes(y);
+                    var status = isFinal ? indexedRows.Check(row, out var x) : indexedRows.Collect(row, out x);
+                    if (status != PngIndexedRowStatus.Ok)
+                        throw CreateColorException(status, x, y);
+                }
+            }
+            catch
+            {
+                indexedRows.Rollback(count);
+                throw;
+            }
+        }
+
+        private UnsupportedImageFeatureException CreateColorException(PngIndexedRowStatus status, int x, int y) => status switch
+        {
+            PngIndexedRowStatus.NotEightBit => new UnsupportedImageFeatureException(string.Create(CultureInfo.InvariantCulture, $"A PNG palette stores 8-bit samples, and the {Options.PixelFormat} pixel ({x}, {y}) has a 16-bit sample that 8 bits cannot represent exactly. PngPixelLayout.Indexed never reduces precision: convert the image explicitly with CloneAs, or select PngPixelLayout.Auto."), ImageFormat.Png, "Bit depth reduction"),
+            PngIndexedRowStatus.MissingColor => new UnsupportedImageFeatureException(string.Create(CultureInfo.InvariantCulture, $"The pixel ({x}, {y}) has a color that is not in the palette of the PNG file. A PNG file has one palette, written before its first image with the colors known at that point: the colors of every frame for an eager save, the colors of the first image for a sequential writer. PngPixelLayout.Indexed never reduces colors: write a first image that holds every color of the animation, save the whole image at once, or select PngPixelLayout.Auto."), ImageFormat.Png, "Color reduction"),
+            _ => new UnsupportedImageFeatureException(string.Create(CultureInfo.InvariantCulture, $"The image has more than {ExactPaletteCollector.MaxColors} distinct colors, the most a PNG palette can hold; the pixel ({x}, {y}) has one more. A color is a combination of red, green, blue and alpha samples (fully transparent pixels of different colors are different entries), and the frames and the poster of an animation share one palette. PngPixelLayout.Indexed never reduces colors: reduce the colors of the image first, or select PngPixelLayout.Auto."), ImageFormat.Png, "Color reduction"),
+        };
 
         private void WriteAnimationControl(ImageOutputBuffer output)
         {

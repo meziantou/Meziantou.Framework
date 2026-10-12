@@ -3,7 +3,11 @@ namespace Meziantou.Framework.Imaging.Formats;
 /// <summary>Selects the PNG row filters used before compression.</summary>
 public enum PngFilter
 {
-    /// <summary>Chooses a filter per row with a heuristic. This is the default.</summary>
+    /// <summary>
+    /// Chooses a filter per row with a heuristic. This is the default. Indexed output
+    /// (<see cref="PngPixelLayout.Indexed"/>) uses filter type 0 (None) for every row instead, as the PNG specification
+    /// recommends: differences between palette indexes say nothing about the colors.
+    /// </summary>
     Adaptive = 0,
 
     /// <summary>Uses filter type 0 (None) for every row.</summary>

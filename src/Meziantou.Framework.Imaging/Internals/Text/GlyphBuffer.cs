@@ -14,20 +14,25 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <para>
 /// <b>Bounds.</b> A font is untrusted input: its lookups can multiply glyphs without end. The buffer refuses to grow
 /// beyond <see cref="ImageResourceLimits.MaxTextGlyphs"/>, and counts the operations of the lookups so that a font
-/// cannot make shaping run for a time out of proportion with the text.
+/// cannot make shaping run for a time out of proportion with the text: a pass of a lookup over the glyphs is what
+/// shaping is, the lookups a rule applies and the number of subtables of the font are what is bounded.
 /// </para>
 /// </remarks>
 internal sealed class GlyphBuffer
 {
-    /// <summary>The operations a run can spend, per character: far more than any font needs.</summary>
+    /// <summary>The lookups the rules of the lookups of a run can apply, per character: far more than any font needs.</summary>
     private const int OperationsPerCharacter = 1024;
 
     private const int MinimumOperations = 16384;
+
+    /// <summary>The subtables the lookups of one run can have, together: far more than any font has.</summary>
+    private const int MaxSubtablesPerRun = 1 << 16;
 
     private readonly long _maxLength;
     private GlyphInfo[] _info = new GlyphInfo[32];
     private GlyphPosition[] _positions = [];
     private long _operations;
+    private long _subtables;
     private byte _nextLigatureId;
 
     public GlyphBuffer(ImageResourceLimits limits)
@@ -61,7 +66,24 @@ internal sealed class GlyphBuffer
     }
 
     /// <summary>Sets the budget of operations from the number of characters of the run.</summary>
-    public void StartShaping() => _operations = Math.Max((long)Length * OperationsPerCharacter, MinimumOperations);
+    public void StartShaping()
+    {
+        _operations = Math.Max((long)Length * OperationsPerCharacter, MinimumOperations);
+        _subtables = 0;
+    }
+
+    /// <summary>
+    /// Counts a pass of a lookup over the glyphs: each of its subtables is tried at each glyph. That work is what
+    /// shaping is, and is in proportion with the text as long as the lookups of the font are in reasonable number;
+    /// what a lookup costs beyond it (the lookups its rules apply) is taken from the budget of the run.
+    /// </summary>
+    /// <exception cref="InvalidImageContentException">The lookups have more subtables than a font can need.</exception>
+    public void StartPass(int subtableCount)
+    {
+        _subtables += subtableCount;
+        if (_subtables > MaxSubtablesPerRun)
+            throw FontErrors.Invalid("its layout tables make shaping a text take an unreasonable amount of work.");
+    }
 
     /// <summary>Spends operations of the budget.</summary>
     /// <exception cref="InvalidImageContentException">The font asks for more work than a text can need.</exception>

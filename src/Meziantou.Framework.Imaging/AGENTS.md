@@ -372,8 +372,11 @@ glyphs and positions in a `GlyphBuffer`; `LayoutApplier` (`Internals/Text/OpenTy
 - **Clusters are the contract with the rest of the layout**: every glyph has the index of the first character of its
   cluster, a cluster never splits what shaping tied together (a ligature, a character and its marks), and clusters never
   decrease along a run. Merge clusters whenever glyphs are merged, reordered or removed.
-- **Bounds.** The buffer refuses to grow beyond `MaxTextGlyphs`; every lookup application is charged to the operation
-  budget of the buffer; nested lookups are limited in depth; sequences are limited in length. A layout table is read
+- **Bounds.** The buffer refuses to grow beyond `MaxTextGlyphs`. A pass of a lookup over the glyphs is what shaping
+  is: it is not charged, and the subtables of the lookups of one run are limited in number instead (a font can have
+  several thousand, tried at each glyph; it cannot have millions by pointing every offset at one table). What a rule
+  adds to that, the lookups it applies, is charged to the operation budget of the buffer, which is in proportion
+  with the text. Nested lookups are limited in depth; sequences are limited in length. A layout table is read
   through `FontBinary` like any other: a reference outside the table is `InvalidImageContentException`, raised when the
   layout is created.
 - A feature value lives in bits of the mask of each glyph, so a feature can differ along a run without splitting it.
@@ -416,8 +419,24 @@ glyphs and positions in a `GlyphBuffer`; `LayoutApplier` (`Internals/Text/OpenTy
     after `locl` and `ccmp` by giving each character a place and sorting, and zeroes the advance of its marks before
     positioning. A Myanmar font with the tag `mymr` only is shaped with the default model, as the reference shaper
     does. These syllabic models decompose every character before shaping and do not compose onto marks.
-  - `ShapingCombiningClass` orders marks for shaping (Hebrew points, Arabic vowel marks); every script goes through
-    it, and composition is blocked by these classes, not by the canonical ones.
+  - `UniversalShaper`: the model of the scripts registered for the Universal Shaping Engine, and of an Indic font
+    whose script tag ends with 3. The class of a character is derived at run time from Indic_Syllabic_Category,
+    Indic_Positional_Category, General_Category and Joining_Type, with the values of the two data files of the
+    specification transcribed in `GetSyllabicCategory` and `GetPositionalCategory` (update them when the files are
+    updated for a new version of Unicode) and a few classes of its own (the al-lakuna, the sakot). The cluster
+    schemas are `SyllablePattern`s; the joiners and the variation selectors are taken out before matching. The
+    glyphs `rphf` and `pref` make are found with `GlyphInfo.Substituted`, which the model clears between its stages
+    (an ignorable glyph a feature replaced is ignorable again after that, as in the reference shaper). The forms
+    of the joining scripts come from `ArabicShaper.SetFormMasks`. Two things are the reference shaper's and not the
+    specification's: a symbol cluster (a space, a digit) joins its neighbors for the topographical features of a
+    script that does not join, which the specification leaves unspecified; a code point that is no character is a
+    symbol. One thing is the specification's and not the reference shaper's: U+2015, U+2022 and U+25FB to U+25FE
+    are generic bases (`KnownDivergences` in the conformance tests).
+  - `GetShaper`: a model is not used for a font that has features for a default script only (`DFLT`, `dflt`,
+    `latn`); a font without the script and without default script, or without substitution table, gets the model.
+  - `ShapingCombiningClass` orders marks for shaping (Hebrew points, Arabic vowel marks, the vowel signs of
+    Tibetan, and three marks by their code point); every script goes through it, and composition is blocked by
+    these classes, not by the canonical ones.
 - **Normalization** follows the text: a character without marks is kept when the font has it and decomposed (as far
   as needed) when it does not; a character followed by marks is decomposed as far as the font allows, with its marks,
   then ordered and composed again. A run without any mark is neither ordered nor composed.
@@ -427,16 +446,24 @@ glyphs and positions in a `GlyphBuffer`; `LayoutApplier` (`Internals/Text/OpenTy
   through, except by the features of a shaping model that say otherwise and by `mark` and `mkmk`: a joiner between
   a letter and a mark keeps the mark off the letter (`abvm` and `blwm` see through it). A combining
   grapheme joiner that kept two marks from being reordered separates them for substitutions. The glyphs of these
-  characters are the ones of the font until the positions are made, and are hidden afterward.
+  characters are the ones of the font until the positions are made, and are hidden afterward. The free variation
+  selectors of Mongolian and the tag characters are `Hidden` from the start: substitutions see them. The fillers of
+  Hangul and the format controls of the shorthands (U+1BCA0 to U+1BCA3) are not ignorable at all.
 - **Ligature bookkeeping** (`GlyphInfo.Props`, `LigatureId`, `LigatureComponent`): a real ligature has
   `LigatureWithComponents` (a base with its marks, or marks together, are not one); becoming a ligature clears
   `Multiplied`; the glyphs that replace a glyph tied to a ligature keep its identifier instead of being numbered.
   Mark attachment depends on all three: a glyph of a multiplied sequence carries marks when it is the first one, when
   a mark precedes it, when the sequence lost the glyph before it, or when the lookup has it as a base.
-- **Marks on marks.** A mark is placed vertically when it is attached, from the position its target has at that
-  point of the lookups; horizontally it follows its target to the end. A later lookup that moves the target
-  vertically does not move the mark: the reference shaper does the same, and the fonts are made with it. Cursive
-  attachments, which are resolved at the end, do move the marks of the glyphs they move.
+- **Where a mark is placed.** A mark is placed vertically when it is attached, from where its target is at that
+  point of the lookups, the glyphs a cursive attachment connects the target to included
+  (`GetVerticalOffset`); horizontally it follows its target to the end. A later lookup that moves the target
+  vertically (another mark lookup, a cursive attachment made afterward) does not move the mark: the reference
+  shaper does the same, and the fonts are made with it.
+- **Cursive chains.** A glyph follows one other glyph. When a lookup connects a glyph that already followed
+  another one, the links of its old chain are reversed (`ReverseCursiveChain`), so that what was connected stays
+  connected; two glyphs that would follow each other are separated.
+- In a mark-to-ligature lookup, the glyphs a substitution put after another one are passed over when the ligature
+  is looked for.
 - A mark is attached to the first of the glyphs one glyph was replaced by, unless a later one is a base of the mark
   in the lookup (nastaliq fonts insert a spacing glyph before a letter).
 - Tests have three sources: the Annotated OpenType Specification tests of Adobe (`Conformance/ShapingSuiteTests`, the
@@ -449,7 +476,12 @@ glyphs and positions in a `GlyphBuffer`; `LayoutApplier` (`Internals/Text/OpenTy
   thousands of random sequences of the letters, marks, joiners and punctuation of a script with several fonts, with
   the library and with `hb-shape --shapers=ot` (same script and direction), found what the written cases did not:
   when a character is decomposed, when a joiner blocks a mark, which glyph of a multiplied sequence is a base. Add
-  the text that differs to the cases of `FontCorpus.cs` once it is understood.
+  the text that differs to the cases of `FontCorpus.cs` once it is understood. For a new script, build the texts
+  from the characters the font has: each one alone, around a letter, after a halant, a joiner and a space, the
+  pairs of marks, then random sequences; and give them to `hb-shape` in one call (`--text-file`).
+- The reference shaper numbers the syllables of a run from 1 to 15 and starts again; it shows no dotted circle for a
+  syllable without base that has the number of the last one it showed a circle for. The library shows it. Keep the
+  lines of the corpus that have such syllables short, so that the two agree, rather than listing a divergence.
 
 ## Performance work
 

@@ -199,6 +199,10 @@ its first point, even a line without length: the library does the same, so that 
 | `fonts/noto-sans-devanagari-first-version`, `fonts/noto-sans-malayalam-first-version` | ttf | 1 | OFL-1.1 | The same fonts with the script tag of the first version of the specifications only (`hb-subset --layout-scripts`): the "old behavior" of the model |
 | `fonts/noto-sans-khmer` | ttf | 1 | OFL-1.1 | Noto Sans Khmer 2.004, stored as it is: the forms of the subscripts (`pref`, `blwf`, `abvf`, `pstf`, `cfar`), the parts of the split vowels, ligatures of the presentation features |
 | `fonts/noto-sans-myanmar` | ttf | 1 | OFL-1.1 | Noto Sans Myanmar 2.107, stored as it is: the features of the Myanmar shaping model under the tag `mym2` (kinzi, medials, stacked consonants), the letters of the extended blocks |
+| `fonts/noto-serif-tibetan` | ttf | 1 | OFL-1.1 | Noto Serif Tibetan 2.103, stored as it is: stacks of subjoined letters, vowel signs and marks placed by anchors, and more than two thousand substitution subtables, which a long text tries at each glyph |
+| `fonts/noto-sans-sinhala`, `-javanese`, `-balinese`, `-tai-tham`, `-cham`, `-newa`, `-kaithi`, `-lepcha` | ttf | 1 | OFL-1.1 | The Noto Sans font of scripts of the universal shaping model (versions 2.002 to 2.007), stored as they are: among them the features of the model (`rphf` in Sinhala, Newa and Kaithi; `pref` in Javanese, Cham and Newa; `akhn`, `half`, `blwf`, `abvf`, `pstf`, `vatu`, `cjct`), vowel signs Unicode decomposes, a glyph a font moves after the marks of its letter (Lepcha) |
+| `fonts/noto-sans-nko`, `-mongolian`, `-adlam` | ttf | 1 | OFL-1.1 | Noto Sans NKo 2.004, Mongolian 3.002 and Adlam 3.002, stored as they are: scripts of the universal model whose letters join (`isol`, `init`, `medi`, `fina`), two of them from right to left; the free variation selectors of Mongolian |
+| `fonts/noto-sans-duployan` | ttf | 1 | OFL-1.1 | Noto Sans Duployan 3.002, subset to a few letters, the marks and the format controls: each letter becomes many glyphs, connected by cursive attachments that several lookups make and remake, with marks attached before them; some six thousand subtables |
 | `fonts/noto-sans-thai`, `fonts/noto-sans-lao` | ttf | 1 | OFL-1.1 | Noto Sans Thai 2.002 and Noto Sans Lao 2.003, stored as they are: the marks above tall consonants and below consonants that have a tail, the sara am, ligatures of a ring and a tone mark |
 | `fonts/noto-sans-cjk-kr-regular` | otf | 1 | OFL-1.1 | Noto Sans CJK KR 2.004, subset to the letters of Hangul (the modern ones, a few of Old Hangul and of the extended blocks, the fillers), the tone marks and thirty syllables, with the glyphs the font has for a letter at each position of a block (`ljmo`, `vjmo`, `tjmo`); CFF outlines, hints kept |
 | `fonts/noto-sans-cjk-kr-letters` | otf | 1 | OFL-1.1 | The same subset without any syllable: every block is drawn with its letters |
@@ -278,7 +282,9 @@ the syllables and in one that does not, and about the tone marks. The Indic scri
 the letters they have at the same place of their blocks (conjuncts, reph, joiners, the vowel sign drawn before its
 syllable, signs without a base, each feature of the model turned off), followed by the cases of each script. Those of
 Khmer are about the subscripts, the ro among them, the vowels with two parts and the register shifters; those of
-Myanmar about the kinzi, the medials, the marks whose order changes and the bases that are not letters. Several of them were found by
+Myanmar about the kinzi, the medials, the marks whose order changes and the bases that are not letters. Those of the
+scripts of the universal model are about the classes of their characters (what a cluster can have, and in which order),
+the glyphs that are moved, the forms of the letters that join, and what is not a cluster. Several of them were found by
 shaping random sequences of the characters of a script with both shapers. For the font without positioning table, the
 glyphs and the clusters are compared and the positions are not: the reference shaper then places marks from the shape
 of the glyphs, by rules of its own.

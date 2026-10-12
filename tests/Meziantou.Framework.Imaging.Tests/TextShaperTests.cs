@@ -650,6 +650,182 @@ public sealed class TextShaperTests
         Assert.Equal(expected, FormatCodePoints(buffer));
     }
 
+    [Theory]
+    [InlineData("A98F", "S1")]
+    [InlineData("A98F A9C0 A98F", "S3")]
+    [InlineData("A98F A9C0", "S2")]
+    [InlineData("A98F A9BF A9BA A9B6 A981", "S5")]
+    [InlineData("A98F A9B6 A9BA", "S2 B1")]
+    [InlineData("A98F A983 A981", "S2 B1")]
+    [InlineData("A9BA", "B1")]
+    [InlineData("A98F 200C A98F", "S2 S1")]
+    [InlineData("A98F 200C A9B6", "S3")]
+    [InlineData("A98F 200D A9B6", "S3")]
+    [InlineData("A98F 034F A9B6", "S3")]
+    [InlineData("0020 A9B6", "Y2")]
+    [InlineData("0041 A98F", "Y1 S1")]
+    [InlineData("2060 A9B6", "O1 B1")]
+    [InlineData("A9D1 A9D2", "S1 S1")]
+    [InlineData("11052", "N1")]
+    [InlineData("11052 1107F 11052", "N3")]
+    [InlineData("11052 1107F", "J2")]
+    [InlineData("0D9A 0DCA 0DBB", "S3")]
+    [InlineData("0D9A 0DD9 0DCA", "S3")]
+    [InlineData("1A20 1A60 1A20", "S3")]
+    [InlineData("1A20 1A60", "K2")]
+    [InlineData("1A20 1A63 1A60 1A20", "S4")]
+    [InlineData("11F12 11F42", "V2")]
+    [InlineData("11F12 11F42 11F12", "S3")]
+    [InlineData("11F02 11F12", "S2")]
+    [InlineData("11F02", "B1")]
+    [InlineData("111C2 11191", "S2")]
+    [InlineData("111C2 2022", "S2")]
+    [InlineData("13000", "H1")]
+    [InlineData("13000 13430 13001", "H3")]
+    [InlineData("00B2", "O1")]
+    [InlineData("A98F 00B2", "S2")]
+    public void AUniversalModelTextIsCutIntoClusters(string text, string expected)
+    {
+        // The cluster schemas of the specification of the universal shaping engine. A standard cluster (S) is a base,
+        // consonants joined to it by a halant, one medial consonant, the vowels, the vowel modifiers and the final
+        // consonants of each place in the order before, above, below, after; it can end with a halant. A cluster
+        // that ends with an invisible stacker is a virama terminated cluster (V), with the sakot of Tai Tham a sakot
+        // terminated one (K). Numbers joined by a number joiner are a numeral cluster (N), which is number-joiner
+        // terminated (J) when it ends with the joiner. A symbol, a space or a letter of another script with the marks
+        // that follow it is a symbol cluster (Y); hieroglyphs with their joiners a hieroglyph cluster (H). Marks
+        // without a base are a broken cluster (B), and what is of no cluster is alone (O). The zero width joiner and
+        // the combining grapheme joiner are of the cluster they are in; a zero width non-joiner ends a cluster,
+        // unless a mark follows it.
+        var info = ParseCodePoints(text);
+        foreach (ref var glyph in info.AsSpan())
+        {
+            glyph.Category = UnicodeProperties.GetGeneralCategory(glyph.CodePoint);
+        }
+
+        UniversalShaper.FindSyllables(info);
+        Assert.Equal(expected, FormatSyllables(info, "VKSJNYHBO"));
+    }
+
+    [Theory]
+    [InlineData("A98F A9B6", "A98F A9B6")]
+    [InlineData("A98F A9BA", "A9BA A98F")]
+    [InlineData("A98F A9C0 A98F A9BA", "A98F A9C0 A9BA A98F")]
+    [InlineData("0020 A9BA", "A9BA 0020")]
+    [InlineData("A9BA", "A9BA 25CC")]
+    [InlineData("11F02 11F12", "11F12 11F02")]
+    [InlineData("11F02 11F12 11F36", "11F12 11F02 11F36")]
+    [InlineData("11F02 11F12 11F42 11F12", "11F12 11F02 11F42 11F12")]
+    [InlineData("11F02", "25CC 11F02")]
+    public void TheGlyphsOfAUniversalModelClusterAreReordered(string text, string expected)
+    {
+        // "Glyph reordering": a vowel drawn before the base goes to the start of the cluster, or after the last halant
+        // that no feature replaced ("reordering components do not reorder past an explicit virama"); a repha goes
+        // after the base, before what follows it; a cluster without base gets a dotted circle, after its repha.
+        var buffer = CreateBuffer(text, out var font);
+        foreach (ref var glyph in buffer.Info)
+        {
+            glyph.Category = UnicodeProperties.GetGeneralCategory(glyph.CodePoint);
+        }
+
+        UniversalShaper.FindSyllables(buffer.Info);
+        UniversalShaper.Reorder(buffer, font.Face);
+        Assert.Equal(expected, FormatCodePoints(buffer));
+    }
+
+    [Fact]
+    public void ALongTextIsShapedWithAFontThatHasManyLookups()
+    {
+        // Two thousand subtables are tried at each glyph: the work is in proportion with the text, whatever the font
+        // has, and is not what the budget of a run bounds.
+        var font = FontTestSupport.Load(CreateFontWithSubtables(lookupCount: 1, subtableCount: 2000));
+        var buffer = Shape(font, new string('A', 500));
+        Assert.Equal(500, buffer.Length);
+        Assert.Equal(FontSamples.BoxA, buffer.Info[^1].Glyph);
+    }
+
+    [Fact]
+    public void TheSubtablesOfTheLookupsOfARunAreLimited()
+    {
+        // A font can make three lookups of thirty thousand subtables with a few bytes: every offset is the same one.
+        var font = FontTestSupport.Load(CreateFontWithSubtables(lookupCount: 3, subtableCount: 30000));
+        var exception = Assert.Throws<InvalidImageContentException>(() => Shape(font, "A"));
+        Assert.Contains("unreasonable amount of work", exception.Message, StringComparison.Ordinal);
+
+        // Two of them are within what a font can have.
+        font = FontTestSupport.Load(CreateFontWithSubtables(lookupCount: 2, subtableCount: 30000));
+        Assert.Equal(1, Shape(font, "A").Length);
+    }
+
+    /// <summary>
+    /// Creates a font whose <c>ccmp</c> feature has lookups that all are the same table, which has subtables that all
+    /// are the same single substitution: it replaces the box B by itself.
+    /// </summary>
+    private static FontBuilder CreateFontWithSubtables(int lookupCount, int subtableCount)
+    {
+        var table = new List<byte>();
+        void UInt16(int value)
+        {
+            table.Add((byte)(value >> 8));
+            table.Add((byte)value);
+        }
+
+        // The header, then the script list: the default script, whose default language system has one feature.
+        var featureList = 10 + 20;
+        var lookupList = featureList + 12 + (lookupCount * 2);
+        UInt16(1);
+        UInt16(0);
+        UInt16(10);
+        UInt16(featureList);
+        UInt16(lookupList);
+        UInt16(1);
+        table.AddRange("DFLT"u8.ToArray());
+        UInt16(8);
+        UInt16(4);
+        UInt16(0);
+        UInt16(0);
+        UInt16(0xFFFF);
+        UInt16(1);
+        UInt16(0);
+
+        // The feature list: ccmp, with the lookups.
+        UInt16(1);
+        table.AddRange("ccmp"u8.ToArray());
+        UInt16(8);
+        UInt16(0);
+        UInt16(lookupCount);
+        for (var i = 0; i < lookupCount; i++)
+        {
+            UInt16(i);
+        }
+
+        // The lookup list: every lookup is the same table, and every subtable of it the same one.
+        UInt16(lookupCount);
+        for (var i = 0; i < lookupCount; i++)
+        {
+            UInt16(2 + (lookupCount * 2));
+        }
+
+        UInt16(1);
+        UInt16(0);
+        UInt16(subtableCount);
+        for (var i = 0; i < subtableCount; i++)
+        {
+            UInt16(6 + (subtableCount * 2));
+        }
+
+        // A single substitution, format 1: the glyphs of the coverage, plus zero.
+        UInt16(1);
+        UInt16(6);
+        UInt16(0);
+        UInt16(1);
+        UInt16(1);
+        UInt16(FontSamples.BoxB);
+
+        var builder = FontSamples.Boxes();
+        builder.RawTables["GSUB"] = [.. table];
+        return builder;
+    }
+
     private static GlyphInfo[] ParseCodePoints(string text)
     {
         return text.Split(' ').Select(item => new GlyphInfo { CodePoint = int.Parse(item, NumberStyles.HexNumber, CultureInfo.InvariantCulture) }).ToArray();

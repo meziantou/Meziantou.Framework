@@ -59,7 +59,7 @@ public sealed class ShapingConformanceTests
             var script = GetScript(text);
 
             // The reference shaper lays a text out in the direction of its script, and gives the glyphs from left to right.
-            var isRightToLeft = script is UnicodeScript.Arabic or UnicodeScript.Hebrew or UnicodeScript.Syriac;
+            var isRightToLeft = script is UnicodeScript.Arabic or UnicodeScript.Hebrew or UnicodeScript.Syriac or UnicodeScript.Nko or UnicodeScript.Adlam;
             TextShaper.Shape(buffer, face, script, language: 0, isRightToLeft, ParseFeatures(testCase.Features));
             var glyphs = new List<(int, int, int, int, int, int)>();
             for (var i = 0; i < buffer.Length; i++)
@@ -103,6 +103,19 @@ public sealed class ShapingConformanceTests
     [InlineData("fonts/noto-sans-malayalam", UnicodeScript.Malayalam)]
     [InlineData("fonts/noto-sans-khmer", UnicodeScript.Khmer)]
     [InlineData("fonts/noto-sans-myanmar", UnicodeScript.Myanmar)]
+    [InlineData("fonts/noto-serif-tibetan", UnicodeScript.Tibetan)]
+    [InlineData("fonts/noto-sans-sinhala", UnicodeScript.Sinhala)]
+    [InlineData("fonts/noto-sans-javanese", UnicodeScript.Javanese)]
+    [InlineData("fonts/noto-sans-balinese", UnicodeScript.Balinese)]
+    [InlineData("fonts/noto-sans-tai-tham", UnicodeScript.TaiTham)]
+    [InlineData("fonts/noto-sans-nko", UnicodeScript.Nko)]
+    [InlineData("fonts/noto-sans-mongolian", UnicodeScript.Mongolian)]
+    [InlineData("fonts/noto-sans-adlam", UnicodeScript.Adlam)]
+    [InlineData("fonts/noto-sans-cham", UnicodeScript.Cham)]
+    [InlineData("fonts/noto-sans-newa", UnicodeScript.Newa)]
+    [InlineData("fonts/noto-sans-kaithi", UnicodeScript.Kaithi)]
+    [InlineData("fonts/noto-sans-lepcha", UnicodeScript.Lepcha)]
+    [InlineData("fonts/noto-sans-duployan", UnicodeScript.Duployan)]
     public void ALayoutIsAsWideAsTheReferenceShaperMakesIt(string id, UnicodeScript script)
     {
         // The whole way from a string to a line: the direction, the script and the runs are found by the layout, where
@@ -143,7 +156,14 @@ public sealed class ShapingConformanceTests
     /// The texts the library shapes differently from the reference shaper, on purpose, with the reason. A text that no
     /// longer differs fails the test: the list stays what the library actually does.
     /// </summary>
-    private static readonly Dictionary<string, string> KnownDivergences = new(StringComparer.Ordinal);
+    private static readonly Dictionary<string, string> KnownDivergences = new(StringComparer.Ordinal)
+    {
+        // "Creating and supporting OpenType fonts for the Universal Shaping Engine", character classification: the
+        // class BASE_OTHER is the consonant placeholders and "U+2015, U+2022, U+25FB-25FE". The reference shaper
+        // takes these six characters as symbols: a mark can follow one, but not a letter that takes a stacked
+        // consonant or a reph before it, which it shows on a dotted circle of its own.
+        ["fonts/noto-sans-newa;11460 2022 11436;"] = "the bullet is a generic base of the universal model",
+    };
 
     /// <summary>
     /// The fonts whose glyphs and clusters are compared, and not the positions, with the reason.

@@ -1036,7 +1036,24 @@ public static void DrawTextOnPath(string fontPath, string outputPath)
     syllable; an anusvara written after a vowel below is put before it. The features of the font are applied in the
     order of the specification (`rphf`, `pref`, `blwf`, `pstf`, then `pres`, `abvs`, `blws`, `psts`), inside each
     syllable. A font that only has the script under the tag of the first version of the specification (`mymr`) is
-    not reordered: its features are applied as those of a simple script.
+    not reordered: its features are applied as those of a simple script;
+  - the scripts of the **universal shaping model** (Tibetan, Sinhala, Javanese, Balinese, Tai Tham, Cham, Lepcha,
+    Newa, Kaithi, Mongolian, N'Ko, Adlam, Duployan and some eighty others, the scripts registered for the
+    "Universal Shaping Engine" of Microsoft): the class of each character comes from its Unicode properties, and the
+    text is cut into clusters of a base with its stacked or subjoined consonants, its vowels, their modifiers and
+    its final consonants, each in the order above, below, after. The features of the font are applied in the order
+    of the specification (`locl`, `ccmp`, `nukt`, `akhn`; `rphf`; `pref`; `rkrf`, `abvf`, `blwf`, `half`, `pstf`,
+    `vatu`, `cjct`), inside each cluster; then the reph goes after the base and what is drawn before the base (a
+    vowel, the glyph `pref` made) to the start of the cluster, or after the last halant that is still there. The
+    letters of the scripts that join (Mongolian, N'Ko, Adlam, Mandaic...) take their form (`isol`, `init`, `medi`,
+    `fina`) from their neighbors as Arabic letters do, and a free variation selector of Mongolian chooses the form
+    of its letter; in the other scripts the form is the place of the cluster among the clusters around it. Then
+    come `abvs`, `blws`, `haln`, `pres` and `psts`. A cluster without base is drawn on a dotted circle. An Indic font
+    made for this model (the script tags that end with 3) is shaped with it.
+
+  A font that has no feature for the script of a text, only for a default script (`DFLT`, `latn`), was made for no
+  model: its features are applied as those of a simple script. A font without substitution table at all is shaped
+  with the model of the script.
 
   Control characters are not drawn and format characters (joiners, variation selectors, the soft hyphen where the line
   is not broken) are invisible. A character no font of the stack has is drawn with the missing glyph of the primary
@@ -1071,9 +1088,7 @@ public static void DrawTextOnPath(string fontPath, string outputPath)
 - **Limits.** `MaxTextLength` (UTF-16 code units), `MaxTextGlyphs`, `MaxTextLines` and `MaxGlyphComplexity`, from the
   configuration the primary font of the first span was loaded with.
 
-What text layout does not do yet: Tibetan, Sinhala and the other scripts of the universal shaping
-model are not shaped correctly, nor is an Indic font made for that model (the script tags that end with 3); Thai, Lao,
-Khmer and Myanmar have no dictionary to break their lines. A Thai font made before OpenType Layout, with its marks in the private use area, is
+What text layout does not do yet: Thai, Lao, Khmer and Myanmar have no dictionary to break their lines. A Thai font made before OpenType Layout, with its marks in the private use area, is
 drawn without them. A font that only has the Arabic presentation forms, without substitution table, is not joined; the marks of
 a font without positioning table are drawn where its glyphs put them. Letter spacing is added between the letters of
 every script, including those that join. Justification does not lengthen Arabic words (kashida). The language of a
@@ -1970,6 +1985,6 @@ Everything below is rejected explicitly (never decoded or encoded approximately)
 | AVIF encoding | An image of a sequence is predicted from the previous image only, with one motion vector per block and the regular interpolation filter: no compound prediction (two references), global, warped or overlapped motion, switchable interpolation filter, temporal motion vector prediction, or scene change detection (an image that differs from the previous one is coded with intra blocks, not as a key frame). Not used: intra block copy (content that repeats in an image, such as the characters of a text, is not predicted from the image itself: a lossless screenshot can be larger than its PNG), the split of the transform blocks of an inter block (it has the largest transform of its size), quantizer deltas, quantization matrices, loop restoration, CDEF strengths per block (one pair per frame), super-resolution and film grain. No grid, layered (progressive) or premultiplied-alpha output; no `clap`, `pasp`, mastering display or content light level box; no orientation for an image sequence. An image sequence of one image cannot store animation settings (it is read back as a still image): a single frame with animation settings is rejected. An image sequence needs a seekable destination and its frame count. The level of the stream is the lowest one whose picture size holds the image; the other limits of a level are not checked |
 | AVIF decoding | Rejected with `UnsupportedImageFeatureException`: premultiplied alpha, `iden`/`iovl` derived images, fragmented files, edit lists that do not play the whole track, image sequences whose images change size, clean apertures that do not select whole samples or that follow a rotation, grid tiles that declare other transformations than their grid, large scale tile streams, and the other matrix coefficients (constant luminance, ICtCp, SMPTE 2085, chromaticity-derived). Not read: gain maps, depth maps, thumbnails, the images that are not the primary item, the `tkhd` matrix and the other transformations of an image sequence (its images are returned as stored), mastering display and content light level boxes. A layered image is returned at its full quality only: its lower layers are not exposed as a progressive rendering. HDR samples are returned as stored: no tone mapping |
 | JPEG XL | Decoding, rejected with `UnsupportedImageFeatureException` (also from `Identify` when the image header tells): floating-point samples and samples of more than 16 bits, premultiplied alpha, CMYK (a black channel) and spot colors, an XYB image whose ICC profile is not sRGB (it needs a color conversion to that profile), the PQ or HLG transfer function with primaries or a white point that CICP cannot express, a Modular frame stored as YCbCr with subsampled channels, restoration filters on a grayscale Modular frame, an upsampled frame with patches or splines whose extra channels have another resolution. Ignored: the preview frame, frame names, the intrinsic size, the JPEG reconstruction data (`jbrd`: a recompressed JPEG file is decoded to pixels, the JPEG file is not rebuilt), `jumb` and unknown boxes; depth, selection mask, thermal and the other extra channels than alpha are decoded and dropped. Samples of 1 to 16 bits other than 8 and 16 are scaled exactly to 8 or 16 bits. A lossy frame is decoded in floating point: the result is within a few sixteen-bit units of the reference decoders, not bit-exact. Encoding: lossless only (no lossy output), full frames that replace the image (no layers, blending, patches or cropped frames), frame durations in whole milliseconds, no frame of an animation without duration; an EXIF orientation is written to the image header |
-| Text | Horizontal text only; no shaping model for Tibetan, Sinhala and the other scripts of the universal shaping model, no Arabic joining for a font without substitution table and no dictionary line breaking for the scripts that need one; no language-specific forms; greedy line breaking; no AAT (`morx`, `kerx`) shaping, no device adjustment of positions (hinting); no hinting and no subpixel (LCD) rendering; no system font: every font is given by the caller; along a path, glyphs are turned but not warped; see [Text](#text) |
+| Text | Horizontal text only; no Arabic joining for a font without substitution table and no dictionary line breaking for the scripts that need one; no language-specific forms; greedy line breaking; no AAT (`morx`, `kerx`) shaping, no device adjustment of positions (hinting); no hinting and no subpixel (LCD) rendering; no system font: every font is given by the caller; along a path, glyphs are turned but not warped; see [Text](#text) |
 | Fonts | No system font, no SVG glyph, no monochrome bitmap glyph, no Type 1 font, no hinting; variable fonts without version 2 of `avar`; see [Fonts](#fonts) |
 | API | No public allocator, custom pixel type, codec plug-in or image-processor interface; implementation types are internal |

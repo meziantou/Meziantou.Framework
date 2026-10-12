@@ -29,6 +29,10 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <b>Telugu.</b> The length marks (classes 84 and 91) are the second part of a vowel sign: they stay next to its
 /// first part, before a nukta (class 7) or a halant (class 9), which the canonical order puts between the two.
 /// </para>
+/// <para>
+/// <b>Tibetan.</b> The vowel sign u (class 132) is drawn under the stack, closer to it than the vowel signs above
+/// (class 130): it comes before them, after the sign aa (class 129).
+/// </para>
 /// </remarks>
 internal static class ShapingCombiningClass
 {
@@ -41,6 +45,8 @@ internal static class ShapingCombiningClass
     private const int ThaiVowelBelow = 103;
     private const int TeluguLengthMark = 84;
     private const int TeluguAiLengthMark = 91;
+    private const int TibetanVowelAbove = 130;
+    private const int TibetanVowelBelow = 132;
 
     public const int Shadda = 27;
     public const int Patah = 20;
@@ -61,8 +67,20 @@ internal static class ShapingCombiningClass
     private static ReadOnlySpan<byte> ArabicOrder => [33, 27, 28, 29, 30, 31, 32, 34, 35];
 
     /// <summary>Gets the class that orders a mark for shaping, from its canonical combining class.</summary>
-    public static byte Get(byte combiningClass)
+    public static byte Get(int codePoint, byte combiningClass)
     {
+        // Marks whose class is the one of all the viramas or the nuktas, and that are written at another place.
+        switch (codePoint)
+        {
+            // The sakot of Tai Tham comes after the tone marks, and the padma of Tibetan after the vowel signs.
+            case 0x1A60 or 0x0FC6:
+                return 254;
+
+            // The tsa -phru of Tibetan comes before the vowel sign u.
+            case 0x0F39:
+                return 127;
+        }
+
         if (combiningClass is >= 10 and <= 26)
             return (byte)(10 + HebrewOrder.IndexOf(combiningClass));
 
@@ -74,6 +92,8 @@ internal static class ShapingCombiningClass
             ThaiVowelBelow => 3,
             TeluguLengthMark => 4,
             TeluguAiLengthMark => 5,
+            TibetanVowelAbove => 132,
+            TibetanVowelBelow => 131,
             _ => combiningClass,
         };
     }

@@ -234,8 +234,12 @@ internal static class KhmerShaper
         for (var i = 0; i < buffer.Length; i++)
         {
             var syllable = buffer.Info[i].Syllable;
+            // A syllable is told from the one before it: the numbers of the syllables come back after fifteen.
             if (syllable == lastSyllable || (syllable & 0x0F) != BrokenCluster)
+            {
+                lastSyllable = syllable;
                 continue;
+            }
 
             lastSyllable = syllable;
             var template = buffer.Info[i];

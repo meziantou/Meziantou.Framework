@@ -694,6 +694,11 @@ internal static class SmokeTests
         var stacked = TextLayout.Create("\u1780\u17D2\u179A\u17BE \u17C1 \u1000\u1031", boxes, 16);
         Check(!stacked.Lines[0].IsRightToLeft && stacked.HasMissingGlyphs && stacked.Width == 9 * 8, "text: stacked syllables");
 
+        // The universal model: a Tibetan letter with a vowel sign, which is a mark and does not move the pen, a Sinhala
+        // letter with the vowel sign drawn before it, and two Mongolian letters that join. Seven times 8 pixels.
+        var clusters = TextLayout.Create("\u0F40\u0F72 \u0D9A\u0DD9 \u1820\u1820", boxes, 16);
+        Check(!clusters.Lines[0].IsRightToLeft && clusters.HasMissingGlyphs && clusters.Width == 7 * 8, "text: clusters");
+
         // CFF outlines, stroked, through the overload that lays out the text
         var cff = Font.Load(SmokeFonts.CharstringsOtf);
         using var stroked = new Image<Rgba32>(64, 16);

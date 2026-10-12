@@ -99,6 +99,17 @@ internal static class ArabicShaper
     /// <param name="firstBit">The bit of the first form in the masks of the glyphs.</param>
     public static void SetFormMasks(Span<GlyphInfo> info, int firstBit)
     {
+        SetFormMasks(info, [firstBit + Isolated, firstBit + Final, firstBit + Final2, firstBit + Final3, firstBit + Medial, firstBit + Medial2, firstBit + Initial]);
+    }
+
+    /// <summary>Gives each letter the bit of the feature of its form.</summary>
+    /// <param name="info">The characters of the run, in the order of the text.</param>
+    /// <param name="bits">
+    /// The bit of each form in the masks of the glyphs, in the order isolated, final, second final, third final,
+    /// medial, second medial, initial; a negative value for a form that has no feature.
+    /// </param>
+    public static void SetFormMasks(Span<GlyphInfo> info, ReadOnlySpan<int> bits)
+    {
         // The letter before the current one, the marks and format characters between them left out.
         var previous = -1;
         var previousType = UnicodeJoiningType.NonJoining;
@@ -145,9 +156,9 @@ internal static class ArabicShaper
                 }
             }
 
-            if (previous >= 0 && previousForm != NoForm)
+            if (previous >= 0 && previousForm != NoForm && bits[previousForm] >= 0)
             {
-                info[previous].Mask |= 1u << (firstBit + previousForm);
+                info[previous].Mask |= 1u << bits[previousForm];
             }
 
             previous = i;
@@ -155,9 +166,9 @@ internal static class ArabicShaper
             previousForm = form;
         }
 
-        if (previous >= 0 && previousForm != NoForm)
+        if (previous >= 0 && previousForm != NoForm && bits[previousForm] >= 0)
         {
-            info[previous].Mask |= 1u << (firstBit + previousForm);
+            info[previous].Mask |= 1u << bits[previousForm];
         }
     }
 

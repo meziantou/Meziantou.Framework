@@ -116,6 +116,7 @@ internal sealed partial class LayoutApplier
         if (lookup.SubtableCount == 0)
             return;
 
+        _buffer.StartPass(lookup.SubtableCount);
         var isPerSyllable = flags.HasFlag(ShaperFeatureFlags.PerSyllable);
 
         if (!_isPositioning && GetEffectiveType(data, lookup) == SubstitutionReverseChain)
@@ -217,7 +218,6 @@ internal sealed partial class LayoutApplier
 
     private bool Apply(int type, int subtable, ref int index)
     {
-        _buffer.Charge(1);
         if (_isPositioning)
         {
             return type switch
@@ -280,6 +280,9 @@ internal sealed partial class LayoutApplier
         if (lookup.SubtableCount == 0 || (!_isPositioning && GetEffectiveType(data, lookup) == SubstitutionReverseChain))
             return;
 
+        // A lookup a rule applies is work the text did not ask for: it is what the budget bounds. A lookup with a
+        // great number of subtables costs more than one.
+        _buffer.Charge(1 + (lookup.SubtableCount >> 6));
         var (flag, markSet) = (_flag, _markSet);
         _flag = lookup.Flag;
         _markSet = lookup.MarkFilteringSet;

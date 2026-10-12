@@ -26,4 +26,7 @@ internal enum ScriptShaperKind
 
     /// <summary>Myanmar: a kinzi, stacked and medial consonants, and vowels drawn before the syllable.</summary>
     Myanmar,
+
+    /// <summary>The universal model: the scripts written in clusters that have no model of their own.</summary>
+    Universal,
 }

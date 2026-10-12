@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using Meziantou.Framework.Imaging.CorpusGenerator.Common;
 using Meziantou.Framework.Imaging.Internals;
 using Meziantou.Framework.Imaging.Typography;
@@ -8,6 +9,40 @@ namespace Meziantou.Framework.Imaging.Tests;
 internal static class FontTestSupport
 {
     public static Font Load(FontBuilder builder, FontLoadOptions? options = null) => Font.Load(builder.Build(), options);
+
+    /// <summary>
+    /// Gives a script of the layout tables of a font another tag: the font is then one made for another script, or
+    /// for another version of the shaping model of its script. The new tag must keep the script list sorted.
+    /// </summary>
+    public static byte[] RenameScriptTag(byte[] font, string from, string to)
+    {
+        var result = (byte[])font.Clone();
+        var tableCount = BinaryPrimitives.ReadUInt16BigEndian(result.AsSpan(4));
+        var renamed = 0;
+        for (var i = 0; i < tableCount; i++)
+        {
+            var record = result.AsSpan(12 + (i * 16), 16);
+            if (!record[..4].SequenceEqual("GSUB"u8) && !record[..4].SequenceEqual("GPOS"u8))
+                continue;
+
+            var table = result.AsSpan((int)BinaryPrimitives.ReadUInt32BigEndian(record[8..]), (int)BinaryPrimitives.ReadUInt32BigEndian(record[12..]));
+            var scripts = table[BinaryPrimitives.ReadUInt16BigEndian(table[4..])..];
+            for (var j = 0; j < BinaryPrimitives.ReadUInt16BigEndian(scripts); j++)
+            {
+                var tag = scripts.Slice(2 + (j * 6), 4);
+                if (tag.SequenceEqual(Encoding.ASCII.GetBytes(from)))
+                {
+                    Encoding.ASCII.GetBytes(to).CopyTo(tag);
+                    renamed++;
+                }
+            }
+        }
+
+        if (renamed == 0)
+            throw new ArgumentException($"The font has no script '{from}'", nameof(from));
+
+        return result;
+    }
 
     /// <summary>
     /// Gets the outline of a glyph as SVG path data in font units, with the y axis up, in the form the corpus generator

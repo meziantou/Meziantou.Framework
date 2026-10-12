@@ -121,6 +121,7 @@ internal static class TextShaper
             ScriptShaperKind.Indic => IndicShaper.Plan,
             ScriptShaperKind.Khmer => KhmerShaper.Plan,
             ScriptShaperKind.Myanmar => MyanmarShaper.Plan,
+            ScriptShaperKind.Universal => UniversalShaper.Plan,
             _ => ShaperPlan.Default,
         };
 
@@ -133,7 +134,7 @@ internal static class TextShaper
         {
             HangulShaper.ComposeSyllables(buffer, face);
         }
-        else if (shaper == ScriptShaperKind.Indic)
+        else if (shaper is ScriptShaperKind.Indic or ScriptShaperKind.Universal)
         {
             IndicShaper.SeparateVowelSequences(buffer, script);
         }
@@ -151,7 +152,7 @@ internal static class TextShaper
         var hasFractions = false;
         var hasStretching = false;
         var lookups = face.Gsub is { } gsub ? CollectLookups(gsub, face.GsubData.Span, scripts, language, isRightToLeft, plan, shaperPlan, coordinates, out hasFractions, out _) : [];
-        SetMasks(buffer, plan, hasFractions, shaper);
+        SetMasks(buffer, plan, hasFractions, shaper, script);
         IndicShaper? indic = null;
         if (shaper == ScriptShaperKind.Indic)
         {
@@ -191,6 +192,29 @@ internal static class TextShaper
             {
                 MyanmarShaper.Reorder(buffer, face);
             }
+            else if (shaper == ScriptShaperKind.Universal)
+            {
+                // The glyph a feature made is told from the others by the stage that made it.
+                switch (stage)
+                {
+                    case UniversalShaper.PreprocessingStage:
+                        UniversalShaper.ClearSubstitutions(buffer.Info);
+                        break;
+
+                    case UniversalShaper.RephStage:
+                        UniversalShaper.RecordReph(buffer.Info, FirstShaperBit);
+                        UniversalShaper.ClearSubstitutions(buffer.Info);
+                        break;
+
+                    case UniversalShaper.PreBaseStage:
+                        UniversalShaper.RecordPreBaseForm(buffer.Info);
+                        break;
+
+                    case UniversalShaper.ReorderingStage:
+                        UniversalShaper.Reorder(buffer, face);
+                        break;
+                }
+            }
             else if (indic is not null && stage == IndicShaper.InitialReorderingStage)
             {
                 indic.ReorderBeforeBasicForms(buffer);
@@ -210,25 +234,29 @@ internal static class TextShaper
             positions[i].XAdvance = info[i].ShaperData is > 0 and <= SpaceEm5 ? GetSpaceAdvance(face, info[i].ShaperData) : face.GetAdvanceWidth(info[i].Glyph);
         }
 
-        // Myanmar: the marks have no advance before the font places them, so that what it adds to one stays.
-        var marksHaveNoAdvanceBeforePositioning = shaper == ScriptShaperKind.Myanmar;
+        // Myanmar and the universal model: the marks have no advance before the font places them, so that what it adds
+        // to one stays ("OT processing cancels the width associated with a mark [...] the width of the base glyph must
+        // be added back using the 'dist' feature").
+        // A font without positioning table places no mark: a mark that has an advance is then drawn before the pen it
+        // would have moved, over the glyph it follows.
+        var marksAreMovedBack = face.Gpos is null && !isRightToLeft;
+        var marksHaveNoAdvanceBeforePositioning = shaper is ScriptShaperKind.Myanmar or ScriptShaperKind.Universal;
         if (marksHaveNoAdvanceBeforePositioning)
         {
             for (var i = 0; i < info.Length; i++)
             {
                 if (info[i].IsMark)
                 {
+                    positions[i].XOffset -= marksAreMovedBack ? positions[i].XAdvance : 0;
                     positions[i].XAdvance = 0;
                 }
             }
         }
 
         var hasKerningFeature = false;
-        var hasPositioning = false;
         if (face.Gpos is { } gpos)
         {
             var positioningLookups = CollectLookups(gpos, face.GposData.Span, scripts, language, isRightToLeft, plan, shaperPlan, coordinates, out _, out hasKerningFeature);
-            hasPositioning = positioningLookups.Count > 0;
             applier.Begin(gpos, face.GposData, isPositioning: true, isRightToLeft);
             foreach (var lookup in positioningLookups)
             {
@@ -244,12 +272,12 @@ internal static class TextShaper
         // A mark does not move the pen. Without positioning lookups, a mark that has an advance is drawn before the pen
         // it would have moved, over the glyph it follows. The fonts of Hangul and of the Indic scripts give their marks
         // the advance they are to have: a vowel sign written after its consonant is a mark that takes room.
-        var marksHaveNoAdvance = shaper is not (ScriptShaperKind.Hangul or ScriptShaperKind.Indic or ScriptShaperKind.Khmer or ScriptShaperKind.Myanmar);
+        var marksHaveNoAdvance = shaper is not (ScriptShaperKind.Hangul or ScriptShaperKind.Indic or ScriptShaperKind.Khmer or ScriptShaperKind.Myanmar or ScriptShaperKind.Universal);
         for (var i = 0; i < info.Length; i++)
         {
             if (info[i].IsMark && marksHaveNoAdvance)
             {
-                if (!hasPositioning && !isRightToLeft)
+                if (marksAreMovedBack)
                 {
                     positions[i].XOffset -= positions[i].XAdvance;
                 }
@@ -282,6 +310,9 @@ internal static class TextShaper
 
     private static ScriptShaperKind GetShaper(UnicodeScript script, uint scriptTag)
     {
+        // A font that has features for a default script and none for the script of the text was made for no model: the
+        // features do the work. A font without any script, or without substitution table, is shaped with the model.
+        var hasDefaultScriptOnly = scriptTag == OpenTypeScript.Default || scriptTag == ShapingFeature.ToTag("dflt") || scriptTag == ShapingFeature.ToTag("latn");
         switch (script)
         {
             case UnicodeScript.Arabic or UnicodeScript.Syriac:
@@ -301,21 +332,18 @@ internal static class TextShaper
 
             case UnicodeScript.Myanmar:
                 // The tag of the first version of the Myanmar model is the one of fonts that need no model.
-                return scriptTag is 0 or OpenTypeScript.Default || scriptTag == ShapingFeature.ToTag("dflt") || scriptTag == ShapingFeature.ToTag("latn") || scriptTag == ShapingFeature.ToTag("mymr")
-                    ? ScriptShaperKind.Default
-                    : ScriptShaperKind.Myanmar;
+                return hasDefaultScriptOnly || scriptTag == ShapingFeature.ToTag("mymr") ? ScriptShaperKind.Default : ScriptShaperKind.Myanmar;
 
             case UnicodeScript.Devanagari or UnicodeScript.Bengali or UnicodeScript.Gurmukhi or UnicodeScript.Gujarati or UnicodeScript.Oriya
                 or UnicodeScript.Tamil or UnicodeScript.Telugu or UnicodeScript.Kannada or UnicodeScript.Malayalam:
-                // The model is the one the font was made for: a font that has the script under its own tag was made
-                // for the Indic model (the tag with a 3 is the one of the universal model), and a font that only has
-                // a default script was made for no model at all.
-                return scriptTag is 0 or OpenTypeScript.Default || scriptTag == ShapingFeature.ToTag("dflt") || scriptTag == ShapingFeature.ToTag("latn") || (scriptTag & 0xFF) == '3'
-                    ? ScriptShaperKind.Default
-                    : ScriptShaperKind.Indic;
+                // The model is the one the font was made for: the tag with a 3 is the one of the universal model.
+                if (hasDefaultScriptOnly)
+                    return ScriptShaperKind.Default;
+
+                return (scriptTag & 0xFF) == '3' ? ScriptShaperKind.Universal : ScriptShaperKind.Indic;
 
             default:
-                return ScriptShaperKind.Default;
+                return UniversalShaper.IsUniversalScript(script) && !hasDefaultScriptOnly ? ScriptShaperKind.Universal : ScriptShaperKind.Default;
         }
     }
 
@@ -399,12 +427,13 @@ internal static class TextShaper
         info.CodePoint = codePoint;
         info.Glyph = codePoint;
         info.Category = UnicodeProperties.GetGeneralCategory(codePoint);
-        info.CombiningClass = ShapingCombiningClass.Get((byte)UnicodeProperties.GetCanonicalCombiningClass(codePoint));
+        info.CombiningClass = ShapingCombiningClass.Get(codePoint, (byte)UnicodeProperties.GetCanonicalCombiningClass(codePoint));
         var flags = 0;
 
         // The fillers of Hangul are default ignorable for Unicode and are letters for a font: they take part in the
-        // shaping of a syllable and are shown as the font draws them.
-        if (UnicodeProperties.IsDefaultIgnorable(codePoint) && codePoint is not (0x115F or 0x1160 or 0x3164 or 0xFFA0))
+        // shaping of a syllable and are shown as the font draws them. So are the format controls of the shorthands
+        // (Duployan): the font has the glyphs that make its letters overlap or step.
+        if (UnicodeProperties.IsDefaultIgnorable(codePoint) && codePoint is not (0x115F or 0x1160 or 0x3164 or 0xFFA0 or (>= 0x1BCA0 and <= 0x1BCA3)))
         {
             flags |= GlyphInfo.DefaultIgnorable;
         }
@@ -413,6 +442,10 @@ internal static class TextShaper
         {
             ZeroWidthNonJoiner => GlyphInfo.ZeroWidthNonJoiner,
             ZeroWidthJoiner => GlyphInfo.ZeroWidthJoiner,
+
+            // The free variation selectors of Mongolian and the tag characters have no visible form, and are what
+            // the substitutions of a font look for: they are passed over when glyphs are positioned only.
+            (>= 0x180B and <= 0x180D) or 0x180F or (>= 0xE0020 and <= 0xE007F) => GlyphInfo.Hidden,
             _ => 0,
         };
         info.Flags = (byte)flags;
@@ -488,8 +521,9 @@ internal static class TextShaper
             {
                 hasMarks = true;
 
-                // A variation selector chooses a glyph of the character it follows: such a character is kept as it is.
-                isKept = false;
+                // A variation selector chooses a glyph of the character it follows: such a character is kept as it is,
+                // and so are the marks of a variation selector that has no character before it.
+                isKept = IsVariationSelector(buffer.Info[i].CodePoint);
                 for (marksEnd = i + 1; marksEnd < buffer.Length && IsMark(buffer.Info[marksEnd].Category); marksEnd++)
                 {
                     isKept |= IsVariationSelector(buffer.Info[marksEnd].CodePoint);
@@ -500,7 +534,7 @@ internal static class TextShaper
             // model decomposes every character: "the shaping engine decomposes two- or three-part matras into their
             // constituent parts before any repositioning", each part having its own place in the syllable.
             var codePoint = buffer.Info[i].CodePoint;
-            var isSyllabic = shaper is ScriptShaperKind.Indic or ScriptShaperKind.Khmer or ScriptShaperKind.Myanmar;
+            var isSyllabic = shaper is ScriptShaperKind.Indic or ScriptShaperKind.Khmer or ScriptShaperKind.Myanmar or ScriptShaperKind.Universal;
             var isComplete = isSyllabic ? !(i < marksEnd && isKept) : i < marksEnd && !isKept && shaper != ScriptShaperKind.Hangul;
             if (!isComplete && face.MapCodePoint(codePoint) != 0)
                 continue;
@@ -600,7 +634,7 @@ internal static class TextShaper
             ref var current = ref buffer.Info[i];
             var isMark = current.Category is UnicodeCategory.NonSpacingMark or UnicodeCategory.SpacingCombiningMark or UnicodeCategory.EnclosingMark;
             // Indic: the parts of a matra are not composed again, and one letter Unicode never composes is.
-            if (shaper is ScriptShaperKind.Indic or ScriptShaperKind.Khmer && starter >= 0 && IsMark(buffer.Info[starter].Category))
+            if (shaper is ScriptShaperKind.Indic or ScriptShaperKind.Khmer or ScriptShaperKind.Universal && starter >= 0 && IsMark(buffer.Info[starter].Category))
             {
                 isMark = false;
             }
@@ -819,7 +853,7 @@ internal static class TextShaper
     /// Gives each glyph the mask of the features that apply to it: all of them, and around a fraction slash the
     /// features that make the digits before it a numerator and the digits after it a denominator.
     /// </summary>
-    private static void SetMasks(GlyphBuffer buffer, FeaturePlan plan, bool hasFractions, ScriptShaperKind shaper)
+    private static void SetMasks(GlyphBuffer buffer, FeaturePlan plan, bool hasFractions, ScriptShaperKind shaper, UnicodeScript script)
     {
         var info = buffer.Info;
         plan.SetMasks(info);
@@ -842,6 +876,11 @@ internal static class TextShaper
         else if (shaper == ScriptShaperKind.Myanmar)
         {
             MyanmarShaper.FindSyllables(info);
+        }
+        else if (shaper == ScriptShaperKind.Universal)
+        {
+            UniversalShaper.FindSyllables(info);
+            UniversalShaper.SetMasks(info, FirstShaperBit, script);
         }
 
         foreach (ref var glyph in info)

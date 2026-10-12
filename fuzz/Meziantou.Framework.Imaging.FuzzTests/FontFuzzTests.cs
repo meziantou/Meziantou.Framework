@@ -370,14 +370,14 @@ public sealed class FontFuzzTests
                 bool hasScript;
                 try
                 {
-                    hasScript = font.Face.MapCodePoint(text[0]) != 0;
+                    hasScript = font.Face.MapCodePoint(Rune.GetRuneAt(text, 0).Value) != 0;
                 }
                 catch (Exception exception) when (exception is InvalidImageContentException or UnsupportedImageFeatureException or ImageResourceLimitException)
                 {
                     continue;
                 }
 
-                var isRightToLeft = script is UnicodeScript.Arabic or UnicodeScript.Hebrew or UnicodeScript.Syriac;
+                var isRightToLeft = script is UnicodeScript.Arabic or UnicodeScript.Hebrew or UnicodeScript.Syriac or UnicodeScript.Nko or UnicodeScript.Adlam;
                 if (hasScript && CheckShaping(font, text, script, isRightToLeft, []) is { } scriptFailure)
                     return scriptFailure;
             }
@@ -424,7 +424,9 @@ public sealed class FontFuzzTests
     // each Indic script, conjuncts, a reph, a vowel sign drawn before its syllable, joiners after a halant, a nukta, a
     // vowel letter followed by a vowel sign, and signs without a base; for Khmer, subscripts with the ro among them, the
     // vowels with two parts, a register shifter and what has no base; for Myanmar, a kinzi, medials, the vowel drawn
-    // before the syllable, marks whose order changes, and what has no base.
+    // before the syllable, marks whose order changes, and what has no base; for scripts of the universal model, stacked
+    // and subjoined consonants, a reph, vowels drawn before the cluster, marks in an order a cluster does not have,
+    // joiners, what has no base, and letters that join with a variation selector or a mark between them.
     private static readonly (UnicodeScript Script, string Text)[] ScriptTexts =
     [
         (UnicodeScript.Arabic, "\u0628\u064E\u0651\u0633\u0654\u0650\u0645\u0020\u0644\u0627\u0020\u0644\u200D\u0627\u0020\u0628\u200C\u0628\u0640\u0622\u0655\u0020\u06AF\u0654\u064F"),
@@ -440,6 +442,14 @@ public sealed class FontFuzzTests
         (UnicodeScript.Malayalam, "\u0D15\u0D4D\u0D37\u0D3F \u0D30\u0D4D\u0D15\u0D4B\u0D02 \u0D15\u0D4D\u200D\u0D24\u0D3F \u0D15\u0D3C\u0D4D\u0D2F\u0D41 \u0D05\u0D3E \u0D3F\u0D4D \u0D24\u0D4D\u0D30\u0D4D\u0D2F\u0D3E \u0D15\u0D4D\u200C\u0D15\u0D4D"),
         (UnicodeScript.Khmer, "\u179F\u17D2\u178F\u17D2\u179A\u17B8 \u1780\u17BE\u1784\u17C4 \u179F\u17CA\u17B8 \u1784\u17D2\u179A\u17D2\u1782\u17C6 \u17C1\u17D2 \u17D2\u1780 \u1780\u200C\u17D2\u1780\u17C7"),
         (UnicodeScript.Myanmar, "\u1021\u1004\u103A\u1039\u1002\u101C\u102D\u1015\u103A \u1000\u103C\u103D\u1031\u102C \u1000\u102F\u1036\u1037 \u1015\u1005\u1039\u1005\u100A\u103A\u1038 \u1031\u103A \u1039\u1000 \u1040\u102D\u200D\u1031"),
+        (UnicodeScript.Tibetan, "\u0F66\u0F92\u0FB2\u0F74\u0F56\u0F0B \u0F40\u0F72\u0F71\u0F39 \u0F20\u0F3F \u0F72\u0F84 \u0F40\u200D\u0F7A\u0FC6 \u0F43\u0F73"),
+        (UnicodeScript.Sinhala, "\u0DC1\u0DCA\u200D\u0DBB\u0DD3 \u0DBB\u0DCA\u200D\u0D9A\u0DDC \u0D9A\u0DD9\u0DCA \u0DD9\u0DCA \u0D85\u0DCF \u0D9A\u200C\u0DCA"),
+        (UnicodeScript.Javanese, "\uA98F\uA9C0\uA9A0\uA9BA\uA9B4 \uA98F\uA9BF\uA9BA \uA98F\uA9B6\uA9BA \uA9BA\uA9C0 \uA98F\uA982\u200D\uA983"),
+        (UnicodeScript.TaiTham, "\u1A20\u1A75\u1A60\u1A20\u1A6E \u1A20\u1A55\u1A6E\u1A63 \u1A60\u1A6E \u1A20\u200C\u1A60\u1A65"),
+        (UnicodeScript.Mongolian, "\u182E\u1823\u1829\u182D\u1823\u182F \u182D\u180B\u1820\u180E\u1820 \u1820\u200D\u180D \u1887\u1885\u18A9 \u180B\u1820"),
+        (UnicodeScript.Nko, "\u07D2\u07DE\u07CF \u07D3\u07EC\u07D3\u07F2\u07FA \u07D3\u200D\u07C1\u07D3 \u07EC\u200C\u07D3"),
+        (UnicodeScript.Adlam, "\U0001E900\U0001E923\U0001E924\U0001E922\U0001E925 \U0001E922\U0001E944\U0001E94A\U0001E922 \U0001E94B\u0640\U0001E922\u200D \U0001E944"),
+        (UnicodeScript.Kaithi, "\U000110A9\U000110B9\U0001108D\U000110B1 \U0001108D\U000110B9\u200D\U000110A9 \U000110BD\u0967 \U000110B1\U000110B9 \U0001108D\U000110BA\U00011081\U000110B3"),
         (UnicodeScript.Thai, "\u0E01\u0E48\u0E33 \u0E19\u0E49\u0E33\u0E33 \u0E1B\u0E38\u0E3A\u0E48 \u0E33"),
         (UnicodeScript.Lao, "\u0E81\u0EC8\u0EB3 \u0E99\u0EC9\u0EB3 \u0EAB\u0EBC\u0EB8\u0EC8 \u0EB3"),
         (UnicodeScript.Hangul, "\u1100\u1161\u11A8 \uAC00\u11A8\u302E \u1113\u1161\u11C3\u302F \u302E \uAC01\u11EB\u115F\u1160"),

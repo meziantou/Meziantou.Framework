@@ -18,6 +18,9 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </remarks>
 internal sealed class SyllablePattern
 {
+    // The largest automaton whose working storage is on the stack: the patterns of the models are well below.
+    private const int MaxStackStates = 4096;
+
     // A state has a set of categories and one successor, or no category and up to two successors it leads to
     // without reading a character. The last state is the accepting one.
     private readonly ulong[] _categories;
@@ -57,12 +60,20 @@ internal sealed class SyllablePattern
     /// <param name="start">The first glyph.</param>
     /// <param name="states">Working storage: at least <see cref="StateCount"/> entries, twice.</param>
     /// <returns>The number of glyphs of the match; 0 when the pattern does not match, or matches nothing.</returns>
-    public int Match(ReadOnlySpan<GlyphInfo> info, int start, Span<int> states)
+    public int Match(ReadOnlySpan<GlyphInfo> info, int start, Span<int> states) => Match(info, default, info.Length, start, states);
+
+    /// <summary>Finds the longest sequence of categories the pattern matches from one of them.</summary>
+    /// <param name="categories">The syllable categories of the characters.</param>
+    /// <param name="start">The first one.</param>
+    /// <param name="states">Working storage: at least <see cref="StateCount"/> entries, twice.</param>
+    public int Match(ReadOnlySpan<byte> categories, int start, Span<int> states) => Match(default, categories, categories.Length, start, states);
+
+    private int Match(ReadOnlySpan<GlyphInfo> info, ReadOnlySpan<byte> categories, int length, int start, Span<int> states)
     {
         var count = _categories.Length;
         var current = states[..count];
         var following = states.Slice(count, count);
-        Span<bool> isActive = count <= 512 ? stackalloc bool[count] : new bool[count];
+        Span<bool> isActive = count <= MaxStackStates ? stackalloc bool[count] : new bool[count];
         isActive.Clear();
         var currentCount = 0;
         Add(_start, current, ref currentCount, isActive);
@@ -80,10 +91,10 @@ internal sealed class SyllablePattern
                 longest = i - start;
             }
 
-            if (i >= info.Length || currentCount == 0)
+            if (i >= length || currentCount == 0)
                 break;
 
-            var category = 1UL << (info[i].SyllableCategory & 63);
+            var category = 1UL << ((categories.IsEmpty ? info[i].SyllableCategory : categories[i]) & 63);
             isActive.Clear();
             var followingCount = 0;
             for (var j = 0; j < currentCount; j++)

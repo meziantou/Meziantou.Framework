@@ -380,6 +380,139 @@ internal static partial class FontCorpus
             ReservedFontName: null,
             Unicodes: null),
         new(
+            "fonts/noto-serif-tibetan",
+            "fonts/noto-serif-tibetan/NotoSerifTibetan-Regular.ttf",
+            "NotoSerifTibetan-Regular.ttf",
+            "7292b2c76cf5c9b81e5362d88e0cb0a16b9d92827f86f945203014b049fd2fc5",
+            "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSerifTibetan/unhinted/ttf/NotoSerifTibetan-Regular.ttf",
+            "The Noto Project Authors (https://github.com/notofonts/tibetan)",
+            "OFL-1.1",
+            ReservedFontName: null,
+            Unicodes: null),
+        new(
+            "fonts/noto-sans-sinhala",
+            "fonts/noto-sans-sinhala/NotoSansSinhala-Regular.ttf",
+            "NotoSansSinhala-Regular.ttf",
+            "9517c7789971e8d17f55ef61992faf526eb21e7910d2dda82f50d82b95255d0e",
+            "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansSinhala/unhinted/ttf/NotoSansSinhala-Regular.ttf",
+            "The Noto Project Authors (https://github.com/notofonts/sinhala)",
+            "OFL-1.1",
+            ReservedFontName: null,
+            Unicodes: null),
+        new(
+            "fonts/noto-sans-javanese",
+            "fonts/noto-sans-javanese/NotoSansJavanese-Regular.ttf",
+            "NotoSansJavanese-Regular.ttf",
+            "016f43b042c0b01e29688f71607e5d6fdb0effef6fc7aa3aa8eae6b4427fdca8",
+            "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansJavanese/unhinted/ttf/NotoSansJavanese-Regular.ttf",
+            "The Noto Project Authors (https://github.com/notofonts/javanese)",
+            "OFL-1.1",
+            ReservedFontName: null,
+            Unicodes: null),
+        new(
+            "fonts/noto-sans-balinese",
+            "fonts/noto-sans-balinese/NotoSansBalinese-Regular.ttf",
+            "NotoSansBalinese-Regular.ttf",
+            "cee58a184e7e00c4332087ac01870a69ac52fd5fa17ea3783ac728c945af1827",
+            "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansBalinese/unhinted/ttf/NotoSansBalinese-Regular.ttf",
+            "The Noto Project Authors (https://github.com/notofonts/balinese)",
+            "OFL-1.1",
+            ReservedFontName: null,
+            Unicodes: null),
+        new(
+            "fonts/noto-sans-tai-tham",
+            "fonts/noto-sans-tai-tham/NotoSansTaiTham-Regular.ttf",
+            "NotoSansTaiTham-Regular.ttf",
+            "f07591d877c315027d1e8945143c6aed351f43561af1b102364ad9ea70d47d2f",
+            "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansTaiTham/unhinted/ttf/NotoSansTaiTham-Regular.ttf",
+            "The Noto Project Authors (https://github.com/notofonts/tai-tham)",
+            "OFL-1.1",
+            ReservedFontName: null,
+            Unicodes: null),
+        new(
+            "fonts/noto-sans-nko",
+            "fonts/noto-sans-nko/NotoSansNKo-Regular.ttf",
+            "NotoSansNKo-Regular.ttf",
+            "72107ca6885331147fb0ca4d7a71f96e6b3e989a75d66ef979a96966b28f8526",
+            "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansNKo/unhinted/ttf/NotoSansNKo-Regular.ttf",
+            "The Noto Project Authors (https://github.com/notofonts/nko)",
+            "OFL-1.1",
+            ReservedFontName: null,
+            Unicodes: null),
+        new(
+            "fonts/noto-sans-mongolian",
+            "fonts/noto-sans-mongolian/NotoSansMongolian-Regular.ttf",
+            "NotoSansMongolian-Regular.ttf",
+            "df8e76675870a47f7dd97ea7e224fcf870713f43ebe6fe4ae6c260d0ee838a0d",
+            "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansMongolian/unhinted/ttf/NotoSansMongolian-Regular.ttf",
+            "The Noto Project Authors (https://github.com/notofonts/mongolian)",
+            "OFL-1.1",
+            ReservedFontName: null,
+            Unicodes: null),
+        new(
+            "fonts/noto-sans-adlam",
+            "fonts/noto-sans-adlam/NotoSansAdlam-Regular.ttf",
+            "NotoSansAdlam-Regular.ttf",
+            "e723b210127ffd4aa2f467c3d417d0764168296c9457ca42e498c7258956f2ce",
+            "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansAdlam/unhinted/ttf/NotoSansAdlam-Regular.ttf",
+            "The Noto Project Authors (https://github.com/notofonts/adlam)",
+            "OFL-1.1",
+            ReservedFontName: null,
+            Unicodes: null),
+        new(
+            "fonts/noto-sans-cham",
+            "fonts/noto-sans-cham/NotoSansCham-Regular.ttf",
+            "NotoSansCham-Regular.ttf",
+            "d48a34e02b4096eb3f2e008b74459789540598c2274d65fc53012517d0b08d92",
+            "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansCham/unhinted/ttf/NotoSansCham-Regular.ttf",
+            "The Noto Project Authors (https://github.com/notofonts/cham)",
+            "OFL-1.1",
+            ReservedFontName: null,
+            Unicodes: null),
+        new(
+            "fonts/noto-sans-newa",
+            "fonts/noto-sans-newa/NotoSansNewa-Regular.ttf",
+            "NotoSansNewa-Regular.ttf",
+            "b772e089e2298380589f8cdea1f53da9e8ad0aa3e2edbaaaeb8704cd5072309c",
+            "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansNewa/unhinted/ttf/NotoSansNewa-Regular.ttf",
+            "The Noto Project Authors (https://github.com/notofonts/newa)",
+            "OFL-1.1",
+            ReservedFontName: null,
+            Unicodes: null),
+        new(
+            "fonts/noto-sans-kaithi",
+            "fonts/noto-sans-kaithi/NotoSansKaithi-Regular.ttf",
+            "NotoSansKaithi-Regular.ttf",
+            "ba33fd78d18df942260c53df4080254901aa7c3b69678c7571d680bf063a5e2d",
+            "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansKaithi/unhinted/ttf/NotoSansKaithi-Regular.ttf",
+            "The Noto Project Authors (https://github.com/notofonts/kaithi)",
+            "OFL-1.1",
+            ReservedFontName: null,
+            Unicodes: null),
+        new(
+            "fonts/noto-sans-lepcha",
+            "fonts/noto-sans-lepcha/NotoSansLepcha-Regular.ttf",
+            "NotoSansLepcha-Regular.ttf",
+            "e3f52772d537a0156efa2dbfb7057f154485990df555ef15bd37e5046907dee6",
+            "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansLepcha/unhinted/ttf/NotoSansLepcha-Regular.ttf",
+            "The Noto Project Authors (https://github.com/notofonts/lepcha)",
+            "OFL-1.1",
+            ReservedFontName: null,
+            Unicodes: null),
+        new(
+            "fonts/noto-sans-duployan",
+            "fonts/noto-sans-duployan/NotoSansDuployan-Regular.subset.ttf",
+            "NotoSansDuployan-Regular.ttf",
+            "969d84fe2f971de6bc7bf9b25698a63019967ca2739e4ec9ddb7e355aebbe0f5",
+            "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansDuployan/unhinted/ttf/NotoSansDuployan-Regular.ttf",
+            "David Corbett and Google LLC (https://github.com/notofonts/duployan)",
+            "OFL-1.1",
+            ReservedFontName: null,
+
+            // A few letters of each kind, the marks and the format controls: the font keeps the lookups that connect
+            // them, a few thousand subtables, and the glyphs they need.
+            Unicodes: "20,2E,41,25CC,200C,200D,1BC00-1BC0B,1BC21,1BC37,1BC3B,1BC40,1BC41,1BC44,1BC46,1BC5A,1BC68,1BC9D-1BCA3"),
+        new(
             "fonts/noto-sans-thai",
             "fonts/noto-sans-thai/NotoSansThai-Regular.ttf",
             "NotoSansThai-Regular.ttf",
@@ -895,7 +1028,10 @@ internal static partial class FontCorpus
         ("\u0BB0\u0BCD\u200D\u0B95 \u0BB0\u0BCD\u200C\u0B95 \u0BB0\u200D\u0BCD\u0B95 \u0BB0\u0BCD\u0BAF \u0BB0\u0BCD\u200D\u0BAF \u0BB0\u0BCD\u0BB9", null),
         ("\u0B95\u0BCD\u200D\u0BB7 \u0B95\u0BCD\u200C\u0BB7 \u0B95\u200D\u0BCD\u0BB7 \u0B95\u0BCD\u200D \u0B95\u0BCD\u200C \u0B95\u0BCD\u200D\u0BA4\u0BBF \u0B95\u0BCD\u200C\u0BA4\u0BBF", null),
         ("\u0B95\u0BCD\u0BA4\u0BBF \u0BB8\u0BCD\u0BA4\u0BCD\u0BB0\u0BBF \u0B95\u0BBF\u0B95\u0BBF \u0BBF \u0B95\u0BBC\u0BBF \u0B95\u0BBF\u0BBC \u0BA4\u0BCD\u0BAF\u0BBF \u0BA8\u0BCD\u0BA6\u0BCD\u0BB0\u0BBF", null),
-        ("\u0B95\u0BCD \u0B95\u0BBC \u0B95\u0BBC\u0BCD\u0BB7 \u0B95\u0BCD\u0BBC \u0B95\u0BBC\u0BBC \u0B95\u0BBC\u0BBC\u0BBC \u0B95\u0BCD\u0BCD \u0B95\u0BCD\u0BCD\u0B95", null),
+        // Two lines: the reference shaper numbers the syllables from 1 to 15 and starts again, and does not show a
+        // dotted circle for a syllable without base that has the number of the last one it showed one for.
+        ("\u0B95\u0BCD \u0B95\u0BBC \u0B95\u0BBC\u0BCD\u0BB7 \u0B95\u0BCD\u0BBC", null),
+        ("\u0B95\u0BBC\u0BBC \u0B95\u0BBC\u0BBC\u0BBC \u0B95\u0BCD\u0BCD \u0B95\u0BCD\u0BCD\u0B95", null),
         ("\u0B85 \u0B86 \u0B85\u0BBE \u0B87\u0B82 \u0B85\u0B82\u0B83 \u0B85\u0BCD\u0B95 \u0B85\u200D \u0BB0\u0BCD\u0B85 \u0BB0\u0BCD\u0B87", null),
         ("\u0BBE \u0BCD \u0B82 \u0BBC\u0B95 \u0B95\u0BBE\u0BBE \u0B95\u0B82\u0BBE \u0B95\u0B82\u0B82\u0B82 \u25CC\u0BBF \u00A0\u0BBF \u00A0\u0BCD\u0BB0 \u25CC\u0BCD\u0B95 \u0B95\u0B83\u0B83", null),
         ("\u0B95\u0951 \u0B95\u0BC1\u0952 \u0B95\u0B82\u0951\u0952 \u0B95\u0B82\u0B83 \u0BE6\u0BE7\u0BE8 \u0B95\u0964 \u0B95\u0965 \u0B95 \u0B95\u0B81\u1CDA \uA8F2\u0B82", null),
@@ -1024,6 +1160,254 @@ internal static partial class FontCorpus
         ("\u1021\u1004\u103A\u1039\u1002 \u1000\u103C\u1031 \u1015\u1005\u1039\u1005", "-liga,-mark,-mkmk"),
     ];
 
+    // Tibetan: words, the vowel signs in an order that is not the one of shaping and those that have several parts, the
+    // tsa -phru and the padma, the letters Unicode decomposes, the astrological signs, what is not a cluster, marks,
+    // joiners and punctuation, and clusters without groups of features.
+    private static readonly ShapingText[] TibetanShapingCases =
+    [
+        ("\u0F56\u0F7C\u0F51\u0F0B \u0F66\u0F90\u0F51\u0F0D \u0F66\u0F92\u0FB2\u0F74\u0F56\u0F0B \u0F62\u0FAB\u0F7C\u0F44 \u0F68\u0F7C\u0F7E\u0F0B", null),
+        ("\u0F40\u0F71\u0F72 \u0F40\u0F72\u0F71 \u0F40\u0F74\u0F71 \u0F40\u0F71\u0F74\u0F7E \u0F40\u0F73 \u0F40\u0F75 \u0F40\u0F76 \u0F40\u0F77 \u0F40\u0F78 \u0F40\u0F79 \u0F40\u0F81", null),
+        ("\u0F40\u0F74\u0F39 \u0F40\u0F39\u0F74 \u0F40\u0FC6\u0F72 \u0F40\u0F72\u0FC6 \u0F40\u0F39\u0F71\u0F74\u0F72", null),
+        ("\u0F43 \u0F4D \u0F69 \u0F93 \u0FB9 \u0F40\u0FB5 \u0F40\u0F90\u0FB5", null),
+        ("\u0F20\u0F18 \u0F21\u0F19 \u0F20\u0F3E \u0F20\u0F3F \u0F3F \u0F18 \u0F40\u0F3F\u0F72", null),
+        ("\u0F72 \u0F90 \u0F84\u0F40 \u0F40\u0F84 \u0F40\u0F84\u0F40", null),
+        ("\u25CC\u0F72 \u00A0\u0F74 \u0F40\u0F72\u0F90 \u0F40\u0F74\u0F72", null),
+        ("\u0F40\u0F35 \u0F40\u0F37 \u0F40\u0F7E \u0F40\u0F7F \u0F40\u0F82 \u0F40\u0F83 \u0F40\u0F86 \u0F40\u0F7E\u0F72", null),
+        ("\u0F40\u200D\u0F72 \u0F40\u200C\u0F72 \u0F40\u200C\u0F40 \u0F40\u034F\u0F72 A\u0F40. \u0F04\u0F05 \u0F3A\u0F40\u0F3B \u0F2A\u0F2B", null),
+
+        // A long text: the font has more than two thousand subtables to try at each glyph.
+        ("\u0F56\u0F7C\u0F51\u0F0B\u0F66\u0F90\u0F51\u0F0D \u0F66\u0F92\u0FB2\u0F74\u0F56\u0F0B \u0F56\u0F7C\u0F51\u0F0B\u0F66\u0F90\u0F51\u0F0D \u0F66\u0F92\u0FB2\u0F74\u0F56\u0F0B \u0F56\u0F7C\u0F51\u0F0B\u0F66\u0F90\u0F51\u0F0D \u0F66\u0F92\u0FB2\u0F74\u0F56\u0F0B \u0F56\u0F7C\u0F51\u0F0B\u0F66\u0F90\u0F51\u0F0D \u0F66\u0F92\u0FB2\u0F74\u0F56\u0F0B \u0F56\u0F7C\u0F51\u0F0B\u0F66\u0F90\u0F51\u0F0D \u0F66\u0F92\u0FB2\u0F74\u0F56\u0F0B \u0F56\u0F7C\u0F51\u0F0B\u0F66\u0F90\u0F51\u0F0D \u0F66\u0F92\u0FB2\u0F74\u0F56\u0F0B \u0F56\u0F7C\u0F51\u0F0B\u0F66\u0F90\u0F51\u0F0D \u0F66\u0F92\u0FB2\u0F74\u0F56\u0F0B \u0F56\u0F7C\u0F51\u0F0B\u0F66\u0F90\u0F51\u0F0D \u0F66\u0F92\u0FB2\u0F74\u0F56\u0F0B \u0F56\u0F7C\u0F51\u0F0B\u0F66\u0F90\u0F51\u0F0D \u0F66\u0F92\u0FB2\u0F74\u0F56\u0F0B \u0F56\u0F7C\u0F51\u0F0B\u0F66\u0F90\u0F51\u0F0D \u0F66\u0F92\u0FB2\u0F74\u0F56\u0F0B", null),
+        ("\u0F66\u0F92\u0FB2\u0F74\u0F56\u0F0B \u0F40\u0F71\u0F74\u0F7E \u0F40\u0F39\u0F74 \u0F62\u0F90\u0FB1\u0F7A", "-abvs,-blws"),
+        ("\u0F66\u0F92\u0FB2\u0F74\u0F56\u0F0B \u0F40\u0F71\u0F74\u0F7E \u0F40\u0F39\u0F74 \u0F62\u0F90\u0FB1\u0F7A", "-ccmp"),
+        ("\u0F66\u0F92\u0FB2\u0F74\u0F56\u0F0B \u0F40\u0F71\u0F74\u0F7E \u0F40\u0F39\u0F74 \u0F62\u0F90\u0FB1\u0F7A", "-abvm,-blwm,-mark"),
+        ("\u0F66\u0F92\u0FB2\u0F74\u0F56\u0F0B \u0F40\u0F71\u0F74\u0F7E \u0F40\u0F39\u0F74 \u0F62\u0F90\u0FB1\u0F7A", "-kern,-dist"),
+        ("\u0F66\u0F92\u0FB2\u0F74\u0F56\u0F0B \u0F40\u0F71\u0F74\u0F7E \u0F40\u0F39\u0F74 \u0F62\u0F90\u0FB1\u0F7A", "-calt"),
+    ];
+
+    // Sinhala: words, the forms a consonant takes with a joiner (the rakaransaya, the yansaya, the repaya, conjuncts), the
+    // vowel signs with a part before the consonant, the al-lakuna after a vowel sign, what is not a cluster, the vowel
+    // letters a vowel sign is not written on, and clusters without groups of features.
+    private static readonly ShapingText[] SinhalaShapingCases =
+    [
+        ("\u0DC3\u0DD2\u0D82\u0DC4\u0DBD \u0DC1\u0DCA\u200D\u0DBB\u0DD3 \u0DBD\u0D82\u0D9A\u0DCF\u0DC0 \u0D9A\u0DD8\u0DAD\u0DD2", null),
+        ("\u0D9A\u0DCA\u200D\u0DBB \u0D9A\u0DCA\u200D\u0DBA \u0DBB\u0DCA\u200D\u0D9A \u0DBB\u0DCA\u200D\u0D9A\u0DD9 \u0D9A\u0DCA\u0DC2 \u0D9A\u0DCA\u200D\u0DC2 \u0D9A\u200D\u0DCA\u0DC2 \u0D9A\u0DCA\u200C\u0DC2", null),
+        ("\u0D9A\u0DD9 \u0D9A\u0DDA \u0D9A\u0DDB \u0D9A\u0DDC \u0D9A\u0DDD \u0D9A\u0DDE \u0D9A\u0DD9\u0DCA \u0D9A\u0DD9\u0DCF\u0DCA \u0D9A\u0DCA\u200D\u0DBB\u0DDC", null),
+        ("\u0D9A\u0DCF \u0D9A\u0DD2 \u0D9A\u0DD4 \u0D9A\u0DD6 \u0D9A\u0DDF \u0D9A\u0DF2 \u0D9A\u0D82 \u0D9A\u0D83 \u0D9A\u0DD2\u0D82 \u0D9A\u0D81", null),
+        ("\u0DD9 \u0DCA \u0DCA\u0D9A \u0D82 \u0D9A\u0DCA \u0D9A\u0DCF\u0DD2 \u25CC\u0DD9 \u00A0\u0DD2 \u0D9A\u0DD9\u0DD9", null),
+        ("\u0D85\u0DCF \u0D85\u0DD0 \u0D91\u0DCA \u0D91\u0DD9 \u0D8B\u0DDF \u0D94\u0DDF \u0D8D\u0DD8", null),
+        ("\u0DE6\u0DE7 \u0DF4 A\u0D9A. \u0D9A\u034F\u0DD2 \u0D9A\uFE00\u0DD2", null),
+        ("\u0DC1\u0DCA\u200D\u0DBB\u0DD3 \u0DBB\u0DCA\u200D\u0D9A\u0DD9 \u0D9A\u0DCA\u200D\u0DBA \u0D9A\u0DDC \u0D9A\u0DCA\u200D\u0DC2", "-rphf"),
+        ("\u0DC1\u0DCA\u200D\u0DBB\u0DD3 \u0DBB\u0DCA\u200D\u0D9A\u0DD9 \u0D9A\u0DCA\u200D\u0DBA \u0D9A\u0DDC \u0D9A\u0DCA\u200D\u0DC2", "-akhn,-vatu,-pstf"),
+        ("\u0DC1\u0DCA\u200D\u0DBB\u0DD3 \u0DBB\u0DCA\u200D\u0D9A\u0DD9 \u0D9A\u0DCA\u200D\u0DBA \u0D9A\u0DDC \u0D9A\u0DCA\u200D\u0DC2", "-pres,-abvs,-blws,-psts"),
+        ("\u0DC1\u0DCA\u200D\u0DBB\u0DD3 \u0DBB\u0DCA\u200D\u0D9A\u0DD9 \u0D9A\u0DCA\u200D\u0DBA \u0D9A\u0DDC \u0D9A\u0DCA\u200D\u0DC2", "-ccmp"),
+        ("\u0DC1\u0DCA\u200D\u0DBB\u0DD3 \u0DBB\u0DCA\u200D\u0D9A\u0DD9 \u0D9A\u0DCA\u200D\u0DBA \u0D9A\u0DDC \u0D9A\u0DCA\u200D\u0DC2", "-abvm,-mark,-dist,-kern"),
+    ];
+
+    // Javanese: words, the vowel sign drawn before the cluster, alone, with the tarung and after a stacked consonant, the
+    // medial consonants (the cakra, the keret, the pengkal), the layar and the other signs, the pangkon, vowel signs in an
+    // order a cluster does not have, what is not a cluster, and clusters without groups of features.
+    private static readonly ShapingText[] JavaneseShapingCases =
+    [
+        ("\uA997\uA9AE \uA98F\uA9BA\uA9B4 \uA9B2\uA98F\uA9C0\uA9B1\uA9AB \uA9A0\uA9B8\uA9AD\uA9B6\uA9B1\uA9C0", null),
+        ("\uA98F\uA9BA \uA98F\uA9BB \uA98F\uA9BA\uA9B4 \uA98F\uA9C0\uA9A0\uA9BA \uA98F\uA9C0\uA9A0\uA9BA\uA9B4 \uA98F\uA9BF\uA9BA \uA98F\uA9BE\uA9BA\uA9B4 \uA98F\uA9C0\uA9AB\uA9BA", null),
+        ("\uA98F\uA9BF \uA98F\uA9BD \uA98F\uA9BE \uA98F\uA9BF\uA9B6 \uA98F\uA9B6\uA981 \uA98F\uA982 \uA98F\uA983 \uA98F\uA9B8\uA982 \uA98F\uA9B3 \uA98F\uA980 \uA98F\uA9BC\uA982", null),
+        ("\uA98F\uA9C0 \uA98F\uA9C0\u200C\uA9A0 \uA98F\uA9C0\u200D\uA9A0 \uA98F\uA9C0\uA9A0\uA9C0\uA9A0 \uA98F\uA9B3\uA9C0\uA9A0", null),
+        ("\uA9BA \uA9C0\uA98F \uA9BF \uA981 \u25CC\uA9BA\uA9B4 \u00A0\uA9B6 \uA98F\uA9B6\uA9BA \uA98F\uA9B4\uA9BA \uA98F\uA9BA\uA9BA \uA98F\uA982\uA9B6", null),
+        ("\uA9D1\uA9D2 \uA9C7\uA98F\uA9C8 A\uA98F. \uA98F\u200C\uA9BA \uA98F\u034F\uA9B6 \uA984\uA9B4", null),
+        ("\uA98F\uA9BA\uA9B4 \uA98F\uA9BF\uA9BA \uA98F\uA9C0\uA9A0\uA9BA \uA98F\uA9B8\uA982 \uA98F\uA9BD", "-pref"),
+        ("\uA98F\uA9BA\uA9B4 \uA98F\uA9BF\uA9BA \uA98F\uA9C0\uA9A0\uA9BA \uA98F\uA9B8\uA982 \uA98F\uA9BD", "-akhn"),
+        ("\uA98F\uA9BA\uA9B4 \uA98F\uA9BF\uA9BA \uA98F\uA9C0\uA9A0\uA9BA \uA98F\uA9B8\uA982 \uA98F\uA9BD", "-abvs,-blws,-pres,-psts"),
+        ("\uA98F\uA9BA\uA9B4 \uA98F\uA9BF\uA9BA \uA98F\uA9C0\uA9A0\uA9BA \uA98F\uA9B8\uA982 \uA98F\uA9BD", "-rlig"),
+        ("\uA98F\uA9BA\uA9B4 \uA98F\uA9BF\uA9BA \uA98F\uA9C0\uA9A0\uA9BA \uA98F\uA9B8\uA982 \uA98F\uA9BD", "-abvm,-mark,-kern"),
+    ];
+
+    // Balinese: words, the vowel signs Unicode decomposes and the ones drawn before the cluster, the letters a vowel sign
+    // makes, with a joiner between the two, the adeg adeg, the surang and the other signs, marks on a musical symbol,
+    // what is not a cluster, and clusters without groups of features.
+    private static readonly ShapingText[] BalineseShapingCases =
+    [
+        ("\u1B29\u1B2E\u1B36 \u1B13\u1B40 \u1B13\u1B3E\u1B35 \u1B13\u1B41 \u1B13\u1B43 \u1B13\u1B3B \u1B13\u1B3D \u1B13\u1B3F", null),
+        ("\u1B06 \u1B05\u1B35 \u1B05\u200D\u1B35 \u1B05\u200C\u1B35 \u1B08\u1B0A\u1B0C\u1B0E\u1B12 \u1B09\u1B35", null),
+        ("\u1B13\u1B44\u1B13 \u1B13\u1B44\u1B2D\u1B3E \u1B13\u1B44 \u1B13\u1B44\u200C\u1B13 \u1B13\u1B44\u200D\u1B13 \u1B13\u1B44\u1B13\u1B44\u1B13 \u1B13\u1B34\u1B44\u1B13", null),
+        ("\u1B13\u1B03 \u1B13\u1B36\u1B02 \u1B13\u1B04 \u1B13\u1B34 \u1B13\u1B01 \u1B13\u1B00 \u1B13\u1B38\u1B03 \u1B13\u1B3E\u1B02", null),
+        ("\u1B3E \u1B44\u1B13 \u1B02 \u1B13\u1B38\u1B36 \u1B13\u1B35\u1B3E \u25CC\u1B3E \u00A0\u1B36 \u1B13\u1B3E\u1B3E", null),
+        ("\u1B61\u1B6B \u1B61\u1B6C \u1B62\u1B6D\u1B6E \u1B6B \u1B51\u1B52 \u1B5A\u1B13\u1B5B A\u1B13. \u1B13\u034F\u1B36", null),
+        ("\u1B13\u1B44\u1B13 \u1B13\u1B40 \u1B05\u1B35 \u1B13\u1B36\u1B02 \u1B13\u1B44\u1B2D\u1B3E", "-abvf,-blwf"),
+        ("\u1B13\u1B44\u1B13 \u1B13\u1B40 \u1B05\u1B35 \u1B13\u1B36\u1B02 \u1B13\u1B44\u1B2D\u1B3E", "-ccmp"),
+        ("\u1B13\u1B44\u1B13 \u1B13\u1B40 \u1B05\u1B35 \u1B13\u1B36\u1B02 \u1B13\u1B44\u1B2D\u1B3E", "-rlig"),
+        ("\u1B13\u1B44\u1B13 \u1B13\u1B40 \u1B05\u1B35 \u1B13\u1B36\u1B02 \u1B13\u1B44\u1B2D\u1B3E", "-abvm,-mark,-dist"),
+    ];
+
+    // Tai Tham: the vowel signs drawn before the cluster, the medial ra, the sakot that stacks a consonant, before and
+    // after a tone mark and after a vowel sign, the marks above and below, what is not a cluster, digits, and clusters
+    // without groups of features.
+    private static readonly ShapingText[] TaiThamShapingCases =
+    [
+        ("\u1A20\u1A6E\u1A63\u1A49 \u1A3E\u1A6E\u1A65\u1A20\u1A60\u1A45 \u1A32\u1A62\u1A75", null),
+        ("\u1A20\u1A6E \u1A20\u1A6F \u1A20\u1A70 \u1A20\u1A71 \u1A20\u1A72 \u1A20\u1A6E\u1A63 \u1A20\u1A55\u1A6E \u1A20\u1A56 \u1A20\u1A55", null),
+        ("\u1A20\u1A60\u1A20 \u1A20\u1A60 \u1A20\u1A60\u1A45\u1A6E \u1A20\u1A75\u1A60\u1A20 \u1A20\u1A60\u1A75 \u1A20\u1A63\u1A60\u1A20 \u1A20\u1A60\u1A20\u1A60\u1A20 \u1A20\u1A60\u1A3F\u1A63", null),
+        ("\u1A20\u1A65\u1A75 \u1A20\u1A69\u1A65 \u1A20\u1A74 \u1A20\u1A7A \u1A20\u1A7F \u1A20\u1A62 \u1A20\u1A65\u1A76 \u1A20\u1A6B\u1A74 \u1A20\u1A58 \u1A20\u1A5A", null),
+        ("\u1A6E \u1A60\u1A20 \u1A75 \u1A55 \u25CC\u1A6E \u00A0\u1A65 \u1A20\u1A6E\u1A6E \u1A20\u1A75\u1A65", null),
+        ("\u1A20\u200C\u1A6E \u1A20\u200D\u1A60\u1A20 \u1A20\u1A60\u200C\u1A20 \u1A81\u1A82 \u1A91\u1A92 \u1AA0\u1A20\u1AA1 A\u1A20. \u1A53 \u1A20\u034F\u1A65", null),
+        ("\u1A20\u1A60\u1A20 \u1A20\u1A75\u1A60\u1A20 \u1A20\u1A55\u1A6E \u1A20\u1A65\u1A75", "-ccmp"),
+        ("\u1A20\u1A60\u1A20 \u1A20\u1A75\u1A60\u1A20 \u1A20\u1A55\u1A6E \u1A20\u1A65\u1A75", "-liga"),
+        ("\u1A20\u1A60\u1A20 \u1A20\u1A75\u1A60\u1A20 \u1A20\u1A55\u1A6E \u1A20\u1A65\u1A75", "-mark"),
+    ];
+
+    // N'Ko: letters in each of their forms, with marks between them, the lajanyalan that joins as a letter does, joiners,
+    // a space, digits and punctuation between letters, marks without a letter, and words without the features of the forms.
+    private static readonly ShapingText[] NKoShapingCases =
+    [
+        ("\u07D2\u07DE\u07CF \u07D3\u07CA\u07D3 \u07D3 \u07D3\u07D3 \u07D3\u07D3\u07D3 \u07D3\u07CA \u07CA\u07D3 \u07D8\u07CA\u07EC\u07E1\u07CA", null),
+        ("\u07D3\u07EC\u07D3\u07F2 \u07D3\u07EB\u07ED \u07D3\u07F3\u07D3 \u07D3\u07F2\u07EC \u07D3\u07FD\u07D3", null),
+        ("\u07D3\u07FA\u07D3 \u07D3\u07FA \u07FA\u07D3 \u07D3\u07FA\u07FA\u07D3", null),
+        ("\u07D3\u200C\u07D3 \u07D3\u200D \u200D\u07D3 \u07D3\u200D\u07D3 \u07D3\u200C \u07D3\u034F\u07D3", null),
+        ("\u07D3\u07C1\u07C2\u07D3 \u07D3\u07F8\u07D3 \u07D3\u07F4\u07D3 \u07D3\u07F5\u07D3 \u07D3.\u07D3 \u07C1\u07C2\u07C3", null),
+        ("\u07EC \u07F2\u07D3 \u25CC\u07EC \u00A0\u07F2 A\u07D3. \u07F6\u07D3\u07F7 \u07FE\u07FF", null),
+        ("\u07D3\u07D3\u07D3 \u07D2\u07DE\u07CF \u07D3\u07EC\u07D3\u07F2 \u07D3\u07FA\u07D3", "-fina"),
+        ("\u07D3\u07D3\u07D3 \u07D2\u07DE\u07CF \u07D3\u07EC\u07D3\u07F2 \u07D3\u07FA\u07D3", "-init,-medi"),
+        ("\u07D3\u07D3\u07D3 \u07D2\u07DE\u07CF \u07D3\u07EC\u07D3\u07F2 \u07D3\u07FA\u07D3", "-ccmp"),
+        ("\u07D3\u07D3\u07D3 \u07D2\u07DE\u07CF \u07D3\u07EC\u07D3\u07F2 \u07D3\u07FA\u07D3", "-mark,-kern"),
+    ];
+
+    // Mongolian: words, letters in each of their forms, the free variation selectors that choose a form, the vowel
+    // separator and the narrow space before a suffix, the nirugu, joiners (and a joiner before a variation selector),
+    // digits and punctuation, marks of Ali Gali, and words without groups of features.
+    private static readonly ShapingText[] MongolianShapingCases =
+    [
+        ("\u182E\u1823\u1829\u182D\u1823\u182F \u182A\u1822\u1834\u1822\u182D \u1820 \u1820\u1820 \u1820\u1820\u1820 \u182D\u1820\u1835\u1820\u1837", null),
+        ("\u1820\u180B \u182D\u180B\u1820 \u182D\u180C\u1820 \u1820\u180D \u1828\u180B\u1820 \u1833\u180B \u182D\u180B \u1836\u180B\u1822 \u1820\u180F", null),
+        ("\u1833\u1820\u180E\u1820 \u1828\u180E\u1820 \u182D\u1820\u202F\u1836\u1822\u1828 \u182E\u1823\u202F\u1833\u1824 \u1820\u202F\u1824", null),
+        ("\u1820\u180A\u1820 \u180A\u1820 \u1820\u180A \u1820\u1807\u1820 \u1820\u1806\u1820", null),
+        ("\u1820\u200D \u200D\u1820 \u1820\u200D\u1820 \u1820\u200C\u1820 \u1897\u200D\u180D\u185E \u1820\u200D\u180B \u1820\u034F\u1820", null),
+        ("\u1811\u1812\u1820 \u1820\u1802\u1820 \u1820\u1803 \u1800\u1820 \u1820 \u1820 A\u1820.", null),
+        ("\u1887\u1885 \u1887\u18A9 \u1887\u1886\u1820 \u180B \u1885 \u1843\u1820 \u1844\u1845\u1846 \u1873\u1874", null),
+        ("\u182E\u1823\u1829\u182D\u1823\u182F \u182D\u180B\u1820 \u1833\u1820\u180E\u1820 \u1820", "-isol"),
+        ("\u182E\u1823\u1829\u182D\u1823\u182F \u182D\u180B\u1820 \u1833\u1820\u180E\u1820 \u1820", "-init,-medi,-fina"),
+        ("\u182E\u1823\u1829\u182D\u1823\u182F \u182D\u180B\u1820 \u1833\u1820\u180E\u1820 \u1820", "-rclt"),
+        ("\u182E\u1823\u1829\u182D\u1823\u182F \u182D\u180B\u1820 \u1833\u1820\u180E\u1820 \u1820", "-calt"),
+        ("\u182E\u1823\u1829\u182D\u1823\u182F \u182D\u180B\u1820 \u1833\u1820\u180E\u1820 \u1820", "-rlig,-ccmp"),
+        ("\u182E\u1823\u1829\u182D\u1823\u182F \u182D\u180B\u1820 \u1833\u1820\u180E\u1820 \u1820", "-mark,-abvm"),
+    ];
+
+    // Adlam: capital and small letters in each of their forms, the marks above a letter (lengtheners, the gemination
+    // mark, the nukta), the tatweel, joiners, a space, digits and punctuation, marks without a letter, and words without
+    // groups of features.
+    private static readonly ShapingText[] AdlamShapingCases =
+    [
+        ("\U0001E90A\U0001E92B\U0001E932\U0001E922 \U0001E91E\U0001E935\U0001E938 \U0001E901\U0001E922\U0001E944\U0001E923", null),
+        ("\U0001E900\U0001E923\U0001E924\U0001E922\U0001E925 \U0001E922 \U0001E922\U0001E922 \U0001E922\U0001E922\U0001E922 \U0001E900\U0001E900 \U0001E90A\U0001E92B\U0001E932", null),
+        ("\U0001E922\U0001E944\U0001E922 \U0001E922\U0001E94A \U0001E922\U0001E946\U0001E947 \U0001E922\U0001E945\U0001E922 \U0001E922\U0001E948\U0001E949 \U0001E922\U0001E94A\U0001E944", null),
+        ("\U0001E94B\U0001E922 \U0001E922\U0001E94B \U0001E922\u0640\U0001E922 \U0001E922\u0640 \u0640\U0001E922", null),
+        ("\U0001E922\u200C\U0001E922 \U0001E922\u200D \u200D\U0001E922 \U0001E922\u200D\U0001E922 \U0001E922\u034F\U0001E922 \U0001E922 \U0001E922", null),
+        ("\U0001E951\U0001E952\U0001E922 \U0001E922\U0001E953\U0001E922 \U0001E95E\U0001E922! \U0001E95F\U0001E922? \U0001E922.\U0001E922", null),
+        ("\U0001E944 \U0001E94A\U0001E922 \u25CC\U0001E944 \u00A0\U0001E94A A\U0001E922.", null),
+        ("\U0001E922\U0001E922\U0001E922 \U0001E900\U0001E923\U0001E924\U0001E922\U0001E925 \U0001E922\U0001E944\U0001E922 \U0001E922\U0001E94A", "-fina"),
+        ("\U0001E922\U0001E922\U0001E922 \U0001E900\U0001E923\U0001E924\U0001E922\U0001E925 \U0001E922\U0001E944\U0001E922 \U0001E922\U0001E94A", "-init,-medi"),
+        ("\U0001E922\U0001E922\U0001E922 \U0001E900\U0001E923\U0001E924\U0001E922\U0001E925 \U0001E922\U0001E944\U0001E922 \U0001E922\U0001E94A", "-ccmp"),
+        ("\U0001E922\U0001E922\U0001E922 \U0001E900\U0001E923\U0001E924\U0001E922\U0001E925 \U0001E922\U0001E944\U0001E922 \U0001E922\U0001E94A", "-mark,-abvm,-blwm"),
+        ("\U0001E922\U0001E922\U0001E922 \U0001E900\U0001E923\U0001E924\U0001E922\U0001E925 \U0001E922\U0001E944\U0001E922 \U0001E922\U0001E94A", "-rlig"),
+    ];
+
+    // Cham: the vowel signs drawn before the cluster, the medial ra that a feature of the font moves there, the other
+    // medial consonants, the final letters, vowel signs in an order a cluster does not have, what is not a cluster, and
+    // clusters without groups of features.
+    private static readonly ShapingText[] ChamShapingCases =
+    [
+        ("\uAA06\uAA2F\uAA20\uAA2A \uAA00\uAA06\uAA34\uAA2F\uAA4C \uAA0A\uAA2D\uAA43", null),
+        ("\uAA06\uAA2F \uAA06\uAA30 \uAA06\uAA34 \uAA06\uAA34\uAA2F \uAA06\uAA34\uAA30 \uAA06\uAA33\uAA2A \uAA06\uAA33\uAA34 \uAA06\uAA35 \uAA06\uAA36", null),
+        ("\uAA06\uAA29 \uAA06\uAA2A \uAA06\uAA2B \uAA06\uAA2D \uAA06\uAA2E \uAA06\uAA31 \uAA06\uAA32 \uAA06\uAA2A\uAA4C \uAA06\uAA43 \uAA06\uAA4D \uAA06\uAA2F\uAA4C", null),
+        ("\uAA06\uAA2D\uAA2A \uAA06\uAA32\uAA29 \uAA06\uAA2F\uAA2F \uAA06\uAA4C\uAA2A \uAA06\uAA36\uAA35", null),
+        ("\uAA2F \uAA34 \uAA4C \uAA29 \u25CC\uAA2F \u00A0\uAA2A \uAA06\u200C\uAA2F \uAA06\u200D\uAA34 \uAA06\u034F\uAA2A", null),
+        ("\uAA00\uAA01\uAA02 \uAA20\uAA2F\uAA06\uAA40 \uAA51\uAA52 \uAA5C\uAA06\uAA5D A\uAA06. \uAA06\uAA40 \uAA06\uAA42", null),
+        ("\uAA06\uAA34\uAA2F \uAA06\uAA2F \uAA06\uAA33\uAA2A \uAA06\uAA2A\uAA4C", "-pref"),
+        ("\uAA06\uAA34\uAA2F \uAA06\uAA2F \uAA06\uAA33\uAA2A \uAA06\uAA2A\uAA4C", "-pres"),
+        ("\uAA06\uAA34\uAA2F \uAA06\uAA2F \uAA06\uAA33\uAA2A \uAA06\uAA2A\uAA4C", "-ccmp,-rlig"),
+        ("\uAA06\uAA34\uAA2F \uAA06\uAA2F \uAA06\uAA33\uAA2A \uAA06\uAA2A\uAA4C", "-abvm,-mark,-dist"),
+        ("\uAA06\uAA34\uAA2F \uAA06\uAA2F \uAA06\uAA33\uAA2A \uAA06\uAA2A\uAA4C", "ss01"),
+    ];
+
+    // Newa: the vowel sign drawn before the cluster, conjuncts, the reph and the forms of ra after a consonant, the virama
+    // with joiners, the nukta and the signs, the letters that take a stacked consonant, what is not a cluster, and clusters
+    // without groups of features.
+    private static readonly ShapingText[] NewaShapingCases =
+    [
+        ("\U0001140E\U00011436 \U0001140E\U00011435 \U0001140E\U00011437 \U0001140E\U00011438 \U0001140E\U0001143E \U0001140E\U0001143F \U0001140E\U00011440 \U0001140E\U00011441", null),
+        ("\U0001140E\U00011442\U0001140E \U0001140E\U00011442\U0001141F \U00011428\U00011442\U0001140E \U00011428\U00011442\U0001140E\U00011436 \U00011428\U00011442\U0001140E\U00011442\U0001140E \U0001140E\U00011442\U00011428 \U0001140E\U00011442\U00011429\U00011436 \U0001140E\U00011442\U0001142B", null),
+        ("\U0001140E\U00011442\u200D \U0001140E\U00011442\u200C\U0001140E \U0001140E\U00011442\u200D\U0001140E \U0001140E\U00011442 \U00011428\U00011442\u200D\U0001140E \U00011428\U00011442\u200C\U0001140E", null),
+        ("\U0001140E\U00011446 \U0001140E\U00011438\U00011444 \U0001140E\U00011436\U00011443 \U0001140E\U00011445 \U0001140E\U0001145E \U0001140E\U00011447 \U0001140E\U00011446\U00011442\U0001140E", null),
+        ("\U00011460\U0001140E \U00011461\U0001141E \U00011460\U0001140E\U00011436 \U00011400\U00011435 \U00011401\U00011444", null),
+        ("\U00011436 \U00011442\U0001140E \U00011444 \U00011446 \u25CC\U00011436 \u00A0\U00011438 \U0001140E\U00011436\U00011436 \U0001140E\U00011444\U00011438", null),
+        ("\U00011451\U00011452 \U0001144B\U0001140E\U0001144C A\U0001140E. \U0001140E\u034F\U00011438 \U0001140E\u200C\U00011436", null),
+
+        // The bullet is a generic base in the specification of the model.
+        ("\U00011460\u2022\U00011436", null),
+        ("\U00011428\U00011442\U0001140E\U00011436 \U0001140E\U00011442\U0001140E \U0001140E\U00011442\U00011428 \U0001140E\U00011436 \U0001140E\U00011438\U00011444", "-rphf"),
+        ("\U00011428\U00011442\U0001140E\U00011436 \U0001140E\U00011442\U0001140E \U0001140E\U00011442\U00011428 \U0001140E\U00011436 \U0001140E\U00011438\U00011444", "-pref"),
+        ("\U00011428\U00011442\U0001140E\U00011436 \U0001140E\U00011442\U0001140E \U0001140E\U00011442\U00011428 \U0001140E\U00011436 \U0001140E\U00011438\U00011444", "-half"),
+        ("\U00011428\U00011442\U0001140E\U00011436 \U0001140E\U00011442\U0001140E \U0001140E\U00011442\U00011428 \U0001140E\U00011436 \U0001140E\U00011438\U00011444", "-akhn"),
+        ("\U00011428\U00011442\U0001140E\U00011436 \U0001140E\U00011442\U0001140E \U0001140E\U00011442\U00011428 \U0001140E\U00011436 \U0001140E\U00011438\U00011444", "-abvs,-blws"),
+        ("\U00011428\U00011442\U0001140E\U00011436 \U0001140E\U00011442\U0001140E \U0001140E\U00011442\U00011428 \U0001140E\U00011436 \U0001140E\U00011438\U00011444", "-curs"),
+        ("\U00011428\U00011442\U0001140E\U00011436 \U0001140E\U00011442\U0001140E \U0001140E\U00011442\U00011428 \U0001140E\U00011436 \U0001140E\U00011438\U00011444", "-ccmp,-calt"),
+        ("\U00011428\U00011442\U0001140E\U00011436 \U0001140E\U00011442\U0001140E \U0001140E\U00011442\U00011428 \U0001140E\U00011436 \U0001140E\U00011438\U00011444", "-abvm,-mark,-dist,-kern"),
+    ];
+
+    // Kaithi: the vowel sign drawn before the cluster, conjuncts and half forms, the reph, the virama with joiners, the
+    // nukta and the signs, the number signs before digits, what is not a cluster, and clusters without groups of features.
+    private static readonly ShapingText[] KaithiShapingCases =
+    [
+        ("\U0001108D\U000110B1 \U0001108D\U000110B0 \U0001108D\U000110B2 \U0001108D\U000110B3 \U0001108D\U000110B5 \U0001108D\U000110B7 \U0001108D\U000110B8", null),
+        ("\U0001108D\U000110B9\U0001108D \U0001108D\U000110B9\U000110A8 \U000110A9\U000110B9\U0001108D \U000110A9\U000110B9\U0001108D\U000110B1 \U000110A9\U000110B9\U0001108D\U000110B9\U0001108D \U0001108D\U000110B9\U000110A9 \U0001108D\U000110B9\U000110A9\U000110B1 \U000110A3\U000110B9\U000110A8", null),
+        ("\U0001108D\U000110B9\u200D \U0001108D\U000110B9\u200C\U0001108D \U0001108D\U000110B9\u200D\U0001108D \U0001108D\U000110B9 \U000110A9\U000110B9\u200D\U0001108D", null),
+        ("\U0001108D\U000110BA \U0001108D\U000110B3\U00011081 \U0001108D\U000110B1\U00011080 \U0001108D\U00011082 \U0001108D\U000110BA\U000110B9\U0001108D \U00011083\U000110B0 \U00011084\U00011081", null),
+        ("\U000110BD\u0967\u0968 \U000110CD\u0967 \U000110BD \U000110BD\U0001108D \u0967\u0968", null),
+        ("\U000110B1 \U000110B9\U0001108D \U00011081 \U000110BA \u25CC\U000110B1 \u00A0\U000110B3 \U0001108D\U000110B1\U000110B1 \U0001108D\U00011081\U000110B3", null),
+        ("\U000110BB\U0001108D\U000110BC \U000110BE\U000110BF A\U0001108D. \U0001108D\u034F\U000110B3 \U0001108D\u200C\U000110B1", null),
+        ("\U000110A9\U000110B9\U0001108D\U000110B1 \U0001108D\U000110B9\U0001108D \U0001108D\U000110B9\U000110A9 \U0001108D\U000110B1 \U0001108D\U000110B3\U00011081", "-rphf"),
+        ("\U000110A9\U000110B9\U0001108D\U000110B1 \U0001108D\U000110B9\U0001108D \U0001108D\U000110B9\U000110A9 \U0001108D\U000110B1 \U0001108D\U000110B3\U00011081", "-half"),
+        ("\U000110A9\U000110B9\U0001108D\U000110B1 \U0001108D\U000110B9\U0001108D \U0001108D\U000110B9\U000110A9 \U0001108D\U000110B1 \U0001108D\U000110B3\U00011081", "-akhn,-cjct"),
+        ("\U000110A9\U000110B9\U0001108D\U000110B1 \U0001108D\U000110B9\U0001108D \U0001108D\U000110B9\U000110A9 \U0001108D\U000110B1 \U0001108D\U000110B3\U00011081", "-abvs,-psts"),
+        ("\U000110A9\U000110B9\U0001108D\U000110B1 \U0001108D\U000110B9\U0001108D \U0001108D\U000110B9\U000110A9 \U0001108D\U000110B1 \U0001108D\U000110B3\U00011081", "-rclt"),
+        ("\U000110A9\U000110B9\U0001108D\U000110B1 \U0001108D\U000110B9\U0001108D \U0001108D\U000110B9\U000110A9 \U0001108D\U000110B1 \U0001108D\U000110B3\U00011081", "-abvm,-blwm,-mark,-kern"),
+    ];
+
+    // Lepcha: the vowel signs drawn before the cluster, the subjoined letters, alone, with a joiner before them and in the
+    // ligature a font makes of a letter and one of them, the final consonants above a letter and above such a ligature
+    // when a vowel sign comes between them, the ran, the nukta, what is not a cluster, and clusters without groups of
+    // features.
+    private static readonly ShapingText[] LepchaShapingCases =
+    [
+        ("\u1C00\u1C27 \u1C00\u1C28 \u1C00\u1C29 \u1C00\u1C26 \u1C00\u1C2A \u1C00\u1C2B \u1C00\u1C2C", null),
+        ("\u1C00\u1C24 \u1C00\u1C25 \u1C00\u1C24\u1C27 \u1C00\u1C25\u1C26 \u1C00\u1C25\u1C24 \u1C23\u1C24 \u1C00\u200D\u1C24 \u1C00\u200D\u1C25 \u1C00\u200C\u1C24", null),
+        ("\u1C00\u1C2D \u1C00\u1C30 \u1C00\u1C26\u1C2D \u1C00\u1C2D\u1C30 \u1C0A\u1C26\u1C2D\u1C30 \u1C23\u1C24\u1C26\u1C2D\u1C30 \u1C23\u1C24\u1C2D\u1C30 \u1C23\u1C24\u1C26\u1C30", null),
+        ("\u1C00\u1C2D\u1C36 \u1C00\u1C36 \u1C00\u1C37 \u1C00\u1C37\u1C26 \u1C00\u1C35 \u1C00\u1C34 \u1C00\u1C2A\u1C2C \u1C00\u1C2D\u1C35", null),
+        ("\u1C27 \u1C24 \u1C2D \u1C36 \u25CC\u1C27 \u00A0\u1C2A \u1C00\u1C27\u1C27 \u1C00\u1C2D\u1C27", null),
+        ("\u1C41\u1C42 \u1C3B\u1C00\u1C3C A\u1C00. \u1C00\u034F\u1C2A \u1C00\u200C\u1C27 \u1C4D\u1C4E\u1C4F", null),
+        ("\u1C23\u1C24\u1C26\u1C2D\u1C30 \u1C00\u1C24\u1C27 \u1C00\u1C2D\u1C36 \u1C00\u1C28", "-ccmp"),
+        ("\u1C23\u1C24\u1C26\u1C2D\u1C30 \u1C00\u1C24\u1C27 \u1C00\u1C2D\u1C36 \u1C00\u1C28", "-abvs,-psts"),
+        ("\u1C23\u1C24\u1C26\u1C2D\u1C30 \u1C00\u1C24\u1C27 \u1C00\u1C2D\u1C36 \u1C00\u1C28", "-abvm,-blwm,-mark"),
+        ("\u1C23\u1C24\u1C26\u1C2D\u1C30 \u1C00\u1C24\u1C27 \u1C00\u1C2D\u1C36 \u1C00\u1C28", "-dist,-kern"),
+    ];
+
+    // Duployan: letters that join, each one attached to the exit of the one before it, marks of a letter, the format
+    // controls that make letters overlap or step and that the font draws, a joiner and a space between letters, a
+    // long text (each letter becomes many glyphs and is tried against several thousand subtables), and letters without
+    // groups of features.
+    private static readonly ShapingText[] DuployanShapingCases =
+    [
+        ("\U0001BC02\U0001BC41\U0001BC06\U0001BC44 \U0001BC08\U0001BC46\U0001BC0B \U0001BC00\U0001BC5A\U0001BC05\U0001BC41", null),
+        ("\U0001BC02\U0001BC41\U0001BC03 \U0001BC00\U0001BC01 \U0001BC01 \U0001BC02 \U0001BC02\U0001BC03\U0001BC06 \U0001BC08\U0001BC44\U0001BC0B", null),
+        ("\U0001BC02\U0001BC9D \U0001BC02\U0001BC9E \U0001BC02\U0001BC9D\U0001BC03 \U0001BC9D \U0001BC9E\U0001BC02 \U0001BC03\U0001BC9E\U0001BC9D", null),
+        ("\U0001BC02\U0001BCA0\U0001BC03 \U0001BC02\U0001BCA1\U0001BC03 \U0001BC02\U0001BCA2\U0001BC03 \U0001BC02\U0001BCA3\U0001BC03 \U0001BC68\U0001BCA0\U0001BC46\U0001BC3B \U0001BC9E\U0001BC40\U0001BC21\U0001BC02\U0001BC9D\U0001BC09\U0001BCA0\U0001BC37", null),
+        ("\U0001BC02\u200C\U0001BC03 \U0001BC02\u200D\U0001BC03 \U0001BC02 \U0001BC03 \U0001BC02\u034F\U0001BC03 A\U0001BC02. \U0001BC02\U0001BC9F", null),
+        ("\U0001BC02\U0001BC41\U0001BC03\U0001BC06\U0001BC44\U0001BC0B \U0001BC08\U0001BC46\U0001BC07\U0001BC5A\U0001BC05 \U0001BC0A\U0001BC41\U0001BC09\U0001BC04\U0001BC44 \U0001BC02\U0001BC41\U0001BC03\U0001BC06\U0001BC44\U0001BC0B \U0001BC08\U0001BC46\U0001BC07\U0001BC5A\U0001BC05 \U0001BC0A\U0001BC41\U0001BC09\U0001BC04\U0001BC44 \U0001BC02\U0001BC41\U0001BC03\U0001BC06\U0001BC44\U0001BC0B \U0001BC08\U0001BC46\U0001BC07\U0001BC5A\U0001BC05 \U0001BC0A\U0001BC41\U0001BC09\U0001BC04\U0001BC44 \U0001BC02\U0001BC41\U0001BC03\U0001BC06\U0001BC44\U0001BC0B \U0001BC08\U0001BC46\U0001BC07\U0001BC5A\U0001BC05 \U0001BC0A\U0001BC41\U0001BC09\U0001BC04\U0001BC44", null),
+        ("\U0001BC02\U0001BC41\U0001BC03 \U0001BC68\U0001BCA0\U0001BC46\U0001BC3B \U0001BC02\U0001BC9D\U0001BC03 \U0001BC00\U0001BC01", "-curs"),
+        ("\U0001BC02\U0001BC41\U0001BC03 \U0001BC68\U0001BCA0\U0001BC46\U0001BC3B \U0001BC02\U0001BC9D\U0001BC03 \U0001BC00\U0001BC01", "-rclt"),
+        ("\U0001BC02\U0001BC41\U0001BC03 \U0001BC68\U0001BCA0\U0001BC46\U0001BC3B \U0001BC02\U0001BC9D\U0001BC03 \U0001BC00\U0001BC01", "-mark,-mkmk"),
+        ("\U0001BC02\U0001BC41\U0001BC03 \U0001BC68\U0001BCA0\U0001BC46\U0001BC3B \U0001BC02\U0001BC9D\U0001BC03 \U0001BC00\U0001BC01", "-abvs,-blwm,-abvm"),
+        ("\U0001BC02\U0001BC41\U0001BC03 \U0001BC68\U0001BCA0\U0001BC46\U0001BC3B \U0001BC02\U0001BC9D\U0001BC03 \U0001BC00\U0001BC01", "-dist"),
+    ];
+
     // Hebrew: letters and final forms, the points in the order of a normalized text and in the order they are typed
     // in, a meteg between the parts of a vowel, cantillation marks, the precomposed letters (which a font that
     // positions the points draws as a letter and its points, and a font that does not draws as they are), the
@@ -1092,6 +1476,19 @@ internal static partial class FontCorpus
         ["fonts/noto-sans-malayalam-first-version"] = MalayalamShapingCases,
         ["fonts/noto-sans-khmer"] = KhmerShapingCases,
         ["fonts/noto-sans-myanmar"] = MyanmarShapingCases,
+        ["fonts/noto-serif-tibetan"] = TibetanShapingCases,
+        ["fonts/noto-sans-sinhala"] = SinhalaShapingCases,
+        ["fonts/noto-sans-javanese"] = JavaneseShapingCases,
+        ["fonts/noto-sans-balinese"] = BalineseShapingCases,
+        ["fonts/noto-sans-tai-tham"] = TaiThamShapingCases,
+        ["fonts/noto-sans-nko"] = NKoShapingCases,
+        ["fonts/noto-sans-mongolian"] = MongolianShapingCases,
+        ["fonts/noto-sans-adlam"] = AdlamShapingCases,
+        ["fonts/noto-sans-cham"] = ChamShapingCases,
+        ["fonts/noto-sans-newa"] = NewaShapingCases,
+        ["fonts/noto-sans-kaithi"] = KaithiShapingCases,
+        ["fonts/noto-sans-lepcha"] = LepchaShapingCases,
+        ["fonts/noto-sans-duployan"] = DuployanShapingCases,
         ["fonts/noto-sans-thai"] = ThaiShapingCases,
         ["fonts/noto-sans-lao"] = LaoShapingCases,
         ["fonts/noto-sans-cjk-kr-regular"] = HangulShapingCases,

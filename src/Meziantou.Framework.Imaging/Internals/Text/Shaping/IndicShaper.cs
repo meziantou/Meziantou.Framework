@@ -277,6 +277,29 @@ internal sealed class IndicShaper
                 UnicodeScript.Telugu => (first == 0x0C12 && second is 0x0C4C or 0x0C55) || (first is 0x0C3F or 0x0C46 or 0x0C4A && second == 0x0C55),
                 UnicodeScript.Kannada => (first is 0x0C89 or 0x0C8B && second == 0x0CBE) || (first == 0x0C92 && second == 0x0CCC),
                 UnicodeScript.Malayalam => (first is 0x0D07 or 0x0D09 && second == 0x0D57) || (first == 0x0D0E && second == 0x0D46) || (first == 0x0D12 && second is 0x0D3E or 0x0D57),
+
+                // The scripts of the universal model: its data file of the clusters that are not valid.
+                UnicodeScript.Sinhala => first switch
+                {
+                    0x0D85 => second is 0x0DCF or 0x0DD0 or 0x0DD1,
+                    0x0D8B or 0x0D8F or 0x0D94 => second == 0x0DDF,
+                    0x0D8D => second == 0x0DD8,
+                    0x0D91 => second is 0x0DCA or 0x0DD9 or 0x0DDA or 0x0DDC or 0x0DDD or 0x0DDE,
+                    _ => false,
+                },
+                UnicodeScript.Brahmi => (first == 0x11005 && second == 0x11038) || (first == 0x1100B && second == 0x1103E) || (first == 0x1100F && second == 0x11042),
+                UnicodeScript.Takri => (first == 0x11680 && second is 0x116AD or 0x116B4 or 0x116B5) || (first == 0x11686 && second == 0x116B2),
+                UnicodeScript.Khojki => first switch
+                {
+                    0x11200 => second is 0x1122C or 0x11231 or 0x11233,
+                    0x11206 => second == 0x1122C,
+                    0x1122C => second is 0x11230 or 0x11231,
+                    0x11240 => second == 0x1122E,
+                    _ => false,
+                },
+                UnicodeScript.Khudawadi => first == 0x112B0 && second is 0x112E0 or 0x112E5 or 0x112E6 or 0x112E7 or 0x112E8,
+                UnicodeScript.Tirhuta => (first == 0x11481 && second == 0x114B0) || (first == 0x114AA && second is 0x114B5 or 0x114B6) || (first is 0x1148B or 0x1148D && second == 0x114BA),
+                UnicodeScript.Modi => first is 0x11600 or 0x11601 && second is 0x11639 or 0x1163A,
                 _ => false,
             };
 
@@ -290,12 +313,13 @@ internal sealed class IndicShaper
             if (!isSeparated)
                 continue;
 
-            // The circle is in the cluster of what follows it.
+            // The circle is in the cluster of what follows it. The character after the circle is not looked at as
+            // the first of another sequence.
             var cluster = buffer.Info[i + 1].Cluster;
             buffer.Resize(i + 1, 0, 1);
             TextShaper.SetCharacterProperties(ref buffer.Info[i + 1], 0x25CC);
             buffer.Info[i + 1].Cluster = cluster;
-            i++;
+            i += 2;
         }
     }
 
@@ -399,8 +423,12 @@ internal sealed class IndicShaper
         for (var i = 0; i < buffer.Length; i++)
         {
             var syllable = buffer.Info[i].Syllable;
+            // A syllable is told from the one before it: the numbers of the syllables come back after fifteen.
             if (syllable == lastSyllable || (syllable & 0x0F) != BrokenCluster)
+            {
+                lastSyllable = syllable;
                 continue;
+            }
 
             // The circle takes the cluster and the features of the first glyph of the syllable.
             lastSyllable = syllable;

@@ -83042,6 +83042,77 @@
       }
     },
     {
+      "id": "fonts/noto-sans-adlam",
+      "file": {
+        "path": "fonts/noto-sans-adlam/NotoSansAdlam-Regular.ttf",
+        "sha256": "e723b210127ffd4aa2f467c3d417d0764168296c9457ca42e498c7258956f2ce",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "The Noto Project Authors (https://github.com/notofonts/adlam)",
+        "source": "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansAdlam/unhinted/ttf/NotoSansAdlam-Regular.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=12",
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB",
+        "font.table=glyf"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-sans-adlam.json",
+        "sha256": "180f7b3f34025fe642f3cfc31f2f48ef2e3fd641315ec3b77786c3c9a840d446",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-sans-adlam.json",
+        "sha256": "b2e2136a881fcd12d0f69f14409b843193dec49039104211499ccc57206da5be",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/noto-sans-balinese",
+      "file": {
+        "path": "fonts/noto-sans-balinese/NotoSansBalinese-Regular.ttf",
+        "sha256": "cee58a184e7e00c4332087ac01870a69ac52fd5fa17ea3783ac728c945af1827",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "The Noto Project Authors (https://github.com/notofonts/balinese)",
+        "source": "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansBalinese/unhinted/ttf/NotoSansBalinese-Regular.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB",
+        "font.table=glyf"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-sans-balinese.json",
+        "sha256": "17332d70485de779339d0592238316b80b8ada27b121533c81063f53ed20163b",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-sans-balinese.json",
+        "sha256": "f8f6214034a018b94b0a7ad781a53d47c41053797a493bb9487bf2ae8b445dd5",
+        "role": "shaping-vectors"
+      }
+    },
+    {
       "id": "fonts/noto-sans-bengali",
       "file": {
         "path": "fonts/noto-sans-bengali/NotoSansBengali-Regular.ttf",
@@ -83073,6 +83144,41 @@
       "shaping": {
         "path": "fonts/shaping/noto-sans-bengali.json",
         "sha256": "376d1f7f27190d667923e081a6e06161ed07b20e34e113457bfec9a8200ed28a",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/noto-sans-cham",
+      "file": {
+        "path": "fonts/noto-sans-cham/NotoSansCham-Regular.ttf",
+        "sha256": "d48a34e02b4096eb3f2e008b74459789540598c2274d65fc53012517d0b08d92",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "The Noto Project Authors (https://github.com/notofonts/cham)",
+        "source": "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansCham/unhinted/ttf/NotoSansCham-Regular.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB",
+        "font.table=glyf"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-sans-cham.json",
+        "sha256": "d922dfde809c6fe5bc38c98c70a380f6cb348bf8cfb96f3b373a47e167726048",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-sans-cham.json",
+        "sha256": "801f8fb094684491a37f7113acb50b2a31b37bef76eb429346bb2b358e51237d",
         "role": "shaping-vectors"
       }
     },
@@ -83343,6 +83449,48 @@
       }
     },
     {
+      "id": "fonts/noto-sans-duployan",
+      "file": {
+        "path": "fonts/noto-sans-duployan/NotoSansDuployan-Regular.subset.ttf",
+        "sha256": "bd0c12b0cbeb2f67faaa572f94bd28717d1f7abb49d5b0e0a609cffdcace1624",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "David Corbett and Google LLC (https://github.com/notofonts/duployan)",
+        "source": "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansDuployan/unhinted/ttf/NotoSansDuployan-Regular.ttf",
+        "tools": [
+          "hb-subset 14.6.0"
+        ],
+        "commands": [
+          "hb-subset --unicodes=20,2E,41,25CC,200C,200D,1BC00-1BC0B,1BC21,1BC37,1BC3B,1BC40,1BC41,1BC44,1BC46,1BC5A,1BC68,1BC9D-1BCA3 --layout-features=* --no-hinting --notdef-outline --output-file=NotoSansDuployan-Regular.subset.ttf NotoSansDuployan-Regular.ttf"
+        ]
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "subset",
+      "features": [
+        "font.cmap=12",
+        "font.cmap=4",
+        "font.loca=long",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB",
+        "font.table=glyf"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-sans-duployan.json",
+        "sha256": "2260714010ce2c53ba5348d802e19b63622ca29fddfc8245bd9ef568b9b18431",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-sans-duployan.json",
+        "sha256": "c82c6088c34810993f58fbb3e0fa89b9415533b1bdc72e60b1b3364f62b1a18b",
+        "role": "shaping-vectors"
+      }
+    },
+    {
       "id": "fonts/noto-sans-gujarati",
       "file": {
         "path": "fonts/noto-sans-gujarati/NotoSansGujarati-Regular.ttf",
@@ -83488,6 +83636,77 @@
       }
     },
     {
+      "id": "fonts/noto-sans-javanese",
+      "file": {
+        "path": "fonts/noto-sans-javanese/NotoSansJavanese-Regular.ttf",
+        "sha256": "016f43b042c0b01e29688f71607e5d6fdb0effef6fc7aa3aa8eae6b4427fdca8",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "The Noto Project Authors (https://github.com/notofonts/javanese)",
+        "source": "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansJavanese/unhinted/ttf/NotoSansJavanese-Regular.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB",
+        "font.table=glyf"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-sans-javanese.json",
+        "sha256": "a6eee67c6f97a4918ea1265370ec44c14708c559afac78b2191ea25ba6d57f9f",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-sans-javanese.json",
+        "sha256": "04f35c38312a27e60338052eb1c475a379611a5d464fd2168e510675203cca9d",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/noto-sans-kaithi",
+      "file": {
+        "path": "fonts/noto-sans-kaithi/NotoSansKaithi-Regular.ttf",
+        "sha256": "ba33fd78d18df942260c53df4080254901aa7c3b69678c7571d680bf063a5e2d",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "The Noto Project Authors (https://github.com/notofonts/kaithi)",
+        "source": "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansKaithi/unhinted/ttf/NotoSansKaithi-Regular.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=12",
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB",
+        "font.table=glyf"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-sans-kaithi.json",
+        "sha256": "433d1d1a01e44c5657d93c8e9c4e650ac77894ef12930bb8a0f96cfe05dfd386",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-sans-kaithi.json",
+        "sha256": "ea00158f3d9cfd3448358388ae1b2e5c0a3c796258a1e0a04284a4552e2b19a6",
+        "role": "shaping-vectors"
+      }
+    },
+    {
       "id": "fonts/noto-sans-kannada",
       "file": {
         "path": "fonts/noto-sans-kannada/NotoSansKannada-Regular.ttf",
@@ -83593,6 +83812,41 @@
       }
     },
     {
+      "id": "fonts/noto-sans-lepcha",
+      "file": {
+        "path": "fonts/noto-sans-lepcha/NotoSansLepcha-Regular.ttf",
+        "sha256": "e3f52772d537a0156efa2dbfb7057f154485990df555ef15bd37e5046907dee6",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "The Noto Project Authors (https://github.com/notofonts/lepcha)",
+        "source": "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansLepcha/unhinted/ttf/NotoSansLepcha-Regular.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB",
+        "font.table=glyf"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-sans-lepcha.json",
+        "sha256": "5ffe4c34f876f3332b02163087c17b4f39e031fe32c5739212575299502333a0",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-sans-lepcha.json",
+        "sha256": "ef7b151bcb57ae0306b26cb8ea2071ff75664085c588bf41fa4c0d634794c3a1",
+        "role": "shaping-vectors"
+      }
+    },
+    {
       "id": "fonts/noto-sans-malayalam",
       "file": {
         "path": "fonts/noto-sans-malayalam/NotoSansMalayalam-Regular.ttf",
@@ -83669,6 +83923,42 @@
       }
     },
     {
+      "id": "fonts/noto-sans-mongolian",
+      "file": {
+        "path": "fonts/noto-sans-mongolian/NotoSansMongolian-Regular.ttf",
+        "sha256": "df8e76675870a47f7dd97ea7e224fcf870713f43ebe6fe4ae6c260d0ee838a0d",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "The Noto Project Authors (https://github.com/notofonts/mongolian)",
+        "source": "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansMongolian/unhinted/ttf/NotoSansMongolian-Regular.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=12",
+        "font.cmap=4",
+        "font.loca=long",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB",
+        "font.table=glyf"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-sans-mongolian.json",
+        "sha256": "a7bfd25e0abf03e3c9905d6c958f195e75f4e8073e3b7839e3107422116c4166",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-sans-mongolian.json",
+        "sha256": "8e7fd52c9b020a840e3f228d01bdb902c2ba3a4aa6fbf14cb1ac94045ad2aca4",
+        "role": "shaping-vectors"
+      }
+    },
+    {
       "id": "fonts/noto-sans-myanmar",
       "file": {
         "path": "fonts/noto-sans-myanmar/NotoSansMyanmar-Regular.ttf",
@@ -83700,6 +83990,77 @@
       "shaping": {
         "path": "fonts/shaping/noto-sans-myanmar.json",
         "sha256": "d62aa70a1d9b862b15b591985fe64f9b86203fabf8519b7bdf047b3f25879803",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/noto-sans-newa",
+      "file": {
+        "path": "fonts/noto-sans-newa/NotoSansNewa-Regular.ttf",
+        "sha256": "b772e089e2298380589f8cdea1f53da9e8ad0aa3e2edbaaaeb8704cd5072309c",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "The Noto Project Authors (https://github.com/notofonts/newa)",
+        "source": "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansNewa/unhinted/ttf/NotoSansNewa-Regular.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=12",
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB",
+        "font.table=glyf"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-sans-newa.json",
+        "sha256": "ad6652dd33f39d67ea38a1c28affd17042b375b8169dfc2fc5646123d6a01caf",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-sans-newa.json",
+        "sha256": "707cbb66f186febce4dbf48f279c294127f8e2f26f5da008456c700ae725e51d",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/noto-sans-nko",
+      "file": {
+        "path": "fonts/noto-sans-nko/NotoSansNKo-Regular.ttf",
+        "sha256": "72107ca6885331147fb0ca4d7a71f96e6b3e989a75d66ef979a96966b28f8526",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "The Noto Project Authors (https://github.com/notofonts/nko)",
+        "source": "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansNKo/unhinted/ttf/NotoSansNKo-Regular.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB",
+        "font.table=glyf"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-sans-nko.json",
+        "sha256": "6f0b2330cb4501f61d9eb8b268a2e22613fe5f58b992ab2054255418a488cac3",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-sans-nko.json",
+        "sha256": "11252e9b9799b77ea3a92ebb208bcad7e5c5d66f90bcda95054e978325cd1e45",
         "role": "shaping-vectors"
       }
     },
@@ -83889,6 +84250,42 @@
       "original": "fonts/noto-sans-regular"
     },
     {
+      "id": "fonts/noto-sans-sinhala",
+      "file": {
+        "path": "fonts/noto-sans-sinhala/NotoSansSinhala-Regular.ttf",
+        "sha256": "9517c7789971e8d17f55ef61992faf526eb21e7910d2dda82f50d82b95255d0e",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "The Noto Project Authors (https://github.com/notofonts/sinhala)",
+        "source": "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansSinhala/unhinted/ttf/NotoSansSinhala-Regular.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=12",
+        "font.cmap=4",
+        "font.loca=long",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB",
+        "font.table=glyf"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-sans-sinhala.json",
+        "sha256": "b953705b91cfd707c511f6b870ed416564e708681753012f75a0b18412685d5b",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-sans-sinhala.json",
+        "sha256": "d793acae80b2d1a3e4f5ec3d9909edafe17e59a5414ba1e84fdce6c379a7f9f5",
+        "role": "shaping-vectors"
+      }
+    },
+    {
       "id": "fonts/noto-sans-syriac",
       "file": {
         "path": "fonts/noto-sans-syriac/NotoSansSyriac-Regular.ttf",
@@ -83924,6 +84321,41 @@
       }
     },
     {
+      "id": "fonts/noto-sans-tai-tham",
+      "file": {
+        "path": "fonts/noto-sans-tai-tham/NotoSansTaiTham-Regular.ttf",
+        "sha256": "f07591d877c315027d1e8945143c6aed351f43561af1b102364ad9ea70d47d2f",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "The Noto Project Authors (https://github.com/notofonts/tai-tham)",
+        "source": "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSansTaiTham/unhinted/ttf/NotoSansTaiTham-Regular.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB",
+        "font.table=glyf"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-sans-tai-tham.json",
+        "sha256": "57eee69699af18974e18176d5bbf5763384504ccedbfccc920e910f066a971d1",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-sans-tai-tham.json",
+        "sha256": "23db1fdbdc3c0a13a205d33b10d3cd8bc8adbcd1bd57067b965a95ae0f754bb5",
+        "role": "shaping-vectors"
+      }
+    },
+    {
       "id": "fonts/noto-sans-tamil",
       "file": {
         "path": "fonts/noto-sans-tamil/NotoSansTamil-Regular.ttf",
@@ -83955,7 +84387,7 @@
       },
       "shaping": {
         "path": "fonts/shaping/noto-sans-tamil.json",
-        "sha256": "8586855f0675b1859a7b4c069f6317e275557946bb6e0413845b9b8139df6cfb",
+        "sha256": "c0e3704f72c5a016c7ca8950bd9abe92362fa074a3bcf6a57d3c248aa96df3c0",
         "role": "shaping-vectors"
       }
     },
@@ -84073,6 +84505,41 @@
       "shaping": {
         "path": "fonts/shaping/noto-sans-variable.json",
         "sha256": "d551ab1c6b412a4b159a91996cbf6af1c430b1682c48c75edfaf41400896213e",
+        "role": "shaping-vectors"
+      }
+    },
+    {
+      "id": "fonts/noto-serif-tibetan",
+      "file": {
+        "path": "fonts/noto-serif-tibetan/NotoSerifTibetan-Regular.ttf",
+        "sha256": "7292b2c76cf5c9b81e5362d88e0cb0a16b9d92827f86f945203014b049fd2fc5",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "OFL-1.1",
+        "author": "The Noto Project Authors (https://github.com/notofonts/tibetan)",
+        "source": "https://github.com/notofonts/notofonts.github.io/blob/28b15b4b43b7bed62b5cf6e6b0b5ff5846270535/fonts/NotoSerifTibetan/unhinted/ttf/NotoSerifTibetan-Regular.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=long",
+        "font.table=GDEF",
+        "font.table=GPOS",
+        "font.table=GSUB",
+        "font.table=glyf"
+      ],
+      "vectors": {
+        "path": "fonts/vectors/noto-serif-tibetan.json",
+        "sha256": "43e25fd5bc35dd78155092f573f73d624ff9875eb238d9e6b435594426c1a00f",
+        "role": "font-vectors"
+      },
+      "shaping": {
+        "path": "fonts/shaping/noto-serif-tibetan.json",
+        "sha256": "16506f113296a8e841908f0537e59f2f6c2b4dafbb9382f6aebf72e280e092c3",
         "role": "shaping-vectors"
       }
     },

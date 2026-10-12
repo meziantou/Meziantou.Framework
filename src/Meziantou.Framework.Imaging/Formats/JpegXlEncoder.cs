@@ -23,6 +23,50 @@ public sealed class JpegXlEncoder : ImageEncoder
     /// <inheritdoc />
     public override ImageFormat Format => ImageFormat.JpegXl;
 
+    /// <summary>Gets how every frame is coded. Defaults to <see cref="JpegXlCompression.Lossless"/>.</summary>
+    /// <exception cref="ArgumentOutOfRangeException">The value is not a defined <see cref="JpegXlCompression"/>.</exception>
+    public JpegXlCompression Compression
+    {
+        get;
+        init
+        {
+            if (!Enum.IsDefined(value))
+                throw new ArgumentOutOfRangeException(nameof(value), value, "The compression is not valid.");
+
+            field = value;
+        }
+    }
+
+    /// <summary>
+    /// Gets the quality of <see cref="JpegXlCompression.Lossy"/> output, from 0 (smallest) to 100 (best). Defaults to 75.
+    /// Ignored by lossless output.
+    /// </summary>
+    /// <remarks>
+    /// The quality selects the quantization steps: 90 is a quality at which the difference with the original is barely
+    /// visible at a normal viewing distance, and 100 is the finest quantization the encoder uses, still lossy. It never
+    /// changes the encoding time.
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException">The value is not between 0 and 100.</exception>
+    public int Quality
+    {
+        get;
+        init
+        {
+            ArgumentOutOfRangeException.ThrowIfLessThan(value, 0);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(value, 100);
+            field = value;
+        }
+    } = 75;
+
+    /// <summary>
+    /// Gets a value indicating whether the frames are written so that a reader of a part of the file can show the image at
+    /// a lower resolution, then refine it. Defaults to <see langword="false"/>.
+    /// </summary>
+    /// <remarks>
+    /// The decoded pixels are those of a file that is not progressive; the file is slightly larger.
+    /// </remarks>
+    public bool Progressive { get; init; }
+
     /// <summary>
     /// Gets the compression effort, from 0 (fastest, largest output) to 9 (slowest, smallest output). Defaults to 5. The effort
     /// never changes the decoded pixels.

@@ -122,6 +122,13 @@ namespace Meziantou.Framework.Imaging
         public static bool operator >=(Meziantou.Framework.Imaging.FrameDuration left, Meziantou.Framework.Imaging.FrameDuration right) => throw null;
     }
 
+    public sealed class FrameRefinement
+    {
+        public bool IsFinal { get => throw null; }
+        public int Downsampling { get => throw null; }
+        public int CompletedPasses { get => throw null; }
+    }
+
     public struct Gray16 : System.IEquatable<Meziantou.Framework.Imaging.Gray16>
     {
         public ushort Value;
@@ -446,6 +453,8 @@ namespace Meziantou.Framework.Imaging
         public Meziantou.Framework.Imaging.Image<TPixel>? ReadFrame() => throw null;
         public System.Threading.Tasks.ValueTask<Meziantou.Framework.Imaging.Image<TPixel>?> ReadFrameAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
         public bool ReadFrameInto(Meziantou.Framework.Imaging.Image<TPixel> destination) => throw null;
+        public Meziantou.Framework.Imaging.FrameRefinement? ReadFrameRefinementInto(Meziantou.Framework.Imaging.Image<TPixel> destination) => throw null;
+        public System.Threading.Tasks.ValueTask<Meziantou.Framework.Imaging.FrameRefinement?> ReadFrameRefinementIntoAsync(Meziantou.Framework.Imaging.Image<TPixel> destination, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public System.Threading.Tasks.ValueTask<bool> ReadFrameIntoAsync(Meziantou.Framework.Imaging.Image<TPixel> destination, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public void Dispose() { }
         public System.Threading.Tasks.ValueTask DisposeAsync() => throw null;
@@ -1109,9 +1118,18 @@ namespace Meziantou.Framework.Imaging.Formats
         public bool AllowBitDepthReduction { get => throw null; init { } }
     }
 
+    public enum JpegXlCompression
+    {
+        Lossless = 0,
+        Lossy = 1,
+    }
+
     public sealed class JpegXlEncoder : Meziantou.Framework.Imaging.Formats.ImageEncoder
     {
         public override Meziantou.Framework.Imaging.ImageFormat Format { get => throw null; }
+        public Meziantou.Framework.Imaging.Formats.JpegXlCompression Compression { get => throw null; init { } }
+        public int Quality { get => throw null; init { } }
+        public bool Progressive { get => throw null; init { } }
         public int Effort { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Formats.FrameDurationRounding DurationRounding { get => throw null; init { } }
     }

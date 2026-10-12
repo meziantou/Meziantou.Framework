@@ -135,10 +135,17 @@ public sealed class ApiSurfaceTests
         Assert.True(type.IsPublic && type.IsSealed && type.IsSubclassOf(typeof(ImageEncoder)));
         Assert.NotNull(type.GetConstructor(Type.EmptyTypes));
         Assert.Equal(
-            [nameof(JpegXlEncoder.DurationRounding), nameof(JpegXlEncoder.Effort), nameof(JpegXlEncoder.Format)],
+            [nameof(JpegXlEncoder.Compression), nameof(JpegXlEncoder.DurationRounding), nameof(JpegXlEncoder.Effort), nameof(JpegXlEncoder.Format), nameof(JpegXlEncoder.Progressive), nameof(JpegXlEncoder.Quality)],
             type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly).Select(property => property.Name).Order(StringComparer.Ordinal));
         Assert.Equal(typeof(int), GetDeclaredProperty(type, nameof(JpegXlEncoder.Effort)).PropertyType);
         Assert.Equal(typeof(FrameDurationRounding), GetDeclaredProperty(type, nameof(JpegXlEncoder.DurationRounding)).PropertyType);
+        Assert.Equal(typeof(JpegXlCompression), GetDeclaredProperty(type, nameof(JpegXlEncoder.Compression)).PropertyType);
+        Assert.Equal(typeof(int), GetDeclaredProperty(type, nameof(JpegXlEncoder.Quality)).PropertyType);
+        Assert.Equal(typeof(bool), GetDeclaredProperty(type, nameof(JpegXlEncoder.Progressive)).PropertyType);
+
+        // The lossless coding is the default value of the enumeration, like the other formats that have two codings
+        Assert.Equal(0, (int)JpegXlCompression.Lossless);
+        Assert.Equal(1, (int)JpegXlCompression.Lossy);
     }
 
     [Theory]

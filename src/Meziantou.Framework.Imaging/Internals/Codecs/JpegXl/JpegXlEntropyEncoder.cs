@@ -20,7 +20,7 @@ internal sealed class JpegXlEntropyEncoder : IDisposable
     private const int MaxAlphabetSize = 1 << JpegXlPrefixCode.MaxLength;
 
     /// <summary>The base-2 logarithm of the alphabet size of the ANS distributions that are written: 256 tokens.</summary>
-    private const int AnsLogAlphabetSize = 8;
+    internal const int AnsLogAlphabetSize = 8;
 
     private const int RefillFlag = 1 << 16;
 
@@ -108,12 +108,7 @@ internal sealed class JpegXlEntropyEncoder : IDisposable
 
         for (var i = 0; i < _clusterCount; i++)
         {
-            writer.WriteBits((uint)_config.SplitExponent, JpegXlHybridUintConfig.CeilingLog2(logAlphabetSize + 1));
-            if (_config.SplitExponent != logAlphabetSize)
-            {
-                writer.WriteBits((uint)_config.MsbInToken, JpegXlHybridUintConfig.CeilingLog2(_config.SplitExponent + 1));
-                writer.WriteBits((uint)_config.LsbInToken, JpegXlHybridUintConfig.CeilingLog2(_config.SplitExponent - _config.MsbInToken + 1));
-            }
+            WriteConfig(writer, _config, logAlphabetSize);
         }
 
         if (_useAns)
@@ -168,56 +163,90 @@ internal sealed class JpegXlEntropyEncoder : IDisposable
     {
         const int TableSize = JpegXlAnsDistribution.TableSize;
         const int BucketCount = 1 << AnsLogAlphabetSize;
-        const int LogBucketSize = JpegXlAnsDistribution.LogTableSize - AnsLogAlphabetSize;
 
         // For each cluster: the probability of each token, where the positions of each token start once sorted by token, and
         // the state the decoder maps to each of these positions (the inverse of its alias table)
         using var distributions = Av1PooledArray<int>.Rent(_scope, (long)_clusterCount * BucketCount, clear: true);
         using var starts = Av1PooledArray<int>.Rent(_scope, (long)_clusterCount * BucketCount, clear: false);
         using var positions = Av1PooledArray<ushort>.Rent(_scope, (long)_clusterCount * TableSize, clear: false);
-        Span<JpegXlAnsDistribution.AliasEntry> aliases = stackalloc JpegXlAnsDistribution.AliasEntry[BucketCount];
         for (var cluster = 0; cluster < _clusterCount; cluster++)
         {
             var distribution = distributions.Span.Slice(cluster * BucketCount, BucketCount);
             Normalize(_histograms[cluster], distribution);
             WriteDistribution(writer, distribution);
-
-            var start = starts.Span.Slice(cluster * BucketCount, BucketCount);
-            var sum = 0;
-            for (var i = 0; i < BucketCount; i++)
-            {
-                start[i] = sum;
-                sum += distribution[i];
-            }
-
-            JpegXlAnsDistribution.BuildAliasTable(distribution, aliases);
-            var position = positions.Span.Slice(cluster * TableSize, TableSize);
-            for (var index = 0; index < TableSize; index++)
-            {
-                var bucket = index >> LogBucketSize;
-                var offset = index & ((1 << LogBucketSize) - 1);
-                ref readonly var entry = ref aliases[bucket];
-                if (offset < entry.Cutoff)
-                {
-                    position[start[bucket] + offset] = (ushort)index;
-                }
-                else
-                {
-                    position[start[entry.Symbol] + entry.Offset + offset] = (ushort)index;
-                }
-            }
+            BuildAnsEncodingTable(distribution, starts.Span.Slice(cluster * BucketCount, BucketCount), positions.Span.Slice(cluster * TableSize, TableSize));
         }
 
-        // The decoder reads the values first to last and ends in the initial state: the states are computed last to first.
-        // When a state would not fit 32 bits, its low 16 bits are what the decoder reads after the value
         var values = _values is null ? default : _values.Span[.._count];
         using var refills = Av1PooledArray<int>.Rent(_scope, Math.Max(1, _count), clear: false);
+        WriteAnsStream(writer, values, distributions.Span, starts.Span, positions.Span, refills.Span);
+    }
+
+    /// <summary>Writes the configuration of the hybrid integers of a cluster.</summary>
+    internal static void WriteConfig(LsbBitWriter writer, JpegXlHybridUintConfig config, int logAlphabetSize)
+    {
+        writer.WriteBits((uint)config.SplitExponent, JpegXlHybridUintConfig.CeilingLog2(logAlphabetSize + 1));
+        if (config.SplitExponent != logAlphabetSize)
+        {
+            writer.WriteBits((uint)config.MsbInToken, JpegXlHybridUintConfig.CeilingLog2(config.SplitExponent + 1));
+            writer.WriteBits((uint)config.LsbInToken, JpegXlHybridUintConfig.CeilingLog2(config.SplitExponent - config.MsbInToken + 1));
+        }
+    }
+
+    /// <summary>
+    /// Computes, for a distribution of 256 tokens, where the positions of each token start once sorted by token, and the
+    /// state the decoder maps to each of these positions (the inverse of its alias table).
+    /// </summary>
+    internal static void BuildAnsEncodingTable(ReadOnlySpan<int> distribution, Span<int> starts, Span<ushort> positions)
+    {
+        const int BucketCount = 1 << AnsLogAlphabetSize;
+        const int LogBucketSize = JpegXlAnsDistribution.LogTableSize - AnsLogAlphabetSize;
+        Span<JpegXlAnsDistribution.AliasEntry> aliases = stackalloc JpegXlAnsDistribution.AliasEntry[BucketCount];
+        var sum = 0;
+        for (var i = 0; i < BucketCount; i++)
+        {
+            starts[i] = sum;
+            sum += distribution[i];
+        }
+
+        JpegXlAnsDistribution.BuildAliasTable(distribution, aliases);
+        for (var index = 0; index < JpegXlAnsDistribution.TableSize; index++)
+        {
+            var bucket = index >> LogBucketSize;
+            var offset = index & ((1 << LogBucketSize) - 1);
+            ref readonly var entry = ref aliases[bucket];
+            if (offset < entry.Cutoff)
+            {
+                positions[starts[bucket] + offset] = (ushort)index;
+            }
+            else
+            {
+                positions[starts[entry.Symbol] + entry.Offset + offset] = (ushort)index;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Writes the state of the ANS coder, then the values of a stream. The decoder reads the values first to last and ends
+    /// in the initial state: the states are computed last to first. When a state would not fit 32 bits, its low 16 bits are
+    /// what the decoder reads after the value.
+    /// </summary>
+    /// <param name="writer">The writer.</param>
+    /// <param name="values">The values: the cluster, the token, the number of raw bits and the raw bits of each.</param>
+    /// <param name="distributions">The distributions of the clusters, 256 values each.</param>
+    /// <param name="starts">The starts of the clusters, as <see cref="BuildAnsEncodingTable"/> computes them.</param>
+    /// <param name="positions">The positions of the clusters, as <see cref="BuildAnsEncodingTable"/> computes them.</param>
+    /// <param name="refills">Scratch memory of the length of <paramref name="values"/>.</param>
+    internal static void WriteAnsStream(LsbBitWriter writer, ReadOnlySpan<ulong> values, ReadOnlySpan<int> distributions, ReadOnlySpan<int> starts, ReadOnlySpan<ushort> positions, Span<int> refills)
+    {
+        const int TableSize = JpegXlAnsDistribution.TableSize;
+        const int BucketCount = 1 << AnsLogAlphabetSize;
         var state = JpegXlAnsDistribution.InitialState;
         for (var i = values.Length - 1; i >= 0; i--)
         {
             var cluster = (int)(values[i] >> 56);
             var token = (int)((values[i] >> 40) & 0xFFFF);
-            var frequency = (uint)distributions.Span[(cluster * BucketCount) + token];
+            var frequency = (uint)distributions[(cluster * BucketCount) + token];
             var refill = 0;
             if ((state >> (32 - JpegXlAnsDistribution.LogTableSize)) >= frequency)
             {
@@ -225,16 +254,16 @@ internal sealed class JpegXlEntropyEncoder : IDisposable
                 state >>= 16;
             }
 
-            refills.Span[i] = refill;
+            refills[i] = refill;
             var (quotient, remainder) = Math.DivRem(state, frequency);
-            state = (quotient << JpegXlAnsDistribution.LogTableSize) + positions.Span[(cluster * TableSize) + starts.Span[(cluster * BucketCount) + token] + (int)remainder];
+            state = (quotient << JpegXlAnsDistribution.LogTableSize) + positions[(cluster * TableSize) + starts[(cluster * BucketCount) + token] + (int)remainder];
         }
 
         writer.WriteBits(state & 0xFFFF, 16);
         writer.WriteBits(state >> 16, 16);
         for (var i = 0; i < values.Length; i++)
         {
-            var refill = refills.Span[i];
+            var refill = refills[i];
             if (refill != 0)
             {
                 writer.WriteBits((uint)refill & 0xFFFF, 16);
@@ -248,7 +277,7 @@ internal sealed class JpegXlEntropyEncoder : IDisposable
     /// Scales the counts of the tokens of a cluster to probabilities whose sum is 4096, each token that occurs keeping a
     /// probability; a cluster without value is given the token 0.
     /// </summary>
-    private static void Normalize(ReadOnlySpan<uint> histogram, Span<int> distribution)
+    internal static void Normalize(ReadOnlySpan<uint> histogram, Span<int> distribution)
     {
         const int TableSize = JpegXlAnsDistribution.TableSize;
         distribution.Clear();
@@ -307,7 +336,7 @@ internal sealed class JpegXlEntropyEncoder : IDisposable
     }
 
     /// <summary>Writes a distribution (section D.3.4), exactly: with one or two tokens, or as the logarithm and the lower bits of each probability.</summary>
-    private static void WriteDistribution(LsbBitWriter writer, ReadOnlySpan<int> distribution)
+    internal static void WriteDistribution(LsbBitWriter writer, ReadOnlySpan<int> distribution)
     {
         var used = 0;
         var first = -1;
@@ -414,24 +443,26 @@ internal sealed class JpegXlEntropyEncoder : IDisposable
         writer.WriteBits((uint)(value - (1 << log)), log);
     }
 
+    private (int Token, int BitCount, uint Bits) GetToken(uint value) => GetToken(_config, value);
+
     /// <summary>Splits a value into its token and its raw bits (the inverse of <see cref="JpegXlHybridUintConfig.ReadValue"/>).</summary>
-    private (int Token, int BitCount, uint Bits) GetToken(uint value)
+    internal static (int Token, int BitCount, uint Bits) GetToken(JpegXlHybridUintConfig config, uint value)
     {
-        var split = 1u << _config.SplitExponent;
+        var split = 1u << config.SplitExponent;
         if (value < split)
             return ((int)value, 0, 0);
 
-        var msb = _config.MsbInToken;
-        var lsb = _config.LsbInToken;
+        var msb = config.MsbInToken;
+        var lsb = config.LsbInToken;
         var log = BitOperations.Log2(value);
         var mantissa = value - (1u << log);
-        var token = split + (((uint)(log - _config.SplitExponent)) << (msb + lsb)) + ((mantissa >> (log - msb)) << lsb) + (mantissa & ((1u << lsb) - 1));
+        var token = split + (((uint)(log - config.SplitExponent)) << (msb + lsb)) + ((mantissa >> (log - msb)) << lsb) + (mantissa & ((1u << lsb) - 1));
         var bitCount = log - msb - lsb;
         var bits = (mantissa >> lsb) & (uint)((1UL << bitCount) - 1);
         return ((int)token, bitCount, bits);
     }
 
-    private static void WriteVarLenUint16(LsbBitWriter writer, int value)
+    internal static void WriteVarLenUint16(LsbBitWriter writer, int value)
     {
         if (value == 0)
         {
@@ -446,7 +477,7 @@ internal sealed class JpegXlEntropyEncoder : IDisposable
     }
 
     /// <summary>Writes the prefix code of an alphabet of at least two symbols (section D.2) and computes its codes.</summary>
-    private static void WritePrefixCode(LsbBitWriter writer, ReadOnlySpan<uint> histogram, Span<byte> lengths, Span<ushort> codes)
+    internal static void WritePrefixCode(LsbBitWriter writer, ReadOnlySpan<uint> histogram, Span<byte> lengths, Span<ushort> codes)
     {
         if (histogram.Length > MaxAlphabetSize)
             throw new InvalidOperationException("The alphabet of a prefix code is too large.");

@@ -89,6 +89,25 @@ internal sealed class SequentialDecodeSession
     }
 
     /// <exception cref="InvalidOperationException">A completed image is pending: the walker began another image without yielding.</exception>
+    /// <summary>Gets the factor by which the last intermediate rendering reduces the resolution of the frame.</summary>
+    public int RefinementDownsampling { get; private set; } = 1;
+
+    /// <summary>Gets the number of passes of the last rendering that was reported: the ones an intermediate rendering holds, or all the passes of a frame.</summary>
+    public int RefinementPassCount { get; private set; } = 1;
+
+    /// <summary>Called by the sink when an intermediate rendering of the current frame is written to the image of the caller.</summary>
+    internal void OnRefinement(int downsampling, int passCount)
+    {
+        EnsureNoPendingEvent();
+        RefinementDownsampling = downsampling;
+        RefinementPassCount = passCount;
+        _pendingEvent = SequentialDecodeEvent.Refinement;
+        _yieldRequested = true;
+    }
+
+    /// <summary>Called by a decoder whose frames have passes, before it completes a frame: the number of passes of the frame.</summary>
+    public void SetFramePassCount(int passCount) => RefinementPassCount = passCount;
+
     internal void EnsureNoPendingEvent()
     {
         // A pending header is fine: a decoder may begin its first image in the header callback (bound later)
@@ -99,7 +118,9 @@ internal sealed class SequentialDecodeSession
     internal void BeginRequest(SequentialRequest request, Image? destination)
     {
         Debug.Assert(request != SequentialRequest.None);
-        Debug.Assert(destination is null || request == SequentialRequest.Frame);
+        Debug.Assert(destination is null || request is SequentialRequest.Frame or SequentialRequest.FrameRefinement);
+        RefinementDownsampling = 1;
+        RefinementPassCount = 1;
         Request = request;
         Destination = destination;
     }

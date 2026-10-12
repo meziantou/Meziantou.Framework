@@ -73,15 +73,65 @@ internal static class JpegXlModularEncoder
             writer.WriteU32(0, 0, 0, 1, 0, 2, 4, 18, 8);
         }
 
-        // The residuals of one channel: every channel of a group has the same size
+        EncodeChannels(writer, image.Channels, effort, scope, cancellationToken);
+    }
+
+    /// <summary>
+    /// Writes the start of a sub-bitstream that holds its own tree and applies the squeeze transform with its default
+    /// steps to the channels of the image, after a reversible color transform of the first three channels when the image
+    /// has three color channels; <see cref="EncodeChannels"/> writes what follows.
+    /// </summary>
+    /// <param name="writer">The writer.</param>
+    /// <param name="hasColorTransform">Whether the YCgCo transform is applied to the first three channels.</param>
+    public static void WriteSqueezeHeader(LsbBitWriter writer, bool hasColorTransform)
+    {
+        writer.WriteBool(false);
+        writer.WriteBool(true);
+        writer.WriteU32(hasColorTransform ? 2u : 1u, 0, 0, 1, 0, 2, 4, 18, 8);
+        if (hasColorTransform)
+        {
+            writer.WriteBits(0, 2);
+            writer.WriteU32(0, 0, 3, 8, 6, 72, 10, 1096, 13);
+            writer.WriteU32(YCgCoTransform, 6, 0, 0, 2, 2, 4, 10, 6);
+        }
+
+        // The squeeze transform, without step: the default ones
+        writer.WriteBits(2, 2);
+        writer.WriteU32(0, 0, 0, 1, 4, 9, 6, 41, 8);
+    }
+
+    /// <summary>Writes the start of a sub-bitstream that holds its own tree and has no transform.</summary>
+    public static void WriteHeader(LsbBitWriter writer)
+    {
+        writer.WriteBool(false);
+        writer.WriteBool(true);
+        writer.WriteU32(0, 0, 0, 1, 0, 2, 4, 18, 8);
+    }
+
+    /// <summary>Applies the YCgCo transform to three color channels of the same size: the transform <see cref="WriteSqueezeHeader"/> declares.</summary>
+    public static void ApplyYCgCo(JpegXlModularImage image) => ApplyColorTransform(YCgCoTransform, image.Channels[0].Samples, image.Channels[1].Samples, image.Channels[2].Samples);
+
+    /// <summary>
+    /// Writes the tree and the samples of the channels of a sub-bitstream, after its header: a tree that gives each channel
+    /// its own context and its own predictor, then the residuals.
+    /// </summary>
+    /// <param name="writer">The writer, after the header of the sub-bitstream.</param>
+    /// <param name="channels">The channels, none of them empty.</param>
+    /// <param name="effort">The compression effort, from 0 to 9.</param>
+    /// <param name="scope">The scope of the working memory.</param>
+    /// <param name="cancellationToken">The token checked between channels.</param>
+    public static void EncodeChannels(LsbBitWriter writer, IReadOnlyList<JpegXlModularChannel> channels, int effort, AllocationScope scope, CancellationToken cancellationToken)
+    {
+        // The residuals of one channel
         var sampleCount = 0;
-        foreach (var channel in image.Channels)
+        foreach (var channel in channels)
         {
             sampleCount = Math.Max(sampleCount, channel.Samples.Length);
         }
 
         using var residuals = Av1PooledArray<uint>.Rent(scope, sampleCount, clear: false);
-        Span<int> predictors = stackalloc int[image.Channels.Count];
+        Span<int> predictors = channels.Count <= 64 ? stackalloc int[channels.Count] : new int[channels.Count];
+        Span<int> contexts = channels.Count <= 64 ? stackalloc int[channels.Count] : new int[channels.Count];
         predictors.Fill(GradientPredictor);
         if (effort >= SearchEffort)
         {
@@ -92,7 +142,7 @@ internal static class JpegXlModularEncoder
                 var best = double.MaxValue;
                 foreach (var candidate in candidates)
                 {
-                    var cost = EstimateCost(image.Channels[c], candidate, residuals.Span, scope);
+                    var cost = EstimateCost(channels[c], candidate, residuals.Span, scope);
                     if (cost < best)
                     {
                         best = cost;
@@ -102,14 +152,13 @@ internal static class JpegXlModularEncoder
             }
         }
 
-        Span<int> contexts = stackalloc int[image.Channels.Count];
         WriteTree(writer, predictors, contexts, scope);
 
         using var stream = new JpegXlEntropyEncoder(contexts.Length, SampleConfig, scope, useAns: effort >= SearchEffort);
-        for (var c = 0; c < image.Channels.Count; c++)
+        for (var c = 0; c < channels.Count; c++)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            var channel = image.Channels[c];
+            var channel = channels[c];
             var values = residuals.Span[..channel.Samples.Length];
             ComputeResiduals(channel, predictors[c], values, scope);
             foreach (var value in values)

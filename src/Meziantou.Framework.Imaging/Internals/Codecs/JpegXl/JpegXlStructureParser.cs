@@ -48,6 +48,7 @@ internal sealed class JpegXlStructureParser : ImageParser<ImageInfo>
     private bool _exifSeen;
     private bool _xmpSeen;
     private int _frameCount;
+    private int _checkpoint;
     private ImageInfo? _result;
 
     // Box being streamed
@@ -511,6 +512,10 @@ internal sealed class JpegXlStructureParser : ImageParser<ImageInfo>
 
             case JpegXlCodestreamEvent.FrameComplete:
                 return OnFrameComplete();
+
+            case JpegXlCodestreamEvent.PayloadCheckpoint:
+                _observer!.OnFramePartial(this, _walker.FrameHeader!, _walker.Toc!, _walker.Payload!, _checkpoint++);
+                return TryYield() ? ParseStatus.Complete : null;
         }
 
         // The walker took everything it was given and needs more
@@ -572,6 +577,16 @@ internal sealed class JpegXlStructureParser : ImageParser<ImageInfo>
         }
 
         _walker.BeginPayload(buffer: _walk == StructureWalk.Decode && !_walker.IsPreviewFrame);
+        _checkpoint = 0;
+        if (_walk == StructureWalk.Decode && !_walker.IsPreviewFrame && _context.Sequential is not null && IsDisplayed(frame))
+        {
+            // A sequential reader may ask for the frame before it is complete
+            var checkpoints = _observer!.GetPayloadCheckpoints(this, frame, _walker.Toc!);
+            if (checkpoints.Length > 0)
+            {
+                _walker.SetPayloadCheckpoints(checkpoints);
+            }
+        }
     }
 
     private ParseStatus? OnFrameComplete()

@@ -103,6 +103,56 @@ public sealed class ImageReader<TPixel> : IDisposable, IAsyncDisposable
         return _core.ReadFrameInto(destination);
     }
 
+    /// <summary>
+    /// Reads the next rendering of the current displayed frame into an existing image: an intermediate rendering, when the
+    /// format stores the frame at increasing levels of detail and the part that was read allows one, otherwise the frame.
+    /// </summary>
+    /// <param name="destination">
+    /// A single-frame still image with the canvas size. Every rendering is a full image at the size of the frame; its
+    /// metadata are replaced like <see cref="ReadFrameInto"/> replaces them.
+    /// </param>
+    /// <returns>
+    /// What was written to the destination, or <see langword="null"/> at the clean end of input, in which case the
+    /// destination is unchanged. After a rendering whose <see cref="FrameRefinement.IsFinal"/> is set, the next read starts
+    /// the next frame.
+    /// </returns>
+    /// <remarks>
+    /// <para>
+    /// Call the method until it returns a final rendering to show an image while its data arrive: a progressive JPEG XL frame
+    /// gives the image at one eighth of its detail, then one rendering for each of its passes, then the frame. Other formats,
+    /// and frames that are not progressive, give the frame at once. <see cref="ReadFrame"/> and <see cref="ReadFrameInto"/>
+    /// may be called at any time: they read the frame itself.
+    /// </para>
+    /// <para>
+    /// An input that ends before the frame is complete is malformed: the renderings that were returned stay valid, and the
+    /// read that reaches the end of the input throws <see cref="InvalidImageContentException"/>. The intermediate
+    /// renderings of a frame count toward <see cref="ImageResourceLimits.MaxTotalPixels"/>.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="ArgumentException"><paramref name="destination"/> does not have the canvas size, has several frames, a poster frame, or animation settings.</exception>
+    /// <exception cref="InvalidOperationException">Another operation is in progress, the reader is faulted, or a lease is active on the destination.</exception>
+    /// <exception cref="InvalidImageContentException">The data is malformed or truncated. The destination may be partially updated but remains valid.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">The frame uses an unsupported feature.</exception>
+    /// <exception cref="ImageResourceLimitException">A configured limit is exceeded.</exception>
+    /// <exception cref="ObjectDisposedException">The reader or the destination is disposed.</exception>
+    public FrameRefinement? ReadFrameRefinementInto(Image<TPixel> destination)
+    {
+        ArgumentNullException.ThrowIfNull(destination);
+        return _core.ReadFrameRefinementInto(destination);
+    }
+
+    /// <summary>Asynchronously reads the next rendering of the current displayed frame into an existing image (see <see cref="ReadFrameRefinementInto"/>).</summary>
+    /// <param name="destination">A single-frame still image with the canvas size.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+    /// <returns>What was written to the destination, or <see langword="null"/> at the clean end of input.</returns>
+    /// <exception cref="ArgumentException"><paramref name="destination"/> is not a compatible single-frame still image.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled. The reader is faulted; the destination may be partially updated but remains valid.</exception>
+    public ValueTask<FrameRefinement?> ReadFrameRefinementIntoAsync(Image<TPixel> destination, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(destination);
+        return _core.ReadFrameRefinementIntoAsync(destination, cancellationToken);
+    }
+
     /// <summary>Asynchronously reads the next displayed frame into an existing image, reusing its pixel storage.</summary>
     /// <param name="destination">A single-frame still image with the canvas size.</param>
     /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>

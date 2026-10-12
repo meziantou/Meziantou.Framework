@@ -5,16 +5,21 @@ using Meziantou.Framework.Imaging.Formats;
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
-/// The JPEG XL encoder: a lossless Modular codestream (ISO/IEC 18181-1), bare or, when EXIF or XMP metadata are written
-/// or when the codestream exceeds level 5, in the container (ISO/IEC 18181-2).
+/// The JPEG XL encoder: a lossless Modular codestream or a lossy VarDCT one (ISO/IEC 18181-1), bare or, when EXIF or XMP
+/// metadata are written or when the codestream exceeds level 5, in the container (ISO/IEC 18181-2).
 /// </summary>
 /// <remarks>
 /// <list type="bullet">
 /// <item><description>
-/// Layout: grayscale pixel formats are one gray channel, the others three color channels; a pixel format with alpha adds
-/// an alpha channel of the same depth. Every frame is a regular Modular frame that covers the image and replaces it, in
-/// groups of 256 samples: a frame of one group is a single section, otherwise each group is a section that holds its own
-/// tree and prefix codes, so that a frame is compressed group by group.
+/// Lossless layout: grayscale pixel formats are one gray channel, the others three color channels; a pixel format with
+/// alpha adds an alpha channel of the same depth. Every frame is a regular Modular frame that covers the image and
+/// replaces it, in groups of 256 samples: a frame of one group is a single section, otherwise each group is a section
+/// that holds its own tree and prefix codes, so that a frame is compressed group by group.
+/// </description></item>
+/// <item><description>
+/// Lossy layout: the image is stored in XYB and every frame is a VarDCT frame (<see cref="JpegXlVarDctEncoder"/>); the
+/// alpha channel is a lossless Modular channel of the frame, in the global Modular data when it fits a group, otherwise
+/// in the groups of the last pass.
 /// </description></item>
 /// <item><description>
 /// Container: the signature and file type boxes, the level box when the codestream needs level 10 (samples of more than
@@ -69,6 +74,9 @@ internal sealed class JpegXlEncoderCodec : ImageEncoderCodec
         private readonly bool _useContainer;
         private readonly bool _needsLevel10;
         private readonly JpegXlEncoderColor _color;
+        private readonly bool _isLossy;
+        private readonly JpegXlFrameSettings _frameSettings;
+        private JpegXlImageHeader? _imageHeader;
         private readonly byte[]? _icc;
         private readonly byte[]? _exif;
         private readonly byte[]? _xmp;
@@ -114,6 +122,28 @@ internal sealed class JpegXlEncoderCodec : ImageEncoderCodec
             else
             {
                 _color = metadata.TransferFunction == Metadata.ColorTransferFunction.Linear ? JpegXlEncoderColor.LinearSrgb : JpegXlEncoderColor.Srgb;
+            }
+
+            _isLossy = _encoder.Compression == JpegXlCompression.Lossy;
+            _frameSettings = JpegXlFrameSettings.Lossless;
+            if (_isLossy)
+            {
+                // A lossy image is stored in XYB: a decoder converts it to the color space the image declares, which it only
+                // knows for an enumerated encoding and for an sRGB profile
+                if (metadata.IccProfile is { } profile && !SrgbProfileRecognition.IsSrgb(profile, _sourceFormat))
+                    throw new UnsupportedImageFeatureException("Lossy JPEG XL output stores the image in the XYB color space, which requires an sRGB profile or no ICC profile: convert the image with ConvertColorProfile, describe its colors with a CICP description, or use lossless compression.", ImageFormat.JpegXl, "lossy JPEG XL encoding with an ICC profile that is not sRGB");
+
+                if (_color.TransferFunction is JpegXlColorEncoding.TransferPq or JpegXlColorEncoding.TransferHlg)
+                    throw new UnsupportedImageFeatureException("Lossy JPEG XL output is not implemented for the PQ and HLG transfer functions: use lossless compression.", ImageFormat.JpegXl, "lossy JPEG XL encoding of PQ or HLG samples");
+
+                var epfIterations = JpegXlVarDctEncoder.GetEpfIterations(_encoder.Quality);
+                _frameSettings = _encoder.Progressive
+                    ? new JpegXlFrameSettings { PassShifts = [0, 0, 0], PassDownsampleShifts = [2, 1], PassDownsampleLastPasses = [0, 1], EpfIterations = epfIterations }
+                    : new JpegXlFrameSettings { EpfIterations = epfIterations };
+            }
+            else if (_encoder.Progressive)
+            {
+                _frameSettings = new JpegXlFrameSettings { IsModular = true, PassShifts = [0, 0, 0], PassDownsampleShifts = [2, 1], PassDownsampleLastPasses = [0, 1] };
             }
         }
 
@@ -238,7 +268,18 @@ internal sealed class JpegXlEncoderCodec : ImageEncoderCodec
 
             _prefixWritten = true;
             using var writer = new LsbBitWriter(Options.Scope);
-            JpegXlHeaderWriter.WriteImageHeader(writer, Options.CanvasSize, _isGray, _bitsPerSample, _hasAlpha, Options.Metadata.Orientation, _isAnimated ? Options.Animation ?? new Metadata.AnimationMetadata() : null, _color);
+            var animation = _isAnimated ? Options.Animation ?? new Metadata.AnimationMetadata() : null;
+            JpegXlHeaderWriter.WriteImageHeader(writer, Options.CanvasSize, _isGray, _bitsPerSample, _hasAlpha, Options.Metadata.Orientation, animation, _color, _isLossy);
+            if (_isLossy || _encoder.Progressive)
+            {
+                // The headers are parsed back by the reader of the decoder: the encoder derives nothing from them itself
+                using var copy = new LsbBitWriter(Options.Scope);
+                JpegXlHeaderWriter.WriteImageHeader(copy, Options.CanvasSize, _isGray, _bitsPerSample, _hasAlpha, Options.Metadata.Orientation, animation, _color, _isLossy);
+                copy.ZeroPadToByte();
+                var bytes = copy.WrittenSpan.ToArray();
+                _imageHeader = JpegXlImageHeader.Read(new JpegXlBitReader(bytes, 0, bytes.Length));
+            }
+
             if (_icc is not null)
             {
                 JpegXlIccEncoder.Write(writer, _icc, Options.Scope);
@@ -292,7 +333,7 @@ internal sealed class JpegXlEncoderCodec : ImageEncoderCodec
             _emitting = frame;
 
             using var writer = new LsbBitWriter(Options.Scope);
-            JpegXlHeaderWriter.WriteFrameHeader(writer, _hasAlpha, _isAnimated ? frame.Duration : null, isLast);
+            JpegXlHeaderWriter.WriteFrameHeader(writer, _frameSettings, _isLossy, _hasAlpha, _isAnimated ? frame.Duration : null, isLast);
             JpegXlHeaderWriter.WriteToc(writer, CollectionsMarshal.AsSpan(frame.SectionSizes));
             var header = writer.WrittenSpan.ToArray();
             var sections = frame.Sections.WrittenMemory;
@@ -344,6 +385,12 @@ internal sealed class JpegXlEncoderCodec : ImageEncoderCodec
             {
                 duration = AnimationTiming.ToJpegXlDuration(frame.Metadata.Duration, _encoder.DurationRounding);
             }
+
+            if (_isLossy)
+                return CompressLossyFrame(frame, duration);
+
+            if (_encoder.Progressive)
+                return CompressProgressiveFrame(frame, duration);
 
             var scope = Options.Scope;
             var columns = (_width + GroupDimension - 1) / GroupDimension;
@@ -404,6 +451,177 @@ internal sealed class JpegXlEncoderCodec : ImageEncoderCodec
             }
         }
 
+        /// <summary>Gets the header of a frame as the decoder reads it: the geometry of the frame is the one the decoder derives from it.</summary>
+        private JpegXlFrameHeader ReadFrameHeader(uint duration)
+        {
+            using var writer = new LsbBitWriter(Options.Scope);
+            JpegXlHeaderWriter.WriteFrameHeader(writer, _frameSettings, _isLossy, _hasAlpha, _isAnimated ? duration : null, isLast: true);
+            writer.ZeroPadToByte();
+            var bytes = writer.WrittenSpan.ToArray();
+            return JpegXlFrameHeader.Read(new JpegXlBitReader(bytes, 0, bytes.Length), _imageHeader!, isPreview: false);
+        }
+
+        /// <summary>
+        /// Compresses a lossless frame that a reader can show before it has all of it: the whole image is one Modular image
+        /// that is squeezed, each step halving a direction, and each resolution is coded where the format expects it (the
+        /// coarsest channels in <c>LfGlobal</c>, those reduced by 8 or more in the LF groups, the others in the groups of
+        /// the pass of their resolution).
+        /// </summary>
+        private EncodedFrame CompressProgressiveFrame(ImageFrame frame, uint duration)
+        {
+            var header = ReadFrameHeader(duration);
+            var scope = Options.Scope;
+            var colorChannelCount = _isGray ? 1 : 3;
+            LsbBitWriter? owned = null;
+            try
+            {
+                var writer = owned = new LsbBitWriter(scope);
+                var sizes = new List<int>();
+                var total = 0;
+                using var image = new JpegXlModularImage(_bitsPerSample);
+                for (var i = 0; i < colorChannelCount + (_hasAlpha ? 1 : 0); i++)
+                {
+                    image.AddChannel(_width, _height, 0, 0);
+                    image.Channels[i].Allocate(scope);
+                }
+
+                using (var lease = frame.GetStorage().AcquireLease())
+                {
+                    LoadChannels(image, lease, 0, 0, _width, _height);
+                }
+
+                if (colorChannelCount == 3)
+                {
+                    JpegXlModularEncoder.ApplyYCgCo(image);
+                }
+
+                CancellationToken.ThrowIfCancellationRequested();
+                JpegXlModularTransform.ApplyDefaultSqueeze(image, scope);
+
+                // LfGlobal: the default LF dequantization, no global tree, then the channels that fit a group, up to the first
+                // one that does not
+                var groupDimension = (int)header.GroupDimension;
+                var first = 0;
+                while (first < image.Channels.Count && image.Channels[first].Width <= groupDimension && image.Channels[first].Height <= groupDimension)
+                {
+                    first++;
+                }
+
+                writer.WriteBool(true);
+                writer.WriteBool(false);
+                JpegXlModularEncoder.WriteSqueezeHeader(writer, colorChannelCount == 3);
+                JpegXlModularEncoder.EncodeChannels(writer, image.Channels.GetRange(0, first), _encoder.Effort, scope, CancellationToken);
+                EndSection(writer, sizes, ref total);
+
+                var lfDimension = groupDimension * 8;
+                for (var group = 0; group < (int)header.LfGroupCount; group++)
+                {
+                    EncodeRegion(writer, image, first, (long)(group % header.LfGroupColumns) * lfDimension, (long)(group / header.LfGroupColumns) * lfDimension, lfDimension, minShift: 3, maxShift: int.MaxValue);
+                    EndSection(writer, sizes, ref total);
+                }
+
+                // HfGlobal is empty for a Modular frame
+                sizes.Add(0);
+                for (var pass = 0; pass < header.PassCount; pass++)
+                {
+                    var (minShift, maxShift) = header.GetModularShiftBracket(pass);
+                    for (var group = 0; group < (int)header.GroupCount; group++)
+                    {
+                        EncodeRegion(writer, image, first, (long)(group % header.GroupColumns) * groupDimension, (long)(group / header.GroupColumns) * groupDimension, groupDimension, minShift, maxShift);
+                        EndSection(writer, sizes, ref total);
+                    }
+                }
+
+                owned = null;
+                return new EncodedFrame(writer, sizes, duration);
+            }
+            finally
+            {
+                owned?.Dispose();
+            }
+        }
+
+        /// <summary>Compresses what a group codes of the channels of a squeezed image: the rectangle of the group in each channel of its resolutions.</summary>
+        private void EncodeRegion(LsbBitWriter writer, JpegXlModularImage full, int first, long x0, long y0, int dimension, int minShift, int maxShift)
+        {
+            CancellationToken.ThrowIfCancellationRequested();
+            using var region = new JpegXlModularImage(full.BitDepth);
+            for (var i = first; i < full.Channels.Count; i++)
+            {
+                var source = full.Channels[i];
+                if (!JpegXlFrameDecoder.TryGetGroupRectangle(source, x0, y0, dimension, minShift, maxShift, out var x, out var y, out var width, out var height))
+                    continue;
+
+                region.AddChannel(width, height, source.HorizontalShift, source.VerticalShift);
+                var target = region.Channels[^1];
+                target.Allocate(Options.Scope);
+                for (var row = 0; row < height; row++)
+                {
+                    source.GetRow(y + row).Slice(x, width).CopyTo(target.GetRow(row));
+                }
+            }
+
+            if (region.Channels.Count == 0)
+                return;
+
+            JpegXlModularEncoder.WriteHeader(writer);
+            JpegXlModularEncoder.EncodeChannels(writer, region.Channels, _encoder.Effort, Options.Scope, CancellationToken);
+        }
+
+        /// <summary>Compresses a frame with VarDCT.</summary>
+        private EncodedFrame CompressLossyFrame(ImageFrame frame, uint duration)
+        {
+            var header = ReadFrameHeader(duration);
+            LsbBitWriter? owned = null;
+            try
+            {
+                var writer = owned = new LsbBitWriter(Options.Scope);
+                var sizes = new List<int>();
+                using var lease = frame.GetStorage().AcquireLease();
+                using var encoder = new JpegXlVarDctEncoder(_imageHeader!, header, _sourceFormat, _encoder.Quality, _encoder.Effort, Options.Scope, CancellationToken);
+                encoder.Encode(lease, writer, sizes, _hasAlpha ? EncodeAlpha : null);
+                owned = null;
+                return new EncodedFrame(writer, sizes, duration);
+            }
+            finally
+            {
+                owned?.Dispose();
+            }
+        }
+
+        /// <summary>Compresses the alpha samples of a rectangle as a Modular sub-bitstream of one channel.</summary>
+        private void EncodeAlpha(LsbBitWriter writer, scoped in PixelLease lease, int x0, int y0, int width, int height)
+        {
+            CancellationToken.ThrowIfCancellationRequested();
+            var scope = Options.Scope;
+            using var image = new JpegXlModularImage(_bitsPerSample);
+            image.AddChannel(width, height, 0, 0);
+            image.Channels[0].Allocate(scope);
+            for (var y = 0; y < height; y++)
+            {
+                var source = lease.GetRowBytes(y0 + y);
+                var alpha = image.Channels[0].GetRow(y);
+                if (_bitsPerSample == 8)
+                {
+                    var pixels = source.Slice(x0 * 4, width * 4);
+                    for (var x = 0; x < width; x++)
+                    {
+                        alpha[x] = pixels[(x * 4) + 3];
+                    }
+                }
+                else
+                {
+                    var samples = unsafe(MemoryMarshal.Cast<byte, ushort>(source)).Slice(x0 * 4, width * 4);
+                    for (var x = 0; x < width; x++)
+                    {
+                        alpha[x] = samples[(x * 4) + 3];
+                    }
+                }
+            }
+
+            JpegXlModularEncoder.Encode(writer, image, colorChannelCount: 0, _encoder.Effort, scope, CancellationToken);
+        }
+
         private static void EndSection(LsbBitWriter writer, List<int> sizes, ref int total)
         {
             writer.ZeroPadToByte();
@@ -426,6 +644,13 @@ internal sealed class JpegXlEncoderCodec : ImageEncoderCodec
                 image.Channels[i].Allocate(scope);
             }
 
+            LoadChannels(image, lease, x0, y0, width, height);
+            JpegXlModularEncoder.Encode(writer, image, colorChannelCount, _encoder.Effort, scope, CancellationToken);
+        }
+
+        /// <summary>Copies the samples of a rectangle of the frame to the channels of an image: the color channels, then the alpha channel.</summary>
+        private void LoadChannels(JpegXlModularImage image, scoped in PixelLease lease, int x0, int y0, int width, int height)
+        {
             for (var y = 0; y < height; y++)
             {
                 var source = lease.GetRowBytes(y0 + y);
@@ -502,8 +727,6 @@ internal sealed class JpegXlEncoderCodec : ImageEncoderCodec
                     }
                 }
             }
-
-            JpegXlModularEncoder.Encode(writer, image, colorChannelCount, _encoder.Effort, scope, CancellationToken);
         }
 
         /// <summary>A compressed frame that waits to be written: its sections and their sizes.</summary>

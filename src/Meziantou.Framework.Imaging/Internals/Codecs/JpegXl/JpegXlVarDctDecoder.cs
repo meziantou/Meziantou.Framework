@@ -28,7 +28,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 internal sealed class JpegXlVarDctDecoder : IDisposable
 {
     /// <summary>The side of a group of a VarDCT frame, in blocks.</summary>
-    private const int GroupBlocks = 32;
+    private const int GroupBlocks = JpegXlCoefficientContexts.GroupBlocks;
 
     /// <summary>The side of the rectangles that share the factors of the chroma from luma prediction, in blocks.</summary>
     private const int ColorTileBlocks = 8;
@@ -636,8 +636,6 @@ internal sealed class JpegXlVarDctDecoder : IDisposable
         var nonZeros = _nonZeros!.Span;
         var orders = _orders!;
         var quantContextCount = _quantThresholds.Length + 1;
-        var frequencyContexts = JpegXlVarDctTables.CoefficientFrequencyContext;
-        var nonZeroContexts = JpegXlVarDctTables.CoefficientNonZeroContext;
         using var decoder = new JpegXlEntropyDecoder(code, _scope);
         decoder.Begin(reader);
 
@@ -675,32 +673,18 @@ internal sealed class JpegXlVarDctDecoder : IDisposable
                         continue;
 
                     // The block context: the channel (Y, X, B), the order, the range of the quantization factor and of the LF
-                    var channelIndex = c < 2 ? c ^ 1 : 2;
-                    var blockContext = _blockContextMap[(((((channelIndex * JpegXlVarDctTables.OrderCount) + order) * quantContextCount) + quantIndex) * _lfContextCount) + lfIndex[position]];
+                    var blockContext = _blockContextMap[JpegXlCoefficientContexts.GetBlockContextIndex(c, order, quantContextCount, quantIndex, _lfContextCount, lfIndex[position])];
 
                     // The number of non-zero coefficients is predicted from the blocks above and on the left, in the group
                     var channelNonZeros = nonZeros.Slice(c * GroupBlocks * GroupBlocks, GroupBlocks * GroupBlocks);
                     var index = (cy * GroupBlocks) + cx;
-                    int predicted;
-                    if (cx == 0)
-                    {
-                        predicted = cy == 0 ? 32 : channelNonZeros[index - GroupBlocks];
-                    }
-                    else if (cy == 0)
-                    {
-                        predicted = channelNonZeros[index - 1];
-                    }
-                    else
-                    {
-                        predicted = (channelNonZeros[index - GroupBlocks] + channelNonZeros[index - 1] + 1) >> 1;
-                    }
-
-                    var nonZeroContext = ((predicted < 8 ? predicted : 4 + (predicted / 2)) * _blockContextCount) + blockContext;
+                    var predicted = JpegXlCoefficientContexts.PredictNonZeros(channelNonZeros, cx, cy);
+                    var nonZeroContext = JpegXlCoefficientContexts.GetNonZeroContext(predicted, _blockContextCount, blockContext);
                     var nonZeroCount = (int)decoder.Read(reader, contextOffset + nonZeroContext);
                     if ((uint)nonZeroCount > (uint)(size - blockCount))
                         throw JpegXlFormat.Invalid("a block has more non-zero coefficients than coefficients.");
 
-                    var stored = (byte)((nonZeroCount + blockCount - 1) >> logBlockCount);
+                    var stored = JpegXlCoefficientContexts.GetStoredNonZeros(nonZeroCount, blockCount, logBlockCount);
                     for (var by = 0; by < blocksHigh; by++)
                     {
                         channelNonZeros.Slice(index + (by * GroupBlocks), blocksWide).Fill(stored);
@@ -711,16 +695,15 @@ internal sealed class JpegXlVarDctDecoder : IDisposable
 
                     var block = coefficients.Slice((c * groupArea) + offsets[(y * GroupBlocks) + x], size);
                     var coefficientOrder = orders.GetOrder(pass, order, c);
-                    var coefficientContext = contextOffset + (JpegXlVarDctTables.NonZeroContextCount * _blockContextCount) + (JpegXlVarDctTables.CoefficientContextCount * blockContext);
-                    var previous = nonZeroCount > size / 16 ? 0 : 1;
+                    var coefficientContext = contextOffset + JpegXlCoefficientContexts.GetCoefficientContextOffset(_blockContextCount, blockContext);
+                    var previous = JpegXlCoefficientContexts.GetInitialPrevious(nonZeroCount, size);
                     for (var k = blockCount; k < size && nonZeroCount != 0; k++)
                     {
                         // The contexts are defined for the counts a block can still hold
                         if (nonZeroCount > size - k)
                             throw JpegXlFormat.Invalid("a block has more non-zero coefficients left than coefficients.");
 
-                        var remaining = (nonZeroCount + blockCount - 1) >> logBlockCount;
-                        var context = coefficientContext + ((nonZeroContexts[remaining] + frequencyContexts[k >> logBlockCount]) * 2) + previous;
+                        var context = coefficientContext + JpegXlCoefficientContexts.GetCoefficientContext(nonZeroCount, k, blockCount, logBlockCount, previous);
                         var value = decoder.Read(reader, context);
                         block[coefficientOrder[k]] += JpegXlBitReader.UnpackSigned(value) << shift;
                         previous = value != 0 ? 1 : 0;
@@ -1029,7 +1012,7 @@ internal sealed class JpegXlVarDctDecoder : IDisposable
     /// is brought towards zero by the bias of its channel, and a larger one by a bias inversely proportional to it.
     /// </summary>
     [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
-    private static float AdjustBias(int quantized, float bias, float biasNumerator)
+    internal static float AdjustBias(int quantized, float bias, float biasNumerator)
     {
         if (quantized == 0)
             return 0;

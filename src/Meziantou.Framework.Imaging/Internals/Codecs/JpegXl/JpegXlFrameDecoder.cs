@@ -59,10 +59,34 @@ internal sealed class JpegXlFrameDecoder
     public static JpegXlDecodedFrame Decode(JpegXlImageHeader image, JpegXlFrameHeader frame, JpegXlToc toc, byte[] data, JpegXlImageBuffer? lfFrame, AllocationScope scope, CancellationToken cancellationToken)
     {
         EnsureSupported(frame);
-        return new JpegXlFrameDecoder(image, frame, toc, data, lfFrame, scope, cancellationToken).Decode();
+        return new JpegXlFrameDecoder(image, frame, toc, data, lfFrame, scope, cancellationToken).Decode(frame.PassCount)!;
     }
 
-    private JpegXlDecodedFrame Decode()
+    /// <summary>
+    /// Decodes a frame of several sections from its first sections: <c>LfGlobal</c>, the LF groups, <c>HfGlobal</c> and the
+    /// groups of its first passes. What the other passes hold is zero: the coefficients they add, and the Modular channels
+    /// they code.
+    /// </summary>
+    /// <param name="image">The image header.</param>
+    /// <param name="frame">The frame header.</param>
+    /// <param name="toc">The table of contents of the frame.</param>
+    /// <param name="data">The sections of the frame; only the ones that are decoded are read.</param>
+    /// <param name="passCount">The number of passes to decode: fewer than the frame has.</param>
+    /// <param name="lfFrame">The LF frame of the level above the one of the frame, when it was decoded.</param>
+    /// <param name="scope">The scope of the samples and of the working memory.</param>
+    /// <param name="cancellationToken">The token checked between rows and sections.</param>
+    /// <returns>
+    /// The samples, or <see langword="null"/> when they would not show the image: a Modular frame whose color channels are
+    /// coded in the groups and are not squeezed. An alpha channel that is not decoded yet and is not squeezed is opaque.
+    /// </returns>
+    public static JpegXlDecodedFrame? DecodePartial(JpegXlImageHeader image, JpegXlFrameHeader frame, JpegXlToc toc, byte[] data, int passCount, JpegXlImageBuffer? lfFrame, AllocationScope scope, CancellationToken cancellationToken)
+    {
+        EnsureSupported(frame);
+        ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(passCount, frame.PassCount);
+        return new JpegXlFrameDecoder(image, frame, toc, data, lfFrame, scope, cancellationToken).Decode(passCount);
+    }
+
+    private JpegXlDecodedFrame? Decode(int passCount)
     {
         var frame = _frame;
         var groupDimension = (int)frame.GroupDimension;
@@ -138,6 +162,13 @@ internal sealed class JpegXlFrameDecoder
             JpegXlModularDecoder.Decode(_reader, modular, streamIndex: 0, globalTree, groupDimension, undoTransforms: false, _scope, _cancellationToken);
             EndSection();
 
+            // What the passes that are not decoded hold is zero. Squeezed channels are then the image at a lower resolution;
+            // other channels are not the image at all
+            var isPartial = passCount < frame.PassCount;
+            var isSqueezed = modular.Transforms.Exists(transform => transform.IsSqueeze);
+            if (isPartial && !isSqueezed && modularColorChannelCount != 0 && (width > groupDimension || height > groupDimension))
+                return null;
+
             // An LF group holds the LF coefficients of a VarDCT frame, the Modular channels that are subsampled by 8 or more
             // in both directions, then the HF metadata of a VarDCT frame
             var tree = globalTree;
@@ -168,7 +199,7 @@ internal sealed class JpegXlFrameDecoder
             for (var group = 0; group < groupCount; group++)
             {
                 varDct?.BeginGroup(group);
-                for (var pass = 0; pass < frame.PassCount; pass++)
+                for (var pass = 0; pass < passCount; pass++)
                 {
                     var (minShift, maxShift) = frame.GetModularShiftBracket(pass);
                     BeginSection(2 + lfGroupCount + (pass * groupCount) + group);
@@ -187,6 +218,18 @@ internal sealed class JpegXlFrameDecoder
             varDct?.ApplyRestorationFilters();
 
             JpegXlModularDecoder.UndoTransforms(modular, _scope);
+            if (isPartial && !isSqueezed)
+            {
+                for (var i = 0; i < _image.ExtraChannels.Length; i++)
+                {
+                    var channel = modular.Channels.Count == modularColorChannelCount + _image.ExtraChannels.Length ? modular.Channels[modularColorChannelCount + i] : null;
+                    if (channel is not null && _image.ExtraChannels[i].Type == JpegXlExtraChannelInfo.TypeAlpha && (channel.Width > groupDimension || channel.Height > groupDimension))
+                    {
+                        channel.Samples.Fill((1 << _image.ExtraChannels[i].BitDepth.BitsPerSample) - 1);
+                    }
+                }
+            }
+
             if (modular.MetaChannelCount != 0 || modular.Channels.Count != modularColorChannelCount + _image.ExtraChannels.Length)
                 throw JpegXlFormat.Invalid("the transforms of a frame do not give back the channels of the image.");
 
@@ -304,7 +347,11 @@ internal sealed class JpegXlFrameDecoder
             throw JpegXlFormat.Invalid("the transforms of a group do not give back its channels.");
     }
 
-    private static bool TryGetGroupRectangle(JpegXlModularChannel channel, long x0, long y0, int dimension, int minShift, int maxShift, out int x, out int y, out int width, out int height)
+    /// <summary>
+    /// Gets the rectangle of a channel that a group of the frame codes, when the group codes the resolution of the channel:
+    /// the channels whose smaller shift is in the range of the group.
+    /// </summary>
+    internal static bool TryGetGroupRectangle(JpegXlModularChannel channel, long x0, long y0, int dimension, int minShift, int maxShift, out int x, out int y, out int width, out int height)
     {
         x = 0;
         y = 0;

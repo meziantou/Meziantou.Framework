@@ -125,6 +125,9 @@ internal static partial class AvifCorpus
         ["avif/sequence-co64-stz2"] = (0, 0.0),
         ["avif/sequence-ffmpeg"] = (0, 0.0),
         ["avif/sequence-ffmpeg-svt"] = (1, 0.0002), // one unit on a few samples
+        ["avif/sequence-fragmented-alpha"] = (0, 0.0),
+        ["avif/sequence-fragmented-alpha-in-next-fragment"] = (0, 0.0),
+        ["avif/sequence-fragmented-defaults"] = (0, 0.0),
         ["avif/sequence-hdr-boxes"] = (0, 0.0),
         ["avif/sequence-ictcp-hlg"] = (0, 0.0),
         ["avif/sequence-matrix-mirror-clap"] = (0, 0.0),
@@ -831,6 +834,14 @@ internal static partial class AvifCorpus
         var icc = track.IccProfile?.ToArray();
         AddColorFeatures(features, first, alphaPayload?.Frames[0], alphaPayload is null ? [payload] : [payload, alphaPayload], matrix, fullRange, track.Nclx is not null, icc is not null);
         features.Add("avif.seq.editList=" + (track.EditList is not { } edits ? "none" : !edits.IsRepeating ? "once" : track.Duration is null ? "repeat-indefinite" : "repeat"));
+        if (file.HasMovieExtends)
+        {
+            // The images of a fragmented sequence are those of its moov box, then those of its movie fragments
+            features.Add(Inv($"avif.seq.fragments={file.TopLevelBoxes.Count(box => box.Type == "moof")}"));
+            Py.Assert(track.FragmentDecodeTimes.All(time => time.DecodeTime == time.MediaTime), "the fragments follow each other");
+            Py.Assert(track.CompositionOffsets.All(offset => offset == 0), "the samples are shown in the order they are decoded");
+        }
+
         features.Add("avif.seq.sampleSizes=" + track.SampleSizeBox);
         features.Add("avif.seq.chunkOffsets=" + track.ChunkOffsetBox);
         if (payload.HasInterFrames)

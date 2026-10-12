@@ -23731,6 +23731,1343 @@
       "notes": "Exif and XMP items in the meta box of the file, their data in its idat box."
     },
     {
+      "id": "avif/sequence-fragmented",
+      "kind": "valid",
+      "format": "avif",
+      "input": {
+        "path": "avif/sequence-fragmented.avif",
+        "sha256": "cb8e653a3e584598705e191763998c4044b7083d9600be72d5e661739d896082",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/AvifCorpus.Container.cs (BuildSequences)",
+        "tools": [
+          "libavif 1.4.2 avifenc (aom 3.14.1) (payloads)",
+          "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "payloadsOf": "avif/sequence-lossless-6-images"
+        }
+      },
+      "features": [
+        "avif.bitDepth=8",
+        "avif.boxes=unknown",
+        "avif.colr=nclx",
+        "avif.lossless",
+        "avif.majorBrand=avis",
+        "avif.matrix=0",
+        "avif.range=full",
+        "avif.seq.chunkOffsets=stco",
+        "avif.seq.editList=once",
+        "avif.seq.fragments=3",
+        "avif.seq.hiddenFrames=2",
+        "avif.seq.interFrames",
+        "avif.seq.sampleSizes=stsz",
+        "avif.sequence",
+        "avif.subsampling=4:4:4"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "Planes of the samples decoded identically by both decoders, scaled without matrix.",
+        "decoder": "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+        "backend": "ReferenceAvif and ReferenceYuvConverter (test harness)",
+        "command": "av1Vectors.decoders[].command",
+        "crossChecks": [
+          {
+            "decoder": "libavif 1.4.2 avifdec (dav1d 1.5.3)",
+            "command": "avifdec -j 1 --index all {input} {output}.png",
+            "result": "differs",
+            "notes": "avifdec rejects the file: ERROR: Failed to parse image: No content"
+          },
+          {
+            "decoder": "libavif 1.4.2 avifdec (dav1d 1.5.3), on avif/sequence-lossless-6-images",
+            "command": "avifdec -j 1 --index all {input} {output}.png",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "result": "exact",
+            "notes": "The same payloads in the layout avifdec reads; the references are the same files."
+          }
+        ]
+      },
+      "expected": {
+        "width": 8,
+        "height": 8,
+        "pixelFormat": "Rgb24",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "cicp": {
+          "colorPrimaries": 1,
+          "transferCharacteristics": 13,
+          "matrixCoefficients": 0,
+          "fullRange": true
+        },
+        "animation": {
+          "totalPlays": 1,
+          "editList": {
+            "repeating": false,
+            "segmentDuration": 15,
+            "trackDuration": 15
+          }
+        },
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 6,
+        "frames": [
+          {
+            "duration": "1/5",
+            "encodedDelay": {
+              "sampleDelta": 2,
+              "timescale": 10
+            },
+            "buffers": [
+              {
+                "path": "avif/sequence-lossless-6-images.frame-0.rgba8.raw",
+                "sha256": "2083d0503b16c07f1178d4987a1a97291052bea4a718dff2c09f308d05916410",
+                "layout": "rgba8",
+                "width": 8,
+                "height": 8,
+                "rowBytes": 32,
+                "byteLength": 256,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "avif/sequence-lossless-6-images.frame-0.rgb8.raw",
+                "sha256": "57e676ead1e250e2e129d3d8768496fc54320ff4622df52255575de94ae52ed6",
+                "layout": "rgb8",
+                "width": 8,
+                "height": 8,
+                "rowBytes": 24,
+                "byteLength": 192,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          },
+          {
+            "duration": "3/10",
+            "encodedDelay": {
+              "sampleDelta": 3,
+              "timescale": 10
+            },
+            "buffers": [
+              {
+                "path": "avif/sequence-lossless-6-images.frame-1.rgba8.raw",
+                "sha256": "1bb5254aeb2c12962397f09f396ca9970ee9b5cd69a88dbf7f41df3621f3b493",
+                "layout": "rgba8",
+                "width": 8,
+                "height": 8,
+                "rowBytes": 32,
+                "byteLength": 256,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "avif/sequence-lossless-6-images.frame-1.rgb8.raw",
+                "sha256": "eb7385c5408a861ab42500f05a79371e2d27001637a859d69eaa4bdf5d74dd4a",
+                "layout": "rgb8",
+                "width": 8,
+                "height": 8,
+                "rowBytes": 24,
+                "byteLength": 192,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          },
+          {
+            "duration": "1/10",
+            "encodedDelay": {
+              "sampleDelta": 1,
+              "timescale": 10
+            },
+            "buffers": [
+              {
+                "path": "avif/sequence-lossless-6-images.frame-2.rgba8.raw",
+                "sha256": "e43c651fd2aece7dcbc3ef174b06c503aed7d0b776e510fb71ad44bd53f5d61c",
+                "layout": "rgba8",
+                "width": 8,
+                "height": 8,
+                "rowBytes": 32,
+                "byteLength": 256,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "avif/sequence-lossless-6-images.frame-2.rgb8.raw",
+                "sha256": "256d9e9fdcc25b7e3bdb0ca88d075c7730d39458a9b644dd7c79e7c858631382",
+                "layout": "rgb8",
+                "width": 8,
+                "height": 8,
+                "rowBytes": 24,
+                "byteLength": 192,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          },
+          {
+            "duration": "2/5",
+            "encodedDelay": {
+              "sampleDelta": 4,
+              "timescale": 10
+            },
+            "buffers": [
+              {
+                "path": "avif/sequence-lossless-6-images.frame-3.rgba8.raw",
+                "sha256": "c2b01f665250903e9943edfd24de1ec6ebccc10cd8c4112a6a2249fa15d751ba",
+                "layout": "rgba8",
+                "width": 8,
+                "height": 8,
+                "rowBytes": 32,
+                "byteLength": 256,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "avif/sequence-lossless-6-images.frame-3.rgb8.raw",
+                "sha256": "dc4230c4391435388ea2bfb636ad1b4183533e7559aea6ee7dfd3ae3fe9872e9",
+                "layout": "rgb8",
+                "width": 8,
+                "height": 8,
+                "rowBytes": 24,
+                "byteLength": 192,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          },
+          {
+            "duration": "1/5",
+            "encodedDelay": {
+              "sampleDelta": 2,
+              "timescale": 10
+            },
+            "buffers": [
+              {
+                "path": "avif/sequence-lossless-6-images.frame-4.rgba8.raw",
+                "sha256": "3d7de4b13c666da1d26020148515a95309cdd47ac75c550060c981e665a86073",
+                "layout": "rgba8",
+                "width": 8,
+                "height": 8,
+                "rowBytes": 32,
+                "byteLength": 256,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "avif/sequence-lossless-6-images.frame-4.rgb8.raw",
+                "sha256": "9db2a6a49f4c50a25e55627635d9e3126cd815ace401466f44bce5f26d1a74a0",
+                "layout": "rgb8",
+                "width": 8,
+                "height": 8,
+                "rowBytes": 24,
+                "byteLength": 192,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          },
+          {
+            "duration": "3/10",
+            "encodedDelay": {
+              "sampleDelta": 3,
+              "timescale": 10
+            },
+            "buffers": [
+              {
+                "path": "avif/sequence-lossless-6-images.frame-5.rgba8.raw",
+                "sha256": "f5d851bd85e3a513a6520d15779bb56638bd88ac702c80d02c82bd25690ad22a",
+                "layout": "rgba8",
+                "width": 8,
+                "height": 8,
+                "rowBytes": 32,
+                "byteLength": 256,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "avif/sequence-lossless-6-images.frame-5.rgb8.raw",
+                "sha256": "26cc12c5818df00972268ab27f1aca6552bab01a6980be6c08aeaabad5e1c20a",
+                "layout": "rgb8",
+                "width": 8,
+                "height": 8,
+                "rowBytes": 24,
+                "byteLength": 192,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      },
+      "notes": "Six images in three fragments of 2, 3 and 1 images; the data offsets of the runs are relative to their moof box (default-base-is-moof)."
+    },
+    {
+      "id": "avif/sequence-fragmented-after-movie-samples",
+      "kind": "valid",
+      "format": "avif",
+      "input": {
+        "path": "avif/sequence-fragmented-after-movie-samples.avif",
+        "sha256": "206656b48e3242d2f9a6aa8f77cc29bb2d32e44ef8c838ee86e0dea6e34b6c68",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/AvifCorpus.Container.cs (BuildSequences)",
+        "tools": [
+          "libavif 1.4.2 avifenc (aom 3.14.1) (payloads)",
+          "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "payloadsOf": "avif/sequence-lossless-6-images"
+        }
+      },
+      "features": [
+        "avif.bitDepth=8",
+        "avif.boxes=unknown",
+        "avif.colr=nclx",
+        "avif.lossless",
+        "avif.majorBrand=avis",
+        "avif.matrix=0",
+        "avif.range=full",
+        "avif.seq.chunkOffsets=stco",
+        "avif.seq.editList=once",
+        "avif.seq.fragments=2",
+        "avif.seq.hiddenFrames=2",
+        "avif.seq.interFrames",
+        "avif.seq.sampleSizes=stsz",
+        "avif.sequence",
+        "avif.subsampling=4:4:4"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "Planes of the samples decoded identically by both decoders, scaled without matrix.",
+        "decoder": "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+        "backend": "ReferenceAvif and ReferenceYuvConverter (test harness)",
+        "command": "av1Vectors.decoders[].command",
+        "crossChecks": [
+          {
+            "decoder": "libavif 1.4.2 avifdec (dav1d 1.5.3)",
+            "command": "avifdec -j 1 --index all {input} {output}.png",
+            "result": "differs",
+            "notes": "avifdec did not write the 6 expected frames."
+          },
+          {
+            "decoder": "libavif 1.4.2 avifdec (dav1d 1.5.3), on avif/sequence-lossless-6-images",
+            "command": "avifdec -j 1 --index all {input} {output}.png",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "result": "exact",
+            "notes": "The same payloads in the layout avifdec reads; the references are the same files."
+          }
+        ]
+      },
+      "expected": {
+        "width": 8,
+        "height": 8,
+        "pixelFormat": "Rgb24",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "cicp": {
+          "colorPrimaries": 1,
+          "transferCharacteristics": 13,
+          "matrixCoefficients": 0,
+          "fullRange": true
+        },
+        "animation": {
+          "totalPlays": 1,
+          "editList": {
+            "repeating": false,
+            "segmentDuration": 15,
+            "trackDuration": 15
+          }
+        },
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 6,
+        "frames": [
+          {
+            "duration": "1/5",
+            "encodedDelay": {
+              "sampleDelta": 2,
+              "timescale": 10
+            },
+            "buffers": [
+              {
+                "path": "avif/sequence-lossless-6-images.frame-0.rgba8.raw",
+                "sha256": "2083d0503b16c07f1178d4987a1a97291052bea4a718dff2c09f308d05916410",
+                "layout": "rgba8",
+                "width": 8,
+                "height": 8,
+                "rowBytes": 32,
+                "byteLength": 256,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "avif/sequence-lossless-6-images.frame-0.rgb8.raw",
+                "sha256": "57e676ead1e250e2e129d3d8768496fc54320ff4622df52255575de94ae52ed6",
+                "layout": "rgb8",
+                "width": 8,
+                "height": 8,
+                "rowBytes": 24,
+                "byteLength": 192,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          },
+          {
+            "duration": "3/10",
+            "encodedDelay": {
+              "sampleDelta": 3,
+              "timescale": 10
+            },
+            "buffers": [
+              {
+                "path": "avif/sequence-lossless-6-images.frame-1.rgba8.raw",
+                "sha256": "1bb5254aeb2c12962397f09f396ca9970ee9b5cd69a88dbf7f41df3621f3b493",
+                "layout": "rgba8",
+                "width": 8,
+                "height": 8,
+                "rowBytes": 32,
+                "byteLength": 256,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "avif/sequence-lossless-6-images.frame-1.rgb8.raw",
+                "sha256": "eb7385c5408a861ab42500f05a79371e2d27001637a859d69eaa4bdf5d74dd4a",
+                "layout": "rgb8",
+                "width": 8,
+                "height": 8,
+                "rowBytes": 24,
+                "byteLength": 192,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          },
+          {
+            "duration": "1/10",
+            "encodedDelay": {
+              "sampleDelta": 1,
+              "timescale": 10
+            },
+            "buffers": [
+              {
+                "path": "avif/sequence-lossless-6-images.frame-2.rgba8.raw",
+                "sha256": "e43c651fd2aece7dcbc3ef174b06c503aed7d0b776e510fb71ad44bd53f5d61c",
+                "layout": "rgba8",
+                "width": 8,
+                "height": 8,
+                "rowBytes": 32,
+                "byteLength": 256,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "avif/sequence-lossless-6-images.frame-2.rgb8.raw",
+                "sha256": "256d9e9fdcc25b7e3bdb0ca88d075c7730d39458a9b644dd7c79e7c858631382",
+                "layout": "rgb8",
+                "width": 8,
+                "height": 8,
+                "rowBytes": 24,
+                "byteLength": 192,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          },
+          {
+            "duration": "2/5",
+            "encodedDelay": {
+              "sampleDelta": 4,
+              "timescale": 10
+            },
+            "buffers": [
+              {
+                "path": "avif/sequence-lossless-6-images.frame-3.rgba8.raw",
+                "sha256": "c2b01f665250903e9943edfd24de1ec6ebccc10cd8c4112a6a2249fa15d751ba",
+                "layout": "rgba8",
+                "width": 8,
+                "height": 8,
+                "rowBytes": 32,
+                "byteLength": 256,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "avif/sequence-lossless-6-images.frame-3.rgb8.raw",
+                "sha256": "dc4230c4391435388ea2bfb636ad1b4183533e7559aea6ee7dfd3ae3fe9872e9",
+                "layout": "rgb8",
+                "width": 8,
+                "height": 8,
+                "rowBytes": 24,
+                "byteLength": 192,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          },
+          {
+            "duration": "1/5",
+            "encodedDelay": {
+              "sampleDelta": 2,
+              "timescale": 10
+            },
+            "buffers": [
+              {
+                "path": "avif/sequence-lossless-6-images.frame-4.rgba8.raw",
+                "sha256": "3d7de4b13c666da1d26020148515a95309cdd47ac75c550060c981e665a86073",
+                "layout": "rgba8",
+                "width": 8,
+                "height": 8,
+                "rowBytes": 32,
+                "byteLength": 256,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "avif/sequence-lossless-6-images.frame-4.rgb8.raw",
+                "sha256": "9db2a6a49f4c50a25e55627635d9e3126cd815ace401466f44bce5f26d1a74a0",
+                "layout": "rgb8",
+                "width": 8,
+                "height": 8,
+                "rowBytes": 24,
+                "byteLength": 192,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          },
+          {
+            "duration": "3/10",
+            "encodedDelay": {
+              "sampleDelta": 3,
+              "timescale": 10
+            },
+            "buffers": [
+              {
+                "path": "avif/sequence-lossless-6-images.frame-5.rgba8.raw",
+                "sha256": "f5d851bd85e3a513a6520d15779bb56638bd88ac702c80d02c82bd25690ad22a",
+                "layout": "rgba8",
+                "width": 8,
+                "height": 8,
+                "rowBytes": 32,
+                "byteLength": 256,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "avif/sequence-lossless-6-images.frame-5.rgb8.raw",
+                "sha256": "26cc12c5818df00972268ab27f1aca6552bab01a6980be6c08aeaabad5e1c20a",
+                "layout": "rgb8",
+                "width": 8,
+                "height": 8,
+                "rowBytes": 24,
+                "byteLength": 192,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      },
+      "notes": "The first two images are described by the sample table of the moov box, and the four other ones by two fragments."
+    },
+    {
+      "id": "avif/sequence-fragmented-alpha",
+      "kind": "valid",
+      "format": "avif",
+      "input": {
+        "path": "avif/sequence-fragmented-alpha.avif",
+        "sha256": "415a7a82b240945b5d13af6a018c016b9318d7bc2bb6acfc544288eb59d92b22",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/AvifCorpus.Container.cs (BuildSequences)",
+        "tools": [
+          "libavif 1.4.2 avifenc (aom 3.14.1) (payloads)",
+          "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "payloadsOf": "avif/sequence-alpha-repeat-2"
+        }
+      },
+      "features": [
+        "avif.alpha",
+        "avif.bitDepth=8",
+        "avif.boxes=unknown",
+        "avif.colr=nclx",
+        "avif.majorBrand=avis",
+        "avif.matrix=6",
+        "avif.range=full",
+        "avif.seq.chunkOffsets=stco",
+        "avif.seq.editList=repeat",
+        "avif.seq.fragments=2",
+        "avif.seq.interFrames",
+        "avif.seq.sampleSizes=stsz",
+        "avif.sequence",
+        "avif.subsampling=4:4:4"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "Planes of the samples decoded identically by both decoders, converted with exact rationals (matrix, range and chroma position of the file).",
+        "decoder": "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+        "backend": "ReferenceAvif and ReferenceYuvConverter (test harness)",
+        "command": "av1Vectors.decoders[].command",
+        "crossChecks": [
+          {
+            "decoder": "libavif 1.4.2 avifdec (dav1d 1.5.3)",
+            "command": "avifdec -j 1 --index all {input} {output}.png",
+            "result": "differs",
+            "notes": "avifdec rejects the file: ERROR: Failed to parse image: No content"
+          },
+          {
+            "decoder": "libavif 1.4.2 avifdec (dav1d 1.5.3), on avif/sequence-alpha-repeat-2",
+            "command": "avifdec -j 1 --index all {input} {output}.png",
+            "maxAbsoluteError": 1,
+            "meanAbsoluteError": 0.1823,
+            "result": "differs",
+            "notes": "The same payloads in the layout avifdec reads; the references are the same files."
+          }
+        ]
+      },
+      "expected": {
+        "width": 8,
+        "height": 8,
+        "pixelFormat": "Rgba32",
+        "colorModel": "YCbCr",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "cicp": {
+          "colorPrimaries": 1,
+          "transferCharacteristics": 13,
+          "matrixCoefficients": 6,
+          "fullRange": true
+        },
+        "animation": {
+          "totalPlays": 3,
+          "editList": {
+            "repeating": true,
+            "segmentDuration": 1040,
+            "trackDuration": 3120
+          }
+        },
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 2,
+        "frames": [
+          {
+            "duration": "1/25",
+            "encodedDelay": {
+              "sampleDelta": 40,
+              "timescale": 1000
+            },
+            "buffers": [
+              {
+                "path": "avif/sequence-alpha-repeat-2.frame-0.rgba8.raw",
+                "sha256": "cabc49e6ec6c87f7380f39c04a2c442e10931e163d9fbd2de68b1986f849c25d",
+                "layout": "rgba8",
+                "width": 8,
+                "height": 8,
+                "rowBytes": 32,
+                "byteLength": 256,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          },
+          {
+            "duration": "1/1",
+            "encodedDelay": {
+              "sampleDelta": 1000,
+              "timescale": 1000
+            },
+            "buffers": [
+              {
+                "path": "avif/sequence-alpha-repeat-2.frame-1.rgba8.raw",
+                "sha256": "94ce706ceab9dbf8747c4fb06fa2e650b21b575aa844d3e6f9dc2abc7403c997",
+                "layout": "rgba8",
+                "width": 8,
+                "height": 8,
+                "rowBytes": 32,
+                "byteLength": 256,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "tolerance",
+        "maxAbsoluteError": 1,
+        "maxMeanAbsoluteError": 0.01,
+        "justification": "Exact-rational reference; the library rounds its matrix coefficients to 16 fractional bits (measured: max 0, mean 0.0). Allowed: 1 and the measured mean + 0.01; the cross-checks would justify max 2, mean 0.5."
+      },
+      "notes": "A fragment for each image and its alpha plane. The track fragments have neither base flag: the data of the color track are at the offset of its run from the moof box, and the data of the alpha track follow them."
+    },
+    {
+      "id": "avif/sequence-fragmented-alpha-in-next-fragment",
+      "kind": "valid",
+      "format": "avif",
+      "input": {
+        "path": "avif/sequence-fragmented-alpha-in-next-fragment.avif",
+        "sha256": "561ca8e45076d2eb7f2487e230724557e3a4bb5ba1d66012d67e225d102ddae7",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/AvifCorpus.Container.cs (BuildSequences)",
+        "tools": [
+          "libavif 1.4.2 avifenc (aom 3.14.1) (payloads)",
+          "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "payloadsOf": "avif/sequence-alpha-repeat-2"
+        }
+      },
+      "features": [
+        "avif.alpha",
+        "avif.bitDepth=8",
+        "avif.boxes=unknown",
+        "avif.colr=nclx",
+        "avif.majorBrand=avis",
+        "avif.matrix=6",
+        "avif.range=full",
+        "avif.seq.chunkOffsets=stco",
+        "avif.seq.editList=repeat",
+        "avif.seq.fragments=2",
+        "avif.seq.interFrames",
+        "avif.seq.sampleSizes=stsz",
+        "avif.sequence",
+        "avif.subsampling=4:4:4"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "Planes of the samples decoded identically by both decoders, converted with exact rationals (matrix, range and chroma position of the file).",
+        "decoder": "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+        "backend": "ReferenceAvif and ReferenceYuvConverter (test harness)",
+        "command": "av1Vectors.decoders[].command",
+        "crossChecks": [
+          {
+            "decoder": "libavif 1.4.2 avifdec (dav1d 1.5.3)",
+            "command": "avifdec -j 1 --index all {input} {output}.png",
+            "result": "differs",
+            "notes": "avifdec rejects the file: ERROR: Failed to parse image: No content"
+          },
+          {
+            "decoder": "libavif 1.4.2 avifdec (dav1d 1.5.3), on avif/sequence-alpha-repeat-2",
+            "command": "avifdec -j 1 --index all {input} {output}.png",
+            "maxAbsoluteError": 1,
+            "meanAbsoluteError": 0.1823,
+            "result": "differs",
+            "notes": "The same payloads in the layout avifdec reads; the references are the same files."
+          }
+        ]
+      },
+      "expected": {
+        "width": 8,
+        "height": 8,
+        "pixelFormat": "Rgba32",
+        "colorModel": "YCbCr",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "cicp": {
+          "colorPrimaries": 1,
+          "transferCharacteristics": 13,
+          "matrixCoefficients": 6,
+          "fullRange": true
+        },
+        "animation": {
+          "totalPlays": 3,
+          "editList": {
+            "repeating": true,
+            "segmentDuration": 1040,
+            "trackDuration": 3120
+          }
+        },
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 2,
+        "frames": [
+          {
+            "duration": "1/25",
+            "encodedDelay": {
+              "sampleDelta": 40,
+              "timescale": 1000
+            },
+            "buffers": [
+              {
+                "path": "avif/sequence-alpha-repeat-2.frame-0.rgba8.raw",
+                "sha256": "cabc49e6ec6c87f7380f39c04a2c442e10931e163d9fbd2de68b1986f849c25d",
+                "layout": "rgba8",
+                "width": 8,
+                "height": 8,
+                "rowBytes": 32,
+                "byteLength": 256,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          },
+          {
+            "duration": "1/1",
+            "encodedDelay": {
+              "sampleDelta": 1000,
+              "timescale": 1000
+            },
+            "buffers": [
+              {
+                "path": "avif/sequence-alpha-repeat-2.frame-1.rgba8.raw",
+                "sha256": "94ce706ceab9dbf8747c4fb06fa2e650b21b575aa844d3e6f9dc2abc7403c997",
+                "layout": "rgba8",
+                "width": 8,
+                "height": 8,
+                "rowBytes": 32,
+                "byteLength": 256,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "tolerance",
+        "maxAbsoluteError": 1,
+        "maxMeanAbsoluteError": 0.01,
+        "justification": "Exact-rational reference; the library rounds its matrix coefficients to 16 fractional bits (measured: max 0, mean 0.0). Allowed: 1 and the measured mean + 0.01; the cross-checks would justify max 2, mean 0.5."
+      },
+      "notes": "The two color images are described by the first fragment and their alpha planes by the second one: the images wait for their alpha planes."
+    },
+    {
+      "id": "avif/sequence-fragmented-defaults",
+      "kind": "valid",
+      "format": "avif",
+      "input": {
+        "path": "avif/sequence-fragmented-defaults.avif",
+        "sha256": "8b217913d580cffbfc720d3c2de002b6933c454b17149a0e1612ec60bd616803",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/AvifCorpus.Container.cs (BuildSequences)",
+        "tools": [
+          "libavif 1.4.2 avifenc (aom 3.14.1) (payloads)",
+          "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "payloadsOf": "avif/sequence-10bit-once"
+        }
+      },
+      "features": [
+        "avif.bitDepth=10",
+        "avif.boxes=unknown",
+        "avif.colr=nclx",
+        "avif.majorBrand=avis",
+        "avif.matrix=9",
+        "avif.range=limited",
+        "avif.seq.chunkOffsets=stco",
+        "avif.seq.editList=once",
+        "avif.seq.fragments=2",
+        "avif.seq.interFrames",
+        "avif.seq.sampleSizes=stsz",
+        "avif.sequence",
+        "avif.subsampling=4:2:0"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "Planes of the samples decoded identically by both decoders, converted with exact rationals (matrix, range and chroma position of the file).",
+        "decoder": "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+        "backend": "ReferenceAvif and ReferenceYuvConverter (test harness)",
+        "command": "av1Vectors.decoders[].command",
+        "crossChecks": [
+          {
+            "decoder": "libavif 1.4.2 avifdec (dav1d 1.5.3)",
+            "command": "avifdec -j 1 -d 16 --index all {input} {output}.png",
+            "result": "differs",
+            "notes": "avifdec rejects the file: ERROR: Failed to parse image: No content"
+          },
+          {
+            "decoder": "libavif 1.4.2 avifdec (dav1d 1.5.3), on avif/sequence-10bit-once",
+            "command": "avifdec -j 1 -d 16 --index all {input} {output}.png",
+            "maxAbsoluteError": 1,
+            "meanAbsoluteError": 0.091,
+            "result": "differs",
+            "notes": "The same payloads in the layout avifdec reads; the references are the same files."
+          }
+        ]
+      },
+      "expected": {
+        "width": 8,
+        "height": 8,
+        "pixelFormat": "Rgba64",
+        "colorModel": "YCbCr",
+        "bitsPerComponent": 10,
+        "orientation": 1,
+        "iccProfile": "none",
+        "cicp": {
+          "colorPrimaries": 9,
+          "transferCharacteristics": 16,
+          "matrixCoefficients": 9,
+          "fullRange": false
+        },
+        "animation": {
+          "totalPlays": 1,
+          "editList": {
+            "repeating": false,
+            "segmentDuration": 2002,
+            "trackDuration": 2002
+          }
+        },
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 2,
+        "frames": [
+          {
+            "duration": "1001/30000",
+            "encodedDelay": {
+              "sampleDelta": 1001,
+              "timescale": 30000
+            },
+            "buffers": [
+              {
+                "path": "avif/sequence-10bit-once.frame-0.rgba16le.raw",
+                "sha256": "dedf0ada6747dbb375638575afc198a3944e2a15e321d01211556c69db3dc90e",
+                "layout": "rgba16le",
+                "width": 8,
+                "height": 8,
+                "rowBytes": 64,
+                "byteLength": 512,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          },
+          {
+            "duration": "1001/30000",
+            "encodedDelay": {
+              "sampleDelta": 1001,
+              "timescale": 30000
+            },
+            "buffers": [
+              {
+                "path": "avif/sequence-10bit-once.frame-1.rgba16le.raw",
+                "sha256": "0f66f1c5d56e601916cb406a4935d4069ac51ddbb0003e744f9ce7a716833d91",
+                "layout": "rgba16le",
+                "width": 8,
+                "height": 8,
+                "rowBytes": 64,
+                "byteLength": 512,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "tolerance",
+        "maxAbsoluteError": 1,
+        "maxMeanAbsoluteError": 0.01,
+        "justification": "Exact-rational reference; the library rounds its matrix coefficients to 16 fractional bits (measured: max 0, mean 0.0). Allowed: 1 and the measured mean + 0.01; the cross-checks would justify max 2, mean 0.5."
+      },
+      "notes": "The duration of the image of the first fragment is the default of its track fragment (tfhd), and the duration of the image of the second one the default of the movie (trex)."
+    },
+    {
+      "id": "avif/sequence-fragmented-explicit-base",
+      "kind": "valid",
+      "format": "avif",
+      "input": {
+        "path": "avif/sequence-fragmented-explicit-base.avif",
+        "sha256": "5088d69d4b9a3e33c66ccf2a169a2ef9b1c6d5562345baf8e387b81341c0cf6a",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/AvifCorpus.Container.cs (BuildSequences)",
+        "tools": [
+          "libavif 1.4.2 avifenc (aom 3.14.1) (payloads)",
+          "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "payloadsOf": "avif/sequence-lossless-6-images"
+        }
+      },
+      "features": [
+        "avif.bitDepth=8",
+        "avif.boxes=unknown",
+        "avif.colr=nclx",
+        "avif.lossless",
+        "avif.majorBrand=avis",
+        "avif.matrix=0",
+        "avif.range=full",
+        "avif.seq.chunkOffsets=stco",
+        "avif.seq.editList=once",
+        "avif.seq.fragments=2",
+        "avif.seq.hiddenFrames=2",
+        "avif.seq.interFrames",
+        "avif.seq.sampleSizes=stsz",
+        "avif.sequence",
+        "avif.subsampling=4:4:4"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "Planes of the samples decoded identically by both decoders, scaled without matrix.",
+        "decoder": "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+        "backend": "ReferenceAvif and ReferenceYuvConverter (test harness)",
+        "command": "av1Vectors.decoders[].command",
+        "crossChecks": [
+          {
+            "decoder": "libavif 1.4.2 avifdec (dav1d 1.5.3)",
+            "command": "avifdec -j 1 --index all {input} {output}.png",
+            "result": "differs",
+            "notes": "avifdec rejects the file: ERROR: Failed to parse image: No content"
+          },
+          {
+            "decoder": "libavif 1.4.2 avifdec (dav1d 1.5.3), on avif/sequence-lossless-6-images",
+            "command": "avifdec -j 1 --index all {input} {output}.png",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "result": "exact",
+            "notes": "The same payloads in the layout avifdec reads; the references are the same files."
+          }
+        ]
+      },
+      "expected": {
+        "width": 8,
+        "height": 8,
+        "pixelFormat": "Rgb24",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "cicp": {
+          "colorPrimaries": 1,
+          "transferCharacteristics": 13,
+          "matrixCoefficients": 0,
+          "fullRange": true
+        },
+        "animation": {
+          "totalPlays": 1,
+          "editList": {
+            "repeating": false,
+            "segmentDuration": 15,
+            "trackDuration": 15
+          }
+        },
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 6,
+        "frames": [
+          {
+            "duration": "1/5",
+            "encodedDelay": {
+              "sampleDelta": 2,
+              "timescale": 10
+            },
+            "buffers": [
+              {
+                "path": "avif/sequence-lossless-6-images.frame-0.rgba8.raw",
+                "sha256": "2083d0503b16c07f1178d4987a1a97291052bea4a718dff2c09f308d05916410",
+                "layout": "rgba8",
+                "width": 8,
+                "height": 8,
+                "rowBytes": 32,
+                "byteLength": 256,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "avif/sequence-lossless-6-images.frame-0.rgb8.raw",
+                "sha256": "57e676ead1e250e2e129d3d8768496fc54320ff4622df52255575de94ae52ed6",
+                "layout": "rgb8",
+                "width": 8,
+                "height": 8,
+                "rowBytes": 24,
+                "byteLength": 192,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          },
+          {
+            "duration": "3/10",
+            "encodedDelay": {
+              "sampleDelta": 3,
+              "timescale": 10
+            },
+            "buffers": [
+              {
+                "path": "avif/sequence-lossless-6-images.frame-1.rgba8.raw",
+                "sha256": "1bb5254aeb2c12962397f09f396ca9970ee9b5cd69a88dbf7f41df3621f3b493",
+                "layout": "rgba8",
+                "width": 8,
+                "height": 8,
+                "rowBytes": 32,
+                "byteLength": 256,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "avif/sequence-lossless-6-images.frame-1.rgb8.raw",
+                "sha256": "eb7385c5408a861ab42500f05a79371e2d27001637a859d69eaa4bdf5d74dd4a",
+                "layout": "rgb8",
+                "width": 8,
+                "height": 8,
+                "rowBytes": 24,
+                "byteLength": 192,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          },
+          {
+            "duration": "1/10",
+            "encodedDelay": {
+              "sampleDelta": 1,
+              "timescale": 10
+            },
+            "buffers": [
+              {
+                "path": "avif/sequence-lossless-6-images.frame-2.rgba8.raw",
+                "sha256": "e43c651fd2aece7dcbc3ef174b06c503aed7d0b776e510fb71ad44bd53f5d61c",
+                "layout": "rgba8",
+                "width": 8,
+                "height": 8,
+                "rowBytes": 32,
+                "byteLength": 256,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "avif/sequence-lossless-6-images.frame-2.rgb8.raw",
+                "sha256": "256d9e9fdcc25b7e3bdb0ca88d075c7730d39458a9b644dd7c79e7c858631382",
+                "layout": "rgb8",
+                "width": 8,
+                "height": 8,
+                "rowBytes": 24,
+                "byteLength": 192,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          },
+          {
+            "duration": "2/5",
+            "encodedDelay": {
+              "sampleDelta": 4,
+              "timescale": 10
+            },
+            "buffers": [
+              {
+                "path": "avif/sequence-lossless-6-images.frame-3.rgba8.raw",
+                "sha256": "c2b01f665250903e9943edfd24de1ec6ebccc10cd8c4112a6a2249fa15d751ba",
+                "layout": "rgba8",
+                "width": 8,
+                "height": 8,
+                "rowBytes": 32,
+                "byteLength": 256,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "avif/sequence-lossless-6-images.frame-3.rgb8.raw",
+                "sha256": "dc4230c4391435388ea2bfb636ad1b4183533e7559aea6ee7dfd3ae3fe9872e9",
+                "layout": "rgb8",
+                "width": 8,
+                "height": 8,
+                "rowBytes": 24,
+                "byteLength": 192,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          },
+          {
+            "duration": "1/5",
+            "encodedDelay": {
+              "sampleDelta": 2,
+              "timescale": 10
+            },
+            "buffers": [
+              {
+                "path": "avif/sequence-lossless-6-images.frame-4.rgba8.raw",
+                "sha256": "3d7de4b13c666da1d26020148515a95309cdd47ac75c550060c981e665a86073",
+                "layout": "rgba8",
+                "width": 8,
+                "height": 8,
+                "rowBytes": 32,
+                "byteLength": 256,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "avif/sequence-lossless-6-images.frame-4.rgb8.raw",
+                "sha256": "9db2a6a49f4c50a25e55627635d9e3126cd815ace401466f44bce5f26d1a74a0",
+                "layout": "rgb8",
+                "width": 8,
+                "height": 8,
+                "rowBytes": 24,
+                "byteLength": 192,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          },
+          {
+            "duration": "3/10",
+            "encodedDelay": {
+              "sampleDelta": 3,
+              "timescale": 10
+            },
+            "buffers": [
+              {
+                "path": "avif/sequence-lossless-6-images.frame-5.rgba8.raw",
+                "sha256": "f5d851bd85e3a513a6520d15779bb56638bd88ac702c80d02c82bd25690ad22a",
+                "layout": "rgba8",
+                "width": 8,
+                "height": 8,
+                "rowBytes": 32,
+                "byteLength": 256,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "avif/sequence-lossless-6-images.frame-5.rgb8.raw",
+                "sha256": "26cc12c5818df00972268ab27f1aca6552bab01a6980be6c08aeaabad5e1c20a",
+                "layout": "rgb8",
+                "width": 8,
+                "height": 8,
+                "rowBytes": 24,
+                "byteLength": 192,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      },
+      "notes": "Two fragments of three images, each in two runs; the track fragments give the offset of their data in the file (base-data-offset-present) and have no tfdt box."
+    },
+    {
       "id": "avif/sequence-hdr-boxes",
       "kind": "valid",
       "format": "avif",
@@ -24139,7 +25476,7 @@
             "decoder": "libavif 1.4.2 avifdec (dav1d 1.5.3)",
             "command": "avifdec -j 1 -d 16 --index all {input} {output}.png",
             "result": "differs",
-            "notes": "avifdec rejects the file: Conversion to RGB failed: /var/folders/l_/m8fk0x1s07ngvkcrk8mhhpqh0000gn/T/mfi-corpus-scratch-Rx2bav/221-sequence-ictcp-hlg/avifdec-0000000000.png"
+            "notes": "avifdec rejects the file: Conversion to RGB failed: /var/folders/l_/m8fk0x1s07ngvkcrk8mhhpqh0000gn/T/mfi-corpus-scratch-cl2Dy5/227-sequence-ictcp-hlg/avifdec-0000000000.png"
           },
           {
             "decoder": "libavif 1.4.2 avifdec (dav1d 1.5.3), on avif/sequence-10bit-once",
@@ -33925,11 +35262,11 @@
       "notes": "The Exif item of the meta box of the file, which precedes the moov box of the image sequence, is located at offset 65536, after the end of the file."
     },
     {
-      "id": "invalid/avif/sequence-fragmented",
+      "id": "invalid/avif/sequence-fragment-before-moov",
       "kind": "unsupported",
       "format": "avif",
       "input": {
-        "path": "invalid/avif/sequence-fragmented.avif",
+        "path": "invalid/avif/sequence-fragment-before-moov.avif",
         "sha256": "a98204910a08a1e0199b7288571663dcb25c1a0240aeac50ab2e64a6c6dc9856",
         "role": "encoded"
       },
@@ -33950,7 +35287,169 @@
       "features": [
         "avif.unsupported=fragmented"
       ],
-      "notes": "The file has a movie fragment box (moof)."
+      "notes": "A movie fragment box (moof) precedes the moov box: the tracks it adds images to are not known yet."
+    },
+    {
+      "id": "invalid/avif/sequence-fragment-without-mvex",
+      "kind": "invalid",
+      "format": "avif",
+      "input": {
+        "path": "invalid/avif/sequence-fragment-without-mvex.avif",
+        "sha256": "46ca2d5da167fc922f8c2cb4ea98ff86ae40cd6d01eb08493d59b5efc4082371",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/AvifCorpus.Container.cs (BuildInvalid)",
+        "tools": [
+          "libavif 1.4.2 avifenc (aom 3.14.1) (payloads)",
+          ".NET 10.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "InvalidImageContentException",
+        "format": "Avif"
+      },
+      "notes": "A movie fragment box (moof) follows a moov box that has no mvex box, before the samples: the movie does not announce fragments."
+    },
+    {
+      "id": "invalid/avif/sequence-fragmented-alpha-missing",
+      "kind": "invalid",
+      "format": "avif",
+      "input": {
+        "path": "invalid/avif/sequence-fragmented-alpha-missing.avif",
+        "sha256": "3028377d872823e9b5d023b45dba798354e57ef4a2477808236df722071a0833",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/AvifCorpus.Container.cs (BuildInvalid)",
+        "tools": [
+          "libavif 1.4.2 avifenc (aom 3.14.1) (payloads)",
+          ".NET 10.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "InvalidImageContentException",
+        "format": "Avif"
+      },
+      "notes": "The color track has an image in the moov box and one in a fragment; the alpha track has one alpha plane only."
+    },
+    {
+      "id": "invalid/avif/sequence-fragmented-composition-offsets",
+      "kind": "unsupported",
+      "format": "avif",
+      "input": {
+        "path": "invalid/avif/sequence-fragmented-composition-offsets.avif",
+        "sha256": "e6555667987ca7996af24266d06cd910b38348ff8b563ba243ca9920a74eb4a4",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/AvifCorpus.Container.cs (BuildUnsupported)",
+        "tools": [
+          "libavif 1.4.2 avifenc (aom 3.14.1) (payloads)",
+          ".NET 10.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "UnsupportedImageFeatureException",
+        "format": "Avif"
+      },
+      "features": [
+        "avif.unsupported=fragmented"
+      ],
+      "notes": "The samples of the fragment have a composition time offset of 3: they are not shown when they are decoded."
+    },
+    {
+      "id": "invalid/avif/sequence-fragmented-data-first",
+      "kind": "unsupported",
+      "format": "avif",
+      "input": {
+        "path": "invalid/avif/sequence-fragmented-data-first.avif",
+        "sha256": "875de1b3341c2bc2226adb9ed68da0b3dca0da2ee79c0076deb3e2d985326030",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/AvifCorpus.Container.cs (BuildUnsupported)",
+        "tools": [
+          "libavif 1.4.2 avifenc (aom 3.14.1) (payloads)",
+          ".NET 10.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "UnsupportedImageFeatureException",
+        "format": "Avif"
+      },
+      "features": [
+        "avif.unsupported=fragmented"
+      ],
+      "notes": "The mdat box of the fragment precedes its moof box: the samples went by before they were described."
+    },
+    {
+      "id": "invalid/avif/sequence-fragmented-edit-list",
+      "kind": "unsupported",
+      "format": "avif",
+      "input": {
+        "path": "invalid/avif/sequence-fragmented-edit-list.avif",
+        "sha256": "5c1d1b3f047fbd9d093779e4fb0ec3c028e4fc7c119116abd8fbaa0e2246c8fd",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/AvifCorpus.Container.cs (BuildUnsupported)",
+        "tools": [
+          "libavif 1.4.2 avifenc (aom 3.14.1) (payloads)",
+          ".NET 10.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "UnsupportedImageFeatureException",
+        "format": "Avif"
+      },
+      "features": [
+        "avif.unsupported=fragmented"
+      ],
+      "notes": "The edit of the fragmented sequence starts at the media time 1: the media that it selects a part of is not known when the edit list is read."
+    },
+    {
+      "id": "invalid/avif/sequence-fragmented-gap",
+      "kind": "unsupported",
+      "format": "avif",
+      "input": {
+        "path": "invalid/avif/sequence-fragmented-gap.avif",
+        "sha256": "234cda77a647bc167fdab847d14f7d7f9f42d50ef7d57ebf35b797af2becfceb",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/AvifCorpus.Container.cs (BuildUnsupported)",
+        "tools": [
+          "libavif 1.4.2 avifenc (aom 3.14.1) (payloads)",
+          ".NET 10.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "UnsupportedImageFeatureException",
+        "format": "Avif"
+      },
+      "features": [
+        "avif.unsupported=fragmented"
+      ],
+      "notes": "The first image is in the moov box and lasts 2 units; the track fragment that holds the two other ones starts at the decode time 7: the fragments do not follow each other."
     },
     {
       "id": "invalid/avif/sequence-matrix-constant-luminance-unspecified-transfer",

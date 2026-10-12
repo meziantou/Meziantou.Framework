@@ -50,7 +50,19 @@ internal static class FixtureTraits
         return fixture.Entry.HasFeature("jxl.boxesAfterCodestream");
     }
 
-    public static bool ProperPrefixMayBeValid(GoldenFixture fixture) => IsDelimitedByEndOfInput(fixture) || HasUnreadTrailingBytes(fixture) || HasBoxesAfterTheCodestream(fixture);
+    public static bool ProperPrefixMayBeValid(GoldenFixture fixture) => IsDelimitedByEndOfInput(fixture) || HasUnreadTrailingBytes(fixture) || HasBoxesAfterTheCodestream(fixture) || IsFragmentedSequence(fixture);
+
+    /// <summary>
+    /// Gets a value indicating whether the input is a fragmented AVIF image sequence: its images are described by movie
+    /// fragments that follow each other until the end of the file, which nothing announces. The file that ends after one
+    /// of its fragments is a complete sequence of fewer images, and a header identification, which stops at the
+    /// <c>moov</c> box, does not know how many images follow.
+    /// </summary>
+    public static bool IsFragmentedSequence(GoldenFixture fixture)
+    {
+        ArgumentNullException.ThrowIfNull(fixture);
+        return fixture.Entry.Features?.Any(feature => feature.StartsWith("avif.seq.fragments=", StringComparison.Ordinal)) ?? false;
+    }
 
     /// <summary>
     /// Gets a value indicating whether a header identification needs the whole input: an AVIF file whose last box is the

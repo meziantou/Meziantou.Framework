@@ -11,6 +11,12 @@ internal sealed class AvifTrack : IDisposable
     private Av1PooledArray<long>? _sampleOffsets;
     private Av1PooledArray<int>? _sampleSizes;
 
+    // The samples of the movie fragments are appended to the tables, which then only hold the samples that are still to
+    // be read: the index of the first one, and the duration of each (the 'stts' runs describe the samples of the 'moov' box)
+    private Av1PooledArray<uint>? _fragmentDurations;
+    private int _firstLocated;
+    private int _locatedCount;
+
     /// <summary>Gets or sets <c>track_ID</c>.</summary>
     public uint Id { get; set; }
 
@@ -106,7 +112,22 @@ internal sealed class AvifTrack : IDisposable
     public long SampleCount { get; set; }
 
     /// <summary>Gets the number of samples whose location is known: the first ones, up to the frame limit of the operation.</summary>
-    public int LocatedSampleCount { get; private set; }
+    public int LocatedSampleCount => _firstLocated + _locatedCount;
+
+    /// <summary>Gets or sets the index of the AV1 sample entry in the sample description box, from 1; 0 when the track has none.</summary>
+    public uint SampleDescriptionIndex { get; set; }
+
+    /// <summary>Gets or sets a value indicating whether the movie declares defaults for the fragments of the track (<c>trex</c>).</summary>
+    public bool HasTrackExtends { get; set; }
+
+    /// <summary>Gets or sets the default sample description index of the fragments of the track (<c>trex</c>).</summary>
+    public uint DefaultSampleDescriptionIndex { get; set; }
+
+    /// <summary>Gets or sets the default duration of the samples of the fragments of the track (<c>trex</c>).</summary>
+    public uint DefaultSampleDuration { get; set; }
+
+    /// <summary>Gets or sets the default size of the samples of the fragments of the track (<c>trex</c>).</summary>
+    public uint DefaultSampleSize { get; set; }
 
     /// <summary>Gets the durations of the samples in units of <see cref="Timescale"/>: runs of samples of the same duration.</summary>
     public List<(uint Count, uint Delta)> Durations { get; } = [];
@@ -121,14 +142,17 @@ internal sealed class AvifTrack : IDisposable
     public bool IsAlpha => AuxiliaryType is null || AuxiliaryType.AsSpan().SequenceEqual(AvifFormat.AlphaAuxiliaryType);
 
     /// <summary>Gets the offset of a sample in the file.</summary>
-    public long GetSampleOffset(int index) => _sampleOffsets!.Span[index];
+    public long GetSampleOffset(int index) => _sampleOffsets!.Span[index - _firstLocated];
 
     /// <summary>Gets the number of bytes of a sample.</summary>
-    public int GetSampleSize(int index) => _sampleSizes!.Span[index];
+    public int GetSampleSize(int index) => _sampleSizes!.Span[index - _firstLocated];
 
     /// <summary>Gets the duration of a sample, in units of <see cref="Timescale"/>.</summary>
     public uint GetSampleDuration(int index)
     {
+        if (_fragmentDurations is { } durations)
+            return durations.Span[index - _firstLocated];
+
         long first = 0;
         foreach (var (count, delta) in Durations)
         {
@@ -151,9 +175,53 @@ internal sealed class AvifTrack : IDisposable
         _sampleSizes = null;
         _sampleOffsets = Av1PooledArray<long>.Rent(scope, count);
         _sampleSizes = Av1PooledArray<int>.Rent(scope, count);
-        LocatedSampleCount = count;
-        offsets = _sampleOffsets.Span;
-        sizes = _sampleSizes.Span;
+        _firstLocated = 0;
+        _locatedCount = count;
+        offsets = _sampleOffsets.Span[..count];
+        sizes = _sampleSizes.Span[..count];
+    }
+
+    /// <summary>
+    /// Makes room for the samples of a movie fragment after the samples that are located, and forgets the samples that
+    /// were read: the tables only hold what is still to be read, so their size does not grow with the sequence.
+    /// </summary>
+    /// <param name="scope">The allocation scope of the operation.</param>
+    /// <param name="firstNeeded">The index of the first sample that is still to be read.</param>
+    /// <param name="count">The number of samples to append.</param>
+    /// <param name="offsets">Receives the offsets of the appended samples, to fill.</param>
+    /// <param name="sizes">Receives the sizes of the appended samples, to fill.</param>
+    /// <param name="durations">Receives the durations of the appended samples, to fill.</param>
+    /// <exception cref="ImageResourceLimitException">The tables exceed the live-allocation limit.</exception>
+    public void AppendSamples(AllocationScope scope, int firstNeeded, int count, out Span<long> offsets, out Span<int> sizes, out Span<uint> durations)
+    {
+        firstNeeded = Math.Clamp(firstNeeded, _firstLocated, LocatedSampleCount);
+        var kept = LocatedSampleCount - firstNeeded;
+        var total = checked(kept + count);
+
+        // The samples that are still to be read are set aside while the tables are replaced
+        using var keptOffsets = Av1PooledArray<long>.Rent(scope, kept);
+        using var keptSizes = Av1PooledArray<int>.Rent(scope, kept);
+        using var keptDurations = Av1PooledArray<uint>.Rent(scope, kept);
+        for (var i = 0; i < kept; i++)
+        {
+            keptOffsets.Span[i] = GetSampleOffset(firstNeeded + i);
+            keptSizes.Span[i] = GetSampleSize(firstNeeded + i);
+            keptDurations.Span[i] = GetSampleDuration(firstNeeded + i);
+        }
+
+        Dispose();
+        _firstLocated = firstNeeded;
+        _locatedCount = 0;
+        _sampleOffsets = Av1PooledArray<long>.Rent(scope, total);
+        _sampleSizes = Av1PooledArray<int>.Rent(scope, total);
+        _fragmentDurations = Av1PooledArray<uint>.Rent(scope, total);
+        keptOffsets.Span[..kept].CopyTo(_sampleOffsets.Span);
+        keptSizes.Span[..kept].CopyTo(_sampleSizes.Span);
+        keptDurations.Span[..kept].CopyTo(_fragmentDurations.Span);
+        _locatedCount = total;
+        offsets = _sampleOffsets.Span.Slice(kept, count);
+        sizes = _sampleSizes.Span.Slice(kept, count);
+        durations = _fragmentDurations.Span.Slice(kept, count);
     }
 
     public void Dispose()
@@ -162,5 +230,7 @@ internal sealed class AvifTrack : IDisposable
         _sampleOffsets = null;
         _sampleSizes?.Dispose();
         _sampleSizes = null;
+        _fragmentDurations?.Dispose();
+        _fragmentDurations = null;
     }
 }

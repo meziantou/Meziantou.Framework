@@ -232,6 +232,25 @@ internal static partial class AvifCorpus
                 track.EditList.Entries[0] = (4, 60, edit.MediaRateInteger, edit.MediaRateFraction);
             }
         }, "The edit starts at the media time 60, after the last image (the media lasts 6 units): it shows no image.");
+        Invalid(context, "sequence-fragment-without-mvex", SequenceSource, builder =>
+        {
+            builder.ExtraBoxes["moof"] = AvifFileBuilder.Box("moof", AvifFileBuilder.FullBox("mfhd", 0, 0, AvifFileBuilder.U32(1)));
+            Py.Assert(builder.Layout.IndexOf(AvifFileBuilder.MovieBox) < builder.Layout.IndexOf(AvifFileBuilder.MediaDataBox), "the samples follow the moov box");
+            builder.Layout.Insert(builder.Layout.IndexOf(AvifFileBuilder.MovieBox) + 1, "moof");
+        }, "A movie fragment box (moof) follows a moov box that has no mvex box, before the samples: the movie does not announce fragments.");
+        Invalid(context, "sequence-fragmented-alpha-missing", "sequence-alpha-repeat-2", builder =>
+        {
+            // The second color image is in a fragment; its alpha plane is nowhere
+            var color = builder.Tracks.Single(track => track.HandlerType == "pict");
+            var alpha = builder.Tracks.Single(track => track.HandlerType == "auxv");
+            var fragment = new AvifFileBuilder.Fragment();
+            var part = new AvifFileBuilder.TrackFragment(color.Id);
+            part.Samples.Add((color.Samples[1].Data, color.Samples[1].Duration));
+            fragment.Tracks.Add(part);
+            builder.Fragments.Add(fragment);
+            color.Samples.RemoveAt(1);
+            alpha.Samples.RemoveAt(1);
+        }, "The color track has an image in the moov box and one in a fragment; the alpha track has one alpha plane only.");
         Invalid(context, "sequence-missing-chunk-offsets", SequenceSource, builder => builder.OmittedBoxes.Add("stco"),
             "The sample tables of the tracks have no chunk offset box: the samples cannot be located.");
         var sequence = ErrorBuilder(context, SequenceSource).Build();
@@ -295,11 +314,46 @@ internal static partial class AvifCorpus
 
         // Image sequences
         const string SequenceSource = "sequence-lossless-infinite";
-        Unsupported(context, "sequence-fragmented", SequenceSource, builder =>
+        Unsupported(context, "sequence-fragment-before-moov", SequenceSource, builder =>
         {
             builder.ExtraBoxes["moof"] = AvifFileBuilder.Box("moof", AvifFileBuilder.FullBox("mfhd", 0, 0, AvifFileBuilder.U32(1)));
             builder.Layout.Insert(builder.Layout.IndexOf(AvifFileBuilder.MovieBox), "moof");
-        }, "fragmented", "The file has a movie fragment box (moof).");
+        }, "fragmented", "A movie fragment box (moof) precedes the moov box: the tracks it adds images to are not known yet.");
+
+        // Fragments that do not follow each other, or whose images are not shown in the order they are decoded
+        void RejectedFragments(string name, Action<AvifFileBuilder> configure, string notes) =>
+            Unsupported(context, name, SequenceSource, builder =>
+            {
+                foreach (var track in builder.Tracks)
+                {
+                    var fragment = new AvifFileBuilder.Fragment();
+                    var part = new AvifFileBuilder.TrackFragment(track.Id);
+                    foreach (var sample in track.Samples.Skip(1))
+                        part.Samples.Add((sample.Data, sample.Duration));
+
+                    fragment.Tracks.Add(part);
+                    builder.Fragments.Add(fragment);
+                    while (track.Samples.Count > 1)
+                        track.Samples.RemoveAt(track.Samples.Count - 1);
+                }
+
+                configure(builder);
+            }, "fragmented", notes);
+
+        RejectedFragments("sequence-fragmented-gap", builder => builder.Fragments[0].Tracks[0].DecodeTime = 7,
+            "The first image is in the moov box and lasts 2 units; the track fragment that holds the two other ones starts at the decode time 7: the fragments do not follow each other.");
+        RejectedFragments("sequence-fragmented-composition-offsets", builder => builder.Fragments[0].Tracks[0].CompositionOffset = 3,
+            "The samples of the fragment have a composition time offset of 3: they are not shown when they are decoded.");
+        RejectedFragments("sequence-fragmented-data-first", builder => builder.Fragments[0].MediaDataFirst = true,
+            "The mdat box of the fragment precedes its moof box: the samples went by before they were described.");
+        RejectedFragments("sequence-fragmented-edit-list", builder =>
+        {
+            foreach (var track in builder.Tracks)
+            {
+                var edit = track.EditList!.Entries[0];
+                track.EditList.Entries[0] = (edit.SegmentDuration, 1, edit.MediaRateInteger, edit.MediaRateFraction);
+            }
+        }, "The edit of the fragmented sequence starts at the media time 1: the media that it selects a part of is not known when the edit list is read.");
         // Edit lists that do not play the media forward at its rate (the images last 2, 3 and 1 units of the time scale of
         // the media, which is the one of the movie)
         void RejectedEdits(string name, (ulong Duration, long MediaTime, short Rate)[] edits, string notes) =>

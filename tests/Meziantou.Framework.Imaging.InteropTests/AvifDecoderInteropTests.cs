@@ -1,5 +1,6 @@
 using System.Buffers.Binary;
 using System.Globalization;
+using System.Text;
 using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.Internals;
 using Meziantou.Framework.Imaging.Metadata;
@@ -1170,6 +1171,55 @@ public sealed class AvifDecoderInteropTests
         else
         {
             AssertPixels(expected, actual, ColorBound.Exact, $"{id}: library vs Apple ImageIO");
+        }
+    }
+
+    /// <summary>
+    /// Fragmented image sequences, which no pinned tool writes and which libavif does not read: the fixtures are assembled
+    /// on the samples of a committed sequence, and FFmpeg, whose demuxer follows the movie fragments with its own reader,
+    /// finds in them the frames of that sequence: the same number, with the same decoded content (the frame checksums of
+    /// its <c>framecrc</c> muxer; it reports their times in a time base that it chooses for each file, which is not the
+    /// same for both, so the times are not compared). The library decodes both files to the same references in the
+    /// conformance tests. FFmpeg does not read every layout of the corpus (explicit base offsets, samples in the
+    /// <c>moov</c> box and in fragments): those are only judged by the independent reader of the harness.
+    /// </summary>
+    [Theory]
+    [InlineData("avif/sequence-fragmented", "avif/sequence-lossless-6-images")]
+    [InlineData("avif/sequence-fragmented-defaults", "avif/sequence-10bit-once")]
+    [InlineData("avif/sequence-fragmented-alpha", "avif/sequence-alpha-repeat-2")]
+    public async Task FragmentedSequencesAreDemuxedByFFmpegAsTheirSource(string fragmentedId, string sourceId)
+    {
+        var ffmpeg = await RequiredTools.FFmpegAsync();
+        var fragmented = await ReadTrackFramesAsync(fragmentedId);
+        var source = await ReadTrackFramesAsync(sourceId);
+        Assert.NotEmpty(source);
+        Assert.Equal(source, fragmented);
+        using var image = Image.Load(GoldenCorpus.Default.Get(fragmentedId).ReadInput());
+        Assert.Equal(source[0].Split('\n').Length, image.Frames.Count);
+
+        // The frames of each stream of the file that is a sequence (the streams of the image items have one frame):
+        // the checksum of each frame, the streams in order
+        async Task<List<string>> ReadTrackFramesAsync(string id)
+        {
+            var path = ArtifactPath("fragments-" + id.Replace('/', '-') + ".avif");
+            await File.WriteAllBytesAsync(path, GoldenCorpus.Default.Get(id).ReadInput(), XunitCancellationToken);
+            var streams = new List<string>();
+            for (var stream = 0; stream < 4; stream++)
+            {
+                var result = await ffmpeg.RunAsync(["-i", path, "-map", string.Create(CultureInfo.InvariantCulture, $"0:v:{stream}"), "-fps_mode", "passthrough", "-f", "framecrc", "-"], XunitCancellationToken);
+                if (result.ExitCode != 0)
+                    continue;
+
+                var frames = Encoding.ASCII.GetString(result.StandardOutput.Span).Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                    .Where(line => !line.StartsWith("#", StringComparison.Ordinal))
+                    .Select(line => line.Split(',', StringSplitOptions.TrimEntries))
+                    .Select(fields => fields[5])
+                    .ToList();
+                if (frames.Count > 1)
+                    streams.Add(string.Join('\n', frames));
+            }
+
+            return streams;
         }
     }
 

@@ -114,6 +114,13 @@ public sealed class AvifDecoderConformanceTests
         Assert.Contains(fixtures, fixture => fixture.Entry.HasFeature("avif.seq.partialDurations") && fixture.Entry.HasFeature("avif.alpha"));
         Assert.Contains(fixtures, fixture => fixture.Entry.HasFeature("avif.seq.partialDurations") && fixture.Expected.Frames.Any(frame => frame.Duration is "2/15" or "7/30"));
 
+        // Fragmented sequences: several fragments, images in the moov box followed by fragments, an alpha track (in the
+        // fragment of its images, and in a later one), and a deeper bit depth
+        Assert.Contains(fixtures, fixture => fixture.Entry.HasFeature("avif.seq.fragments=3"));
+        Assert.Equal(2, fixtures.Count(fixture => HasFeatureKey(fixture, "avif.seq.fragments") && fixture.Entry.HasFeature("avif.alpha")));
+        Assert.Contains(fixtures, fixture => HasFeatureKey(fixture, "avif.seq.fragments") && fixture.Entry.HasFeature("avif.bitDepth=10"));
+        Assert.Contains(fixtures, fixture => HasFeatureKey(fixture, "avif.seq.fragments") && ReferenceAvif.Parse(fixture.ReadInput()) is var fragmented && fragmented.ColorTrack!.Samples.Count > fragmented.TopLevelBoxes.Count(box => box.Type == "moof") && fragmented.ColorTrack.Samples[0].Offset < fragmented.TopLevelBoxes.First(box => box.Type == "moof").Offset);
+
         // Identity derivations: of a grid, with an alpha plane (derived the same way, or coded under an untransformed
         // derivation), with transformations on the derivation and on its input, and described by its input
         Assert.Contains(fixtures, fixture => HasFeatureKey(fixture, "avif.iden") && HasFeatureKey(fixture, "avif.grid"));
@@ -318,7 +325,8 @@ public sealed class AvifDecoderConformanceTests
             var header = Image.Identify(data);
             Assert.Null(header.Metadata.ExifProfile);
             Assert.Null(header.Metadata.XmpProfile);
-            Assert.Equal(presentation.Count, header.FrameCount);
+            Assert.Equal(file.HasMovieExtends, HasFeatureKey(fixture, "avif.seq.fragments"));
+            Assert.Equal(file.HasMovieExtends ? null : presentation.Count, header.FrameCount);
         }
         else
         {
@@ -859,7 +867,22 @@ public sealed class AvifDecoderConformanceTests
     public void ErrorFixturesAreWhatTheirNotesSay()
     {
         // The independent reader confirms the structural facts that the error fixtures are built on
-        Assert.True(Read("invalid/avif/sequence-fragmented").IsFragmented);
+
+        // Movie fragments: one before the moov box, one that the moov box does not announce, fragments that do not
+        // follow each other, composition time offsets, samples that precede their fragment, an edit list that selects a
+        // part of a fragmented media, and an alpha track that lacks an alpha plane
+        var beforeMovie = Read("invalid/avif/sequence-fragment-before-moov");
+        Assert.True(beforeMovie.TopLevelBoxes.Select(box => box.Type).ToList() is var types && types.IndexOf("moof") < types.IndexOf("moov"));
+        Assert.True(Read("invalid/avif/sequence-fragment-without-mvex") is { IsFragmented: true, HasMovieExtends: false });
+        Assert.Contains(Read("invalid/avif/sequence-fragmented-gap").ColorTrack!.FragmentDecodeTimes, time => time.DecodeTime != time.MediaTime);
+        Assert.Contains(3, Read("invalid/avif/sequence-fragmented-composition-offsets").ColorTrack!.CompositionOffsets);
+        var dataFirst = Read("invalid/avif/sequence-fragmented-data-first");
+        Assert.True(dataFirst.ColorTrack!.Samples[^1].Offset < dataFirst.TopLevelBoxes.Single(box => box.Type == "moof").Offset);
+        var fragmentedEdit = Read("invalid/avif/sequence-fragmented-edit-list");
+        Assert.True(fragmentedEdit.HasMovieExtends);
+        Assert.Equal(1, fragmentedEdit.ColorTrack!.EditList!.Entries[0].MediaTime);
+        var missingAlpha = Read("invalid/avif/sequence-fragmented-alpha-missing");
+        Assert.Equal((2, 1), (missingAlpha.ColorTrack!.Samples.Count, missingAlpha.AlphaTrack!.Samples.Count));
         Assert.Equal(2, Read("invalid/avif/two-meta-boxes").TopLevelBoxes.Count(box => box.Type == "meta"));
         Assert.Null(Read("invalid/avif/missing-pitm").PrimaryItemId);
         Assert.Null(Read("invalid/avif/missing-primary-item").PrimaryItem);

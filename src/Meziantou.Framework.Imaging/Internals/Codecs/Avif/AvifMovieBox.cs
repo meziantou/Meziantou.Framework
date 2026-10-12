@@ -13,6 +13,7 @@ internal sealed class AvifMovieBox : IDisposable
     private const int VisualSampleEntryLength = 78;
 
     private readonly List<AvifTrack> _tracks = [];
+    private readonly List<(uint TrackId, uint DescriptionIndex, uint Duration, uint Size)> _trackExtends = [];
     private uint _timescale;
 
     private AvifMovieBox()
@@ -34,8 +35,33 @@ internal sealed class AvifMovieBox : IDisposable
     /// <summary>Gets the number of images of the sequence: the images of the color track that are shown.</summary>
     public long FrameCount => Timeline?.PresentedCount ?? Color.SampleCount;
 
-    /// <summary>Gets the number of images of the color track, which are decoded in their order whether they are shown or not.</summary>
+    /// <summary>
+    /// Gets the number of images of the color track, which are decoded in their order whether they are shown or not. It
+    /// grows with the movie fragments of a fragmented sequence.
+    /// </summary>
     public long SampleCount => Color.SampleCount;
+
+    /// <summary>
+    /// Gets a value indicating whether the movie announces movie fragments (an <c>mvex</c> box, ISO/IEC 14496-12, section
+    /// 8.8.1): the images of the sequence are then described by the <c>moof</c> boxes that follow, and their number is
+    /// only known at the end of the file.
+    /// </summary>
+    public bool IsFragmented { get; private set; }
+
+    /// <summary>Returns the color track or the alpha track with an identifier, or <see langword="null"/>.</summary>
+    public AvifTrack? FindTrack(uint id) => Color.Id == id ? Color : Alpha is { } alpha && alpha.Id == id ? alpha : null;
+
+    /// <summary>Returns the track with an identifier, whatever it holds, or <see langword="null"/>.</summary>
+    public AvifTrack? FindAnyTrack(uint id)
+    {
+        foreach (var track in _tracks)
+        {
+            if (track.Id == id)
+                return track;
+        }
+
+        return null;
+    }
 
     /// <summary>
     /// Gets the presentation of the images of the color track through its edit list, or <see langword="null"/> when every
@@ -107,12 +133,39 @@ internal sealed class AvifMovieBox : IDisposable
                     continue;
                 }
 
+                if (type is AvifFormat.Mvex)
+                {
+                    // ISO/IEC 14496-12, section 8.8.3 "Track Extends Box": the defaults of the samples of the fragments
+                    movie.IsFragmented = true;
+                    while (box.TryReadBox(out var extendsType, out _, out var extends))
+                    {
+                        if (extendsType is not AvifFormat.Trex)
+                            continue;
+
+                        extends.ReadFullBoxHeader();
+                        movie._trackExtends.Add((extends.ReadUInt32(), extends.ReadUInt32(), extends.ReadUInt32(), extends.ReadUInt32()));
+                    }
+
+                    continue;
+                }
+
                 if (type is not AvifFormat.Trak)
                     continue;
 
                 var track = new AvifTrack();
                 movie._tracks.Add(track);
                 ParseTrack(box, offset, track, scope, maxSamples);
+            }
+
+            foreach (var (id, descriptionIndex, duration, size) in movie._trackExtends)
+            {
+                if (movie.FindAnyTrack(id) is { } extended)
+                {
+                    extended.HasTrackExtends = true;
+                    extended.DefaultSampleDescriptionIndex = descriptionIndex;
+                    extended.DefaultSampleDuration = duration;
+                    extended.DefaultSampleSize = size;
+                }
             }
 
             movie.SelectTracks();
@@ -140,7 +193,8 @@ internal sealed class AvifMovieBox : IDisposable
         AvifTrack? color = null;
         foreach (var track in _tracks)
         {
-            if (track.HandlerType is AvifFormat.Pict && track.HasAv1SampleEntry && track.SampleCount > 0)
+            // The samples of a fragmented sequence may all be in its fragments
+            if (track.HandlerType is AvifFormat.Pict && track.HasAv1SampleEntry && (track.SampleCount > 0 || (IsFragmented && track.HasTrackExtends)))
             {
                 color = track;
                 break;
@@ -155,7 +209,14 @@ internal sealed class AvifMovieBox : IDisposable
         // for its duration. The duration of the edit, which is in units of the time scale of the movie, is rounded by the
         // writers: an edit that reaches the last image plays the whole media (it also does when it ends where the last
         // image starts and that image has no duration). Any other edit list selects parts of the media
-        if (color.HasEditList && !PlaysWholeMedia(color))
+        if (IsFragmented)
+        {
+            // The media of a fragmented sequence is not known when its edit list is read: only the edit that plays it
+            // from its start is supported
+            if (color.HasEditList && (color.Edits.Count is not 1 || color.Edits[0].MediaTime is not 0))
+                throw AvifFormat.Unsupported("The AVIF image sequence is fragmented and has an edit list that selects parts of its media.", "edit list of a fragmented image sequence");
+        }
+        else if (color.HasEditList && !PlaysWholeMedia(color))
         {
             Timeline = AvifEditTimeline.Create(color, _timescale);
             if (Timeline.PresentedCount is 0)
@@ -425,6 +486,7 @@ internal sealed class AvifMovieBox : IDisposable
             {
                 case AvifFormat.Stsd:
                     descriptionIndex = ParseSampleDescriptions(box, baseOffset + offset, track);
+                    track.SampleDescriptionIndex = descriptionIndex;
                     break;
                 case AvifFormat.Stts:
                     timeToSample = box;

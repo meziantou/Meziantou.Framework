@@ -233,6 +233,16 @@ public sealed class AvifFileBuilder
     /// <returns>The item.</returns>
     public Item GetItem(uint id) => Items.First(item => item.Id == id);
 
+    /// <summary>
+    /// Gets the movie fragments (ISO/IEC 14496-12, section 8.8), which are written after the boxes of the layout: for
+    /// each of them a <c>moof</c> box and the <c>mdat</c> box of its samples. A file with fragments has an <c>mvex</c>
+    /// box in its <c>moov</c> box, with a <c>trex</c> box for each track.
+    /// </summary>
+    public IList<Fragment> Fragments { get; } = [];
+
+    /// <summary>Gets or sets a value indicating whether the <c>moov</c> box has an <c>mvex</c> box although the file has no fragment.</summary>
+    public bool HasMovieExtends { get; set; }
+
     /// <summary>Writes the file.</summary>
     /// <returns>The file.</returns>
     public byte[] Build()
@@ -343,7 +353,82 @@ public sealed class AvifFileBuilder
         }
 
         Assemble(0, out var start);
-        return Assemble(start, out _);
+        var file = new List<byte>(Assemble(start, out _));
+
+        // The fragments: the samples of each track fragment follow each other in the mdat box of their fragment
+        var decodeTimes = Tracks.ToDictionary(track => track.Id, track => (ulong)track.Samples.Sum(sample => (long)sample.Duration));
+        for (var index = 0; index < Fragments.Count; index++)
+        {
+            var fragment = Fragments[index];
+            var fragmentMedia = fragment.Tracks.SelectMany(track => track.Samples.SelectMany(sample => sample.Data)).ToArray();
+            var fragmentStart = file.Count;
+            byte[] Write(long movieFragmentStart, long mediaStart)
+            {
+                var boxes = new List<byte[]> { FullBox("mfhd", 0, 0, U32((uint)(index + 1))) };
+                long position = 0;
+                for (var t = 0; t < fragment.Tracks.Count; t++)
+                {
+                    var track = fragment.Tracks[t];
+                    var parts = new List<byte[]>();
+
+                    // tfhd: the base of the data offsets, and the default duration of the samples
+                    var flags = track.Base switch { FragmentBase.MovieFragment => 0x020000, FragmentBase.Explicit => 0x000001, _ => 0 } | (track.UseDefaultDuration ? 0x000008 : 0);
+                    parts.Add(FullBox("tfhd", 0, flags, U32(track.TrackId), track.Base == FragmentBase.Explicit ? U64((ulong)mediaStart) : [], track.UseDefaultDuration ? U32(track.Samples[0].Duration) : []));
+                    if (!track.OmitDecodeTime)
+                        parts.Add(FullBox("tfdt", 1, 0, U64(track.DecodeTime ?? decodeTimes.GetValueOrDefault(track.TrackId))));
+
+                    // The data offset of the first run is relative to the base: the start of the moof box, or the start of
+                    // the media data for an explicit base. Without either flag the base of a track fragment that is not
+                    // the first one is the end of the data of the previous one, and its run has no offset
+                    var hasOffset = track.Base != FragmentBase.Implicit || t == 0;
+                    var dataOffset = track.Base == FragmentBase.Explicit ? position : mediaStart - movieFragmentStart + position;
+                    var first = 0;
+                    for (var run = 0; run < track.RunCount; run++)
+                    {
+                        var count = run == track.RunCount - 1 ? track.Samples.Count - first : track.Samples.Count / track.RunCount;
+                        var runFlags = (run == 0 && hasOffset ? 0x000001 : 0) | (track.UseDefaultDuration || track.UseMovieDefaultDuration ? 0 : 0x000100) | 0x000200 | (track.CompositionOffset is null ? 0 : 0x000800);
+                        var entries = new List<byte[]>();
+                        for (var i = first; i < first + count; i++)
+                        {
+                            if ((runFlags & 0x000100) != 0)
+                                entries.Add(U32(track.Samples[i].Duration));
+
+                            entries.Add(U32((uint)track.Samples[i].Data.Length));
+                            if (track.CompositionOffset is { } offset)
+                                entries.Add(U32(unchecked((uint)offset)));
+                        }
+
+                        parts.Add(FullBox("trun", 0, runFlags, U32((uint)count), run == 0 && hasOffset ? U32(unchecked((uint)dataOffset)) : [], Concat([.. entries])));
+                        first += count;
+                    }
+
+                    position += track.Samples.Sum(sample => (long)sample.Data.Length);
+                    boxes.Add(Box("traf", [.. parts]));
+                }
+
+                return Box("moof", [.. boxes]);
+            }
+
+            // The size of the moof box does not depend on the offsets
+            var size = Write(0, 0).Length;
+            if (fragment.MediaDataFirst)
+            {
+                file.AddRange(Box(MediaDataBox, fragmentMedia));
+                file.AddRange(Write(file.Count, fragmentStart + 8));
+            }
+            else
+            {
+                file.AddRange(Write(fragmentStart, fragmentStart + size + 8));
+                file.AddRange(Box(MediaDataBox, fragmentMedia));
+            }
+
+            foreach (var track in fragment.Tracks)
+            {
+                decodeTimes[track.TrackId] = decodeTimes.GetValueOrDefault(track.TrackId) + (ulong)track.Samples.Sum(sample => (long)sample.Duration);
+            }
+        }
+
+        return [.. file];
     }
 
     /// <summary>Writes a box: its size, its type and its payload.</summary>
@@ -592,6 +677,13 @@ public sealed class AvifFileBuilder
         {
             FullBox("mvhd", 1, 0, U64(0), U64(0), U32(MovieTimescale), U64(movieDuration), U32(0x00010000), U16(0x0100), new byte[10], identity, new byte[24], U32((uint)Tracks.Count + 1)),
         };
+        if (Fragments.Count > 0 || HasMovieExtends)
+        {
+            // ISO/IEC 14496-12, section 8.8.3 "Track Extends Box": the defaults of the samples of the fragments. The
+            // default duration is the one of the first sample of the first fragment of the track
+            parts.Add(Box("mvex", [.. Tracks.Select(track => FullBox("trex", 0, 0, U32(track.Id), U32(1), U32(Fragments.SelectMany(fragment => fragment.Tracks).FirstOrDefault(fragment => fragment.TrackId == track.Id) is { Samples.Count: > 0 } first ? first.Samples[0].Duration : 0), U32(0), U32(0)))]));
+        }
+
         foreach (var track in Tracks)
         {
             var boxes = new List<byte[]>
@@ -680,7 +772,10 @@ public sealed class AvifFileBuilder
         var chunkCount = (int)((track.Samples.Count + (long)track.SamplesPerChunk - 1) / track.SamplesPerChunk);
         Add("stsc", () =>
         {
-            // One run for the full chunks and one for a shorter last chunk
+            // One run for the full chunks and one for a shorter last chunk; none for a track whose samples are in fragments
+            if (track.Samples.Count == 0)
+                return FullBox("stsc", 0, 0, U32(0));
+
             var runs = new List<byte[]>();
             var perChunk = (uint)Math.Min(track.SamplesPerChunk, track.Samples.Count);
             runs.Add(Concat(U32(1), U32(perChunk), U32(1)));
@@ -700,7 +795,8 @@ public sealed class AvifFileBuilder
                 ? FullBox("co64", 0, 0, U32((uint)chunkCount), Concat([.. chunkOffsets.Select(offset => U64((ulong)offset))]))
                 : FullBox("stco", 0, 0, U32((uint)chunkCount), Concat([.. chunkOffsets.Select(offset => U32((uint)offset))]));
         });
-        Add("stss", () => FullBox("stss", 0, 0, U32(1), U32(1)));
+        if (track.Samples.Count > 0)
+            Add("stss", () => FullBox("stss", 0, 0, U32(1), U32(1)));
 
         return Concat(
             track.HeaderVersion == 1
@@ -735,6 +831,61 @@ public sealed class AvifFileBuilder
             default:
                 return Concat([.. sizes.Select(size => U16((ushort)size))]);
         }
+    }
+
+    /// <summary>The base of the data offsets of a track fragment (ISO/IEC 14496-12, section 8.8.7).</summary>
+    public enum FragmentBase
+    {
+        /// <summary>The start of the <c>moof</c> box: the <c>default-base-is-moof</c> flag.</summary>
+        MovieFragment,
+
+        /// <summary>An offset in the file, which is the start of the media data of the fragment: the <c>base-data-offset-present</c> flag.</summary>
+        Explicit,
+
+        /// <summary>Neither flag: the start of the <c>moof</c> box for the first track fragment, the end of the data of the previous one for the next ones.</summary>
+        Implicit,
+    }
+
+    /// <summary>A movie fragment: a <c>moof</c> box and the <c>mdat</c> box of its samples.</summary>
+    public sealed class Fragment
+    {
+        /// <summary>Gets the track fragments, whose samples are stored in this order.</summary>
+        public IList<TrackFragment> Tracks { get; } = [];
+
+        /// <summary>Gets or sets a value indicating whether the <c>mdat</c> box precedes the <c>moof</c> box.</summary>
+        public bool MediaDataFirst { get; set; }
+    }
+
+    /// <summary>The samples of a track in a movie fragment (<c>traf</c>).</summary>
+    /// <param name="trackId">The identifier of the track.</param>
+    public sealed class TrackFragment(uint trackId)
+    {
+        /// <summary>Gets the identifier of the track.</summary>
+        public uint TrackId => trackId;
+
+        /// <summary>Gets the samples: the data and the duration of each.</summary>
+        public IList<(byte[] Data, uint Duration)> Samples { get; } = [];
+
+        /// <summary>Gets or sets the base of the data offsets.</summary>
+        public FragmentBase Base { get; set; }
+
+        /// <summary>Gets or sets the decode time of the first sample (<c>tfdt</c>), or <see langword="null"/> for the sum of the durations of the samples before it.</summary>
+        public ulong? DecodeTime { get; set; }
+
+        /// <summary>Gets or sets a value indicating whether the <c>tfdt</c> box is left out.</summary>
+        public bool OmitDecodeTime { get; set; }
+
+        /// <summary>Gets or sets a value indicating whether the duration of the samples is the default duration of the <c>tfhd</c> box (the one of the first sample).</summary>
+        public bool UseDefaultDuration { get; set; }
+
+        /// <summary>Gets or sets a value indicating whether the duration of the samples is the default duration of the <c>trex</c> box of the track.</summary>
+        public bool UseMovieDefaultDuration { get; set; }
+
+        /// <summary>Gets or sets the number of <c>trun</c> boxes the samples are split into.</summary>
+        public int RunCount { get; set; } = 1;
+
+        /// <summary>Gets or sets the composition time offset written for every sample, or <see langword="null"/> for none.</summary>
+        public int? CompositionOffset { get; set; }
     }
 
     /// <summary>Where the data of an item is stored.</summary>

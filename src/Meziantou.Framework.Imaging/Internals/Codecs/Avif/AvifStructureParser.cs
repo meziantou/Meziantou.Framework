@@ -52,6 +52,14 @@ internal sealed class AvifStructureParser : ImageParser<ImageInfo>
     private int? _bitstreamMatrix;
     private int _nextFrame;
 
+    // A movie fragment of a fragmented image sequence: the payload of its 'moof' box and the offset of the box, the
+    // encoded bytes of the samples that were scheduled, and whether the input ended on a box boundary (a fragmented
+    // sequence ends with the file, since nothing tells how many fragments it has)
+    private WebPPayloadBuffer? _fragmentData;
+    private long _fragmentOffset;
+    private long _scheduledBytes;
+    private bool _isAtEndOfInput;
+
     // The images that were shown so far, and how the next image of the track is shown (read once: the timeline is sequential)
     private long _shownFrames;
     private bool _hasFrameTiming;
@@ -79,6 +87,7 @@ internal sealed class AvifStructureParser : ImageParser<ImageInfo>
         BoxHeader,
         Meta,
         Movie,
+        Fragment,
         Media,
         Done,
     }
@@ -104,7 +113,7 @@ internal sealed class AvifStructureParser : ImageParser<ImageInfo>
     public CicpColorDescription? ContainerColorDescription => _nclx;
 
     /// <summary>Gets the animation settings of an image sequence of several images, or <see langword="null"/>.</summary>
-    public AnimationMetadata? Animation => _movie is { FrameCount: > 1 } movie ? new AnimationMetadata { TotalPlays = movie.TotalPlays } : null;
+    public AnimationMetadata? Animation => _movie is { } movie && (movie.FrameCount > 1 || (movie.IsFragmented && !_isAtEndOfInput)) ? new AnimationMetadata { TotalPlays = movie.TotalPlays } : null;
 
     /// <summary>Gets the metadata collected so far.</summary>
     public ImageMetadata Metadata => _metadata.Metadata;
@@ -131,6 +140,7 @@ internal sealed class AvifStructureParser : ImageParser<ImageInfo>
                         return ParseStatus.Complete;
                     }
 
+                    _isAtEndOfInput = isEndOfInput && remaining.IsEmpty;
                     if (IsResolved && TryFinish())
                         return ParseStatus.Complete;
 
@@ -143,7 +153,11 @@ internal sealed class AvifStructureParser : ImageParser<ImageInfo>
 
                     var status = ReadBoxHeader(remaining, ref consumed);
                     if (!status.IsComplete)
-                        return status;
+                    {
+                        // A fragmented sequence ends with the file, after any of its fragments: the end of the input is
+                        // an answer to the request for the next box
+                        return _movie is { IsFragmented: true } && !isEndOfInput && remaining.IsEmpty ? ParseStatus.NeedMoreDataOrEnd(status.RequiredBytes) : status;
+                    }
 
                     break;
                 }
@@ -189,6 +203,24 @@ internal sealed class AvifStructureParser : ImageParser<ImageInfo>
 
                     var piece = remaining[..(int)Math.Min(remaining.Length, _boxRemaining)];
                     _movieData!.Append(piece);
+                    Advance(ref consumed, piece.Length);
+                    break;
+                }
+
+                case State.Fragment:
+                {
+                    if (_boxRemaining is 0)
+                    {
+                        ProcessFragment();
+                        _state = State.BoxHeader;
+                        break;
+                    }
+
+                    if (remaining.IsEmpty)
+                        return ParseStatus.NeedMoreData(1);
+
+                    var piece = remaining[..(int)Math.Min(remaining.Length, _boxRemaining)];
+                    _fragmentData!.Append(piece);
                     Advance(ref consumed, piece.Length);
                     break;
                 }
@@ -256,6 +288,8 @@ internal sealed class AvifStructureParser : ImageParser<ImageInfo>
             _movieData = null;
             _movie?.Dispose();
             _movie = null;
+            _fragmentData?.Dispose();
+            _fragmentData = null;
             ReleaseRetained();
             foreach (var capture in _captures)
             {
@@ -330,11 +364,30 @@ internal sealed class AvifStructureParser : ImageParser<ImageInfo>
         if (type is AvifFormat.Ftyp)
             throw AvifFormat.Invalid("the file has two file type boxes.");
 
+        var boxOffset = _position;
         _boxRemaining = headerLength;
         Advance(ref consumed, headerLength);
         _boxRemaining = payloadLength;
-        if (type is AvifFormat.Moof)
-            throw AvifFormat.Unsupported("The AVIF file is fragmented.", "fragmented image sequences");
+
+        // A movie fragment describes more images of an image sequence whose movie announces fragments. A file that
+        // presents its primary item has no use for it
+        if (type is AvifFormat.Moof && _isSequence)
+        {
+            if (_movie is null)
+                throw AvifFormat.Unsupported("The AVIF image sequence has a movie fragment before its 'moov' box.", "fragmented image sequence without movie");
+
+            if (!_movie.IsFragmented)
+                throw AvifFormat.Invalid("the file has a movie fragment that its 'moov' box does not announce.");
+
+            if (payloadLength is long.MaxValue)
+                throw AvifFormat.Unsupported("The AVIF 'moof' box has no size.", "moof box without size");
+
+            _fragmentData?.Dispose();
+            _fragmentData = new WebPPayloadBuffer(_context.Scope, payloadLength);
+            _fragmentOffset = boxOffset;
+            _state = State.Fragment;
+            return ParseStatus.Complete;
+        }
 
         if (type is AvifFormat.Moov && _isSequence)
         {
@@ -874,13 +927,15 @@ internal sealed class AvifStructureParser : ImageParser<ImageInfo>
         bool isMonochrome;
         bool hasAlpha;
         int bitDepth;
-        var frameCount = 1;
+        int? frameCount = 1;
         if (_movie is { } movie)
         {
             isMonochrome = movie.Color.IsMonochrome;
             hasAlpha = movie.Alpha is not null;
             bitDepth = movie.Color.BitDepth;
-            frameCount = (int)Math.Min(movie.FrameCount, int.MaxValue);
+
+            // The images of a fragmented sequence are counted when the file was read to its end
+            frameCount = movie.IsFragmented && (mode is ImageIdentifyMode.Header || !_isAtEndOfInput) ? null : (int)Math.Min(movie.FrameCount, int.MaxValue);
         }
         else
         {
@@ -917,7 +972,7 @@ internal sealed class AvifStructureParser : ImageParser<ImageInfo>
             colorModel,
             bitDepth,
             frameCount,
-            isAnimated: frameCount > 1,
+            isAnimated: frameCount is { } count ? count > 1 : Animation is not null,
             hasPosterFrame: false,
             mayHaveTransparency: hasAlpha,
             Animation,
@@ -989,12 +1044,11 @@ internal sealed class AvifStructureParser : ImageParser<ImageInfo>
         }
 
         // The samples whose data the walk captures
-        long total = 0;
         for (var i = 0; i < color.LocatedSampleCount; i++)
         {
-            total = AddSample(color, i, total);
-            if (movie.Alpha is { } alpha)
-                total = AddSample(alpha, i, total);
+            ScheduleSample(color, i);
+            if (movie.Alpha is { } alpha && i < alpha.LocatedSampleCount)
+                ScheduleSample(alpha, i);
         }
 
         foreach (var (offset, data) in _retained)
@@ -1014,16 +1068,77 @@ internal sealed class AvifStructureParser : ImageParser<ImageInfo>
             _returnNow = _context.TryConsumeYield();
         }
 
-        long AddSample(AvifTrack track, int index, long total)
-        {
-            var size = track.GetSampleSize(index);
-            total += size;
-            if (total > _context.Limits.MaxEncodedBytes)
-                throw new ImageResourceLimitException(ImageResourceLimitKind.EncodedBytes, _context.Limits.MaxEncodedBytes, total);
+    }
 
-            var storesData = _walk is StructureWalk.Decode || index is 0;
-            _captures.Add(new Capture(_context.Scope, item: null, track.GetSampleOffset(index), size, isItemData: false, storesData) { Track = track, SampleIndex = index });
-            return total;
+    // Schedules the capture of a sample of an image sequence
+    private void ScheduleSample(AvifTrack track, int index)
+    {
+        var size = track.GetSampleSize(index);
+        _scheduledBytes += size;
+        if (_scheduledBytes > _context.Limits.MaxEncodedBytes)
+            throw new ImageResourceLimitException(ImageResourceLimitKind.EncodedBytes, _context.Limits.MaxEncodedBytes, _scheduledBytes);
+
+        var storesData = _walk is StructureWalk.Decode || index is 0;
+        _captures.Add(new Capture(_context.Scope, item: null, track.GetSampleOffset(index), size, isItemData: false, storesData) { Track = track, SampleIndex = index });
+    }
+
+    // ISO/IEC 14496-12, section 8.8 "Movie Fragments": the samples of the fragment follow the samples that are known. Their
+    // data follow the 'moof' box, where the walk captures them as they go by
+    private void ProcessFragment()
+    {
+        var movie = _movie!;
+        var color = movie.Color;
+        var alpha = movie.Alpha;
+        var (colorCount, alphaCount) = (color.LocatedSampleCount, alpha?.LocatedSampleCount ?? 0);
+        var samplesBefore = color.SampleCount;
+
+        // A full scan keeps the first sample of each track, which it verifies at the end, and forgets the other ones
+        // once they went by; a decoding walk released the samples of the images it produced
+        var firstNeeded = _walk is StructureWalk.Decode ? _nextFrame : color.LocatedSampleCount;
+        if (_walk is not StructureWalk.Decode)
+        {
+            for (var i = _captures.Count - 1; i >= 0; i--)
+            {
+                if (_captures[i] is { Track: not null, SampleIndex: > 0, IsComplete: true } capture)
+                {
+                    _captures.RemoveAt(i);
+                    capture.Dispose();
+                }
+            }
+        }
+
+        var maxSamples = (int)Math.Min(_context.Limits.MaxFrames + 1L, int.MaxValue);
+        AvifMovieFragment.Parse(_fragmentData!.Span, _fragmentOffset, movie, _context.Scope, firstNeeded, maxSamples);
+        _fragmentData.Dispose();
+        _fragmentData = null;
+        if (_walk is StructureWalk.FullScan)
+        {
+            for (var i = samplesBefore; i < color.SampleCount; i++)
+            {
+                _context.Tracker.ChargeScannedFrame();
+            }
+        }
+
+        // The data of a fragment follow its description: what is behind the position of the walk is gone
+        for (var i = colorCount; i < color.LocatedSampleCount; i++)
+        {
+            EnsureAhead(color, i);
+            ScheduleSample(color, i);
+        }
+
+        if (alpha is not null)
+        {
+            for (var i = alphaCount; i < alpha.LocatedSampleCount; i++)
+            {
+                EnsureAhead(alpha, i);
+                ScheduleSample(alpha, i);
+            }
+        }
+
+        void EnsureAhead(AvifTrack track, int index)
+        {
+            if (track.GetSampleOffset(index) < _position)
+                throw AvifFormat.Unsupported("The samples of a fragment of the AVIF image sequence precede the fragment.", "fragmented image sequence whose data precede their fragment");
         }
     }
 
@@ -1092,11 +1207,20 @@ internal sealed class AvifStructureParser : ImageParser<ImageInfo>
         var movie = _movie!;
         if (_walk is not StructureWalk.Decode)
         {
-            // A full scan ends when every sample went by; it verifies the first sample of each track
+            // A full scan ends when every sample went by; it verifies the first sample of each track. The samples of a
+            // fragmented sequence go by until the end of the file
             foreach (var capture in _captures)
             {
                 if (!capture.IsComplete)
                     return false;
+            }
+
+            if (movie.IsFragmented)
+            {
+                if (!_isAtEndOfInput)
+                    return false;
+
+                EnsureFragmentsAreWhole(movie);
             }
 
             TryAdoptSequenceMetadata();
@@ -1119,9 +1243,27 @@ internal sealed class AvifStructureParser : ImageParser<ImageInfo>
             // cut short never reads as a whole one
             if (_nextFrame >= movie.SampleCount)
             {
+                // The images of a fragmented sequence come with its fragments, until the end of the file
+                if (movie.IsFragmented)
+                {
+                    if (!_isAtEndOfInput)
+                        return false;
+
+                    EnsureFragmentsAreWhole(movie);
+                }
+
                 _result = CreateInfo(ImageIdentifyMode.FullScan);
                 _state = State.Done;
                 return true;
+            }
+
+            // The alpha plane of an image of a fragmented sequence may be described by a later fragment
+            if (movie.Alpha is { } pendingAlpha && _nextFrame >= pendingAlpha.SampleCount)
+            {
+                if (_isAtEndOfInput)
+                    throw AvifFormat.Invalid("the alpha track does not have the number of images of the color track.");
+
+                return false;
             }
 
             if (!_hasFrameTiming)
@@ -1163,6 +1305,15 @@ internal sealed class AvifStructureParser : ImageParser<ImageInfo>
 
             if (_context.TryConsumeYield())
                 return true;
+        }
+
+        static void EnsureFragmentsAreWhole(AvifMovieBox movie)
+        {
+            if (movie.SampleCount is 0)
+                throw AvifFormat.Invalid("the image sequence has no image.");
+
+            if (movie.Alpha is { } alpha && alpha.SampleCount != movie.SampleCount)
+                throw AvifFormat.Invalid("the alpha track does not have the number of images of the color track.");
         }
 
         Capture FindSample(AvifTrack track, int index)

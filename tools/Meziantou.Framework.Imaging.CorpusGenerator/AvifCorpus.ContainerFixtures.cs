@@ -849,6 +849,72 @@ internal static partial class AvifCorpus
         Edits("sequence-alpha-edit-offset", "sequence-alpha-repeat-2", 1000, [(1030, 10)], ["avif.alpha", "avif.seq.partialDurations"],
             "The color track and the alpha track have the same edit, which starts 10 ms inside the first image (40 ms and 1 s): the image and its alpha plane are shown for 30 ms.");
 
+        // Fragmented sequences (ISO/IEC 14496-12, section 8.8): the moov box announces fragments (mvex), and each moof box
+        // describes more images, whose samples follow it. The samples of the source are distributed in fragments
+        void Fragmented(string name, string source, int kept, int[] split, Action<AvifFileBuilder>? configure, string[] requires, string notes) =>
+            Assembled(context, name, source, builder =>
+            {
+                var first = kept;
+                foreach (var count in split)
+                {
+                    var fragment = new AvifFileBuilder.Fragment();
+                    foreach (var track in builder.Tracks)
+                    {
+                        var part = new AvifFileBuilder.TrackFragment(track.Id);
+                        for (var i = first; i < first + count; i++)
+                            part.Samples.Add((track.Samples[i].Data, track.Samples[i].Duration));
+
+                        fragment.Tracks.Add(part);
+                    }
+
+                    builder.Fragments.Add(fragment);
+                    first += count;
+                }
+
+                foreach (var track in builder.Tracks)
+                {
+                    Py.Assert(first == track.Samples.Count, "every sample is in the moov box or in a fragment");
+                    while (track.Samples.Count > kept)
+                        track.Samples.RemoveAt(track.Samples.Count - 1);
+                }
+
+                configure?.Invoke(builder);
+            }, ["avif.sequence", .. requires], notes, "BuildSequences");
+
+        Fragmented("sequence-fragmented", Edited, 0, [2, 3, 1], null, ["avif.seq.fragments=3", "avif.lossless"],
+            "Six images in three fragments of 2, 3 and 1 images; the data offsets of the runs are relative to their moof box (default-base-is-moof).");
+        Fragmented("sequence-fragmented-explicit-base", Edited, 0, [3, 3], builder =>
+        {
+            foreach (var track in builder.Fragments.SelectMany(fragment => fragment.Tracks))
+            {
+                track.Base = AvifFileBuilder.FragmentBase.Explicit;
+                track.RunCount = 2;
+                track.OmitDecodeTime = true;
+            }
+        }, ["avif.seq.fragments=2"], "Two fragments of three images, each in two runs; the track fragments give the offset of their data in the file (base-data-offset-present) and have no tfdt box.");
+        Fragmented("sequence-fragmented-after-movie-samples", Edited, 2, [1, 3], null, ["avif.seq.fragments=2"],
+            "The first two images are described by the sample table of the moov box, and the four other ones by two fragments.");
+        Fragmented("sequence-fragmented-alpha", "sequence-alpha-repeat-2", 0, [1, 1], builder =>
+        {
+            foreach (var track in builder.Fragments.SelectMany(fragment => fragment.Tracks))
+                track.Base = AvifFileBuilder.FragmentBase.Implicit;
+        }, ["avif.seq.fragments=2", "avif.alpha"], "A fragment for each image and its alpha plane. The track fragments have neither base flag: the data of the color track are at the offset of its run from the moof box, and the data of the alpha track follow them.");
+        Fragmented("sequence-fragmented-defaults", "sequence-10bit-once", 0, [1, 1], builder =>
+        {
+            builder.Fragments[0].Tracks[0].UseDefaultDuration = true;
+            builder.Fragments[1].Tracks[0].UseMovieDefaultDuration = true;
+        }, ["avif.seq.fragments=2", "avif.bitDepth=10"], "The duration of the image of the first fragment is the default of its track fragment (tfhd), and the duration of the image of the second one the default of the movie (trex).");
+        Fragmented("sequence-fragmented-alpha-in-next-fragment", "sequence-alpha-repeat-2", 0, [2], builder =>
+        {
+            // The color images in a fragment, their alpha planes in the next one
+            var both = builder.Fragments[0];
+            var alpha = both.Tracks.Single(track => track.TrackId == builder.Tracks.Single(candidate => candidate.HandlerType == "auxv").Id);
+            both.Tracks.Remove(alpha);
+            var next = new AvifFileBuilder.Fragment();
+            next.Tracks.Add(alpha);
+            builder.Fragments.Add(next);
+        }, ["avif.seq.fragments=2", "avif.alpha"], "The two color images are described by the first fragment and their alpha planes by the second one: the images wait for their alpha planes.");
+
         // The colr box of the sample entry declares ICtCp with the HLG transfer characteristics: every image of the track
         // is converted through the transfer function
         Assembled(context, "sequence-ictcp-hlg", "sequence-10bit-once", builder =>

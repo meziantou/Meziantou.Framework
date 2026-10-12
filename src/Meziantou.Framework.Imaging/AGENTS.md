@@ -115,6 +115,14 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   Scalability only changes which frames are output, never how they are decoded: the units outside the operating point
   are dropped, and a temporal unit with several spatial layers outputs the frame of its highest layer (what a player
   shows, and what `lsel`-less layered AVIF images present). `OutputAllLayers` is for conformance tests only.
+  An `iden` item is resolved by `AvifImagePlan` into the transformations of the coded image it presents (no pixel
+  moves; the alpha plane of a derived image must be presented as its colors). The edit list of a track that selects
+  parts of the media is an `AvifEditTimeline` (exact intersections in units of the two time scales; the images that
+  are left out are decoded and charged as hidden pixels, and every sample is located then). A fragmented sequence
+  (`mvex`) is read by `AvifMovieFragment`: each `moof` box appends samples to `AvifTrack`, whose tables only hold the
+  samples that are still to be read, and the walk ends with the input (`ParseStatus.NeedMoreDataOrEnd` at a box
+  boundary). The independent readers are `ReferenceAvif.GetIdentityChain`, `Track.GetPresentation` and its own `moof`
+  reader; Apple ImageIO judges identity derivations and FFmpeg the fragments it can demux.
 - **AV1 encoder** (`Internals/Codecs/Avif/Av1/Encoding`, and the `Write` and `Encode` parts of `Av1TileCoder`). The
   specification only describes decoding: the encoder is written from it, never from another encoder.
   - The encoder shares the state and the processes of the decoder (`Av1FrameCodingState`, the prediction, the

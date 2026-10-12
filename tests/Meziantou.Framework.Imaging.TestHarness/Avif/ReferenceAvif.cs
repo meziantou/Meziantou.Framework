@@ -24,6 +24,7 @@ public sealed class ReferenceAvif
     private readonly List<Box> _topLevelBoxes = [];
     private readonly List<string> _compatibleBrands = [];
     private readonly List<Track> _tracks = [];
+    private readonly Dictionary<uint, (uint Duration, uint Size)> _fragmentDefaults = [];
     private MetaContent _meta = new();
 
     private ReferenceAvif(byte[] data)
@@ -66,6 +67,9 @@ public sealed class ReferenceAvif
 
     /// <summary>Gets a value indicating whether the file has a movie fragment box (<c>moof</c>).</summary>
     public bool IsFragmented => _topLevelBoxes.Any(box => box.Type == "moof");
+
+    /// <summary>Gets a value indicating whether the <c>moov</c> box has an <c>mvex</c> box, which announces movie fragments.</summary>
+    public bool HasMovieExtends { get; private set; }
 
     /// <summary>Gets a value indicating whether the file declares the brand of the image sequences (<c>avis</c>).</summary>
     public bool IsSequence => HasBrand("avis");
@@ -388,6 +392,9 @@ public sealed class ReferenceAvif
                 case "moov" when MovieTimescale == 0 && _tracks.Count == 0:
                     ReadMovie(payload);
                     break;
+                case "moof":
+                    ReadMovieFragment(payload, box.Offset);
+                    break;
                 default:
                     break;
             }
@@ -635,6 +642,96 @@ public sealed class ReferenceAvif
             {
                 _tracks.Add(ReadTrack(content));
             }
+            else if (box.Type == "mvex")
+            {
+                HasMovieExtends = true;
+                foreach (var (extends, defaults) in Children(content))
+                {
+                    if (extends.Type != "trex")
+                        continue;
+
+                    // Track identifier, default sample description index, duration, size and flags
+                    var reader = new Cursor(defaults);
+                    reader.FullBoxVersion();
+                    var trackId = reader.U32();
+                    reader.Skip(4);
+                    _fragmentDefaults[trackId] = (reader.U32(), reader.U32());
+                }
+            }
+        }
+    }
+
+    // ISO/IEC 14496-12, section 8.8 "Movie Fragments": the samples of a fragment are appended to their tracks. The data of
+    // a run starts at the base of its track fragment plus the offset of the run: the base is an offset in the file
+    // (base-data-offset-present), the start of the moof box (default-base-is-moof, or the first track fragment without
+    // either flag), or the end of the data of the previous track fragment. A run without offset follows the previous run
+    private void ReadMovieFragment(ReadOnlyMemory<byte> payload, long movieFragmentOffset)
+    {
+        long previousEnd = movieFragmentOffset;
+        var isFirst = true;
+        foreach (var (box, content) in Children(payload))
+        {
+            if (box.Type != "traf")
+                continue;
+
+            Track? track = null;
+            long baseOffset = isFirst ? movieFragmentOffset : previousEnd;
+            long next = baseOffset;
+            (uint Duration, uint Size) defaults = default;
+            foreach (var (child, body) in Children(content))
+            {
+                var reader = new Cursor(body);
+                if (child.Type == "tfhd")
+                {
+                    var flags = reader.U32() & 0xFFFFFF;
+                    var trackId = reader.U32();
+                    track = _tracks.FirstOrDefault(candidate => candidate.Id == trackId);
+                    defaults = _fragmentDefaults.GetValueOrDefault(trackId);
+                    if ((flags & 0x000001) != 0)
+                        baseOffset = checked((long)reader.U64());
+                    else if ((flags & 0x020000) != 0)
+                        baseOffset = movieFragmentOffset;
+
+                    if ((flags & 0x000002) != 0)
+                        reader.Skip(4);
+                    if ((flags & 0x000008) != 0)
+                        defaults.Duration = reader.U32();
+                    if ((flags & 0x000010) != 0)
+                        defaults.Size = reader.U32();
+
+                    next = baseOffset;
+                }
+                else if (child.Type == "tfdt" && track is not null)
+                {
+                    var version = reader.FullBoxVersion();
+                    track.AddFragmentDecodeTime(version == 1 ? reader.U64() : reader.U32(), (ulong)track.Samples.Sum(sample => (long)sample.Duration));
+                }
+                else if (child.Type == "trun" && track is not null)
+                {
+                    var flags = reader.U32() & 0xFFFFFF;
+                    var count = reader.U32();
+                    if ((flags & 0x000001) != 0)
+                        next = baseOffset + unchecked((int)reader.U32());
+                    if ((flags & 0x000004) != 0)
+                        reader.Skip(4);
+
+                    for (uint i = 0; i < count; i++)
+                    {
+                        var duration = (flags & 0x000100) != 0 ? reader.U32() : defaults.Duration;
+                        var size = (flags & 0x000200) != 0 ? reader.U32() : defaults.Size;
+                        if ((flags & 0x000400) != 0)
+                            reader.Skip(4);
+                        if ((flags & 0x000800) != 0)
+                            track.AddCompositionOffset(unchecked((int)reader.U32()));
+
+                        track.AddSample(new Sample(next, checked((int)size), duration));
+                        next += size;
+                    }
+                }
+            }
+
+            previousEnd = next;
+            isFirst = false;
         }
     }
 
@@ -1461,6 +1558,17 @@ public sealed class ReferenceAvif
     {
         private readonly List<TrackReference> _references = [];
         private readonly List<Sample> _samples = [];
+        private readonly List<(ulong DecodeTime, ulong MediaTime)> _fragmentDecodeTimes = [];
+        private readonly List<int> _compositionOffsets = [];
+
+        /// <summary>
+        /// Gets, for each track fragment that has a <c>tfdt</c> box, the decode time it declares for its first sample and the
+        /// sum of the durations of the samples before it: the two are equal when the fragments follow each other.
+        /// </summary>
+        public IReadOnlyList<(ulong DecodeTime, ulong MediaTime)> FragmentDecodeTimes => _fragmentDecodeTimes;
+
+        /// <summary>Gets the composition time offsets that the runs of the fragments declare for their samples.</summary>
+        public IReadOnlyList<int> CompositionOffsets => _compositionOffsets;
         private readonly List<SampleEntryBox> _sampleEntryBoxes = [];
         private IReadOnlyList<Item> _metaItems = [];
 
@@ -1712,6 +1820,10 @@ public sealed class ReferenceAvif
         }
 
         internal void AddSample(Sample sample) => _samples.Add(sample);
+
+        internal void AddFragmentDecodeTime(ulong decodeTime, ulong mediaTime) => _fragmentDecodeTimes.Add((decodeTime, mediaTime));
+
+        internal void AddCompositionOffset(int offset) => _compositionOffsets.Add(offset);
     }
 
     /// <summary>The content of a <c>meta</c> box, of the file or of a track.</summary>

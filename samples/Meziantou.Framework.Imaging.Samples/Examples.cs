@@ -306,6 +306,28 @@ internal static class Examples
     }
     // end-snippet
 
+    /// <summary>A compact PNG for graphics with few colors: palette indexes instead of color samples, stored exactly.</summary>
+    // begin-snippet: save-png-indexed
+    public static bool SaveIndexedPng(string inputPath, string outputPath)
+    {
+        using var image = Image.Load(inputPath);
+        try
+        {
+            // One palette (PLTE, plus tRNS when a color is not opaque) for the colors of every frame, and 1-, 2-, 4- or
+            // 8-bit indexes. The pixels are stored exactly, alpha included: nothing is ever reduced.
+            image.Save(outputPath, new PngEncoder { PixelLayout = PngPixelLayout.Indexed });
+            return true;
+        }
+        catch (UnsupportedImageFeatureException exception) when (exception.Feature is "Color reduction" or "Bit depth reduction")
+        {
+            // More than 256 colors, or 16-bit samples that 8 bits cannot represent: the save failed before it wrote
+            // anything. The default layout follows the pixel format and stores every image.
+            image.Save(outputPath, new PngEncoder());
+            return false;
+        }
+    }
+    // end-snippet
+
     /// <summary>A multi-page TIFF document: pages may differ in size and pixel format, and are read one at a time.</summary>
     // begin-snippet: tiff-pages
     public static Size WriteAndReadTiffDocument(string inputPath, string documentPath)

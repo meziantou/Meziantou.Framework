@@ -4,7 +4,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
 /// Maps rows of color keys to the palette indices of a <see cref="PaletteQuantizer"/>, with optional Floyd–Steinberg
-/// dithering, for the encoders that write palettes (GIF, indexed BMP).
+/// dithering, for the encoders that reduce colors to a palette (GIF, indexed BMP).
 /// </summary>
 /// <remarks>
 /// Dithering carries the error of each row to the next one, so the rows of a frame must be mapped in display order, from

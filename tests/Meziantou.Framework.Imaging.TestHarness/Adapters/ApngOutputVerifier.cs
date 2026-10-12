@@ -9,8 +9,8 @@ namespace Meziantou.Framework.Imaging.TestHarness.Adapters;
 /// (<see cref="ReferencePng"/>): the container and sequence rules, the encoded control semantics of full-canvas output
 /// (every frame a canvas-sized <c>SOURCE</c> region at offset 0 with <c>dispose_op</c> NONE, so no stale delta or disposal
 /// data can survive an edit), the frame count, the play count, the poster layout, exact delays, and the pixels of every
-/// displayed frame and of the separate poster, compared exactly with the intended full-canvas frames. The library decoder is
-/// never used.
+/// displayed frame and of the separate poster, compared exactly with the intended full-canvas frames (expanded exactly to
+/// 8-bit RGBA for indexed output, which the reader decodes through the palette). The library decoder is never used.
 /// </summary>
 public static class ApngOutputVerifier
 {
@@ -63,15 +63,21 @@ public static class ApngOutputVerifier
                 Check((Int128)frame.DelayNumerator * duration.Denominator == (Int128)duration.Numerator * frame.DelayDenominator, name, $"delay {frame.DelayNumerator}/{frame.DelayDenominator}, {duration} expected exactly");
             }
 
-            Compare(ImageSnapshots.CaptureFrame(expected.Frames[i]), reference.DecodeDisplayedFrame(i), name);
+            Compare(GetExpected(reference, expected.Frames[i]), reference.DecodeDisplayedFrame(i), name);
         }
 
         if (expected.PosterFrame is { } poster)
         {
-            Compare(ImageSnapshots.CaptureFrame(poster), reference.DecodePoster(), context + ", poster");
+            Compare(GetExpected(reference, poster), reference.DecodePoster(), context + ", poster");
         }
 
         return reference;
+    }
+
+    private static RawPixelBuffer GetExpected(ReferencePng reference, ImageFrame frame)
+    {
+        var pixels = ImageSnapshots.CaptureFrame(frame);
+        return reference.ColorType == 3 ? IndexedPngExpectation.ToRgba8(pixels) : pixels;
     }
 
     private static void Compare(RawPixelBuffer expected, RawPixelBuffer actual, string context)

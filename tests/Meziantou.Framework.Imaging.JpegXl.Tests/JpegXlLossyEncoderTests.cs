@@ -1,4 +1,5 @@
 using Meziantou.Framework.Imaging.Formats;
+using Meziantou.Framework.Imaging.Internals;
 using Meziantou.Framework.Imaging.Metadata;
 using Meziantou.Framework.Imaging.TestHarness.JpegXl;
 
@@ -140,6 +141,203 @@ public sealed class JpegXlLossyEncoderTests
 
         // The same input gives the same bytes
         Assert.Equal(data, Save(image, new JpegXlEncoder { Compression = JpegXlCompression.Lossy, Quality = 90, Effort = effort }));
+    }
+
+    /// <summary>
+    /// What each tier of the effort adds is used, and pays: on an image of slow ramps, of bands that vary in one direction,
+    /// of noise and of hard edges, the 16x16 transform (effort 3), the transforms that are not square (7) and the larger
+    /// ones (8) each change the file, which is then closer to the source without being larger by more than a few percent.
+    /// </summary>
+    [Theory]
+    [InlineData(50)]
+    [InlineData(75)]
+    [InlineData(90)]
+    public void EachTierOfTheEffortChoosesOtherTransformsAndIsCloserToTheSource(int quality)
+    {
+        using var image = CreateWaves();
+        var fixedTransform = Save(image, new JpegXlEncoder { Compression = JpegXlCompression.Lossy, Quality = quality, Effort = 2 });
+        using var fixedDecoded = Image.Load(fixedTransform);
+        var (fixedPsnr, _) = Measure(image, fixedDecoded);
+        byte[] previous = fixedTransform;
+        foreach (var effort in new[] { 3, 7, 8 })
+        {
+            var data = Save(image, new JpegXlEncoder { Compression = JpegXlCompression.Lossy, Quality = quality, Effort = effort });
+            Assert.NotEqual(previous, data);
+            using var decoded = Image.Load(data);
+            var (psnr, _) = Measure(image, decoded);
+            Assert.True(psnr >= fixedPsnr + 0.5, $"quality {quality}, effort {effort}: {psnr:F2} dB, {fixedPsnr:F2} dB with the 8x8 transform only.");
+            Assert.True(data.Length <= fixedTransform.Length * 1.05, $"quality {quality}, effort {effort}: {data.Length} bytes, {fixedTransform.Length} bytes with the 8x8 transform only.");
+            previous = data;
+        }
+    }
+
+    /// <summary>
+    /// The decoder smooths the frames of the qualities up to 90 (the Gabor-like filter), which the encoder sharpened; above,
+    /// where the quantization is finer than what the pair of filters loses, it does not.
+    /// </summary>
+    [Theory]
+    [InlineData(0, true)]
+    [InlineData(75, true)]
+    [InlineData(90, true)]
+    [InlineData(91, false)]
+    [InlineData(100, false)]
+    public void TheDecoderSmoothsTheFramesOfTheQualitiesThatNeedIt(int quality, bool expected)
+    {
+        using var image = CreatePhoto(96, 80, seed: 3);
+        var data = Save(image, new JpegXlEncoder { Compression = JpegXlCompression.Lossy, Quality = quality });
+        var frame = Assert.Single(ReferenceJpegXl.Parse(data).Frames!);
+        Assert.Equal(expected, frame.IsGaborishEnabled);
+
+        // A lossless frame is never filtered
+        var lossless = Assert.Single(ReferenceJpegXl.Parse(Save(image, new JpegXlEncoder())).Frames!);
+        Assert.Equal((false, 0), (lossless.IsGaborishEnabled, lossless.EdgePreservingIterations));
+    }
+
+    /// <summary>
+    /// The size of a file grows with the quality across the quality where the decoder stops smoothing the frames, and the
+    /// image is closer to its source on each side of it.
+    /// </summary>
+    [Fact]
+    public void TheQualityScaleIsMonotonicAroundTheFilterThreshold()
+    {
+        using var image = CreatePhoto(300, 270, seed: 9);
+        var previousLength = 0;
+        foreach (var quality in new[] { 86, 88, 90, 91, 93, 95 })
+        {
+            var length = Save(image, new JpegXlEncoder { Compression = JpegXlCompression.Lossy, Quality = quality }).Length;
+            Assert.True(length > previousLength, $"quality {quality}: {length} bytes after {previousLength}.");
+            previousLength = length;
+        }
+    }
+
+    /// <summary>
+    /// The forward transforms give the coefficients from which the transforms of the decoder give the samples back, for
+    /// every transform the encoder chooses; the lowest frequencies of a transform of several blocks go through the LF
+    /// samples of its blocks, as they do in a file.
+    /// </summary>
+    [Theory]
+    [InlineData(0)]
+    [InlineData(4)]
+    [InlineData(5)]
+    [InlineData(6)]
+    [InlineData(7)]
+    [InlineData(10)]
+    [InlineData(11)]
+    [InlineData(18)]
+    [InlineData(19)]
+    [InlineData(20)]
+    public void TheForwardTransformIsTheInverseOfTheTransformOfTheDecoder(int transform)
+    {
+        var blocksWide = JpegXlVarDctTables.BlocksWide[transform];
+        var blocksHigh = JpegXlVarDctTables.BlocksHigh[transform];
+        var width = blocksWide * 8;
+        var height = blocksHigh * 8;
+        var samples = new float[width * height];
+        var state = (uint)(transform + 1) * 2654435761u;
+        for (var i = 0; i < samples.Length; i++)
+        {
+            // A ramp, a wave of a few samples and noise: every frequency
+            state = (state * 1664525u) + 1013904223u;
+            samples[i] = (0.3f * (i % width) / width) + (0.2f * ((i / width) % 5)) + ((state >> 8) * (0.5f / (1 << 24)));
+        }
+
+        var coefficients = new float[samples.Length];
+        JpegXlForwardTransform.ForwardDct(samples, width, height, width, coefficients, new float[samples.Length]);
+
+        // The LF sample of each block, then the lowest frequencies again from these samples, as the decoder computes them
+        var lowFrequency = new float[blocksWide * blocksHigh];
+        JpegXlForwardTransform.GetLowFrequencies(coefficients, blocksHigh, blocksWide, lowFrequency);
+        var stride = Math.Max(blocksWide, blocksHigh) * 8;
+        var original = (float[])coefficients.Clone();
+        for (var v = 0; v < Math.Min(blocksWide, blocksHigh); v++)
+        {
+            Array.Clear(coefficients, v * stride, Math.Max(blocksWide, blocksHigh));
+        }
+
+        var scratch = new float[JpegXlInverseTransform.ScratchLength];
+        JpegXlInverseTransform.SetLowestFrequencies(lowFrequency, blocksWide, blocksHigh, blocksWide, coefficients, scratch);
+        for (var i = 0; i < coefficients.Length; i++)
+        {
+            Assert.True(Math.Abs(coefficients[i] - original[i]) < 2e-5f, $"coefficient {i}: {coefficients[i]} after the LF samples, {original[i]} before.");
+        }
+
+        var decoded = new float[samples.Length];
+        JpegXlInverseTransform.Apply(transform, coefficients, decoded, width, scratch);
+        for (var i = 0; i < samples.Length; i++)
+        {
+            Assert.True(Math.Abs(decoded[i] - samples[i]) < 1e-4f, $"sample {i}: {decoded[i]} instead of {samples[i]}.");
+        }
+    }
+
+    /// <summary>
+    /// The sharpening of the encoder is undone by the smoothing of the decoder: exactly for a constant and for a slope, and
+    /// to a small fraction of the range for the samples of an image, which hold little of the highest frequencies.
+    /// </summary>
+    [Fact]
+    public void TheSmoothingOfTheDecoderUndoesTheSharpeningOfTheEncoder()
+    {
+        const int Width = 64;
+        const int Height = 48;
+        const int Radius = JpegXlInverseGaborish.Radius;
+        var filter = JpegXlRestorationFilter.Default;
+        Span<float> weights = stackalloc float[JpegXlInverseGaborish.WeightCount];
+        JpegXlInverseGaborish.GetWeights(filter.GaborWeights[0], filter.GaborWeights[1], weights);
+
+        // The weights of a filter that keeps a constant sum up to 1: the center, four of each of the samples at (1, 0), (1, 1), (2, 0) and (2, 2), eight at (2, 1)
+        Assert.True(Math.Abs(weights[0] + (4 * (weights[1] + weights[2] + weights[3] + weights[5])) + (8 * weights[4]) - 1) < 1e-6f);
+
+        using var image = CreatePhoto(Width, Height, seed: 12);
+        var pixels = new Rgba32[Width * Height];
+        image.Frames[0].CopyPixelDataTo(pixels);
+        var scope = AllocationScope.Create(ImageConfiguration.Default, nameof(TheSmoothingOfTheDecoderUndoesTheSharpeningOfTheEncoder));
+        // White noise is the worst input: it holds as much of the highest frequencies as of the others (0.092 is measured)
+        foreach (var (name, tolerance) in new[] { ("constant", 1e-5), ("slope", 1e-5), ("photo", 0.012), ("noise", 0.12) })
+        {
+            // The plane, mirrored around the frame as the decoder mirrors it
+            float Sample(int x, int y)
+            {
+                x = x < 0 ? -x - 1 : x >= Width ? (2 * Width) - 1 - x : x;
+                y = y < 0 ? -y - 1 : y >= Height ? (2 * Height) - 1 - y : y;
+                return name switch
+                {
+                    "constant" => 0.37f,
+                    "slope" => 0.1f + (x * 0.004f) + (y * 0.007f),
+                    "photo" => pixels[(y * Width) + x].G / 255f,
+                    _ => (((uint)((x * 73856093) ^ (y * 19349663)) * 2654435761u) >> 8) * (1f / (1 << 24)),
+                };
+            }
+
+            var paddedStride = Width + (2 * Radius);
+            var padded = new float[paddedStride * (Height + (2 * Radius))];
+            for (var y = -Radius; y < Height + Radius; y++)
+            {
+                for (var x = -Radius; x < Width + Radius; x++)
+                {
+                    padded[((y + Radius) * paddedStride) + x + Radius] = Sample(x, y);
+                }
+            }
+
+            using var sharpened = Av1PooledArray<float>.Rent(scope, Width * Height, clear: true);
+            JpegXlInverseGaborish.Apply(padded, paddedStride, sharpened.Span, Width, Width, Height, weights);
+
+            // The decoder filters three planes: the same one three times
+            using var second = Av1PooledArray<float>.Rent(scope, Width * Height, clear: false);
+            using var third = Av1PooledArray<float>.Rent(scope, Width * Height, clear: false);
+            sharpened.Span.CopyTo(second.Span);
+            sharpened.Span.CopyTo(third.Span);
+            JpegXlRestorationFilters.ApplyGaborish([sharpened, second, third], Width, Width, Height, filter, scope, TestContext.Current.CancellationToken);
+            // Away from the edges of the frame, where the mirror image of a slope is not a slope
+            var worst = 0.0;
+            for (var y = Radius + 1; y < Height - Radius - 1; y++)
+            {
+                for (var x = Radius + 1; x < Width - Radius - 1; x++)
+                {
+                    worst = Math.Max(worst, Math.Abs(sharpened.Span[(y * Width) + x] - Sample(x, y)));
+                }
+            }
+
+            Assert.True(worst <= tolerance, $"{name}: the decoder gives back the samples within {worst:G3}, more than {tolerance}.");
+        }
     }
 
     [Theory]
@@ -318,6 +516,64 @@ public sealed class JpegXlLossyEncoderTests
     }
 
     /// <summary>Smooth colors with a soft texture, as a photograph has, and an alpha channel with opaque, translucent and transparent areas.</summary>
+    /// <summary>
+    /// Creates an image of slow ramps, of bands that vary in one direction only, of long diagonal waves, of noise and of a
+    /// bar with hard edges: each suits another transform. Integer operations only.
+    /// </summary>
+    private static Image<Rgb24> CreateWaves()
+    {
+        const int Width = 320;
+        const int Height = 320;
+        var pixels = new Rgb24[Width * Height];
+        Span<byte> values = stackalloc byte[3];
+        for (var y = 0; y < Height; y++)
+        {
+            for (var x = 0; x < Width; x++)
+            {
+                for (var c = 0; c < 3; c++)
+                {
+                    var value = 40 + (c * 30) + ((x * (3 - c)) / 4) + ((y * (c + 1)) / 5);
+                    if (y < 96 && x >= 160)
+                    {
+                        value += Triangle(x, 32) * 2;
+                    }
+
+                    if (y is >= 96 and < 192 && x < 160)
+                    {
+                        value += Triangle(y, 24) * 2;
+                    }
+
+                    if (y >= 192 && x >= 192)
+                    {
+                        value += (int)((((ulong)((x * 7) + (y * 13) + (c * 5)) * 2654435761UL) >> 27) & 31);
+                    }
+
+                    if (y is >= 200 and < 216 && x is >= 32 and < 120)
+                    {
+                        value = 230 - (c * 40);
+                    }
+
+                    if (y < 192 && ((x / 64) + (y / 96)) % 2 == 0)
+                    {
+                        value += Triangle(x + y, 64) / 2;
+                    }
+
+                    values[c] = (byte)Math.Clamp(value, 0, 255);
+                }
+
+                pixels[(y * Width) + x] = new Rgb24(values[0], values[1], values[2]);
+            }
+        }
+
+        return Image.ImportPixelData<Rgb24>(pixels, Width, Height);
+
+        static int Triangle(int value, int period)
+        {
+            value %= 2 * period;
+            return value < period ? value : (2 * period) - value;
+        }
+    }
+
     private static Image<Rgba32> CreatePhoto(int width, int height, int seed)
     {
         var pixels = new Rgba32[width * height];

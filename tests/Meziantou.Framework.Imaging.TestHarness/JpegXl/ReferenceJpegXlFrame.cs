@@ -17,4 +17,11 @@ namespace Meziantou.Framework.Imaging.TestHarness.JpegXl;
 /// <param name="SaveAsReference">The reference slot the frame is saved to.</param>
 /// <param name="SectionCount">The number of sections.</param>
 /// <param name="ByteCount">The size of the sections, or -1 when the table of contents is permuted (it is then entropy coded and not read).</param>
-public sealed record ReferenceJpegXlFrame(int Type, bool IsModular, ulong Flags, bool IsYCbCr, int Upsampling, int PassCount, int X, int Y, int Width, int Height, int BlendMode, long Duration, bool IsLast, int SaveAsReference, int SectionCount, long ByteCount);
+public sealed record ReferenceJpegXlFrame(int Type, bool IsModular, ulong Flags, bool IsYCbCr, int Upsampling, int PassCount, int X, int Y, int Width, int Height, int BlendMode, long Duration, bool IsLast, int SaveAsReference, int SectionCount, long ByteCount)
+{
+    /// <summary>Gets a value indicating whether the decoder applies the Gabor-like filter to the frame; a frame header with every default value applies it.</summary>
+    public bool IsGaborishEnabled { get; init; } = true;
+
+    /// <summary>Gets the number of iterations of the edge-preserving filter (0 to 3); a frame header with every default value has 2.</summary>
+    public int EdgePreservingIterations { get; init; } = 2;
+}

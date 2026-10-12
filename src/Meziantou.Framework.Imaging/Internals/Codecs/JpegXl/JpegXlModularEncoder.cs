@@ -35,6 +35,9 @@ internal static class JpegXlModularEncoder
 
     private static ReadOnlySpan<int> PredictorCandidates => [GradientPredictor, 1, 2, 3, 4, 13, WeightedPredictor];
 
+    /// <summary>The predictors of the rows of a channel whose first row is apart: none, the sample on the left, the gradient.</summary>
+    private static ReadOnlySpan<int> SeparateRowPredictorCandidates => [0, 1, GradientPredictor];
+
     private static JpegXlHybridUintConfig SampleConfig => new(TokenSplitExponent, 1, 0);
 
     /// <summary>Writes the channels of a rectangle of the image.</summary>
@@ -44,7 +47,8 @@ internal static class JpegXlModularEncoder
     /// <param name="effort">The compression effort, from 0 to 9.</param>
     /// <param name="scope">The scope of the working memory.</param>
     /// <param name="cancellationToken">The token checked between rows.</param>
-    public static void Encode(LsbBitWriter writer, JpegXlModularImage image, int colorChannelCount, int effort, AllocationScope scope, CancellationToken cancellationToken)
+    /// <param name="firstRowChannel">The channel whose first row holds other values than its other rows, or -1: see <see cref="EncodeChannels"/>.</param>
+    public static void Encode(LsbBitWriter writer, JpegXlModularImage image, int colorChannelCount, int effort, AllocationScope scope, CancellationToken cancellationToken, int firstRowChannel = -1)
     {
         var colorTransform = NoColorTransform;
         if (colorChannelCount == 3)
@@ -72,7 +76,7 @@ internal static class JpegXlModularEncoder
             writer.WriteU32(0, 0, 0, 1, 0, 2, 4, 18, 8);
         }
 
-        EncodeChannels(writer, image.Channels, effort, scope, cancellationToken);
+        EncodeChannels(writer, image.Channels, effort, scope, cancellationToken, firstRowChannel);
     }
 
     /// <summary>
@@ -119,7 +123,12 @@ internal static class JpegXlModularEncoder
     /// <param name="effort">The compression effort, from 0 to 9.</param>
     /// <param name="scope">The scope of the working memory.</param>
     /// <param name="cancellationToken">The token checked between channels.</param>
-    public static void EncodeChannels(LsbBitWriter writer, IReadOnlyList<JpegXlModularChannel> channels, int effort, AllocationScope scope, CancellationToken cancellationToken)
+    /// <param name="firstRowChannel">
+    /// The channel whose first row holds other values than its other rows, or -1. The tree gives this row a context and a
+    /// predictor of its own: values of two kinds that share a context each pay for the presence of the other, and a
+    /// predictor that reads the row above mixes them. The block list of a VarDCT frame is such a channel.
+    /// </param>
+    public static void EncodeChannels(LsbBitWriter writer, IReadOnlyList<JpegXlModularChannel> channels, int effort, AllocationScope scope, CancellationToken cancellationToken, int firstRowChannel = -1)
     {
         // The residuals of one channel
         var sampleCount = 0;
@@ -129,15 +138,20 @@ internal static class JpegXlModularEncoder
         }
 
         using var residuals = Av1PooledArray<uint>.Rent(scope, sampleCount, clear: false);
-        Span<int> predictors = channels.Count <= 64 ? stackalloc int[channels.Count] : new int[channels.Count];
-        Span<int> contexts = channels.Count <= 64 ? stackalloc int[channels.Count] : new int[channels.Count];
+        // One leaf per channel; the other rows of the channel whose first row is apart have the last leaf
+        var leafCount = channels.Count + (firstRowChannel >= 0 ? 1 : 0);
+        Span<int> predictors = leafCount <= 64 ? stackalloc int[leafCount] : new int[leafCount];
+        Span<int> contexts = leafCount <= 64 ? stackalloc int[leafCount] : new int[leafCount];
         predictors.Fill(GradientPredictor);
         if (effort >= SearchEffort)
         {
             var candidates = effort >= WeightedPredictorEffort ? PredictorCandidates : PredictorCandidates[..^1];
-            for (var c = 0; c < predictors.Length; c++)
+            for (var c = 0; c < channels.Count; c++)
             {
                 cancellationToken.ThrowIfCancellationRequested();
+                if (c == firstRowChannel)
+                    continue;
+
                 var best = double.MaxValue;
                 foreach (var candidate in candidates)
                 {
@@ -151,7 +165,35 @@ internal static class JpegXlModularEncoder
             }
         }
 
-        WriteTree(writer, predictors, contexts, scope);
+        if (firstRowChannel >= 0)
+        {
+            // Each part has the predictor that gives it the fewest bits, at every effort: the channel is small. A value
+            // that names something (a transform) is often best left as it is; a value that varies slowly, as its difference
+            // with the previous one
+            var channel = channels[firstRowChannel];
+            var values = residuals.Span[..channel.Samples.Length];
+            var bestFirst = double.MaxValue;
+            var bestOthers = double.MaxValue;
+            foreach (var candidate in SeparateRowPredictorCandidates)
+            {
+                ComputeResiduals(channel, candidate, values, scope);
+                var first = GetTokenCost(values[..channel.Width]);
+                if (first < bestFirst)
+                {
+                    bestFirst = first;
+                    predictors[firstRowChannel] = candidate;
+                }
+
+                var others = GetTokenCost(values[channel.Width..]);
+                if (others < bestOthers)
+                {
+                    bestOthers = others;
+                    predictors[^1] = candidate;
+                }
+            }
+        }
+
+        WriteTree(writer, predictors, contexts, channels.Count, firstRowChannel, scope);
 
         // Prefix codes or the ANS coder, at every effort: a prefix code spends one bit at least on each sample, which is
         // many times the size of a channel that is constant or nearly so, and the ANS coder needs a longer description
@@ -162,9 +204,19 @@ internal static class JpegXlModularEncoder
             var channel = channels[c];
             var values = residuals.Span[..channel.Samples.Length];
             ComputeResiduals(channel, predictors[c], values, scope);
-            foreach (var value in values)
+            var count = c == firstRowChannel ? channel.Width : values.Length;
+            foreach (var value in values[..count])
             {
                 stream.Add(contexts[c], value);
+            }
+
+            if (c == firstRowChannel && values.Length > count)
+            {
+                ComputeResiduals(channel, predictors[^1], values, scope);
+                foreach (var value in values[count..])
+                {
+                    stream.Add(contexts[^1], value);
+                }
             }
         }
 
@@ -179,16 +231,18 @@ internal static class JpegXlModularEncoder
     public static void WriteUnusedGlobalTree(LsbBitWriter writer, AllocationScope scope)
     {
         Span<int> contexts = stackalloc int[1];
-        WriteTree(writer, [GradientPredictor], contexts, scope);
+        WriteTree(writer, [GradientPredictor], contexts, 1, -1, scope);
         using var stream = new JpegXlEntropyEncoder(1, SampleConfig, scope);
         stream.Write(writer);
     }
 
     /// <summary>
     /// Writes a tree whose leaves are the channels (a chain of decisions on the index of the channel), each with its
-    /// predictor, no offset and a multiplier of 1; gives the context of each channel, which is the rank of its leaf.
+    /// predictor, no offset and a multiplier of 1; gives the context of each leaf, which is its rank. The channel whose
+    /// first row is apart has a decision on the row instead of a leaf: its first row has the leaf of the channel, its other
+    /// rows the last leaf.
     /// </summary>
-    private static void WriteTree(LsbBitWriter writer, ReadOnlySpan<int> predictors, Span<int> contexts, AllocationScope scope)
+    private static void WriteTree(LsbBitWriter writer, ReadOnlySpan<int> predictors, Span<int> contexts, int channelCount, int firstRowChannel, AllocationScope scope)
     {
         const int SplitValueContext = 0;
         const int PropertyContext = 1;
@@ -196,37 +250,47 @@ internal static class JpegXlModularEncoder
         const int OffsetContext = 3;
         const int MultiplierLogContext = 4;
         const int MultiplierBitsContext = 5;
+        const int RowProperty = 2;
 
         using var stream = new JpegXlEntropyEncoder(JpegXlMaTree.TreeContextCount, new JpegXlHybridUintConfig(4, 0, 0), scope);
 
-        // Breadth-first: a decision "channel > k" has the rest of the chain on the left and the leaf of the channel k on the right.
-        // A queued value is the first channel of a chain, or, as its complement, the channel of a leaf
-        var channelCount = contexts.Length;
+        // Breadth-first: a decision "channel > k" has the rest of the chain on the left and the channel k on the right; a
+        // decision "row > 0" has the other rows on the left and the first row on the right. A queued value is the first
+        // channel of a chain, or, as its complement, a channel or the leaf of the other rows
         var queue = new Queue<int>();
         queue.Enqueue(0);
         var leafCount = 0;
+        var isRowDecisionWritten = false;
         while (queue.Count > 0)
         {
             var item = queue.Dequeue();
-            var isLeaf = item < 0 || item == channelCount - 1;
-            if (isLeaf)
-            {
-                var channel = item < 0 ? ~item : item;
-                contexts[channel] = leafCount++;
-                stream.Add(PropertyContext, 0);
-                stream.Add(PredictorContext, (uint)predictors[channel]);
-                stream.Add(OffsetContext, 0);
-                stream.Add(MultiplierLogContext, 0);
-                stream.Add(MultiplierBitsContext, 0);
-            }
-            else
+            if (item >= 0 && item < channelCount - 1)
             {
                 // The property 0 is the index of the channel; a property is written plus one
                 stream.Add(PropertyContext, 1);
                 stream.Add(SplitValueContext, (uint)(item << 1));
                 queue.Enqueue(item + 1);
                 queue.Enqueue(~item);
+                continue;
             }
+
+            var leaf = item < 0 ? ~item : item;
+            if (leaf == firstRowChannel && !isRowDecisionWritten)
+            {
+                stream.Add(PropertyContext, RowProperty + 1);
+                stream.Add(SplitValueContext, 0);
+                isRowDecisionWritten = true;
+                queue.Enqueue(~channelCount);
+                queue.Enqueue(~leaf);
+                continue;
+            }
+
+            contexts[leaf] = leafCount++;
+            stream.Add(PropertyContext, 0);
+            stream.Add(PredictorContext, (uint)predictors[leaf]);
+            stream.Add(OffsetContext, 0);
+            stream.Add(MultiplierLogContext, 0);
+            stream.Add(MultiplierBitsContext, 0);
         }
 
         stream.Write(writer);
@@ -329,6 +393,15 @@ internal static class JpegXlModularEncoder
     {
         residuals = residuals[..channel.Samples.Length];
         ComputeResiduals(channel, predictor, residuals, scope);
+        return GetTokenCost(residuals);
+    }
+
+    /// <summary>Estimates the number of bits of residuals that have a context of their own.</summary>
+    private static double GetTokenCost(ReadOnlySpan<uint> residuals)
+    {
+        if (residuals.IsEmpty)
+            return 0;
+
         Span<int> histogram = stackalloc int[MaxTokenCount];
         histogram.Clear();
         long rawBits = 0;
@@ -346,7 +419,7 @@ internal static class JpegXlModularEncoder
             }
         }
 
-        var total = (double)channel.Width * channel.Height;
+        var total = (double)residuals.Length;
         var cost = (double)rawBits;
         foreach (var count in histogram)
         {

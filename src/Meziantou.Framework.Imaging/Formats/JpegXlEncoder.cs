@@ -49,8 +49,9 @@ public sealed class JpegXlEncoder : ImageEncoder
     /// </summary>
     /// <remarks>
     /// The quality selects the quantization steps: 90 is a quality at which the difference with the original is barely
-    /// visible at a normal viewing distance, and 100 is the finest quantization the encoder uses, still lossy. It never
-    /// changes the encoding time.
+    /// visible at a normal viewing distance, and 100 is the finest quantization the encoder uses, still lossy. Up to 90,
+    /// the decoder also smooths the image with the filter of the format that removes the edges between blocks, which the
+    /// encoder prepares by sharpening it.
     /// </remarks>
     /// <exception cref="ArgumentOutOfRangeException">The value is not between 0 and 100.</exception>
     public int Quality
@@ -84,9 +85,11 @@ public sealed class JpegXlEncoder : ImageEncoder
     /// <remarks>
     /// Lossless output: efforts 0 to 2 use a fixed color transform and a fixed predictor; from 3 on, the color transform and
     /// the predictor are searched; from 7 on, the weighted predictor is also tried. At every effort, each group of samples
-    /// is written with prefix codes or with ANS, whichever is smaller. Lossy output: from 3 on, each tile has its own
+    /// is written with prefix codes or with ANS, whichever is smaller. Lossy output: efforts 0 to 2 only use the 8x8
+    /// transform; from 3 on, each area has the 8x8 or the 16x16 transform, whichever costs less, each tile has its own
     /// factors of the chroma from luma prediction and the predictor of the alpha channel is searched; from 6 on, the
-    /// contexts of the coefficients have more distributions.
+    /// contexts of the coefficients have more distributions; from 7 on, the 16x8 and 8x16 transforms are tried, and from
+    /// 8 on the transforms of up to 64x64 samples.
     /// </remarks>
     /// <exception cref="ArgumentOutOfRangeException">The value is not between 0 and 9.</exception>
     public int Effort

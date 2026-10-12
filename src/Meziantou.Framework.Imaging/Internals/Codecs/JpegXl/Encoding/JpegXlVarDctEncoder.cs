@@ -1,4 +1,5 @@
 using System.Numerics;
+using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -9,9 +10,15 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <remarks>
 /// <list type="bullet">
 /// <item><description>
-/// Analysis, group by group: the samples of the group are converted to XYB, each block is transformed and quantized, and
-/// only the quantized values are kept: one value per coefficient, and the LF value of each block. The blocks of a frame do
-/// not predict each other, so the encoder does not reconstruct what it writes.
+/// Analysis, group by group: the samples of the group are converted to XYB, and sharpened when the decoder smooths the
+/// frame (<see cref="JpegXlInverseGaborish"/>); the transform of each area is chosen, from the 8x8 DCT to the 64x64 one
+/// by the effort, by what it costs for the luma (<see cref="GetTransformCost"/>); then each transform is applied and
+/// quantized, and only the quantized values are kept: one value per coefficient, and the LF value of each block. The
+/// blocks of a frame do not predict each other, so the encoder does not reconstruct what it writes.
+/// </description></item>
+/// <item><description>
+/// Every block has the quantization factor of the frame: a factor that follows the content of the block was measured
+/// and is larger at equal quality (see the notes of the library).
 /// </description></item>
 /// <item><description>
 /// The channels are X, Y and B in that order, as in the decoder; Y is quantized first, because the decoder predicts the
@@ -37,6 +44,7 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
     private const int ColorTileBlocks = 8;
     private const int BlockContextCount = 15;
 
+    private const byte BlockCovered = 1;
     private const byte BlockFirst = 2;
 
     /// <summary>The quantization factor of a block that is neither coarser nor finer than the frame.</summary>
@@ -50,6 +58,43 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
 
     /// <summary>The unit of the factors of the chroma from luma prediction: the default value of the frame.</summary>
     private const float ColorScale = 1f / 84;
+
+    /// <summary>The effort from which the transform of each block is chosen.</summary>
+    private const int TransformSelectionEffort = 3;
+
+    /// <summary>The effort from which the transforms that are twice as wide as high, or as high as wide, are tried.</summary>
+    private const int RectangularTransformEffort = 7;
+
+    /// <summary>The effort from which transforms of 32x32 and 64x64 samples, and their halves, are tried.</summary>
+    private const int LargeTransformEffort = 8;
+
+    /// <summary>
+    /// What an error is worth in bits, when a transform is chosen: the weight of the squared error of the samples, in units
+    /// of the quantization step of a coefficient in the middle of the 8x8 block. Measured: see the remarks of
+    /// <see cref="GetTransformCost"/>.
+    /// </summary>
+    private const float DistortionWeight = 0.8f;
+
+    // The estimated size of the coefficients of a transform, fitted on the sizes of frames coded with one transform: a
+    // coefficient that is not zero, each bit of its magnitude, a zero before the last coefficient that is not zero (by
+    // the number of coefficients of the transform: 64, 256, 1024 and 4096), a transform without coefficient, and what
+    // names the transform in the block list, the 8x8 DCT being the common one
+    private const float NonZeroBits = 3.5f;
+    private const float MagnitudeBits = 1f;
+    private const float ZeroBits8 = 0.76f;
+    private const float ZeroBits16 = 0.6f;
+    private const float ZeroBits32 = 0.44f;
+    private const float ZeroBits64 = 0.28f;
+    private const float EmptyTransformBits = 0.3f;
+    private const float TypeBits8 = 0.5f;
+    private const float TypeBits = 4f;
+
+    /// <summary>
+    /// The factor of the distance of a frame that the decoder smooths: the sharpening of the encoder gives the same
+    /// quantization steps more to code, so the steps are larger for the same file size, and the frame is closer to the
+    /// original than without the filter.
+    /// </summary>
+    private const float GaborishDistanceFactor = 1.25f;
 
     private static readonly JpegXlHybridUintConfig CoefficientConfig = new(4, 2, 0);
 
@@ -75,6 +120,14 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
     private readonly float[] _hfScale = new float[3];
     private readonly int[] _horizontalShift = new int[3];
     private readonly int[] _verticalShift = new int[3];
+    private readonly TileBlock[] _tileBlocks = new TileBlock[ColorTileBlocks * ColorTileBlocks];
+    private readonly int[]?[] _ranks = new int[]?[JpegXlVarDctTables.OrderCount];
+    private readonly bool _gaborish;
+    private readonly float[] _gaborishWeights = new float[3 * JpegXlInverseGaborish.WeightCount];
+    private readonly Av1PooledArray<float>?[] _padded = new Av1PooledArray<float>?[3];
+    private readonly int _maxTransformBlocks = 1;
+    private readonly bool _usesRectangles;
+    private float _referenceStep;
 
     // The quantization table of each channel of a recompressed JPEG file, in the layout of the coefficients of the frame
     private ushort[][]? _jpegQuantization;
@@ -92,6 +145,7 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
     private Av1PooledArray<float>? _work;
     private Av1PooledArray<float>? _tileCoefficients;
     private Av1PooledArray<float>? _tileLuma;
+    private Av1PooledArray<float>? _candidate;
     private JpegXlDequantMatrices? _matrices;
     private JpegXlCoefficientOrders? _orders;
     private JpegXlForwardColor? _color;
@@ -155,7 +209,9 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
             return;
         }
 
-        var distance = GetDistance(quality);
+        // The decoder smooths the frame: the encoder sharpens it first, with what undoes the weights of each channel
+        _gaborish = frame.RestorationFilter.IsGaborEnabled;
+        var distance = GetDistance(quality) * (_gaborish ? GaborishDistanceFactor : 1f);
         _globalScale = Math.Clamp((int)MathF.Round(65536f * HfScaleAtDistance1 / (distance * NominalQuantField), MidpointRounding.AwayFromZero), 1, 8193 + 65535);
         _quantLf = Math.Clamp((int)MathF.Round(65536f * LfScaleAtDistance1 / (GetLfDistance(distance) * _globalScale), MidpointRounding.AwayFromZero), 1, 65536);
         ReadOnlySpan<float> lfQuant = [1f / 4096, 1f / 512, 1f / 256];
@@ -168,7 +224,28 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
         _hfScale[0] = MathF.Pow(0.8f, frame.XqmScale - 2);
         _hfScale[1] = 1;
         _hfScale[2] = MathF.Pow(0.8f, frame.BqmScale - 2);
+
+        if (_gaborish)
+        {
+            for (var c = 0; c < 3; c++)
+            {
+                JpegXlInverseGaborish.GetWeights(frame.RestorationFilter.GaborWeights[c * 2], frame.RestorationFilter.GaborWeights[(c * 2) + 1], _gaborishWeights.AsSpan(c * JpegXlInverseGaborish.WeightCount, JpegXlInverseGaborish.WeightCount));
+            }
+        }
+
+        // What the effort searches: the 16x16 transform from 3, the transforms that are not square from 7, the transforms
+        // of up to 64 samples per side from 8
+        _maxTransformBlocks = effort switch
+        {
+            < TransformSelectionEffort => 1,
+            < LargeTransformEffort => 2,
+            _ => 8,
+        };
+        _usesRectangles = effort >= RectangularTransformEffort;
     }
+
+    [StructLayout(LayoutKind.Auto)]
+    private readonly record struct TileBlock(byte X, byte Y, byte Transform, int Offset);
 
     /// <summary>Writes the Modular channels of a rectangle of the image that are not color channels (the alpha channel), as one sub-bitstream.</summary>
     public delegate void ExtraChannelWriter(LsbBitWriter writer, scoped in PixelLease lease, int x, int y, int width, int height);
@@ -214,6 +291,14 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
             _ => 3,
         };
     }
+
+    /// <summary>
+    /// Gets a value indicating whether the decoder smooths the frames of a quality with the Gabor-like filter, which the
+    /// encoder prepares by sharpening them (<see cref="JpegXlInverseGaborish"/>). The pair removes the edges that the
+    /// quantization leaves between blocks; the sharpening is not the exact inverse of the smoothing, which shows on fine
+    /// textures once the quantization is fine, so the highest qualities do not use it.
+    /// </summary>
+    public static bool UsesGaborish(int quality) => GetDistance(quality) >= 1f;
 
     /// <summary>Encodes a frame: its sections, one after the other, and their sizes.</summary>
     /// <param name="lease">The pixels of the frame.</param>
@@ -321,6 +406,8 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
             _lf[c] = null;
             _samples[c]?.Dispose();
             _samples[c] = null;
+            _padded[c]?.Dispose();
+            _padded[c] = null;
         }
 
         _blockInfo?.Dispose();
@@ -343,6 +430,8 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
         _tileCoefficients = null;
         _tileLuma?.Dispose();
         _tileLuma = null;
+        _candidate?.Dispose();
+        _candidate = null;
         _matrices?.Dispose();
         _matrices = null;
         _orders?.Dispose();
@@ -360,12 +449,21 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
         for (var c = 0; c < 3; c++)
         {
             _samples[c] = Av1PooledArray<float>.Rent(_scope, GroupSize * GroupSize, clear: false);
+            if (_gaborish)
+            {
+                const int PaddedSize = GroupSize + (2 * JpegXlInverseGaborish.Radius);
+                _padded[c] = Av1PooledArray<float>.Rent(_scope, PaddedSize * PaddedSize, clear: false);
+            }
         }
 
         _work = Av1PooledArray<float>.Rent(_scope, (long)JpegXlForwardTransform.MaxSize * JpegXlForwardTransform.MaxSize, clear: false);
         _tileCoefficients = Av1PooledArray<float>.Rent(_scope, 3L * ColorTileBlocks * ColorTileBlocks * 64, clear: false);
         _tileLuma = Av1PooledArray<float>.Rent(_scope, (long)ColorTileBlocks * ColorTileBlocks * 64, clear: false);
+        _candidate = Av1PooledArray<float>.Rent(_scope, (long)JpegXlForwardTransform.MaxSize * JpegXlForwardTransform.MaxSize, clear: false);
         _matrices = JpegXlDequantMatrices.CreateDefault(_scope);
+
+        // The reference of the errors: the step of a coefficient in the middle of the 8x8 block of the luma
+        _referenceStep = _matrices.GetMatrix(JpegXlVarDctTables.QuantTable[JpegXlVarDctTables.TransformDct8])[64 + (3 * 8) + 3];
         _color = new JpegXlForwardColor(_image, PixelFormats.GetBitsPerComponent(_format), _scope);
     }
 
@@ -407,154 +505,562 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
         height = Math.Min(GroupBlocks, _blocksHigh - y);
     }
 
-    /// <summary>Converts the samples of a group to XYB, then transforms and quantizes each of its blocks, tile by tile.</summary>
+    /// <summary>
+    /// Converts the samples of a group to XYB, chooses the transform of its blocks, then transforms and quantizes them,
+    /// tile by tile.
+    /// </summary>
     private void AnalyzeGroup(scoped in PixelLease lease, int group)
     {
         GetGroupRectangle(group, out var groupX, out var groupY, out var groupWidth, out var groupHeight);
         LoadSamples(lease, groupX * 8, groupY * 8, groupWidth * 8, groupHeight * 8);
 
-        var blockInfo = _blockInfo!.Span;
-        var quantField = _quantField!.Span;
-        var scratch = _work!.Span;
-        var tileCoefficients = _tileCoefficients!.Span;
-        var tileLuma = _tileLuma!.Span;
-        var matrix = _matrices!.GetMatrix(JpegXlVarDctTables.QuantTable[JpegXlVarDctTables.TransformDct8]);
-        var transformData = _image.TransformData;
-        var biasY = transformData.QuantBias[1];
-        var biasNumerator = transformData.QuantBiasNumerator;
-        var groupOffset = _groupOffsets!.Span[group];
-        var inverseGlobalScale = 65536f / _globalScale;
+        // The transforms of every tile first: where the coefficients of a transform are stored depends on the ones before it
         for (var tileY = 0; tileY < groupHeight; tileY += ColorTileBlocks)
         {
             for (var tileX = 0; tileX < groupWidth; tileX += ColorTileBlocks)
             {
-                var tileWidth = Math.Min(ColorTileBlocks, groupWidth - tileX);
-                var tileHeight = Math.Min(ColorTileBlocks, groupHeight - tileY);
+                ChooseTransforms(groupX, groupY, tileX, tileY, Math.Min(ColorTileBlocks, groupWidth - tileX), Math.Min(ColorTileBlocks, groupHeight - tileY));
+            }
+        }
 
-                // Y first: the two other channels are coded as their difference with a multiple of its dequantized values
-                double sumXY = 0;
-                double sumXYY = 0;
-                double sumBY = 0;
-                double sumBYY = 0;
-                for (var y = 0; y < tileHeight; y++)
+        var blockInfo = _blockInfo!.Span;
+        var offsets = _blockOffsets!.Span;
+        var next = 0;
+        for (var y = 0; y < groupHeight; y++)
+        {
+            var row = blockInfo.Slice(((groupY + y) * _blocksWide) + groupX, groupWidth);
+            for (var x = 0; x < groupWidth; x++)
+            {
+                if (row[x] < BlockFirst)
+                    continue;
+
+                var transform = row[x] - BlockFirst;
+                offsets[(y * GroupBlocks) + x] = next;
+                next += JpegXlVarDctTables.BlocksWide[transform] * JpegXlVarDctTables.BlocksHigh[transform] * 64;
+            }
+        }
+
+        var groupOffset = _groupOffsets!.Span[group];
+        for (var tileY = 0; tileY < groupHeight; tileY += ColorTileBlocks)
+        {
+            for (var tileX = 0; tileX < groupWidth; tileX += ColorTileBlocks)
+            {
+                EncodeTile(groupOffset, groupX, groupY, tileX, tileY, Math.Min(ColorTileBlocks, groupWidth - tileX), Math.Min(ColorTileBlocks, groupHeight - tileY));
+            }
+        }
+    }
+
+    /// <summary>
+    /// Chooses the transforms of a tile: each square of blocks is one transform, two transforms of half its size side by
+    /// side or one above the other, or its four quarters, whichever has the smallest cost; the quarters are chosen first.
+    /// </summary>
+    private void ChooseTransforms(int groupX, int groupY, int tileX, int tileY, int tileWidth, int tileHeight)
+    {
+        // For each block of the tile: 0 when a transform that starts elsewhere covers it, or its transform plus one
+        Span<byte> plan = stackalloc byte[ColorTileBlocks * ColorTileBlocks];
+        plan.Clear();
+        if (_maxTransformBlocks == 1)
+        {
+            plan.Fill(JpegXlVarDctTables.TransformDct8 + 1);
+        }
+        else
+        {
+            ChooseSquare(plan, tileX, tileY, 0, 0, ColorTileBlocks, tileWidth, tileHeight);
+        }
+
+        var blockInfo = _blockInfo!.Span;
+        var quantField = _quantField!.Span;
+        for (var y = 0; y < tileHeight; y++)
+        {
+            for (var x = 0; x < tileWidth; x++)
+            {
+                if (plan[(y * ColorTileBlocks) + x] == 0)
+                    continue;
+
+                var transform = plan[(y * ColorTileBlocks) + x] - 1;
+                var blocksWide = JpegXlVarDctTables.BlocksWide[transform];
+                var blocksHigh = JpegXlVarDctTables.BlocksHigh[transform];
+                var position = ((groupY + tileY + y) * _blocksWide) + groupX + tileX + x;
+                for (var by = 0; by < blocksHigh; by++)
                 {
-                    for (var x = 0; x < tileWidth; x++)
-                    {
-                        var blockX = groupX + tileX + x;
-                        var blockY = groupY + tileY + y;
-                        var position = (blockY * _blocksWide) + blockX;
-                        blockInfo[position] = BlockFirst + JpegXlVarDctTables.TransformDct8;
-                        quantField[position] = NominalQuantField;
-                        var coefficients = tileCoefficients.Slice(((y * ColorTileBlocks) + x) * 3 * 64, 3 * 64);
-                        for (var c = 0; c < 3; c++)
-                        {
-                            JpegXlForwardTransform.ForwardDct(_samples[c]!.Span[((((tileY + y) * 8) * GroupSize) + ((tileX + x) * 8))..], GroupSize, 8, 8, coefficients.Slice(c * 64, 64), scratch);
-                        }
-
-                        // The LF values: X is not predicted, and B is predicted from the dequantized Y with the factor 1
-                        var lfY = (int)MathF.Round(coefficients[64] / _lfStep[1], MidpointRounding.AwayFromZero);
-                        var dequantizedLfY = lfY * _lfStep[1];
-                        _lf[1]!.Span[position] = lfY;
-                        _lf[0]!.Span[position] = (int)MathF.Round(coefficients[0] / _lfStep[0], MidpointRounding.AwayFromZero);
-                        _lf[2]!.Span[position] = (int)MathF.Round((coefficients[128] - dequantizedLfY) / _lfStep[2], MidpointRounding.AwayFromZero);
-
-                        var scale = inverseGlobalScale / quantField[position];
-                        var offset = groupOffset + ((((tileY + y) * groupWidth) + tileX + x) * 64);
-                        var quantizedY = _coefficients[1]!.Span.Slice(offset, 64);
-                        var luma = tileLuma.Slice(((y * ColorTileBlocks) + x) * 64, 64);
-                        quantizedY[0] = 0;
-                        luma[0] = 0;
-                        for (var k = 1; k < 64; k++)
-                        {
-                            var stepY = matrix[64 + k] * scale;
-                            var valueY = Quantize(coefficients[64 + k] / stepY);
-                            quantizedY[k] = valueY;
-                            var dequantizedY = JpegXlVarDctDecoder.AdjustBias(valueY, biasY, biasNumerator) * stepY;
-                            luma[k] = dequantizedY;
-                            if (valueY != 0 && _effort >= ChromaFromLumaEffort)
-                            {
-                                // Least squares, in quantization steps
-                                var inverseStepX = 1.0 / (matrix[k] * (scale * _hfScale[0]));
-                                var inverseStepB = 1.0 / (matrix[128 + k] * (scale * _hfScale[2]));
-                                var weightedX = dequantizedY * inverseStepX;
-                                var weightedB = dequantizedY * inverseStepB;
-                                sumXY += weightedX * (coefficients[k] * inverseStepX);
-                                sumXYY += weightedX * weightedX;
-                                sumBY += weightedB * ((coefficients[128 + k] - dequantizedY) * inverseStepB);
-                                sumBYY += weightedB * weightedB;
-                            }
-                        }
-                    }
+                    blockInfo.Slice(position + (by * _blocksWide), blocksWide).Fill(BlockCovered);
+                    quantField.Slice(position + (by * _blocksWide), blocksWide).Fill(NominalQuantField);
                 }
 
-                // The factors of the tile, in units of 1/84: the decoder adds them to 0 for X and to 1 for B
-                var factorX = GetChromaFactor(sumXY, sumXYY);
-                var factorB = GetChromaFactor(sumBY, sumBYY);
-                if (factorX != 0 && GetTileCost(0, factorX, tileWidth, tileHeight, groupX + tileX, groupY + tileY, matrix, inverseGlobalScale) >= GetTileCost(0, 0, tileWidth, tileHeight, groupX + tileX, groupY + tileY, matrix, inverseGlobalScale))
+                blockInfo[position] = (byte)(BlockFirst + transform);
+            }
+        }
+    }
+
+    /// <summary>Chooses the transforms of a square of blocks of a tile, and returns their cost.</summary>
+    /// <param name="plan">The transforms of the tile, updated.</param>
+    /// <param name="tileX">The first column of blocks of the tile in its group.</param>
+    /// <param name="tileY">The first row of blocks of the tile in its group.</param>
+    /// <param name="x">The first column of blocks of the square in the tile.</param>
+    /// <param name="y">The first row of blocks of the square in the tile.</param>
+    /// <param name="blocks">The side of the square, in blocks.</param>
+    /// <param name="tileWidth">The number of columns of blocks of the tile that are in the frame.</param>
+    /// <param name="tileHeight">The number of rows of blocks of the tile that are in the frame.</param>
+    private float ChooseSquare(Span<byte> plan, int tileX, int tileY, int x, int y, int blocks, int tileWidth, int tileHeight)
+    {
+        if (blocks == 1)
+        {
+            plan[(y * ColorTileBlocks) + x] = JpegXlVarDctTables.TransformDct8 + 1;
+            return GetTransformCost(JpegXlVarDctTables.TransformDct8, tileX + x, tileY + y);
+        }
+
+        // The quarters that are in the frame
+        var half = blocks / 2;
+        Span<float> costs = [0, 0, 0, 0];
+        Span<bool> whole = [false, false, false, false];
+        for (var i = 0; i < 4; i++)
+        {
+            var quarterX = x + ((i & 1) * half);
+            var quarterY = y + ((i >> 1) * half);
+            if (quarterX >= tileWidth || quarterY >= tileHeight)
+                continue;
+
+            costs[i] = ChooseSquare(plan, tileX, tileY, quarterX, quarterY, half, tileWidth, tileHeight);
+
+            // A larger transform is only tried over quarters that are each one transform: where the smaller ones did not
+            // win, a larger one rarely does, and its evaluation is what costs the most
+            var transform = plan[(quarterY * ColorTileBlocks) + quarterX] - 1;
+            whole[i] = half == 1 || (transform >= 0 && JpegXlVarDctTables.BlocksWide[transform] == half && JpegXlVarDctTables.BlocksHigh[transform] == half);
+        }
+
+        var split = costs[0] + costs[1] + costs[2] + costs[3];
+        if (blocks > _maxTransformBlocks)
+            return split;
+
+        var fitsWidth = x + blocks <= tileWidth;
+        var fitsHeight = y + blocks <= tileHeight;
+        var (full, wide, tall) = blocks switch
+        {
+            2 => (4, 7, 6),
+            4 => (5, 11, 10),
+            _ => (18, 20, 19),
+        };
+
+        // Two transforms, each as wide as the square, one above the other; or the quarters of the half that is not worth it
+        var top = costs[0] + costs[1];
+        var bottom = costs[2] + costs[3];
+        var isTopMerged = false;
+        var isBottomMerged = false;
+        if (_usesRectangles && fitsWidth && whole[0] && whole[1])
+        {
+            var cost = GetTransformCost(wide, tileX + x, tileY + y);
+            if (cost < top)
+            {
+                top = cost;
+                isTopMerged = true;
+            }
+        }
+
+        if (_usesRectangles && fitsWidth && fitsHeight && whole[2] && whole[3])
+        {
+            var cost = GetTransformCost(wide, tileX + x, tileY + y + half);
+            if (cost < bottom)
+            {
+                bottom = cost;
+                isBottomMerged = true;
+            }
+        }
+
+        // Or side by side
+        var left = costs[0] + costs[2];
+        var right = costs[1] + costs[3];
+        var isLeftMerged = false;
+        var isRightMerged = false;
+        if (_usesRectangles && fitsHeight && whole[0] && whole[2])
+        {
+            var cost = GetTransformCost(tall, tileX + x, tileY + y);
+            if (cost < left)
+            {
+                left = cost;
+                isLeftMerged = true;
+            }
+        }
+
+        if (_usesRectangles && fitsWidth && fitsHeight && whole[1] && whole[3])
+        {
+            var cost = GetTransformCost(tall, tileX + x + half, tileY + y);
+            if (cost < right)
+            {
+                right = cost;
+                isRightMerged = true;
+            }
+        }
+
+        var best = split;
+        var choice = 0;
+        if (top + bottom < best)
+        {
+            best = top + bottom;
+            choice = 1;
+        }
+
+        if (left + right < best)
+        {
+            best = left + right;
+            choice = 2;
+        }
+
+        if (fitsWidth && fitsHeight && whole[0] && whole[1] && whole[2] && whole[3])
+        {
+            var cost = GetTransformCost(full, tileX + x, tileY + y);
+            if (cost < best)
+            {
+                best = cost;
+                choice = 3;
+            }
+        }
+
+        switch (choice)
+        {
+            case 1:
+                if (isTopMerged)
                 {
-                    factorX = 0;
+                    SetTransform(plan, wide, x, y);
                 }
 
-                if (factorB != 0 && GetTileCost(2, factorB, tileWidth, tileHeight, groupX + tileX, groupY + tileY, matrix, inverseGlobalScale) >= GetTileCost(2, 0, tileWidth, tileHeight, groupX + tileX, groupY + tileY, matrix, inverseGlobalScale))
+                if (isBottomMerged)
                 {
-                    factorB = 0;
+                    SetTransform(plan, wide, x, y + half);
                 }
 
-                var tile = (((groupY + tileY) / ColorTileBlocks) * _tilesWide) + ((groupX + tileX) / ColorTileBlocks);
-                _xFromY!.Span[tile] = factorX;
-                _bFromY!.Span[tile] = factorB;
-                var kx = factorX * ColorScale;
-                var kb = 1f + (factorB * ColorScale);
-                for (var y = 0; y < tileHeight; y++)
+                break;
+
+            case 2:
+                if (isLeftMerged)
                 {
-                    for (var x = 0; x < tileWidth; x++)
-                    {
-                        var position = ((groupY + tileY + y) * _blocksWide) + groupX + tileX + x;
-                        var scale = inverseGlobalScale / quantField[position];
-                        var offset = groupOffset + ((((tileY + y) * groupWidth) + tileX + x) * 64);
-                        var coefficients = tileCoefficients.Slice(((y * ColorTileBlocks) + x) * 3 * 64, 3 * 64);
-                        var luma = tileLuma.Slice(((y * ColorTileBlocks) + x) * 64, 64);
-                        var quantizedX = _coefficients[0]!.Span.Slice(offset, 64);
-                        var quantizedB = _coefficients[2]!.Span.Slice(offset, 64);
-                        quantizedX[0] = 0;
-                        quantizedB[0] = 0;
-                        for (var k = 1; k < 64; k++)
-                        {
-                            quantizedX[k] = Quantize((coefficients[k] - (kx * luma[k])) / (matrix[k] * (scale * _hfScale[0])));
-                            quantizedB[k] = Quantize((coefficients[128 + k] - (kb * luma[k])) / (matrix[128 + k] * (scale * _hfScale[2])));
-                        }
-                    }
+                    SetTransform(plan, tall, x, y);
                 }
+
+                if (isRightMerged)
+                {
+                    SetTransform(plan, tall, x + half, y);
+                }
+
+                break;
+
+            case 3:
+                SetTransform(plan, full, x, y);
+                break;
+        }
+
+        return best;
+
+        static void SetTransform(Span<byte> plan, int transform, int x, int y)
+        {
+            for (var by = 0; by < JpegXlVarDctTables.BlocksHigh[transform]; by++)
+            {
+                plan.Slice(((y + by) * ColorTileBlocks) + x, JpegXlVarDctTables.BlocksWide[transform]).Clear();
+            }
+
+            plan[(y * ColorTileBlocks) + x] = (byte)(transform + 1);
+        }
+    }
+
+    /// <summary>
+    /// Estimates what a transform costs for the luma of its blocks: the bits of its quantized coefficients, plus the
+    /// squared error of the samples that the quantization leaves, in bits.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A coefficient of every DCT of the format is the amplitude of a pattern over all the samples of the transform, so
+    /// the squared error of the samples is the number of samples times the sum of the squared errors of the
+    /// coefficients, whatever the size: transforms of different sizes are compared on the same error. The lowest
+    /// frequencies of a transform of several blocks are in the LF image, which every choice codes.
+    /// </para>
+    /// <para>
+    /// The size is a model fitted on frames coded with a single transform; it is within a few percent of their size.
+    /// What names the transform matters as much: a block list that only holds the 8x8 DCT costs nothing, and each other
+    /// transform about four bits. The weight of the error was chosen on photographs, for the size of the file at equal
+    /// PSNR, SSIM and VMAF; only the luma is measured, which decides for the three channels.
+    /// </para>
+    /// </remarks>
+    private float GetTransformCost(int transform, int x, int y)
+    {
+        var blocksWide = JpegXlVarDctTables.BlocksWide[transform];
+        var blocksHigh = JpegXlVarDctTables.BlocksHigh[transform];
+        var size = blocksWide * blocksHigh * 64;
+        var coefficients = _candidate!.Span[..size];
+        JpegXlForwardTransform.ForwardDct(_samples[1]!.Span[((y * 8 * GroupSize) + (x * 8))..], GroupSize, blocksHigh * 8, blocksWide * 8, coefficients, _work!.Span);
+
+        var matrix = _matrices!.GetMatrix(JpegXlVarDctTables.QuantTable[transform]).Slice(size, size);
+        var scale = (65536f / _globalScale) / NominalQuantField;
+        var columns = Math.Max(blocksWide, blocksHigh) * 8;
+        var rows = Math.Min(blocksWide, blocksHigh) * 8;
+        var lowestRows = Math.Min(blocksWide, blocksHigh);
+        var lowestColumns = Math.Max(blocksWide, blocksHigh);
+        var ranks = GetRanks(JpegXlVarDctTables.Order[transform]);
+        var error = 0f;
+        var bits = 0f;
+        var nonZeroCount = 0;
+        var lastRank = 0;
+        for (var row = 0; row < rows; row++)
+        {
+            var values = coefficients.Slice(row * columns, columns);
+            var steps = matrix.Slice(row * columns, columns);
+            var rowRanks = ranks.Slice(row * columns, columns);
+            for (var column = row < lowestRows ? lowestColumns : 0; column < columns; column++)
+            {
+                var step = steps[column] * scale;
+                var value = values[column];
+                var quantized = Quantize(value / step);
+                if (quantized == 0)
+                {
+                    error += value * value;
+                }
+                else
+                {
+                    var difference = value - (quantized * step);
+                    error += difference * difference;
+                    bits += NonZeroBits + (MagnitudeBits * BitOperations.Log2((uint)Math.Abs(quantized)));
+                    nonZeroCount++;
+                    lastRank = Math.Max(lastRank, rowRanks[column]);
+                }
+            }
+        }
+
+        if (nonZeroCount != 0)
+        {
+            // The zeros before the last coefficient that is not zero are coded too: the larger the transform, the less each costs
+            var zeroBits = BitOperations.Log2((uint)size) switch
+            {
+                6 or 7 => ZeroBits8,
+                8 => ZeroBits16,
+                9 => (ZeroBits16 + ZeroBits32) / 2,
+                10 => ZeroBits32,
+                11 => (ZeroBits32 + ZeroBits64) / 2,
+                _ => ZeroBits64,
+            };
+            bits += zeroBits * (lastRank + 1 - (blocksWide * blocksHigh) - nonZeroCount);
+        }
+        else
+        {
+            bits = EmptyTransformBits;
+        }
+
+        bits += transform == JpegXlVarDctTables.TransformDct8 ? TypeBits8 : TypeBits;
+        var reference = _referenceStep * scale;
+        return (error * size * (DistortionWeight / (reference * reference))) + bits;
+    }
+
+    /// <summary>Gets, for an order of coefficients, the rank of each position of a block.</summary>
+    private ReadOnlySpan<int> GetRanks(int order)
+    {
+        var ranks = _ranks[order];
+        if (ranks is null)
+        {
+            var positions = _orders!.GetOrder(0, order, 1);
+            ranks = new int[positions.Length];
+            for (var rank = 0; rank < positions.Length; rank++)
+            {
+                ranks[positions[rank]] = rank;
+            }
+
+            _ranks[order] = ranks;
+        }
+
+        return ranks;
+    }
+
+    /// <summary>
+    /// Transforms and quantizes the blocks of a tile: the three channels of each transform, the LF value of each of its
+    /// blocks, then the luma, the factors of the chroma from luma prediction of the tile, and the two other channels.
+    /// </summary>
+    private void EncodeTile(int groupOffset, int groupX, int groupY, int tileX, int tileY, int tileWidth, int tileHeight)
+    {
+        const int TileArea = ColorTileBlocks * ColorTileBlocks * 64;
+        var blockInfo = _blockInfo!.Span;
+        var quantField = _quantField!.Span;
+        var offsets = _blockOffsets!.Span;
+        var scratch = _work!.Span;
+        var tileCoefficients = _tileCoefficients!.Span;
+        var tileLuma = _tileLuma!.Span;
+        var transformData = _image.TransformData;
+        var biasY = transformData.QuantBias[1];
+        var biasNumerator = transformData.QuantBiasNumerator;
+        var inverseGlobalScale = 65536f / _globalScale;
+
+        // The transforms of the tile, their coefficients one after the other
+        var blocks = _tileBlocks.AsSpan();
+        var count = 0;
+        var next = 0;
+        for (var y = 0; y < tileHeight; y++)
+        {
+            for (var x = 0; x < tileWidth; x++)
+            {
+                var info = blockInfo[((groupY + tileY + y) * _blocksWide) + groupX + tileX + x];
+                if (info < BlockFirst)
+                    continue;
+
+                blocks[count++] = new TileBlock((byte)x, (byte)y, (byte)(info - BlockFirst), next);
+                next += JpegXlVarDctTables.BlocksWide[info - BlockFirst] * JpegXlVarDctTables.BlocksHigh[info - BlockFirst] * 64;
+            }
+        }
+
+        blocks = blocks[..count];
+
+        // Y first: the two other channels are coded as their difference with a multiple of its dequantized values
+        double sumXY = 0;
+        double sumXYY = 0;
+        double sumBY = 0;
+        double sumBYY = 0;
+        Span<float> lowFrequency = stackalloc float[3 * ColorTileBlocks * ColorTileBlocks];
+        foreach (var block in blocks)
+        {
+            var blocksWide = JpegXlVarDctTables.BlocksWide[block.Transform];
+            var blocksHigh = JpegXlVarDctTables.BlocksHigh[block.Transform];
+            var blockCount = blocksWide * blocksHigh;
+            var size = blockCount * 64;
+            var x = tileX + block.X;
+            var y = tileY + block.Y;
+            var position = ((groupY + y) * _blocksWide) + groupX + x;
+            for (var c = 0; c < 3; c++)
+            {
+                var coefficients = tileCoefficients.Slice((c * TileArea) + block.Offset, size);
+                JpegXlForwardTransform.ForwardDct(_samples[c]!.Span[((y * 8 * GroupSize) + (x * 8))..], GroupSize, blocksHigh * 8, blocksWide * 8, coefficients, scratch);
+                JpegXlForwardTransform.GetLowFrequencies(coefficients, blocksHigh, blocksWide, lowFrequency.Slice(c * blockCount, blockCount));
+            }
+
+            // The LF values: X is not predicted, and B is predicted from the dequantized Y with the factor 1
+            for (var by = 0; by < blocksHigh; by++)
+            {
+                for (var bx = 0; bx < blocksWide; bx++)
+                {
+                    var index = (by * blocksWide) + bx;
+                    var lfPosition = position + (by * _blocksWide) + bx;
+                    var lfY = (int)MathF.Round(lowFrequency[blockCount + index] / _lfStep[1], MidpointRounding.AwayFromZero);
+                    var dequantizedLfY = lfY * _lfStep[1];
+                    _lf[1]!.Span[lfPosition] = lfY;
+                    _lf[0]!.Span[lfPosition] = (int)MathF.Round(lowFrequency[index] / _lfStep[0], MidpointRounding.AwayFromZero);
+                    _lf[2]!.Span[lfPosition] = (int)MathF.Round((lowFrequency[(2 * blockCount) + index] - dequantizedLfY) / _lfStep[2], MidpointRounding.AwayFromZero);
+                }
+            }
+
+            var matrix = _matrices!.GetMatrix(JpegXlVarDctTables.QuantTable[block.Transform]);
+            var scale = inverseGlobalScale / quantField[position];
+            var source = tileCoefficients[block.Offset..];
+            var quantizedY = _coefficients[1]!.Span.Slice(groupOffset + offsets[(y * GroupBlocks) + x], size);
+            var luma = tileLuma.Slice(block.Offset, size);
+            var columns = Math.Max(blocksWide, blocksHigh) * 8;
+            var lowestLimit = Math.Min(blocksWide, blocksHigh) * columns;
+            var lowestColumns = Math.Max(blocksWide, blocksHigh);
+            for (var k = 0; k < size; k++)
+            {
+                // The lowest frequencies are in the LF image
+                if (k < lowestLimit && k % columns < lowestColumns)
+                {
+                    quantizedY[k] = 0;
+                    luma[k] = 0;
+                    continue;
+                }
+
+                var stepY = matrix[size + k] * scale;
+                var valueY = Quantize(source[TileArea + k] / stepY);
+                quantizedY[k] = valueY;
+                var dequantizedY = JpegXlVarDctDecoder.AdjustBias(valueY, biasY, biasNumerator) * stepY;
+                luma[k] = dequantizedY;
+                if (valueY != 0 && _effort >= ChromaFromLumaEffort)
+                {
+                    // Least squares, in quantization steps
+                    var inverseStepX = 1.0 / (matrix[k] * (scale * _hfScale[0]));
+                    var inverseStepB = 1.0 / (matrix[(2 * size) + k] * (scale * _hfScale[2]));
+                    var weightedX = dequantizedY * inverseStepX;
+                    var weightedB = dequantizedY * inverseStepB;
+                    sumXY += weightedX * (source[k] * inverseStepX);
+                    sumXYY += weightedX * weightedX;
+                    sumBY += weightedB * ((source[(2 * TileArea) + k] - dequantizedY) * inverseStepB);
+                    sumBYY += weightedB * weightedB;
+                }
+            }
+        }
+
+        // The factors of the tile, in units of 1/84: the decoder adds them to 0 for X and to 1 for B
+        var factorX = GetChromaFactor(sumXY, sumXYY);
+        var factorB = GetChromaFactor(sumBY, sumBYY);
+        if (factorX != 0 && GetTileCost(blocks, 0, factorX, groupX + tileX, groupY + tileY, inverseGlobalScale) >= GetTileCost(blocks, 0, 0, groupX + tileX, groupY + tileY, inverseGlobalScale))
+        {
+            factorX = 0;
+        }
+
+        if (factorB != 0 && GetTileCost(blocks, 2, factorB, groupX + tileX, groupY + tileY, inverseGlobalScale) >= GetTileCost(blocks, 2, 0, groupX + tileX, groupY + tileY, inverseGlobalScale))
+        {
+            factorB = 0;
+        }
+
+        var tile = (((groupY + tileY) / ColorTileBlocks) * _tilesWide) + ((groupX + tileX) / ColorTileBlocks);
+        _xFromY!.Span[tile] = factorX;
+        _bFromY!.Span[tile] = factorB;
+        var kx = factorX * ColorScale;
+        var kb = 1f + (factorB * ColorScale);
+        foreach (var block in blocks)
+        {
+            var blocksWide = JpegXlVarDctTables.BlocksWide[block.Transform];
+            var blocksHigh = JpegXlVarDctTables.BlocksHigh[block.Transform];
+            var size = blocksWide * blocksHigh * 64;
+            var x = tileX + block.X;
+            var y = tileY + block.Y;
+            var matrix = _matrices!.GetMatrix(JpegXlVarDctTables.QuantTable[block.Transform]);
+            var scale = inverseGlobalScale / quantField[((groupY + y) * _blocksWide) + groupX + x];
+            var offset = groupOffset + offsets[(y * GroupBlocks) + x];
+            var source = tileCoefficients[block.Offset..];
+            var luma = tileLuma.Slice(block.Offset, size);
+            var quantizedX = _coefficients[0]!.Span.Slice(offset, size);
+            var quantizedB = _coefficients[2]!.Span.Slice(offset, size);
+            var columns = Math.Max(blocksWide, blocksHigh) * 8;
+            var lowestLimit = Math.Min(blocksWide, blocksHigh) * columns;
+            var lowestColumns = Math.Max(blocksWide, blocksHigh);
+            for (var k = 0; k < size; k++)
+            {
+                if (k < lowestLimit && k % columns < lowestColumns)
+                {
+                    quantizedX[k] = 0;
+                    quantizedB[k] = 0;
+                    continue;
+                }
+
+                quantizedX[k] = Quantize((source[k] - (kx * luma[k])) / (matrix[k] * (scale * _hfScale[0])));
+                quantizedB[k] = Quantize((source[(2 * TileArea) + k] - (kb * luma[k])) / (matrix[(2 * size) + k] * (scale * _hfScale[2])));
             }
         }
     }
 
     /// <summary>
     /// Estimates the size of the coefficients of a channel (X or B) of a tile for a factor of the chroma from luma
-    /// prediction: the sum, over the coefficients that are not zero, of one plus the number of bits of their magnitude.
+    /// prediction: the sum, over the coefficients that are not zero, of two plus the number of bits of their magnitude.
     /// </summary>
-    private long GetTileCost(int channel, int factor, int tileWidth, int tileHeight, int blockX, int blockY, ReadOnlySpan<float> matrix, float inverseGlobalScale)
+    private long GetTileCost(ReadOnlySpan<TileBlock> blocks, int channel, int factor, int tileBlockX, int tileBlockY, float inverseGlobalScale)
     {
+        const int TileArea = ColorTileBlocks * ColorTileBlocks * 64;
         var tileCoefficients = _tileCoefficients!.Span;
         var tileLuma = _tileLuma!.Span;
         var quantField = _quantField!.Span;
         var k0 = (channel == 0 ? 0f : 1f) + (factor * ColorScale);
         long cost = 0;
-        for (var y = 0; y < tileHeight; y++)
+        foreach (var block in blocks)
         {
-            for (var x = 0; x < tileWidth; x++)
+            var blocksWide = JpegXlVarDctTables.BlocksWide[block.Transform];
+            var blocksHigh = JpegXlVarDctTables.BlocksHigh[block.Transform];
+            var size = blocksWide * blocksHigh * 64;
+            var scale = inverseGlobalScale / quantField[((tileBlockY + block.Y) * _blocksWide) + tileBlockX + block.X] * _hfScale[channel];
+            var coefficients = tileCoefficients.Slice((channel * TileArea) + block.Offset, size);
+            var luma = tileLuma.Slice(block.Offset, size);
+            var matrix = _matrices!.GetMatrix(JpegXlVarDctTables.QuantTable[block.Transform]).Slice(channel * size, size);
+            var columns = Math.Max(blocksWide, blocksHigh) * 8;
+            var lowestLimit = Math.Min(blocksWide, blocksHigh) * columns;
+            var lowestColumns = Math.Max(blocksWide, blocksHigh);
+            for (var k = 0; k < size; k++)
             {
-                var scale = inverseGlobalScale / quantField[((blockY + y) * _blocksWide) + blockX + x] * _hfScale[channel];
-                var coefficients = tileCoefficients.Slice(((((y * ColorTileBlocks) + x) * 3) + channel) * 64, 64);
-                var luma = tileLuma.Slice(((y * ColorTileBlocks) + x) * 64, 64);
-                var channelMatrix = matrix.Slice(channel * 64, 64);
-                for (var k = 1; k < 64; k++)
+                if (k < lowestLimit && k % columns < lowestColumns)
+                    continue;
+
+                var value = Quantize((coefficients[k] - (k0 * luma[k])) / (matrix[k] * scale));
+                if (value != 0)
                 {
-                    var value = Quantize((coefficients[k] - (k0 * luma[k])) / (channelMatrix[k] * scale));
-                    if (value != 0)
-                    {
-                        cost += 2 + BitOperations.Log2((uint)Math.Abs(value));
-                    }
+                    cost += 2 + BitOperations.Log2((uint)Math.Abs(value));
                 }
             }
         }
@@ -562,7 +1068,6 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
         return cost;
     }
 
-    /// <summary>Gets the factor that minimizes a sum of squares, in units of 1/84, as the signed byte the frame stores.</summary>
     private static sbyte GetChromaFactor(double sumXY, double sumYY)
     {
         if (sumYY <= 0)
@@ -583,19 +1088,65 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
         return value < 0 ? -rounded : rounded;
     }
 
-    /// <summary>Converts a rectangle of the frame to XYB; the samples outside the frame repeat its last column and its last row.</summary>
+    /// <summary>
+    /// Converts a rectangle of the frame to XYB; the samples outside the frame repeat its last column and its last row.
+    /// When the decoder smooths the frame (the Gabor-like filter), the samples are sharpened so that it gives them back.
+    /// </summary>
     private void LoadSamples(scoped in PixelLease lease, int x0, int y0, int width, int height)
     {
         var available = Math.Min(width, _width - x0);
+        var rows = Math.Min(height, _height - y0);
         var planeX = _samples[0]!.Span;
         var planeY = _samples[1]!.Span;
         var planeB = _samples[2]!.Span;
+        if (_gaborish)
+        {
+            // The rectangle and what the filter reads around it: the samples of the frame, which is mirrored at its edges
+            // as the decoder mirrors it
+            const int Radius = JpegXlInverseGaborish.Radius;
+            const int Stride = GroupSize + (2 * Radius);
+            var paddedX = _padded[0]!.Span;
+            var paddedY = _padded[1]!.Span;
+            var paddedB = _padded[2]!.Span;
+            var first = Math.Max(0, x0 - Radius);
+            var last = Math.Min(_width, x0 + available + Radius);
+            var origin = x0 - Radius;
+            for (var y = -Radius; y < rows + Radius; y++)
+            {
+                var rowX = paddedX.Slice((y + Radius) * Stride, available + (2 * Radius));
+                var rowY = paddedY.Slice((y + Radius) * Stride, available + (2 * Radius));
+                var rowB = paddedB.Slice((y + Radius) * Stride, available + (2 * Radius));
+                var source = lease.GetRowBytes(Mirror(y0 + y, _height));
+                _color!.Convert(source, _format, first, rowX.Slice(first - origin, last - first), rowY.Slice(first - origin, last - first), rowB.Slice(first - origin, last - first));
+                for (var x = origin; x < first; x++)
+                {
+                    var mirrored = Mirror(x, _width) - origin;
+                    rowX[x - origin] = rowX[mirrored];
+                    rowY[x - origin] = rowY[mirrored];
+                    rowB[x - origin] = rowB[mirrored];
+                }
+
+                for (var x = last; x < x0 + available + Radius; x++)
+                {
+                    var mirrored = Mirror(x, _width) - origin;
+                    rowX[x - origin] = rowX[mirrored];
+                    rowY[x - origin] = rowY[mirrored];
+                    rowB[x - origin] = rowB[mirrored];
+                }
+            }
+
+            var weights = _gaborishWeights.AsSpan();
+            JpegXlInverseGaborish.Apply(paddedX, Stride, planeX, GroupSize, available, rows, weights[..JpegXlInverseGaborish.WeightCount]);
+            JpegXlInverseGaborish.Apply(paddedY, Stride, planeY, GroupSize, available, rows, weights.Slice(JpegXlInverseGaborish.WeightCount, JpegXlInverseGaborish.WeightCount));
+            JpegXlInverseGaborish.Apply(paddedB, Stride, planeB, GroupSize, available, rows, weights.Slice(2 * JpegXlInverseGaborish.WeightCount, JpegXlInverseGaborish.WeightCount));
+        }
+
         for (var y = 0; y < height; y++)
         {
             var rowX = planeX.Slice(y * GroupSize, width);
             var rowY = planeY.Slice(y * GroupSize, width);
             var rowB = planeB.Slice(y * GroupSize, width);
-            if (y0 + y >= _height)
+            if (y >= rows)
             {
                 planeX.Slice((y - 1) * GroupSize, width).CopyTo(rowX);
                 planeY.Slice((y - 1) * GroupSize, width).CopyTo(rowY);
@@ -603,11 +1154,26 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
                 continue;
             }
 
-            _color!.Convert(lease.GetRowBytes(y0 + y), _format, x0, rowX[..available], rowY[..available], rowB[..available]);
+            if (!_gaborish)
+            {
+                _color!.Convert(lease.GetRowBytes(y0 + y), _format, x0, rowX[..available], rowY[..available], rowB[..available]);
+            }
+
             rowX[available..].Fill(rowX[available - 1]);
             rowY[available..].Fill(rowY[available - 1]);
             rowB[available..].Fill(rowB[available - 1]);
         }
+    }
+
+    /// <summary>The position inside a side of a position that may be outside: the side is mirrored at its two ends, which are repeated.</summary>
+    private static int Mirror(int position, int size)
+    {
+        while (position < 0 || position >= size)
+        {
+            position = position < 0 ? -position - 1 : (2 * size) - 1 - position;
+        }
+
+        return position;
     }
 
     private void WriteSections(scoped in PixelLease lease, LsbBitWriter writer, List<int> sizes, ExtraChannelWriter? writeExtraChannels)
@@ -871,7 +1437,8 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
             }
         }
 
-        JpegXlModularEncoder.Encode(writer, metadata, colorChannelCount: 0, _effort, _scope, _cancellationToken);
+        // The block list holds the transforms on its first row and the quantization factors on its second one
+        JpegXlModularEncoder.Encode(writer, metadata, colorChannelCount: 0, _effort, _scope, _cancellationToken, firstRowChannel: 2);
     }
 
     /// <summary>

@@ -166,6 +166,33 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   which made a constant channel larger than the colors, and the description of an ANS distribution is longer than a
   small group. The effort only selects what is searched; `jxl-quality` shows the sizes per effort. A change of the
   encoder is checked by the interop tests (djxl and jxl-oxide must read the file like the decoder of the library does).
+- **Lossy JPEG XL quality tools** (`JpegXlVarDctEncoder`). Each one is kept or left out on measurements, not on what
+  other encoders do: file size at equal PSNR, SSIM, MS-SSIM, XPSNR and VMAF (FFmpeg and the `vmaf` tool on djxl output)
+  over photographs of several sizes, with cjxl at its efforts 3 and 7 as the yardstick. Measure again before changing a
+  constant, on real photographs: the synthetic patterns of the tests are noise and say nothing.
+  - *Transform selection* (`ChooseSquare`, `GetTransformCost`): squares of 16, 32 and 64 samples and their halves
+    against their quarters, on the luma, by `bits + weight * squared error`. The squared error of the samples is exact
+    (every DCT of the format has basis functions of the same energy); the bits are a model fitted on frames coded with
+    one transform, to a few percent. What names a transform in the block list is part of the cost (about four bits):
+    without it the selection loses on small images. The transforms above 16x16 add about 0.1 % on photographs (more on
+    smooth graphics) and can double the encoding time, hence their effort. The 4x4, 4x8, identity and AFV transforms are
+    not written.
+  - *The block list* is a Modular channel whose first row holds the transforms and whose second row holds the
+    quantization factors: the tree gives each row its own context and predictor (`firstRowChannel`), which made the
+    list 15 % smaller on a photograph.
+  - *Gaborish* (`JpegXlInverseGaborish`, `UsesGaborish`): the encoder sharpens with `3 I - 3 S + S^2`, three terms of the
+    inverse of the smoothing `S` of the decoder, computed from its weights. It is smaller at equal PSNR, SSIM and XPSNR
+    (5 to 8 %) and larger at equal MS-SSIM (3 %) and VMAF (10 %): it stays because it removes block edges, with the
+    distance scaled so that a quality keeps its file size. Above quality 90 the pair loses fine texture that the
+    quantization would keep (a PSNR ceiling near 46 dB on a textured image), so it is off. A 5x5 least-squares inverse
+    does not keep a constant (2.6 % of gain at the frequency 0): do not use one.
+  - *Adaptive quantization is not written*: one quantization factor for the frame. A factor per block that follows the
+    activity of the block (finer where it is flat) was measured in three forms (8x8 blocks, 16x16 cells and 64x64 tiles;
+    relative to the mean of the frame; with a floor that protects edges) and is larger at equal quality on every one of
+    the five metrics (2 to 25 %), and visibly softer on textures at equal size: the factors cost 3 to 10 % of a file, and
+    none of these metrics rewards the redistribution. A factor chosen by the cost of the transform is neutral on PSNR and
+    worse on the others. It needs a metric of the kind libjxl tunes it with (butteraugli, SSIMULACRA 2), which is not
+    among the reference tools.
 - **Progressive reading.** `ImageReader.ReadFrameRefinementInto` is the only way to see a frame before it is complete.
   The walker stops at the lengths the decoder asks for (the end of the sections of a stage); an intermediate rendering
   decodes the sections again from the buffered payload (`JpegXlFrameDecoder.DecodePartial`), never changes the state of

@@ -17,6 +17,8 @@ public sealed class JpegXlLossyEncoderInteropTests
     /// <summary>
     /// The floors are measured on the output of djxl 0.12.0, minus a margin of 1 dB: an encoder change that loses more than
     /// that is a regression of the quality scale, which is part of the contract of <see cref="JpegXlEncoder.Quality"/>.
+    /// The pattern of waves has what suits each transform the encoder chooses from: with it, the efforts 3, 7 and 8 each
+    /// write other transforms than the effort below, up to 64x64 samples, which the reference decoders read like the library.
     /// The patterns are hard on purpose (texture, wrapping gradients, noise), so a low floor is a property of the pattern:
     /// on the two that were compared (photo-rgb16 and large-rgb8), cjxl at its effort 3 and a similar file size is within
     /// 1.5 dB of the library.
@@ -43,6 +45,18 @@ public sealed class JpegXlLossyEncoderInteropTests
     [InlineData("large-rgba8", 60, 5, true, 16.5)]
     [InlineData("text-rgb8", 75, 5, false, 24.9)]
     [InlineData("noise-rgba8", 90, 5, false, 18.9)]
+    [InlineData("waves-rgb8", 50, 2, false, 43.8)]
+    [InlineData("waves-rgb8", 50, 3, false, 44.8)]
+    [InlineData("waves-rgb8", 50, 7, false, 45.3)]
+    [InlineData("waves-rgb8", 50, 9, false, 45.2)]
+    [InlineData("waves-rgb8", 75, 5, true, 46.1)]
+    [InlineData("waves-rgb8", 75, 7, false, 46.1)]
+    [InlineData("waves-rgb8", 75, 9, true, 46.1)]
+    [InlineData("waves-rgb8", 90, 8, false, 48.8)]
+    [InlineData("waves-rgb8", 95, 9, false, 53.1)]
+    [InlineData("photo-rgb8", 75, 7, false, 32.2)]
+    [InlineData("photo-rgba16", 60, 9, false, 31.3)]
+    [InlineData("large-rgb8", 75, 9, true, 18.0)]
     public async Task LossyOutputDecodesLikeTheReferenceDecoders(string patternName, int quality, int effort, bool progressive, double minimumPsnr)
     {
         var jxl = await RequiredTools.LibJxlAsync();

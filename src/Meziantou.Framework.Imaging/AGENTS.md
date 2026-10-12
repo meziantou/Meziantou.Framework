@@ -1,9 +1,9 @@
 # Meziantou.Framework.Imaging
 
-A fully managed image library: PNG/APNG, GIF, JPEG, WebP, QOI, BMP, TGA, Netpbm, TIFF, ICO/CUR, ANI and AVIF (with its
-own AV1 decoder and encoder) decoding and encoding, JPEG XL decoding and lossless encoding, animation-aware processing,
-vector drawing, font files (TrueType, OpenType, WOFF, WOFF2), ICC color conversion, and bounded-memory streaming readers
-and writers.
+A fully managed image library: PNG/APNG, GIF, JPEG, WebP, QOI, BMP, TGA, Netpbm, TIFF, ICO/CUR, ANI, AVIF (with its
+own AV1 decoder and encoder) and JPEG XL (lossless and lossy, progressive) decoding and encoding, lossless JPEG
+recompression (`JpegXlTranscoder`), animation-aware processing, vector drawing, font files (TrueType, OpenType, WOFF,
+WOFF2), ICC color conversion, and bounded-memory streaming readers and writers.
 
 These instructions complete the repository-level `AGENTS.md`. The user guide is [readme.md](readme.md): it states what
 the library guarantees to its callers (support matrix, limitations, defaults). Keep the code, the XML documentation and
@@ -153,6 +153,34 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   are shown as they are stored; everything else goes through `JpegXlFrameRenderer`, in floating point, where 1 is the
   largest integer sample. The render order is the one of libjxl: restoration filters, patches, splines, upsampling,
   noise, color transform, blending.
+- **JPEG XL encoder** (`JpegXlEncoderCodec`, `Internals/Codecs/JpegXl/Encoding`). The headers are written, then parsed
+  back by the readers of the decoder: the geometry of a frame is never derived twice. The lossy encoder
+  (`JpegXlVarDctEncoder`) mirrors `JpegXlVarDctDecoder`: its forward transforms and its color matrix are measured on, or
+  inverted from, what the decoder computes (`JpegXlForwardTransform`, `JpegXlForwardColor`), and a coefficient is
+  written with the context derivation the decoder reads it with (`JpegXlCoefficientContexts`). The blocks of a VarDCT
+  frame do not predict each other, so the encoder does not reconstruct what it writes; its decisions use float32 in a
+  fixed order. `JpegXlEntropyCodeBuilder` clusters the contexts of the streams that share a code. Every Modular
+  sub-stream, of a lossless frame or of a lossy one (LF image, block fields, alpha channel), goes through
+  `JpegXlEntropyEncoder`, which writes the smaller of prefix codes and ANS at every effort
+  (`JpegXlEntropyCoding.Smallest`, decided from the token counts): a prefix code spends one bit per sample at least,
+  which made a constant channel larger than the colors, and the description of an ANS distribution is longer than a
+  small group. The effort only selects what is searched; `jxl-quality` shows the sizes per effort. A change of the
+  encoder is checked by the interop tests (djxl and jxl-oxide must read the file like the decoder of the library does).
+- **Progressive reading.** `ImageReader.ReadFrameRefinementInto` is the only way to see a frame before it is complete.
+  The walker stops at the lengths the decoder asks for (the end of the sections of a stage); an intermediate rendering
+  decodes the sections again from the buffered payload (`JpegXlFrameDecoder.DecodePartial`), never changes the state of
+  the decoder (no reference frame is saved), and counts as hidden pixels. The frame itself always goes through the
+  same code as an eager load: the last rendering is the frame of `Image.Load`, byte for byte. A truncated input gives
+  its complete stages, then fails: truncation is never a clean end.
+- **JPEG recompression** (`JpegXlTranscoder`; `JpegXlJpegRecompressor`, `JpegXlJpegReconstructor`,
+  `JpegXlJpegReconstructionData`, and `JpegBitstreamReader`, `JpegBitstreamWriter`, `JpegBitstreamModel` in
+  `Internals/Codecs/Jpeg`). It works on files, never on an `Image`. `JpegBitstreamReader` is strict where the decoder is
+  tolerant: it accepts nothing `JpegBitstreamWriter` does not write back byte for byte, and the recompressor checks
+  both the rewritten JPEG file and the file its own output rebuilds before it returns. The layout of the `jbrd` box and
+  the integer chroma from luma rule were established against files written by cjxl, since the standard is not
+  available: a change there needs the interop tests (djxl and jxl-oxide rebuild the files of the library, the library
+  rebuilds the files of cjxl). The JPEG entropy coding shares `JpegBitWriter` and `JpegHuffmanEncoder` with the JPEG
+  encoder: there is still one JPEG implementation of each direction of pixels, and one of coefficients.
 - **TIFF** (`Internals/Codecs/Tiff`). `TiffPage` resolves and validates a directory without reading a pixel, so every
   rejection also comes from `Identify`, except the ones of the compressed data. `TiffBlockReader` turns a strip or a
   tile into rows of samples (fill order, compression, predictor, YCbCr data units) and `TiffRowExpander` turns the rows
@@ -557,6 +585,7 @@ glyphs and positions in a `GlyphBuffer`; `LayoutApplier` (`Internals/Text/OpenTy
   dotnet run -c Release --project benchmarks/ImagingBenchmarks -f net10.0 -- --inProcess --filter "*PngBenchmarks*"
   dotnet run -c Release --project benchmarks/ImagingBenchmarks -f net10.0 -- service --seconds 10
   dotnet run -c Release --project benchmarks/ImagingBenchmarks -f net10.0 -- webp-quality 512 3
+  dotnet run -c Release --project benchmarks/ImagingBenchmarks -f net10.0 -- jxl-quality 512 3
   dotnet run -c Release --project benchmarks/ImagingBenchmarks -f net10.0 -- profile PngBenchmarks.SaveLarge8 20
   dotnet run -c Release --project benchmarks/ImagingBenchmarks -f net10.0 -- profile PngBenchmarks.SaveLarge8 50x
   dotnet run -c Release --project benchmarks/ImagingBenchmarks -f net10.0 -- profile TextBenchmarks.LayoutTibetan 200x
@@ -580,7 +609,7 @@ glyphs and positions in a `GlyphBuffer`; `LayoutApplier` (`Internals/Text/OpenTy
 | `src/Meziantou.Framework.Imaging` | The library and the package README (`readme.md`) |
 | `tests/Meziantou.Framework.Imaging.Tests` | Tests that are not about one codec: image model, pixels, memory, metadata, readers and writers with test codecs, format detection, defaults, API surface, the corpus and harness self-tests, the documentation examples |
 | `tests/Meziantou.Framework.Imaging.Processing.Tests` | Processing, resampling, convolution, automatic cropping, drawing and color conversion, with their golden and reference suites |
-| `tests/Meziantou.Framework.Imaging.<Codec>.Tests` | One project per codec (`Png` with APNG, `Gif`, `Jpeg`, `JpegXl`, `WebP`, `Qoi`, `Bmp`, `Tga`, `Pnm`, `Tiff`, `Ico` with CUR and ANI, `Av1`, `Avif`, `AvifEncoder`): its unit tests (no fixture file), its conformance tests under `Conformance/`, and the generic suites for its fixtures and its encoder |
+| `tests/Meziantou.Framework.Imaging.<Codec>.Tests` | One project per codec (`Png` with APNG, `Gif`, `Jpeg`, `JpegXl` with the transcoder, `WebP`, `Qoi`, `Bmp`, `Tga`, `Pnm`, `Tiff`, `Ico` with CUR and ANI, `Av1`, `Avif`, `AvifEncoder`): its unit tests (no fixture file), its conformance tests under `Conformance/`, and the generic suites for its fixtures and its encoder |
 | `tests/Meziantou.Framework.Imaging.Tests.Shared` | Sources compiled into every project above (no project file): `Helpers/`, the generic suites over the corpus (`Suites/`) and `Imaging.Tests.Shared.props` |
 | `tests/Meziantou.Framework.Imaging.InteropTests` | Files produced by the encoders are decoded by pinned external tools |
 | `tests/Meziantou.Framework.Imaging.TestHarness` | Shared, test-framework-agnostic support: corpus manifest, raw-buffer comparison, independent reference readers, tool helpers |

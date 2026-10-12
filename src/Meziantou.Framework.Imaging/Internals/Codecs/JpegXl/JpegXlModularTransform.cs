@@ -57,6 +57,9 @@ internal sealed class JpegXlModularTransform
         45, -45, 24, 24, 45, -45, 64, 64, -64, 128, 128, 0, 0, 0, -128, -24, 45, -45,
     ];
 
+    /// <summary>Gets a value indicating whether the transform squeezes channels.</summary>
+    public bool IsSqueeze => _kind == KindSqueeze;
+
     public static JpegXlModularTransform Read(JpegXlBitReader reader)
     {
         var kind = (int)reader.ReadBits(2);
@@ -510,6 +513,122 @@ internal sealed class JpegXlModularTransform
         }
 
         return steps;
+    }
+
+    /// <summary>
+    /// Applies the default squeezes to the samples of an image, in the direction of the encoder: each step replaces a
+    /// channel with the averages of its pairs of samples and adds the channel of their differences, minus what the decoder
+    /// expects from the neighboring averages. <see cref="Undo"/> of a squeeze transform that lists no step gives back the
+    /// samples.
+    /// </summary>
+    public static void ApplyDefaultSqueeze(JpegXlModularImage image, AllocationScope scope)
+    {
+        ArgumentNullException.ThrowIfNull(image);
+        ArgumentNullException.ThrowIfNull(scope);
+        foreach (var step in GetDefaultSqueezes(image))
+        {
+            var begin = step.BeginChannel;
+            var end = step.BeginChannel + step.ChannelCount - 1;
+            var offset = step.InPlace ? end + 1 : image.Channels.Count;
+            for (var c = begin; c <= end; c++)
+            {
+                var channel = image.Channels[c];
+                var averageWidth = step.Horizontal ? (channel.Width + 1) / 2 : channel.Width;
+                var averageHeight = step.Horizontal ? channel.Height : (channel.Height + 1) / 2;
+                var horizontalShift = channel.HorizontalShift + (step.Horizontal ? 1 : 0);
+                var verticalShift = channel.VerticalShift + (step.Horizontal ? 0 : 1);
+                using var average = new JpegXlModularChannel(averageWidth, averageHeight, horizontalShift, verticalShift);
+                average.Allocate(scope);
+                image.InsertChannel(offset + (c - begin), step.Horizontal ? channel.Width - averageWidth : channel.Width, step.Horizontal ? channel.Height : channel.Height - averageHeight, horizontalShift, verticalShift);
+                var residual = image.Channels[offset + (c - begin)];
+                if (!residual.IsEmpty)
+                {
+                    residual.Allocate(scope);
+                }
+
+                if (step.Horizontal)
+                {
+                    SqueezeHorizontally(channel, average, residual);
+                }
+                else
+                {
+                    SqueezeVertically(channel, average, residual);
+                }
+
+                channel.TakeFrom(average);
+            }
+        }
+    }
+
+    private static void SqueezeHorizontally(JpegXlModularChannel source, JpegXlModularChannel average, JpegXlModularChannel residual)
+    {
+        for (var y = 0; y < source.Height; y++)
+        {
+            var row = source.GetRow(y);
+            var averages = average.GetRow(y);
+            var pairCount = row.Length / 2;
+
+            // The average that the decoder completes with the difference: the first sample minus half the difference
+            for (var x = 0; x < pairCount; x++)
+            {
+                long first = row[x << 1];
+                long second = row[(x << 1) + 1];
+                averages[x] = (int)(first - ((first - second) / 2));
+            }
+
+            if ((row.Length & 1) != 0)
+            {
+                averages[^1] = row[^1];
+            }
+
+            if (pairCount == 0)
+                continue;
+
+            var residuals = residual.GetRow(y);
+            for (var x = 0; x < pairCount; x++)
+            {
+                long current = averages[x];
+                long next = x + 1 < averages.Length ? averages[x + 1] : current;
+                long left = x > 0 ? row[(x << 1) - 1] : current;
+                residuals[x] = (int)((long)row[x << 1] - row[(x << 1) + 1] - GetSmoothTendency(left, current, next));
+            }
+        }
+    }
+
+    private static void SqueezeVertically(JpegXlModularChannel source, JpegXlModularChannel average, JpegXlModularChannel residual)
+    {
+        var pairCount = source.Height / 2;
+        for (var y = 0; y < pairCount; y++)
+        {
+            var first = source.GetRow(y << 1);
+            var second = source.GetRow((y << 1) + 1);
+            var averages = average.GetRow(y);
+            for (var x = 0; x < averages.Length; x++)
+            {
+                long a = first[x];
+                long b = second[x];
+                averages[x] = (int)(a - ((a - b) / 2));
+            }
+        }
+
+        if ((source.Height & 1) != 0)
+        {
+            source.GetRow(source.Height - 1).CopyTo(average.GetRow(average.Height - 1));
+        }
+
+        for (var y = 0; y < pairCount; y++)
+        {
+            var first = source.GetRow(y << 1);
+            var second = source.GetRow((y << 1) + 1);
+            var averages = average.GetRow(y);
+            var nextAverages = y + 1 < average.Height ? average.GetRow(y + 1) : averages;
+            var previous = y > 0 ? source.GetRow((y << 1) - 1) : averages;
+            var residuals = residual.GetRow(y);
+            for (var x = 0; x < averages.Length; x++)
+            {
+                residuals[x] = (int)((long)first[x] - second[x] - GetSmoothTendency(previous[x], averages[x], nextAverages[x]));
+            }
+        }
     }
 
     private static void ApplySqueezeToChannelList(JpegXlModularImage image, SqueezeStep step)

@@ -104,7 +104,7 @@ public sealed class LimitBoundaryTests
         Assert.Equal(new Size(3, 5), tall.Size);
     }
 
-    public static TheoryData<string> Encoders => ["png", "apng", "gif", "jpeg", "jpeg-progressive", "webp", "webp-lossy", "webp-animated", "qoi", "avif", "avif-lossy", "avif-animated", "jxl", "jxl-fast", "jxl-animated"];
+    public static TheoryData<string> Encoders => ["png", "apng", "gif", "jpeg", "jpeg-progressive", "webp", "webp-lossy", "webp-animated", "qoi", "avif", "avif-lossy", "avif-animated", "jxl", "jxl-fast", "jxl-animated", "jxl-lossy", "jxl-lossy-progressive", "jxl-progressive"];
 
     [Theory]
     [MemberData(nameof(Encoders))]
@@ -168,6 +168,9 @@ public sealed class LimitBoundaryTests
                 "jxl" or "jxl-animated" => new JpegXlEncoder(),
                 "jxl-fast" => new JpegXlEncoder { Effort = 0 },
                 "jpeg-progressive" => new JpegEncoder { Process = JpegEncodingProcess.Progressive },
+                "jxl-lossy" => new JpegXlEncoder { Compression = JpegXlCompression.Lossy },
+                "jxl-lossy-progressive" => new JpegXlEncoder { Compression = JpegXlCompression.Lossy, Progressive = true },
+                "jxl-progressive" => new JpegXlEncoder { Progressive = true },
                 _ => new JpegEncoder(),
             },
             ExpectedFrameCount = encoder is "apng" or "webp-animated" or "avif-animated" or "jxl-animated" ? 2 : 1,

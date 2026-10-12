@@ -1,3 +1,4 @@
+using System.Numerics;
 using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Imaging.Internals;
@@ -11,6 +12,9 @@ internal struct JpegBitWriter
 {
     private ulong _buffer;
     private int _count;
+
+    /// <summary>Gets the number of bits of the incomplete byte: 0 to 7.</summary>
+    public readonly int PendingBitCount => _count;
 
     /// <summary>Appends bits, emitting the whole bytes.</summary>
     /// <param name="destination">The destination; two bytes per completed byte must be available.</param>
@@ -31,6 +35,37 @@ internal struct JpegBitWriter
                 destination[position++] = 0;
             }
         }
+    }
+
+    /// <summary>Writes the code of a symbol.</summary>
+    /// <exception cref="InvalidOperationException">The table has no code for the symbol.</exception>
+    public void WriteSymbol(Span<byte> destination, ref int position, JpegHuffmanEncoder table, int symbol)
+    {
+        var length = table.GetLength(symbol);
+        if (length == 0)
+            throw new InvalidOperationException(string.Create(CultureInfo.InvariantCulture, $"The Huffman table has no code for the symbol 0x{symbol:X2}."));
+
+        Write(destination, ref position, table.GetCode(symbol), length);
+    }
+
+    /// <summary>Writes the symbol <c>(symbolHigh &lt;&lt; 4) | SSSS</c> for a value, then its SSSS additional bits (negative values as <c>value - 1</c>).</summary>
+    public void WriteValue(Span<byte> destination, ref int position, JpegHuffmanEncoder table, int symbolHigh, int value)
+    {
+        var magnitude = (uint)Math.Abs(value);
+        var size = magnitude == 0 ? 0 : 32 - BitOperations.LeadingZeroCount(magnitude);
+        WriteSymbol(destination, ref position, table, (symbolHigh << 4) | size);
+        if (size > 0)
+        {
+            var bits = value < 0 ? (uint)(value - 1) & ((1u << size) - 1) : (uint)value;
+            Write(destination, ref position, bits, size);
+        }
+    }
+
+    /// <summary>Forgets the bits of the incomplete byte: the start of a scan whose previous one was not completed here.</summary>
+    public void Reset()
+    {
+        _buffer = 0;
+        _count = 0;
     }
 
     /// <summary>Completes the last byte with 1-bits at the end of an entropy-coded segment.</summary>

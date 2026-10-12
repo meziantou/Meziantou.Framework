@@ -11,4 +11,7 @@ internal enum SequentialRequest
 
     /// <summary><c>ReadFrame</c>/<c>ReadFrameInto</c>: the next displayed frame. A poster met first is decoded and discarded.</summary>
     Frame,
+
+    /// <summary>The next rendering of the current displayed frame, into the image of the caller: an intermediate one when the decoder has one, otherwise the frame.</summary>
+    FrameRefinement,
 }

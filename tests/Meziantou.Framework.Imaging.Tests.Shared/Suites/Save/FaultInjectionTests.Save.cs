@@ -177,7 +177,18 @@ public sealed partial class FaultInjectionTests
 
                 return image;
             case "jxl":
-                encoder = new JpegXlEncoder { MetadataHandling = MetadataHandling.Strip };
+            case "jxl-lossy":
+            case "jxl-progressive":
+                encoder = encoderName switch
+                {
+                    "jxl" => new JpegXlEncoder { MetadataHandling = MetadataHandling.Strip },
+
+                    // The fastest search of the lossy coding, in three passes: the test encodes each input once per rental
+                    "jxl-lossy" => new JpegXlEncoder { MetadataHandling = MetadataHandling.Strip, Compression = JpegXlCompression.Lossy, Progressive = true, Effort = 0 },
+
+                    // The lossless coding of a squeezed image, whose resolutions are spread over the sections of the frame
+                    _ => new JpegXlEncoder { MetadataHandling = MetadataHandling.Strip, Progressive = true, Effort = 0 },
+                };
                 image.RemovePosterFrame();
                 if (image.Frames.Count > 1)
                 {

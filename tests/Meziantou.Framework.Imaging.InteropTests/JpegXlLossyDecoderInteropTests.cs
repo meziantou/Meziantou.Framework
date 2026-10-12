@@ -23,11 +23,9 @@ namespace Meziantou.Framework.Imaging.InteropTests;
 /// </remarks>
 public sealed class JpegXlLossyDecoderInteropTests
 {
-    private const double DjxlTolerance = 0.0008;
-    private const double OxideTolerance = 0.0004;
-
-    /// <summary>A reference decoder is not compared: the case says why.</summary>
-    private const double Skip = -1;
+    private const double DjxlTolerance = JpegXlReferenceComparison.DjxlTolerance;
+    private const double OxideTolerance = JpegXlReferenceComparison.OxideTolerance;
+    private const double Skip = JpegXlReferenceComparison.Skip;
 
     /// <summary>The options of cjxl that reach the coding tools of the lossy modes.</summary>
     public static TheoryData<string, string, double, double> EncoderCases
@@ -160,7 +158,7 @@ public sealed class JpegXlLossyDecoderInteropTests
         var jxlPath = directory / (name + ".jxl");
         await File.WriteAllBytesAsync(inputPath, pattern.ToPam(), XunitCancellationToken);
         await jxl.EncodeAsync(inputPath, jxlPath, options.Split(' '), XunitCancellationToken);
-        await AssertDecodesLikeTheReferencesAsync(jxlPath, djxlTolerance, oxideTolerance, $"{patternName} {options}");
+        await JpegXlReferenceComparison.AssertDecodesLikeTheReferencesAsync(jxlPath, djxlTolerance, oxideTolerance, $"{patternName} {options}");
     }
 
     /// <summary>
@@ -195,7 +193,7 @@ public sealed class JpegXlLossyDecoderInteropTests
         var info = await jxl.GetInfoAsync(jxlPath, XunitCancellationToken);
         Assert.True(info.HasJpegReconstruction);
         Assert.False(info.IsXybEncoded);
-        await AssertDecodesLikeTheReferencesAsync(jxlPath, djxlTolerance, OxideTolerance, name);
+        await JpegXlReferenceComparison.AssertDecodesLikeTheReferencesAsync(jxlPath, djxlTolerance, OxideTolerance, name);
     }
 
     /// <summary>
@@ -237,7 +235,7 @@ public sealed class JpegXlLossyDecoderInteropTests
         Assert.True(info.IsAnimation);
 
         // jxl-oxide differs from djxl on the color of the pixels that the blending leaves almost transparent
-        using var image = await AssertDecodesLikeTheReferencesAsync(jxlPath, DjxlTolerance, Skip, name);
+        using var image = await JpegXlReferenceComparison.AssertDecodesLikeTheReferencesAsync(jxlPath, DjxlTolerance, Skip, name);
         Assert.Equal(milliseconds.Length, image.Frames.Count);
         for (var i = 0; i < milliseconds.Length; i++)
         {
@@ -479,111 +477,8 @@ public sealed class JpegXlLossyDecoderInteropTests
         var jxl = await RequiredTools.LibJxlAsync();
         var jxlPath = InteropSettings.GetArtifactsDirectory(nameof(TreeFilesDecodeLikeTheReferenceDecoders)) / (name + ".jxl");
         await jxl.EncodeFromTreeAsync(tree, jxlPath, XunitCancellationToken);
-        using var image = await AssertDecodesLikeTheReferencesAsync(jxlPath, djxlTolerance, oxideTolerance, name);
+        using var image = await JpegXlReferenceComparison.AssertDecodesLikeTheReferencesAsync(jxlPath, djxlTolerance, oxideTolerance, name);
     }
-
-    /// <summary>Decodes a file with the library and with the reference decoders, and compares every sample of every frame.</summary>
-    /// <returns>The image the library decoded.</returns>
-    private static async Task<Image> AssertDecodesLikeTheReferencesAsync(FullPath path, double djxlTolerance, double oxideTolerance, string context)
-    {
-        var jxl = await RequiredTools.LibJxlAsync();
-        var oxide = await RequiredTools.JxlOxideAsync();
-        var data = await File.ReadAllBytesAsync(path, XunitCancellationToken);
-        var image = Image.Load(data);
-        try
-        {
-            var djxlFrames = djxlTolerance >= 0 ? await jxl.DecodeFramesAsync(path, XunitCancellationToken) : null;
-            var oxideFrames = oxideTolerance >= 0 ? await oxide.DecodeFramesAsync(path, XunitCancellationToken) : null;
-            Assert.True(djxlFrames is not null || oxideFrames is not null, "A case is compared with at least one reference decoder.");
-            if (djxlFrames is not null && oxideFrames is not null)
-            {
-                // The references agree: the tolerances are not hiding a file that is read in two ways
-                Assert.Equal((djxlFrames.FrameCount, djxlFrames.Width, djxlFrames.Height, djxlFrames.ChannelCount), (oxideFrames.FrameCount, oxideFrames.Width, oxideFrames.Height, oxideFrames.ChannelCount));
-                var worst = 0.0;
-                for (var frame = 0; frame < djxlFrames.FrameCount; frame++)
-                {
-                    for (var y = 0; y < djxlFrames.Height; y++)
-                    {
-                        for (var x = 0; x < djxlFrames.Width; x++)
-                        {
-                            for (var c = 0; c < djxlFrames.ChannelCount; c++)
-                            {
-                                worst = Math.Max(worst, Math.Abs(Clamp(djxlFrames.GetSample(frame, x, y, c)) - Clamp(oxideFrames.GetSample(frame, x, y, c))));
-                            }
-                        }
-                    }
-                }
-
-                Assert.True(worst <= djxlTolerance + oxideTolerance, $"{context}: djxl and jxl-oxide differ by {worst:F5}.");
-            }
-
-            if (djxlFrames is not null)
-            {
-                AssertFramesMatch(image, djxlFrames, djxlTolerance, $"{context}: djxl {jxl.Version}");
-            }
-
-            if (oxideFrames is not null)
-            {
-                AssertFramesMatch(image, oxideFrames, oxideTolerance, $"{context}: jxl-oxide {oxide.Version}");
-            }
-
-            return image;
-        }
-        catch
-        {
-            image.Dispose();
-            throw;
-        }
-    }
-
-    private static void AssertFramesMatch(Image image, NpyFrames reference, double tolerance, string context)
-    {
-        Assert.Equal((reference.FrameCount, reference.Width, reference.Height), (image.Frames.Count, image.Width, image.Height));
-
-        // The library returns integers of 8 or 16 bits: half a unit of rounding is its own
-        var is8Bit = image.PixelFormat is PixelFormat.Gray8 or PixelFormat.Rgb24 or PixelFormat.Rgba32 or PixelFormat.Bgra32;
-        var allowed = tolerance + (0.5 / (is8Bit ? byte.MaxValue : ushort.MaxValue)) + 1e-7;
-        // The samples are compared as they are stored: a grayscale profile does not describe their RGBA copy
-        using var typed = image.CloneAs<Rgba64>(new PixelConversionOptions { DiscardIncompatibleColorProfile = true });
-        var pixels = new Rgba64[image.Width * image.Height];
-        var channels = reference.ChannelCount;
-        var worst = 0.0;
-        var worstDescription = "";
-        for (var frame = 0; frame < reference.FrameCount; frame++)
-        {
-            typed.Frames[frame].CopyPixelDataTo(pixels);
-            for (var y = 0; y < reference.Height; y++)
-            {
-                for (var x = 0; x < reference.Width; x++)
-                {
-                    var pixel = pixels[(y * reference.Width) + x];
-                    for (var c = 0; c < channels; c++)
-                    {
-                        // The channels of the file: gray, gray and alpha, RGB or RGBA
-                        var actual = (channels, c) switch
-                        {
-                            (2, 1) or (4, 3) => pixel.A,
-                            (_, 0) => pixel.R,
-                            (_, 1) => pixel.G,
-                            _ => pixel.B,
-                        };
-
-                        var expected = Clamp(reference.GetSample(frame, x, y, c));
-                        var difference = Math.Abs((actual / 65535.0) - expected);
-                        if (difference > worst)
-                        {
-                            worst = difference;
-                            worstDescription = $"frame {frame}, ({x}, {y}), channel {c}: {actual / 65535.0:F5} instead of {expected:F5}";
-                        }
-                    }
-                }
-            }
-        }
-
-        Assert.True(worst <= allowed, $"{context}: the library differs by {worst:F5} (allowed {allowed:F5}) at {worstDescription}.");
-    }
-
-    private static double Clamp(float value) => Math.Clamp(value, 0f, 1f);
 
     /// <summary>Creates an 8-bit image from a pattern, its rows rotated by an offset so that frames differ.</summary>
     private static Image CreateImage(JpegXlPattern pattern, int rowOffset)

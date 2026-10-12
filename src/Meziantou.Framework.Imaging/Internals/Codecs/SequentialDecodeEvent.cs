@@ -11,4 +11,7 @@ internal enum SequentialDecodeEvent
 
     /// <summary>The clean end of the input: the container was fully validated (or the walk stopped at the frame limit).</summary>
     End,
+
+    /// <summary>An intermediate rendering of the current frame was written to the image of the caller.</summary>
+    Refinement,
 }

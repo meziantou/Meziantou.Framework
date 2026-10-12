@@ -391,12 +391,21 @@ public sealed class DocumentationExampleTests : IDisposable
         }
 
         var jxl = GetPath("photo.jxl");
+        var lossy = GetPath("photo-lossy.jxl");
         var animated = GetPath("animation.jxl");
-        Assert.Equal("JpegXl 32x16 Rgba64, 16 bits", Examples.SaveJpegXl(photo, jxl, apngPath, animated));
+        Assert.Equal("JpegXl 32x16 Rgba64, 16 bits", Examples.SaveJpegXl(photo, jxl, lossy, apngPath, animated));
         using (var image = Image.Load<Rgba64>(jxl))
         {
             Assert.Equal(ImageFormat.JpegXl, image.Metadata.SourceFormat);
             Assert.Equal(color, image.Frames[0][16, 8]); // 16 bits, lossless
+        }
+
+        using (var image = Image.Load<Rgba64>(lossy))
+        {
+            // Lossy colors are close, and the alpha channel is exact
+            var pixel = image.Frames[0][16, 8];
+            Assert.Equal(color.A, pixel.A);
+            Assert.True(Math.Abs(pixel.R - color.R) < 2048 && Math.Abs(pixel.G - color.G) < 2048 && Math.Abs(pixel.B - color.B) < 2048, pixel.ToString());
         }
 
         using var animation = Image.Load<Rgba32>(animated);
@@ -405,6 +414,48 @@ public sealed class DocumentationExampleTests : IDisposable
         Assert.Equal(3, animation.Animation!.TotalPlays);
         Assert.Equal(new FrameDuration(33, 1000), animation.Frames[1].Metadata.Duration); // nearest millisecond
         Assert.Equal(expected.Frames[1][63, 63], animation.Frames[1][63, 63]);
+    }
+
+    [Fact]
+    public void ShowWhileReadingGivesTheRenderingsOfAProgressiveFile()
+    {
+        // 300x270: several groups, so that a lossy progressive frame has the LF image and three passes
+        var pixels = new Rgba32[300 * 270];
+        for (var i = 0; i < pixels.Length; i++)
+        {
+            var (y, x) = Math.DivRem(i, 300);
+            pixels[i] = new Rgba32((byte)(x ^ y), (byte)(x + y), (byte)(x * 3), 255);
+        }
+
+        using var source = Image.ImportPixelData<Rgba32>(pixels, 300, 270);
+        using var stream = new MemoryStream();
+        source.Save(stream, new JpegXlEncoder { Compression = JpegXlCompression.Lossy, Progressive = true });
+        stream.Position = 0;
+        var seen = new List<(bool IsFinal, int Downsampling)>();
+        Assert.Equal(4, Examples.ShowWhileReading(stream, (image, refinement) =>
+        {
+            Assert.Equal((300, 270), (image.Width, image.Height));
+            seen.Add((refinement.IsFinal, refinement.Downsampling));
+        }));
+        Assert.Equal([(false, 8), (false, 4), (false, 2), (true, 1)], seen);
+
+        // Another format gives its frame at once
+        using var png = new MemoryStream();
+        source.Save(png, new PngEncoder());
+        png.Position = 0;
+        Assert.Equal(1, Examples.ShowWhileReading(png, (_, refinement) => Assert.True(refinement.IsFinal)));
+    }
+
+    [Fact]
+    public void RecompressJpegStoresAJpegFileAndGivesItBack()
+    {
+        var jpeg = GoldenCorpus.Default.Get("jpeg/baseline-420").InputPath;
+        var jxl = GetPath("recompressed.jxl");
+        var rebuilt = GetPath("rebuilt.jpg");
+        Assert.True(Examples.RecompressJpeg(jpeg, jxl, rebuilt));
+        Assert.Equal(File.ReadAllBytes(jpeg), File.ReadAllBytes(rebuilt));
+        Assert.True(JpegXlTranscoder.HasJpegReconstructionData((string)jxl));
+        Assert.Equal(ImageFormat.JpegXl, Image.Identify(jxl).Format);
     }
 
     [Theory]

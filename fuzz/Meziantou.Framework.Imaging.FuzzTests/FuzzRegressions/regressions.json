@@ -33,6 +33,17 @@
       "defect": "An iCCP profile whose zlib header sets FDICT made identification and loads throw the BCL's internal ZLibException; a malformed ancillary payload must be ignored. Fixed in BoundedInflater.TryInflateZlib.",
       "expectedIdentify": "success",
       "expectedLoad": "success"
+    },
+    {
+      "id": "jxl/reconstruct-animation-layer-min",
+      "file": "jxl-reconstruct-animation-layer.min.jxl",
+      "sha256": "9a9ff1fe3d79777bf04d28bd17b54233848880cbde4acde09b07852bcf7691d9",
+      "origin": "fuzz-minimized",
+      "license": "CC0-1.0",
+      "foundBy": "FuzzTests group jxl-animated, base seed 5576998306593010799 (default), 1500 iterations, with the transcoding property added to FuzzOracle; minimized by FuzzMinimizer to 27 bytes",
+      "defect": "An animation whose first frame is a layer (no duration), without JPEG reconstruction data: JpegXlTranscoder.TryReconstructJpeg stops at the first frame, before any frame is counted, and JpegXlStructureParser built an ImageInfo with a frame count of 0, which threw ArgumentOutOfRangeException instead of returning false. Fixed in JpegXlStructureParser.CreateInfo (the count is unknown).",
+      "expectedIdentify": "InvalidImageContentException",
+      "expectedLoad": "InvalidImageContentException"
     }
   ]
 }

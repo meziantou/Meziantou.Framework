@@ -19,12 +19,15 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </remarks>
 internal sealed class JpegXlOutputColor
 {
+    /// <summary>Gets the luminance of each primary of sRGB.</summary>
+    public static ReadOnlySpan<float> SrgbLuminances => [0.2126f, 0.7152f, 0.0722f];
+
     private static ReadOnlySpan<double> SrgbPrimaries => [0.639998686, 0.330010138, 0.300003784, 0.600003357, 0.150002046, 0.059997204];
 
     private readonly float[] _matrix = new float[9];
     private readonly float[] _bias = new float[3];
     private readonly float[] _biasRoot = new float[3];
-    private readonly float[] _luminances = [0.2126f, 0.7152f, 0.0722f];
+    private readonly float[] _luminances = [.. SrgbLuminances];
     private readonly int _transfer;
     private readonly float _gamma;
     private readonly float _intensityTarget;
@@ -42,46 +45,8 @@ internal sealed class JpegXlOutputColor
             _biasRoot[i] = MathF.Cbrt(_bias[i]);
         }
 
-        // An image described by an ICC profile is only decoded when the profile is sRGB
         Span<double> matrix = stackalloc double[9];
-        for (var i = 0; i < 9; i++)
-        {
-            matrix[i] = transform.OpsinInverseMatrix[i];
-        }
-
-        var isSrgbPrimaries = encoding.WantIcc || (encoding.WhitePoint == JpegXlColorEncoding.WhitePointD65 && (IsGray || encoding.Primaries == JpegXlColorEncoding.PrimariesSrgb));
-        if (!isSrgbPrimaries && !IsGray)
-        {
-            // From linear sRGB to XYZ adapted to D50, then to the primaries of the image
-            var (whiteX, whiteY) = encoding.GetWhitePointChromaticity();
-            Span<double> primaries = stackalloc double[6];
-            encoding.GetPrimariesChromaticities(primaries);
-            ReadOnlySpan<double> srgbPrimaries = SrgbPrimaries;
-            ReadOnlySpan<double> d50 = [0.96422, 1.0, 0.82521];
-            Span<double> srgbToXyz = stackalloc double[9];
-            Span<double> adaptation = stackalloc double[9];
-            Span<double> srgbToXyzD50 = stackalloc double[9];
-            Span<double> targetToXyz = stackalloc double[9];
-            Span<double> targetToXyzD50 = stackalloc double[9];
-            Span<double> xyzD50ToTarget = stackalloc double[9];
-            if (!ChromaticityMath.TryGetRgbToXyz(srgbPrimaries, 0.3127, 0.3290, srgbToXyz) || !ChromaticityMath.TryGetBradfordAdaptation(0.3127, 0.3290, d50, adaptation))
-                throw new InvalidOperationException("The sRGB color space is not valid.");
-
-            ChromaticityMath.Multiply(adaptation, srgbToXyz, srgbToXyzD50);
-            if (!ChromaticityMath.TryGetRgbToXyz(primaries, whiteX, whiteY, targetToXyz) || !ChromaticityMath.TryGetBradfordAdaptation(whiteX, whiteY, d50, adaptation))
-                throw JpegXlFormat.Invalid("the primaries or the white point of the color encoding are not valid.");
-
-            ChromaticityMath.Multiply(adaptation, targetToXyz, targetToXyzD50);
-            if (!ChromaticityMath.TryInvert(targetToXyzD50, xyzD50ToTarget))
-                throw JpegXlFormat.Invalid("the primaries or the white point of the color encoding are not valid.");
-
-            _luminances = [(float)targetToXyz[3], (float)targetToXyz[4], (float)targetToXyz[5]];
-            Span<double> srgbToTarget = stackalloc double[9];
-            Span<double> combined = stackalloc double[9];
-            ChromaticityMath.Multiply(xyzD50ToTarget, srgbToXyzD50, srgbToTarget);
-            ChromaticityMath.Multiply(srgbToTarget, matrix, combined);
-            combined.CopyTo(matrix);
-        }
+        ComputeMatrix(header, matrix, _luminances);
 
         if (IsGray)
         {
@@ -129,6 +94,62 @@ internal sealed class JpegXlOutputColor
         // The samples of an HLG image describe the scene: the system gamma of the display is undone
         var hlgGamma = (1f / 1.2f) * MathF.Pow(1.111f, -MathF.Log2(_intensityTarget / 1000f));
         _hlgExponent = hlgGamma - 1;
+    }
+
+    /// <summary>
+    /// Gets the matrix that converts the responses of the three cone types of the XYB transform to linear samples of the
+    /// primaries of the image, for a display of 255 nits: the inverse opsin absorbance matrix, then the conversion from
+    /// linear sRGB to the primaries of the image.
+    /// </summary>
+    /// <param name="header">The image header.</param>
+    /// <param name="matrix">Receives the nine values of the matrix, row by row.</param>
+    /// <param name="luminances">Receives the luminance of each primary; it already holds the ones of sRGB.</param>
+    public static void ComputeMatrix(JpegXlImageHeader header, Span<double> matrix, Span<float> luminances)
+    {
+        var encoding = header.ColorEncoding;
+        var transform = header.TransformData;
+
+        // An image described by an ICC profile is only decoded when the profile is sRGB
+        for (var i = 0; i < 9; i++)
+        {
+            matrix[i] = transform.OpsinInverseMatrix[i];
+        }
+
+        var isSrgbPrimaries = encoding.WantIcc || (encoding.WhitePoint == JpegXlColorEncoding.WhitePointD65 && (encoding.IsGray || encoding.Primaries == JpegXlColorEncoding.PrimariesSrgb));
+        if (!isSrgbPrimaries && !encoding.IsGray)
+        {
+            // From linear sRGB to XYZ adapted to D50, then to the primaries of the image
+            var (whiteX, whiteY) = encoding.GetWhitePointChromaticity();
+            Span<double> primaries = stackalloc double[6];
+            encoding.GetPrimariesChromaticities(primaries);
+            ReadOnlySpan<double> srgbPrimaries = SrgbPrimaries;
+            ReadOnlySpan<double> d50 = [0.96422, 1.0, 0.82521];
+            Span<double> srgbToXyz = stackalloc double[9];
+            Span<double> adaptation = stackalloc double[9];
+            Span<double> srgbToXyzD50 = stackalloc double[9];
+            Span<double> targetToXyz = stackalloc double[9];
+            Span<double> targetToXyzD50 = stackalloc double[9];
+            Span<double> xyzD50ToTarget = stackalloc double[9];
+            if (!ChromaticityMath.TryGetRgbToXyz(srgbPrimaries, 0.3127, 0.3290, srgbToXyz) || !ChromaticityMath.TryGetBradfordAdaptation(0.3127, 0.3290, d50, adaptation))
+                throw new InvalidOperationException("The sRGB color space is not valid.");
+
+            ChromaticityMath.Multiply(adaptation, srgbToXyz, srgbToXyzD50);
+            if (!ChromaticityMath.TryGetRgbToXyz(primaries, whiteX, whiteY, targetToXyz) || !ChromaticityMath.TryGetBradfordAdaptation(whiteX, whiteY, d50, adaptation))
+                throw JpegXlFormat.Invalid("the primaries or the white point of the color encoding are not valid.");
+
+            ChromaticityMath.Multiply(adaptation, targetToXyz, targetToXyzD50);
+            if (!ChromaticityMath.TryInvert(targetToXyzD50, xyzD50ToTarget))
+                throw JpegXlFormat.Invalid("the primaries or the white point of the color encoding are not valid.");
+
+            luminances[0] = (float)targetToXyz[3];
+            luminances[1] = (float)targetToXyz[4];
+            luminances[2] = (float)targetToXyz[5];
+            Span<double> srgbToTarget = stackalloc double[9];
+            Span<double> combined = stackalloc double[9];
+            ChromaticityMath.Multiply(xyzD50ToTarget, srgbToXyzD50, srgbToTarget);
+            ChromaticityMath.Multiply(srgbToTarget, matrix, combined);
+            combined.CopyTo(matrix);
+        }
     }
 
     /// <summary>Gets a value indicating whether the output is a single channel, written to the first one.</summary>

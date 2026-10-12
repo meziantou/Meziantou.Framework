@@ -2,6 +2,7 @@ using System.Buffers.Binary;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using Meziantou.Framework.Imaging.Formats;
+using Meziantou.Framework.Imaging.Internals;
 using Meziantou.Framework.Imaging.Metadata;
 using Meziantou.Framework.Imaging.TestHarness.Streams;
 
@@ -135,18 +136,175 @@ public sealed class JpegXlEncoderTests
             pixels[i] = new Rgb24((byte)x, (byte)y, (byte)((x + y) / 2));
         }
 
-        // Prefix codes spend at least one bit per sample, whatever the image; the ANS coder of the higher efforts does not
+        // The fixed color transform and predictor of the lowest efforts leave more in the residuals of this image than the
+        // ones that are searched from effort 3
         using var image = Image.ImportPixelData<Rgb24>(pixels, 256, 256);
         var sampleCount = pixels.Length * 3;
-        foreach (var (effort, maxBitsPerSample) in new[] { (0, 1.5), (2, 1.5), (3, 0.5), (5, 0.5), (9, 0.5) })
+        foreach (var (effort, maxBitsPerSample) in new[] { (0, 1.25), (2, 1.25), (3, 0.5), (5, 0.5), (9, 0.5) })
         {
             var data = Save(image, new JpegXlEncoder { Effort = effort });
             Assert.True(data.Length * 8.0 / sampleCount < maxBitsPerSample, $"Effort {effort}: {data.Length} bytes for {sampleCount} samples.");
         }
 
-        // A flat image only holds the descriptions of its codes
+        // A flat image only holds the descriptions of its codes, at every effort: a prefix code would spend a bit on each
+        // of the samples of a channel that has a first sample and then no residual
         using var flat = new Image<Rgba32>(256, 256);
-        Assert.InRange(Save(flat, new JpegXlEncoder()).Length, 1, 200);
+        var color = new Rgba32[256 * 256];
+        color.AsSpan().Fill(new Rgba32(100, 150, 200, 255));
+        using var solid = Image.ImportPixelData<Rgba32>(color, 256, 256);
+        foreach (var effort in new[] { 0, 2, 5 })
+        {
+            Assert.InRange(Save(flat, new JpegXlEncoder { Effort = effort }).Length, 1, 200);
+            Assert.InRange(Save(solid, new JpegXlEncoder { Effort = effort }).Length, 1, 200);
+        }
+    }
+
+    /// <summary>
+    /// The alpha channel of an opaque image is constant: it costs the description of a code at every effort, not a bit
+    /// per pixel.
+    /// </summary>
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(5)]
+    public void AnOpaqueAlphaChannelIsAlmostFree(int effort)
+    {
+        using var source = CreateImage(300, 270, seed: 5);
+        using var opaque = source.CloneAs<Rgb24>(new PixelConversionOptions { BackgroundColor = new Rgba64(0, 0, 0, ushort.MaxValue) });
+        using var withAlpha = opaque.CloneAs<Rgba32>();
+        var encoder = new JpegXlEncoder { Effort = effort };
+        var colors = Save(opaque, encoder).Length;
+        var all = Save(withAlpha, encoder).Length;
+
+        // Two groups in each direction: a few bytes per group for the code of the channel, when a bit per pixel is 10,125 bytes
+        Assert.True(all - colors < 256, $"Effort {effort}: {all} bytes with an opaque alpha channel, {colors} bytes without it.");
+    }
+
+    /// <summary>
+    /// More effort does not write a larger file for a small image either: the ANS coder needs a longer description than a
+    /// prefix code, which is what a stream of a few hundred samples is made of.
+    /// </summary>
+    [Theory]
+    [InlineData(1, 1)]
+    [InlineData(5, 3)]
+    [InlineData(16, 16)]
+    [InlineData(33, 21)]
+    [InlineData(64, 48)]
+    public void MoreEffortIsNotLargerForASmallImage(int width, int height)
+    {
+        using var source = CreateImage(width, height, seed: width + height);
+        foreach (var format in new[] { PixelFormat.Rgba32, PixelFormat.Rgb24, PixelFormat.Gray16 })
+        {
+            using var image = ConvertTo(source, format);
+            var fastest = Save(image, new JpegXlEncoder { Effort = 0 }).Length;
+            var searched = Save(image, new JpegXlEncoder { Effort = 5 }).Length;
+
+            // The predictors are searched on an estimate of the size of the residuals, which leaves the descriptions out
+            Assert.True(searched <= fastest + 4, $"{width}x{height} {format}: effort 5 writes {searched} bytes, effort 0 writes {fastest} bytes.");
+        }
+    }
+
+    public static TheoryData<string, int> EntropyStreams => new()
+    {
+        { "empty", 0 },
+        { "single", 1 },
+        { "constant", 5000 },
+        { "almost-constant", 50000 },
+        { "two-tokens", 3000 },
+        { "geometric", 20000 },
+        { "geometric", 300 },
+        { "uniform", 40 },
+        { "uniform", 20000 },
+        { "large-values", 2000 },
+        { "skewed-contexts", 10000 },
+    };
+
+    /// <summary>
+    /// The three ways to write a stream are read back by the decoder, and <see cref="JpegXlEntropyCoding.Smallest"/>
+    /// writes one of the two others: the smaller one, up to the few bits that the final state of the ANS coder takes.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(EntropyStreams))]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void TheEntropyEncoderWritesTheSmallerOfPrefixCodesAndAns(string kind, int count)
+    {
+        const int ContextCount = 3;
+        var config = new JpegXlHybridUintConfig(4, 1, 0);
+        var random = new Random(count + kind.Length);
+        var values = new (int Context, uint Value)[count];
+        for (var i = 0; i < count; i++)
+        {
+            var context = kind == "skewed-contexts" ? (i % 7 == 0 ? 1 : 0) : i % ContextCount;
+            var value = kind switch
+            {
+                "constant" => 0u,
+                "almost-constant" => random.Next(500) == 0 ? (uint)random.Next(1, 40) : 0u,
+                "two-tokens" => (uint)random.Next(2),
+                "geometric" => (uint)Math.Min(1_000_000, -8 * Math.Log(1 - random.NextDouble())),
+                "uniform" => (uint)random.Next(64),
+                "large-values" => (uint)random.NextInt64(1L << 32),
+                "skewed-contexts" => context == 1 ? (uint)random.Next(1 << 20) : (random.Next(50) == 0 ? 3u : 0u),
+                _ => 7u,
+            };
+            values[i] = (context, value);
+        }
+
+        var scope = AllocationScope.Create(ImageConfiguration.Default, nameof(TheEntropyEncoderWritesTheSmallerOfPrefixCodesAndAns));
+        var prefix = Write(JpegXlEntropyCoding.PrefixCodes, out var prefixBits);
+        var ans = Write(JpegXlEntropyCoding.Ans, out var ansBits);
+        var smallest = Write(JpegXlEntropyCoding.Smallest, out var smallestBits);
+
+        Assert.True(smallest.AsSpan().SequenceEqual(prefix) || smallest.AsSpan().SequenceEqual(ans), $"{kind} x{count}: the smallest stream is neither of the two others.");
+        Assert.True(smallestBits <= Math.Min(prefixBits, ansBits) + 32, $"{kind} x{count}: {smallestBits} bits are written, prefix codes take {prefixBits} bits and the ANS coder {ansBits} bits.");
+
+        // What each coding is for: a value that is almost certain costs a fraction of a bit with the ANS coder only, and a
+        // short stream is mostly the description of its codes
+        switch (kind, count)
+        {
+            case ("almost-constant", _):
+                Assert.True(ansBits * 10 < prefixBits, $"{ansBits} bits with the ANS coder, {prefixBits} bits with prefix codes.");
+                Assert.Equal(ansBits, smallestBits);
+                break;
+
+            case ("uniform", 40) or ("geometric", 300):
+                Assert.True(prefixBits < ansBits, $"{ansBits} bits with the ANS coder, {prefixBits} bits with prefix codes.");
+                Assert.Equal(prefixBits, smallestBits);
+                break;
+        }
+
+        byte[] Write(JpegXlEntropyCoding coding, out long bitCount)
+        {
+            using var stream = new JpegXlEntropyEncoder(ContextCount, config, scope, coding);
+            foreach (var (context, value) in values)
+            {
+                stream.Add(context, value);
+            }
+
+            using var writer = new LsbBitWriter(scope);
+            stream.Write(writer);
+            bitCount = writer.BitCount;
+            writer.Finish();
+            var data = writer.WrittenSpan.ToArray();
+
+            // The decoder reads the values that were written, and ends in the state the stream started from
+            var reader = new JpegXlBitReader(data, 0, data.Length);
+            using var code = JpegXlEntropyCode.Read(reader, ContextCount, scope);
+            if (coding != JpegXlEntropyCoding.Smallest)
+            {
+                Assert.Equal(coding == JpegXlEntropyCoding.PrefixCodes, code.UsesPrefixCodes);
+            }
+
+            using var decoder = new JpegXlEntropyDecoder(code, scope);
+            decoder.Begin(reader);
+            foreach (var (context, value) in values)
+            {
+                Assert.Equal(value, decoder.Read(reader, context));
+            }
+
+            decoder.EnsureFinalState();
+            return data;
+        }
     }
 
     [Fact]

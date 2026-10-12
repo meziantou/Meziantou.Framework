@@ -213,6 +213,9 @@ public sealed class GoldenCorpusTests
 
             // Without a colr box of type nclx the AV1 bitstream describes the colors; the inspector does not read coded data
             Cicp = fields.ContainerCicp?.ToString() ?? (fixture.Entry.Format == "avif" ? fixture.Expected.Cicp?.ToString() : null),
+            ContentLightLevel = fields.ContentLightLevel?.ToString(),
+            MasteringDisplay = fields.MasteringDisplay?.ToString(),
+            PixelAspectRatio = fields.PixelAspectRatio?.ToString(),
 
             // The ICC profile of a JPEG XL codestream is entropy coded: the inspector says it is there, and the profile is the
             // one of the corpus that the fixture expects

@@ -272,6 +272,21 @@ public static class GoldenAssert
             failures.Add($"CICP color description: expected {expected.Cicp?.ToString() ?? "none"}, actual {actual.Cicp ?? "none"} (a label: the primaries and the transfer characteristics are never applied).");
         }
 
+        if (!string.Equals(expected.ContentLightLevel?.ToString(), actual.ContentLightLevel, StringComparison.Ordinal))
+        {
+            failures.Add($"Content light level: expected {expected.ContentLightLevel?.ToString() ?? "none"}, actual {actual.ContentLightLevel ?? "none"} (a label: the values of the file).");
+        }
+
+        if (!string.Equals(expected.MasteringDisplay?.ToString(), actual.MasteringDisplay, StringComparison.Ordinal))
+        {
+            failures.Add($"Mastering display color volume: expected {expected.MasteringDisplay?.ToString() ?? "none"}, actual {actual.MasteringDisplay ?? "none"} (a label: the integers of the file).");
+        }
+
+        if (!string.Equals(expected.PixelAspectRatio?.ToString(), actual.PixelAspectRatio, StringComparison.Ordinal))
+        {
+            failures.Add($"Pixel aspect ratio: expected {expected.PixelAspectRatio?.ToString() ?? "none"}, actual {actual.PixelAspectRatio ?? "none"} (a label: the terms of the file, never applied).");
+        }
+
         CompareProfile("ICC profile", expected.Profiles.Icc, actual.IccProfile, failures);
         CompareProfile("EXIF profile", expected.Profiles.Exif, actual.ExifProfile, failures);
         CompareProfile("XMP packet", expected.Profiles.Xmp, actual.XmpProfile, failures);

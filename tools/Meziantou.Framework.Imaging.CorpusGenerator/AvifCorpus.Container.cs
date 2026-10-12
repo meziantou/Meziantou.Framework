@@ -55,6 +55,7 @@ internal static partial class AvifCorpus
         ["avif/grid-2x1-10bit-444"] = (0, 0.0),
         ["avif/grid-2x1-alpha-420"] = (0, 0.0),
         ["avif/grid-3x1-420"] = (0, 0.0),
+        ["avif/hdr-mastering-display"] = (1, 0.0), // one unit of a 16-bit sample: 1/257 on the 8-bit scale
         ["avif/layered-2-quality-420"] = (0, 0.0),
         ["avif/layered-3-scaled-422-10bit"] = (1, 0.0), // one unit of a 16-bit sample: 1/257 on the 8-bit scale
         ["avif/layered-lsel-0-420"] = (0, 0.0),
@@ -78,6 +79,7 @@ internal static partial class AvifCorpus
         ["avif/lossy-420-chroma-colocated"] = (0, 0.0),
         ["avif/lossy-420-chroma-vertical"] = (0, 0.0),
         ["avif/lossy-420-fcc-limited-10bit"] = (0, 0.0),
+        ["avif/lossy-420-pasp-clli"] = (0, 0.0),
         ["avif/lossy-420-smpte240m-full-odd"] = (0, 0.0),
         ["avif/lossy-420-unspecified"] = (0, 0.0),
         ["avif/lossy-420-ycgco-full-12bit"] = (0, 0.0),
@@ -110,6 +112,7 @@ internal static partial class AvifCorpus
         ["avif/sequence-co64-stz2"] = (0, 0.0),
         ["avif/sequence-ffmpeg"] = (0, 0.0),
         ["avif/sequence-ffmpeg-svt"] = (1, 0.0002), // one unit on a few samples
+        ["avif/sequence-hdr-boxes"] = (0, 0.0),
         ["avif/sequence-mdat-first"] = (0, 0.0),
         ["avif/sequence-no-edit-list"] = (0, 0.0),
     };
@@ -283,6 +286,15 @@ internal static partial class AvifCorpus
         public required int Orientation { get; init; }
 
         public required ReferenceAvif.ColorDescription? Cicp { get; init; }
+
+        /// <summary>The <c>clli</c> box of the primary item or of the sample entry, or <see langword="null"/>.</summary>
+        public ReferenceAvif.ContentLightLevel? ContentLightLevel { get; init; }
+
+        /// <summary>The <c>mdcv</c> box of the primary item or of the sample entry, or <see langword="null"/>.</summary>
+        public ReferenceAvif.MasteringDisplay? MasteringDisplay { get; init; }
+
+        /// <summary>The <c>pasp</c> box of the primary item or of the sample entry, or <see langword="null"/>.</summary>
+        public ReferenceAvif.PixelAspectRatio? PixelAspectRatio { get; init; }
 
         public required byte[]? Icc { get; init; }
 
@@ -670,8 +682,12 @@ internal static partial class AvifCorpus
         if (metadata.Count > 0)
             features.Add("avif.metadata=" + string.Join(',', metadata));
 
+        AddPresentationFeatures(features, primary.ContentLightLevel, primary.MasteringDisplay, primary.PixelAspectRatio);
         return new AvifReference
         {
+            ContentLightLevel = primary.ContentLightLevel,
+            MasteringDisplay = primary.MasteringDisplay,
+            PixelAspectRatio = primary.PixelAspectRatio,
             Frames = [ToFrame(color, alpha, matrix, fullRange, crop)],
             PixelFormat = PixelFormatOf(color, alpha),
             ColorModel = ColorModelOf(color, alpha is not null, matrix),
@@ -689,6 +705,20 @@ internal static partial class AvifCorpus
             HiddenFrames = payloads.Sum(payload => payload.HiddenFrames),
             LowerLayerPixels = payloads.Sum(payload => payload.LowerLayerPixels),
         };
+    }
+
+    /// <summary>The boxes that describe how the samples are presented: labels, which change no pixel.</summary>
+    private static void AddPresentationFeatures(SortedSet<string> features, ReferenceAvif.ContentLightLevel? lightLevel, ReferenceAvif.MasteringDisplay? display, ReferenceAvif.PixelAspectRatio? pixelAspectRatio)
+    {
+        if (lightLevel is not null)
+            features.Add("avif.clli");
+        if (display is not null)
+            features.Add("avif.mdcv");
+        if (pixelAspectRatio is not null)
+        {
+            Py.Assert(pixelAspectRatio.HorizontalSpacing > 0 && pixelAspectRatio.VerticalSpacing > 0, "the terms of the pixel aspect ratio are positive");
+            features.Add("avif.pasp");
+        }
     }
 
     /// <summary>
@@ -794,8 +824,12 @@ internal static partial class AvifCorpus
             features.Add("avif.seq.samplesOutOfOrder");
 
         var frames = payload.Frames.Select((frame, i) => ToFrame(frame, alphaPayload?.Frames[i], matrix, fullRange, (0, 0, frame.Width, frame.Height))).ToList();
+        AddPresentationFeatures(features, track.ContentLightLevel, track.MasteringDisplay, track.PixelAspectRatio);
         return new AvifReference
         {
+            ContentLightLevel = track.ContentLightLevel,
+            MasteringDisplay = track.MasteringDisplay,
+            PixelAspectRatio = track.PixelAspectRatio,
             Frames = frames,
             PixelFormat = PixelFormatOf(first, alphaPayload?.Frames[0]),
             ColorModel = ColorModelOf(first, alphaPayload is not null, matrix),
@@ -1039,19 +1073,52 @@ internal static partial class AvifCorpus
                 ["matrixCoefficients"] = cicp.MatrixCoefficients,
                 ["fullRange"] = cicp.FullRange,
             },
-            ["animation"] = animation,
-            ["resolution"] = null,
-            ["profiles"] = new Obj
-            {
-                ["icc"] = reference.Icc is null ? null : CommonCorpus.ProfileRecord(reference.Icc),
-                ["exif"] = reference.Exif is null ? null : CommonCorpus.ProfileRecord(reference.Exif),
-                ["xmp"] = reference.Xmp is null ? null : CommonCorpus.ProfileRecord(reference.Xmp),
-            },
-            ["text"] = new List<object?>(),
-            ["frameCount"] = reference.Frames.Count,
-            ["frames"] = frames,
-            ["poster"] = null,
         };
+
+        // The labels that few files have are only written for the files that have them
+        if (reference.ContentLightLevel is { } lightLevel)
+        {
+            expected["contentLightLevel"] = new Obj
+            {
+                ["maxContentLightLevel"] = lightLevel.MaxContentLightLevel,
+                ["maxPictureAverageLightLevel"] = lightLevel.MaxPictureAverageLightLevel,
+            };
+        }
+
+        if (reference.MasteringDisplay is { } display)
+        {
+            expected["masteringDisplay"] = new Obj
+            {
+                ["red"] = new List<object?> { display.Red.X, display.Red.Y },
+                ["green"] = new List<object?> { display.Green.X, display.Green.Y },
+                ["blue"] = new List<object?> { display.Blue.X, display.Blue.Y },
+                ["whitePoint"] = new List<object?> { display.WhitePoint.X, display.WhitePoint.Y },
+                ["maxLuminance"] = display.MaxLuminance,
+                ["minLuminance"] = display.MinLuminance,
+            };
+        }
+
+        if (reference.PixelAspectRatio is { } pixelAspectRatio)
+        {
+            expected["pixelAspectRatio"] = new Obj
+            {
+                ["horizontalSpacing"] = pixelAspectRatio.HorizontalSpacing,
+                ["verticalSpacing"] = pixelAspectRatio.VerticalSpacing,
+            };
+        }
+
+        expected["animation"] = animation;
+        expected["resolution"] = null;
+        expected["profiles"] = new Obj
+        {
+            ["icc"] = reference.Icc is null ? null : CommonCorpus.ProfileRecord(reference.Icc),
+            ["exif"] = reference.Exif is null ? null : CommonCorpus.ProfileRecord(reference.Exif),
+            ["xmp"] = reference.Xmp is null ? null : CommonCorpus.ProfileRecord(reference.Xmp),
+        };
+        expected["text"] = new List<object?>();
+        expected["frameCount"] = reference.Frames.Count;
+        expected["frames"] = frames;
+        expected["poster"] = null;
 
         var fixture = new Obj
         {

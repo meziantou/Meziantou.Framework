@@ -40,6 +40,12 @@ internal static class AvifFileWriter
         public ReadOnlyMemory<byte> Xmp { get; init; }
 
         public ExifOrientation Orientation { get; init; } = ExifOrientation.TopLeft;
+
+        public PixelAspectRatio? PixelAspectRatio { get; init; }
+
+        public ContentLightLevel? ContentLightLevel { get; init; }
+
+        public MasteringDisplayColorVolume? MasteringDisplay { get; init; }
     }
 
     /// <summary>
@@ -241,6 +247,12 @@ internal static class AvifFileWriter
 
         /// <summary>Gets the number of times the sequence is played, or <see langword="null"/> when it repeats forever.</summary>
         public int? TotalPlays { get; init; }
+
+        public PixelAspectRatio? PixelAspectRatio { get; init; }
+
+        public ContentLightLevel? ContentLightLevel { get; init; }
+
+        public MasteringDisplayColorVolume? MasteringDisplay { get; init; }
     }
 
     /// <summary>
@@ -444,7 +456,16 @@ internal static class AvifFileWriter
         else
         {
             WriteColorInformation(writer, movie.ColorDescription, movie.IccProfile);
+            if (movie.ContentLightLevel is { } contentLightLevel)
+                AvifPresentationBoxes.Write(writer, contentLightLevel);
+
+            if (movie.MasteringDisplay is { } masteringDisplay)
+                AvifPresentationBoxes.Write(writer, masteringDisplay);
         }
+
+        // The pixels of the alpha plane have the shape of the pixels of the color image
+        if (movie.PixelAspectRatio is { } pixelAspectRatio)
+            AvifPresentationBoxes.Write(writer, pixelAspectRatio);
 
         // ISO/IEC 23008-12, section 7.2.3 "Coding constraints box": the images may predict from one another, and from the
         // samples of their own image
@@ -642,8 +663,8 @@ internal static class AvifFileWriter
     private static void WriteItemProperties(AvifBoxWriter writer, StillImage image)
     {
         const int Essential = 0x80;
-        Span<byte> color = stackalloc byte[8];
-        Span<byte> alpha = stackalloc byte[8];
+        Span<byte> color = stackalloc byte[16];
+        Span<byte> alpha = stackalloc byte[16];
         var colorCount = 0;
         var alphaCount = 0;
         var index = 0;
@@ -667,6 +688,28 @@ internal static class AvifFileWriter
         for (var i = WriteColorInformation(writer, image.ColorDescription, image.IccProfile); i > 0; i--)
         {
             color[colorCount++] = (byte)++index;
+        }
+
+        // The labels of the samples: the light levels and the display describe the colors, the shape of the pixels
+        // is also the one of the pixels of the alpha plane
+        if (image.ContentLightLevel is { } contentLightLevel)
+        {
+            AvifPresentationBoxes.Write(writer, contentLightLevel);
+            color[colorCount++] = (byte)++index;
+        }
+
+        if (image.MasteringDisplay is { } masteringDisplay)
+        {
+            AvifPresentationBoxes.Write(writer, masteringDisplay);
+            color[colorCount++] = (byte)++index;
+        }
+
+        var pixelAspectRatioIndex = 0;
+        if (image.PixelAspectRatio is { } pixelAspectRatio)
+        {
+            AvifPresentationBoxes.Write(writer, pixelAspectRatio);
+            pixelAspectRatioIndex = ++index;
+            color[colorCount++] = (byte)index;
         }
 
         // The transformations apply to the alpha plane as they do to the color image
@@ -703,6 +746,9 @@ internal static class AvifFileWriter
             writer.WriteCString(AvifFormat.AlphaAuxiliaryType);
             writer.EndBox(box);
             alpha[alphaCount++] = (byte)++index;
+            if (pixelAspectRatioIndex is not 0)
+                alpha[alphaCount++] = (byte)pixelAspectRatioIndex;
+
             if (rotationIndex is not 0)
                 alpha[alphaCount++] = (byte)(rotationIndex | Essential);
 

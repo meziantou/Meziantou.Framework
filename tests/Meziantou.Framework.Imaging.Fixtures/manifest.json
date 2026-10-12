@@ -5094,6 +5094,132 @@
       "notes": "Three columns and two rows of 16x16 tiles, coded one by one and assembled: smaller than the 64 samples MIAF asks for, so avifdec rejects the file."
     },
     {
+      "id": "avif/hdr-mastering-display",
+      "kind": "valid",
+      "format": "avif",
+      "input": {
+        "path": "avif/hdr-mastering-display.avif",
+        "sha256": "473541b61cb42c19eb847fe50081924ec329be228a8d6db6c4c7c5a69c842ae9",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/AvifCorpus.Container.cs (BuildStills)",
+        "tools": [
+          "libavif 1.4.2 avifenc (aom 3.14.1) (payloads)",
+          "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "payloadsOf": "avif/lossy-420-bt2020-limited-10bit"
+        }
+      },
+      "features": [
+        "avif.bitDepth=10",
+        "avif.clli",
+        "avif.colr=nclx",
+        "avif.majorBrand=avif",
+        "avif.matrix=9",
+        "avif.mdcv",
+        "avif.range=limited",
+        "avif.subsampling=4:2:0"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "Planes of the items decoded identically by both decoders, converted with exact rationals (matrix, range and chroma position of the file).",
+        "decoder": "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+        "backend": "ReferenceAvif and ReferenceYuvConverter (test harness)",
+        "command": "av1Vectors.decoders[].command",
+        "crossChecks": [
+          {
+            "decoder": "libavif 1.4.2 avifdec (dav1d 1.5.3)",
+            "command": "avifdec -j 1 -d 16 {input} {output}.png",
+            "maxAbsoluteError": 1,
+            "meanAbsoluteError": 0.0834,
+            "result": "differs",
+            "notes": "Independent conversion (its own chroma upsampling and rounding). Alpha is identical."
+          }
+        ]
+      },
+      "expected": {
+        "width": 8,
+        "height": 8,
+        "pixelFormat": "Rgba64",
+        "colorModel": "YCbCr",
+        "bitsPerComponent": 10,
+        "orientation": 1,
+        "iccProfile": "none",
+        "cicp": {
+          "colorPrimaries": 9,
+          "transferCharacteristics": 16,
+          "matrixCoefficients": 9,
+          "fullRange": false
+        },
+        "contentLightLevel": {
+          "maxContentLightLevel": 4000,
+          "maxPictureAverageLightLevel": 1000
+        },
+        "masteringDisplay": {
+          "red": [
+            35400,
+            14600
+          ],
+          "green": [
+            8500,
+            39850
+          ],
+          "blue": [
+            6550,
+            2300
+          ],
+          "whitePoint": [
+            15635,
+            16450
+          ],
+          "maxLuminance": 40000000,
+          "minLuminance": 50
+        },
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "avif/lossy-420-bt2020-limited-10bit.frame-0.rgba16le.raw",
+                "sha256": "d909651db4b11c663b8f5e8ac1c30d0b9f4405c13291081b9b86e7e31680542c",
+                "layout": "rgba16le",
+                "width": 8,
+                "height": 8,
+                "rowBytes": 64,
+                "byteLength": 512,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "tolerance",
+        "maxAbsoluteError": 1,
+        "maxMeanAbsoluteError": 0.01,
+        "justification": "Exact-rational reference; the library rounds its matrix coefficients to 16 fractional bits (measured: max 1, mean 0.0). Allowed: 1 and the measured mean + 0.01; the cross-checks would justify max 2, mean 0.5."
+      },
+      "notes": "The mastering display color volume of an HDR image (BT.2020 primaries, D65, 0.005 to 4000 cd/m2) and its light levels: the mdcv box stores the primaries in the order green, blue, red."
+    },
+    {
       "id": "avif/icc-without-nclx",
       "kind": "valid",
       "format": "avif",
@@ -12408,6 +12534,128 @@
         "maxMeanAbsoluteError": 0.01,
         "justification": "Exact-rational reference; the library rounds its matrix coefficients to 16 fractional bits (measured: max 0, mean 0.0). Allowed: 1 and the measured mean + 0.01; the cross-checks would justify max 2, mean 0.5."
       }
+    },
+    {
+      "id": "avif/lossy-420-pasp-clli",
+      "kind": "valid",
+      "format": "avif",
+      "input": {
+        "path": "avif/lossy-420-pasp-clli.avif",
+        "sha256": "7c4cc4bd39b5af6a62d809961395f44e6c2e7cd87c1ae200f80dab6907904e93",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/AvifCorpus.Container.cs (BuildStills)",
+        "tools": [
+          "libavif 1.4.2 avifenc (aom 3.14.1)",
+          "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+          ".NET 10.0"
+        ],
+        "commands": [
+          "avifenc -j 1 -s 6 -q 70 -y 420 --cicp 1/13/6 --pasp 4,3 --clli 1000,400 source.png {output}.avif"
+        ]
+      },
+      "features": [
+        "avif.bitDepth=8",
+        "avif.clli",
+        "avif.colr=nclx",
+        "avif.majorBrand=avif",
+        "avif.matrix=6",
+        "avif.pasp",
+        "avif.range=full",
+        "avif.subsampling=4:2:0"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "Planes of the items decoded identically by both decoders, converted with exact rationals (matrix, range and chroma position of the file).",
+        "decoder": "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+        "backend": "ReferenceAvif and ReferenceYuvConverter (test harness)",
+        "command": "av1Vectors.decoders[].command",
+        "crossChecks": [
+          {
+            "decoder": "libavif 1.4.2 avifdec (dav1d 1.5.3)",
+            "command": "avifdec -j 1 {input} {output}.png",
+            "maxAbsoluteError": 1,
+            "meanAbsoluteError": 0.1042,
+            "result": "differs",
+            "notes": "Independent conversion (its own chroma upsampling and rounding). Alpha is identical."
+          }
+        ]
+      },
+      "expected": {
+        "width": 8,
+        "height": 6,
+        "pixelFormat": "Rgb24",
+        "colorModel": "YCbCr",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "cicp": {
+          "colorPrimaries": 1,
+          "transferCharacteristics": 13,
+          "matrixCoefficients": 6,
+          "fullRange": true
+        },
+        "contentLightLevel": {
+          "maxContentLightLevel": 1000,
+          "maxPictureAverageLightLevel": 400
+        },
+        "pixelAspectRatio": {
+          "horizontalSpacing": 4,
+          "verticalSpacing": 3
+        },
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "avif/lossy-420-pasp-clli.frame-0.rgba8.raw",
+                "sha256": "c26681a1d1e8bf799b9782fcd158dfa9378d33dec96073216375948b769351a7",
+                "layout": "rgba8",
+                "width": 8,
+                "height": 6,
+                "rowBytes": 32,
+                "byteLength": 192,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "avif/lossy-420-pasp-clli.frame-0.rgb8.raw",
+                "sha256": "9b8f58ec33c4df0a2dd2876678561312a990941801128e471c40918fe1510fc7",
+                "layout": "rgb8",
+                "width": 8,
+                "height": 6,
+                "rowBytes": 24,
+                "byteLength": 144,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "tolerance",
+        "maxAbsoluteError": 1,
+        "maxMeanAbsoluteError": 0.01,
+        "justification": "Exact-rational reference; the library rounds its matrix coefficients to 16 fractional bits (measured: max 0, mean 0.0). Allowed: 1 and the measured mean + 0.01; the cross-checks would justify max 2, mean 0.5."
+      },
+      "notes": "A pixel aspect ratio of 4:3 and a content light level (MaxCLL 1000, MaxPALL 400 cd/m2): labels, which change no pixel."
     },
     {
       "id": "avif/lossy-420-smpte240m-full-odd",
@@ -19998,6 +20246,174 @@
         "mode": "exact"
       },
       "notes": "Exif and XMP items in the meta box of the file, their data in its idat box."
+    },
+    {
+      "id": "avif/sequence-hdr-boxes",
+      "kind": "valid",
+      "format": "avif",
+      "input": {
+        "path": "avif/sequence-hdr-boxes.avif",
+        "sha256": "8f8f6a1e0d5fd8f5e883c24c256462e9a68c01713ace17a0859f59e6f2eaa8d2",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/AvifCorpus.Container.cs (BuildSequences)",
+        "tools": [
+          "libavif 1.4.2 avifenc (aom 3.14.1) (payloads)",
+          "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "payloadsOf": "avif/sequence-10bit-once"
+        }
+      },
+      "features": [
+        "avif.bitDepth=10",
+        "avif.clli",
+        "avif.colr=nclx",
+        "avif.majorBrand=avis",
+        "avif.matrix=9",
+        "avif.mdcv",
+        "avif.pasp",
+        "avif.range=limited",
+        "avif.seq.chunkOffsets=stco",
+        "avif.seq.editList=once",
+        "avif.seq.interFrames",
+        "avif.seq.sampleSizes=stsz",
+        "avif.sequence",
+        "avif.subsampling=4:2:0"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "Planes of the samples decoded identically by both decoders, converted with exact rationals (matrix, range and chroma position of the file).",
+        "decoder": "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+        "backend": "ReferenceAvif and ReferenceYuvConverter (test harness)",
+        "command": "av1Vectors.decoders[].command",
+        "crossChecks": [
+          {
+            "decoder": "libavif 1.4.2 avifdec (dav1d 1.5.3)",
+            "command": "avifdec -j 1 -d 16 --index all {input} {output}.png",
+            "maxAbsoluteError": 1,
+            "meanAbsoluteError": 0.091,
+            "result": "differs",
+            "notes": "Independent conversion (its own chroma upsampling and rounding). Alpha is identical."
+          }
+        ]
+      },
+      "expected": {
+        "width": 8,
+        "height": 8,
+        "pixelFormat": "Rgba64",
+        "colorModel": "YCbCr",
+        "bitsPerComponent": 10,
+        "orientation": 1,
+        "iccProfile": "none",
+        "cicp": {
+          "colorPrimaries": 9,
+          "transferCharacteristics": 16,
+          "matrixCoefficients": 9,
+          "fullRange": false
+        },
+        "contentLightLevel": {
+          "maxContentLightLevel": 4000,
+          "maxPictureAverageLightLevel": 1000
+        },
+        "masteringDisplay": {
+          "red": [
+            35400,
+            14600
+          ],
+          "green": [
+            8500,
+            39850
+          ],
+          "blue": [
+            6550,
+            2300
+          ],
+          "whitePoint": [
+            15635,
+            16450
+          ],
+          "maxLuminance": 40000000,
+          "minLuminance": 50
+        },
+        "pixelAspectRatio": {
+          "horizontalSpacing": 16,
+          "verticalSpacing": 15
+        },
+        "animation": {
+          "totalPlays": 1,
+          "editList": {
+            "repeating": false,
+            "segmentDuration": 2002,
+            "trackDuration": 2002
+          }
+        },
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 2,
+        "frames": [
+          {
+            "duration": "1001/30000",
+            "encodedDelay": {
+              "sampleDelta": 1001,
+              "timescale": 30000
+            },
+            "buffers": [
+              {
+                "path": "avif/sequence-10bit-once.frame-0.rgba16le.raw",
+                "sha256": "dedf0ada6747dbb375638575afc198a3944e2a15e321d01211556c69db3dc90e",
+                "layout": "rgba16le",
+                "width": 8,
+                "height": 8,
+                "rowBytes": 64,
+                "byteLength": 512,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          },
+          {
+            "duration": "1001/30000",
+            "encodedDelay": {
+              "sampleDelta": 1001,
+              "timescale": 30000
+            },
+            "buffers": [
+              {
+                "path": "avif/sequence-10bit-once.frame-1.rgba16le.raw",
+                "sha256": "0f66f1c5d56e601916cb406a4935d4069ac51ddbb0003e744f9ce7a716833d91",
+                "layout": "rgba16le",
+                "width": 8,
+                "height": 8,
+                "rowBytes": 64,
+                "byteLength": 512,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "tolerance",
+        "maxAbsoluteError": 1,
+        "maxMeanAbsoluteError": 0.01,
+        "justification": "Exact-rational reference; the library rounds its matrix coefficients to 16 fractional bits (measured: max 0, mean 0.0). Allowed: 1 and the measured mean + 0.01; the cross-checks would justify max 2, mean 0.5."
+      },
+      "notes": "The pixel aspect ratio (16:15), the content light level and the mastering display color volume of an image sequence are boxes of the sample entry of its track."
     },
     {
       "id": "avif/sequence-icc",

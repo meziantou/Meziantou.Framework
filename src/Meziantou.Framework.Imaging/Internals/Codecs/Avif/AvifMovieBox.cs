@@ -536,6 +536,16 @@ internal sealed class AvifMovieBox : IDisposable
                         child.ReadFullBoxHeader();
                         track.AuxiliaryType = child.ReadCString().ToArray();
                         break;
+                    case AvifFormat.Pasp:
+                        var pixelAspectRatio = AvifPresentationBoxes.ReadPixelAspectRatio(ref child);
+                        track.PixelAspectRatio ??= pixelAspectRatio;
+                        break;
+                    case AvifFormat.Clli:
+                        track.ContentLightLevel ??= AvifPresentationBoxes.ReadContentLightLevel(ref child);
+                        break;
+                    case AvifFormat.Mdcv:
+                        track.MasteringDisplay ??= AvifPresentationBoxes.ReadMasteringDisplay(ref child);
+                        break;
                     default:
                         break;
                 }

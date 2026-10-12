@@ -34,6 +34,15 @@ internal sealed class AvifImagePlan
     /// <summary>Gets the range of the ICC profile of the primary item in the <c>meta</c> payload, or an empty range.</summary>
     public (int Offset, int Length) IccProfile { get; private set; }
 
+    /// <summary>Gets the <c>pasp</c> property of the primary item, or <see langword="null"/>.</summary>
+    public PixelAspectRatio? PixelAspectRatio { get; private set; }
+
+    /// <summary>Gets the <c>clli</c> property of the primary item, or <see langword="null"/>.</summary>
+    public ContentLightLevel? ContentLightLevel { get; private set; }
+
+    /// <summary>Gets the <c>mdcv</c> property of the primary item, or <see langword="null"/>.</summary>
+    public MasteringDisplayColorVolume? MasteringDisplay { get; private set; }
+
     /// <summary>Gets the Exif item that describes the primary item, or <see langword="null"/>.</summary>
     public AvifItem? Exif { get; private set; }
 
@@ -158,9 +167,15 @@ internal sealed class AvifImagePlan
                     orientation = orientation.Then(OrientationTransform.ForFlip((reader.ReadByte() & 1) is 0 ? FlipMode.Vertical : FlipMode.Horizontal));
                     break;
                 case AvifFormat.Pasp:
-                    if (reader.ReadUInt32() is 0 || reader.ReadUInt32() is 0)
-                        throw AvifFormat.Invalid("the pixel aspect ratio is not valid.");
-
+                    // A label, like the two that follow: the first property of each type describes the image
+                    var pixelAspectRatio = AvifPresentationBoxes.ReadPixelAspectRatio(ref reader);
+                    PixelAspectRatio ??= pixelAspectRatio;
+                    break;
+                case AvifFormat.Clli:
+                    ContentLightLevel ??= AvifPresentationBoxes.ReadContentLightLevel(ref reader);
+                    break;
+                case AvifFormat.Mdcv:
+                    MasteringDisplay ??= AvifPresentationBoxes.ReadMasteringDisplay(ref reader);
                     break;
                 default:
                     break;

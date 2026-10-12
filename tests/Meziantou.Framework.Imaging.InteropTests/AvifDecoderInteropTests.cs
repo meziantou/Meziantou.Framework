@@ -134,6 +134,12 @@ public sealed class AvifDecoderInteropTests
         /// avifdec describes the 16-bit image it could reconstruct and decodes the primary item.
         /// </summary>
         public int? PrimaryItemDepth { get; init; }
+
+        /// <summary>The content light level passed to avifenc (<c>--clli</c>), which the library must report.</summary>
+        public ContentLightLevel? ContentLightLevel { get; init; }
+
+        /// <summary>The pixel aspect ratio passed to avifenc (<c>--pasp</c>), which the library must report.</summary>
+        public PixelAspectRatio? PixelAspectRatio { get; init; }
     }
 
     /// <param name="Name">The name of the case and of its files.</param>
@@ -227,8 +233,10 @@ public sealed class AvifDecoderInteropTests
         yield return new("lossy-420-10-film-grain", SourceKind.Rgb16, 64, 48, ["--qcolor", "50", "--yuv", "420", "--depth", "10", "--advanced", "film-grain-test=11"], ColorBound.Subsampled10);
         yield return new("lossy-16x16-420-8", SourceKind.Rgb8, 16, 16, ["--qcolor", "50", "--yuv", "420"], ColorBound.Subsampled8);
 
-        // Properties that describe the display and are not read: the pixels are those of the same file without them
-        yield return new("lossy-420-8-pasp-clli", SourceKind.Rgb8, 32, 24, ["--qcolor", "50", "--yuv", "420", "--pasp", "2,1", "--clli", "1000,400"], ColorBound.Subsampled8);
+        // Properties that describe how the samples are displayed: they are reported, and the pixels are those of the same
+        // file without them
+        yield return new("lossy-420-8-pasp-clli", SourceKind.Rgb8, 32, 24, ["--qcolor", "50", "--yuv", "420", "--pasp", "2,1", "--clli", "1000,400"], ColorBound.Subsampled8) { ContentLightLevel = new(1000, 400), PixelAspectRatio = new(2, 1) };
+        yield return new("lossy-444-10-pasp-clli-alpha", SourceKind.Rgba16, 32, 24, ["--qcolor", "50", "--yuv", "444", "--depth", "10", "--cicp", "9/16/9", "--pasp", "64,45", "--clli", "65535,1"], ColorBound.Matrix16) { Cicp = new(9, 16, 9, fullRange: true), ContentLightLevel = new(65535, 1), PixelAspectRatio = new(64, 45) };
 
         // A hidden image that extends the depth of the primary item to 16 bits (sample transform): the primary item is presented,
         // which avifdec decodes unless it is asked for the transform
@@ -286,6 +294,13 @@ public sealed class AvifDecoderInteropTests
         Assert.Null(image.Animation);
         Assert.Equal(ExifOrientation.TopLeft, image.Metadata.Orientation);
         AssertColorDescription(info, item.Cicp, image.Metadata.Cicp, name);
+
+        // avifdec prints the light levels and the terms of the pixel aspect ratio of a file that has them
+        Assert.Equal(item.ContentLightLevel, image.Metadata.ContentLightLevel);
+        Assert.Equal(item.PixelAspectRatio, image.Metadata.PixelAspectRatio);
+        Assert.Equal<(int, int)?>(item.ContentLightLevel is { } level ? (level.MaxContentLightLevel, level.MaxPictureAverageLightLevel) : null, info.ContentLightLevel);
+        Assert.Equal<(int, int)?>(item.PixelAspectRatio is { } ratio ? ((int)ratio.HorizontalSpacing, (int)ratio.VerticalSpacing) : null, info.PixelAspectRatio);
+        Assert.Null(image.Metadata.MasteringDisplay);
         var measured = AssertPixels(reference.Pixels, ToRgba16(ImageSnapshots.CaptureFrame(image.Frames[0])), item.MaxColorError, $"{name}: library vs avifdec {avif.Version}");
         TestContext.Current.TestOutputHelper?.WriteLine(string.Create(CultureInfo.InvariantCulture, $"{name}: {info.Format} {info.BitDepth}-bit matrix {info.MatrixCoefficients} {(info.FullRange ? "full" : "limited")}{(info.HasAlpha ? " alpha" : "")}: max color difference {measured.Max} ({measured.Max / 257.0:F3}/255), mean {measured.Mean:F2}, bound {item.MaxColorError}"));
 
@@ -301,6 +316,8 @@ public sealed class AvifDecoderInteropTests
             Assert.Equal<bool?>(info.HasAlpha, identified.MayHaveTransparency);
             Assert.Null(identified.Animation);
             Assert.Equal(image.Metadata.Cicp, identified.Metadata.Cicp);
+            Assert.Equal(item.ContentLightLevel, identified.Metadata.ContentLightLevel);
+            Assert.Equal(item.PixelAspectRatio, identified.Metadata.PixelAspectRatio);
             Assert.Equal(ExifOrientation.TopLeft, identified.Metadata.Orientation);
         }
     }

@@ -408,6 +408,9 @@ internal sealed class AvifStructureParser : ImageParser<ImageInfo>
 
         metadata.Orientation = plan.Orientation;
         metadata.Cicp = plan.Nclx;
+        metadata.PixelAspectRatio = plan.PixelAspectRatio;
+        metadata.ContentLightLevel = plan.ContentLightLevel;
+        metadata.MasteringDisplay = plan.MasteringDisplay;
         if (plan.IccProfile.Length > 0)
         {
             _metadata.Charge(plan.IccProfile.Length);
@@ -929,6 +932,9 @@ internal sealed class AvifStructureParser : ImageParser<ImageInfo>
             AvifYuvConverter.EnsureSupported(nclx.MatrixCoefficients, color.IsMonochrome, color.SubsamplingX, color.SubsamplingY);
 
         _metadata.Metadata.Cicp = color.Nclx;
+        _metadata.Metadata.PixelAspectRatio = color.PixelAspectRatio;
+        _metadata.Metadata.ContentLightLevel = color.ContentLightLevel;
+        _metadata.Metadata.MasteringDisplay = color.MasteringDisplay;
         if (color.IccProfile.Length > 0)
         {
             _metadata.Charge(color.IccProfile.Length);

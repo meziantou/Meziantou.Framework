@@ -11,8 +11,8 @@ public sealed class MetadataWritePlanTests
 {
     private static readonly Size Canvas = new(4, 3);
 
-    // No format stores a content light level, a mastering display color volume or the shape of the pixels yet
-    private static readonly ImageFormat[] FormatsWithoutHighDynamicRangeFields = [.. Enum.GetValues<ImageFormat>().Where(format => format is not ImageFormat.Unknown)];
+    // Only AVIF stores a content light level, a mastering display color volume and the shape of the pixels
+    private static readonly ImageFormat[] FormatsWithoutHighDynamicRangeFields = [.. Enum.GetValues<ImageFormat>().Where(format => format is not (ImageFormat.Unknown or ImageFormat.Avif))];
 
     [Fact]
     public void ValidIccProfilePassesValidation()
@@ -309,6 +309,30 @@ public sealed class MetadataWritePlanTests
             var square = MetadataWritePlan.Create(new ImageMetadata { PixelAspectRatio = new PixelAspectRatio(3, 3) }, format, MetadataHandling.Strict, Canvas);
             Assert.Null(square.PixelAspectRatio);
         }
+    }
+
+    [Fact]
+    public void AvifStoresLightLevelsMasteringDisplayAndPixelShape()
+    {
+        var metadata = new ImageMetadata
+        {
+            ContentLightLevel = new ContentLightLevel(1000, 400),
+            MasteringDisplay = new MasteringDisplayColorVolume(35400, 14600, 8500, 39850, 6550, 2300, 15635, 16450, 10_000_000, 50),
+            PixelAspectRatio = new PixelAspectRatio(2, 1),
+        };
+        var plan = MetadataWritePlan.Create(metadata, ImageFormat.Avif, MetadataHandling.Strict, Canvas);
+        Assert.Same(metadata.ContentLightLevel, plan.ContentLightLevel);
+        Assert.Same(metadata.MasteringDisplay, plan.MasteringDisplay);
+        Assert.Same(metadata.PixelAspectRatio, plan.PixelAspectRatio);
+
+        // A square ratio is stored as it is given: the box exists for it too
+        var square = new PixelAspectRatio(3, 3);
+        Assert.Same(square, MetadataWritePlan.Create(new ImageMetadata { PixelAspectRatio = square }, ImageFormat.Avif, MetadataHandling.Strict, Canvas).PixelAspectRatio);
+
+        plan = MetadataWritePlan.Create(metadata, ImageFormat.Avif, MetadataHandling.Strip, Canvas);
+        Assert.Null(plan.ContentLightLevel);
+        Assert.Null(plan.MasteringDisplay);
+        Assert.Null(plan.PixelAspectRatio);
     }
 
     [Fact]

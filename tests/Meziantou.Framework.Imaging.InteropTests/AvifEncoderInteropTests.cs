@@ -405,6 +405,69 @@ public sealed class AvifEncoderInteropTests
     }
 
     [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task LightLevelsMasteringDisplayAndPixelShapeAreReportedByOtherReaders(bool isSequence)
+    {
+        var libavif = await RequiredTools.LibAvifAsync();
+        var ffmpeg = await RequiredTools.FFmpegAsync();
+        using var image = CreateImage(16, 12, monochrome: false, bitDepth: 10, seed: 31, transparent: false);
+        if (isSequence)
+        {
+            using var second = CreateImage(16, 12, monochrome: false, bitDepth: 10, seed: 32, transparent: false);
+            image.AppendFrame(second.Frames[0]);
+            image.Frames[0].Metadata.Duration = new FrameDuration(1, 10);
+            image.Frames[1].Metadata.Duration = new FrameDuration(1, 10);
+        }
+
+        // The BT.2020 primaries and D65 (SMPTE ST 2086 units of 0.00002), a display of 0.005 to 1,000 cd/m2
+        image.Metadata.Cicp = new CicpColorDescription(9, 16, 9, fullRange: false);
+        image.Metadata.ContentLightLevel = new ContentLightLevel(1000, 400);
+        image.Metadata.MasteringDisplay = new MasteringDisplayColorVolume(redX: 35400, redY: 14600, greenX: 8500, greenY: 39850, blueX: 6550, blueY: 2300, whitePointX: 15635, whitePointY: 16450, maxLuminance: 10_000_000, minLuminance: 50);
+        image.Metadata.PixelAspectRatio = new PixelAspectRatio(4, 3);
+        var path = await SaveAsync(image, new AvifEncoder { Compression = AvifCompression.Lossy, BitDepth = 10 }, $"hdr-metadata-{(isSequence ? "sequence" : "still")}");
+
+        // libavif reads the properties of the primary item, which is the first image of a sequence
+        var info = await libavif.GetInfoAsync(path, XunitCancellationToken);
+        Assert.Equal((1000, 400), info.ContentLightLevel);
+        Assert.Equal((4, 3), info.PixelAspectRatio);
+
+        // FFmpeg names the primaries of the mastering display: the order in which the box stores them is the one it reads.
+        // It reads the boxes of the sample entry of a track, and for a still image the properties of the item (but not the
+        // shape of its pixels; with an alpha item, it attaches them to the wrong stream, whoever wrote the file)
+        using var probe = await ffmpeg.ProbeStreamsAsync(path, XunitCancellationToken);
+        var streams = probe.RootElement.GetProperty("streams").EnumerateArray().ToArray();
+        var stream = isSequence
+            ? streams.Single(candidate => candidate.GetProperty("nb_frames").GetString() == "2" && candidate.GetProperty("pix_fmt").GetString() == "yuv420p10le")
+            : Assert.Single(streams);
+        var sideData = stream.GetProperty("side_data_list").EnumerateArray().ToArray();
+        var display = sideData.Single(data => data.GetProperty("side_data_type").GetString() == "Mastering display metadata");
+        Assert.Equal("35400/50000", display.GetProperty("red_x").GetString());
+        Assert.Equal("14600/50000", display.GetProperty("red_y").GetString());
+        Assert.Equal("8500/50000", display.GetProperty("green_x").GetString());
+        Assert.Equal("39850/50000", display.GetProperty("green_y").GetString());
+        Assert.Equal("6550/50000", display.GetProperty("blue_x").GetString());
+        Assert.Equal("2300/50000", display.GetProperty("blue_y").GetString());
+        Assert.Equal("15635/50000", display.GetProperty("white_point_x").GetString());
+        Assert.Equal("16450/50000", display.GetProperty("white_point_y").GetString());
+        Assert.Equal("50/10000", display.GetProperty("min_luminance").GetString());
+        Assert.Equal("10000000/10000", display.GetProperty("max_luminance").GetString());
+
+        var lightLevel = sideData.Single(data => data.GetProperty("side_data_type").GetString() == "Content light level metadata");
+        Assert.Equal(1000, lightLevel.GetProperty("max_content").GetInt32());
+        Assert.Equal(400, lightLevel.GetProperty("max_average").GetInt32());
+        if (isSequence)
+        {
+            Assert.Equal("4:3", stream.GetProperty("sample_aspect_ratio").GetString());
+
+            // The alpha track has the shape of the pixels, and nothing that describes colors
+            var alpha = streams.Single(candidate => candidate.GetProperty("nb_frames").GetString() == "2" && candidate.GetProperty("pix_fmt").GetString() != "yuv420p10le");
+            Assert.Equal("4:3", alpha.GetProperty("sample_aspect_ratio").GetString());
+            Assert.False(alpha.TryGetProperty("side_data_list", out _));
+        }
+    }
+
+    [Theory]
     [InlineData(AvifCompression.Lossless, false)]
     [InlineData(AvifCompression.Lossless, true)]
     [InlineData(AvifCompression.Lossy, false)]

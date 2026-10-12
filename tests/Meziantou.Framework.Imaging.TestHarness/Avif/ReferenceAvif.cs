@@ -863,6 +863,7 @@ public sealed class ReferenceAvif
         track.Height = BinaryPrimitives.ReadUInt16BigEndian(content.Span[26..]);
         foreach (var (box, child) in Children(content[78..]))
         {
+            track.AddSampleEntryBox(new SampleEntryBox(box.Type, child));
             switch (box.Type)
             {
                 case "av1C":
@@ -898,6 +899,74 @@ public sealed class ReferenceAvif
     /// <param name="Type">The four-character code.</param>
     /// <param name="Payload">The payload of the property box (with the version and flags of a full box).</param>
     public sealed record Property(int Index, string Type, ReadOnlyMemory<byte> Payload);
+
+    /// <summary>The content light level of a <c>clli</c> box (ISO/IEC 14496-12, section 12.1.6), in candelas per square meter.</summary>
+    /// <param name="MaxContentLightLevel">The light level of the brightest pixel, or 0 when unknown.</param>
+    /// <param name="MaxPictureAverageLightLevel">The largest average light level of a picture, or 0 when unknown.</param>
+    public sealed record ContentLightLevel(int MaxContentLightLevel, int MaxPictureAverageLightLevel)
+    {
+        /// <summary>Parses the payload of the box: two 16-bit fields.</summary>
+        /// <param name="payload">The payload.</param>
+        /// <returns>The light levels.</returns>
+        /// <exception cref="InvalidDataException">The box is truncated.</exception>
+        public static ContentLightLevel Parse(ReadOnlySpan<byte> payload)
+        {
+            if (payload.Length < 4)
+                throw new InvalidDataException("The 'clli' box is truncated.");
+
+            return new ContentLightLevel(BinaryPrimitives.ReadUInt16BigEndian(payload), BinaryPrimitives.ReadUInt16BigEndian(payload[2..]));
+        }
+    }
+
+    /// <summary>
+    /// The mastering display color volume of a <c>mdcv</c> box (ISO/IEC 14496-12, section 12.1.7): chromaticities in units
+    /// of 0.00002, luminances in units of 0.0001 candela per square meter. The box stores the three primaries with the
+    /// semantics of the SEI message of Rec. ITU-T H.265 (section D.3.28): green, then blue, then red.
+    /// </summary>
+    /// <param name="Red">The x and y of the red primary.</param>
+    /// <param name="Green">The x and y of the green primary.</param>
+    /// <param name="Blue">The x and y of the blue primary.</param>
+    /// <param name="WhitePoint">The x and y of the white point.</param>
+    /// <param name="MaxLuminance">The nominal maximum luminance of the display.</param>
+    /// <param name="MinLuminance">The nominal minimum luminance of the display.</param>
+    public sealed record MasteringDisplay((int X, int Y) Red, (int X, int Y) Green, (int X, int Y) Blue, (int X, int Y) WhitePoint, long MaxLuminance, long MinLuminance)
+    {
+        /// <summary>Parses the payload of the box: eight 16-bit fields, then two 32-bit fields.</summary>
+        /// <param name="payload">The payload.</param>
+        /// <returns>The color volume.</returns>
+        /// <exception cref="InvalidDataException">The box is truncated.</exception>
+        public static MasteringDisplay Parse(ReadOnlySpan<byte> payload)
+        {
+            if (payload.Length < 24)
+                throw new InvalidDataException("The 'mdcv' box is truncated.");
+
+            (int X, int Y) Pair(ReadOnlySpan<byte> data, int index) => (BinaryPrimitives.ReadUInt16BigEndian(data[(index * 4)..]), BinaryPrimitives.ReadUInt16BigEndian(data[((index * 4) + 2)..]));
+            return new MasteringDisplay(Pair(payload, 2), Pair(payload, 0), Pair(payload, 1), Pair(payload, 3), BinaryPrimitives.ReadUInt32BigEndian(payload[16..]), BinaryPrimitives.ReadUInt32BigEndian(payload[20..]));
+        }
+    }
+
+    /// <summary>The pixel aspect ratio of a <c>pasp</c> box (ISO/IEC 14496-12, section 12.1.4): the relative width and height of a pixel.</summary>
+    /// <param name="HorizontalSpacing">The relative width of a pixel.</param>
+    /// <param name="VerticalSpacing">The relative height of a pixel.</param>
+    public sealed record PixelAspectRatio(long HorizontalSpacing, long VerticalSpacing)
+    {
+        /// <summary>Parses the payload of the box: two 32-bit fields.</summary>
+        /// <param name="payload">The payload.</param>
+        /// <returns>The ratio.</returns>
+        /// <exception cref="InvalidDataException">The box is truncated.</exception>
+        public static PixelAspectRatio Parse(ReadOnlySpan<byte> payload)
+        {
+            if (payload.Length < 8)
+                throw new InvalidDataException("The 'pasp' box is truncated.");
+
+            return new PixelAspectRatio(BinaryPrimitives.ReadUInt32BigEndian(payload), BinaryPrimitives.ReadUInt32BigEndian(payload[4..]));
+        }
+    }
+
+    /// <summary>A box of a visual sample entry (<c>stsd</c>).</summary>
+    /// <param name="Type">The four-character code.</param>
+    /// <param name="Payload">The payload of the box (with the version and flags of a full box).</param>
+    public sealed record SampleEntryBox(string Type, ReadOnlyMemory<byte> Payload);
 
     /// <summary>The association of a property with an item (<c>ipma</c>).</summary>
     /// <param name="Property">The property.</param>
@@ -1085,6 +1154,15 @@ public sealed class ReferenceAvif
         /// <summary>Gets the ICC profile of the first <c>colr</c> property of type <c>prof</c> or <c>rICC</c>, or <see langword="null"/>.</summary>
         public ReadOnlyMemory<byte>? IccProfile => FindColor("prof") ?? FindColor("rICC");
 
+        /// <summary>Gets the first <c>clli</c> property, or <see langword="null"/>.</summary>
+        public ContentLightLevel? ContentLightLevel => Find("clli") is { } property ? ReferenceAvif.ContentLightLevel.Parse(property.Payload.Span) : null;
+
+        /// <summary>Gets the first <c>mdcv</c> property, or <see langword="null"/>.</summary>
+        public MasteringDisplay? MasteringDisplay => Find("mdcv") is { } property ? ReferenceAvif.MasteringDisplay.Parse(property.Payload.Span) : null;
+
+        /// <summary>Gets the first <c>pasp</c> property, or <see langword="null"/>.</summary>
+        public PixelAspectRatio? PixelAspectRatio => Find("pasp") is { } property ? ReferenceAvif.PixelAspectRatio.Parse(property.Payload.Span) : null;
+
         /// <summary>Gets the auxiliary type (<c>auxC</c>), or <see langword="null"/>.</summary>
         public string? AuxiliaryType => Find("auxC") is { } property ? new Cursor(property.Payload[4..]).CString() : null;
 
@@ -1175,6 +1253,7 @@ public sealed class ReferenceAvif
     {
         private readonly List<TrackReference> _references = [];
         private readonly List<Sample> _samples = [];
+        private readonly List<SampleEntryBox> _sampleEntryBoxes = [];
         private IReadOnlyList<Item> _metaItems = [];
 
         internal Track()
@@ -1216,6 +1295,18 @@ public sealed class ReferenceAvif
 
         /// <summary>Gets the auxiliary type of the sample entry (<c>auxi</c>), or <see langword="null"/>.</summary>
         public string? AuxiliaryType { get; internal set; }
+
+        /// <summary>Gets the boxes of the visual sample entry, in file order: the configuration, the color information and whatever else describes the samples.</summary>
+        public IReadOnlyList<SampleEntryBox> SampleEntryBoxes => _sampleEntryBoxes;
+
+        /// <summary>Gets the first <c>clli</c> box of the sample entry, or <see langword="null"/>.</summary>
+        public ContentLightLevel? ContentLightLevel => FindSampleEntryBox("clli") is { } box ? ReferenceAvif.ContentLightLevel.Parse(box.Payload.Span) : null;
+
+        /// <summary>Gets the first <c>mdcv</c> box of the sample entry, or <see langword="null"/>.</summary>
+        public MasteringDisplay? MasteringDisplay => FindSampleEntryBox("mdcv") is { } box ? ReferenceAvif.MasteringDisplay.Parse(box.Payload.Span) : null;
+
+        /// <summary>Gets the first <c>pasp</c> box of the sample entry, or <see langword="null"/>.</summary>
+        public PixelAspectRatio? PixelAspectRatio => FindSampleEntryBox("pasp") is { } box ? ReferenceAvif.PixelAspectRatio.Parse(box.Payload.Span) : null;
 
         /// <summary>Gets the edit list, or <see langword="null"/>.</summary>
         public EditList? EditList { get; internal set; }
@@ -1268,6 +1359,13 @@ public sealed class ReferenceAvif
                 return plays > int.MaxValue ? null : (int)BigInteger.Max(plays, 1);
             }
         }
+
+        /// <summary>Returns the first box of the visual sample entry of a type.</summary>
+        /// <param name="type">The four-character code.</param>
+        /// <returns>The box, or <see langword="null"/>.</returns>
+        public SampleEntryBox? FindSampleEntryBox(string type) => _sampleEntryBoxes.FirstOrDefault(box => box.Type == type);
+
+        internal void AddSampleEntryBox(SampleEntryBox box) => _sampleEntryBoxes.Add(box);
 
         internal void AddReference(TrackReference reference) => _references.Add(reference);
 

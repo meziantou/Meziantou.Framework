@@ -205,6 +205,17 @@ internal static partial class AvifCorpus
         Still(context, "lossy-420-chroma-colocated", Y4m(8, 8, "420paldv"), "-q 70 --cicp 1/13/6", ["avif.chromaSamplePosition=colocated"], sourceName: "source.y4m");
         Still(context, "lossy-420-alpha", Png(WithAlpha(smooth)), "-q 70 --qalpha 70 -y 420 --cicp 1/13/6", ["avif.alpha", "avif.matrix=6", "avif.subsampling=4:2:0"]);
 
+        // The boxes that describe how the samples are presented and change no pixel: the shape of the pixels and the
+        // light levels as avifenc writes them, then a mastering display, which no option of avifenc writes
+        Still(context, "lossy-420-pasp-clli", Png(CommonCorpus.PatternSmoothColor(8, 6)), "-q 70 -y 420 --cicp 1/13/6 --pasp 4,3 --clli 1000,400", ["avif.pasp", "avif.clli"],
+            notes: "A pixel aspect ratio of 4:3 and a content light level (MaxCLL 1000, MaxPALL 400 cd/m2): labels, which change no pixel.");
+        Assembled(context, "hdr-mastering-display", "lossy-420-bt2020-limited-10bit", builder =>
+        {
+            var item = builder.GetItem(builder.PrimaryItemId!.Value);
+            item.Associations.Add((builder.AddProperty(AvifFileBuilder.Box("clli", AvifFileBuilder.U16(4000), AvifFileBuilder.U16(1000))), false));
+            item.Associations.Add((builder.AddProperty(MasteringDisplayBox()), false));
+        }, ["avif.mdcv", "avif.clli", "avif.bitDepth=10"], "The mastering display color volume of an HDR image (BT.2020 primaries, D65, 0.005 to 4000 cd/m2) and its light levels: the mdcv box stores the primaries in the order green, blue, red.", "BuildStills");
+
         // (Matrixed content is subsampled wherever avifdec converts 4:4:4 samples exactly: a tolerance needs a measured
         // disagreement of an independent decoder, and the 4:4:4 conversions are checked matrix by matrix, within one unit,
         // by Tests/Conformance/AvifContainerConformanceTests.)
@@ -357,6 +368,12 @@ internal static partial class AvifCorpus
         Py.Assert(index >= 0, type);
         item.Associations[index] = (builder.AddProperty(box), item.Associations[index].IsEssential);
     }
+
+    // ISO/IEC 14496-12, section 12.1.7: the BT.2020 primaries in the order green, blue, red and the D65 white point, in
+    // units of 0.00002; 4000 and 0.005 cd/m2 in units of 0.0001
+    private static byte[] MasteringDisplayBox() => AvifFileBuilder.Box("mdcv",
+        AvifFileBuilder.U16(8500), AvifFileBuilder.U16(39850), AvifFileBuilder.U16(6550), AvifFileBuilder.U16(2300), AvifFileBuilder.U16(35400), AvifFileBuilder.U16(14600),
+        AvifFileBuilder.U16(15635), AvifFileBuilder.U16(16450), AvifFileBuilder.U32(40_000_000), AvifFileBuilder.U32(50));
 
     private static void RemoveProperty(AvifFileBuilder builder, AvifFileBuilder.Item item, string type)
     {
@@ -533,6 +550,15 @@ internal static partial class AvifCorpus
             ["avif.seq.editList=repeat", "avif.alpha"], "Two repetitions: three plays.");
         Sequence(context, "sequence-10bit-once", [DeepColor(8, 8, 10), Shift(DeepColor(8, 8, 10))], "-q 70 -d 10 -y 420 --cicp 9/16/9 -r limited --timescale 30000 --repetition-count 0", [1001, 1001],
             ["avif.seq.editList=once", "avif.bitDepth=10"], "No repetition: an edit list that does not repeat, played once. The duration of a frame is 1001/30000 s.");
+
+        // The boxes of the visual sample entry that describe how the samples are presented
+        Assembled(context, "sequence-hdr-boxes", "sequence-10bit-once", builder =>
+        {
+            var track = builder.Tracks[0];
+            track.SampleEntryBoxes.Add(AvifFileBuilder.Box("pasp", AvifFileBuilder.U32(16), AvifFileBuilder.U32(15)));
+            track.SampleEntryBoxes.Add(AvifFileBuilder.Box("clli", AvifFileBuilder.U16(4000), AvifFileBuilder.U16(1000)));
+            track.SampleEntryBoxes.Add(MasteringDisplayBox());
+        }, ["avif.sequence", "avif.pasp", "avif.clli", "avif.mdcv"], "The pixel aspect ratio (16:15), the content light level and the mastering display color volume of an image sequence are boxes of the sample entry of its track.", "BuildSequences");
 
         // The FFmpeg avif muxer: another writer of the moov box
         var scratch = context.NewScratch("enc-sequence-ffmpeg");

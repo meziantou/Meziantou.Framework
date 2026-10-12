@@ -49,6 +49,9 @@ internal sealed class AvifEncoderCodec : ImageEncoderCodec
         private readonly byte[]? _exif;
         private readonly byte[]? _xmp;
         private readonly ExifOrientation _orientation;
+        private readonly PixelAspectRatio? _pixelAspectRatio;
+        private readonly ContentLightLevel? _contentLightLevel;
+        private readonly MasteringDisplayColorVolume? _masteringDisplay;
         private readonly bool _isSequence;
         private readonly int _frameCount;
         private readonly int _movieReservation;
@@ -123,6 +126,9 @@ internal sealed class AvifEncoderCodec : ImageEncoderCodec
             _icc = metadata.IccProfile?.Data.ToArray();
             _exif = metadata.Exif;
             _xmp = metadata.XmpProfile?.Data.ToArray();
+            _pixelAspectRatio = metadata.PixelAspectRatio;
+            _contentLightLevel = metadata.ContentLightLevel;
+            _masteringDisplay = metadata.MasteringDisplay;
             _orientation = metadata.Orientation;
             if (_isSequence && _orientation is not ExifOrientation.TopLeft)
             {
@@ -410,6 +416,9 @@ internal sealed class AvifEncoderCodec : ImageEncoderCodec
                         Exif = _exif,
                         Xmp = _xmp,
                         Orientation = _orientation,
+                        PixelAspectRatio = _pixelAspectRatio,
+                        ContentLightLevel = _contentLightLevel,
+                        MasteringDisplay = _masteringDisplay,
                     },
                     _isSequence ? _movieReservation : -1);
 
@@ -482,6 +491,9 @@ internal sealed class AvifEncoderCodec : ImageEncoderCodec
                     IccProfile = _icc,
                     Timescale = (uint)timescale,
                     TotalPlays = worstCase ? null : Options.Animation?.TotalPlays,
+                    PixelAspectRatio = _pixelAspectRatio,
+                    ContentLightLevel = _contentLightLevel,
+                    MasteringDisplay = _masteringDisplay,
                 },
                 colorSizes,
                 alphaSizes,

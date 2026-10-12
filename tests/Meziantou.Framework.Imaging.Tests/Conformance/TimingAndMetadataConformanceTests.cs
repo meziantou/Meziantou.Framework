@@ -54,6 +54,18 @@ public sealed class TimingAndMetadataConformanceTests
             Assert.Equal(animation.EditList?.TrackDuration, fields.EditList?.TrackDuration);
         }
 
+        // The light levels, the mastering display and the shape of the pixels are boxes of AVIF: what the manifest expects is
+        // what the inspector reads from them
+        Assert.Equal(expected.ContentLightLevel?.ToString(), fields.ContentLightLevel?.ToString());
+        Assert.Equal(expected.MasteringDisplay?.ToString(), fields.MasteringDisplay?.ToString());
+        Assert.Equal(expected.PixelAspectRatio?.ToString(), fields.PixelAspectRatio?.ToString());
+        if (fixture.Entry.Format != "avif")
+        {
+            Assert.Null(expected.ContentLightLevel);
+            Assert.Null(expected.MasteringDisplay);
+            Assert.Null(expected.PixelAspectRatio);
+        }
+
         if (fixture.Entry.Format == "avif")
         {
             // The orientation of an AVIF image is the composition of its irot and imir properties, and a colr box of type

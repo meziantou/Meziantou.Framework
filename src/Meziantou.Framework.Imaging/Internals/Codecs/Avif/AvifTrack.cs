@@ -62,6 +62,15 @@ internal sealed class AvifTrack : IDisposable
     /// <summary>Gets or sets the <c>colr</c> box of type <c>nclx</c> of the sample entry, or <see langword="null"/>.</summary>
     public CicpColorDescription? Nclx { get; set; }
 
+    /// <summary>Gets or sets the <c>pasp</c> box of the sample entry, or <see langword="null"/>.</summary>
+    public PixelAspectRatio? PixelAspectRatio { get; set; }
+
+    /// <summary>Gets or sets the <c>clli</c> box of the sample entry, or <see langword="null"/>.</summary>
+    public ContentLightLevel? ContentLightLevel { get; set; }
+
+    /// <summary>Gets or sets the <c>mdcv</c> box of the sample entry, or <see langword="null"/>.</summary>
+    public MasteringDisplayColorVolume? MasteringDisplay { get; set; }
+
     /// <summary>Gets or sets the range of the ICC profile of the sample entry in the <c>moov</c> payload, or an empty range.</summary>
     public (int Offset, int Length) IccProfile { get; set; }
 

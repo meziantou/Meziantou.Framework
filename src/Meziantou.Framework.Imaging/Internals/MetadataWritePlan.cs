@@ -368,8 +368,9 @@ internal sealed class MetadataWritePlan
         // TIFF stores the orientation in its own tag, so no EXIF block has to be synthesized for it
         private static readonly FormatCapabilities Tiff = new(icc: true, exif: false, xmp: true, resolution: true, TextSupport.None, nativeOrientation: true);
 
-        // AVIF stores the orientation as item properties (irot and imir) and the color description in a colr box
-        private static readonly FormatCapabilities Avif = new(icc: true, exif: true, xmp: true, resolution: false, TextSupport.None, nativeOrientation: true, cicp: true);
+        // AVIF stores the orientation as item properties (irot and imir), the color description in a colr box, and the
+        // light levels, the mastering display and the shape of the pixels in clli, mdcv and pasp boxes
+        private static readonly FormatCapabilities Avif = new(icc: true, exif: true, xmp: true, resolution: false, TextSupport.None, nativeOrientation: true, cicp: true, contentLightLevel: true, masteringDisplay: true, pixelAspectRatio: true);
 
         // JPEG XL stores the orientation, the linear transfer function and an enumerable CICP description in its image header
         private static readonly FormatCapabilities JpegXl = new(icc: true, exif: true, xmp: true, resolution: false, TextSupport.None, linearTransfer: true, nativeOrientation: true, enumeratedCicp: true);

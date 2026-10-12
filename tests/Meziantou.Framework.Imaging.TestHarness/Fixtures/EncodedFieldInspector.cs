@@ -105,10 +105,16 @@ public static class EncodedFieldInspector
         var file = Avif.ReferenceAvif.Parse(data);
         var result = new EncodedFields();
         Avif.ReferenceAvif.ColorDescription? nclx;
+        Avif.ReferenceAvif.ContentLightLevel? lightLevel;
+        Avif.ReferenceAvif.MasteringDisplay? display;
+        Avif.ReferenceAvif.PixelAspectRatio? pixelAspectRatio;
         if (file.IsSequence)
         {
             var track = file.ColorTrack ?? throw new InvalidDataException("The AVIF image sequence has no track of AV1 images.");
             nclx = track.Nclx;
+            lightLevel = track.ContentLightLevel;
+            display = track.MasteringDisplay;
+            pixelAspectRatio = track.PixelAspectRatio;
             result.Icc = track.IccProfile;
             result.TransformOrientation = 1;
             var (exif, xmp) = file.FindSequenceMetadata();
@@ -139,6 +145,9 @@ public static class EncodedFieldInspector
         {
             var primary = file.PrimaryItem ?? throw new InvalidDataException("The AVIF file has no primary item.");
             nclx = primary.Nclx;
+            lightLevel = primary.ContentLightLevel;
+            display = primary.MasteringDisplay;
+            pixelAspectRatio = primary.PixelAspectRatio;
             result.Icc = primary.IccProfile;
             result.TransformOrientation = primary.Orientation;
             foreach (var item in file.FindDescriptions(primary.Id))
@@ -157,6 +166,29 @@ public static class EncodedFieldInspector
         if (nclx is not null)
         {
             result.ContainerCicp = new CicpExpectation { ColorPrimaries = nclx.ColorPrimaries, TransferCharacteristics = nclx.TransferCharacteristics, MatrixCoefficients = nclx.MatrixCoefficients, FullRange = nclx.FullRange };
+        }
+
+        if (lightLevel is not null)
+        {
+            result.ContentLightLevel = new ContentLightLevelExpectation { MaxContentLightLevel = lightLevel.MaxContentLightLevel, MaxPictureAverageLightLevel = lightLevel.MaxPictureAverageLightLevel };
+        }
+
+        if (display is not null)
+        {
+            result.MasteringDisplay = new MasteringDisplayExpectation
+            {
+                Red = [display.Red.X, display.Red.Y],
+                Green = [display.Green.X, display.Green.Y],
+                Blue = [display.Blue.X, display.Blue.Y],
+                WhitePoint = [display.WhitePoint.X, display.WhitePoint.Y],
+                MaxLuminance = display.MaxLuminance,
+                MinLuminance = display.MinLuminance,
+            };
+        }
+
+        if (pixelAspectRatio is not null)
+        {
+            result.PixelAspectRatio = new PixelAspectRatioExpectation { HorizontalSpacing = pixelAspectRatio.HorizontalSpacing, VerticalSpacing = pixelAspectRatio.VerticalSpacing };
         }
 
         return result;

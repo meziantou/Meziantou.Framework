@@ -219,6 +219,107 @@ public sealed class AvifDecoderTests
         Assert.Equal(132, ReferenceAvif.Parse(data).PrimaryItem!.IccProfile!.Value.Length);
     }
 
+    // ISO/IEC 14496-12, sections 12.1.6, 12.1.7 and 12.1.4: big-endian fields, written by hand. MaxCLL 1,000 and MaxPALL
+    // 400 cd/m2; the BT.2020 primaries in the order green (8500, 39850), blue (6550, 2300), red (35400, 14600), the D65
+    // white point (15635, 16450), then 1,000 and 0.005 cd/m2 in units of 0.0001; pixels of 4 by 3
+    private static readonly byte[] ContentLightLevelPayload = [0x03, 0xE8, 0x01, 0x90];
+    private static readonly byte[] MasteringDisplayPayload = [0x21, 0x34, 0x9B, 0xAA, 0x19, 0x96, 0x08, 0xFC, 0x8A, 0x48, 0x39, 0x08, 0x3D, 0x13, 0x40, 0x42, 0x00, 0x98, 0x96, 0x80, 0x00, 0x00, 0x00, 0x32];
+    private static readonly byte[] PixelAspectRatioPayload = [0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x03];
+
+    [Fact]
+    public void LightLevelsMasteringDisplayAndPixelShapeAreReadFromThePrimaryItem()
+    {
+        // Without the properties, nothing is declared
+        var bare = Image.Identify(Still().Build()).Metadata;
+        Assert.Null(bare.ContentLightLevel);
+        Assert.Null(bare.MasteringDisplay);
+        Assert.Null(bare.PixelAspectRatio);
+
+        var builder = Still(bitDepth: 10);
+        var item = builder.GetItem(1);
+        item.Associations.Add((builder.AddProperty(AvifFileBuilder.Box("clli", ContentLightLevelPayload)), false));
+        item.Associations.Add((builder.AddProperty(AvifFileBuilder.Box("mdcv", MasteringDisplayPayload)), false));
+        item.Associations.Add((builder.AddProperty(AvifFileBuilder.Box("pasp", PixelAspectRatioPayload)), false));
+        var metadata = Image.Identify(builder.Build()).Metadata;
+        Assert.Equal(new ContentLightLevel(1000, 400), metadata.ContentLightLevel);
+        Assert.Equal(new MasteringDisplayColorVolume(redX: 35400, redY: 14600, greenX: 8500, greenY: 39850, blueX: 6550, blueY: 2300, whitePointX: 15635, whitePointY: 16450, maxLuminance: 10_000_000, minLuminance: 50), metadata.MasteringDisplay);
+        Assert.Equal(new PixelAspectRatio(4, 3), metadata.PixelAspectRatio);
+
+        // The first property of a type describes the image; a property marked essential is one the reader understands
+        item.Associations.Add((builder.AddProperty(AvifFileBuilder.Box("clli", [0x00, 0x01, 0x00, 0x02])), true));
+        item.Associations.Add((builder.AddProperty(AvifFileBuilder.Box("pasp", [0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01])), true));
+        metadata = Image.Identify(builder.Build()).Metadata;
+        Assert.Equal(new ContentLightLevel(1000, 400), metadata.ContentLightLevel);
+        Assert.Equal(new PixelAspectRatio(4, 3), metadata.PixelAspectRatio);
+
+        // Square pixels are stored as they are declared, and the unknown light level (0) is a value
+        var square = Still();
+        square.GetItem(1).Associations.Add((square.AddProperty(AvifFileBuilder.Box("pasp", [0x00, 0x00, 0x00, 0x05, 0x00, 0x00, 0x00, 0x05])), false));
+        square.GetItem(1).Associations.Add((square.AddProperty(AvifFileBuilder.Box("clli", [0x00, 0x00, 0x00, 0x00])), false));
+        metadata = Image.Identify(square.Build()).Metadata;
+        Assert.Equal(new PixelAspectRatio(5, 5), metadata.PixelAspectRatio);
+        Assert.Equal(new ContentLightLevel(0, 0), metadata.ContentLightLevel);
+    }
+
+    [Theory]
+    [InlineData("clli", 3)]
+    [InlineData("mdcv", 23)]
+    [InlineData("pasp", 7)]
+    public void TruncatedPresentationPropertiesAreInvalid(string type, int length)
+    {
+        var payload = type switch
+        {
+            "clli" => ContentLightLevelPayload,
+            "mdcv" => MasteringDisplayPayload,
+            _ => PixelAspectRatioPayload,
+        };
+
+        var builder = Still();
+        builder.GetItem(1).Associations.Add((builder.AddProperty(AvifFileBuilder.Box(type, payload[..length])), false));
+        Assert.Throws<InvalidImageContentException>(() => Image.Identify(builder.Build()));
+
+        var sequence = Sequence(configure: track => track.SampleEntryBoxes.Add(AvifFileBuilder.Box(type, payload[..length]))).Build();
+        Assert.Throws<InvalidImageContentException>(() => Image.Identify(sequence));
+    }
+
+    [Theory]
+    [InlineData(0u, 1u)]
+    [InlineData(1u, 0u)]
+    [InlineData(0u, 0u)]
+    public void PixelAspectRatioWithAZeroTermIsInvalid(uint horizontalSpacing, uint verticalSpacing)
+    {
+        var box = AvifFileBuilder.Box("pasp", AvifFileBuilder.U32(horizontalSpacing), AvifFileBuilder.U32(verticalSpacing));
+        var builder = Still();
+        builder.GetItem(1).Associations.Add((builder.AddProperty(box), false));
+        Assert.Throws<InvalidImageContentException>(() => Image.Identify(builder.Build()));
+        Assert.Throws<InvalidImageContentException>(() => Image.Identify(Sequence(configure: track => track.SampleEntryBoxes.Add(box)).Build()));
+    }
+
+    [Fact]
+    public void LightLevelsMasteringDisplayAndPixelShapeAreReadFromTheSampleEntryOfASequence()
+    {
+        var bare = Image.Identify(Sequence().Build()).Metadata;
+        Assert.Null(bare.ContentLightLevel);
+        Assert.Null(bare.MasteringDisplay);
+        Assert.Null(bare.PixelAspectRatio);
+
+        var data = Sequence(configure: track =>
+        {
+            track.SampleEntryBoxes.Add(AvifFileBuilder.Box("pasp", PixelAspectRatioPayload));
+            track.SampleEntryBoxes.Add(AvifFileBuilder.Box("clli", ContentLightLevelPayload));
+            track.SampleEntryBoxes.Add(AvifFileBuilder.Box("mdcv", MasteringDisplayPayload));
+        }).Build();
+        var metadata = Image.Identify(data).Metadata;
+        Assert.Equal(new ContentLightLevel(1000, 400), metadata.ContentLightLevel);
+        Assert.Equal(new MasteringDisplayColorVolume(35400, 14600, 8500, 39850, 6550, 2300, 15635, 16450, 10_000_000, 50), metadata.MasteringDisplay);
+        Assert.Equal(new PixelAspectRatio(4, 3), metadata.PixelAspectRatio);
+
+        // The independent reader sees the same boxes
+        var track = ReferenceAvif.Parse(data).ColorTrack!;
+        Assert.Equal(["av1C", "pasp", "clli", "mdcv"], track.SampleEntryBoxes.Select(box => box.Type));
+        Assert.Equal(MasteringDisplayPayload, track.FindSampleEntryBox("mdcv")!.Payload.ToArray());
+    }
+
     [Theory]
     [InlineData("avif", new[] { "avif", "mif1", "miaf" }, true)]
     [InlineData("mif1", new[] { "mif1", "avif" }, true)] // a compatible brand is enough

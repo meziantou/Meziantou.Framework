@@ -112,6 +112,27 @@ internal static partial class AvifCorpus
         Invalid(context, "missing-primary-item", ErrorSource, builder => builder.PrimaryItemId = 99, "The pitm box names item 99, which does not exist.");
         Invalid(context, "missing-ispe", ErrorSource, builder => RemoveProperty(builder, builder.GetItem(1), "ispe"), "The primary item has no ispe property (ISO/IEC 23008-12 requires one for every image item).");
         Invalid(context, "missing-av1c", ErrorSource, builder => RemoveProperty(builder, builder.GetItem(1), "av1C"), "The av01 item has no av1C property.");
+        Invalid(context, "iden-two-inputs", ErrorSource, builder =>
+        {
+            WrapInIdentity(builder, 1, 2, 8, 8, describe: true);
+            var index = Enumerable.Range(0, builder.References.Count).Single(i => builder.References[i].Type == "dimg");
+            builder.References[index] = ("dimg", 1, [2, 2]);
+        }, "The identity derivation that is the primary item has two input images.");
+        Invalid(context, "iden-missing-input", ErrorSource, builder =>
+        {
+            WrapInIdentity(builder, 1, 2, 8, 8, describe: true);
+            var index = Enumerable.Range(0, builder.References.Count).Single(i => builder.References[i].Type == "dimg");
+            builder.References[index] = ("dimg", 1, [99]);
+        }, "The input image of the identity derivation that is the primary item is item 99, which does not exist.");
+        Invalid(context, "iden-loop", ErrorSource, builder =>
+        {
+            WrapInIdentity(builder, 1, 2, 8, 8, describe: true);
+            WrapInIdentity(builder, 1, 3, 8, 8, describe: true);
+            var index = Enumerable.Range(0, builder.References.Count).Single(i => builder.References[i] is { Type: "dimg", FromItemId: 3 });
+            builder.References[index] = ("dimg", 3, [1]);
+        }, "Two identity derivations are the input image of each other: the primary item is derived from itself.");
+        Invalid(context, "iden-size-mismatch", ErrorSource, builder => WrapInIdentity(builder, 1, 2, 9, 8, describe: true),
+            "The identity derivation declares 9x8 and its input image is 8x8.");
         Invalid(context, "two-meta-boxes", ErrorSource, builder => builder.Layout.Insert(2, AvifFileBuilder.MetaBox), "The file has two meta boxes at its top level (ISO/IEC 14496-12 allows at most one).");
         Invalid(context, "item-outside-file", ErrorSource, builder => builder.GetItem(1).ExtentOverride = [(4096, builder.GetItem(1).Data.Length)],
             "The extent of the primary item starts at offset 4096, after the end of the file.");
@@ -234,7 +255,6 @@ internal static partial class AvifCorpus
             }, "derived-image", $"The primary item is a derived image of type {type} whose input is the coded image.");
         }
 
-        Derived("iden", []);
         Derived("iovl", AvifFileBuilder.Concat([0, 0], new byte[8], AvifFileBuilder.U16(8), AvifFileBuilder.U16(8), new byte[4]));
 
         Unsupported(context, "clap-fractional", ErrorSource, builder => builder.GetItem(1).Associations.Add((builder.AddProperty(AvifFileBuilder.CleanAperture(5, 2, 4, 1, 0, 1, 0, 1)), true)),
@@ -247,6 +267,13 @@ internal static partial class AvifCorpus
             "matrix", "The colr box declares the ICtCp matrix coefficients (14) with the sRGB transfer characteristics: ICtCp is defined for PQ and for HLG only.");
         Unsupported(context, "matrix-chromaticity-unspecified-primaries", ErrorSource, builder => ReplaceProperty(builder, builder.GetItem(1), "colr", AvifFileBuilder.ColorNclx(2, 13, 13, fullRange: true)),
             "matrix", "The colr box declares the chromaticity-derived constant luminance matrix coefficients (13) and unspecified color primaries: there are no chromaticities to derive them from.");
+        Unsupported(context, "iden-depth", ErrorSource, builder =>
+        {
+            for (uint i = 0; i < 9; i++)
+                WrapInIdentity(builder, 1, 2 + i, 8, 8, describe: true);
+        }, "derivation-depth", "The primary item is derived from the coded image through nine nested identity derivations, more than the eight that are followed.");
+        Unsupported(context, "iden-alpha-untransformed", "lossless-rgba8", builder => WrapInIdentity(builder, 1, 10, 12, 9, describe: true, ApertureOf(12, 9, 1, 2, 8, 6)),
+            "alpha-transform", "The primary item is an identity derivation that keeps a clean aperture of 8x6 at (1, 2) of the coded image, and its alpha plane is a coded image of 12x9 without transformation. Readers do not agree on the samples of the plane that the image shows (Apple ImageIO scales the plane to 8x6): an alpha plane must be presented as the image it belongs to.");
         Unsupported(context, "alpha-different-size", "lossless-rgba8", builder => ReplaceProperty(builder, builder.GetItem(2), "ispe", AvifFileBuilder.ImageSize(6, 9)),
             "alpha-size", "The alpha auxiliary image declares 6x9 and the color image 12x9.");
 

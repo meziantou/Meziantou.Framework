@@ -137,11 +137,12 @@ internal static class FixtureTraits
         }
         else
         {
-            var primary = file.PrimaryItem!;
-            if (primary.Nclx is not null)
+            // The color description of an identity derivation is its own, or else the one of its input
+            var chain = file.GetIdentityChain(file.PrimaryItem!);
+            if (chain.Any(item => item.Nclx is not null))
                 return false;
 
-            var coded = primary.Type == "grid" ? file.GetGridTiles(primary)[0] : primary;
+            var coded = chain[^1].Type == "grid" ? file.GetGridTiles(chain[^1])[0] : chain[^1];
             if (coded.ConstructionMethod != 0)
                 return false;
 
@@ -155,13 +156,14 @@ internal static class FixtureTraits
     /// <summary>
     /// Gets the size that the canvas limits apply to. It is the size of the image, except for an AVIF image with a clean
     /// aperture: every frame of the bitstream is checked against the canvas limits (a documented rule), and the coded
-    /// image, whose size is the <c>ispe</c> property of the primary item or the size of the sample entry of a sequence,
-    /// is larger than the aperture that is presented.
+    /// image, whose size is the <c>ispe</c> property of the primary item (of the coded image that it is derived from,
+    /// when it is an identity derivation) or the size of the sample entry of a sequence, is larger than the aperture that
+    /// is presented.
     /// </summary>
     public static (int Width, int Height) GetLimitedCanvas(GoldenFixture fixture)
     {
         ArgumentNullException.ThrowIfNull(fixture);
-        if (fixture.Entry.HasFeature("avif.clap") && ReferenceAvif.Parse(fixture.ReadInput()).PrimaryItem?.Size is var (width, height))
+        if (fixture.Entry.HasFeature("avif.clap") && ReferenceAvif.Parse(fixture.ReadInput()) is { PrimaryItem: { } primary } file && file.GetIdentityChain(primary)[^1].Size is var (width, height))
             return ((int)width, (int)height);
 
         if (fixture.Entry.HasFeature("avif.seq.clap") && ReferenceAvif.Parse(fixture.ReadInput()).ColorTrack is { } track)

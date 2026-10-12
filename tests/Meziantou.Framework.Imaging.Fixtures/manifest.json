@@ -5580,6 +5580,810 @@
       "notes": "A colr box of type prof and none of type nclx: the profile is returned and the bitstream gives the matrix coefficients (identity)."
     },
     {
+      "id": "avif/iden",
+      "kind": "valid",
+      "format": "avif",
+      "input": {
+        "path": "avif/iden.avif",
+        "sha256": "9b52f52698c934033630ad4b20e870036e8f5ea6cac8f990c54cfd3c655a7721",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/AvifCorpus.Container.cs (BuildDerivedImages)",
+        "tools": [
+          "libavif 1.4.2 avifenc (aom 3.14.1) (payloads)",
+          "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "payloadsOf": "avif/lossless-rgb8"
+        }
+      },
+      "features": [
+        "avif.bitDepth=8",
+        "avif.colr=nclx",
+        "avif.iden=1",
+        "avif.lossless",
+        "avif.majorBrand=avif",
+        "avif.matrix=0",
+        "avif.range=full",
+        "avif.subsampling=4:4:4"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "Planes of the items decoded identically by both decoders, scaled without matrix.",
+        "decoder": "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+        "backend": "ReferenceAvif and ReferenceYuvConverter (test harness)",
+        "command": "av1Vectors.decoders[].command",
+        "crossChecks": [
+          {
+            "decoder": "libavif 1.4.2 avifdec (dav1d 1.5.3)",
+            "command": "avifdec -j 1 {input} {output}.png",
+            "result": "differs",
+            "notes": "avifdec rejects the file: ERROR: Failed to parse image: BMFF parsing failed"
+          },
+          {
+            "decoder": "libavif 1.4.2 avifdec (dav1d 1.5.3), on avif/lossless-rgb8",
+            "command": "avifdec -j 1 {input} {output}.png",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "result": "exact",
+            "notes": "The same payloads in the layout avifdec reads; the references are the same files."
+          },
+          {
+            "decoder": "ffmpeg 9.0.2 (mov demuxer, libdav1d, swscale)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -threads 1 -c:v libdav1d -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt rgba -",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "result": "exact"
+          }
+        ]
+      },
+      "expected": {
+        "width": 12,
+        "height": 9,
+        "pixelFormat": "Rgb24",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "cicp": {
+          "colorPrimaries": 1,
+          "transferCharacteristics": 13,
+          "matrixCoefficients": 0,
+          "fullRange": true
+        },
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "avif/lossless-rgb8.frame-0.rgba8.raw",
+                "sha256": "71abaa7d22e76287c4f909d311e6ef2956b0a6ec0de29616e5eb56664d1b9724",
+                "layout": "rgba8",
+                "width": 12,
+                "height": 9,
+                "rowBytes": 48,
+                "byteLength": 432,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "avif/lossless-rgb8.frame-0.rgb8.raw",
+                "sha256": "36d9036555215abe29d18c8d9e31cec7c42e098c59bcaf205ae40416ac301ccb",
+                "layout": "rgb8",
+                "width": 12,
+                "height": 9,
+                "rowBytes": 36,
+                "byteLength": 324,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      },
+      "notes": "The primary item is an identity derivation of the coded image, without transformation."
+    },
+    {
+      "id": "avif/iden-alpha-coded",
+      "kind": "valid",
+      "format": "avif",
+      "input": {
+        "path": "avif/iden-alpha-coded.avif",
+        "sha256": "78f922bce684117c0dfc1bdb6fc0c3298ca7dd1c6788e12f7e45f6fb6c7773fd",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/AvifCorpus.Container.cs (BuildDerivedImages)",
+        "tools": [
+          "libavif 1.4.2 avifenc (aom 3.14.1) (payloads)",
+          "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "payloadsOf": "avif/lossless-rgba8"
+        }
+      },
+      "features": [
+        "avif.alpha",
+        "avif.bitDepth=8",
+        "avif.colr=nclx",
+        "avif.iden=1",
+        "avif.lossless",
+        "avif.majorBrand=avif",
+        "avif.matrix=0",
+        "avif.range=full",
+        "avif.subsampling=4:4:4"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "Planes of the items decoded identically by both decoders, scaled without matrix.",
+        "decoder": "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+        "backend": "ReferenceAvif and ReferenceYuvConverter (test harness)",
+        "command": "av1Vectors.decoders[].command",
+        "crossChecks": [
+          {
+            "decoder": "libavif 1.4.2 avifdec (dav1d 1.5.3)",
+            "command": "avifdec -j 1 {input} {output}.png",
+            "result": "differs",
+            "notes": "avifdec rejects the file: ERROR: Failed to parse image: BMFF parsing failed"
+          },
+          {
+            "decoder": "libavif 1.4.2 avifdec (dav1d 1.5.3), on avif/lossless-rgba8",
+            "command": "avifdec -j 1 {input} {output}.png",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "result": "exact",
+            "notes": "The same payloads in the layout avifdec reads; the references are the same files."
+          }
+        ]
+      },
+      "expected": {
+        "width": 12,
+        "height": 9,
+        "pixelFormat": "Rgba32",
+        "colorModel": "Rgba",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "cicp": {
+          "colorPrimaries": 1,
+          "transferCharacteristics": 13,
+          "matrixCoefficients": 0,
+          "fullRange": true
+        },
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "avif/lossless-rgba8.frame-0.rgba8.raw",
+                "sha256": "b369ec9466a9b9dea52f3ca90de7497f068c1e99724b7860ade7638cf753c529",
+                "layout": "rgba8",
+                "width": 12,
+                "height": 9,
+                "rowBytes": 48,
+                "byteLength": 432,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      },
+      "notes": "The primary item is an identity derivation without transformation, and its alpha plane is a coded image."
+    },
+    {
+      "id": "avif/iden-alpha-derived",
+      "kind": "valid",
+      "format": "avif",
+      "input": {
+        "path": "avif/iden-alpha-derived.avif",
+        "sha256": "9d8aba86c9f7f4ea7d271f0ac1220e10c42d41773e288a3c52cf429f31f34590",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/AvifCorpus.Container.cs (BuildDerivedImages)",
+        "tools": [
+          "libavif 1.4.2 avifenc (aom 3.14.1) (payloads)",
+          "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "payloadsOf": "avif/lossless-rgba8"
+        }
+      },
+      "features": [
+        "avif.alpha",
+        "avif.bitDepth=8",
+        "avif.clap",
+        "avif.colr=nclx",
+        "avif.iden=1",
+        "avif.lossless",
+        "avif.majorBrand=avif",
+        "avif.matrix=0",
+        "avif.range=full",
+        "avif.subsampling=4:4:4"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "Planes of the items decoded identically by both decoders, scaled without matrix.",
+        "decoder": "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+        "backend": "ReferenceAvif and ReferenceYuvConverter (test harness)",
+        "command": "av1Vectors.decoders[].command",
+        "crossChecks": [
+          {
+            "decoder": "libavif 1.4.2 avifdec (dav1d 1.5.3)",
+            "command": "avifdec -j 1 {input} {output}.png",
+            "result": "differs",
+            "notes": "avifdec rejects the file: ERROR: Failed to parse image: BMFF parsing failed"
+          },
+          {
+            "decoder": "libavif 1.4.2 avifdec (dav1d 1.5.3), on avif/lossless-rgba8",
+            "command": "avifdec -j 1 {input} {output}.png",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "result": "exact",
+            "notes": "The same payloads in the layout avifdec reads; the references are the same files."
+          }
+        ]
+      },
+      "expected": {
+        "width": 8,
+        "height": 6,
+        "pixelFormat": "Rgba32",
+        "colorModel": "Rgba",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "cicp": {
+          "colorPrimaries": 1,
+          "transferCharacteristics": 13,
+          "matrixCoefficients": 0,
+          "fullRange": true
+        },
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "avif/iden-nested-alpha.frame-0.rgba8.raw",
+                "sha256": "97d3fcdbd1516731b9ddecb4f864d752d39fbe99f43acb5a40b9fbd894d29198",
+                "layout": "rgba8",
+                "width": 8,
+                "height": 6,
+                "rowBytes": 32,
+                "byteLength": 192,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      },
+      "notes": "The primary item and its alpha plane are identity derivations of the coded color image and of the coded alpha plane, with the same clean aperture of 8x6 at (1, 2)."
+    },
+    {
+      "id": "avif/iden-clap-after-irot",
+      "kind": "valid",
+      "format": "avif",
+      "input": {
+        "path": "avif/iden-clap-after-irot.avif",
+        "sha256": "749cf968595a72fb8aa6fa3b0e9a961f51fd8c90b7dad78db492a70562c732c7",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/AvifCorpus.Container.cs (BuildDerivedImages)",
+        "tools": [
+          "libavif 1.4.2 avifenc (aom 3.14.1) (payloads)",
+          "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "payloadsOf": "avif/lossless-rgb8"
+        }
+      },
+      "features": [
+        "avif.bitDepth=8",
+        "avif.clap",
+        "avif.colr=nclx",
+        "avif.iden=1",
+        "avif.imir=1",
+        "avif.irot=1",
+        "avif.lossless",
+        "avif.majorBrand=avif",
+        "avif.matrix=0",
+        "avif.range=full",
+        "avif.subsampling=4:4:4"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "Planes of the items decoded identically by both decoders, scaled without matrix.",
+        "decoder": "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+        "backend": "ReferenceAvif and ReferenceYuvConverter (test harness)",
+        "command": "av1Vectors.decoders[].command",
+        "crossChecks": [
+          {
+            "decoder": "libavif 1.4.2 avifdec (dav1d 1.5.3)",
+            "command": "avifdec -j 1 {input} {output}.png",
+            "result": "differs",
+            "notes": "avifdec rejects the file: ERROR: Failed to parse image: BMFF parsing failed"
+          },
+          {
+            "decoder": "libavif 1.4.2 avifdec (dav1d 1.5.3), on avif/lossless-rgb8",
+            "command": "avifdec -j 1 {input} {output}.png",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "result": "exact",
+            "notes": "The same payloads in the layout avifdec reads; the references are the same files."
+          }
+        ]
+      },
+      "expected": {
+        "width": 6,
+        "height": 5,
+        "pixelFormat": "Rgb24",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 8,
+        "orientation": 7,
+        "iccProfile": "none",
+        "cicp": {
+          "colorPrimaries": 1,
+          "transferCharacteristics": 13,
+          "matrixCoefficients": 0,
+          "fullRange": true
+        },
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "avif/iden-clap-after-irot.frame-0.rgba8.raw",
+                "sha256": "b7afed24b702fd61caf7317cf2397821df03829fe774d4e4105f7c8d6ff731b5",
+                "layout": "rgba8",
+                "width": 6,
+                "height": 5,
+                "rowBytes": 24,
+                "byteLength": 120,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "avif/iden-clap-after-irot.frame-0.rgb8.raw",
+                "sha256": "b3882e9f168be33a38f50756219a1495cec77a490125a5baeaeb39bb7e21f8c5",
+                "layout": "rgb8",
+                "width": 6,
+                "height": 5,
+                "rowBytes": 18,
+                "byteLength": 90,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      },
+      "notes": "The coded image is turned a quarter turn (12x9 to 9x12); the identity derivation, which is the primary item, keeps a clean aperture of 5x6 at (2, 3) of the turned image, then mirrors it."
+    },
+    {
+      "id": "avif/iden-color-from-input",
+      "kind": "valid",
+      "format": "avif",
+      "input": {
+        "path": "avif/iden-color-from-input.avif",
+        "sha256": "325b1128e8d4da8e3fef40dbb17c23f5f088491c5ac010f88af35a5c5b5726ee",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/AvifCorpus.Container.cs (BuildDerivedImages)",
+        "tools": [
+          "libavif 1.4.2 avifenc (aom 3.14.1) (payloads)",
+          "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "payloadsOf": "avif/lossy-444-bt601-full"
+        }
+      },
+      "features": [
+        "avif.bitDepth=8",
+        "avif.colr=nclx",
+        "avif.iden=1",
+        "avif.irot=2",
+        "avif.majorBrand=avif",
+        "avif.matrix=6",
+        "avif.range=full",
+        "avif.subsampling=4:4:4"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "Planes of the items decoded identically by both decoders, converted with exact rationals (matrix, range and chroma position of the file).",
+        "decoder": "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+        "backend": "ReferenceAvif and ReferenceYuvConverter (test harness)",
+        "command": "av1Vectors.decoders[].command",
+        "crossChecks": [
+          {
+            "decoder": "libavif 1.4.2 avifdec (dav1d 1.5.3)",
+            "command": "avifdec -j 1 {input} {output}.png",
+            "result": "differs",
+            "notes": "avifdec rejects the file: ERROR: Failed to parse image: BMFF parsing failed"
+          },
+          {
+            "decoder": "libavif 1.4.2 avifdec (dav1d 1.5.3), on avif/lossy-444-bt601-full",
+            "command": "avifdec -j 1 {input} {output}.png",
+            "maxAbsoluteError": 1,
+            "meanAbsoluteError": 0.1302,
+            "result": "differs",
+            "notes": "The same payloads in the layout avifdec reads; the references are the same files."
+          }
+        ]
+      },
+      "expected": {
+        "width": 8,
+        "height": 8,
+        "pixelFormat": "Rgb24",
+        "colorModel": "YCbCr",
+        "bitsPerComponent": 8,
+        "orientation": 3,
+        "iccProfile": "none",
+        "cicp": {
+          "colorPrimaries": 1,
+          "transferCharacteristics": 13,
+          "matrixCoefficients": 6,
+          "fullRange": true
+        },
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "avif/lossy-444-bt601-full.frame-0.rgba8.raw",
+                "sha256": "eabfc0114b88bd56157e97071c1e13cd7e9e1e94da2d889a8a1d68fb4cdba204",
+                "layout": "rgba8",
+                "width": 8,
+                "height": 8,
+                "rowBytes": 32,
+                "byteLength": 256,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "avif/lossy-444-bt601-full.frame-0.rgb8.raw",
+                "sha256": "b77ba5b1b888a8776e1dc67ebcad031cf663f82346563a7a2e853cd759447b8b",
+                "layout": "rgb8",
+                "width": 8,
+                "height": 8,
+                "rowBytes": 24,
+                "byteLength": 192,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "tolerance",
+        "maxAbsoluteError": 1,
+        "maxMeanAbsoluteError": 0.01,
+        "justification": "Exact-rational reference; the library rounds its matrix coefficients to 16 fractional bits (measured: max 0, mean 0.0). Allowed: 1 and the measured mean + 0.01; the cross-checks would justify max 2, mean 0.5."
+      },
+      "notes": "The identity derivation has no colr property: the color description is the one of its input image (BT.601, full range)."
+    },
+    {
+      "id": "avif/iden-grid-clap",
+      "kind": "valid",
+      "format": "avif",
+      "input": {
+        "path": "avif/iden-grid-clap.avif",
+        "sha256": "efc72e5d2914c3aff8c7d7107de85fe887c3fa01c10ea9ebf7fc7c9975452756",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/AvifCorpus.Container.cs (BuildDerivedImages)",
+        "tools": [
+          "libavif 1.4.2 avifenc (aom 3.14.1) (payloads)",
+          "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "payloadsOf": "avif/grid-2x2-lossless"
+        }
+      },
+      "features": [
+        "avif.bitDepth=8",
+        "avif.clap",
+        "avif.colr=nclx",
+        "avif.grid=2x2",
+        "avif.iden=1",
+        "avif.lossless",
+        "avif.majorBrand=avif",
+        "avif.matrix=0",
+        "avif.range=full",
+        "avif.subsampling=4:4:4"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "Planes of the items decoded identically by both decoders, scaled without matrix.",
+        "decoder": "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+        "backend": "ReferenceAvif and ReferenceYuvConverter (test harness)",
+        "command": "av1Vectors.decoders[].command",
+        "crossChecks": [
+          {
+            "decoder": "libavif 1.4.2 avifdec (dav1d 1.5.3)",
+            "command": "avifdec -j 1 {input} {output}.png",
+            "result": "differs",
+            "notes": "avifdec rejects the file: ERROR: Failed to parse image: BMFF parsing failed"
+          },
+          {
+            "decoder": "libavif 1.4.2 avifdec (dav1d 1.5.3), on avif/grid-2x2-lossless",
+            "command": "avifdec -j 1 {input} {output}.png",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "result": "exact",
+            "notes": "The same payloads in the layout avifdec reads; the references are the same files."
+          }
+        ]
+      },
+      "expected": {
+        "width": 90,
+        "height": 70,
+        "pixelFormat": "Rgb24",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "cicp": {
+          "colorPrimaries": 1,
+          "transferCharacteristics": 13,
+          "matrixCoefficients": 0,
+          "fullRange": true
+        },
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "avif/iden-grid-clap.frame-0.rgba8.raw.gz",
+                "sha256": "30ad0bb2870ae72d7da1a00a8383223469683829cc0aa3487df5c5dadcbaecb4",
+                "layout": "rgba8",
+                "width": 90,
+                "height": 70,
+                "rowBytes": 360,
+                "byteLength": 25200,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "gzip"
+              },
+              {
+                "path": "avif/iden-grid-clap.frame-0.rgb8.raw.gz",
+                "sha256": "6c04ccc4d42194fbcdfa87052b69714f61b5b043c0f3ee1532b1ceb89243db2a",
+                "layout": "rgb8",
+                "width": 90,
+                "height": 70,
+                "rowBytes": 270,
+                "byteLength": 18900,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "gzip"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      },
+      "notes": "The primary item is an identity derivation of a grid, with a clean aperture of 90x70 at (20, 30) that spans the four tiles."
+    },
+    {
+      "id": "avif/iden-nested-alpha",
+      "kind": "valid",
+      "format": "avif",
+      "input": {
+        "path": "avif/iden-nested-alpha.avif",
+        "sha256": "3effca318be2ca8431138a0ffd877ceefc5c524263715dd56e5727613fd06f92",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/AvifCorpus.Container.cs (BuildDerivedImages)",
+        "tools": [
+          "libavif 1.4.2 avifenc (aom 3.14.1) (payloads)",
+          "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "payloadsOf": "avif/lossless-rgba8"
+        }
+      },
+      "features": [
+        "avif.alpha",
+        "avif.bitDepth=8",
+        "avif.clap",
+        "avif.colr=nclx",
+        "avif.iden=2",
+        "avif.irot=3",
+        "avif.lossless",
+        "avif.majorBrand=avif",
+        "avif.matrix=0",
+        "avif.range=full",
+        "avif.subsampling=4:4:4"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "Planes of the items decoded identically by both decoders, scaled without matrix.",
+        "decoder": "libdav1d 1.5.4 + libaom 3.15.1 (ffmpeg 9.0.2)",
+        "backend": "ReferenceAvif and ReferenceYuvConverter (test harness)",
+        "command": "av1Vectors.decoders[].command",
+        "crossChecks": [
+          {
+            "decoder": "libavif 1.4.2 avifdec (dav1d 1.5.3)",
+            "command": "avifdec -j 1 {input} {output}.png",
+            "result": "differs",
+            "notes": "avifdec rejects the file: ERROR: Failed to parse image: BMFF parsing failed"
+          },
+          {
+            "decoder": "libavif 1.4.2 avifdec (dav1d 1.5.3), on avif/lossless-rgba8",
+            "command": "avifdec -j 1 {input} {output}.png",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "result": "exact",
+            "notes": "The same payloads in the layout avifdec reads; the references are the same files."
+          }
+        ]
+      },
+      "expected": {
+        "width": 8,
+        "height": 6,
+        "pixelFormat": "Rgba32",
+        "colorModel": "Rgba",
+        "bitsPerComponent": 8,
+        "orientation": 6,
+        "iccProfile": "none",
+        "cicp": {
+          "colorPrimaries": 1,
+          "transferCharacteristics": 13,
+          "matrixCoefficients": 0,
+          "fullRange": true
+        },
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "avif/iden-nested-alpha.frame-0.rgba8.raw",
+                "sha256": "97d3fcdbd1516731b9ddecb4f864d752d39fbe99f43acb5a40b9fbd894d29198",
+                "layout": "rgba8",
+                "width": 8,
+                "height": 6,
+                "rowBytes": 32,
+                "byteLength": 192,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      },
+      "notes": "Two nested identity derivations: the inner one keeps a clean aperture of 8x6 at (1, 2) of the coded image and the outer one, which is the primary item, turns it. The alpha plane of the primary item is an identity derivation of the coded alpha plane, with the same clean aperture and rotation."
+    },
+    {
       "id": "avif/identity-lossy-alpha",
       "kind": "valid",
       "format": "avif",
@@ -22129,7 +22933,7 @@
             "decoder": "libavif 1.4.2 avifdec (dav1d 1.5.3)",
             "command": "avifdec -j 1 -d 16 --index all {input} {output}.png",
             "result": "differs",
-            "notes": "avifdec rejects the file: Conversion to RGB failed: /var/folders/l_/m8fk0x1s07ngvkcrk8mhhpqh0000gn/T/mfi-corpus-scratch-faTTdA/206-sequence-ictcp-hlg/avifdec-0000000000.png"
+            "notes": "avifdec rejects the file: Conversion to RGB failed: /var/folders/l_/m8fk0x1s07ngvkcrk8mhhpqh0000gn/T/mfi-corpus-scratch-zKkwoV/213-sequence-ictcp-hlg/avifdec-0000000000.png"
           },
           {
             "decoder": "libavif 1.4.2 avifdec (dav1d 1.5.3), on avif/sequence-10bit-once",
@@ -30609,34 +31413,6 @@
       "notes": "The clean aperture is 5/2 samples wide: not a whole number of samples."
     },
     {
-      "id": "invalid/avif/derived-iden",
-      "kind": "unsupported",
-      "format": "avif",
-      "input": {
-        "path": "invalid/avif/derived-iden.avif",
-        "sha256": "cf878acafc203b4ca76307d13aff33368013577d8e58c8a9b875d117274f07e9",
-        "role": "encoded"
-      },
-      "provenance": {
-        "origin": "hand-authored",
-        "license": "CC0-1.0",
-        "author": "Meziantou.Framework.Imaging contributors",
-        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/AvifCorpus.Container.cs (BuildUnsupported)",
-        "tools": [
-          "libavif 1.4.2 avifenc (aom 3.14.1) (payloads)",
-          ".NET 10.0"
-        ]
-      },
-      "expectedError": {
-        "exception": "UnsupportedImageFeatureException",
-        "format": "Avif"
-      },
-      "features": [
-        "avif.unsupported=derived-image"
-      ],
-      "notes": "The primary item is a derived image of type iden whose input is the coded image."
-    },
-    {
       "id": "invalid/avif/derived-iovl",
       "kind": "unsupported",
       "format": "avif",
@@ -30818,6 +31594,162 @@
         "format": "Avif"
       },
       "notes": "The second tile of the grid declares 8x7 and the others 8x8: the tiles of a grid have the same size."
+    },
+    {
+      "id": "invalid/avif/iden-alpha-untransformed",
+      "kind": "unsupported",
+      "format": "avif",
+      "input": {
+        "path": "invalid/avif/iden-alpha-untransformed.avif",
+        "sha256": "bfa748308b12846377f990061f577f8700ff63746d68b6307f09f5f550bdc354",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/AvifCorpus.Container.cs (BuildUnsupported)",
+        "tools": [
+          "libavif 1.4.2 avifenc (aom 3.14.1) (payloads)",
+          ".NET 10.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "UnsupportedImageFeatureException",
+        "format": "Avif"
+      },
+      "features": [
+        "avif.unsupported=alpha-transform"
+      ],
+      "notes": "The primary item is an identity derivation that keeps a clean aperture of 8x6 at (1, 2) of the coded image, and its alpha plane is a coded image of 12x9 without transformation. Readers do not agree on the samples of the plane that the image shows (Apple ImageIO scales the plane to 8x6): an alpha plane must be presented as the image it belongs to."
+    },
+    {
+      "id": "invalid/avif/iden-depth",
+      "kind": "unsupported",
+      "format": "avif",
+      "input": {
+        "path": "invalid/avif/iden-depth.avif",
+        "sha256": "118e83c631586a466bd45ad5561c2110604c0f416ab2151f9dcaf2725009215d",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/AvifCorpus.Container.cs (BuildUnsupported)",
+        "tools": [
+          "libavif 1.4.2 avifenc (aom 3.14.1) (payloads)",
+          ".NET 10.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "UnsupportedImageFeatureException",
+        "format": "Avif"
+      },
+      "features": [
+        "avif.unsupported=derivation-depth"
+      ],
+      "notes": "The primary item is derived from the coded image through nine nested identity derivations, more than the eight that are followed."
+    },
+    {
+      "id": "invalid/avif/iden-loop",
+      "kind": "invalid",
+      "format": "avif",
+      "input": {
+        "path": "invalid/avif/iden-loop.avif",
+        "sha256": "049c0cd25ee9408b03f62ce0ec736cc2f2b9f9f0ab99f517f53af2cf68d43e76",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/AvifCorpus.Container.cs (BuildInvalid)",
+        "tools": [
+          "libavif 1.4.2 avifenc (aom 3.14.1) (payloads)",
+          ".NET 10.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "InvalidImageContentException",
+        "format": "Avif"
+      },
+      "notes": "Two identity derivations are the input image of each other: the primary item is derived from itself."
+    },
+    {
+      "id": "invalid/avif/iden-missing-input",
+      "kind": "invalid",
+      "format": "avif",
+      "input": {
+        "path": "invalid/avif/iden-missing-input.avif",
+        "sha256": "8795be45096f1efd608e06ade3a54df2b0a3eec8650a015557e3027196422637",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/AvifCorpus.Container.cs (BuildInvalid)",
+        "tools": [
+          "libavif 1.4.2 avifenc (aom 3.14.1) (payloads)",
+          ".NET 10.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "InvalidImageContentException",
+        "format": "Avif"
+      },
+      "notes": "The input image of the identity derivation that is the primary item is item 99, which does not exist."
+    },
+    {
+      "id": "invalid/avif/iden-size-mismatch",
+      "kind": "invalid",
+      "format": "avif",
+      "input": {
+        "path": "invalid/avif/iden-size-mismatch.avif",
+        "sha256": "9654d18af636e7d619fc8756f3ad0efcb769254124d56215abc11d631e172348",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/AvifCorpus.Container.cs (BuildInvalid)",
+        "tools": [
+          "libavif 1.4.2 avifenc (aom 3.14.1) (payloads)",
+          ".NET 10.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "InvalidImageContentException",
+        "format": "Avif"
+      },
+      "notes": "The identity derivation declares 9x8 and its input image is 8x8."
+    },
+    {
+      "id": "invalid/avif/iden-two-inputs",
+      "kind": "invalid",
+      "format": "avif",
+      "input": {
+        "path": "invalid/avif/iden-two-inputs.avif",
+        "sha256": "7409dc4b8fe5d84d00d05cc5c3aacfb77dbcc4bd6d2397adc05418e8ea2f7dd8",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "hand-authored",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/AvifCorpus.Container.cs (BuildInvalid)",
+        "tools": [
+          "libavif 1.4.2 avifenc (aom 3.14.1) (payloads)",
+          ".NET 10.0"
+        ]
+      },
+      "expectedError": {
+        "exception": "InvalidImageContentException",
+        "format": "Avif"
+      },
+      "notes": "The identity derivation that is the primary item has two input images."
     },
     {
       "id": "invalid/avif/ispe-mismatch",

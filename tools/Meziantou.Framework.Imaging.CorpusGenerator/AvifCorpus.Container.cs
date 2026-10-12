@@ -56,6 +56,7 @@ internal static partial class AvifCorpus
         ["avif/grid-2x1-alpha-420"] = (0, 0.0),
         ["avif/grid-3x1-420"] = (0, 0.0),
         ["avif/hdr-mastering-display"] = (1, 0.0), // one unit of a 16-bit sample: 1/257 on the 8-bit scale
+        ["avif/iden-color-from-input"] = (0, 0.0),
         ["avif/layered-2-quality-420"] = (0, 0.0),
         ["avif/layered-3-scaled-422-10bit"] = (1, 0.0), // one unit of a 16-bit sample: 1/257 on the 8-bit scale
         ["avif/layered-lsel-0-420"] = (0, 0.0),
@@ -148,6 +149,7 @@ internal static partial class AvifCorpus
             var context = new ContainerContext(corpus);
             BuildStills(context);
             BuildLayouts(context);
+            BuildDerivedImages(context);
             BuildSequences(context);
             BuildLayered(context);
             BuildInvalid(context);
@@ -629,9 +631,10 @@ internal static partial class AvifCorpus
                 result.AddRange(file.GetGridTiles(item));
         }
 
+        // An identity derivation has no data: what is read is the coded image it presents
         var primary = file.PrimaryItem!;
-        AddImage(primary);
-        AddImage(file.AlphaItem);
+        AddImage(file.GetIdentityChain(primary)[^1]);
+        AddImage(file.AlphaItem is { } alphaItem ? file.GetIdentityChain(alphaItem)[^1] : null);
         result.AddRange(file.FindDescriptions(primary.Id).Where(item => item.Type == "Exif" || item.ContentType == "application/rdf+xml"));
         return result;
     }
@@ -639,37 +642,62 @@ internal static partial class AvifCorpus
     private static AvifReference DescribeStill(AvifFileTools tools, FullPath scratch, ReferenceAvif file, SortedSet<string> features)
     {
         var primary = file.PrimaryItem ?? throw new ToolException("the file has no primary item.");
-        var (color, payloads, grid, layers) = DecodeItem(tools, scratch, file, primary, "color");
-        var size = primary.Size ?? throw new ToolException("the primary item has no ispe property.");
+
+        // An identity derivation (iden) presents its input image with its own transformations after those of the input:
+        // the coded image is the last item of the chain, and its samples go through the transformations of every item
+        var chain = file.GetIdentityChain(primary);
+        var coded = chain[^1];
+        var transforms = ReferenceAvif.GetTransforms(chain);
+        if (chain.Count > 1)
+            features.Add(Inv($"avif.iden={chain.Count - 1}"));
+
+        var (color, payloads, grid, layers) = DecodeItem(tools, scratch, file, coded, "color");
+        var size = coded.Size ?? throw new ToolException("the coded image has no ispe property.");
         Py.Assert(size == (color.Width, color.Height), "ispe does not match the bitstream");
-        CheckConfiguration(grid is null ? primary : file.GetGridTiles(primary)[0], color);
+        CheckConfiguration(grid is null ? coded : file.GetGridTiles(coded)[0], color);
+        for (var i = chain.Count - 2; i >= 0; i--)
+        {
+            // The size of a derived image is the size of its input, as the input is presented
+            var input = ReferenceAvif.Item.Present(ReferenceAvif.GetTransforms([.. chain.Skip(i + 1)]), color.Width, color.Height) ?? throw new ToolException("the clean aperture is not a whole number of samples.");
+            Py.Assert(chain[i].Size == (input.Width, input.Height), "the ispe of an identity derivation is the size of its input");
+        }
 
         PlaneImage? alpha = null;
         if (file.AlphaItem is { } alphaItem)
         {
-            (alpha, var alphaPayloads, _, _) = DecodeItem(tools, scratch, file, alphaItem, "alpha");
+            var alphaChain = file.GetIdentityChain(alphaItem);
+            (alpha, var alphaPayloads, _, _) = DecodeItem(tools, scratch, file, alphaChain[^1], "alpha");
+
+            // The alpha plane is presented as the color image; the alpha plane of a coded image may also declare no
+            // transformation, in which case those of the coded image apply to it
+            var alphaTransforms = ReferenceAvif.GetTransforms(alphaChain);
+            Py.Assert((alphaTransforms.Count == 0 && chain.Count == 1)
+                || (ReferenceAvif.Item.Present(alphaTransforms, alpha.Width, alpha.Height)?.Rectangle == ReferenceAvif.Item.Present(transforms, color.Width, color.Height)?.Rectangle && ReferenceAvif.ComposeOrientation(alphaTransforms) == ReferenceAvif.ComposeOrientation(transforms)),
+                "the alpha plane is presented as the color image");
             payloads.AddRange(alphaPayloads);
             features.Add("avif.alpha");
             if (file.IsPremultiplied)
                 features.Add("avif.premultiplied");
         }
 
-        var nclx = primary.Nclx;
+        // The properties that describe the image are those of the primary item, then those of the image it is derived from
+        var nclx = chain.Select(item => item.Nclx).FirstOrDefault(value => value is not null);
         var (matrix, fullRange, cicp) = ResolveColor(nclx, color);
         // The transformations apply in the order of their association: the samples that they present are a rectangle of
         // the coded image, which stays as it is coded (the rotation and the mirroring are the orientation of the image)
-        var crop = primary.GetPresentedRectangle(color.Width, color.Height) ?? throw new ToolException("the clean aperture is not a whole number of samples.");
-        if (primary.CleanAperture is not null)
+        var crop = ReferenceAvif.Item.Present(transforms, color.Width, color.Height)?.Rectangle ?? throw new ToolException("the clean aperture is not a whole number of samples.");
+        if (transforms.Any(transform => transform.Type == "clap"))
             features.Add("avif.clap");
 
-        foreach (var transform in primary.Transforms.Where(t => t.Type is "irot" or "imir"))
+        foreach (var transform in transforms.Where(t => t.Type is "irot" or "imir"))
         {
             features.Add(Inv($"avif.{transform.Type}={transform.Payload.Span[0] & 3}"));
         }
 
         // MIAF orders the transformations clap, irot, imir. HEIF applies the properties in the order of their association,
         // which is what a file that does otherwise gets (libavif applies them in the MIAF order whatever the file says)
-        if (!primary.HasMiafTransformOrder)
+        var hasMiafTransformOrder = chain.All(item => item.HasMiafTransformOrder);
+        if (!hasMiafTransformOrder)
             features.Add("avif.transformOrder=association");
 
         if (grid is not null)
@@ -678,10 +706,10 @@ internal static partial class AvifCorpus
 
             // libavif repeats the transformations of a grid on its tiles; they apply once, to the assembled image, and a
             // tile that declares other ones is not a valid fixture
-            var tiles = file.GetGridTiles(primary);
+            var tiles = file.GetGridTiles(coded);
             if (tiles.Any(tile => tile.Transforms.Count > 0))
             {
-                Py.Assert(tiles.All(tile => tile.Transforms.Select(t => (t.Type, Convert.ToHexString(t.Payload.Span))).SequenceEqual(primary.Transforms.Select(t => (t.Type, Convert.ToHexString(t.Payload.Span))))), "the tiles of a grid repeat its transformations or have none");
+                Py.Assert(tiles.All(tile => tile.Transforms.Select(t => (t.Type, Convert.ToHexString(t.Payload.Span))).SequenceEqual(coded.Transforms.Select(t => (t.Type, Convert.ToHexString(t.Payload.Span))))), "the tiles of a grid repeat its transformations or have none");
                 features.Add("avif.gridTileTransforms");
             }
         }
@@ -696,7 +724,10 @@ internal static partial class AvifCorpus
         var descriptions = file.FindDescriptions(primary.Id);
         var exifItem = descriptions.FirstOrDefault(item => item.Type == "Exif");
         var xmpItem = descriptions.FirstOrDefault(item => item.ContentType == "application/rdf+xml");
-        var icc = primary.IccProfile?.ToArray();
+        var icc = chain.Select(item => item.IccProfile).FirstOrDefault(value => value is not null)?.ToArray();
+        var lightLevel = chain.Select(item => item.ContentLightLevel).FirstOrDefault(value => value is not null);
+        var masteringDisplay = chain.Select(item => item.MasteringDisplay).FirstOrDefault(value => value is not null);
+        var pixelAspectRatio = chain.Select(item => item.PixelAspectRatio).FirstOrDefault(value => value is not null);
         AddColorFeatures(features, color, alpha, payloads, matrix, fullRange, nclx is not null, icc is not null);
         var metadata = new List<string>();
         if (exifItem is not null)
@@ -706,18 +737,18 @@ internal static partial class AvifCorpus
         if (metadata.Count > 0)
             features.Add("avif.metadata=" + string.Join(',', metadata));
 
-        AddPresentationFeatures(features, primary.ContentLightLevel, primary.MasteringDisplay, primary.PixelAspectRatio);
+        AddPresentationFeatures(features, lightLevel, masteringDisplay, pixelAspectRatio);
         return new AvifReference
         {
-            ContentLightLevel = primary.ContentLightLevel,
-            MasteringDisplay = primary.MasteringDisplay,
-            PixelAspectRatio = primary.PixelAspectRatio,
-            HasMiafTransformOrder = primary.HasMiafTransformOrder,
+            ContentLightLevel = lightLevel,
+            MasteringDisplay = masteringDisplay,
+            PixelAspectRatio = pixelAspectRatio,
+            HasMiafTransformOrder = hasMiafTransformOrder,
             Frames = [ToFrame(color, alpha, matrix, fullRange, crop, file.IsPremultiplied, cicp?.ColorPrimaries ?? 2, cicp?.TransferCharacteristics ?? 2)],
             PixelFormat = PixelFormatOf(color, alpha),
             ColorModel = ColorModelOf(color, alpha is not null, matrix),
             BitsPerComponent = color.Color.BitDepth,
-            Orientation = primary.Orientation,
+            Orientation = ReferenceAvif.ComposeOrientation(transforms),
             Cicp = cicp,
             Icc = icc,
             Exif = exifItem is null ? null : file.ReadExifPayload(exifItem),

@@ -43,7 +43,7 @@ public sealed class AvifDecoderConformanceTests
             "avif.subsampling=4:4:4", "avif.subsampling=4:2:2", "avif.subsampling=4:2:0", "avif.subsampling=4:0:0",
             "avif.matrix=0", "avif.matrix=1", "avif.matrix=2", "avif.matrix=4", "avif.matrix=5", "avif.matrix=6", "avif.matrix=7", "avif.matrix=8", "avif.matrix=9", "avif.matrix=10", "avif.matrix=11", "avif.matrix=12", "avif.matrix=13", "avif.matrix=14", "avif.range=full", "avif.range=limited",
             "avif.colr=nclx", "avif.colr=icc", "avif.colr=none", "avif.chromaSamplePosition=vertical", "avif.chromaSamplePosition=colocated",
-            "avif.lossless", "avif.filmGrain", "avif.alpha", "avif.grid=2x2", "avif.grid=2x1", "avif.grid=3x1", "avif.grid=1x3", "avif.grid=3x2", "avif.gridTileTransforms", "avif.clap",
+            "avif.lossless", "avif.filmGrain", "avif.alpha", "avif.grid=2x2", "avif.grid=2x1", "avif.grid=3x1", "avif.grid=1x3", "avif.grid=3x2", "avif.gridTileTransforms", "avif.clap", "avif.iden=1", "avif.iden=2",
             "avif.irot=0", "avif.irot=1", "avif.irot=2", "avif.irot=3", "avif.imir=0", "avif.imir=1",
             "avif.metadata=exif", "avif.metadata=xmp",
             "avif.layout=media-first", "avif.idat", "avif.extents=3", "avif.boxes=free", "avif.boxes=unknown", "avif.boxes=large-size", "avif.boxes=to-end", "avif.trailingData",
@@ -104,6 +104,14 @@ public sealed class AvifDecoderConformanceTests
         Assert.Contains(fixtures, fixture => fixture.Expected.Cicp is { TransferCharacteristics: 18, MatrixCoefficients: 14 });
         Assert.Contains(fixtures, fixture => fixture.Expected.Cicp is { TransferCharacteristics: 18, MatrixCoefficients: 14, FullRange: false } && fixture.Entry.HasFeature("avif.sequence"));
         Assert.Contains(fixtures, fixture => fixture.Expected.Cicp is { ColorPrimaries: 12, MatrixCoefficients: 13 });
+
+        // Identity derivations: of a grid, with an alpha plane (derived the same way, or coded under an untransformed
+        // derivation), with transformations on the derivation and on its input, and described by its input
+        Assert.Contains(fixtures, fixture => HasFeatureKey(fixture, "avif.iden") && HasFeatureKey(fixture, "avif.grid"));
+        Assert.Contains(fixtures, fixture => HasFeatureKey(fixture, "avif.iden") && fixture.Entry.HasFeature("avif.alpha") && fixture.Entry.HasFeature("avif.clap"));
+        Assert.Contains(fixtures, fixture => HasFeatureKey(fixture, "avif.iden") && fixture.Entry.HasFeature("avif.alpha") && !fixture.Entry.HasFeature("avif.clap"));
+        Assert.Contains(fixtures, fixture => HasFeatureKey(fixture, "avif.iden") && fixture.Entry.HasFeature("avif.clap") && fixture.Entry.HasFeature("avif.irot=1") && fixture.Entry.HasFeature("avif.imir=1"));
+        Assert.Contains(fixtures, fixture => HasFeatureKey(fixture, "avif.iden") && fixture.Entry.HasFeature("avif.matrix=6"));
 
         foreach (var matrix in new[] { 1, 4, 5, 6, 7, 8, 9 })
         {
@@ -300,8 +308,12 @@ public sealed class AvifDecoderConformanceTests
         }
         else
         {
-            var primary = file.PrimaryItem;
-            Assert.NotNull(primary);
+            Assert.NotNull(file.PrimaryItem);
+
+            // An identity derivation presents its input image: the coded image is the last item of the chain
+            var chain = file.GetIdentityChain(file.PrimaryItem);
+            Assert.Equal(chain.Count > 1, HasFeatureKey(fixture, "avif.iden"));
+            var primary = chain[^1];
             var coded = primary;
             if (primary.Type == "grid")
             {
@@ -314,25 +326,23 @@ public sealed class AvifDecoderConformanceTests
             }
 
             configuration = coded.Configuration!;
-            nclx = primary.Nclx;
-            icc = primary.IccProfile;
+            nclx = chain.Select(item => item.Nclx).FirstOrDefault(value => value is not null);
+            icc = chain.Select(item => item.IccProfile).FirstOrDefault(value => value is not null);
             hasAlpha = file.AlphaItem is not null;
-            alphaBitDepth = file.AlphaItem is { } alpha ? (alpha.Type == "grid" ? file.GetGridTiles(alpha)[0] : alpha).Configuration!.BitDepth : 0;
-            var ispe = primary.Size!.Value;
-            size = ((int)ispe.Width, (int)ispe.Height);
-            if (primary.CleanAperture is { } aperture)
-            {
-                var rectangle = aperture.GetRectangle(size.Width, size.Height);
-                Assert.NotNull(rectangle);
-                size = (rectangle.Value.Width, rectangle.Value.Height);
-            }
+            alphaBitDepth = file.AlphaItem is { } alphaItem && file.GetIdentityChain(alphaItem)[^1] is var alpha ? (alpha.Type == "grid" ? file.GetGridTiles(alpha)[0] : alpha).Configuration!.BitDepth : 0;
 
-            orientation = primary.Orientation;
+            // The image is the part of the coded image that the transformations of the chain present, as it is coded
+            var ispe = primary.Size!.Value;
+            var transforms = ReferenceAvif.GetTransforms(chain);
+            var presented = ReferenceAvif.Item.Present(transforms, (int)ispe.Width, (int)ispe.Height);
+            Assert.NotNull(presented);
+            size = (presented.Value.Rectangle.Width, presented.Value.Rectangle.Height);
+            orientation = ReferenceAvif.ComposeOrientation(transforms);
             Assert.Single(image.Frames);
             Assert.Null(image.Animation);
             Assert.Equal(FrameDuration.Zero, image.Frames[0].Metadata.Duration);
 
-            var descriptions = file.FindDescriptions(primary.Id);
+            var descriptions = file.FindDescriptions(file.PrimaryItem.Id);
             var exif = descriptions.FirstOrDefault(item => item.Type == "Exif");
             var xmp = descriptions.FirstOrDefault(item => item.ContentType == "application/rdf+xml");
             Assert.Equal(exif is null ? null : Convert.ToHexString(file.ReadExifPayload(exif)), image.Metadata.ExifProfile is { } stillExif ? Convert.ToHexString(stillExif.Data.Span) : null);
@@ -841,7 +851,19 @@ public sealed class AvifDecoderConformanceTests
         Assert.Null(Read("invalid/avif/missing-primary-item").PrimaryItem);
         Assert.Null(Read("invalid/avif/missing-ispe").PrimaryItem!.Size);
         Assert.Null(Read("invalid/avif/missing-av1c").PrimaryItem!.Configuration);
-        Assert.Equal("iden", Read("invalid/avif/derived-iden").PrimaryItem!.Type);
+
+        // Identity derivations: two inputs, an input that does not exist, a loop, a size that is not the one of the input,
+        // nine of them nested, and an alpha plane that is not transformed while the derivation has a clean aperture
+        Assert.Equal([2u, 2u], Read("invalid/avif/iden-two-inputs").ItemReferences.Single(reference => reference.Type == "dimg").ToItemIds);
+        Assert.Null(Read("invalid/avif/iden-missing-input").FindItem(Read("invalid/avif/iden-missing-input").ItemReferences.Single(reference => reference.Type == "dimg").ToItemIds[0]));
+        Assert.Throws<InvalidDataException>(() => Read("invalid/avif/iden-loop").GetIdentityChain(Read("invalid/avif/iden-loop").PrimaryItem!));
+        var mismatch = Read("invalid/avif/iden-size-mismatch");
+        Assert.NotEqual(mismatch.PrimaryItem!.Size, mismatch.GetIdentityChain(mismatch.PrimaryItem)[^1].Size);
+        Assert.HasCount(10, Read("invalid/avif/iden-depth").GetIdentityChain(Read("invalid/avif/iden-depth").PrimaryItem!));
+        var untransformedAlpha = Read("invalid/avif/iden-alpha-untransformed");
+        Assert.Equal(("iden", "av01"), (untransformedAlpha.PrimaryItem!.Type, untransformedAlpha.AlphaItem!.Type));
+        Assert.NotNull(untransformedAlpha.PrimaryItem.CleanAperture);
+        Assert.Empty(untransformedAlpha.AlphaItem.Transforms);
         Assert.Equal("iovl", Read("invalid/avif/derived-iovl").PrimaryItem!.Type);
         Assert.Null(Read("invalid/avif/clap-fractional").PrimaryItem!.CleanAperture!.GetRectangle(8, 8));
         Assert.Equal(3, Read("invalid/avif/matrix-reserved").PrimaryItem!.Nclx!.MatrixCoefficients);

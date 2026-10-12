@@ -549,6 +549,87 @@ internal static partial class AvifCorpus
         return AddValidAvif(context, name, builder.Build(), "hand-authored", function, AssemblyTools(context), null, new Obj { ["payloadsOf"] = "avif/" + source }, notes, requires, source, sourceLayer);
     }
 
+    /// <summary>
+    /// Makes an item the input of a new identity derivation (ISO/IEC 23008-12, section 6.6.2.1), which takes its
+    /// identifier: what referred to the item (the primary item, an alpha plane, the metadata) now refers to the derivation.
+    /// The input is hidden, as an image that is not meant to be displayed is (ISO/IEC 23008-12, section 6.4.2).
+    /// </summary>
+    /// <param name="builder">The file.</param>
+    /// <param name="id">The identifier of the item, which becomes the one of the derivation.</param>
+    /// <param name="inputId">The new identifier of the item.</param>
+    /// <param name="width">The width of the derivation: the one of its input, as the input is presented.</param>
+    /// <param name="height">The height of the derivation.</param>
+    /// <param name="describe">Whether the derivation gets the colr, pixi and auxC properties of its input.</param>
+    /// <param name="transforms">The transformative properties of the derivation, in order.</param>
+    private static AvifFileBuilder.Item WrapInIdentity(AvifFileBuilder builder, uint id, uint inputId, uint width, uint height, bool describe, params byte[][] transforms)
+    {
+        var input = builder.GetItem(id);
+        input.Id = inputId;
+        input.IsHidden = true;
+        for (var i = 0; i < builder.References.Count; i++)
+        {
+            // The inputs of the item are still its own
+            if (builder.References[i] is { Type: "dimg" } reference && reference.FromItemId == id)
+                builder.References[i] = (reference.Type, inputId, reference.ToItemIds);
+        }
+
+        var derived = builder.AddItem(id, "iden", []);
+        derived.Storage = AvifFileBuilder.ItemStorage.None;
+        derived.Associations.Add((builder.AddProperty(AvifFileBuilder.ImageSize(width, height)), false));
+        if (describe)
+        {
+            foreach (var association in input.Associations.Where(association => PropertyType(builder.Properties[association.PropertyIndex - 1]) is "colr" or "pixi" or "auxC"))
+                derived.Associations.Add(association);
+        }
+
+        foreach (var transform in transforms)
+            derived.Associations.Add((builder.AddProperty(transform), true));
+
+        builder.References.Add(("dimg", id, [inputId]));
+        return derived;
+    }
+
+    /// <summary>The clean aperture that shows a rectangle of whole samples of an image.</summary>
+    private static byte[] ApertureOf(int imageWidth, int imageHeight, int x, int y, int width, int height) =>
+        AvifFileBuilder.CleanAperture((uint)width, 1, (uint)height, 1, (2 * x) + width - imageWidth, 2, (2 * y) + height - imageHeight, 2);
+
+    private static void BuildDerivedImages(ContainerContext context)
+    {
+        const string Function = nameof(BuildDerivedImages);
+
+        // Identity derivations: an iden item is its input image, transformed again. The pixels are those of the coded
+        // image: the transformations of the whole chain select a part of them and give the orientation
+        Assembled(context, "iden", "lossless-rgb8", builder => WrapInIdentity(builder, 1, 2, 12, 9, describe: true),
+            [], "The primary item is an identity derivation of the coded image, without transformation.", Function);
+        Assembled(context, "iden-clap-after-irot", "lossless-rgb8", builder =>
+        {
+            builder.GetItem(1).Associations.Add((builder.AddProperty(AvifFileBuilder.Rotation(1)), true));
+            WrapInIdentity(builder, 1, 2, 9, 12, describe: true, ApertureOf(9, 12, 2, 3, 5, 6), AvifFileBuilder.Mirror(1));
+        }, ["avif.clap", "avif.irot=1", "avif.imir=1"], "The coded image is turned a quarter turn (12x9 to 9x12); the identity derivation, which is the primary item, keeps a clean aperture of 5x6 at (2, 3) of the turned image, then mirrors it.", Function);
+        Assembled(context, "iden-nested-alpha", "lossless-rgba8", builder =>
+        {
+            var aperture = ApertureOf(12, 9, 1, 2, 8, 6);
+            WrapInIdentity(builder, 1, 10, 12, 9, describe: true, aperture);
+            WrapInIdentity(builder, 1, 11, 8, 6, describe: true, AvifFileBuilder.Rotation(3));
+            WrapInIdentity(builder, 2, 12, 12, 9, describe: true, aperture, AvifFileBuilder.Rotation(3));
+        }, ["avif.alpha", "avif.clap", "avif.irot=3"], "Two nested identity derivations: the inner one keeps a clean aperture of 8x6 at (1, 2) of the coded image and the outer one, which is the primary item, turns it. The alpha plane of the primary item is an identity derivation of the coded alpha plane, with the same clean aperture and rotation.", Function);
+        Assembled(context, "iden-alpha-derived", "lossless-rgba8", builder =>
+        {
+            var aperture = ApertureOf(12, 9, 1, 2, 8, 6);
+            WrapInIdentity(builder, 1, 10, 12, 9, describe: true, aperture);
+            WrapInIdentity(builder, 2, 12, 12, 9, describe: true, aperture);
+        }, ["avif.alpha", "avif.clap"], "The primary item and its alpha plane are identity derivations of the coded color image and of the coded alpha plane, with the same clean aperture of 8x6 at (1, 2).", Function);
+        Assembled(context, "iden-alpha-coded", "lossless-rgba8", builder => WrapInIdentity(builder, 1, 10, 12, 9, describe: true),
+            ["avif.alpha"], "The primary item is an identity derivation without transformation, and its alpha plane is a coded image.", Function);
+        Assembled(context, "iden-grid-clap", "grid-2x2-lossless", builder =>
+        {
+            var id = builder.PrimaryItemId!.Value;
+            WrapInIdentity(builder, id, builder.Items.Max(item => item.Id) + 1, 128, 128, describe: true, ApertureOf(128, 128, 20, 30, 90, 70));
+        }, ["avif.grid=2x2", "avif.clap"], "The primary item is an identity derivation of a grid, with a clean aperture of 90x70 at (20, 30) that spans the four tiles.", Function);
+        Assembled(context, "iden-color-from-input", "lossy-444-bt601-full", builder => WrapInIdentity(builder, 1, 2, 8, 8, describe: false, AvifFileBuilder.Rotation(2)),
+            ["avif.matrix=6", "avif.irot=2"], "The identity derivation has no colr property: the color description is the one of its input image (BT.601, full range).", Function);
+    }
+
     private static void BuildLayouts(ContainerContext context)
     {
         const string Source = "lossless-rgb8";

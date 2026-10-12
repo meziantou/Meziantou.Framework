@@ -91,7 +91,7 @@ internal sealed class AvifCodedImage
                 tiles[i] = tile;
             }
         }
-        else if (item.Type is AvifFormat.Iden or AvifFormat.Iovl)
+        else if (item.Type is AvifFormat.Iovl)
         {
             throw AvifFormat.Unsupported($"The AVIF image is a derived image of type '{AvifFormat.ToText(item.Type)}'.", "derived image");
         }
@@ -138,6 +138,19 @@ internal sealed class AvifCodedImage
         return image;
     }
 
+    /// <summary>
+    /// Reads the properties of an identity derivation (<c>iden</c> item): its size and its transformative properties. It
+    /// has no coded item of its own.
+    /// </summary>
+    public static AvifCodedImage CreateIdentityDerivation(AvifMetaBox meta, ReadOnlySpan<byte> payload, AvifItem item, ImageResourceLimits limits)
+    {
+        // The size of the derivation is not one that is decoded or allocated: it must be the size of its input, as the
+        // input is presented, and the limits apply to the coded image and to the image that is returned
+        var image = new AvifCodedImage(item, []);
+        image.Size = ReadProperties(meta, payload, item, limits, isCodedItem: false, image, enforceLimits: false);
+        return image;
+    }
+
     /// <summary>Returns whether two images declare the same transformative properties, in the same order.</summary>
     public static bool HasSameTransforms(AvifCodedImage first, AvifCodedImage second, ReadOnlySpan<byte> payload)
     {
@@ -156,7 +169,7 @@ internal sealed class AvifCodedImage
     }
 
     // Reads the properties of an image item: the size of the item is returned, the sample format is stored in the image
-    private static Size ReadProperties(AvifMetaBox meta, ReadOnlySpan<byte> payload, AvifItem item, ImageResourceLimits limits, bool isCodedItem, AvifCodedImage image)
+    private static Size ReadProperties(AvifMetaBox meta, ReadOnlySpan<byte> payload, AvifItem item, ImageResourceLimits limits, bool isCodedItem, AvifCodedImage image, bool enforceLimits = true)
     {
         Size? size = null;
         var hasConfiguration = false;
@@ -174,10 +187,20 @@ internal sealed class AvifCodedImage
                     if (width is 0 || height is 0)
                         throw AvifFormat.Invalid("the size of an image is zero.");
 
-                    if (width > int.MaxValue || height > int.MaxValue)
-                        throw new ImageResourceLimitException(ImageResourceLimitKind.Width, limits.MaxWidth, width);
+                    if (!enforceLimits)
+                    {
+                        // No coded image has a side of 2^31 samples or more
+                        if (width > int.MaxValue || height > int.MaxValue)
+                            throw AvifFormat.Invalid("the size of an identity derivation is not the size of its input image.");
+                    }
+                    else
+                    {
+                        if (width > int.MaxValue || height > int.MaxValue)
+                            throw new ImageResourceLimitException(ImageResourceLimitKind.Width, limits.MaxWidth, width);
 
-                    limits.EnsureCanvasWithinLimits((int)width, (int)height);
+                        limits.EnsureCanvasWithinLimits((int)width, (int)height);
+                    }
+
                     size = new Size((int)width, (int)height);
                     break;
                 }

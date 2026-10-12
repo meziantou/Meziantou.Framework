@@ -266,6 +266,46 @@ public sealed class ReferenceAvif
     }
 
     /// <summary>
+    /// Follows the identity derivations of an item (ISO/IEC 23008-12, section 6.6.2.1): an <c>iden</c> item is its one
+    /// input image (<c>dimg</c> reference), with the transformative properties of the item applied after those of the input.
+    /// </summary>
+    /// <param name="item">The item that is presented.</param>
+    /// <returns>The items from <paramref name="item"/> to the first one that is not an identity derivation, which is the last element.</returns>
+    /// <exception cref="InvalidDataException">An identity derivation does not have one input image, or the derivations form a loop.</exception>
+    public IReadOnlyList<Item> GetIdentityChain(Item item)
+    {
+        ArgumentNullException.ThrowIfNull(item);
+        var chain = new List<Item> { item };
+        while (chain[^1].Type == "iden")
+        {
+            var current = chain[^1];
+            var references = _meta.References.Where(reference => reference.Type == "dimg" && reference.FromItemId == current.Id).ToList();
+            if (references.Count != 1 || references[0].ToItemIds.Count != 1)
+                throw new InvalidDataException("An identity derivation does not have one input image.");
+
+            var input = FindItem(references[0].ToItemIds[0]) ?? throw new InvalidDataException("The input image of a derived image does not exist.");
+            if (chain.Contains(input))
+                throw new InvalidDataException("A derived image is derived from itself.");
+
+            chain.Add(input);
+        }
+
+        return chain;
+    }
+
+    /// <summary>
+    /// Gets the transformative properties that the samples of the coded image of a chain of identity derivations go
+    /// through, in the order they apply: those of the coded image, then those of each derivation up to the presented item.
+    /// </summary>
+    /// <param name="chain">The items, from the presented one to the coded one (<see cref="GetIdentityChain"/>).</param>
+    /// <returns>The <c>clap</c>, <c>irot</c> and <c>imir</c> properties.</returns>
+    public static IReadOnlyList<Property> GetTransforms(IReadOnlyList<Item> chain)
+    {
+        ArgumentNullException.ThrowIfNull(chain);
+        return [.. chain.Reverse().SelectMany(item => item.Transforms)];
+    }
+
+    /// <summary>
     /// Computes the EXIF orientation that is equivalent to transformations applied in order (ISO/IEC 23008-12, sections
     /// 6.5.10 and 6.5.12): <c>irot</c> rotates anti-clockwise by a multiple of 90 degrees, <c>imir</c> exchanges the top and
     /// the bottom (axis 0) or the left and the right (axis 1).
@@ -1286,8 +1326,23 @@ public sealed class ReferenceAvif
         /// <param name="imageHeight">The height of the coded image.</param>
         /// <returns>The rectangle of the coded image, or <see langword="null"/> when a clean aperture does not select whole samples.</returns>
         /// <exception cref="InvalidDataException">A clean aperture is not inside the image it applies to.</exception>
-        public (int X, int Y, int Width, int Height)? GetPresentedRectangle(int imageWidth, int imageHeight)
+        public (int X, int Y, int Width, int Height)? GetPresentedRectangle(int imageWidth, int imageHeight) => Present(Transforms, imageWidth, imageHeight)?.Rectangle;
+
+        /// <summary>
+        /// Computes the samples of a coded image that transformative properties present, applied in order: a grid that
+        /// holds the position of every coded sample is cropped, turned and mirrored as each property says.
+        /// </summary>
+        /// <param name="transforms">The <c>clap</c>, <c>irot</c> and <c>imir</c> properties, in the order they apply.</param>
+        /// <param name="imageWidth">The width of the coded image.</param>
+        /// <param name="imageHeight">The height of the coded image.</param>
+        /// <returns>
+        /// The rectangle of the coded image and the size of the image that is presented (the rectangle, turned), or
+        /// <see langword="null"/> when a clean aperture does not select whole samples.
+        /// </returns>
+        /// <exception cref="InvalidDataException">A clean aperture is not inside the image it applies to.</exception>
+        public static ((int X, int Y, int Width, int Height) Rectangle, int Width, int Height)? Present(IEnumerable<Property> transforms, int imageWidth, int imageHeight)
         {
+            ArgumentNullException.ThrowIfNull(transforms);
             if (imageWidth < 1 || imageHeight < 1 || (long)imageWidth * imageHeight > 1 << 24)
                 throw new ArgumentOutOfRangeException(nameof(imageWidth), imageWidth, "The image is empty or too large for the grid of its samples.");
 
@@ -1301,7 +1356,7 @@ public sealed class ReferenceAvif
                 }
             }
 
-            foreach (var property in Transforms)
+            foreach (var property in transforms)
             {
                 var (sourceWidth, sourceHeight, source) = (width, height, grid);
                 Func<int, int, (int X, int Y)> at;
@@ -1354,7 +1409,7 @@ public sealed class ReferenceAvif
             if ((long)(right - left + 1) * (bottom - top + 1) != grid.Length || grid.Distinct().Count() != grid.Length)
                 throw new InvalidDataException("The presented samples are not a rectangle of the coded image.");
 
-            return (left, top, right - left + 1, bottom - top + 1);
+            return ((left, top, right - left + 1, bottom - top + 1), width, height);
         }
 
         /// <summary>Gets the first associated property of a type.</summary>

@@ -5,6 +5,7 @@ using Meziantou.Framework.Imaging.Metadata;
 using Meziantou.Framework.Imaging.TestHarness.Adapters;
 using Meziantou.Framework.Imaging.TestHarness.Avif;
 using Meziantou.Framework.Imaging.TestHarness.ExternalTools;
+using Meziantou.Framework.Imaging.TestHarness.Golden;
 using Meziantou.Framework.Imaging.TestHarness.Pixels;
 
 namespace Meziantou.Framework.Imaging.InteropTests;
@@ -1117,6 +1118,57 @@ public sealed class AvifDecoderInteropTests
             var expected = ToRgba16(RawPixelBuffer.Create(image.Width, image.Height, RawPixelLayout.Rgba8, result.StandardOutput.Slice(i * frameLength, frameLength).Span));
             var measured = AssertPixels(expected, ToRgba16(ImageSnapshots.CaptureFrame(image.Frames[i])), bound, $"{name} frame {i}: library vs Apple ImageIO");
             TestContext.Current.TestOutputHelper?.WriteLine(string.Create(CultureInfo.InvariantCulture, $"{name} frame {i}: max color difference {measured.Max} ({measured.Max / 257.0:F3}/255), mean {measured.Mean:F2}, bound {bound}"));
+        }
+    }
+
+    /// <summary>
+    /// Identity derivations (<c>iden</c> items), which no pinned tool writes or reads: the fixtures are assembled on
+    /// committed lossless payloads, and Apple ImageIO, which follows a derivation with its own reader, returns the
+    /// pixels as stored: the part of the coded image that the transformations of the derivation and of its input
+    /// present, identical to the one the library returns, with the alpha plane that is derived the same way or that
+    /// belongs to an untransformed derivation. ImageIO reads no file with nested derivations, shows no alpha plane when
+    /// only the input of the derivation has one (the library does not either), and scales an alpha plane without
+    /// transformation to the size of a derivation that has a clean aperture, a case that the library rejects
+    /// (<c>invalid/avif/iden-alpha-untransformed</c>).
+    /// </summary>
+    [Theory]
+    [InlineData("avif/iden", false)]
+    [InlineData("avif/iden-clap-after-irot", false)]
+    [InlineData("avif/iden-grid-clap", false)]
+    [InlineData("avif/iden-alpha-derived", true)]
+    [InlineData("avif/iden-alpha-coded", true)]
+    public async Task IdentityDerivationsDecodeAsAppleImageIO(string id, bool hasAlpha)
+    {
+        // Apple ImageIO exists only on macOS: skipped elsewhere locally; required (never skipped) in the CI interop job (macOS)
+        var (swift, script) = RequiredTools.AppleImageIO();
+        var path = ArtifactPath("imageio-" + id.Replace('/', '-') + ".avif");
+        await File.WriteAllBytesAsync(path, GoldenCorpus.Default.Get(id).ReadInput(), XunitCancellationToken);
+        string[] arguments = hasAlpha ? [script, path] : [script, "--binary-alpha", path];
+        var result = await ProcessRunner.RunAsync(swift, arguments, XunitCancellationToken);
+        if (result.ExitCode != 0)
+            Assert.Fail($"ImageIO failed on {id} (exit code {result.ExitCode}): {result.StandardError}");
+
+        using var image = Image.Load(path);
+        Assert.Equal(hasAlpha, PixelFormats.HasAlpha(image.PixelFormat));
+        var header = result.StandardError.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)[^1].Split(' ');
+        Assert.Equal(["frames", "1", image.Width.ToString(CultureInfo.InvariantCulture), image.Height.ToString(CultureInfo.InvariantCulture), "8"], header);
+        var expected = ToRgba16(RawPixelBuffer.Create(image.Width, image.Height, RawPixelLayout.Rgba8, result.StandardOutput.Span));
+        var actual = ToRgba16(ImageSnapshots.CaptureFrame(image.Frames[0]));
+        if (hasAlpha)
+        {
+            // The alpha plane is the one of the same samples, and the colors that it shows are identical (ImageIO
+            // returns the colors of the transparent pixels as black)
+            for (var i = 0; i < image.Width * image.Height; i++)
+            {
+                var (x, y) = (i % image.Width, i / image.Width);
+                Assert.Equal(expected.GetSample(x, y, 3), actual.GetSample(x, y, 3));
+                if (actual.GetSample(x, y, 3) == 65535)
+                    Assert.Equal((expected.GetSample(x, y, 0), expected.GetSample(x, y, 1), expected.GetSample(x, y, 2)), (actual.GetSample(x, y, 0), actual.GetSample(x, y, 1), actual.GetSample(x, y, 2)));
+            }
+        }
+        else
+        {
+            AssertPixels(expected, actual, ColorBound.Exact, $"{id}: library vs Apple ImageIO");
         }
     }
 

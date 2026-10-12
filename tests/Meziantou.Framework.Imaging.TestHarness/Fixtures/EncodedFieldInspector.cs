@@ -144,12 +144,16 @@ public static class EncodedFieldInspector
         else
         {
             var primary = file.PrimaryItem ?? throw new InvalidDataException("The AVIF file has no primary item.");
-            nclx = primary.Nclx;
-            lightLevel = primary.ContentLightLevel;
-            display = primary.MasteringDisplay;
-            pixelAspectRatio = primary.PixelAspectRatio;
-            result.Icc = primary.IccProfile;
-            result.TransformOrientation = primary.Orientation;
+
+            // An identity derivation is described by its own properties, or else by those of its input, and the samples
+            // of the coded image go through the transformations of every item of the chain
+            var chain = file.GetIdentityChain(primary);
+            nclx = chain.Select(item => item.Nclx).FirstOrDefault(value => value is not null);
+            lightLevel = chain.Select(item => item.ContentLightLevel).FirstOrDefault(value => value is not null);
+            display = chain.Select(item => item.MasteringDisplay).FirstOrDefault(value => value is not null);
+            pixelAspectRatio = chain.Select(item => item.PixelAspectRatio).FirstOrDefault(value => value is not null);
+            result.Icc = chain.Select(item => item.IccProfile).FirstOrDefault(value => value is not null);
+            result.TransformOrientation = Avif.ReferenceAvif.ComposeOrientation(Avif.ReferenceAvif.GetTransforms(chain));
             foreach (var item in file.FindDescriptions(primary.Id))
             {
                 if (item.Type == "Exif")

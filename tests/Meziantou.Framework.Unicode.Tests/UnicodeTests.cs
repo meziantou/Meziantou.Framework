@@ -1141,7 +1141,7 @@ public sealed class UnicodeTests
         Assert.Equal(new[] { 6, 7 }, lineBreaks.ToArray());
 
         var runs = 0;
-        foreach (var run in Unicode.EnumerateScriptRuns(text))
+        foreach (var _ in Unicode.EnumerateScriptRuns(text))
         {
             runs++;
         }
@@ -1449,11 +1449,11 @@ public sealed class UnicodeTests
         // The line ends with Hebrew then spaces: the spaces would be displayed on the left without the reset.
         var text = "a \u05D0\u05D1  ";
         var levels = new byte[text.Length];
-        var paragraphLevel = UnicodeBidi.ResolveLevels(text, UnicodeBidiDirection.RightToLeft, levels);
+        UnicodeBidi.ResolveLevels(text, UnicodeBidiDirection.RightToLeft, levels);
         Assert.Equal(new byte[] { 2, 1, 1, 1, 1, 1 }, levels);
 
         // The same text as a line of a left-to-right paragraph.
-        paragraphLevel = UnicodeBidi.ResolveLevels(text, UnicodeBidiDirection.LeftToRight, levels);
+        var paragraphLevel = UnicodeBidi.ResolveLevels(text, UnicodeBidiDirection.LeftToRight, levels);
         levels.AsSpan(4).Fill(1);
         UnicodeBidi.ResetLineLevels(text, paragraphLevel, levels);
         Assert.Equal(new byte[] { 0, 0, 1, 1, 0, 0 }, levels);

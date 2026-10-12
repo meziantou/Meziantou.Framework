@@ -87,11 +87,11 @@ internal static class FontVariationWriter
         foreach (var subtable in store.Subtables)
         {
             // The columns that need the wide form come first: the caller orders the regions accordingly.
-            var wide = subtable.UseLongDeltas ? (short.MinValue, short.MaxValue) : (sbyte.MinValue, sbyte.MaxValue);
+            (int Min, int Max) wide = subtable.UseLongDeltas ? (short.MinValue, short.MaxValue) : (sbyte.MinValue, sbyte.MaxValue);
             var wordCount = 0;
             for (var column = 0; column < subtable.Regions.Length; column++)
             {
-                if (subtable.Items.Any(item => item[column] < wide.Item1 || item[column] > wide.Item2))
+                if (subtable.Items.Any(item => item[column] < wide.Min || item[column] > wide.Max))
                 {
                     wordCount = column + 1;
                 }

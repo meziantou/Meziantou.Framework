@@ -16,6 +16,12 @@ public sealed class FontCorpusTests
         Assert.Equal(FontSamples.Variable().Build(), ReadFont("fonts/synthetic-variable"));
         Assert.Equal(FontSamples.Variable(withAdvanceVariations: false).Build(), ReadFont("fonts/synthetic-variable-phantom"));
         Assert.Equal(FontSamples.VariableCharstrings().Build(), ReadFont("fonts/synthetic-variable-charstrings"));
+        Assert.Equal(FontSamples.ColorBoxes().Build(), ReadFont("fonts/synthetic-color-boxes"));
+        Assert.Equal(FontSamples.ColorTransforms().Build(), ReadFont("fonts/synthetic-color-transforms"));
+        Assert.Equal(FontSamples.ColorGradients().Build(), ReadFont("fonts/synthetic-color-gradients"));
+        Assert.Equal(FontSamples.ColorClips().Build(), ReadFont("fonts/synthetic-color-clips"));
+        Assert.Equal(FontSamples.BitmapBoxes().Build(), ReadFont("fonts/synthetic-bitmap-boxes"));
+        Assert.Equal(FontSamples.BitmapBoxes(useColorBitmapTables: true).Build(), ReadFont("fonts/synthetic-color-bitmaps"));
         Assert.Equal(FontBuilder.WriteCollection([FontSamples.Boxes().BuildTables(), FontSamples.Curves().BuildTables()]), ReadFont("fonts/synthetic-collection"));
     }
 
@@ -29,8 +35,8 @@ public sealed class FontCorpusTests
         {
             if (font.Vectors is not { } vectorsFile)
             {
-                // Another container of a font that has vectors.
-                Assert.Equal("container", font.Modification);
+                // Another container of a font that has vectors, or a color font, which has renders.
+                Assert.True(font.Modification == "container" || font.Renders is { Count: > 0 }, $"{font.Id} has neither vectors nor renders");
                 continue;
             }
 

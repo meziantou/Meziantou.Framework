@@ -96,6 +96,28 @@
         "features": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
         "vectors": { "$ref": "#/$defs/file", "description": "Reference values recorded from independent font readers (JSON): names, metrics, character map, advances and outlines of each face." },
         "shaping": { "$ref": "#/$defs/file", "description": "The glyphs and positions the reference shaper gives for texts set in the font (JSON)." },
+        "renderTool": { "type": "string", "description": "The tool that drew 'renders', with its version and options." },
+        "renders": {
+          "type": "array",
+          "description": "Lines of text drawn with the font by the reference renderer, on a white background: the box of the line with a margin on each side.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["file", "text", "size", "margin", "ascent", "descent"],
+            "properties": {
+              "file": { "$ref": "#/$defs/file" },
+              "text": { "type": "string", "description": "Hexadecimal code points separated by spaces." },
+              "size": { "type": "integer", "minimum": 1, "description": "Pixels per em." },
+              "margin": { "type": "integer", "minimum": 0 },
+              "ascent": { "type": "integer", "minimum": 0, "description": "Pixels from the top of the box of the line to its baseline." },
+              "descent": { "type": "integer", "minimum": 0 },
+              "variations": { "type": "string" },
+              "palette": { "type": "integer", "minimum": 0 },
+              "foreground": { "type": "string", "pattern": "^[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$" },
+              "imageShift": { "type": "integer", "description": "Pixels, downward, between where the font places the images of its bitmap glyphs and where the reference renderer drew them." }
+            }
+          }
+        },
         "notes": { "type": "string" }
       }
     },

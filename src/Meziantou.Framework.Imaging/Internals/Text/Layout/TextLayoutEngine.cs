@@ -987,9 +987,9 @@ internal sealed class TextLayoutEngine
                 if (glyph.Glyph >= 0 && !glyph.IsInvisible)
                 {
                     var brush = GetBrushIndex(brushes, style.Brush);
-                    if (runs.Count == 0 || runs[^1].Font != glyph.Font || runs[^1].Size != glyph.Size || runs[^1].Brush != brush)
+                    if (runs.Count == 0 || runs[^1].Font != glyph.Font || runs[^1].Size != glyph.Size || runs[^1].Brush != brush || runs[^1].Palette != style.ColorPaletteIndex)
                     {
-                        runs.Add(new GlyphRun(glyph.Font, glyph.Size, brush, glyphs.Count, 0));
+                        runs.Add(new GlyphRun(glyph.Font, glyph.Size, brush, glyphs.Count, 0, style.ColorPaletteIndex));
                     }
 
                     runs[^1] = runs[^1] with { Count = runs[^1].Count + 1 };

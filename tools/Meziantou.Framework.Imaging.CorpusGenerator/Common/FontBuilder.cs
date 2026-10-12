@@ -140,6 +140,27 @@ internal sealed class FontBuilder
     /// <summary>Gets the item of each metric the <c>MVAR</c> table varies, by its tag.</summary>
     public SortedDictionary<string, (int Outer, int Inner)> MetricVariationItems { get; } = new(StringComparer.Ordinal);
 
+    /// <summary>Gets the palettes of a color font, for the <c>CPAL</c> table: the red, green, blue and alpha of each color.</summary>
+    public List<(byte R, byte G, byte B, byte A)[]> ColorPalettes { get; } = [];
+
+    /// <summary>Gets or sets the backgrounds each palette is made for (1: light, 2: dark), which makes the <c>CPAL</c> table a version 1.</summary>
+    public List<int>? ColorPaletteTypes { get; set; }
+
+    /// <summary>Gets the layers of the color glyphs, for a <c>COLR</c> table of version 0: a glyph and an entry of the palette, from the bottom to the top.</summary>
+    public SortedDictionary<int, (int Glyph, int PaletteIndex)[]> ColorLayers { get; } = [];
+
+    /// <summary>Gets the paints of the color glyphs: with one of them, the <c>COLR</c> table is a version 1.</summary>
+    public SortedDictionary<int, FontColorPaint> ColorPaints { get; } = [];
+
+    /// <summary>Gets the clip boxes of the color glyphs of a <c>COLR</c> table of version 1: left, bottom, right, top.</summary>
+    public SortedDictionary<int, (int XMin, int YMin, int XMax, int YMax)> ColorClipBoxes { get; } = [];
+
+    /// <summary>Gets the strikes of a bitmap font: the images of its glyphs at sizes in pixels per em.</summary>
+    public List<FontBitmapStrike> BitmapStrikes { get; } = [];
+
+    /// <summary>Gets or sets a value indicating whether the strikes are written as <c>CBLC</c> and <c>CBDT</c> tables instead of an <c>sbix</c> table.</summary>
+    public bool UseColorBitmapTables { get; set; }
+
     /// <summary>Gets names that are added to the <c>name</c> table, by identifier.</summary>
     public SortedDictionary<int, string> ExtraNames { get; } = [];
 
@@ -211,6 +232,28 @@ internal sealed class FontBuilder
         if (KerningPairs.Count > 0)
         {
             tables["kern"] = WriteKern();
+        }
+
+        if (BitmapStrikes.Count > 0)
+        {
+            if (UseColorBitmapTables)
+            {
+                (tables["CBLC"], tables["CBDT"]) = FontBitmapWriter.WriteColorBitmaps(BitmapStrikes);
+            }
+            else
+            {
+                tables["sbix"] = FontBitmapWriter.WriteSbix(BitmapStrikes, Glyphs.Count);
+            }
+        }
+
+        if (ColorPalettes.Count > 0)
+        {
+            tables["CPAL"] = FontColorWriter.WriteCpal(ColorPalettes, ColorPaletteTypes);
+        }
+
+        if (ColorLayers.Count > 0 || ColorPaints.Count > 0)
+        {
+            tables["COLR"] = FontColorWriter.WriteColr(ColorLayers, ColorPaints.Count > 0 ? ColorPaints : null, ColorClipBoxes);
         }
 
         if (Axes.Count > 0)

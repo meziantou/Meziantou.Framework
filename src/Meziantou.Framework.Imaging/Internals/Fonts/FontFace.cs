@@ -49,6 +49,21 @@ internal sealed class FontFace
     private readonly int _mvarOffset;
     private readonly int _mvarLength;
 
+    private readonly ColrTable? _colr;
+    private readonly int _colrOffset;
+    private readonly int _colrLength;
+    private readonly CpalTable? _cpal;
+    private readonly int _cpalOffset;
+    private readonly int _cpalLength;
+    private readonly SbixTable? _sbix;
+    private readonly int _sbixOffset;
+    private readonly int _sbixLength;
+    private readonly CblcTable? _cblc;
+    private readonly int _cblcOffset;
+    private readonly int _cblcLength;
+    private readonly int _cbdtOffset;
+    private readonly int _cbdtLength;
+
     // The face of the default instance, which the other instances are made from: itself for the face that was loaded.
     private readonly FontFace _default;
     private FontInstance? _instance;
@@ -194,6 +209,29 @@ internal sealed class FontFace
         else
         {
             Outlines = FontOutlineKind.None;
+        }
+
+        // The color glyphs: the palettes, and the layers or the paints of the glyphs. A table whose header is not
+        // understood is left out: the glyphs are then drawn with their outlines.
+        if (_directory.TryFind(FontTags.Cpal, out _cpalOffset, out _cpalLength))
+        {
+            _cpal = CpalTable.Read(file.Slice(_cpalOffset, _cpalLength));
+        }
+
+        if (_directory.TryFind(FontTags.Colr, out _colrOffset, out _colrLength))
+        {
+            _colr = ColrTable.Read(file.Slice(_colrOffset, _colrLength));
+        }
+
+        // The glyphs that are images: the strikes of the sbix table, or the color bitmaps of the CBLC and CBDT tables.
+        if (_directory.TryFind(FontTags.Sbix, out _sbixOffset, out _sbixLength))
+        {
+            _sbix = SbixTable.Read(file.Slice(_sbixOffset, _sbixLength), GlyphCount);
+        }
+
+        if (_directory.TryFind(FontTags.Cblc, out _cblcOffset, out _cblcLength) && _directory.TryFind(FontTags.Cbdt, out _cbdtOffset, out _cbdtLength))
+        {
+            _cblc = CblcTable.Read(file.Slice(_cblcOffset, _cblcLength));
         }
 
         // The variations: the axes, then the tables that vary the outlines, the advances and the metrics along them.
@@ -358,6 +396,70 @@ internal sealed class FontFace
         return advance;
     }
 
+    /// <summary>Gets a value indicating whether the font has glyphs that are drawn with their own colors.</summary>
+    public bool HasColorGlyphs => _colr is not null || _sbix is not null || _cblc is not null;
+
+    /// <summary>Finds the image of a glyph the font gives as a bitmap, in the strike that suits a size.</summary>
+    /// <returns><see langword="false"/> when the font has no image for the glyph.</returns>
+    public bool TryGetBitmapGlyph(int glyphId, double size, out BitmapGlyph glyph)
+    {
+        var bytes = Data.Bytes.AsSpan();
+        if (_sbix is not null && _sbix.TryGetGlyph(bytes.Slice(_sbixOffset, _sbixLength), _sbixOffset, glyphId, size, out glyph))
+            return true;
+
+        if (_cblc is not null && (uint)glyphId < (uint)GlyphCount)
+            return _cblc.TryGetGlyph(bytes.Slice(_cblcOffset, _cblcLength), bytes.Slice(_cbdtOffset, _cbdtLength), _cbdtOffset, glyphId, size, out glyph);
+
+        glyph = default;
+        return false;
+    }
+
+    /// <summary>Gets the number of palettes of colors of the font.</summary>
+    public int PaletteCount => _cpal?.PaletteCount ?? 0;
+
+    /// <summary>Gets the number of colors of each palette.</summary>
+    public int PaletteEntryCount => _cpal?.EntryCount ?? 0;
+
+    /// <summary>Gets a color of a palette: its red, green, blue and alpha components, from 0 to 255.</summary>
+    /// <returns><see langword="false"/> when the font does not have the palette or the entry.</returns>
+    public bool TryGetPaletteColor(int palette, int entry, out int red, out int green, out int blue, out int alpha)
+    {
+        if (_cpal is null)
+        {
+            red = green = blue = alpha = 0;
+            return false;
+        }
+
+        return _cpal.TryGetColor(Data.Bytes.AsSpan(_cpalOffset, _cpalLength), palette, entry, out red, out green, out blue, out alpha);
+    }
+
+    /// <summary>Tells the backgrounds a palette is made for.</summary>
+    public void GetPaletteType(int palette, out bool isForLightBackground, out bool isForDarkBackground)
+    {
+        isForLightBackground = isForDarkBackground = false;
+        _cpal?.GetPaletteType(Data.Bytes.AsSpan(_cpalOffset, _cpalLength), palette, out isForLightBackground, out isForDarkBackground);
+    }
+
+    /// <summary>Tells whether a glyph is drawn with its own colors.</summary>
+    public bool IsColorGlyph(int glyphId)
+        => _colr is not null && (uint)glyphId < (uint)GlyphCount && _colr.HasGlyph(Data.Bytes.AsSpan(_colrOffset, _colrLength), glyphId);
+
+    /// <summary>Builds the display list of a color glyph, which validates what the glyph refers to.</summary>
+    /// <param name="glyphId">The glyph.</param>
+    /// <param name="palette">The palette its colors come from; a palette the font does not have is its first one.</param>
+    /// <param name="scratch">The working storage of the outlines.</param>
+    /// <param name="budget">The complexity budget of the glyph.</param>
+    /// <returns>The display list, or <see langword="null"/> when the glyph has no colors of its own.</returns>
+    /// <exception cref="InvalidImageContentException">The data of the glyph is malformed.</exception>
+    /// <exception cref="ImageResourceLimitException">The glyph exceeds the complexity limit or the allocation limit.</exception>
+    public ColorGlyph? BuildColorGlyph(int glyphId, int palette, GlyphScratch scratch, ref GlyphBudget budget)
+    {
+        if (_colr is null || (uint)glyphId >= (uint)GlyphCount)
+            return null;
+
+        return _colr.Build(Data.Bytes.AsSpan(_colrOffset, _colrLength), this, glyphId, (uint)palette < (uint)PaletteCount ? palette : 0, scratch, ref budget);
+    }
+
     /// <summary>Gets the axes of a variable font; empty for a font that does not vary.</summary>
     public ReadOnlySpan<FontAxisRecord> Axes => _fvar is null ? default : _fvar.Axes;
 
@@ -427,6 +529,11 @@ internal sealed class FontFace
         if (root.Gdef is { VariationStore: not 0 } gdef)
         {
             instance.LayoutScalars = ItemVariationStore.ComputeScalars(root.GdefData.Span, gdef.VariationStore, coordinates);
+        }
+
+        if (root._colr is { VariationStore: not 0 } colr)
+        {
+            instance.ColorScalars = ItemVariationStore.ComputeScalars(bytes.Slice(root._colrOffset, root._colrLength), colr.VariationStore, coordinates);
         }
 
         if (root._cff is { VariationStore: not 0 } cff)

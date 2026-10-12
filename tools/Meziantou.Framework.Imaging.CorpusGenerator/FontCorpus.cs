@@ -59,6 +59,15 @@ internal static partial class FontCorpus
         new("fonts/synthetic-variable", "fonts/synthetic/variable.ttf", static () => FontSamples.Variable().Build(), nameof(FontSamples.Variable), "ttf", 1),
         new("fonts/synthetic-variable-phantom", "fonts/synthetic/variable.phantom.ttf", static () => FontSamples.Variable(withAdvanceVariations: false).Build(), nameof(FontSamples.Variable) + " without HVAR", "ttf", 1),
         new("fonts/synthetic-variable-charstrings", "fonts/synthetic/variable-charstrings.otf", static () => FontSamples.VariableCharstrings().Build(), nameof(FontSamples.VariableCharstrings), "otf", 1),
+
+        // The color fonts have no outline vectors: the reference tool draws their glyphs with their paints. They have
+        // renders instead.
+        new("fonts/synthetic-color-boxes", "fonts/synthetic/color-boxes.ttf", static () => FontSamples.ColorBoxes().Build(), nameof(FontSamples.ColorBoxes), "ttf", 1, HasOutlineVectors: false),
+        new("fonts/synthetic-color-transforms", "fonts/synthetic/color-transforms.ttf", static () => FontSamples.ColorTransforms().Build(), nameof(FontSamples.ColorTransforms), "ttf", 1, HasOutlineVectors: false),
+        new("fonts/synthetic-color-gradients", "fonts/synthetic/color-gradients.ttf", static () => FontSamples.ColorGradients().Build(), nameof(FontSamples.ColorGradients), "ttf", 1, HasOutlineVectors: false),
+        new("fonts/synthetic-color-clips", "fonts/synthetic/color-clips.ttf", static () => FontSamples.ColorClips().Build(), nameof(FontSamples.ColorClips), "ttf", 1, HasOutlineVectors: false),
+        new("fonts/synthetic-bitmap-boxes", "fonts/synthetic/bitmap-boxes.ttf", static () => FontSamples.BitmapBoxes().Build(), nameof(FontSamples.BitmapBoxes), "ttf", 1, HasOutlineVectors: false),
+        new("fonts/synthetic-color-bitmaps", "fonts/synthetic/color-bitmaps.ttf", static () => FontSamples.BitmapBoxes(useColorBitmapTables: true).Build(), nameof(FontSamples.BitmapBoxes) + " with CBLC and CBDT tables", "ttf", 1, HasOutlineVectors: false),
     ];
 
     // The instances of the variable fonts whose advances, outlines and metrics are recorded, in the syntax of the
@@ -181,7 +190,89 @@ internal static partial class FontCorpus
         TextRenderingFont("trt-rvrn-cff2", "TestRVRN-CFF2.otf", "OFL-1.1", "Unicode, Inc."),
         TextRenderingFont("trt-cff2", "AdobeVFPrototype-Subset.otf", "OFL-1.1", "Adobe Systems Incorporated"),
         TextRenderingFont("trt-gpos-four", "TestGPOSFour.ttf", "OFL-1.1", "Unicode, Inc."),
+
+        // Color fonts of the googlefonts/color-fonts project, stored as they are. The test glyphs are built by a
+        // script of the project for each paint of the COLR table; the smiley is one emoji of the Twemoji set.
+        ColorFont("colr-test-glyphs", "test_glyphs-glyf_colr_1.ttf", "8aa611b1ca97044ac6f13dc982fde29256612f0a5acc6ef47ca541a7a5b99b28", "Apache-2.0", "The googlefonts/color-fonts authors"),
+        ColorFont("colr-test-glyphs-variable", "test_glyphs-glyf_colr_1_variable.ttf", "ad575a09d6748aebcb3b90ffd384c64d5c64b5fd9927967e7cd7cc0d70c98d34", "Apache-2.0", "The googlefonts/color-fonts authors"),
+        ColorFont("colr-twemoji-smiley", "twemoji_smiley-glyf_colr_1.ttf", "b462e4de616a38979b053a49b0b5a5f2dd72b6d5f55be43c5b1eb812fd438dbc", "CC-BY-4.0", "Twitter, Inc and other contributors (Twemoji), built by the googlefonts/color-fonts project"),
+        ColorFont("sbix-twemoji-smiley", "twemoji_smiley-sbix.ttf", "7767316e76003dff2415c0bec6d8972024d8f308349bb576abce7b26b5319c9f", "CC-BY-4.0", "Twitter, Inc and other contributors (Twemoji), built by the googlefonts/color-fonts project"),
+        ColorFont("colr-twemoji-smiley-cff2", "twemoji_smiley-cff2_colr_1.otf", "217bfb5a2876029afa9f52affe9810f398ba48574518fc228ee8966640af8ae3", "CC-BY-4.0", "Twitter, Inc and other contributors (Twemoji), built by the googlefonts/color-fonts project"),
     ];
+
+    // The lines of text the reference renderer draws with the color fonts: every character of the font unless texts
+    // are given, a number of characters per line, at a size and with a box of the line that are whole pixels.
+    private static readonly Dictionary<string, RenderSet[]> Renders = new(StringComparer.Ordinal)
+    {
+        ["fonts/synthetic-color-boxes"] = [new(Size: 64, Ascent: 64, Descent: 16, PerLine: 8), new(Size: 64, Ascent: 64, Descent: 16, PerLine: 8, Palette: 1, Foreground: "2060C0")],
+        ["fonts/synthetic-color-transforms"] = [new(Size: 64, Ascent: 64, Descent: 16, PerLine: 8, Foreground: "0000FF")],
+        ["fonts/synthetic-color-gradients"] = [new(Size: 64, Ascent: 64, Descent: 16, PerLine: 8, Foreground: "0000FF")],
+        ["fonts/synthetic-color-clips"] = [new(Size: 64, Ascent: 64, Descent: 16, PerLine: 8)],
+        // The bitmap fonts, at the sizes of their strikes: a pixel of an image is then a pixel of the render. The
+        // reference renderer draws an image one pixel higher than an outline at the same place (the bottom of an image
+        // that is on the baseline is one pixel above it): the renders say so, and the tests draw there. C, which is an
+        // outline, is left out of these lines.
+        ["fonts/synthetic-bitmap-boxes"] = [new(Size: 16, Ascent: 16, Descent: 4, PerLine: 8, ImageShift: -1, Exclude: ["0043"]), new(Size: 32, Ascent: 32, Descent: 8, PerLine: 8, ImageShift: -1, Exclude: ["0043"])],
+        ["fonts/synthetic-color-bitmaps"] = [new(Size: 16, Ascent: 16, Descent: 4, PerLine: 8, ImageShift: -1, Exclude: ["0043"]), new(Size: 32, Ascent: 32, Descent: 8, PerLine: 8, ImageShift: -1, Exclude: ["0043"])],
+        ["fonts/sbix-twemoji-smiley"] = [new(Size: 109, Ascent: 109, Descent: 32, PerLine: 8, ImageShift: -1)],
+        ["fonts/colr-test-glyphs"] =
+        [
+            new(Size: 100, Ascent: 100, Descent: 20, PerLine: 8),
+
+            // The glyphs that use the color of the text, with a color that is not black and with one that is translucent.
+            new(Size: 100, Ascent: 100, Descent: 20, PerLine: 8, Texts: ["F0B00 F0B01 F0B02 F0B03 F0B04 F0B05 F0B06 F0B07"], Foreground: "D02090"),
+            new(Size: 100, Ascent: 100, Descent: 20, PerLine: 8, Texts: ["F0B00 F0B01 F0B02 F0B03 F0B04 F0B05 F0B06 F0B07"], Foreground: "2060C080"),
+
+            // The other palettes of the font, and a small size.
+            new(Size: 100, Ascent: 100, Descent: 20, PerLine: 8, Texts: ["F0100 F0200 F0500 F0503 F0A03 F0E00 F0E01 F1000"], Palette: 1),
+            new(Size: 100, Ascent: 100, Descent: 20, PerLine: 8, Texts: ["F0100 F0200 F0500 F0503 F0A03 F0E00 F0E01 F1000"], Palette: 2),
+            new(Size: 20, Ascent: 20, Descent: 4, PerLine: 32),
+        ],
+        ["fonts/colr-test-glyphs-variable"] =
+        [
+            new(Size: 100, Ascent: 100, Descent: 20, PerLine: 8),
+            new(Size: 100, Ascent: 100, Descent: 20, PerLine: 8, Variations: "SWPS=45,SWPE=-30,SWC1=0.25,SWC2=-0.25,SWC3=0.5,SWC4=-0.5"),
+            new(Size: 100, Ascent: 100, Descent: 20, PerLine: 8, Variations: "SCOX=100,SCOY=-150,SCSX=0.5,SCSY=-0.75"),
+            new(Size: 100, Ascent: 100, Descent: 20, PerLine: 8, Variations: "GRX0=100,GRY0=-200,GRX1=-150,GRY1=250,GRX2=300,GRY2=100,GRR0=50,GRR1=-100", Exclude: ["F0503", "F0504", "F0505", "F0C00", "F0C01", "F0C02", "F0C03", "F0C04", "F0C05", "F0C06", "F0C07", "F0C08", "F0C09", "F0C0A"]),
+        ],
+        ["fonts/colr-twemoji-smiley"] = [new(Size: 96, Ascent: 96, Descent: 32, PerLine: 8), new(Size: 40, Ascent: 40, Descent: 12, PerLine: 16)],
+        ["fonts/colr-twemoji-smiley-cff2"] = [new(Size: 96, Ascent: 96, Descent: 32, PerLine: 8)],
+    };
+
+    // The characters of the color fonts the reference renderer does not draw as the specification says, which are
+    // left out of the lines it draws:
+    // - a gradient that pads and whose stops are all at the same offset, or a sweep gradient that pads and whose angles
+    //   are equal, has two colors ("Color lines" and "Sweep gradients" of the COLR table); the renderer draws nothing;
+    // - a glyph that paints another glyph several times, which is not a cycle; the renderer draws nothing;
+    // - a radial gradient is painted where the radius of its circles is positive ("Radial gradients": when the circles
+    //   make a cone, on one side of its tip); the renderer also paints the other side of the tip. The tip is in the
+    //   glyphs of the radial gradients between two circles side by side (F0506 to F0508) and, when the axes of the
+    //   variable font move the circles of its radial gradients, in the glyphs that are left out of that instance.
+    private static readonly Dictionary<string, HashSet<string>> CharactersWithoutReference = new(StringComparer.Ordinal)
+    {
+        ["fonts/colr-test-glyphs"] = ["F1300", "F1303", "F1306", "F1309", "F130C", "F130F", "F1312", "F1315", "F1200", "F0506", "F0507", "F0508"],
+        ["fonts/colr-test-glyphs-variable"] = ["F1300", "F1303", "F1306", "F1309", "F130C", "F130F", "F1312", "F1315", "F1200", "F0506", "F0507", "F0508"],
+
+        // The synthetic gradients: J is a linear gradient whose stops are at one offset, M a sweep whose angles are equal.
+        ["fonts/synthetic-color-gradients"] = ["004A", "004D"],
+    };
+
+    private const string ColorFontsCommit = "0046ea4c3b69e9fbbe464c2594816894e3aa5e4b";
+
+    private static ExternalFont ColorFont(string id, string fileName, string sha256, string license, string author)
+    {
+        return new ExternalFont(
+            "fonts/" + id,
+            "fonts/color-fonts/" + fileName,
+            "color-fonts/" + fileName,
+            sha256,
+            $"https://github.com/googlefonts/color-fonts/blob/{ColorFontsCommit}/fonts/{fileName}",
+            author,
+            license,
+            ReservedFontName: null,
+            Unicodes: null,
+            HasOutlineVectors: false);
+    }
 
     private static ExternalFont TextRenderingFont(string id, string fileName, string license, string author)
     {
@@ -380,7 +471,7 @@ internal static partial class FontCorpus
                     ["tools"] = new List<string> { ToolSet.RuntimeLabel },
                 };
                 files.Add(font.Id, (font.Path, data, provenance, font.FaceCount));
-                entries.Add(CreateEntry(outDir, work, tools, font.Id, font.Path, data, provenance, font.Flavor, font.FaceCount, "none", reservedFontName: null, original: null, withVectors: true));
+                entries.Add(CreateEntry(outDir, work, tools, font.Id, font.Path, data, provenance, font.Flavor, font.FaceCount, "none", reservedFontName: null, original: null, withVectors: font.HasOutlineVectors));
             }
 
             foreach (var font in ExternalFonts)
@@ -419,7 +510,7 @@ internal static partial class FontCorpus
                 }
 
                 files.Add(font.Id, (font.Path, data, provenance, 1));
-                entries.Add(CreateEntry(outDir, work, tools, font.Id, font.Path, data, provenance, GetFlavor(data), 1, modification, font.ReservedFontName, original: null, withVectors: true));
+                entries.Add(CreateEntry(outDir, work, tools, font.Id, font.Path, data, provenance, GetFlavor(data), 1, modification, font.ReservedFontName, original: null, withVectors: font.HasOutlineVectors));
             }
 
             foreach (var container in Containers)
@@ -589,6 +680,13 @@ internal static partial class FontCorpus
             entry["vectors"] = new Obj { ["path"] = vectorsPath, ["sha256"] = Bytes.Sha256Hex(vectorsData), ["role"] = "font-vectors" };
         }
 
+        if (Renders.TryGetValue(id, out var renderSets))
+        {
+            entry["features"] = GetFeatures(data);
+            entry["renderTool"] = tools.HarfBuzzLabel("hb-raster") + " --logical --background=FFFFFF";
+            entry["renders"] = RecordRenders(outDir, work, tools, id, data, renderSets);
+        }
+
         if (ShapingCases.TryGetValue(id, out var shapingCases))
         {
             var shapingPath = "fonts/shaping/" + id["fonts/".Length..] + ".json";
@@ -609,13 +707,13 @@ internal static partial class FontCorpus
         File.WriteAllBytes(file, data);
         string[] faceArguments = ["--face-index=" + face.ToString(CultureInfo.InvariantCulture)];
 
-        var info = ParseKeyValues(Proc.RunText([tools.HbInfo, .. faceArguments, file]));
+        var info = ParseKeyValues(tools.RunText([tools.HbInfo, .. faceArguments, file]));
         var glyphCount = int.Parse(info["Glyph count"], CultureInfo.InvariantCulture);
         var metrics = RecordMetrics(tools, file, faceArguments);
 
         // The character map without shaping: code point to glyph name, then glyph name to glyph identifier.
         var glyphIds = new Dictionary<string, int>(StringComparer.Ordinal);
-        foreach (var line in Proc.RunText([tools.HbInfo, .. faceArguments, "--list-glyphs", file]).Split('\n'))
+        foreach (var line in tools.RunText([tools.HbInfo, .. faceArguments, "--list-glyphs", file]).Split('\n'))
         {
             var parts = line.Split('\t');
             if (parts.Length == 2 && int.TryParse(parts[0], NumberStyles.None, CultureInfo.InvariantCulture, out var id))
@@ -629,7 +727,7 @@ internal static partial class FontCorpus
             throw new FatalException($"hb-info lists {glyphIds.Count} glyphs but the font has {glyphCount}.");
 
         var characterMap = new Obj();
-        foreach (var line in Proc.RunText([tools.HbInfo, .. faceArguments, "--list-unicodes", file]).Split('\n'))
+        foreach (var line in tools.RunText([tools.HbInfo, .. faceArguments, "--list-unicodes", file]).Split('\n'))
         {
             var parts = line.Split('\t');
             if (parts.Length == 2 && parts[0].StartsWith("U+", StringComparison.Ordinal))
@@ -647,8 +745,8 @@ internal static partial class FontCorpus
         for (var glyph = 0; glyph < glyphCount; glyph++)
         {
             var text = glyph.ToString(CultureInfo.InvariantCulture);
-            var withOt = GetOutline(Proc.RunText([tools.HbVector, .. faceArguments, "--font-funcs=ot", "--glyphs", file, text]));
-            var withFt = GetOutline(Proc.RunText([tools.HbVector, .. faceArguments, "--font-funcs=ft", "--glyphs", file, text]));
+            var withOt = GetOutline(tools.RunText([tools.HbVector, .. faceArguments, "--font-funcs=ot", "--glyphs", file, text]));
+            var withFt = GetOutline(tools.RunText([tools.HbVector, .. faceArguments, "--font-funcs=ft", "--glyphs", file, text]));
             if (withOt != withFt)
                 throw new FatalException($"The two font readers disagree on the outline of the glyph {glyph}:\n  ot: {withOt}\n  ft: {withFt}");
 
@@ -688,8 +786,8 @@ internal static partial class FontCorpus
                 for (var glyph = 0; glyph < glyphCount; glyph++)
                 {
                     var text = glyph.ToString(CultureInfo.InvariantCulture);
-                    var withOt = GetOutline(Proc.RunText([tools.HbVector, .. arguments, "--font-funcs=ot", "--precision=3", "--glyphs", file, text]));
-                    var withFt = GetOutline(Proc.RunText([tools.HbVector, .. arguments, "--font-funcs=ft", "--precision=3", "--glyphs", file, text]));
+                    var withOt = GetOutline(tools.RunText([tools.HbVector, .. arguments, "--font-funcs=ot", "--precision=3", "--glyphs", file, text]));
+                    var withFt = GetOutline(tools.RunText([tools.HbVector, .. arguments, "--font-funcs=ft", "--precision=3", "--glyphs", file, text]));
                     if (!AreClose(withOt, withFt, tolerance: 2.0))
                         throw new FatalException($"The two font readers disagree on the outline of the glyph {glyph} of the instance {instance}:\n  ot: {withOt}\n  ft: {withFt}");
 
@@ -711,10 +809,109 @@ internal static partial class FontCorpus
         return result;
     }
 
+    /// <summary>
+    /// Draws lines of text with the reference renderer: the box of each line with a margin, on a white background, so
+    /// that the origin of the first glyph is at (margin, margin + ascent).
+    /// </summary>
+    private static List<object?> RecordRenders(FullPath outDir, FullPath work, Tools tools, string id, byte[] data, RenderSet[] sets)
+    {
+        const int Margin = 32;
+        var file = work / "render.font";
+        File.WriteAllBytes(file, data);
+
+        // The characters of the font, without the space.
+        var excluded = CharactersWithoutReference.GetValueOrDefault(id) ?? [];
+        var characters = new List<string>();
+        foreach (var line in tools.RunText([tools.HbInfo, "--list-unicodes", file]).Split('\n'))
+        {
+            var parts = line.Split('\t');
+            if (parts.Length == 2 && parts[0].StartsWith("U+", StringComparison.Ordinal) && parts[0] != "U+0020" && !excluded.Contains(parts[0][2..]))
+            {
+                characters.Add(parts[0][2..]);
+            }
+        }
+
+        var renders = new List<object?>();
+        for (var setIndex = 0; setIndex < sets.Length; setIndex++)
+        {
+            var set = sets[setIndex];
+            var texts = set.Texts ?? [.. characters.Where(character => set.Exclude?.Contains(character, StringComparer.Ordinal) != true).Chunk(set.PerLine).Select(chunk => string.Join(' ', chunk))];
+            for (var lineIndex = 0; lineIndex < texts.Length; lineIndex++)
+            {
+                var path = string.Create(CultureInfo.InvariantCulture, $"fonts/renders/{id["fonts/".Length..]}/{setIndex:00}-{lineIndex:000}.png");
+                var output = work / "render.png";
+                List<string> arguments =
+                [
+                    "--logical",
+                    "--margin=" + Margin.ToString(CultureInfo.InvariantCulture),
+                    "--font-size=" + set.Size.ToString(CultureInfo.InvariantCulture),
+
+                    // The strike of a bitmap font is chosen by the number of pixels per em; without it, the largest one.
+                    "--font-ppem=" + set.Size.ToString(CultureInfo.InvariantCulture),
+                    string.Create(CultureInfo.InvariantCulture, $"--font-extents={set.Ascent},{set.Descent},0"),
+                    "--background=FFFFFF",
+                    "--output-format=png",
+                ];
+                if (set.Foreground is not null)
+                {
+                    arguments.Add("--foreground=" + set.Foreground);
+                }
+
+                if (set.Palette != 0)
+                {
+                    arguments.Add("--font-palette=" + set.Palette.ToString(CultureInfo.InvariantCulture));
+                }
+
+                if (set.Variations is not null)
+                {
+                    arguments.Add("--variations=" + set.Variations);
+                }
+
+                var image = tools.RunToFile([tools.HbRaster, .. arguments, file, "--unicodes=" + string.Join(',', texts[lineIndex].Split(' '))], output);
+                var target = outDir / path;
+                target.CreateParentDirectory();
+                File.WriteAllBytes(target, image);
+
+                var render = new Obj
+                {
+                    ["file"] = new Obj { ["path"] = path, ["sha256"] = Bytes.Sha256Hex(image), ["role"] = "font-render" },
+                    ["text"] = texts[lineIndex],
+                    ["size"] = set.Size,
+                    ["margin"] = Margin,
+                    ["ascent"] = set.Ascent,
+                    ["descent"] = set.Descent,
+                };
+                if (set.Variations is not null)
+                {
+                    render["variations"] = set.Variations;
+                }
+
+                if (set.Palette != 0)
+                {
+                    render["palette"] = set.Palette;
+                }
+
+                if (set.Foreground is not null)
+                {
+                    render["foreground"] = set.Foreground;
+                }
+
+                if (set.ImageShift != 0)
+                {
+                    render["imageShift"] = set.ImageShift;
+                }
+
+                renders.Add(render);
+            }
+        }
+
+        return renders;
+    }
+
     private static Obj RecordMetrics(Tools tools, FullPath file, string[] arguments)
     {
         var metrics = new Obj();
-        foreach (var line in Proc.RunText([tools.HbInfo, .. arguments, "--list-metrics", file]).Split('\n'))
+        foreach (var line in tools.RunText([tools.HbInfo, .. arguments, "--list-metrics", file]).Split('\n'))
         {
             // "hasc: horizontal-ascender<tabs>832<tab>": a value marked with * is a fallback the font does not declare.
             var match = MetricRegex().Match(line);
@@ -733,8 +930,8 @@ internal static partial class FontCorpus
         for (var start = 0; start < glyphCount; start += 256)
         {
             var glyphs = "[" + string.Join('|', Enumerable.Range(start, Math.Min(256, glyphCount - start)).Select(id => id.ToString(CultureInfo.InvariantCulture))) + "]";
-            var withOt = Proc.RunText([tools.HbShape, .. arguments, "--font-funcs=ot", "--glyphs", "--output-format=json", "--no-glyph-names", file, glyphs]);
-            var withFt = Proc.RunText([tools.HbShape, .. arguments, "--font-funcs=ft", "--glyphs", "--output-format=json", "--no-glyph-names", file, glyphs]);
+            var withOt = tools.RunText([tools.HbShape, .. arguments, "--font-funcs=ot", "--glyphs", "--output-format=json", "--no-glyph-names", file, glyphs]);
+            var withFt = tools.RunText([tools.HbShape, .. arguments, "--font-funcs=ft", "--glyphs", "--output-format=json", "--no-glyph-names", file, glyphs]);
             if (withOt != withFt)
                 throw new FatalException($"The two font readers disagree on the advances of the glyphs ({string.Join(' ', arguments)}):\n  ot: {withOt}\n  ft: {withFt}");
 
@@ -788,7 +985,7 @@ internal static partial class FontCorpus
             }
 
             arguments.Add("--unicodes=" + string.Join(',', codePoints.Select(codePoint => "U+" + codePoint)));
-            var output = Proc.RunText([tools.HbShape, .. arguments, fontFile]);
+            var output = tools.RunText([tools.HbShape, .. arguments, fontFile]);
             var glyphs = new List<object?>();
             using (var document = JsonDocument.Parse(output))
             {
@@ -836,18 +1033,18 @@ internal static partial class FontCorpus
         for (var face = 0; face < faceCount; face++)
         {
             string[] faceArguments = ["--face-index=" + face.ToString(CultureInfo.InvariantCulture)];
-            var glyphCount = int.Parse(ParseKeyValues(Proc.RunText([tools.HbInfo, .. faceArguments, originalFile]))["Glyph count"], CultureInfo.InvariantCulture);
+            var glyphCount = int.Parse(ParseKeyValues(tools.RunText([tools.HbInfo, .. faceArguments, originalFile]))["Glyph count"], CultureInfo.InvariantCulture);
             var glyphs = "[" + string.Join('|', Enumerable.Range(0, Math.Min(256, glyphCount)).Select(id => id.ToString(CultureInfo.InvariantCulture))) + "]";
-            var expectedAdvances = Proc.RunText([tools.HbShape, .. faceArguments, "--font-funcs=ft", "--glyphs", "--output-format=json", "--no-glyph-names", originalFile, glyphs]);
-            var actualAdvances = Proc.RunText([tools.HbShape, .. faceArguments, "--face-loader=ft", "--font-funcs=ft", "--glyphs", "--output-format=json", "--no-glyph-names", containerFile, glyphs]);
+            var expectedAdvances = tools.RunText([tools.HbShape, .. faceArguments, "--font-funcs=ft", "--glyphs", "--output-format=json", "--no-glyph-names", originalFile, glyphs]);
+            var actualAdvances = tools.RunText([tools.HbShape, .. faceArguments, "--face-loader=ft", "--font-funcs=ft", "--glyphs", "--output-format=json", "--no-glyph-names", containerFile, glyphs]);
             if (expectedAdvances != actualAdvances)
                 throw new FatalException($"The {flavor} form does not give the advances of the original font.");
 
             for (var glyph = 0; glyph < glyphCount; glyph++)
             {
                 var text = glyph.ToString(CultureInfo.InvariantCulture);
-                var expected = GetOutline(Proc.RunText([tools.HbVector, .. faceArguments, "--font-funcs=ft", "--glyphs", originalFile, text]));
-                var actual = GetOutline(Proc.RunText([tools.HbVector, .. faceArguments, "--face-loader=ft", "--font-funcs=ft", "--glyphs", containerFile, text]));
+                var expected = GetOutline(tools.RunText([tools.HbVector, .. faceArguments, "--font-funcs=ft", "--glyphs", originalFile, text]));
+                var actual = GetOutline(tools.RunText([tools.HbVector, .. faceArguments, "--face-loader=ft", "--font-funcs=ft", "--glyphs", containerFile, text]));
                 if (expected != actual)
                     throw new FatalException($"The {flavor} form does not give the outline of the glyph {glyph} of the face {face} of the original font:\n  original: {expected}\n  {flavor}: {actual}");
             }
@@ -980,20 +1177,32 @@ internal static partial class FontCorpus
         public static implicit operator ShapingText((string Text, string? Features) value) => new(value.Text, value.Features);
     }
 
+    /// <summary>Lines of text the reference renderer draws with a font.</summary>
+    private sealed record RenderSet(int Size, int Ascent, int Descent, int PerLine, string[]? Texts = null, string? Variations = null, int Palette = 0, string? Foreground = null, string[]? Exclude = null, int ImageShift = 0);
+
     private sealed record Container(string Original, string Flavor, string? Variant = null, Func<byte[]>? Build = null, string? Description = null);
 
-    private sealed record SyntheticFont(string Id, string Path, Func<byte[]> Build, string Function, string Flavor, int FaceCount);
+    private sealed record SyntheticFont(string Id, string Path, Func<byte[]> Build, string Function, string Flavor, int FaceCount, bool HasOutlineVectors = true);
 
-    private sealed record ExternalFont(string Id, string Path, string FileName, string Sha256, string Source, string Author, string License, string? ReservedFontName, string? Unicodes, bool KeepHinting = false);
+    private sealed record ExternalFont(string Id, string Path, string FileName, string Sha256, string Source, string Author, string License, string? ReservedFontName, string? Unicodes, bool KeepHinting = false, bool HasOutlineVectors = true);
 
     private sealed class Tools
     {
+        private readonly FullPath? _cache;
+
         public Tools()
         {
+            if (Environment.GetEnvironmentVariable("MEZIANTOU_FRAMEWORK_IMAGING_CORPUS_CACHE") is { Length: > 0 } cache)
+            {
+                _cache = FullPath.FromPath(cache);
+                Directory.CreateDirectory(_cache.Value);
+            }
+
             HbShape = Download(PrebuiltTools.HbShape);
             HbInfo = Download(PrebuiltTools.HbInfo);
             HbSubset = Download(PrebuiltTools.HbSubset);
             HbVector = Download(PrebuiltTools.HbVector);
+            HbRaster = Download(PrebuiltTools.HbRaster);
             Woff2Compress = Download(PrebuiltTools.Woff2Compress);
             Woff2Decompress = Download(PrebuiltTools.Woff2Decompress);
             HarfBuzzVersion = HarfBuzzVersionRegex().Match(Proc.RunText([HbShape, "--version"])).Groups["version"].Value;
@@ -1010,6 +1219,8 @@ internal static partial class FontCorpus
 
         public string HbVector { get; }
 
+        public string HbRaster { get; }
+
         public string Woff2Compress { get; }
 
         public string Woff2Decompress { get; }
@@ -1021,6 +1232,58 @@ internal static partial class FontCorpus
         public string Woff2Label => "woff2 " + Woff2Version;
 
         public string HarfBuzzLabel(string tool) => tool + " " + HarfBuzzVersion;
+
+        /// <summary>
+        /// Runs a tool that reads files and writes text. With a cache directory (the environment variable
+        /// MEZIANTOU_FRAMEWORK_IMAGING_CORPUS_CACHE), the output of a command that was already run on files of the same
+        /// content is read back: the thousands of runs of an unchanged font take no time. The cache is a convenience
+        /// of the person who regenerates the corpus; the pinned tools are deterministic, and a run without the cache
+        /// writes the same corpus.
+        /// </summary>
+        public string RunText(IReadOnlyList<string> command) => Encoding.UTF8.GetString(RunCached(command, output: null));
+
+        /// <summary>Runs a tool that writes a file, given by a last "--output-file" argument that this method adds, and returns the content of the file.</summary>
+        public byte[] RunToFile(IReadOnlyList<string> command, FullPath output) => RunCached(command, output);
+
+        private byte[] RunCached(IReadOnlyList<string> command, FullPath? output)
+        {
+            string? entry = null;
+            if (_cache is { } cache)
+            {
+                // The key: the tool (its path has its version), the arguments, and the content of the files they name.
+                var key = new StringBuilder();
+                foreach (var argument in command)
+                {
+                    key.Append(argument != command[0] && File.Exists(argument) ? GetContentHash(argument) : argument).Append('\n');
+                }
+
+                key.Append(output is null ? "text" : "file");
+                entry = cache / Bytes.Sha256Hex(Encoding.UTF8.GetBytes(key.ToString()));
+                if (File.Exists(entry))
+                    return File.ReadAllBytes(entry);
+            }
+
+            byte[] result;
+            if (output is { } file)
+            {
+                Proc.Run([.. command, "--output-file=" + file]);
+                result = File.ReadAllBytes(file);
+            }
+            else
+            {
+                result = Proc.Run(command);
+            }
+
+            if (entry is not null)
+            {
+                File.WriteAllBytes(entry + ".tmp", result);
+                File.Move(entry + ".tmp", entry, overwrite: true);
+            }
+
+            return result;
+        }
+
+        private static string GetContentHash(string path) => Bytes.Sha256Hex(File.ReadAllBytes(path));
 
         private static string Download(PrebuiltTool tool) => tool.GetOrDownloadAsync(CancellationToken.None).GetAwaiter().GetResult();
     }

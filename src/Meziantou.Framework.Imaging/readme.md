@@ -779,6 +779,7 @@ public static string DescribeFont(string path)
 | Containers | TrueType and OpenType files (`.ttf`, `.otf`), font collections (`.ttc`, `.otc`), WOFF 1.0 and WOFF 2.0 (with the transformed glyph, location and horizontal metrics tables, and collections); detected from the content, never from the extension |
 | Outlines | TrueType (`glyf`: simple and composite glyphs, scaled, rotated and placed by matching points), CFF version 1 (`CFF `: Type 2 charstrings, subroutines, CID-keyed fonts) and CFF version 2 (`CFF2`) |
 | Variable fonts | The axes and the named instances (`fvar`), the mapping of the axes (`avar` version 1), and what an instance varies: TrueType outlines (`gvar`), CFF2 outlines (the `blend` operator), advances (`HVAR`, or the phantom points of the glyphs), metrics (`MVAR`), the positions and anchors of `GPOS` (the variation store of `GDEF`) and the features a font replaces in a part of its variation space (feature variations, `rvrn`) |
+| Color glyphs | The layers of version 0 of the `COLR` table and the paints of its version 1 (solid colors, linear, radial and sweep gradients, transformations, clips, clip boxes, the 28 composition modes, and their variations in a variable font), with the palettes of the `CPAL` table; glyphs that are PNG images, in the `sbix` table and in the `CBLC` and `CBDT` tables (index subtables of formats 1 to 5, images of formats 17, 18 and 19) |
 | Character maps | Unicode subtables of formats 0, 4, 6, 12 and 13, variation sequences (format 14), and the Macintosh Roman subtable for ASCII when a font has no Unicode one |
 | Names | The typographic family and subfamily when the font has them, the legacy ones otherwise; Windows and Unicode platform names, then Macintosh Roman |
 | Metrics | In font units (`Font.Metrics`) or scaled to a size in pixels (`Font.GetMetrics`): ascent, descent, line gap, cap height, x-height, underline and strikethrough. The ascent, descent and line gap come from the table the font designates (`hhea`, or the typographic values of `OS/2` when the font sets `USE_TYPO_METRICS` or has an empty `hhea`) |
@@ -823,6 +824,28 @@ public static void DrawWeights(string variableFontPath, string outputPath)
   the default one. The advances, the metrics and the positions of the layout tables of an instance are whole font
   units. An instance costs a few small arrays when it is created (no glyph is read), and its glyphs cost more to
   decode than those of the default instance; that work counts in `MaxGlyphComplexity`.
+- **Color glyphs.** `Font.HasColorGlyphs` says that a font has glyphs with their own colors, such as emoji, and
+  `Font.ColorPalettes` gives its palettes. `FillText` draws these glyphs with their colors: each one is drawn on a
+  surface of its own, layer after layer, then composited over the image like any other paint. The edges of its shapes
+  have the exact coverage of every shape of the drawing API, gradients are evaluated at the center of each pixel, and
+  no function of the platform is involved (the angles of sweep gradients and of rotations are computed by the
+  library), so the pixels are the same everywhere. The colors of a palette are drawn as the colors of a brush are:
+  as sample values, without color management.
+  - The brush of the text is the color of the parts of a glyph the font leaves to the text ("foreground"); it can be a
+    gradient. `TextStyle.ColorPaletteIndex` selects another palette of the font.
+  - A color glyph is drawn after the glyphs that are not, in the order of the text. `StrokeText` and
+    `TextLayout.ToPath` use the outline the font gives to the glyph itself, which can be empty.
+  - A glyph the font gives as an image (`sbix`, `CBDT`) is taken from the smallest strike that is at least as large
+    as the size of the text, or from the largest one. Its image is decoded when the layout is created, with the PNG
+    decoder and the limits of the library, and scaled down to the size of the text with the default filter of
+    `Resize`; an image smaller than the text is enlarged when it is drawn, by bilinear interpolation. At the size of
+    its strike, at a whole position, the pixels of the image are the pixels drawn. A glyph that has both paints and
+    an image is drawn with its paints; a glyph without image in the strike is drawn with its outline.
+  - A graph of paints that refers to itself is cut where it would never end. A gradient the font defines without
+    length, or whose color line repeats over a length of zero, is not drawn, as the specification says.
+  - The surface of a glyph is rented from the allocation scope of the image (16 bytes per pixel of the box of the
+    glyph, per layer it composes): a glyph that needs more than the image allows fails with
+    `ImageResourceLimitException` before any pixel of the text is drawn.
 - **A glyph is drawn from its origin.** The outline of a TrueType glyph is placed by its left side bearing, as a
   TrueType rasterizer does: a font whose side bearings are not the left of its outlines is drawn where its metrics
   say.
@@ -842,7 +865,8 @@ public static void DrawWeights(string variableFontPath, string outputPath)
   is not a font, `InvalidImageContentException` for a malformed font, `UnsupportedImageFeatureException` for the
   features below, `ImageResourceLimitException` for a limit.
 - **Not supported**: version 2 of the `avar` table (its version 1 part is applied), the variation of the vertical
-  metrics and of the hinting values (`VVAR`, `cvar`), bitmap and color glyph tables (`sbix`, `CBDT`, `COLR`, `SVG `), PostScript Type 1 fonts, Type 1
+  metrics and of the hinting values (`VVAR`, `cvar`), glyphs in SVG (`SVG `: their outlines are drawn), the images of an `sbix` table that are not PNG files (JPEG, TIFF)
+  and the bitmaps without colors of the `EBDT` table (their outlines are drawn too), PostScript Type 1 fonts, Type 1
   charstrings and the deprecated `seac` form of `endchar` in a CFF table, the font matrix of a CFF table (the units of
   the `head` table are used), and hinting: instructions and hints are skipped. A WOFF or WOFF2 file is expanded in
   memory; its metadata and private blocks are not read. Table checksums are not verified.
@@ -1900,5 +1924,5 @@ Everything below is rejected explicitly (never decoded or encoded approximately)
 | AVIF decoding | Rejected with `UnsupportedImageFeatureException`: premultiplied alpha, `iden`/`iovl` derived images, fragmented files, edit lists that do not play the whole track, image sequences whose images change size, clean apertures that do not select whole samples or that follow a rotation, grid tiles that declare other transformations than their grid, large scale tile streams, and the other matrix coefficients (constant luminance, ICtCp, SMPTE 2085, chromaticity-derived). Not read: gain maps, depth maps, thumbnails, the images that are not the primary item, the `tkhd` matrix and the other transformations of an image sequence (its images are returned as stored), mastering display and content light level boxes. A layered image is returned at its full quality only: its lower layers are not exposed as a progressive rendering. HDR samples are returned as stored: no tone mapping |
 | JPEG XL | Decoding, rejected with `UnsupportedImageFeatureException` (also from `Identify` when the image header tells): floating-point samples and samples of more than 16 bits, premultiplied alpha, CMYK (a black channel) and spot colors, an XYB image whose ICC profile is not sRGB (it needs a color conversion to that profile), the PQ or HLG transfer function with primaries or a white point that CICP cannot express, a Modular frame stored as YCbCr with subsampled channels, restoration filters on a grayscale Modular frame, an upsampled frame with patches or splines whose extra channels have another resolution. Ignored: the preview frame, frame names, the intrinsic size, the JPEG reconstruction data (`jbrd`: a recompressed JPEG file is decoded to pixels, the JPEG file is not rebuilt), `jumb` and unknown boxes; depth, selection mask, thermal and the other extra channels than alpha are decoded and dropped. Samples of 1 to 16 bits other than 8 and 16 are scaled exactly to 8 or 16 bits. A lossy frame is decoded in floating point: the result is within a few sixteen-bit units of the reference decoders, not bit-exact. Encoding: lossless only (no lossy output), full frames that replace the image (no layers, blending, patches or cropped frames), frame durations in whole milliseconds, no frame of an animation without duration; an EXIF orientation is written to the image header |
 | Text | Horizontal text only; no shaping beyond the lookups of the font (Arabic joining, Indic and Southeast Asian reordering) and no dictionary line breaking for the scripts that need one; no language-specific forms; greedy line breaking; no AAT (`morx`, `kerx`) shaping, no device adjustment of positions (hinting); no hinting and no subpixel (LCD) rendering; no system font: every font is given by the caller; along a path, glyphs are turned but not warped; see [Text](#text) |
-| Fonts | No system font, no bitmap or color glyph table, no Type 1 font, no hinting; variable fonts without version 2 of `avar`; see [Fonts](#fonts) |
+| Fonts | No system font, no SVG glyph, no monochrome bitmap glyph, no Type 1 font, no hinting; variable fonts without version 2 of `avar`; see [Fonts](#fonts) |
 | API | No public allocator, custom pixel type, codec plug-in or image-processor interface; implementation types are internal |

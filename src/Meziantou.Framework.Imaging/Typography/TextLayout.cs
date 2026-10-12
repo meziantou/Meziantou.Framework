@@ -62,6 +62,11 @@ public sealed class TextLayout
     private readonly DecorationRectangle[] _decorations;
     private readonly TextLine[] _lines;
 
+    // The display list of each distinct color glyph, and the one of each glyph: -1 for a glyph that is drawn with its
+    // outline. No array when the layout has no color glyph.
+    private readonly ColorGlyph[] _colorGlyphs;
+    private readonly int[]? _colorIndexes;
+
     private TextLayout(TextLayoutData data)
     {
         _fonts = data.Fonts;
@@ -77,7 +82,7 @@ public sealed class TextLayout
         Height = data.Height;
         IsTruncated = data.IsTruncated;
         HasMissingGlyphs = data.HasMissingGlyphs;
-        InkBounds = Measure();
+        InkBounds = Measure(out _colorGlyphs, out _colorIndexes);
     }
 
     /// <summary>Gets the width of the text, in pixels: the width of its widest line, with the indent of a first line.</summary>
@@ -121,6 +126,29 @@ public sealed class TextLayout
     public bool IsTruncated { get; }
 
     internal int BrushCount => _brushes.Length;
+
+    /// <summary>Gets a value indicating whether a glyph of the layout is drawn with its own colors.</summary>
+    internal bool HasColorGlyphs => _colorIndexes is not null;
+
+    internal int RunCount => _runs.Length;
+
+    /// <summary>Gets a run of glyphs of one font, one size and one paint.</summary>
+    internal void GetRun(int index, out FontFace face, out double scale, out int start, out int count, out int brush)
+    {
+        var run = _runs[index];
+        face = _fonts[run.Font].Face;
+        scale = run.Size / face.UnitsPerEm;
+        start = run.Start;
+        count = run.Count;
+        brush = run.Brush;
+    }
+
+    /// <summary>Gets the display list of a glyph that is drawn with its own colors, or <see langword="null"/> for a glyph that is drawn with its outline.</summary>
+    internal ColorGlyph? GetColorGlyph(int glyph) => _colorIndexes is null || _colorIndexes[glyph] < 0 ? null : _colorGlyphs[_colorIndexes[glyph]];
+
+    /// <summary>Gets the transformation from the units of a glyph to the pixels of a canvas the layout is drawn on at a point.</summary>
+    internal Affine2D GetGlyphTransform(int glyph, double scale, double originX, double originY)
+        => Affine2D.ForGlyph(scale, originX + _positions[glyph * 2], originY + _positions[(glyph * 2) + 1]);
 
     /// <summary>Lays out a text with one font, on one line per paragraph.</summary>
     /// <param name="text">The text.</param>
@@ -234,7 +262,8 @@ public sealed class TextLayout
     /// that glyphs that overlap add up whatever the convention of their font.
     /// </param>
     /// <param name="brush">The paint whose glyphs and decorations are sent, or -1 for all of them.</param>
-    internal void Emit(PathSink target, GlyphPathSink glyphSink, GlyphScratch scratch, double originX, double originY, EdgeBuilder? edges, int brush)
+    /// <param name="skipColorGlyphs">Whether the glyphs the font draws with its own colors are left out: they are drawn on their own.</param>
+    internal void Emit(PathSink target, GlyphPathSink glyphSink, GlyphScratch scratch, double originX, double originY, EdgeBuilder? edges, int brush, bool skipColorGlyphs = false)
     {
         foreach (var run in _runs)
         {
@@ -246,6 +275,10 @@ public sealed class TextLayout
             var limits = face.Data.Limits;
             for (var i = run.Start; i < run.Start + run.Count; i++)
             {
+                // A color glyph is not a shape of the paint of the text: it is drawn on its own.
+                if (skipColorGlyphs && _colorIndexes is not null && _colorIndexes[i] >= 0)
+                    continue;
+
                 var first = edges?.Count ?? 0;
                 glyphSink.Begin(target, Affine2D.ForGlyph(scale, originX + _positions[i * 2], originY + _positions[(i * 2) + 1]));
                 var budget = new GlyphBudget(limits);
@@ -293,7 +326,7 @@ public sealed class TextLayout
     /// horizontal path has the points of the same text drawn at a point.
     /// </para>
     /// </remarks>
-    internal void EmitOnPath(PathSink target, GlyphPathSink glyphSink, GlyphScratch scratch, PathMeasure measure, TextPathOptions options, EdgeBuilder? edges, int brush)
+    internal void EmitOnPath(PathSink target, GlyphPathSink glyphSink, GlyphScratch scratch, PathMeasure measure, TextPathOptions options, EdgeBuilder? edges, int brush, bool skipColorGlyphs = false)
     {
         var length = measure.Length;
         if (!(length > 0))
@@ -321,17 +354,14 @@ public sealed class TextLayout
             var limits = face.Data.Limits;
             for (var i = run.Start; i < run.Start + run.Count; i++)
             {
-                if (!TryLocate(measure, shift + _anchors[i], isReversed, isClipped, out var x, out var y, out var directionX, out var directionY))
+                if (skipColorGlyphs && _colorIndexes is not null && _colorIndexes[i] >= 0)
                     continue;
 
-                // The origin of the glyph from the point of its cluster: along the path, then across it. The side the
-                // layout grows down to is on the right of the direction of the path.
-                var along = _positions[i * 2] - _anchors[i];
-                var across = _positions[(i * 2) + 1] - baseline;
-                var originX = (x + (along * directionX)) - (across * directionY);
-                var originY = (y + (along * directionY)) + (across * directionX);
+                if (!TryGetGlyphTransformOnPath(i, scale, measure, options, out var transform))
+                    continue;
+
                 var first = edges?.Count ?? 0;
-                glyphSink.Begin(target, new Affine2D(scale * directionX, scale * directionY, scale * directionY, -(scale * directionX), originX, originY));
+                glyphSink.Begin(target, transform);
                 var budget = new GlyphBudget(limits);
                 face.DecodeOutline(_glyphs[i], glyphSink, scratch, ref budget);
                 if (edges is not null && glyphSink.SignedArea < 0)
@@ -428,6 +458,39 @@ public sealed class TextLayout
         }
     }
 
+    /// <summary>
+    /// Gets the transformation from the units of a glyph to the pixels of a canvas the layout is drawn on along a path:
+    /// the glyph is placed, with its cluster, where the middle of the advance of the cluster is on the path, and turned
+    /// to the direction of the path there.
+    /// </summary>
+    /// <returns><see langword="false"/> when the glyph is not drawn: it is beyond an end of a path that clips.</returns>
+    internal bool TryGetGlyphTransformOnPath(int glyph, double scale, PathMeasure measure, TextPathOptions options, out Affine2D transform)
+    {
+        var length = measure.Length;
+        transform = default;
+        if (!(length > 0))
+            return false;
+
+        var shift = options.StartOffset + options.Alignment switch
+        {
+            TextPathAlignment.Center => (length - Width) / 2,
+            TextPathAlignment.End => length - Width,
+            _ => 0,
+        };
+        var baseline = _lines[0].Y + _lines[0].Baseline + options.BaselineOffset;
+        if (!TryLocate(measure, shift + _anchors[glyph], options.Side == TextPathSide.Right, options.Overflow == TextPathOverflow.Clip, out var x, out var y, out var directionX, out var directionY))
+            return false;
+
+        // The origin of the glyph from the point of its cluster: along the path, then across it. The side the
+        // layout grows down to is on the right of the direction of the path.
+        var along = _positions[glyph * 2] - _anchors[glyph];
+        var across = _positions[(glyph * 2) + 1] - baseline;
+        var originX = (x + (along * directionX)) - (across * directionY);
+        var originY = (y + (along * directionY)) + (across * directionX);
+        transform = new Affine2D(scale * directionX, scale * directionY, scale * directionY, -(scale * directionX), originX, originY);
+        return true;
+    }
+
     /// <summary>Finds the point of a path at a distance, on the side and with the overflow the options ask for.</summary>
     private static bool TryLocate(PathMeasure measure, double distance, bool isReversed, bool isClipped, out double x, out double y, out double directionX, out double directionY)
     {
@@ -454,8 +517,12 @@ public sealed class TextLayout
     }
 
     /// <summary>Decodes each glyph of the layout once, which validates it, and measures what the layout draws.</summary>
-    private RectangleD Measure()
+    private RectangleD Measure(out ColorGlyph[] colorGlyphs, out int[]? colorIndexes)
     {
+        // The display list of each distinct color glyph of a font and a palette.
+        var colors = new List<ColorGlyph>();
+        var colorKeys = new Dictionary<(int Font, int Glyph, int Palette, double Size), int>();
+        colorIndexes = null;
         var left = double.PositiveInfinity;
         var top = double.PositiveInfinity;
         var right = double.NegativeInfinity;
@@ -480,6 +547,53 @@ public sealed class TextLayout
                     bounds.Add((run.Font, _glyphs[i]), glyphBounds);
                 }
 
+                // A glyph the font draws with its own colors: its display list is built once, which validates what it
+                // refers to, and its box replaces the box of its outline.
+                // A glyph the font draws with its own colors: its display list is built once, which validates what it
+                // refers to, and its box replaces the box of its outline. A glyph that is an image depends on the size
+                // it is drawn at.
+                if (face.HasColorGlyphs)
+                {
+                    var isPainted = face.IsColorGlyph(_glyphs[i]);
+                    var key = (run.Font, _glyphs[i], isPainted ? run.Palette : 0, isPainted ? 0 : run.Size);
+                    if (!colorKeys.TryGetValue(key, out var colorIndex))
+                    {
+                        var budget = new GlyphBudget(face.Data.Limits);
+                        ColorGlyph? colorGlyph = null;
+                        if (isPainted)
+                        {
+                            colorGlyph = face.BuildColorGlyph(_glyphs[i], run.Palette, scratch, ref budget);
+                        }
+                        else if (face.TryGetBitmapGlyph(_glyphs[i], run.Size, out var bitmap))
+                        {
+                            colorGlyph = ColorImage.CreateGlyph(face, bitmap, run.Size);
+                        }
+
+                        colorIndex = -1;
+                        if (colorGlyph is not null)
+                        {
+                            colorIndex = colors.Count;
+                            colors.Add(colorGlyph);
+                        }
+
+                        colorKeys.Add(key, colorIndex);
+                    }
+
+                    if (colorIndex >= 0)
+                    {
+                        if (colorIndexes is null)
+                        {
+                            colorIndexes = new int[_glyphs.Length];
+                            colorIndexes.AsSpan().Fill(-1);
+                        }
+
+                        // A color glyph whose paints draw nothing draws nothing: its outline is not a fallback.
+                        colorIndexes[i] = colorIndex;
+                        var color = colors[colorIndex];
+                        glyphBounds = color.IsEmpty ? null : (color.XMin, color.YMin, color.XMax, color.YMax);
+                    }
+                }
+
                 if (glyphBounds is not { } box)
                     continue;
 
@@ -500,6 +614,7 @@ public sealed class TextLayout
             bottom = Math.Max(bottom, decoration.Y + decoration.Height);
         }
 
+        colorGlyphs = [.. colors];
         return left <= right ? RectangleD.FromLTRB(left, top, right, bottom) : RectangleD.Empty;
     }
 }

@@ -81024,6 +81024,1942 @@
   ],
   "fonts": [
     {
+      "id": "fonts/colr-test-glyphs",
+      "file": {
+        "path": "fonts/color-fonts/test_glyphs-glyf_colr_1.ttf",
+        "sha256": "8aa611b1ca97044ac6f13dc982fde29256612f0a5acc6ef47ca541a7a5b99b28",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "Apache-2.0",
+        "author": "The googlefonts/color-fonts authors",
+        "source": "https://github.com/googlefonts/color-fonts/blob/0046ea4c3b69e9fbbe464c2594816894e3aa5e4b/fonts/test_glyphs-glyf_colr_1.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=12",
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=COLR",
+        "font.table=CPAL",
+        "font.table=glyf"
+      ],
+      "renderTool": "hb-raster 14.6.0 --logical --background=FFFFFF",
+      "renders": [
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs/00-000.png",
+            "sha256": "6cd168bab5122517c4d49eb38617b085d3721ea590dc5020f426def68b683be4",
+            "role": "font-render"
+          },
+          "text": "F0100 F0101 F0102 F0103 F0200 F0201 F0202 F0203",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs/00-001.png",
+            "sha256": "f6c8d2fd91c0f1e2f5e4dda6ffb8fad90bd7bfa7d0262e84a69e8d8b9cf8ca39",
+            "role": "font-render"
+          },
+          "text": "F0204 F0205 F0206 F0207 F0208 F0209 F020A F020B",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs/00-002.png",
+            "sha256": "b8693da9b90d3b60942975059a8c160b6475e4541eb29e48ad684be948e7dba4",
+            "role": "font-render"
+          },
+          "text": "F020C F020D F020E F020F F0210 F0211 F0212 F0213",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs/00-003.png",
+            "sha256": "1836e31cce4d1e218a62ae75a24f3cc86e474bb78f789738bb12f3fe04ec1d41",
+            "role": "font-render"
+          },
+          "text": "F0214 F0215 F0216 F0217 F0218 F0219 F021A F021B",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs/00-004.png",
+            "sha256": "429e196d127ae406bf7de55287a05838798d92d386855675f06fed92e57af07b",
+            "role": "font-render"
+          },
+          "text": "F021C F021D F021E F021F F0220 F0221 F0222 F0223",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs/00-005.png",
+            "sha256": "e9d2fff12cd88eb5820ca998a631c3b0bf91db67608552c50573d684a47bdb73",
+            "role": "font-render"
+          },
+          "text": "F0224 F0225 F0226 F0227 F0228 F0229 F022A F022B",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs/00-006.png",
+            "sha256": "437e05a0cc1951ae2cc95862e03150fc87c4dc9403ca3be0bcfc89edf98f3589",
+            "role": "font-render"
+          },
+          "text": "F022C F022D F022E F022F F0230 F0231 F0232 F0233",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs/00-007.png",
+            "sha256": "09855b1f9b432250745f158c46c115e13090b39bdba55c63bb36ec9ac4b3770e",
+            "role": "font-render"
+          },
+          "text": "F0234 F0235 F0236 F0237 F0238 F0239 F023A F023B",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs/00-008.png",
+            "sha256": "4bb59a36f076eedece6b85f31c3e75513b55bd674d2f2df59f44964cf24b85ef",
+            "role": "font-render"
+          },
+          "text": "F023C F023D F023E F023F F0240 F0241 F0242 F0243",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs/00-009.png",
+            "sha256": "919d199f93d59ed80ddb93d6e7f38fcc3c80218554bcbe67e4083de2fbb580e7",
+            "role": "font-render"
+          },
+          "text": "F0244 F0245 F0246 F0247 F0300 F0301 F0302 F0303",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs/00-010.png",
+            "sha256": "2847dfcce9ceb56a08bda103542449b21c6ea662329f76acc8e47c5261d9485e",
+            "role": "font-render"
+          },
+          "text": "F0304 F0305 F0500 F0501 F0502 F0503 F0504 F0505",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs/00-011.png",
+            "sha256": "5767e4e62007ed67a7707c9539d7558e7ab311c7dc802daa6d929342c92a5b86",
+            "role": "font-render"
+          },
+          "text": "F0600 F0601 F0602 F0603 F0700 F0701 F0702 F0703",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs/00-012.png",
+            "sha256": "00189168595470d6a54cf72474469c988d6b54cfe5536eded3433969b4471fdb",
+            "role": "font-render"
+          },
+          "text": "F0704 F0705 F0800 F0801 F0802 F0803 F0900 F0901",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs/00-013.png",
+            "sha256": "3d4201bc770c1a3cdadf6d7b6930b783e7923ec89a20121f789833638320a99b",
+            "role": "font-render"
+          },
+          "text": "F0902 F0903 F0904 F0905 F0906 F0A00 F0A01 F0A02",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs/00-014.png",
+            "sha256": "724f5c316370e453fe830a659d899a69f189716e5d4245ea226c7191d6431e93",
+            "role": "font-render"
+          },
+          "text": "F0A03 F0A04 F0A05 F0A06 F0A07 F0A08 F0A09 F0A0A",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs/00-015.png",
+            "sha256": "53553f997a27505ac1999bf9e90c8ea9f12888f50525404c686e43b814c9cbf5",
+            "role": "font-render"
+          },
+          "text": "F0A0B F0A0C F0A0D F0A0E F0A0F F0A10 F0A11 F0A12",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs/00-016.png",
+            "sha256": "1d73e87788854bdc086ef386980d475e1b3086d1f4c8ed7cdf16414b54675ba8",
+            "role": "font-render"
+          },
+          "text": "F0A13 F0A14 F0A15 F0A16 F0A17 F0A18 F0A19 F0A1A",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs/00-017.png",
+            "sha256": "b64bdf6f480a350d0dab2d7d73bf804cd7884a478d0198ff980f2f83811b5317",
+            "role": "font-render"
+          },
+          "text": "F0A1B F0B00 F0B01 F0B02 F0B03 F0B04 F0B05 F0B06",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs/00-018.png",
+            "sha256": "2416116b38e66452e202660bd650269ef474f63b95b7520acc1de412e15f5853",
+            "role": "font-render"
+          },
+          "text": "F0B07 F0C00 F0C01 F0C02 F0C03 F0C04 F0C05 F0C06",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs/00-019.png",
+            "sha256": "7350ae1d6fbe3d0e7fc30960aff94c96899f34ad6fd883635de45b0cbc7532d6",
+            "role": "font-render"
+          },
+          "text": "F0C07 F0C08 F0C09 F0C0A F0D00 F0E00 F0E01 F0F00",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs/00-020.png",
+            "sha256": "6aba222b6ea7d030aa0d82b89af33d01f7fa81351f15b7988619ff7bffed55ba",
+            "role": "font-render"
+          },
+          "text": "F0F01 F0F02 F0F03 F0F04 F0F05 F0F06 F1000 F1100",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs/00-021.png",
+            "sha256": "252da08b0b16cba4c062303a67fcf56c8ee0b331abd4355093bdb3f447b689b7",
+            "role": "font-render"
+          },
+          "text": "F1101 F1301 F1302 F1304 F1305 F1307 F1308 F130A",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs/00-022.png",
+            "sha256": "252da08b0b16cba4c062303a67fcf56c8ee0b331abd4355093bdb3f447b689b7",
+            "role": "font-render"
+          },
+          "text": "F130B F130D F130E F1310 F1311 F1313 F1314 F1316",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs/00-023.png",
+            "sha256": "3a7f5153c7b7fa4c6288309838b2a0d59880b8f99b335c4bb69accc720821c75",
+            "role": "font-render"
+          },
+          "text": "F1317 F1400 F1401 F1402 F1403 F1404 F1405 F1406",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs/00-024.png",
+            "sha256": "957f1b4cd71d476d3d5dc20004faf82f4cd98dad00645fc9a2de7c2dfea9a657",
+            "role": "font-render"
+          },
+          "text": "F1407 F1408 F1409 F140A F140B F140C F140D F140E",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs/00-025.png",
+            "sha256": "5c3bc301e8b351cf98b2cac08f9dc16d5549c632415cc579c2d19eefb82bc9c9",
+            "role": "font-render"
+          },
+          "text": "F140F FE001 FE002 FE003 FE004 FE005 FE006 FE007",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs/01-000.png",
+            "sha256": "4bd095e20d67b58a84529589b400c9197259bc8bc8762389789d5352a4658d09",
+            "role": "font-render"
+          },
+          "text": "F0B00 F0B01 F0B02 F0B03 F0B04 F0B05 F0B06 F0B07",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "foreground": "D02090"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs/02-000.png",
+            "sha256": "7de6b75997e7d3b17d9eb7962a5d447b4654405765ae1767863fa7fee0335d62",
+            "role": "font-render"
+          },
+          "text": "F0B00 F0B01 F0B02 F0B03 F0B04 F0B05 F0B06 F0B07",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "foreground": "2060C080"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs/03-000.png",
+            "sha256": "dfb431f2028e196638065ad802b8b23661feec5c3f8f36dad51622d08371f306",
+            "role": "font-render"
+          },
+          "text": "F0100 F0200 F0500 F0503 F0A03 F0E00 F0E01 F1000",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "palette": 1
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs/04-000.png",
+            "sha256": "20c7dbb0e92062c6b4e5203ab0829813e21869e4f2319cba9644992960c0977e",
+            "role": "font-render"
+          },
+          "text": "F0100 F0200 F0500 F0503 F0A03 F0E00 F0E01 F1000",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "palette": 2
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs/05-000.png",
+            "sha256": "6d10869d5254c249ce74f9757d9fb98fb9c1ea62f5e89d499e67f35af9145378",
+            "role": "font-render"
+          },
+          "text": "F0100 F0101 F0102 F0103 F0200 F0201 F0202 F0203 F0204 F0205 F0206 F0207 F0208 F0209 F020A F020B F020C F020D F020E F020F F0210 F0211 F0212 F0213 F0214 F0215 F0216 F0217 F0218 F0219 F021A F021B",
+          "size": 20,
+          "margin": 32,
+          "ascent": 20,
+          "descent": 4
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs/05-001.png",
+            "sha256": "fa2a9794687972b91864c308d226bf86af6cb621b73207a3e2cdd2a8bcee4443",
+            "role": "font-render"
+          },
+          "text": "F021C F021D F021E F021F F0220 F0221 F0222 F0223 F0224 F0225 F0226 F0227 F0228 F0229 F022A F022B F022C F022D F022E F022F F0230 F0231 F0232 F0233 F0234 F0235 F0236 F0237 F0238 F0239 F023A F023B",
+          "size": 20,
+          "margin": 32,
+          "ascent": 20,
+          "descent": 4
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs/05-002.png",
+            "sha256": "da685dfb054951f5949dbdccfe291cb8dadd2bab1840897ce9de71b12c3d3b1d",
+            "role": "font-render"
+          },
+          "text": "F023C F023D F023E F023F F0240 F0241 F0242 F0243 F0244 F0245 F0246 F0247 F0300 F0301 F0302 F0303 F0304 F0305 F0500 F0501 F0502 F0503 F0504 F0505 F0600 F0601 F0602 F0603 F0700 F0701 F0702 F0703",
+          "size": 20,
+          "margin": 32,
+          "ascent": 20,
+          "descent": 4
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs/05-003.png",
+            "sha256": "6139eb820854e582b55ce5ea5d8e219303c5910ac3a95aac852c0ad4a2401cea",
+            "role": "font-render"
+          },
+          "text": "F0704 F0705 F0800 F0801 F0802 F0803 F0900 F0901 F0902 F0903 F0904 F0905 F0906 F0A00 F0A01 F0A02 F0A03 F0A04 F0A05 F0A06 F0A07 F0A08 F0A09 F0A0A F0A0B F0A0C F0A0D F0A0E F0A0F F0A10 F0A11 F0A12",
+          "size": 20,
+          "margin": 32,
+          "ascent": 20,
+          "descent": 4
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs/05-004.png",
+            "sha256": "65d49e4d3a83a40dfc566c84c13f9cb81ce648180c73d9398b4c5b7771996fb7",
+            "role": "font-render"
+          },
+          "text": "F0A13 F0A14 F0A15 F0A16 F0A17 F0A18 F0A19 F0A1A F0A1B F0B00 F0B01 F0B02 F0B03 F0B04 F0B05 F0B06 F0B07 F0C00 F0C01 F0C02 F0C03 F0C04 F0C05 F0C06 F0C07 F0C08 F0C09 F0C0A F0D00 F0E00 F0E01 F0F00",
+          "size": 20,
+          "margin": 32,
+          "ascent": 20,
+          "descent": 4
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs/05-005.png",
+            "sha256": "a0553e470d883419c645cfbe2553d8a7efb13865d943cc9f4827070c6c9b2f94",
+            "role": "font-render"
+          },
+          "text": "F0F01 F0F02 F0F03 F0F04 F0F05 F0F06 F1000 F1100 F1101 F1301 F1302 F1304 F1305 F1307 F1308 F130A F130B F130D F130E F1310 F1311 F1313 F1314 F1316 F1317 F1400 F1401 F1402 F1403 F1404 F1405 F1406",
+          "size": 20,
+          "margin": 32,
+          "ascent": 20,
+          "descent": 4
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs/05-006.png",
+            "sha256": "1d3d64a2bdef15abd2857c245e615adb498b69cc91edfd69e03f8fc2073c162d",
+            "role": "font-render"
+          },
+          "text": "F1407 F1408 F1409 F140A F140B F140C F140D F140E F140F FE001 FE002 FE003 FE004 FE005 FE006 FE007",
+          "size": 20,
+          "margin": 32,
+          "ascent": 20,
+          "descent": 4
+        }
+      ]
+    },
+    {
+      "id": "fonts/colr-test-glyphs-variable",
+      "file": {
+        "path": "fonts/color-fonts/test_glyphs-glyf_colr_1_variable.ttf",
+        "sha256": "ad575a09d6748aebcb3b90ffd384c64d5c64b5fd9927967e7cd7cc0d70c98d34",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "Apache-2.0",
+        "author": "The googlefonts/color-fonts authors",
+        "source": "https://github.com/googlefonts/color-fonts/blob/0046ea4c3b69e9fbbe464c2594816894e3aa5e4b/fonts/test_glyphs-glyf_colr_1_variable.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=12",
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=COLR",
+        "font.table=CPAL",
+        "font.table=HVAR",
+        "font.table=STAT",
+        "font.table=fvar",
+        "font.table=glyf",
+        "font.table=gvar"
+      ],
+      "renderTool": "hb-raster 14.6.0 --logical --background=FFFFFF",
+      "renders": [
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/00-000.png",
+            "sha256": "6cd168bab5122517c4d49eb38617b085d3721ea590dc5020f426def68b683be4",
+            "role": "font-render"
+          },
+          "text": "F0100 F0101 F0102 F0103 F0200 F0201 F0202 F0203",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/00-001.png",
+            "sha256": "f6c8d2fd91c0f1e2f5e4dda6ffb8fad90bd7bfa7d0262e84a69e8d8b9cf8ca39",
+            "role": "font-render"
+          },
+          "text": "F0204 F0205 F0206 F0207 F0208 F0209 F020A F020B",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/00-002.png",
+            "sha256": "b8693da9b90d3b60942975059a8c160b6475e4541eb29e48ad684be948e7dba4",
+            "role": "font-render"
+          },
+          "text": "F020C F020D F020E F020F F0210 F0211 F0212 F0213",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/00-003.png",
+            "sha256": "1836e31cce4d1e218a62ae75a24f3cc86e474bb78f789738bb12f3fe04ec1d41",
+            "role": "font-render"
+          },
+          "text": "F0214 F0215 F0216 F0217 F0218 F0219 F021A F021B",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/00-004.png",
+            "sha256": "429e196d127ae406bf7de55287a05838798d92d386855675f06fed92e57af07b",
+            "role": "font-render"
+          },
+          "text": "F021C F021D F021E F021F F0220 F0221 F0222 F0223",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/00-005.png",
+            "sha256": "e9d2fff12cd88eb5820ca998a631c3b0bf91db67608552c50573d684a47bdb73",
+            "role": "font-render"
+          },
+          "text": "F0224 F0225 F0226 F0227 F0228 F0229 F022A F022B",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/00-006.png",
+            "sha256": "437e05a0cc1951ae2cc95862e03150fc87c4dc9403ca3be0bcfc89edf98f3589",
+            "role": "font-render"
+          },
+          "text": "F022C F022D F022E F022F F0230 F0231 F0232 F0233",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/00-007.png",
+            "sha256": "09855b1f9b432250745f158c46c115e13090b39bdba55c63bb36ec9ac4b3770e",
+            "role": "font-render"
+          },
+          "text": "F0234 F0235 F0236 F0237 F0238 F0239 F023A F023B",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/00-008.png",
+            "sha256": "4bb59a36f076eedece6b85f31c3e75513b55bd674d2f2df59f44964cf24b85ef",
+            "role": "font-render"
+          },
+          "text": "F023C F023D F023E F023F F0240 F0241 F0242 F0243",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/00-009.png",
+            "sha256": "919d199f93d59ed80ddb93d6e7f38fcc3c80218554bcbe67e4083de2fbb580e7",
+            "role": "font-render"
+          },
+          "text": "F0244 F0245 F0246 F0247 F0300 F0301 F0302 F0303",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/00-010.png",
+            "sha256": "2847dfcce9ceb56a08bda103542449b21c6ea662329f76acc8e47c5261d9485e",
+            "role": "font-render"
+          },
+          "text": "F0304 F0305 F0500 F0501 F0502 F0503 F0504 F0505",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/00-011.png",
+            "sha256": "5767e4e62007ed67a7707c9539d7558e7ab311c7dc802daa6d929342c92a5b86",
+            "role": "font-render"
+          },
+          "text": "F0600 F0601 F0602 F0603 F0700 F0701 F0702 F0703",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/00-012.png",
+            "sha256": "00189168595470d6a54cf72474469c988d6b54cfe5536eded3433969b4471fdb",
+            "role": "font-render"
+          },
+          "text": "F0704 F0705 F0800 F0801 F0802 F0803 F0900 F0901",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/00-013.png",
+            "sha256": "3d4201bc770c1a3cdadf6d7b6930b783e7923ec89a20121f789833638320a99b",
+            "role": "font-render"
+          },
+          "text": "F0902 F0903 F0904 F0905 F0906 F0A00 F0A01 F0A02",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/00-014.png",
+            "sha256": "724f5c316370e453fe830a659d899a69f189716e5d4245ea226c7191d6431e93",
+            "role": "font-render"
+          },
+          "text": "F0A03 F0A04 F0A05 F0A06 F0A07 F0A08 F0A09 F0A0A",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/00-015.png",
+            "sha256": "53553f997a27505ac1999bf9e90c8ea9f12888f50525404c686e43b814c9cbf5",
+            "role": "font-render"
+          },
+          "text": "F0A0B F0A0C F0A0D F0A0E F0A0F F0A10 F0A11 F0A12",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/00-016.png",
+            "sha256": "1d73e87788854bdc086ef386980d475e1b3086d1f4c8ed7cdf16414b54675ba8",
+            "role": "font-render"
+          },
+          "text": "F0A13 F0A14 F0A15 F0A16 F0A17 F0A18 F0A19 F0A1A",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/00-017.png",
+            "sha256": "b64bdf6f480a350d0dab2d7d73bf804cd7884a478d0198ff980f2f83811b5317",
+            "role": "font-render"
+          },
+          "text": "F0A1B F0B00 F0B01 F0B02 F0B03 F0B04 F0B05 F0B06",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/00-018.png",
+            "sha256": "2416116b38e66452e202660bd650269ef474f63b95b7520acc1de412e15f5853",
+            "role": "font-render"
+          },
+          "text": "F0B07 F0C00 F0C01 F0C02 F0C03 F0C04 F0C05 F0C06",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/00-019.png",
+            "sha256": "7350ae1d6fbe3d0e7fc30960aff94c96899f34ad6fd883635de45b0cbc7532d6",
+            "role": "font-render"
+          },
+          "text": "F0C07 F0C08 F0C09 F0C0A F0D00 F0E00 F0E01 F0F00",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/00-020.png",
+            "sha256": "6aba222b6ea7d030aa0d82b89af33d01f7fa81351f15b7988619ff7bffed55ba",
+            "role": "font-render"
+          },
+          "text": "F0F01 F0F02 F0F03 F0F04 F0F05 F0F06 F1000 F1100",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/00-021.png",
+            "sha256": "252da08b0b16cba4c062303a67fcf56c8ee0b331abd4355093bdb3f447b689b7",
+            "role": "font-render"
+          },
+          "text": "F1101 F1301 F1302 F1304 F1305 F1307 F1308 F130A",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/00-022.png",
+            "sha256": "252da08b0b16cba4c062303a67fcf56c8ee0b331abd4355093bdb3f447b689b7",
+            "role": "font-render"
+          },
+          "text": "F130B F130D F130E F1310 F1311 F1313 F1314 F1316",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/00-023.png",
+            "sha256": "3a7f5153c7b7fa4c6288309838b2a0d59880b8f99b335c4bb69accc720821c75",
+            "role": "font-render"
+          },
+          "text": "F1317 F1400 F1401 F1402 F1403 F1404 F1405 F1406",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/00-024.png",
+            "sha256": "957f1b4cd71d476d3d5dc20004faf82f4cd98dad00645fc9a2de7c2dfea9a657",
+            "role": "font-render"
+          },
+          "text": "F1407 F1408 F1409 F140A F140B F140C F140D F140E",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/00-025.png",
+            "sha256": "5c3bc301e8b351cf98b2cac08f9dc16d5549c632415cc579c2d19eefb82bc9c9",
+            "role": "font-render"
+          },
+          "text": "F140F FE001 FE002 FE003 FE004 FE005 FE006 FE007",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/01-000.png",
+            "sha256": "6f01fffcf7fbfa85d980aa9c2e00c578c2d415016c8f7bd3d5daa71adef5120a",
+            "role": "font-render"
+          },
+          "text": "F0100 F0101 F0102 F0103 F0200 F0201 F0202 F0203",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SWPS=45,SWPE=-30,SWC1=0.25,SWC2=-0.25,SWC3=0.5,SWC4=-0.5"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/01-001.png",
+            "sha256": "fa87c77c5916def4076ee99fbfaa13c826f7356ea735ea77670512faab56e19d",
+            "role": "font-render"
+          },
+          "text": "F0204 F0205 F0206 F0207 F0208 F0209 F020A F020B",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SWPS=45,SWPE=-30,SWC1=0.25,SWC2=-0.25,SWC3=0.5,SWC4=-0.5"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/01-002.png",
+            "sha256": "901df687af3e5fe9fa7da1544c545d7bda802c0b345b751d2c40138813c2b5d9",
+            "role": "font-render"
+          },
+          "text": "F020C F020D F020E F020F F0210 F0211 F0212 F0213",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SWPS=45,SWPE=-30,SWC1=0.25,SWC2=-0.25,SWC3=0.5,SWC4=-0.5"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/01-003.png",
+            "sha256": "2f9655a48b92cd48847df25f3b3901984afa1dd0a597f065b0c8e894ff8dc1f4",
+            "role": "font-render"
+          },
+          "text": "F0214 F0215 F0216 F0217 F0218 F0219 F021A F021B",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SWPS=45,SWPE=-30,SWC1=0.25,SWC2=-0.25,SWC3=0.5,SWC4=-0.5"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/01-004.png",
+            "sha256": "a2e8e69b71499690777ef0f46fd009e50b6ba6add381fcf4734abae371c0d3d9",
+            "role": "font-render"
+          },
+          "text": "F021C F021D F021E F021F F0220 F0221 F0222 F0223",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SWPS=45,SWPE=-30,SWC1=0.25,SWC2=-0.25,SWC3=0.5,SWC4=-0.5"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/01-005.png",
+            "sha256": "a03baf361b29f2f94ad57d7879403bcef8647ee1b2a2acebc579d25019d67d05",
+            "role": "font-render"
+          },
+          "text": "F0224 F0225 F0226 F0227 F0228 F0229 F022A F022B",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SWPS=45,SWPE=-30,SWC1=0.25,SWC2=-0.25,SWC3=0.5,SWC4=-0.5"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/01-006.png",
+            "sha256": "e9016f65d67f967b088f6c7901c3ee8275abf6fe63b4d7328bdc9ba9b0acccc4",
+            "role": "font-render"
+          },
+          "text": "F022C F022D F022E F022F F0230 F0231 F0232 F0233",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SWPS=45,SWPE=-30,SWC1=0.25,SWC2=-0.25,SWC3=0.5,SWC4=-0.5"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/01-007.png",
+            "sha256": "cfb4eb9569003faad39c69fd9e29523727be565b8b2f7371781ba8eb7eae6771",
+            "role": "font-render"
+          },
+          "text": "F0234 F0235 F0236 F0237 F0238 F0239 F023A F023B",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SWPS=45,SWPE=-30,SWC1=0.25,SWC2=-0.25,SWC3=0.5,SWC4=-0.5"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/01-008.png",
+            "sha256": "7dd459928f66a87d98fb67a21ae161c098b75654a815b4521d8787e0cf7edf76",
+            "role": "font-render"
+          },
+          "text": "F023C F023D F023E F023F F0240 F0241 F0242 F0243",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SWPS=45,SWPE=-30,SWC1=0.25,SWC2=-0.25,SWC3=0.5,SWC4=-0.5"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/01-009.png",
+            "sha256": "fb6d7eacc50e2928fdd0842d1523715e61f22ef0d6e304b29f3bdb4b8d401f2d",
+            "role": "font-render"
+          },
+          "text": "F0244 F0245 F0246 F0247 F0300 F0301 F0302 F0303",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SWPS=45,SWPE=-30,SWC1=0.25,SWC2=-0.25,SWC3=0.5,SWC4=-0.5"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/01-010.png",
+            "sha256": "2847dfcce9ceb56a08bda103542449b21c6ea662329f76acc8e47c5261d9485e",
+            "role": "font-render"
+          },
+          "text": "F0304 F0305 F0500 F0501 F0502 F0503 F0504 F0505",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SWPS=45,SWPE=-30,SWC1=0.25,SWC2=-0.25,SWC3=0.5,SWC4=-0.5"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/01-011.png",
+            "sha256": "5767e4e62007ed67a7707c9539d7558e7ab311c7dc802daa6d929342c92a5b86",
+            "role": "font-render"
+          },
+          "text": "F0600 F0601 F0602 F0603 F0700 F0701 F0702 F0703",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SWPS=45,SWPE=-30,SWC1=0.25,SWC2=-0.25,SWC3=0.5,SWC4=-0.5"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/01-012.png",
+            "sha256": "00189168595470d6a54cf72474469c988d6b54cfe5536eded3433969b4471fdb",
+            "role": "font-render"
+          },
+          "text": "F0704 F0705 F0800 F0801 F0802 F0803 F0900 F0901",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SWPS=45,SWPE=-30,SWC1=0.25,SWC2=-0.25,SWC3=0.5,SWC4=-0.5"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/01-013.png",
+            "sha256": "3d4201bc770c1a3cdadf6d7b6930b783e7923ec89a20121f789833638320a99b",
+            "role": "font-render"
+          },
+          "text": "F0902 F0903 F0904 F0905 F0906 F0A00 F0A01 F0A02",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SWPS=45,SWPE=-30,SWC1=0.25,SWC2=-0.25,SWC3=0.5,SWC4=-0.5"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/01-014.png",
+            "sha256": "724f5c316370e453fe830a659d899a69f189716e5d4245ea226c7191d6431e93",
+            "role": "font-render"
+          },
+          "text": "F0A03 F0A04 F0A05 F0A06 F0A07 F0A08 F0A09 F0A0A",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SWPS=45,SWPE=-30,SWC1=0.25,SWC2=-0.25,SWC3=0.5,SWC4=-0.5"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/01-015.png",
+            "sha256": "53553f997a27505ac1999bf9e90c8ea9f12888f50525404c686e43b814c9cbf5",
+            "role": "font-render"
+          },
+          "text": "F0A0B F0A0C F0A0D F0A0E F0A0F F0A10 F0A11 F0A12",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SWPS=45,SWPE=-30,SWC1=0.25,SWC2=-0.25,SWC3=0.5,SWC4=-0.5"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/01-016.png",
+            "sha256": "1d73e87788854bdc086ef386980d475e1b3086d1f4c8ed7cdf16414b54675ba8",
+            "role": "font-render"
+          },
+          "text": "F0A13 F0A14 F0A15 F0A16 F0A17 F0A18 F0A19 F0A1A",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SWPS=45,SWPE=-30,SWC1=0.25,SWC2=-0.25,SWC3=0.5,SWC4=-0.5"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/01-017.png",
+            "sha256": "b64bdf6f480a350d0dab2d7d73bf804cd7884a478d0198ff980f2f83811b5317",
+            "role": "font-render"
+          },
+          "text": "F0A1B F0B00 F0B01 F0B02 F0B03 F0B04 F0B05 F0B06",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SWPS=45,SWPE=-30,SWC1=0.25,SWC2=-0.25,SWC3=0.5,SWC4=-0.5"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/01-018.png",
+            "sha256": "2416116b38e66452e202660bd650269ef474f63b95b7520acc1de412e15f5853",
+            "role": "font-render"
+          },
+          "text": "F0B07 F0C00 F0C01 F0C02 F0C03 F0C04 F0C05 F0C06",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SWPS=45,SWPE=-30,SWC1=0.25,SWC2=-0.25,SWC3=0.5,SWC4=-0.5"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/01-019.png",
+            "sha256": "7350ae1d6fbe3d0e7fc30960aff94c96899f34ad6fd883635de45b0cbc7532d6",
+            "role": "font-render"
+          },
+          "text": "F0C07 F0C08 F0C09 F0C0A F0D00 F0E00 F0E01 F0F00",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SWPS=45,SWPE=-30,SWC1=0.25,SWC2=-0.25,SWC3=0.5,SWC4=-0.5"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/01-020.png",
+            "sha256": "6aba222b6ea7d030aa0d82b89af33d01f7fa81351f15b7988619ff7bffed55ba",
+            "role": "font-render"
+          },
+          "text": "F0F01 F0F02 F0F03 F0F04 F0F05 F0F06 F1000 F1100",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SWPS=45,SWPE=-30,SWC1=0.25,SWC2=-0.25,SWC3=0.5,SWC4=-0.5"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/01-021.png",
+            "sha256": "252da08b0b16cba4c062303a67fcf56c8ee0b331abd4355093bdb3f447b689b7",
+            "role": "font-render"
+          },
+          "text": "F1101 F1301 F1302 F1304 F1305 F1307 F1308 F130A",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SWPS=45,SWPE=-30,SWC1=0.25,SWC2=-0.25,SWC3=0.5,SWC4=-0.5"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/01-022.png",
+            "sha256": "252da08b0b16cba4c062303a67fcf56c8ee0b331abd4355093bdb3f447b689b7",
+            "role": "font-render"
+          },
+          "text": "F130B F130D F130E F1310 F1311 F1313 F1314 F1316",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SWPS=45,SWPE=-30,SWC1=0.25,SWC2=-0.25,SWC3=0.5,SWC4=-0.5"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/01-023.png",
+            "sha256": "3a7f5153c7b7fa4c6288309838b2a0d59880b8f99b335c4bb69accc720821c75",
+            "role": "font-render"
+          },
+          "text": "F1317 F1400 F1401 F1402 F1403 F1404 F1405 F1406",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SWPS=45,SWPE=-30,SWC1=0.25,SWC2=-0.25,SWC3=0.5,SWC4=-0.5"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/01-024.png",
+            "sha256": "957f1b4cd71d476d3d5dc20004faf82f4cd98dad00645fc9a2de7c2dfea9a657",
+            "role": "font-render"
+          },
+          "text": "F1407 F1408 F1409 F140A F140B F140C F140D F140E",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SWPS=45,SWPE=-30,SWC1=0.25,SWC2=-0.25,SWC3=0.5,SWC4=-0.5"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/01-025.png",
+            "sha256": "5c3bc301e8b351cf98b2cac08f9dc16d5549c632415cc579c2d19eefb82bc9c9",
+            "role": "font-render"
+          },
+          "text": "F140F FE001 FE002 FE003 FE004 FE005 FE006 FE007",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SWPS=45,SWPE=-30,SWC1=0.25,SWC2=-0.25,SWC3=0.5,SWC4=-0.5"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/02-000.png",
+            "sha256": "6cd168bab5122517c4d49eb38617b085d3721ea590dc5020f426def68b683be4",
+            "role": "font-render"
+          },
+          "text": "F0100 F0101 F0102 F0103 F0200 F0201 F0202 F0203",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SCOX=100,SCOY=-150,SCSX=0.5,SCSY=-0.75"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/02-001.png",
+            "sha256": "f6c8d2fd91c0f1e2f5e4dda6ffb8fad90bd7bfa7d0262e84a69e8d8b9cf8ca39",
+            "role": "font-render"
+          },
+          "text": "F0204 F0205 F0206 F0207 F0208 F0209 F020A F020B",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SCOX=100,SCOY=-150,SCSX=0.5,SCSY=-0.75"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/02-002.png",
+            "sha256": "b8693da9b90d3b60942975059a8c160b6475e4541eb29e48ad684be948e7dba4",
+            "role": "font-render"
+          },
+          "text": "F020C F020D F020E F020F F0210 F0211 F0212 F0213",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SCOX=100,SCOY=-150,SCSX=0.5,SCSY=-0.75"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/02-003.png",
+            "sha256": "1836e31cce4d1e218a62ae75a24f3cc86e474bb78f789738bb12f3fe04ec1d41",
+            "role": "font-render"
+          },
+          "text": "F0214 F0215 F0216 F0217 F0218 F0219 F021A F021B",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SCOX=100,SCOY=-150,SCSX=0.5,SCSY=-0.75"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/02-004.png",
+            "sha256": "429e196d127ae406bf7de55287a05838798d92d386855675f06fed92e57af07b",
+            "role": "font-render"
+          },
+          "text": "F021C F021D F021E F021F F0220 F0221 F0222 F0223",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SCOX=100,SCOY=-150,SCSX=0.5,SCSY=-0.75"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/02-005.png",
+            "sha256": "e9d2fff12cd88eb5820ca998a631c3b0bf91db67608552c50573d684a47bdb73",
+            "role": "font-render"
+          },
+          "text": "F0224 F0225 F0226 F0227 F0228 F0229 F022A F022B",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SCOX=100,SCOY=-150,SCSX=0.5,SCSY=-0.75"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/02-006.png",
+            "sha256": "437e05a0cc1951ae2cc95862e03150fc87c4dc9403ca3be0bcfc89edf98f3589",
+            "role": "font-render"
+          },
+          "text": "F022C F022D F022E F022F F0230 F0231 F0232 F0233",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SCOX=100,SCOY=-150,SCSX=0.5,SCSY=-0.75"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/02-007.png",
+            "sha256": "09855b1f9b432250745f158c46c115e13090b39bdba55c63bb36ec9ac4b3770e",
+            "role": "font-render"
+          },
+          "text": "F0234 F0235 F0236 F0237 F0238 F0239 F023A F023B",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SCOX=100,SCOY=-150,SCSX=0.5,SCSY=-0.75"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/02-008.png",
+            "sha256": "4bb59a36f076eedece6b85f31c3e75513b55bd674d2f2df59f44964cf24b85ef",
+            "role": "font-render"
+          },
+          "text": "F023C F023D F023E F023F F0240 F0241 F0242 F0243",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SCOX=100,SCOY=-150,SCSX=0.5,SCSY=-0.75"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/02-009.png",
+            "sha256": "b95174dc0f4cfc8e57ab34fa55e8fdc4256af7fdd3a92027d8790aaf2685adb6",
+            "role": "font-render"
+          },
+          "text": "F0244 F0245 F0246 F0247 F0300 F0301 F0302 F0303",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SCOX=100,SCOY=-150,SCSX=0.5,SCSY=-0.75"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/02-010.png",
+            "sha256": "b267f184ddc988952d9499789ba39ed483f2b0726350e98ba31ba598f5f08426",
+            "role": "font-render"
+          },
+          "text": "F0304 F0305 F0500 F0501 F0502 F0503 F0504 F0505",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SCOX=100,SCOY=-150,SCSX=0.5,SCSY=-0.75"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/02-011.png",
+            "sha256": "5767e4e62007ed67a7707c9539d7558e7ab311c7dc802daa6d929342c92a5b86",
+            "role": "font-render"
+          },
+          "text": "F0600 F0601 F0602 F0603 F0700 F0701 F0702 F0703",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SCOX=100,SCOY=-150,SCSX=0.5,SCSY=-0.75"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/02-012.png",
+            "sha256": "00189168595470d6a54cf72474469c988d6b54cfe5536eded3433969b4471fdb",
+            "role": "font-render"
+          },
+          "text": "F0704 F0705 F0800 F0801 F0802 F0803 F0900 F0901",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SCOX=100,SCOY=-150,SCSX=0.5,SCSY=-0.75"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/02-013.png",
+            "sha256": "3d4201bc770c1a3cdadf6d7b6930b783e7923ec89a20121f789833638320a99b",
+            "role": "font-render"
+          },
+          "text": "F0902 F0903 F0904 F0905 F0906 F0A00 F0A01 F0A02",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SCOX=100,SCOY=-150,SCSX=0.5,SCSY=-0.75"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/02-014.png",
+            "sha256": "724f5c316370e453fe830a659d899a69f189716e5d4245ea226c7191d6431e93",
+            "role": "font-render"
+          },
+          "text": "F0A03 F0A04 F0A05 F0A06 F0A07 F0A08 F0A09 F0A0A",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SCOX=100,SCOY=-150,SCSX=0.5,SCSY=-0.75"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/02-015.png",
+            "sha256": "53553f997a27505ac1999bf9e90c8ea9f12888f50525404c686e43b814c9cbf5",
+            "role": "font-render"
+          },
+          "text": "F0A0B F0A0C F0A0D F0A0E F0A0F F0A10 F0A11 F0A12",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SCOX=100,SCOY=-150,SCSX=0.5,SCSY=-0.75"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/02-016.png",
+            "sha256": "1d73e87788854bdc086ef386980d475e1b3086d1f4c8ed7cdf16414b54675ba8",
+            "role": "font-render"
+          },
+          "text": "F0A13 F0A14 F0A15 F0A16 F0A17 F0A18 F0A19 F0A1A",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SCOX=100,SCOY=-150,SCSX=0.5,SCSY=-0.75"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/02-017.png",
+            "sha256": "b64bdf6f480a350d0dab2d7d73bf804cd7884a478d0198ff980f2f83811b5317",
+            "role": "font-render"
+          },
+          "text": "F0A1B F0B00 F0B01 F0B02 F0B03 F0B04 F0B05 F0B06",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SCOX=100,SCOY=-150,SCSX=0.5,SCSY=-0.75"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/02-018.png",
+            "sha256": "2416116b38e66452e202660bd650269ef474f63b95b7520acc1de412e15f5853",
+            "role": "font-render"
+          },
+          "text": "F0B07 F0C00 F0C01 F0C02 F0C03 F0C04 F0C05 F0C06",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SCOX=100,SCOY=-150,SCSX=0.5,SCSY=-0.75"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/02-019.png",
+            "sha256": "7350ae1d6fbe3d0e7fc30960aff94c96899f34ad6fd883635de45b0cbc7532d6",
+            "role": "font-render"
+          },
+          "text": "F0C07 F0C08 F0C09 F0C0A F0D00 F0E00 F0E01 F0F00",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SCOX=100,SCOY=-150,SCSX=0.5,SCSY=-0.75"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/02-020.png",
+            "sha256": "6aba222b6ea7d030aa0d82b89af33d01f7fa81351f15b7988619ff7bffed55ba",
+            "role": "font-render"
+          },
+          "text": "F0F01 F0F02 F0F03 F0F04 F0F05 F0F06 F1000 F1100",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SCOX=100,SCOY=-150,SCSX=0.5,SCSY=-0.75"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/02-021.png",
+            "sha256": "252da08b0b16cba4c062303a67fcf56c8ee0b331abd4355093bdb3f447b689b7",
+            "role": "font-render"
+          },
+          "text": "F1101 F1301 F1302 F1304 F1305 F1307 F1308 F130A",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SCOX=100,SCOY=-150,SCSX=0.5,SCSY=-0.75"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/02-022.png",
+            "sha256": "252da08b0b16cba4c062303a67fcf56c8ee0b331abd4355093bdb3f447b689b7",
+            "role": "font-render"
+          },
+          "text": "F130B F130D F130E F1310 F1311 F1313 F1314 F1316",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SCOX=100,SCOY=-150,SCSX=0.5,SCSY=-0.75"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/02-023.png",
+            "sha256": "3a7f5153c7b7fa4c6288309838b2a0d59880b8f99b335c4bb69accc720821c75",
+            "role": "font-render"
+          },
+          "text": "F1317 F1400 F1401 F1402 F1403 F1404 F1405 F1406",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SCOX=100,SCOY=-150,SCSX=0.5,SCSY=-0.75"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/02-024.png",
+            "sha256": "957f1b4cd71d476d3d5dc20004faf82f4cd98dad00645fc9a2de7c2dfea9a657",
+            "role": "font-render"
+          },
+          "text": "F1407 F1408 F1409 F140A F140B F140C F140D F140E",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SCOX=100,SCOY=-150,SCSX=0.5,SCSY=-0.75"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/02-025.png",
+            "sha256": "5c3bc301e8b351cf98b2cac08f9dc16d5549c632415cc579c2d19eefb82bc9c9",
+            "role": "font-render"
+          },
+          "text": "F140F FE001 FE002 FE003 FE004 FE005 FE006 FE007",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "SCOX=100,SCOY=-150,SCSX=0.5,SCSY=-0.75"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/03-000.png",
+            "sha256": "6cd168bab5122517c4d49eb38617b085d3721ea590dc5020f426def68b683be4",
+            "role": "font-render"
+          },
+          "text": "F0100 F0101 F0102 F0103 F0200 F0201 F0202 F0203",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "GRX0=100,GRY0=-200,GRX1=-150,GRY1=250,GRX2=300,GRY2=100,GRR0=50,GRR1=-100"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/03-001.png",
+            "sha256": "f6c8d2fd91c0f1e2f5e4dda6ffb8fad90bd7bfa7d0262e84a69e8d8b9cf8ca39",
+            "role": "font-render"
+          },
+          "text": "F0204 F0205 F0206 F0207 F0208 F0209 F020A F020B",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "GRX0=100,GRY0=-200,GRX1=-150,GRY1=250,GRX2=300,GRY2=100,GRR0=50,GRR1=-100"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/03-002.png",
+            "sha256": "b8693da9b90d3b60942975059a8c160b6475e4541eb29e48ad684be948e7dba4",
+            "role": "font-render"
+          },
+          "text": "F020C F020D F020E F020F F0210 F0211 F0212 F0213",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "GRX0=100,GRY0=-200,GRX1=-150,GRY1=250,GRX2=300,GRY2=100,GRR0=50,GRR1=-100"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/03-003.png",
+            "sha256": "1836e31cce4d1e218a62ae75a24f3cc86e474bb78f789738bb12f3fe04ec1d41",
+            "role": "font-render"
+          },
+          "text": "F0214 F0215 F0216 F0217 F0218 F0219 F021A F021B",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "GRX0=100,GRY0=-200,GRX1=-150,GRY1=250,GRX2=300,GRY2=100,GRR0=50,GRR1=-100"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/03-004.png",
+            "sha256": "429e196d127ae406bf7de55287a05838798d92d386855675f06fed92e57af07b",
+            "role": "font-render"
+          },
+          "text": "F021C F021D F021E F021F F0220 F0221 F0222 F0223",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "GRX0=100,GRY0=-200,GRX1=-150,GRY1=250,GRX2=300,GRY2=100,GRR0=50,GRR1=-100"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/03-005.png",
+            "sha256": "e9d2fff12cd88eb5820ca998a631c3b0bf91db67608552c50573d684a47bdb73",
+            "role": "font-render"
+          },
+          "text": "F0224 F0225 F0226 F0227 F0228 F0229 F022A F022B",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "GRX0=100,GRY0=-200,GRX1=-150,GRY1=250,GRX2=300,GRY2=100,GRR0=50,GRR1=-100"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/03-006.png",
+            "sha256": "437e05a0cc1951ae2cc95862e03150fc87c4dc9403ca3be0bcfc89edf98f3589",
+            "role": "font-render"
+          },
+          "text": "F022C F022D F022E F022F F0230 F0231 F0232 F0233",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "GRX0=100,GRY0=-200,GRX1=-150,GRY1=250,GRX2=300,GRY2=100,GRR0=50,GRR1=-100"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/03-007.png",
+            "sha256": "09855b1f9b432250745f158c46c115e13090b39bdba55c63bb36ec9ac4b3770e",
+            "role": "font-render"
+          },
+          "text": "F0234 F0235 F0236 F0237 F0238 F0239 F023A F023B",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "GRX0=100,GRY0=-200,GRX1=-150,GRY1=250,GRX2=300,GRY2=100,GRR0=50,GRR1=-100"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/03-008.png",
+            "sha256": "4bb59a36f076eedece6b85f31c3e75513b55bd674d2f2df59f44964cf24b85ef",
+            "role": "font-render"
+          },
+          "text": "F023C F023D F023E F023F F0240 F0241 F0242 F0243",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "GRX0=100,GRY0=-200,GRX1=-150,GRY1=250,GRX2=300,GRY2=100,GRR0=50,GRR1=-100"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/03-009.png",
+            "sha256": "919d199f93d59ed80ddb93d6e7f38fcc3c80218554bcbe67e4083de2fbb580e7",
+            "role": "font-render"
+          },
+          "text": "F0244 F0245 F0246 F0247 F0300 F0301 F0302 F0303",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "GRX0=100,GRY0=-200,GRX1=-150,GRY1=250,GRX2=300,GRY2=100,GRR0=50,GRR1=-100"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/03-010.png",
+            "sha256": "16bb964abc1cc3f4ca703c41bde7bd73b292d599e16fce9b3cde3b9f0592bd27",
+            "role": "font-render"
+          },
+          "text": "F0304 F0305 F0500 F0501 F0502 F0600 F0601 F0602",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "GRX0=100,GRY0=-200,GRX1=-150,GRY1=250,GRX2=300,GRY2=100,GRR0=50,GRR1=-100"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/03-011.png",
+            "sha256": "3867498f0e33c517f9e2ead8792f000811880eafbaa9f3b66e988e75b4e6ee37",
+            "role": "font-render"
+          },
+          "text": "F0603 F0700 F0701 F0702 F0703 F0704 F0705 F0800",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "GRX0=100,GRY0=-200,GRX1=-150,GRY1=250,GRX2=300,GRY2=100,GRR0=50,GRR1=-100"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/03-012.png",
+            "sha256": "4ecd4cf7a627ff7e11e5cef13e9b86d62cb655d3204a4b33b604c332061649e5",
+            "role": "font-render"
+          },
+          "text": "F0801 F0802 F0803 F0900 F0901 F0902 F0903 F0904",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "GRX0=100,GRY0=-200,GRX1=-150,GRY1=250,GRX2=300,GRY2=100,GRR0=50,GRR1=-100"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/03-013.png",
+            "sha256": "5b6fd10b38e4ea33f2aa80793cf9a5fb7c52c7b134e8ae34efe105c7b8cf74f5",
+            "role": "font-render"
+          },
+          "text": "F0905 F0906 F0A00 F0A01 F0A02 F0A03 F0A04 F0A05",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "GRX0=100,GRY0=-200,GRX1=-150,GRY1=250,GRX2=300,GRY2=100,GRR0=50,GRR1=-100"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/03-014.png",
+            "sha256": "82befd5f6e7a316959e94385f53ed169a16b7bfbee5cc3933d342a2ed78978f7",
+            "role": "font-render"
+          },
+          "text": "F0A06 F0A07 F0A08 F0A09 F0A0A F0A0B F0A0C F0A0D",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "GRX0=100,GRY0=-200,GRX1=-150,GRY1=250,GRX2=300,GRY2=100,GRR0=50,GRR1=-100"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/03-015.png",
+            "sha256": "f209539b6ef7a255a60a3da7a05262935b27c4eeddc2d810582c7fb4fe9fcc44",
+            "role": "font-render"
+          },
+          "text": "F0A0E F0A0F F0A10 F0A11 F0A12 F0A13 F0A14 F0A15",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "GRX0=100,GRY0=-200,GRX1=-150,GRY1=250,GRX2=300,GRY2=100,GRR0=50,GRR1=-100"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/03-016.png",
+            "sha256": "57e73ebaae118ad81606434ae4f6014bb0b4e9908ca2e595a296fa7ff9400a70",
+            "role": "font-render"
+          },
+          "text": "F0A16 F0A17 F0A18 F0A19 F0A1A F0A1B F0B00 F0B01",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "GRX0=100,GRY0=-200,GRX1=-150,GRY1=250,GRX2=300,GRY2=100,GRR0=50,GRR1=-100"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/03-017.png",
+            "sha256": "bd399b760511ec3f30bb9153287ebee1236df6cfef9e3ea0463ad68416f57ce5",
+            "role": "font-render"
+          },
+          "text": "F0B02 F0B03 F0B04 F0B05 F0B06 F0B07 F0D00 F0E00",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "GRX0=100,GRY0=-200,GRX1=-150,GRY1=250,GRX2=300,GRY2=100,GRR0=50,GRR1=-100"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/03-018.png",
+            "sha256": "aba3bbe841b31c42615977c39f0a90a8876c7b9964f151b0cb57a37a9b23aae6",
+            "role": "font-render"
+          },
+          "text": "F0E01 F0F00 F0F01 F0F02 F0F03 F0F04 F0F05 F0F06",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "GRX0=100,GRY0=-200,GRX1=-150,GRY1=250,GRX2=300,GRY2=100,GRR0=50,GRR1=-100"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/03-019.png",
+            "sha256": "75ef8aaedc0a41d64c37a8e7fce0c827af56f0f58f69b4d0cdb2c9d7e1050a5c",
+            "role": "font-render"
+          },
+          "text": "F1000 F1100 F1101 F1301 F1302 F1304 F1305 F1307",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "GRX0=100,GRY0=-200,GRX1=-150,GRY1=250,GRX2=300,GRY2=100,GRR0=50,GRR1=-100"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/03-020.png",
+            "sha256": "252da08b0b16cba4c062303a67fcf56c8ee0b331abd4355093bdb3f447b689b7",
+            "role": "font-render"
+          },
+          "text": "F1308 F130A F130B F130D F130E F1310 F1311 F1313",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "GRX0=100,GRY0=-200,GRX1=-150,GRY1=250,GRX2=300,GRY2=100,GRR0=50,GRR1=-100"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/03-021.png",
+            "sha256": "3adc5f279fa0c71a3e8a58b08a5e1eeb3c0706c2dd183f91fbef69e110f89c3f",
+            "role": "font-render"
+          },
+          "text": "F1314 F1316 F1317 F1400 F1401 F1402 F1403 F1404",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "GRX0=100,GRY0=-200,GRX1=-150,GRY1=250,GRX2=300,GRY2=100,GRR0=50,GRR1=-100"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/03-022.png",
+            "sha256": "af6c4d178ae1cc41eab41cc8d753800fa29ecc7e6626f39b422549079d3c3e07",
+            "role": "font-render"
+          },
+          "text": "F1405 F1406 F1407 F1408 F1409 F140A F140B F140C",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "GRX0=100,GRY0=-200,GRX1=-150,GRY1=250,GRX2=300,GRY2=100,GRR0=50,GRR1=-100"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/03-023.png",
+            "sha256": "befcb78bd409888c8b7425482055325e256c25417278070b6f6be966518370d7",
+            "role": "font-render"
+          },
+          "text": "F140D F140E F140F FE001 FE002 FE003 FE004 FE005",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "GRX0=100,GRY0=-200,GRX1=-150,GRY1=250,GRX2=300,GRY2=100,GRR0=50,GRR1=-100"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-test-glyphs-variable/03-024.png",
+            "sha256": "f56c2b8385a7599bdeeaff11d3163a23df97ca653ef584d195bbd6e709cbb3b0",
+            "role": "font-render"
+          },
+          "text": "FE006 FE007",
+          "size": 100,
+          "margin": 32,
+          "ascent": 100,
+          "descent": 20,
+          "variations": "GRX0=100,GRY0=-200,GRX1=-150,GRY1=250,GRX2=300,GRY2=100,GRR0=50,GRR1=-100"
+        }
+      ]
+    },
+    {
+      "id": "fonts/colr-twemoji-smiley",
+      "file": {
+        "path": "fonts/color-fonts/twemoji_smiley-glyf_colr_1.ttf",
+        "sha256": "b462e4de616a38979b053a49b0b5a5f2dd72b6d5f55be43c5b1eb812fd438dbc",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "CC-BY-4.0",
+        "author": "Twitter, Inc and other contributors (Twemoji), built by the googlefonts/color-fonts project",
+        "source": "https://github.com/googlefonts/color-fonts/blob/0046ea4c3b69e9fbbe464c2594816894e3aa5e4b/fonts/twemoji_smiley-glyf_colr_1.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=12",
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=COLR",
+        "font.table=CPAL",
+        "font.table=glyf"
+      ],
+      "renderTool": "hb-raster 14.6.0 --logical --background=FFFFFF",
+      "renders": [
+        {
+          "file": {
+            "path": "fonts/renders/colr-twemoji-smiley/00-000.png",
+            "sha256": "a5ef6395dfcad8121150b1bb8fb338f8ba34300ca823b66866835d18eefd6ad0",
+            "role": "font-render"
+          },
+          "text": "263A 1F601 1F603 1F604 1F605 1F606 1F607 1F608",
+          "size": 96,
+          "margin": 32,
+          "ascent": 96,
+          "descent": 32
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-twemoji-smiley/00-001.png",
+            "sha256": "8433770adf5b79d78f2d10c9c058e942ab4a1da0aab3f6759ac31c592ad33462",
+            "role": "font-render"
+          },
+          "text": "1F60A 1F60D 1F60E 1F60F 1F619 1F642 1F970",
+          "size": 96,
+          "margin": 32,
+          "ascent": 96,
+          "descent": 32
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-twemoji-smiley/01-000.png",
+            "sha256": "41197ccefa778a476f34040392d9ed35bc7d4928a60097e5e422650f1cd4974d",
+            "role": "font-render"
+          },
+          "text": "263A 1F601 1F603 1F604 1F605 1F606 1F607 1F608 1F60A 1F60D 1F60E 1F60F 1F619 1F642 1F970",
+          "size": 40,
+          "margin": 32,
+          "ascent": 40,
+          "descent": 12
+        }
+      ]
+    },
+    {
+      "id": "fonts/colr-twemoji-smiley-cff2",
+      "file": {
+        "path": "fonts/color-fonts/twemoji_smiley-cff2_colr_1.otf",
+        "sha256": "217bfb5a2876029afa9f52affe9810f398ba48574518fc228ee8966640af8ae3",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "CC-BY-4.0",
+        "author": "Twitter, Inc and other contributors (Twemoji), built by the googlefonts/color-fonts project",
+        "source": "https://github.com/googlefonts/color-fonts/blob/0046ea4c3b69e9fbbe464c2594816894e3aa5e4b/fonts/twemoji_smiley-cff2_colr_1.otf"
+      },
+      "flavor": "otf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=12",
+        "font.cmap=4",
+        "font.table=CFF2",
+        "font.table=COLR",
+        "font.table=CPAL"
+      ],
+      "renderTool": "hb-raster 14.6.0 --logical --background=FFFFFF",
+      "renders": [
+        {
+          "file": {
+            "path": "fonts/renders/colr-twemoji-smiley-cff2/00-000.png",
+            "sha256": "aaed73ab05578505c979be127c436f4d79cf108078fab068cb778c07b6f39a06",
+            "role": "font-render"
+          },
+          "text": "263A 1F601 1F603 1F604 1F605 1F606 1F607 1F608",
+          "size": 96,
+          "margin": 32,
+          "ascent": 96,
+          "descent": 32
+        },
+        {
+          "file": {
+            "path": "fonts/renders/colr-twemoji-smiley-cff2/00-001.png",
+            "sha256": "b1032033bf914ca1028d61c6ee22884bc9b60ed74d9b3e72668bc22c9e619dfd",
+            "role": "font-render"
+          },
+          "text": "1F60A 1F60D 1F60E 1F60F 1F619 1F642 1F970",
+          "size": 96,
+          "margin": 32,
+          "ascent": 96,
+          "descent": 32
+        }
+      ]
+    },
+    {
       "id": "fonts/noto-sans-cjk-jp-regular",
       "file": {
         "path": "fonts/noto-sans-cjk/NotoSansCJKjp-Regular.subset.otf",
@@ -81327,6 +83263,114 @@
       }
     },
     {
+      "id": "fonts/sbix-twemoji-smiley",
+      "file": {
+        "path": "fonts/color-fonts/twemoji_smiley-sbix.ttf",
+        "sha256": "7767316e76003dff2415c0bec6d8972024d8f308349bb576abce7b26b5319c9f",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "external",
+        "license": "CC-BY-4.0",
+        "author": "Twitter, Inc and other contributors (Twemoji), built by the googlefonts/color-fonts project",
+        "source": "https://github.com/googlefonts/color-fonts/blob/0046ea4c3b69e9fbbe464c2594816894e3aa5e4b/fonts/twemoji_smiley-sbix.ttf"
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=12",
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=glyf",
+        "font.table=sbix"
+      ],
+      "renderTool": "hb-raster 14.6.0 --logical --background=FFFFFF",
+      "renders": [
+        {
+          "file": {
+            "path": "fonts/renders/sbix-twemoji-smiley/00-000.png",
+            "sha256": "15b46b028e91eb6bf123e1e5a333b27fcc1461748e1a512f83a137ad20bd42ee",
+            "role": "font-render"
+          },
+          "text": "263A 1F601 1F603 1F604 1F605 1F606 1F607 1F608",
+          "size": 109,
+          "margin": 32,
+          "ascent": 109,
+          "descent": 32,
+          "imageShift": -1
+        },
+        {
+          "file": {
+            "path": "fonts/renders/sbix-twemoji-smiley/00-001.png",
+            "sha256": "c61b368aae2209902b8958412a5d29c029518bec04774b2fcd0e7b8d4e7c7d21",
+            "role": "font-render"
+          },
+          "text": "1F60A 1F60D 1F60E 1F60F 1F619 1F642 1F970",
+          "size": 109,
+          "margin": 32,
+          "ascent": 109,
+          "descent": 32,
+          "imageShift": -1
+        }
+      ]
+    },
+    {
+      "id": "fonts/synthetic-bitmap-boxes",
+      "file": {
+        "path": "fonts/synthetic/bitmap-boxes.ttf",
+        "sha256": "844d337c7b3548cadb4ac5a3fc0b09a4cb46da57760e01dafbff8cc22c135889",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/Common/FontSamples.cs (BitmapBoxes)",
+        "tools": [
+          ".NET 10.0"
+        ]
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=glyf",
+        "font.table=sbix"
+      ],
+      "renderTool": "hb-raster 14.6.0 --logical --background=FFFFFF",
+      "renders": [
+        {
+          "file": {
+            "path": "fonts/renders/synthetic-bitmap-boxes/00-000.png",
+            "sha256": "8abfd42baf3e4d7e24cd148929058624a059ea0043b1cba6757fbb797a0dfc9f",
+            "role": "font-render"
+          },
+          "text": "0041 0042 0044",
+          "size": 16,
+          "margin": 32,
+          "ascent": 16,
+          "descent": 4,
+          "imageShift": -1
+        },
+        {
+          "file": {
+            "path": "fonts/renders/synthetic-bitmap-boxes/01-000.png",
+            "sha256": "6987b8f5b5d1fde1705c7e0079a7a2e8c01f655a7064a38d5e80b8e930978ea5",
+            "role": "font-render"
+          },
+          "text": "0041 0042 0044",
+          "size": 32,
+          "margin": 32,
+          "ascent": 32,
+          "descent": 8,
+          "imageShift": -1
+        }
+      ]
+    },
+    {
       "id": "fonts/synthetic-boxes",
       "file": {
         "path": "fonts/synthetic/boxes.ttf",
@@ -81589,6 +83633,284 @@
       "faceCount": 2,
       "modification": "container",
       "original": "fonts/synthetic-collection"
+    },
+    {
+      "id": "fonts/synthetic-color-bitmaps",
+      "file": {
+        "path": "fonts/synthetic/color-bitmaps.ttf",
+        "sha256": "b25ac4051db1654ac5176a2eeeaaed4df2af26a1f9a3d0b58b036b965ff604c6",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/Common/FontSamples.cs (BitmapBoxes with CBLC and CBDT tables)",
+        "tools": [
+          ".NET 10.0"
+        ]
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=CBDT",
+        "font.table=CBLC",
+        "font.table=glyf"
+      ],
+      "renderTool": "hb-raster 14.6.0 --logical --background=FFFFFF",
+      "renders": [
+        {
+          "file": {
+            "path": "fonts/renders/synthetic-color-bitmaps/00-000.png",
+            "sha256": "8abfd42baf3e4d7e24cd148929058624a059ea0043b1cba6757fbb797a0dfc9f",
+            "role": "font-render"
+          },
+          "text": "0041 0042 0044",
+          "size": 16,
+          "margin": 32,
+          "ascent": 16,
+          "descent": 4,
+          "imageShift": -1
+        },
+        {
+          "file": {
+            "path": "fonts/renders/synthetic-color-bitmaps/01-000.png",
+            "sha256": "6987b8f5b5d1fde1705c7e0079a7a2e8c01f655a7064a38d5e80b8e930978ea5",
+            "role": "font-render"
+          },
+          "text": "0041 0042 0044",
+          "size": 32,
+          "margin": 32,
+          "ascent": 32,
+          "descent": 8,
+          "imageShift": -1
+        }
+      ]
+    },
+    {
+      "id": "fonts/synthetic-color-boxes",
+      "file": {
+        "path": "fonts/synthetic/color-boxes.ttf",
+        "sha256": "8ccd3b75cf951cc13a4c1cf94a091f025e35976b207f6006bc92bd3a800f633d",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/Common/FontSamples.cs (ColorBoxes)",
+        "tools": [
+          ".NET 10.0"
+        ]
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=COLR",
+        "font.table=CPAL",
+        "font.table=glyf"
+      ],
+      "renderTool": "hb-raster 14.6.0 --logical --background=FFFFFF",
+      "renders": [
+        {
+          "file": {
+            "path": "fonts/renders/synthetic-color-boxes/00-000.png",
+            "sha256": "605451f5c5286df147b75eec1c53ac0eb2e4f64bb1f9e782696029ef591c1b19",
+            "role": "font-render"
+          },
+          "text": "0041 0042 0043",
+          "size": 64,
+          "margin": 32,
+          "ascent": 64,
+          "descent": 16
+        },
+        {
+          "file": {
+            "path": "fonts/renders/synthetic-color-boxes/01-000.png",
+            "sha256": "f402e9902298f62b1eff42f197d84ded8f7ea3d851347638d118817b5b6a9043",
+            "role": "font-render"
+          },
+          "text": "0041 0042 0043",
+          "size": 64,
+          "margin": 32,
+          "ascent": 64,
+          "descent": 16,
+          "palette": 1,
+          "foreground": "2060C0"
+        }
+      ]
+    },
+    {
+      "id": "fonts/synthetic-color-clips",
+      "file": {
+        "path": "fonts/synthetic/color-clips.ttf",
+        "sha256": "0c5f28a9d2690917bbe12113192715c6857ac376c77fc51a4109c2867998d9d6",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/Common/FontSamples.cs (ColorClips)",
+        "tools": [
+          ".NET 10.0"
+        ]
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=COLR",
+        "font.table=CPAL",
+        "font.table=glyf"
+      ],
+      "renderTool": "hb-raster 14.6.0 --logical --background=FFFFFF",
+      "renders": [
+        {
+          "file": {
+            "path": "fonts/renders/synthetic-color-clips/00-000.png",
+            "sha256": "6db9cffb2f50ab1ed302cb9228631db45782c6da2b60422dcaa4dc21e878ca41",
+            "role": "font-render"
+          },
+          "text": "0041 0042 0043 0044 0045 0046 0047 0048",
+          "size": 64,
+          "margin": 32,
+          "ascent": 64,
+          "descent": 16
+        },
+        {
+          "file": {
+            "path": "fonts/renders/synthetic-color-clips/00-001.png",
+            "sha256": "71be4de5ce0dbf9c0c01cdd634cae7fd1a7ff4d3909f82e8d6ba47a14d0bb97e",
+            "role": "font-render"
+          },
+          "text": "0049",
+          "size": 64,
+          "margin": 32,
+          "ascent": 64,
+          "descent": 16
+        }
+      ]
+    },
+    {
+      "id": "fonts/synthetic-color-gradients",
+      "file": {
+        "path": "fonts/synthetic/color-gradients.ttf",
+        "sha256": "224979fca542c2fe4b3a4e4a312de0bb375b03a41e3c850963e7a0268e33e6ef",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/Common/FontSamples.cs (ColorGradients)",
+        "tools": [
+          ".NET 10.0"
+        ]
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=COLR",
+        "font.table=CPAL",
+        "font.table=glyf"
+      ],
+      "renderTool": "hb-raster 14.6.0 --logical --background=FFFFFF",
+      "renders": [
+        {
+          "file": {
+            "path": "fonts/renders/synthetic-color-gradients/00-000.png",
+            "sha256": "08be78b72dc1b39a00a26bf2adacbc27ef355d197a1aaba340afa6148d8707e3",
+            "role": "font-render"
+          },
+          "text": "0041 0042 0043 0044 0045 0046 0047 0048",
+          "size": 64,
+          "margin": 32,
+          "ascent": 64,
+          "descent": 16,
+          "foreground": "0000FF"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/synthetic-color-gradients/00-001.png",
+            "sha256": "78c3822c6a7b47f119c6eb1a23b8a0bb04e1e8bdd95d2c6a0ae45167d926650c",
+            "role": "font-render"
+          },
+          "text": "0049 004B 004C 004E 004F 0050",
+          "size": 64,
+          "margin": 32,
+          "ascent": 64,
+          "descent": 16,
+          "foreground": "0000FF"
+        }
+      ]
+    },
+    {
+      "id": "fonts/synthetic-color-transforms",
+      "file": {
+        "path": "fonts/synthetic/color-transforms.ttf",
+        "sha256": "8e127df25e924d61f630744cebbeeb4a9cc15043d1d1b7695b1795f68129e22d",
+        "role": "font"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/Common/FontSamples.cs (ColorTransforms)",
+        "tools": [
+          ".NET 10.0"
+        ]
+      },
+      "flavor": "ttf",
+      "faceCount": 1,
+      "modification": "none",
+      "features": [
+        "font.cmap=4",
+        "font.loca=short",
+        "font.table=COLR",
+        "font.table=CPAL",
+        "font.table=glyf"
+      ],
+      "renderTool": "hb-raster 14.6.0 --logical --background=FFFFFF",
+      "renders": [
+        {
+          "file": {
+            "path": "fonts/renders/synthetic-color-transforms/00-000.png",
+            "sha256": "828e28beab68ee1c6f5e8c3090b9066b26ee194131b0fea750b3d811d3ffb951",
+            "role": "font-render"
+          },
+          "text": "0041 0042 0043 0044 0045 0046 0047 0048",
+          "size": 64,
+          "margin": 32,
+          "ascent": 64,
+          "descent": 16,
+          "foreground": "0000FF"
+        },
+        {
+          "file": {
+            "path": "fonts/renders/synthetic-color-transforms/00-001.png",
+            "sha256": "728054e491d28638764ed1d59adfb3b54e30bad4a2b3a56a1f36748f09baf148",
+            "role": "font-render"
+          },
+          "text": "0049 004A 004B 004C 004D 004E 004F 0050",
+          "size": 64,
+          "margin": 32,
+          "ascent": 64,
+          "descent": 16,
+          "foreground": "0000FF"
+        }
+      ]
     },
     {
       "id": "fonts/synthetic-curves",

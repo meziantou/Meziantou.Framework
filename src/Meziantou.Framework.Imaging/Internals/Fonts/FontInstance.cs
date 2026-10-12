@@ -31,6 +31,9 @@ internal sealed class FontInstance
     /// <summary>Gets the scalars of the store of the <c>CFF2</c> table.</summary>
     public double[] OutlineScalars { get; set; } = [];
 
+    /// <summary>Gets the scalars of the store of the <c>COLR</c> table.</summary>
+    public double[] ColorScalars { get; set; } = [];
+
     /// <summary>
     /// Normalizes the value of an axis: -1 at its minimum, 0 at its default, 1 at its maximum. OpenType specification,
     /// "Coordinate scales and normalization".

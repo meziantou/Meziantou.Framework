@@ -60,6 +60,14 @@ public sealed class FontEntry
     [JsonPropertyName("shaping")]
     public FixtureFile? Shaping { get; init; }
 
+    /// <summary>Gets the tool that drew <see cref="Renders"/>, with its version.</summary>
+    [JsonPropertyName("renderTool")]
+    public string? RenderTool { get; init; }
+
+    /// <summary>Gets lines of text the reference renderer drew with the font; <see langword="null"/> when there is none.</summary>
+    [JsonPropertyName("renders")]
+    public IReadOnlyList<FontRender>? Renders { get; init; }
+
     [JsonPropertyName("notes")]
     public string? Notes { get; init; }
 }

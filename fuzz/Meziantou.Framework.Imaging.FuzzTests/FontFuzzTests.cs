@@ -37,6 +37,8 @@ public sealed class FontFuzzTests
     private static readonly ShapingFeature[] SuiteFeatures = [new("test")];
 
     private static readonly SolidBrush TextBrush = new(new Rgba32(10, 20, 30, 200));
+    private static readonly LinearGradientBrush ColorGradient = new(new PointD(0, 0), new PointD(60, 40), [new GradientStop(0, new Rgba32(255, 0, 0)), new GradientStop(1, new Rgba32(0, 0, 255, 80))]);
+    private static readonly VectorPath ColorPath = new VectorPathBuilder().MoveTo(4, 40).QuadraticBezierTo(30, -10, 60, 30).Build();
     private static readonly Pen TextPen = new(new SolidBrush(new Rgba32(200, 100, 0)), 1.5);
 
     [Fact]
@@ -426,14 +428,89 @@ public sealed class FontFuzzTests
                         canvas.StrokeText(state.TextPen, state.layout, new PointD(-3, 1.25));
                     }
                 });
+                // A color glyph can draw something without having an outline of its own.
                 var path = layout.ToPath(new PointD(1.5, 2));
-                if (path.IsEmpty != layout.InkBounds.IsEmpty && path.IsEmpty)
+                if (path.IsEmpty != layout.InkBounds.IsEmpty && path.IsEmpty && !font.HasColorGlyphs)
                     return FuzzFailure.Property("layout-path", "The layout has ink bounds and an empty path.");
             }
             catch (Exception exception)
             {
                 return FuzzFailure.FromException("draw", exception);
             }
+
+            if (font.HasColorGlyphs && CheckColorGlyphs(font) is { } failure)
+                return failure;
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Lays out and draws characters a font draws with its own colors, at a point and along a path, with a solid brush
+    /// and with a gradient as the color of the text: a layout is refused with a documented exception or is drawn
+    /// without any.
+    /// </summary>
+    private static FuzzFailure? CheckColorGlyphs(Font font)
+    {
+        var text = new StringBuilder();
+        var count = 0;
+        try
+        {
+            _ = font.ColorPalettes.Count;
+            foreach (var (first, last) in ((int, int)[])[(0x21, 0x7E), (0x263A, 0x263A), (0x1F600, 0x1F64F), (0x1F970, 0x1F970), (0xF0100, 0xF1500)])
+            {
+                for (var codePoint = first; codePoint <= last && count < 14; codePoint += first == 0xF0100 ? 0x51 : 1)
+                {
+                    var glyph = font.Face.MapCodePoint(codePoint);
+                    if (font.Face.IsColorGlyph(glyph) || font.Face.TryGetBitmapGlyph(glyph, 11.5, out _))
+                    {
+                        text.Append(char.ConvertFromUtf32(codePoint));
+                        count++;
+                    }
+                }
+            }
+        }
+        catch (Exception exception) when (exception is InvalidImageContentException or UnsupportedImageFeatureException or ImageResourceLimitException)
+        {
+            return null;
+        }
+        catch (Exception exception)
+        {
+            return FuzzFailure.FromException("color-read", exception);
+        }
+
+        if (count == 0)
+            return null;
+
+        TextLayout layout;
+        try
+        {
+            layout = TextLayout.Create(text.ToString(), new TextStyle(font, 11.5) { ColorPaletteIndex = count & 1 }, new TextLayoutOptions { MaxWidth = 60 });
+        }
+        catch (Exception exception) when (exception is InvalidImageContentException or UnsupportedImageFeatureException or ImageResourceLimitException)
+        {
+            return null;
+        }
+        catch (Exception exception)
+        {
+            return FuzzFailure.FromException("color-layout", exception);
+        }
+
+        if (!double.IsFinite(layout.InkBounds.Width) || !double.IsFinite(layout.InkBounds.Height))
+            return FuzzFailure.Property("color-bounds", $"The layout of color glyphs has the ink bounds {layout.InkBounds}.");
+
+        try
+        {
+            using var image = new Image<Rgba32>(64, 48);
+            image.Draw((layout, TextBrush, Gradient: ColorGradient, Path: ColorPath), static (canvas, state) =>
+            {
+                canvas.FillText(state.TextBrush, state.layout, new PointD(0.5, 1.25));
+                canvas.FillText(state.Gradient, state.layout, state.Path);
+            });
+        }
+        catch (Exception exception)
+        {
+            return FuzzFailure.FromException("color-draw", exception);
         }
 
         return null;

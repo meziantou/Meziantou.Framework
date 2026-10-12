@@ -19,7 +19,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// (edges, sweep, gradient stops) grows to the largest call and is kept until the session ends.
 /// </para>
 /// </remarks>
-internal sealed class DrawingSession : IDisposable
+internal sealed partial class DrawingSession : IDisposable
 {
     private readonly Image _image;
     private readonly ImageFrame[] _frames;
@@ -206,27 +206,31 @@ internal sealed class DrawingSession : IDisposable
         DrawingGuard.Point(origin, nameof(origin));
         var glyphSink = _glyphSink ??= new GlyphPathSink();
         var scratch = _glyphScratch ??= new GlyphScratch(_image.Owner.Scope);
-        if (layout.BrushCount <= 1)
+        if (layout.BrushCount <= 1 && !layout.HasColorGlyphs)
         {
             layout.Emit(BeginFill(), glyphSink, scratch, origin.X, origin.Y, _edges, brush: -1);
             Render(layout.BrushCount == 0 ? brush : layout.GetBrush(0) ?? brush, FillRule.NonZero);
             return;
         }
 
-        // A text of several paints is one shape per paint. Every rental of a call happens before its first pixel
-        // write: each shape is prepared once without being painted, so that the working storage has grown to the
-        // largest of them, then the shapes are painted in the order of the paints.
+        // A text of several paints is one shape per paint, and each color glyph is drawn on its own. Every rental of
+        // a call happens before its first pixel write: each shape is prepared once without being painted, so that the
+        // working storage has grown to the largest of them, then the shapes are painted in the order of the paints,
+        // and the color glyphs after them.
         for (var i = 0; i < layout.BrushCount; i++)
         {
-            layout.Emit(BeginFill(), glyphSink, scratch, origin.X, origin.Y, _edges, i);
+            layout.Emit(BeginFill(), glyphSink, scratch, origin.X, origin.Y, _edges, i, skipColorGlyphs: true);
             Prepare(layout.GetBrush(i) ?? brush, FillRule.NonZero, out _, out _);
         }
 
+        DrawColorGlyphs(brush, layout, origin.X, origin.Y, measure: null, options: null, paint: false);
         for (var i = 0; i < layout.BrushCount; i++)
         {
-            layout.Emit(BeginFill(), glyphSink, scratch, origin.X, origin.Y, _edges, i);
+            layout.Emit(BeginFill(), glyphSink, scratch, origin.X, origin.Y, _edges, i, skipColorGlyphs: true);
             Render(layout.GetBrush(i) ?? brush, FillRule.NonZero);
         }
+
+        DrawColorGlyphs(brush, layout, origin.X, origin.Y, measure: null, options: null, paint: true);
     }
 
     public void StrokeText(Pen pen, TextLayout layout, PointD origin)
@@ -248,7 +252,7 @@ internal sealed class DrawingSession : IDisposable
         var measure = Measure(path);
         var glyphSink = _glyphSink ??= new GlyphPathSink();
         var scratch = _glyphScratch ??= new GlyphScratch(_image.Owner.Scope);
-        if (layout.BrushCount <= 1)
+        if (layout.BrushCount <= 1 && !layout.HasColorGlyphs)
         {
             layout.EmitOnPath(BeginFill(), glyphSink, scratch, measure, options, _edges, brush: -1);
             Render(layout.BrushCount == 0 ? brush : layout.GetBrush(0) ?? brush, FillRule.NonZero);
@@ -258,15 +262,18 @@ internal sealed class DrawingSession : IDisposable
         // As for a text at a point: every shape is prepared before the first one is painted.
         for (var i = 0; i < layout.BrushCount; i++)
         {
-            layout.EmitOnPath(BeginFill(), glyphSink, scratch, measure, options, _edges, i);
+            layout.EmitOnPath(BeginFill(), glyphSink, scratch, measure, options, _edges, i, skipColorGlyphs: true);
             Prepare(layout.GetBrush(i) ?? brush, FillRule.NonZero, out _, out _);
         }
 
+        DrawColorGlyphs(brush, layout, 0, 0, measure, options, paint: false);
         for (var i = 0; i < layout.BrushCount; i++)
         {
-            layout.EmitOnPath(BeginFill(), glyphSink, scratch, measure, options, _edges, i);
+            layout.EmitOnPath(BeginFill(), glyphSink, scratch, measure, options, _edges, i, skipColorGlyphs: true);
             Render(layout.GetBrush(i) ?? brush, FillRule.NonZero);
         }
+
+        DrawColorGlyphs(brush, layout, 0, 0, measure, options, paint: true);
     }
 
     public void StrokeText(Pen pen, TextLayout layout, VectorPath path, TextPathOptions? options)
@@ -294,6 +301,10 @@ internal sealed class DrawingSession : IDisposable
         IsActive = false;
         _pathMeasure?.Dispose();
         _pathMeasure = null;
+        _colorSurface?.Dispose();
+        _colorSurface = null;
+        _foregroundGradient?.Dispose();
+        _foregroundGradient = null;
         _glyphScratch?.Dispose();
         _glyphScratch = null;
         _gradient?.Dispose();

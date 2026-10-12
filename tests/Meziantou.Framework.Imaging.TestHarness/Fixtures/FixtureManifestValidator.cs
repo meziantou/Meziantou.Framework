@@ -1207,6 +1207,15 @@ public static partial class FixtureManifestValidator
             {
                 ValidateFile(name, shaping, root, referencedFiles, errors);
             }
+
+            foreach (var render in font.Renders ?? [])
+            {
+                ValidateFile(name, render.File, root, referencedFiles, errors);
+                if (render.Size <= 0 || render.Margin < 0 || render.Ascent < 0 || render.Descent < 0 || string.IsNullOrWhiteSpace(render.Text))
+                {
+                    errors.Add($"{name}: the render '{render.File.Path}' needs a text, a size, a margin, an ascent and a descent.");
+                }
+            }
         }
 
         // A suite is one entry for a whole directory: its files are identified together.

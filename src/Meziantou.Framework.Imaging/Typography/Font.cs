@@ -1,3 +1,4 @@
+using Meziantou.Framework.Imaging.Drawing;
 using Meziantou.Framework.Imaging.Internals;
 
 namespace Meziantou.Framework.Imaging.Typography;
@@ -26,6 +27,7 @@ public sealed class Font
     private readonly FontVariationAxis[] _axes;
     private readonly FontNamedInstance[] _namedInstances;
     private readonly FontVariationSetting[] _variations;
+    private FontColorPalette[]? _palettes;
 
     internal Font(FontFace face)
         : this(face, CreateAxes(face), namedInstances: null)
@@ -88,6 +90,20 @@ public sealed class Font
     /// </para>
     /// </remarks>
     public FontMetrics Metrics { get; }
+
+    /// <summary>
+    /// Gets a value indicating whether the font has glyphs that are drawn with their own colors, such as emoji: layers
+    /// of colors or graphs of paints (the <c>COLR</c> table).
+    /// </summary>
+    /// <remarks>
+    /// <see cref="DrawingCanvas.FillText(Brush, TextLayout, PointD)"/> draws these glyphs with their colors; the brush of
+    /// the text is the color of the parts of a glyph the font leaves to it. Stroking a text, and its path, use the
+    /// outlines of the glyphs.
+    /// </remarks>
+    public bool HasColorGlyphs => Face.HasColorGlyphs;
+
+    /// <summary>Gets the palettes of a color font (the <c>CPAL</c> table). Empty for a font without palette.</summary>
+    public IReadOnlyList<FontColorPalette> ColorPalettes => _palettes ??= CreatePalettes(Face);
 
     /// <summary>Gets the axes of a variable font: what can vary, and in what range. Empty for a font that does not vary.</summary>
     public IReadOnlyList<FontVariationAxis> VariationAxes => _axes;
@@ -266,6 +282,31 @@ public sealed class Font
     }
 
     private static async Task<Font> LoadCoreAsync(Task<FontFace[]> faces) => new((await faces.ConfigureAwait(false))[0]);
+
+    private static FontColorPalette[] CreatePalettes(FontFace face)
+    {
+        if (face.PaletteCount == 0)
+            return [];
+
+        var palettes = new FontColorPalette[face.PaletteCount];
+        for (var i = 0; i < palettes.Length; i++)
+        {
+            var colors = new Rgba32[face.PaletteEntryCount];
+            for (var entry = 0; entry < colors.Length; entry++)
+            {
+                // An entry outside the colors of the font is transparent black.
+                if (face.TryGetPaletteColor(i, entry, out var red, out var green, out var blue, out var alpha))
+                {
+                    colors[entry] = new Rgba32((byte)red, (byte)green, (byte)blue, (byte)alpha);
+                }
+            }
+
+            face.GetPaletteType(i, out var isForLightBackground, out var isForDarkBackground);
+            palettes[i] = new FontColorPalette(colors, isForLightBackground, isForDarkBackground);
+        }
+
+        return palettes;
+    }
 
     private static FontVariationAxis[] CreateAxes(FontFace face)
     {

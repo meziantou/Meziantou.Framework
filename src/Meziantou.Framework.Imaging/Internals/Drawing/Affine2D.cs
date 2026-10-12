@@ -40,6 +40,30 @@ internal readonly struct Affine2D
     /// </summary>
     public static Affine2D ForGlyph(double scale, double originX, double originY) => new(scale, 0, 0, -scale, originX, originY);
 
+    /// <summary>Gets the transformation that applies six numbers (xx, yx, xy, yy, dx, dy) first, then this one.</summary>
+    public Affine2D Then(ReadOnlySpan<double> inner) => new(
+        (A * inner[0]) + (C * inner[1]),
+        (B * inner[0]) + (D * inner[1]),
+        (A * inner[2]) + (C * inner[3]),
+        (B * inner[2]) + (D * inner[3]),
+        ((A * inner[4]) + (C * inner[5])) + Tx,
+        ((B * inner[4]) + (D * inner[5])) + Ty);
+
+    /// <summary>Gets the transformation that undoes this one.</summary>
+    /// <returns><see langword="false"/> when the transformation flattens the plane: nothing undoes it.</returns>
+    public bool TryInvert(out Affine2D inverse)
+    {
+        var determinant = (A * D) - (B * C);
+        if (determinant == 0 || !double.IsFinite(determinant))
+        {
+            inverse = default;
+            return false;
+        }
+
+        inverse = new Affine2D(D / determinant, -B / determinant, -C / determinant, A / determinant, ((C * Ty) - (D * Tx)) / determinant, ((B * Tx) - (A * Ty)) / determinant);
+        return true;
+    }
+
     public double TransformX(double x, double y) => ((A * x) + (C * y)) + Tx;
 
     public double TransformY(double x, double y) => ((B * x) + (D * y)) + Ty;

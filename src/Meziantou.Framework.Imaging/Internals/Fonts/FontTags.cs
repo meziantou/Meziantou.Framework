@@ -34,6 +34,11 @@ internal static class FontTags
     public const uint Gvar = ((uint)'g' << 24) | ((uint)'v' << 16) | ((uint)'a' << 8) | 'r';
     public const uint Hvar = ((uint)'H' << 24) | ((uint)'V' << 16) | ((uint)'A' << 8) | 'R';
     public const uint Mvar = ((uint)'M' << 24) | ((uint)'V' << 16) | ((uint)'A' << 8) | 'R';
+    public const uint Colr = ((uint)'C' << 24) | ((uint)'O' << 16) | ((uint)'L' << 8) | 'R';
+    public const uint Cpal = ((uint)'C' << 24) | ((uint)'P' << 16) | ((uint)'A' << 8) | 'L';
+    public const uint Sbix = ((uint)'s' << 24) | ((uint)'b' << 16) | ((uint)'i' << 8) | 'x';
+    public const uint Cblc = ((uint)'C' << 24) | ((uint)'B' << 16) | ((uint)'L' << 8) | 'C';
+    public const uint Cbdt = ((uint)'C' << 24) | ((uint)'B' << 16) | ((uint)'D' << 8) | 'T';
 
     // Axes of a variable font
     public const uint WeightAxis = ((uint)'w' << 24) | ((uint)'g' << 16) | ((uint)'h' << 8) | 't';

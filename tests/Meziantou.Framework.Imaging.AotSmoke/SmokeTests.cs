@@ -656,6 +656,25 @@ internal static class SmokeTests
         Check(Math.Abs(heavyLayout.InkBounds.Left - 1.6) < 1e-9 && Math.Abs(heavyLayout.InkBounds.Right - 11.2) < 1e-9, "text: instance outline");
         Check(variable.WithVariations(variable.NamedInstances[2]).Variations[1].Value == 200, "text: named instance");
 
+        // A color glyph: at 16 pixels per em, the three layers of A are squares of 12, 8 and 4 pixels, red, green and
+        // the color of the text
+        var color = Font.Load(SmokeFonts.ColorBoxesTtf);
+        Check(color.HasColorGlyphs && color.ColorPalettes is [{ Colors: [{ R: 255, G: 0, B: 0, A: 255 }, ..] }, _], "text: palettes");
+        using (var emoji = new Image<Rgba32>(16, 16, new Rgba32(255, 255, 255)))
+        {
+            emoji.Draw(color, static (canvas, font) => canvas.FillText(new Rgba32(0, 0, 255), "A", font, 16, new PointD(0, 0)));
+            var pixels = emoji.Frames[0];
+            Check(pixels[2, 1] == new Rgba32(255, 0, 0) && pixels[4, 3] == new Rgba32(0, 255, 0) && pixels[6, 5] == new Rgba32(0, 0, 255) && pixels[1, 1] == new Rgba32(255, 255, 255), "text: color glyph");
+        }
+
+        // A glyph that is an image: at the size of its strike, 16 pixels per em, its pixels are those of the canvas
+        using (var bitmap = new Image<Rgba32>(16, 16, new Rgba32(255, 255, 255)))
+        {
+            bitmap.Draw(Font.Load(SmokeFonts.BitmapBoxesTtf), static (canvas, font) => canvas.FillText(new Rgba32(0, 0, 0), "A", font, 16, new PointD(0, 0)));
+            var pixels = bitmap.Frames[0];
+            Check(pixels[2, 1] == new Rgba32(255, 0, 0) && pixels[6, 5] == new Rgba32(0, 255, 0) && pixels[5, 12] == new Rgba32(127, 127, 255) && pixels[1, 1] == new Rgba32(255, 255, 255), "text: bitmap glyph");
+        }
+
         var hebrew = TextLayout.Create("\u05D0\u05D1 AB", new TextStyle(boxes, 16), new TextLayoutOptions { Direction = TextDirection.RightToLeft });
         Check(hebrew.Lines[0].IsRightToLeft && hebrew.HasMissingGlyphs, "text: direction");
 

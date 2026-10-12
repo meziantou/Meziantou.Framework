@@ -191,6 +191,12 @@ its first point, even a line without length: the library does the same, so that 
 | `fonts/noto-sans-variable` | ttf | 1 | OFL-1.1 | Noto Sans 2.015 variable (weight and width), subset to 123 characters (279 glyphs) with every variation table kept: `gvar`, `HVAR`, `MVAR`, `avar`, positions and anchors of `GPOS` that vary |
 | `fonts/noto-sans-cjk-jp-variable` | otf | 1 | OFL-1.1 | Noto Sans CJK JP 2.004 variable (weight), subset to 133 characters (566 glyphs): a CID-keyed `CFF2` table with several font DICTs, blended hints kept, `HVAR`, `avar` |
 | `fonts/trt-*` | ttf, otf | 1 | OFL-1.1, Apache-2.0 or CC0-1.0 (see the manifest) | Ten fonts of the text-rendering-tests suite of the Unicode Consortium, stored as they are (`fonts/text-rendering-tests/`), each made for one feature: `avar`, `gvar` (also composite glyphs and regions between two values), `HVAR` with TrueType and with CFF2 outlines, `CFF2`, feature variations (`rvrn`) with both kinds of outlines, anchors of `GPOS` that vary |
+| `fonts/synthetic-color-boxes` | ttf | 1 | CC0-1.0 | A color font of rectangles: `COLR` version 0 (layers, a layer with the color of the text), `CPAL` version 1 with two palettes and their types |
+| `fonts/synthetic-color-transforms`, `-gradients`, `-clips` | ttf | 1 | CC0-1.0 | `COLR` version 1, one glyph per case: opacity, translation, scale, rotation, skew, matrix, nested clips, compositions; linear, radial and sweep gradients with each extend mode and the degenerate color lines; clip boxes, a glyph that paints another one, a glyph that paints itself |
+| `fonts/colr-test-glyphs`, `fonts/colr-test-glyphs-variable` | ttf | 1 | Apache-2.0 | The COLRv1 test glyphs of the googlefonts/color-fonts project, stored as they are: 220 glyphs, one per feature of the paints (every composition mode, extend modes of each gradient, transformations, clip boxes, the color of the text, cycles), and their variable form (18 axes that vary the fields of the paints) |
+| `fonts/colr-twemoji-smiley`, `fonts/colr-twemoji-smiley-cff2` | ttf, otf | 1 | CC-BY-4.0 | Fifteen emoji of the Twemoji set as `COLR` version 1 paints, with TrueType and with CFF2 outlines, from the same project |
+| `fonts/synthetic-bitmap-boxes`, `fonts/synthetic-color-bitmaps` | ttf | 1 | CC0-1.0 | Glyphs that are PNG images of a few flat colors, in strikes of 16 and 32 pixels per em: an `sbix` table (an image that stands for another glyph's, a glyph without image) and `CBLC` and `CBDT` tables; one glyph is an outline only |
+| `fonts/sbix-twemoji-smiley` | ttf | 1 | CC-BY-4.0 | The fifteen emoji of the same project as PNG images of an `sbix` table, in one strike of 109 pixels per em |
 | `fonts/*-woff`, `fonts/*-woff2` | woff, woff2 | as the original | as the original | WOFF of the boxes, deltas, charstrings, Noto Sans and Noto Sans CJK fonts; WOFF2 of the boxes, curves, deltas, charstrings, collection and both Noto Sans fonts |
 | `fonts/synthetic-boxes-woff2-metrics`, `fonts/synthetic-deltas-woff2-boxes` | woff2 | 1 | CC0-1.0 | Written by `FontWoff2Writer`: transformed horizontal metrics (both flags, then one), every bounding box stored |
 
@@ -209,6 +215,36 @@ The fonts of the text-rendering-tests suite come from `test/shape/data/text-rend
 HarfBuzz the AOTS suite comes from, copied to a `text-rendering-tests` directory of the fonts directory. Only the fonts
 whose own license (the one their `name` table declares, or the Apache-2.0 license of the suite when they declare none)
 is accepted by the corpus are stored; the fonts of the suite under another license are not.
+
+A color font has **renders** instead of outline vectors (`renders` of its entry, `FontRender` in the test harness):
+lines of its characters drawn by `hb-raster`, the rasterizer of the HarfBuzz utilities, as PNG files of
+`fonts/renders/`. A line is drawn in its box (`--logical`, with the ascent and the descent given by
+`--font-extents`, so that they are whole pixels) with a margin of 32 pixels, on a white background: the origin of its
+first glyph is at (margin, margin + ascent). The tests draw the same line at the same place and compare the images
+(`Conformance/ColorFontConformanceTests`): the two rasterizers anti-alias edges differently and the reference one
+works with 8-bit colors, so the test bounds the mean difference, the part of the pixels that differ by more than 24
+levels, and the size of a block of such pixels, which an edge never is. This is a cross-check of the whole pipeline,
+not an exact reference: the exact expectations are the literals of `ColorFontTests`, computed by hand on the
+synthetic color fonts, which `hb-raster` also draws.
+
+A few characters are left out of the lines (`CharactersWithoutReference` in `FontCorpus.cs`) because the reference
+renderer does not draw them as the OpenType specification says: it draws nothing for a sweep gradient that pads and
+whose angles are equal or whose stops are at one offset (the specification gives it two colors), and nothing for a
+glyph that paints the same glyph several times, which is not a cycle. These cases have literals in `ColorFontTests`.
+
+The fonts whose glyphs are images are drawn at the sizes of their strikes (`--font-ppem`, without which the reference
+renderer takes the largest strike), where a pixel of an image is a pixel of the render. The reference renderer draws
+an image one pixel higher than the specification places it (the row of an image that is on the baseline is drawn above
+it): a render records that shift (`imageShift`, in pixels, down when positive) and the test draws its line there. A
+line of these fonts has no glyph that is an outline, which the reference renderer does not shift.
+
+Regenerating the renders and the vectors runs the reference tools thousands of times. When
+`MEZIANTOU_FRAMEWORK_IMAGING_CORPUS_CACHE` names a directory, the generator keeps there the output of each command,
+keyed by its arguments and by the content of its input files, and reuses it; the variable is not set by default.
+
+The fonts of the googlefonts/color-fonts project (`fonts/color-fonts/`) come from its `fonts` directory at the commit
+`FontCorpus.cs` pins. The test glyphs are generated by a script of the project (Apache-2.0); the emoji are those of
+Twemoji (CC-BY-4.0, Twitter, Inc and other contributors).
 
 The `shaping` file of a font (`ShapingVectors` in the test harness) holds texts and what the OpenType shaper of
 HarfBuzz gives for them: `hb-shape --shapers=ot --font-funcs=ot --no-glyph-names`, with the features of the case and, for a variable font, the

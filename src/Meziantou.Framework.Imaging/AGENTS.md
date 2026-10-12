@@ -324,6 +324,33 @@ directory and the fixed-size tables, `CmapTable` maps characters, `GlyfOutlineRe
   quadrilateral per chord, and more than one turn around a closed path is one turn (the work is bounded by the number
   of chords, not by the length of the text). The literals are whole-pixel rectangles on axis-aligned paths and a 3-4-5
   slope (`DrawingTextTests`).
+- **Color glyphs** (`ColrTable`, `ColorGlyph`, `ColorSurface`, `DrawingSession.ColorGlyphs.cs`). The graph of paints
+  of a glyph is walked once, when a layout is created (`TextLayout.Measure`), and written as a flat display list with
+  the transformations resolved: fills of an outline or of the clip, clips (an outline, a box), layers and their
+  composition. The walk validates everything the glyph refers to, charges `GlyphBudget` per paint, and leaves out a
+  paint that refers to a glyph or a layer that is being painted. Drawing runs the list on a `ColorSurface`: layers of
+  premultiplied single precision colors and clip masks over the box of the glyph on the canvas, filled row by row
+  from the unchanged `CoverageRasterizer`, then composited onto the frames as a paint with a color per pixel.
+  - `FillText` prepares every color glyph (`paint: false`: the surface of the largest one, the sweep of every
+    outline) before any shape of the call is painted, then paints them after the shapes of the brushes.
+  - Angles go through `DeterministicAngle` (series and square roots, in half turns), never `Math.Sin`, `Cos` or
+    `Atan2`: the rule against trigonometric functions in drawing holds for the paints.
+  - The degenerate cases are those of the specification, not of a renderer: equal sweep angles or stops at one
+    offset give two colors when the color line pads and nothing when it repeats or reflects.
+  - A bitmap glyph (`SbixTable`, `CblcTable`, `ColorImage`) is a display list of one op, `FillImage`, whose paint is
+    the image: decoded with the PNG decoder of the library under the limits of the font, scaled down once at layout
+    time (`Resize`) when the strike is larger than the text, sampled bilinearly at draw time. The key of a color glyph
+    in a layout is (font, glyph, palette) for paints and (font, glyph, size) for images. `FontFace.IsColorGlyph` is
+    about `COLR` only: use `TryGetBitmapGlyph` for images.
+  - Tests: literals on `FontSamples.ColorBoxes`, `ColorTransforms`, `ColorGradients` and `ColorClips` (rectangles on
+    whole pixels, gradient values at pixel centers; `ColorFontTests`), and the images `hb-raster` draws for the fonts
+    of the corpus (`Conformance/ColorFontConformanceTests`: two rasterizers do not give the same edge pixels, so
+    the comparison is statistical). The glyphs the reference renderer does not draw as the specification says are
+    listed in `FontCorpus.CharactersWithoutReference` with the reason, and are covered by literals. `hb-raster`
+    needs `--font-ppem` to choose the strike of a bitmap font (without it, the largest), and draws an image one pixel
+    higher than an outline (`FontRender.ImageShift`): a line of a bitmap font has no outline glyph for that reason.
+    The literals of the bitmap glyphs are on `FontSamples.BitmapBoxes` (both table families, every index and image
+    format).
 - **The layout overloads allocate nothing** once the scratch of the session has grown (`PerformanceContractTests`). The
   overload that takes a string creates a layout and is the documented exception.
 - Tests: literals on the boxes font (rectangles on whole pixels at 16 pixels per em, compared with `FillRectangle`;

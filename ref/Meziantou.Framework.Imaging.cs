@@ -1436,6 +1436,8 @@ namespace Meziantou.Framework.Imaging.Typography
         public int UnitsPerEm { get => throw null; }
         public int GlyphCount { get => throw null; }
         public Meziantou.Framework.Imaging.Typography.FontMetrics Metrics { get => throw null; }
+        public bool HasColorGlyphs { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Imaging.Typography.FontColorPalette> ColorPalettes { get => throw null; }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Imaging.Typography.FontVariationAxis> VariationAxes { get => throw null; }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Imaging.Typography.FontNamedInstance> NamedInstances { get => throw null; }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Imaging.Typography.FontVariationSetting> Variations { get => throw null; }
@@ -1461,6 +1463,13 @@ namespace Meziantou.Framework.Imaging.Typography
         public static System.Threading.Tasks.Task<Meziantou.Framework.Imaging.Typography.FontCollection> LoadAsync(System.IO.Stream stream, Meziantou.Framework.Imaging.Typography.FontLoadOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public System.Collections.Generic.IEnumerator<Meziantou.Framework.Imaging.Typography.Font> GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
+    }
+
+    public sealed class FontColorPalette
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Imaging.Rgba32> Colors { get => throw null; }
+        public bool IsForLightBackground { get => throw null; }
+        public bool IsForDarkBackground { get => throw null; }
     }
 
     public readonly struct FontFeature : System.IEquatable<Meziantou.Framework.Imaging.Typography.FontFeature>
@@ -1676,6 +1685,7 @@ namespace Meziantou.Framework.Imaging.Typography
         public double WordSpacing { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Typography.TextDecorations Decorations { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Drawing.Brush? DecorationBrush { get => throw null; init { } }
+        public int ColorPaletteIndex { get => throw null; init { } }
         public Meziantou.Framework.Hyphenator? Hyphenator { get => throw null; init { } }
         public TextStyle(Meziantou.Framework.Imaging.Typography.FontStack fonts, double size) { }
     }

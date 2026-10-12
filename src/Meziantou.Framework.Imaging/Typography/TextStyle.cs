@@ -93,6 +93,22 @@ public sealed class TextStyle
     public Brush? DecorationBrush { get; init; }
 
     /// <summary>
+    /// Gets the palette the color glyphs of the text take their colors from: an index in <see cref="Font.ColorPalettes"/>
+    /// of the font of each glyph. 0 by default; a font that does not have the palette uses its first one.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">The value is negative or greater than 65535.</exception>
+    public int ColorPaletteIndex
+    {
+        get;
+        init
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(value);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(value, ushort.MaxValue);
+            field = value;
+        }
+    }
+
+    /// <summary>
     /// Gets the hyphenation patterns of the language of the text, or <see langword="null"/> (the default). They are
     /// used when the layout hyphenates automatically (<see cref="TextHyphenation.Automatic"/>).
     /// </summary>

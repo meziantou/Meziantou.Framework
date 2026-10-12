@@ -31,7 +31,7 @@ internal static class TiffFormat
     /// <summary>The <c>MM</c> byte-order mark of a big-endian TIFF.</summary>
     public static ReadOnlySpan<byte> BigEndianMark => "MM"u8;
 
-    // Baseline tags read by the decoder; every other tag is skipped without being interpreted
+    // The tags read by the decoder; every other tag is skipped without being interpreted
     public const ushort NewSubfileTypeTag = 254;
     public const ushort SubfileTypeTag = 255;
     public const ushort ImageWidthTag = 256;
@@ -51,6 +51,8 @@ internal static class TiffFormat
     public const ushort YResolutionTag = 283;
     public const ushort PlanarConfigurationTag = 284;
     public const ushort PageNameTag = 285;
+    public const ushort T4OptionsTag = 292;
+    public const ushort T6OptionsTag = 293;
     public const ushort ResolutionUnitTag = 296;
     public const ushort PageNumberTag = 297;
     public const ushort SoftwareTag = 305;
@@ -60,9 +62,16 @@ internal static class TiffFormat
     public const ushort TileLengthTag = 323;
     public const ushort TileOffsetsTag = 324;
     public const ushort TileByteCountsTag = 325;
+    public const ushort InkSetTag = 332;
+    public const ushort NumberOfInksTag = 334;
+    public const ushort DotRangeTag = 336;
     public const ushort ExtraSamplesTag = 338;
     public const ushort SampleFormatTag = 339;
     public const ushort JpegTablesTag = 347;
+    public const ushort YCbCrCoefficientsTag = 529;
+    public const ushort YCbCrSubSamplingTag = 530;
+    public const ushort YCbCrPositioningTag = 531;
+    public const ushort ReferenceBlackWhiteTag = 532;
     public const ushort XmpTag = 700;
     public const ushort ExifIfdPointerTag = 34665;
     public const ushort IccProfileTag = 34675;
@@ -108,6 +117,22 @@ internal static class TiffFormat
     public const int ExtraSampleUnspecified = 0;
     public const int ExtraSampleAssociatedAlpha = 1;
     public const int ExtraSampleUnassociatedAlpha = 2;
+
+    // FillOrder values
+    public const int FillOrderMostSignificantBitFirst = 1;
+    public const int FillOrderLeastSignificantBitFirst = 2;
+
+    // T4Options bits (Group 3) and T6Options bits (Group 4)
+    public const uint T4OptionTwoDimensional = 1;
+    public const uint T4OptionUncompressedMode = 2;
+    public const uint T4OptionFillBits = 4;
+    public const uint T6OptionUncompressedMode = 2;
+
+    // InkSet values
+    public const int InkSetCmyk = 1;
+
+    /// <summary>The largest accepted <c>JPEGTables</c> field: four quantization tables and eight Huffman tables fit in far less.</summary>
+    public const int MaxJpegTablesLength = 64 * 1024;
 
     // ResolutionUnit values
     public const int ResolutionUnitNone = 1;

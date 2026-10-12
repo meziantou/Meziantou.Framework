@@ -61,7 +61,10 @@ internal sealed class JpegRowWriter : IDisposable
     private static readonly int[] CrToG = CreateTable(static v => (-46802 * v) + 32768);
 
     private readonly JpegFrameComponent[] _components;
-    private readonly DecodedFrameSink _sink;
+    private readonly DecodedFrameSink? _sink;
+
+    // The container of an embedded datastream, which receives the samples instead of an image; null for an image
+    private readonly JpegSampleReceiver? _receiver;
     private readonly ImageColorModel _colorModel;
 
     // The conversion of the inks of a four-component frame to RGB; null for the other frames
@@ -74,12 +77,23 @@ internal sealed class JpegRowWriter : IDisposable
     private PooledBuffer? _inkRow;
 
     public JpegRowWriter(JpegFrameComponent[] components, DecodedFrameSink sink, ImageColorModel colorModel, IccPipeline? inkConversion, int width, int height, int maxVertical, AllocationScope scope)
+        : this(components, sink, receiver: null, colorModel, inkConversion, width, height, maxVertical, scope)
     {
         if ((components.Length == 4) != (inkConversion is not null))
             throw new ArgumentException("A four-component frame, and only it, needs the conversion of its inks.", nameof(inkConversion));
+    }
 
+    /// <summary>Creates a writer that hands the rows to the container of an embedded datastream instead of an image.</summary>
+    public JpegRowWriter(JpegFrameComponent[] components, JpegSampleReceiver receiver, ImageColorModel colorModel, int width, int height, int maxVertical, AllocationScope scope)
+        : this(components, sink: null, receiver, colorModel, inkConversion: null, width, height, maxVertical, scope)
+    {
+    }
+
+    private JpegRowWriter(JpegFrameComponent[] components, DecodedFrameSink? sink, JpegSampleReceiver? receiver, ImageColorModel colorModel, IccPipeline? inkConversion, int width, int height, int maxVertical, AllocationScope scope)
+    {
         _components = components;
         _sink = sink;
+        _receiver = receiver;
         _colorModel = colorModel;
         _inkConversion = inkConversion;
         _width = width;
@@ -96,7 +110,8 @@ internal sealed class JpegRowWriter : IDisposable
                 }
             }
 
-            if (!sink.Plan.IsIdentity && components.Length > 1)
+            // A sink that stores the rows as they are is written in place; a receiver is given a row of its own
+            if (sink is null ? components.Length == 3 : !sink.Plan.IsIdentity && components.Length > 1)
             {
                 _sourceRow = scope.Rent(width * 3, AllocationKind.DecoderState, clear: false);
             }
@@ -123,10 +138,20 @@ internal sealed class JpegRowWriter : IDisposable
         cancellationToken.ThrowIfCancellationRequested();
         var first = BandsWritten * _bandRows;
         var last = Math.Min(_height, first + _bandRows);
-        using var lease = _sink.LeaseCurrentFrame();
-        for (var y = first; y < last; y++)
+        if (_receiver is not null)
         {
-            WriteRow(lease, y);
+            for (var y = first; y < last; y++)
+            {
+                WriteSampleRow(_receiver, y);
+            }
+        }
+        else
+        {
+            using var lease = _sink!.LeaseCurrentFrame();
+            for (var y = first; y < last; y++)
+            {
+                WriteRow(lease, y);
+            }
         }
 
         BandsWritten++;
@@ -157,19 +182,62 @@ internal sealed class JpegRowWriter : IDisposable
         return table;
     }
 
+    /// <summary>Hands one row of an embedded datastream to its container: the samples of the components, interleaved.</summary>
+    private void WriteSampleRow(JpegSampleReceiver receiver, int y)
+    {
+        if (_components.Length == 1)
+        {
+            receiver.OnRow(y, _components[0].GetRow(y)[.._width]);
+            return;
+        }
+
+        var c0 = GetSamples(_components[0], y);
+        var c1 = GetSamples(_components[1], y);
+        var c2 = GetSamples(_components[2], y);
+        if (_components.Length == 4)
+        {
+            // The container says what the four samples are: they are handed over as they are stored
+            var samples = _inkRow!.RawBuffer.AsSpan(0, _width * 4);
+            var c3 = GetSamples(_components[3], y);
+            for (var x = 0; x < c3.Length; x++)
+            {
+                samples[4 * x] = c0[x];
+                samples[(4 * x) + 1] = c1[x];
+                samples[(4 * x) + 2] = c2[x];
+                samples[(4 * x) + 3] = c3[x];
+            }
+
+            receiver.OnRow(y, samples);
+            return;
+        }
+
+        var row = _sourceRow!.RawBuffer.AsSpan(0, _width * 3);
+        if (_colorModel == ImageColorModel.YCbCr)
+        {
+            ConvertYCbCr(c0, c1, c2, row);
+        }
+        else
+        {
+            Interleave(c0, c1, c2, row);
+        }
+
+        receiver.OnRow(y, row);
+    }
+
     private void WriteRow(scoped in PixelLease lease, int y)
     {
+        var sink = _sink!;
         if (_components.Length == 1)
         {
             // Grayscale: the luma samples are the output (a single-component frame is never subsampled)
             var samples = _components[0].GetRow(y)[.._width];
-            if (_sink.Plan.IsIdentity)
+            if (sink.Plan.IsIdentity)
             {
                 samples.CopyTo(lease.GetRowBytes(y));
             }
             else
             {
-                _sink.WriteRow(lease, y, samples);
+                sink.WriteRow(lease, y, samples);
             }
 
             return;
@@ -178,7 +246,7 @@ internal sealed class JpegRowWriter : IDisposable
         var c0 = GetSamples(_components[0], y);
         var c1 = GetSamples(_components[1], y);
         var c2 = GetSamples(_components[2], y);
-        var identity = _sink.Plan.IsIdentity;
+        var identity = sink.Plan.IsIdentity;
         var row = identity ? lease.GetRowBytes(y)[..(_width * 3)] : _sourceRow!.RawBuffer.AsSpan(0, _width * 3);
         if (_inkConversion is not null)
         {
@@ -199,12 +267,7 @@ internal sealed class JpegRowWriter : IDisposable
         }
         else if (_colorModel == ImageColorModel.Rgb)
         {
-            for (var x = 0; x < c0.Length; x++)
-            {
-                row[3 * x] = c0[x];
-                row[(3 * x) + 1] = c1[x];
-                row[(3 * x) + 2] = c2[x];
-            }
+            Interleave(c0, c1, c2, row);
         }
         else
         {
@@ -213,7 +276,18 @@ internal sealed class JpegRowWriter : IDisposable
 
         if (!identity)
         {
-            _sink.WriteRow(lease, y, row);
+            sink.WriteRow(lease, y, row);
+        }
+    }
+
+    /// <summary>Interleaves three planes whose samples are stored as they are displayed.</summary>
+    private static void Interleave(ReadOnlySpan<byte> first, ReadOnlySpan<byte> second, ReadOnlySpan<byte> third, Span<byte> destination)
+    {
+        for (var x = 0; x < first.Length; x++)
+        {
+            destination[3 * x] = first[x];
+            destination[(3 * x) + 1] = second[x];
+            destination[(3 * x) + 2] = third[x];
         }
     }
 

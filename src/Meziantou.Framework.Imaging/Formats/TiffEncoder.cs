@@ -3,16 +3,18 @@ namespace Meziantou.Framework.Imaging.Formats;
 /// <summary>Immutable settings for TIFF and BigTIFF encoding.</summary>
 /// <remarks>
 /// <para>
-/// The output is a deliberately conservative subset of TIFF 6.0, chosen so that any reader accepts it: little-endian by
-/// default, chunky samples, top-down strips, no predictor, and either uncompressed or Deflate data
-/// (<see cref="Compression"/>). Tiles, planar storage, palettes, LZW, PackBits, CCITT fax and JPEG compression are never
-/// written.
+/// The container is the part of TIFF 6.0 that any reader accepts: little-endian by default, chunky samples, top-down
+/// strips, no predictor. <see cref="Compression"/> selects no compression, Deflate (the default), LZW, PackBits, the
+/// CCITT facsimile compressions or JPEG. Tiles and planar storage are never written.
 /// </para>
 /// <para>
-/// The sample layout follows the pixel format of the image, losslessly: <c>Gray8</c>/<c>Gray16</c> become 8- or 16-bit
-/// <c>BlackIsZero</c> grayscale, <c>Rgb24</c> becomes 8-bit RGB, and the formats with alpha become RGBA with
-/// <c>ExtraSamples = 2</c> (unassociated, straight alpha). Nothing is quantized and alpha is never dropped, so this
-/// encoder needs no background color and no bit-depth-reduction switch.
+/// By default (<see cref="TiffPixelLayout.Auto"/>) the sample layout follows the pixel format of the image, losslessly:
+/// <c>Gray8</c>/<c>Gray16</c> become 8- or 16-bit <c>BlackIsZero</c> grayscale, <c>Rgb24</c> becomes 8-bit RGB, and the
+/// formats with alpha become RGBA with <c>ExtraSamples = 2</c> (unassociated, straight alpha). Nothing is quantized and
+/// alpha is never dropped. <see cref="PixelLayout"/> also selects a bilevel layout (one bit per pixel) and a palette
+/// layout, which store the image exactly or reject it: this encoder has no background color, no bit-depth-reduction
+/// switch and no color reduction. The only output that is not exact is the one of <see cref="TiffCompression.Jpeg"/>,
+/// which is lossy by nature and selected explicitly. CMYK data is never written.
 /// </para>
 /// <para>
 /// <strong>The destination must be seekable.</strong> A TIFF directory stores the offsets of the strips it describes, so
@@ -29,7 +31,8 @@ namespace Meziantou.Framework.Imaging.Formats;
 /// Metadata (subject to <see cref="ImageEncoder.MetadataHandling"/>): the resolution
 /// (<c>XResolution</c>/<c>YResolution</c>/<c>ResolutionUnit</c>), the orientation (<c>Orientation</c>), the ICC profile
 /// (<c>InterColorProfile</c>) and the XMP packet (<c>XMP</c>). An EXIF block and text entries are not stored (rejected by
-/// default).
+/// default). A profile describes the written samples: a bilevel page is grayscale and a palette page is RGB, whatever
+/// the pixel format of the image, so a profile of the other color space is metadata the page cannot store.
 /// </para>
 /// </remarks>
 public sealed class TiffEncoder : ImageEncoder
@@ -54,6 +57,60 @@ public sealed class TiffEncoder : ImageEncoder
         }
     } = TiffCompression.Deflate;
 
+    /// <summary>Gets the sample layout. Defaults to <see cref="TiffPixelLayout.Auto"/>.</summary>
+    /// <remarks>
+    /// <see cref="TiffCompression.CcittModifiedHuffman"/>, <see cref="TiffCompression.CcittGroup3"/> and
+    /// <see cref="TiffCompression.CcittGroup4"/> require <see cref="TiffPixelLayout.Bilevel"/>, and
+    /// <see cref="TiffCompression.Jpeg"/> requires <see cref="TiffPixelLayout.Auto"/>; saving fails with an
+    /// <see cref="ArgumentException"/> otherwise.
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException">The value is not a defined <see cref="TiffPixelLayout"/>.</exception>
+    public TiffPixelLayout PixelLayout
+    {
+        get;
+        init
+        {
+            if (!Enum.IsDefined(value))
+                throw new ArgumentOutOfRangeException(nameof(value), value, "The pixel layout is not valid.");
+
+            field = value;
+        }
+    }
+
+    /// <summary>
+    /// Gets the quality of <see cref="TiffCompression.Jpeg"/>, from 1 (smallest output) to 100 (best quality), with the
+    /// meaning of <see cref="JpegEncoder.Quality"/>. Defaults to 90. Ignored by the other compressions.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">The value is not between 1 and 100.</exception>
+    public int JpegQuality
+    {
+        get;
+        init
+        {
+            ArgumentOutOfRangeException.ThrowIfLessThan(value, 1);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(value, 100);
+            field = value;
+        }
+    } = 90;
+
+    /// <summary>
+    /// Gets the chroma subsampling of <see cref="TiffCompression.Jpeg"/> for the color pixel formats, with the meaning of
+    /// <see cref="JpegEncoder.ChromaSubsampling"/>. Defaults to <see cref="JpegChromaSubsampling.Auto"/> (4:2:0). Ignored
+    /// by the other compressions and by the gray pixel formats.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">The value is not a defined <see cref="JpegChromaSubsampling"/>.</exception>
+    public JpegChromaSubsampling JpegChromaSubsampling
+    {
+        get;
+        init
+        {
+            if (!Enum.IsDefined(value))
+                throw new ArgumentOutOfRangeException(nameof(value), value, "The chroma subsampling is not valid.");
+
+            field = value;
+        }
+    }
+
     /// <summary>
     /// Gets a value indicating whether to write a BigTIFF (magic 43, 64-bit offsets) instead of a classic TIFF. Defaults to
     /// <see langword="false"/>: a classic TIFF is accepted by far more readers, and nothing this encoder writes needs
@@ -71,7 +128,7 @@ public sealed class TiffEncoder : ImageEncoder
     /// <summary>
     /// Gets the number of rows of one strip, or 0 (the default) to choose a number of rows whose uncompressed size is
     /// close to <see cref="DefaultStripBytes"/>, so that encoding one page needs a bounded amount of memory whatever the
-    /// size of the page.
+    /// size of the page. Ignored by <see cref="TiffCompression.Jpeg"/>, which writes each page as one strip.
     /// </summary>
     /// <exception cref="ArgumentOutOfRangeException">The value is negative.</exception>
     public int RowsPerStrip

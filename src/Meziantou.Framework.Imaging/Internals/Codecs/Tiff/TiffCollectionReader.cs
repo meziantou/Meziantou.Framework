@@ -2,8 +2,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
 /// The <see cref="ImageCollectionReader"/> of a TIFF or BigTIFF document: the pages are resolved from the directory chain
-/// when the collection is loaded, and the pixels of a page are read only when that page is decoded
-///.
+/// when the collection is loaded, and the pixels of a page are read only when that page is decoded.
 /// </summary>
 internal sealed class TiffCollectionReader : ImageCollectionReader
 {
@@ -55,10 +54,5 @@ internal sealed class TiffCollectionReader : ImageCollectionReader
     }
 
     protected override Image DecodeCore(int index, RandomAccessSource source, ImageDecodeRequest request, ImageCodecContext context)
-    {
-        var page = _pages[index];
-        using var sink = DecodedFrameSink.Create(context, request, ImageFormat.Tiff, page.Size, page.SourcePixelFormat, page.SourcePixelFormat, page.Metadata.IccProfile);
-        TiffPageDecoder.Decode(source, page, sink);
-        return sink.Build(page.Metadata, animation: null);
-    }
+        => TiffPageDecoder.Decode(source, _pages[index], request, context);
 }

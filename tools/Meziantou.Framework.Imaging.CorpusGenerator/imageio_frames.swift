@@ -7,13 +7,21 @@
 // convert losslessly: "none skip last" (an opaque frame: the padding byte is replaced by 255) and "premultiplied last" when
 // every alpha sample is 0 or 255 (opaque colors are unchanged; fully transparent pixels have no color, written as 0,0,0,0).
 // Any other alpha value still fails.
-// Usage: swift imageio_frames.swift [--binary-alpha] <input> (prints "frames <n> <width> <height> <bits>" on stderr)
+// With --opaque (TIFF pages without alpha), two 8-bit layouts without alpha are accepted because they convert
+// losslessly: one grayscale sample per pixel (written as gray, gray, gray, 255, the sample inverted when the decode array
+// of the image says that 0 is white) and "none skip last" RGB (the padding byte is replaced by 255).
+// Usage: swift imageio_frames.swift [--binary-alpha | --opaque] <input> (prints "frames <n> <width> <height> <bits>" on stderr)
 import Foundation
 import ImageIO
 
 var arguments = Array(CommandLine.arguments.dropFirst())
 let binaryAlpha = arguments.first == "--binary-alpha"
 if binaryAlpha {
+    arguments.removeFirst()
+}
+
+let opaque = arguments.first == "--opaque"
+if opaque {
     arguments.removeFirst()
 }
 
@@ -41,7 +49,9 @@ for index in 0..<count {
     let channels = image.bitsPerPixel / bits
     let orderMatches = order == expectedOrder || (bits == 8 && (order == CGBitmapInfo.byteOrder32Big.rawValue || order == CGBitmapInfo.byteOrder16Big.rawValue))
     let binaryLayout = binaryAlpha && bits == 8 && channels == 4 && orderMatches && (image.alphaInfo == .noneSkipLast || image.alphaInfo == .premultipliedLast)
-    guard binaryLayout || (image.alphaInfo == .last && (channels == 4 || channels == 2) && (bits == 8 || bits == 16) && orderMatches) else {
+    let opaqueGray = opaque && bits == 8 && channels == 1 && image.alphaInfo == .none && image.colorSpace?.model == .monochrome
+    let opaqueColor = opaque && bits == 8 && channels == 4 && orderMatches && image.alphaInfo == .noneSkipLast && image.colorSpace?.model == .rgb
+    guard binaryLayout || opaqueGray || opaqueColor || (image.alphaInfo == .last && (channels == 4 || channels == 2) && (bits == 8 || bits == 16) && orderMatches) else {
         fail("unsupported decoded layout: bits \(bits), alpha \(image.alphaInfo.rawValue), bitmap \(image.bitmapInfo.rawValue)", 4)
     }
 
@@ -62,6 +72,27 @@ for index in 0..<count {
                     converted[x * 4 + 1] = 0
                     converted[x * 4 + 2] = 0
                 }
+            }
+
+            output.append(contentsOf: converted)
+            continue
+        }
+
+        if opaqueGray {
+            // The samples are as the file stores them: a decode array of [1, 0] says that 0 is white (WhiteIsZero)
+            let inverted = image.decode.map { $0[0] > $0[1] } ?? false
+            for stored in row {
+                let value = inverted ? 255 - stored : stored
+                output.append(contentsOf: [value, value, value, 255])
+            }
+
+            continue
+        }
+
+        if opaqueColor {
+            var converted = [UInt8](row)
+            for x in 0..<image.width {
+                converted[x * 4 + 3] = 255
             }
 
             output.append(contentsOf: converted)

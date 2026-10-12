@@ -1193,6 +1193,12 @@ namespace Meziantou.Framework.Imaging.Formats
     {
         None = 0,
         Deflate = 1,
+        Lzw = 2,
+        PackBits = 3,
+        CcittModifiedHuffman = 4,
+        CcittGroup3 = 5,
+        CcittGroup4 = 6,
+        Jpeg = 7,
     }
 
     public sealed class TiffEncoder : Meziantou.Framework.Imaging.Formats.ImageEncoder
@@ -1200,9 +1206,19 @@ namespace Meziantou.Framework.Imaging.Formats
         public const int DefaultStripBytes = 65536;
         public override Meziantou.Framework.Imaging.ImageFormat Format { get => throw null; }
         public Meziantou.Framework.Imaging.Formats.TiffCompression Compression { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Formats.TiffPixelLayout PixelLayout { get => throw null; init { } }
+        public int JpegQuality { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Formats.JpegChromaSubsampling JpegChromaSubsampling { get => throw null; init { } }
         public bool BigTiff { get => throw null; init { } }
         public bool BigEndian { get => throw null; init { } }
         public int RowsPerStrip { get => throw null; init { } }
+    }
+
+    public enum TiffPixelLayout
+    {
+        Auto = 0,
+        Bilevel = 1,
+        Indexed = 2,
     }
 
     public enum WebPCompression

@@ -152,6 +152,12 @@ public sealed class PerformanceContractTests
             canvas.DrawImage(state.Sprite, AffineTransform.CreateRotation(30, new PointD(5, 5)).Then(AffineTransform.CreateScale(0.4, 0.3)), ImageSampling.Smooth, 0.8);
             canvas.Fill(state.Tile, state.Path);
             canvas.FillText(state.Tile, state.Text, new PointD(2.5, 3));
+            canvas.Layer(0.6, state, static (layer, state) =>
+            {
+                layer.Fill(state.Gradient, state.Path);
+                layer.FillText(state.Solid, state.ColorText, new PointD(1, 20));
+                layer.Clip(new RectangleD(8.5, 4, 40, 30), state, static (inner, state) => inner.Layer(1, state, static (mask, state) => mask.Stroke(state.Pen, state.Path), CompositeMode.DestinationIn));
+            });
             canvas.Clip(state.Path, state, static (clipped, state) =>
             {
                 clipped.DrawImage(state.Sprite, new RectangleD(1.5, 2, 60, 44), 0.6);

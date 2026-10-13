@@ -900,6 +900,16 @@ public static void ComposeCard(string photoPath, string outputPath)
 }
 ```
 
+**Layers**. `canvas.Layer(opacity, callback)` runs a callback whose drawings are made on a transparent image of the
+size of the canvas, which is then drawn on the canvas as a whole. Shapes that overlap, drawn one after the other with a
+translucent paint, show through each other; in a layer they are drawn as they are, then the whole is faded. A layer can
+also be combined with the canvas by a compositing operator (see below): `CompositeMode.DestinationIn` makes a mask of
+any drawing, a text included, and `DestinationOut` an eraser. A layer starts transparent and has the coordinates of
+the canvas; layers and clips nest, and a clip that is active when a layer starts applies to the layer as a whole. The
+image of a layer comes from the allocation scope of the image (4 bytes per pixel on an 8-bit color canvas, 8 bytes
+otherwise) and is kept while the canvas lasts; a layer costs the clearing and the drawing of the pixels the clip can
+show, so start a layer inside `Clip` when it covers a small part of a large canvas.
+
 **Operators**. A brush is painted over the pixels (`CompositeMode.SourceOver`) unless its `CompositeMode` says
 otherwise. The modes are the compositing operators of Porter and Duff: `Source` replaces the pixels, alpha included (a
 transparent color erases), `DestinationOut` erases them where the paint is opaque (an eraser, with any shape and any
@@ -971,6 +981,11 @@ public static void MarkAnimation(string inputPath, string outputPath)
   size of the region) reads the pixels whose centers are less than `sx` and `sy` away from that position, with the
   weights `(1 - dx / sx) (1 - dy / sy)`; the weights of the pixels that are outside a transparent image count for the
   alpha. The opacity of an image multiplies the coverage, as a clip does.
+- **Layers.** A layer is an image with colors and alpha (`Rgba32` on an `Rgba32`, `Bgra32` or `Rgb24` canvas,
+  `Rgba64` otherwise) on which the drawings follow the rules of any frame. When it ends, it is drawn as an image is on
+  whole pixels: its pixels are converted to the pixel format of the canvas like brush colors, and its opacity
+  multiplies the coverage. A drawing of opaque colors on whole pixels is the same in a layer as on the canvas;
+  elsewhere the alpha of the layer is rounded to its samples before it is drawn, which can change a sample by one.
 - **Clips.** The coverage of a pixel under a clip is the product of the coverage of the shape and of the coverage of
   the clip, rounded to the nearest 1/65536 (ties upward). It is the area of what the shape and the clip have in common
   wherever one of them covers the pixel entirely; on a pixel that both only cover in part, it is the product of the two
@@ -1214,7 +1229,7 @@ public static void DrawTextOnPath(string fontPath, string outputPath)
 | Scripts that join | Arabic (with Persian, Urdu and the other languages written with it) and Syriac; in the universal model, N'Ko, Mongolian, Adlam, Mandaic, Manichaean, Psalter Pahlavi, Hanifi Rohingya, Sogdian, Old Uyghur, Chorasmian and Phags-pa |
 | Scripts with a model of their own | Hebrew; Thai and Lao; Hangul; Devanagari, Bengali, Gurmukhi, Gujarati, Oriya, Tamil, Telugu, Kannada and Malayalam; Khmer; Myanmar |
 | Scripts of the universal model | The scripts registered for the Universal Shaping Engine: Tibetan, Sinhala, Javanese, Balinese, Sundanese, Batak, Buginese, Cham, Tai Tham, Tai Le, Tai Viet, Lepcha, Limbu, Meetei Mayek, Newa, Kaithi, Sharada, Grantha, Chakma, Brahmi, Kharoshthi, Tifinagh, Duployan, Egyptian Hieroglyphs and the others |
-| Drawing | No transform on the canvas (a path is transformed with `VectorPath.Transform`), no blend mode (multiply, screen, ...) beyond the compositing operators, no layer or group opacity; always antialiased; composited on the encoded sample values (no linear-light option); sequential; an image that is reduced is read with four pixels per pixel of the canvas unless smooth sampling is asked for, whose filter is the one of the interpolation (`Resize` has sharper ones), and an image gives black as the color of the text to the glyphs a font draws with its own colors; a clip multiplies coverages (on a pixel that the shape and the clip both cover in part, that is not the area they have in common); the path of a stroke (`Widen`) is the pieces of the stroke, not a single outline (`Simplify` makes it one); combined and simplified paths are made of segments, on a grid of 1/1024 of a pixel; coordinates are limited to ±16,777,216 |
+| Drawing | No transform on the canvas (a path is transformed with `VectorPath.Transform`), no blend mode (multiply, screen, ...) beyond the compositing operators; always antialiased; composited on the encoded sample values (no linear-light option); sequential; an image that is reduced is read with four pixels per pixel of the canvas unless smooth sampling is asked for, whose filter is the one of the interpolation (`Resize` has sharper ones), and an image gives black as the color of the text to the glyphs a font draws with its own colors; a clip multiplies coverages (on a pixel that the shape and the clip both cover in part, that is not the area they have in common); the path of a stroke (`Widen`) is the pieces of the stroke, not a single outline (`Simplify` makes it one); combined and simplified paths are made of segments, on a grid of 1/1024 of a pixel; coordinates are limited to ±16,777,216 |
 | Fonts made before OpenType Layout | The marks of a font without positioning table are placed from the shapes of the glyphs; the letters of an Arabic font without substitution table take the presentation forms the font has as characters, with the ligatures of lam and alef; the marks of a Thai font without substitution table take the forms the font has in the private use area |
 
 The glyphs, the clusters and the positions are compared with those of a reference shaper (HarfBuzz) for fonts of

@@ -303,6 +303,12 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
   is a rectangle of whole pixels, a mask of coverages rasterized once, when the clip starts, by the same rasterizer.
   Draw calls multiply their coverage by the mask row by row (`ApplyClip`), into a row of the session: they rent nothing.
   Every path that composites pixels (`PaintRows`, the color glyphs) must go through `ApplyClip`.
+- A layer (`DrawingSession.Layers.cs`) replaces what the draw calls paint (`_frames`, `_storages`: never assume they
+  are the frames of the image) by an internal image created from the scope of the image, one per depth, kept until
+  the session ends. Starting a layer pushes a clip of whole pixels with the bounds of the clip under it (its mask is
+  applied when the layer is drawn); ending it is `DrawImage` of that image at the origin, with the operator and the
+  opacity of the layer. A layer whose callback throws is not drawn. Anything that composites must use the current
+  `_frames` and go through `ApplyClip`, so that it works in a layer without knowing it.
 - Every rental of a draw call happens before its first pixel write (edges, then the sweep and gradient scratch in
   `Render`). Draw calls allocate nothing once the scratch of the session has grown (`PerformanceContractTests`).
 - The cost of a shape follows its edges and their crossings. Keep the events of the sweep logarithmic: no pass over

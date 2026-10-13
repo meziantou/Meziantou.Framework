@@ -1165,6 +1165,8 @@ namespace Meziantou.Framework.Imaging.Drawing
         public void Clip<TState>(Meziantou.Framework.Imaging.Drawing.VectorPath path, TState state, Meziantou.Framework.Imaging.Drawing.DrawingAction<TState> action, Meziantou.Framework.Imaging.Drawing.FillRule fillRule = Meziantou.Framework.Imaging.Drawing.FillRule.NonZero) where TState : allows ref struct { }
         public void Clip(Meziantou.Framework.Imaging.RectangleD rectangle, Meziantou.Framework.Imaging.Drawing.DrawingAction action) { }
         public void Clip<TState>(Meziantou.Framework.Imaging.RectangleD rectangle, TState state, Meziantou.Framework.Imaging.Drawing.DrawingAction<TState> action) where TState : allows ref struct { }
+        public void Layer(double opacity, Meziantou.Framework.Imaging.Drawing.DrawingAction action, Meziantou.Framework.Imaging.Drawing.CompositeMode compositeMode = Meziantou.Framework.Imaging.Drawing.CompositeMode.SourceOver) { }
+        public void Layer<TState>(double opacity, TState state, Meziantou.Framework.Imaging.Drawing.DrawingAction<TState> action, Meziantou.Framework.Imaging.Drawing.CompositeMode compositeMode = Meziantou.Framework.Imaging.Drawing.CompositeMode.SourceOver) where TState : allows ref struct { }
     }
 
     public enum FillRule

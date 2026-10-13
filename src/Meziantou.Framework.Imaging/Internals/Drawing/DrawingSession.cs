@@ -22,9 +22,12 @@ namespace Meziantou.Framework.Imaging.Internals;
 internal sealed partial class DrawingSession : IDisposable
 {
     private readonly Image _image;
-    private readonly ImageFrame[] _frames;
-    private readonly PixelStorage[] _storages;
+    private readonly PixelStorage[] _leasedStorages;
     private readonly long[] _tokens;
+
+    // What the draw calls paint: the frames of the image, or the image of a layer
+    private ImageFrame[] _frames;
+    private PixelStorage[] _storages;
     private readonly CancellationToken _cancellationToken;
     private int _leaseCount;
     private EdgeBuilder? _edges;
@@ -44,6 +47,7 @@ internal sealed partial class DrawingSession : IDisposable
         _image = image;
         _frames = frames;
         _storages = storages;
+        _leasedStorages = storages;
         _tokens = new long[storages.Length];
         _cancellationToken = cancellationToken;
         Width = image.Width;
@@ -551,6 +555,7 @@ internal sealed partial class DrawingSession : IDisposable
     public void Dispose()
     {
         IsActive = false;
+        DisposeLayers();
         DisposeClips();
         _pathMeasure?.Dispose();
         _pathMeasure = null;
@@ -572,7 +577,7 @@ internal sealed partial class DrawingSession : IDisposable
         _edges = null;
         for (var i = _leaseCount - 1; i >= 0; i--)
         {
-            var storage = _storages[i];
+            var storage = _leasedStorages[i];
             storage.Owner.ReleaseLease(storage, _tokens[i]);
         }
 

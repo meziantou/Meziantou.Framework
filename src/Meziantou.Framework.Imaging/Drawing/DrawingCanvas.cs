@@ -661,6 +661,86 @@ public readonly ref struct DrawingCanvas
         }
     }
 
+    /// <summary>Runs a callback whose drawings are made on a transparent layer, which is then drawn on the canvas as a whole: with an opacity, or with an operator.</summary>
+    /// <remarks>
+    /// <para>
+    /// Shapes drawn one after the other with a translucent paint show through each other where they overlap. In a
+    /// layer, they are drawn as they are, then the whole is made translucent: <c>canvas.Layer(0.5, ...)</c> fades a
+    /// drawing without changing it. With a <paramref name="compositeMode"/>, the whole drawing is combined with the
+    /// canvas: a layer drawn with <see cref="CompositeMode.DestinationIn"/> keeps the canvas where the drawing is
+    /// opaque (a mask made of several shapes, or of a text), and one drawn with
+    /// <see cref="CompositeMode.DestinationOut"/> erases it there.
+    /// </para>
+    /// <para>
+    /// The layer is an image of the size of the canvas, transparent when the callback starts, with colors and alpha
+    /// (8-bit samples on an 8-bit color canvas, 16-bit samples otherwise): a drawing of opaque colors on whole pixels
+    /// is the same in a layer and on the canvas. Its pixels are the pixels of the canvas: the coordinates do not change. When the callback
+    /// returns, the layer is drawn on the canvas (or on the layer it was started in) as an image is: its pixels are
+    /// converted to the pixel format of the canvas, and the opacity multiplies the coverage, as that of
+    /// <see cref="DrawImage(ImageFrame, PointD, double)"/> does. When the callback fails, the layer is not drawn.
+    /// </para>
+    /// <para>
+    /// A clip that is active when the layer starts applies to the layer as a whole. The image of a layer is taken from
+    /// the allocation scope of the image when a layer first starts at its depth, and kept until the drawing ends; a
+    /// layer costs the clearing and the drawing of the pixels the clip can show: start a layer inside
+    /// <see cref="Clip(RectangleD, DrawingAction)"/> when it only covers a part of a large canvas.
+    /// </para>
+    /// </remarks>
+    /// <param name="opacity">The opacity of the layer, from 0 (nothing is drawn; the callback still runs) to 1.</param>
+    /// <param name="action">The callback that draws. It must not be asynchronous and must not retain the canvas.</param>
+    /// <param name="compositeMode">The operator that combines the layer with the canvas.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="opacity"/> is not between 0 and 1, or <paramref name="compositeMode"/> is not a defined <see cref="CompositeMode"/>.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="ImageResourceLimitException">The layer or the working storage would exceed the allocation limit.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void Layer(double opacity, DrawingAction action, CompositeMode compositeMode = CompositeMode.SourceOver)
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        var session = GetSession();
+        session.PushLayer(opacity, compositeMode);
+        var isDrawn = false;
+        try
+        {
+            action(this);
+            isDrawn = true;
+        }
+        finally
+        {
+            session.PopLayer(isDrawn);
+        }
+    }
+
+    /// <summary>Runs a callback whose drawings are made on a transparent layer, which is then drawn on the canvas as a whole, passing caller state to avoid closure allocations.</summary>
+    /// <typeparam name="TState">The type of the state.</typeparam>
+    /// <param name="opacity">The opacity of the layer, from 0 (nothing is drawn; the callback still runs) to 1.</param>
+    /// <param name="state">The state passed to <paramref name="action"/>.</param>
+    /// <param name="action">The callback that draws. Use a static lambda to avoid allocations. It must not retain the canvas.</param>
+    /// <param name="compositeMode">The operator that combines the layer with the canvas.</param>
+    /// <remarks>See <see cref="Layer(double, DrawingAction, CompositeMode)"/>.</remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="opacity"/> is not between 0 and 1, or <paramref name="compositeMode"/> is not a defined <see cref="CompositeMode"/>.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="ImageResourceLimitException">The layer or the working storage would exceed the allocation limit.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void Layer<TState>(double opacity, TState state, DrawingAction<TState> action, CompositeMode compositeMode = CompositeMode.SourceOver)
+        where TState : allows ref struct
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        var session = GetSession();
+        session.PushLayer(opacity, compositeMode);
+        var isDrawn = false;
+        try
+        {
+            action(this, state);
+            isDrawn = true;
+        }
+        finally
+        {
+            session.PopLayer(isDrawn);
+        }
+    }
+
     private DrawingSession GetSession()
     {
         var session = _session;

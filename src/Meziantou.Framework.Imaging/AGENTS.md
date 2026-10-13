@@ -285,12 +285,46 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
     the largest number of edges on one row.
   - Compositing is exact integer source-over (`ulong`), the generalization of `AnimationCompositor.BlendOver8/16` to a
     fractional source alpha. Colors are converted to the pixel format first (`PixelConverter` rules).
+  - The other operators of `CompositeMode` (a property of the brush, so that the canvas has no state) have one kernel
+    for all of them, from the two factors of the operator; source-over keeps its own, unchanged. A paint without
+    opacity is skipped only with the operators it changes nothing with (`IsTransparentPaintInert`): with the others it
+    erases. `ReferenceCompositor` has the same operators from their definition, in rational numbers.
   - Gradients interpolate premultiplied values of the converted stops, evaluated per pixel at its center.
 - Only `+ - * /` and `Math.Sqrt` in the geometry (no trigonometry, no fused multiply-add), and every order that
   influences a sum is total (events and crossings are sorted with a tie-break): results must not depend on the
   platform, the framework version or a sorting algorithm.
+- A path is transformed exactly (`VectorPath.Transform`): the control points of its curves, and an ellipse as its
+  center and two conjugate half-diameters (`PathCommand.EllipseAxes`), flattened like the circle it is the image of.
+  Never replace an ellipse by Bézier curves. `AffineTransform` gets its sines and cosines from `DeterministicAngle`.
+- An arc is stored as pieces of at most a quarter turn (`ArcPiece`, `ArcGeometry`): the ellipse, the unit vectors of
+  both ends and the exact end point. Only the ends of the pieces come from angles (`DeterministicAngle`); the points
+  inside a piece come from bisection, as for round joins. The end point is given, never computed: a shape made of arcs
+  and segments (a rounded rectangle) has no gap and no segment of a few units of the last place, which a stroke would
+  turn into a spike. The shapes with arcs are written once over `IPathReceiver`, for the builder and for the sinks.
+- The queries of a path (`Contains`, `GetLength`, `TryGetPointAtDistance`, `Widen`) flatten it with `PathFlattener`
+  into a sink, as drawing does, so that they answer for what is drawn; `GetTightBounds` (`PathBounds`) is computed from
+  the curves, and contains their chords. `Widen` runs the `Stroker` into a path builder: the same pieces in the same
+  order as a draw call, so filling the result is stroking, bit for bit (`FillingAWidenedPathIsStrokingThePath`).
 - A stroke is a union of convex pieces with one orientation (`Stroker`): overlaps are harmless because the coverage is
   the area of the union. The 1/16 pixel flattening tolerance is public; the positions of the chord vertices are not.
+- Dashes are cut before the stroker (`Dasher`), which strokes each dash as an open contour. The first dash of a contour
+  is held back until the contour ends, because the last dash of a closed contour continues with it. On a canvas, only
+  the parts of a segment whose dashes can change a pixel are cut (the canvas seen along the segment, plus the reach of
+  a cap, and a short length next to an end whose join or cap can show), the pattern is advanced by the length of the
+  others, and nothing is cut once the stroke covers the canvas: the cost of a dashed stroke must stay what the canvas
+  shows of it, whatever the length of the path and the width of the pen
+  (`WhatIsOutsideTheCanvasIsNotCutIntoDashesAndThePatternGoesOn`, `AWidePenIsNotCutIntoTheDashesTheCanvasDoesNotShow`).
+  `Widen` has no canvas and cuts everything.
+- A brush that is not a single color is a `PaintEvaluator`: it gives a row of colors in the pixel format of the frame
+  (`GradientEvaluator`, `ImageEvaluator`). An image is read through the lease of its frame, taken when a shape is painted
+  and released in `finally` (`Begin` / `End`): never keep it between two draw calls. `ImageEvaluator` interpolates
+  16-bit colors read with the pixel conversion (`ReadRgba64`), then converts them like any brush color; when the rows
+  of the canvas stay rows of the image, it converts each row of the image once. `DrawImage` is a fill of the rectangle
+  with that evaluator: no brush is allocated.
+- A clip is a stack of levels in the session (`DrawingSession.Clipping.cs`): bounds in whole pixels and, unless the clip
+  is a rectangle of whole pixels, a mask of coverages rasterized once, when the clip starts, by the same rasterizer.
+  Draw calls multiply their coverage by the mask row by row (`ApplyClip`), into a row of the session: they rent nothing.
+  Every path that composites pixels (`PaintRows`, the color glyphs) must go through `ApplyClip`.
 - Every rental of a draw call happens before its first pixel write (edges, then the sweep and gradient scratch in
   `Render`). Draw calls allocate nothing once the scratch of the session has grown (`PerformanceContractTests`).
 - The cost of a shape follows its edges and their crossings. Keep the events of the sweep logarithmic: no pass over

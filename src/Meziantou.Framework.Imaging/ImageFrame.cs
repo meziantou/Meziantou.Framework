@@ -178,6 +178,12 @@ public abstract class ImageFrame
     /// <summary>Converts a paint color to the pixel type of the frame (see <see cref="DrawingKernels.ConvertColor{TPixel}"/>).</summary>
     internal abstract DrawingColor ConvertDrawingColor(Rgba64 color);
 
+    /// <summary>Converts paint colors to the pixel type of the frame: four samples per color, laid out as <see cref="DrawingColor"/>.</summary>
+    internal abstract void ConvertDrawingColors(ReadOnlySpan<Rgba64> colors, Span<ushort> destination);
+
+    /// <summary>Reads pixels of a row as 16-bit colors, with the rules of pixel conversion. The caller holds the lease of the storage.</summary>
+    internal abstract void ReadRgba64(PixelStorage storage, int y, int x, Span<Rgba64> destination);
+
     /// <summary>
     /// Composites a paint over a run of pixels, weighted by their coverage, with the kernel of the frame pixel type. The
     /// drawing session holds the lease of the storage for its whole duration.

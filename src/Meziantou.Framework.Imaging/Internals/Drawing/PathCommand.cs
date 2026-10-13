@@ -20,4 +20,19 @@ internal enum PathCommand : byte
 
     /// <summary>A complete closed ellipse (center, then the two radii as a pair).</summary>
     Ellipse = 5,
+
+    /// <summary>
+    /// A complete closed ellipse whose axes are not horizontal and vertical: its center, then two conjugate
+    /// half-diameters as vectors. The contour starts at the end of the first one and turns toward the second one.
+    /// </summary>
+    EllipseAxes = 6,
+
+    /// <summary>
+    /// An arc of an ellipse, of at most a quarter turn, from the current point (the coordinates of an
+    /// <see cref="ArcPiece"/>: center, two conjugate half-diameters, the unit vectors of both ends, end point).
+    /// </summary>
+    Arc = 7,
+
+    /// <summary>The same, continuing the arc of the element before it: the vertex between them is not a corner of the path.</summary>
+    ArcContinuation = 8,
 }

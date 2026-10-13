@@ -148,6 +148,150 @@ public sealed class DrawingGradientTests
     }
 
     [Fact]
+    public void ASweepGradientFollowsTheAngleAroundItsCenter()
+    {
+        // Around (2, 2) on a 4x4 canvas, from black to white over a full turn that starts on the right of the center and
+        // goes clockwise on the image (toward the bottom first). The centers of the pixels are at (+-0.5 or +-1.5) from
+        // the center on each axis; their angles, in degrees, and 255 * angle / 360:
+        //   row 0: 225 -> 159.375 | 251.565 -> 178.19 | 288.435 -> 204.31 | 315 -> 223.125
+        //   row 1: 198.435 -> 140.56 | 225 -> 159.375 | 315 -> 223.125 | 341.565 -> 241.94
+        //   row 2: 161.565 -> 114.44 | 135 -> 95.625 | 45 -> 31.875 | 18.435 -> 13.06
+        //   row 3: 135 -> 95.625 | 108.435 -> 76.81 | 71.565 -> 50.69 | 45 -> 31.875
+        AssertFill(4, 4, new SweepGradientBrush(new PointD(2, 2), BlackToWhite), [[159, 178, 204, 223], [141, 159, 223, 242], [114, 96, 32, 13], [96, 77, 51, 32]]);
+
+        // On a 2x2 canvas around (1, 1), the four pixels are at 225, 315 (top) and 135, 45 (bottom) degrees
+        AssertFill(2, 2, new SweepGradientBrush(new PointD(1, 1), BlackToWhite), [[159, 223], [96, 32]]);
+
+        // From 90 degrees (under the center): the angles become 135, 225 and 45, 315
+        AssertFill(2, 2, new SweepGradientBrush(new PointD(1, 1), 90, 450, BlackToWhite), [[96, 159], [32, 223]]);
+
+        // From -90 degrees (over the center): 315, 45 and 225, 135
+        AssertFill(2, 2, new SweepGradientBrush(new PointD(1, 1), -90, 270, BlackToWhite), [[223, 32], [159, 96]]);
+
+        // Over half a turn, the parameters are 1.25, 1.75 and 0.75, 0.25: the spread mode gives the colors beyond 1
+        AssertFill(2, 2, new SweepGradientBrush(new PointD(1, 1), 0, 180, BlackToWhite), [[255, 255], [191, 64]]);
+        AssertFill(2, 2, new SweepGradientBrush(new PointD(1, 1), 0, 180, BlackToWhite) { SpreadMode = GradientSpreadMode.Repeat }, [[64, 191], [191, 64]]);
+        AssertFill(2, 2, new SweepGradientBrush(new PointD(1, 1), 0, 180, BlackToWhite) { SpreadMode = GradientSpreadMode.Reflect }, [[191, 64], [191, 64]]);
+
+        // Over two turns, the parameters are half of what they are over one
+        AssertFill(2, 2, new SweepGradientBrush(new PointD(1, 1), 0, 720, BlackToWhite), [[80, 112], [48, 16]]);
+
+        // Without angle between its ends, the gradient has the color of its last stop
+        AssertFill(2, 2, new SweepGradientBrush(new PointD(1, 1), 30, 30, BlackToWhite), [[255, 255], [255, 255]]);
+
+        var brush = new SweepGradientBrush(new PointD(1, 2), 30, 90, BlackToWhite);
+        Assert.Equal((new PointD(1, 2), 30d, 90d, 2), (brush.Center, brush.StartAngle, brush.EndAngle, brush.Stops.Length));
+        Assert.Equal((0d, 360d), (new SweepGradientBrush(default, BlackToWhite).StartAngle, new SweepGradientBrush(default, BlackToWhite).EndAngle));
+        Assert.Throws<ArgumentException>(() => new SweepGradientBrush(new PointD(double.NaN, 0), BlackToWhite));
+        Assert.Throws<ArgumentException>(() => new SweepGradientBrush(default, double.NaN, 90, BlackToWhite));
+        Assert.Throws<ArgumentException>(() => new SweepGradientBrush(default, 0, double.PositiveInfinity, BlackToWhite));
+        Assert.Throws<ArgumentException>(() => new SweepGradientBrush(default, []));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new SweepGradientBrush(default, 90, 89, BlackToWhite));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new SweepGradientBrush(new PointD(16777217, 0), BlackToWhite));
+    }
+
+    [Fact]
+    public void ARadialGradientSpreadsFromItsFocalPoint()
+    {
+        // The circle of center (4.5, 0.5) and radius 6 goes from x = -1.5 to x = 10.5 on the row; from the focal point
+        // (2.5, 0.5), it is 4 away on the left and 8 away on the right. The centers of the pixels are at x - 2 from the
+        // focal point: the parameter is (2 - x) / 4 on its left and (x - 2) / 8 on its right.
+        //   x = 0: 1/2 -> 127.5 -> 128 | x = 1: 1/4 -> 63.75 -> 64 | x = 2: 0 | x = 3..10: (x - 2) / 8
+        var brush = new RadialGradientBrush(new PointD(4.5, 0.5), 6, BlackToWhite) { FocalPoint = new PointD(2.5, 0.5) };
+        AssertFill(11, 1, brush, [[128, 64, 0, 32, 64, 96, 128, 159, 191, 223, 255]]);
+        Assert.Equal(new PointD(2.5, 0.5), brush.FocalPoint);
+        Assert.Equal(new PointD(4.5, 0.5), brush.Center);
+
+        // The focal point is the center unless it is set, and setting it to the center changes nothing
+        var plain = new RadialGradientBrush(new PointD(3.3, 4.1), 5, BlackToWhite);
+        Assert.Equal(plain.Center, plain.FocalPoint);
+        using var expected = Fill(8, 8, plain);
+        using var same = Fill(8, 8, new RadialGradientBrush(new PointD(3.3, 4.1), 5, BlackToWhite) { FocalPoint = new PointD(3.3, 4.1) });
+        Assert.Equal(DrawingTestSupport.ReadSamples(expected.Frames[0]), DrawingTestSupport.ReadSamples(same.Frames[0]));
+
+        // The focal point must be strictly inside the circle
+        Assert.Throws<ArgumentOutOfRangeException>(() => new RadialGradientBrush(new PointD(4, 4), 2, BlackToWhite) { FocalPoint = new PointD(6, 4) });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new RadialGradientBrush(new PointD(4, 4), 2, BlackToWhite) { FocalPoint = new PointD(4, 7) });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new RadialGradientBrush(new PointD(4, 4), 0, BlackToWhite) { FocalPoint = new PointD(4, 4.5) });
+        Assert.Throws<ArgumentException>(() => new RadialGradientBrush(new PointD(4, 4), 2, BlackToWhite) { FocalPoint = new PointD(double.NaN, 4) });
+        Assert.Equal(new PointD(4, 4), new RadialGradientBrush(new PointD(4, 4), 0, BlackToWhite) { FocalPoint = new PointD(4, 4) }.FocalPoint);
+    }
+
+    [Fact]
+    public void APositionOfAFocalGradientIsOnTheCircleOfItsParameter()
+    {
+        // The definition: the position of parameter t is on the circle centered t of the way from the focal point to the
+        // center, of radius t times the radius. A black to white gradient on 16-bit gray pixels gives t within 1/131070.
+        GradientStop[] stops = [new(0, new Rgba64(0, 0, 0)), new(1, new Rgba64(65535, 65535, 65535))];
+        var random = new Random(8642);
+        for (var index = 0; index < 40; index++)
+        {
+            var center = new PointD(random.NextDouble() * 16, random.NextDouble() * 16);
+            var radius = 2 + (random.NextDouble() * 18);
+            var angle = random.NextDouble() * 2 * Math.PI;
+            var distance = random.NextDouble() * 0.95 * radius;
+            var focal = new PointD(center.X + (distance * Math.Cos(angle)), center.Y + (distance * Math.Sin(angle)));
+            var brush = new RadialGradientBrush(center, radius, stops) { FocalPoint = focal };
+            using var image = new Image<Gray16>(16, 16, new Gray16(0));
+            image.Frames[0].Draw(canvas => canvas.Fill(brush), Ct);
+            var inside = 0;
+            for (var y = 0; y < 16; y++)
+            {
+                for (var x = 0; x < 16; x++)
+                {
+                    var value = image.Frames[0][x, y].Value;
+                    var position = new PointD(x + 0.5, y + 0.5);
+                    if (value == 65535)
+                    {
+                        // Clamped: on the circle of the gradient or outside it
+                        Assert.True(position.DistanceTo(center) >= radius - 1e-3, $"case {index}, pixel ({x}, {y})");
+                        continue;
+                    }
+
+                    var t = value / 65535.0;
+                    var circleCenter = focal + ((center - focal) * t);
+                    Assert.True(Math.Abs(position.DistanceTo(circleCenter) - (t * radius)) <= 1e-3, $"case {index}, pixel ({x}, {y}): t {t}, {position.DistanceTo(circleCenter)} from the center of a circle of radius {t * radius}");
+                    inside++;
+                }
+            }
+
+            Assert.True(inside > 0 || radius < 3, $"case {index}");
+        }
+    }
+
+    [Fact]
+    public void ATransformPlacesAGradientOnTheCanvas()
+    {
+        // A linear gradient of length 4 made twice as wide is the gradient of length 8
+        using (var expected = Fill(8, 2, new LinearGradientBrush(new PointD(0, 0), new PointD(8, 0), BlackToWhite)))
+        using (var actual = Fill(8, 2, new LinearGradientBrush(new PointD(0, 0), new PointD(4, 0), BlackToWhite) { Transform = AffineTransform.CreateScale(2, 1) }))
+        {
+            Assert.Equal(DrawingTestSupport.ReadSamples(expected.Frames[0]), DrawingTestSupport.ReadSamples(actual.Frames[0]));
+        }
+
+        // Turned by a quarter turn, a horizontal gradient is a vertical one
+        AssertFill(1, 4, new LinearGradientBrush(new PointD(0, 0), new PointD(4, 0), BlackToWhite) { Transform = AffineTransform.CreateRotation(90) }, [[32], [96], [159], [223]]);
+
+        // Moved: the gradient from x = 0 to x = 4, two pixels to the right, starts at x = 2
+        AssertFill(6, 1, new LinearGradientBrush(new PointD(0, 0), new PointD(4, 0), BlackToWhite) { Transform = AffineTransform.CreateTranslation(2, 0) }, [[0, 0, 32, 96, 159, 223]]);
+
+        // A radial gradient of radius 2 made twice as wide around its center (4, 0.5) is an ellipse: on its row, the
+        // parameter is |x + 0.5 - 4| / 4 instead of |x + 0.5 - 4| / 2
+        AssertFill(8, 1, new RadialGradientBrush(new PointD(4, 0.5), 2, BlackToWhite), [[255, 255, 191, 64, 64, 191, 255, 255]]);
+        AssertFill(8, 1, new RadialGradientBrush(new PointD(4, 0.5), 2, BlackToWhite) { Transform = AffineTransform.CreateScale(2, 1, new PointD(4, 0.5)) }, [[223, 159, 96, 32, 32, 96, 159, 223]]);
+
+        // A sweep gradient turned by a quarter turn starts under its center
+        AssertFill(2, 2, new SweepGradientBrush(new PointD(1, 1), BlackToWhite) { Transform = AffineTransform.CreateRotation(90, new PointD(1, 1)) }, [[96, 159], [32, 223]]);
+
+        // A transformation that flattens the plane leaves the color of the last stop
+        AssertFill(2, 2, new LinearGradientBrush(new PointD(0, 0), new PointD(4, 0), BlackToWhite) { Transform = AffineTransform.CreateScale(0, 1) }, [[255, 255], [255, 255]]);
+        AssertFill(2, 2, new RadialGradientBrush(new PointD(1, 1), 4, BlackToWhite) { Transform = new AffineTransform(1, 2, 2, 4, 0, 0) }, [[255, 255], [255, 255]]);
+
+        Assert.True(new LinearGradientBrush(default, new PointD(1, 0), BlackToWhite).Transform.IsIdentity);
+        Assert.Equal(AffineTransform.CreateScale(2, 1), new LinearGradientBrush(default, new PointD(1, 0), BlackToWhite) { Transform = AffineTransform.CreateScale(2, 1) }.Transform);
+    }
+
+    [Fact]
     public void AGradientIsWeightedByTheCoverage()
     {
         // White on the left half of each pixel of a black row: half of the gradient color.
@@ -184,6 +328,9 @@ public sealed class DrawingGradientTests
             [
                 new LinearGradientBrush(new PointD(1, 2), new PointD(6.5, 3.25), stops) { SpreadMode = GradientSpreadMode.Reflect },
                 new RadialGradientBrush(new PointD(3.3, 4.1), 2.5, stops) { SpreadMode = GradientSpreadMode.Repeat },
+                new RadialGradientBrush(new PointD(3.3, 4.1), 2.5, stops) { SpreadMode = GradientSpreadMode.Reflect, FocalPoint = new PointD(4.5, 3) },
+                new SweepGradientBrush(new PointD(3.3, 4.1), 20, 75, stops) { SpreadMode = GradientSpreadMode.Repeat },
+                new LinearGradientBrush(new PointD(1, 2), new PointD(6.5, 3.25), stops) { Transform = new AffineTransform(0.5, 1.25, -2, 0.75, 3, -1) },
             ];
 
             using var solid = DrawingTestSupport.CreateRandom(format, 8, 8, new Random(i).Next);

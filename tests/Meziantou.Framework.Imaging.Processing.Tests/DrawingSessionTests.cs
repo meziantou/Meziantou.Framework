@@ -612,6 +612,307 @@ public sealed class DrawingSessionTests
         Assert.Equal(new Size(4, 4), image.Size);
     }
 
+    // -----------------------------------------------------------------------------------------------------------------
+    // Clipping
+    // -----------------------------------------------------------------------------------------------------------------
+
+    [Fact]
+    public void AClipOfWholePixelsKeepsTheDrawingsInsideIt()
+    {
+        using var image = new Image<Gray8>(4, 4, new Gray8(0));
+        image.Draw(
+            canvas =>
+            {
+                canvas.Clip(new Rectangle(1, 1, 2, 2), inner =>
+                {
+                    inner.Fill(White);
+                    inner.StrokeLine(new Pen(White, 2), new PointD(0, 0), new PointD(4, 0));
+                    inner.FillCircle(White, new PointD(3.5, 3.5), 0.5);
+                });
+
+                // The clip is over when the callback returns
+                canvas.FillRectangle(White, new Rectangle(3, 3, 1, 1));
+            },
+            Ct);
+        Assert.Equal([0, 0, 0, 0, 0, 255, 255, 0, 0, 255, 255, 0, 0, 0, 0, 255], DrawingTestSupport.ReadSamples(image.Frames[0]));
+
+        // Beyond the canvas, and empty
+        using var other = new Image<Gray8>(2, 2, new Gray8(0));
+        other.Draw(
+            canvas =>
+            {
+                canvas.Clip(new Rectangle(-5, 1, 6, 100), inner => inner.Fill(White));
+                canvas.Clip(new Rectangle(1, 0, 0, 2), inner => inner.Fill(White));
+                canvas.Clip(new Rectangle(5, 5, 2, 2), inner => inner.Fill(White));
+            },
+            Ct);
+        Assert.Equal([0, 0, 255, 0], DrawingTestSupport.ReadSamples(other.Frames[0]));
+    }
+
+    [Fact]
+    public void AClipMultipliesTheCoverageOfWhatIsDrawn()
+    {
+        // A rectangle that is not on whole pixels has an antialiased edge, like a shape: from x = 0.5 to x = 2.5
+        using (var image = new Image<Gray8>(3, 1, new Gray8(0)))
+        {
+            image.Draw(canvas => canvas.Clip(new RectangleD(0.5, 0, 2, 1), inner => inner.Fill(White)), Ct);
+            Assert.Equal([128, 255, 128], DrawingTestSupport.ReadSamples(image.Frames[0]));
+        }
+
+        // The left half of a pixel as a clip, the top half as a shape: a quarter, 63.75 -> 64
+        Assert.Equal(64, PaintClipped(new RectangleD(0, 0, 0.5, 1), new RectangleD(0, 0, 1, 0.5)));
+
+        // The coverages are multiplied, whatever the shapes have in common: the left half in the left half is a quarter too
+        Assert.Equal(64, PaintClipped(new RectangleD(0, 0, 0.5, 1), new RectangleD(0, 0, 0.5, 1)));
+        Assert.Equal(64, PaintClipped(new RectangleD(0, 0, 0.5, 1), new RectangleD(0.5, 0, 0.5, 1)));
+
+        // A shape that covers the pixel has the coverage of the clip, and a clip that covers it changes nothing
+        Assert.Equal(128, PaintClipped(new RectangleD(0, 0, 0.5, 1), new RectangleD(0, 0, 1, 1)));
+        Assert.Equal(128, PaintClipped(new RectangleD(-3, -3, 8, 8.5), new RectangleD(0, 0, 0.5, 1)));
+        Assert.Equal(128, PaintClipped(new RectangleD(-3.5, -3.5, 8, 8), new RectangleD(0, 0, 0.5, 1)));
+
+        // Three quarters of three quarters: 0.5625 -> 143.4 -> 143
+        Assert.Equal(143, PaintClipped(new RectangleD(0, 0, 0.75, 1), new RectangleD(0, 0, 1, 0.75)));
+
+        static int PaintClipped(RectangleD clip, RectangleD shape)
+        {
+            using var image = new Image<Gray8>(1, 1, new Gray8(0));
+            image.Draw(canvas => canvas.Clip(clip, inner => inner.FillRectangle(White, shape)), Ct);
+            return image.Frames[0][0, 0].Value;
+        }
+    }
+
+    [Fact]
+    public void FillingInsideTheClipOfAPathIsFillingThePath()
+    {
+        var circle = new VectorPathBuilder().AddCircle(new PointD(4.25, 3.5), 3.1).Build();
+        var rings = new VectorPathBuilder().AddRectangle(new RectangleD(0.5, 0.5, 7, 7)).AddRectangle(new RectangleD(2.25, 2.25, 3.5, 3.5)).AddCircle(new PointD(4, 4), 1.2).Build();
+        var gradient = new LinearGradientBrush(new PointD(0, 0), new PointD(8, 8), [new GradientStop(0, new Rgba32(255, 0, 0, 40)), new GradientStop(1, new Rgba32(0, 0, 255))]);
+        var translucent = new SolidBrush(new Rgba32(10, 200, 30, 120));
+        foreach (var brush in new Brush[] { White, translucent, gradient })
+        {
+            foreach (var (path, fillRule) in new[] { (circle, FillRule.NonZero), (rings, FillRule.NonZero), (rings, FillRule.EvenOdd) })
+            {
+                var expected = Paint(canvas => canvas.Fill(brush, path, fillRule));
+                Assert.Equal(expected, Paint(canvas => canvas.Clip(path, inner => inner.Fill(brush), fillRule)));
+
+                // With a state, and from the whole canvas as a rectangle
+                Assert.Equal(expected, Paint(canvas => canvas.Clip(path, brush, static (inner, brush) => inner.FillRectangle(brush, new Rectangle(0, 0, 8, 8)), fillRule)));
+            }
+        }
+
+        static int[] Paint(DrawingAction action)
+        {
+            using var image = DrawingTestSupport.CreateRandom(PixelFormat.Rgba32, 8, 8, new Random(11).Next);
+            image.Draw(action, Ct);
+            return DrawingTestSupport.ReadSamples(image.Frames[0]);
+        }
+    }
+
+    [Fact]
+    public void AClipInsideAnotherOneKeepsWhatBothLetThrough()
+    {
+        var circle = new VectorPathBuilder().AddCircle(new PointD(4.25, 3.5), 3.1).Build();
+        using var whole = new Image<Gray8>(8, 8, new Gray8(0));
+        whole.Draw(canvas => canvas.Fill(White, circle), Ct);
+        var filled = DrawingTestSupport.ReadSamples(whole.Frames[0]);
+
+        // A rectangle of whole pixels inside the clip of a path, and the other way around: the right half of the circle
+        var expected = filled.Select((value, index) => index % 8 >= 4 ? value : 0).ToArray();
+        using (var image = new Image<Gray8>(8, 8, new Gray8(0)))
+        {
+            image.Draw(canvas => canvas.Clip(circle, inner => inner.Clip(new Rectangle(4, 0, 4, 8), innermost => innermost.Fill(White))), Ct);
+            Assert.Equal(expected, DrawingTestSupport.ReadSamples(image.Frames[0]));
+        }
+
+        using (var image = new Image<Gray8>(8, 8, new Gray8(0)))
+        {
+            image.Draw(canvas => canvas.Clip(new Rectangle(4, 0, 4, 8), inner => inner.Clip(circle, innermost => innermost.Fill(White))), Ct);
+            Assert.Equal(expected, DrawingTestSupport.ReadSamples(image.Frames[0]));
+        }
+
+        // Two rectangles of whole pixels: their intersection
+        using (var image = new Image<Gray8>(4, 4, new Gray8(0)))
+        {
+            image.Draw(
+                canvas => canvas.Clip(new Rectangle(0, 0, 2, 2), inner =>
+                {
+                    inner.Clip(new Rectangle(1, 1, 3, 3), innermost => innermost.Fill(White));
+
+                    // The inner clip is over: the outer one applies again
+                    inner.FillRectangle(new SolidBrush(new Rgba32(100, 100, 100)), new Rectangle(0, 0, 4, 1));
+                }),
+                Ct);
+            Assert.Equal([100, 100, 0, 0, 0, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], DrawingTestSupport.ReadSamples(image.Frames[0]));
+        }
+
+        // Two halves of a pixel: a quarter (63.75 -> 64); three halves in each other: an eighth (31.875 -> 32)
+        using (var image = new Image<Gray8>(1, 1, new Gray8(0)))
+        {
+            image.Draw(canvas => canvas.Clip(new RectangleD(0, 0, 0.5, 1), inner => inner.Clip(new RectangleD(0, 0, 1, 0.5), innermost => innermost.Fill(White))), Ct);
+            Assert.Equal(new Gray8(64), image.Frames[0][0, 0]);
+        }
+
+        using (var image = new Image<Gray8>(1, 1, new Gray8(0)))
+        {
+            var half = new VectorPathBuilder().AddRectangle(new RectangleD(0, 0, 0.5, 1)).Build();
+            image.Draw(canvas => canvas.Clip(half, inner => inner.Clip(new RectangleD(0, 0, 1, 0.5), innermost => innermost.Clip(half, last => last.Fill(White)))), Ct);
+            Assert.Equal(new Gray8(32), image.Frames[0][0, 0]);
+        }
+    }
+
+    [Fact]
+    public void AClipAppliesToEveryDrawingAndToEveryFrame()
+    {
+        using var image = NewAnimation();
+        var before = CopyAll(image);
+        var triangle = new VectorPathBuilder().AddPolygon([new PointD(0, 0), new PointD(4, 0), new PointD(0, 3)]).Build();
+        image.Draw(
+            canvas => canvas.Clip(new Rectangle(1, 0, 2, 2), inner =>
+            {
+                inner.Clear(new Rgba32(1, 2, 3, 4));
+                inner.Stroke(new Pen(White, 1), triangle);
+                inner.StrokeRectangle(new Pen(new Rgba32(9, 9, 9), 3) { DashPattern = [1, 1] }, new Rectangle(-2, -2, 10, 10));
+            }),
+            Ct);
+        var after = CopyAll(image);
+        for (var frame = 0; frame < 3; frame++)
+        {
+            for (var pixel = 0; pixel < 12; pixel++)
+            {
+                var inside = pixel % 4 is 1 or 2 && pixel / 4 < 2;
+                var changed = !before[frame].AsSpan(pixel * 4, 4).SequenceEqual(after[frame].AsSpan(pixel * 4, 4));
+                Assert.Equal(inside, changed, $"frame {frame}, pixel {pixel}");
+            }
+
+            // The same pixels on every frame
+            Assert.Equal(after[0].AsSpan(4, 8).ToArray(), after[frame].AsSpan(4, 8).ToArray());
+        }
+    }
+
+    [Fact]
+    public void AClipEndsWhenItsCallbackThrows()
+    {
+        using var image = new Image<Gray8>(2, 2, new Gray8(0));
+        image.Draw(
+            canvas =>
+            {
+                try
+                {
+                    canvas.Clip(new Rectangle(0, 0, 1, 1), _ => throw new FormatException("stop"));
+                }
+                catch (FormatException)
+                {
+                }
+
+                try
+                {
+                    canvas.Clip(new VectorPathBuilder().AddCircle(default, 1).Build(), 5, static (_, _) => throw new FormatException("stop"));
+                }
+                catch (FormatException)
+                {
+                }
+
+                canvas.Fill(White);
+            },
+            Ct);
+        Assert.Equal([255, 255, 255, 255], DrawingTestSupport.ReadSamples(image.Frames[0]));
+    }
+
+    [Fact]
+    public void AClipThatLetsNothingThroughDrawsNothing()
+    {
+        using var image = new Image<Gray8>(4, 4, new Gray8(0));
+        var ran = 0;
+        image.Draw(
+            canvas =>
+            {
+                canvas.Clip(new VectorPathBuilder().Build(), inner => Fill(inner));
+                canvas.Clip(new VectorPathBuilder().AddCircle(new PointD(50, 50), 3).Build(), inner => Fill(inner));
+                canvas.Clip(new VectorPathBuilder().MoveTo(1, 1).LineTo(3, 3).Build(), inner => Fill(inner));
+                canvas.Clip(new RectangleD(1.5, 1.5, 0, 2), inner => Fill(inner));
+                canvas.Clip(new RectangleD(-9.5, -9.5, 2, 2), inner => Fill(inner));
+            },
+            Ct);
+        Assert.Equal(5, ran);
+        Assert.Equal(new int[16], DrawingTestSupport.ReadSamples(image.Frames[0]));
+
+        void Fill(DrawingCanvas canvas)
+        {
+            ran++;
+            canvas.Fill(White);
+            canvas.Clear(Colors.White);
+            canvas.Clip(new Rectangle(0, 0, 4, 4), inner => inner.Fill(White));
+        }
+    }
+
+    [Fact]
+    public void AClipValidatesItsArgumentsAndIsChargedToTheImage()
+    {
+        using (var image = new Image<Gray8>(4, 4, new Gray8(0)))
+        {
+            image.Draw(
+                canvas =>
+                {
+                    AssertThrows<ArgumentNullException>(canvas, static canvas => canvas.Clip((VectorPath)null!, static _ => { }));
+                    AssertThrows<ArgumentNullException>(canvas, static canvas => canvas.Clip(new VectorPathBuilder().Build(), null!));
+                    AssertThrows<ArgumentNullException>(canvas, static canvas => canvas.Clip(new VectorPathBuilder().Build(), 1, null!));
+                    AssertThrows<ArgumentNullException>(canvas, static canvas => canvas.Clip(new Rectangle(0, 0, 1, 1), null!));
+                    AssertThrows<ArgumentNullException>(canvas, static canvas => canvas.Clip(new Rectangle(0, 0, 1, 1), 1, null!));
+                    AssertThrows<ArgumentOutOfRangeException>(canvas, static canvas => canvas.Clip(new VectorPathBuilder().Build(), static _ => Assert.Fail("The callback ran."), (FillRule)2));
+                    AssertThrows<ArgumentException>(canvas, static canvas => canvas.Clip(new RectangleD(double.NaN, 0, 1, 1), static _ => Assert.Fail("The callback ran.")));
+                    AssertThrows<ArgumentOutOfRangeException>(canvas, static canvas => canvas.Clip(new RectangleD(16777216, 0, 1, 1), static _ => Assert.Fail("The callback ran.")));
+
+                    // A rejected clip leaves the canvas without clip
+                    canvas.FillRectangle(White, new Rectangle(0, 0, 1, 1));
+                },
+                Ct);
+            Assert.Equal(new Gray8(255), image.Frames[0][0, 0]);
+        }
+
+        // Room for the pixels and for the scratch of the frame size, not for the edges and the mask of a clip: the
+        // callback is not run, and the canvas can still be drawn on once there is room
+        using var probe = new Image<Gray8>(64, 64, new Gray8(0), ImageConfiguration.Default);
+        long session = 0;
+        probe.Draw(_ => session = probe.Owner.Scope.LiveBytes, Ct);
+        var large = new VectorPathBuilder().AddCircle(new PointD(32, 32), 30).Build();
+        var small = new VectorPathBuilder().AddCircle(new PointD(32, 32), 5).Build();
+        long before;
+        using (var image = new Image<Gray8>(64, 64, new Gray8(0), new ImageConfiguration { Limits = new ImageResourceLimits { MaxLiveAllocationBytes = session } }))
+        {
+            before = image.Owner.Scope.LiveBytes;
+            var thrown = false;
+            image.Draw(
+                canvas =>
+                {
+                    try
+                    {
+                        canvas.Clip(large, static _ => Assert.Fail("The callback ran."));
+                    }
+                    catch (ImageResourceLimitException)
+                    {
+                        thrown = true;
+                    }
+                },
+                Ct);
+            Assert.True(thrown);
+            Assert.Equal(new int[64 * 64], DrawingTestSupport.ReadSamples(image.Frames[0]));
+            Assert.Equal(before, image.Owner.Scope.LiveBytes);
+            Assert.Equal(0, image.Owner.ActiveLeaseCount);
+        }
+
+        // The mask is released with the session
+        using (var image = new Image<Gray8>(64, 64, new Gray8(0), ImageConfiguration.Default))
+        {
+            before = image.Owner.Scope.LiveBytes;
+            image.Draw(canvas => canvas.Clip(large, inner => inner.Clip(small, innermost => innermost.Fill(White))), Ct);
+            Assert.Equal(before, image.Owner.Scope.LiveBytes);
+            Assert.Equal(new Gray8(255), image.Frames[0][32, 32]);
+            Assert.Equal(new Gray8(0), image.Frames[0][40, 32]);
+            Assert.Equal(new Gray8(0), image.Frames[0][2, 2]);
+        }
+    }
+
     private delegate void CanvasAction(DrawingCanvas canvas);
 
     private static void AssertThrows<TException>(DrawingCanvas canvas, CanvasAction action)

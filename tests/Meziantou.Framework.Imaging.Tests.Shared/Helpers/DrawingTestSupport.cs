@@ -138,6 +138,10 @@ internal static class DrawingTestSupport
     /// </summary>
     /// <returns>A description of the first mismatches, or <see langword="null"/> when every pixel matches.</returns>
     public static string? Compare(ImageFrame frame, int[] before, Fraction[] areas, ReferencePaint paint)
+        => Compare(frame, before, areas, paint, mode: null);
+
+    /// <summary>The same for a paint combined with an operator of Porter and Duff, checked against the reference of the operators.</summary>
+    public static string? Compare(ImageFrame frame, int[] before, Fraction[] areas, ReferencePaint paint, ReferenceCompositeMode? mode)
     {
         var layout = ReferencePixelLayout.FromPixelFormat(frame.PixelFormat);
         var after = ReadSamples(frame);
@@ -148,12 +152,15 @@ internal static class DrawingTestSupport
             var destination = before.AsSpan(pixel * channels, channels).ToArray();
             var actual = after.AsSpan(pixel * channels, channels).ToArray();
             var (low, high) = ReferenceCoverage.GetAcceptedCoverage(areas[pixel]);
-            var expected = ReferenceCompositor.Blend(destination, paint, low, layout);
+            var expected = Blend(low);
             if (actual.SequenceEqual(expected))
                 continue;
 
-            if (high != low && actual.SequenceEqual(ReferenceCompositor.Blend(destination, paint, high, layout)))
+            if (high != low && actual.SequenceEqual(Blend(high)))
                 continue;
+
+            int[] Blend(int coverage)
+                => mode is { } value ? ReferenceCompositor.Blend(destination, paint, coverage, layout, value) : ReferenceCompositor.Blend(destination, paint, coverage, layout);
 
             if (mismatches.Count < 8)
             {

@@ -40,6 +40,11 @@ internal sealed class Av1EncoderWorkspace : IDisposable
     private readonly Av1PooledArray<ushort> _pixels;
     private readonly Av1PooledArray<int> _coefficients;
     private Av1PooledArray<int>? _records;
+    private Av1PooledArray<int>? _tape;
+    private int _tapeLength;
+    private Av1PooledArray<ushort>? _restored;
+    private Av1PooledArray<long>? _statistics;
+    private Av1PooledArray<int>? _filtered;
     private Av1PooledArray<int>? _copyHeads;
     private Av1PooledArray<int>? _copyNext;
     private readonly byte[] _copyCells = new byte[16 * 16];
@@ -83,6 +88,74 @@ internal sealed class Av1EncoderWorkspace : IDisposable
 
     /// <summary>Gets the quantizer index of the frame after the block-level deltas of the tile being encoded (<c>CurrentQIndex</c>).</summary>
     public int CurrentQIndex { get; set; }
+
+    /// <summary>
+    /// Gets the number of values of the tape: the syntax elements of the frame being encoded, in coding order, when they
+    /// are written after the frame is filtered (a frame with loop restoration codes the parameters of its units with its
+    /// superblocks, and chooses them last).
+    /// </summary>
+    public int TapeLength => _tapeLength;
+
+    /// <summary>Gets the values of the tape.</summary>
+    public ReadOnlySpan<int> Tape => _tape is null ? default : _tape.Span[.._tapeLength];
+
+    /// <summary>Empties the tape.</summary>
+    public void ResetTape() => _tapeLength = 0;
+
+    /// <summary>Appends a value to the tape.</summary>
+    /// <exception cref="ImageResourceLimitException">The tape exceeds the live-allocation limit.</exception>
+    public void AppendTape(int value)
+    {
+        if (_tape is null || _tapeLength == _tape.Length)
+        {
+            var larger = Av1PooledArray<int>.Rent(_scope, Math.Max(InitialRecordCapacity, 2L * _tapeLength), clear: false, AllocationKind.Temporary);
+            if (_tape is not null)
+            {
+                _tape.Span[.._tapeLength].CopyTo(larger.Span);
+                _tape.Dispose();
+            }
+
+            _tape = larger;
+        }
+
+        _tape.Span[_tapeLength++] = value;
+    }
+
+    /// <summary>Gets the samples of a block that a candidate filter restores: 64 rows of 64 samples at most.</summary>
+    /// <exception cref="ImageResourceLimitException">The buffer exceeds the live-allocation limit.</exception>
+    public Span<ushort> GetRestoredBlock()
+    {
+        _restored ??= Av1PooledArray<ushort>.Rent(_scope, Av1LoopRestoration.MaxBlockWidth * Av1LoopRestoration.MaxBlockHeight, clear: false, AllocationKind.Temporary);
+        return _restored.Span;
+    }
+
+    /// <summary>Gets <paramref name="count"/> sums of the search of the loop restoration filters.</summary>
+    /// <exception cref="ImageResourceLimitException">The buffer exceeds the live-allocation limit.</exception>
+    public Span<long> GetRestorationStatistics(int count)
+    {
+        if (_statistics is null || _statistics.Length < count)
+        {
+            _statistics?.Dispose();
+            _statistics = null;
+            _statistics = Av1PooledArray<long>.Rent(_scope, count, clear: false, AllocationKind.Temporary);
+        }
+
+        return _statistics.Span[..count];
+    }
+
+    /// <summary>Gets the rows of a stripe that the search of the loop restoration filters filters across: <paramref name="count"/> values.</summary>
+    /// <exception cref="ImageResourceLimitException">The buffer exceeds the live-allocation limit.</exception>
+    public Span<int> GetFilteredRows(int count)
+    {
+        if (_filtered is null || _filtered.Length < count)
+        {
+            _filtered?.Dispose();
+            _filtered = null;
+            _filtered = Av1PooledArray<int>.Rent(_scope, count, clear: false, AllocationKind.Temporary);
+        }
+
+        return _filtered.Span[..count];
+    }
 
     /// <summary>The number of lists of the table of the blocks that intra block copy may copy.</summary>
     public const int BlockCopyBuckets = 1 << 16;
@@ -195,6 +268,14 @@ internal sealed class Av1EncoderWorkspace : IDisposable
         _coefficients?.Dispose();
         _records?.Dispose();
         _records = null;
+        _tape?.Dispose();
+        _tape = null;
+        _restored?.Dispose();
+        _restored = null;
+        _statistics?.Dispose();
+        _statistics = null;
+        _filtered?.Dispose();
+        _filtered = null;
         _copyHeads?.Dispose();
         _copyHeads = null;
         _copyNext?.Dispose();

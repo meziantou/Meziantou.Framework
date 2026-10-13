@@ -602,6 +602,154 @@ public sealed class Av1EncoderRoundTripTests
     }
 
     [Theory]
+    [InlineData(40, 24, 8, "444", "photo", -1, 4)]
+    [InlineData(150, 77, 10, "420", "blocks", -1, 2)]
+    [InlineData(4160, 70, 8, "400", "blocks", -1, 0)]
+    [InlineData(4100, 80, 8, "420", "photo", 60, 3)]
+    [InlineData(130, 70, 12, "422", "photo", 30, 5)]
+    [InlineData(64, 64, 8, "444", "noise", 90, 7)]
+    public void SyntaxElementsWrittenAfterTheFrameAreTheSameBytes(int width, int height, int bitDepth, string format, string content, int quality, int effort)
+    {
+        // The syntax elements of a frame are written as its superblocks are encoded, or kept and written once the frame
+        // is filtered, when the units of the loop restoration are coded with them: the tiles are the same bytes either
+        // way, in every tile of a frame that has several, and for the frames that follow the first one
+        var lossless = quality < 0;
+        var name = $"deferred-{width}x{height}-{bitDepth}-{format}-{content}-q{quality}-e{effort}";
+        var scope = AllocationScope.Create(ImageConfiguration.Default, name);
+        var monochrome = format is "400";
+        var subsamplingX = format is "420" or "422" ? 1 : 0;
+        var subsamplingY = format is "420" ? 1 : 0;
+        var settings = new Av1EncoderSettings(width, height, bitDepth, monochrome, subsamplingX, subsamplingY, ColorPrimaries: 1, TransferCharacteristics: 13, MatrixCoefficients: lossless && format is "444" ? 0 : 6, FullRange: true, ChromaSamplePosition: 0, StillPicture: false, Lossless: lossless, Quality: Math.Max(quality, 0), Effort: effort);
+        var payloads = new List<byte[]>[2];
+        for (var deferred = 0; deferred < 2; deferred++)
+        {
+            payloads[deferred] = [];
+            using var encoder = new Av1Encoder(scope, settings) { DefersSymbols = deferred is 1 };
+            for (var index = 0; index < 2; index++)
+            {
+                for (var plane = 0; plane < (monochrome ? 1 : 3); plane++)
+                {
+                    var buffer = encoder.GetSourcePlane(plane);
+                    var samples = CreateSamples(content, buffer.Width, buffer.Height, bitDepth, seed: (plane * 7919) + width + index);
+                    for (var y = 0; y < buffer.Height; y++)
+                    {
+                        samples.AsSpan(y * buffer.Width, buffer.Width).CopyTo(buffer.GetRow(y));
+                    }
+                }
+
+                encoder.BeginFrame();
+                while (!encoder.Encode(XunitCancellationToken))
+                {
+                }
+
+                payloads[deferred].Add(encoder.Payload.ToArray());
+            }
+        }
+
+        for (var index = 0; index < 2; index++)
+        {
+            Assert.True(payloads[0][index].AsSpan().SequenceEqual(payloads[1][index]), $"{name}: frame {index} has {payloads[0][index].Length} bytes, and {payloads[1][index].Length} other bytes when its syntax elements are written last");
+        }
+    }
+
+    [Theory]
+    [InlineData(96, 80, 8, "420", 30, 0)]
+    [InlineData(200, 130, 8, "444", 60, 1)]
+    [InlineData(300, 280, 10, "422", 45, 0)]
+    [InlineData(260, 200, 12, "400", 30, 2)]
+    [InlineData(150, 120, 12, "444", 50, 0)]
+    public void UnitsOfALossyFrameAreRestoredByAWienerFilter(int width, int height, int bitDepth, string format, int quality, int effort)
+    {
+        // Edges on a smooth image, coded coarsely at an effort whose narrow search leaves errors that a filter of the
+        // decoded frame reduces (the efforts 0 to 2 are the ones that look for it). The decoder applies the filters that
+        // the units code: its frame is the reconstruction of the encoder, and it is closer to the source than the same
+        // frame without the filters of its units
+        var name = $"restoration-{width}x{height}-{bitDepth}-{format}-q{quality}-e{effort}";
+        var scope = AllocationScope.Create(ImageConfiguration.Default, name);
+        var monochrome = format is "400";
+        var subsamplingX = format is "420" or "422" ? 1 : 0;
+        var subsamplingY = format is "420" ? 1 : 0;
+        var settings = new Av1EncoderSettings(width, height, bitDepth, monochrome, subsamplingX, subsamplingY, ColorPrimaries: 1, TransferCharacteristics: 13, MatrixCoefficients: 6, FullRange: true, ChromaSamplePosition: 0, StillPicture: true, Lossless: false, Quality: quality, Effort: effort);
+        using var encoder = new Av1Encoder(scope, settings);
+        using var decoder = new Av1Decoder(scope);
+        using var unrestored = new Av1Decoder(scope) { InLoopFilters = Av1InLoopFilters.Deblock | Av1InLoopFilters.Cdef };
+        var planeCount = monochrome ? 1 : 3;
+        var max = (1 << bitDepth) - 1;
+        var source = new ushort[planeCount][];
+        for (var plane = 0; plane < planeCount; plane++)
+        {
+            var buffer = encoder.GetSourcePlane(plane);
+            source[plane] = CreateSamples("photo", buffer.Width, buffer.Height, bitDepth, seed: plane + width);
+            for (var y = 0; y < buffer.Height; y++)
+            {
+                for (var x = 0; x < buffer.Width; x++)
+                {
+                    if (((x / 19) + (y / 13)) % 3 is 0 || Math.Abs((2 * x) - y - 30) < 3)
+                        source[plane][(y * buffer.Width) + x] = (ushort)Math.Clamp(source[plane][(y * buffer.Width) + x] + (max / 4) - (plane * max / 10), 0, max);
+                }
+
+                source[plane].AsSpan(y * buffer.Width, buffer.Width).CopyTo(buffer.GetRow(y));
+            }
+        }
+
+        encoder.BeginFrame();
+        while (!encoder.Encode(XunitCancellationToken))
+        {
+        }
+
+        var payload = encoder.Payload.ToArray();
+        Assert.True(encoder.Sequence.EnableRestoration);
+        Assert.True(encoder.RestoredUnitCount > 0, $"{name}: no unit has a filter");
+
+        // A wider search does not look for filters, and a lossless frame has none
+        using (var thorough = new Av1Encoder(scope, settings with { Effort = 5 }))
+        using (var lossless = new Av1Encoder(scope, settings with { Lossless = true }))
+        {
+            Assert.False(thorough.Sequence.EnableRestoration);
+            Assert.False(lossless.Sequence.EnableRestoration);
+        }
+
+        decoder.SetInput(payload, 0, payload.Length);
+        unrestored.SetInput(payload, 0, payload.Length);
+        var frame = decoder.DecodeNextOutputFrame(XunitCancellationToken);
+        var plain = unrestored.DecodeNextOutputFrame(XunitCancellationToken);
+        Assert.NotNull(frame);
+        Assert.NotNull(plain);
+        try
+        {
+            Assert.True(frame.Header.UsesLr);
+            long restoredError = 0;
+            long plainError = 0;
+            for (var plane = 0; plane < planeCount; plane++)
+            {
+                var decoded = frame.GetPlane(plane);
+                var reconstructed = encoder.Reconstruction.GetPlane(plane);
+                var other = plain.GetPlane(plane);
+                for (var y = 0; y < decoded.Height; y++)
+                {
+                    Assert.True(reconstructed.GetRow(y).SequenceEqual(decoded.GetRow(y)), $"{name}: row {y} of plane {plane} is not the row that the encoder reconstructed");
+                    var expected = source[plane].AsSpan(y * decoded.Width, decoded.Width);
+                    var actual = decoded.GetRow(y);
+                    var unfiltered = other.GetRow(y);
+                    for (var x = 0; x < expected.Length; x++)
+                    {
+                        restoredError += (long)(expected[x] - actual[x]) * (expected[x] - actual[x]);
+                        plainError += (long)(expected[x] - unfiltered[x]) * (expected[x] - unfiltered[x]);
+                    }
+                }
+            }
+
+            TestContext.Current.TestOutputHelper?.WriteLine($"{name}: {payload.Length} bytes, {encoder.RestoredUnitCount} units with a filter, squared error {plainError} without their filters and {restoredError} with them");
+            Assert.True(restoredError < plainError, $"{name}: the squared error is {restoredError} with the filters of the units, {plainError} without");
+        }
+        finally
+        {
+            frame.Release();
+            plain.Release();
+        }
+    }
+
+    [Theory]
     [InlineData(448, 136, 8, "444", 5)]
     [InlineData(448, 136, 8, "420", 2)]
     [InlineData(520, 200, 10, "400", 9)]
@@ -692,6 +840,54 @@ public sealed class Av1EncoderRoundTripTests
         Assert.False(tools[0].HasFlag(Av1Tools.IntraBlockCopy), $"{name}: a block of a page that does not repeat is a copy");
         Assert.True(tools[1].HasFlag(Av1Tools.IntraBlockCopy), $"{name}: no block is a copy");
         Assert.True(sizes[1] * 2 < sizes[0], $"{name}: {sizes[1]} bytes when the page repeats, {sizes[0]} bytes otherwise");
+    }
+
+    [Theory]
+    [InlineData(192, 144, 5, false)]
+    [InlineData(256, 192, 5, false)]
+    [InlineData(256, 256, 5, true)]
+    [InlineData(1024, 64, 5, true)]
+    [InlineData(1024, 64, 0, false)]
+    public void IntraBlockCopyIsForFramesOfSixteenSuperblocks(int width, int height, int effort, bool expected)
+    {
+        // A block copies samples that are five superblocks behind it: a frame of a few superblocks does not pay for the
+        // flag that each of its blocks would code, and the fastest effort does not look for copies
+        var scope = AllocationScope.Create(ImageConfiguration.Default, nameof(IntraBlockCopyIsForFramesOfSixteenSuperblocks));
+        var settings = new Av1EncoderSettings(width, height, 8, Monochrome: true, 1, 1, 1, 13, 6, FullRange: true, ChromaSamplePosition: 0, StillPicture: true, Lossless: true, Quality: 100, Effort: effort);
+        using var encoder = new Av1Encoder(scope, settings);
+        using var decoder = new Av1Decoder(scope);
+        var buffer = encoder.GetSourcePlane(0);
+        for (var y = 0; y < buffer.Height; y++)
+        {
+            var row = buffer.GetRow(y);
+            for (var x = 0; x < row.Length; x++)
+            {
+                row[x] = (ushort)((((x / 5) + (y / 7)) % 3) * 100);
+            }
+        }
+
+        encoder.BeginFrame();
+        while (!encoder.Encode(XunitCancellationToken))
+        {
+        }
+
+        var payload = encoder.Payload.ToArray();
+        decoder.SetInput(payload, 0, payload.Length);
+        var frame = decoder.DecodeNextOutputFrame(XunitCancellationToken);
+        Assert.NotNull(frame);
+        try
+        {
+            Assert.True(frame.Header.AllowScreenContentTools);
+            Assert.Equal(expected, frame.Header.AllowIntrabc);
+            for (var y = 0; y < buffer.Height; y++)
+            {
+                Assert.True(buffer.GetRow(y).SequenceEqual(frame.GetPlane(0).GetRow(y)), $"row {y} is not the encoded row");
+            }
+        }
+        finally
+        {
+            frame.Release();
+        }
     }
 
     [Fact]

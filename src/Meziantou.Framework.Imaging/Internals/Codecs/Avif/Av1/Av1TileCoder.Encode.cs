@@ -122,10 +122,20 @@ internal ref partial struct Av1TileCoder
         _sink = SymbolSink.Cost;
         SearchPartition(r, c, sbSize);
 
-        // The stream: the same blocks, coded from the contexts that the superblock started with
+        // The stream: the same blocks, coded from the contexts that the superblock started with. The tape gets them
+        // instead when the frame writes its tiles last, with the position of the superblock before its blocks
         CopyContexts(workspace.SuperblockContexts, r, c, sbSize4, sbSize4, save: false);
         _recordPosition = 0;
-        _sink = SymbolSink.Range;
+        if (_defersSymbols)
+        {
+            workspace.AppendTape(int.MinValue | (r << 15) | c);
+            _sink = SymbolSink.Tape;
+        }
+        else
+        {
+            _sink = SymbolSink.Range;
+        }
+
         ReplayPartition(r, c, sbSize);
     }
 

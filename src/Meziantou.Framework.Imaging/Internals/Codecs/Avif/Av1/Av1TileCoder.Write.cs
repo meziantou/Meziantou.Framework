@@ -23,7 +23,13 @@ internal ref partial struct Av1TileCoder
         None,
         Cost,
         Range,
+        Tape,
     }
+
+    // The values of the tape of the workspace: a symbol and its distribution, a literal, a bit coded with a probability
+    // that is not adapted, or the start of a superblock (negative: its row and its column of 4x4 blocks)
+    private const int TapeLiteralFlag = 1 << 30;
+    private const int TapeBoolFlag = 1 << 29;
 
     /// <summary>Creates the coder of the tiles of a frame to encode.</summary>
     public Av1TileCoder(Av1FrameBuffer frame, Av1FrameState state, Av1EncoderWorkspace workspace, Av1SymbolEncoder encoder, Av1TileScratch scratch, Av1ReferenceFrames references, Av1InterScratch? interScratch, Span<ushort> cdf, CancellationToken cancellationToken)
@@ -44,6 +50,13 @@ internal ref partial struct Av1TileCoder
             case SymbolSink.Range:
                 _encoder!.WriteSymbol(_cdf.Slice(offset, size), symbol);
                 break;
+            case SymbolSink.Tape:
+                // The distributions adapt as they do when the symbol is written: the search reads them
+                if (!_header.DisableCdfUpdate)
+                    Av1Cdf.Update(_cdf.Slice(offset, size), symbol);
+
+                _workspace!.AppendTape((offset << 10) | (size << 5) | symbol);
+                break;
         }
     }
 
@@ -57,6 +70,59 @@ internal ref partial struct Av1TileCoder
             case SymbolSink.Range:
                 _encoder!.WriteLiteral(value, count);
                 break;
+            case SymbolSink.Tape:
+                Debug.Assert(count <= 24);
+                if (count > 0)
+                    _workspace!.AppendTape(TapeLiteralFlag | (count << 24) | value);
+
+                break;
+        }
+    }
+
+    /// <summary>
+    /// Sets whether the syntax elements of the tile are kept on the tape of the workspace, to be written by
+    /// <see cref="ReplayTape"/> once the parameters of the loop restoration are chosen, rather than written as the
+    /// superblocks are encoded.
+    /// </summary>
+    public void SetDeferred(bool value) => _defersSymbols = value;
+
+    /// <summary>
+    /// Writes the syntax elements of a tile that the tape holds, with the parameters of the loop restoration units of each
+    /// superblock before its blocks (<c>read_lr</c> in <c>decode_tile</c>, section 5.11.2). The distributions are the ones
+    /// that the tile starts with.
+    /// </summary>
+    public void ReplayTape(int tileRow, int tileCol, ReadOnlySpan<int> tape)
+    {
+        _miRowStart = _header.MiRowStarts[tileRow];
+        _miRowEnd = _header.MiRowStarts[tileRow + 1];
+        _miColStart = _header.MiColStarts[tileCol];
+        _miColEnd = _header.MiColStarts[tileCol + 1];
+        ResetLoopRestorationReferences();
+        _sink = SymbolSink.Range;
+        var encoder = _encoder!;
+        var sbSize = _sequence.Use128x128Superblock ? Av1Constants.Block128x128 : Av1Constants.Block64x64;
+        Span<ushort> cdf = [0, 1 << 15, 0];
+        foreach (var value in tape)
+        {
+            if (value < 0)
+            {
+                _cancellationToken.ThrowIfCancellationRequested();
+                WriteLr((value >> 15) & 0x7FFF, value & 0x7FFF, sbSize);
+            }
+            else if ((value & TapeLiteralFlag) is not 0)
+            {
+                encoder.WriteLiteral(value & 0xFFFFFF, (value >> 24) & 0x1F);
+            }
+            else if ((value & TapeBoolFlag) is not 0)
+            {
+                cdf[0] = (ushort)((value >> 1) & 0x7FFF);
+                cdf[2] = 0;
+                encoder.WriteSymbol(cdf, value & 1);
+            }
+            else
+            {
+                encoder.WriteSymbol(_cdf.Slice(value >> 10, (value >> 5) & 0x1F), value & 0x1F);
+            }
         }
     }
 
@@ -89,6 +155,9 @@ internal ref partial struct Av1TileCoder
                 case SymbolSink.Range:
                     Span<ushort> cdf = [first, 1 << 15, 0];
                     _encoder!.WriteSymbol(cdf, isSplit ? 1 : 0);
+                    break;
+                case SymbolSink.Tape:
+                    _workspace!.AppendTape(TapeBoolFlag | (first << 1) | (isSplit ? 1 : 0));
                     break;
             }
         }
@@ -412,11 +481,11 @@ internal ref partial struct Av1TileCoder
         Debug.Assert(_header.CdefBits is 0);
         const sbyte Value = 0;
         WriteLiteral(Value, _header.CdefBits);
-        if (_sink is not SymbolSink.Range)
+        if (_sink is not (SymbolSink.Range or SymbolSink.Tape))
             return;
 
         // The search and the rebuilding of the state write the mode info of a block several times: only the walk that
-        // produces the stream marks the index as coded
+        // produces the stream, or the tape it is written from, marks the index as coded
         var w4 = Av1Tables.Num4x4BlocksWide[_miSize];
         var h4 = Av1Tables.Num4x4BlocksHigh[_miSize];
         for (var i = r; i < r + h4 && i < _miRows; i += CdefSize4)

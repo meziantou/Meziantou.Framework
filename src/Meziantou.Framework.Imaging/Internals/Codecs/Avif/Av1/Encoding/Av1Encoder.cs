@@ -19,6 +19,9 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </remarks>
 internal sealed class Av1Encoder : IDisposable
 {
+    // The number of superblocks of 64x64 samples from which a lossless frame of screen content looks for blocks to copy
+    private const int MinBlockCopySuperblocks = 16;
+
     private readonly AllocationScope _scope;
     private readonly Av1EncoderSettings _settings;
     private readonly Av1SequenceHeader _sequence;
@@ -34,6 +37,8 @@ internal sealed class Av1Encoder : IDisposable
     private Av1FrameHeader? _syntax;
     private Av1FrameBuffer? _reconstruction;
     private int[] _tileSizes = [];
+    private int[] _tapeEnds = [];
+    private bool _defersSymbols;
     private Phase _phase = Phase.Idle;
     private int _tile;
     private int _row;
@@ -97,7 +102,7 @@ internal sealed class Av1Encoder : IDisposable
             settings.StillPicture,
             Use128x128Superblock: false,
             EnableCdef: !settings.Lossless,
-            EnableRestoration: false,
+            EnableRestoration: !settings.Lossless && _decisions.LoopRestoration,
             Av1Levels.GetLevelIndex(settings.Width, settings.Height));
 
         _coding = new Av1FrameCodingState(scope);
@@ -134,6 +139,15 @@ internal sealed class Av1Encoder : IDisposable
     /// an image sequence.
     /// </summary>
     public bool IsKeyFrame { get; private set; }
+
+    /// <summary>
+    /// Gets or sets whether the syntax elements of every frame are kept and written when the frame is complete, which a
+    /// frame with loop restoration does by itself. The output is the same either way: a test compares both.
+    /// </summary>
+    public bool DefersSymbols { get; set; }
+
+    /// <summary>Gets the number of loop restoration units of the last encoded frame that have a filter, in every plane.</summary>
+    public int RestoredUnitCount { get; private set; }
 
     /// <summary>Gets the last encoded frame as a decoder reconstructs it; valid until the next frame starts.</summary>
     public Av1FrameBuffer Reconstruction => _reconstruction ?? throw new InvalidOperationException("No frame is encoded.");
@@ -337,9 +351,10 @@ internal sealed class Av1Encoder : IDisposable
         var hasFewColors = HasFewColors(_workspace.GetSource(0), _sequence.BitDepth);
 
         // Intra block copy turns the in-loop filters off: it is for the lossless frames, which have none. A block copies
-        // samples that are five superblocks behind it: a smaller frame has none
+        // samples that are five superblocks behind it: a frame of a few superblocks has few of them, and the flag that
+        // each of its blocks would code costs more than its rare copies save (measured on the avif-quality report)
         var superblocks = (long)((_settings.Width + 63) >> 6) * ((_settings.Height + 63) >> 6);
-        var allowsBlockCopy = isKeyFrame && hasFewColors && _settings.Lossless && _decisions.IntraBlockCopy && superblocks > Av1Constants.IntrabcDelaySb64 + 1;
+        var allowsBlockCopy = isKeyFrame && hasFewColors && _settings.Lossless && _decisions.IntraBlockCopy && superblocks >= MinBlockCopySuperblocks;
         var syntax = new Av1FrameHeader
         {
             FrameType = isKeyFrame ? Av1Constants.KeyFrame : Av1Constants.InterFrame,
@@ -360,13 +375,31 @@ internal sealed class Av1Encoder : IDisposable
             CdefDamping = 3 + Math.Min(3, _quantizerIndex >> 6),
         };
 
+        if (_sequence.EnableRestoration)
+        {
+            // Every unit of every plane may have a Wiener filter, which is chosen when the frame is filtered. The units
+            // are the largest ones: their coefficients are a few bytes, which a small unit seldom pays back
+            for (var plane = 0; plane < _sequence.PlaneCount; plane++)
+            {
+                syntax.FrameRestorationType[plane] = (byte)Av1Constants.RestoreWiener;
+                syntax.LoopRestorationSize[plane] = Av1Constants.RestorationTilesizeMax;
+            }
+        }
+
         _syntax = syntax;
         IsKeyFrame = syntax.FrameType is Av1Constants.KeyFrame;
         var header = ParseFrameHeader(syntax);
         _coding.BeginFrame(_sequence, header);
         if (_tileSizes.Length < header.TileCount)
+        {
             _tileSizes = new int[header.TileCount];
+            _tapeEnds = new int[header.TileCount];
+        }
 
+        // The units of the loop restoration are coded with the superblocks, and chosen after the last one: the syntax
+        // elements of the frame are kept, and written once the frame is filtered
+        _defersSymbols = header.UsesLr || DefersSymbols;
+        _workspace.ResetTape();
         _tileData.Reset();
         _tile = 0;
         BeginTile(header);
@@ -388,7 +421,9 @@ internal sealed class Av1Encoder : IDisposable
     private void BeginTile(Av1FrameHeader header)
     {
         _coding.BeginTile();
-        _symbols.Initialize(_tileData, header.DisableCdfUpdate);
+        if (!_defersSymbols)
+            _symbols.Initialize(_tileData, header.DisableCdfUpdate);
+
         _row = header.MiRowStarts[_tile / header.TileCols];
     }
 
@@ -401,13 +436,22 @@ internal sealed class Av1Encoder : IDisposable
         var tileCol = _tile % header.TileCols;
         var coder = new Av1TileCoder(frame, _coding.State, _workspace, _symbols, _coding.Scratch!, _coding.References, _coding.InterScratch, _coding.TileContext, cancellationToken);
         coder.SetDecisions(_decisions);
+        coder.SetDeferred(_defersSymbols);
         coder.EncodeSuperblockRow(tileRow, tileCol, _row);
         _row += _sequence.Use128x128Superblock ? 32 : 16;
         if (_row < header.MiRowStarts[tileRow + 1])
             return false;
 
-        _tileSizes[_tile] = _symbols.Finish();
-        _coding.EndTile(header, _tile);
+        if (_defersSymbols)
+        {
+            _tapeEnds[_tile] = _workspace.TapeLength;
+        }
+        else
+        {
+            _tileSizes[_tile] = _symbols.Finish();
+            _coding.EndTile(header, _tile);
+        }
+
         _tile++;
         if (_tile < header.TileCount)
         {
@@ -415,8 +459,33 @@ internal sealed class Av1Encoder : IDisposable
             return false;
         }
 
-        _coding.EndTiles(header);
+        if (!_defersSymbols)
+            _coding.EndTiles(header);
+
         return true;
+    }
+
+    // Writes the tiles of a frame whose syntax elements were kept: each tile again from the distributions of the frame,
+    // with the loop restoration units of each superblock. The distributions that the frame ends with are the ones of
+    // this pass, which adapt to the units too
+    private void WriteDeferredTiles(CancellationToken cancellationToken)
+    {
+        var frame = _coding.CurrentFrame!;
+        var header = frame.Header;
+        var tape = _workspace.Tape;
+        var start = 0;
+        for (var tile = 0; tile < header.TileCount; tile++)
+        {
+            _coding.BeginTile();
+            _symbols.Initialize(_tileData, header.DisableCdfUpdate);
+            var coder = new Av1TileCoder(frame, _coding.State, _workspace, _symbols, _coding.Scratch!, _coding.References, _coding.InterScratch, _coding.TileContext, cancellationToken);
+            coder.ReplayTape(tile / header.TileCols, tile % header.TileCols, tape[start.._tapeEnds[tile]]);
+            start = _tapeEnds[tile];
+            _tileSizes[tile] = _symbols.Finish();
+            _coding.EndTile(header, tile);
+        }
+
+        _coding.EndTiles(header);
     }
 
     private void FinishFrame(CancellationToken cancellationToken)
@@ -424,6 +493,7 @@ internal sealed class Av1Encoder : IDisposable
         var frame = _coding.CurrentFrame!;
         var header = frame.Header;
         var syntax = _syntax!;
+        RestoredUnitCount = 0;
         if (header.CodedLossless)
         {
             // A lossless frame has no filter
@@ -432,7 +502,24 @@ internal sealed class Av1Encoder : IDisposable
         else
         {
             Av1FilterSearch.Run(_scope, _coding.PostFilter, frame, _coding.State, _workspace, syntax, _decisions.FilterSearch, cancellationToken);
+            if (header.UsesLr)
+            {
+                Av1RestorationSearch.Run(_scope, _coding.PostFilter, frame, _coding.State, _workspace, _decisions, cancellationToken);
+                _coding.PostFilter.Apply(_scope, frame, _coding.State, Av1InLoopFilters.Restoration, cancellationToken, boundariesSaved: true);
+                for (var plane = 0; plane < frame.PlaneCount; plane++)
+                {
+                    var units = _coding.State.GetLoopRestorationUnits(plane);
+                    for (var i = 0; i < units.Length; i += Av1FrameState.LoopRestorationUnitLength)
+                    {
+                        if (units[i] is Av1Constants.RestoreWiener)
+                            RestoredUnitCount++;
+                    }
+                }
+            }
         }
+
+        if (_defersSymbols)
+            WriteDeferredTiles(cancellationToken);
 
         _reconstruction = _coding.StoreFrame();
 

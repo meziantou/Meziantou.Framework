@@ -153,6 +153,13 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
     the delay that `IsMvValid` requires, and a candidate is always validated by `IsMvValid`, which is the function
     of the decoder. A copy is an inter block of an intra frame: it is searched, recorded and replayed by the code of
     the inter blocks. Lossy frames do not copy blocks, because a frame that does has no in-loop filter.
+  - A frame with loop restoration (lossy, efforts 0 to 2) writes its tiles last: the units of the loop restoration
+    are coded with the superblocks and chosen after the whole frame is filtered. The syntax elements go to the tape of
+    the workspace (`SymbolSink.Tape`, which adapts the distributions like the range encoder) and `ReplayTape` writes
+    them with the units. Whatever the block syntax does when it produces the stream (`SymbolSink.Range`), it must do
+    for the tape too: `Av1EncoderRoundTripTests.SyntaxElementsWrittenAfterTheFrameAreTheSameBytes` compares both. The
+    filters are proposed by least squares (`Av1RestorationSearch`) and judged with the filter of the decoder, on the
+    stripes that `Av1PostFilter.TryGetRestorationStripe` builds for both.
   - A tool is enabled at the efforts where the `avif-quality` report (`benchmarks/ImagingBenchmarks`) shows that it
     makes its inputs smaller at equal quality, and stays out otherwise: the Limitations row of the readme lists the
     tools that were measured and left out, with their figures. Measure before and after with the report (it takes a

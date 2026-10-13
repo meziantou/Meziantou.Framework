@@ -292,6 +292,54 @@ public sealed class AvifEncoderInteropTests
     }
 
     [Theory]
+    [InlineData(8, "420", 0, 30, 300, 280)]
+    [InlineData(8, "444", 1, 60, 200, 130)]
+    [InlineData(10, "422", 2, 45, 300, 280)]
+    [InlineData(12, "400", 0, 50, 260, 200)]
+    [InlineData(8, "420", 2, 75, 4100, 80)]
+    public async Task TheReferenceDecodersRestoreTheUnitsOfTheLibrary(int bitDepth, string format, int effort, int quality, int width, int height)
+    {
+        // A lossy image at an effort that looks for the Wiener filters of its loop restoration units, which are coded with
+        // its superblocks (in two tiles for the widest image): the two reference decoders apply them as the library does
+        var ffmpeg = await RequiredTools.FFmpegAsync();
+        var dav1d = new Av1ReferenceDecoder(ffmpeg, Av1ReferenceDecoder.Dav1d);
+        var libaom = new Av1ReferenceDecoder(ffmpeg, Av1ReferenceDecoder.Libaom);
+        var directory = InteropSettings.GetArtifactsDirectory(nameof(AvifEncoderInteropTests));
+        var name = string.Create(CultureInfo.InvariantCulture, $"restoration-{bitDepth}-{format}-e{effort}-q{quality}-{width}x{height}");
+        using var image = CreateImage(width, height, format is "400", bitDepth, seed: width + quality, transparent: false);
+        var encoder = new AvifEncoder
+        {
+            Compression = AvifCompression.Lossy,
+            Quality = quality,
+            Effort = effort,
+            BitDepth = bitDepth,
+            ChromaSubsampling = format switch
+            {
+                "444" => AvifChromaSubsampling.Ratio444,
+                "422" => AvifChromaSubsampling.Ratio422,
+                _ => AvifChromaSubsampling.Ratio420,
+            },
+        };
+
+        var path = await SaveAsync(image, encoder, name);
+        var reader = ReferenceAvif.Parse(await File.ReadAllBytesAsync(path, XunitCancellationToken));
+        var payload = reader.ReadItemData(reader.PrimaryItem!);
+        var stream = directory / $"{name}.obu";
+        await File.WriteAllBytesAsync(stream, [0x12, 0x00, .. payload], XunitCancellationToken);
+        var frame = Assert.Single(await dav1d.ProbeAsync(stream, XunitCancellationToken));
+        Assert.Equal((width, height), (frame.Width, frame.Height));
+        var first = Assert.Single(await dav1d.DecodeAsync(stream, frame.PixelFormat, directory / $"{name}-dav1d", XunitCancellationToken));
+        var second = Assert.Single(await libaom.DecodeAsync(stream, frame.PixelFormat, directory / $"{name}-libaom", XunitCancellationToken));
+        Assert.True(first.AsSpan().SequenceEqual(second), $"{name}: dav1d and libaom reconstruct different planes ({frame.PixelFormat}).");
+        var library = Assert.Single(DecodeFramesWithLibrary([payload], name, out _));
+        Assert.True(first.AsSpan().SequenceEqual(library), $"{name}: the reference decoders and the library reconstruct different planes ({frame.PixelFormat}; first difference at byte {first.AsSpan().CommonPrefixLength(library)} of {first.Length}).");
+
+        // Units have a filter: the frame is another one without the loop restoration
+        var unrestored = Assert.Single(DecodeFramesWithLibrary([payload], name, out _, Av1InLoopFilters.Deblock | Av1InLoopFilters.Cdef));
+        Assert.False(library.AsSpan().SequenceEqual(unrestored), $"{name}: no unit has a filter.");
+    }
+
+    [Theory]
     [InlineData(8, "444", 1, 448, 136)]
     [InlineData(8, "444", 5, 520, 200)]
     [InlineData(12, "444", 3, 392, 190)]
@@ -864,10 +912,10 @@ public sealed class AvifEncoderInteropTests
 
     // The same for the samples of a track, which the same decoder decodes one after the other; tools receives the coding
     // tools of the frames
-    private static List<byte[]> DecodeFramesWithLibrary(IReadOnlyList<byte[]> payloads, string name, out Av1Tools tools)
+    private static List<byte[]> DecodeFramesWithLibrary(IReadOnlyList<byte[]> payloads, string name, out Av1Tools tools, Av1InLoopFilters filters = Av1InLoopFilters.All)
     {
         var scope = AllocationScope.Create(ImageConfiguration.Default, name);
-        using var decoder = new Av1Decoder(scope);
+        using var decoder = new Av1Decoder(scope) { InLoopFilters = filters };
         var frames = new List<byte[]>();
         tools = Av1Tools.None;
         foreach (var payload in payloads)

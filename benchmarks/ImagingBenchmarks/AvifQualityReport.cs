@@ -8,8 +8,8 @@ namespace Meziantou.Framework.Imaging.Benchmarks;
 
 /// <summary>
 /// The <c>avif-quality</c> command: encoded size, reconstruction quality and encoding time of AVIF output across
-/// compression modes, qualities and efforts, on the deterministic synthetic inputs of the <c>webp-quality</c> command and
-/// on a page of text, printed as Markdown tables. A row of lossy WebP output at the same quality gives a point of
+/// compression modes, qualities and efforts, on the deterministic synthetic inputs of the <c>webp-quality</c> command, on
+/// a page of text and on a photograph with edges and little noise, printed as Markdown tables. A row of lossy WebP output at the same quality gives a point of
 /// comparison. A second part encodes the text and the graphics at four times the size, without loss, and a third one
 /// image sequences: a pan over a photograph by whole samples, a drift by fractions of
 /// a sample, a pan with a cut to another scene, a cross-fade and a page of text that scrolls.
@@ -43,6 +43,7 @@ internal static class AvifQualityReport
             ("graphics", WebPQualityReport.Graphics(width, height)),
             ("transparent", BenchmarkPixels.Rgba32(width, height, seed: 12, alpha: true)),
             ("text", Text(width, height, scroll: 0)),
+            ("edges", Edges(width, height)),
         };
 
         foreach (var (name, pixels) in inputs)
@@ -164,6 +165,47 @@ internal static class AvifQualityReport
 
             Console.WriteLine();
         }
+    }
+
+    // A photograph with less noise than "photo" (a low sensitivity) and with edges: bands and a diagonal line that are
+    // brighter than what they cross, which is where a lossy coding leaves the errors that the in-loop filters reduce
+    internal static Rgba32[] Edges(int width, int height)
+    {
+        var pixels = new Rgba32[width * height];
+        Span<double> color = stackalloc double[3];
+        for (var y = 0; y < height; y++)
+        {
+            for (var x = 0; x < width; x++)
+            {
+                var u = x / (double)width;
+                var v = y / (double)height;
+                var isEdge = ((x / 37) + (y / 29)) % 3 == 0 || Math.Abs((2 * x) - y - 60) < 4;
+                for (var channel = 0; channel < 3; channel++)
+                {
+                    var phase = 4.07 + (channel * 1.9);
+                    var value = 0.45
+                        + (0.25 * Math.Sin((u * 5.1) + phase) * Math.Cos((v * 3.7) - phase))
+                        + (0.15 * Math.Sin(((u + v) * 13.3) + (channel * 0.7)))
+                        + (0.08 * Math.Cos(Math.Sqrt(((u - 0.3) * (u - 0.3)) + ((v - 0.6) * (v - 0.6))) * 40));
+
+                    // A noise of 1% of the range, from a hash of the position
+                    var hash = (uint)((x * 374761393) + (y * 668265263) + ((channel + 88) * 1274126177));
+                    hash = (hash ^ (hash >> 13)) * 1274126177;
+                    hash ^= hash >> 16;
+                    value += (((hash & 0xFFFF) / 65535.0) - 0.5) * 0.01;
+                    if (isEdge)
+                        value += 0.3 - (0.2 * channel);
+
+                    color[channel] = Math.Clamp(value, 0, 1);
+                }
+
+                pixels[(y * width) + x] = new Rgba32(To8(color[0]), To8(color[1]), To8(color[2]));
+            }
+        }
+
+        return pixels;
+
+        static byte To8(double value) => (byte)Math.Round(value * 255, MidpointRounding.AwayFromZero);
     }
 
     // A page of text: lines of glyphs of 5x7 dots, drawn from a small alphabet so that they repeat as letters do, dark on

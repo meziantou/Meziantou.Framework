@@ -2083,6 +2083,22 @@ namespace Meziantou.Framework.Imaging.Typography
         RightToLeft = 2,
     }
 
+    public readonly struct TextHit : System.IEquatable<Meziantou.Framework.Imaging.Typography.TextHit>
+    {
+        public int LineIndex { get => throw null; }
+        public int TextIndex { get => throw null; }
+        public int Length { get => throw null; }
+        public bool IsTrailing { get => throw null; }
+        public bool IsInside { get => throw null; }
+        public int CaretIndex { get => throw null; }
+        public bool Equals(Meziantou.Framework.Imaging.Typography.TextHit other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.Imaging.Typography.TextHit left, Meziantou.Framework.Imaging.Typography.TextHit right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Imaging.Typography.TextHit left, Meziantou.Framework.Imaging.Typography.TextHit right) => throw null;
+    }
+
     public enum TextHyphenation
     {
         Manual = 0,
@@ -2104,6 +2120,9 @@ namespace Meziantou.Framework.Imaging.Typography
         public static Meziantou.Framework.Imaging.Typography.TextLayout Create(string text, Meziantou.Framework.Imaging.Typography.TextStyle style, Meziantou.Framework.Imaging.Typography.TextLayoutOptions? options = null) => throw null;
         public static Meziantou.Framework.Imaging.Typography.TextLayout Create(Meziantou.Framework.Imaging.Typography.RichText text, Meziantou.Framework.Imaging.Typography.TextLayoutOptions? options = null) => throw null;
         public Meziantou.Framework.Imaging.Drawing.VectorPath ToPath(Meziantou.Framework.Imaging.PointD origin) => throw null;
+        public Meziantou.Framework.Imaging.Typography.TextHit HitTest(Meziantou.Framework.Imaging.PointD point) => throw null;
+        public Meziantou.Framework.Imaging.RectangleD GetCaretRectangle(int textIndex) => throw null;
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Imaging.RectangleD> GetSelectionRectangles(int start, int length) => throw null;
     }
 
     public sealed class TextLayoutOptions

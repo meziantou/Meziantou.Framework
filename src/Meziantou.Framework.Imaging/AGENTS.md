@@ -414,6 +414,12 @@ directory and the fixed-size tables, `CmapTable` maps characters, `GlyfOutlineRe
   `Lines` and `InkBounds` come from the positions that are drawn. A layout is immutable and thread-safe, holds exact
   managed arrays (like `VectorPath`) and no pooled storage; so are `TextStyle`, `TextLayoutOptions`, `RichText` and
   `FontStack`.
+- **The positions of the text come from the positions that are drawn.** `Finish` records, for each line, its clusters
+  from the left (`TextHitBox`: the characters of the cluster, and the span of the pen over its glyphs, after alignment
+  and justification), with the direction of the item they come from. `HitTest`, `GetCaretRectangle` and
+  `GetSelectionRectangles` only read these: the layout does not keep the text. A cluster holds the characters up to
+  the next cluster of its line in the order of the text; the grapheme boundaries of a cluster of several characters
+  (a ligature) are kept, and share its width. What a line adds (a hyphen, an ellipsis) has no character.
 - **Validate at layout, not at draw.** Creating a layout decodes each distinct glyph once, so the errors of the font
   data surface there; drawing a layout then only fails on a limit of the image or on cancellation. Do not add a failure
   mode to `FillText` that `TextLayout.Create` could have reported.

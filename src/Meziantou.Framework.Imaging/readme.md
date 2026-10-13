@@ -24,11 +24,14 @@ conversion, and bounded-memory streaming.
   hotspot that follows its pixel through geometry operations
 - Six working pixel formats (`Rgba32`, `Bgra32`, `Rgb24`, `Rgba64`, `Gray8`, `Gray16`) with 16-bit precision preserved
 - Crop, auto-crop (background detection), resize (alpha-aware, Contain/Cover/Stretch), rotate, auto-orient, flip,
-  grayscale and convolution matrices (sharpen, blur, edge detection) applied to all frames
+  grayscale, Gaussian blur and convolution matrices (sharpen, edge detection) applied to all frames
 - Antialiased vector drawing on a frame or on every frame: filled and stroked shapes and paths with Bézier curves and
-  arcs, dashed strokes, solid colors, linear, radial and sweep gradients, images, clips and compositing operators, with
-  exact pixel coverage
-- Text drawn from font files with the same rasterizer, measured by the layout that is drawn
+  arcs, dashed strokes, solid colors, linear, radial and sweep gradients, images, clips, layers, shadows, blend modes,
+  compositing operators and transformations of the canvas, with exact pixel coverage
+- Paths that are read from and written to SVG path data, combined (union, intersection, difference), simplified,
+  reversed, cut and measured
+- Text drawn from font files with the same rasterizer, measured by the layout that is drawn, with the positions of
+  its characters (hit testing, carets, selections)
 - Font files read without any system library: TrueType and OpenType (TrueType and CFF outlines), font collections,
   WOFF and WOFF2, with their names, metrics, character map and glyph outlines
 - ICC color management on request: convert an image to another color profile, or convert sample buffers between two
@@ -1528,6 +1531,14 @@ of their characters and were not compared with a font.
   tight curve, neighboring characters overlap or part; give letter spacing to the style when that matters.
 - **Measuring.** `Width` and `Height` are the size of the text, `Lines` gives each line (its part of the text, its
   position, its width, its baseline), and `InkBounds` contains everything that is drawn.
+- **Positions of the text.** `HitTest(point)` gives the character at a point of the layout (the point of the canvas
+  less the origin the layout is drawn at), or the nearest one, and which half of it the point is on: its `CaretIndex`
+  is where a click puts a caret. `GetCaretRectangle(index)` is where that caret is drawn, and
+  `GetSelectionRectangles(start, length)` the rectangles that highlight a range of the text, line by line. A
+  character is a grapheme cluster (a letter with its marks, an emoji sequence), and takes the space of its advance, not
+  of its ink; the characters a font draws as one glyph share its width. A right-to-left character starts on its
+  right: in a text that mixes directions, a caret jumps where the direction changes, and a range of the text can be
+  several rectangles on one line.
 - **Cost.** Creating a layout allocates (its glyphs and positions) and decodes each distinct glyph once, which validates
   the font data the text uses: drawing a layout then only fails on a limit of the image or on cancellation, and
   allocates nothing. The time to create a layout grows with the length of the text and with the number of lookups

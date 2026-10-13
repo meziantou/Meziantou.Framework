@@ -717,6 +717,16 @@ angle turns clockwise on the image (Y grows downward); sines and cosines do not 
 by a multiple of 90 degrees is exact. The canvas has no transform of its own: a shape is transformed before it is
 drawn, and a text through `TextLayout.ToPath`.
 
+**Measuring a path**. A `VectorPath` answers the questions a drawing asks about a shape: `Contains` tells whether a
+point is inside (what a fill paints, with either fill rule), `GetLength` gives its length and `TryGetPointAtDistance`
+the point at a distance along it with the direction of the path there (to place a marker, an arrow head or a label),
+`Bounds` is the box of its points and control points, and `GetTightBounds` the box it really reaches. `Widen` returns
+the path a pen draws when it strokes the path, so that all of these also answer for a stroke: the bounds of a stroke
+are the tight bounds of the widened path, and a click is on a line when the widened path contains it. A widened path
+is the pieces the library fills (one per segment, join and cap, overlapping): fill it with the non-zero rule; it is
+not a single outline. Lengths and containment are those of the path as it is drawn, with its curves replaced by their
+chords.
+
 **Coordinates**. Positions are `double` values in pixels (`PointD`, `RectangleD`; the integer `Point` and `Rectangle`
 convert implicitly). The origin is the top-left corner, and integer coordinates are pixel boundaries: the pixel
 `(x, y)` covers the square from `(x, y)` to `(x + 1, y + 1)`. A rectangle on integer coordinates is filled exactly, and

@@ -528,7 +528,8 @@ public sealed class VectorPathBuilder
         SetCurrentPoint(piece.EndX, piece.EndY);
     }
 
-    private void AppendMoveTo(double x, double y)
+    /// <summary>Starts a contour at a point that is not validated: the caller validates the path it builds.</summary>
+    internal void AppendMoveTo(double x, double y)
     {
         _commands.Add(PathCommand.MoveTo);
         AppendPoint(x, y);
@@ -539,7 +540,8 @@ public sealed class VectorPathBuilder
         SetCurrentPoint(x, y);
     }
 
-    private void AppendLineTo(double x, double y)
+    /// <summary>Adds a straight segment to a point that is not validated: the caller validates the path it builds.</summary>
+    internal void AppendLineTo(double x, double y)
     {
         BeginSegment();
         _commands.Add(PathCommand.LineTo);

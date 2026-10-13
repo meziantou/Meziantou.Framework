@@ -136,6 +136,125 @@ public sealed class VectorPath
 
     }
 
+    /// <summary>Gets a value indicating whether a point is inside the path: whether a fill of the path paints it.</summary>
+    /// <remarks>
+    /// The path is the one that is drawn: its curves are their chords, within 1/16 of a pixel of the curve, and an open
+    /// contour is closed by a straight segment. A point on the outline itself may be reported either way.
+    /// </remarks>
+    /// <param name="point">The point.</param>
+    /// <param name="fillRule">The rule deciding what is inside when contours overlap.</param>
+    /// <returns><see langword="true"/> if the point is inside; <see langword="false"/> for a point that is not a finite position.</returns>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="fillRule"/> is not a defined <see cref="FillRule"/>.</exception>
+    public bool Contains(PointD point, FillRule fillRule = FillRule.NonZero)
+    {
+        if (fillRule is not (FillRule.NonZero or FillRule.EvenOdd))
+            throw new ArgumentOutOfRangeException(nameof(fillRule), fillRule, "The fill rule is not valid.");
+
+        // Written so that a coordinate that is not a number is outside
+        var bounds = Bounds;
+        if (!(point.X >= bounds.Left && point.X <= bounds.Right && point.Y >= bounds.Top && point.Y <= bounds.Bottom))
+            return false;
+
+        var sink = new WindingSink(point.X, point.Y);
+        PathFlattener.Flatten(this, sink);
+        return fillRule == FillRule.EvenOdd ? (sink.Winding & 1) != 0 : sink.Winding != 0;
+    }
+
+    /// <summary>Gets the length of the path: the sum of the lengths of its contours.</summary>
+    /// <remarks>
+    /// The path is measured as it is drawn: by the chords of its curves, within 1/16 of a pixel of the curve. A closed
+    /// contour includes its closing segment; the gap between two contours is not counted. Each call walks the whole path.
+    /// </remarks>
+    /// <returns>The length, in pixels.</returns>
+    public double GetLength()
+    {
+        if (IsEmpty)
+            return 0;
+
+        var sink = new DistanceSink(double.NaN);
+        PathFlattener.Flatten(this, sink);
+        return sink.Length;
+    }
+
+    /// <summary>Finds the point at a distance from the start of the path, and the direction of the path there.</summary>
+    /// <remarks>
+    /// The distance is measured as <see cref="GetLength"/> measures the path: the contours follow each other, without
+    /// the gap between them. A distance before the start gives the first point, a distance beyond the end the last
+    /// one. At a corner, the direction is the one of the segment that starts there. Each call walks the path from its
+    /// start.
+    /// </remarks>
+    /// <param name="distance">The distance from the start of the path, in pixels.</param>
+    /// <param name="point">The point of the path at that distance.</param>
+    /// <param name="tangent">The direction of the path at that point, as a vector of length 1.</param>
+    /// <returns><see langword="false"/> when the path has no length: there is no point to find, and no direction.</returns>
+    /// <exception cref="ArgumentException"><paramref name="distance"/> is not a number.</exception>
+    public bool TryGetPointAtDistance(double distance, out PointD point, out PointD tangent)
+    {
+        if (double.IsNaN(distance))
+            throw new ArgumentException("The distance must be a number.", nameof(distance));
+
+        if (!IsEmpty)
+        {
+            var sink = new DistanceSink(distance);
+            PathFlattener.Flatten(this, sink);
+            if (sink.IsFound)
+            {
+                point = new PointD(sink.PointX, sink.PointY);
+                tangent = new PointD(sink.DirectionX, sink.DirectionY);
+                return true;
+            }
+        }
+
+        point = default;
+        tangent = default;
+        return false;
+    }
+
+    /// <summary>
+    /// Gets the smallest rectangle containing the path itself: unlike <see cref="Bounds"/>, a curve counts for the points
+    /// it reaches, not for its control points.
+    /// </summary>
+    /// <remarks>
+    /// The rectangle is computed from the curves, not from their chords: it contains everything a fill of the path
+    /// paints. It does not account for the width of a stroke: see <see cref="Widen"/>. Empty for an empty path.
+    /// </remarks>
+    /// <returns>The rectangle.</returns>
+    public RectangleD GetTightBounds() => PathBounds.ComputeTight(_commands, _points);
+
+    /// <summary>Creates the path a pen draws when it strokes this path: filling the result paints what the stroke paints.</summary>
+    /// <remarks>
+    /// <para>
+    /// The result is the stroke as the library draws it: one closed convex contour for each segment, each join and
+    /// each cap. The contours overlap and all turn the same way: fill them with <see cref="FillRule.NonZero"/>. It is not
+    /// the outline of the stroke as a single contour, so stroking the result outlines every piece.
+    /// </para>
+    /// <para>
+    /// Curves are widened along their chords, which stay within 1/16 of a pixel of the curve at the size the path has:
+    /// transform a path before widening it, not after. The brush of the pen is not used.
+    /// </para>
+    /// </remarks>
+    /// <param name="pen">The stroke.</param>
+    /// <returns>The path of the stroke; an empty path when this path is empty.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="pen"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The stroke goes beyond the largest coordinate (16777216).</exception>
+    public VectorPath Widen(Pen pen)
+    {
+        ArgumentNullException.ThrowIfNull(pen);
+        var builder = new VectorPathBuilder();
+        var stroker = new Stroker(builder);
+        stroker.Configure(pen);
+        PathFlattener.Flatten(this, stroker);
+        var result = builder.Build();
+        foreach (var value in result._points)
+        {
+            // Written so that a value that is not a number is rejected too
+            if (!(Math.Abs(value) <= DrawingGuard.MaxCoordinate))
+                throw new ArgumentOutOfRangeException(nameof(pen), "The stroke goes beyond the largest coordinate (16777216).");
+        }
+
+        return result;
+    }
+
     /// <summary>Gets the smallest rectangle containing every point and control point of a list of elements.</summary>
     internal static RectangleD ComputeBounds(ReadOnlySpan<PathCommand> commands, ReadOnlySpan<double> points)
     {

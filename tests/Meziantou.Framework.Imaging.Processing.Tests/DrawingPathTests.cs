@@ -713,6 +713,292 @@ public sealed class DrawingPathTests
         }
     }
 
+    [Fact]
+    public void ContainsTellsWhatAFillPaints()
+    {
+        // Two squares turning the same way, one inside the other: a hole for the even-odd rule only
+        var nested = new VectorPathBuilder().AddRectangle(new RectangleD(0, 0, 10, 10)).AddRectangle(new RectangleD(3, 3, 4, 4)).Build();
+        Assert.True(nested.Contains(new PointD(1, 1)));
+        Assert.True(nested.Contains(new PointD(5, 5)));
+        Assert.True(nested.Contains(new PointD(1, 1), FillRule.EvenOdd));
+        Assert.False(nested.Contains(new PointD(5, 5), FillRule.EvenOdd));
+        Assert.False(nested.Contains(new PointD(11, 5)));
+        Assert.False(nested.Contains(new PointD(-0.001, 5)));
+        Assert.False(nested.Contains(new PointD(5, 10.001), FillRule.EvenOdd));
+
+        // The inner square the other way: a hole for both rules
+        var hole = new VectorPathBuilder().AddRectangle(new RectangleD(0, 0, 10, 10)).AddPolygon([new PointD(3, 3), new PointD(3, 7), new PointD(7, 7), new PointD(7, 3)]).Build();
+        Assert.False(hole.Contains(new PointD(5, 5)));
+        Assert.True(hole.Contains(new PointD(8, 5)));
+
+        // An open contour is closed by a straight segment, as when it is filled
+        var open = new VectorPathBuilder().MoveTo(0, 0).LineTo(10, 0).LineTo(10, 10).Build();
+        Assert.True(open.Contains(new PointD(8, 3)));
+        Assert.False(open.Contains(new PointD(3, 8)));
+
+        // Curves and arcs
+        var circle = new VectorPathBuilder().AddCircle(new PointD(20, 20), 10).Build();
+        var pie = new VectorPathBuilder().AddPie(new PointD(20, 20), 10, 10, 0, 90).Build();
+        for (var degrees = 5; degrees < 360; degrees += 10)
+        {
+            var (sin, cos) = Math.SinCos(degrees * Math.PI / 180);
+            Assert.True(circle.Contains(new PointD(20 + (9.9 * cos), 20 + (9.9 * sin))));
+            Assert.False(circle.Contains(new PointD(20 + (10.1 * cos), 20 + (10.1 * sin))));
+            Assert.Equal(degrees < 90, pie.Contains(new PointD(20 + (9.9 * cos), 20 + (9.9 * sin))));
+            Assert.False(pie.Contains(new PointD(20 + (10.1 * cos), 20 + (10.1 * sin))));
+        }
+
+        // A horizontal line through a vertex counts it once
+        var diamond = new VectorPathBuilder().AddPolygon([new PointD(5, 0), new PointD(10, 5), new PointD(5, 10), new PointD(0, 5)]).Build();
+        Assert.True(diamond.Contains(new PointD(5, 5)));
+        Assert.True(diamond.Contains(new PointD(1, 5)));
+        Assert.False(diamond.Contains(new PointD(-1, 5)));
+        Assert.False(diamond.Contains(new PointD(11, 5)));
+
+        Assert.False(new VectorPathBuilder().Build().Contains(default));
+        Assert.False(circle.Contains(new PointD(double.NaN, 20)));
+        Assert.False(circle.Contains(new PointD(20, double.PositiveInfinity)));
+        Assert.Throws<ArgumentOutOfRangeException>(() => circle.Contains(default, (FillRule)2));
+    }
+
+    [Fact]
+    public void ContainsAgreesWithThePixelsOfAFill()
+    {
+        var path = new VectorPathBuilder()
+            .MoveTo(1, 1).CubicBezierTo(15, 0, 2, 15, 15.5, 14.5).QuadraticBezierTo(4, 17, 1.5, 6.25).Close()
+            .AddEllipse(new PointD(8, 8), 5.5, 3.25, 25)
+            .AddRoundedRectangle(new RectangleD(3, 9, 9, 5), 2)
+            .Build();
+        foreach (var fillRule in new[] { FillRule.NonZero, FillRule.EvenOdd })
+        {
+            using var image = new Image<Gray8>(16, 16, new Gray8(0));
+            image.Draw(canvas => canvas.Fill(White, path, fillRule), Ct);
+            var inside = 0;
+            for (var y = 0; y < 16; y++)
+            {
+                for (var x = 0; x < 16; x++)
+                {
+                    // A pixel that is entirely painted has its center inside, a pixel that is not painted has it outside
+                    var value = image.Frames[0][x, y].Value;
+                    if (value is 0 or 255)
+                    {
+                        Assert.Equal(value == 255, path.Contains(new PointD(x + 0.5, y + 0.5), fillRule), $"pixel ({x}, {y}) with {fillRule}");
+                        inside += value == 255 ? 1 : 0;
+                    }
+                }
+            }
+
+            Assert.True(inside > 20);
+        }
+    }
+
+    [Fact]
+    public void TheLengthOfAPathIsTheSumOfItsContours()
+    {
+        Assert.Equal(0, new VectorPathBuilder().Build().GetLength());
+        Assert.Equal(0, new VectorPathBuilder().MoveTo(3, 4).Build().GetLength());
+        Assert.Equal(5, new VectorPathBuilder().MoveTo(1, 1).LineTo(4, 5).Build().GetLength());
+
+        // A closed contour includes its closing segment; an open one does not
+        Assert.Equal(12, new VectorPathBuilder().MoveTo(0, 0).LineTo(3, 0).LineTo(3, 4).Close().Build().GetLength());
+        Assert.Equal(7, new VectorPathBuilder().MoveTo(0, 0).LineTo(3, 0).LineTo(3, 4).Build().GetLength());
+        Assert.Equal(26, new VectorPathBuilder().AddRectangle(new RectangleD(1, 1, 6, 7)).Build().GetLength());
+
+        // The gap between two contours is not counted
+        Assert.Equal(7, new VectorPathBuilder().MoveTo(0, 0).LineTo(3, 0).MoveTo(100, 100).LineTo(100, 104).Build().GetLength());
+
+        // A circle: its chords are a little shorter than it is
+        var circle = new VectorPathBuilder().AddCircle(new PointD(5, 5), 100).Build().GetLength();
+        Assert.InRange(circle, (2 * Math.PI * 100) - 0.2, 2 * Math.PI * 100);
+        var arc = new VectorPathBuilder().AddArc(new PointD(5, 5), 100, 100, 10, 90).Build().GetLength();
+        Assert.InRange(arc, (Math.PI * 50) - 0.05, Math.PI * 50);
+    }
+
+    [Fact]
+    public void APointAtADistanceIsOnThePathWithItsDirection()
+    {
+        var path = new VectorPathBuilder().MoveTo(0, 0).LineTo(10, 0).LineTo(10, 10).MoveTo(50, 50).LineTo(50, 40).Build();
+        Assert.Equal(30, path.GetLength());
+        AssertPoint(path, 0, new PointD(0, 0), new PointD(1, 0));
+        AssertPoint(path, 2.5, new PointD(2.5, 0), new PointD(1, 0));
+
+        // At a corner, the direction is the one of the segment that starts there
+        AssertPoint(path, 10, new PointD(10, 0), new PointD(0, 1));
+        AssertPoint(path, 17, new PointD(10, 7), new PointD(0, 1));
+
+        // The next contour continues without the gap
+        AssertPoint(path, 20, new PointD(50, 50), new PointD(0, -1));
+        AssertPoint(path, 26, new PointD(50, 44), new PointD(0, -1));
+
+        // Before the start and beyond the end, the ends of the path
+        AssertPoint(path, 30, new PointD(50, 40), new PointD(0, -1));
+        AssertPoint(path, 1000, new PointD(50, 40), new PointD(0, -1));
+        AssertPoint(path, double.PositiveInfinity, new PointD(50, 40), new PointD(0, -1));
+        AssertPoint(path, -3, new PointD(0, 0), new PointD(1, 0));
+        AssertPoint(path, double.NegativeInfinity, new PointD(0, 0), new PointD(1, 0));
+
+        // A closed contour includes its closing segment
+        var triangle = new VectorPathBuilder().MoveTo(0, 0).LineTo(3, 0).LineTo(3, 4).Close().Build();
+        AssertPoint(triangle, 9.5, new PointD(1.5, 2), new PointD(-0.6, -0.8));
+
+        // On a circle, the point is on the circle and the direction is along it
+        var circle = new VectorPathBuilder().AddCircle(new PointD(0, 0), 50).Build();
+        Assert.True(circle.TryGetPointAtDistance(25 * Math.PI, out var point, out var tangent));
+        Assert.Equal(0, point.X, 0.2);
+        Assert.Equal(50, point.Y, 0.1);
+        Assert.Equal(-1, tangent.X, 0.01);
+        Assert.Equal(1, Math.Sqrt((tangent.X * tangent.X) + (tangent.Y * tangent.Y)), 1e-12);
+
+        // A path without length has no point
+        Assert.False(new VectorPathBuilder().Build().TryGetPointAtDistance(0, out point, out tangent));
+        Assert.Equal((default(PointD), default(PointD)), (point, tangent));
+        Assert.False(new VectorPathBuilder().MoveTo(1, 2).Build().TryGetPointAtDistance(0, out _, out _));
+        Assert.False(new VectorPathBuilder().MoveTo(1, 2).LineTo(1, 2).Close().Build().TryGetPointAtDistance(0, out _, out _));
+        Assert.Throws<ArgumentException>(() => path.TryGetPointAtDistance(double.NaN, out _, out _));
+
+        static void AssertPoint(VectorPath path, double distance, PointD expectedPoint, PointD expectedTangent)
+        {
+            Assert.True(path.TryGetPointAtDistance(distance, out var point, out var tangent));
+            Assert.Equal(expectedPoint.X, point.X, 1e-12);
+            Assert.Equal(expectedPoint.Y, point.Y, 1e-12);
+            Assert.Equal(expectedTangent.X, tangent.X, 1e-12);
+            Assert.Equal(expectedTangent.Y, tangent.Y, 1e-12);
+        }
+    }
+
+    [Fact]
+    public void TightBoundsAreWhatThePathReaches()
+    {
+        Assert.Equal(RectangleD.Empty, new VectorPathBuilder().Build().GetTightBounds());
+        Assert.Equal(new RectangleD(3, -2, 0, 0), new VectorPathBuilder().MoveTo(3, -2).Build().GetTightBounds());
+
+        // Straight segments: the same as the bounds
+        var polygon = new VectorPathBuilder().AddPolygon([new PointD(0, 0), new PointD(6, 2), new PointD(-1, 5)]).Build();
+        Assert.Equal(polygon.Bounds, polygon.GetTightBounds());
+
+        // A quadratic curve reaches half way to its control point; a symmetric cubic one, three quarters of the way
+        var quadratic = new VectorPathBuilder().MoveTo(0, 0).QuadraticBezierTo(5, 10, 10, 0).Build();
+        Assert.Equal(new RectangleD(0, 0, 10, 10), quadratic.Bounds);
+        Assert.Equal(new RectangleD(0, 0, 10, 5), quadratic.GetTightBounds());
+        var cubic = new VectorPathBuilder().MoveTo(0, 0).CubicBezierTo(0, 10, 10, 10, 10, 0).Build();
+        Assert.Equal(new RectangleD(0, 0, 10, 7.5), cubic.GetTightBounds());
+
+        // A curve that goes beyond both of its ends, on both axes
+        var loop = new VectorPathBuilder().MoveTo(0, 0).CubicBezierTo(60, 10, -50, 10, 10, 0).Build().GetTightBounds();
+        Assert.True(loop.Left < -8 && loop.Left > -50 && loop.Right > 18 && loop.Right < 60, loop.ToString());
+        Assert.Equal((0d, 7.5d), (loop.Top, loop.Bottom));
+
+        Assert.Equal(RectangleD.FromLTRB(7, 8.5, 13, 11.5), new VectorPathBuilder().AddEllipse(new PointD(10, 10), 3, 1.5).Build().GetTightBounds());
+
+        // An ellipse of radii 2 and 1 turned by an eighth of a turn reaches sqrt(2.5) from its center on both axes
+        var turned = new VectorPathBuilder().AddEllipse(new PointD(10, 10), 2, 1, 45).Build();
+        var reach = Math.Sqrt(2.5);
+        AssertRectangle(RectangleD.FromLTRB(10 - reach, 10 - reach, 10 + reach, 10 + reach), turned.GetTightBounds(), 1e-12);
+        Assert.True(turned.Bounds.Contains(turned.GetTightBounds()));
+        Assert.True(turned.Bounds.Width > 2 * reach);
+
+        // A quarter of a circle from 45 to 135 degrees: its lowest point is under the center, its ends are its sides
+        var arc = new VectorPathBuilder().AddArc(new PointD(0, 0), 5, 5, 45, 90).Build();
+        var half = 5 * Math.Sqrt(0.5);
+        AssertRectangle(RectangleD.FromLTRB(-half, half, half, 5), arc.GetTightBounds(), 1e-12);
+        Assert.Equal(5 * Math.Sqrt(2), arc.Bounds.Bottom, 1e-12);
+
+        // An arc that reaches no extreme of its circle is bounded by its ends
+        var small = new VectorPathBuilder().AddArc(new PointD(0, 0), 5, 5, 10, 60).Build();
+        AssertRectangle(RectangleD.FromLTRB(5 * Math.Cos(70 * Math.PI / 180), 5 * Math.Sin(10 * Math.PI / 180), 5 * Math.Cos(10 * Math.PI / 180), 5 * Math.Sin(70 * Math.PI / 180)), small.GetTightBounds(), 1e-12);
+
+        // A rounded rectangle is bounded by its rectangle
+        Assert.Equal(new RectangleD(1, 2, 20, 10), new VectorPathBuilder().AddRoundedRectangle(new RectangleD(1, 2, 20, 10), 4).Build().GetTightBounds());
+    }
+
+    [Fact]
+    public void TightBoundsContainTheChordsOfAnyPathAndAreReachedByThem()
+    {
+        var random = new Random(20261013);
+        for (var index = 0; index < 100; index++)
+        {
+            var builder = new VectorPathBuilder().MoveTo(Next(), Next());
+            for (var i = random.Next(1, 5); i > 0; i--)
+            {
+                _ = random.Next(6) switch
+                {
+                    0 => builder.LineTo(Next(), Next()),
+                    1 => builder.QuadraticBezierTo(Next(), Next(), Next(), Next()),
+                    2 => builder.CubicBezierTo(Next(), Next(), Next(), Next(), Next(), Next()),
+                    3 => builder.ArcTo(1 + Math.Abs(Next()), 1 + Math.Abs(Next()), Next() * 3, random.Next(2) == 0, random.Next(2) == 0, Next(), Next()),
+                    4 => builder.ArcTo(new PointD(Next(), Next()), Math.Abs(Next()), Math.Abs(Next()), Next() * 5, Next() * 8),
+                    _ => builder.AddEllipse(new PointD(Next(), Next()), Math.Abs(Next()), Math.Abs(Next()), Next() * 3),
+                };
+            }
+
+            var path = builder.Build().Transform(new AffineTransform(1 + random.NextDouble(), random.NextDouble() - 0.5, random.NextDouble() - 0.5, 1 + random.NextDouble(), Next(), Next()));
+            var tight = path.GetTightBounds();
+            var bounds = path.Bounds;
+            Assert.True(tight.Left >= bounds.Left - 1e-9 && tight.Top >= bounds.Top - 1e-9 && tight.Right <= bounds.Right + 1e-9 && tight.Bottom <= bounds.Bottom + 1e-9, $"case {index}: {tight} is not inside {bounds}");
+
+            var sink = new VertexSink();
+            Internals.PathFlattener.Flatten(path, sink);
+            var points = sink.Points;
+            const double Tolerance = Internals.PathFlattener.Tolerance + 1e-9;
+            Assert.InRange(points.Min(point => point.X), tight.Left - 1e-9, tight.Left + Tolerance, message: $"case {index}: left");
+            Assert.InRange(points.Max(point => point.X), tight.Right - Tolerance, tight.Right + 1e-9, message: $"case {index}: right");
+            Assert.InRange(points.Min(point => point.Y), tight.Top - 1e-9, tight.Top + Tolerance, message: $"case {index}: top");
+            Assert.InRange(points.Max(point => point.Y), tight.Bottom - Tolerance, tight.Bottom + 1e-9, message: $"case {index}: bottom");
+        }
+
+        double Next() => (random.NextDouble() - 0.5) * 60;
+    }
+
+    [Fact]
+    public void FillingAWidenedPathIsStrokingThePath()
+    {
+        var path = new VectorPathBuilder()
+            .MoveTo(1, 1).LineTo(6.5, 1.25).LineTo(2, 3).QuadraticBezierTo(7, 4, 6, 7).Close()
+            .MoveTo(0.75, 5).CubicBezierTo(2, 3.5, 3, 8.5, 4.5, 6.25)
+            .AddArc(new PointD(4, 4), 3, 2, 200, 120)
+            .MoveTo(7, 7)
+            .Build();
+        foreach (var pen in new[]
+        {
+            new Pen(White, 1),
+            new Pen(White, 1.5) { LineJoin = LineJoin.Round, LineCap = LineCap.Round },
+            new Pen(White, 0.75) { LineJoin = LineJoin.Bevel, LineCap = LineCap.Square },
+            new Pen(White, 2.25) { MiterLimit = 1.5 },
+            new Pen(White, 40),
+        })
+        {
+            var widened = path.Widen(pen);
+            Assert.False(widened.IsEmpty);
+            AssertSamePixels(canvas => canvas.Stroke(pen, path), canvas => canvas.Fill(White, widened));
+        }
+
+        // The stroke of a horizontal line: its bounds are the line, half the width away on each side, and a point of it
+        // is found as a point of any path
+        var line = new VectorPathBuilder().MoveTo(2, 5).LineTo(12, 5).Build();
+        var stroke = line.Widen(new Pen(White, 3));
+        Assert.Equal(RectangleD.FromLTRB(2, 3.5, 12, 6.5), stroke.GetTightBounds());
+        Assert.True(stroke.Contains(new PointD(7, 6.4)));
+        Assert.False(stroke.Contains(new PointD(7, 6.6)));
+        Assert.False(stroke.Contains(new PointD(1.9, 5)));
+        Assert.Equal(RectangleD.FromLTRB(0.5, 3.5, 13.5, 6.5), line.Widen(new Pen(White, 3) { LineCap = LineCap.Square }).GetTightBounds());
+
+        // Nothing to stroke
+        Assert.True(new VectorPathBuilder().Build().Widen(new Pen(White, 3)).IsEmpty);
+        Assert.True(new VectorPathBuilder().MoveTo(1, 1).Build().Widen(new Pen(White, 3)).IsEmpty);
+        Assert.False(new VectorPathBuilder().MoveTo(1, 1).Build().Widen(new Pen(White, 3) { LineCap = LineCap.Round }).IsEmpty);
+
+        Assert.Throws<ArgumentNullException>(() => path.Widen(null!));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new VectorPathBuilder().MoveTo(16777216, 0).LineTo(16777216, 10).Build().Widen(new Pen(White, 3)));
+    }
+
+    private static void AssertRectangle(RectangleD expected, RectangleD actual, double tolerance)
+    {
+        Assert.Equal(expected.Left, actual.Left, tolerance);
+        Assert.Equal(expected.Top, actual.Top, tolerance);
+        Assert.Equal(expected.Right, actual.Right, tolerance);
+        Assert.Equal(expected.Bottom, actual.Bottom, tolerance);
+    }
+
     /// <summary>Gets the vertices of the single contour a path is flattened to.</summary>
     private static List<(double X, double Y)> Flatten(VectorPath path)
     {

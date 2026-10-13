@@ -1230,6 +1230,11 @@ namespace Meziantou.Framework.Imaging.Drawing
         public bool IsEmpty { get => throw null; }
         public Meziantou.Framework.Imaging.RectangleD Bounds { get => throw null; }
         public Meziantou.Framework.Imaging.Drawing.VectorPath Transform(Meziantou.Framework.Imaging.AffineTransform transform) => throw null;
+        public bool Contains(Meziantou.Framework.Imaging.PointD point, Meziantou.Framework.Imaging.Drawing.FillRule fillRule = Meziantou.Framework.Imaging.Drawing.FillRule.NonZero) => throw null;
+        public double GetLength() => throw null;
+        public bool TryGetPointAtDistance(double distance, out Meziantou.Framework.Imaging.PointD point, out Meziantou.Framework.Imaging.PointD tangent) => throw null;
+        public Meziantou.Framework.Imaging.RectangleD GetTightBounds() => throw null;
+        public Meziantou.Framework.Imaging.Drawing.VectorPath Widen(Meziantou.Framework.Imaging.Drawing.Pen pen) => throw null;
     }
 
     public sealed class VectorPathBuilder

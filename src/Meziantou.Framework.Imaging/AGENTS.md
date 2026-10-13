@@ -255,6 +255,10 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
   inside a piece come from bisection, as for round joins. The end point is given, never computed: a shape made of arcs
   and segments (a rounded rectangle) has no gap and no segment of a few units of the last place, which a stroke would
   turn into a spike. The shapes with arcs are written once over `IPathReceiver`, for the builder and for the sinks.
+- The queries of a path (`Contains`, `GetLength`, `TryGetPointAtDistance`, `Widen`) flatten it with `PathFlattener`
+  into a sink, as drawing does, so that they answer for what is drawn; `GetTightBounds` (`PathBounds`) is computed from
+  the curves, and contains their chords. `Widen` runs the `Stroker` into a path builder: the same pieces in the same
+  order as a draw call, so filling the result is stroking, bit for bit (`FillingAWidenedPathIsStrokingThePath`).
 - A stroke is a union of convex pieces with one orientation (`Stroker`): overlaps are harmless because the coverage is
   the area of the union. The 1/16 pixel flattening tolerance is public; the positions of the chord vertices are not.
 - Every rental of a draw call happens before its first pixel write (edges, then the sweep and gradient scratch in

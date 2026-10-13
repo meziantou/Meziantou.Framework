@@ -345,6 +345,16 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   - The encoder (`Jpeg2000EncoderCodec`) is one tile, one layer, LRCP, without rate control; a lossy output codes the
     opacity reversibly through COC and QCC marker segments. Its quantization steps come from the gains of the synthesis
     kernel of the library, measured, not from published tables.
+  - The lossy quality is calibrated on `JpegEncoder` (`Jpeg2000QuantizationDesign`): the base step of the luminance is
+    `0.47 * s^(3/4)` levels, `s` being the scale of the JPEG quality, and the two chrominances have twice that step (a
+    QCC marker segment each). The constants were fitted on photographs of several sizes, so that a quality has the SSIM
+    of the JPEG file of the same quality: of the five metrics measured (PSNR, SSIM, XPSNR, MS-SSIM, VMAF, from FFmpeg
+    and the `vmaf` tool), SSIM asks for the step in the middle. At the same quality, PSNR and XPSNR are then up to 2 dB
+    above JPEG, MS-SSIM about 1 dB below, VMAF 1 to 3 points below up to the quality 50 and the same from 80, and the
+    file is about two thirds of the JPEG one (half of it at the quality 20). The ratio of the chrominances is what the default 4:2:0 sub-sampling of the JPEG encoder
+    costs them; it does not grow with the quality as that cost does. The power is computed from square roots, so that
+    the output is the same on every platform. Measure again before changing a constant or the quantizer, on real
+    photographs: `TheQualityFollowsTheScaleOfTheJpegEncoder` only keeps the two scales together on a synthetic image.
   - A TIFF strip or tile compressed with JPEG 2000 is decoded by the same code through `Jpeg2000SampleDecoder` and a
     `Jpeg2000SampleReceiver`: the page says what the components are.
 - **TIFF** (`Internals/Codecs/Tiff`). `TiffPage` resolves and validates a directory without reading a pixel, so every

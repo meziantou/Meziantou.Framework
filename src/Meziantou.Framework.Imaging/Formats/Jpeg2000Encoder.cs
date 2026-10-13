@@ -42,10 +42,18 @@ public sealed class Jpeg2000Encoder : ImageEncoder
     /// Defaults to 90. It is ignored by a lossless output.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// The quality sets the quantization step sizes of the sub-bands; there is no rate control, so the size of the output
-    /// follows from the image. The scale is the one of <see cref="JpegEncoder.Quality"/>: with <c>s = 5000 / Quality</c>
-    /// below 50 and <c>s = 200 - 2 * Quality</c> otherwise (at least 1), the error that the quantization of a sub-band adds
-    /// to the image has a step of <c>s / 16</c> levels of an 8-bit sample, and proportionally more for deeper samples.
+    /// follows from the image. With the scale of <see cref="JpegEncoder.Quality"/>, <c>s = 5000 / Quality</c> below 50 and
+    /// <c>s = 200 - 2 * Quality</c> otherwise (at least 1), the error that the quantization of a sub-band of the luminance
+    /// (or of the gray levels) adds to the image has a step of <c>0.47 * s^(3/4)</c> levels of an 8-bit sample,
+    /// proportionally more for deeper samples; the two chrominances are quantized twice as coarsely.
+    /// </para>
+    /// <para>
+    /// The values are calibrated on <see cref="JpegEncoder"/>: on photographs, a quality gives the structural similarity
+    /// (SSIM) of a JPEG file of the same quality, with chrominances that are not worse than its sub-sampled ones, in a file
+    /// of about two thirds of the size (half of it at the quality 20). 100 is the finest quantization, still lossy.
+    /// </para>
     /// </remarks>
     /// <exception cref="ArgumentOutOfRangeException">The value is not between 1 and 100.</exception>
     public int Quality

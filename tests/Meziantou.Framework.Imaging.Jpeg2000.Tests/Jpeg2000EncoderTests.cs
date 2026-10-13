@@ -166,7 +166,106 @@ public sealed class Jpeg2000EncoderTests
             Assert.True(errors[i] < errors[i - 1], $"{format}: errors {string.Join(", ", errors)}.");
         }
 
-        Assert.True(errors[0] < 40 && errors[2] < 2 && errors[3] < 0.5, $"{format}: errors {string.Join(", ", errors)}.");
+        Assert.True(errors[0] < 45 && errors[2] < 6 && errors[3] < 0.6, $"{format}: errors {string.Join(", ", errors)}.");
+    }
+
+    /// <summary>
+    /// An image of one sample has no decomposition level: its only sub-band holds the samples, and the step size of that
+    /// sub-band is the base step of the quality. With the scale s of the JPEG encoder (1 at the quality 100, 50 at 75, 100
+    /// at 50 and 500 at 10), the base step is 0.47 * s^(3/4) levels of an 8-bit sample: 0.47, 8.837, 14.863 and 49.696.
+    /// Equation E-3 writes a step size as 2^(Rb - exponent) * (1 + mantissa / 2^11), with Rb = 8 for samples of 8 bits:
+    /// 0.47 = 2^-2 * 1.88 is the exponent 10 and the mantissa floor(0.88 * 2048) = 1802; 8.837 = 2^3 * 1.10468 is 5 and 214;
+    /// 14.863 = 2^3 * 1.85784 is 5 and 1756; 49.696 = 2^5 * 1.55301 is 3 and 1132. Samples of 16 bits have steps 256 times
+    /// larger, which are the same parameters with Rb = 16. The two chrominances are quantized twice as coarsely: one
+    /// exponent less and the same mantissa, in a QCC marker segment each.
+    /// </summary>
+    [Theory]
+    [InlineData(100, 10, 1802)]
+    [InlineData(75, 5, 214)]
+    [InlineData(50, 5, 1756)]
+    [InlineData(10, 3, 1132)]
+    public void TheStepSizesFollowTheQualityScale(int quality, int exponent, int mantissa)
+    {
+        const int MarkerQcd = 0xFF5C;
+        const int MarkerQcc = 0xFF5D;
+        const int ScalarExpounded = 2;
+        var encoder = new Jpeg2000Encoder { Compression = Jpeg2000Compression.Lossy, Quality = quality, Container = Jpeg2000Container.Codestream };
+        foreach (var format in new[] { PixelFormat.Gray8, PixelFormat.Gray16, PixelFormat.Rgb24, PixelFormat.Rgba32, PixelFormat.Rgba64 })
+        {
+            using var source = new Image<Rgba32>(1, 1);
+            using var image = ConvertTo(source, format);
+            var segments = ReadMainHeader(Save(image, encoder));
+
+            // Sqcd (the guard bits and the style), then one step size
+            var defaults = segments.Single(segment => segment.Marker == MarkerQcd).Payload;
+            Assert.Equal((3, ScalarExpounded), (defaults.Length, defaults[0] & 0x1F));
+            Assert.Equal((exponent << 11) | mantissa, BinaryPrimitives.ReadUInt16BigEndian(defaults.AsSpan(1)));
+
+            var components = segments.Where(segment => segment.Marker == MarkerQcc).Select(segment => segment.Payload).ToArray();
+            if (PixelFormats.IsGrayscale(format))
+            {
+                Assert.Empty(components);
+                continue;
+            }
+
+            // Cqcc, Sqcc, then one step size; an opacity has a third segment, without quantization
+            Assert.HasCount(PixelFormats.HasAlpha(format) ? 3 : 2, components);
+            for (var c = 1; c <= 2; c++)
+            {
+                var chrominance = components[c - 1];
+                Assert.Equal((4, c, defaults[0]), (chrominance.Length, chrominance[0], chrominance[1]));
+                Assert.Equal(((exponent - 1) << 11) | mantissa, BinaryPrimitives.ReadUInt16BigEndian(chrominance.AsSpan(2)));
+            }
+        }
+    }
+
+    /// <summary>
+    /// The quality is calibrated on the one of <see cref="JpegEncoder"/>: at the same setting, the error of the
+    /// luminance is about the same (within the bounds below; on photographs the structural similarity is the same), the
+    /// chrominances are not worse than the sub-sampled ones of the JPEG file, and the output is smaller.
+    /// </summary>
+    [Theory]
+    [InlineData(10)]
+    [InlineData(30)]
+    [InlineData(50)]
+    [InlineData(75)]
+    [InlineData(90)]
+    [InlineData(95)]
+    public void TheQualityFollowsTheScaleOfTheJpegEncoder(int quality)
+    {
+        using var image = CreateLandscape();
+        var expected = GetBytes(image, PixelFormat.Rgb24);
+        var jpegData = Save(image, new JpegEncoder { Quality = quality });
+        var data = Save(image, new Jpeg2000Encoder { Compression = Jpeg2000Compression.Lossy, Quality = quality });
+        using var jpegImage = Image.Load(jpegData);
+        using var decoded = Image.Load(data);
+        var jpeg = Measure(GetBytes(jpegImage, PixelFormat.Rgb24));
+        var actual = Measure(GetBytes(decoded, PixelFormat.Rgb24));
+
+        var message = $"quality {quality}: JPEG {jpegData.Length} bytes, luminance {jpeg.Luminance:0.000}, chrominance {jpeg.Chrominance:0.000}; JPEG 2000 {data.Length} bytes, luminance {actual.Luminance:0.000}, chrominance {actual.Chrominance:0.000}";
+        Assert.InRange(actual.Luminance, 0.65 * jpeg.Luminance, 1.25 * jpeg.Luminance, message: message);
+        Assert.InRange(actual.Chrominance, 0, jpeg.Chrominance, message: message);
+        Assert.HasCountLessThan(jpegData.Length, data, message);
+
+        // The root mean square errors of the luminance and of the two chrominances (BT.601), in levels
+        (double Luminance, double Chrominance) Measure(byte[] pixels)
+        {
+            var luminance = 0.0;
+            var chrominance = 0.0;
+            for (var i = 0; i < expected.Length; i += 3)
+            {
+                double red = expected[i] - pixels[i];
+                double green = expected[i + 1] - pixels[i + 1];
+                double blue = expected[i + 2] - pixels[i + 2];
+                var y = (0.299 * red) + (0.587 * green) + (0.114 * blue);
+                var cb = (-0.168736 * red) - (0.331264 * green) + (0.5 * blue);
+                var cr = (0.5 * red) - (0.418688 * green) - (0.081312 * blue);
+                luminance += y * y;
+                chrominance += (cb * cb) + (cr * cr);
+            }
+
+            return (Math.Sqrt(luminance / (expected.Length / 3)), Math.Sqrt(chrominance / (2 * (expected.Length / 3))));
+        }
     }
 
     [Fact]
@@ -410,6 +509,24 @@ public sealed class Jpeg2000EncoderTests
         }
     }
 
+    /// <summary>Reads the marker segments of the main header of a codestream, from the SOC marker to the first SOT marker.</summary>
+    private static List<(int Marker, byte[] Payload)> ReadMainHeader(byte[] codestream)
+    {
+        const int MarkerSot = 0xFF90;
+        var segments = new List<(int Marker, byte[] Payload)>();
+        var position = 2;
+        while (true)
+        {
+            var marker = BinaryPrimitives.ReadUInt16BigEndian(codestream.AsSpan(position));
+            if (marker == MarkerSot)
+                return segments;
+
+            var length = BinaryPrimitives.ReadUInt16BigEndian(codestream.AsSpan(position + 2));
+            segments.Add((marker, codestream[(position + 4)..(position + 2 + length)]));
+            position += 2 + length;
+        }
+    }
+
     private static List<(string Type, byte[] Payload)> ReadBoxes(byte[] data)
     {
         Assert.Equal(FileSignature, data[..12]);
@@ -470,6 +587,63 @@ public sealed class Jpeg2000EncoderTests
             var bytes = new byte[converted.Width * converted.Height * System.Runtime.CompilerServices.Unsafe.SizeOf<TPixel>()];
             converted.Frames[0].CopyPixelBytesTo(bytes);
             return bytes;
+        }
+    }
+
+    /// <summary>
+    /// An image with the content of a photograph, from integers only: a sky that changes slowly, hills, a textured ground,
+    /// a bright disc with a sharp edge, and a little noise.
+    /// </summary>
+    private static Image<Rgb24> CreateLandscape()
+    {
+        const int Width = 256;
+        const int Height = 192;
+        var pixels = new Rgb24[Width * Height];
+        var state = 12345u;
+        for (var y = 0; y < Height; y++)
+        {
+            for (var x = 0; x < Width; x++)
+            {
+                state = (state * 1664525) + 1013904223;
+                var noise = (int)(state >> 30) - 1;
+                var hill = 96 + (Triangle(x, 160) / 6) + (Triangle(x + 40, 67) / 12);
+                int red;
+                int green;
+                int blue;
+                if (y < hill)
+                {
+                    red = 90 + (y / 2) + (Triangle(x + (2 * y), 190) / 10);
+                    green = 140 + (y / 3) + (Triangle(x - y, 230) / 12);
+                    blue = 220 - (y / 4);
+                }
+                else
+                {
+                    var texture = (Triangle((3 * x) + y, 13) + Triangle(x - (2 * y), 9) + Triangle(x + (5 * y), 31)) / 9;
+                    red = 60 + texture + ((y - hill) / 2);
+                    green = 90 + texture + (Triangle(x, 120) / 8);
+                    blue = 40 + (texture / 2);
+                }
+
+                var dx = x - 190;
+                var dy = y - 50;
+                if ((dx * dx) + (dy * dy) < 24 * 24)
+                {
+                    red = 250 - (dx / 3);
+                    green = 225 + (dy / 4);
+                    blue = 120;
+                }
+
+                pixels[(y * Width) + x] = new Rgb24((byte)Math.Clamp(red + noise, 0, 255), (byte)Math.Clamp(green + noise, 0, 255), (byte)Math.Clamp(blue + (noise / 2), 0, 255));
+            }
+        }
+
+        return Image.ImportPixelData<Rgb24>(pixels, Width, Height);
+
+        // A wave between 0 and 255
+        static int Triangle(int value, int period)
+        {
+            var phase = ((value % period) + period) % period;
+            return Math.Abs((2 * phase) - period) * 255 / period;
         }
     }
 

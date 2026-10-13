@@ -41,8 +41,9 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
     /// </description></item>
     /// <item><description>
     /// Lossy: the irreversible filter and component transformation; a dead-zone quantizer whose step sizes come from
-    /// <see cref="Jpeg2000QuantizationDesign"/>; every bit-plane of the quantized coefficients is coded. The opacity
-    /// component keeps the reversible filter, through COC and QCC marker segments.
+    /// <see cref="Jpeg2000QuantizationDesign"/>; every bit-plane of the quantized coefficients is coded. The two
+    /// chrominances have coarser step sizes than the luminance, in a QCC marker segment each. The opacity component keeps
+    /// the reversible filter, through COC and QCC marker segments.
     /// </description></item>
     /// <item><description>
     /// The output only depends on the pixels and on the settings: integers on the reversible path, single-precision
@@ -56,6 +57,7 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
         private const int BlocksPerCall = 64;
         private const int BytesPerCall = 64 * 1024;
         private const int LosslessGuardBits = 2;
+        private const int StepTableCount = 2;
         private const int ColorPieceLength = 256;
         private const int SourceHead = 0;
         private const int SourcePacketHeaders = 1;
@@ -122,9 +124,9 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
             // The partition of the tile does not depend on the quantization: provisional values stand for it
             var bandCount = (3 * _levels) + 1;
             _bandBitPlanes = new int[_componentCount * bandCount];
-            _bandSteps = new float[bandCount];
-            _bandExponents = new int[bandCount];
-            _bandMantissas = new int[bandCount];
+            _bandSteps = new float[StepTableCount * bandCount];
+            _bandExponents = new int[StepTableCount * bandCount];
+            _bandMantissas = new int[StepTableCount * bandCount];
             _coding = CreateCoding(bandCount);
             _geometry = Jpeg2000TileGeometry.Create(_scope, _siz, _coding, tileIndex: 0);
             Jpeg2000Tier1Encoder? blockEncoder = null;
@@ -279,19 +281,27 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
 
         private static int GetGain(int band) => band == 0 ? 0 : ((band - 1) % 3) == 2 ? 2 : 1;
 
+        /// <summary>Gets the table of step sizes of a lossy component: 1 for the two chrominances of a color image, 0 for the luminance or the gray levels.</summary>
+        private int GetStepTable(int component) => _colorCount == 3 && component is 1 or 2 ? 1 : 0;
+
         private Jpeg2000TileCoding CreateCoding(int bandCount)
         {
-            // The step sizes of the lossy sub-bands: the base step of the quality divided by the norm of each sub-band
-            var baseStep = Jpeg2000QuantizationDesign.GetBaseStep(_encoder.Quality, _precision);
-            for (var band = 0; band < bandCount; band++)
+            // The step sizes of the lossy sub-bands: the base step of the quality divided by the norm of each sub-band, for
+            // the luminance, then for the chrominances
+            for (var table = 0; table < StepTableCount; table++)
             {
-                var resolution = band == 0 ? 0 : ((band - 1) / 3) + 1;
-                var orientation = band == 0 ? -1 : (band - 1) % 3;
-                var level = band == 0 ? _levels : _levels - resolution + 1;
-                var norm = Jpeg2000QuantizationDesign.GetNorm(level, isHighHorizontally: orientation is 0 or 2, isHighVertically: orientation is 1 or 2);
-                var range = _precision + GetGain(band);
-                Jpeg2000QuantizationDesign.GetStepParameters(baseStep / norm, range, out _bandExponents[band], out _bandMantissas[band]);
-                _bandSteps[band] = Jpeg2000QuantizationDesign.GetStep(_bandExponents[band], _bandMantissas[band], range);
+                var baseStep = Jpeg2000QuantizationDesign.GetBaseStep(_encoder.Quality, _precision, isChrominance: table == 1);
+                for (var band = 0; band < bandCount; band++)
+                {
+                    var resolution = band == 0 ? 0 : ((band - 1) / 3) + 1;
+                    var orientation = band == 0 ? -1 : (band - 1) % 3;
+                    var level = band == 0 ? _levels : _levels - resolution + 1;
+                    var norm = Jpeg2000QuantizationDesign.GetNorm(level, isHighHorizontally: orientation is 0 or 2, isHighVertically: orientation is 1 or 2);
+                    var range = _precision + GetGain(band);
+                    var index = (table * bandCount) + band;
+                    Jpeg2000QuantizationDesign.GetStepParameters(baseStep / norm, range, out _bandExponents[index], out _bandMantissas[index]);
+                    _bandSteps[index] = Jpeg2000QuantizationDesign.GetStep(_bandExponents[index], _bandMantissas[index], range);
+                }
             }
 
             var headers = new Jpeg2000HeaderSet(_componentCount);
@@ -478,7 +488,7 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
                 else
                 {
                     // Equation E-1: the magnitude is divided by the step size and truncated
-                    var step = _bandSteps[_band - firstBand];
+                    var step = _bandSteps[(GetStepTable(component) * bandCount) + (_band - firstBand)];
                     for (var y = 0; y < height; y++)
                     {
                         var source = coefficients.Slice(origin + (y * stride), width);
@@ -508,7 +518,8 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
             var bandCount = (3 * _levels) + 1;
 
             // The number of bit-planes of a sub-band is its exponent plus the guard bits, less one (equation E-2): the
-            // exponents of the reversible sub-bands and the guard bits of the others are raised as the coefficients need
+            // exponents of the reversible sub-bands and the guard bits of the others are raised as the coefficients need.
+            // The luminance and the chrominances have their own step sizes and the same guard bits
             Span<byte> reversibleExponents = stackalloc byte[bandCount];
             var guardBits = 1;
             for (var band = 0; band < bandCount; band++)
@@ -523,7 +534,7 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
                     }
                     else
                     {
-                        guardBits = Math.Max(guardBits, bitPlanes - _bandExponents[band] + 1);
+                        guardBits = Math.Max(guardBits, bitPlanes - _bandExponents[(GetStepTable(c) * bandCount) + band] + 1);
                     }
                 }
 
@@ -574,7 +585,7 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
 
                             ref readonly var band = ref _geometry.Bands[resolution.FirstBand + b];
                             var bandIndex = resolution.FirstBand + b - firstBand;
-                            var bandBitPlanes = IsReversible(c) ? reversibleExponents[bandIndex] + LosslessGuardBits - 1 : _bandExponents[bandIndex] + guardBits - 1;
+                            var bandBitPlanes = IsReversible(c) ? reversibleExponents[bandIndex] + LosslessGuardBits - 1 : _bandExponents[(GetStepTable(c) * reversibleExponents.Length) + bandIndex] + guardBits - 1;
                             var wide = precinctBand.BlocksWide;
                             var high = precinctBand.BlocksHigh;
 
@@ -761,16 +772,24 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
             if (_isLossy)
             {
                 boxes.WriteUInt16(3 + (2 * bandCount));
-                boxes.WriteByte((byte)((guardBits << 5) | Jpeg2000Quantization.StyleExpounded));
-                for (var band = 0; band < bandCount; band++)
-                {
-                    boxes.WriteUInt16((_bandExponents[band] << 11) | _bandMantissas[band]);
-                }
+                WriteStepSizes(boxes, guardBits, table: 0, bandCount);
             }
             else
             {
                 boxes.WriteUInt16(3 + bandCount);
                 WriteReversibleQuantization(boxes, reversibleExponents);
+            }
+
+            if (_isLossy && _colorCount == 3)
+            {
+                // A.6.5: the two chrominances have coarser step sizes than the luminance
+                for (var c = 1; c <= 2; c++)
+                {
+                    boxes.WriteUInt16(Jpeg2000Format.MarkerQcc);
+                    boxes.WriteUInt16(4 + (2 * bandCount));
+                    boxes.WriteByte((byte)c);
+                    WriteStepSizes(boxes, guardBits, GetStepTable(c), bandCount);
+                }
             }
 
             if (hasLossyAlpha)
@@ -817,6 +836,16 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
             boxes.WriteByte(BlockExponent - 2);
             boxes.WriteByte(0);
             boxes.WriteByte((byte)(isReversible ? 1 : 0));
+        }
+
+        private void WriteStepSizes(HeifBoxWriter boxes, int guardBits, int table, int bandCount)
+        {
+            boxes.WriteByte((byte)((guardBits << 5) | Jpeg2000Quantization.StyleExpounded));
+            for (var band = 0; band < bandCount; band++)
+            {
+                var index = (table * bandCount) + band;
+                boxes.WriteUInt16((_bandExponents[index] << 11) | _bandMantissas[index]);
+            }
         }
 
         private static void WriteReversibleQuantization(HeifBoxWriter boxes, ReadOnlySpan<byte> exponents)

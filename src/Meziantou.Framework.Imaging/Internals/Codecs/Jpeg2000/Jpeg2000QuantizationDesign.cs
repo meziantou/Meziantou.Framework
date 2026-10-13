@@ -13,11 +13,26 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// The norms are not transcribed from a table: they are measured once on the inverse transformation of the decoder
 /// (<see cref="Jpeg2000Dwt.LiftIrreversible"/>), by rebuilding the signal of a single coefficient.
 /// </para>
+/// <para>
+/// The base step is calibrated on the JPEG encoder of the library, whose quality scales its quantization tables by
+/// <c>s</c> (100 at the quality 50, 1 at the quality 100). The base step of the luminance that gives the structural
+/// similarity (SSIM) of the JPEG file of the same quality was measured on photographs, for the qualities 20 to 95: it
+/// follows <c>0.47 * s^(3/4)</c> within 6 %. The error of a quantizer with a dead zone grows more slowly than its step,
+/// more so for the tables of JPEG than for the sub-bands: hence a power below one. The chrominances of a JPEG file are
+/// sub-sampled and have coarser tables: the same similarity is reached with a step 2 to 2.5 times the one of the
+/// luminance, and the factor 2 keeps them at least as good at every quality.
+/// </para>
 /// </remarks>
 internal static class Jpeg2000QuantizationDesign
 {
     /// <summary>The largest number of decomposition levels the encoder uses.</summary>
     public const int MaxLevels = 5;
+
+    /// <summary>The base step of the luminance, in levels of an 8-bit sample, when the scale of the quality is 1 (the quality 100).</summary>
+    public const double LuminanceFactor = 0.47;
+
+    /// <summary>How many times coarser than the luminance the two chrominances are quantized.</summary>
+    public const double ChrominanceRatio = 2;
 
     private const int ImpulseLength = 64;
 
@@ -28,11 +43,25 @@ internal static class Jpeg2000QuantizationDesign
     /// <summary>Gets the base step of a quality, in levels of a sample of <paramref name="precision"/> bits.</summary>
     /// <param name="quality">The quality, 1 to 100.</param>
     /// <param name="precision">The number of bits of a sample.</param>
-    public static double GetBaseStep(int quality, int precision)
+    /// <param name="isChrominance">Whether the step is the one of the two chrominances of a color image.</param>
+    public static double GetBaseStep(int quality, int precision, bool isChrominance)
     {
         // The scale of the JPEG encoder of the library: 100 at the quality 50, 1 at the quality 100
         var scale = Math.Max(1, quality < 50 ? 5000 / quality : 200 - (2 * quality));
-        return Math.ScaleB(scale / 16.0, precision - 8);
+        var step = LuminanceFactor * GetPower(scale);
+        if (isChrominance)
+        {
+            step *= ChrominanceRatio;
+        }
+
+        return Math.ScaleB(step, precision - 8);
+    }
+
+    /// <summary>Gets the scale of a quality raised to the power 3/4, from square roots only: the result is the same on every platform.</summary>
+    private static double GetPower(int scale)
+    {
+        var root = Math.Sqrt(scale);
+        return root * Math.Sqrt(root);
     }
 
     /// <summary>Gets the norm of the synthesis waveform of a sub-band.</summary>

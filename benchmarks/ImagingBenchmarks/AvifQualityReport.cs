@@ -70,7 +70,7 @@ internal static class AvifQualityReport
         }
     }
 
-    private static void Report(string mode, string setting, Rgba32[] source, int width, int height, int runs, Func<byte[]> encode)
+    internal static void Report(string mode, string setting, Rgba32[] source, int width, int height, int runs, Func<byte[]> encode)
     {
         var data = encode(); // warm-up, and the measured output
         var times = new List<double>();
@@ -116,7 +116,7 @@ internal static class AvifQualityReport
         static double Psnr(double squares, int count) => squares == 0 ? double.PositiveInfinity : 10 * Math.Log10(255.0 * 255.0 * count / squares);
     }
 
-    private static byte[] Save(Image image, ImageEncoder encoder)
+    internal static byte[] Save(Image image, ImageEncoder encoder)
     {
         using var stream = new MemoryStream();
         image.Save(stream, encoder);

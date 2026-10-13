@@ -49,8 +49,11 @@ internal abstract class ImageParser<TResult> : IDisposable
     /// <summary>Creates the exception reported when the input ends before the parser completes.</summary>
     /// <param name="position">The number of bytes consumed from the input.</param>
     /// <returns>The exception (an <see cref="InvalidImageContentException"/>: truncation is never a clean end of input).</returns>
-    public virtual Exception CreateTruncatedException(long position)
-        => new InvalidImageContentException(string.Create(CultureInfo.InvariantCulture, $"The {ImageFormatNames.Get(Format)} data is truncated (unexpected end of input after {position} bytes)."), Format);
+    public virtual Exception CreateTruncatedException(long position) => CreateTruncation(Format, position);
+
+    /// <summary>Creates the exception reported when the input of a format ends before its parser completes.</summary>
+    protected static InvalidImageContentException CreateTruncation(ImageFormat format, long position)
+        => new(string.Create(CultureInfo.InvariantCulture, $"The {ImageFormatNames.Get(format)} data is truncated (unexpected end of input after {position} bytes)."), format);
 
     /// <summary>Releases the parser state (and a partially built image that was not transferred).</summary>
     public void Dispose()

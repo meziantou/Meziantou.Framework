@@ -9,8 +9,9 @@ namespace Meziantou.Framework.Imaging.TestHarness.Fixtures;
 /// provenance and licenses, file existence (inside the corpus root only), SHA-256 hashes, orphan files, expected
 /// frame/metadata consistency (frame counts, rational durations, loop-count conventions, posters), raw-buffer layouts and
 /// exact lengths (with bounded decompression), comparison policies (including proof that each tolerance rejects channel
-/// swaps and flips of its reference), reference provenance and expected errors; and the AV1 conformance vectors (files,
-/// hashes, provenance, two decoders, plane digests).
+/// swaps and flips of its reference), reference provenance and expected errors; the AV1 conformance vectors (files,
+/// hashes, provenance, two decoders, plane digests); and the HEVC conformance vectors (files, hashes, provenance, feature
+/// vocabulary, the decoders that agree and the ones that are left out, plane digests and picture hashes).
 /// </summary>
 public static partial class FixtureManifestValidator
 {
@@ -42,7 +43,7 @@ public static partial class FixtureManifestValidator
     public static IReadOnlySet<string> AllowedKinds => FixtureKinds.All;
 
     /// <summary>The accepted values of <see cref="FixtureEntry.Format"/> (container formats; APNG is <c>png</c>).</summary>
-    public static IReadOnlySet<string> AllowedFormats { get; } = new HashSet<string>(StringComparer.Ordinal) { "png", "gif", "jpeg", "webp", "qoi", "bmp", "tga", "pnm", "avif", "jxl" };
+    public static IReadOnlySet<string> AllowedFormats { get; } = new HashSet<string>(StringComparer.Ordinal) { "png", "gif", "jpeg", "webp", "qoi", "bmp", "tga", "pnm", "avif", "heic", "jxl" };
 
     /// <summary>The accepted values of <see cref="FixtureExpectation.PixelFormat"/> (library <c>PixelFormat</c> names).</summary>
     public static IReadOnlySet<string> AllowedPixelFormats { get; } = new HashSet<string>(StringComparer.Ordinal) { "Rgba32", "Bgra32", "Rgb24", "Rgba64", "Gray8", "Gray16" };
@@ -79,6 +80,107 @@ public static partial class FixtureManifestValidator
 
     /// <summary>The directory of the AV1 conformance vectors, and the prefix of their identifiers.</summary>
     public const string Av1VectorPrefix = "av1/";
+
+    /// <summary>The accepted values of <see cref="HevcVectorEntry.BitDepth"/>: 16 is a stream the library rejects.</summary>
+    public static IReadOnlySet<int> AllowedHevcBitDepths { get; } = new HashSet<int> { 8, 10, 12, 16 };
+
+    /// <summary>The accepted values of <see cref="HevcVectorEntry.ChromaFormat"/>.</summary>
+    public static IReadOnlySet<string> AllowedHevcChromaFormats { get; } = new HashSet<string>(StringComparer.Ordinal) { "4:0:0", "4:2:0", "4:2:2", "4:4:4" };
+
+    /// <summary>The accepted values of <see cref="HevcVectorPictureHash.Type"/>.</summary>
+    public static IReadOnlySet<string> AllowedHevcPictureHashes { get; } = new HashSet<string>(StringComparer.Ordinal) { HevcVectorPictureHash.Md5, HevcVectorPictureHash.Crc, HevcVectorPictureHash.Checksum };
+
+    /// <summary>The accepted values of <see cref="HevcVectorEntry.OutputOrder"/>.</summary>
+    public static IReadOnlySet<string> AllowedHevcOutputOrders { get; } = new HashSet<string>(StringComparer.Ordinal) { HevcVectorEntry.DecodingOrder, HevcVectorEntry.ReorderedOrder };
+
+    /// <summary>The accepted values of <see cref="HevcVectorExclusion.Outcome"/>.</summary>
+    public static IReadOnlySet<string> AllowedHevcOutcomes { get; } = new HashSet<string>(StringComparer.Ordinal) { HevcVectorExclusion.Rejects, HevcVectorExclusion.Differs };
+
+    /// <summary>The directory of the HEVC conformance vectors, and the prefix of their identifiers.</summary>
+    public const string HevcVectorPrefix = "hevc/";
+
+    /// <summary>
+    /// The feature keys of the HEVC conformance vectors (the part of a tag before <c>=</c>), each one documented by a row
+    /// of the "HEVC vector features" table of the fixtures README. A key that is not here is a validation error: the
+    /// vocabulary only grows with the generator and the documentation.
+    /// </summary>
+    public static IReadOnlySet<string> AllowedHevcFeatureKeys { get; } = new HashSet<string>(StringComparer.Ordinal)
+    {
+        // Profile, tier, level and sample format
+        "hevc.profile", "hevc.level", "hevc.tier", "hevc.chroma", "hevc.bitDepth", "hevc.bitDepthChroma", "hevc.matrix", "hevc.separateColourPlanes",
+
+        // Block structure
+        "hevc.ctb", "hevc.minCb", "hevc.minTb", "hevc.maxTb", "hevc.tuDepthIntra", "hevc.tuDepthInter", "hevc.ctbs", "hevc.crop",
+
+        // Coding tools of the sequence parameter set
+        "hevc.amp", "hevc.strongIntraSmoothing", "hevc.pcm", "hevc.pcm.bitDepth", "hevc.pcm.size", "hevc.pcm.loopFilterDisabled", "hevc.scalingList", "hevc.scalingList.coding",
+        "hevc.transformSkipRotation", "hevc.transformSkipContext", "hevc.implicitRdpcm", "hevc.explicitRdpcm", "hevc.extendedPrecision", "hevc.intraSmoothingDisabled", "hevc.highPrecisionOffsets",
+        "hevc.persistentRice", "hevc.cabacBypassAlignment",
+
+        // Video usability information
+        "hevc.colourDescription", "hevc.fullRange", "hevc.chromaLoc", "hevc.defaultDisplayWindow", "hevc.hrd", "hevc.fieldSeq",
+
+        // Coding tools of the picture parameter set
+        "hevc.signDataHiding", "hevc.constrainedIntraPred", "hevc.transformSkip", "hevc.transformSkip.maxSize", "hevc.transquantBypass", "hevc.wpp", "hevc.outputFlagPresent", "hevc.parallelMergeLevel",
+        "hevc.cuQpDelta", "hevc.qgSize", "hevc.chromaQpOffset", "hevc.sliceChromaQpOffset", "hevc.tiles", "hevc.tiles.spacing", "hevc.tiles.loopFilterAcross", "hevc.crossComponentPrediction",
+        "hevc.chromaQpOffsetList", "hevc.saoOffsetScale",
+
+        // Slices
+        "hevc.sliceTypes", "hevc.frameTypes", "hevc.sliceQp", "hevc.slices", "hevc.dependentSlices", "hevc.cabacInit", "hevc.cuChromaQpOffset", "hevc.loopFilterAcrossSlices", "hevc.deblocking",
+        "hevc.deblocking.offsets", "hevc.deblocking.sliceOverride", "hevc.sao",
+
+        // Inter prediction and reference pictures
+        "hevc.temporalMvp", "hevc.mergeCand", "hevc.refs", "hevc.mvdL1Zero", "hevc.collocatedFromL1", "hevc.collocatedRefIdx", "hevc.weightedPred", "hevc.weights", "hevc.listsModification",
+        "hevc.longTermRefs", "hevc.rps", "hevc.rps.interPrediction", "hevc.referenceB",
+
+        // NAL units, SEI messages and parameter sets
+        "hevc.nal", "hevc.sei", "hevc.pictureHash", "hevc.temporalLayers", "hevc.repeatedParameterSets", "hevc.sps", "hevc.pps",
+
+        // Output
+        "hevc.frames", "hevc.outputOrder", "hevc.sequences", "hevc.frameSizes", "hevc.raslSkipped", "hevc.noOutputOfPriorPics", "hevc.pocWrap", "hevc.pocLsbBits", "hevc.reorder",
+
+        // What does not come from the headers: the encoder, a derived stream, a measured property, what the library rejects
+        "hevc.encoder", "hevc.derived", "hevc.lossless", "hevc.unsupported",
+    };
+
+    /// <summary>The accepted values of the HEVC feature keys whose values are an enumeration.</summary>
+    public static IReadOnlyDictionary<string, IReadOnlySet<string>> AllowedHevcFeatureValues { get; } = new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal)
+    {
+        ["hevc.chroma"] = AllowedHevcChromaFormats,
+        ["hevc.bitDepth"] = new HashSet<string>(StringComparer.Ordinal) { "8", "10", "12", "16" },
+        ["hevc.tier"] = new HashSet<string>(StringComparer.Ordinal) { "high" },
+        ["hevc.matrix"] = new HashSet<string>(StringComparer.Ordinal) { "identity" },
+        ["hevc.ctb"] = new HashSet<string>(StringComparer.Ordinal) { "16", "32", "64" },
+        ["hevc.minCb"] = new HashSet<string>(StringComparer.Ordinal) { "8", "16", "32", "64" },
+        ["hevc.minTb"] = new HashSet<string>(StringComparer.Ordinal) { "4", "8", "16", "32" },
+        ["hevc.maxTb"] = new HashSet<string>(StringComparer.Ordinal) { "4", "8", "16", "32" },
+        ["hevc.crop"] = new HashSet<string>(StringComparer.Ordinal) { "left", "right", "top", "bottom" },
+        ["hevc.strongIntraSmoothing"] = new HashSet<string>(StringComparer.Ordinal) { "0", "1" },
+        ["hevc.signDataHiding"] = new HashSet<string>(StringComparer.Ordinal) { "0", "1" },
+        ["hevc.scalingList"] = new HashSet<string>(StringComparer.Ordinal) { "default", "sps", "pps" },
+        ["hevc.scalingList.coding"] = new HashSet<string>(StringComparer.Ordinal) { "explicit", "copy", "default" },
+        ["hevc.tiles.spacing"] = new HashSet<string>(StringComparer.Ordinal) { "uniform", "explicit" },
+        ["hevc.tiles.loopFilterAcross"] = new HashSet<string>(StringComparer.Ordinal) { "0", "1" },
+        ["hevc.sliceTypes"] = new HashSet<string>(StringComparer.Ordinal) { "I", "P", "B" },
+        ["hevc.frameTypes"] = new HashSet<string>(StringComparer.Ordinal) { "intra", "inter" },
+        ["hevc.loopFilterAcrossSlices"] = new HashSet<string>(StringComparer.Ordinal) { "0" },
+        ["hevc.deblocking"] = new HashSet<string>(StringComparer.Ordinal) { "0", "1" },
+        ["hevc.sao"] = new HashSet<string>(StringComparer.Ordinal) { "off", "luma", "chroma", "sliceOff" },
+        ["hevc.temporalMvp"] = new HashSet<string>(StringComparer.Ordinal) { "0", "1" },
+        ["hevc.mergeCand"] = new HashSet<string>(StringComparer.Ordinal) { "1", "2", "3", "4", "5" },
+        ["hevc.weightedPred"] = new HashSet<string>(StringComparer.Ordinal) { "p", "b" },
+        ["hevc.weights"] = new HashSet<string>(StringComparer.Ordinal) { "luma", "chroma" },
+        ["hevc.rps"] = new HashSet<string>(StringComparer.Ordinal) { "sps", "slice" },
+        ["hevc.nal"] = new HashSet<string>(StringComparer.Ordinal)
+        {
+            "TRAIL_N", "TRAIL_R", "TSA_N", "TSA_R", "STSA_N", "STSA_R", "RADL_N", "RADL_R", "RASL_N", "RASL_R", "BLA_W_LP", "BLA_W_RADL", "BLA_N_LP", "IDR_W_RADL", "IDR_N_LP", "CRA", "AUD", "EOS", "EOB", "FD",
+        },
+        ["hevc.pictureHash"] = AllowedHevcPictureHashes,
+        ["hevc.outputOrder"] = new HashSet<string>(StringComparer.Ordinal) { HevcVectorEntry.ReorderedOrder },
+        ["hevc.encoder"] = new HashSet<string>(StringComparer.Ordinal) { "x265", "kvazaar", "hm" },
+        ["hevc.derived"] = new HashSet<string>(StringComparer.Ordinal) { "metadata", "filterUnits", "startAtIrap", "nalType", "endOfSequence", "subLayers", "concatenation", "trailingUnits" },
+        ["hevc.unsupported"] = new HashSet<string>(StringComparer.Ordinal) { "extendedPrecision", "cabacBypassAlignment", "bitDepth", "unequalBitDepth", "separateColourPlanes", "fieldSeq" },
+    };
 
     /// <summary>Files of the corpus root that are not fixtures and need not be referenced by the manifest.</summary>
     public static IReadOnlySet<string> InfrastructureFiles { get; } = new HashSet<string>(StringComparer.Ordinal)
@@ -124,6 +226,11 @@ public static partial class FixtureManifestValidator
                 errors.Add($"{name}: AV1 conformance vectors belong to 'av1Vectors', not to 'fixtures' (they have no pixel reference).");
             }
 
+            if (entry.Id.StartsWith(HevcVectorPrefix, StringComparison.Ordinal) || entry.Input.Path.StartsWith(HevcVectorPrefix, StringComparison.Ordinal))
+            {
+                errors.Add($"{name}: HEVC conformance vectors belong to 'hevcVectors', not to 'fixtures' (they have no pixel reference).");
+            }
+
             if (!AllowedFormats.Contains(entry.Format))
             {
                 errors.Add($"{name}: invalid format '{entry.Format}' (allowed: {string.Join(", ", AllowedFormats)}).");
@@ -159,6 +266,11 @@ public static partial class FixtureManifestValidator
         if (manifest.Av1Vectors is { } vectors)
         {
             ValidateAv1Vectors(vectors, root, ids, referencedFiles, errors);
+        }
+
+        if (manifest.HevcVectors is { } hevcVectors)
+        {
+            ValidateHevcVectors(hevcVectors, root, ids, referencedFiles, errors);
         }
 
         ValidateColorSections(manifest, root, ids, referencedFiles, errors);
@@ -504,18 +616,18 @@ public static partial class FixtureManifestValidator
             errors.Add($"{name}: invalid colorModel '{expected.ColorModel}' (allowed: {string.Join(", ", AllowedColorModels)}).");
         }
 
-        // AV1 samples are 8, 10 or 12 bits wide; JPEG XL samples have any width, the fixtures use the same ones; JPEG
-        // samples are 8 or 12 bits wide
-        if (expected.BitsPerComponent is not null and not (1 or 2 or 4 or 8 or 16) && !(entry.Format is "avif" or "jxl" && expected.BitsPerComponent is 10 or 12) && !(entry.Format is "jpeg" && expected.BitsPerComponent is 12))
+        // AV1 and HEVC samples are 8, 10 or 12 bits wide; JPEG XL samples have any width, the fixtures use the same ones;
+        // JPEG samples are 8 or 12 bits wide
+        if (expected.BitsPerComponent is not null and not (1 or 2 or 4 or 8 or 16) && !(entry.Format is "avif" or "heic" or "jxl" && expected.BitsPerComponent is 10 or 12) && !(entry.Format is "jpeg" && expected.BitsPerComponent is 12))
         {
             errors.Add($"{name}: invalid bitsPerComponent {expected.BitsPerComponent}.");
         }
 
         if (expected.Cicp is { } cicp)
         {
-            if (entry.Format is not ("avif" or "jxl"))
+            if (entry.Format is not ("avif" or "heic" or "jxl"))
             {
-                errors.Add($"{name}: only AVIF and JPEG XL inputs declare a CICP color description.");
+                errors.Add($"{name}: only AVIF and JPEG XL inputs declare a CICP color description (and HEIC ones, which share the container of AVIF).");
             }
 
             if (cicp.ColorPrimaries is < 0 or > 255 || cicp.TransferCharacteristics is < 0 or > 255 || cicp.MatrixCoefficients is < 0 or > 255)
@@ -608,7 +720,7 @@ public static partial class FixtureManifestValidator
     {
         if (frame.EncodedDelay is not { } delay)
         {
-            if (expected.Animation is not null && (entry.Format is "png" or "webp" or "avif" or "jxl" || duration != RationalDuration.Zero))
+            if (expected.Animation is not null && (entry.Format is "png" or "webp" or "avif" or "heic" or "jxl" || duration != RationalDuration.Zero))
             {
                 errors.Add($"{frameName}: frames of animated inputs must record the encoded delay field (encodedDelay).");
             }
@@ -647,9 +759,10 @@ public static partial class FixtureManifestValidator
 
             expectedDuration = RationalDuration.Create(delay.Milliseconds!.Value, 1000);
         }
-        else if (delay.IsAvif && entry.Format == "avif")
+        else if (delay.IsAvif && entry.Format is "avif" or "heic")
         {
-            // The duration of a sample over the time scale of its media, both 32-bit fields
+            // The duration of a sample (of an image, when composition offsets reorder the samples of an HEIC sequence) over
+            // the time scale of its media, both 32-bit fields
             if (delay.SampleDelta is < 0 or > uint.MaxValue || delay.Timescale is <= 0 or > uint.MaxValue)
             {
                 errors.Add($"{frameName}: the sample delta and the time scale of an AVIF image sequence are 32-bit values, and the time scale is not zero.");
@@ -739,9 +852,9 @@ public static partial class FixtureManifestValidator
             errors.Add($"{name}: iccProfile '{expected.IccProfile}' is inconsistent with profiles.icc ({(profiles.Icc is null ? "absent" : "present")}).");
         }
 
-        // The orientation of an AVIF input comes from its irot and imir properties, and the one of a JPEG XL input from its
-        // image header, never from their EXIF payload
-        if (expected.Orientation != 1 && profiles.Exif is null && entry.Format is not ("avif" or "jxl"))
+        // The orientation of an AVIF or HEIC input comes from its irot and imir properties, and the one of a JPEG XL input
+        // from its image header, never from their EXIF payload
+        if (expected.Orientation != 1 && profiles.Exif is null && entry.Format is not ("avif" or "heic" or "jxl"))
         {
             errors.Add($"{name}: orientation {expected.Orientation} can only come from an EXIF payload (profiles.exif).");
         }
@@ -760,9 +873,9 @@ public static partial class FixtureManifestValidator
             {
                 errors.Add($"{name}: WebP has no text chunk.");
             }
-            else if (entry.Format == "avif")
+            else if (entry.Format is "avif" or "heic")
             {
-                errors.Add($"{name}: no text of an AVIF file is read.");
+                errors.Add($"{name}: no text of an {(entry.Format == "avif" ? "AVIF" : "HEIC")} file is read.");
             }
             else if (entry.Format == "jxl")
             {
@@ -793,9 +906,9 @@ public static partial class FixtureManifestValidator
             errors.Add($"{name}: totalPlays counts all plays (>= 1) or is null for infinite.");
         }
 
-        if (animation.EditList is not null && entry.Format != "avif")
+        if (animation.EditList is not null && entry.Format is not ("avif" or "heic"))
         {
-            errors.Add($"{name}: only AVIF image sequences have an edit list.");
+            errors.Add($"{name}: only AVIF image sequences have an edit list (and HEIC ones).");
         }
 
         if (expected.Poster is not null && !entry.HasFeature("apng"))
@@ -842,12 +955,12 @@ public static partial class FixtureManifestValidator
             }
         }
 
-        else if (entry.Format == "avif")
+        else if (entry.Format is "avif" or "heic")
         {
             // The plays of an image sequence come from the edit list of its track and the duration of its track header
             if (animation.EncodedLoopValue is not null)
             {
-                errors.Add($"{name}: an AVIF image sequence has no loop field; record its edit list (editList).");
+                errors.Add($"{name}: an {(entry.Format == "avif" ? "AVIF" : "HEIC")} image sequence has no loop field; record its edit list (editList).");
             }
 
             var expectedPlays = EditListExpectation.GetTotalPlays(animation.EditList);
@@ -1029,6 +1142,249 @@ public static partial class FixtureManifestValidator
                     errors.Add($"{frameName}: plane digests are SHA-256 hashes (64 lowercase hexadecimal characters).");
                 }
             }
+        }
+    }
+
+    private static void ValidateHevcVectors(HevcVectorSet vectors, FullPath root, HashSet<string> ids, HashSet<string> referencedFiles, List<string> errors)
+    {
+        const string Section = "hevcVectors";
+        if (string.IsNullOrWhiteSpace(vectors.Generator.Script) || string.IsNullOrWhiteSpace(vectors.Generator.Command) || vectors.Generator.Tools.Count == 0)
+        {
+            errors.Add($"{Section}: the generator must record its script, its command and its pinned tools.");
+        }
+
+        if (string.IsNullOrWhiteSpace(vectors.PlaneDigest))
+        {
+            errors.Add($"{Section}: planeDigest must define the byte layout of a plane digest.");
+        }
+
+        if (string.IsNullOrWhiteSpace(vectors.PictureHash))
+        {
+            errors.Add($"{Section}: pictureHash must define the picture hashes of the frames.");
+        }
+
+        if (string.IsNullOrWhiteSpace(vectors.HeaderParser.Name) || string.IsNullOrWhiteSpace(vectors.HeaderParser.Command))
+        {
+            errors.Add($"{Section}: the header parser must be named with its command.");
+        }
+
+        if (vectors.Decoders.Any(decoder => string.IsNullOrWhiteSpace(decoder.Id) || string.IsNullOrWhiteSpace(decoder.Name) || string.IsNullOrWhiteSpace(decoder.Command)))
+        {
+            errors.Add($"{Section}: every decoder must have an id, a name and its command.");
+        }
+
+        var decoders = vectors.Decoders.Select(decoder => decoder.Id ?? "").ToHashSet(StringComparer.Ordinal);
+        if (decoders.Count != vectors.Decoders.Count || vectors.Decoders.Select(decoder => decoder.Name).Distinct(StringComparer.Ordinal).Count() != vectors.Decoders.Count)
+        {
+            errors.Add($"{Section}: the decoders must be distinct.");
+        }
+
+        if (decoders.Count < 2)
+        {
+            errors.Add($"{Section}: plane digests need at least two distinct independent decoders; a digest from a single decoder is not a reference.");
+        }
+
+        foreach (var entry in vectors.Entries)
+        {
+            var name = $"HEVC vector '{entry.Id}'";
+            if (!IdRegex().IsMatch(entry.Id) || !entry.Id.StartsWith(HevcVectorPrefix, StringComparison.Ordinal))
+            {
+                errors.Add($"{name}: invalid id (allowed: '{HevcVectorPrefix}' followed by lowercase letters, digits, '-', '_', '.', '/').");
+            }
+
+            if (!ids.Add(entry.Id))
+            {
+                errors.Add($"{name}: duplicate id.");
+            }
+
+            if (entry.Features.Count == 0 || entry.Features.Any(string.IsNullOrWhiteSpace) || entry.Features.Distinct(StringComparer.Ordinal).Count() != entry.Features.Count)
+            {
+                errors.Add($"{name}: features must be present, non-empty and unique.");
+            }
+
+            ValidateHevcFeatures(name, entry, errors);
+            ValidateProvenance(name, entry.Provenance, errors);
+            if (entry.Provenance.Commands is not { Count: > 0 })
+            {
+                errors.Add($"{name}: the encoder command must be recorded ('commands').");
+            }
+
+            if (!entry.Input.Path.StartsWith(HevcVectorPrefix, StringComparison.Ordinal) || !entry.Input.Path.EndsWith(".hevc", StringComparison.Ordinal))
+            {
+                errors.Add($"{name}: the input '{entry.Input.Path}' must be a raw byte stream '{HevcVectorPrefix}*.hevc'.");
+            }
+
+            if (referencedFiles.Contains(entry.Input.Path))
+            {
+                errors.Add($"{name}: the input '{entry.Input.Path}' is already used by another entry.");
+            }
+
+            ValidateFile(name, entry.Input, root, referencedFiles, errors);
+
+            if (!AllowedHevcBitDepths.Contains(entry.BitDepth) || (entry.BitDepthChroma is { } chromaDepth && (!AllowedHevcBitDepths.Contains(chromaDepth) || chromaDepth == entry.BitDepth)))
+            {
+                errors.Add($"{name}: invalid bitDepth {entry.BitDepth.ToString(CultureInfo.InvariantCulture)} or bitDepthChroma (allowed: {string.Join(", ", AllowedHevcBitDepths.Order())}; bitDepthChroma only when it differs).");
+            }
+
+            if (!AllowedHevcChromaFormats.Contains(entry.ChromaFormat))
+            {
+                errors.Add($"{name}: invalid chromaFormat '{entry.ChromaFormat}' (allowed: {string.Join(", ", AllowedHevcChromaFormats.Order(StringComparer.Ordinal))}).");
+            }
+
+            if (string.IsNullOrWhiteSpace(entry.PixelFormat))
+            {
+                errors.Add($"{name}: pixelFormat is required.");
+            }
+
+            if (!AllowedHevcOutputOrders.Contains(entry.OutputOrder))
+            {
+                errors.Add($"{name}: invalid outputOrder '{entry.OutputOrder}' (allowed: {string.Join(", ", AllowedHevcOutputOrders.Order(StringComparer.Ordinal))}).");
+            }
+
+            if (entry.Frames.Count == 0)
+            {
+                errors.Add($"{name}: a vector has at least one output picture.");
+            }
+
+            if (entry.FrameCount != entry.Frames.Count)
+            {
+                errors.Add($"{name}: frameCount {entry.FrameCount.ToString(CultureInfo.InvariantCulture)} does not match the {entry.Frames.Count.ToString(CultureInfo.InvariantCulture)} frames.");
+            }
+
+            if (entry.PictureCount < entry.Frames.Count)
+            {
+                errors.Add($"{name}: pictureCount {entry.PictureCount.ToString(CultureInfo.InvariantCulture)} is less than the {entry.Frames.Count.ToString(CultureInfo.InvariantCulture)} output pictures.");
+            }
+
+            // The decoders: each one either agrees or is left out with a reason, and two of them make a digest
+            var agreement = entry.Decoders;
+            var excluded = agreement.Excluded.Select(exclusion => exclusion.Decoder).ToList();
+            if (agreement.Agree.Concat(excluded).Any(decoder => !decoders.Contains(decoder)) || agreement.Agree.Concat(excluded).Distinct(StringComparer.Ordinal).Count() != decoders.Count
+                || agreement.Agree.Count + excluded.Count != decoders.Count)
+            {
+                errors.Add($"{name}: every decoder of the section ({string.Join(", ", decoders.Order(StringComparer.Ordinal))}) must either agree or be excluded, once.");
+            }
+
+            if (agreement.Agree.Count == 0)
+            {
+                errors.Add($"{name}: no decoder decodes the stream as recorded.");
+            }
+
+            foreach (var exclusion in agreement.Excluded)
+            {
+                if (!AllowedHevcOutcomes.Contains(exclusion.Outcome) || string.IsNullOrWhiteSpace(exclusion.Reason) || string.IsNullOrWhiteSpace(exclusion.Observed))
+                {
+                    errors.Add($"{name}: the excluded decoder '{exclusion.Decoder}' needs an outcome ({string.Join(", ", AllowedHevcOutcomes.Order(StringComparer.Ordinal))}), a reason and what was observed.");
+                }
+            }
+
+            // A stream without digests is one the library rejects: nothing has to be compared with its pictures
+            var unsupported = entry.Features.Any(feature => feature.StartsWith("hevc.unsupported=", StringComparison.Ordinal));
+            if (!entry.HasDigests && !unsupported)
+            {
+                errors.Add($"{name}: plane digests need two decoders that agree; a digest from a single decoder is not a reference (only a vector tagged 'hevc.unsupported' may have none).");
+            }
+
+            var hash = entry.PictureHash;
+            if (!AllowedHevcPictureHashes.Contains(hash.Type))
+            {
+                errors.Add($"{name}: invalid picture hash type '{hash.Type}' (allowed: {string.Join(", ", AllowedHevcPictureHashes.Order(StringComparer.Ordinal))}).");
+            }
+
+            if (hash.VerifiedBy.Count == 0 || hash.VerifiedBy.Any(decoder => !agreement.Agree.Contains(decoder, StringComparer.Ordinal)) || hash.VerifiedBy.Distinct(StringComparer.Ordinal).Count() != hash.VerifiedBy.Count)
+            {
+                errors.Add($"{name}: the picture hashes must be verified by at least one of the decoders that agree.");
+            }
+
+            var decodeOrders = new HashSet<int>();
+            for (var i = 0; i < entry.Frames.Count; i++)
+            {
+                var frame = entry.Frames[i];
+                var frameName = $"{name} frame {i.ToString(CultureInfo.InvariantCulture)}";
+                if (frame.Width <= 0 || frame.Height <= 0)
+                {
+                    errors.Add($"{frameName}: dimensions must be positive.");
+                }
+
+                if (frame.DecodeOrder < 0 || frame.DecodeOrder >= entry.PictureCount || !decodeOrders.Add(frame.DecodeOrder))
+                {
+                    errors.Add($"{frameName}: decodeOrder must be the index of one coded picture of the stream, used once.");
+                }
+
+                if (frame.Planes.Count != (entry.HasDigests ? entry.PlaneCount : 0))
+                {
+                    errors.Add(entry.HasDigests
+                        ? $"{frameName}: {frame.Planes.Count.ToString(CultureInfo.InvariantCulture)} plane digests, {entry.PlaneCount.ToString(CultureInfo.InvariantCulture)} expected for {entry.ChromaFormat}."
+                        : $"{frameName}: plane digests without two decoders that agree.");
+                }
+
+                if (frame.Planes.Any(digest => !Sha256Regex().IsMatch(digest)))
+                {
+                    errors.Add($"{frameName}: plane digests are SHA-256 hashes (64 lowercase hexadecimal characters).");
+                }
+
+                if (frame.Hash.Count != entry.PlaneCount || frame.Hash.Any(value => value.Length != hash.HexLength || !LowerHexRegex().IsMatch(value)))
+                {
+                    errors.Add($"{frameName}: the picture hash has one lowercase hexadecimal value of {hash.HexLength.ToString(CultureInfo.InvariantCulture)} characters per colour component ({entry.PlaneCount.ToString(CultureInfo.InvariantCulture)} for {entry.ChromaFormat}).");
+                }
+            }
+
+            var reordered = !entry.Frames.Select(frame => frame.DecodeOrder).SequenceEqual(entry.Frames.Select(frame => frame.DecodeOrder).Order());
+            if (AllowedHevcOutputOrders.Contains(entry.OutputOrder) && reordered != (entry.OutputOrder == HevcVectorEntry.ReorderedOrder))
+            {
+                errors.Add($"{name}: outputOrder '{entry.OutputOrder}' does not match the decoding order of the frames.");
+            }
+        }
+    }
+
+    /// <summary>The features of an HEVC vector use the documented vocabulary, and say what the other fields of the entry say.</summary>
+    private static void ValidateHevcFeatures(string name, HevcVectorEntry entry, List<string> errors)
+    {
+        foreach (var feature in entry.Features)
+        {
+            var separator = feature.IndexOf('=', StringComparison.Ordinal);
+            var key = separator < 0 ? feature : feature[..separator];
+            if (!AllowedHevcFeatureKeys.Contains(key))
+            {
+                errors.Add($"{name}: unknown feature key '{key}'. A new key is added to the validator and to the 'HEVC vector features' table of the fixtures README.");
+                continue;
+            }
+
+            if (separator >= 0 && AllowedHevcFeatureValues.TryGetValue(key, out var allowed))
+            {
+                foreach (var value in feature[(separator + 1)..].Split(','))
+                {
+                    if (!allowed.Contains(value))
+                    {
+                        errors.Add($"{name}: invalid value '{value}' of the feature '{key}' (allowed: {string.Join(", ", allowed.Order(StringComparer.Ordinal))}).");
+                    }
+                }
+            }
+        }
+
+        // The feature of a key is exactly the value the entry has for it, or absent
+        void Require(string key, string? value, string what)
+        {
+            var expected = value is null ? null : key + "=" + value;
+            var actual = entry.Features.FirstOrDefault(feature => feature.StartsWith(key + "=", StringComparison.Ordinal) || feature == key);
+            if (!string.Equals(actual, expected, StringComparison.Ordinal))
+            {
+                errors.Add($"{name}: the feature '{key}' must be {(expected is null ? "absent" : $"'{expected}'")}: {what}.");
+            }
+        }
+
+        var frames = entry.Frames.Count.ToString(CultureInfo.InvariantCulture);
+        Require("hevc.bitDepth", entry.BitDepth.ToString(CultureInfo.InvariantCulture), "bitDepth of the entry");
+        Require("hevc.bitDepthChroma", entry.BitDepthChroma?.ToString(CultureInfo.InvariantCulture), "bitDepthChroma of the entry");
+        Require("hevc.chroma", entry.ChromaFormat, "chromaFormat of the entry");
+        Require("hevc.pictureHash", entry.PictureHash.Type, "type of the picture hashes");
+        Require("hevc.frames", entry.Frames.Count > 1 ? frames : null, $"{frames} output pictures");
+        Require("hevc.outputOrder", entry.OutputOrder == HevcVectorEntry.ReorderedOrder ? HevcVectorEntry.ReorderedOrder : null, $"outputOrder is '{entry.OutputOrder}'");
+        Require("hevc.matrix", entry.PixelFormat.StartsWith("gbrp", StringComparison.Ordinal) ? "identity" : null, $"pixelFormat is '{entry.PixelFormat}'");
+
+        if (!entry.Features.Any(feature => feature.StartsWith("hevc.encoder=", StringComparison.Ordinal)))
+        {
+            errors.Add($"{name}: the feature 'hevc.encoder' is required.");
         }
     }
 
@@ -1324,4 +1680,7 @@ public static partial class FixtureManifestValidator
 
     [GeneratedRegex("^[0-9a-f]{64}$", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
     private static partial Regex Sha256Regex();
+
+    [GeneratedRegex("^[0-9a-f]+$", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
+    private static partial Regex LowerHexRegex();
 }

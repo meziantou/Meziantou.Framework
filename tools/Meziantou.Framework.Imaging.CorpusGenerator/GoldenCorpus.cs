@@ -22,7 +22,7 @@ internal static partial class GoldenCorpus
 
     // Formats whose fixtures are produced by their own generators (any OS): WebPCorpus, QoiCorpus, BmpCorpus, TgaCorpus,
     // PnmCorpus, AvifCorpus and JxlCorpus
-    private static readonly HashSet<string> ExternalFormats = new(StringComparer.Ordinal) { "webp", "qoi", "bmp", "tga", "pnm", "avif", "jxl" };
+    private static readonly HashSet<string> ExternalFormats = new(StringComparer.Ordinal) { "webp", "qoi", "bmp", "tga", "pnm", "avif", "heic", "jxl" };
 
     public static int Run(GeneratorOptions options)
     {
@@ -88,6 +88,8 @@ internal static partial class GoldenCorpus
             CorpusDriver.CopyCommittedAv1Vectors(outDir, committed);
         }
 
+        // So are the HEVC conformance vectors, which HevcCorpus generates
+        CorpusDriver.PreserveHevcVectors(outDir, manifest);
         CorpusDriver.PreserveColorSections(outDir, manifest);
         CorpusDriver.PreserveFonts(outDir, manifest);
         CorpusDriver.WriteManifest(outDir, manifest);

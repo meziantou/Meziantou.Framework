@@ -204,6 +204,111 @@ internal static class SmokeTests
         "QoULZ0zL+pKDcO+XeY/N9GvzJZrR80GngPIFZSpCCuZAEgAyGzADwIAAAEaAAQAgKt+T+n2mzlWGu7ZgUgODwBIAMhgwBAEEAABGgAEAInEUpn+E93lt023a" +
         "wXA=";
 
+    // The inputs of the HEIC decoder are files written by another encoder, heif-enc 1.23.6 with x265 (lossless, 64x64, with
+    // alpha; the images of the sequence that follow the first one are P pictures), from the pattern of CheckHeicFrame:
+    //   ffmpeg -f lavfi -i "color=black:size=64x64:rate=10,format=rgba,geq=r='floor(X/16)*60':g='floor(Y/16)*60':b='N*60+floor((X+Y)/32)*40':a='255-floor(X/32)*100'" -frames:v 3 f%d.png
+    //   heif-enc -L f1.png -o still.heic
+    //   heif-enc -L -S --timebase 25 --duration 2 --repetitions 4 --gop-structure low-delay f1.png f2.png f3.png -o animation.heics
+    private const string HeicStill =
+        "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";
+
+    private const string HeicAnimation =
+        "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" +
+        "DAIB0Al8IMFuSq4J6AAAAAsCAdAR/6iBgtSBQw==";
+
     // The fixture jxl/lossy-rgb8 of the corpus: a VarDCT frame of 32x16 pixels, stored in XYB
     private const string JpegXlLossy =
         "/wrDQUJxIQATiAIAFAe1nyAAABUqo4wbvJzr+fJDh8W0jesMbbVtYQljs70wSEg4IxqHB33Zmh+4+yYKvg1vJj9vVs0UFw4zrJmC/gMchhoYWPPRAcDRttgWQIUUyAFgt+3d3E0yLyZhBeLUQM8nf9li9APiyWOXh5tB5lpj53vi+kQYY00WJwHHyrDNOqUXXL9YiLTFuZB2ilSkbzSF7UoGNffJVs7vtySNE5/JxsQ8q1b4l29G9Y1mkpbuENJUHbaOqiHK9N9pP/3rDRz14FgLwnWTnbZIAjSX5YSpgJMC27fmp9OxCkhCDTYWWDcil7D4Vyw9iEm2JGdZbA6U2bWnn30QqzvSTjGvf+dZxpdA1wU0REK7e+1TNgKjbiO8rtPIGKaN9SqLe091Tyc/O9QPeb0vXiX0BsnzGBNqXbofwrevpLCa+Z7M86d/XR8MocxnE9K5nj7/K1tDVO7L+ajXsr5lbtTXOn825DbGuIJ6xMJkzUx/I79SvdJ9pEMRP9rqjEm7/ccotsSl4BEbtg3tiU2LN4NmjgKIFox5nlMr6dNKJO18/H8NAt99EnhFU3QZ7YJIqJY9FK4/1GY96zPNhVPQlDLVwrFdBnWdSDwUKis=";
@@ -321,6 +426,80 @@ internal static class SmokeTests
             Check(decoded.Frames.Count == 3 && decoded.Animation?.TotalPlays == 5, "AVIF sequence encoding frames and plays");
             Check(decoded.Frames[0].Metadata.Duration == new FrameDuration(2, 25) && decoded.Frames[2].Metadata.Duration == new FrameDuration(1, 5), "AVIF sequence encoding durations");
             CheckAvifFrame(decoded.Frames[2], index: 2, "AVIF sequence encoding frame");
+        }
+    }
+
+    public static void Heic()
+    {
+        var still = Convert.FromBase64String(HeicStill);
+        Check(Image.DetectFormat(still) == ImageFormat.Heic, "HEIC detection");
+        var info = Image.Identify(still, new ImageIdentifyOptions { Mode = ImageIdentifyMode.FullScan });
+        Check(info.Width == 64 && info.Height == 64 && info.FrameCount == 1 && info.PixelFormat == PixelFormat.Rgba32 && info.MayHaveTransparency == true, "HEIC identification");
+        using (var decoded = Image.Load<Rgba32>(still))
+        {
+            CheckHeicFrame(decoded.Frames[0], index: 0, "HEIC still");
+            Check(new CicpColorDescription(1, 13, 0, fullRange: true).Equals(decoded.Metadata.Cicp), "HEIC color description");
+        }
+
+        // An image sequence whose images are predicted from one another
+        var animation = Convert.FromBase64String(HeicAnimation);
+        using (var decoded = Image.Load<Rgba32>(animation))
+        {
+            Check(decoded.Frames.Count == 3 && decoded.Animation?.TotalPlays == 4, "HEIC animation frames and plays");
+            Check(decoded.Frames[0].Metadata.Duration == new FrameDuration(2, 25) && decoded.Frames[2].Metadata.Duration == new FrameDuration(2, 25), "HEIC durations");
+            CheckHeicFrame(decoded.Frames[2], index: 2, "HEIC animation frame");
+        }
+
+        using var reader = Image.OpenReader<Rgba32>(new MemoryStream(animation));
+        var count = 0;
+        while (reader.ReadFrame() is { } frame)
+        {
+            using (frame)
+            {
+                CheckHeicFrame(frame.Frames[0], count, "HEIC reader frame");
+                count++;
+            }
+        }
+
+        Check(count == 3, "HEIC reader frame count");
+
+        // The encoder: a lossless still image, a lossy one and an image sequence, read back by the decoder
+        using var source = Image.Load<Rgba32>(animation);
+        using (var first = source.CloneFrame(0))
+        {
+            using var lossless = new MemoryStream();
+            first.Save(lossless, new HeicEncoder());
+            using (var decoded = Image.Load<Rgba32>(lossless.ToArray()))
+            {
+                CheckHeicFrame(decoded.Frames[0], index: 0, "HEIC lossless encoding");
+            }
+
+            using var lossy = new MemoryStream();
+            first.Save(lossy, new HeicEncoder { Compression = HeicCompression.Lossy, Quality = 60, Effort = 2 });
+            var lossyInfo = Image.Identify(lossy.ToArray());
+            Check(lossyInfo.Format == ImageFormat.Heic && lossyInfo.Width == 64 && lossyInfo.Height == 64 && lossyInfo.ColorModel == ImageColorModel.YCbCr, "HEIC lossy encoding");
+        }
+
+        using var sequence = new MemoryStream();
+        source.Save(sequence, new HeicEncoder { Effort = 0 });
+        using (var decoded = Image.Load<Rgba32>(sequence.ToArray()))
+        {
+            Check(decoded.Frames.Count == 3 && decoded.Animation?.TotalPlays == 4, "HEIC sequence encoding frames and plays");
+            Check(decoded.Frames[0].Metadata.Duration == new FrameDuration(2, 25) && decoded.Frames[2].Metadata.Duration == new FrameDuration(2, 25), "HEIC sequence encoding durations");
+            CheckHeicFrame(decoded.Frames[2], index: 2, "HEIC sequence encoding frame");
+        }
+    }
+
+    private static void CheckHeicFrame(ImageFrame<Rgba32> frame, int index, string context)
+    {
+        Check(frame.Width == 64 && frame.Height == 64, context + " size");
+        for (var y = 0; y < frame.Height; y++)
+        {
+            for (var x = 0; x < frame.Width; x++)
+            {
+                var expected = new Rgba32((byte)(x / 16 * 60), (byte)(y / 16 * 60), (byte)((index * 60) + ((x + y) / 32 * 40)), (byte)(255 - (x / 32 * 100)));
+                Check(frame[x, y] == expected, string.Create(CultureInfo.InvariantCulture, $"{context} pixel at ({x}, {y}): {frame[x, y]}, {expected} expected"));
+            }
         }
     }
 

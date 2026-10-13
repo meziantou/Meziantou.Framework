@@ -23,7 +23,7 @@ public abstract partial class Image
     public static ImageFormat DetectFormat(ReadOnlySpan<byte> prefix)
     {
         // Built-in codecs only (never a test registry): this is a pure function of the bytes
-        return ImageCodecRegistry.Default.Detect(prefix)?.Format ?? ImageFormat.Unknown;
+        return ImageCodecRegistry.Default.Detect(prefix)?.GetDetectedFormat(prefix) ?? ImageFormat.Unknown;
     }
 
     /// <summary>Reads information about an image file without decoding its pixels.</summary>

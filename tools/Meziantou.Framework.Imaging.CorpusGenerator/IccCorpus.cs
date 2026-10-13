@@ -281,6 +281,7 @@ internal static partial class IccCorpus
         var manifest = CorpusDriver.LoadCommittedManifest();
         CorpusDriver.CopyCommittedFiles(outDir, CorpusDriver.Fixtures(manifest));
         CorpusDriver.CopyCommittedAv1Vectors(outDir, manifest);
+        CorpusDriver.PreserveHevcVectors(outDir, manifest);
         CorpusDriver.PreserveFonts(outDir, manifest);
 
         // The corpus holds the whole collection: a profile added by another commit needs its entry and its conversions

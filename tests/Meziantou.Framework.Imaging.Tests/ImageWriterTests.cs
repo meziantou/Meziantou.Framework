@@ -211,7 +211,7 @@ public sealed class ImageWriterTests
         // Static PNG, APNG, GIF and JPEG: PngEncoderTests, ApngEncoderTests, GifEncoderTests,
         // JpegEncoderTests. Creating a writer creates the codec session and writes nothing before the first frame.
         Assert.DoesNotContain(ImageEncoderRegistry.Default.Codecs, codec => codec.GetType().Name.Contains("Unavailable", StringComparison.Ordinal));
-        ImageEncoder[] encoders = [new PngEncoder(), new PngEncoder { AnimationMode = PngAnimationMode.Animated }, new GifEncoder(), new JpegEncoder(), new AvifEncoder()];
+        ImageEncoder[] encoders = [new PngEncoder(), new PngEncoder { AnimationMode = PngAnimationMode.Animated }, new GifEncoder(), new JpegEncoder(), new AvifEncoder(), new HeicEncoder()];
         foreach (var encoder in encoders)
         {
             using var writer = Image.CreateWriter<Rgba32>(new ThrowingStream(), new ImageWriterOptions(Width, Height) { Encoder = encoder, ExpectedFrameCount = encoder is GifEncoder ? null : 1 });
@@ -673,7 +673,7 @@ public sealed class ImageWriterTests
             Assert.Equal(ImageFormat.Jpeg, Create("a.jpeg").Format);
             Assert.Equal(ImageFormat.Gif, Create("a.png", new GifEncoder()).Format);
             Assert.Equal(ImageFormat.Png, Create("a.unknown", new PngEncoder()).Format);
-            Assert.Throws<ArgumentException>(() => Create("a.heic"));
+            Assert.Throws<ArgumentException>(() => Create("a.xyz"));
             Assert.Throws<ArgumentException>(() => Create("noextension"));
             Assert.Throws<DirectoryNotFoundException>(() => Create(Path.Combine("missing", "a.png")));
 

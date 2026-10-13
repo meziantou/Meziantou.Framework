@@ -17,6 +17,10 @@ internal static class CorpusDriver
     /// apart from the fixtures because they have no pixel reference.</summary>
     public const string Av1VectorsKey = "av1Vectors";
 
+    /// <summary>The manifest section of the HEVC conformance vectors (HevcCorpus): raw HEVC byte streams with plane
+    /// digests, kept apart from the fixtures because they have no pixel reference.</summary>
+    public const string HevcVectorsKey = "hevcVectors";
+
     /// <summary>The version of the manifest schema every generator writes.</summary>
     public const int SchemaVersion = 5;
 
@@ -89,10 +93,15 @@ internal static class CorpusDriver
     }
 
     /// <summary>The input files of the AV1 conformance vectors a manifest lists.</summary>
-    public static SortedSet<string> Av1VectorFiles(Obj manifest)
+    public static SortedSet<string> Av1VectorFiles(Obj manifest) => VectorFiles(manifest, Av1VectorsKey);
+
+    /// <summary>The input files of the HEVC conformance vectors a manifest lists.</summary>
+    public static SortedSet<string> HevcVectorFiles(Obj manifest) => VectorFiles(manifest, HevcVectorsKey);
+
+    private static SortedSet<string> VectorFiles(Obj manifest, string key)
     {
         var paths = new SortedSet<string>(StringComparer.Ordinal);
-        if (manifest.TryGetValue(Av1VectorsKey, out var value) && value is Obj section)
+        if (manifest.TryGetValue(key, out var value) && value is Obj section)
         {
             foreach (var entry in ((List<object?>)section["entries"]!).Cast<Obj>())
                 paths.Add((string)((Obj)entry["input"]!)["path"]!);
@@ -132,6 +141,25 @@ internal static class CorpusDriver
             var target = outDir / path;
             target.CreateParentDirectory();
             File.Copy(CorpusDir / path, target, overwrite: true);
+        }
+    }
+
+    /// <summary>The other generators keep the HEVC conformance vectors of the committed manifest, and their files,
+    /// unchanged (HevcCorpus owns them).</summary>
+    public static void PreserveHevcVectors(FullPath outDir, Obj manifest)
+    {
+        var committed = LoadCommittedManifest();
+        if (committed.TryGetValue(HevcVectorsKey, out var value))
+            manifest[HevcVectorsKey] = value;
+
+        foreach (var path in HevcVectorFiles(committed))
+        {
+            var target = outDir / path;
+            if (!File.Exists(target))
+            {
+                target.CreateParentDirectory();
+                File.Copy(CorpusDir / path, target);
+            }
         }
     }
 
@@ -212,13 +240,14 @@ internal static class CorpusDriver
     }
 
     /// <summary>The generators of one format family replace only their own entries: every other fixture and file of the
-    /// committed corpus is kept unchanged (the other generators own them), and so are the AV1 conformance vectors.</summary>
+    /// committed corpus is kept unchanged (the other generators own them), and so are the AV1 and the HEVC conformance vectors.</summary>
     public static void MergeIntoCommittedManifest(FullPath outDir, IReadOnlyList<Obj> fixtures, Func<Obj, bool> owns)
     {
         var committed = LoadCommittedManifest();
         var others = Fixtures(committed).Where(f => !owns(f)).ToList();
         CopyCommittedFiles(outDir, others);
         CopyCommittedAv1Vectors(outDir, committed);
+        PreserveHevcVectors(outDir, committed);
         PreserveColorSections(outDir, committed);
         PreserveFonts(outDir, committed);
         committed["fixtures"] = others.Concat(fixtures).OrderBy(f => (string)f["id"]!, StringComparer.Ordinal).Cast<object?>().ToList();

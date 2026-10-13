@@ -52,8 +52,9 @@ public sealed class ResourceLimitBoundaryTests
         var decodes = context is "load" or "reader";
         Assert.Null(Run(context, data, ImageResourceLimits.Default));
 
-        // The canvas limits apply to the coded image, which is larger than the image when a clean aperture crops it
-        var (limitedWidth, limitedHeight) = FixtureTraits.GetLimitedCanvas(fixture);
+        // The canvas limits apply to the coded image, which is larger than the image when a clean aperture crops it, and,
+        // when it is decoded, to an HEVC picture whose conformance window removes more than its padding
+        var (limitedWidth, limitedHeight) = FixtureTraits.GetLimitedCanvas(fixture, decodes);
         AssertExactBoundary(context, data, ImageResourceLimitKind.Width, limitedWidth);
         AssertExactBoundary(context, data, ImageResourceLimitKind.Height, limitedHeight);
         AssertExactBoundary(context, data, ImageResourceLimitKind.FramePixels, (long)limitedWidth * limitedHeight);

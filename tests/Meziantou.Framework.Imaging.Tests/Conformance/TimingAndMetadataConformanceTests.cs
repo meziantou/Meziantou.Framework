@@ -54,9 +54,9 @@ public sealed class TimingAndMetadataConformanceTests
             Assert.Equal(animation.EditList?.TrackDuration, fields.EditList?.TrackDuration);
         }
 
-        if (fixture.Entry.Format == "avif")
+        if (fixture.Entry.Format is "avif" or "heic")
         {
-            // The orientation of an AVIF image is the composition of its irot and imir properties, and a colr box of type
+            // The orientation of an AVIF or HEIC image is the composition of its irot and imir properties, and a colr box of type
             // nclx is its color description (without one the bitstream describes the colors, which the inspector does not read)
             Assert.Equal(expected.Orientation, fields.TransformOrientation);
             if (fields.ContainerCicp is { } cicp)
@@ -65,7 +65,7 @@ public sealed class TimingAndMetadataConformanceTests
             }
             else
             {
-                Assert.True(fixture.Entry.HasFeature("avif.colr=none") || fixture.Entry.HasFeature("avif.colr=icc"), "A file without nclx color information has the feature that says so.");
+                Assert.True(fixture.Entry.HasFeature(fixture.Entry.Format + ".colr=none") || fixture.Entry.HasFeature(fixture.Entry.Format + ".colr=icc"), "A file without nclx color information has the feature that says so.");
             }
         }
         else if (fixture.Entry.Format == "jxl")
@@ -131,7 +131,7 @@ public sealed class TimingAndMetadataConformanceTests
                 Assert.Equal(actual, new FrameDuration(numerator, denominator));
                 Assert.NotEqual(0, denominator);
             }
-            else if (fixture.Entry.Format == "avif")
+            else if (fixture.Entry.Format is "avif" or "heic")
             {
                 // The duration of a sample over the time scale of its media: an exact rational, whatever the time scale
                 actual = new FrameDuration(raw.SampleDelta!.Value, raw.Timescale!.Value);
@@ -177,7 +177,7 @@ public sealed class TimingAndMetadataConformanceTests
         var fixture = GoldenCorpus.Default.Get(id);
         var animation = fixture.Expected.Animation!;
         var loop = fixture.InspectInput().LoopValue;
-        if (fixture.Entry.Format == "avif")
+        if (fixture.Entry.Format is "avif" or "heic")
         {
             // No loop field: the edit list of the track and the duration of its header give the plays
             Assert.Null(loop);
@@ -274,9 +274,9 @@ public sealed class TimingAndMetadataConformanceTests
         var fixture = GoldenCorpus.Default.Get(id);
         var exif = fixture.InspectInput().Exif!.Value.ToArray();
         Assert.True(MetadataValidation.TryValidateExif(exif, out var error), error);
-        if (fixture.Entry.Format is "avif" or "jxl")
+        if (fixture.Entry.Format is "avif" or "heic" or "jxl")
         {
-            // The orientation of an AVIF image comes from its irot and imir properties, and the one of a JPEG XL image from
+            // The orientation of an AVIF or HEIC image comes from its irot and imir properties, and the one of a JPEG XL image from
             // its image header; their EXIF orientation tag is ignored
             Assert.Equal(fixture.Expected.Orientation, fixture.InspectInput().TransformOrientation);
         }

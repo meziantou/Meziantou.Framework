@@ -26,6 +26,15 @@ internal abstract class ImageCodec
     public abstract bool IsMatch(ReadOnlySpan<byte> prefix);
 
     /// <summary>
+    /// Gets the format that <see cref="Image.DetectFormat"/> reports for data that <see cref="IsMatch"/> accepted:
+    /// <see cref="Format"/>, unless the codec also reads the files of another format that only the bytes after its signature
+    /// tell apart (the brands of a HEIF file).
+    /// </summary>
+    /// <param name="prefix">The first bytes of the data.</param>
+    /// <returns>The format, or <see cref="ImageFormat.Unknown"/> when the prefix shows that no codec reads the data.</returns>
+    public virtual ImageFormat GetDetectedFormat(ReadOnlySpan<byte> prefix) => Format;
+
+    /// <summary>
     /// Gets a value indicating whether the format is addressed by file offsets instead of being a byte stream (TIFF,
     /// BigTIFF, ICO, CUR and ANI). Such a codec implements <see cref="IdentifyRandomAccess"/> and
     /// <see cref="DecodeRandomAccess"/>; its <see cref="CreateIdentifyParser"/> and <see cref="CreateDecodeParser"/>

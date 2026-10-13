@@ -1032,6 +1032,73 @@ public sealed class DrawingTextTests
     }
 
     /// <summary>Draws on an image whose pixels are zero and returns its samples.</summary>
+    [Fact]
+    public void ATransformedTextIsTheTextTransformed()
+    {
+        // The glyphs of this font have straight sides: a text drawn under a transformation is its path, transformed,
+        // bit for bit, and so is its stroke
+        var transform = AffineTransform.CreateRotation(25, new PointD(10, 10)).Then(AffineTransform.CreateScale(1.5, 0.8)).Then(AffineTransform.CreateTranslation(20, 4));
+        var layout = TextLayout.Create("AB\u00C1H", new TextStyle(Boxes, 14) { Decorations = TextDecorations.Underline });
+        var origin = new PointD(3.5, 6.25);
+        var path = layout.ToPath(origin);
+        var brush = new SolidBrush(new Rgba32(250, 120, 10, 150));
+        var pen = new Pen(new SolidBrush(new Rgba32(20, 40, 250, 200)), 1.3);
+        Assert.Equal(
+            Render(PixelFormat.Rgba32, 120, 90, canvas => canvas.Fill(brush, path.Transform(transform))),
+            Render(PixelFormat.Rgba32, 120, 90, canvas => canvas.Transform(transform, inner => inner.FillText(brush, layout, origin))));
+        Assert.Equal(
+            Render(PixelFormat.Rgba32, 120, 90, canvas => canvas.Fill(pen.Brush, path.Widen(pen).Transform(transform))),
+            Render(PixelFormat.Rgba32, 120, 90, canvas => canvas.Transform(transform, inner => inner.StrokeText(pen, layout, origin))));
+        Assert.Contains(Render(PixelFormat.Rgba32, 120, 90, canvas => canvas.Transform(transform, inner => inner.FillText(brush, layout, origin))), sample => sample != 0);
+
+        // A text of several paints, with decorations, a synthetic bold, glyphs that have curves and glyphs a font
+        // draws with its own colors: turned by a quarter, each pixel (x, y) of the drawing is the pixel
+        // (height - 1 - y, x). The colors of a glyph are composed in single precision: a sample can differ by a unit.
+        var curves = FontTestSupport.Load(FontSamples.Curves());
+        var line = new FontColorLine(1, (0, 0, 1), (0.5, 0xFFFF, 0.5), (1, 1, 1));
+        var colors = FontTestSupport.Load(FontSamples.ColorPaints(
+            ('D', new FontColorPaint.Composite(
+                new FontColorPaint.Glyph(3, new FontColorPaint.Sweep(line, 512, 384, 30, 300)),
+                14,
+                new FontColorPaint.Glyph(4, new FontColorPaint.Radial(line, 400, 300, 20, 600, 400, 300)))),
+            ('E', new FontColorPaint.Glyph(3, new FontColorPaint.Linear(line, 128, 0, 600, 200, 300, 700)))));
+        var gradient = new LinearGradientBrush(new PointD(0, 0), new PointD(60, 40), [new GradientStop(0, new Rgba32(0, 0, 255)), new GradientStop(1, new Rgba32(255, 255, 0, 100))]);
+        var rich = TextLayout.Create(
+            new RichTextBuilder()
+                .Append("AB ", new TextStyle(Boxes, 13) { Brush = new SolidBrush(new Rgba32(200, 0, 0, 180)), Decorations = TextDecorations.Underline, Synthesis = FontSynthesis.Bold })
+                .Append("OP ", new TextStyle(curves, 12) { Brush = gradient, Decorations = TextDecorations.Strikethrough })
+                .Append("DE", new TextStyle(colors, 14) { ColorPaletteIndex = 1 })
+                .Append(" QA", new TextStyle(new FontStack(curves, Boxes), 11) { Synthesis = FontSynthesis.Oblique })
+                .Build(),
+            new TextLayoutOptions { MaxWidth = 70 });
+        Assert.True(rich.HasColorGlyphs);
+        var black = new SolidBrush(new Rgba32(0, 0, 0));
+        const int Width = 80;
+        const int Height = 64;
+        var upright = Render(PixelFormat.Rgba32, Width, Height, canvas => canvas.FillText(black, rich, new PointD(4.5, 3.25)));
+        var quarterTurn = AffineTransform.CreateRotation(90).Then(AffineTransform.CreateTranslation(Height, 0));
+        var turned = Render(PixelFormat.Rgba32, Height, Width, canvas => canvas.Transform(quarterTurn, inner => inner.FillText(black, rich, new PointD(4.5, 3.25))));
+        Assert.HasCountGreaterThan(20, upright.Chunk(4).Select(pixel => (pixel[0], pixel[1], pixel[2])).Distinct().ToArray());
+        for (var y = 0; y < Height; y++)
+        {
+            for (var x = 0; x < Width; x++)
+            {
+                var expected = upright.AsSpan(((y * Width) + x) * 4, 4);
+                var actual = turned.AsSpan(((x * Height) + (Height - 1 - y)) * 4, 4);
+                for (var c = 0; c < 4; c++)
+                {
+                    Assert.InRange(actual[c], expected[c] - 2, expected[c] + 2, message: $"pixel ({x}, {y}), sample {c}");
+                }
+            }
+        }
+
+        // Along a path, the path and the text are transformed together
+        var route = new VectorPathBuilder().MoveTo(5, 30).LineTo(40, 12).LineTo(75, 30).Build();
+        Assert.Equal(
+            Render(PixelFormat.Rgba32, 120, 90, canvas => canvas.FillText(brush, layout, route.Transform(AffineTransform.CreateTranslation(12, 20)))),
+            Render(PixelFormat.Rgba32, 120, 90, canvas => canvas.Transform(AffineTransform.CreateTranslation(12, 20), inner => inner.FillText(brush, layout, route))));
+    }
+
     private static int[] Render(PixelFormat format, int width, int height, DrawingAction action)
     {
         using var image = DrawingTestSupport.Create(format, width, height);

@@ -160,6 +160,21 @@ public sealed class PerformanceContractTests
             });
             canvas.Layer(0.9, state, static (layer, state) => layer.FillEllipse(state.Focal, new PointD(30, 20), 25, 15), CompositeMode.SourceAtop, BlendMode.Overlay);
             canvas.Shadow(new Rgba32(0, 0, 0, 100), new PointD(2.5, 3), 1.75, state, static (shadowed, state) => shadowed.FillText(state.Solid, state.Text, new PointD(4, 6)));
+            canvas.Transform(AffineTransform.CreateRotation(20, new PointD(32, 24)).Then(AffineTransform.CreateScale(1.25, 0.8)), state, static (turned, state) =>
+            {
+                turned.Fill(state.Gradient, state.Path);
+                turned.Stroke(state.Pen, state.Path);
+                turned.Stroke(state.DashedPen, state.Path);
+                turned.FillRoundedRectangle(state.Sweep, new RectangleD(3.5, 2.25, 40, 30), 6.5);
+                turned.FillText(state.Solid, state.RichText, new PointD(2, 3));
+                turned.FillText(state.Gradient, state.ColorText, new PointD(1, 20));
+                turned.StrokeText(state.Pen, state.CffText, new PointD(3, 30));
+                turned.FillText(state.Solid, state.Text, state.Path, state.PathOptions);
+                turned.DrawImage(state.Sprite, new RectangleD(-5, 6.5, 30, 20), ImageSampling.Smooth, 0.9);
+                turned.Fill(state.Tile, state.Path);
+                turned.Clip(state.Path, state, static (clipped, state) => clipped.Transform(AffineTransform.CreateTranslation(2.5, -1), state, static (moved, state) => moved.Fill(state.Focal)));
+                turned.Shadow(new Rgba32(0, 0, 0, 100), new PointD(2, 1), 0.75, state, static (shadowed, state) => shadowed.FillCircle(state.Solid, new PointD(20, 20), 6));
+            });
             canvas.Clip(new Rectangle(10, 8, 30, 24), state, static (clipped, state) => clipped.Shadow(new Rgba32(255, 255, 0), default, 0.8, state, static (glow, state) => glow.Stroke(state.Pen, state.Path)));
             canvas.Clip(state.Path, state, static (clipped, state) =>
             {

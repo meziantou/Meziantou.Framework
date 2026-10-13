@@ -317,6 +317,15 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
   drawn: the layer covers a margin around the bounds of the clip (the reach of the blur and of the offset), and the
   blur reads beyond it as its edge pixels (a shape that leaves the canvas keeps its shadow along the edge). The
   weights are those of `GaussianKernel`, shared with `GaussianBlur`: computed without `Math.Exp`.
+- The transformation of the canvas (`DrawingSession.Transforms.cs`) is applied where a shape becomes edges, not where
+  it is described: `BeginFill` wraps the fill sink in a `TransformSink`, the `Stroker` transforms the vertices of its
+  pieces (`SetOutput`: the path is stroked in the coordinates of the drawing, so the pen is transformed with it), and
+  the evaluators of the brushes get the transformation of the brush followed by the one of the canvas (`ToCanvas`).
+  The flatteners read `PathSink.Scale` of the sink they emit to, and cut curves that much finer; it is 1 without
+  transformation, where nothing may change (every product by it is exact). What is given in pixels must use
+  `BeginDeviceFill`: the frame, a layer that ends, the outlines of a color glyph (whose placement is composed with
+  the transformation instead, because its paints are evaluated in pixels). The whole-frame test of the stroker and
+  the canvas-aware cutting of the dasher are off under a transformation.
 - Every rental of a draw call happens before its first pixel write (edges, then the sweep and gradient scratch in
   `Render`). Draw calls allocate nothing once the scratch of the session has grown (`PerformanceContractTests`).
 - The cost of a shape follows its edges and their crossings. Keep the events of the sweep logarithmic: no pass over

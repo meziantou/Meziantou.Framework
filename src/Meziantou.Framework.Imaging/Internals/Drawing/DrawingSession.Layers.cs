@@ -60,6 +60,15 @@ internal sealed partial class DrawingSession
     {
         DrawingGuard.Point(offset, nameof(offset));
         GaussianKernel.Validate(sigma, nameof(sigma));
+        if (_hasTransform)
+        {
+            // The offset is a distance of the drawing, and so is the blur: a transformation that enlarges the drawing
+            // moves its shadow further and blurs it more, by the square root of what it does to an area
+            offset = _transform.TransformVector(offset);
+            sigma = Math.Min(sigma * Math.Sqrt(Math.Abs(_transform.Determinant)), GaussianKernel.MaxSigma);
+            if (!(Math.Abs(offset.X) <= DrawingGuard.MaxCoordinate && Math.Abs(offset.Y) <= DrawingGuard.MaxCoordinate))
+                TransformSink.ThrowOutOfRange(Math.Abs(offset.X) <= DrawingGuard.MaxCoordinate ? offset.Y : offset.X);
+        }
 
         // What is drawn around the pixels the clip can show casts a shadow on them: the layer keeps that much more
         var reach = GaussianKernel.GetRadius(sigma) + Math.Ceiling(Math.Max(Math.Abs(offset.X), Math.Abs(offset.Y))) + 1;
@@ -144,7 +153,7 @@ internal sealed partial class DrawingSession
 
         // The layer is an image at the origin of the canvas: its pixels are those of the canvas, read as they are
         var bounds = Rectangle.FromLTRB(level.Left, level.Top, level.Right, level.Bottom);
-        var sink = BeginFill();
+        var sink = BeginDeviceFill();
         AddRectangle(sink, bounds);
         sink.End();
         var evaluator = _imagePaint ??= new ImageEvaluator(_image.Owner.Scope);

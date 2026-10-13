@@ -745,6 +745,75 @@ public readonly ref struct DrawingCanvas
         }
     }
 
+    /// <summary>Runs a callback whose drawings are transformed: moved, turned, scaled, skewed or mirrored.</summary>
+    /// <remarks>
+    /// <para>
+    /// Everything the callback draws is drawn as it would be without the transformation, then transformed: shapes,
+    /// strokes (the pen is transformed with the path it strokes: a scaling makes it wider, and stretches its dashes),
+    /// the gradients and the images of the brushes, images, texts with the paints of their spans and the glyphs a font
+    /// draws with its own colors, the paths of the clips, and the offset and the blur of a shadow. This is what
+    /// <see cref="VectorPath.Transform"/> does to a path, for any drawing: a text along a diagonal, or a drawing made
+    /// for one size drawn at another.
+    /// </para>
+    /// <para>
+    /// A transformation started inside another one applies first, then the one around it. <see cref="Fill(Brush)"/>
+    /// and <see cref="Clear"/> still cover the whole canvas (the brush is transformed), and <see cref="Width"/> and
+    /// <see cref="Height"/> stay those of the canvas. Curves are drawn at the size the transformation gives them: they
+    /// stay smooth however they are enlarged. A transformation that flattens the plane to a line draws nothing.
+    /// </para>
+    /// <para>
+    /// The coordinates given to a draw call are validated as they are without transformation, and a coordinate that
+    /// the transformation moves beyond 16777216 is rejected, before the call changes a pixel. A dashed stroke has
+    /// every dash of its path cut, even those the canvas does not show.
+    /// </para>
+    /// </remarks>
+    /// <param name="transform">The transformation.</param>
+    /// <param name="action">The callback that draws. It must not be asynchronous and must not retain the canvas.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">A coefficient of the transformation, combined with the one it starts in, is not a finite number.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void Transform(AffineTransform transform, DrawingAction action)
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        var session = GetSession();
+        session.PushTransform(transform);
+        try
+        {
+            action(this);
+        }
+        finally
+        {
+            session.PopTransform();
+        }
+    }
+
+    /// <summary>Runs a callback whose drawings are transformed, passing caller state to avoid closure allocations.</summary>
+    /// <typeparam name="TState">The type of the state.</typeparam>
+    /// <param name="transform">The transformation.</param>
+    /// <param name="state">The state passed to <paramref name="action"/>.</param>
+    /// <param name="action">The callback that draws. Use a static lambda to avoid allocations. It must not retain the canvas.</param>
+    /// <remarks>See <see cref="Transform(AffineTransform, DrawingAction)"/>.</remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">A coefficient of the transformation, combined with the one it starts in, is not a finite number.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void Transform<TState>(AffineTransform transform, TState state, DrawingAction<TState> action)
+        where TState : allows ref struct
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        var session = GetSession();
+        session.PushTransform(transform);
+        try
+        {
+            action(this, state);
+        }
+        finally
+        {
+            session.PopTransform();
+        }
+    }
+
     /// <summary>Runs a callback whose drawings are drawn with their shadow: a drop shadow, or a glow without offset.</summary>
     /// <remarks>
     /// <para>

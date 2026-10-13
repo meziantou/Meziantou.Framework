@@ -28,6 +28,12 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// The pieces go to the edges of a draw call, or to a path as closed contours (<see cref="VectorPath.Widen"/>): the same
 /// points in the same order, so that filling that path is stroking.
 /// </para>
+/// <para>
+/// Under a transformation of the canvas, the path is stroked as it is given and the vertices of the pieces are
+/// transformed when they are emitted: the pen is transformed with the path, whatever the transformation. The round
+/// joins and caps are cut finer by the factor of the transformation (<see cref="PathSink.Scale"/>), and no piece is
+/// tested against the frame.
+/// </para>
 /// </remarks>
 internal sealed class Stroker : PathSink
 {
@@ -37,6 +43,8 @@ internal sealed class Stroker : PathSink
     private LineJoin _join;
     private LineCap _cap;
     private double _miterLimitSquared;
+    private bool _hasOutputTransform;
+    private Affine2D _outputTransform;
 
     // The contour being stroked
     private bool _hasStart;
@@ -81,11 +89,25 @@ internal sealed class Stroker : PathSink
     /// <summary>Gets a value indicating whether the stroke covers the whole frame; the edges are then meaningless.</summary>
     public bool CoversFrame { get; private set; }
 
+    /// <summary>
+    /// Sets the transformation the pieces of the next strokes go through before they become edges, or none: the stroke
+    /// is then the one of the path as it is given, pen included, placed on the canvas afterward. Set before the pen.
+    /// </summary>
+    /// <param name="hasTransform">Whether there is a transformation.</param>
+    /// <param name="transform">The transformation.</param>
+    /// <param name="scale">The largest factor by which the transformation enlarges a length.</param>
+    public void SetOutput(bool hasTransform, in Affine2D transform, double scale)
+    {
+        _hasOutputTransform = hasTransform;
+        _outputTransform = transform;
+        Scale = hasTransform ? scale : 1;
+    }
+
     /// <summary>Sets the pen of the next path.</summary>
     public void Configure(Pen pen)
     {
         CoversFrame = false;
-        _testFrame = _edges is not null && pen.Width >= Math.Min(_edges.Width, _edges.Height);
+        _testFrame = _edges is not null && !_hasOutputTransform && pen.Width >= Math.Min(_edges.Width, _edges.Height);
         _halfWidth = pen.Width / 2;
         _join = pen.LineJoin;
         _cap = pen.LineCap;
@@ -97,7 +119,7 @@ internal sealed class Stroker : PathSink
     public void Configure(double width, LineJoin join, double miterLimit)
     {
         CoversFrame = false;
-        _testFrame = _edges is not null && width >= Math.Min(_edges.Width, _edges.Height);
+        _testFrame = _edges is not null && !_hasOutputTransform && width >= Math.Min(_edges.Width, _edges.Height);
         _halfWidth = width / 2;
         _join = join;
         _cap = LineCap.Butt;
@@ -366,7 +388,7 @@ internal sealed class Stroker : PathSink
         var mx = ux + vx;
         var my = uy + vy;
         var length = Math.Sqrt((mx * mx) + (my * my));
-        if (depth >= PathFlattener.MaxArcDepth || !(_halfWidth * (1 - (length / 2)) > PathFlattener.Tolerance))
+        if (depth >= PathFlattener.MaxArcDepth || !(_halfWidth * Scale * (1 - (length / 2)) > PathFlattener.Tolerance))
         {
             PieceLineTo(centerX + (_halfWidth * vx), centerY + (_halfWidth * vy));
             return;
@@ -380,6 +402,11 @@ internal sealed class Stroker : PathSink
 
     private void BeginPiece(double x, double y)
     {
+        if (_hasOutputTransform)
+        {
+            (x, y) = TransformOutput(x, y);
+        }
+
         _pieceStartX = x;
         _pieceStartY = y;
         _pieceX = x;
@@ -403,6 +430,11 @@ internal sealed class Stroker : PathSink
 
     private void PieceLineTo(double x, double y)
     {
+        if (_hasOutputTransform)
+        {
+            (x, y) = TransformOutput(x, y);
+        }
+
         AddPieceEdge(x, y);
         _pieceX = x;
         _pieceY = y;
@@ -429,6 +461,20 @@ internal sealed class Stroker : PathSink
         {
             _edges.Truncate(_pieceFirstEdge);
         }
+    }
+
+    /// <summary>Places a vertex of a piece on the canvas.</summary>
+    /// <exception cref="ArgumentOutOfRangeException">The vertex is beyond the largest coordinate.</exception>
+    private (double X, double Y) TransformOutput(double x, double y)
+    {
+        var px = _outputTransform.TransformX(x, y);
+        var py = _outputTransform.TransformY(x, y);
+
+        // Written so that a value that is not a number is rejected too
+        if (!(Math.Abs(px) <= DrawingGuard.MaxCoordinate && Math.Abs(py) <= DrawingGuard.MaxCoordinate))
+            TransformSink.ThrowOutOfRange(Math.Abs(px) <= DrawingGuard.MaxCoordinate ? py : px);
+
+        return (px, py);
     }
 
     private void AddPieceEdge(double x, double y)

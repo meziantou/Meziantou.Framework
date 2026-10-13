@@ -50,6 +50,9 @@ internal sealed partial class DrawingSession
                     continue;
                 }
 
+                // A color glyph is drawn in the pixels of the canvas: its placement includes the transformation
+                placement = ToCanvas(placement);
+
                 if (!surface.Reserve(glyph, placement, Width, Height))
                     continue;
 
@@ -84,7 +87,7 @@ internal sealed partial class DrawingSession
         }
 
         var gradient = _foregroundGradient ??= new GradientEvaluator(_image.Owner.Scope);
-        gradient.PrepareColors(gradientBrush, Width);
+        gradient.PrepareColors(gradientBrush, ToCanvas(gradientBrush.Transform), Width);
         surface.ForegroundGradient = gradient;
     }
 
@@ -217,7 +220,7 @@ internal sealed partial class DrawingSession
     /// <returns><see langword="false"/> when the outline covers nothing of the canvas.</returns>
     private bool BeginOutline(FontFace face, int glyph, in Affine2D transform)
     {
-        var sink = BeginFill();
+        var sink = BeginDeviceFill();
         var glyphSink = _glyphSink ??= new GlyphPathSink();
         glyphSink.Begin(sink, transform);
         var budget = new GlyphBudget(face.Data.Limits);
@@ -229,7 +232,7 @@ internal sealed partial class DrawingSession
     /// <summary>Builds the edges of a box (its left, bottom, right and top, in the units of the glyph) and starts their sweep.</summary>
     private bool BeginBox(ReadOnlySpan<double> box, in Affine2D transform)
     {
-        var sink = BeginFill();
+        var sink = BeginDeviceFill();
         sink.MoveTo(transform.TransformX(box[0], box[1]), transform.TransformY(box[0], box[1]));
         sink.LineTo(transform.TransformX(box[0], box[3]), transform.TransformY(box[0], box[3]), smooth: false);
         sink.LineTo(transform.TransformX(box[2], box[3]), transform.TransformY(box[2], box[3]), smooth: false);

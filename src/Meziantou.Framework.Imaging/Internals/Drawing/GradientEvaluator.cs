@@ -83,17 +83,21 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
 
     /// <summary>Converts the stops of a brush to the pixel format of a frame and rents the row of colors.</summary>
     /// <exception cref="ImageResourceLimitException">The scratch exceeds the allocation limit.</exception>
-    public void Prepare(GradientBrush brush, ImageFrame frame, int width)
-        => Prepare(brush, frame, width, (1 << PixelFormats.GetBitsPerComponent(frame.PixelFormat)) - 1);
+    /// <param name="brush">The gradient.</param>
+    /// <param name="transform">The transformation that places the gradient on the canvas: the one of the brush, then the one of the canvas.</param>
+    /// <param name="frame">A frame that is drawn on.</param>
+    /// <param name="width">The width of the canvas.</param>
+    public void Prepare(GradientBrush brush, AffineTransform transform, ImageFrame frame, int width)
+        => Prepare(brush, transform, frame, width, (1 << PixelFormats.GetBitsPerComponent(frame.PixelFormat)) - 1);
 
     /// <summary>
     /// Prepares the evaluation of a gradient whose colors are not converted to the samples of a frame: 16-bit red,
     /// green, blue and alpha values, for what composes colors before it writes them to a frame.
     /// </summary>
     /// <exception cref="ImageResourceLimitException">The scratch exceeds the allocation limit.</exception>
-    public void PrepareColors(GradientBrush brush, int width) => Prepare(brush, frame: null, width, ushort.MaxValue);
+    public void PrepareColors(GradientBrush brush, AffineTransform transform, int width) => Prepare(brush, transform, frame: null, width, ushort.MaxValue);
 
-    private void Prepare(GradientBrush brush, ImageFrame? frame, int width, int max)
+    private void Prepare(GradientBrush brush, AffineTransform transform, ImageFrame? frame, int width, int max)
     {
         var stops = brush.StopSpan;
         if (stops.Length > _stopCapacity)
@@ -176,10 +180,9 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
         }
 
         _degenerate = !(_divisor > 0);
-        _hasTransform = !brush.Transform.IsIdentity;
+        _hasTransform = !transform.IsIdentity;
         if (_hasTransform)
         {
-            var transform = brush.Transform;
             if (!new Affine2D(transform.M11, transform.M12, transform.M21, transform.M22, transform.OffsetX, transform.OffsetY).TryInvert(out _inverse))
             {
                 _degenerate = true;

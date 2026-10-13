@@ -905,6 +905,32 @@ internal static class Examples
     }
     // end-snippet
 
+    /// <summary>A transformation of the canvas: a text repeated along a diagonal, over an image.</summary>
+    // begin-snippet: draw-watermark
+    public static void DrawWatermark(string fontPath, string inputPath, string outputPath)
+    {
+        using var image = Image.Load(inputPath);
+        var layout = TextLayout.Create("DRAFT", Font.Load(fontPath), size: image.Width / 6.0);
+        var ink = new SolidBrush(new Rgba32(255, 255, 255, 110));
+        var center = new PointD(image.Width / 2.0, image.Height / 2.0);
+
+        image.Draw(canvas =>
+        {
+            // Everything the callback draws is turned around the center of the image: the text is drawn as usual
+            canvas.Transform(AffineTransform.CreateRotation(-30, center), turned =>
+            {
+                for (var row = -1; row <= 1; row++)
+                {
+                    var origin = new PointD(center.X - (layout.Width / 2), center.Y - (layout.Height / 2) + (row * layout.Height * 1.5));
+                    turned.FillText(ink, layout, origin);
+                }
+            });
+        });
+
+        image.Save(outputPath);
+    }
+    // end-snippet
+
     /// <summary>Text: a line of text that follows a curve.</summary>
     // begin-snippet: draw-text-on-path
     public static void DrawTextOnPath(string fontPath, string outputPath)

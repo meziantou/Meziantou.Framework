@@ -93,8 +93,7 @@ internal sealed class Dasher : PathSink, IDisposable
     /// <summary>Sets the pen and the stroker of the next path, drawn on a canvas of a size.</summary>
     public void Configure(Pen pen, Stroker stroker, double width, double height, CancellationToken cancellationToken)
     {
-        Configure(pen, stroker);
-        _cancellationToken = cancellationToken;
+        Configure(pen, stroker, cancellationToken);
 
         // The body of a dash is within half the width of the pen of its segment; a cap goes that far beyond its end; a
         // miter goes as far as the miter limit allows from its vertex, and the corner of a square cap or of a square dot
@@ -108,13 +107,13 @@ internal sealed class Dasher : PathSink, IDisposable
         _vertexReach = (half * Math.Max(pen.LineJoin == LineJoin.Miter ? pen.MiterLimit : 1, 2)) + 1;
     }
 
-    /// <summary>Sets the pen and the stroker of the next path, wherever it is.</summary>
-    public void Configure(Pen pen, Stroker stroker)
+    /// <summary>Sets the pen and the stroker of the next path, wherever it is: every dash of the path is cut.</summary>
+    public void Configure(Pen pen, Stroker stroker, CancellationToken cancellationToken = default)
     {
         _stroker = stroker;
         _pattern = pen.Dashes;
         _patternLength = pen.DashLength;
-        _cancellationToken = default;
+        _cancellationToken = cancellationToken;
         _dashCount = 0;
         _hasCanvas = false;
         _hasCurrent = false;

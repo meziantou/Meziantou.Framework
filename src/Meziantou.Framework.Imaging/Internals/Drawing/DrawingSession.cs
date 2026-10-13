@@ -188,7 +188,7 @@ internal sealed partial class DrawingSession : IDisposable
     private void PaintImage(ImageFrame source, Rectangle region, AffineTransform transform, ImageSampling sampling, uint coverage, bool isEmpty, string regionParameterName)
     {
         var evaluator = _imagePaint ??= new ImageEvaluator(_image.Owner.Scope);
-        evaluator.Prepare(source, region, transform, ImageWrapMode.Pad, sampling, _frames[0], Width, regionParameterName);
+        evaluator.Prepare(source, region, ToCanvas(transform), ImageWrapMode.Pad, sampling, _frames[0], Width, regionParameterName);
         if (coverage == 0 || isEmpty || _edges!.Count == 0)
             return;
 
@@ -446,7 +446,7 @@ internal sealed partial class DrawingSession : IDisposable
         DrawingGuard.Point(origin, nameof(origin));
         var glyphSink = _glyphSink ??= new GlyphPathSink();
         var scratch = _glyphScratch ??= new GlyphScratch(_image.Owner.Scope);
-        var emboldener = layout.HasEmboldenedGlyphs ? _stroker ??= new Stroker(_edges!) : null;
+        var emboldener = GetEmboldener(layout);
         if (layout.BrushCount <= 1 && !layout.HasColorGlyphs)
         {
             FillFrameWhenCovered(layout.Emit(BeginFill(), glyphSink, scratch, origin.X, origin.Y, _edges, brush: -1, emboldener: emboldener));
@@ -493,7 +493,7 @@ internal sealed partial class DrawingSession : IDisposable
         var measure = Measure(path);
         var glyphSink = _glyphSink ??= new GlyphPathSink();
         var scratch = _glyphScratch ??= new GlyphScratch(_image.Owner.Scope);
-        var emboldener = layout.HasEmboldenedGlyphs ? _stroker ??= new Stroker(_edges!) : null;
+        var emboldener = GetEmboldener(layout);
         if (layout.BrushCount <= 1 && !layout.HasColorGlyphs)
         {
             FillFrameWhenCovered(layout.EmitOnPath(BeginFill(), glyphSink, scratch, measure, options, _edges, brush: -1, emboldener: emboldener));
@@ -543,10 +543,22 @@ internal sealed partial class DrawingSession : IDisposable
         }
     }
 
+    /// <summary>Gets the stroker that thickens the glyphs of a synthetic bold, which the transformation of the canvas enlarges with them.</summary>
+    private Stroker? GetEmboldener(TextLayout layout)
+    {
+        if (!layout.HasEmboldenedGlyphs)
+            return null;
+
+        var stroker = _stroker ??= new Stroker(_edges!);
+        stroker.SetOutput(_hasTransform, _transformMatrix, _transformScale);
+        return stroker;
+    }
+
     /// <summary>Flattens a path and measures its chords.</summary>
     private PathMeasure Measure(VectorPath path)
     {
         var measure = _pathMeasure ??= new PathMeasure(_image.Owner.Scope);
+        measure.Scale = _transformScale;
         measure.Reset();
         PathFlattener.Flatten(path, measure);
         return measure;
@@ -609,7 +621,8 @@ internal sealed partial class DrawingSession : IDisposable
         return edges;
     }
 
-    private FillSink BeginFill()
+    /// <summary>Gets the sink of a fill whose shape is given in the pixels of the canvas, whatever its transformation.</summary>
+    private FillSink BeginDeviceFill()
     {
         var edges = BeginCall();
         return _fillSink ??= new FillSink(edges);
@@ -619,12 +632,23 @@ internal sealed partial class DrawingSession : IDisposable
     {
         var edges = BeginCall();
         var stroker = _stroker ??= new Stroker(edges);
+        stroker.SetOutput(_hasTransform, _transformMatrix, _transformScale);
         stroker.Configure(pen);
         if (!pen.IsDashed)
             return stroker;
 
         var dasher = _dasher ??= new Dasher(_image.Owner.Scope);
-        dasher.Configure(pen, stroker, Width, Height, _cancellationToken);
+        dasher.Scale = _transformScale;
+        if (_hasTransform)
+        {
+            // The dashes are cut in the coordinates of the drawing, where the canvas is not a rectangle: all of them
+            dasher.Configure(pen, stroker, _cancellationToken);
+        }
+        else
+        {
+            dasher.Configure(pen, stroker, Width, Height, _cancellationToken);
+        }
+
         return dasher;
     }
 
@@ -722,7 +746,7 @@ internal sealed partial class DrawingSession : IDisposable
         else if (brush is ImageBrush image)
         {
             var imagePaint = _imagePaint ??= new ImageEvaluator(_image.Owner.Scope);
-            imagePaint.Prepare(image.Source, image.SourceRegion, image.Transform, image.WrapMode, image.Sampling, _frames[0], Width, nameof(brush));
+            imagePaint.Prepare(image.Source, image.SourceRegion, ToCanvas(image.Transform), image.WrapMode, image.Sampling, _frames[0], Width, nameof(brush));
             if (image.OpacityCoverage == 0)
                 return false;
 
@@ -736,7 +760,8 @@ internal sealed partial class DrawingSession : IDisposable
         else
         {
             var gradient = _gradient ??= new GradientEvaluator(_image.Owner.Scope);
-            gradient.Prepare((GradientBrush)brush, _frames[0], Width);
+            var gradientBrush = (GradientBrush)brush;
+            gradient.Prepare(gradientBrush, ToCanvas(gradientBrush.Transform), _frames[0], Width);
             if (gradient.IsTransparent && isInert)
                 return false;
 

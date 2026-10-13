@@ -184,6 +184,58 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void DrawWatermarkTurnsATextOverAnImage()
+    {
+        var fontPath = FixtureRoot.GetDirectory() / "fonts" / "noto-sans" / "NotoSans-Regular.subset.ttf";
+        var input = GetPath("photo.png");
+        var output = GetPath("watermarked.png");
+        using (var photo = new Image<Rgba32>(300, 200, new Rgba32(20, 60, 120)))
+        {
+            photo.Save(input);
+        }
+
+        Examples.DrawWatermark(fontPath, input, output);
+
+        using var image = Image.Load<Rgba32>(output);
+        Assert.Equal(new Size(300, 200), image.Size);
+        var frame = image.Frames[0];
+
+        // The ink lightens the pixels it covers, and leaves the others: the corners the turned text does not reach
+        var background = new Rgba32(20, 60, 120);
+        Assert.Equal(background, frame[2, 2]);
+        Assert.Equal(background, frame[297, 197]);
+        var inked = 0;
+        long sumX = 0;
+        long sumY = 0;
+        long lowerLeft = 0;
+        long upperLeft = 0;
+        for (var y = 0; y < 200; y++)
+        {
+            for (var x = 0; x < 300; x++)
+            {
+                if (frame[x, y] == background)
+                    continue;
+
+                inked++;
+                sumX += x;
+                sumY += y;
+
+                // Under or over the diagonal of the image that goes from its bottom-left corner to its top-right one
+                var side = ((x - 150) * 2) + ((y - 100) * 3);
+                lowerLeft += side < -150 ? 1 : 0;
+                upperLeft += side > 150 ? 1 : 0;
+            }
+        }
+
+        // The three lines are around the center, and the text climbs to the right
+        Assert.InRange(inked, 3000, 30000);
+        Assert.InRange(sumX / inked, 135, 165);
+        Assert.InRange(sumY / inked, 85, 115);
+        Assert.True(frame[150, 100].R >= background.R);
+        Assert.True(lowerLeft > 0 && upperLeft > 0);
+    }
+
+    [Fact]
     public void DrawRoutePlacesItsMarksAlongThePath()
     {
         var output = GetPath("route.png");

@@ -723,8 +723,40 @@ ends exactly on its end point, and it is transformed as an arc.
 applied first), and `VectorPath.Transform` returns the path it gives. The result is exact: curves are transformed as
 curves and an ellipse stays an ellipse, so a path that is enlarged stays smooth. Angles are in degrees, and a positive
 angle turns clockwise on the image (Y grows downward); sines and cosines do not come from the platform, and a rotation
-by a multiple of 90 degrees is exact. The canvas has no transform of its own: a shape is transformed before it is
-drawn, and a text through `TextLayout.ToPath`.
+by a multiple of 90 degrees is exact.
+
+`canvas.Transform(transform, callback)` transforms everything a callback draws: shapes, strokes (the pen is
+transformed with the path it strokes, so a scaling makes it wider), the gradients and the images of the brushes,
+images, texts with the paints of their spans and the glyphs a font draws with its own colors, clips, and the offset
+and the blur of a shadow. A drawing is flattened for the size the transformation gives it: curves stay smooth however
+they are enlarged, and straight sides are placed exactly where `VectorPath.Transform` places them. Transformations
+nest (the inner one applies first), with clips and layers in any order.
+
+<!-- snippet: draw-watermark -->
+```csharp
+public static void DrawWatermark(string fontPath, string inputPath, string outputPath)
+{
+    using var image = Image.Load(inputPath);
+    var layout = TextLayout.Create("DRAFT", Font.Load(fontPath), size: image.Width / 6.0);
+    var ink = new SolidBrush(new Rgba32(255, 255, 255, 110));
+    var center = new PointD(image.Width / 2.0, image.Height / 2.0);
+
+    image.Draw(canvas =>
+    {
+        // Everything the callback draws is turned around the center of the image: the text is drawn as usual
+        canvas.Transform(AffineTransform.CreateRotation(-30, center), turned =>
+        {
+            for (var row = -1; row <= 1; row++)
+            {
+                var origin = new PointD(center.X - (layout.Width / 2), center.Y - (layout.Height / 2) + (row * layout.Height * 1.5));
+                turned.FillText(ink, layout, origin);
+            }
+        });
+    });
+
+    image.Save(outputPath);
+}
+```
 
 **Clipping**. `canvas.Clip` runs a callback whose drawings only change the inside of a path or of a rectangle: the clip
 lasts as long as the callback, and a clip started inside another one keeps what both let through. The edge of a clip
@@ -1050,6 +1082,11 @@ public static void MarkAnimation(string inputPath, string outputPath)
   on the edges, the shadow of a pixel is the alpha blurred by the weights of a Gaussian blur (see `GaussianBlur`) at
   the position the offset moves it to, interpolated between the four pixels around it, and rounded to a coverage
   (`floor(65536 s + 1/2)`); the color of the shadow is composited with that coverage as a shape is.
+- **Transformations.** Under a transformation of the canvas, a shape is flattened as it is given, by chords that
+  stay within 1/16 of a pixel of its curves divided by the largest factor the transformation enlarges a length by,
+  then its vertices are transformed: on the canvas the chords stay within 1/16 of a pixel. A stroke is the stroke of
+  the path as it is given, transformed the same way. A brush is placed by its own transformation, then by the one of
+  the canvas. A shape with straight sides is, bit for bit, the transformed path.
 - **Clips.** The coverage of a pixel under a clip is the product of the coverage of the shape and of the coverage of
   the clip, rounded to the nearest 1/65536 (ties upward). It is the area of what the shape and the clip have in common
   wherever one of them covers the pixel entirely; on a pixel that both only cover in part, it is the product of the two
@@ -1293,7 +1330,7 @@ public static void DrawTextOnPath(string fontPath, string outputPath)
 | Scripts that join | Arabic (with Persian, Urdu and the other languages written with it) and Syriac; in the universal model, N'Ko, Mongolian, Adlam, Mandaic, Manichaean, Psalter Pahlavi, Hanifi Rohingya, Sogdian, Old Uyghur, Chorasmian and Phags-pa |
 | Scripts with a model of their own | Hebrew; Thai and Lao; Hangul; Devanagari, Bengali, Gurmukhi, Gujarati, Oriya, Tamil, Telugu, Kannada and Malayalam; Khmer; Myanmar |
 | Scripts of the universal model | The scripts registered for the Universal Shaping Engine: Tibetan, Sinhala, Javanese, Balinese, Sundanese, Batak, Buginese, Cham, Tai Tham, Tai Le, Tai Viet, Lepcha, Limbu, Meetei Mayek, Newa, Kaithi, Sharada, Grantha, Chakma, Brahmi, Kharoshthi, Tifinagh, Duployan, Egyptian Hieroglyphs and the others |
-| Drawing | No transform on the canvas (a path is transformed with `VectorPath.Transform`); always antialiased; composited on the encoded sample values (no linear-light option); sequential; an image that is reduced is read with four pixels per pixel of the canvas unless smooth sampling is asked for, whose filter is the one of the interpolation (`Resize` has sharper ones), and an image gives black as the color of the text to the glyphs a font draws with its own colors; a clip multiplies coverages (on a pixel that the shape and the clip both cover in part, that is not the area they have in common); the path of a stroke (`Widen`) is the pieces of the stroke, not a single outline (`Simplify` makes it one); combined and simplified paths are made of segments, on a grid of 1/1024 of a pixel; coordinates are limited to ±16,777,216 |
+| Drawing | Always antialiased; under a transformation of the canvas, every dash of a dashed stroke is cut, also those the canvas does not show; composited on the encoded sample values (no linear-light option); sequential; an image that is reduced is read with four pixels per pixel of the canvas unless smooth sampling is asked for, whose filter is the one of the interpolation (`Resize` has sharper ones), and an image gives black as the color of the text to the glyphs a font draws with its own colors; a clip multiplies coverages (on a pixel that the shape and the clip both cover in part, that is not the area they have in common); the path of a stroke (`Widen`) is the pieces of the stroke, not a single outline (`Simplify` makes it one); combined and simplified paths are made of segments, on a grid of 1/1024 of a pixel; coordinates are limited to ±16,777,216 |
 | Fonts made before OpenType Layout | The marks of a font without positioning table are placed from the shapes of the glyphs; the letters of an Arabic font without substitution table take the presentation forms the font has as characters, with the ligatures of lam and alef; the marks of a Thai font without substitution table take the forms the font has in the private use area |
 
 The glyphs, the clusters and the positions are compared with those of a reference shaper (HarfBuzz) for fonts of

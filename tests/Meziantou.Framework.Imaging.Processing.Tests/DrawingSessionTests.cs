@@ -8,6 +8,7 @@ namespace Meziantou.Framework.Imaging.Tests;
 /// The <c>Draw</c> entry points: the scope of the canvas, the lease held during the callback, the frames an image-level
 /// call paints, argument validation, cancellation, the working storage and the metadata side effects.
 /// </summary>
+[SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
 public sealed class DrawingSessionTests
 {
     private static readonly Brush White = new SolidBrush(new Rgba32(255, 255, 255));
@@ -1405,6 +1406,263 @@ public sealed class DrawingSessionTests
         Assert.InRange(image.Frames[0][6, 6].Value, 201, 255);
         Assert.InRange(image.Frames[0][8, 10].Value, 1, 150);
         Assert.Equal(new Gray8(200), image.Frames[0][0, 15]);
+    }
+
+    // -----------------------------------------------------------------------------------------------------------------
+    // The transformation of the canvas
+    // -----------------------------------------------------------------------------------------------------------------
+
+    public static TheoryData<double, double, double, double, double, double> Transforms => new()
+    {
+        { 1, 0, 0, 1, 3, 2 },
+        { 1, 0, 0, 1, 2.25, -1.5 },
+        { 1.5, 0, 0, 1.5, 1, 1 },
+        { 2, 0, 0, 0.5, 0, 6 },
+        { 0, 1, -1, 0, 20, 2 },
+        { -1, 0, 0, 1, 22, 1 },
+        { 0.8, 0.6, -0.6, 0.8, 9, -3 },
+        { 1.2, 0.3, 0.5, 0.9, -2, 1.5 },
+        { 0.6, -0.9, 1.1, 0.4, 3, 12 },
+    };
+
+    [Theory]
+    [MemberData(nameof(Transforms))]
+    public void ATransformedDrawingIsTheDrawingOfTheTransformedShapes(double m11, double m12, double m21, double m22, double dx, double dy)
+    {
+        var transform = new AffineTransform(m11, m12, m21, m22, dx, dy);
+        var polygon = new VectorPathBuilder().AddPolygon([new PointD(2, 1), new PointD(13.5, 3), new PointD(9, 12.25), new PointD(1.5, 8)]).AddRectangle(new RectangleD(4, 4, 3, 3)).Build();
+        var curve = new VectorPathBuilder().MoveTo(2, 9).CubicBezierTo(3, -4, 9, 16, 13, 2).AddEllipse(new PointD(7, 7), 5, 3, 25).AddRoundedRectangle(new RectangleD(1, 1, 12, 9), new CornerRadii(2, 4, 0, 3)).Build();
+        GradientStop[] stops = [new(0, new Rgba32(255, 0, 0)), new(1, new Rgba32(0, 0, 255, 60))];
+        var gradient = new LinearGradientBrush(new PointD(1, 2), new PointD(12, 9), stops) { Transform = AffineTransform.CreateSkew(10, 0) };
+        var radial = new RadialGradientBrush(new PointD(6, 6), 7, stops) { SpreadMode = GradientSpreadMode.Reflect };
+        using var texture = DrawingTestSupport.CreateRandom(PixelFormat.Rgba32, 5, 4, new Random(3).Next);
+        var tile = new ImageBrush(texture.Frames[0]) { WrapMode = ImageWrapMode.Repeat, Transform = AffineTransform.CreateScale(1.5, 2) };
+
+        // Straight sides: the vertices are transformed as those of a path are, and the pixels are the same, bit for
+        // bit. The brushes are placed by their own transformation, then by the one of the canvas.
+        AssertSame(canvas => canvas.Fill(White, polygon.Transform(transform)), canvas => canvas.Transform(transform, inner => inner.Fill(White, polygon)));
+        AssertSame(canvas => canvas.Fill(White, polygon.Transform(transform), FillRule.EvenOdd), canvas => canvas.Transform(transform, inner => inner.Fill(White, polygon, FillRule.EvenOdd)));
+        AssertSame(
+            canvas => canvas.Fill(new LinearGradientBrush(new PointD(1, 2), new PointD(12, 9), stops) { Transform = AffineTransform.CreateSkew(10, 0).Then(transform) }, polygon.Transform(transform)),
+            canvas => canvas.Transform(transform, inner => inner.Fill(gradient, polygon)));
+        AssertSame(
+            canvas => canvas.Fill(new RadialGradientBrush(new PointD(6, 6), 7, stops) { SpreadMode = GradientSpreadMode.Reflect, Transform = transform }, polygon.Transform(transform)),
+            canvas => canvas.Transform(transform, inner => inner.Fill(radial, polygon)));
+        AssertSame(
+            canvas => canvas.Fill(new ImageBrush(texture.Frames[0]) { WrapMode = ImageWrapMode.Repeat, Transform = AffineTransform.CreateScale(1.5, 2).Then(transform) }, polygon.Transform(transform)),
+            canvas => canvas.Transform(transform, inner => inner.Fill(tile, polygon)));
+        AssertSame(
+            canvas => canvas.FillPolygon(White, [transform.Transform(new PointD(1, 1)), transform.Transform(new PointD(9, 2)), transform.Transform(new PointD(4, 11))]),
+            canvas => canvas.Transform(transform, 3, static (inner, _) => inner.FillPolygon(White, [new PointD(1, 1), new PointD(9, 2), new PointD(4, 11)])));
+        AssertSame(
+            canvas => canvas.Fill(White, new VectorPathBuilder().AddRectangle(new RectangleD(2.5, 1, 8, 6.25)).Build().Transform(transform)),
+            canvas => canvas.Transform(transform, inner => inner.FillRectangle(White, new RectangleD(2.5, 1, 8, 6.25))));
+
+        // An image, to a rectangle or with a transformation of its own
+        AssertSame(
+            canvas => canvas.DrawImage(texture.Frames[0], AffineTransform.CreateScale(2, 1.5).Then(AffineTransform.CreateTranslation(1, 2)).Then(transform), 0.75),
+            canvas => canvas.Transform(transform, inner => inner.DrawImage(texture.Frames[0], new RectangleD(1, 2, 10, 6), 0.75)));
+        AssertSame(
+            canvas => canvas.DrawImage(texture.Frames[0], AffineTransform.CreateRotation(20).Then(transform), ImageSampling.Smooth),
+            canvas => canvas.Transform(transform, inner => inner.DrawImage(texture.Frames[0], AffineTransform.CreateRotation(20), ImageSampling.Smooth)));
+
+        // The stroke of a pen is the stroke of the path, transformed: the pen is transformed with it. With straight
+        // joins and ends, the pieces are the same, bit for bit.
+        var pen = new Pen(White, 2.5) { LineJoin = LineJoin.Miter, LineCap = LineCap.Square };
+        var dashed = new Pen(White, 1.5) { LineJoin = LineJoin.Bevel, DashPattern = [3, 2, 1, 2], DashOffset = 1.25 };
+        AssertSame(canvas => canvas.Fill(White, polygon.Widen(pen).Transform(transform)), canvas => canvas.Transform(transform, inner => inner.Stroke(pen, polygon)));
+        AssertSame(canvas => canvas.Fill(White, polygon.Widen(dashed).Transform(transform)), canvas => canvas.Transform(transform, inner => inner.Stroke(dashed, polygon)));
+        AssertSame(
+            canvas => canvas.Fill(White, new VectorPathBuilder().MoveTo(2, 3).LineTo(11, 9).Build().Widen(pen).Transform(transform)),
+            canvas => canvas.Transform(transform, inner => inner.StrokeLine(pen, new PointD(2, 3), new PointD(11, 9))));
+
+        // A clip is the clip of the transformed path, and a rectangle is a path
+        AssertSame(canvas => canvas.Fill(White, polygon.Transform(transform)), canvas => canvas.Transform(transform, inner => inner.Clip(polygon, clipped => clipped.Fill(White))));
+        AssertSame(
+            canvas => canvas.Fill(White, new VectorPathBuilder().AddRectangle(new Rectangle(2, 1, 8, 6)).Build().Transform(transform)),
+            canvas => canvas.Transform(transform, inner => inner.Clip(new Rectangle(2, 1, 8, 6), clipped => clipped.Fill(White))));
+
+        // Curves are flattened for the size the transformation gives them, before their vertices are transformed: the
+        // chords are not those of the transformed path, and both stay within 1/16 of a pixel of the curve. Along an
+        // edge that crosses a pixel, that is at most 2 * sqrt(2) / 16 of the pixel: 45 levels.
+        var round = new Pen(White, 2) { LineJoin = LineJoin.Round, LineCap = LineCap.Round };
+        AssertClose(canvas => canvas.Fill(White, curve.Transform(transform)), canvas => canvas.Transform(transform, inner => inner.Fill(White, curve)), 46);
+        AssertClose(canvas => canvas.Stroke(round, curve.Transform(transform)), canvas => canvas.Transform(AffineTransform.CreateTranslation(dx, dy), inner => inner.Stroke(round, curve.Transform(new AffineTransform(m11, m12, m21, m22, 0, 0)))), 46);
+
+        // The stroke of a curve with a round pen: the pieces of the stroke, transformed. The pieces of a widened path
+        // are cut for the size the path has, so their chords are as far from the stroke as the transformation makes
+        // them (up to 2.3 / 16 of a pixel here), and those of the canvas within 1/16
+        AssertClose(canvas => canvas.Fill(White, curve.Widen(round).Transform(transform)), canvas => canvas.Transform(transform, inner => inner.Stroke(round, curve)), 96);
+        AssertClose(
+            canvas => canvas.Fill(White, new VectorPathBuilder().AddEllipse(new PointD(7, 6), 5, 3).Build().Transform(transform)),
+            canvas => canvas.Transform(transform, inner => inner.FillEllipse(White, new PointD(7, 6), 5, 3)),
+            46);
+
+        // A transformation inside another one applies first
+        var inner = AffineTransform.CreateRotation(15, new PointD(6, 6)).Then(AffineTransform.CreateScale(0.9, 1.1));
+        AssertSame(
+            canvas => canvas.Transform(inner.Then(transform), nested => nested.Fill(gradient, polygon)),
+            canvas => canvas.Transform(transform, outer => outer.Transform(inner, nested => nested.Fill(gradient, polygon))));
+
+        static void AssertSame(DrawingAction expected, DrawingAction actual) => AssertClose(expected, actual, 0);
+
+        static void AssertClose(DrawingAction expected, DrawingAction actual, int tolerance)
+        {
+            using var first = new Image<Rgba32>(32, 28, new Rgba32(10, 20, 30, 200));
+            using var second = new Image<Rgba32>(32, 28, new Rgba32(10, 20, 30, 200));
+            first.Draw(expected, Ct);
+            second.Draw(actual, Ct);
+            var left = DrawingTestSupport.ReadSamples(first.Frames[0]);
+            var right = DrawingTestSupport.ReadSamples(second.Frames[0]);
+            if (tolerance == 0)
+            {
+                Assert.Equal(left, right);
+                return;
+            }
+
+            for (var i = 0; i < left.Length; i++)
+            {
+                Assert.InRange(right[i], left[i] - tolerance, left[i] + tolerance, message: $"sample {i}");
+            }
+        }
+    }
+
+    [Fact]
+    public void ATransformationAppliesToTheDrawingsOfItsCallbackOnly()
+    {
+        // Enlarged 40 times, a circle of radius 1 is the circle of radius 40: its curve is not the octagon a circle
+        // of radius 1 is drawn with
+        using (var direct = new Image<Gray8>(100, 100, new Gray8(0)))
+        using (var scaled = new Image<Gray8>(100, 100, new Gray8(0)))
+        {
+            direct.Draw(canvas => canvas.FillCircle(White, new PointD(50, 50), 40), Ct);
+            scaled.Draw(canvas => canvas.Transform(AffineTransform.CreateScale(40, 40).Then(AffineTransform.CreateTranslation(10, 10)), inner => inner.FillCircle(White, new PointD(1, 1), 1)), Ct);
+            var expected = DrawingTestSupport.ReadSamples(direct.Frames[0]);
+            var actual = DrawingTestSupport.ReadSamples(scaled.Frames[0]);
+            for (var i = 0; i < expected.Length; i++)
+            {
+                Assert.InRange(actual[i], expected[i] - 2, expected[i] + 2, message: $"pixel {i}");
+            }
+
+            // The pen is enlarged with the path: a circle of radius 1 stroked with a pen of 0.1 is a ring 4 pixels wide
+            scaled.Draw(
+                canvas =>
+                {
+                    canvas.Clear(Colors.Black);
+                    canvas.Transform(AffineTransform.CreateScale(40, 40).Then(AffineTransform.CreateTranslation(10, 10)), inner => inner.StrokeCircle(new Pen(White, 0.1), new PointD(1, 1), 1));
+                },
+                Ct);
+            Assert.Equal(new Gray8(255), scaled.Frames[0][50, 10]);
+            Assert.Equal(new Gray8(255), scaled.Frames[0][50, 11]);
+            Assert.Equal(new Gray8(0), scaled.Frames[0][50, 14]);
+            Assert.Equal(new Gray8(0), scaled.Frames[0][50, 6]);
+            Assert.Equal(2 * Math.PI * 40 * 4, DrawingTestSupport.ReadSamples(scaled.Frames[0]).Sum() / 255.0, 3.0);
+        }
+
+        using var image = new Image<Gray8>(8, 4, new Gray8(0));
+        image.Draw(
+            canvas =>
+            {
+                canvas.Transform(AffineTransform.CreateTranslation(4, 0), inner => inner.FillRectangle(White, new Rectangle(0, 0, 1, 1)));
+
+                // The transformation ended with its callback, also when the callback throws
+                canvas.FillRectangle(White, new Rectangle(0, 1, 1, 1));
+                try
+                {
+                    canvas.Transform(AffineTransform.CreateTranslation(4, 0), 1, static (_, _) => throw new FormatException("stop"));
+                }
+                catch (FormatException)
+                {
+                }
+
+                canvas.FillRectangle(White, new Rectangle(0, 2, 1, 1));
+
+                // The size of the canvas does not change, and filling the canvas fills all of it: only the brush moves
+                canvas.Transform(AffineTransform.CreateScale(2, 2), inner =>
+                {
+                    Assert.Equal(8, inner.Width);
+                    Assert.Equal(4, inner.Height);
+                    inner.Clip(new Rectangle(0, 3, 8, 1), row => row.Fill(new LinearGradientBrush(new PointD(0, 0), new PointD(4, 0), [new GradientStop(0, new Rgba32(0, 0, 0)), new GradientStop(1, new Rgba32(255, 255, 255))])));
+                });
+            },
+            Ct);
+
+        // The gradient goes from 0 to 4 before the transformation, so from 0 to 8 on the canvas: the parameters of the
+        // centers are 1/16, 3/16, ... 15/16, and the clip of the row 3 is the rows 6 and 7 of the canvas, outside it
+        Assert.Equal(
+            [
+                0, 0, 0, 0, 255, 0, 0, 0,
+                255, 0, 0, 0, 0, 0, 0, 0,
+                255, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0,
+            ],
+            DrawingTestSupport.ReadSamples(image.Frames[0]));
+        image.Draw(
+            canvas => canvas.Transform(AffineTransform.CreateScale(2, 2), inner => inner.Clip(new RectangleD(0, 1.5, 4, 0.5), row => row.Fill(new LinearGradientBrush(new PointD(0, 0), new PointD(4, 0), [new GradientStop(0, new Rgba32(0, 0, 0)), new GradientStop(1, new Rgba32(255, 255, 255))])))),
+            Ct);
+        Assert.Equal([16, 48, 80, 112, 143, 175, 207, 239], DrawingTestSupport.ReadSamples(image.Frames[0])[24..]);
+
+        // A transformation that flattens the plane draws nothing; one that sends a shape too far is rejected, and
+        // the canvas can still be drawn on
+        using var gray = new Image<Gray8>(4, 4, new Gray8(0));
+        gray.Draw(
+            canvas =>
+            {
+                canvas.Transform(AffineTransform.CreateScale(0, 1), inner => inner.FillRectangle(White, new Rectangle(0, 0, 4, 4)));
+                canvas.Transform(AffineTransform.CreateScale(1, 0), inner => inner.Stroke(WhitePen, new VectorPathBuilder().AddCircle(new PointD(2, 2), 1).Build()));
+                canvas.Transform(AffineTransform.CreateScale(1e6, 1e6), inner =>
+                {
+                    AssertThrows<ArgumentOutOfRangeException>(inner, static canvas => canvas.FillRectangle(White, new Rectangle(0, 0, 100, 100)));
+                    AssertThrows<ArgumentOutOfRangeException>(inner, static canvas => canvas.StrokeLine(WhitePen, new PointD(0, 0), new PointD(100, 100)));
+                    AssertThrows<ArgumentOutOfRangeException>(inner, static canvas => canvas.Shadow(Colors.Black, new PointD(100, 0), 1, static _ => Assert.Fail("The callback ran.")));
+                    AssertThrows<ArgumentException>(inner, static canvas => canvas.FillRectangle(White, new RectangleD(double.NaN, 0, 1, 1)));
+                });
+                AssertThrows<ArgumentNullException>(canvas, static canvas => canvas.Transform(AffineTransform.Identity, null!));
+                AssertThrows<ArgumentNullException>(canvas, static canvas => canvas.Transform(AffineTransform.Identity, 1, null!));
+                canvas.FillRectangle(White, new Rectangle(3, 3, 1, 1));
+            },
+            Ct);
+        Assert.Equal([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255], DrawingTestSupport.ReadSamples(gray.Frames[0]));
+    }
+
+    [Fact]
+    public void ATransformationCombinesWithLayersAndShadows()
+    {
+        // A layer keeps the pixels of the canvas: what is drawn in it is transformed, and the layer itself is not
+        using (var image = new Image<Gray8>(6, 2, new Gray8(0)))
+        {
+            image.Draw(
+                canvas => canvas.Transform(AffineTransform.CreateTranslation(2, 0), inner => inner.Layer(0.5, layer => layer.FillRectangle(White, new Rectangle(0, 0, 2, 1)))),
+                Ct);
+            Assert.Equal([0, 0, 128, 128, 0, 0, 0, 0, 0, 0, 0, 0], DrawingTestSupport.ReadSamples(image.Frames[0]));
+            image.Draw(
+                canvas => canvas.Layer(1, layer => layer.Transform(AffineTransform.CreateScale(2, 2), inner => inner.FillRectangle(White, new Rectangle(0, 0, 1, 1)))),
+                Ct);
+            Assert.Equal([255, 255, 128, 128, 0, 0, 255, 255, 0, 0, 0, 0], DrawingTestSupport.ReadSamples(image.Frames[0]));
+        }
+
+        // The offset and the blur of a shadow are distances of the drawing: twice as large when the drawing is
+        using var plain = new Image<Rgba32>(24, 24);
+        using var scaled = new Image<Rgba32>(24, 24);
+        var black = new Rgba32(0, 0, 0);
+        plain.Draw(canvas => canvas.Shadow(black, new PointD(6, 4), 2, layer => layer.FillRectangle(White, new Rectangle(4, 4, 8, 8))), Ct);
+        scaled.Draw(
+            canvas => canvas.Transform(AffineTransform.CreateScale(2, 2), inner => inner.Shadow(black, new PointD(3, 2), 1, layer => layer.FillRectangle(White, new Rectangle(2, 2, 4, 4)))),
+            Ct);
+        Assert.Equal(DrawingTestSupport.ReadSamples(plain.Frames[0]), DrawingTestSupport.ReadSamples(scaled.Frames[0]));
+        Assert.Equal(new Rgba32(255, 255, 255), scaled.Frames[0][5, 5]);
+        Assert.InRange(scaled.Frames[0][14, 13].A, 200, 255);
+
+        // A quarter turn moves the shadow with the drawing
+        using var turned = new Image<Rgba32>(6, 6);
+        turned.Draw(
+            canvas => canvas.Transform(AffineTransform.CreateRotation(90).Then(AffineTransform.CreateTranslation(6, 0)), inner => inner.Shadow(black, new PointD(2, 0), 0, layer => layer.FillRectangle(White, new Rectangle(1, 1, 1, 1)))),
+            Ct);
+
+        // The pixel (1, 1) goes to the column 6 - 2 = 4 and the row 1; its shadow, 2 to the right, goes 2 down
+        Assert.Equal(new Rgba32(255, 255, 255), turned.Frames[0][4, 1]);
+        Assert.Equal(black, turned.Frames[0][4, 3]);
+        Assert.Equal(2, DrawingTestSupport.ReadSamples(turned.Frames[0]).Where((_, index) => index % 4 == 3).Count(alpha => alpha != 0));
     }
 
     private delegate void CanvasAction(DrawingCanvas canvas);

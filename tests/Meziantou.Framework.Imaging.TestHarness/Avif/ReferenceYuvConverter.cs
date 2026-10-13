@@ -158,7 +158,7 @@ public static class ReferenceYuvConverter
 
         // KR and KB as fractions: over 10000 for the decimal numbers of ITU-T H.273, table 4, and the exact values of the
         // color primaries for the chromaticity-derived coefficients
-        (BigInteger kr, BigInteger kb, BigInteger Denominator) = matrixCoefficients switch
+        (BigInteger kr, BigInteger kb, BigInteger weightDenominator) = matrixCoefficients switch
         {
             1 => (2126, 722, 10000),
             4 => (3000, 1100, 10000),
@@ -169,7 +169,7 @@ public static class ReferenceYuvConverter
             12 or 13 => GetLuminanceWeights(colorPrimaries)!.Value,
             _ => (BigInteger.Zero, BigInteger.Zero, new BigInteger(10000)),
         };
-        var kg = Denominator - kr - kb;
+        var kg = weightDenominator - kr - kb;
 
         for (var i = 0; i < width * height; i++)
         {
@@ -196,7 +196,7 @@ public static class ReferenceYuvConverter
                 // The conversions that go through the transfer characteristics, on the normalized E'Y, E'PB and E'PR
                 var normalized = matrixCoefficients == 14
                     ? ConvertIctcp((decimal)luma / (decimal)lumaRange, (decimal)cb / (decimal)chromaRange, (decimal)cr / (decimal)chromaRange, transferCharacteristics)
-                    : ConvertConstantLuminance((decimal)luma / (decimal)lumaRange, (decimal)cb / (decimal)chromaRange, (decimal)cr / (decimal)chromaRange, (decimal)kr / (decimal)Denominator, (decimal)kb / (decimal)Denominator, transferCharacteristics);
+                    : ConvertConstantLuminance((decimal)luma / (decimal)lumaRange, (decimal)cb / (decimal)chromaRange, (decimal)cr / (decimal)chromaRange, (decimal)kr / (decimal)weightDenominator, (decimal)kb / (decimal)weightDenominator, transferCharacteristics);
                 for (var channel = 0; channel < 3; channel++)
                 {
                     result[(3 * i) + channel] = RoundClipped(normalized[channel], outputMaximum);
@@ -227,11 +227,11 @@ public static class ReferenceYuvConverter
             else
             {
                 // R = Y + 2 (1 - KR) PR, B = Y + 2 (1 - KB) PB, G = Y - (2 KB (1 - KB) PB + 2 KR (1 - KR) PR) / KG
-                denominator = lumaRange * chromaRange * Denominator * kg;
-                var common = luma * chromaRange * Denominator * kg;
-                red = common + (2 * (Denominator - kr) * cr * lumaRange * kg);
-                blue = common + (2 * (Denominator - kb) * cb * lumaRange * kg);
-                green = common - (2 * kb * (Denominator - kb) * cb * lumaRange) - (2 * kr * (Denominator - kr) * cr * lumaRange);
+                denominator = lumaRange * chromaRange * weightDenominator * kg;
+                var common = luma * chromaRange * weightDenominator * kg;
+                red = common + (2 * (weightDenominator - kr) * cr * lumaRange * kg);
+                blue = common + (2 * (weightDenominator - kb) * cb * lumaRange * kg);
+                green = common - (2 * kb * (weightDenominator - kb) * cb * lumaRange) - (2 * kr * (weightDenominator - kr) * cr * lumaRange);
             }
 
             result[3 * i] = RoundClipped(red, denominator, outputMaximum);

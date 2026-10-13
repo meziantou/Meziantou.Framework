@@ -495,6 +495,69 @@ public sealed class DrawingStrokeTests
     }
 
     [Fact]
+    public void AWidePenIsNotCutIntoTheDashesTheCanvasDoesNotShow()
+    {
+        // The time a stroke takes if it is cut into every dash of its path: more than the test allows
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(Ct);
+        timeout.CancelAfter(TimeSpan.FromMinutes(2));
+
+        // A pen a million pixels wide, the shortest pattern, the longest line: the dashes are slivers across the whole
+        // canvas, which cover half of it. Only those the canvas shows are cut.
+        using (var image = NewBlack(4, 3))
+        {
+            var pen = new Pen(White, 1000000) { DashPattern = [1.0 / 2048] };
+            image.Frames[0].Draw(canvas => canvas.StrokeLine(pen, new PointD(-16777216, 1.5), new PointD(16777216, 1.5)), timeout.Token);
+            AssertGray8(image, [[128, 128, 128, 128], [128, 128, 128, 128], [128, 128, 128, 128]]);
+        }
+
+        // With round caps, each dash is a disk a million pixels wide: the first one that covers the canvas ends the stroke
+        using (var image = NewBlack(4, 3))
+        {
+            var pen = new Pen(White, 1000000) { DashPattern = [1.0 / 2048], LineCap = LineCap.Round };
+            image.Frames[0].Draw(canvas => canvas.StrokeLine(pen, new PointD(-16777216, 1.5), new PointD(16777216, 1.5)), timeout.Token);
+            AssertGray8(image, [[255, 255, 255, 255], [255, 255, 255, 255], [255, 255, 255, 255]]);
+        }
+
+        // Far from the canvas across the line, nothing is cut at all
+        using (var image = NewBlack(4, 3))
+        {
+            var pen = new Pen(White, 10) { DashPattern = [1.0 / 2048] };
+            image.Frames[0].Draw(canvas => canvas.StrokeLine(pen, new PointD(-16777216, 100), new PointD(16777216, 100.5)), timeout.Token);
+            AssertGray8(image, [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]);
+        }
+    }
+
+    [Fact]
+    public void AJoinOutsideTheCanvasStillShowsWhereItReachesIt()
+    {
+        // A sharp corner on the right of the canvas, pointing to the left: its two segments stay outside, and only the
+        // tip of its miter crosses the canvas. A dash that goes through the corner draws it like a stroke without dashes.
+        var corner = new VectorPathBuilder().MoveTo(40, 2).LineTo(12, 4).LineTo(40, 6).Build();
+        var solid = new Pen(White, 2) { MiterLimit = 20 };
+        using (var image = NewBlack(8, 8))
+        {
+            image.Draw(canvas => canvas.Stroke(solid, corner), Ct);
+            Assert.True(image.Frames[0][4, 3].Value > 0 && image.Frames[0][4, 4].Value > 0);
+            Assert.Equal(new Gray8(0), image.Frames[0][4, 1]);
+        }
+
+        AssertSamePixels(canvas => canvas.Stroke(new Pen(White, 2) { MiterLimit = 20, DashPattern = [1000, 1] }, corner), canvas => canvas.Stroke(solid, corner));
+        AssertSamePixels(canvas => canvas.Stroke(new Pen(White, 2) { MiterLimit = 20, DashPattern = [20, 1], DashOffset = 10 }, corner), canvas => canvas.Stroke(solid, corner));
+
+        // A dash that ends before the corner leaves no miter: two butt caps near the corner, outside the canvas
+        using (var image = NewBlack(8, 8))
+        {
+            image.Draw(canvas => canvas.Stroke(new Pen(White, 2) { MiterLimit = 20, DashPattern = [27, 2] }, corner), Ct);
+            Assert.Equal(new int[64], DrawingTestSupport.ReadSamples(image.Frames[0]));
+        }
+
+        // The cap of an open contour that ends outside the canvas, a square cap of half the width 6
+        var line = new VectorPathBuilder().MoveTo(40, 4).LineTo(12, 4).Build();
+        var capped = new Pen(White, 12) { LineCap = LineCap.Square };
+        AssertSamePixels(canvas => canvas.Stroke(new Pen(White, 12) { LineCap = LineCap.Square, DashPattern = [1000, 1] }, line), canvas => canvas.Stroke(capped, line));
+    }
+
+    [Fact]
     public void ADashedStrokeIsBoundedByTheAllocationLimitOfTheImage()
     {
         // Sixty-four thousand dashes on the canvas need more edges than the limit allows: nothing is drawn

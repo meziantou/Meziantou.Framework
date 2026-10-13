@@ -21,9 +21,14 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </para>
 /// <para>
 /// <b>Cost.</b> The time and the edges of a dashed stroke grow with the number of dashes. When the stroke is drawn on
-/// a canvas, what is far outside the canvas is not cut into dashes: the pattern is advanced by the length that is
-/// skipped, so a long path with a short pattern costs what the canvas shows of it. The cancellation token is checked
-/// every few hundred dashes.
+/// a canvas, only the parts of a segment whose dashes can change a pixel are cut into dashes, and the pattern is
+/// advanced by the length of the others: a long path with a short pattern costs what the canvas shows of it. A dash
+/// changes a pixel of the canvas through its body (within half the width of the pen of the segment, between its ends),
+/// through its caps (half the width further along the segment) or through the join of a vertex it goes through. So a
+/// segment is cut where the canvas is, seen along the segment, plus the reach of a cap; and, when one of its ends is
+/// close enough to the canvas for a join or a cap there to show, on a short length next to that end, which is all the
+/// stroker needs to draw the join or the cap. Once the stroke covers the whole canvas, nothing more is cut. The
+/// cancellation token is checked every few hundred dashes.
 /// </para>
 /// </remarks>
 internal sealed class Dasher : PathSink, IDisposable
@@ -32,6 +37,9 @@ internal sealed class Dasher : PathSink, IDisposable
     private const int ValuesPerVertex = 3;
     private const int DashesPerCancellationCheck = 256;
 
+    /// <summary>The length of a segment that is cut next to one of its ends for the join or the cap of that end.</summary>
+    private const double VertexLength = 1;
+
     private readonly AllocationScope? _scope;
     private Stroker _stroker = null!;
     private double[] _pattern = [];
@@ -39,12 +47,14 @@ internal sealed class Dasher : PathSink, IDisposable
     private CancellationToken _cancellationToken;
     private int _dashCount;
 
-    // The part of the plane where a dash can change a pixel
-    private bool _hasBox;
-    private double _boxLeft;
-    private double _boxTop;
-    private double _boxRight;
-    private double _boxBottom;
+    // The canvas, and how far from it a dash can be and still change one of its pixels: across the segment, along it,
+    // and from a vertex
+    private bool _hasCanvas;
+    private double _canvasWidth;
+    private double _canvasHeight;
+    private double _acrossReach;
+    private double _alongReach;
+    private double _vertexReach;
 
     // Where a contour starts in the pattern
     private int _startIndex;
@@ -86,14 +96,16 @@ internal sealed class Dasher : PathSink, IDisposable
         Configure(pen, stroker);
         _cancellationToken = cancellationToken;
 
-        // A dash reaches half the width of the pen from its path, times the miter limit at a corner, and a square cap
-        // reaches the diagonal of half the width
-        var margin = (pen.Width / 2 * Math.Max(pen.LineJoin == LineJoin.Miter ? pen.MiterLimit : 1, 2)) + 1;
-        _hasBox = true;
-        _boxLeft = -margin;
-        _boxTop = -margin;
-        _boxRight = width + margin;
-        _boxBottom = height + margin;
+        // The body of a dash is within half the width of the pen of its segment; a cap goes that far beyond its end; a
+        // miter goes as far as the miter limit allows from its vertex, and the corner of a square cap or of a square dot
+        // the diagonal of half the width. One more pixel than needed never shows.
+        var half = pen.Width / 2;
+        _hasCanvas = true;
+        _canvasWidth = width;
+        _canvasHeight = height;
+        _acrossReach = half + 1;
+        _alongReach = (pen.LineCap == LineCap.Butt ? 0 : half) + 1;
+        _vertexReach = (half * Math.Max(pen.LineJoin == LineJoin.Miter ? pen.MiterLimit : 1, 2)) + 1;
     }
 
     /// <summary>Sets the pen and the stroker of the next path, wherever it is.</summary>
@@ -104,7 +116,7 @@ internal sealed class Dasher : PathSink, IDisposable
         _patternLength = pen.DashLength;
         _cancellationToken = default;
         _dashCount = 0;
-        _hasBox = false;
+        _hasCanvas = false;
         _hasCurrent = false;
         _index = 0;
         _remaining = _pattern[0];
@@ -144,30 +156,51 @@ internal sealed class Dasher : PathSink, IDisposable
         _x = x;
         _y = y;
         _hasSegment = true;
-        double from = 0;
-        var to = length;
-        if (_hasBox && !TryClip(startX, startY, dx, dy, length, out from, out to))
-        {
-            // Nothing of the segment can be seen: the pattern goes on without it
-            EndDash();
-            Advance(length);
+
+        // The stroke already covers the whole canvas: nothing can be added to it
+        if (_stroker.CoversFrame)
             return;
-        }
 
         var ux = dx / length;
         var uy = dy / length;
 
-        // A dash that comes from the segment before continues through the vertex between them
-        var isContinued = _dashOpen && from == 0;
-        if (from > 0)
+        // The parts of the segment whose dashes can change a pixel, as distances from its start. Between them, the
+        // pattern goes on without drawing.
+        Span<double> ranges = stackalloc double[6];
+        var count = GetVisibleRanges(startX, startY, x, y, ux, uy, length, ranges);
+        double position = 0;
+        for (var i = 0; i < count; i++)
         {
-            EndDash();
-            Advance(from);
+            var from = ranges[2 * i];
+            if (from > position)
+            {
+                EndDash();
+                Advance(from - position);
+            }
+
+            position = ranges[(2 * i) + 1];
+            CutRange(startX, startY, x, y, ux, uy, length, from, position, smooth);
         }
 
+        if (position < length)
+        {
+            EndDash();
+            Advance(length - position);
+        }
+    }
+
+    /// <summary>Cuts a part of a segment into dashes.</summary>
+    private void CutRange(double startX, double startY, double x, double y, double ux, double uy, double length, double from, double to, bool smooth)
+    {
+        // A dash that comes from the segment before continues through the vertex between them
+        var isContinued = _dashOpen && from == 0;
         var position = from;
         while (true)
         {
+            // A dash covered the whole canvas: the stroke is complete
+            if (_stroker.CoversFrame)
+                return;
+
             if (!(_remaining > 0))
             {
                 // The dash or the gap is over, or has no length
@@ -209,12 +242,6 @@ internal sealed class Dasher : PathSink, IDisposable
 
             _remaining -= step;
             position = next;
-        }
-
-        if (to < length)
-        {
-            EndDash();
-            Advance(length - to);
         }
     }
 
@@ -386,47 +413,88 @@ internal sealed class Dasher : PathSink, IDisposable
         _remaining -= distance;
     }
 
-    /// <summary>Gets the part of a segment that is inside the box where a dash can change a pixel, as distances from its start.</summary>
-    /// <returns><see langword="false"/> when the segment is entirely outside.</returns>
-    private bool TryClip(double x, double y, double dx, double dy, double length, out double from, out double to)
+    /// <summary>
+    /// Gets the parts of a segment whose dashes can change a pixel of the canvas, as distances from its start, in
+    /// increasing order and apart from each other: at most three.
+    /// </summary>
+    /// <returns>The number of parts; each one takes two values of <paramref name="ranges"/>.</returns>
+    private int GetVisibleRanges(double startX, double startY, double endX, double endY, double ux, double uy, double length, Span<double> ranges)
     {
-        double t0 = 0;
-        double t1 = 1;
-        from = 0;
-        to = length;
-        if (!ClipAxis(x, dx, _boxLeft, _boxRight, ref t0, ref t1) || !ClipAxis(y, dy, _boxTop, _boxBottom, ref t0, ref t1))
-            return false;
-
-        if (t0 > 0)
+        if (!_hasCanvas)
         {
-            from = Math.Min(t0 * length, length);
+            ranges[0] = 0;
+            ranges[1] = length;
+            return 1;
         }
 
-        if (t1 < 1)
+        // The canvas seen from the segment: how far along it and how far across it the four corners are
+        var minAlong = double.PositiveInfinity;
+        var maxAlong = double.NegativeInfinity;
+        var minAcross = double.PositiveInfinity;
+        var maxAcross = double.NegativeInfinity;
+        for (var corner = 0; corner < 4; corner++)
         {
-            to = Math.Min(t1 * length, length);
+            var cx = ((corner & 1) == 0 ? 0 : _canvasWidth) - startX;
+            var cy = ((corner & 2) == 0 ? 0 : _canvasHeight) - startY;
+            var along = (cx * ux) + (cy * uy);
+            var across = (cy * ux) - (cx * uy);
+            minAlong = Math.Min(minAlong, along);
+            maxAlong = Math.Max(maxAlong, along);
+            minAcross = Math.Min(minAcross, across);
+            maxAcross = Math.Max(maxAcross, across);
         }
 
-        return from < to;
+        // Where the bodies and the caps of the dashes can reach the canvas
+        double from = 0;
+        double to = -1;
+        if (minAcross <= _acrossReach && maxAcross >= -_acrossReach)
+        {
+            from = Math.Max(minAlong - _alongReach, 0);
+            to = Math.Min(maxAlong + _alongReach, length);
+        }
+
+        // Next to an end whose join or cap can reach the canvas, enough of the segment for the stroker to draw it
+        var count = 0;
+        if (IsNearCanvas(startX, startY))
+        {
+            ranges[0] = 0;
+            ranges[1] = Math.Min(VertexLength, length);
+            count = 1;
+        }
+
+        if (from < to)
+        {
+            count = AddRange(ranges, count, from, to);
+        }
+
+        if (IsNearCanvas(endX, endY))
+        {
+            count = AddRange(ranges, count, Math.Max(length - VertexLength, 0), length);
+        }
+
+        return count;
     }
 
-    /// <summary>Narrows the range of the parameters of a segment to those whose coordinate is between two bounds.</summary>
-    private static bool ClipAxis(double start, double delta, double low, double high, ref double t0, ref double t1)
+    /// <summary>Adds a part that starts at or after the start of the last one, merging them when they touch.</summary>
+    private static int AddRange(Span<double> ranges, int count, double from, double to)
     {
-        if (delta == 0)
-            return start >= low && start <= high;
-
-        var a = (low - start) / delta;
-        var b = (high - start) / delta;
-        if (a > b)
+        if (count > 0 && from <= ranges[(2 * count) - 1])
         {
-            (a, b) = (b, a);
+            // The parts are added by increasing start, except the part of the canvas, which may start before the end
+            // of the part next to the first vertex
+            ranges[(2 * count) - 2] = Math.Min(ranges[(2 * count) - 2], from);
+            ranges[(2 * count) - 1] = Math.Max(ranges[(2 * count) - 1], to);
+            return count;
         }
 
-        t0 = Math.Max(t0, a);
-        t1 = Math.Min(t1, b);
-        return t0 <= t1;
+        ranges[2 * count] = from;
+        ranges[(2 * count) + 1] = to;
+        return count + 1;
     }
+
+    /// <summary>Gets a value indicating whether a join or a cap at a point can change a pixel of the canvas.</summary>
+    private bool IsNearCanvas(double x, double y)
+        => x >= -_vertexReach && x <= _canvasWidth + _vertexReach && y >= -_vertexReach && y <= _canvasHeight + _vertexReach;
 
     private void AddFirst(double x, double y, bool smooth)
     {

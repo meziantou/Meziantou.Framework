@@ -266,10 +266,13 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
 - A stroke is a union of convex pieces with one orientation (`Stroker`): overlaps are harmless because the coverage is
   the area of the union. The 1/16 pixel flattening tolerance is public; the positions of the chord vertices are not.
 - Dashes are cut before the stroker (`Dasher`), which strokes each dash as an open contour. The first dash of a contour
-  is held back until the contour ends, because the last dash of a closed contour continues with it. On a canvas, the
-  parts of a segment outside the box where a stroke can change a pixel are skipped and the pattern is advanced by
-  their length: the cost of a dashed stroke must stay what the canvas shows of it, whatever the length of the path
-  (`WhatIsOutsideTheCanvasIsNotCutIntoDashesAndThePatternGoesOn`). `Widen` has no canvas and cuts everything.
+  is held back until the contour ends, because the last dash of a closed contour continues with it. On a canvas, only
+  the parts of a segment whose dashes can change a pixel are cut (the canvas seen along the segment, plus the reach of
+  a cap, and a short length next to an end whose join or cap can show), the pattern is advanced by the length of the
+  others, and nothing is cut once the stroke covers the canvas: the cost of a dashed stroke must stay what the canvas
+  shows of it, whatever the length of the path and the width of the pen
+  (`WhatIsOutsideTheCanvasIsNotCutIntoDashesAndThePatternGoesOn`, `AWidePenIsNotCutIntoTheDashesTheCanvasDoesNotShow`).
+  `Widen` has no canvas and cuts everything.
 - A brush that is not a single color is a `PaintEvaluator`: it gives a row of colors in the pixel format of the frame
   (`GradientEvaluator`, `ImageEvaluator`). An image is read through the lease of its frame, taken when a shape is painted
   and released in `finally` (`Begin` / `End`): never keep it between two draw calls. `ImageEvaluator` interpolates

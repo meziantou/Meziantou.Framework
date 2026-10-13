@@ -842,8 +842,8 @@ objects; the shapes themselves allocate nothing once that storage has grown to t
 pens and paths and use the overloads with a state and a static callback. The time to draw a shape grows with the number
 of its edges and with the number of points where they cross each other, which the exact area depends on. One family of
 shapes has millions of crossings: a pen far wider than the bends of a long curve it follows. A dashed stroke has the
-edges of every dash the canvas shows: what is outside the canvas is not cut into dashes, but a very short pattern on a
-large canvas is millions of dashes. Pass a `CancellationToken`
+edges of every dash the canvas shows: what cannot change a pixel of the canvas is not cut into dashes, whatever the
+length of the path and the width of the pen, but a very short pattern on a large canvas is millions of dashes. Pass a `CancellationToken`
 when shapes come from untrusted input; it is checked by every shape, every 64 rows, every few thousand crossings and
 every few hundred dashes.
 

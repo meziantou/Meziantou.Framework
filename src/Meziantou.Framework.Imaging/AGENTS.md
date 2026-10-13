@@ -227,7 +227,10 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   both the rewritten JPEG file and the file its own output rebuilds before it returns. The layout of the `jbrd` box and
   the integer chroma from luma rule were established against files written by cjxl, since the standard is not
   available: a change there needs the interop tests (djxl and jxl-oxide rebuild the files of the library, the library
-  rebuilds the files of cjxl). The JPEG entropy coding shares `JpegBitWriter` and `JpegHuffmanEncoder` with the JPEG
+  rebuilds the files of cjxl). The library reading back what it writes proves nothing about the layout: the two lists
+  of a scan (reset points, extra zero runs) were once written list by list instead of scan by scan, which only djxl
+  refused, and only for a file of several scans that has them; cjxl and the JPEG encoders of the corpus never write
+  such a file, `JpegTestImage` does (`FilesWithRedundantSymbolsGoThroughBothChains`). The JPEG entropy coding shares `JpegBitWriter` and `JpegHuffmanEncoder` with the JPEG
   encoder: there is still one JPEG implementation of each direction of pixels, and one of coefficients.
 - **TIFF** (`Internals/Codecs/Tiff`). `TiffPage` resolves and validates a directory without reading a pixel, so every
   rejection also comes from `Identify`, except the ones of the compressed data. `TiffBlockReader` turns a strip or a

@@ -145,6 +145,9 @@ public sealed class JpegXlTranscoderTests
                 // Runs of blocks that an encoder would join: the file says where they stop
                 new JpegTestEncodeOptions { Progression = JpegTestProgressiveScan.ParseScript(GetScript(all, deep: true)), MaxEndOfBandRun = 1, SegmentsBeforeFrame = [comment] },
                 new JpegTestEncodeOptions { Progression = JpegTestProgressiveScan.ParseScript(GetScript(all, deep: true)), MaxEndOfBandRun = 3, TablesBeforeEachScan = true, HuffmanSeed = 5 },
+
+                // Runs of zeros before the end of a band, which an encoder would leave to the end of the band
+                new JpegTestEncodeOptions { Progression = JpegTestProgressiveScan.ParseScript(GetScript(all, deep: true)), MaxEndOfBandRun = 2, ZeroRunsBeforeEndOfBlock = 2 },
             ]
             :
             [
@@ -152,6 +155,9 @@ public sealed class JpegXlTranscoderTests
                 new JpegTestEncodeOptions { Huffman = JpegTestHuffmanStyle.Skewed, RestartInterval = 1 },
                 new JpegTestEncodeOptions { FrameMarker = 0xC1, RestartInterval = 3, HuffmanSeed = 7, SegmentsBeforeFrame = [application, comment], SegmentsAfterScans = [comment] },
                 new JpegTestEncodeOptions { Scans = [.. all.Reverse().Select(index => new[] { index })], TablesBeforeEachScan = true, RestartInterval = 2 },
+
+                // Runs of zeros before the end of a block, which an encoder would leave to the end of the block
+                new JpegTestEncodeOptions { Scans = [.. all.Select(index => new[] { index })], ZeroRunsBeforeEndOfBlock = 3 },
             ];
 
         for (var i = 0; i < options.Length; i++)

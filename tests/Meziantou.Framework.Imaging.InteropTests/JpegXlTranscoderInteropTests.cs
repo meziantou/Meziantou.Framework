@@ -2,6 +2,7 @@ using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.TestHarness.ExternalTools;
 using Meziantou.Framework.Imaging.TestHarness.Fixtures;
 using Meziantou.Framework.Imaging.TestHarness.Golden;
+using Meziantou.Framework.Imaging.Tests.Codecs;
 
 namespace Meziantou.Framework.Imaging.InteropTests;
 
@@ -165,6 +166,67 @@ public sealed class JpegXlTranscoderInteropTests
             Assert.True(await JpegXlTranscoder.TryReconstructJpegAsync(reference, rebuilt, cancellationToken: XunitCancellationToken));
         }
 
+        Assert.True(jpeg.AsSpan().SequenceEqual(rebuilt.GetBuffer().AsSpan(0, (int)rebuilt.Length)), $"{name}: the library does not rebuild the JPEG file from the output of cjxl {jxl.Version}.");
+    }
+
+    /// <summary>
+    /// Files with what an encoder is free to write and a decoder must give back, through both chains: runs of blocks
+    /// without coefficient that stop early (the reset points of the reconstruction data), and runs of sixteen zeros
+    /// before the end of a block (its extra zero runs), in one scan and in several, where the order of the two lists in
+    /// the reconstruction data shows.
+    /// </summary>
+    [Theory]
+    [InlineData("gray", false, 0, 1)]
+    [InlineData("444", false, 0, 2)]
+    [InlineData("420", false, 0, 1)]
+    [InlineData("gray", true, 1, 0)]
+    [InlineData("444", true, 1, 0)]
+    [InlineData("420", true, 3, 0)]
+    [InlineData("gray", true, 0, 2)]
+    [InlineData("444", true, 3, 2)]
+    [InlineData("422", true, 2, 1)]
+    [InlineData("420", true, 1, 3)]
+    public async Task FilesWithRedundantSymbolsGoThroughBothChains(string sampling, bool progressive, int maxEndOfBandRun, int zeroRuns)
+    {
+        var jxl = await RequiredTools.LibJxlAsync();
+        (int H, int V)[] factors = sampling switch
+        {
+            "gray" => [(1, 1)],
+            "444" => [(1, 1), (1, 1), (1, 1)],
+            "420" => [(2, 2), (1, 1), (1, 1)],
+            _ => [(2, 1), (1, 1), (1, 1)],
+        };
+
+        // Few coefficients: blocks without any, and blocks that end with more than sixteen zeros
+        var image = JpegTestImage.CreateRandom(72, 56, factors, seed: factors.Length + maxEndOfBandRun + (zeroRuns * 4), acDensity: 0.06, dcOnlyProbability: 0.4);
+        var components = string.Join(',', Enumerable.Range(0, factors.Length));
+        var script = new List<string> { $"{components}: 0 0 0 1" };
+        for (var c = 0; c < factors.Length; c++)
+        {
+            script.AddRange([$"{c}: 1 5 0 2", $"{c}: 6 63 0 1", $"{c}: 1 5 2 1", $"{c}: 1 63 1 0"]);
+        }
+
+        script.Add($"{components}: 0 0 1 0");
+        var progression = progressive ? JpegTestProgressiveScan.ParseScript(string.Join("; ", script)) : null;
+        var plain = image.Encode(new JpegTestEncodeOptions { Progression = progression });
+        var jpeg = image.Encode(new JpegTestEncodeOptions { Progression = progression, MaxEndOfBandRun = maxEndOfBandRun == 0 ? 0x7FFF : maxEndOfBandRun, ZeroRunsBeforeEndOfBlock = zeroRuns });
+        Assert.False(plain.AsSpan().SequenceEqual(jpeg), "The file has no redundant symbol: it tests nothing.");
+
+        var directory = InteropSettings.GetArtifactsDirectory(nameof(FilesWithRedundantSymbolsGoThroughBothChains));
+        var name = $"{sampling}-{(progressive ? "progressive" : "sequential")}-eob{maxEndOfBandRun}-zrl{zeroRuns}";
+        var jpegPath = directory / (name + ".jpg");
+        var libraryPath = directory / (name + ".library.jxl");
+        var referencePath = directory / (name + ".cjxl.jxl");
+        await File.WriteAllBytesAsync(jpegPath, jpeg, XunitCancellationToken);
+
+        File.Delete(libraryPath);
+        await JpegXlTranscoder.RecompressJpegAsync(jpegPath, libraryPath, cancellationToken: XunitCancellationToken);
+        var rebuiltByDjxl = await jxl.ReconstructJpegAsync(libraryPath, XunitCancellationToken);
+        Assert.True(jpeg.AsSpan().SequenceEqual(rebuiltByDjxl), $"{name}: djxl {jxl.Version} rebuilds {rebuiltByDjxl.Length} bytes that are not the {jpeg.Length} bytes of the JPEG file.");
+
+        await jxl.EncodeAsync(jpegPath, referencePath, ["--lossless_jpeg=1"], XunitCancellationToken);
+        using var rebuilt = new MemoryStream();
+        Assert.True(JpegXlTranscoder.TryReconstructJpeg(await File.ReadAllBytesAsync(referencePath, XunitCancellationToken), rebuilt));
         Assert.True(jpeg.AsSpan().SequenceEqual(rebuilt.GetBuffer().AsSpan(0, (int)rebuilt.Length)), $"{name}: the library does not rebuild the JPEG file from the output of cjxl {jxl.Version}.");
     }
 

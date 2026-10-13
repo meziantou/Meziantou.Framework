@@ -141,6 +141,89 @@ public sealed class DrawingImageTests
     }
 
     [Fact]
+    public void AnImageIsPlacedByATransformation()
+    {
+        using var source = new Image<Rgba32>(2, 2);
+        var a = source.Frames[0][0, 0] = new Rgba32(10, 20, 30);
+        var b = source.Frames[0][1, 0] = new Rgba32(40, 50, 60);
+        var c = source.Frames[0][0, 1] = new Rgba32(70, 80, 90);
+        var d = source.Frames[0][1, 1] = new Rgba32(100, 110, 120);
+        var frame = source.Frames[0];
+        var background = new Rgba32(1, 2, 3, 4);
+
+        // Without transformation, or moved by whole pixels: the image at that position; scaled: the image stretched
+        Assert.Equal(Draw(canvas => canvas.DrawImage(frame, default(PointD))), Draw(canvas => canvas.DrawImage(frame, AffineTransform.Identity)));
+        Assert.Equal(Draw(canvas => canvas.DrawImage(frame, new Point(1, 2))), Draw(canvas => canvas.DrawImage(frame, AffineTransform.CreateTranslation(1, 2))));
+        Assert.Equal(Draw(canvas => canvas.DrawImage(frame, new PointD(0.25, 1.5), 0.5)), Draw(canvas => canvas.DrawImage(frame, AffineTransform.CreateTranslation(0.25, 1.5), 0.5)));
+        Assert.Equal(
+            Draw(canvas => canvas.DrawImage(frame, new RectangleD(0.5, 1, 3, 2.5))),
+            Draw(canvas => canvas.DrawImage(frame, AffineTransform.CreateScale(1.5, 1.25).Then(AffineTransform.CreateTranslation(0.5, 1)))));
+
+        // A quarter turn around the center of the image, clockwise on the image: the pixels themselves, turned
+        var center = new PointD(1, 1);
+        var turned = Draw(canvas => canvas.DrawImage(frame, AffineTransform.CreateRotation(90, center).Then(AffineTransform.CreateTranslation(1, 1))));
+        Assert.Equal(c, At(turned, 1, 1));
+        Assert.Equal(a, At(turned, 2, 1));
+        Assert.Equal(d, At(turned, 1, 2));
+        Assert.Equal(b, At(turned, 2, 2));
+        Assert.Equal(background, At(turned, 0, 1));
+        Assert.Equal(background, At(turned, 3, 2));
+
+        // Mirrored from left to right, and turned upside down
+        var mirrored = Draw(canvas => canvas.DrawImage(frame, AffineTransform.CreateScale(-1, 1, center)));
+        Assert.Equal(b, At(mirrored, 0, 0));
+        Assert.Equal(a, At(mirrored, 1, 0));
+        Assert.Equal(d, At(mirrored, 0, 1));
+        Assert.Equal(c, At(mirrored, 1, 1));
+        var upsideDown = Draw(canvas => canvas.DrawImage(frame, AffineTransform.CreateRotation(180, center).Then(AffineTransform.CreateTranslation(2, 2))));
+        Assert.Equal(d, At(upsideDown, 2, 2));
+        Assert.Equal(a, At(upsideDown, 3, 3));
+
+        // A transformation that flattens the image draws nothing
+        Assert.Equal(Draw(static _ => { }), Draw(canvas => canvas.DrawImage(frame, AffineTransform.CreateScale(0, 1))));
+        Assert.Equal(Draw(static _ => { }), Draw(canvas => canvas.DrawImage(frame, AffineTransform.CreateTranslation(1, 1), 0)));
+
+        // Turned by any angle: the edges are antialiased, and the image keeps its area
+        using var white = new Image<Rgba32>(6, 4, new Rgba32(255, 255, 255));
+        using var canvasImage = new Image<Rgba32>(16, 16);
+        canvasImage.Draw(canvas => canvas.DrawImage(white.Frames[0], AffineTransform.CreateRotation(33, new PointD(3, 2)).Then(AffineTransform.CreateTranslation(5, 6))), Ct);
+        var samples = DrawingTestSupport.ReadSamples(canvasImage.Frames[0]);
+        var area = 0;
+        var partial = 0;
+        for (var i = 0; i < samples.Length; i += 4)
+        {
+            area += samples[i + 3];
+            partial += samples[i + 3] is > 0 and < 255 ? 1 : 0;
+            if (samples[i + 3] != 0)
+            {
+                Assert.Equal([255, 255, 255], samples.AsSpan(i, 3).ToArray());
+            }
+        }
+
+        Assert.Equal(24, area / 255.0, 0.05);
+        Assert.InRange(partial, 12, 30);
+
+        // The opacity and the clip apply as to any image
+        using var gray = new Image<Gray8>(4, 4, new Gray8(0));
+        using var dot = new Image<Gray8>(2, 2, new Gray8(255));
+        gray.Draw(
+            canvas => canvas.Clip(new Rectangle(0, 0, 4, 2), clipped => clipped.DrawImage(dot.Frames[0], AffineTransform.CreateScale(2, 2), 0.5)),
+            Ct);
+        Assert.Equal([128, 128, 128, 128, 128, 128, 128, 128, 0, 0, 0, 0, 0, 0, 0, 0], DrawingTestSupport.ReadSamples(gray.Frames[0]));
+
+        Rgba32[] Draw(DrawingAction action)
+        {
+            using var image = new Image<Rgba32>(4, 4, background);
+            image.Draw(action, Ct);
+            var pixels = new Rgba32[16];
+            image.Frames[0].CopyPixelDataTo(pixels);
+            return pixels;
+        }
+
+        static Rgba32 At(Rgba32[] pixels, int x, int y) => pixels[(y * 4) + x];
+    }
+
+    [Fact]
     public void ARegionOfAnImageIsDrawnWithoutThePixelsAroundIt()
     {
         using var source = new Image<Gray8>(4, 2);
@@ -446,6 +529,11 @@ public sealed class DrawingImageTests
                 AssertThrows<ArgumentOutOfRangeException>(canvas, canvas => canvas.DrawImage(frame, default(PointD), double.NaN));
                 AssertThrows<ArgumentException>(canvas, canvas => canvas.DrawImage(frame, new PointD(double.NaN, 0)));
                 AssertThrows<ArgumentOutOfRangeException>(canvas, canvas => canvas.DrawImage(frame, new RectangleD(16777216, 0, 1, 1)));
+                AssertThrows<ArgumentNullException>(canvas, static canvas => canvas.DrawImage(null!, AffineTransform.Identity));
+                AssertThrows<ArgumentOutOfRangeException>(canvas, canvas => canvas.DrawImage(frame, AffineTransform.Identity, 1.5));
+                AssertThrows<ArgumentOutOfRangeException>(canvas, canvas => canvas.DrawImage(frame, AffineTransform.CreateTranslation(16777216, 0)));
+                AssertThrows<ArgumentOutOfRangeException>(canvas, canvas => canvas.DrawImage(frame, AffineTransform.CreateScale(1e7, 1)));
+                AssertThrows<InvalidOperationException>(canvas, canvas => canvas.DrawImage(image.Frames[0], AffineTransform.Identity));
 
                 // The frames that are drawn on are leased by the drawing
                 AssertThrows<InvalidOperationException>(canvas, canvas => canvas.DrawImage(image.Frames[0], default(PointD)));
@@ -475,6 +563,7 @@ public sealed class DrawingImageTests
             canvas =>
             {
                 AssertThrows<ObjectDisposedException>(canvas, canvas => canvas.DrawImage(frame, default(PointD)));
+                AssertThrows<ObjectDisposedException>(canvas, canvas => canvas.DrawImage(frame, AffineTransform.Identity));
                 AssertThrows<ObjectDisposedException>(canvas, canvas => canvas.Fill(brush));
             },
             Ct);

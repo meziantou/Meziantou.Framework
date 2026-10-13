@@ -147,6 +147,7 @@ public sealed class PerformanceContractTests
             canvas.DrawImage(state.Sprite, new Point(3, 4));
             canvas.DrawImage(state.Sprite, new PointD(30.5, 20.25), 0.5);
             canvas.DrawImage(state.Sprite, new Rectangle(4, 2, 10, 8), new RectangleD(-5, 6.5, 80, 30), 0.9);
+            canvas.DrawImage(state.Sprite, AffineTransform.CreateRotation(30, new PointD(5, 5)).Then(AffineTransform.CreateTranslation(20, 10)), 0.8);
             canvas.Fill(state.Tile, state.Path);
             canvas.FillText(state.Tile, state.Text, new PointD(2.5, 3));
             canvas.Clip(state.Path, state, static (clipped, state) =>

@@ -1134,6 +1134,7 @@ namespace Meziantou.Framework.Imaging.Drawing
         public void DrawImage(Meziantou.Framework.Imaging.ImageFrame source, Meziantou.Framework.Imaging.PointD position, double opacity = 1d) { }
         public void DrawImage(Meziantou.Framework.Imaging.ImageFrame source, Meziantou.Framework.Imaging.RectangleD destination, double opacity = 1d) { }
         public void DrawImage(Meziantou.Framework.Imaging.ImageFrame source, Meziantou.Framework.Imaging.Rectangle sourceRegion, Meziantou.Framework.Imaging.RectangleD destination, double opacity = 1d) { }
+        public void DrawImage(Meziantou.Framework.Imaging.ImageFrame source, Meziantou.Framework.Imaging.AffineTransform transform, double opacity = 1d) { }
         public void FillRectangle(Meziantou.Framework.Imaging.Drawing.Brush brush, Meziantou.Framework.Imaging.RectangleD rectangle) { }
         public void StrokeRectangle(Meziantou.Framework.Imaging.Drawing.Pen pen, Meziantou.Framework.Imaging.RectangleD rectangle) { }
         public void FillRoundedRectangle(Meziantou.Framework.Imaging.Drawing.Brush brush, Meziantou.Framework.Imaging.RectangleD rectangle, double radius) { }

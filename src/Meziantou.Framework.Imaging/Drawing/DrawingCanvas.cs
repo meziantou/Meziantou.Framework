@@ -145,6 +145,31 @@ public readonly ref struct DrawingCanvas
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
     public void DrawImage(ImageFrame source, Rectangle sourceRegion, RectangleD destination, double opacity = 1) => GetSession().DrawImage(source, sourceRegion, destination, opacity);
 
+    /// <summary>Draws the pixels of a frame of another image, placed on the canvas by a transformation: turned, scaled, skewed or mirrored.</summary>
+    /// <remarks>
+    /// <para>
+    /// The transformation applies to the image as it would be drawn at the origin of the canvas, without scaling: the
+    /// pixel <c>(i, j)</c> of the frame is the square from <c>(i, j)</c> to <c>(i + 1, j + 1)</c> before it applies.
+    /// <see cref="AffineTransform.CreateRotation(double, PointD)"/> around the center of the frame, then a
+    /// translation, draws the image turned around its center.
+    /// </para>
+    /// <para>
+    /// The edges of the image are antialiased as the edges of a shape are, and its pixels are interpolated (see
+    /// <see cref="ImageBrush"/>, which this method is a shortcut for, with the pixels of the edges extended). A
+    /// transformation that flattens the image to a line draws nothing. See <see cref="DrawImage(ImageFrame, PointD, double)"/>.
+    /// </para>
+    /// </remarks>
+    /// <param name="source">The frame to draw.</param>
+    /// <param name="transform">The transformation that places the frame on the canvas.</param>
+    /// <param name="opacity">The opacity of the image, from 0 to 1.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The magnitude of a coordinate of a corner of the image on the canvas exceeds 16777216, or <paramref name="opacity"/> is not between 0 and 1.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned, or <paramref name="source"/> is a frame that is being drawn on or whose pixels are being accessed.</exception>
+    /// <exception cref="ObjectDisposedException"><paramref name="source"/> no longer belongs to a live image.</exception>
+    /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. No pixel is changed by this call.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void DrawImage(ImageFrame source, AffineTransform transform, double opacity = 1) => GetSession().DrawImage(source, transform, opacity);
+
     /// <summary>Paints a rectangle.</summary>
     /// <param name="brush">The paint. A color converts implicitly.</param>
     /// <param name="rectangle">The rectangle. A <see cref="Rectangle"/> of pixels converts implicitly.</param>

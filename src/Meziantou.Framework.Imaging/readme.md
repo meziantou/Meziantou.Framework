@@ -846,7 +846,9 @@ on the canvas: the points of the gradient are given before it applies, so a scal
 makes an elliptical radial gradient, and a rotation turns a gradient without recomputing its points.
 
 **Images**. `canvas.DrawImage` draws a frame of another image: at a position (its pixels as they are), stretched to a
-rectangle, or a region of it stretched to a rectangle (a sprite of a sheet), with an optional opacity. An `ImageBrush`
+rectangle, a region of it stretched to a rectangle (a sprite of a sheet), or placed by an `AffineTransform` (turned,
+skewed, mirrored: its edges are antialiased, and a quarter turn or a mirror keeps its pixels exactly), with an optional
+opacity. An `ImageBrush`
 paints any shape or text with an image: `Transform` places the image on the canvas, `WrapMode` gives the colors around
 it (`Transparent` by default, `Pad`, `Repeat` for tiles, `Reflect`), `Sampling` chooses between the interpolation of
 the four pixels around a position (`Bilinear`, the default) and the nearest pixel, and `Opacity` fades it. An image

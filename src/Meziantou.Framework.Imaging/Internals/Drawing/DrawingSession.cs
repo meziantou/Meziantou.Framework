@@ -123,6 +123,32 @@ internal sealed partial class DrawingSession : IDisposable
         DrawImageCore(source, sourceRegion, destination, opacity);
     }
 
+    public void DrawImage(ImageFrame source, AffineTransform transform, double opacity)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        var coverage = ImageEvaluator.GetOpacityCoverage(opacity, nameof(opacity));
+
+        // The corners of the image, on the canvas
+        var width = source.Width;
+        var height = source.Height;
+        var topLeft = transform.Transform(default);
+        var topRight = transform.Transform(new PointD(width, 0));
+        var bottomRight = transform.Transform(new PointD(width, height));
+        var bottomLeft = transform.Transform(new PointD(0, height));
+        DrawingGuard.Point(topLeft, nameof(transform));
+        DrawingGuard.Point(topRight, nameof(transform));
+        DrawingGuard.Point(bottomRight, nameof(transform));
+        DrawingGuard.Point(bottomLeft, nameof(transform));
+        var sink = BeginFill();
+        sink.MoveTo(topLeft.X, topLeft.Y);
+        sink.LineTo(topRight.X, topRight.Y, smooth: false);
+        sink.LineTo(bottomRight.X, bottomRight.Y, smooth: false);
+        sink.LineTo(bottomLeft.X, bottomLeft.Y, smooth: false);
+        sink.Close(smooth: false);
+        sink.End();
+        PaintImage(source, new Rectangle(0, 0, width, height), transform, coverage, isEmpty: false, nameof(source));
+    }
+
     private void DrawImageCore(ImageFrame source, Rectangle? sourceRegion, RectangleD destination, double opacity)
     {
         var coverage = ImageEvaluator.GetOpacityCoverage(opacity, nameof(opacity));
@@ -142,9 +168,15 @@ internal sealed partial class DrawingSession : IDisposable
             transform = new AffineTransform(scaleX, 0, 0, scaleY, destination.X - (region.X * scaleX), destination.Y - (region.Y * scaleY));
         }
 
+        PaintImage(source, region, transform, coverage, region.IsEmpty || destination.IsEmpty, nameof(sourceRegion));
+    }
+
+    /// <summary>Paints the edges of the call with a region of an image, placed by a transformation, its pixels on the edges extended.</summary>
+    private void PaintImage(ImageFrame source, Rectangle region, AffineTransform transform, uint coverage, bool isEmpty, string regionParameterName)
+    {
         var evaluator = _imagePaint ??= new ImageEvaluator(_image.Owner.Scope);
-        evaluator.Prepare(source, region, transform, ImageWrapMode.Pad, ImageSampling.Bilinear, _frames[0], Width, nameof(sourceRegion));
-        if (coverage == 0 || region.IsEmpty || destination.IsEmpty || _edges!.Count == 0)
+        evaluator.Prepare(source, region, transform, ImageWrapMode.Pad, ImageSampling.Bilinear, _frames[0], Width, regionParameterName);
+        if (coverage == 0 || isEmpty || _edges!.Count == 0)
             return;
 
         if (coverage != CoverageRasterizer.FullCoverage)

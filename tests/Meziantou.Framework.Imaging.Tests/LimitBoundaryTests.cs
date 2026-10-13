@@ -104,7 +104,7 @@ public sealed class LimitBoundaryTests
         Assert.Equal(new Size(3, 5), tall.Size);
     }
 
-    public static TheoryData<string> Encoders => ["png", "apng", "gif", "jpeg", "webp", "webp-lossy", "webp-animated", "qoi", "avif", "avif-lossy", "avif-animated", "jxl", "jxl-fast", "jxl-animated"];
+    public static TheoryData<string> Encoders => ["png", "apng", "gif", "jpeg", "webp", "webp-lossy", "webp-animated", "qoi", "avif", "avif-lossy", "avif-animated", "jxl", "jxl-fast", "jxl-animated", "jp2", "jp2-lossy", "j2k"];
 
     [Theory]
     [MemberData(nameof(Encoders))]
@@ -167,6 +167,9 @@ public sealed class LimitBoundaryTests
                 "avif-lossy" => new AvifEncoder { Compression = AvifCompression.Lossy },
                 "jxl" or "jxl-animated" => new JpegXlEncoder(),
                 "jxl-fast" => new JpegXlEncoder { Effort = 0 },
+                "jp2" => new Jpeg2000Encoder(),
+                "jp2-lossy" => new Jpeg2000Encoder { Compression = Jpeg2000Compression.Lossy },
+                "j2k" => new Jpeg2000Encoder { Container = Jpeg2000Container.Codestream },
                 _ => new JpegEncoder(),
             },
             ExpectedFrameCount = encoder is "apng" or "webp-animated" or "avif-animated" or "jxl-animated" ? 2 : 1,

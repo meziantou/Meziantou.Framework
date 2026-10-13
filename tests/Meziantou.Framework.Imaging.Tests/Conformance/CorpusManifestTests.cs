@@ -98,6 +98,7 @@ public sealed class CorpusManifestTests
                 "pnm" => "tools/Meziantou.Framework.Imaging.CorpusGenerator/PnmCorpus.cs",
                 "avif" => "tools/Meziantou.Framework.Imaging.CorpusGenerator/AvifCorpus.Container.cs",
                 "jxl" => "tools/Meziantou.Framework.Imaging.CorpusGenerator/JxlCorpus.cs",
+                "jp2" => "tools/Meziantou.Framework.Imaging.CorpusGenerator/Jp2Corpus.cs",
                 _ => "tools/Meziantou.Framework.Imaging.CorpusGenerator/GoldenCorpus.cs",
             };
             Assert.StartsWith(generator, fixture.Provenance.Generator);
@@ -300,6 +301,9 @@ public sealed class CorpusManifestTests
     [InlineData(FixtureKinds.Invalid, "jxl")]
     [InlineData(FixtureKinds.Unsupported, "jxl")]
     [InlineData(FixtureKinds.Limit, "jxl")]
+    [InlineData(FixtureKinds.Invalid, "jp2")]
+    [InlineData(FixtureKinds.Unsupported, "jp2")]
+    [InlineData(FixtureKinds.Limit, "jp2")]
     public void StarterCorpusHasErrorFixtures(string kind, string format)
     {
         Assert.Contains(LoadManifest().Fixtures, fixture => fixture.Kind == kind && fixture.Format == format && fixture.ExpectedError is not null && fixture.Expected is null);

@@ -24,6 +24,7 @@ Run("icon", SmokeTests.Icon);
 Run("ani", SmokeTests.Ani);
 Run("avif", SmokeTests.Avif);
 Run("jxl", SmokeTests.JpegXl);
+Run("jp2", SmokeTests.Jpeg2000);
 Run("processing", SmokeTests.Processing);
 Run("drawing", SmokeTests.Drawing);
 Run("color", SmokeTests.ColorConversion);

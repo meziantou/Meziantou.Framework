@@ -19,6 +19,7 @@ internal static class ImageFormatNames
         ImageFormat.Ani => "ANI",
         ImageFormat.Avif => "AVIF",
         ImageFormat.JpegXl => "JPEG XL",
+        ImageFormat.Jpeg2000 => "JPEG 2000",
         _ => "image",
     };
 }

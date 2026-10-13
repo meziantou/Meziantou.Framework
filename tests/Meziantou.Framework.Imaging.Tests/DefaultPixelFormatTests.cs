@@ -48,6 +48,18 @@ public sealed class DefaultPixelFormatTests
     public void JpegXlDefaults(bool isGray, bool hasAlpha, bool isSixteenBit, PixelFormat expected)
         => Assert.Equal(expected, DefaultPixelFormats.ForJpegXl(isGray, hasAlpha, isSixteenBit));
 
+    [Theory]
+    [InlineData(true, false, false, PixelFormat.Gray8)]
+    [InlineData(true, false, true, PixelFormat.Gray16)]
+    [InlineData(false, false, false, PixelFormat.Rgb24)]
+    [InlineData(false, true, false, PixelFormat.Rgba32)]
+    [InlineData(true, true, false, PixelFormat.Rgba32)] // there is no gray format with alpha
+    [InlineData(false, false, true, PixelFormat.Rgba64)] // there is no 16-bit RGB format
+    [InlineData(false, true, true, PixelFormat.Rgba64)]
+    [InlineData(true, true, true, PixelFormat.Rgba64)]
+    public void Jpeg2000Defaults(bool isGray, bool hasAlpha, bool isSixteenBit, PixelFormat expected)
+        => Assert.Equal(expected, DefaultPixelFormats.ForJpeg2000(isGray, hasAlpha, isSixteenBit));
+
     [Fact]
     public void GifAndJpegDefaults()
     {

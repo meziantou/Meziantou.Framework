@@ -154,4 +154,15 @@ internal static class DefaultPixelFormats
 
         return isGray ? PixelFormat.Gray8 : PixelFormat.Rgb24;
     }
+
+    /// <summary>Selects the default pixel format of a JPEG 2000 image.</summary>
+    /// <param name="isGray">Whether the image has a single color channel.</param>
+    /// <param name="hasAlpha">Whether the image has an opacity channel.</param>
+    /// <param name="isSixteenBit">Whether a color channel or the opacity channel has more than 8 bits.</param>
+    /// <returns>
+    /// The pixel format: there is no gray-with-alpha and no 16-bit RGB format, so that grayscale images with alpha are
+    /// stored as RGBA and deep color images without alpha are opaque <see cref="PixelFormat.Rgba64"/>. The inks of a CMYK
+    /// image are converted to red, green and blue.
+    /// </returns>
+    public static PixelFormat ForJpeg2000(bool isGray, bool hasAlpha, bool isSixteenBit) => ForJpegXl(isGray, hasAlpha, isSixteenBit);
 }

@@ -107,7 +107,7 @@ public sealed class ImageInfo
     /// <summary>Gets the color model of the encoded samples.</summary>
     public ImageColorModel ColorModel { get; }
 
-    /// <summary>Gets the precision of the encoded samples, in bits per component (for example 1, 2, 4, 8 or 16 for PNG; 8, 10 or 12 for AVIF; 1 to 16 for JPEG XL).</summary>
+    /// <summary>Gets the precision of the encoded samples, in bits per component (for example 1, 2, 4, 8 or 16 for PNG; 8, 10 or 12 for AVIF; 1 to 16 for JPEG XL and JPEG 2000).</summary>
     public int BitsPerComponent { get; }
 
     /// <summary>Gets the number of displayed animation frames (excluding a separate poster frame), or <see langword="null"/> when unknown.</summary>

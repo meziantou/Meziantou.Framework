@@ -43,6 +43,24 @@ public sealed class FFmpegToolTests
     }
 
     /// <summary>
+    /// What the JPEG 2000 interoperability tests need from the pinned build: the native <c>jpeg2000</c> decoder, which
+    /// shares no code with OpenJPEG (the build has no <c>libopenjpeg</c> decoder that could be selected in its place), and
+    /// the demuxer that reads a codestream or a JP2 file.
+    /// </summary>
+    [Fact]
+    public async Task FFmpegHasJpeg2000Capabilities()
+    {
+        var ffmpeg = await RequireFFmpegAsync();
+
+        var decoders = await ffmpeg.GetDecodersAsync(XunitCancellationToken);
+        Assert.True(decoders.Contains("jpeg2000"), $"ffmpeg {ffmpeg.Version} does not provide the 'jpeg2000' decoder.");
+        Assert.False(decoders.Contains("libopenjpeg"), $"ffmpeg {ffmpeg.Version} provides the 'libopenjpeg' decoder: it would not be an independent decoder.");
+
+        var demuxers = await ffmpeg.GetDemuxersAsync(XunitCancellationToken);
+        Assert.True(demuxers.Contains("j2k_pipe"), $"ffmpeg {ffmpeg.Version} does not provide the 'j2k_pipe' demuxer.");
+    }
+
+    /// <summary>
     /// What the AVIF and AV1 interoperability tests need from the pinned build: two AV1 encoders, two independent AV1 decoders,
     /// raw AV1 streams (the <c>obu</c> muxer and demuxer), FFmpeg's own AVIF muxer, the header parser and the planar formats
     /// that hold AV1 planes without conversion.

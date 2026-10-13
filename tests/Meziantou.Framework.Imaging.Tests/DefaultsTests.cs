@@ -79,6 +79,13 @@ public sealed class DefaultsTests
         Assert.Equal(0, avif.KeyFrameInterval);
         Assert.Equal(FrameDurationRounding.RequireExact, avif.DurationRounding);
         Assert.Equal(MetadataHandling.Strict, avif.MetadataHandling);
+
+        var jpeg2000 = new Jpeg2000Encoder();
+        Assert.Equal(ImageFormat.Jpeg2000, jpeg2000.Format);
+        Assert.Equal(Jpeg2000Compression.Lossless, jpeg2000.Compression);
+        Assert.Equal(90, jpeg2000.Quality);
+        Assert.Equal(Jpeg2000Container.Jp2, jpeg2000.Container);
+        Assert.Equal(MetadataHandling.Strict, jpeg2000.MetadataHandling);
     }
 
     [Fact]
@@ -97,6 +104,10 @@ public sealed class DefaultsTests
         Assert.Throws<ArgumentOutOfRangeException>(() => new AvifEncoder { DurationRounding = (FrameDurationRounding)2 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new AvifEncoder { KeyFrameInterval = -1 });
         Assert.Equal(new Rgba64(65535, 0, 0), new JpegEncoder { BackgroundColor = new Rgba32(255, 0, 0) }.BackgroundColor);
+        Assert.Throws<ArgumentOutOfRangeException>(() => new Jpeg2000Encoder { Quality = 0 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new Jpeg2000Encoder { Quality = 101 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new Jpeg2000Encoder { Compression = (Jpeg2000Compression)2 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new Jpeg2000Encoder { Container = (Jpeg2000Container)2 });
     }
 
     [Fact]
@@ -125,6 +136,19 @@ public sealed class DefaultsTests
         Assert.IsType<AniEncoder>(ImageEncoder.FromPath("a.ANI"));
         Assert.IsType<JpegXlEncoder>(ImageEncoder.FromPath("a.jxl"));
         Assert.IsType<JpegXlEncoder>(ImageEncoder.FromPath("dir/a.JXL"));
+        Assert.Equal(Jpeg2000Container.Jp2, Assert.IsType<Jpeg2000Encoder>(ImageEncoder.FromPath("a.jp2")).Container);
+        Assert.Equal(Jpeg2000Container.Jp2, Assert.IsType<Jpeg2000Encoder>(ImageEncoder.FromPath("dir/a.JP2")).Container);
+        foreach (var extension in new[] { ".j2k", ".j2c", ".jpc", ".J2K" })
+        {
+            Assert.Equal(Jpeg2000Container.Codestream, Assert.IsType<Jpeg2000Encoder>(ImageEncoder.FromPath("a" + extension)).Container);
+        }
+
+        // The other members of the family are read, never written
+        foreach (var extension in new[] { ".jpx", ".jpf", ".jph", ".jhc" })
+        {
+            Assert.Contains("can be read but not written", Assert.Throws<ArgumentException>(() => ImageEncoder.FromPath("a" + extension)).Message, StringComparison.Ordinal);
+        }
+
         Assert.Throws<ArgumentException>(() => ImageEncoder.FromPath("a.heic"));
 
         Assert.Equal(AvifCompression.Lossless, Assert.IsType<AvifEncoder>(ImageEncoder.FromPath("a.avif")).Compression);

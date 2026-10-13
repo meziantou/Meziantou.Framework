@@ -180,7 +180,10 @@ public sealed class GoldenCorpusTests
             var isMatrixedAvif = fixture.Entry.Format == "avif" && (fixture.Entry.Features ?? []).Any(feature => feature.StartsWith("avif.matrix=", StringComparison.Ordinal) && feature != "avif.matrix=0");
             // JPEG XL: an image stored in XYB, and a VarDCT frame, are decoded in floating point
             var isLossyJpegXl = fixture.Entry.Format == "jxl" && (fixture.Entry.HasFeature("jxl.colorTransform=xyb") || fixture.Entry.HasFeature("jxl.encoding=vardct"));
-            Assert.Equal((fixture.Entry.Format == "jpeg" || fixture.Entry.HasFeature("webp.bitstream=vp8") || isMatrixedAvif || isLossyJpegXl) && !decodedIdentically, !policy.IsExact);
+            // JPEG 2000: the irreversible wavelet transformation, and the conversion of sYCC components to RGB, are defined
+            // on real numbers
+            var isLossyJpeg2000 = fixture.Entry.Format == "jp2" && (fixture.Entry.HasFeature("jp2.transform=9-7") || fixture.Entry.HasFeature("jp2.colorSpace=sycc"));
+            Assert.Equal((fixture.Entry.Format == "jpeg" || fixture.Entry.HasFeature("webp.bitstream=vp8") || isMatrixedAvif || isLossyJpegXl || isLossyJpeg2000) && !decodedIdentically, !policy.IsExact);
             if (!policy.IsExact)
             {
                 Assert.True(policy.MaxAbsoluteError <= ComparisonPolicy.AbsoluteErrorCeiling);

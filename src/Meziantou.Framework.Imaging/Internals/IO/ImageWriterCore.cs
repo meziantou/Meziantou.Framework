@@ -321,7 +321,7 @@ internal sealed class ImageWriterCore : IDisposable, IAsyncDisposable
 
         // A profile describes the written samples: the bilevel and palette layouts of TIFF do not follow the pixel format
         var labeledFormat = encoder is TiffEncoder tiff ? TiffSampleLayout.GetLabeledPixelFormat(tiff.PixelLayout, pixelFormat) : pixelFormat;
-        var metadata = MetadataWritePlan.Create(snapshot.Metadata, capabilities.Format, encoder.MetadataHandling, snapshot.CanvasSize, labeledFormat);
+        var metadata = MetadataWritePlan.Create(snapshot.Metadata, capabilities.Format, encoder.MetadataHandling, snapshot.CanvasSize, labeledFormat, encoder);
         var animation = capabilities.IsAnimated ? snapshot.Animation?.Clone() ?? new AnimationMetadata() : null;
         var scope = AllocationScope.Create(snapshot.Configuration, "ImageWriter");
         var options = new ImageEncoderSessionOptions(encoder, capabilities, snapshot.CanvasSize, pixelFormat, snapshot.ExpectedFrameCount, metadata, animation, snapshot.Configuration, scope);

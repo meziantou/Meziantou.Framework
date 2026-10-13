@@ -773,6 +773,65 @@ internal static class SmokeTests
         throw new InvalidOperationException($"{typeof(T).Name} expected.");
     }
 
+    // The fixture jp2/ht-lossless-rgb8 of the corpus: a codestream of the high-throughput block coder, 13x9 pixels whose
+    // samples are (37x + 11) mod 256, (59y + 101) mod 256 and (13xy + 29) mod 256
+    private const string Jpeg2000HighThroughput =
+        "/0//UQAvQAAAAAANAAAACQAAAAAAAAAAAAAADQAAAAkAAAAAAAAAAAADBwEBBwEBBwEB/1AACAACAAAAA/9SAAwAAgABAQMEBEAB/1wADSBQWFhYWFhYUFBQ" +
+        "/2QAFwABT3BlbkpQSCBWZXIgMC4zMi4wLv+QAAoAAAAAAc4AAf+TwBOAoUgKACGUAMAVAHOsMeYAgbQAwBUAB9PN/gCDNADACeAEsAJgXtDCAEc0AIz+MjMA" +
+        "RPwAAXQAwAqIATQAmIYTdf0AQbQAMOsAIjQAGMYBAXQAwAqQNjZt2vwAwbQAwArYAV0AKoADZGAlKvkCkLz4/pcAahyCXIIRM/4AAAEvNgCJJqoR/gDIv5UA" +
+        "wAr4AV0AKwCT4ruzicNpAIQvf5N+uADz6YmVUf0RKwAIQFuWAClojq5F4gAAgL+WAMAKyAFeXq+71wigLjBD0ngA3x/fPr4/vj/+AAhAFrYAwBbkAXRQBaoH" +
+        "1h+wGwIrDb0zZR0n6A/QGXwC0Y0nYBCEUdwAwL4PGCshdsYesAO71XfGnlJt62t3tgAmY5R4IF5AREScAICAAwAe4IEe4O/9/gIVwt89hBIZAMAW5AF0UAWs" +
+        "ns+39/P3ez8+H9//Z/9/gQ/FB+O9pRxD0I99AP5+Ly8Pj/7+/v5e/n9efl7ffv4+f38XA1MhCBveCAAnXAB+vp8fv37/f/3/fYAYpjhfGEHxj3sAwBWQBbT/" +
+        "f/9/sAhGU4ECeAD+fr/f7/f7+/v7+/v7CGOnptAAB2kAAKddAP/Z";
+
+    public static void Jpeg2000()
+    {
+        // Lossless: 8-bit and 16-bit samples, the colors of transparent pixels included, as a file and as a codestream
+        using var still = CreatePattern(seed: 11);
+        foreach (var container in new[] { Jpeg2000Container.Jp2, Jpeg2000Container.Codestream })
+        {
+            var encoded = Encode(still, new Jpeg2000Encoder { Container = container });
+            Check(Image.DetectFormat(encoded) == ImageFormat.Jpeg2000, "JPEG 2000 detection");
+            var info = Image.Identify(encoded, new ImageIdentifyOptions { Mode = ImageIdentifyMode.FullScan });
+            Check(info.Width == Width && info.Height == Height && info.FrameCount == 1 && info.PixelFormat == PixelFormat.Rgba32 && info.MayHaveTransparency == true, "JPEG 2000 identification");
+            using var decoded = Image.Load(encoded);
+            CheckEqual(still, decoded, "JPEG 2000 lossless");
+        }
+
+        using (var deep = still.CloneAs<Rgba64>())
+        using (var decoded = Image.Load(Encode(deep, new Jpeg2000Encoder())))
+        {
+            Check(decoded.PixelFormat == PixelFormat.Rgba64, "JPEG 2000 16-bit pixel format");
+            CheckEqual(deep, decoded, "JPEG 2000 16-bit lossless");
+        }
+
+        // Lossy: the irreversible wavelet and component transformations, in floating point; the opacity is exact
+        using (var decoded = Image.Load<Rgba32>(Encode(still, new Jpeg2000Encoder { Compression = Jpeg2000Compression.Lossy, Quality = 95 })))
+        {
+            var error = MaxError(still, decoded);
+            Check(error is > 0 and <= 48, string.Create(CultureInfo.InvariantCulture, $"JPEG 2000 lossy error ({error})"));
+            var (source, lossy) = (Pixels(still.Frames[0]), Pixels(decoded.Frames[0]));
+            for (var i = 3; i < source.Length; i += 4)
+            {
+                Check(source[i] == lossy[i], "JPEG 2000 lossy opacity");
+            }
+        }
+
+        // A sequential reader, and a codestream of the high-throughput block coder written by OpenJPH
+        using var reader = Image.OpenReader<Rgb24>(new MemoryStream(Convert.FromBase64String(Jpeg2000HighThroughput)));
+        using var frame = reader.ReadFrame();
+        Check(frame is { Width: 13, Height: 9 } && reader.ReadFrame() is null, "JPEG 2000 reader");
+        var pixels = Pixels(frame!.Frames[0]);
+        for (var y = 0; y < 9; y++)
+        {
+            for (var x = 0; x < 13; x++)
+            {
+                var offset = 3 * ((y * 13) + x);
+                Check(pixels[offset] == (byte)((x * 37) + 11) && pixels[offset + 1] == (byte)((y * 59) + 101) && pixels[offset + 2] == (byte)((x * y * 13) + 29), "JPEG 2000 high-throughput samples");
+            }
+        }
+    }
+
     private static byte[] Encode(Image image, ImageEncoder encoder)
     {
         using var stream = new MemoryStream();

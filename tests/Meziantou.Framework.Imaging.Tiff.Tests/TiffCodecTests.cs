@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using System.Runtime.InteropServices;
 using System.Text;
 using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.Metadata;
@@ -416,7 +417,7 @@ public sealed class TiffCodecTests
     [Theory]
     [InlineData(6, "old-style JPEG")]
     [InlineData(32771, "compression 32771")]
-    [InlineData(34712, "compression 34712")]
+    [InlineData(34713, "compression 34713")]
     public void UnsupportedCompressionIsRecognizedAndRejected(int compression, string name)
     {
         var data = new TiffFileBuilder().AddPage(new TiffPageSpec
@@ -1073,6 +1074,131 @@ public sealed class TiffCodecTests
         {
             Assert.Empty(InkReference.Compare(amounts, GetBytes(image)));
         }
+    }
+
+    [Fact]
+    public void Jpeg2000StripsDecodeToTheSamplesGivenToTheEncoderOfTheCodestream()
+    {
+        // The codestreams are written by opj_compress (Jpeg2000TestFiles): the page says what their components are.
+        // Grayscale, inverted when 0 is white
+        var gray = Jpeg2000TestFiles.GetPattern8(15);
+        using (var image = Image.Load(new TiffFileBuilder().AddPage(new TiffPageSpec { Width = 5, Height = 3, Photometric = 1, Compression = 34712, EncodedBlocks = [Jpeg2000TestFiles.Gray], Samples = [] }).Build()))
+        {
+            Assert.Equal(PixelFormat.Gray8, image.PixelFormat);
+            Assert.Equal(gray, GetBytes(image));
+        }
+
+        using (var image = Image.Load(new TiffFileBuilder().AddPage(new TiffPageSpec { Width = 5, Height = 3, Photometric = 0, Compression = 34712, EncodedBlocks = [Jpeg2000TestFiles.Gray], Samples = [] }).Build()))
+        {
+            Assert.Equal([.. gray.Select(static value => (byte)(255 - value))], GetBytes(image));
+        }
+
+        // RGB: the component transformation of the codestream is undone by its decoder
+        using (var image = Image.Load(new TiffFileBuilder().AddPage(new TiffPageSpec { Width = 5, Height = 3, SamplesPerPixel = 3, Photometric = 2, Compression = 34712, EncodedBlocks = [Jpeg2000TestFiles.Rgb], Samples = [] }).Build()))
+        {
+            Assert.Equal(PixelFormat.Rgb24, image.PixelFormat);
+            Assert.Equal(Jpeg2000TestFiles.GetPattern8(45), GetBytes(image));
+        }
+
+        // 16-bit samples, whatever the byte order of the file
+        foreach (var bigEndian in new[] { false, true })
+        {
+            using var image = Image.Load(new TiffFileBuilder { BigEndian = bigEndian }.AddPage(new TiffPageSpec { Width = 5, Height = 3, BitsPerSample = 16, Photometric = 1, Compression = 34712, EncodedBlocks = [Jpeg2000TestFiles.Gray16], Samples = [] }).Build());
+            Assert.Equal(PixelFormat.Gray16, image.PixelFormat);
+            Assert.Equal(Jpeg2000TestFiles.GetPattern16(15), unsafe(MemoryMarshal.Cast<byte, ushort>(GetBytes(image))).ToArray());
+        }
+
+        // A block may hold a whole JP2 file: its boxes are not interpreted. Here its fourth component is the unassociated
+        // alpha of the page
+        using (var image = Image.Load(new TiffFileBuilder().AddPage(new TiffPageSpec { Width = 5, Height = 3, SamplesPerPixel = 4, Photometric = 2, Compression = 34712, ExtraSamples = [2], EncodedBlocks = [Jpeg2000TestFiles.RgbaFile], Samples = [] }).Build()))
+        {
+            Assert.Equal(PixelFormat.Rgba32, image.PixelFormat);
+            Assert.Equal(Jpeg2000TestFiles.GetPattern8(60), GetBytes(image));
+        }
+    }
+
+    [Fact]
+    public void Jpeg2000StripsAndTilesAreDecodedOneCodestreamEach()
+    {
+        // Three strips of three rows: the last one holds the two rows the page still has, and a third one that is not kept
+        var gray = Jpeg2000TestFiles.GetPattern8(15);
+        using (var image = Image.Load(new TiffFileBuilder().AddPage(new TiffPageSpec { Width = 5, Height = 8, Photometric = 1, Compression = 34712, RowsPerStrip = 3, EncodedBlocks = [Jpeg2000TestFiles.Gray, Jpeg2000TestFiles.Gray, Jpeg2000TestFiles.Gray], Samples = [] }).Build()))
+        {
+            var actual = GetBytes(image);
+            for (var y = 0; y < 8; y++)
+            {
+                Assert.Equal(gray.AsSpan((y % 3) * 5, 5).ToArray(), actual.AsSpan(y * 5, 5).ToArray());
+            }
+        }
+
+        // 20x14 pixels in tiles of 16x16, each of which is the codestream of a 13x11 image in four tiles of its own: the
+        // codestream of a block must have the size of the block
+        var tile = Jpeg2000TestFiles.Tiled;
+        Assert.Throws<InvalidImageContentException>(() => Image.Load(new TiffFileBuilder().AddPage(new TiffPageSpec { Width = 20, Height = 14, SamplesPerPixel = 3, Photometric = 2, Compression = 34712, TileWidth = 16, TileLength = 16, EncodedBlocks = [tile, tile], Samples = [] }).Build()));
+
+        // One strip that is this codestream: its four tiles fill the rows of the strip in any order
+        using (var image = Image.Load(new TiffFileBuilder().AddPage(new TiffPageSpec { Width = 13, Height = 11, SamplesPerPixel = 3, Photometric = 2, Compression = 34712, EncodedBlocks = [tile], Samples = [] }).Build()))
+        {
+            Assert.Equal(Jpeg2000TestFiles.GetPattern8(13 * 11 * 3), GetBytes(image));
+        }
+    }
+
+    [Fact]
+    public void CmykJpeg2000StripsAreConvertedLikeTheOtherCmykPages()
+    {
+        // Four components are the ink amounts of the page (0 is no ink)
+        var inks = new byte[60];
+        for (var i = 0; i < 15; i++)
+        {
+            inks[4 * i] = (byte)((i * 37) + 11);
+            inks[(4 * i) + 1] = (byte)((i * 41) + 3);
+            inks[(4 * i) + 2] = (byte)((i * 43) + 5);
+            inks[(4 * i) + 3] = (byte)((i * 13) + 2);
+        }
+
+        var data = new TiffFileBuilder().AddPage(new TiffPageSpec { Width = 5, Height = 3, SamplesPerPixel = 4, Photometric = 5, Compression = 34712, EncodedBlocks = [Jpeg2000TestFiles.FourComponents], Samples = [] }).Build();
+        Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(data));
+        using var image = Image.Load(data, InkOptions);
+        Assert.Empty(InkReference.Compare(inks, GetBytes(image)));
+    }
+
+    [Fact]
+    public void AJpeg2000StripMustMatchThePageItBelongsTo()
+    {
+        static byte[] Page(int width, int height, int samplesPerPixel, int photometric, byte[] block, int bitsPerSample = 8, Action<TiffPageSpec>? configure = null)
+        {
+            var page = new TiffPageSpec { Width = width, Height = height, SamplesPerPixel = samplesPerPixel, BitsPerSample = bitsPerSample, Photometric = photometric, Compression = 34712, EncodedBlocks = [block], Samples = [] };
+            configure?.Invoke(page);
+            return new TiffFileBuilder().AddPage(page).Build();
+        }
+
+        var strip = Jpeg2000TestFiles.Rgb;
+        Image.Load(Page(5, 3, 3, 2, strip)).Dispose();
+
+        // A codestream taller than the strip is not the codestream of the strip; another width, too few rows, another
+        // number of components, another depth
+        Assert.Throws<InvalidImageContentException>(() => Image.Load(Page(5, 2, 3, 2, strip)));
+        Assert.Throws<InvalidImageContentException>(() => Image.Load(Page(4, 3, 3, 2, strip)));
+        Assert.Throws<InvalidImageContentException>(() => Image.Load(Page(5, 4, 3, 2, strip)));
+        Assert.Throws<InvalidImageContentException>(() => Image.Load(Page(5, 3, 1, 1, strip)));
+        Assert.Throws<InvalidImageContentException>(() => Image.Load(Page(5, 3, 3, 2, strip, bitsPerSample: 16)));
+
+        // A codestream that is cut, or that is not one
+        var truncated = Assert.Throws<InvalidImageContentException>(() => Image.Load(Page(5, 3, 3, 2, strip[..^20])));
+        Assert.Equal(ImageFormat.Tiff, truncated.Format);
+        Assert.Throws<InvalidImageContentException>(() => Image.Load(Page(5, 3, 3, 2, strip[..^2])));
+        Assert.Throws<InvalidImageContentException>(() => Image.Load(Page(5, 3, 3, 2, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14])));
+
+        // What the codestream cannot be: a JPEG 2000 feature that is not supported is one of the page
+        var signed = Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(Page(5, 3, 1, 1, Jpeg2000TestFiles.Signed)));
+        Assert.Equal((ImageFormat.Tiff, "Compression: signed samples"), (signed.Format, signed.Feature));
+        Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(Page(6, 4, 3, 2, Jpeg2000TestFiles.Subsampled)));
+
+        // What the page cannot declare with this compression: these are known from the directory, without reading a block
+        Assert.Equal("Compression: JPEG 2000 with 4-bit samples", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(Page(5, 3, 1, 1, Jpeg2000TestFiles.Gray4, bitsPerSample: 4))).Feature);
+        Assert.Equal("Compression: JPEG 2000 with this sample layout", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(Page(5, 3, 3, 6, strip))).Feature);
+        var predicted = new TiffFileBuilder().AddPage(new TiffPageSpec { Width = 5, Height = 3, SamplesPerPixel = 3, Photometric = 2, Compression = 34712, Predictor = 2, EncodedBlocks = [strip], Samples = [] }).Build();
+        Assert.Equal("Predictor: 2 with this sample layout or compression", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(predicted)).Feature);
     }
 
     [Fact]

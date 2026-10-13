@@ -179,6 +179,14 @@ public sealed partial class FaultInjectionTests
                 }
 
                 return image;
+            case "jp2":
+                // The whole encoder runs for every code-block: transformation, block coder, packet headers
+                encoder = new Jpeg2000Encoder { MetadataHandling = MetadataHandling.Strip };
+                if (image.Frames.Count == 1 && image.PosterFrame is null && !image.IsAnimated)
+                    return image;
+
+                image.Dispose();
+                return null;
             case "qoi":
             case "bmp":
             case "bmp-indexed":

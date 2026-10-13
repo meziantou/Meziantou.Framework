@@ -12,7 +12,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// The supported subset is checked here, once: unsigned integer samples; grayscale (<c>WhiteIsZero</c> and
 /// <c>BlackIsZero</c>, 1, 2, 4, 8 or 16 bits), RGB (8 or 16 bits), palette color (1, 2, 4 or 8 bits), CMYK (8 or 16 bits)
 /// and YCbCr (8 bits) data; chunky planar configuration; strips or tiles; no compression, Deflate, LZW, PackBits, the CCITT
-/// facsimile compressions and JPEG; the horizontal differencing predictor. Everything else is recognized and rejected with
+/// facsimile compressions, JPEG and JPEG 2000; the horizontal differencing predictor. Everything else is recognized and rejected with
 /// <see cref="UnsupportedImageFeatureException"/>, never guessed.
 /// </para>
 /// <para>
@@ -104,6 +104,9 @@ internal sealed class TiffPage
 
     /// <summary>Gets a value indicating whether each strip or tile is a JPEG datastream.</summary>
     public bool IsJpeg => Compression == TiffFormat.CompressionJpeg;
+
+    /// <summary>Gets a value indicating whether each block holds a JPEG 2000 codestream.</summary>
+    public bool IsJpeg2000 => Compression == TiffFormat.CompressionJpeg2000;
 
     /// <summary>Gets a value indicating whether a Group 3 page mixes one- and two-dimensional rows (<c>T4Options</c> bit 0).</summary>
     public bool IsTwoDimensionalFax { get; private set; }
@@ -374,9 +377,9 @@ internal sealed class TiffPage
     {
         var compression = Directory.TryGetUnsigned(TiffFormat.CompressionTag, out var value) ? value : TiffFormat.CompressionNone;
         if (compression is not (TiffFormat.CompressionNone or TiffFormat.CompressionCcittRle or TiffFormat.CompressionCcittFax3 or TiffFormat.CompressionCcittFax4 or TiffFormat.CompressionLzw
-            or TiffFormat.CompressionJpeg or TiffFormat.CompressionAdobeDeflate or TiffFormat.CompressionPackBits or TiffFormat.CompressionDeflate))
+            or TiffFormat.CompressionJpeg or TiffFormat.CompressionAdobeDeflate or TiffFormat.CompressionPackBits or TiffFormat.CompressionDeflate or TiffFormat.CompressionJpeg2000))
         {
-            throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} uses {TiffFormat.GetCompressionName((long)compression)} compression; uncompressed, Deflate, LZW, PackBits, CCITT (modified Huffman, Group 3 and Group 4) and JPEG data are supported."), string.Create(CultureInfo.InvariantCulture, $"Compression: {compression}"));
+            throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} uses {TiffFormat.GetCompressionName((long)compression)} compression; uncompressed, Deflate, LZW, PackBits, CCITT (modified Huffman, Group 3 and Group 4), JPEG and JPEG 2000 data are supported."), string.Create(CultureInfo.InvariantCulture, $"Compression: {compression}"));
         }
 
         Compression = (int)compression;
@@ -401,8 +404,8 @@ internal sealed class TiffPage
         }
 
         Predictor = (int)predictor;
-        if (Predictor == TiffFormat.PredictorHorizontalDifferencing && (BitsPerSample < 8 || IsYCbCr || IsCcitt || IsJpeg))
-            throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} uses horizontal differencing with {BitsPerSample}-bit {TiffFormat.GetPhotometricName(Photometric)} data and {TiffFormat.GetCompressionName(Compression)} compression; it is supported with 8- and 16-bit samples that are not YCbCr, and not with the CCITT and JPEG compressions."), "Predictor: 2 with this sample layout or compression");
+        if (Predictor == TiffFormat.PredictorHorizontalDifferencing && (BitsPerSample < 8 || IsYCbCr || IsCcitt || IsJpeg || IsJpeg2000))
+            throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} uses horizontal differencing with {BitsPerSample}-bit {TiffFormat.GetPhotometricName(Photometric)} data and {TiffFormat.GetCompressionName(Compression)} compression; it is supported with 8- and 16-bit samples that are not YCbCr, and not with the CCITT, JPEG and JPEG 2000 compressions."), "Predictor: 2 with this sample layout or compression");
 
         if (IsCcitt)
         {
@@ -411,6 +414,10 @@ internal sealed class TiffPage
         else if (IsJpeg)
         {
             ResolveJpeg();
+        }
+        else if (IsJpeg2000)
+        {
+            ResolveJpeg2000();
         }
     }
 
@@ -433,6 +440,17 @@ internal sealed class TiffPage
             if ((options & TiffFormat.T6OptionUncompressedMode) != 0)
                 throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} uses the uncompressed mode of Group 4 coding."), "T6Options: uncompressed mode");
         }
+    }
+
+    private void ResolveJpeg2000()
+    {
+        // The codestream of a block holds the samples of the page as its components: its own color transformation is
+        // undone by its decoder, so the page cannot declare another one
+        if (BitsPerSample is not (8 or 16))
+            throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} uses JPEG 2000 compression with {BitsPerSample}-bit samples; 8- and 16-bit samples are supported."), string.Create(CultureInfo.InvariantCulture, $"Compression: JPEG 2000 with {BitsPerSample}-bit samples"));
+
+        if (IsPalette || IsYCbCr)
+            throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} uses JPEG 2000 compression with {(IsPalette ? "palette indexes" : "YCbCr data")}; grayscale, RGB and CMYK data are supported."), "Compression: JPEG 2000 with this sample layout");
     }
 
     private void ResolveJpeg()

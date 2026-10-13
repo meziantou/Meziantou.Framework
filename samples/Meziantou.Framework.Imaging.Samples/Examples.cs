@@ -484,6 +484,32 @@ internal static class Examples
     }
     // end-snippet
 
+    /// <summary>JPEG 2000 output: a lossless JP2 file, a lossy codestream, and what a JPEG 2000 file declares.</summary>
+    // begin-snippet: save-jpeg2000
+    public static string SaveJpeg2000(string inputPath, string jp2Path, string codestreamPath)
+    {
+        using var image = Image.Load(inputPath);
+
+        // Lossless by default: every pixel format is stored as it is, 16-bit samples and the colors of fully
+        // transparent pixels included. A JP2 file stores the ICC profile, the resolution, EXIF and XMP.
+        image.Save(jp2Path);
+
+        // Lossy: the quality sets the quantization, on the scale of the JPEG encoder; the opacity stays exact.
+        // A codestream alone (.j2k, .j2c, .jpc) stores no metadata: a strict save rejects an image that has some.
+        image.Save(codestreamPath, new Jpeg2000Encoder
+        {
+            Compression = Jpeg2000Compression.Lossy,
+            Quality = 80,
+            Container = Jpeg2000Container.Codestream,
+            MetadataHandling = MetadataHandling.DiscardUnsupported,
+        });
+
+        // Files, codestreams and the high-throughput block coder (HTJ2K) are decoded, whatever wrote them.
+        var info = Image.Identify(jp2Path);
+        return $"{info.Format} {info.Size.Width}x{info.Size.Height} {info.PixelFormat}, {info.BitsPerComponent} bits";
+    }
+    // end-snippet
+
     /// <summary>Identify without decoding pixels; unknown values stay null.</summary>
     // begin-snippet: identify
     public static string Describe(Stream stream)

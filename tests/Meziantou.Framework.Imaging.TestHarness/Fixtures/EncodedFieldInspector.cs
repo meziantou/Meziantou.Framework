@@ -32,8 +32,32 @@ public static class EncodedFieldInspector
         "pnm" => InspectPnm(data),
         "avif" => InspectAvif(data),
         "jxl" => InspectJpegXl(data),
+        "jp2" => InspectJpeg2000(data),
         _ => throw new ArgumentException($"Unknown fixture format '{format}'.", nameof(format)),
     };
+
+    /// <summary>
+    /// JPEG 2000: the fields come from <see cref="Jpeg2000.ReferenceJpeg2000"/>. The ICC profile of the first color
+    /// specification box, the UUID boxes of the EXIF profile and of the XMP packet, and the capture resolution box of a
+    /// JP2 file are read; a codestream has none of them. The resolution is reported when it is a whole number of grid
+    /// points per meter (a denominator of 1 and an exponent of 0 on both axes).
+    /// </summary>
+    private static EncodedFields InspectJpeg2000(ReadOnlySpan<byte> data)
+    {
+        var file = Jpeg2000.ReferenceJpeg2000.Parse(data);
+        var result = new EncodedFields
+        {
+            Icc = file.IccProfile,
+            Exif = file.Exif,
+            Xmp = file.Xmp,
+        };
+        if (file.CaptureResolution is { VerticalDenominator: 1, HorizontalDenominator: 1, VerticalExponent: 0, HorizontalExponent: 0 } resolution)
+        {
+            result.Resolution = new EncodedResolution { Unit = ResolutionExpectation.Meter, X = resolution.HorizontalNumerator, Y = resolution.VerticalNumerator };
+        }
+
+        return result;
+    }
 
     /// <summary>
     /// JPEG XL: the fields come from <see cref="JpegXl.ReferenceJpegXl"/>. The <c>Exif</c> and <c>xml </c> boxes, the

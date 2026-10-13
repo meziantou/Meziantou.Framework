@@ -60,6 +60,7 @@ public static class FixtureOptions
             "pnm" => ImageFormat.Pnm,
             "avif" => ImageFormat.Avif,
             "jxl" => ImageFormat.JpegXl,
+            "jp2" => ImageFormat.Jpeg2000,
             _ => ImageFormat.Unknown,
         };
     }

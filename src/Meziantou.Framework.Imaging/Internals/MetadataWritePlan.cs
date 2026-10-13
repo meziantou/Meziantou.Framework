@@ -92,15 +92,17 @@ internal sealed class MetadataWritePlan
     /// space cannot label these pixels (gray profiles for gray formats, RGB profiles for color
     /// formats) is unsupported metadata: it follows <paramref name="handling"/> like any other unrepresentable item.
     /// </param>
+    /// <param name="encoder">The encoder settings, for the formats whose settings change what the output stores; <see langword="null"/> otherwise.</param>
     /// <returns>The plan.</returns>
     /// <exception cref="UnsupportedImageFeatureException">Metadata cannot be represented and <paramref name="handling"/> is <see cref="MetadataHandling.Strict"/>.</exception>
     /// <exception cref="InvalidImageContentException">A payload that would be written is malformed.</exception>
-    public static MetadataWritePlan Create(ImageMetadata? metadata, ImageFormat format, MetadataHandling handling, Size canvasSize, PixelFormat? pixelFormat = null)
+    public static MetadataWritePlan Create(ImageMetadata? metadata, ImageFormat format, MetadataHandling handling, Size canvasSize, PixelFormat? pixelFormat = null, ImageEncoder? encoder = null)
     {
         if (metadata is null || handling == MetadataHandling.Strip)
             return Empty;
 
-        var capabilities = FormatCapabilities.Get(format);
+        // A JPEG 2000 codestream that is not in a JP2 file stores no metadata
+        var capabilities = encoder is Jpeg2000Encoder { Container: Jpeg2000Container.Codestream } ? FormatCapabilities.Get(ImageFormat.Unknown) : FormatCapabilities.Get(format);
         var context = new PlanContext(format, handling);
 
         IccProfile? icc = null;
@@ -124,6 +126,10 @@ internal sealed class MetadataWritePlan
                 else if (format == ImageFormat.Jpeg && iccProfile.Data.Length > MaxJpegIccBytes)
                 {
                     context.Unsupported("ICC color profile larger than 255 JPEG APP2 segments");
+                }
+                else if (format == ImageFormat.Jpeg2000 && !Jpeg2000RestrictedIcc.IsRestricted(iccProfile.Data.Span))
+                {
+                    context.Unsupported("ICC color profile that is neither a grayscale profile nor a matrix-based RGB profile (the only ones a JP2 file allows)");
                 }
                 else
                 {
@@ -218,6 +224,10 @@ internal sealed class MetadataWritePlan
                     else if (format == ImageFormat.Tiff)
                     {
                         _ = ResolutionConversion.ToTiffRational(value);
+                    }
+                    else if (format == ImageFormat.Jpeg2000)
+                    {
+                        _ = ResolutionConversion.ToJp2Resolution(value);
                     }
                     else
                     {
@@ -342,6 +352,9 @@ internal sealed class MetadataWritePlan
         // JPEG XL stores the orientation, the linear transfer function and an enumerable CICP description in its image header
         private static readonly FormatCapabilities JpegXl = new(icc: true, exif: true, xmp: true, resolution: false, TextSupport.None, linearTransfer: true, nativeOrientation: true, enumeratedCicp: true);
 
+        // A JP2 file; the orientation is the one of its EXIF data
+        private static readonly FormatCapabilities Jp2 = new(icc: true, exif: true, xmp: true, resolution: true, TextSupport.None);
+
         private FormatCapabilities(bool icc, bool exif, bool xmp, bool resolution, TextSupport text, bool linearTransfer = false, bool nativeOrientation = false, bool cicp = false, bool enumeratedCicp = false)
         {
             Cicp = cicp;
@@ -410,6 +423,7 @@ internal sealed class MetadataWritePlan
             ImageFormat.Ani => Ani,
             ImageFormat.Avif => Avif,
             ImageFormat.JpegXl => JpegXl,
+            ImageFormat.Jpeg2000 => Jp2,
             _ => None,
         };
 

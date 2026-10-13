@@ -96,6 +96,7 @@ public static class InputVariants
         ImageFormat.Gif => ".gif",
         ImageFormat.Jpeg => ".jpg",
         ImageFormat.JpegXl => ".jxl",
+        ImageFormat.Jpeg2000 => ".jp2",
         _ => ".bin",
     };
 

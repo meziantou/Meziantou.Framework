@@ -1,15 +1,15 @@
 using Meziantou.Framework.Imaging.Metadata;
-using Meziantou.Framework.Imaging.TestHarness.Avif;
+using Meziantou.Framework.Imaging.TestHarness.Heif;
 using Meziantou.Framework.Imaging.TestHarness.Fixtures;
 
 namespace Meziantou.Framework.Imaging.Tests;
 
 /// <summary>
 /// The AVIF container rules that a header identification applies, on files assembled box by box by
-/// <see cref="AvifFileBuilder"/> (no fixture file, no tool): the item model and the track model are read before any coded
+/// <see cref="HeifFileBuilder"/> (no fixture file, no tool): the item model and the track model are read before any coded
 /// data, so the payloads are placeholders. Expected values are written from the specifications; the independent reader
-/// (<see cref="ReferenceAvif"/>) reads the same files. The oracles of the corpus (<see cref="ReferenceYuvConverter"/>,
-/// the orientation and clean aperture arithmetic of <see cref="ReferenceAvif"/>) are checked here against hand-computed
+/// (<see cref="ReferenceHeif"/>) reads the same files. The oracles of the corpus (<see cref="ReferenceYuvConverter"/>,
+/// the orientation and clean aperture arithmetic of <see cref="ReferenceHeif"/>) are checked here against hand-computed
 /// values. Decoding is covered by <c>Conformance/AvifDecoderConformanceTests</c> and <c>Conformance/AvifContainerConformanceTests</c>.
 /// </summary>
 public sealed class AvifDecoderTests
@@ -17,27 +17,27 @@ public sealed class AvifDecoderTests
     // A temporal delimiter and bytes that are never parsed by a header identification
     private static readonly byte[] Payload = [0x12, 0x00, 0x0A, 0x01, 0x00];
 
-    private static AvifFileBuilder Still(uint width = 8, uint height = 6, int bitDepth = 8, bool monochrome = false, int subsampling = 0)
+    private static HeifFileBuilder Still(uint width = 8, uint height = 6, int bitDepth = 8, bool monochrome = false, int subsampling = 0)
     {
-        var builder = new AvifFileBuilder { PrimaryItemId = 1 };
+        var builder = new HeifFileBuilder { PrimaryItemId = 1 };
         builder.AddItem(1, "av01", Payload,
-            builder.AddProperty(AvifFileBuilder.ImageSize(width, height)),
-            -builder.AddProperty(AvifFileBuilder.Av1Configuration(subsampling == 0 && !monochrome ? 1 : 0, 0, bitDepth, monochrome, monochrome ? 1 : subsampling, monochrome ? 1 : subsampling)));
+            builder.AddProperty(HeifFileBuilder.ImageSize(width, height)),
+            -builder.AddProperty(HeifFileBuilder.Av1Configuration(subsampling == 0 && !monochrome ? 1 : 0, 0, bitDepth, monochrome, monochrome ? 1 : subsampling, monochrome ? 1 : subsampling)));
         return builder;
     }
 
-    private static AvifFileBuilder Sequence(int frames = 3, Action<AvifFileBuilder.Track>? configure = null)
+    private static HeifFileBuilder Sequence(int frames = 3, Action<HeifFileBuilder.Track>? configure = null)
     {
-        var builder = new AvifFileBuilder { MajorBrand = "avis", MovieTimescale = 1000 };
+        var builder = new HeifFileBuilder { MajorBrand = "avis", MovieTimescale = 1000 };
         builder.CompatibleBrands.Clear();
         builder.CompatibleBrands.Add("avis");
         builder.CompatibleBrands.Add("msf1");
         builder.Layout.Clear();
-        builder.Layout.Add(AvifFileBuilder.FileTypeBox);
-        builder.Layout.Add(AvifFileBuilder.MovieBox);
-        builder.Layout.Add(AvifFileBuilder.MediaDataBox);
-        var track = new AvifFileBuilder.Track(1, "pict", 8, 6) { Timescale = 1000, Duration = (ulong)frames * 100 };
-        track.SampleEntryBoxes.Add(AvifFileBuilder.Av1Configuration(1, 0, 8, monochrome: false, 0, 0));
+        builder.Layout.Add(HeifFileBuilder.FileTypeBox);
+        builder.Layout.Add(HeifFileBuilder.MovieBox);
+        builder.Layout.Add(HeifFileBuilder.MediaDataBox);
+        var track = new HeifFileBuilder.Track(1, "pict", 8, 6) { Timescale = 1000, Duration = (ulong)frames * 100 };
+        track.SampleEntryBoxes.Add(HeifFileBuilder.Av1Configuration(1, 0, 8, monochrome: false, 0, 0));
         for (var i = 0; i < frames; i++)
         {
             track.Samples.Add((Payload, 100));
@@ -48,9 +48,9 @@ public sealed class AvifDecoderTests
         return builder;
     }
 
-    private static AvifFileBuilder.EditList Edits(bool repeating, ulong segmentDuration, int version = 1, long mediaTime = 0, short rate = 1, short rateFraction = 0)
+    private static HeifFileBuilder.EditList Edits(bool repeating, ulong segmentDuration, int version = 1, long mediaTime = 0, short rate = 1, short rateFraction = 0)
     {
-        var edits = new AvifFileBuilder.EditList { IsRepeating = repeating, Version = version };
+        var edits = new HeifFileBuilder.EditList { IsRepeating = repeating, Version = version };
         edits.Entries.Add((segmentDuration, mediaTime, rate, rateFraction));
         return edits;
     }
@@ -70,9 +70,9 @@ public sealed class AvifDecoderTests
         if (alpha)
         {
             builder.AddItem(2, "av01", Payload,
-                builder.AddProperty(AvifFileBuilder.ImageSize(13, 7)),
-                -builder.AddProperty(AvifFileBuilder.Av1Configuration(0, 0, bitDepth, monochrome: true, 1, 1)),
-                builder.AddProperty(AvifFileBuilder.AuxiliaryType(ReferenceAvif.AlphaAuxiliaryType)));
+                builder.AddProperty(HeifFileBuilder.ImageSize(13, 7)),
+                -builder.AddProperty(HeifFileBuilder.Av1Configuration(0, 0, bitDepth, monochrome: true, 1, 1)),
+                builder.AddProperty(HeifFileBuilder.AuxiliaryType(ReferenceHeif.AlphaAuxiliaryType)));
             builder.References.Add(("auxl", 2, [1]));
         }
 
@@ -89,7 +89,7 @@ public sealed class AvifDecoderTests
         Assert.Null(info.Animation);
         Assert.Null(info.Metadata.Cicp);
 
-        var file = ReferenceAvif.Parse(data);
+        var file = ReferenceHeif.Parse(data);
         Assert.Equal((13L, 7L), file.PrimaryItem!.Size);
         Assert.Equal(alpha, file.AlphaItem is not null);
         Assert.Equal(bitDepth, file.PrimaryItem.Configuration!.BitDepth);
@@ -101,9 +101,9 @@ public sealed class AvifDecoderTests
         // A depth map is an auxiliary image too; only the alpha type gives the image an alpha channel
         var builder = Still();
         builder.AddItem(2, "av01", Payload,
-            builder.AddProperty(AvifFileBuilder.ImageSize(4, 3)),
-            -builder.AddProperty(AvifFileBuilder.Av1Configuration(0, 0, 8, monochrome: true, 1, 1)),
-            builder.AddProperty(AvifFileBuilder.AuxiliaryType("urn:mpeg:mpegB:cicp:systems:auxiliary:depth")));
+            builder.AddProperty(HeifFileBuilder.ImageSize(4, 3)),
+            -builder.AddProperty(HeifFileBuilder.Av1Configuration(0, 0, 8, monochrome: true, 1, 1)),
+            builder.AddProperty(HeifFileBuilder.AuxiliaryType("urn:mpeg:mpegB:cicp:systems:auxiliary:depth")));
         builder.References.Add(("auxl", 2, [1]));
         var info = Image.Identify(builder.Build());
         Assert.Equal(PixelFormat.Rgb24, info.PixelFormat);
@@ -130,16 +130,16 @@ public sealed class AvifDecoderTests
         var builder = Still();
         var item = builder.GetItem(1);
         if (rotation is { } turns)
-            item.Associations.Add((builder.AddProperty(AvifFileBuilder.Rotation(turns)), true));
+            item.Associations.Add((builder.AddProperty(HeifFileBuilder.Rotation(turns)), true));
 
         if (mirror is { } axis)
-            item.Associations.Add((builder.AddProperty(AvifFileBuilder.Mirror(axis)), true));
+            item.Associations.Add((builder.AddProperty(HeifFileBuilder.Mirror(axis)), true));
 
         var data = builder.Build();
         var info = Image.Identify(data);
         Assert.Equal(expected, info.Metadata.Orientation);
         Assert.Equal((8, 6), (info.Width, info.Height)); // reported, never applied
-        Assert.Equal((int)expected, ReferenceAvif.Parse(data).PrimaryItem!.Orientation);
+        Assert.Equal((int)expected, ReferenceHeif.Parse(data).PrimaryItem!.Orientation);
     }
 
     [Theory]
@@ -152,11 +152,11 @@ public sealed class AvifDecoderTests
         // ISO/IEC 23008-12, section 6.5.1: transformative properties apply in the order of their association
         var builder = Still();
         var item = builder.GetItem(1);
-        item.Associations.Add((builder.AddProperty(AvifFileBuilder.Mirror(mirror)), true));
-        item.Associations.Add((builder.AddProperty(AvifFileBuilder.Rotation(rotation)), true));
+        item.Associations.Add((builder.AddProperty(HeifFileBuilder.Mirror(mirror)), true));
+        item.Associations.Add((builder.AddProperty(HeifFileBuilder.Rotation(rotation)), true));
         var data = builder.Build();
         Assert.Equal(expected, Image.Identify(data).Metadata.Orientation);
-        Assert.Equal((int)expected, ReferenceAvif.Parse(data).PrimaryItem!.Orientation);
+        Assert.Equal((int)expected, ReferenceHeif.Parse(data).PrimaryItem!.Orientation);
     }
 
     [Fact]
@@ -165,13 +165,13 @@ public sealed class AvifDecoderTests
         // An 8x6 image; aperture 5x4 whose center is 1/2 sample right of the center: left = (8 - 5) / 2 + 1/2 = 2, top = 1
         var builder = Still();
         var item = builder.GetItem(1);
-        item.Associations.Add((builder.AddProperty(AvifFileBuilder.CleanAperture(5, 1, 4, 1, 1, 2, 0, 1)), true));
-        item.Associations.Add((builder.AddProperty(AvifFileBuilder.Rotation(1)), true));
+        item.Associations.Add((builder.AddProperty(HeifFileBuilder.CleanAperture(5, 1, 4, 1, 1, 2, 0, 1)), true));
+        item.Associations.Add((builder.AddProperty(HeifFileBuilder.Rotation(1)), true));
         var data = builder.Build();
         var info = Image.Identify(data);
         Assert.Equal((5, 4), (info.Width, info.Height));
         Assert.Equal(ExifOrientation.LeftBottom, info.Metadata.Orientation);
-        Assert.Equal((2, 1, 5, 4), ReferenceAvif.Parse(data).PrimaryItem!.CleanAperture!.GetRectangle(8, 6));
+        Assert.Equal((2, 1, 5, 4), ReferenceHeif.Parse(data).PrimaryItem!.CleanAperture!.GetRectangle(8, 6));
     }
 
     [Theory]
@@ -182,9 +182,9 @@ public sealed class AvifDecoderTests
     public void CleanApertureThatDoesNotSelectWholeSamplesIsNotSupported(uint widthN, uint widthD, uint heightN, uint heightD, int horizontalN, uint horizontalD, int verticalN, uint verticalD)
     {
         var builder = Still();
-        builder.GetItem(1).Associations.Add((builder.AddProperty(AvifFileBuilder.CleanAperture(widthN, widthD, heightN, heightD, horizontalN, horizontalD, verticalN, verticalD)), true));
+        builder.GetItem(1).Associations.Add((builder.AddProperty(HeifFileBuilder.CleanAperture(widthN, widthD, heightN, heightD, horizontalN, horizontalD, verticalN, verticalD)), true));
         var data = builder.Build();
-        Assert.Null(ReferenceAvif.Parse(data).PrimaryItem!.CleanAperture!.GetRectangle(8, 6));
+        Assert.Null(ReferenceHeif.Parse(data).PrimaryItem!.CleanAperture!.GetRectangle(8, 6));
         var exception = Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(data));
         Assert.Equal(ImageFormat.Avif, exception.Format);
     }
@@ -198,7 +198,7 @@ public sealed class AvifDecoderTests
     public void CleanApertureOutsideTheImageIsRejected(uint widthN, uint widthD, uint heightN, uint heightD, int horizontalN, uint horizontalD, int verticalN, uint verticalD)
     {
         var builder = Still();
-        builder.GetItem(1).Associations.Add((builder.AddProperty(AvifFileBuilder.CleanAperture(widthN, widthD, heightN, heightD, horizontalN, horizontalD, verticalN, verticalD)), true));
+        builder.GetItem(1).Associations.Add((builder.AddProperty(HeifFileBuilder.CleanAperture(widthN, widthD, heightN, heightD, horizontalN, horizontalD, verticalN, verticalD)), true));
         Assert.ThrowsAny<ImageException>(() => Image.Identify(builder.Build()));
     }
 
@@ -209,14 +209,14 @@ public sealed class AvifDecoderTests
         var icc = new byte[132];
         "RGB "u8.CopyTo(icc.AsSpan(16));
         var item = builder.GetItem(1);
-        item.Associations.Add((builder.AddProperty(AvifFileBuilder.ColorNclx(9, 16, 9, fullRange: false)), false));
-        item.Associations.Add((builder.AddProperty(AvifFileBuilder.ColorProfile(icc)), false));
+        item.Associations.Add((builder.AddProperty(HeifFileBuilder.ColorNclx(9, 16, 9, fullRange: false)), false));
+        item.Associations.Add((builder.AddProperty(HeifFileBuilder.ColorProfile(icc)), false));
         var data = builder.Build();
         var info = Image.Identify(data);
         Assert.Equal(new CicpColorDescription(9, 16, 9, fullRange: false), info.Metadata.Cicp);
         Assert.Equal("9/16/9 limited", info.Metadata.Cicp!.ToString());
-        Assert.Equal(new ReferenceAvif.ColorDescription(9, 16, 9, FullRange: false), ReferenceAvif.Parse(data).PrimaryItem!.Nclx);
-        Assert.Equal(132, ReferenceAvif.Parse(data).PrimaryItem!.IccProfile!.Value.Length);
+        Assert.Equal(new ReferenceHeif.ColorDescription(9, 16, 9, FullRange: false), ReferenceHeif.Parse(data).PrimaryItem!.Nclx);
+        Assert.Equal(132, ReferenceHeif.Parse(data).PrimaryItem!.IccProfile!.Value.Length);
     }
 
     [Theory]
@@ -224,7 +224,7 @@ public sealed class AvifDecoderTests
     [InlineData("mif1", new[] { "mif1", "avif" }, true)] // a compatible brand is enough
     [InlineData("miaf", new[] { "avif" }, true)]
     [InlineData("MA1B", new[] { "avif", "MA1B" }, true)]
-    [InlineData("mif1", new[] { "mif1", "heic" }, false)] // HEIF, not AVIF
+    [InlineData("mif1", new[] { "mif1", "miaf" }, false)] // HEIF, of no codec that the library reads
     [InlineData("mif1", new string[0], false)]
     public void BrandsOfTheFileTypeBoxSelectAvif(string majorBrand, string[] compatibleBrands, bool isAvif)
     {
@@ -237,7 +237,7 @@ public sealed class AvifDecoderTests
         }
 
         var data = builder.Build();
-        Assert.Equal(isAvif, ReferenceAvif.Parse(data).HasBrand("avif"));
+        Assert.Equal(isAvif, ReferenceHeif.Parse(data).HasBrand("avif"));
         if (isAvif)
         {
             Assert.Equal(ImageFormat.Avif, Image.Identify(data).Format);
@@ -248,14 +248,52 @@ public sealed class AvifDecoderTests
         }
     }
 
+    [Theory]
+    [InlineData("mif1", new[] { "mif1", "heic" })]
+    [InlineData("heic", new[] { "mif1", "miaf" })]
+    public void AnAv1ImageInAFileOfHeicBrandsIsNotRead(string majorBrand, string[] compatibleBrands)
+    {
+        // The brands declare images coded with HEVC: the file is an HEIC file whose primary item has another codec
+        var builder = Still();
+        builder.MajorBrand = majorBrand;
+        builder.CompatibleBrands.Clear();
+        foreach (var brand in compatibleBrands)
+        {
+            builder.CompatibleBrands.Add(brand);
+        }
+
+        var exception = Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(builder.Build()));
+        Assert.Equal(ImageFormat.Heic, exception.Format);
+        Assert.Equal("image codec", exception.Feature);
+    }
+
+    [Theory]
+    [InlineData("mif1", new[] { "heic", "avif" })]
+    [InlineData("heic", new[] { "heic", "avif" })]
+    [InlineData("avif", new[] { "heix", "avif" })]
+    public void TheCodecOfTheImageSelectsTheFormatOfAFileOfBothBrands(string majorBrand, string[] compatibleBrands)
+    {
+        var builder = Still();
+        builder.MajorBrand = majorBrand;
+        builder.CompatibleBrands.Clear();
+        foreach (var brand in compatibleBrands)
+        {
+            builder.CompatibleBrands.Add(brand);
+        }
+
+        var info = Image.Identify(builder.Build());
+        Assert.Equal(ImageFormat.Avif, info.Format);
+        Assert.Equal(ImageFormat.Avif, info.Metadata.SourceFormat);
+    }
+
     [Fact]
     public void FileWithTheSequenceBrandPresentsItsTrackAndAnyOtherFileItsPrimaryItem()
     {
         // The same boxes with and without the avis brand: a 13x7 primary item and a track of three 8x6 images
         var builder = Sequence();
-        builder.Layout.Insert(1, AvifFileBuilder.MetaBox);
+        builder.Layout.Insert(1, HeifFileBuilder.MetaBox);
         builder.PrimaryItemId = 1;
-        builder.AddItem(1, "av01", Payload, builder.AddProperty(AvifFileBuilder.ImageSize(13, 7)), -builder.AddProperty(AvifFileBuilder.Av1Configuration(1, 0, 8, monochrome: false, 0, 0)));
+        builder.AddItem(1, "av01", Payload, builder.AddProperty(HeifFileBuilder.ImageSize(13, 7)), -builder.AddProperty(HeifFileBuilder.Av1Configuration(1, 0, 8, monochrome: false, 0, 0)));
         builder.CompatibleBrands.Add("avif");
         var sequence = Image.Identify(builder.Build());
         Assert.Equal((8, 6, 3), (sequence.Width, sequence.Height, sequence.FrameCount));
@@ -275,20 +313,20 @@ public sealed class AvifDecoderTests
     {
         // 64-bit sizes, free and unknown boxes, a uuid box (16 more bytes of header), an mdat box that extends to the end
         var builder = Still();
-        builder.ExtraBoxes["free"] = AvifFileBuilder.Box("free", new byte[3]);
-        builder.ExtraBoxes["large"] = AvifFileBuilder.LargeBox("skip", new byte[7]);
-        builder.ExtraBoxes["uuid"] = AvifFileBuilder.Box("uuid", new byte[16], [1, 2, 3]);
-        builder.ExtraBoxes["unknown"] = AvifFileBuilder.Box("abcd", [9]);
+        builder.ExtraBoxes["free"] = HeifFileBuilder.Box("free", new byte[3]);
+        builder.ExtraBoxes["large"] = HeifFileBuilder.LargeBox("skip", new byte[7]);
+        builder.ExtraBoxes["uuid"] = HeifFileBuilder.Box("uuid", new byte[16], [1, 2, 3]);
+        builder.ExtraBoxes["unknown"] = HeifFileBuilder.Box("abcd", [9]);
         builder.Layout.Clear();
-        foreach (var box in new[] { AvifFileBuilder.FileTypeBox, "free", "large", "uuid", "unknown", AvifFileBuilder.MetaBox, "free", AvifFileBuilder.MediaDataBox })
+        foreach (var box in new[] { HeifFileBuilder.FileTypeBox, "free", "large", "uuid", "unknown", HeifFileBuilder.MetaBox, "free", HeifFileBuilder.MediaDataBox })
         {
             builder.Layout.Add(box);
         }
 
-        builder.LargeSizeBoxes.Add(AvifFileBuilder.MetaBox);
+        builder.LargeSizeBoxes.Add(HeifFileBuilder.MetaBox);
         builder.MediaDataExtendsToEnd = true;
         var data = builder.Build();
-        var file = ReferenceAvif.Parse(data);
+        var file = ReferenceHeif.Parse(data);
         Assert.Equal(["ftyp", "free", "skip", "uuid", "abcd", "meta", "free", "mdat"], file.TopLevelBoxes.Select(box => box.Type).ToArray());
         Assert.True(file.TopLevelBoxes[^1].ExtendsToEnd);
         Assert.Equal(Payload, file.ReadItemData(file.PrimaryItem!));
@@ -300,24 +338,24 @@ public sealed class AvifDecoderTests
     {
         // Two file type boxes
         var twice = Still();
-        twice.Layout.Insert(1, AvifFileBuilder.FileTypeBox);
+        twice.Layout.Insert(1, HeifFileBuilder.FileTypeBox);
         Assert.Throws<InvalidImageContentException>(() => Image.Identify(twice.Build()));
 
         // A file type box that is not a list of four-character codes
         var odd = Still();
-        odd.ExtraBoxes["odd"] = AvifFileBuilder.Box("ftyp", AvifFileBuilder.Ascii("avif"), new byte[4], AvifFileBuilder.Ascii("avi"));
+        odd.ExtraBoxes["odd"] = HeifFileBuilder.Box("ftyp", HeifFileBuilder.Ascii("avif"), new byte[4], HeifFileBuilder.Ascii("avi"));
         odd.Layout[0] = "odd";
         Assert.Throws<InvalidImageContentException>(() => Image.Identify(odd.Build()));
 
         // A 64-bit size smaller than the 16 bytes of its own header
         var small = Still();
-        small.ExtraBoxes["bad"] = AvifFileBuilder.Concat(AvifFileBuilder.U32(1), AvifFileBuilder.Ascii("free"), AvifFileBuilder.U64(12));
+        small.ExtraBoxes["bad"] = HeifFileBuilder.Concat(HeifFileBuilder.U32(1), HeifFileBuilder.Ascii("free"), HeifFileBuilder.U64(12));
         small.Layout.Insert(1, "bad");
         Assert.Throws<InvalidImageContentException>(() => Image.Identify(small.Build()));
 
         // No meta box at all: the file ends before any image is described
         var empty = Still();
-        empty.Layout.Remove(AvifFileBuilder.MetaBox);
+        empty.Layout.Remove(HeifFileBuilder.MetaBox);
         Assert.Throws<InvalidImageContentException>(() => Image.Identify(empty.Build()));
 
         // A property index beyond the ipco box
@@ -333,12 +371,12 @@ public sealed class AvifDecoderTests
     [Fact]
     public void GridsAreValidatedFromTheItemModel()
     {
-        AvifFileBuilder Grid(Action<AvifFileBuilder>? change = null)
+        HeifFileBuilder Grid(Action<HeifFileBuilder>? change = null)
         {
-            var builder = new AvifFileBuilder { PrimaryItemId = 1 };
-            var size = builder.AddProperty(AvifFileBuilder.ImageSize(8, 6));
-            var configuration = builder.AddProperty(AvifFileBuilder.Av1Configuration(1, 0, 8, monochrome: false, 0, 0));
-            builder.AddItem(1, "grid", AvifFileBuilder.GridDescriptor(1, 2, 16, 6), builder.AddProperty(AvifFileBuilder.ImageSize(16, 6)));
+            var builder = new HeifFileBuilder { PrimaryItemId = 1 };
+            var size = builder.AddProperty(HeifFileBuilder.ImageSize(8, 6));
+            var configuration = builder.AddProperty(HeifFileBuilder.Av1Configuration(1, 0, 8, monochrome: false, 0, 0));
+            builder.AddItem(1, "grid", HeifFileBuilder.GridDescriptor(1, 2, 16, 6), builder.AddProperty(HeifFileBuilder.ImageSize(16, 6)));
             builder.AddItem(2, "av01", Payload, size, -configuration).IsHidden = true;
             builder.AddItem(3, "av01", Payload, size, -configuration).IsHidden = true;
             builder.References.Add(("dimg", 1, [2, 3]));
@@ -355,20 +393,20 @@ public sealed class AvifDecoderTests
 
         // A tile that is not a coded image, and a tile with a transformation of its own
         Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(Grid(builder => builder.GetItem(3).Type = "grid").Build()));
-        Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(Grid(builder => builder.GetItem(3).Associations.Add((builder.AddProperty(AvifFileBuilder.Rotation(1)), true))).Build()));
+        Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(Grid(builder => builder.GetItem(3).Associations.Add((builder.AddProperty(HeifFileBuilder.Rotation(1)), true))).Build()));
 
         // Tiles of different bit depths
         Assert.Throws<InvalidImageContentException>(() => Image.Identify(Grid(builder =>
         {
             var tile = builder.GetItem(3);
-            tile.Associations[1] = (builder.AddProperty(AvifFileBuilder.Av1Configuration(1, 0, 10, monochrome: false, 0, 0)), true);
+            tile.Associations[1] = (builder.AddProperty(HeifFileBuilder.Av1Configuration(1, 0, 10, monochrome: false, 0, 0)), true);
         }).Build()));
     }
 
     [Fact]
     public void HeaderOfAnImageSequenceGivesItsSizeAndItsFrameCount()
     {
-        var data = Sequence(frames: 4, track => track.SampleEntryBoxes.Add(AvifFileBuilder.ColorNclx(1, 13, 6, fullRange: true))).Build();
+        var data = Sequence(frames: 4, track => track.SampleEntryBoxes.Add(HeifFileBuilder.ColorNclx(1, 13, 6, fullRange: true))).Build();
         var info = Image.Identify(data);
         Assert.Equal(ImageFormat.Avif, info.Format);
         Assert.Equal((8, 6), (info.Width, info.Height));
@@ -378,7 +416,7 @@ public sealed class AvifDecoderTests
         Assert.Equal(new CicpColorDescription(1, 13, 6, fullRange: true), info.Metadata.Cicp);
         Assert.Equal(ExifOrientation.TopLeft, info.Metadata.Orientation);
 
-        var track = ReferenceAvif.Parse(data).ColorTrack!;
+        var track = ReferenceHeif.Parse(data).ColorTrack!;
         Assert.Equal((8, 6, 4), (track.Width, track.Height, track.Samples.Count));
         Assert.All(track.Samples, sample => Assert.Equal((Payload.Length, 100u), (sample.Size, sample.Duration)));
     }
@@ -423,7 +461,7 @@ public sealed class AvifDecoderTests
         Assert.Equal(expectedPlays, info.Animation.TotalPlays);
 
         // The independent reader and the manifest rule compute the same count from the fields
-        var track = ReferenceAvif.Parse(data).ColorTrack!;
+        var track = ReferenceHeif.Parse(data).ColorTrack!;
         Assert.Equal(expectedPlays, track.TotalPlays);
         Assert.Equal(expectedPlays, EditListExpectation.GetTotalPlays(track.EditList is null ? null : new EditListExpectation
         {
@@ -461,7 +499,7 @@ public sealed class AvifDecoderTests
             track.Duration = 300;
             track.EditList = Edits(repeating, segmentDuration: 100);
         }).Build();
-        var track = ReferenceAvif.Parse(data).ColorTrack!;
+        var track = ReferenceHeif.Parse(data).ColorTrack!;
         Assert.Equal(300L, track.Samples.Sum(sample => (long)sample.Duration));
         Assert.Equal(100UL, track.EditList!.Entries[0].SegmentDuration);
         Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(data));
@@ -470,12 +508,12 @@ public sealed class AvifDecoderTests
     [Fact]
     public void AlphaTrackIsTheAuxiliaryTrackOfTheColorTrack()
     {
-        AvifFileBuilder WithAlpha(Action<AvifFileBuilder.Track, AvifFileBuilder.Track>? change = null)
+        HeifFileBuilder WithAlpha(Action<HeifFileBuilder.Track, HeifFileBuilder.Track>? change = null)
         {
             var builder = Sequence();
-            var alpha = new AvifFileBuilder.Track(2, "auxv", 8, 6) { Timescale = 1000, Duration = 300 };
-            alpha.SampleEntryBoxes.Add(AvifFileBuilder.Av1Configuration(0, 0, 8, monochrome: true, 1, 1));
-            alpha.SampleEntryBoxes.Add(AvifFileBuilder.FullBox("auxi", 0, 0, Encoding.ASCII.GetBytes(ReferenceAvif.AlphaAuxiliaryType), [0]));
+            var alpha = new HeifFileBuilder.Track(2, "auxv", 8, 6) { Timescale = 1000, Duration = 300 };
+            alpha.SampleEntryBoxes.Add(HeifFileBuilder.Av1Configuration(0, 0, 8, monochrome: true, 1, 1));
+            alpha.SampleEntryBoxes.Add(HeifFileBuilder.FullBox("auxi", 0, 0, Encoding.ASCII.GetBytes(ReferenceHeif.AlphaAuxiliaryType), [0]));
             alpha.References.Add(("auxl", [1]));
             for (var i = 0; i < 3; i++)
             {
@@ -491,12 +529,12 @@ public sealed class AvifDecoderTests
         var info = Image.Identify(data);
         Assert.Equal(PixelFormat.Rgba32, info.PixelFormat);
         Assert.True(info.MayHaveTransparency);
-        Assert.Equal(2u, ReferenceAvif.Parse(data).AlphaTrack!.Id);
+        Assert.Equal(2u, ReferenceHeif.Parse(data).AlphaTrack!.Id);
 
         // An auxiliary track of another kind is not an alpha plane
-        var depth = WithAlpha((_, alpha) => alpha.SampleEntryBoxes[1] = AvifFileBuilder.FullBox("auxi", 0, 0, "urn:mpeg:mpegB:cicp:systems:auxiliary:depth"u8.ToArray(), [0])).Build();
+        var depth = WithAlpha((_, alpha) => alpha.SampleEntryBoxes[1] = HeifFileBuilder.FullBox("auxi", 0, 0, "urn:mpeg:mpegB:cicp:systems:auxiliary:depth"u8.ToArray(), [0])).Build();
         Assert.Equal(PixelFormat.Rgb24, Image.Identify(depth).PixelFormat);
-        Assert.Null(ReferenceAvif.Parse(depth).AlphaTrack);
+        Assert.Null(ReferenceHeif.Parse(depth).AlphaTrack);
 
         // Premultiplied alpha, an alpha plane of another size: not supported; another number of images: invalid
         Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(WithAlpha((color, _) => color.References.Add(("prem", [2]))).Build()));
@@ -516,12 +554,12 @@ public sealed class AvifDecoderTests
 
         // No moov box at all
         var bare = Sequence();
-        bare.Layout.Remove(AvifFileBuilder.MovieBox);
+        bare.Layout.Remove(HeifFileBuilder.MovieBox);
         Assert.Throws<InvalidImageContentException>(() => Image.Identify(bare.Build()));
 
         // A movie fragment is not supported
         var fragmented = Sequence();
-        fragmented.ExtraBoxes["moof"] = AvifFileBuilder.Box("moof");
+        fragmented.ExtraBoxes["moof"] = HeifFileBuilder.Box("moof");
         fragmented.Layout.Insert(1, "moof");
         Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(fragmented.Build()));
     }
@@ -627,8 +665,8 @@ public sealed class AvifDecoderTests
     {
         // The items of one file in the mdat box, in the idat box and in several extents, with a nonzero Exif offset
         var builder = Still();
-        var exif = builder.AddItem(2, "Exif", AvifFileBuilder.Concat(AvifFileBuilder.U32(3), [0xAA, 0xBB, 0xCC], "II*\0"u8.ToArray(), [8, 0, 0, 0, 0, 0]));
-        exif.Storage = AvifFileBuilder.ItemStorage.ItemData;
+        var exif = builder.AddItem(2, "Exif", HeifFileBuilder.Concat(HeifFileBuilder.U32(3), [0xAA, 0xBB, 0xCC], "II*\0"u8.ToArray(), [8, 0, 0, 0, 0, 0]));
+        exif.Storage = HeifFileBuilder.ItemStorage.ItemData;
         var xmp = builder.AddItem(3, "mime", "<x:xmpmeta/>"u8.ToArray());
         xmp.ContentType = "application/rdf+xml";
         xmp.ExtentLengths.Add(4);
@@ -636,7 +674,7 @@ public sealed class AvifDecoderTests
         builder.References.Add(("cdsc", 2, [1]));
         builder.References.Add(("cdsc", 3, [1]));
         builder.MediaDataPrefix = [1, 2, 3];
-        var file = ReferenceAvif.Parse(builder.Build());
+        var file = ReferenceHeif.Parse(builder.Build());
         Assert.Equal(Payload, file.ReadItemData(file.PrimaryItem!));
         Assert.Equal(1, file.FindItem(2)!.ConstructionMethod);
         Assert.Equal("II*\0"u8.ToArray().Concat(new byte[] { 8, 0, 0, 0, 0, 0 }), file.ReadExifPayload(file.FindItem(2)!));
@@ -645,7 +683,7 @@ public sealed class AvifDecoderTests
         Assert.Equal([2u, 3u], file.FindDescriptions(1).Select(item => item.Id).ToArray());
 
         // A round trip through the builder keeps the description
-        var copy = ReferenceAvif.Parse(AvifFileBuilder.From(builder.Build()).Build());
+        var copy = ReferenceHeif.Parse(HeifFileBuilder.From(builder.Build()).Build());
         Assert.Equal(file.Items.Select(item => (item.Id, item.Type, item.ConstructionMethod)), copy.Items.Select(item => (item.Id, item.Type, item.ConstructionMethod)));
         Assert.Equal("<x:xmpmeta/>", Encoding.ASCII.GetString(copy.ReadItemData(copy.FindItem(3)!)));
     }

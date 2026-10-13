@@ -41,6 +41,13 @@ public sealed class FixtureManifest
     [JsonPropertyName("av1Vectors")]
     public Av1VectorSet? Av1Vectors { get; init; }
 
+    /// <summary>
+    /// Gets the HEVC conformance vectors: raw byte streams with plane digests. They are not fixtures (no pixel reference),
+    /// so the generic conformance suites never enumerate them.
+    /// </summary>
+    [JsonPropertyName("hevcVectors")]
+    public HevcVectorSet? HevcVectors { get; init; }
+
     /// <summary>Gets the ICC profiles used by <see cref="ColorTransforms"/>.</summary>
     [JsonPropertyName("colorProfiles")]
     public IReadOnlyList<ColorProfileEntry>? ColorProfiles { get; init; }

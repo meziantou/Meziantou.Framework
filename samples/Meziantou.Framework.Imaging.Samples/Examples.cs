@@ -563,6 +563,52 @@ internal static class Examples
     }
     // end-snippet
 
+    /// <summary>HEIC output: a photo that every HEIC reader opens, a lossless image and an animation written as an image sequence.</summary>
+    // begin-snippet: save-heic
+    public static void SaveHeic(string photoPath, string heicPath, string losslessPath, string animatedPath, string animatedHeicPath)
+    {
+        using (var photo = Image.Load(photoPath))
+        {
+            // Lossy 4:2:0 with 8 bits is the Main Still Picture profile of HEVC, which every HEIC reader decodes.
+            // The alpha plane, when the image has one, is always stored losslessly.
+            photo.Save(heicPath, new HeicEncoder
+            {
+                Compression = HeicCompression.Lossy,
+                Quality = 80, // 0-100: size versus fidelity
+                Effort = 4,   // 0-9: encoding time versus size
+                AllowBitDepthReduction = true, // 16-bit sources are written with 12 bits
+            });
+
+            // The default is lossless: every sample of an 8-bit image is decoded back exactly. The R'G'B' samples are
+            // coded as they are (4:4:4), which is a profile of the range extensions of HEVC: fewer readers decode it.
+            photo.Save(losslessPath, new HeicEncoder { AllowBitDepthReduction = true });
+        }
+
+        // An animation is written as an image sequence, with its exact durations and its play count. It needs a seekable
+        // destination (the index of the images is written last): a path, a FileStream or a MemoryStream.
+        using var animation = Image.Load(animatedPath);
+        animation.Save(animatedHeicPath, new HeicEncoder { Compression = HeicCompression.Lossy });
+    }
+    // end-snippet
+
+    /// <summary>HEIC input: the photo of a phone is decoded, turned upright and saved as a JPEG file.</summary>
+    // begin-snippet: load-heic
+    public static string ConvertHeic(string heicPath, string jpegPath)
+    {
+        using var image = Image.Load(heicPath);
+        var description = $"{image.Width}x{image.Height} {image.PixelFormat}, orientation: {image.Metadata.Orientation}";
+
+        // A camera stores the image as its sensor reads it, and the rotation to apply as a property of the file: the
+        // decoder reports it as the orientation of the image and moves no pixel. AutoOrient applies it, so that the
+        // JPEG file needs no orientation.
+        image.AutoOrient();
+
+        // The ICC profile of the photo (Display P3 for a recent phone) and its EXIF block are stored in the JPEG file
+        image.Save(jpegPath, new JpegEncoder { Quality = 90 });
+        return description;
+    }
+    // end-snippet
+
     /// <summary>JPEG XL output: lossless files, 16-bit samples and animations included, lossy and progressive files, and what a JPEG XL file declares.</summary>
     // begin-snippet: save-jpegxl
     public static string SaveJpegXl(string inputPath, string jxlPath, string lossyPath, string animatedPath, string animatedJxlPath)

@@ -21,7 +21,7 @@ internal sealed class ImageEncoderRegistry
         }
     }
 
-    /// <summary>Gets the built-in encoders: static PNG and APNG, through the PNG codec, GIF, baseline and progressive JPEG, WebP (lossless and lossy), QOI, BMP, TGA, PNM, TIFF and BigTIFF, ICO and CUR, ANI, AVIF, and lossless JPEG XL.</summary>
+    /// <summary>Gets the built-in encoders: static PNG and APNG, through the PNG codec, GIF, baseline and progressive JPEG, WebP (lossless and lossy), QOI, BMP, TGA, PNM, TIFF and BigTIFF, ICO and CUR, ANI, AVIF, HEIC, and lossless JPEG XL.</summary>
     public static ImageEncoderRegistry Default { get; } = new(
     [
         PngEncoderCodec.Instance,
@@ -37,6 +37,7 @@ internal sealed class ImageEncoderRegistry
         IcoEncoderCodec.Cursor,
         AniEncoderCodec.Instance,
         AvifEncoderCodec.Instance,
+        HeicEncoderCodec.Instance,
         JpegXlEncoderCodec.Instance,
     ]);
 

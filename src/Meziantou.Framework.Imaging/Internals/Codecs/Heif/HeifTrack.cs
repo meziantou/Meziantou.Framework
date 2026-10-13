@@ -1,0 +1,198 @@
+using Meziantou.Framework.Imaging.Metadata;
+
+namespace Meziantou.Framework.Imaging.Internals;
+
+/// <summary>
+/// A track of an image sequence (ISO/IEC 14496-12, section 8.3 "Track Structure"): the description of its samples, which are
+/// the coded images of a bitstream (the temporal units of an AV1 bitstream), and the location and the duration of each of them.
+/// </summary>
+internal sealed class HeifTrack : IDisposable
+{
+    private Av1PooledArray<long>? _sampleOffsets;
+    private Av1PooledArray<int>? _sampleSizes;
+    private Av1PooledArray<long>? _presentationTimes;
+    private Av1PooledArray<byte>? _configurationRecord;
+
+    /// <summary>Gets or sets <c>track_ID</c>.</summary>
+    public uint Id { get; set; }
+
+    /// <summary>
+    /// Gets or sets the duration of the track with its repetitions, in units of the time scale of the movie;
+    /// <see cref="ulong.MaxValue"/> when it is indefinite.
+    /// </summary>
+    public ulong Duration { get; set; }
+
+    /// <summary>Gets or sets the handler type of the media: <c>pict</c> for an image sequence, <c>auxv</c> for an auxiliary one.</summary>
+    public uint HandlerType { get; set; }
+
+    /// <summary>Gets or sets the number of time units of the media in a second.</summary>
+    public uint Timescale { get; set; }
+
+    /// <summary>Gets the identifiers of the tracks that this track is auxiliary to (<c>auxl</c> track references).</summary>
+    public List<uint> AuxiliaryOf { get; } = [];
+
+    /// <summary>Gets the identifiers of the tracks that this track is premultiplied by (<c>prem</c> track references).</summary>
+    public List<uint> PremultipliedBy { get; } = [];
+
+    /// <summary>Gets or sets a value indicating whether the track has an edit list.</summary>
+    public bool HasEditList { get; set; }
+
+    /// <summary>Gets or sets a value indicating whether the edit list repeats.</summary>
+    public bool IsRepeating { get; set; }
+
+    /// <summary>Gets or sets the media time at which the edit starts, in units of <see cref="Timescale"/>: the time of the first image that is presented.</summary>
+    public long EditMediaTime { get; set; }
+
+    /// <summary>Gets or sets the duration of the edit, which is one play of the track, in units of the time scale of the movie.</summary>
+    public ulong SegmentDuration { get; set; }
+
+    /// <summary>
+    /// Gets or sets the format whose codec the samples are coded with (an <c>av01</c> sample entry is the one of AVIF), or
+    /// <see langword="null"/> for a track that is not part of an image sequence that the library reads.
+    /// </summary>
+    public HeifCodecBinding? Binding { get; set; }
+
+    public bool HasCodedSampleEntry => Binding is not null;
+
+    /// <summary>Gets or sets the size of the samples that the sample entry declares.</summary>
+    public Size Size { get; set; }
+
+    /// <summary>Gets or sets the part of the samples that is the image: their clean aperture, or the whole of them.</summary>
+    public Rectangle Crop { get; set; }
+
+    /// <summary>Gets or sets the bit depth that the configuration record declares.</summary>
+    public int BitDepth { get; set; }
+
+    public bool IsMonochrome { get; set; }
+
+    public int SubsamplingX { get; set; }
+
+    public int SubsamplingY { get; set; }
+
+    /// <summary>
+    /// Gets the configuration record of the sample entry (the payload of its box), when the codec needs it
+    /// (<see cref="HeifCodecBinding.NeedsConfigurationRecord"/>); empty otherwise.
+    /// </summary>
+    public ReadOnlySpan<byte> ConfigurationRecord => _configurationRecord is { } record ? record.Span : default;
+
+    /// <summary>Keeps a copy of the configuration record of the sample entry: the <c>moov</c> payload is released before the samples are decoded.</summary>
+    /// <exception cref="ImageResourceLimitException">The copy exceeds the live-allocation limit.</exception>
+    public void SetConfigurationRecord(AllocationScope scope, ReadOnlySpan<byte> record)
+    {
+        _configurationRecord?.Dispose();
+        _configurationRecord = null;
+        _configurationRecord = Av1PooledArray<byte>.Rent(scope, record.Length, clear: false);
+        record.CopyTo(_configurationRecord.Span);
+    }
+
+    /// <summary>Gets or sets the type of an auxiliary track (<c>auxi</c>), or <see langword="null"/>.</summary>
+    public byte[]? AuxiliaryType { get; set; }
+
+    /// <summary>Gets or sets the <c>colr</c> box of type <c>nclx</c> of the sample entry, or <see langword="null"/>.</summary>
+    public CicpColorDescription? Nclx { get; set; }
+
+    /// <summary>Gets or sets the range of the ICC profile of the sample entry in the <c>moov</c> payload, or an empty range.</summary>
+    public (int Offset, int Length) IccProfile { get; set; }
+
+    /// <summary>Gets or sets the range of the payload of the <c>meta</c> box of the track in the <c>moov</c> payload, or an empty range.</summary>
+    public (int Offset, int Length) Meta { get; set; }
+
+    /// <summary>Gets or sets the number of samples of the track.</summary>
+    public long SampleCount { get; set; }
+
+    /// <summary>Gets the number of samples whose location is known: the first ones, up to the frame limit of the operation.</summary>
+    public int LocatedSampleCount { get; private set; }
+
+    /// <summary>Gets the durations of the samples in units of <see cref="Timescale"/>: runs of samples of the same duration.</summary>
+    public List<(uint Count, uint Delta)> Durations { get; } = [];
+
+    /// <summary>Gets or sets the sum of the durations of the samples, in units of <see cref="Timescale"/>.</summary>
+    public ulong MediaDuration { get; set; }
+
+    /// <summary>Gets or sets the duration of the last sample, in units of <see cref="Timescale"/>.</summary>
+    public uint LastSampleDuration { get; set; }
+
+    /// <summary>Returns whether the track describes an alpha plane: an auxiliary track without type, or of the alpha type of the format.</summary>
+    public bool IsAlphaOf(HeifCodecBinding binding) => AuxiliaryType is null || binding.IsAlphaAuxiliaryType(AuxiliaryType);
+
+    /// <summary>Gets the offset of a sample in the file.</summary>
+    public long GetSampleOffset(int index) => _sampleOffsets!.Span[index];
+
+    /// <summary>Gets the number of bytes of a sample.</summary>
+    public int GetSampleSize(int index) => _sampleSizes!.Span[index];
+
+    /// <summary>Gets the duration of a sample, in units of <see cref="Timescale"/>.</summary>
+    public uint GetSampleDuration(int index)
+    {
+        long first = 0;
+        foreach (var (count, delta) in Durations)
+        {
+            if (index < first + count)
+                return delta;
+
+            first += count;
+        }
+
+        return 0;
+    }
+
+    /// <summary>
+    /// Gets the presentation time of the first image, in units of <see cref="Timescale"/>: 0 for a track whose samples are in
+    /// presentation order.
+    /// </summary>
+    public long FirstPresentationTime => _presentationTimes is { Length: > 0 } times ? times.Span[0] : 0;
+
+    /// <summary>Gets or sets the duration of the located sample that is presented last, in units of <see cref="Timescale"/>.</summary>
+    public uint LastPresentedDuration { get; set; }
+
+    /// <summary>
+    /// Gets the duration of an image, in units of <see cref="Timescale"/>: the image at <paramref name="index"/> in
+    /// presentation order. The samples of a track with composition offsets are not in this order.
+    /// </summary>
+    public uint GetPresentationDuration(int index)
+    {
+        if (_presentationTimes is not { } times)
+            return GetSampleDuration(index);
+
+        // The presentation times are sorted and distinct, and the differences of consecutive ones fit in 32 bits
+        var span = times.Span;
+        return index + 1 < span.Length ? (uint)(span[index + 1] - span[index]) : LastPresentedDuration;
+    }
+
+    /// <summary>Rents the table of the presentation times of the located samples, which the caller fills and sorts.</summary>
+    /// <exception cref="ImageResourceLimitException">The table exceeds the live-allocation limit.</exception>
+    public Span<long> AllocatePresentationTimes(AllocationScope scope)
+    {
+        _presentationTimes?.Dispose();
+        _presentationTimes = null;
+        _presentationTimes = Av1PooledArray<long>.Rent(scope, LocatedSampleCount);
+        return _presentationTimes.Span;
+    }
+
+    /// <summary>Rents the tables that locate the first <paramref name="count"/> samples.</summary>
+    /// <exception cref="ImageResourceLimitException">The tables exceed the live-allocation limit.</exception>
+    public void AllocateSamples(AllocationScope scope, int count, out Span<long> offsets, out Span<int> sizes)
+    {
+        _sampleOffsets?.Dispose();
+        _sampleOffsets = null;
+        _sampleSizes?.Dispose();
+        _sampleSizes = null;
+        _sampleOffsets = Av1PooledArray<long>.Rent(scope, count);
+        _sampleSizes = Av1PooledArray<int>.Rent(scope, count);
+        LocatedSampleCount = count;
+        offsets = _sampleOffsets.Span;
+        sizes = _sampleSizes.Span;
+    }
+
+    public void Dispose()
+    {
+        _sampleOffsets?.Dispose();
+        _sampleOffsets = null;
+        _sampleSizes?.Dispose();
+        _sampleSizes = null;
+        _presentationTimes?.Dispose();
+        _presentationTimes = null;
+        _configurationRecord?.Dispose();
+        _configurationRecord = null;
+    }
+}

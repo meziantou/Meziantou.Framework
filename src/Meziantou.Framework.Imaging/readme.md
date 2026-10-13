@@ -2,9 +2,9 @@
 
 A fully managed, performance-oriented image library for .NET 10 and .NET 11: PNG, animated PNG (APNG), GIF, JPEG, WebP
 (still and animated, lossless and lossy), QOI, BMP, TGA, Netpbm (PBM/PGM/PPM/PAM), TIFF/BigTIFF, ICO/CUR and animated
-cursor (ANI), AVIF (still and animated, lossless and lossy) and JPEG XL (still and animated, lossless and lossy,
-progressive) decoding and encoding, lossless JPEG recompression, animation-aware processing, vector drawing, ICC color
-conversion, and bounded-memory streaming.
+cursor (ANI), AVIF and HEIC (still and animated, lossless and lossy) and JPEG XL (still and animated, lossless and
+lossy, progressive) decoding and encoding, lossless JPEG recompression, animation-aware processing, vector drawing, ICC
+color conversion, and bounded-memory streaming.
 
 - Static PNG, animated PNG (APNG), GIF, baseline/progressive JPEG, WebP (still and animated, lossless and lossy), QOI,
   BMP, TGA, Netpbm (PBM/PGM/PPM/PAM), TIFF/BigTIFF, ICO/CUR and ANI decoding; PNG, APNG, GIF, baseline and progressive
@@ -18,6 +18,9 @@ conversion, and bounded-memory streaming.
   byte (`JpegXlTranscoder`)
 - AVIF decoding and encoding with a fully managed AV1 decoder and a fully managed AV1 encoder: still images and
   animations, lossless and lossy, 8, 10 and 12 bits, alpha; grids and film grain are decoded
+- HEIC decoding and encoding with a fully managed HEVC (H.265) decoder and a fully managed HEVC encoder: the photos of
+  phones and cameras (grids, rotation, alpha, 10 bits), image sequences with reordered pictures, lossless and lossy
+  output, 8 to 12 bits
 - `ImageCollection` for the images that are not animation frames: TIFF document pages and icon/cursor representations,
   read and written one entry at a time
 - Animation-aware model: every frame is a full-canvas displayed image with exact rational timing and, for cursors, a
@@ -75,6 +78,7 @@ compiled and run by the test suite.
   - [TIFF and BigTIFF](#tiff-and-bigtiff)
   - [ICO and CUR](#ico-and-cur)
   - [AVIF](#avif)
+  - [HEIC](#heic)
   - [ANI](#ani)
   - [JPEG XL](#jpeg-xl)
 - [Limitations](#limitations)
@@ -157,6 +161,7 @@ decoded or encoded approximately; see [Format reference](#format-reference) and 
 | TIFF / BigTIFF | Both byte orders and offset sizes; bilevel, 2/4/8/16-bit gray, gray+alpha, RGB, RGBA, palette, YCbCr, and CMYK with a color conversion; strips and tiles; Deflate, LZW, PackBits, CCITT (modified Huffman, Group 3, Group 4) and JPEG; predictor; multi-page documents | Strips; uncompressed, Deflate, LZW, PackBits, CCITT (bilevel) or JPEG; gray, RGB, RGBA, bilevel or palette; classic or BigTIFF; multi-page documents (seekable destination) | `.tif`, `.tiff` |
 | ICO / CUR | PNG and DIB representations, cursor hotspots | PNG or 32-bit DIB representations, cursor hotspots | `.ico`, `.cur` |
 | AVIF | Still images and image sequences (animations); 8, 10 and 12 bits; 4:4:4, 4:2:2, 4:2:0 and monochrome; alpha; grids; film grain; ICC/EXIF/XMP and CICP color descriptions | Lossless and lossy still images and image sequences (seekable destination); 8, 10 and 12 bits; 4:4:4, 4:2:2, 4:2:0 and monochrome; lossless alpha; ICC/EXIF/XMP, CICP color descriptions and orientation | `.avif`, `.avifs` (lossless by default) |
+| HEIC | Still images and image sequences (animations); the HEVC version 1 and range extensions profiles: 8 to 12 bits; 4:4:4, 4:2:2, 4:2:0 and monochrome; intra and inter pictures (P and B, reordered); alpha; grids; ICC/EXIF/XMP and CICP color descriptions | Lossless and lossy still images and image sequences (seekable destination); 8, 10 and 12 bits; 4:4:4, 4:2:2, 4:2:0 and monochrome; lossless alpha; ICC/EXIF/XMP, CICP color descriptions and orientation | `.heic`, `.heif`, `.heics`, `.heifs` (lossless by default) |
 | JPEG XL | Bare codestreams and containers; lossy (VarDCT) and lossless (Modular) frames; up to 16 bits; alpha; animations and layers; patches, splines, noise; recompressed JPEG files; ICC/EXIF/XMP and enumerated color encodings; progressive renderings | Lossless (default) or lossy, every pixel format at its own depth, lossless alpha, animations with any frame count, progressive output, ICC/EXIF/XMP, orientation; JPEG files recompressed without loss (`JpegXlTranscoder`) | `.jxl` |
 | ANI | Animated cursors: icon and cursor frames (PNG and DIB), rate and sequence tables, hotspots, title and author | One cursor image per frame (PNG or 32-bit DIB), hotspots, identical frames stored once, title and author (seekable destination) | `.ani` |
 
@@ -469,7 +474,7 @@ without the `#`), which `ToHexString` writes back. An `Rgba32` converts implicit
 | Gray levels and colors, when encoding a portable bitmap (`PnmPixelLayout.Bitmap`, `.pbm`) | None: pixels that are not exactly black or white are rejected, never thresholded or dithered |
 | Partial alpha, when encoding GIF (GIF has one transparent index) | `GifEncoder.AlphaMode`: `Threshold` (default, `AlphaThreshold` 128) or `Flatten` with `BackgroundColor` |
 | 16-bit precision, when encoding JPEG, WebP, QOI, BMP or TGA | `AllowBitDepthReduction` on the encoder |
-| 16-bit precision, when encoding AVIF (at most 12 bits) | `AvifEncoder.BitDepth` (10 or 12), or `AllowBitDepthReduction` (12 bits) |
+| 16-bit precision, when encoding AVIF or HEIC (at most 12 bits) | `BitDepth` (10 or 12) of `AvifEncoder` or `HeicEncoder`, or `AllowBitDepthReduction` (12 bits) |
 | 8-bit precision, when encoding 16-bit BMP (`Bgr565`, `Bgr555`: 5 or 6 bits per channel) | `BmpEncoder.AllowBitDepthReduction` |
 | 16-bit precision, when loading or converting | Request the narrower type explicitly (`Load<Rgba32>`, `CloneAs<Gray8>`) |
 | Colors beyond 256 per frame, when encoding GIF | Lossy by design: deterministic quantization (`MaxColors`), optional `Dithering` |
@@ -1375,11 +1380,11 @@ resolution, ICC/EXIF/XMP profiles (byte-for-byte payloads) and text entries.
   encoding with the sRGB primaries and a linear transfer function). Only `ConvertColorProfile` converts the pixels (and
   resets the label); linear-light resizing filters `Linear` samples directly. Only QOI and JPEG XL store the label: the
   other encoders treat `Linear` as metadata they cannot store, so the samples are never silently relabeled as sRGB.
-- **CICP color descriptions are labels too.** `Metadata.Cicp` holds the code points of ITU-T H.273 that an AVIF file
-  declares, or that are equivalent to the enumerated color encoding of a JPEG XL file: color primaries, transfer
+- **CICP color descriptions are labels too.** `Metadata.Cicp` holds the code points of ITU-T H.273 that an AVIF or HEIC
+  file declares, or that are equivalent to the enumerated color encoding of a JPEG XL file: color primaries, transfer
   characteristics, matrix coefficients and range. The decoder applies the matrix and the range to produce RGB; the
-  primaries and the transfer characteristics are never applied (HDR samples are not tone mapped). The AVIF encoder
-  stores the description (with the matrix and the range that it used), and the JPEG XL encoder stores it when the
+  primaries and the transfer characteristics are never applied (HDR samples are not tone mapped). The AVIF and HEIC encoders
+  store the description (with the matrix and the range that it used), and the JPEG XL encoder stores it when the
   format can enumerate it (full-range RGB with the sRGB, Display P3, DCI-P3 or BT.2020 primaries). For the other
   encoders, a description that is not equivalent to sRGB is metadata the format cannot store, unless an ICC profile is
   written. Linear-light processing rejects such a description.
@@ -1407,9 +1412,9 @@ resolution, ICC/EXIF/XMP profiles (byte-for-byte payloads) and text entries.
 
 TIFF stores the resolution, the orientation, an ICC profile and XMP (no EXIF block, no text entries); ICO stores no
 metadata, CUR only the hotspot of each representation, and ANI the hotspot of each frame plus one `Title` and one `Author`
-text entry (Latin-1). AVIF stores the ICC profile and the CICP color description (`colr` boxes), EXIF and XMP (items)
+text entry (Latin-1). AVIF and HEIC store the ICC profile and the CICP color description (`colr` boxes), EXIF and XMP (items)
 and, for a still image, the orientation (`irot` and `imir` properties, never an EXIF block created for it); an image
-sequence stores no orientation, and AVIF has no text entry and no resolution. JPEG XL stores an ICC profile (in the
+sequence stores no orientation, and neither format has a text entry or a resolution. JPEG XL stores an ICC profile (in the
 codestream), EXIF and XMP (in `Exif` and `xml ` boxes), the orientation (in the image header, not as an EXIF tag), the
 linear transfer function and a CICP color description; it stores no resolution and no text entry. Unknown chunks,
 segments and extensions are skipped on decode and not round-tripped.
@@ -1596,7 +1601,7 @@ safety bounds: exceeding one throws `ImageResourceLimitException`
 is deliberate prefix selection: decoding stops after that many displayed frames and the rest of the input is neither
 examined nor validated. Limits are inclusive and enforced before allocating or consuming.
 
-AVIF is detected from its file type box (12 bytes) and read forward only: the data of the image are captured as they go
+AVIF and HEIC are detected from the brands of their file type box and read forward only: the data of the image are captured as they go
 by, so a file whose media data precede its index is buffered up to that index, bounded by `MaxEncodedBytes` and the live
 allocation limit.
 
@@ -1660,7 +1665,7 @@ output.
 | WebP | Optional; an animation (any count other than 1) needs a seekable destination |
 | JPEG XL | Optional; any count, without seeking (a frame is written when the next one, or the completion, tells whether it is the last) |
 | ANI | Optional; any count, with a seekable destination (the counts and sizes are patched at completion) |
-| AVIF | Required; an image sequence (any count other than 1) needs a seekable destination (its index is written at completion, in the room that the count reserves) |
+| AVIF, HEIC | Required; an image sequence (any count other than 1) needs a seekable destination (its index is written at completion, in the room that the count reserves) |
 | JPEG, QOI, BMP, TGA, Netpbm, TIFF, ICO/CUR | Optional; exactly one frame |
 
 `Complete` checks that at least one frame was written and that the count matches. Errors detected before any work
@@ -1734,7 +1739,7 @@ public static void StreamingWithReusedBuffer(string inputPath, string outputPath
 `Save(stream, encoder)` requires an encoder. `Save(path)` infers it from the extension: `.png`
 (APNG when the image is animated), `.apng` (always APNG), `.gif`, `.jpg`/`.jpeg`, `.webp` (lossless by default), `.qoi`,
 `.bmp`/`.dib`, `.tga`/`.icb`/`.vda`/`.vst`, `.pnm`/`.pam`/`.ppm`/`.pgm`, `.pbm` (a portable bitmap, from black and white
-pixels only), `.tif`/`.tiff`, `.ico`, `.cur`, `.ani`, `.avif`/`.avifs` (lossless by default) and `.jxl` (lossless by default); anything else throws `ArgumentException`. An eager save validates the whole image against the output (animation, poster,
+pixels only), `.tif`/`.tiff`, `.ico`, `.cur`, `.ani`, `.avif`/`.avifs` (lossless by default), `.heic`/`.heif`/`.heics`/`.heifs` (lossless by default) and `.jxl` (lossless by default); anything else throws `ArgumentException`. An eager save validates the whole image against the output (animation, poster,
 durations, alpha, precision, metadata) before writing anything.
 
 Path outputs, eager or through writers, are written to a temporary file in the destination directory and published by a
@@ -2265,6 +2270,99 @@ public static void SaveAvif(string photoPath, string avifPath, string losslessPa
 
 The encoder does not use every coding tool of AV1: see [Limitations](#limitations).
 
+### HEIC
+
+HEIC is decoded and encoded: HEVC (H.265) images in the HEIF container that AVIF also uses, which is the format of the
+photos of Apple devices and of many cameras. The HEVC decoder is fully managed and written from Rec. ITU-T H.265. It is
+exact: every plane it decodes equals the output of the reference decoders (FFmpeg, libde265 and the HM reference
+software), and the picture hashes that a bitstream carries are checked by the tests.
+
+<!-- snippet: load-heic -->
+```csharp
+public static string ConvertHeic(string heicPath, string jpegPath)
+{
+    using var image = Image.Load(heicPath);
+    var description = $"{image.Width}x{image.Height} {image.PixelFormat}, orientation: {image.Metadata.Orientation}";
+
+    // A camera stores the image as its sensor reads it, and the rotation to apply as a property of the file: the
+    // decoder reports it as the orientation of the image and moves no pixel. AutoOrient applies it, so that the
+    // JPEG file needs no orientation.
+    image.AutoOrient();
+
+    // The ICC profile of the photo (Display P3 for a recent phone) and its EXIF block are stored in the JPEG file
+    image.Save(jpegPath, new JpegEncoder { Quality = 90 });
+    return description;
+}
+```
+
+| Feature | Decoding |
+| --- | --- |
+| Detection | The brands of the file type box: `heic`, `heix`, `heim`, `heis` (images) and `hevc`, `hevx`, `hevm`, `hevs` (image sequences). A file with a generic major brand (`mif1`, `msf1`, `miaf`) is HEIC or AVIF according to its compatible brands, and a file that has both according to the codec of its primary item, or of the track of its sequence. `Image.DetectFormat`, which sees the first bytes only, answers from the brands that these bytes hold |
+| Presentation | A file with a sequence brand presents its image sequence (the `pict` track): an animation whose frames are full-canvas images. Any other file presents its primary item. Thumbnails, gain maps, depth maps and the other images of the file (the other photos of a burst, for instance) are not read |
+| Bitstream | The profiles of version 1 (Main, Main 10, Main Still Picture) and of the range extensions (Monochrome, 4:2:2 and 4:4:4 profiles): 8 to 12 bits, 4:4:4, 4:2:2, 4:2:0 and monochrome; intra pictures and inter pictures (P and B, with two reference lists, weighted prediction, temporal motion vector prediction and long-term reference pictures); tiles, wavefront streams and dependent slice segments (decoded sequentially); scaling lists, PCM and lossless (transform bypass) blocks; the tools of the range extensions (cross-component prediction, residual DPCM, transform skip of large blocks, chroma QP offset lists, persistent Rice adaptation). Only the base layer of a layered stream is decoded |
+| Configuration | The parameter sets of the `hvcC` configuration record and the ones of the bitstream (`hev1` tracks). The sample format of the bitstream must be the one that the record declares, and the size of a picture the one of its `ispe` property |
+| Pixel formats | 8-bit files load as `Rgb24` (`Rgba32` with alpha, `Gray8` for monochrome without alpha); 9-bit to 12-bit files load as `Rgba64` (`Gray16` for monochrome without alpha), their samples scaled to 16 bits exactly |
+| Color conversion | As for AVIF: the matrix coefficients and the range of the `colr` box, or else of the video usability information of the bitstream, convert YCbCr to RGB with integer arithmetic; unspecified coefficients are BT.601. A bitstream without video signal description uses the limited range, which is what H.265 infers and how libheif and Apple ImageIO read such a file. The chroma samples of a 4:2:0 picture are at the position that the bitstream declares (types 0, 1 and 2 of H.265: at the left of the luma samples by default), and the ones of a 4:2:2 picture at the position of the luma samples of even columns |
+| Alpha | The alpha auxiliary image (`urn:mpeg:hevc:2015:auxid:1` or the URN of MPEG-B), or the alpha track of a sequence, of the size of the color image. An alpha plane uses the full range unless its bitstream states the limited range. Premultiplied alpha is rejected |
+| Grids | Grid images, for the color image and its alpha plane: the layout of the photos of a phone (tiles of 512x512 samples) |
+| Transformations | `irot` and `imir` are composed and reported as `Metadata.Orientation`, never applied (`AutoOrient()` applies them); the EXIF orientation tag is ignored, as the format requires. `clap` crops the image when it selects whole samples, as does the `clap` box of the sample entry of a sequence. `pasp` is ignored |
+| Metadata | ICC profile, EXIF, XMP and the CICP color description, as for AVIF |
+| Identification | `Header` mode reads the `meta` box (or the `moov` box of a sequence), whose configuration record gives the sample format and, when the file has no `colr` box, the color description of the bitstream; when the record holds no sequence parameter set (an `hev1` track), it reads on to the one of the bitstream. `FullScan` also walks every item and sample |
+| Animations | Exact frame durations, in presentation order: the images of a sequence are stored in decoding order, and the composition offsets of the track (`ctts`) give the order and the durations of the images that are shown. The number of plays comes from the edit list, and a sequence without edit list loops forever. `ImageReader` decodes a sequence frame by frame with a memory that does not depend on the number of frames: the reference pictures of the stream, and the samples of at most 16 images that are decoded before the image that is shown |
+| Limits | Every picture of the bitstream is checked against the canvas limits, at the size that the decoder outputs: the conformance window of a picture, which removes its padding to a whole number of coding blocks (a picture of 1080 rows is coded with 1088), does not count, unless it removes more than that padding. As for AVIF, a clean aperture does not reduce what is checked: the picture is decoded whole |
+| Errors | No concealment: a missing reference picture, an incomplete picture or a value outside its range is `InvalidImageContentException` |
+
+The screen content coding, multilayer and 3D extensions, bit depths above 12 bits, luma and chroma samples of different
+bit depths, separate color planes, field sequences, extended precision processing, and the chroma sample positions of
+types 3 to 5 are rejected with `UnsupportedImageFeatureException`, as are the container features that the
+AVIF decoder rejects.
+
+<!-- snippet: save-heic -->
+```csharp
+public static void SaveHeic(string photoPath, string heicPath, string losslessPath, string animatedPath, string animatedHeicPath)
+{
+    using (var photo = Image.Load(photoPath))
+    {
+        // Lossy 4:2:0 with 8 bits is the Main Still Picture profile of HEVC, which every HEIC reader decodes.
+        // The alpha plane, when the image has one, is always stored losslessly.
+        photo.Save(heicPath, new HeicEncoder
+        {
+            Compression = HeicCompression.Lossy,
+            Quality = 80, // 0-100: size versus fidelity
+            Effort = 4,   // 0-9: encoding time versus size
+            AllowBitDepthReduction = true, // 16-bit sources are written with 12 bits
+        });
+
+        // The default is lossless: every sample of an 8-bit image is decoded back exactly. The R'G'B' samples are
+        // coded as they are (4:4:4), which is a profile of the range extensions of HEVC: fewer readers decode it.
+        photo.Save(losslessPath, new HeicEncoder { AllowBitDepthReduction = true });
+    }
+
+    // An animation is written as an image sequence, with its exact durations and its play count. It needs a seekable
+    // destination (the index of the images is written last): a path, a FileStream or a MemoryStream.
+    using var animation = Image.Load(animatedPath);
+    animation.Save(animatedHeicPath, new HeicEncoder { Compression = HeicCompression.Lossy });
+}
+```
+
+| Feature | Encoding |
+| --- | --- |
+| Compression | `HeicCompression.Lossless` (the default) codes the R'G'B' samples without color conversion (identity matrix, 4:4:4, full range), and gray pixel formats as a monochrome image, with the transform and the quantization bypassed: every coded sample is decoded back exactly. `HeicCompression.Lossy` codes Y'CbCr samples; `Quality` (0 to 100, 75 by default) selects the quantizer and `ChromaSubsampling` the chroma layout: 4:2:0 (the default), 4:2:2 or 4:4:4. The quantization parameter of HEVC is linear in the quality (51 at 0, 26 at 50, 13 at 75, 0 at 100), which is not the scale of the AVIF encoder: at the default quality, a photograph is closer to its source and several times larger than the AVIF file of the same quality number (the synthetic photograph of the `heic-quality` command of the benchmarks, which measures sizes, qualities and times, takes 0.4 bit per pixel at quality 50 and 2.7 at quality 75, where the AVIF encoder takes 0.2 and 0.4). Lossless files are large: select the lossy coding for photographs |
+| Profiles and readers | The stream declares the narrowest profile that holds it, and the brand of the file follows the profile of the color images. Lossy 4:2:0 output with 8 bits is Main Still Picture (Main for a sequence) in a `heic` file (`hevc` for a sequence), and with 10 bits Main 10 in a `heix` file: the output that the readers of phones, operating systems and browsers open. Everything else is a profile of the range extensions in a `heix` (`hevx`) file: lossless output, 4:4:4 and 4:2:2, 12 bits, gray images. libheif, FFmpeg and Apple ImageIO open them at 8 and 10 bits (the interoperability tests decode every combination with them); Apple ImageIO does not open 12-bit 4:2:2 or 4:4:4 images, and many other readers open none of them |
+| Bit depth | 8-bit pixel formats are written with 8 bits, or with `BitDepth` 10 or 12 (scaled up exactly). HEIC stores at most 12 bits: `Rgba64` and `Gray16` need `BitDepth`, or `AllowBitDepthReduction` (12 bits), and are rounded to nearest. The samples of a 10-bit or 12-bit image, which load as 16-bit pixels, are coded back unchanged at their depth |
+| Color conversion | Lossy output keeps the matrix coefficients and the range of `Metadata.Cicp` when they are ones that the decoder converts, and uses BT.601 in full range otherwise, as for AVIF. The video usability information of the stream always states the range, the color description and the position of the chroma samples. A chroma sample of 4:2:0 or 4:2:2 planes is at the position of the luma sample of an even column, where HEVC readers expect it: the chroma of that column counts twice and the one of each neighbor once (and the two rows of 4:2:0 samples are averaged) |
+| Sizes | The pictures of a stream with subsampled chroma have an even number of columns and of rows that are subsampled. An image of an odd size is coded with one more column or row, which repeats the last one, and the file states the size of the image: a `clap` property for a still image, a `clap` box in the sample entry of a sequence |
+| Alpha | An auxiliary image at the bit depth of the color image, monochrome and always lossless. A still image whose pixels are all opaque has none. `ClearTransparentColors` replaces the color of the fully transparent pixels with black, which makes the file smaller |
+| Effort | `Effort` (0 to 9, 5 by default) widens the search: coding blocks from 32x32 down to 8x8 (64x64 for the predicted images of a sequence), 4x4 prediction blocks from effort 4, the number of intra modes that are tried at their real cost (all 35 at effort 9), the depth of the transform tree, sign data hiding (from effort 4), transform skip (from effort 6), the sample adaptive offset (edge offsets from effort 3, band offsets from effort 5), and for the images of a sequence the reach of the motion search, its refinement to a half then a quarter of a sample, the number of merge candidates, rectangular and asymmetric partitions and temporal motion vector prediction. It never changes the decoded pixels of lossless output. Encoding is single-threaded and far slower than a native encoder: of the order of a megapixel per second at effort 4 for a lossy photograph on a recent laptop, ten times more at effort 0 and ten times less at effort 9 |
+| Animations | An image with several frames is written as an image sequence (`hevc` or `hevx` brand): every frame is a full image, with its exact duration and the play count of the animation, as for AVIF. A pixel format with alpha has an alpha track. The first image is also the primary item of the file, for the readers that do not play sequences. The destination must be seekable and the frame count known |
+| Inter prediction | The first image of a sequence is a key frame (an IDR picture). Each other image is a P picture predicted from the image that precedes it: a block copies the samples that a motion vector points to (to a quarter of a sample), merges with the motion of a neighbor, codes what differs, or is intra coded where that costs less. `KeyFrameInterval` (0 by default: no other key frame) is the number of images from a key frame to the next one; 1 makes every image a key frame. The images are stored in the order they are shown. Lossless output stays lossless |
+| Metadata | A `colr` box of type `nclx` is always written; the ICC profile, EXIF and XMP are stored; the orientation of a still image is stored as `irot` and `imir` properties (the pixels are written as they are). An image sequence stores no orientation |
+| Memory | A still image is coded in memory before the file is written, so it goes to any stream. An image sequence keeps 24 bytes per frame; its coded frames are written as they are encoded |
+| Limits | At most 65,528 pixels per side and 4 GiB for a still image. The level of the stream is the lowest one whose picture size holds the image, and level 8.5 (no limit) for a picture that is larger than the ones of level 6.2 |
+
+The encoder does not use every coding tool of HEVC: see [Limitations](#limitations). HEVC is covered by patents in many
+countries: check the licensing terms that apply to what you distribute.
+
 ### JPEG XL
 
 JPEG XL files are decoded and encoded, lossy or lossless; the decoder and the encoder are fully managed. The lossless
@@ -2392,6 +2490,8 @@ Everything below is rejected explicitly (never decoded or encoded approximately)
 | Processing | No HDR or custom processors; `LinearSrgb` resizing and convolution accept untagged or recognized sRGB/sGray profiles only; convolution matrices have odd dimensions, no bias or divisor, no ready-made matrices and no separable fast path |
 | AVIF encoding | An image of a sequence is predicted from the previous image only, with one motion vector per block and the regular interpolation filter: no compound prediction (two references), global, warped or overlapped motion, switchable interpolation filter, temporal motion vector prediction, or scene change detection (an image that differs from the previous one is coded with intra blocks, not as a key frame). Not used: intra block copy (content that repeats in an image, such as the characters of a text, is not predicted from the image itself: a lossless screenshot can be larger than its PNG), the split of the transform blocks of an inter block (it has the largest transform of its size), quantizer deltas, quantization matrices, loop restoration, CDEF strengths per block (one pair per frame), super-resolution and film grain. No grid, layered (progressive) or premultiplied-alpha output; no `clap`, `pasp`, mastering display or content light level box; no orientation for an image sequence. An image sequence of one image cannot store animation settings (it is read back as a still image): a single frame with animation settings is rejected. An image sequence needs a seekable destination and its frame count. The level of the stream is the lowest one whose picture size holds the image; the other limits of a level are not checked |
 | AVIF decoding | Rejected with `UnsupportedImageFeatureException`: premultiplied alpha, `iden`/`iovl` derived images, fragmented files, edit lists that do not play the whole track, image sequences whose images change size, clean apertures that do not select whole samples or that follow a rotation, grid tiles that declare other transformations than their grid, large scale tile streams, and the other matrix coefficients (constant luminance, ICtCp, SMPTE 2085, chromaticity-derived). Not read: gain maps, depth maps, thumbnails, the images that are not the primary item, the `tkhd` matrix and the other transformations of an image sequence (its images are returned as stored), mastering display and content light level boxes. A layered image is returned at its full quality only: its lower layers are not exposed as a progressive rendering. HDR samples are returned as stored: no tone mapping |
+| HEIC encoding | One slice per picture, without tiles or wavefront streams (the encoder is sequential). An image of a sequence is a P picture predicted from the previous image only: no B pictures, no second reference, no bi-prediction, no weighted prediction, no long-term reference, no scene change detection. Not used: intra coding blocks of 64x64 samples, PCM blocks, scaling lists, quantizer changes inside a picture (no adaptive quantization, no rate control: `Quality` is a quantizer, not a size), rate-distortion optimized quantization, searched deblocking offsets, and the tools of the range extensions (lossless output is the plain transform bypass of version 1, which every HEVC decoder reads: residual DPCM and cross-component prediction would make it smaller). No screen content tools: a lossless screenshot is larger than its PNG. No grid output (an image is one picture, whatever its size), no premultiplied alpha, no `pasp`, mastering display or content light level box, no orientation for an image sequence, and the decoded picture hash is not written. An image of an odd size with subsampled chroma relies on the clean aperture of the file: libheif ignores the one of a sequence and shows one more column or row, which repeats the last one, and FFmpeg reports the even size of the coded pictures (its command-line tool then crops them to an even size). The readers upsample subsampled chroma each in their own way: the edges of a 4:2:0 or 4:2:2 image differ visibly from one reader to another, as they do for the files of any HEVC encoder. FFmpeg 9 decodes 12-bit lossy output of the coarsest quantizers (`Quality` 0 to 2) to other pictures than libde265, the HM reference decoder and this library, which agree. libheif reports the edit list of a sequence that plays once as unsupported, and plays it once. An image sequence of one image cannot store animation settings. An image sequence needs a seekable destination and its frame count |
+| HEIC decoding | The container limitations of AVIF decoding apply (the two formats share their container). Rejected with `UnsupportedImageFeatureException`: the screen content coding, multilayer and 3D extensions of HEVC, bit depths above 12 bits, luma and chroma samples of different bit depths, separate color planes, field sequences, extended precision processing, the chroma sample positions of types 3 to 5, and an image sequence whose pictures change size. Only the base layer of a layered stream is decoded, and a layer selector (`lsel`) is rejected. Not read: the other images of a file (bursts, thumbnails, depth and gain maps, the video of a live photo, which is another file), the supplemental information of the bitstream other than its picture hashes (mastering display, content light level), and the `tkhd` matrix of an image sequence. A file whose bitstream has no video signal description and no `colr` box is read in limited range, as H.265 infers, with the BT.601 matrix: Apple ImageIO reads the same file with the BT.709 matrix, and libheif does not expand the samples of a monochrome image. The decoder is sequential: the tiles and the wavefront rows of a picture are decoded one after the other |
 | JPEG XL | Decoding, rejected with `UnsupportedImageFeatureException` (also from `Identify` when the image header tells): floating-point samples and samples of more than 16 bits, premultiplied alpha, CMYK (a black channel) and spot colors, an XYB image whose ICC profile is not sRGB (it needs a color conversion to that profile), the PQ or HLG transfer function with primaries or a white point that CICP cannot express, a Modular frame stored as YCbCr with subsampled channels, restoration filters on a grayscale Modular frame, an upsampled frame with patches or splines whose extra channels have another resolution. Ignored: the preview frame, frame names, the intrinsic size, the JPEG reconstruction data (`jbrd`: `Image.Load` decodes a recompressed JPEG file to pixels, `JpegXlTranscoder` rebuilds the JPEG file), `jumb` and unknown boxes; depth, selection mask, thermal and the other extra channels than alpha are decoded and dropped. Samples of 1 to 16 bits other than 8 and 16 are scaled exactly to 8 or 16 bits. A lossy frame is decoded in floating point: the result is within a few sixteen-bit units of the reference decoders, not bit-exact. Progressive reading: whole stages only (the data of a section that is not complete are not shown), none for a frame of one section, for a Modular frame that is not squeezed, or for the frames that are not shown; an alpha channel that is not squeezed is opaque until it is decoded; the pixels of an intermediate rendering are not part of the contract. Encoding: full frames that replace the image (no layers, blending, patches or cropped frames), frame durations in whole milliseconds, no frame of an animation without duration; an EXIF orientation is written to the image header. Lossy encoding: 8x8 DCTs only (no larger or smaller transform), one quantization factor per frame (no adaptive quantization), no Gaborish filter, patches, splines or noise; an ICC profile that is not sRGB, and the PQ and HLG transfer functions, are rejected (use lossless output, or convert the image) |
 | JPEG recompression | `JpegXlTranscoder.RecompressJpeg` rejects with `UnsupportedImageFeatureException` what a JPEG XL frame cannot hold: four components (CMYK, YCCK), a sampling factor other than 1 or 2 (4:1:1), subsampled RGB components, arithmetic, lossless, hierarchical and 12-bit files, several restart intervals, a quantization table that no component uses or that is defined after the first scan, a Huffman table that uses the code of all ones, more than 65,535 bytes between two markers or 4,260,096 bytes after the end of image, and entropy-coded data that would not be rebuilt byte for byte (the output is always checked). The whole file is held in memory, with two bytes per coefficient. `ReconstructJpeg` needs the reconstruction data (`jbrd`) before the codestream, as every encoder writes them |
 | Text | Horizontal text only; a synthetic bold is not in the path of a layout nor in a stroked text; no word list is provided for the scripts that need a dictionary to break their lines; greedy line breaking; no AAT (`morx`, `kerx`) shaping, no device adjustment of positions (hinting); no hinting and no subpixel (LCD) rendering; no system font: every font is given by the caller; along a path, glyphs are turned but not warped; see [Text](#text) |

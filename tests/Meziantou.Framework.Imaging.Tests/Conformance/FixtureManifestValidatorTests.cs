@@ -318,6 +318,317 @@ public sealed class FixtureManifestValidatorTests : IDisposable
         };
 
     [Fact]
+    public void ValidHevcVectorPasses()
+    {
+        var file = WriteFile("hevc/a.hevc", [0, 0, 1, 2]);
+        Assert.Empty(FixtureManifestValidator.Validate(CreateHevcManifest(CreateHevcVector("hevc/a", file)), _root));
+
+        // A monochrome vector has one plane, and one value in each picture hash
+        var gray = CreateHevcVector("hevc/a", file, chromaFormat: "4:0:0", pixelFormat: "gray");
+        Assert.Empty(FixtureManifestValidator.Validate(CreateHevcManifest(gray), _root));
+
+        // Two decoders that agree are enough when the third one is left out with a reason
+        var twoDecoders = CreateHevcVector("hevc/a", file, agree: ["ffmpeg", "hm"], excluded: [Exclude("libde265")], verifiedBy: ["hm"]);
+        Assert.Empty(FixtureManifestValidator.Validate(CreateHevcManifest(twoDecoders), _root));
+
+        // Output in another order than the decoding order, with a hash of each type
+        foreach (var (hashType, hashLength) in new[] { ("md5", 32), ("crc", 4), ("checksum", 8) })
+        {
+            var reordered = CreateHevcVector("hevc/a", file, hashType: hashType, hashLength: hashLength, outputOrder: "reordered", decodeOrders: [0, 2, 1],
+                features: ["hevc.encoder=x265", "hevc.bitDepth=8", "hevc.chroma=4:2:0", "hevc.pictureHash=" + hashType, "hevc.frames=3", "hevc.outputOrder=reordered"]);
+            Assert.Empty(FixtureManifestValidator.Validate(CreateHevcManifest(reordered), _root));
+        }
+    }
+
+    [Fact]
+    public void HevcVectorFilesAreHashedAndNeverOrphans()
+    {
+        var file = WriteFile("hevc/a.hevc", [0, 0, 1, 2]);
+        WriteFile("hevc/orphan.hevc", [4]);
+        var errors = FixtureManifestValidator.Validate(CreateHevcManifest(CreateHevcVector("hevc/a", file)), _root);
+        Assert.Contains(errors, error => error.Contains("hevc/orphan.hevc", StringComparison.Ordinal));
+        Assert.DoesNotContain(errors, error => error.Contains("hevc/a.hevc", StringComparison.Ordinal));
+
+        File.Delete(_root / "hevc" / "orphan.hevc");
+        File.WriteAllBytes(_root / "hevc" / "a.hevc", [0, 0, 1, 3]);
+        errors = FixtureManifestValidator.Validate(CreateHevcManifest(CreateHevcVector("hevc/a", file)), _root);
+        Assert.Contains(errors, error => error.Contains("sha256", StringComparison.Ordinal));
+
+        var missing = CreateHevcVector("hevc/b", new FixtureFile { Path = "hevc/b.hevc", Sha256 = new string('0', 64) });
+        Assert.Contains(FixtureManifestValidator.Validate(CreateHevcManifest(missing), _root), error => error.Contains("does not exist", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void HevcVectorsNeedProvenanceLicenseAndTwoDecodersThatAgree()
+    {
+        var file = WriteFile("hevc/a.hevc", [0, 0, 1, 2]);
+
+        var license = CreateHevcVector("hevc/a", file, provenance: new FixtureProvenance { Origin = "generated", License = "GPL-2.0-or-later", Generator = "g", Tools = ["t"], Commands = ["c"] });
+        Assert.Contains(FixtureManifestValidator.Validate(CreateHevcManifest(license), _root), error => error.Contains("GPL-2.0-or-later", StringComparison.Ordinal));
+
+        var noCommand = CreateHevcVector("hevc/a", file, provenance: new FixtureProvenance { Origin = "generated", License = "CC0-1.0", Generator = "g", Tools = ["t"] });
+        Assert.Contains(FixtureManifestValidator.Validate(CreateHevcManifest(noCommand), _root), error => error.Contains("'commands'", StringComparison.Ordinal));
+
+        var noTools = CreateHevcVector("hevc/a", file, provenance: new FixtureProvenance { Origin = "generated", License = "CC0-1.0", Commands = ["c"] });
+        var errors = FixtureManifestValidator.Validate(CreateHevcManifest(noTools), _root);
+        Assert.Contains(errors, error => error.Contains("'generator'", StringComparison.Ordinal));
+        Assert.Contains(errors, error => error.Contains("'tools'", StringComparison.Ordinal));
+
+        // A section with a single decoder cannot produce a reference
+        var oneDecoder = CreateHevcManifest([new HevcVectorTool { Id = "hm", Name = "HM 18.0", Command = "c" }], CreateHevcVector("hevc/a", file, agree: ["hm"], verifiedBy: ["hm"]));
+        Assert.Contains(FixtureManifestValidator.Validate(oneDecoder, _root), error => error.Contains("two distinct independent decoders", StringComparison.Ordinal));
+        var sameDecoderTwice = CreateHevcManifest([new HevcVectorTool { Id = "hm", Name = "HM 18.0", Command = "c" }, new HevcVectorTool { Id = "hm", Name = "HM 18.0", Command = "d" }], CreateHevcVector("hevc/a", file, agree: ["hm"], verifiedBy: ["hm"]));
+        Assert.Contains(FixtureManifestValidator.Validate(sameDecoderTwice, _root), error => error.Contains("the decoders must be distinct", StringComparison.Ordinal));
+        var withoutId = CreateHevcManifest([new HevcVectorTool { Name = "HM 18.0", Command = "c" }, new HevcVectorTool { Id = "ffmpeg", Name = "ffmpeg 9.0.2", Command = "d" }], CreateHevcVector("hevc/a", file, agree: ["ffmpeg"], verifiedBy: ["ffmpeg"]));
+        Assert.Contains(FixtureManifestValidator.Validate(withoutId, _root), error => error.Contains("every decoder must have an id", StringComparison.Ordinal));
+
+        // A digest from a single decoder is not a reference: the frames of such a vector have none, and the vector is one
+        // the library rejects
+        var single = CreateHevcVector("hevc/a", file, agree: ["hm"], excluded: [Exclude("ffmpeg"), Exclude("libde265", HevcVectorExclusion.Rejects)], verifiedBy: ["hm"]);
+        AssertHevcError(single, "plane digests need two decoders that agree");
+        AssertHevcError(single, "plane digests without two decoders that agree");
+        var unsupported = CreateHevcVector("hevc/a", file, agree: ["hm"], excluded: [Exclude("ffmpeg"), Exclude("libde265", HevcVectorExclusion.Rejects)], verifiedBy: ["hm"], planes: 0,
+            features: ["hevc.encoder=hm", "hevc.bitDepth=8", "hevc.chroma=4:2:0", "hevc.pictureHash=md5", "hevc.unsupported=extendedPrecision"]);
+        Assert.Empty(FixtureManifestValidator.Validate(CreateHevcManifest(unsupported), _root));
+    }
+
+    [Fact]
+    public void HevcVectorsRecordEveryDecoderOnce()
+    {
+        var file = WriteFile("hevc/a.hevc", [0, 0, 1, 2]);
+        const string EveryDecoder = "must either agree or be excluded, once";
+
+        // A decoder that is neither among the ones that agree nor left out, one that is both, and an unknown one
+        AssertHevcError(CreateHevcVector("hevc/a", file, agree: ["ffmpeg", "hm"], verifiedBy: ["hm"]), EveryDecoder);
+        AssertHevcError(CreateHevcVector("hevc/a", file, agree: ["ffmpeg", "libde265", "hm"], excluded: [Exclude("hm")]), EveryDecoder);
+        AssertHevcError(CreateHevcVector("hevc/a", file, agree: ["ffmpeg", "hm"], excluded: [Exclude("other")], verifiedBy: ["hm"]), EveryDecoder);
+        AssertHevcError(CreateHevcVector("hevc/a", file, agree: [], excluded: [Exclude("ffmpeg"), Exclude("libde265"), Exclude("hm")], verifiedBy: []), "no decoder decodes the stream as recorded");
+
+        // A decoder is left out with what it does, why, and what was observed
+        AssertHevcError(CreateHevcVector("hevc/a", file, agree: ["ffmpeg", "hm"], excluded: [Exclude("libde265", outcome: "skipped")], verifiedBy: ["hm"]), "needs an outcome");
+        AssertHevcError(CreateHevcVector("hevc/a", file, agree: ["ffmpeg", "hm"], excluded: [Exclude("libde265", reason: " ")], verifiedBy: ["hm"]), "needs an outcome");
+        AssertHevcError(CreateHevcVector("hevc/a", file, agree: ["ffmpeg", "hm"], excluded: [Exclude("libde265", observed: "")], verifiedBy: ["hm"]), "needs an outcome");
+
+        // The hashes of the stream are checked by a decoder that agrees
+        const string Verified = "the picture hashes must be verified by at least one of the decoders that agree";
+        AssertHevcError(CreateHevcVector("hevc/a", file, verifiedBy: []), Verified);
+        AssertHevcError(CreateHevcVector("hevc/a", file, agree: ["ffmpeg", "hm"], excluded: [Exclude("libde265")], verifiedBy: ["libde265"]), Verified);
+        AssertHevcError(CreateHevcVector("hevc/a", file, verifiedBy: ["hm", "hm"]), Verified);
+    }
+
+    [Fact]
+    public void HevcVectorShapeIsEnforced()
+    {
+        var file = WriteFile("hevc/a.hevc", [0, 0, 1, 2]);
+        AssertHevcError(CreateHevcVector("hevc/a", file, bitDepth: 9), "invalid bitDepth 9");
+        AssertHevcError(CreateHevcVector("hevc/a", file, bitDepthChroma: 8), "invalid bitDepth 8 or bitDepthChroma");
+        AssertHevcError(CreateHevcVector("hevc/a", file, chromaFormat: "4:1:1"), "invalid chromaFormat '4:1:1'");
+        AssertHevcError(CreateHevcVector("hevc/a", file, chromaFormat: "4:0:0", pixelFormat: "gray", planes: 3), "3 plane digests, 1 expected");
+        AssertHevcError(CreateHevcVector("hevc/a", file, planes: 1), "1 plane digests, 3 expected");
+        AssertHevcError(CreateHevcVector("hevc/a", file, frameCount: 2), "frameCount 2 does not match the 1 frames");
+        AssertHevcError(CreateHevcVector("hevc/a", file, pictureCount: 0), "pictureCount 0 is less than the 1 output pictures");
+        AssertHevcError(CreateHevcVector("hevc/a", file, digest: new string('A', 64)), "plane digests are SHA-256 hashes");
+        AssertHevcError(CreateHevcVector("hevc/a", file, digest: "abc"), "plane digests are SHA-256 hashes");
+        AssertHevcError(CreateHevcVector("hevc/a", file, width: 0), "dimensions must be positive");
+        AssertHevcError(CreateHevcVector("hevc/a", file, features: []), "features must be present");
+        AssertHevcError(CreateHevcVector("other/a", file), "invalid id");
+        AssertHevcError(CreateHevcVector("hevc/A", file), "invalid id");
+        AssertHevcError(CreateHevcVector("hevc/a", file, outputOrder: "display"), "invalid outputOrder 'display'");
+
+        // The picture hash: a known type, one value per colour component, of the length of the type
+        AssertHevcError(CreateHevcVector("hevc/a", file, hashType: "sha1"), "invalid picture hash type 'sha1'");
+        AssertHevcError(CreateHevcVector("hevc/a", file, hashLength: 30), "the picture hash has one lowercase hexadecimal value of 32 characters");
+        AssertHevcError(CreateHevcVector("hevc/a", file, hashType: "crc", hashLength: 32), "the picture hash has one lowercase hexadecimal value of 4 characters");
+        AssertHevcError(CreateHevcVector("hevc/a", file, hashComponents: 1), "per colour component (3 for 4:2:0)");
+
+        // The frames are in output order and name the picture they are in decoding order
+        AssertHevcError(CreateHevcVector("hevc/a", file, decodeOrders: [0, 0], features: ["hevc.encoder=x265", "hevc.bitDepth=8", "hevc.chroma=4:2:0", "hevc.pictureHash=md5", "hevc.frames=2"]), "decodeOrder must be the index of one coded picture");
+        AssertHevcError(CreateHevcVector("hevc/a", file, decodeOrders: [5]), "decodeOrder must be the index of one coded picture");
+        AssertHevcError(CreateHevcVector("hevc/a", file, decodeOrders: [1, 0], features: ["hevc.encoder=x265", "hevc.bitDepth=8", "hevc.chroma=4:2:0", "hevc.pictureHash=md5", "hevc.frames=2"]), "outputOrder 'decoding' does not match the decoding order of the frames");
+        AssertHevcError(CreateHevcVector("hevc/a", file, outputOrder: "reordered", features: ["hevc.encoder=x265", "hevc.bitDepth=8", "hevc.chroma=4:2:0", "hevc.pictureHash=md5", "hevc.outputOrder=reordered"]), "outputOrder 'reordered' does not match the decoding order of the frames");
+
+        var elsewhere = WriteFile("png/a.hevc", [1]);
+        AssertHevcError(CreateHevcVector("hevc/a", elsewhere), "must be a raw byte stream 'hevc/*.hevc'");
+        var extension = WriteFile("hevc/a.h265", [1]);
+        AssertHevcError(CreateHevcVector("hevc/a", extension), "must be a raw byte stream 'hevc/*.hevc'");
+    }
+
+    [Fact]
+    public void HevcVectorFeaturesUseTheDocumentedVocabulary()
+    {
+        var file = WriteFile("hevc/a.hevc", [0, 0, 1, 2]);
+        string[] required = ["hevc.encoder=x265", "hevc.bitDepth=8", "hevc.chroma=4:2:0", "hevc.pictureHash=md5"];
+
+        // Unknown keys, and unknown values of the keys that are enumerations (one by one in a list of values)
+        AssertHevcError(CreateHevcVector("hevc/a", file, features: [.. required, "hevc.filmGrain"]), "unknown feature key 'hevc.filmGrain'");
+        AssertHevcError(CreateHevcVector("hevc/a", file, features: [.. required, "av1.lossless"]), "unknown feature key 'av1.lossless'");
+        AssertHevcError(CreateHevcVector("hevc/a", file, features: [.. required, "hevc.nal=IDR_N_LP,KEY"]), "invalid value 'KEY' of the feature 'hevc.nal'");
+        AssertHevcError(CreateHevcVector("hevc/a", file, features: [.. required, "hevc.sao=band"]), "invalid value 'band' of the feature 'hevc.sao'");
+        AssertHevcError(CreateHevcVector("hevc/a", file, features: ["hevc.encoder=libx265", "hevc.bitDepth=8", "hevc.chroma=4:2:0", "hevc.pictureHash=md5"]), "invalid value 'libx265' of the feature 'hevc.encoder'");
+        Assert.Empty(FixtureManifestValidator.Validate(CreateHevcManifest(CreateHevcVector("hevc/a", file, features: [.. required, "hevc.nal=IDR_N_LP,TRAIL_R", "hevc.sliceQp=-12,30", "hevc.wpp"])), _root));
+
+        // The features say what the other fields of the entry say
+        AssertHevcError(CreateHevcVector("hevc/a", file, features: ["hevc.encoder=x265", "hevc.bitDepth=10", "hevc.chroma=4:2:0", "hevc.pictureHash=md5"]), "the feature 'hevc.bitDepth' must be 'hevc.bitDepth=8'");
+        AssertHevcError(CreateHevcVector("hevc/a", file, features: ["hevc.encoder=x265", "hevc.bitDepth=8,10", "hevc.chroma=4:2:0", "hevc.pictureHash=md5"]), "the feature 'hevc.bitDepth' must be 'hevc.bitDepth=8'");
+        AssertHevcError(CreateHevcVector("hevc/a", file, features: ["hevc.encoder=x265", "hevc.bitDepth=8", "hevc.chroma=4:4:4", "hevc.pictureHash=md5"]), "the feature 'hevc.chroma' must be 'hevc.chroma=4:2:0'");
+        AssertHevcError(CreateHevcVector("hevc/a", file, features: ["hevc.encoder=x265", "hevc.bitDepth=8", "hevc.chroma=4:2:0", "hevc.pictureHash=crc"]), "the feature 'hevc.pictureHash' must be 'hevc.pictureHash=md5'");
+        AssertHevcError(CreateHevcVector("hevc/a", file, features: ["hevc.encoder=x265", "hevc.bitDepth=8", "hevc.chroma=4:2:0"]), "the feature 'hevc.pictureHash' must be 'hevc.pictureHash=md5'");
+        AssertHevcError(CreateHevcVector("hevc/a", file, features: ["hevc.bitDepth=8", "hevc.chroma=4:2:0", "hevc.pictureHash=md5"]), "the feature 'hevc.encoder' is required");
+        AssertHevcError(CreateHevcVector("hevc/a", file, features: [.. required, "hevc.frames=2"]), "the feature 'hevc.frames' must be absent");
+        AssertHevcError(CreateHevcVector("hevc/a", file, decodeOrders: [0, 1], features: required), "the feature 'hevc.frames' must be 'hevc.frames=2'");
+        AssertHevcError(CreateHevcVector("hevc/a", file, decodeOrders: [0, 1], features: [.. required, "hevc.frames=3"]), "the feature 'hevc.frames' must be 'hevc.frames=2'");
+        AssertHevcError(CreateHevcVector("hevc/a", file, features: [.. required, "hevc.outputOrder=reordered"]), "the feature 'hevc.outputOrder' must be absent");
+        AssertHevcError(CreateHevcVector("hevc/a", file, features: [.. required, "hevc.matrix=identity"]), "the feature 'hevc.matrix' must be absent");
+        AssertHevcError(CreateHevcVector("hevc/a", file, chromaFormat: "4:4:4", pixelFormat: "gbrp", features: ["hevc.encoder=x265", "hevc.bitDepth=8", "hevc.chroma=4:4:4", "hevc.pictureHash=md5"]), "the feature 'hevc.matrix' must be 'hevc.matrix=identity'");
+        AssertHevcError(CreateHevcVector("hevc/a", file, bitDepth: 10, bitDepthChroma: 8, features: ["hevc.encoder=hm", "hevc.bitDepth=10", "hevc.chroma=4:2:0", "hevc.pictureHash=md5"]), "the feature 'hevc.bitDepthChroma' must be 'hevc.bitDepthChroma=8'");
+        AssertHevcError(CreateHevcVector("hevc/a", file, features: [.. required, "hevc.bitDepthChroma=10"]), "the feature 'hevc.bitDepthChroma' must be absent");
+    }
+
+    [Fact]
+    public void HevcVectorsAreNotFixtures()
+    {
+        var file = WriteFile("hevc/a.hevc", [0, 0, 1, 2]);
+        var other = WriteFile("hevc/b.hevc", [4]);
+
+        // The identifiers of the vectors and of the fixtures share one namespace, and a file belongs to one vector
+        var duplicate = CreateHevcManifest(CreateHevcVector("hevc/a", file), CreateHevcVector("hevc/a", other));
+        Assert.Contains(FixtureManifestValidator.Validate(duplicate, _root), error => error.Contains("duplicate id", StringComparison.Ordinal));
+        var sameFile = CreateHevcManifest(CreateHevcVector("hevc/a", file), CreateHevcVector("hevc/b", file));
+        Assert.Contains(FixtureManifestValidator.Validate(sameFile, _root), error => error.Contains("already used by another entry", StringComparison.Ordinal));
+
+        // A vector has no pixel reference: the generic suites must never find it among the fixtures
+        var asFixture = CreateManifest(CreateEntry("hevc/a", file));
+        Assert.Contains(FixtureManifestValidator.Validate(asFixture, _root), error => error.Contains("belong to 'hevcVectors'", StringComparison.Ordinal));
+        var fixtureOnVectorFile = CreateManifest(CreateEntry("invalid/png/a", other));
+        Assert.Contains(FixtureManifestValidator.Validate(fixtureOnVectorFile, _root), error => error.Contains("belong to 'hevcVectors'", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void HevcVectorSectionRoundTripsThroughTheLoader()
+    {
+        var path = _root / "manifest.json";
+        File.WriteAllText(path, """
+            {
+              "schemaVersion": 2,
+              "fixtures": [],
+              "hevcVectors": {
+                "generator": { "script": "s", "command": "c", "tools": ["t"] },
+                "headerParser": { "name": "p", "command": "c" },
+                "decoders": [{ "id": "ffmpeg", "name": "a", "command": "c" }, { "id": "libde265", "name": "b", "command": "c" }, { "id": "hm", "name": "c", "command": "c" }],
+                "planeDigest": "d",
+                "pictureHash": "h",
+                "entries": [{
+                  "id": "hevc/a",
+                  "input": { "path": "hevc/a.hevc", "sha256": "0000000000000000000000000000000000000000000000000000000000000000", "role": "encoded" },
+                  "provenance": { "origin": "generated", "license": "CC0-1.0" },
+                  "features": ["hevc.bitDepth=10", "hevc.nal=CRA,RASL_N,TRAIL_R", "hevc.tiles.spacing=uniform", "hevc.wpp"],
+                  "pixelFormat": "yuv420p-y10-c8",
+                  "bitDepth": 10,
+                  "bitDepthChroma": 8,
+                  "chromaFormat": "4:2:0",
+                  "pictureCount": 3,
+                  "frameCount": 1,
+                  "outputOrder": "decoding",
+                  "decoders": { "agree": ["libde265", "hm"], "excluded": [{ "decoder": "ffmpeg", "outcome": "rejects", "reason": "r", "observed": "o" }] },
+                  "pictureHash": { "type": "crc", "verifiedBy": ["hm"] },
+                  "frames": [{ "width": 3, "height": 2, "poc": 4, "decodeOrder": 1, "planes": ["1111111111111111111111111111111111111111111111111111111111111111"], "hash": ["12ab", "34cd", "56ef"] }]
+                }]
+              }
+            }
+            """);
+        var vector = Assert.Single(FixtureManifestLoader.Load(path).HevcVectors!.Entries);
+        Assert.Equal(("hevc/a", "yuv420p-y10-c8", 10, 8, "4:2:0", 3, 1, 3), (vector.Id, vector.PixelFormat, vector.BitDepth, vector.BitDepthChroma, vector.ChromaFormat, vector.PictureCount, vector.FrameCount, vector.PlaneCount));
+        Assert.Equal((3, 2, 4, 1), (vector.Frames[0].Width, vector.Frames[0].Height, vector.Frames[0].Poc, vector.Frames[0].DecodeOrder));
+        Assert.Equal(["12ab", "34cd", "56ef"], vector.Frames[0].Hash);
+        Assert.Equal((HevcVectorPictureHash.Crc, 4), (vector.PictureHash.Type, vector.PictureHash.HexLength));
+        Assert.True(vector.HasDigests);
+        Assert.Equal(["libde265", "hm"], vector.Decoders.Agree);
+        Assert.Equal(("ffmpeg", HevcVectorExclusion.Rejects, "r", "o"), (vector.Decoders.Excluded[0].Decoder, vector.Decoders.Excluded[0].Outcome, vector.Decoders.Excluded[0].Reason, vector.Decoders.Excluded[0].Observed));
+
+        // A value of a feature is one of its comma-separated values, and a key is whole
+        Assert.True(vector.HasFeature("hevc.nal=RASL_N"));
+        Assert.False(vector.HasFeature("hevc.nal=RASL"));
+        Assert.True(vector.HasFeature("hevc.wpp"));
+        Assert.False(vector.HasFeature("hevc.bitDepth"));
+        Assert.True(vector.HasFeatureKey("hevc.bitDepth"));
+        Assert.False(vector.HasFeatureKey("hevc.tiles"));
+        Assert.True(vector.HasFeatureKey("hevc.tiles.spacing"));
+        Assert.Equal(["CRA", "RASL_N", "TRAIL_R"], vector.GetFeatureValues("hevc.nal"));
+        Assert.Empty(vector.GetFeatureValues("hevc.wpp"));
+
+        // Unknown properties are rejected in the section too
+        File.WriteAllText(path, """{ "schemaVersion": 2, "fixtures": [], "hevcVectors": { "generator": { "script": "s", "command": "c", "tools": [] }, "headerParser": { "name": "p", "command": "c" }, "decoders": [], "planeDigest": "d", "pictureHash": "h", "entries": [], "unexpected": true } }""");
+        Assert.Throws<System.Text.Json.JsonException>(() => FixtureManifestLoader.Load(path));
+    }
+
+    private void AssertHevcError(HevcVectorEntry vector, string expected)
+        => Assert.Contains(FixtureManifestValidator.Validate(CreateHevcManifest(vector), _root), error => error.Contains(expected, StringComparison.Ordinal));
+
+    private static HevcVectorExclusion Exclude(string decoder, string outcome = HevcVectorExclusion.Differs, string reason = "A known behavior of this decoder.", string observed = "outputs other samples")
+        => new() { Decoder = decoder, Outcome = outcome, Reason = reason, Observed = observed };
+
+    private static FixtureManifest CreateHevcManifest(params HevcVectorEntry[] vectors)
+        => CreateHevcManifest(
+            [
+                new HevcVectorTool { Id = "ffmpeg", Name = "ffmpeg 9.0.2 (hevc)", Command = "ffmpeg -c:v hevc" },
+                new HevcVectorTool { Id = "libde265", Name = "libde265 1.1.3 (dec265)", Command = "dec265" },
+                new HevcVectorTool { Id = "hm", Name = "HM 18.0 (TAppDecoder)", Command = "TAppDecoder" },
+            ], vectors);
+
+    private static FixtureManifest CreateHevcManifest(HevcVectorTool[] decoders, params HevcVectorEntry[] vectors) => new()
+    {
+        SchemaVersion = FixtureManifest.CurrentSchemaVersion,
+        Fixtures = [],
+        HevcVectors = new HevcVectorSet
+        {
+            Generator = new FixtureGeneratorInfo { Script = "tools/generator.cs", Command = "generator hevc", Tools = ["ffmpeg 9.0.2"] },
+            HeaderParser = new HevcVectorTool { Name = "ffmpeg 9.0.2 (trace_headers)", Command = "ffmpeg -bsf:v trace_headers" },
+            Decoders = decoders,
+            PlaneDigest = "SHA-256 of the samples of one plane.",
+            PictureHash = "The decoded picture hash SEI message of each picture.",
+            Entries = vectors,
+        },
+    };
+
+    /// <summary>A vector of one frame per decode order given (one by default), in the order given.</summary>
+    private static HevcVectorEntry CreateHevcVector(string id, FixtureFile input, FixtureProvenance? provenance = null, int bitDepth = 8, int? bitDepthChroma = null, string chromaFormat = "4:2:0", string pixelFormat = "yuv420p",
+        int? planes = null, int? frameCount = null, int? pictureCount = null, string? digest = null, int width = 4, string[]? features = null, string[]? agree = null, HevcVectorExclusion[]? excluded = null, string[]? verifiedBy = null,
+        string hashType = "md5", int? hashLength = null, int? hashComponents = null, string outputOrder = "decoding", int[]? decodeOrders = null)
+    {
+        var planeCount = chromaFormat == "4:0:0" ? 1 : 3;
+        decodeOrders ??= [0];
+        var length = hashLength ?? (hashType == "crc" ? 4 : hashType == "checksum" ? 8 : 32);
+        return new()
+        {
+            Id = id,
+            Input = input,
+            Provenance = provenance ?? new FixtureProvenance { Origin = "generated", License = "CC0-1.0", Generator = "tools/generator.cs (Vectors)", Tools = ["ffmpeg 9.0.2", "x265 4.2"], Commands = ["ffmpeg -f hevc {input}"] },
+            Features = features ?? ["hevc.encoder=x265", $"hevc.bitDepth={bitDepth}", "hevc.chroma=" + chromaFormat, "hevc.pictureHash=" + hashType, .. decodeOrders.Length > 1 ? new[] { $"hevc.frames={decodeOrders.Length}" } : []],
+            PixelFormat = pixelFormat,
+            BitDepth = bitDepth,
+            BitDepthChroma = bitDepthChroma,
+            ChromaFormat = chromaFormat,
+            PictureCount = pictureCount ?? decodeOrders.Length,
+            FrameCount = frameCount ?? decodeOrders.Length,
+            OutputOrder = outputOrder,
+            Decoders = new HevcVectorAgreement { Agree = agree ?? ["ffmpeg", "libde265", "hm"], Excluded = excluded ?? [] },
+            PictureHash = new HevcVectorPictureHash { Type = hashType, VerifiedBy = verifiedBy ?? ["libde265", "hm"] },
+            Frames =
+            [
+                .. decodeOrders.Select((decodeOrder, index) => new HevcVectorFrame
+                {
+                    Width = width,
+                    Height = 4,
+                    Poc = index,
+                    DecodeOrder = decodeOrder,
+                    Planes = [.. Enumerable.Repeat(digest ?? new string('a', 64), planes ?? planeCount)],
+                    Hash = [.. Enumerable.Repeat(new string('b', length), hashComponents ?? planeCount)],
+                }),
+            ],
+        };
+    }
+
+    [Fact]
     public void ColorSectionsAreValidated()
     {
         // Two colors of 3 + 1 channels: 2 * 4 * 2 bytes of vectors

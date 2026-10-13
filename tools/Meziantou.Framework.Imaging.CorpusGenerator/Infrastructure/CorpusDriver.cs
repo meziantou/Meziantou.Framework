@@ -64,6 +64,25 @@ internal static partial class CorpusDriver
         }
     }
 
+    /// <summary>The other generators keep the HEVC conformance vectors of the committed manifest, and their files,
+    /// unchanged (HevcCorpus owns them).</summary>
+    public static void PreserveHevcVectors(FullPath outDir, Obj manifest)
+    {
+        var committed = LoadCommittedManifest();
+        if (committed.TryGetValue(HevcVectorsKey, out var value))
+            manifest[HevcVectorsKey] = value;
+
+        foreach (var path in HevcVectorFiles(committed))
+        {
+            var target = outDir / path;
+            if (!File.Exists(target))
+            {
+                target.CreateParentDirectory();
+                File.Copy(CorpusDir / path, target);
+            }
+        }
+    }
+
     /// <summary>The image generators keep the color management sections of the committed manifest, and their files,
     /// unchanged (the icc generator owns them).</summary>
     public static void PreserveColorSections(FullPath outDir, Obj manifest)
@@ -109,13 +128,14 @@ internal static partial class CorpusDriver
     }
 
     /// <summary>The generators of one format family replace only their own entries: every other fixture and file of the
-    /// committed corpus is kept unchanged (the other generators own them), and so are the AV1 conformance vectors.</summary>
+    /// committed corpus is kept unchanged (the other generators own them), and so are the AV1 and the HEVC conformance vectors.</summary>
     public static void MergeIntoCommittedManifest(FullPath outDir, IReadOnlyList<Obj> fixtures, Func<Obj, bool> owns)
     {
         var committed = LoadCommittedManifest();
         var others = Fixtures(committed).Where(f => !owns(f)).ToList();
         CopyCommittedFiles(outDir, others);
         CopyCommittedAv1Vectors(outDir, committed);
+        PreserveHevcVectors(outDir, committed);
         PreserveColorSections(outDir, committed);
         PreserveFonts(outDir, committed);
         committed["fixtures"] = others.Concat(fixtures).OrderBy(f => (string)f["id"]!, StringComparer.Ordinal).Cast<object?>().ToList();

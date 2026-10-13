@@ -11,6 +11,10 @@ internal static partial class CorpusDriver
     /// apart from the fixtures because they have no pixel reference.</summary>
     public const string Av1VectorsKey = "av1Vectors";
 
+    /// <summary>The manifest section of the HEVC conformance vectors (HevcCorpus): raw HEVC byte streams with plane
+    /// digests, kept apart from the fixtures because they have no pixel reference.</summary>
+    public const string HevcVectorsKey = "hevcVectors";
+
     /// <summary>The manifest section of the fonts (FontCorpus): font files and the values independent font readers give
     /// for them, kept apart from the fixtures because they are not images.</summary>
     public const string FontsKey = "fonts";
@@ -49,10 +53,15 @@ internal static partial class CorpusDriver
     }
 
     /// <summary>The input files of the AV1 conformance vectors a manifest lists.</summary>
-    public static SortedSet<string> Av1VectorFiles(Obj manifest)
+    public static SortedSet<string> Av1VectorFiles(Obj manifest) => VectorFiles(manifest, Av1VectorsKey);
+
+    /// <summary>The input files of the HEVC conformance vectors a manifest lists.</summary>
+    public static SortedSet<string> HevcVectorFiles(Obj manifest) => VectorFiles(manifest, HevcVectorsKey);
+
+    private static SortedSet<string> VectorFiles(Obj manifest, string key)
     {
         var paths = new SortedSet<string>(StringComparer.Ordinal);
-        if (manifest.TryGetValue(Av1VectorsKey, out var value) && value is Obj section)
+        if (manifest.TryGetValue(key, out var value) && value is Obj section)
         {
             foreach (var entry in ((List<object?>)section["entries"]!).Cast<Obj>())
                 paths.Add((string)((Obj)entry["input"]!)["path"]!);
@@ -127,6 +136,7 @@ internal static partial class CorpusDriver
     {
         var paths = ManifestFiles(Fixtures(manifest));
         paths.UnionWith(Av1VectorFiles(manifest));
+        paths.UnionWith(HevcVectorFiles(manifest));
         paths.UnionWith(ColorFiles(manifest));
         paths.UnionWith(FontFiles(manifest, corpusDirectory));
         return paths;

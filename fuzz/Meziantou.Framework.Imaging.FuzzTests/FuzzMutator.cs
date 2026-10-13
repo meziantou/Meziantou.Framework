@@ -18,6 +18,17 @@ internal static class FuzzMutator
         32767, 32768, 65535, 65536, 0x7FFFFFFF, 0x80000000, 0xFFFFFFFE, 0xFFFFFFFF,
     ];
 
+    /// <summary>Mutates a seed of a group: the mutations that know its format first, the others otherwise.</summary>
+    public static byte[] Mutate(FuzzRandom random, FuzzSeed seed, IReadOnlyList<FuzzSeed> seeds, IReadOnlyList<byte[]> spliceSources)
+    {
+        // HEVC in the HEIF family: the NAL units, the decoder configuration record, the tables of the container and the
+        // structure of the stream
+        if (FuzzHevcMutator.TryMutate(random, seed, seeds) is { } hevcMutation)
+            return hevcMutation;
+
+        return Mutate(random, seed.Data, spliceSources);
+    }
+
     public static byte[] Mutate(FuzzRandom random, byte[] seed, IReadOnlyList<byte[]> spliceSources)
     {
         // PNG: a quarter of the cases mutate the decompressed payload of a zlib chunk instead (filter bytes, scanlines, text,

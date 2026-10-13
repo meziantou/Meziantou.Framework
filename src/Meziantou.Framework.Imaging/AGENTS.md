@@ -326,6 +326,11 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   - The reversible path (5-3, RCT, region of interest, palette, depth scaling) is integer arithmetic and exact. The
     irreversible path (9-7, ICT) is `float` with a fixed order of operations and no fused multiply-add; it is compared
     with OpenJPEG under a tolerance pinned to the measurement, like JPEG XL.
+  - The wavelet and component transformations have `Vector<T>` paths (`Jpeg2000Dwt`, `Jpeg2000ColorTransform`). A
+    lifting step is one operation on every sample of one parity: it is applied to the two halves of a row while they
+    are separated, and to strips of `ColumnStrip` columns copied to the scratch of the tile. The filters on interleaved
+    signals (`LiftReversible`, `LiftIrreversible` and their forward versions) stay the reference, and each vector path
+    equals its `...Scalar` version bit for bit, in both directions (`VectorizedKernelTests`).
   - The MQ decoder keeps the LPS sub-interval at the bottom of the interval, as T.800 Annex C does; software decoders
     often use the opposite convention, and mixing the two decodes zeros. `Jpeg2000MqCoderTests` holds the test
     sequence of T.88.

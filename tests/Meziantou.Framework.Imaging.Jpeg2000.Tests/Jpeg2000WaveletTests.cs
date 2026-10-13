@@ -213,6 +213,42 @@ public sealed class Jpeg2000WaveletTests
     }
 
     [Fact]
+    public void ForwardComponentTransformationsFollowTheEquationsOfTheSpecification()
+    {
+        // Equations G-1 and G-3, written out here in double precision, on the corners of the range of signed 9-bit samples
+        int[] values = [-256, -255, -1, 0, 1, 254, 255];
+        foreach (var r in values)
+        {
+            foreach (var g in values)
+            {
+                foreach (var b in values)
+                {
+                    int[] red = [r];
+                    int[] green = [g];
+                    int[] blue = [b];
+                    int[] expected = [(int)Math.Floor((r + (2 * g) + b) / 4.0), b - g, r - g];
+                    double[] expectedIrreversible =
+                    [
+                        (0.299 * r) + (0.587 * g) + (0.114 * b),
+                        (-0.16875 * r) - (0.33126 * g) + (0.5 * b),
+                        (0.5 * r) - (0.41869 * g) - (0.08131 * b),
+                    ];
+                    for (var component = 0; component < 3; component++)
+                    {
+                        var reversible = new int[1];
+                        Jpeg2000ColorTransform.ForwardReversible(red, green, blue, component, reversible);
+                        Assert.Equal(expected[component], reversible[0]);
+
+                        var irreversible = new float[1];
+                        Jpeg2000ColorTransform.ForwardIrreversible(red, green, blue, component, irreversible);
+                        Assert.True(Math.Abs(irreversible[0] - expectedIrreversible[component]) < 1e-3, $"component {component} of ({r}, {g}, {b}): expected {expectedIrreversible[component]}, got {irreversible[0]}");
+                    }
+                }
+            }
+        }
+    }
+
+    [Fact]
     public void SamplesAreShiftedRoundedToEvenAndClamped()
     {
         // G.1.2: half of the range is added; a floating-point sample is clamped, then rounded with ties to even

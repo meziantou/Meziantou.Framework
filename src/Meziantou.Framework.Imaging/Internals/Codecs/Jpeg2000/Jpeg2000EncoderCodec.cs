@@ -56,6 +56,7 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
         private const int BlocksPerCall = 64;
         private const int BytesPerCall = 64 * 1024;
         private const int LosslessGuardBits = 2;
+        private const int ColorPieceLength = 256;
         private const int SourceHead = 0;
         private const int SourcePacketHeaders = 1;
         private const int SourceFirstComponent = 2;
@@ -372,49 +373,46 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
                 return;
             }
 
+            // The samples of the three colors are separated piece by piece, then transformed together
+            Span<int> red = stackalloc int[ColorPieceLength];
+            Span<int> green = stackalloc int[ColorPieceLength];
+            Span<int> blue = stackalloc int[ColorPieceLength];
             var floats = unsafe(MemoryMarshal.Cast<int, float>(row));
             var deep = _precision == 16 ? unsafe(MemoryMarshal.Cast<byte, ushort>(pixels)) : default;
             var bytesPerPixel = PixelFormats.GetBytesPerPixel(_pixelFormat);
             var redIndex = _pixelFormat == PixelFormat.Bgra32 ? 2 : 0;
             var blueIndex = 2 - redIndex;
-            for (var x = 0; x < width; x++)
+            for (var start = 0; start < width; start += ColorPieceLength)
             {
-                int red;
-                int green;
-                int blue;
+                var count = Math.Min(ColorPieceLength, width - start);
                 if (_precision == 8)
                 {
-                    var pixel = pixels.Slice(x * bytesPerPixel, 3);
-                    red = pixel[redIndex] - offset;
-                    green = pixel[1] - offset;
-                    blue = pixel[blueIndex] - offset;
+                    for (var i = 0; i < count; i++)
+                    {
+                        var pixel = pixels.Slice((start + i) * bytesPerPixel, 3);
+                        red[i] = pixel[redIndex] - offset;
+                        green[i] = pixel[1] - offset;
+                        blue[i] = pixel[blueIndex] - offset;
+                    }
                 }
                 else
                 {
-                    red = deep[4 * x] - offset;
-                    green = deep[(4 * x) + 1] - offset;
-                    blue = deep[(4 * x) + 2] - offset;
+                    for (var i = 0; i < count; i++)
+                    {
+                        var pixel = deep.Slice(4 * (start + i), 3);
+                        red[i] = pixel[0] - offset;
+                        green[i] = pixel[1] - offset;
+                        blue[i] = pixel[2] - offset;
+                    }
                 }
 
-                if (!_isLossy)
+                if (_isLossy)
                 {
-                    // Equation G-1: the reversible component transformation
-                    row[x] = component switch
-                    {
-                        0 => (red + (2 * green) + blue) >> 2,
-                        1 => blue - green,
-                        _ => red - green,
-                    };
+                    Jpeg2000ColorTransform.ForwardIrreversible(red[..count], green[..count], blue[..count], component, floats.Slice(start, count));
                 }
                 else
                 {
-                    // Equation G-3: the irreversible component transformation
-                    floats[x] = component switch
-                    {
-                        0 => ((0.299f * red) + (0.587f * green)) + (0.114f * blue),
-                        1 => ((-0.16875f * red) - (0.33126f * green)) + (0.5f * blue),
-                        _ => ((0.5f * red) - (0.41869f * green)) - (0.08131f * blue),
-                    };
+                    Jpeg2000ColorTransform.ForwardReversible(red[..count], green[..count], blue[..count], component, row.Slice(start, count));
                 }
             }
         }

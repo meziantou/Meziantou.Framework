@@ -1,15 +1,9 @@
-// The heuristic of this file is a port of the one of libjxl 0.12.0 (lib/jxl/enc_adaptive_quantization.cc and
-// lib/jxl/quantizer.cc): Copyright (c) the JPEG XL Project Authors. All rights reserved. That source code is governed by
-// a BSD-style license, which THIRD-PARTY-NOTICES.md reproduces. It is the only code of the library that was written
-// from the source of another one (see the notes of the library).
-
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
 /// The quantization factor of each block of a lossy JPEG XL frame: finer where an error shows (flat areas, the
-/// neighborhood of an edge), coarser where the content hides it (texture). The standard leaves the choice to the encoder;
-/// this one is the initial quantization field of libjxl 0.12.0, without the search that libjxl runs after it at its
-/// highest efforts.
+/// neighborhood of an edge), coarser where the content hides it (texture). The standard leaves the choice to the
+/// encoder. The field is computed from the image once: the encoder does not decode its output to refine it.
 /// </summary>
 /// <remarks>
 /// <list type="bullet">

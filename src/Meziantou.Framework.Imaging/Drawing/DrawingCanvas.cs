@@ -115,8 +115,9 @@ public readonly ref struct DrawingCanvas
 
     /// <summary>Draws the pixels of a frame of another image, stretched to a rectangle.</summary>
     /// <remarks>
-    /// The pixels are interpolated (see <see cref="ImageBrush"/>): an image that is made much smaller skips pixels, so
-    /// reduce it first for a result without aliasing. See <see cref="DrawImage(ImageFrame, PointD, double)"/>.
+    /// The pixels are interpolated (see <see cref="ImageBrush"/>): an image that is made much smaller skips pixels.
+    /// <see cref="DrawImage(ImageFrame, RectangleD, ImageSampling, double)"/> with <see cref="ImageSampling.Smooth"/>
+    /// reads them all. See <see cref="DrawImage(ImageFrame, PointD, double)"/>.
     /// </remarks>
     /// <param name="source">The frame to draw.</param>
     /// <param name="destination">The rectangle of the canvas the frame fills. A <see cref="Rectangle"/> of pixels converts implicitly.</param>
@@ -128,7 +129,7 @@ public readonly ref struct DrawingCanvas
     /// <exception cref="ObjectDisposedException"><paramref name="source"/> no longer belongs to a live image.</exception>
     /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. No pixel is changed by this call.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
-    public void DrawImage(ImageFrame source, RectangleD destination, double opacity = 1) => GetSession().DrawImage(source, sourceRegion: null, destination, opacity);
+    public void DrawImage(ImageFrame source, RectangleD destination, double opacity = 1) => GetSession().DrawImage(source, sourceRegion: null, destination, ImageSampling.Bilinear, opacity);
 
     /// <summary>Draws some of the pixels of a frame of another image, stretched to a rectangle.</summary>
     /// <remarks>See <see cref="DrawImage(ImageFrame, RectangleD, double)"/>. The pixels around the region are not read.</remarks>
@@ -143,7 +144,7 @@ public readonly ref struct DrawingCanvas
     /// <exception cref="ObjectDisposedException"><paramref name="source"/> no longer belongs to a live image.</exception>
     /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. No pixel is changed by this call.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
-    public void DrawImage(ImageFrame source, Rectangle sourceRegion, RectangleD destination, double opacity = 1) => GetSession().DrawImage(source, sourceRegion, destination, opacity);
+    public void DrawImage(ImageFrame source, Rectangle sourceRegion, RectangleD destination, double opacity = 1) => GetSession().DrawImage(source, sourceRegion, destination, ImageSampling.Bilinear, opacity);
 
     /// <summary>Draws the pixels of a frame of another image, placed on the canvas by a transformation: turned, scaled, skewed or mirrored.</summary>
     /// <remarks>
@@ -168,7 +169,56 @@ public readonly ref struct DrawingCanvas
     /// <exception cref="ObjectDisposedException"><paramref name="source"/> no longer belongs to a live image.</exception>
     /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. No pixel is changed by this call.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
-    public void DrawImage(ImageFrame source, AffineTransform transform, double opacity = 1) => GetSession().DrawImage(source, transform, opacity);
+    public void DrawImage(ImageFrame source, AffineTransform transform, double opacity = 1) => GetSession().DrawImage(source, transform, ImageSampling.Bilinear, opacity);
+
+    /// <summary>Draws the pixels of a frame of another image, stretched to a rectangle, read in a given way.</summary>
+    /// <remarks>
+    /// <see cref="ImageSampling.Smooth"/> reduces an image without skipping pixels (a thumbnail of a photograph), and
+    /// <see cref="ImageSampling.Nearest"/> enlarges one with its pixels as squares. See
+    /// <see cref="DrawImage(ImageFrame, PointD, double)"/>.
+    /// </remarks>
+    /// <param name="source">The frame to draw.</param>
+    /// <param name="destination">The rectangle of the canvas the frame fills. A <see cref="Rectangle"/> of pixels converts implicitly.</param>
+    /// <param name="sampling">How the image is read between the centers of its pixels.</param>
+    /// <param name="opacity">The opacity of the image, from 0 to 1.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">A coordinate is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The magnitude of a coordinate exceeds 16777216, <paramref name="sampling"/> is not a defined <see cref="ImageSampling"/>, or <paramref name="opacity"/> is not between 0 and 1.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned, or <paramref name="source"/> is a frame that is being drawn on or whose pixels are being accessed.</exception>
+    /// <exception cref="ObjectDisposedException"><paramref name="source"/> no longer belongs to a live image.</exception>
+    /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. No pixel is changed by this call.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void DrawImage(ImageFrame source, RectangleD destination, ImageSampling sampling, double opacity = 1) => GetSession().DrawImage(source, sourceRegion: null, destination, sampling, opacity);
+
+    /// <summary>Draws a region of the pixels of a frame of another image, stretched to a rectangle, read in a given way.</summary>
+    /// <remarks>See <see cref="DrawImage(ImageFrame, RectangleD, ImageSampling, double)"/> and <see cref="DrawImage(ImageFrame, Rectangle, RectangleD, double)"/>.</remarks>
+    /// <param name="source">The frame to draw.</param>
+    /// <param name="sourceRegion">The pixels of the frame that are drawn. Its pixels on the edges are extended; the pixels around it are not read.</param>
+    /// <param name="destination">The rectangle of the canvas the region fills. A <see cref="Rectangle"/> of pixels converts implicitly.</param>
+    /// <param name="sampling">How the image is read between the centers of its pixels.</param>
+    /// <param name="opacity">The opacity of the image, from 0 to 1.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">A coordinate is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="sourceRegion"/> is not inside the frame, the magnitude of a coordinate exceeds 16777216, <paramref name="sampling"/> is not a defined <see cref="ImageSampling"/>, or <paramref name="opacity"/> is not between 0 and 1.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned, or <paramref name="source"/> is a frame that is being drawn on or whose pixels are being accessed.</exception>
+    /// <exception cref="ObjectDisposedException"><paramref name="source"/> no longer belongs to a live image.</exception>
+    /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. No pixel is changed by this call.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void DrawImage(ImageFrame source, Rectangle sourceRegion, RectangleD destination, ImageSampling sampling, double opacity = 1) => GetSession().DrawImage(source, sourceRegion, destination, sampling, opacity);
+
+    /// <summary>Draws the pixels of a frame of another image, placed on the canvas by a transformation, read in a given way.</summary>
+    /// <remarks>See <see cref="DrawImage(ImageFrame, AffineTransform, double)"/> and <see cref="DrawImage(ImageFrame, RectangleD, ImageSampling, double)"/>.</remarks>
+    /// <param name="source">The frame to draw.</param>
+    /// <param name="transform">The transformation that places the frame on the canvas.</param>
+    /// <param name="sampling">How the image is read between the centers of its pixels.</param>
+    /// <param name="opacity">The opacity of the image, from 0 to 1.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The magnitude of a coordinate of a corner of the image on the canvas exceeds 16777216, <paramref name="sampling"/> is not a defined <see cref="ImageSampling"/>, or <paramref name="opacity"/> is not between 0 and 1.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned, or <paramref name="source"/> is a frame that is being drawn on or whose pixels are being accessed.</exception>
+    /// <exception cref="ObjectDisposedException"><paramref name="source"/> no longer belongs to a live image.</exception>
+    /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. No pixel is changed by this call.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void DrawImage(ImageFrame source, AffineTransform transform, ImageSampling sampling, double opacity = 1) => GetSession().DrawImage(source, transform, sampling, opacity);
 
     /// <summary>Paints a rectangle.</summary>
     /// <param name="brush">The paint. A color converts implicitly.</param>

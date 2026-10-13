@@ -850,11 +850,17 @@ rectangle, a region of it stretched to a rectangle (a sprite of a sheet), or pla
 skewed, mirrored: its edges are antialiased, and a quarter turn or a mirror keeps its pixels exactly), with an optional
 opacity. An `ImageBrush`
 paints any shape or text with an image: `Transform` places the image on the canvas, `WrapMode` gives the colors around
-it (`Transparent` by default, `Pad`, `Repeat` for tiles, `Reflect`), `Sampling` chooses between the interpolation of
-the four pixels around a position (`Bilinear`, the default) and the nearest pixel, and `Opacity` fades it. An image
-drawn on whole pixels without scaling keeps its pixels exactly; its pixels are converted to the pixel format of the
-canvas like any brush color, and no color profile is applied. An image that is drawn much smaller than it is skips
-pixels: `Resize` it first. The frame is read while it is drawn: it cannot be one of the frames the canvas draws on, but
+it (`Transparent` by default, `Pad`, `Repeat` for tiles, `Reflect`), `Sampling` chooses how the image is read, and
+`Opacity` fades it. An image drawn on whole pixels without scaling keeps its pixels exactly; its pixels are converted
+to the pixel format of the canvas like any brush color, and no color profile is applied.
+
+An `ImageSampling` is `Bilinear` (the default: the four pixels around a position, interpolated), `Nearest` (the pixel
+that contains the position: an enlarged image keeps its pixels as squares) or `Smooth`. With the first two, an image
+that is drawn much smaller than it is skips pixels. `Smooth` reads every pixel of the image a pixel of the canvas
+covers, with the weights of the interpolation stretched over them, so that a photograph drawn as a thumbnail has no
+aliasing; an image that is not reduced is interpolated as with `Bilinear`, bit for bit. `DrawImage` takes the sampling
+as an argument. Painting a pixel then costs as many pixels of the image as it covers: `Resize` an image that is drawn
+many times, which also has sharper filters. The frame is read while it is drawn: it cannot be one of the frames the canvas draws on, but
 it can be another frame of the same image when the drawing is on one frame (`ImageFrame.Draw`).
 
 <!-- snippet: draw-card -->
@@ -951,7 +957,11 @@ public static void MarkAnimation(string inputPath, string outputPath)
 - **Images.** The color an image gives a pixel is the color it has at the position the center of the pixel comes from:
   the four pixels around that position, weighted by their distance to it, interpolated at 16 bits on alpha-premultiplied
   values and rounded to nearest (or the pixel that contains the position, with nearest sampling). At the center of a
-  pixel of the image, it is that pixel exactly. The opacity of an image multiplies the coverage, as a clip does.
+  pixel of the image, it is that pixel exactly. With smooth sampling, a pixel of the canvas that covers `sx` columns
+  and `sy` rows of the image (the lengths of the rows of the inverse of the transformation, at least 1, at most the
+  size of the region) reads the pixels whose centers are less than `sx` and `sy` away from that position, with the
+  weights `(1 - dx / sx) (1 - dy / sy)`; the weights of the pixels that are outside a transparent image count for the
+  alpha. The opacity of an image multiplies the coverage, as a clip does.
 - **Clips.** The coverage of a pixel under a clip is the product of the coverage of the shape and of the coverage of
   the clip, rounded to the nearest 1/65536 (ties upward). It is the area of what the shape and the clip have in common
   wherever one of them covers the pixel entirely; on a pixel that both only cover in part, it is the product of the two
@@ -1195,7 +1205,7 @@ public static void DrawTextOnPath(string fontPath, string outputPath)
 | Scripts that join | Arabic (with Persian, Urdu and the other languages written with it) and Syriac; in the universal model, N'Ko, Mongolian, Adlam, Mandaic, Manichaean, Psalter Pahlavi, Hanifi Rohingya, Sogdian, Old Uyghur, Chorasmian and Phags-pa |
 | Scripts with a model of their own | Hebrew; Thai and Lao; Hangul; Devanagari, Bengali, Gurmukhi, Gujarati, Oriya, Tamil, Telugu, Kannada and Malayalam; Khmer; Myanmar |
 | Scripts of the universal model | The scripts registered for the Universal Shaping Engine: Tibetan, Sinhala, Javanese, Balinese, Sundanese, Batak, Buginese, Cham, Tai Tham, Tai Le, Tai Viet, Lepcha, Limbu, Meetei Mayek, Newa, Kaithi, Sharada, Grantha, Chakma, Brahmi, Kharoshthi, Tifinagh, Duployan, Egyptian Hieroglyphs and the others |
-| Drawing | No transform on the canvas (a path is transformed with `VectorPath.Transform`), no blend mode (multiply, screen, ...) beyond the compositing operators, no layer or group opacity; always antialiased; composited on the encoded sample values (no linear-light option); sequential; an image is read with four pixels at most per pixel of the canvas (no filter when it is reduced), and gives black as the color of the text to the glyphs a font draws with its own colors; a clip multiplies coverages (on a pixel that the shape and the clip both cover in part, that is not the area they have in common); the path of a stroke (`Widen`) is the pieces of the stroke, not a single outline (`Simplify` makes it one); combined and simplified paths are made of segments, on a grid of 1/1024 of a pixel; coordinates are limited to ±16,777,216 |
+| Drawing | No transform on the canvas (a path is transformed with `VectorPath.Transform`), no blend mode (multiply, screen, ...) beyond the compositing operators, no layer or group opacity; always antialiased; composited on the encoded sample values (no linear-light option); sequential; an image that is reduced is read with four pixels per pixel of the canvas unless smooth sampling is asked for, whose filter is the one of the interpolation (`Resize` has sharper ones), and an image gives black as the color of the text to the glyphs a font draws with its own colors; a clip multiplies coverages (on a pixel that the shape and the clip both cover in part, that is not the area they have in common); the path of a stroke (`Widen`) is the pieces of the stroke, not a single outline (`Simplify` makes it one); combined and simplified paths are made of segments, on a grid of 1/1024 of a pixel; coordinates are limited to ±16,777,216 |
 | Fonts made before OpenType Layout | The marks of a font without positioning table are placed from the shapes of the glyphs; the letters of an Arabic font without substitution table take the presentation forms the font has as characters, with the ligatures of lam and alef; the marks of a Thai font without substitution table take the forms the font has in the private use area |
 
 The glyphs, the clusters and the positions are compared with those of a reference shaper (HarfBuzz) for fonts of

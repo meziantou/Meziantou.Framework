@@ -113,19 +113,21 @@ internal sealed partial class DrawingSession : IDisposable
         DrawingGuard.Point(position, nameof(position));
 
         // The image starts at a valid position: its far corner may be a few pixels beyond the largest coordinate
-        DrawImageCore(source, sourceRegion: null, new RectangleD(position.X, position.Y, source.Width, source.Height), opacity);
+        DrawImageCore(source, sourceRegion: null, new RectangleD(position.X, position.Y, source.Width, source.Height), ImageSampling.Bilinear, opacity);
     }
 
-    public void DrawImage(ImageFrame source, Rectangle? sourceRegion, RectangleD destination, double opacity)
+    public void DrawImage(ImageFrame source, Rectangle? sourceRegion, RectangleD destination, ImageSampling sampling, double opacity)
     {
         ArgumentNullException.ThrowIfNull(source);
         DrawingGuard.Rectangle(destination, nameof(destination));
-        DrawImageCore(source, sourceRegion, destination, opacity);
+        ValidateSampling(sampling);
+        DrawImageCore(source, sourceRegion, destination, sampling, opacity);
     }
 
-    public void DrawImage(ImageFrame source, AffineTransform transform, double opacity)
+    public void DrawImage(ImageFrame source, AffineTransform transform, ImageSampling sampling, double opacity)
     {
         ArgumentNullException.ThrowIfNull(source);
+        ValidateSampling(sampling);
         var coverage = ImageEvaluator.GetOpacityCoverage(opacity, nameof(opacity));
 
         // The corners of the image, on the canvas
@@ -146,10 +148,17 @@ internal sealed partial class DrawingSession : IDisposable
         sink.LineTo(bottomLeft.X, bottomLeft.Y, smooth: false);
         sink.Close(smooth: false);
         sink.End();
-        PaintImage(source, new Rectangle(0, 0, width, height), transform, coverage, isEmpty: false, nameof(source));
+        PaintImage(source, new Rectangle(0, 0, width, height), transform, sampling, coverage, isEmpty: false, nameof(source));
     }
 
-    private void DrawImageCore(ImageFrame source, Rectangle? sourceRegion, RectangleD destination, double opacity)
+    private static void ValidateSampling(ImageSampling sampling)
+    {
+        // Not Enum.IsDefined: a draw call allocates nothing
+        if (sampling is not (ImageSampling.Bilinear or ImageSampling.Nearest or ImageSampling.Smooth))
+            throw new ArgumentOutOfRangeException(nameof(sampling), sampling, "The sampling is not valid.");
+    }
+
+    private void DrawImageCore(ImageFrame source, Rectangle? sourceRegion, RectangleD destination, ImageSampling sampling, double opacity)
     {
         var coverage = ImageEvaluator.GetOpacityCoverage(opacity, nameof(opacity));
         var region = sourceRegion ?? new Rectangle(0, 0, source.Width, source.Height);
@@ -168,14 +177,14 @@ internal sealed partial class DrawingSession : IDisposable
             transform = new AffineTransform(scaleX, 0, 0, scaleY, destination.X - (region.X * scaleX), destination.Y - (region.Y * scaleY));
         }
 
-        PaintImage(source, region, transform, coverage, region.IsEmpty || destination.IsEmpty, nameof(sourceRegion));
+        PaintImage(source, region, transform, sampling, coverage, region.IsEmpty || destination.IsEmpty, nameof(sourceRegion));
     }
 
     /// <summary>Paints the edges of the call with a region of an image, placed by a transformation, its pixels on the edges extended.</summary>
-    private void PaintImage(ImageFrame source, Rectangle region, AffineTransform transform, uint coverage, bool isEmpty, string regionParameterName)
+    private void PaintImage(ImageFrame source, Rectangle region, AffineTransform transform, ImageSampling sampling, uint coverage, bool isEmpty, string regionParameterName)
     {
         var evaluator = _imagePaint ??= new ImageEvaluator(_image.Owner.Scope);
-        evaluator.Prepare(source, region, transform, ImageWrapMode.Pad, ImageSampling.Bilinear, _frames[0], Width, regionParameterName);
+        evaluator.Prepare(source, region, transform, ImageWrapMode.Pad, sampling, _frames[0], Width, regionParameterName);
         if (coverage == 0 || isEmpty || _edges!.Count == 0)
             return;
 

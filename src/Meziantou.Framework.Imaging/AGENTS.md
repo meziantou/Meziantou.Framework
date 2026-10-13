@@ -293,7 +293,9 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
   and released in `finally` (`Begin` / `End`): never keep it between two draw calls. `ImageEvaluator` interpolates
   16-bit colors read with the pixel conversion (`ReadRgba64`), then converts them like any brush color; when the rows
   of the canvas stay rows of the image, it converts each row of the image once. `DrawImage` is a fill of the rectangle
-  with that evaluator: no brush is allocated.
+  with that evaluator: no brush is allocated. `ImageSampling.Smooth` is the bilinear paths themselves when the image
+  is not reduced; when it is, `ReduceRows` and `ReducePixels` add the same terms in the same order (rows, then
+  columns), so that the row-by-row path and the pixel-by-pixel one give the same bits: keep them in step.
 - A clip is a stack of levels in the session (`DrawingSession.Clipping.cs`): bounds in whole pixels and, unless the clip
   is a rectangle of whole pixels, a mask of coverages rasterized once, when the clip starts, by the same rasterizer.
   Draw calls multiply their coverage by the mask row by row (`ApplyClip`), into a row of the session: they rent nothing.

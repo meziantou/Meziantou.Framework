@@ -76,6 +76,81 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void ComposeCardDrawsThePhotoInsideTheCircle()
+    {
+        var photoPath = GetPath("photo.png");
+        using (var photo = new Image<Rgba32>(40, 40, new Rgba32(200, 30, 30)))
+        {
+            photo.Save(photoPath);
+        }
+
+        var output = GetPath("card.png");
+        Examples.ComposeCard(photoPath, output);
+
+        using var image = Image.Load<Rgba32>(output);
+        Assert.Equal(new Size(320, 120), image.Size);
+        var frame = image.Frames[0];
+
+        // The corners are outside the rounded rectangle; inside, the gradient is opaque and starts with its first color
+        Assert.Equal(0, frame[0, 0].A);
+        Assert.Equal(0, frame[319, 119].A);
+        Assert.Equal(255, frame[160, 100].A);
+        Assert.Equal(new Rgba32(0x2B, 0x58, 0x76), frame[160, 0]);
+
+        // The photo fills the circle, and nothing of the square it was stretched to outside the circle
+        Assert.Equal(new Rgba32(200, 30, 30), frame[60, 60]);
+        Assert.Equal(new Rgba32(200, 30, 30), frame[40, 45]);
+        Assert.Equal(frame[150, 30], frame[25, 30]);
+
+        // The white ring is on the circle
+        Assert.Equal(new Rgba32(255, 255, 255), frame[99, 60]);
+        Assert.Equal(new Rgba32(255, 255, 255), frame[60, 20]);
+
+        // The dashes start at 120: 120 to 126, a gap to 130, and so on
+        Assert.True(frame[122, 60].R > frame[127, 60].R);
+        Assert.Equal(frame[122, 60], frame[132, 60]);
+        Assert.Equal(frame[127, 60], frame[137, 60]);
+        Assert.Equal(frame[127, 60], frame[310, 60]);
+
+        // The gauge is gold from the top of its circle to its left, clockwise; the quarter between them is not drawn
+        Assert.Equal(Colors.Gold, frame[270, 16]);
+        Assert.Equal(Colors.Gold, frame[283, 30]);
+        Assert.Equal(Colors.Gold, frame[270, 43]);
+        Assert.Equal(Colors.Gold, frame[256, 30]);
+        Assert.Equal(frame[200, 20], frame[260, 20]);
+    }
+
+    [Fact]
+    public void DrawRoutePlacesItsMarksAlongThePath()
+    {
+        var output = GetPath("route.png");
+        Examples.DrawRoute(output);
+
+        using var image = Image.Load<Rgba32>(output);
+        Assert.Equal(new Size(200, 120), image.Size);
+        var frame = image.Frames[0];
+        var route = new Drawing.VectorPathBuilder().MoveTo(20, 100).CubicBezierTo(60, 10, 120, 110, 176, 34).Build();
+        var length = route.GetLength();
+        Assert.InRange(length, 170, 260);
+
+        // A milestone is a disk of radius 4 around each quarter of the way
+        for (var i = 1; i <= 3; i++)
+        {
+            Assert.True(route.TryGetPointAtDistance(length * i / 4, out var milestone, out _));
+            Assert.Equal(Colors.Crimson, frame[(int)milestone.X, (int)milestone.Y]);
+        }
+
+        // The arrow head is behind the end of the route, in its direction
+        Assert.True(route.TryGetPointAtDistance(length, out var tip, out var direction));
+        Assert.Equal(new PointD(176, 34), tip);
+        var inside = tip - (direction * 6);
+        Assert.Equal(Colors.SteelBlue, frame[(int)inside.X, (int)inside.Y]);
+        var ahead = tip + (direction * 3);
+        Assert.Equal(Colors.White, frame[(int)ahead.X, (int)ahead.Y]);
+        Assert.Equal(Colors.White, frame[5, 5]);
+    }
+
+    [Fact]
     public void DrawLandscapePaintsShapesOverEachOther()
     {
         var output = GetPath("landscape.png");

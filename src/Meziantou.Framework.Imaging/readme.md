@@ -25,8 +25,9 @@ conversion, and bounded-memory streaming.
 - Six working pixel formats (`Rgba32`, `Bgra32`, `Rgb24`, `Rgba64`, `Gray8`, `Gray16`) with 16-bit precision preserved
 - Crop, auto-crop (background detection), resize (alpha-aware, Contain/Cover/Stretch), rotate, auto-orient, flip,
   grayscale and convolution matrices (sharpen, blur, edge detection) applied to all frames
-- Antialiased vector drawing on a frame or on every frame: filled and stroked rectangles, ellipses and paths with
-  Bézier curves, solid colors, linear and radial gradients, with exact pixel coverage
+- Antialiased vector drawing on a frame or on every frame: filled and stroked shapes and paths with Bézier curves and
+  arcs, dashed strokes, solid colors, linear, radial and sweep gradients, images, clips and compositing operators, with
+  exact pixel coverage
 - Text drawn from font files with the same rasterizer, measured by the layout that is drawn
 - Font files read without any system library: TrueType and OpenType (TrueType and CFF outlines), font collections,
   WOFF and WOFF2, with their names, metrics, character map and glyph outlines
@@ -733,6 +734,40 @@ is the pieces the library fills (one per segment, join and cap, overlapping): fi
 not a single outline. Lengths and containment are those of the path as it is drawn, with its curves replaced by their
 chords.
 
+<!-- snippet: draw-route -->
+```csharp
+public static void DrawRoute(string outputPath)
+{
+    using var image = new Image<Rgba32>(200, 120, Colors.White);
+    var route = new VectorPathBuilder().MoveTo(20, 100).CubicBezierTo(60, 10, 120, 110, 176, 34).Build();
+
+    // An arrow head that points to the right, with its tip at the origin
+    var arrowHead = new VectorPathBuilder().AddPolygon([new PointD(0, 0), new PointD(-14, -6), new PointD(-14, 6)]).Build();
+
+    // The end of the route and its direction there. The transformation turns the x axis to that direction, then
+    // moves the origin to the end of the route.
+    var length = route.GetLength();
+    _ = route.TryGetPointAtDistance(length, out var tip, out var direction);
+    var head = arrowHead.Transform(new AffineTransform(direction.X, direction.Y, -direction.Y, direction.X, tip.X, tip.Y));
+
+    var line = new Pen(Colors.SteelBlue, 3) { DashPattern = [8, 5], LineCap = LineCap.Round };
+    image.Draw(canvas =>
+    {
+        canvas.Stroke(line, route);
+        canvas.Fill(Colors.SteelBlue, head);
+
+        // A milestone at each quarter of the way
+        for (var i = 1; i <= 3; i++)
+        {
+            _ = route.TryGetPointAtDistance(length * i / 4, out var milestone, out _);
+            canvas.FillCircle(Colors.Crimson, milestone, 4);
+        }
+    });
+
+    image.Save(outputPath);
+}
+```
+
 **Coordinates**. Positions are `double` values in pixels (`PointD`, `RectangleD`; the integer `Point` and `Rectangle`
 convert implicitly). The origin is the top-left corner, and integer coordinates are pixel boundaries: the pixel
 `(x, y)` covers the square from `(x, y)` to `(x + 1, y + 1)`. A rectangle on integer coordinates is filled exactly, and
@@ -741,12 +776,13 @@ canvas. A coordinate must be finite (`ArgumentException`) and no larger than 16,
 (`ArgumentOutOfRangeException`). `PointD` has the usual arithmetic (`+`, `-`, `*`, `/`, `DistanceTo`) and `RectangleD`
 the usual helpers (`Center`, `Contains`, `Intersect`, `Union`, `Offset`, `Inflate`).
 
-**Brushes**. A brush is a `SolidBrush`, a gradient or an `ImageBrush` (see Images below). A `SolidBrush` paints one color (an `Rgba32` or `Rgba64` converts implicitly to a brush). A
-`LinearGradientBrush` (between two points), a `RadialGradientBrush` (around a center, up to a radius) and a
-`SweepGradientBrush` (around a center, by the angle) paint the color of their `GradientStop`s at the center of each
-pixel; `SpreadMode` gives the colors beyond the stops: `Pad` (default), `Repeat` or `Reflect`. Gradients are positioned
-in canvas coordinates, whatever the shape they fill. Two stops with the same offset make a hard edge, and stops are
-interpolated on alpha-premultiplied values, so a transparent stop does not tint its neighbors.
+**Brushes**. A brush is a `SolidBrush`, a gradient or an `ImageBrush` (see Images below). A `SolidBrush` paints one
+color (an `Rgba32` or `Rgba64` converts implicitly to a brush). A `LinearGradientBrush` (between two points), a
+`RadialGradientBrush` (around a center, up to a radius) and a `SweepGradientBrush` (around a center, by the angle) paint
+the color of their `GradientStop`s at the center of each pixel; `SpreadMode` gives the colors beyond the stops: `Pad`
+(default), `Repeat` or `Reflect`. Gradients are positioned in canvas coordinates, whatever the shape they fill. Two
+stops with the same offset make a hard edge, and stops are interpolated on alpha-premultiplied values, so a transparent
+stop does not tint its neighbors.
 
 A radial gradient can spread from a `FocalPoint` that is not its center (a highlight on a sphere): the point must be
 strictly inside the circle. A sweep gradient goes around its center clockwise on the image, from `StartAngle` to
@@ -764,6 +800,37 @@ drawn on whole pixels without scaling keeps its pixels exactly; its pixels are c
 canvas like any brush color, and no color profile is applied. An image that is drawn much smaller than it is skips
 pixels: `Resize` it first. The frame is read while it is drawn: it cannot be one of the frames the canvas draws on, but
 it can be another frame of the same image when the drawing is on one frame (`ImageFrame.Draw`).
+
+<!-- snippet: draw-card -->
+```csharp
+public static void ComposeCard(string photoPath, string outputPath)
+{
+    using var photo = Image.Load(photoPath);
+    using var card = new Image<Rgba32>(320, 120);
+
+    var shade = new LinearGradientBrush(new PointD(0, 0), new PointD(0, 120), [new GradientStop(0, Rgba32.ParseHex("#2B5876")), new GradientStop(1, Rgba32.ParseHex("#4E4376"))]);
+    var portrait = new VectorPathBuilder().AddCircle(new PointD(60, 60), 40).Build();
+    var ring = new Pen(Colors.White, 3);
+    var rule = new Pen(new Rgba32(255, 255, 255, 160), 2) { DashPattern = [6, 4] };
+    var gauge = new Pen(Colors.Gold, 6) { LineCap = LineCap.Round };
+
+    card.Frames[0].Draw(canvas =>
+    {
+        // The pixels outside the rounded corners stay transparent
+        canvas.FillRoundedRectangle(shade, new Rectangle(0, 0, 320, 120), 16);
+
+        // The photo is stretched to the square around the circle, and only changes the inside of the circle
+        canvas.Clip(portrait, clipped => clipped.DrawImage(photo.Frames[0], new Rectangle(20, 20, 80, 80)));
+        canvas.Stroke(ring, portrait);
+
+        // Dashes of 6 pixels and gaps of 4, then three quarters of a circle from its top, clockwise
+        canvas.StrokeLine(rule, new PointD(120, 60), new PointD(300, 60));
+        canvas.StrokeArc(gauge, new PointD(270, 30), 14, -90, 270);
+    });
+
+    card.Save(outputPath);
+}
+```
 
 **Operators**. A brush is painted over the pixels (`CompositeMode.SourceOver`) unless its `CompositeMode` says
 otherwise. The modes are the compositing operators of Porter and Duff: `Source` replaces the pixels, alpha included (a

@@ -1180,6 +1180,8 @@ namespace Meziantou.Framework.Imaging.Drawing
         public Meziantou.Framework.Imaging.Drawing.LineJoin LineJoin { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Drawing.LineCap LineCap { get => throw null; init { } }
         public double MiterLimit { get => throw null; init { } }
+        public System.ReadOnlySpan<double> DashPattern { get => throw null; init { } }
+        public double DashOffset { get => throw null; init { } }
         public Pen(Meziantou.Framework.Imaging.Drawing.Brush brush, double width) { }
     }
 

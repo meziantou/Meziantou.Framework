@@ -301,6 +301,24 @@ internal sealed class Stroker : PathSink
         }
     }
 
+    /// <summary>
+    /// Adds what a dash without length draws at a point of a path: its two caps back to back. Nothing for butt caps, a
+    /// disk for round caps, a square turned to the direction of the path for square caps.
+    /// </summary>
+    public void AddDot(double x, double y, double directionX, double directionY)
+    {
+        switch (_cap)
+        {
+            case LineCap.Round:
+                AddDot(x, y);
+                break;
+
+            case LineCap.Square:
+                AddBody(x - (_halfWidth * directionX), y - (_halfWidth * directionY), x + (_halfWidth * directionX), y + (_halfWidth * directionY), directionX, directionY);
+                break;
+        }
+    }
+
     /// <summary>Adds what a contour reduced to a single point draws: nothing for butt caps, a disk or an axis-aligned square otherwise.</summary>
     private void AddDot(double x, double y)
     {

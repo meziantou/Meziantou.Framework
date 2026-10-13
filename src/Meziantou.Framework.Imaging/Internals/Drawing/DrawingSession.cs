@@ -31,6 +31,7 @@ internal sealed partial class DrawingSession : IDisposable
     private CoverageRasterizer? _rasterizer;
     private FillSink? _fillSink;
     private Stroker? _stroker;
+    private Dasher? _dasher;
     private GradientEvaluator? _gradient;
     private GlyphPathSink? _glyphSink;
     private GlyphScratch? _glyphScratch;
@@ -427,6 +428,8 @@ internal sealed partial class DrawingSession : IDisposable
         IsActive = false;
         _pathMeasure?.Dispose();
         _pathMeasure = null;
+        _dasher?.Dispose();
+        _dasher = null;
         _colorSurface?.Dispose();
         _colorSurface = null;
         _foregroundGradient?.Dispose();
@@ -479,12 +482,17 @@ internal sealed partial class DrawingSession : IDisposable
         return _fillSink ??= new FillSink(edges);
     }
 
-    private Stroker BeginStroke(Pen pen)
+    private PathSink BeginStroke(Pen pen)
     {
         var edges = BeginCall();
         var stroker = _stroker ??= new Stroker(edges);
         stroker.Configure(pen);
-        return stroker;
+        if (!pen.IsDashed)
+            return stroker;
+
+        var dasher = _dasher ??= new Dasher(_image.Owner.Scope);
+        dasher.Configure(pen, stroker, Width, Height, _cancellationToken);
+        return dasher;
     }
 
     /// <summary>Renders the pieces the stroker emitted, or the whole frame when one of them contains it.</summary>

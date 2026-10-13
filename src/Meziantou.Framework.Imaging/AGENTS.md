@@ -261,6 +261,11 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
   order as a draw call, so filling the result is stroking, bit for bit (`FillingAWidenedPathIsStrokingThePath`).
 - A stroke is a union of convex pieces with one orientation (`Stroker`): overlaps are harmless because the coverage is
   the area of the union. The 1/16 pixel flattening tolerance is public; the positions of the chord vertices are not.
+- Dashes are cut before the stroker (`Dasher`), which strokes each dash as an open contour. The first dash of a contour
+  is held back until the contour ends, because the last dash of a closed contour continues with it. On a canvas, the
+  parts of a segment outside the box where a stroke can change a pixel are skipped and the pattern is advanced by
+  their length: the cost of a dashed stroke must stay what the canvas shows of it, whatever the length of the path
+  (`WhatIsOutsideTheCanvasIsNotCutIntoDashesAndThePatternGoesOn`). `Widen` has no canvas and cuts everything.
 - Every rental of a draw call happens before its first pixel write (edges, then the sweep and gradient scratch in
   `Render`). Draw calls allocate nothing once the scratch of the session has grown (`PerformanceContractTests`).
 - The cost of a shape follows its edges and their crossings. Keep the events of the sweep logarithmic: no pass over

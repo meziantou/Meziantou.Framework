@@ -232,6 +232,10 @@ public sealed class VectorPath
     /// Curves are widened along their chords, which stay within 1/16 of a pixel of the curve at the size the path has:
     /// transform a path before widening it, not after. The brush of the pen is not used.
     /// </para>
+    /// <para>
+    /// A dashed pen gives the contours of every dash: the size of the result grows with the length of the path divided by
+    /// the length of the pattern, and nothing limits it.
+    /// </para>
     /// </remarks>
     /// <param name="pen">The stroke.</param>
     /// <returns>The path of the stroke; an empty path when this path is empty.</returns>
@@ -243,7 +247,17 @@ public sealed class VectorPath
         var builder = new VectorPathBuilder();
         var stroker = new Stroker(builder);
         stroker.Configure(pen);
-        PathFlattener.Flatten(this, stroker);
+        if (pen.IsDashed)
+        {
+            using var dasher = new Dasher(scope: null);
+            dasher.Configure(pen, stroker);
+            PathFlattener.Flatten(this, dasher);
+        }
+        else
+        {
+            PathFlattener.Flatten(this, stroker);
+        }
+
         var result = builder.Build();
         foreach (var value in result._points)
         {

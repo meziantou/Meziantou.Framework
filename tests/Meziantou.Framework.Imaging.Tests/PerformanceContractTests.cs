@@ -87,6 +87,7 @@ public sealed class PerformanceContractTests
             TextLayout.Create("AB CA", FontTestSupport.Load(FontSamples.BitmapBoxes(useColorBitmapTables: true)), 16),
             TextLayout.Create("ABCA", FontTestSupport.Load(FontSamples.BitmapBoxes()), 11.5),
             new TextPathOptions { Side = TextPathSide.Right, Alignment = TextPathAlignment.Center, StartOffset = -7.5, BaselineOffset = 2.25, Overflow = TextPathOverflow.Clip },
+            new Pen(new SolidBrush(new Rgba32(0, 0, 0, 200)), 2.5) { DashPattern = [5, 2.5, 0, 2.5], DashOffset = 1.25, LineCap = LineCap.Round },
             new StrongBox<long>(long.MaxValue));
 
         // Tiered compilation running concurrently can attribute a few bytes to this thread, and the many methods behind a
@@ -128,6 +129,9 @@ public sealed class PerformanceContractTests
             canvas.StrokeRoundedRectangle(state.Pen, new Rectangle(5, 5, 20, 20), 100);
             canvas.FillPie(state.Solid, new PointD(30, 20), 17.5, 20, 250);
             canvas.StrokeArc(state.Pen, new PointD(30, 20), 17.5, -30, -400);
+            canvas.Stroke(state.DashedPen, state.Path);
+            canvas.StrokeRectangle(state.DashedPen, new RectangleD(-20, 5.5, 200, 20));
+            canvas.StrokeText(state.DashedPen, state.Text, new PointD(1, 10.5));
             ReadOnlySpan<PointD> points = [new(2, 3), new(60, 10), new(20, 44), new(40, 1), new(5, 40)];
             canvas.FillPolygon(state.Solid, points, FillRule.EvenOdd);
             canvas.StrokePolygon(state.Pen, points);
@@ -353,5 +357,5 @@ public sealed class PerformanceContractTests
         return stream.ToArray();
     }
 
-    private sealed record DrawingState(SolidBrush Solid, GradientBrush Gradient, Pen Pen, VectorPath Path, TextLayout Text, TextLayout CffText, TextLayout CompositeText, TextLayout RichText, TextLayout VariableText, TextLayout BlendedText, TextLayout ColorText, TextLayout BitmapText, TextLayout ScaledBitmapText, TextPathOptions PathOptions, StrongBox<long> Allocated);
+    private sealed record DrawingState(SolidBrush Solid, GradientBrush Gradient, Pen Pen, VectorPath Path, TextLayout Text, TextLayout CffText, TextLayout CompositeText, TextLayout RichText, TextLayout VariableText, TextLayout BlendedText, TextLayout ColorText, TextLayout BitmapText, TextLayout ScaledBitmapText, TextPathOptions PathOptions, Pen DashedPen, StrongBox<long> Allocated);
 }

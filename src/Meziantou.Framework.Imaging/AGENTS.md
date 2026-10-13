@@ -247,7 +247,10 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
     for all of them, from the two factors of the operator; source-over keeps its own, unchanged. A paint without
     opacity is skipped only with the operators it changes nothing with (`IsTransparentPaintInert`): with the others it
     erases. `ReferenceCompositor` has the same operators from their definition, in rational numbers.
-  - Gradients interpolate premultiplied values of the converted stops, evaluated per pixel at its center.
+  - Gradients interpolate premultiplied values of the converted stops, evaluated per pixel at its center. With a
+    `GradientColorSpace` other than `Encoded`, the stops stay 16-bit sRGB colors, are mixed in linear light or in
+    Oklab (`SrgbTransfer`, `Math.Cbrt`: the one place of the drawing code that uses functions of the platform), and
+    the 16-bit result is converted like a brush color; the color of a stop is always written as it is.
 - Only `+ - * /` and `Math.Sqrt` in the geometry (no trigonometry, no fused multiply-add), and every order that
   influences a sum is total (events and crossings are sorted with a tie-break): results must not depend on the
   platform, the framework version or a sorting algorithm.

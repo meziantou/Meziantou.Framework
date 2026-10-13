@@ -838,6 +838,12 @@ the color of their `GradientStop`s at the center of each pixel; `SpreadMode` giv
 stops with the same offset make a hard edge, and stops are interpolated on alpha-premultiplied values, so a transparent
 stop does not tint its neighbors.
 
+`ColorSpace` says in which space the colors of two stops are mixed. `Encoded` (the default, as in CSS and SVG) mixes
+the stored sample values: half way from red to green is a dark olive, (128, 128, 0). `LinearSrgb` mixes light, as
+paints of light do: the yellow (188, 188, 0). `Oklab` mixes in a space made for it, where the lightness and the hue
+change evenly: (208, 168, 0), with no dull band between two saturated colors. The stops are taken as sRGB colors; at
+a stop, the color is the color of the stop in every space.
+
 A radial gradient can spread from a `FocalPoint` that is not its center (a highlight on a sphere): the point must be
 strictly inside the circle. A sweep gradient goes around its center clockwise on the image, from `StartAngle` to
 `EndAngle` (a full turn from the right of the center by default); its colors change abruptly at its start angle unless
@@ -950,7 +956,10 @@ public static void MarkAnimation(string inputPath, string outputPath)
 - **Compositing.** The paint is composited over the pixels (source-over) on the stored sample values, with straight
   alpha and exact integer arithmetic, rounded to nearest with ties upward. A full coverage with an opaque color writes
   that color exactly; frames without alpha stay opaque; a pixel that would stay fully transparent is not written and
-  keeps its hidden color. A gradient whose stops have the same color paints exactly what a solid brush paints.
+  keeps its hidden color. A gradient whose stops have the same color paints exactly what a solid brush paints. A
+  gradient that mixes its colors in linear light or in Oklab computes them at 16 bits with the power and cube root
+  functions of the platform, as `ResizeWorkingSpace.LinearSrgb` does: a sample within about 1e-12 of a rounding
+  boundary can differ by one from a platform to another.
 - **Operators.** The other compositing operators use the same exact arithmetic and the same rounding. A pixel whose
   alpha becomes zero becomes transparent black. A frame without alpha stays opaque: its pixels get the color the result
   would have over black, so an eraser darkens them.

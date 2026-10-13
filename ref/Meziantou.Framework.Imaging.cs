@@ -1177,7 +1177,15 @@ namespace Meziantou.Framework.Imaging.Drawing
     {
         public System.ReadOnlyMemory<Meziantou.Framework.Imaging.Drawing.GradientStop> Stops { get => throw null; }
         public Meziantou.Framework.Imaging.Drawing.GradientSpreadMode SpreadMode { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Drawing.GradientColorSpace ColorSpace { get => throw null; init { } }
         public Meziantou.Framework.Imaging.AffineTransform Transform { get => throw null; init { } }
+    }
+
+    public enum GradientColorSpace
+    {
+        Encoded = 0,
+        LinearSrgb = 1,
+        Oklab = 2,
     }
 
     public enum GradientSpreadMode

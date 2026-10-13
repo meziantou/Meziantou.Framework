@@ -76,7 +76,7 @@ public sealed class PerformanceContractTests
         var state = new DrawingState(
             new SolidBrush(new Rgba32(10, 200, 30, 120)),
             new LinearGradientBrush(new PointD(0, 0), new PointD(64, 48), [new GradientStop(0, new Rgba32(255, 0, 0)), new GradientStop(0.5, new Rgba32(0, 255, 0, 80)), new GradientStop(1, new Rgba32(0, 0, 255))]) { SpreadMode = GradientSpreadMode.Reflect },
-            new Pen(new RadialGradientBrush(new PointD(30, 20), 25, [new GradientStop(0, new Rgba32(0, 0, 0)), new GradientStop(1, new Rgba32(255, 255, 255))]), 3.5) { LineJoin = LineJoin.Round, LineCap = LineCap.Round },
+            new Pen(new RadialGradientBrush(new PointD(30, 20), 25, [new GradientStop(0, new Rgba32(0, 0, 0)), new GradientStop(1, new Rgba32(255, 255, 255))]) { ColorSpace = GradientColorSpace.LinearSrgb }, 3.5) { LineJoin = LineJoin.Round, LineCap = LineCap.Round },
             new VectorPathBuilder().MoveTo(4, 40).CubicBezierTo(20, -10, 40, 60, 60, 6).QuadraticBezierTo(30, 30, 8, 8).AddCircle(new PointD(32, 24), 15).Build(),
             TextLayout.Create("OPQ\nR O", FontTestSupport.Load(FontSamples.Curves()), 14.5),
             TextLayout.Create("ABCDEFG", FontTestSupport.Load(FontSamples.Charstrings()), 9.25),
@@ -89,7 +89,7 @@ public sealed class PerformanceContractTests
             TextLayout.Create("ABCA", FontTestSupport.Load(FontSamples.BitmapBoxes()), 11.5),
             new TextPathOptions { Side = TextPathSide.Right, Alignment = TextPathAlignment.Center, StartOffset = -7.5, BaselineOffset = 2.25, Overflow = TextPathOverflow.Clip },
             new Pen(new SolidBrush(new Rgba32(0, 0, 0, 200)), 2.5) { DashPattern = [5, 2.5, 0, 2.5], DashOffset = 1.25, LineCap = LineCap.Round },
-            new SweepGradientBrush(new PointD(30, 22), 15, 300, [new GradientStop(0, new Rgba32(255, 255, 0, 40)), new GradientStop(1, new Rgba32(0, 255, 255))]) { SpreadMode = GradientSpreadMode.Reflect, Transform = AffineTransform.CreateSkew(20, 0) },
+            new SweepGradientBrush(new PointD(30, 22), 15, 300, [new GradientStop(0, new Rgba32(255, 255, 0, 40)), new GradientStop(1, new Rgba32(0, 255, 255))]) { SpreadMode = GradientSpreadMode.Reflect, Transform = AffineTransform.CreateSkew(20, 0), ColorSpace = GradientColorSpace.Oklab },
             new RadialGradientBrush(new PointD(30, 20), 25, [new GradientStop(0, new Rgba32(255, 255, 255)), new GradientStop(1, new Rgba32(0, 0, 0, 0))]) { FocalPoint = new PointD(22, 14) },
             new RadialGradientBrush(new PointD(25, 14), 12, [new GradientStop(0, new Rgba32(0, 0, 0)), new GradientStop(1, new Rgba32(0, 0, 0, 0))]) { CompositeMode = CompositeMode.DestinationOut },
             sprite.Frames[0],

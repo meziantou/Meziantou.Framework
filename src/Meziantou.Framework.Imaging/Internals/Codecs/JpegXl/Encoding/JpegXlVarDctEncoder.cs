@@ -10,15 +10,18 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <remarks>
 /// <list type="bullet">
 /// <item><description>
-/// Analysis, group by group: the samples of the group are converted to XYB, and sharpened when the decoder smooths the
-/// frame (<see cref="JpegXlInverseGaborish"/>); the transform of each area is chosen, from the 8x8 DCT to the 64x64 one
-/// by the effort, by what it costs for the luma (<see cref="GetTransformCost"/>); then each transform is applied and
-/// quantized, and only the quantized values are kept: one value per coefficient, and the LF value of each block. The
-/// blocks of a frame do not predict each other, so the encoder does not reconstruct what it writes.
+/// The quantization field first, over the whole frame (<see cref="ComputeQuantField"/>): from the effort 3, each block
+/// has its own quantization factor, finer where an error shows (<see cref="JpegXlAdaptiveQuantization"/>), and the scale
+/// of the quantization of the frame is the one that suits the field. The samples are converted to XYB a first time for
+/// it. Below, every block has the same factor.
 /// </description></item>
 /// <item><description>
-/// Every block has the quantization factor of the frame: a factor that follows the content of the block was measured
-/// and is larger at equal quality (see the notes of the library).
+/// Analysis, group by group: the samples of the group are converted to XYB, and sharpened when the decoder smooths the
+/// frame (<see cref="JpegXlInverseGaborish"/>); the transform of each area is chosen, from the 8x8 DCT to the 64x64 one
+/// by the effort, by what it costs for the luma (<see cref="GetTransformCost"/>), and has one factor, from the field of
+/// its blocks; then each transform is applied and quantized, and only the quantized values are kept: one value per
+/// coefficient, and the LF value of each block. The blocks of a frame do not predict each other, so the encoder does
+/// not reconstruct what it writes.
 /// </description></item>
 /// <item><description>
 /// The channels are X, Y and B in that order, as in the decoder; Y is quantized first, because the decoder predicts the
@@ -47,9 +50,6 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
     private const byte BlockCovered = 1;
     private const byte BlockFirst = 2;
 
-    /// <summary>The quantization factor of a block that is neither coarser nor finer than the frame.</summary>
-    private const int NominalQuantField = 32;
-
     /// <summary>The sharpness of the edge-preserving filter of every block: the middle of its range.</summary>
     private const int Sharpness = 4;
 
@@ -58,6 +58,12 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
 
     /// <summary>The unit of the factors of the chroma from luma prediction: the default value of the frame.</summary>
     private const float ColorScale = 1f / 84;
+
+    /// <summary>
+    /// The effort from which each block has its own quantization factor: the field costs a quarter of the time of an
+    /// encoding at the default effort, and more of a faster one.
+    /// </summary>
+    private const int AdaptiveQuantizationEffort = 3;
 
     /// <summary>The effort from which the transform of each block is chosen.</summary>
     private const int TransformSelectionEffort = 3;
@@ -114,8 +120,9 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
     private readonly int _groupCount;
     private readonly int _lfGroupCount;
     private readonly int _passCount;
-    private readonly int _globalScale;
-    private readonly int _quantLf;
+    private readonly float _distance;
+    private int _globalScale;
+    private int _quantLf;
     private readonly float[] _lfStep = new float[3];
     private readonly float[] _hfScale = new float[3];
     private readonly int[] _horizontalShift = new int[3];
@@ -129,6 +136,10 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
     private readonly bool _usesRectangles;
     private float _referenceStep;
 
+    // The group that is analyzed: its first column and its first row of blocks in the frame
+    private int _groupBlockX;
+    private int _groupBlockY;
+
     // The quantization table of each channel of a recompressed JPEG file, in the layout of the coefficients of the frame
     private ushort[][]? _jpegQuantization;
 
@@ -137,6 +148,7 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
     private readonly Av1PooledArray<float>?[] _samples = new Av1PooledArray<float>?[3];
     private Av1PooledArray<byte>? _blockInfo;
     private Av1PooledArray<ushort>? _quantField;
+    private Av1PooledArray<float>? _field;
     private Av1PooledArray<sbyte>? _xFromY;
     private Av1PooledArray<sbyte>? _bFromY;
     private Av1PooledArray<int>? _groupOffsets;
@@ -211,14 +223,8 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
 
         // The decoder smooths the frame: the encoder sharpens it first, with what undoes the weights of each channel
         _gaborish = frame.RestorationFilter.IsGaborEnabled;
-        var distance = GetDistance(quality) * (_gaborish ? GaborishDistanceFactor : 1f);
-        _globalScale = Math.Clamp((int)MathF.Round(65536f * HfScaleAtDistance1 / (distance * NominalQuantField), MidpointRounding.AwayFromZero), 1, 8193 + 65535);
-        _quantLf = Math.Clamp((int)MathF.Round(65536f * LfScaleAtDistance1 / (GetLfDistance(distance) * _globalScale), MidpointRounding.AwayFromZero), 1, 65536);
-        ReadOnlySpan<float> lfQuant = [1f / 4096, 1f / 512, 1f / 256];
-        for (var c = 0; c < 3; c++)
-        {
-            _lfStep[c] = lfQuant[c] * (65536f / _globalScale / _quantLf);
-        }
+        // The scale of the quantization is the one of the quantization field of the frame: see ComputeQuantField
+        _distance = GetDistance(quality) * (_gaborish ? GaborishDistanceFactor : 1f);
 
         // The X and B channels have their own scale of the quantization: a power of 0.8
         _hfScale[0] = MathF.Pow(0.8f, frame.XqmScale - 2);
@@ -250,11 +256,20 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
     /// <summary>Writes the Modular channels of a rectangle of the image that are not color channels (the alpha channel), as one sub-bitstream.</summary>
     public delegate void ExtraChannelWriter(LsbBitWriter writer, scoped in PixelLease lease, int x, int y, int width, int height);
 
-    /// <summary>The scale of the quantization of the coefficients at distance 1, where a difference is barely visible.</summary>
+    /// <summary>The scale of the quantization of the coefficients at distance 1, where a difference is barely visible, when every block has the same factor.</summary>
     private static float HfScaleAtDistance1 => 0.8f;
 
     /// <summary>The scale of the quantization of the LF image at distance 1.</summary>
     private static float LfScaleAtDistance1 => 2.0f;
+
+    /// <summary>The smallest factor of the LF image that the scale of the frame leaves: what keeps its steps precise.</summary>
+    private static float MinQuantLf => 10f;
+
+    /// <summary>
+    /// The factor of the quantization field: what gives a quality, over photographs, the file size it had with one
+    /// quantization factor for the frame (within a tenth, from the lowest qualities to the highest).
+    /// </summary>
+    private static float FieldScale => 1.75f;
 
     /// <summary>
     /// Gets the distance of a quality: the factor by which the quantization steps are multiplied, 1 being a quality at which
@@ -309,12 +324,18 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
     {
         ArgumentNullException.ThrowIfNull(writer);
         ArgumentNullException.ThrowIfNull(sizes);
+        AllocateFrame(clear: false);
+        _color = new JpegXlForwardColor(_image, PixelFormats.GetBitsPerComponent(_format), _scope);
+        ComputeQuantField(lease);
         Allocate();
         for (var group = 0; group < _groupCount; group++)
         {
             _cancellationToken.ThrowIfCancellationRequested();
             AnalyzeGroup(lease, group);
         }
+
+        _field?.Dispose();
+        _field = null;
 
         // The samples are not needed anymore
         for (var c = 0; c < 3; c++)
@@ -414,6 +435,8 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
         _blockInfo = null;
         _quantField?.Dispose();
         _quantField = null;
+        _field?.Dispose();
+        _field = null;
         _xFromY?.Dispose();
         _xFromY = null;
         _bFromY?.Dispose();
@@ -443,9 +466,9 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
     /// <summary>The distance of the LF image: it grows more slowly than the one of the coefficients, since an error of the LF image is a flat error of a whole block.</summary>
     private static float GetLfDistance(float distance) => distance <= 1 ? distance : 1 + ((distance - 1) * 0.5f);
 
+    /// <summary>Rents what the analysis of a group works with.</summary>
     private void Allocate()
     {
-        AllocateFrame(clear: false);
         for (var c = 0; c < 3; c++)
         {
             _samples[c] = Av1PooledArray<float>.Rent(_scope, GroupSize * GroupSize, clear: false);
@@ -464,7 +487,99 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
 
         // The reference of the errors: the step of a coefficient in the middle of the 8x8 block of the luma
         _referenceStep = _matrices.GetMatrix(JpegXlVarDctTables.QuantTable[JpegXlVarDctTables.TransformDct8])[64 + (3 * 8) + 3];
-        _color = new JpegXlForwardColor(_image, PixelFormats.GetBitsPerComponent(_format), _scope);
+    }
+
+    /// <summary>
+    /// Computes the quantization field of the frame (<see cref="JpegXlAdaptiveQuantization"/>) from the samples as they
+    /// are given (the decoder smooths what the quantization leaves, not the field), or the same value for every block
+    /// at the lowest efforts, then the scale of the quantization of the frame, which the field decides.
+    /// </summary>
+    private void ComputeQuantField(scoped in PixelLease lease)
+    {
+        var blockCount = (long)_blocksWide * _blocksHigh;
+        _field = Av1PooledArray<float>.Rent(_scope, blockCount, clear: false);
+        var field = _field.Span;
+        if (_effort < AdaptiveQuantizationEffort)
+        {
+            // One factor for the frame
+            field[..(int)blockCount].Fill(HfScaleAtDistance1 / _distance);
+        }
+        else
+        {
+            ComputeAdaptiveQuantField(lease, field);
+        }
+
+        // The scale of the frame; the LF image keeps at least ten steps per unit of its own scale
+        var lfDistance = GetLfDistance(_distance);
+        using (var sorted = Av1PooledArray<float>.Rent(_scope, blockCount, clear: false))
+        {
+            _globalScale = JpegXlAdaptiveQuantization.GetGlobalScale(field[..(int)blockCount], sorted.Span, (int)(65536f * LfScaleAtDistance1 / (lfDistance * MinQuantLf)));
+        }
+
+        _quantLf = Math.Clamp((int)MathF.Round(65536f * LfScaleAtDistance1 / (lfDistance * _globalScale), MidpointRounding.AwayFromZero), 1, 65536);
+        ReadOnlySpan<float> lfQuant = [1f / 4096, 1f / 512, 1f / 256];
+        for (var c = 0; c < 3; c++)
+        {
+            _lfStep[c] = lfQuant[c] * (65536f / _globalScale / _quantLf);
+        }
+    }
+
+    /// <summary>Computes the quantization field of the frame from its samples, group by group.</summary>
+    private void ComputeAdaptiveQuantField(scoped in PixelLease lease, Span<float> field)
+    {
+        const int Margin = JpegXlAdaptiveQuantization.Margin;
+        const int Stride = GroupSize + (2 * Margin);
+        using (var planeX = Av1PooledArray<float>.Rent(_scope, Stride * Stride, clear: false))
+        using (var planeY = Av1PooledArray<float>.Rent(_scope, Stride * Stride, clear: false))
+        using (var planeB = Av1PooledArray<float>.Rent(_scope, Stride * Stride, clear: false))
+        using (var scratch = Av1PooledArray<float>.Rent(_scope, JpegXlAdaptiveQuantization.GetScratchLength(GroupBlocks, GroupBlocks), clear: false))
+        {
+            var scale = JpegXlAdaptiveQuantization.ScaleAtDistance1 * FieldScale / _distance;
+            for (var group = 0; group < _groupCount; group++)
+            {
+                _cancellationToken.ThrowIfCancellationRequested();
+                GetGroupRectangle(group, out var groupX, out var groupY, out var groupWidth, out var groupHeight);
+
+                // The samples of the group and of what the field reads around it; outside the frame, its nearest sample
+                var x0 = (groupX * 8) - Margin;
+                var first = Math.Max(0, x0);
+                var last = Math.Min(_width, x0 + (groupWidth * 8) + (2 * Margin));
+                var width = (groupWidth * 8) + (2 * Margin);
+                var previous = -1;
+                for (var y = 0; y < (groupHeight * 8) + (2 * Margin); y++)
+                {
+                    var rowX = planeX.Span.Slice(y * Stride, width);
+                    var rowY = planeY.Span.Slice(y * Stride, width);
+                    var rowB = planeB.Span.Slice(y * Stride, width);
+                    var sourceY = Math.Clamp((groupY * 8) - Margin + y, 0, _height - 1);
+                    if (sourceY == previous)
+                    {
+                        planeX.Span.Slice((y - 1) * Stride, width).CopyTo(rowX);
+                        planeY.Span.Slice((y - 1) * Stride, width).CopyTo(rowY);
+                        planeB.Span.Slice((y - 1) * Stride, width).CopyTo(rowB);
+                        continue;
+                    }
+
+                    previous = sourceY;
+                    _color!.Convert(lease.GetRowBytes(sourceY), _format, first, rowX[(first - x0)..(last - x0)], rowY[(first - x0)..(last - x0)], rowB[(first - x0)..(last - x0)]);
+                    rowX[..(first - x0)].Fill(rowX[first - x0]);
+                    rowY[..(first - x0)].Fill(rowY[first - x0]);
+                    rowB[..(first - x0)].Fill(rowB[first - x0]);
+                    rowX[(last - x0)..].Fill(rowX[last - x0 - 1]);
+                    rowY[(last - x0)..].Fill(rowY[last - x0 - 1]);
+                    rowB[(last - x0)..].Fill(rowB[last - x0 - 1]);
+                }
+
+                JpegXlAdaptiveQuantization.ComputeField(planeX.Span, planeY.Span, planeB.Span, Stride, groupX, groupY, groupWidth, groupHeight, _blocksWide, _blocksHigh, _distance, scale, scratch.Span, field[((groupY * _blocksWide) + groupX)..], _blocksWide);
+            }
+        }
+    }
+
+    /// <summary>Gets the quantization factor of a transform at a block of the frame: the one of the field for its blocks.</summary>
+    private int GetQuantFactor(int transform, int blockX, int blockY)
+    {
+        var value = JpegXlAdaptiveQuantization.GetTransformValue(_field!.Span[((blockY * _blocksWide) + blockX)..], _blocksWide, JpegXlVarDctTables.BlocksWide[transform], JpegXlVarDctTables.BlocksHigh[transform], _distance);
+        return JpegXlAdaptiveQuantization.GetQuantFactor(value, 65536f / _globalScale);
     }
 
     /// <summary>Rents what holds a frame once it is analyzed: the quantized values and what describes each block.</summary>
@@ -512,6 +627,8 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
     private void AnalyzeGroup(scoped in PixelLease lease, int group)
     {
         GetGroupRectangle(group, out var groupX, out var groupY, out var groupWidth, out var groupHeight);
+        _groupBlockX = groupX;
+        _groupBlockY = groupY;
         LoadSamples(lease, groupX * 8, groupY * 8, groupWidth * 8, groupHeight * 8);
 
         // The transforms of every tile first: where the coefficients of a transform are stored depends on the ones before it
@@ -581,10 +698,11 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
                 var blocksWide = JpegXlVarDctTables.BlocksWide[transform];
                 var blocksHigh = JpegXlVarDctTables.BlocksHigh[transform];
                 var position = ((groupY + tileY + y) * _blocksWide) + groupX + tileX + x;
+                var factor = (ushort)GetQuantFactor(transform, groupX + tileX + x, groupY + tileY + y);
                 for (var by = 0; by < blocksHigh; by++)
                 {
                     blockInfo.Slice(position + (by * _blocksWide), blocksWide).Fill(BlockCovered);
-                    quantField.Slice(position + (by * _blocksWide), blocksWide).Fill(NominalQuantField);
+                    quantField.Slice(position + (by * _blocksWide), blocksWide).Fill(factor);
                 }
 
                 blockInfo[position] = (byte)(BlockFirst + transform);
@@ -788,7 +906,7 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
         JpegXlForwardTransform.ForwardDct(_samples[1]!.Span[((y * 8 * GroupSize) + (x * 8))..], GroupSize, blocksHigh * 8, blocksWide * 8, coefficients, _work!.Span);
 
         var matrix = _matrices!.GetMatrix(JpegXlVarDctTables.QuantTable[transform]).Slice(size, size);
-        var scale = (65536f / _globalScale) / NominalQuantField;
+        var scale = (65536f / _globalScale) / GetQuantFactor(transform, _groupBlockX + x, _groupBlockY + y);
         var columns = Math.Max(blocksWide, blocksHigh) * 8;
         var rows = Math.Min(blocksWide, blocksHigh) * 8;
         var lowestRows = Math.Min(blocksWide, blocksHigh);
@@ -843,7 +961,20 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
         }
 
         bits += transform == JpegXlVarDctTables.TransformDct8 ? TypeBits8 : TypeBits;
-        var reference = _referenceStep * scale;
+
+        // The error is counted in the steps the field gives the blocks, whatever the transform: two choices for the same
+        // blocks are compared on the same error
+        var fieldSum = 0f;
+        var fieldRows = _field!.Span[(((_groupBlockY + y) * _blocksWide) + _groupBlockX + x)..];
+        for (var by = 0; by < blocksHigh; by++)
+        {
+            for (var bx = 0; bx < blocksWide; bx++)
+            {
+                fieldSum += fieldRows[(by * _blocksWide) + bx];
+            }
+        }
+
+        var reference = _referenceStep * (blocksWide * blocksHigh) / fieldSum;
         return (error * size * (DistortionWeight / (reference * reference))) + bits;
     }
 

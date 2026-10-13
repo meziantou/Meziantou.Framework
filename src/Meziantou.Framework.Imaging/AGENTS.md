@@ -21,6 +21,12 @@ the library guarantees to its callers (support matrix, limitations, defaults). K
   (System.Drawing, libpng, libjpeg, giflib, libwebp, libavif, libaom, dav1d, stb, ...) or from font libraries (FreeType,
   HarfBuzz, the woff2 reference code, fontTools, ...). Those libraries are test oracles only: their output is compared
   with ours, their source is never read to write ours.
+  - One exception, decided by the owner of the library on 2026-10-12, and not a precedent: the adaptive quantization of
+    the lossy JPEG XL encoder (`JpegXlAdaptiveQuantization`, and nothing else) is a port of libjxl 0.12.0
+    (`enc_adaptive_quantization.cc`, the quantization field of `quantizer.cc`). The standard does not describe what an
+    encoder decides, and no design of our own gave a field worth writing (see "Lossy JPEG XL quality tools"). The file
+    names its source, `THIRD-PARTY-NOTICES.md` reproduces the license (BSD-3-Clause) and ships in the package. Another
+    port needs the same explicit decision, written here.
 - No public allocator, custom pixel type, codec plug-in or image-processor interface. Implementation types are `internal`
   and live under `Internals/`.
 - Public namespaces: `Meziantou.Framework.Imaging`, `.Metadata`, `.Formats` (encoder settings), `.Drawing` (brushes,
@@ -186,13 +192,28 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
     distance scaled so that a quality keeps its file size. Above quality 90 the pair loses fine texture that the
     quantization would keep (a PSNR ceiling near 46 dB on a textured image), so it is off. A 5x5 least-squares inverse
     does not keep a constant (2.6 % of gain at the frequency 0): do not use one.
-  - *Adaptive quantization is not written*: one quantization factor for the frame. A factor per block that follows the
-    activity of the block (finer where it is flat) was measured in three forms (8x8 blocks, 16x16 cells and 64x64 tiles;
-    relative to the mean of the frame; with a floor that protects edges) and is larger at equal quality on every one of
-    the five metrics (2 to 25 %), and visibly softer on textures at equal size: the factors cost 3 to 10 % of a file, and
-    none of these metrics rewards the redistribution. A factor chosen by the cost of the transform is neutral on PSNR and
-    worse on the others. It needs a metric of the kind libjxl tunes it with (butteraugli, SSIMULACRA 2), which is not
-    among the reference tools.
+  - *Adaptive quantization* (`JpegXlAdaptiveQuantization`, `ComputeQuantField`): a quantization factor per block, from
+    the quantization field of libjxl 0.12.0, which is ported (the one exception to the rule on the source of other
+    libraries, at the top of this file). Unlike the other tools it is not kept on the measurements: it was asked for as
+    the field of the reference encoder, which moves bits from texture to flat areas and to the neighborhood of edges,
+    and none of the five metrics is the one it was tuned with (butteraugli). Measured on the ten images, effort 5, file
+    size at equal quality against one factor for the frame: PSNR-Y +4.7 %, SSIM 0.0 %, XPSNR +4.7 %, MS-SSIM +0.1 %,
+    VMAF +3.9 %; against cjxl at its default effort the encoder stays smaller (-5.3 %, -4.6 %, -4.8 %, -5.5 %, -0.5 %).
+    Three fields of our own (a factor that follows the activity of the block: 8x8 blocks, 16x16 cells and 64x64 tiles;
+    relative to the mean of the frame; with a floor that protects edges) were 2 to 25 % larger on the five metrics and
+    visibly softer on textures: do not go back to one. The field is written from the effort 3: its pass costs 0.43
+    billion instructions for 1024x768 samples, 27 % of an encoding at the effort 5 and 41 % of one at the effort 0;
+    below, every block has the factor of the frame. What is ours around the port:
+    - the field is computed before the transforms are chosen (a first pass over the frame, which converts it to XYB a
+      second time rather than keeping its planes), so the scale of the frame comes from the field of the 8x8 blocks, not
+      from the factors of the transforms as in libjxl;
+    - a candidate transform is costed with the factor it would have, and its error is counted in the steps the field
+      gives its blocks, so that two choices for the same blocks are compared on the same error;
+    - `FieldScale` gives a quality the mean file size it had with one factor (0.91 at quality 20 to 1.10 at quality 92
+      on the ten images); the LF image keeps its own quantization, and the scale of the frame leaves it a factor of 10
+      at least;
+    - the logarithm and the exponential are the ones of `MathF`, not the approximations of libjxl; the search that
+      libjxl runs after the field at its highest efforts (it decodes the frame and measures it) is not written.
 - **Progressive reading.** `ImageReader.ReadFrameRefinementInto` is the only way to see a frame before it is complete.
   The walker stops at the lengths the decoder asks for (the end of the sections of a stage); an intermediate rendering
   decodes the sections again from the buffered payload (`JpegXlFrameDecoder.DecodePartial`), never changes the state of

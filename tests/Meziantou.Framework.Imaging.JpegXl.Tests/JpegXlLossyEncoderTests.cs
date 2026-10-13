@@ -144,9 +144,11 @@ public sealed class JpegXlLossyEncoderTests
     }
 
     /// <summary>
-    /// What each tier of the effort adds is used, and pays: on an image of slow ramps, of bands that vary in one direction,
-    /// of noise and of hard edges, the 16x16 transform (effort 3), the transforms that are not square (7) and the larger
-    /// ones (8) each change the file, which is then closer to the source without being larger by more than a few percent.
+    /// What each tier of the effort adds is used, and pays, on an image of slow ramps, of bands that vary in one direction,
+    /// of noise and of hard edges. The effort 3 gives each block its own quantization factor and chooses between the 8x8
+    /// and the 16x16 transform: the file is closer to the source, for a size that stays the one of the quality (measured:
+    /// 0.3 to 2.2 dB for 7 to 20 % of the file). The transforms that are not square (7) and the larger ones (8) each change
+    /// the file again, which is then smaller for the same closeness.
     /// </summary>
     [Theory]
     [InlineData(50)]
@@ -158,15 +160,23 @@ public sealed class JpegXlLossyEncoderTests
         var fixedTransform = Save(image, new JpegXlEncoder { Compression = JpegXlCompression.Lossy, Quality = quality, Effort = 2 });
         using var fixedDecoded = Image.Load(fixedTransform);
         var (fixedPsnr, _) = Measure(image, fixedDecoded);
-        byte[] previous = fixedTransform;
-        foreach (var effort in new[] { 3, 7, 8 })
+
+        var chosen = Save(image, new JpegXlEncoder { Compression = JpegXlCompression.Lossy, Quality = quality, Effort = 3 });
+        Assert.NotEqual(fixedTransform, chosen);
+        using var chosenDecoded = Image.Load(chosen);
+        var (chosenPsnr, _) = Measure(image, chosenDecoded);
+        Assert.True(chosenPsnr >= fixedPsnr + 0.1, $"quality {quality}, effort 3: {chosenPsnr:F2} dB, {fixedPsnr:F2} dB with the 8x8 transform and one quantization factor.");
+        Assert.True(chosen.Length <= fixedTransform.Length * 1.3, $"quality {quality}, effort 3: {chosen.Length} bytes, {fixedTransform.Length} bytes with the 8x8 transform and one quantization factor.");
+
+        var previous = chosen;
+        foreach (var effort in new[] { 7, 8 })
         {
             var data = Save(image, new JpegXlEncoder { Compression = JpegXlCompression.Lossy, Quality = quality, Effort = effort });
             Assert.NotEqual(previous, data);
             using var decoded = Image.Load(data);
             var (psnr, _) = Measure(image, decoded);
-            Assert.True(psnr >= fixedPsnr + 0.5, $"quality {quality}, effort {effort}: {psnr:F2} dB, {fixedPsnr:F2} dB with the 8x8 transform only.");
-            Assert.True(data.Length <= fixedTransform.Length * 1.05, $"quality {quality}, effort {effort}: {data.Length} bytes, {fixedTransform.Length} bytes with the 8x8 transform only.");
+            Assert.True(psnr >= chosenPsnr - 0.1, $"quality {quality}, effort {effort}: {psnr:F2} dB, {chosenPsnr:F2} dB at the effort 3.");
+            Assert.HasCountLessThan(chosen.Length, data, $"quality {quality}, effort {effort}: larger than at the effort 3.");
             previous = data;
         }
     }
@@ -338,6 +348,111 @@ public sealed class JpegXlLossyEncoderTests
 
             Assert.True(worst <= tolerance, $"{name}: the decoder gives back the samples within {worst:G3}, more than {tolerance}.");
         }
+    }
+
+    /// <summary>
+    /// The quantization field is finer where the image is flat than where it is textured, and a block counts as flat as
+    /// soon as it is next to a flat area: an error would be seen there. A flat area has one value.
+    /// </summary>
+    [Theory]
+    [InlineData(0.5f)]
+    [InlineData(1f)]
+    [InlineData(4f)]
+    public void TheQuantizationFieldIsFinerWhereTheImageIsFlat(float distance)
+    {
+        const int BlocksWide = 16;
+        const int BlocksHigh = 8;
+        const int Margin = JpegXlAdaptiveQuantization.Margin;
+        const int Stride = (BlocksWide * 8) + (2 * Margin);
+
+        // The left half is flat and the right half is noise; outside the frame, its nearest sample
+        var planeX = new float[Stride * ((BlocksHigh * 8) + (2 * Margin))];
+        var planeY = new float[planeX.Length];
+        for (var y = 0; y < (BlocksHigh * 8) + (2 * Margin); y++)
+        {
+            for (var x = 0; x < Stride; x++)
+            {
+                var frameX = Math.Clamp(x - Margin, 0, (BlocksWide * 8) - 1);
+                var frameY = Math.Clamp(y - Margin, 0, (BlocksHigh * 8) - 1);
+                var noise = (((uint)((frameX * 73856093) ^ (frameY * 19349663)) * 2654435761u) >> 8) * (1f / (1 << 24));
+                planeY[(y * Stride) + x] = frameX < BlocksWide * 4 ? 0.5f : 0.4f + (0.2f * noise);
+            }
+        }
+
+        var field = new float[BlocksWide * BlocksHigh];
+        var scratch = new float[JpegXlAdaptiveQuantization.GetScratchLength(BlocksWide, BlocksHigh)];
+        JpegXlAdaptiveQuantization.ComputeField(planeX, planeY, planeY, Stride, 0, 0, BlocksWide, BlocksHigh, BlocksWide, BlocksHigh, distance, scale: 1f, scratch, field, BlocksWide);
+        for (var y = 0; y < BlocksHigh; y++)
+        {
+            var row = field.AsSpan(y * BlocksWide, BlocksWide);
+            // The last flat block has samples whose neighbors are in the texture
+            for (var x = 1; x < (BlocksWide / 2) - 1; x++)
+            {
+                Assert.Equal(row[0], row[x]);
+            }
+
+            for (var x = (BlocksWide / 2) + 1; x < BlocksWide; x++)
+            {
+                Assert.True(row[x] < row[0] * 0.8f, $"distance {distance}, block ({x}, {y}): {row[x]} in the texture, {row[0]} in the flat area.");
+                Assert.True(row[x] > 0, $"distance {distance}, block ({x}, {y}): {row[x]}.");
+            }
+
+            // The block of texture that touches the flat area is finer than the ones inside the texture
+            Assert.True(row[BlocksWide / 2] > row[(BlocksWide / 2) + 2], $"distance {distance}, row {y}: {row[BlocksWide / 2]} at the edge of the texture, {row[(BlocksWide / 2) + 2]} inside.");
+        }
+
+        // A rectangle of a frame has the values that the frame has there: the field of a frame is computed group by group
+        var part = new float[4 * 3];
+        var partStride = (4 * 8) + (2 * Margin);
+        var partY = new float[partStride * ((3 * 8) + (2 * Margin))];
+        for (var y = 0; y < (3 * 8) + (2 * Margin); y++)
+        {
+            planeY.AsSpan(((y + (2 * 8)) * Stride) + (6 * 8), partStride).CopyTo(partY.AsSpan(y * partStride));
+        }
+
+        JpegXlAdaptiveQuantization.ComputeField(new float[partY.Length], partY, partY, partStride, 6, 2, 4, 3, BlocksWide, BlocksHigh, distance, scale: 1f, scratch, part, 4);
+        for (var y = 0; y < 3; y++)
+        {
+            for (var x = 0; x < 4; x++)
+            {
+                Assert.Equal(field[((y + 2) * BlocksWide) + x + 6], part[(y * 4) + x]);
+            }
+        }
+    }
+
+    /// <summary>
+    /// The scale of the quantization of a frame gives the median of its field, less its median absolute deviation, the
+    /// factor 5, and a transform of several blocks has one factor: of the largest value of its blocks at a low distance, of
+    /// their mean at a high one.
+    /// </summary>
+    [Fact]
+    public void TheScaleOfTheFrameAndTheFactorOfATransformFollowTheField()
+    {
+        // The median is 3 and the median of the distances to it (0, 1, 1, 2, 2) is 1: (3 - 1) / 5 in units of 1/65536
+        ReadOnlySpan<float> field = [5, 1, 4, 2, 3];
+        var scratch = new float[field.Length];
+        var scale = JpegXlAdaptiveQuantization.GetGlobalScale(field, scratch, maximum: int.MaxValue);
+        Assert.Equal(26214, scale);
+        Assert.Equal(5, JpegXlAdaptiveQuantization.GetQuantFactor(2, 65536f / scale));
+        Assert.Equal(13, JpegXlAdaptiveQuantization.GetQuantFactor(5, 65536f / scale));
+        Assert.Equal(1000, JpegXlAdaptiveQuantization.GetGlobalScale(field, scratch, maximum: 1000));
+        Assert.Equal(1 << 15, JpegXlAdaptiveQuantization.GetGlobalScale([100, 100, 100], scratch, maximum: int.MaxValue));
+        Assert.Equal(1, JpegXlAdaptiveQuantization.GetGlobalScale([0, 0, 0], scratch, maximum: int.MaxValue));
+
+        // A factor is from 1 to 256
+        Assert.Equal(1, JpegXlAdaptiveQuantization.GetQuantFactor(0, 65536f / scale));
+        Assert.Equal(JpegXlAdaptiveQuantization.MaxQuantFactor, JpegXlAdaptiveQuantization.GetQuantFactor(1000, 65536f / scale));
+
+        // Four blocks: the largest value below the distance 1.54, the mean from the distance 3.32 on, between the two in between
+        ReadOnlySpan<float> square = [1, 2, 3, 6];
+        Assert.Equal(6f, JpegXlAdaptiveQuantization.GetTransformValue(square, 2, 2, 2, distance: 1f));
+        Assert.Equal(3f, JpegXlAdaptiveQuantization.GetTransformValue(square, 2, 2, 2, distance: 4f));
+        Assert.InRange(JpegXlAdaptiveQuantization.GetTransformValue(square, 2, 2, 2, distance: 2.4f), 4.4f, 4.7f);
+
+        // Two blocks: the largest value at every distance; one block: its value
+        Assert.Equal(6f, JpegXlAdaptiveQuantization.GetTransformValue([1, 6], 2, 2, 1, distance: 10f));
+        Assert.Equal(6f, JpegXlAdaptiveQuantization.GetTransformValue([1, 6], 1, 1, 2, distance: 10f));
+        Assert.Equal(2f, JpegXlAdaptiveQuantization.GetTransformValue(square[1..], 2, 1, 1, distance: 10f));
     }
 
     [Theory]

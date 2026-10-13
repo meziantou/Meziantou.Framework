@@ -367,6 +367,46 @@ internal static class SmokeTests
             var pixel = lossy.Frames[0][x, y];
             Check(Math.Abs(pixel.R - r) <= 1 && Math.Abs(pixel.G - g) <= 1 && Math.Abs(pixel.B - b) <= 1, string.Create(CultureInfo.InvariantCulture, $"JPEG XL lossy sample at ({x}, {y}): {pixel}"));
         }
+
+        // Lossy output in passes, read refinement after refinement: the last one is the image that is loaded at once, and
+        // the alpha channel of lossy output is exact
+        var progressive = Encode(still, new JpegXlEncoder { Compression = JpegXlCompression.Lossy, Quality = 95, Progressive = true });
+        using (var expected = Image.Load<Rgba32>(progressive))
+        using (var destination = new Image<Rgba32>(Width, Height))
+        using (var reader = Image.OpenReader<Rgba32>(new MemoryStream(progressive)))
+        {
+            var refinements = 0;
+            var isFinal = false;
+            while (!isFinal && reader.ReadFrameRefinementInto(destination) is { } refinement)
+            {
+                refinements++;
+                isFinal = refinement.IsFinal;
+            }
+
+            Check(isFinal && refinements >= 1, "JPEG XL refinements");
+            Check(Pixels(expected.Frames[0]).AsSpan().SequenceEqual(Pixels(destination.Frames[0])), "JPEG XL final refinement");
+            var source = Pixels(still.Frames[0]);
+            var decoded = Pixels(expected.Frames[0]);
+            for (var i = 3; i < source.Length; i += 4)
+            {
+                Check(source[i] == decoded[i], "JPEG XL lossy alpha");
+            }
+        }
+
+        // Lossless output in passes: the squeeze transform, exactly undone
+        using (var decoded = Image.Load(Encode(still, new JpegXlEncoder { Progressive = true })))
+        {
+            CheckEqual(still, decoded, "JPEG XL progressive lossless");
+        }
+
+        // A JPEG file recompressed without decoding its pixels, and rebuilt byte for byte
+        var jpeg = Encode(still, new JpegEncoder { Quality = 90, BackgroundColor = new Rgba64(0, 0, 0, 65535) });
+        using var recompressed = new MemoryStream();
+        JpegXlTranscoder.RecompressJpeg(jpeg, recompressed);
+        Check(JpegXlTranscoder.HasJpegReconstructionData(recompressed.ToArray()), "JPEG XL reconstruction data");
+        using var rebuilt = new MemoryStream();
+        Check(JpegXlTranscoder.TryReconstructJpeg(recompressed.ToArray(), rebuilt), "JPEG XL reconstruction");
+        Check(rebuilt.ToArray().AsSpan().SequenceEqual(jpeg), "JPEG XL rebuilt JPEG bytes");
     }
 
     public static void Avif()
@@ -971,6 +1011,22 @@ internal static class SmokeTests
         // letter with the vowel sign drawn before it, and two Mongolian letters that join. Seven times 8 pixels.
         var clusters = TextLayout.Create("\u0F40\u0F72 \u0D9A\u0DD9 \u1820\u1820", boxes, 16);
         Check(!clusters.Lines[0].IsRightToLeft && clusters.HasMissingGlyphs && clusters.Width == 7 * 8, "text: clusters");
+
+        // A language, a synthetic bold and oblique, and a dictionary for the scripts without spaces: at 48 pixels per
+        // em, the bold adds 2 pixels to the advance of each letter, and the dictionary lets the line end between two
+        // words, each of one letter here.
+        var styled = new TextStyle(boxes, 48) { Language = "zh-Hant", Synthesis = FontSynthesis.Bold | FontSynthesis.Oblique };
+        var synthesized = TextLayout.Create("AA", styled);
+        Check(synthesized.Width == 100, "text: synthetic bold");
+        using (var bold = new Image<Rgba32>(110, 50))
+        {
+            bold.Draw(synthesized, static (canvas, layout) => canvas.FillText(new Rgba32(255, 255, 255), layout, new PointD(0, 0)));
+            Check(Pixels(bold.Frames[0]).Any(static value => value != 0), "text: synthetic bold drawn");
+        }
+
+        var dictionary = LineBreakDictionary.Parse("\u0E01\n");
+        var thai = TextLayout.Create("\u0E01\u0E01\u0E01", new TextStyle(boxes, 16), new TextLayoutOptions { MaxWidth = 10, LineBreakDictionary = dictionary });
+        Check(thai.LineCount == 3, "text: dictionary line breaks");
 
         // CFF outlines, stroked, through the overload that lays out the text
         var cff = Font.Load(SmokeFonts.CharstringsOtf);

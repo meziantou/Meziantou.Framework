@@ -66,6 +66,25 @@ public sealed partial class JxlOxideTool
         return NpyFrames.Parse(await File.ReadAllBytesAsync(output, cancellationToken).ConfigureAwait(false));
     }
 
+    /// <summary>
+    /// Rebuilds the JPEG file a JPEG XL file was made from (<c>jxl-oxide decode -f jpeg</c>), from its JPEG bitstream
+    /// reconstruction data.
+    /// </summary>
+    /// <param name="inputPath">The JPEG XL file.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+    /// <returns>The JPEG file, or <see langword="null"/> when jxl-oxide does not rebuild the file.</returns>
+    public async Task<byte[]?> TryReconstructJpegAsync(FullPath inputPath, CancellationToken cancellationToken)
+    {
+        var output = inputPath + ".jxl-oxide.jpg";
+        File.Delete(output);
+        string[] arguments = ["decode", inputPath, "-o", output, "-f", "jpeg", "-j", "1"];
+        var result = await ProcessRunner.RunAsync(Path, arguments, cancellationToken).ConfigureAwait(false);
+        if (result.ExitCode != 0 || !File.Exists(output))
+            return null;
+
+        return await File.ReadAllBytesAsync(output, cancellationToken).ConfigureAwait(false);
+    }
+
     [GeneratedRegex(@"^jxl-oxide-cli (?<version>\S+)", RegexOptions.Multiline | RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
     private static partial Regex VersionRegex();
 }

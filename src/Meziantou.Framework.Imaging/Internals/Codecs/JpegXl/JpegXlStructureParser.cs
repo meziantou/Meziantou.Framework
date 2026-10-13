@@ -48,6 +48,7 @@ internal sealed class JpegXlStructureParser : ImageParser<ImageInfo>
     private bool _exifSeen;
     private bool _xmpSeen;
     private int _frameCount;
+    private int _checkpoint;
     private ImageInfo? _result;
 
     // Box being streamed
@@ -102,6 +103,12 @@ internal sealed class JpegXlStructureParser : ImageParser<ImageInfo>
 
     /// <summary>Gets the default pixel format of the image.</summary>
     public PixelFormat DefaultPixelFormat { get; private set; }
+
+    /// <summary>Gets a value indicating whether a <c>jbrd</c> box was met: the data that rebuild the JPEG file the codestream was made from.</summary>
+    public bool HasJpegReconstructionData { get; private set; }
+
+    /// <summary>Gets the ICC profile of the codestream, when the image header announces one and it is read.</summary>
+    public byte[]? IccProfileBytes => _walker.IccProfile;
 
     public override ParseStatus Parse(ReadOnlySpan<byte> buffer, bool isEndOfInput, out int consumed)
     {
@@ -293,6 +300,13 @@ internal sealed class JpegXlStructureParser : ImageParser<ImageInfo>
             case JpegXlFormat.BrotliBox:
                 return BeginMetadataBox(type, payloadLength, extendsToEnd, headerLength, ref consumed);
 
+            case JpegXlFormat.JpegReconstructionBox:
+                HasJpegReconstructionData = true;
+                if (_observer is { WantsJpegReconstructionData: true })
+                    return BeginMetadataBox(type, payloadLength, extendsToEnd, headerLength, ref consumed);
+
+                return BeginBox(BoxKind.Skip, type, payloadLength, extendsToEnd, headerLength, ref consumed);
+
             default:
                 return BeginBox(BoxKind.Skip, type, payloadLength, extendsToEnd, headerLength, ref consumed);
         }
@@ -413,12 +427,18 @@ internal sealed class JpegXlStructureParser : ImageParser<ImageInfo>
                     return;
 
                 // The orientation of a JPEG XL image is the one of its header: the EXIF tag is not consulted
+                _observer?.OnMetadataBox(type, data);
                 _metadata.TryAdoptExif(data[(4 + (int)offset)..], adoptOrientation: false, alreadyCharged);
                 break;
             }
 
             case JpegXlFormat.XmlBox:
+                _observer?.OnMetadataBox(type, data);
                 _metadata.TryAdoptXmp(data, alreadyCharged);
+                break;
+
+            case JpegXlFormat.JpegReconstructionBox:
+                _observer!.OnJpegReconstructionData(data);
                 break;
 
             case JpegXlFormat.BrotliBox:
@@ -511,6 +531,10 @@ internal sealed class JpegXlStructureParser : ImageParser<ImageInfo>
 
             case JpegXlCodestreamEvent.FrameComplete:
                 return OnFrameComplete();
+
+            case JpegXlCodestreamEvent.PayloadCheckpoint:
+                _observer!.OnFramePartial(this, _walker.FrameHeader!, _walker.Toc!, _walker.Payload!, _checkpoint++);
+                return TryYield() ? ParseStatus.Complete : null;
         }
 
         // The walker took everything it was given and needs more
@@ -571,7 +595,17 @@ internal sealed class JpegXlStructureParser : ImageParser<ImageInfo>
             _context.Limits.EnsureCanvasWithinLimits(frame.Width, frame.Height);
         }
 
-        _walker.BeginPayload(buffer: _walk == StructureWalk.Decode && !_walker.IsPreviewFrame);
+        _walker.BeginPayload(buffer: _walk == StructureWalk.Decode && !_walker.IsPreviewFrame && _observer!.WantsFrames);
+        _checkpoint = 0;
+        if (_walk == StructureWalk.Decode && !_walker.IsPreviewFrame && _observer!.WantsFrames && _context.Sequential is not null && IsDisplayed(frame))
+        {
+            // A sequential reader may ask for the frame before it is complete
+            var checkpoints = _observer!.GetPayloadCheckpoints(this, frame, _walker.Toc!);
+            if (checkpoints.Length > 0)
+            {
+                _walker.SetPayloadCheckpoints(checkpoints);
+            }
+        }
     }
 
     private ParseStatus? OnFrameComplete()
@@ -582,7 +616,8 @@ internal sealed class JpegXlStructureParser : ImageParser<ImageInfo>
             var isDisplayed = IsDisplayed(frame);
             if (_walk == StructureWalk.Decode)
             {
-                var continues = _observer!.OnFrame(this, frame, _walker.Toc!, _walker.Payload!);
+                // An observer that does not want the frames ends the parsing at the first one
+                var continues = _walker.Payload is { } payload && _observer!.OnFrame(this, frame, _walker.Toc!, payload);
                 _walker.ReleasePayload();
                 if (isDisplayed)
                 {
@@ -627,7 +662,8 @@ internal sealed class JpegXlStructureParser : ImageParser<ImageInfo>
         };
 
         // The frames of an animation are only counted by a full scan: a frame without duration is a layer of the next one
-        int? frameCount = !header.HasAnimation ? 1 : mode == ImageIdentifyMode.Header ? null : _frameCount;
+        // An observer that stops at a layer, before any frame is shown, has not counted the frames either
+        int? frameCount = !header.HasAnimation ? 1 : mode == ImageIdentifyMode.Header || _frameCount == 0 ? null : _frameCount;
         return new ImageInfo(
             ImageFormat.JpegXl,
             Size,

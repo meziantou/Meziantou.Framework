@@ -206,9 +206,10 @@ internal sealed partial class DrawingSession : IDisposable
         DrawingGuard.Point(origin, nameof(origin));
         var glyphSink = _glyphSink ??= new GlyphPathSink();
         var scratch = _glyphScratch ??= new GlyphScratch(_image.Owner.Scope);
+        var emboldener = layout.HasEmboldenedGlyphs ? _stroker ??= new Stroker(_edges!) : null;
         if (layout.BrushCount <= 1 && !layout.HasColorGlyphs)
         {
-            layout.Emit(BeginFill(), glyphSink, scratch, origin.X, origin.Y, _edges, brush: -1);
+            FillFrameWhenCovered(layout.Emit(BeginFill(), glyphSink, scratch, origin.X, origin.Y, _edges, brush: -1, emboldener: emboldener));
             Render(layout.BrushCount == 0 ? brush : layout.GetBrush(0) ?? brush, FillRule.NonZero);
             return;
         }
@@ -219,14 +220,14 @@ internal sealed partial class DrawingSession : IDisposable
         // and the color glyphs after them.
         for (var i = 0; i < layout.BrushCount; i++)
         {
-            layout.Emit(BeginFill(), glyphSink, scratch, origin.X, origin.Y, _edges, i, skipColorGlyphs: true);
+            FillFrameWhenCovered(layout.Emit(BeginFill(), glyphSink, scratch, origin.X, origin.Y, _edges, i, skipColorGlyphs: true, emboldener));
             Prepare(layout.GetBrush(i) ?? brush, FillRule.NonZero, out _, out _);
         }
 
         DrawColorGlyphs(brush, layout, origin.X, origin.Y, measure: null, options: null, paint: false);
         for (var i = 0; i < layout.BrushCount; i++)
         {
-            layout.Emit(BeginFill(), glyphSink, scratch, origin.X, origin.Y, _edges, i, skipColorGlyphs: true);
+            FillFrameWhenCovered(layout.Emit(BeginFill(), glyphSink, scratch, origin.X, origin.Y, _edges, i, skipColorGlyphs: true, emboldener));
             Render(layout.GetBrush(i) ?? brush, FillRule.NonZero);
         }
 
@@ -252,9 +253,10 @@ internal sealed partial class DrawingSession : IDisposable
         var measure = Measure(path);
         var glyphSink = _glyphSink ??= new GlyphPathSink();
         var scratch = _glyphScratch ??= new GlyphScratch(_image.Owner.Scope);
+        var emboldener = layout.HasEmboldenedGlyphs ? _stroker ??= new Stroker(_edges!) : null;
         if (layout.BrushCount <= 1 && !layout.HasColorGlyphs)
         {
-            layout.EmitOnPath(BeginFill(), glyphSink, scratch, measure, options, _edges, brush: -1);
+            FillFrameWhenCovered(layout.EmitOnPath(BeginFill(), glyphSink, scratch, measure, options, _edges, brush: -1, emboldener: emboldener));
             Render(layout.BrushCount == 0 ? brush : layout.GetBrush(0) ?? brush, FillRule.NonZero);
             return;
         }
@@ -262,14 +264,14 @@ internal sealed partial class DrawingSession : IDisposable
         // As for a text at a point: every shape is prepared before the first one is painted.
         for (var i = 0; i < layout.BrushCount; i++)
         {
-            layout.EmitOnPath(BeginFill(), glyphSink, scratch, measure, options, _edges, i, skipColorGlyphs: true);
+            FillFrameWhenCovered(layout.EmitOnPath(BeginFill(), glyphSink, scratch, measure, options, _edges, i, skipColorGlyphs: true, emboldener));
             Prepare(layout.GetBrush(i) ?? brush, FillRule.NonZero, out _, out _);
         }
 
         DrawColorGlyphs(brush, layout, 0, 0, measure, options, paint: false);
         for (var i = 0; i < layout.BrushCount; i++)
         {
-            layout.EmitOnPath(BeginFill(), glyphSink, scratch, measure, options, _edges, i, skipColorGlyphs: true);
+            FillFrameWhenCovered(layout.EmitOnPath(BeginFill(), glyphSink, scratch, measure, options, _edges, i, skipColorGlyphs: true, emboldener));
             Render(layout.GetBrush(i) ?? brush, FillRule.NonZero);
         }
 
@@ -285,6 +287,20 @@ internal sealed partial class DrawingSession : IDisposable
         var sink = BeginStroke(pen);
         layout.EmitOnPath(sink, _glyphSink ??= new GlyphPathSink(), _glyphScratch ??= new GlyphScratch(_image.Owner.Scope), measure, options ?? TextPathOptions.Default, edges: null, brush: -1);
         RenderStroke(pen);
+    }
+
+    /// <summary>
+    /// Replaces the edges of a text by the frame when the stroke of a synthetic bold covers it: the stroker then
+    /// stopped adding edges, and the text covers every pixel.
+    /// </summary>
+    private void FillFrameWhenCovered(bool coversFrame)
+    {
+        if (coversFrame)
+        {
+            var edges = _edges!;
+            edges.Reset();
+            AddFrame(edges);
+        }
     }
 
     /// <summary>Flattens a path and measures its chords.</summary>

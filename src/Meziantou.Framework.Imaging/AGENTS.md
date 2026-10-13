@@ -1,9 +1,10 @@
 # Meziantou.Framework.Imaging
 
-A fully managed image library: PNG/APNG, GIF, JPEG, WebP, QOI, BMP, TGA, Netpbm, TIFF, ICO/CUR, ANI, AVIF (with its own
-AV1 decoder and encoder) and HEIC (with its own HEVC decoder and encoder) decoding and encoding, JPEG XL decoding and lossless encoding, animation-aware processing,
-vector drawing, font files (TrueType, OpenType, WOFF, WOFF2), ICC color conversion, and bounded-memory streaming readers
-and writers.
+A fully managed image library: PNG/APNG, GIF, JPEG, WebP, QOI, BMP, TGA, Netpbm, TIFF, ICO/CUR, ANI, AVIF (with its
+own AV1 decoder and encoder), HEIC (with its own HEVC decoder and encoder) and JPEG XL (lossless and lossy,
+progressive) decoding and encoding, lossless JPEG recompression (`JpegXlTranscoder`), animation-aware processing,
+vector drawing, font files (TrueType, OpenType, WOFF, WOFF2), ICC color conversion, and bounded-memory streaming
+readers and writers.
 
 These instructions complete the repository-level `AGENTS.md`. The user guide is [readme.md](readme.md): it states what
 the library guarantees to its callers (support matrix, limitations, defaults). Keep the code, the XML documentation and
@@ -216,6 +217,34 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   are shown as they are stored; everything else goes through `JpegXlFrameRenderer`, in floating point, where 1 is the
   largest integer sample. The render order is the one of libjxl: restoration filters, patches, splines, upsampling,
   noise, color transform, blending.
+- **JPEG XL encoder** (`JpegXlEncoderCodec`, `Internals/Codecs/JpegXl/Encoding`). The headers are written, then parsed
+  back by the readers of the decoder: the geometry of a frame is never derived twice. The lossy encoder
+  (`JpegXlVarDctEncoder`) mirrors `JpegXlVarDctDecoder`: its forward transforms and its color matrix are measured on, or
+  inverted from, what the decoder computes (`JpegXlForwardTransform`, `JpegXlForwardColor`), and a coefficient is
+  written with the context derivation the decoder reads it with (`JpegXlCoefficientContexts`). The blocks of a VarDCT
+  frame do not predict each other, so the encoder does not reconstruct what it writes; its decisions use float32 in a
+  fixed order. `JpegXlEntropyCodeBuilder` clusters the contexts of the streams that share a code. Every Modular
+  sub-stream, of a lossless frame or of a lossy one (LF image, block fields, alpha channel), goes through
+  `JpegXlEntropyEncoder`, which writes the smaller of prefix codes and ANS at every effort
+  (`JpegXlEntropyCoding.Smallest`, decided from the token counts): a prefix code spends one bit per sample at least,
+  which made a constant channel larger than the colors, and the description of an ANS distribution is longer than a
+  small group. The effort only selects what is searched; `jxl-quality` shows the sizes per effort. A change of the
+  encoder is checked by the interop tests (djxl and jxl-oxide must read the file like the decoder of the library does).
+- **Progressive reading.** `ImageReader.ReadFrameRefinementInto` is the only way to see a frame before it is complete.
+  The walker stops at the lengths the decoder asks for (the end of the sections of a stage); an intermediate rendering
+  decodes the sections again from the buffered payload (`JpegXlFrameDecoder.DecodePartial`), never changes the state of
+  the decoder (no reference frame is saved), and counts as hidden pixels. The frame itself always goes through the
+  same code as an eager load: the last rendering is the frame of `Image.Load`, byte for byte. A truncated input gives
+  its complete stages, then fails: truncation is never a clean end.
+- **JPEG recompression** (`JpegXlTranscoder`; `JpegXlJpegRecompressor`, `JpegXlJpegReconstructor`,
+  `JpegXlJpegReconstructionData`, and `JpegBitstreamReader`, `JpegBitstreamWriter`, `JpegBitstreamModel` in
+  `Internals/Codecs/Jpeg`). It works on files, never on an `Image`. `JpegBitstreamReader` is strict where the decoder is
+  tolerant: it accepts nothing `JpegBitstreamWriter` does not write back byte for byte, and the recompressor checks
+  both the rewritten JPEG file and the file its own output rebuilds before it returns. The layout of the `jbrd` box and
+  the integer chroma from luma rule were established against files written by cjxl, since the standard is not
+  available: a change there needs the interop tests (djxl and jxl-oxide rebuild the files of the library, the library
+  rebuilds the files of cjxl). The JPEG entropy coding shares `JpegBitWriter` and `JpegHuffmanEncoder` with the JPEG
+  encoder: there is still one JPEG implementation of each direction of pixels, and one of coefficients.
 - **TIFF** (`Internals/Codecs/Tiff`). `TiffPage` resolves and validates a directory without reading a pixel, so every
   rejection also comes from `Identify`, except the ones of the compressed data. `TiffBlockReader` turns a strip or a
   tile into rows of samples (fill order, compression, predictor, YCbCr data units) and `TiffRowExpander` turns the rows
@@ -331,7 +360,9 @@ directory and the fixed-size tables, `CmapTable` maps characters, `GlyfOutlineRe
   public form.
   - Normalization follows "Coordinate scales and normalization" in its order: normalize as 16.16, map with `avar` at
     that precision, then round to 2.14 (add 2, drop two bits). Rounding before `avar`, or keeping 16.16 coordinates,
-    both differ from the reference readers by a visible fraction of a unit.
+    both differ from the reference readers by a visible fraction of a unit. Version 2 of `avar` then adds the deltas
+    of its variation store to the 2.14 values (`AvarTable.AddDeltas`): all the deltas are computed from the values
+    before any is changed, rounded half away from zero, and the result is clamped to the range of an axis.
   - Outlines are not rounded (`gvar` deltas, inferred deltas, the offsets of components, `blend` in CFF2); what is a
     whole number of font units in the font stays one in an instance: advances (`HVAR`, else the phantom points of
     `gvar`), `MVAR` metrics and `GPOS` deltas are rounded with `ItemVariationStore.Round` (halves upward).
@@ -346,6 +377,13 @@ directory and the fixed-size tables, `CmapTable` maps characters, `GlyfOutlineRe
     FreeType has drawn the same segments within two units; the tests accept 0.005 unit, the precision of the single
     precision numbers of HarfBuzz. Advances and metrics are exact. `FontVariationTests` has the literals, computed by
     hand from `FontSamples.Variable` and `VariableCharstrings`.
+- **Bitmap strikes.** The images of `sbix` (PNG, JPEG, TIFF) and of `CBDT` (PNG) are color glyphs: `BitmapGlyph` says
+  which format the font gives for the data, and `ColorImage` rejects data of another one. The bitmaps without colors
+  of `EBLC` and `EBDT` are outlines: with `FontLoadOptions.UseEmbeddedBitmaps`, `FontFace.DecodeOutline(glyph, size,
+  ...)` emits a rectangle per run of pixels of a strike of one bit per pixel made for exactly that size, so nothing of
+  the drawing pipeline knows about them. Every caller that decodes an outline for a text passes the size; a cache of
+  what depends on the outline of a glyph has the size in its key. The option is off by default: the pixels of a text
+  do not change with the tables a font happens to have.
 - Tests have three sources: literals computed by hand on fonts built in memory (`FontTests`, with `Common/FontBuilder.cs`,
   `FontCffWriter.cs`, `FontCharstring.cs` and `FontWoff2Writer.cs` of the corpus generator, linked into the tests), the
   values HarfBuzz and FreeType both give for the fonts of the corpus (`Conformance/FontConformanceTests`: names,
@@ -369,6 +407,10 @@ directory and the fixed-size tables, `CmapTable` maps characters, `GlyfOutlineRe
 - **The Unicode algorithms are those of `Meziantou.Framework.Unicode`**: line breaking (UAX #14), bidirectional levels
   and reordering (UAX #9), script runs (UAX #24), grapheme clusters and words (UAX #29), hyphenation. Do not
   reimplement or approximate one here; a missing piece belongs in that package, with its conformance tests.
+- **The font of a cluster** (`SelectFont`): the first font of the stack that has every character of the grapheme
+  cluster. An emoji is first looked for in the fonts of its presentation (`GetPresentation`: UTS #51; the fonts with
+  color glyphs for the emoji presentation, the others for the text presentation), then in the order of the stack: the
+  presentation is a preference, never a reason to draw a missing glyph.
 - **The steps of a paragraph**: levels, items (one level, script, font and shaping style each), shaping, lines, display
   order. An item is cut where shaping could differ, never where only the paint differs. A line break inside an item
   cuts it, and both parts are shaped again: no ligature or kerning pair spans two lines. The advance of each character
@@ -384,6 +426,13 @@ directory and the fixed-size tables, `CmapTable` maps characters, `GlyfOutlineRe
   hinting, no snapping, no rounding of advances: a run is positioned in whole font units, then scaled once.
   `TextLayout.ToPath` uses the same transform, and filling or stroking that path must stay bit-identical to
   `FillText` and `StrokeText` of a layout of one paint (`DrawingTextTests.DrawingALayoutIsDrawingItsPath`).
+- **Synthesis** (`TextStyle.Synthesis`, `GlyphRun.Shear` and `EmboldenWidth`). An oblique is a shear in the transform
+  of the glyph (`Affine2D.ForGlyph` with a shear; `Then` on a path): exact, and everywhere the outline goes (fill,
+  stroke, path, bounds). A bold is the fill of the glyph united with a stroke of its outline: `Emit` sends the outline
+  a second time to the `Stroker` of the session, which shares the edges of the fill and whose pieces have the
+  orientation glyphs are given. The fill sink is ended before the pieces are added (it truncates what it added last
+  when a contour stays on the left of the frame). The bold is not in `ToPath` nor in `StrokeText`; the advances and
+  the offsets it changes are made in `TextLayoutEngine.Embolden`, and `InkBounds` adds the reach of a miter.
 - **One shape per paint, one orientation per glyph.** The glyphs and decorations of one paint are rasterized in one
   sweep, so overlaps are painted once. TrueType and CFF outlines turn in opposite directions: `Emit` reverses the
   edges of a glyph whose signed area is negative (`EdgeBuilder.NegateDirections`), otherwise overlapping glyphs of two
@@ -456,6 +505,16 @@ glyphs and positions in a `GlyphBuffer`; `LayoutApplier` (`Internals/Text/OpenTy
   through `FontBinary` like any other: a reference outside the table is `InvalidImageContentException`, raised when the
   layout is created.
 - A feature value lives in bits of the mask of each glyph, so a feature can differ along a run without splitting it.
+- **Languages** (`OpenTypeLanguage`). `TextStyle.Language` is a BCP 47 language tag; the shaper takes the tags of the
+  language systems it can use, by order of preference, and uses the first one the font has for the script. The table
+  (`OpenTypeLanguageTable.g.cs`) is generated by the `language-tags` command of the corpus generator from three
+  sources that are not committed and are pinned by a hash of what is read from them: the registry of language system
+  tags of the OpenType specification, the code list of ISO 639-2 and the language subtag registry of BCP 47 (see the
+  remarks of `LanguageTagTable` in the generator). Never edit it by hand. What the codes alone do not say is a rule
+  of `OpenTypeLanguage.cs`, with its reason from the registry (written forms, Chinese, the tags without code): add
+  one there, never to the generated table. The font `fonts/synthetic-languages` has a language system per tag of the
+  registry, and the corpus has what the reference shaper selects for some 1,500 language tags: a difference is an
+  entry of `KnownDivergences`, by group, with the reason.
 - **Shaping models** (`ScriptShaperKind`, `ShaperPlan`). A script that needs more than the lookups of the font has a
   model: an analysis of the characters that chooses the glyphs each of its features applies to (one mask bit per
   feature, after the bits of the default features), and its features in **stages**. The lookups of a stage are
@@ -513,6 +572,21 @@ glyphs and positions in a `GlyphBuffer`; `LayoutApplier` (`Internals/Text/OpenTy
   - `ShapingCombiningClass` orders marks for shaping (Hebrew points, Arabic vowel marks, the vowel signs of
     Tibetan, and three marks by their code point); every script goes through it, and composition is blocked by
     these classes, not by the canonical ones.
+- **Variation sequences.** A selector after a character whose sequence the font has (format 14 of `cmap`, with a
+  glyph of its own or with the default one) leaves the buffer in `MapGlyphs`: emoji fonts list every emoji with
+  U+FE0F, and a selector that stayed would be a glyph the reference shaper does not have.
+- **Fonts without layout tables.** Three fallbacks, each for a font that has no table (or no script) for what it
+  replaces, each compared with the reference shaper on synthetic fonts of the corpus and on random texts:
+  - `ArabicShaper.ApplyPresentationForms`: the forms and the lam-alef ligatures from the characters of the Arabic
+    Presentation Forms blocks. The table (`ArabicPresentationForms.g.cs`) is generated from `UnicodeData.txt` by the
+    `arabic-forms` command of the corpus generator; never edit it by hand.
+  - `ThaiShaper.RecordPrivateUseForms` and `ApplyPrivateUseForms`: the forms of the private use area, from the
+    public description of Thai shaping by Theppitak Karoonboonyanan; what it leaves open (several marks at one
+    place, marks on what is no consonant) is what the reference shaper does. The forms are found in the order of the
+    text, before normalization reorders the marks.
+  - `FallbackMarkPositioner`: the marks of a font without `GPOS`. No specification describes it: the places come from
+    the combining classes of Unicode, and the distances and the two rules about marks a font already draws far
+    enough were found by comparing with the reference shaper. Say so in the code when a rule is added.
 - **Normalization** follows the text: a character without marks is kept when the font has it and decomposed (as far
   as needed) when it does not; a character followed by marks is decomposed as far as the font allows, with its marks,
   then ordered and composed again. A run without any mark is neither ordered nor composed.
@@ -575,6 +649,7 @@ glyphs and positions in a `GlyphBuffer`; `LayoutApplier` (`Internals/Text/OpenTy
   dotnet run -c Release --project benchmarks/ImagingBenchmarks -f net10.0 -- --inProcess --filter "*PngBenchmarks*"
   dotnet run -c Release --project benchmarks/ImagingBenchmarks -f net10.0 -- service --seconds 10
   dotnet run -c Release --project benchmarks/ImagingBenchmarks -f net10.0 -- webp-quality 512 3
+  dotnet run -c Release --project benchmarks/ImagingBenchmarks -f net10.0 -- jxl-quality 512 3
   dotnet run -c Release --project benchmarks/ImagingBenchmarks -f net10.0 -- profile PngBenchmarks.SaveLarge8 20
   dotnet run -c Release --project benchmarks/ImagingBenchmarks -f net10.0 -- profile PngBenchmarks.SaveLarge8 50x
   dotnet run -c Release --project benchmarks/ImagingBenchmarks -f net10.0 -- profile TextBenchmarks.LayoutTibetan 200x
@@ -598,7 +673,7 @@ glyphs and positions in a `GlyphBuffer`; `LayoutApplier` (`Internals/Text/OpenTy
 | `src/Meziantou.Framework.Imaging` | The library and the package README (`readme.md`) |
 | `tests/Meziantou.Framework.Imaging.Tests` | Tests that are not about one codec: image model, pixels, memory, metadata, readers and writers with test codecs, format detection, defaults, API surface, the corpus and harness self-tests, the documentation examples |
 | `tests/Meziantou.Framework.Imaging.Processing.Tests` | Processing, resampling, convolution, automatic cropping, drawing and color conversion, with their golden and reference suites |
-| `tests/Meziantou.Framework.Imaging.<Codec>.Tests` | One project per codec (`Png` with APNG, `Gif`, `Jpeg`, `JpegXl`, `WebP`, `Qoi`, `Bmp`, `Tga`, `Pnm`, `Tiff`, `Ico` with CUR and ANI, `Av1`, `Avif`, `AvifEncoder`, `Hevc`, `Heic`, `HeicEncoder`): its unit tests (no fixture file), its conformance tests under `Conformance/`, and the generic suites for its fixtures and its encoder |
+| `tests/Meziantou.Framework.Imaging.<Codec>.Tests` | One project per codec (`Png` with APNG, `Gif`, `Jpeg`, `JpegXl` with the transcoder, `WebP`, `Qoi`, `Bmp`, `Tga`, `Pnm`, `Tiff`, `Ico` with CUR and ANI, `Av1`, `Avif`, `AvifEncoder`, `Hevc`, `Heic`, `HeicEncoder`): its unit tests (no fixture file), its conformance tests under `Conformance/`, and the generic suites for its fixtures and its encoder |
 | `tests/Meziantou.Framework.Imaging.Tests.Shared` | Sources compiled into every project above (no project file): `Helpers/`, the generic suites over the corpus (`Suites/`) and `Imaging.Tests.Shared.props` |
 | `tests/Meziantou.Framework.Imaging.InteropTests` | Files produced by the encoders are decoded by pinned external tools |
 | `tests/Meziantou.Framework.Imaging.TestHarness` | Shared, test-framework-agnostic support: corpus manifest, raw-buffer comparison, independent reference readers, tool helpers |
@@ -638,6 +713,10 @@ dotnet publish tests/Meziantou.Framework.Imaging.AotSmoke -c Release -f net11.0 
 - Lossless comparisons are exact, 16-bit low bits included. Lossy comparisons use an independent decoding of the same
   input with a narrow, justified, per-fixture tolerance. Alpha and structure are always exact.
 - Unit, conformance and fuzz tests must not need an external tool or network access.
+- **Generated tables of the text code.** `OpenTypeLanguageTable.g.cs` (`language-tags`) and
+  `ArabicPresentationForms.g.cs` (`arabic-forms`) are written by commands of the corpus generator from sources that
+  are not committed and are pinned by a hash: run the command without `--write` to check that a table is what its
+  sources give, after downloading them from the addresses the command names.
 - **TIFF has no corpus.** The decoder tests assemble files (`TiffFileBuilder`) whose compressed strips never come from
   the library: the reference encoders of the tests (`TiffReferenceCodecs`), the examples of the specifications, fax
   strips written by libtiff and kept as literals, and JPEG datastreams of `JpegTestImage`. The encoder tests compare

@@ -69,6 +69,24 @@ internal static class JpegXlBitWriterExtensions
     /// <summary>Writes <c>Enum()</c>.</summary>
     public static void WriteEnum(this LsbBitWriter writer, int value) => writer.WriteU32((uint)value, 0, 0, 1, 0, 2, 4, 18, 6);
 
+    /// <summary>Writes <c>F16()</c>: a value that a half-precision float holds exactly, or its nearest one.</summary>
+    public static void WriteF16(this LsbBitWriter writer, float value) => writer.WriteBits(BitConverter.HalfToUInt16Bits((Half)value), 16);
+
+    /// <summary>Writes the first <paramref name="bitCount"/> bits of a bit stream written by another writer.</summary>
+    public static void WriteBits(this LsbBitWriter writer, ReadOnlySpan<byte> source, long bitCount)
+    {
+        var index = 0;
+        for (; bitCount >= 8; bitCount -= 8)
+        {
+            writer.WriteBits(source[index++], 8);
+        }
+
+        if (bitCount > 0)
+        {
+            writer.WriteBits(source[index], (int)bitCount);
+        }
+    }
+
     /// <summary>Pads with zero bits to the next byte boundary.</summary>
     public static void ZeroPadToByte(this LsbBitWriter writer) => writer.Finish();
 }

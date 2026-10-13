@@ -160,6 +160,7 @@ public sealed class DefaultsTests
         Assert.IsType<AniEncoder>(ImageEncoder.FromPath("a.ANI"));
         Assert.IsType<JpegXlEncoder>(ImageEncoder.FromPath("a.jxl"));
         Assert.IsType<JpegXlEncoder>(ImageEncoder.FromPath("dir/a.JXL"));
+        Assert.Equal(JpegXlCompression.Lossless, Assert.IsType<JpegXlEncoder>(ImageEncoder.FromPath("a.jxl")).Compression);
         Assert.Throws<ArgumentException>(() => ImageEncoder.FromPath("a.xyz"));
         Assert.Equal(HeicCompression.Lossless, Assert.IsType<HeicEncoder>(ImageEncoder.FromPath("a.heic")).Compression);
         Assert.IsType<HeicEncoder>(ImageEncoder.FromPath("a.heif"));

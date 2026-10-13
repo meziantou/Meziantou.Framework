@@ -8,7 +8,9 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </remarks>
 internal sealed class SbixTable
 {
-    public const uint Png = ((uint)'p' << 24) | ((uint)'n' << 16) | ((uint)'g' << 8) | ' ';
+    private const uint Png = ((uint)'p' << 24) | ((uint)'n' << 16) | ((uint)'g' << 8) | ' ';
+    private const uint Jpeg = ((uint)'j' << 24) | ((uint)'p' << 16) | ((uint)'g' << 8) | ' ';
+    private const uint Tiff = ((uint)'t' << 24) | ((uint)'i' << 16) | ((uint)'f' << 8) | 'f';
     private const uint Duplicate = ((uint)'d' << 24) | ((uint)'u' << 16) | ((uint)'p' << 8) | 'e';
 
     private readonly int _strikeCount;
@@ -39,7 +41,7 @@ internal sealed class SbixTable
     /// <param name="glyphId">The glyph.</param>
     /// <param name="size">The size the glyph is drawn at, in pixels per em.</param>
     /// <param name="glyph">The image.</param>
-    /// <returns><see langword="false"/> when the strike has no PNG image for the glyph.</returns>
+    /// <returns><see langword="false"/> when the strike has no image for the glyph, or an image of a type the specification does not have.</returns>
     public bool TryGetGlyph(ReadOnlySpan<byte> table, int tableOffset, int glyphId, double size, out BitmapGlyph glyph)
     {
         glyph = default;
@@ -85,12 +87,20 @@ internal sealed class SbixTable
                 continue;
             }
 
-            if (type != Png)
+            // The three types of the specification. Another type (the PDF and mask data of older fonts) is no image.
+            var format = type switch
+            {
+                Png => ImageFormat.Png,
+                Jpeg => ImageFormat.Jpeg,
+                Tiff => ImageFormat.Tiff,
+                _ => ImageFormat.Unknown,
+            };
+            if (format == ImageFormat.Unknown)
                 return false;
 
             var left = FontBinary.Int16(data, 0);
             var bottom = FontBinary.Int16(data, 2);
-            glyph = new BitmapGlyph(tableOffset + strike + (int)start + 8, data.Length - 8, strikeSize, strikeSize, left, bottom, 0);
+            glyph = new BitmapGlyph(tableOffset + strike + (int)start + 8, data.Length - 8, strikeSize, strikeSize, left, bottom, 0, format);
             return true;
         }
 

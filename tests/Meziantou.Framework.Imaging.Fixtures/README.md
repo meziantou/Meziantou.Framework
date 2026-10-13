@@ -226,6 +226,13 @@ its first point, even a line without length: the library does the same, so that 
 | `fonts/sbix-twemoji-smiley` | ttf | 1 | CC-BY-4.0 | The fifteen emoji of the same project as PNG images of an `sbix` table, in one strike of 109 pixels per em |
 | `fonts/*-woff`, `fonts/*-woff2` | woff, woff2 | as the original | as the original | WOFF of the boxes, deltas, charstrings, Noto Sans and Noto Sans CJK fonts; WOFF2 of the boxes, curves, deltas, charstrings, collection and both Noto Sans fonts |
 | `fonts/synthetic-boxes-woff2-metrics`, `fonts/synthetic-deltas-woff2-boxes` | woff2 | 1 | CC0-1.0 | Written by `FontWoff2Writer`: transformed horizontal metrics (both flags, then one), every bounding box stored |
+| `fonts/synthetic-variable-axes` | ttf | 1 | CC0-1.0 | The synthetic variable font with version 2 of the `avar` table: a variation store whose deltas change the normalized weight and width from both of them, through a delta set index map |
+| `fonts/synthetic-languages` | ttf | 1 | CC0-1.0 | The boxes font with a language system for each of the 680 tags of the registry of language system tags of OpenType: the `locl` feature of each one replaces A by four glyphs that tell which one it is |
+| `fonts/synthetic-monochrome-boxes` | ttf | 1 | CC0-1.0 | The boxes font with strikes of one bit per pixel (`EBLC` and `EBDT`) at 12 and 16 pixels per em, whose bitmaps do not draw what the outlines draw. The reference tools do not draw these bitmaps: the vectors are those of the outlines, and the bitmaps have literals in the tests |
+| `fonts/synthetic-marks` | ttf | 1 | CC0-1.0 | A font without substitution and positioning tables whose marks, of every kind of combining class, are all drawn at one place, with letters whose ink is not in the middle of their advance |
+| `fonts/synthetic-arabic-forms` | ttf | 1 | CC0-1.0 | A font of Arabic without substitution and positioning tables: a glyph for each letter and for each character of the Arabic Presentation Forms blocks |
+| `fonts/synthetic-thai-forms`, `fonts/synthetic-thai-forms-mac` | ttf | 1 | CC0-1.0 | A font of Thai without substitution and positioning tables: a glyph for each character of the Thai block and for each form of the private use area, at the code points of the fonts of Windows (U+F700 to U+F71A) or of Mac OS (U+F884 to U+F89E) |
+| `fonts/noto-color-emoji` | ttf | 1 | OFL-1.1 | Noto Color Emoji 2.057 (the `COLR` version 1 build), subset to 60 characters of each kind of emoji sequence: emoji that are emoji or text by default, the skin tone modifiers, people and what joins them, four regional indicators, the keycap, the tags of a subdivision flag; the ligatures of their sequences, and their variation sequences with U+FE0F |
 
 ### Shaping vectors
 
@@ -274,8 +281,8 @@ The fonts of the googlefonts/color-fonts project (`fonts/color-fonts/`) come fro
 Twemoji (CC-BY-4.0, Twitter, Inc and other contributors).
 
 The `shaping` file of a font (`ShapingVectors` in the test harness) holds texts and what the OpenType shaper of
-HarfBuzz gives for them: `hb-shape --shapers=ot --font-funcs=ot --no-glyph-names`, with the features of the case and, for a variable font, the
-instance of the case (`--variations`). A text
+HarfBuzz gives for them: `hb-shape --shapers=ot --font-funcs=ot --no-glyph-names`, with the features of the case, for a variable font the
+instance of the case (`--variations`), and the language of the case when it has one (`--language`, a BCP 47 language tag). A text
 is stored as the hexadecimal code points of its characters, so that no invisible character is lost in an editor; a
 glyph is six numbers: the glyph identifier, the cluster (an index of character), the two offsets and the two advances,
 in font units. The texts are listed in `FontCorpus.cs`, chosen for what shaping does to them: kerning, ligatures, marks
@@ -296,9 +303,20 @@ Khmer are about the subscripts, the ro among them, the vowels with two parts and
 Myanmar about the kinzi, the medials, the marks whose order changes and the bases that are not letters. Those of the
 scripts of the universal model are about the classes of their characters (what a cluster can have, and in which order),
 the glyphs that are moved, the forms of the letters that join, and what is not a cluster. Several of them were found by
-shaping random sequences of the characters of a script with both shapers. For the font without positioning table, the
-glyphs and the clusters are compared and the positions are not: the reference shaper then places marks from the shape
-of the glyphs, by rules of its own.
+shaping random sequences of the characters of a script with both shapers.
+
+The fonts without layout tables are about what a shaper does in their place. For the fonts without positioning table
+(the Hebrew font without `GPOS`, the marks font), the reference shaper places each mark from the shapes of the glyphs
+and from its combining class, by rules no specification gives: the positions are compared like any other, on a mark
+of each kind of class, on marks that stack, and on marks a font draws lower or higher than the others. The Arabic
+font without substitution table has the forms of its letters as characters, and the Thai ones the forms of their marks
+in the private use area. The emoji font is about the sequences a font draws with one glyph, and about the variation
+selector that is part of a sequence the font has.
+
+The languages font has a case for each of some 1,500 language tags (the codes of two letters, the codes of the
+registry of OpenType, the languages of a macrolanguage and the deprecated subtags of the registry of BCP 47, and
+tags with a script, a region or a variant): the glyphs tell which language system the shaper took. The differences
+with the reference shaper are listed in `ShapingConformanceTests`, by group, with the reason of each.
 
 There is one reference shaper: the pinned tools have no other one. A difference with it is settled by the
 specifications, and a deliberate one is listed in the test with its reason.
@@ -2201,6 +2219,13 @@ tool version to see what changes; the interop CI job runs it on every build to d
 
 - The generators are the subcommands of one .NET console app (`tools/Meziantou.Framework.Imaging.CorpusGenerator`) and
   never use the library under test.
+- A generator writes a whole corpus to a temporary directory: its own entries and files, and a copy of the files the
+  other sections of the committed manifest reference. `--write` then removes every committed file that is not in that
+  directory. The files each section references are listed in `Infrastructure/CorpusDriver.Files.cs`: a section that
+  gains a kind of file (the `renders` of a font, for instance) must be added there, or the next `--write` of another
+  generator deletes those files. A generator stops before comparing or writing when its manifest describes a file its
+  output does not have, or when its output has a file these lists do not name, and `CorpusManifestTests` checks the
+  lists against the committed corpus.
 - Requirements of `golden`: macOS (Apple ImageIO `sips`: JPEG cross-checks and PNG arbitration; `swift` from the Xcode
   command line tools runs `imageio_frames.swift` for the APNG cross-checks), the .NET SDK of `global.json` (the generator
   targets .NET 10 and has no dependency on the library), FFmpeg, libjpeg-turbo `cjpeg`/`djpeg`/`jpegtran` and LittleCMS

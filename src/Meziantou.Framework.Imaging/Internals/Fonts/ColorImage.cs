@@ -30,6 +30,10 @@ internal sealed class ColorImage
         Image<Rgba32> image;
         try
         {
+            // The data is an image of the format the font gives for it, not of any format the library reads.
+            if (Image.Identify(data, new ImageIdentifyOptions { Configuration = face.Data.Configuration }).Format != bitmap.Format)
+                throw new InvalidImageContentException("The font is invalid: the image of a glyph is not in the format the font gives for it.", ImageFormat.Unknown);
+
             image = Image.Load<Rgba32>(data, new ImageDecodeOptions { Configuration = face.Data.Configuration, FrameLimit = 1 });
         }
         catch (UnknownImageFormatException exception)

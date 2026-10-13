@@ -131,7 +131,8 @@ public static partial class Unicode
     /// <see cref="UnicodeProperties.UnicodeVersion"/>, whatever the version of the runtime. With the default arguments
     /// the rules are not tailored: the classes that need information from outside the algorithm are resolved as the
     /// annex specifies (rule LB1), so Thai, Lao, Khmer and the other scripts that need a dictionary only break at
-    /// spaces, and an object replacement character can break on both sides.
+    /// spaces, and an object replacement character can break on both sides. The overload that takes a
+    /// <see cref="LineBreakDictionary"/> also breaks such text between the words of a word list.
     /// </para>
     /// <para>
     /// A break position is the index of the first character of the next line. A soft hyphen (U+00AD) gives an
@@ -150,6 +151,42 @@ public static partial class Unicode
             throw new ArgumentOutOfRangeException(nameof(wordBreak), wordBreak, "The value is not defined");
 
         return new UnicodeLineBreakEnumerator(text, strictness, wordBreak);
+    }
+
+    /// <summary>Enumerates the positions where a line can or must break, with a dictionary for the text that is written without spaces between words.</summary>
+    /// <param name="text">The text.</param>
+    /// <param name="dictionary">The words of the scripts that are written without spaces between words, or <see langword="null"/> to only apply the rules of the Unicode Line Breaking Algorithm.</param>
+    /// <param name="strictness">How strict the rules are.</param>
+    /// <param name="wordBreak">Whether a line can break inside a word.</param>
+    /// <returns>An enumerator of the breaks, in order. The last one is at the end of the text and is mandatory; an empty text has no break.</returns>
+    /// <remarks>
+    /// <para>
+    /// The breaks are those of <see cref="EnumerateLineBreaks(ReadOnlySpan{char}, UnicodeLineBreakStrictness, UnicodeWordBreakBehavior)"/>,
+    /// and the breaks that <paramref name="dictionary"/> finds in the text that the Unicode Line Breaking Algorithm
+    /// leaves to a dictionary: the characters whose line breaking class is Complex_Context (SA), those of Thai, Lao,
+    /// Khmer, Myanmar and a few other scripts. A break of the dictionary is not mandatory.
+    /// </para>
+    /// <list type="bullet">
+    /// <item><description>A run is a maximal sequence of consecutive Complex_Context characters that starts with a letter: the combining marks before the first letter belong to the character before them.</description></item>
+    /// <item><description>Each run is segmented into words as the remarks of <see cref="LineBreakDictionary"/> specify, and a line can break before each word of the dictionary, except at the start of the run. The breaks of a run are those of <see cref="LineBreakDictionary.FindBreaks(ReadOnlySpan{char}, Span{int})"/> for the run.</description></item>
+    /// <item><description>The characters of a run that are in no word stay with what precedes them. A break is never inside a grapheme cluster, nor before a combining mark.</description></item>
+    /// <item><description>The breaks at the start and at the end of a run are those of the Unicode Line Breaking Algorithm, where a Complex_Context character is a letter or a combining mark (rule LB1). The other characters, such as spaces, digits, punctuation and zero width spaces, are not looked up in the dictionary.</description></item>
+    /// <item><description><see cref="UnicodeWordBreakBehavior.KeepAll"/> keeps the breaks of the dictionary, as the <c>word-break: keep-all</c> of CSS does: they are between words, not inside a word.</description></item>
+    /// <item><description>With <see cref="UnicodeWordBreakBehavior.BreakAll"/> or <see cref="UnicodeLineBreakStrictness.Anywhere"/> a line already breaks between any two letters or grapheme clusters: the dictionary is not used and the breaks are those of the other overload.</description></item>
+    /// </list>
+    /// <para>The enumeration does not allocate, and its cost is proportional to the length of the text.</para>
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="strictness"/> or <paramref name="wordBreak"/> is not a defined value.</exception>
+    /// <seealso href="https://www.unicode.org/reports/tr14/" />
+    public static UnicodeLineBreakEnumerator EnumerateLineBreaks(ReadOnlySpan<char> text, LineBreakDictionary? dictionary, UnicodeLineBreakStrictness strictness = UnicodeLineBreakStrictness.Strict, UnicodeWordBreakBehavior wordBreak = UnicodeWordBreakBehavior.Normal)
+    {
+        if (strictness is < UnicodeLineBreakStrictness.Strict or > UnicodeLineBreakStrictness.Anywhere)
+            throw new ArgumentOutOfRangeException(nameof(strictness), strictness, "The value is not defined");
+
+        if (wordBreak is < UnicodeWordBreakBehavior.Normal or > UnicodeWordBreakBehavior.KeepAll)
+            throw new ArgumentOutOfRangeException(nameof(wordBreak), wordBreak, "The value is not defined");
+
+        return new UnicodeLineBreakEnumerator(text, strictness, wordBreak, dictionary);
     }
 
     /// <summary>Enumerates the runs of a text that are written in one script.</summary>

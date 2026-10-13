@@ -3,6 +3,8 @@ using Meziantou.Framework.Imaging.Benchmarks.Workloads;
 using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.TestHarness.Adapters;
 using Meziantou.Framework.Imaging.TestHarness.Convolution;
+using Meziantou.Framework.Imaging.TestHarness.Golden;
+using Meziantou.Framework.Imaging.TestHarness.Heif;
 using Meziantou.Framework.Imaging.TestHarness.Jpeg;
 using Meziantou.Framework.Imaging.TestHarness.Pixels;
 using Meziantou.Framework.Imaging.TestHarness.Png;
@@ -317,6 +319,48 @@ public sealed class BenchmarkWorkloadTests
     }
 
     [Fact]
+    public void JpegXlWorkloadsGiveBackTheirInputsAndTheirGatesRejectWrongResults()
+    {
+        // Transcoding: the JPEG file of the service request is recompressed, and rebuilt byte for byte
+        using var output = new MemoryStream();
+        Assert.True(ImageWorkloads.Recompress(BenchmarkInputs.ServiceJpeg, output) < BenchmarkInputs.ServiceJpeg.Length);
+        var recompressed = output.ToArray();
+        Assert.Equal(ImageFormat.JpegXl, Image.DetectFormat(recompressed));
+        Assert.Equal(BenchmarkInputs.ServiceJpeg.Length, ImageWorkloads.Reconstruct(recompressed, output));
+        Assert.Equal(BenchmarkInputs.ServiceJpeg, output.ToArray());
+
+        // Progressive output: the pixels of the file written in one pass, or exactly the source for lossless output
+        const int Width = 320;
+        const int Height = 240;
+        var source = ToRgb24(BenchmarkPixels.Rgb24(Width, Height, seed: 5));
+        using var image = Image.ImportPixelData<Rgb24>(source, Width, Height);
+        ImageWorkloads.Encode(image, new JpegXlEncoder { Compression = JpegXlCompression.Lossy }, output);
+        var single = output.ToArray();
+        ImageWorkloads.Encode(image, new JpegXlEncoder { Compression = JpegXlCompression.Lossy, Progressive = true }, output);
+        var progressive = output.ToArray();
+        ImageWorkloads.Encode(image, new JpegXlEncoder { Progressive = true }, output);
+        var lossless = output.ToArray();
+        WorkloadChecks.RequireLossless(lossless, source);
+        WorkloadChecks.RequireSamePixels<Rgb24>(single, progressive);
+        var refinements = WorkloadChecks.RequireRefinements<Rgb24>(progressive, minimum: 3);
+
+        // The workload renders every refinement into one image, which ends as the image that is loaded at once
+        using var destination = new Image<Rgb24>(Width, Height);
+        Assert.Equal(refinements, ImageWorkloads.ReadRefinements(progressive, destination));
+        using var expected = Image.Load<Rgb24>(progressive);
+        var pixels = new Rgb24[Width * Height];
+        var others = new Rgb24[Width * Height];
+        expected.Frames[0].CopyPixelDataTo(pixels);
+        destination.Frames[0].CopyPixelDataTo(others);
+        Assert.Equal(pixels, others);
+
+        // Other pixels, or a file that is not read in as many refinements, fail
+        Assert.Throws<InvalidOperationException>(() => WorkloadChecks.RequireSamePixels<Rgb24>(single, lossless));
+        Assert.Throws<InvalidOperationException>(() => WorkloadChecks.RequireRefinements<Rgb24>(progressive, refinements + 1));
+        Assert.Throws<InvalidOperationException>(() => WorkloadChecks.RequireRefinements<Rgb24>(single, refinements));
+    }
+
+    [Fact]
     public void TheBenchmarkSetupGatesAcceptTheInputsAndRejectWrongResults()
     {
         // The gates run by the benchmarks' global setups (before any timed region)
@@ -330,6 +374,38 @@ public sealed class BenchmarkWorkloadTests
         Assert.Throws<InvalidOperationException>(() => WorkloadChecks.RequireLossless(BenchmarkInputs.SmallPng, wrong));
         Assert.Throws<InvalidOperationException>(() => WorkloadChecks.RequirePsnr(BenchmarkInputs.ServiceJpeg, ToRgb24(BenchmarkPixels.Rgb24(BenchmarkInputs.ServiceWidth, BenchmarkInputs.ServiceHeight, seed: 6)), minimum: 35));
         Assert.Throws<InvalidOperationException>(() => WorkloadChecks.RequireAnimation(BenchmarkInputs.Apng, BenchmarkInputs.AnimationWidth, BenchmarkInputs.AnimationHeight, BenchmarkInputs.AnimationFrames - 1, FrameDuration.FromMilliseconds(40)));
+    }
+
+    [Theory]
+    [InlineData("hevc/x265-benchmark-intra-420-384x216", 1, false)]
+    [InlineData("hevc/x265-benchmark-intra-444-384x216", 3, false)]
+    [InlineData("hevc/x265-benchmark-inter-420-176x144", 1, true)]
+    public void HeicInputsHoldThePicturesOfTheVectorsOfTheCorpus(string id, int chromaFormatIdc, bool isSequence)
+    {
+        var corpus = GoldenCorpus.Default;
+        var vector = corpus.GetHevcVector(id);
+        var frame = vector.Frames[0];
+        var data = HevcStreamContainer.Wrap(File.ReadAllBytes(corpus.GetHevcVectorPath(vector)), frame.Width, frame.Height, bitDepth: 8, chromaFormatIdc);
+
+        // The independent reader finds an image, or a sample for each picture of the vector
+        var reader = ReferenceHeif.Parse(data);
+        Assert.Equal(isSequence, reader.IsSequence);
+        if (isSequence)
+        {
+            Assert.HasCount(vector.Frames.Count, reader.ColorTrack!.Samples);
+            Assert.Equal((frame.Width, frame.Height), (reader.ColorTrack.Width, reader.ColorTrack.Height));
+        }
+        else
+        {
+            Assert.Single(vector.Frames);
+            Assert.Equal("hvc1", reader.PrimaryItem!.Type);
+            Assert.Equal((frame.Width, frame.Height), reader.PrimaryItem.Size);
+        }
+
+        // The library decode (the timed load workloads) gives every picture, at its size
+        using var image = Image.Load(data);
+        Assert.Equal(ImageFormat.Heic, image.Metadata.SourceFormat);
+        Assert.Equal((frame.Width, frame.Height, vector.Frames.Count), (image.Width, image.Height, image.Frames.Count));
     }
 
     private static void AssertMatchesEncoderModel(byte[] jpeg, RawPixelBuffer pixels, string context)

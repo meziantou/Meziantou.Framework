@@ -39,6 +39,8 @@ internal static class FontTags
     public const uint Sbix = ((uint)'s' << 24) | ((uint)'b' << 16) | ((uint)'i' << 8) | 'x';
     public const uint Cblc = ((uint)'C' << 24) | ((uint)'B' << 16) | ((uint)'L' << 8) | 'C';
     public const uint Cbdt = ((uint)'C' << 24) | ((uint)'B' << 16) | ((uint)'D' << 8) | 'T';
+    public const uint Eblc = ((uint)'E' << 24) | ((uint)'B' << 16) | ((uint)'L' << 8) | 'C';
+    public const uint Ebdt = ((uint)'E' << 24) | ((uint)'B' << 16) | ((uint)'D' << 8) | 'T';
 
     // Axes of a variable font
     public const uint WeightAxis = ((uint)'w' << 24) | ((uint)'g' << 16) | ((uint)'h' << 8) | 't';

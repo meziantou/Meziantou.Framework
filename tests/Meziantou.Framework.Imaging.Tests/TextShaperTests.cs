@@ -39,11 +39,12 @@ public sealed class TextShaperTests
         Assert.Equal("2=0+1024|9=0+0", Format(Shape(font, "A\u0301")));
 
         // Neither the composed character nor its mark: the character is missing, as a whole. A mark that is missing is
-        // still a mark: the missing glyph, 512 units wide, does not move the pen and is drawn over what precedes it.
+        // still a mark: the missing glyph, whose ink is 384 units wide from 64, does not move the pen and is placed like
+        // the mark above it stands for, in the middle of the advance of A and 64 units over its top, 768.
         builder.CharacterMap.Remove(0x0301);
         font = FontTestSupport.Load(builder);
         Assert.Equal("0=0+512", Format(Shape(font, "\u00C1")));
-        Assert.Equal("2=0+1024|0=0@-512,0+0", Format(Shape(font, "A\u0301")));
+        Assert.Equal("2=0+1024|0=0@-768,832+0", Format(Shape(font, "A\u0301")));
     }
 
     [Fact]
@@ -58,8 +59,9 @@ public sealed class TextShaperTests
 
         // A mark belongs to the cluster of its base; so do the modifier of an emoji, what a zero width joiner joins, and
         // the second regional indicator of a pair. The clusters are indices in the UTF-16 text.
-        // The mark does not come between A and B either: the pair is kerned.
-        Assert.Equal("2=0+960|9=0+0|3=2@-64,0+448", Format(Shape(font, "A\u0301B")));
+        // The mark does not come between A and B either: the pair is kerned. The mark stays in the middle of A, whose
+        // advance the kerning made 64 units shorter.
+        Assert.Equal("2=0+960|9=0@64,0+0|3=2@-64,0+448", Format(Shape(font, "A\u0301B")));
         Assert.Equal("2=0+960|3=0@-64,0+480|2=4@32,0+1056", Format(Shape(font, "\U0001F600\U0001F3FB\U0001F600")));
         Assert.Equal("4=0+768|4=0+768|4=4+768|4=4+768|4=8+768", Format(Shape(font, "\U0001F1E6\U0001F1E6\U0001F1E6\U0001F1E6\U0001F1E6")));
         Assert.Equal("2=0+1024|1=0+0|2=0+1024", Format(Shape(font, "\U0001F600\u200D\U0001F600")));
@@ -732,6 +734,342 @@ public sealed class TextShaperTests
         Assert.Equal(expected, FormatCodePoints(buffer));
     }
 
+    [Theory]
+
+    // A language has the tag the registry of OpenType gives for its ISO 639 code, whatever the case of the subtags and
+    // the form of the code; the region and the script say nothing of most languages.
+    [InlineData("sr", "SRB ")]
+    [InlineData("SR-cyrl-rs", "SRB ")]
+    [InlineData("srp", "SRB ")]
+    [InlineData("tr", "TRK ")]
+    [InlineData("fr-CA", "FRA ")]
+    [InlineData("de-CH-1901", "DEU ")]
+
+    // A code that several tags have: the tag of fewer languages first (Irish, then Irish Traditional, which is also
+    // Old Irish; Navajo, then the Athapaskan languages).
+    [InlineData("ga", "IRI ,IRT ")]
+    [InlineData("nv", "NAV ,ATH ")]
+    [InlineData("ko", "KOR ,KOH ")]
+
+    // The tags of a written form are used when the language tag asks for the form.
+    [InlineData("el", "ELL ")]
+    [InlineData("el-polyton", "PGR ,ELL ")]
+    [InlineData("ka", "KAT ")]
+    [InlineData("ka-Geok", "KGE ,KAT ")]
+    [InlineData("syr", "SYR ")]
+    [InlineData("syr-Syrj", "SYRJ,SYR ")]
+    [InlineData("syc-Syre", "SYRE,SYR ")]
+    [InlineData("und-fonipa", "IPPH")]
+    [InlineData("en-fonipa", "IPPH,ENG ")]
+    [InlineData("fi-fonupa", "UPPH,FIN ")]
+
+    // Chinese: the script, or else the region, chooses.
+    [InlineData("zh", "ZHS ")]
+    [InlineData("zh-Hans", "ZHS ")]
+    [InlineData("zh-SG", "ZHS ")]
+    [InlineData("zh-Hant", "ZHT ")]
+    [InlineData("zh-TW", "ZHT ")]
+    [InlineData("zh-HK", "ZHH ,ZHT ")]
+    [InlineData("zh-Hant-MO", "ZHTM,ZHH ,ZHT ")]
+    [InlineData("zh-Hans-HK", "ZHS ")]
+    [InlineData("zh-Bopo", "ZHP ")]
+    [InlineData("cmn", "ZHS ")]
+    [InlineData("cmn-Hant", "ZHT ")]
+    [InlineData("zh-cmn-Hant", "ZHT ")]
+    [InlineData("yue", "ZHH ,ZHT ")]
+    [InlineData("zh-yue", "ZHH ,ZHT ")]
+    [InlineData("yue-Hans", "ZHS ")]
+    [InlineData("lzh", "ZHT ")]
+
+    // A language of a macrolanguage also has the tags of the macrolanguage; a deprecated subtag has the tags of the
+    // subtag that replaces it.
+    [InlineData("arb", "ARA ")]
+    [InlineData("ary", "MOR ,ARA ")]
+    [InlineData("zsm", "MLY ")]
+    [InlineData("id", "IND ,MLY ")]
+    [InlineData("in", "IND ,MLY ")]
+    [InlineData("iw", "IWR ")]
+    [InlineData("mo", "MOL ,ROM ")]
+    [InlineData("ro-MD", "MOL ,ROM ")]
+    [InlineData("ro", "ROM ")]
+    [InlineData("no", "NOR ")]
+    [InlineData("nn", "NYN ")]
+
+    // No tag: an undetermined language, private use, a language that is not an ISO 639 code, a code the registry lacks.
+    [InlineData("und", "")]
+    [InlineData("x-klingon", "")]
+    [InlineData("en-x-zh", "ENG ")]
+    [InlineData("english", "")]
+    [InlineData("zxx", "")]
+    [InlineData("sh", "")]
+    public void ALanguageTagGivesTheLanguageSystemTagsOfTheRegistry(string language, string expected)
+    {
+        Assert.True(OpenTypeLanguage.IsWellFormed(language));
+        Assert.Equal(expected, string.Join(',', OpenTypeLanguage.GetTags(language).Select(FormatTag)));
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("-")]
+    [InlineData("en-")]
+    [InlineData("-en")]
+    [InlineData("en--US")]
+    [InlineData("en_US")]
+    [InlineData("1en")]
+    [InlineData("abcdefghi")]
+    [InlineData("en-abcdefghi")]
+    [InlineData("fr\u00E9")]
+    [InlineData("en US")]
+    public void ALanguageTagIsMadeOfSubtagsOfLettersAndDigits(string language)
+    {
+        Assert.False(OpenTypeLanguage.IsWellFormed(language));
+    }
+
+    [Fact]
+    public void EveryCodeOfTheRegistryGivesItsTag()
+    {
+        // A second reading of the registry (FontSamples.LanguageSystemRegistry) against the table of the library. The
+        // tags of a written form are given by a subtag, not by the code alone.
+        string[] forms = ["SYRE", "SYRJ", "SYRN", "PGR ", "KGE ", "ZHH ", "ZHP ", "ZHT ", "ZHTM"];
+        var codeCount = 0;
+        foreach (var item in FontSamples.LanguageSystemRegistry.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries))
+        {
+            var parts = item.Split(':');
+            var tag = parts[0].TrimEnd('!').PadRight(4);
+            if (parts.Length == 1 || forms.Contains(tag))
+                continue;
+
+            foreach (var code in parts[1].Split(','))
+            {
+                Assert.Contains(tag, OpenTypeLanguage.GetTags(code).Select(FormatTag));
+                codeCount++;
+            }
+        }
+
+        Assert.Equal(1107, codeCount);
+    }
+
+    [Fact]
+    public void TheMarksOfAFontWithoutPositioningTableArePlacedFromTheShapesOfTheGlyphs()
+    {
+        // The font draws every mark at one place: the rectangle (-250, 800)-(-150, 900). A is (100, 0)-(700, 700), with
+        // an advance of 1000: a mark is placed in the advance, from 0 to 1000, and on the ink, from 0 to 700. The gap
+        // is a sixteenth of the em, 62 units.
+        var font = FontTestSupport.Load(FontSamples.Marks());
+
+        // Above: centered, its left at 450, so drawn from 700, which is 300 before the pen. It would stand at 762; the
+        // font draws it at 800, and it is brought down by half of the 38 units.
+        Assert.Equal("2=0+1000|8=0@-300,-19+0", Format(Shape(font, "A\u0300")));
+
+        // Below: its top 62 units under the baseline. Attached below: its top on the baseline.
+        Assert.Equal("2=0+1000|13=0@-300,-962+0", Format(Shape(font, "A\u0316")));
+        Assert.Equal("2=0+1000|12=0@-300,-900+0", Format(Shape(font, "A\u0321")));
+
+        // On the right, its right at the end of the advance; on the left, its left at the origin; a double mark, in
+        // the middle of the end of the advance.
+        Assert.Equal("2=0+1000|10=0@150,-19+0", Format(Shape(font, "A\u0315")));
+        Assert.Equal("2=0+1000|18=0@-750,-962+0", Format(Shape(font, "A\u302A")));
+        Assert.Equal("2=0+1000|17=0@200,-19+0|2=2+1000", Format(Shape(font, "A\u0361A")));
+
+        // A class without place of its own (an overlay): centered, at its height.
+        Assert.Equal("2=0+1000|14=0@-300,0+0", Format(Shape(font, "A\u0334")));
+
+        // The marks of a class stack, 62 units from each other: the second one above is at 881 + 62; another class
+        // starts from the letter again.
+        Assert.Equal("2=0+1000|8=0@-300,-19+0|8=0@-300,143+0", Format(Shape(font, "A\u0300\u0300")));
+        Assert.Equal("2=0+1000|13=0@-300,-962+0|13=0@-300,-1124+0|8=0@-300,-19+0", Format(Shape(font, "A\u0300\u0316\u0316")));
+
+        // A mark below that the font draws lower than 62 units under the letter stays there, and the next one hangs
+        // under it: 62 units under its bottom, -300. A mark above that the font draws lower is brought up.
+        var low = font.Face.MapCodePoint(0x0317);
+        Assert.Equal($"2=0+1000|{low}=0@-300,0+0|13=0@-300,-1262+0", Format(Shape(font, "A\u0317\u0316")));
+        Assert.Equal($"2=0+1000|{font.Face.MapCodePoint(0x0302)}=0@-300,42+0", Format(Shape(font, "A\u0302")));
+
+        // A mark without letter before it, and the marks of Thai, are left where the font draws them.
+        Assert.Equal("8=0+0|2=1+1000", Format(Shape(font, "\u0300A")));
+        var buffer = new GlyphBuffer(ImageResourceLimits.Default);
+        TextShaper.AddText(buffer, "\u0E01\u0E48");
+        TextShaper.Shape(buffer, font.Face, UnicodeScript.Thai, languages: [], isRightToLeft: false, []);
+        Assert.Equal((0, 0), (buffer.Positions[1].XOffset, buffer.Positions[1].YOffset));
+
+        // From right to left, a mark is drawn before its letter, from the same pen: the Hebrew alef has an advance of
+        // 600, and the sheva goes under the middle of it.
+        buffer = new GlyphBuffer(ImageResourceLimits.Default);
+        TextShaper.AddText(buffer, "\u05D0\u05B0");
+        TextShaper.Shape(buffer, font.Face, UnicodeScript.Hebrew, languages: [], isRightToLeft: true, []);
+        Assert.Equal(font.Face.MapCodePoint(0x05B0), buffer.Info[0].Glyph);
+        Assert.Equal((500, -962, 0), (buffer.Positions[0].XOffset, buffer.Positions[0].YOffset, buffer.Positions[0].XAdvance));
+        Assert.Equal((0, 600), (buffer.Positions[1].XOffset, buffer.Positions[1].XAdvance));
+    }
+
+    [Fact]
+    public void TheLettersOfAnArabicFontWithoutSubstitutionTableTakeTheirPresentationForms()
+    {
+        // The font has the letters and their presentation forms as characters, and no substitution table. The glyphs
+        // are given from right to left.
+        var font = FontTestSupport.Load(FontSamples.ArabicForms());
+        int Glyph(int character) => font.Face.MapCodePoint(character);
+        string Shaped(string text)
+        {
+            var buffer = new GlyphBuffer(ImageResourceLimits.Default);
+            TextShaper.AddText(buffer, text);
+            TextShaper.Shape(buffer, font.Face, UnicodeScript.Arabic, languages: [], isRightToLeft: true, []);
+            return string.Join(' ', buffer.Info.ToArray().Select(glyph => glyph.Glyph));
+        }
+
+        // Beh alone, then three of them: isolated (U+FE8F); final (U+FE90), medial (U+FE92), initial (U+FE91).
+        Assert.Equal($"{Glyph(0xFE8F)}", Shaped("\u0628"));
+        Assert.Equal($"{Glyph(0xFE90)} {Glyph(0xFE92)} {Glyph(0xFE91)}", Shaped("\u0628\u0628\u0628"));
+
+        // Alef only joins the letter before it: beh initial then alef final; alef isolated then beh isolated.
+        Assert.Equal($"{Glyph(0xFE8E)} {Glyph(0xFE91)}", Shaped("\u0628\u0627"));
+        Assert.Equal($"{Glyph(0xFE8F)} {Glyph(0xFE8D)}", Shaped("\u0627\u0628"));
+
+        // A letter that does not join, the hamza, keeps its glyph; a letter of the block Arabic Presentation Forms-A.
+        Assert.Equal($"{Glyph(0xFE8F)} {Glyph(0x0621)}", Shaped("\u0621\u0628"));
+        Assert.Equal($"{Glyph(0xFB57)} {Glyph(0xFB59)} {Glyph(0xFB58)}", Shaped("\u067E\u067E\u067E"));
+
+        // Lam and alef are their ligature: isolated (U+FEFB), final after a letter that joins (U+FEFC), with the alef
+        // with madda (U+FEF5). A mark between the two letters follows the ligature in the text, and is drawn first.
+        Assert.Equal($"{Glyph(0xFEFB)}", Shaped("\u0644\u0627"));
+        Assert.Equal($"{Glyph(0xFEFC)} {Glyph(0xFE91)}", Shaped("\u0628\u0644\u0627"));
+        Assert.Equal($"{Glyph(0xFEF5)}", Shaped("\u0644\u0622"));
+        Assert.Equal($"{Glyph(0x064E)} {Glyph(0xFEFB)}", Shaped("\u0644\u064E\u0627"));
+
+        // A zero width joiner between them is passed over, and is drawn as nothing after the ligature; a zero width
+        // non-joiner keeps the two letters apart, each in its isolated form.
+        Assert.Equal($"{Glyph(' ')} {Glyph(0xFEFB)}", Shaped("\u0644\u200D\u0627"));
+        Assert.Equal($"{Glyph(0xFE8D)} {Glyph(' ')} {Glyph(0xFEDD)}", Shaped("\u0644\u200C\u0627"));
+
+        // The other ligatures the font has as characters are not forms a text needs: yeh with hamza and jeem.
+        Assert.Equal($"{Glyph(0xFE9E)} {Glyph(0xFE8B)}", Shaped("\u0626\u062C"));
+
+        // A font without the character of a form draws the letter with its own glyph.
+        var builder = FontSamples.ArabicForms();
+        builder.CharacterMap.Remove(0xFE92);
+        builder.CharacterMap.Remove(0xFEFB);
+        font = FontTestSupport.Load(builder);
+        Assert.Equal($"{Glyph(0xFE90)} {Glyph(0x0628)} {Glyph(0xFE91)}", Shaped("\u0628\u0628\u0628"));
+        Assert.Equal($"{Glyph(0xFE8E)} {Glyph(0xFEDF)}", Shaped("\u0644\u0627"));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void TheMarksOfAThaiFontWithoutSubstitutionTableTakeTheirPrivateUseForms(bool useMacCodePoints)
+    {
+        // The font has the forms of the marks as characters of the private use area, at the code points of the fonts of
+        // Windows or of Mac OS, and no substitution table.
+        var font = FontTestSupport.Load(FontSamples.ThaiForms(useMacCodePoints));
+        int Glyph(int character) => font.Face.MapCodePoint(character);
+        int Form(int windows, int mac) => Glyph(useMacCodePoints ? mac : windows);
+        string Shaped(string text)
+        {
+            var buffer = new GlyphBuffer(ImageResourceLimits.Default);
+            TextShaper.AddText(buffer, text);
+            TextShaper.Shape(buffer, font.Face, UnicodeScript.Thai, languages: [], isRightToLeft: false, []);
+            return string.Join(' ', buffer.Info.ToArray().Select(glyph => glyph.Glyph));
+        }
+
+        // Ko kai, a consonant of the usual shape: a tone mark alone is drawn lower (low mai ek); after a vowel above,
+        // it keeps its place.
+        Assert.Equal($"{Glyph(0x0E01)} {Form(0xF70A, 0xF88B)}", Shaped("\u0E01\u0E48"));
+        Assert.Equal($"{Glyph(0x0E01)} {Glyph(0x0E34)} {Glyph(0x0E48)}", Shaped("\u0E01\u0E34\u0E48"));
+
+        // Po pla has an ascender: the vowel above moves left (left sara i), the tone mark alone is low and left, and
+        // the tone mark after a vowel is left.
+        Assert.Equal($"{Glyph(0x0E1B)} {Form(0xF701, 0xF885)}", Shaped("\u0E1B\u0E34"));
+        Assert.Equal($"{Glyph(0x0E1B)} {Form(0xF705, 0xF88C)}", Shaped("\u0E1B\u0E48"));
+        Assert.Equal($"{Glyph(0x0E1B)} {Form(0xF701, 0xF885)} {Form(0xF713, 0xF88A)}", Shaped("\u0E1B\u0E34\u0E48"));
+
+        // Yo ying loses its descender before a vowel below; under do chada, whose descender stays, the vowel is lower.
+        Assert.Equal($"{Form(0xF70F, 0xF89A)} {Glyph(0x0E38)}", Shaped("\u0E0D\u0E38"));
+        Assert.Equal($"{Glyph(0x0E0E)} {Form(0xF718, 0xF89B)}", Shaped("\u0E0E\u0E38"));
+
+        // The sara am is a nikhahit, which counts as a vowel above, and a sara aa: the tone mark before it keeps its
+        // place, on the nikhahit.
+        Assert.Equal($"{Glyph(0x0E01)} {Glyph(0x0E4D)} {Glyph(0x0E48)} {Glyph(0x0E32)}", Shaped("\u0E01\u0E48\u0E33"));
+
+        // A second mark below is lower; a mark above something that is no consonant keeps its glyph.
+        Assert.Equal($"{Glyph(0x0E01)} {Glyph(0x0E38)} {Form(0xF719, 0xF89C)}", Shaped("\u0E01\u0E38\u0E39"));
+        Assert.Equal($"{Glyph(0x0E32)} {Glyph(0x0E48)}", Shaped("\u0E32\u0E48"));
+
+        // A font without the character of a form draws the mark with its own glyph.
+        var builder = FontSamples.ThaiForms(useMacCodePoints);
+        builder.CharacterMap.Remove(useMacCodePoints ? 0xF88B : 0xF70A);
+        font = FontTestSupport.Load(builder);
+        Assert.Equal($"{Glyph(0x0E01)} {Glyph(0x0E48)}", Shaped("\u0E01\u0E48"));
+    }
+
+    [Fact]
+    public void TheSelectorOfAVariationSequenceTheFontHasIsPartOfItsCharacter()
+    {
+        // A font with two variation sequences of A: one with a glyph of its own (B), one with the glyph of A.
+        var builder = FontSamples.Boxes();
+        builder.CmapFormats = FontCmapFormats.Format4 | FontCmapFormats.Format14;
+        builder.VariationSequences[(0xFE00, 'A')] = FontSamples.BoxB;
+        builder.VariationSequences[(0xFE01, 'A')] = -1;
+        var font = FontTestSupport.Load(builder);
+
+        // The selector of a sequence the font has leaves no glyph, and what follows keeps its cluster.
+        Assert.Equal("3=0+512|4=2+768", Format(Shape(font, "A\uFE00C")));
+        Assert.Equal("2=0+1024|4=2+768", Format(Shape(font, "A\uFE01C")));
+
+        // A selector the font has no sequence for is a character without visible form: a glyph that takes no room, in
+        // the cluster of its character. Only the first selector after a character is the one of a sequence.
+        var unknown = Shape(font, "A\uFE02C");
+        Assert.Equal(3, unknown.Length);
+        Assert.Equal((2, 0, 1024), (unknown.Info[0].Glyph, unknown.Info[0].Cluster, unknown.Positions[0].XAdvance));
+        Assert.Equal((true, 0, 0), (unknown.Info[1].IsIgnorable, unknown.Info[1].Cluster, unknown.Positions[1].XAdvance));
+        Assert.Equal(3, Shape(font, "A\uFE00\uFE00C").Length);
+        Assert.Equal(FontSamples.BoxB, Shape(font, "A\uFE00\uFE00C").Info[0].Glyph);
+    }
+
+    [Fact]
+    public void TheLanguageOfARunSelectsALanguageSystemOfTheFont()
+    {
+        // The language systems of the font, each with a feature that replaces A (glyph 2) by four glyphs, the last of
+        // which tells which one it is: ROM (2), SRB (3), ZHT (4). The default language system has no feature.
+        var font = FontTestSupport.Load(FontSamples.Languages(["ROM ", "SRB ", "ZHT "]));
+        Assert.Equal("2", ShapeInLanguage(font, null));
+        Assert.Equal("2 2 2 3", ShapeInLanguage(font, "sr"));
+        Assert.Equal("2 2 2 2", ShapeInLanguage(font, "ro"));
+
+        // The first tag of the language the font has: not the one of Moldova nor the one of Hong Kong.
+        Assert.Equal("2 2 2 2", ShapeInLanguage(font, "ro-MD"));
+        Assert.Equal("2 2 2 4", ShapeInLanguage(font, "zh-HK"));
+
+        // A language the font has no language system for uses the default one, like a text without language.
+        Assert.Equal("2", ShapeInLanguage(font, "fr"));
+        Assert.Equal("2", ShapeInLanguage(font, "zh"));
+
+        // Each tag of the registry selects its own language system in a font that has them all: the one of index 500 is
+        // drawn with the digits 2, 1, 5 and 2 in base 6.
+        font = FontTestSupport.Load(FontSamples.Languages());
+        var tags = FontSamples.LanguageSystemTags();
+        Assert.HasCount(680, tags);
+        var buffer = new GlyphBuffer(ImageResourceLimits.Default);
+        TextShaper.AddText(buffer, "A");
+        TextShaper.Shape(buffer, font.Face, UnicodeScript.Latin, [ShapingFeature.ToTag(tags[500])], isRightToLeft: false, []);
+        Assert.Equal("4 3 7 4", string.Join(' ', buffer.Info.ToArray().Select(glyph => glyph.Glyph)));
+
+        static string ShapeInLanguage(Font font, string? language)
+        {
+            var buffer = new GlyphBuffer(ImageResourceLimits.Default);
+            TextShaper.AddText(buffer, "A");
+            TextShaper.Shape(buffer, font.Face, UnicodeScript.Latin, language is null ? [] : OpenTypeLanguage.GetTags(language), isRightToLeft: false, []);
+            return string.Join(' ', buffer.Info.ToArray().Select(glyph => glyph.Glyph));
+        }
+    }
+
+    private static string FormatTag(uint tag) => string.Create(4, tag, (span, value) =>
+    {
+        for (var i = 0; i < 4; i++)
+        {
+            span[i] = (char)((value >> (24 - (8 * i))) & 0xFF);
+        }
+    });
+
     [Fact]
     public void ALongTextIsShapedWithAFontThatHasManyLookups()
     {
@@ -882,7 +1220,7 @@ public sealed class TextShaperTests
     {
         var buffer = new GlyphBuffer(ImageResourceLimits.Default);
         TextShaper.AddText(buffer, text);
-        TextShaper.Shape(buffer, font.Face, script, language: 0, isRightToLeft: false, []);
+        TextShaper.Shape(buffer, font.Face, script, languages: [], isRightToLeft: false, []);
         return string.Join(' ', buffer.Info.ToArray().Select(glyph => string.Create(CultureInfo.InvariantCulture, $"{glyph.Glyph}={glyph.Cluster}")));
     }
 
@@ -891,7 +1229,7 @@ public sealed class TextShaperTests
     {
         var buffer = new GlyphBuffer(ImageResourceLimits.Default);
         TextShaper.AddText(buffer, text);
-        TextShaper.Shape(buffer, font.Face, script, language: 0, isRightToLeft: false, []);
+        TextShaper.Shape(buffer, font.Face, script, languages: [], isRightToLeft: false, []);
         return string.Join(' ', buffer.Info.ToArray().Select(glyph => glyph.Glyph));
     }
 
@@ -899,7 +1237,7 @@ public sealed class TextShaperTests
     {
         var buffer = new GlyphBuffer(ImageResourceLimits.Default);
         TextShaper.AddText(buffer, text);
-        TextShaper.Shape(buffer, font.Face, UnicodeScript.Latin, language: 0, isRightToLeft: false, features);
+        TextShaper.Shape(buffer, font.Face, UnicodeScript.Latin, languages: [], isRightToLeft: false, features);
         return buffer;
     }
 

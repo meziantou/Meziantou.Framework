@@ -2,7 +2,8 @@ namespace Meziantou.Framework.Imaging.CorpusGenerator.Common;
 
 /// <summary>
 /// Writes the tables of a bitmap font from their description: OpenType specification, "sbix - Standard Bitmap Graphics
-/// Table", "CBLC - Color Bitmap Location Table" and "CBDT - Color Bitmap Data Table".
+/// Table", "CBLC - Color Bitmap Location Table" and "CBDT - Color Bitmap Data Table", "EBLC - Embedded Bitmap Location
+/// Table" and "EBDT - Embedded Bitmap Data Table".
 /// </summary>
 internal static class FontBitmapWriter
 {
@@ -63,11 +64,50 @@ internal static class FontBitmapWriter
     }
 
     /// <summary>Writes the <c>CBLC</c> and <c>CBDT</c> tables: each strike has one index subtable, for the range of its glyphs.</summary>
-    public static (byte[] Locations, byte[] Data) WriteColorBitmaps(IReadOnlyList<FontBitmapStrike> strikes)
+    public static (byte[] Locations, byte[] Data) WriteColorBitmaps(IReadOnlyList<FontBitmapStrike> strikes) => WriteBitmaps(strikes, isMonochrome: false);
+
+    /// <summary>
+    /// Writes the <c>EBLC</c> and <c>EBDT</c> tables: strikes of bitmaps without colors, whose image formats are 1, 2, 5,
+    /// 6 and 7. The data of a glyph is the bits of its pixels (<see cref="PackBits"/>), without length before them.
+    /// </summary>
+    public static (byte[] Locations, byte[] Data) WriteMonochromeBitmaps(IReadOnlyList<FontBitmapStrike> strikes) => WriteBitmaps(strikes, isMonochrome: true);
+
+    /// <summary>Packs the pixels of a bitmap of one bit per pixel, row by row from the top, the most significant bit first.</summary>
+    /// <param name="width">The width, in pixels.</param>
+    /// <param name="height">The height, in pixels.</param>
+    /// <param name="isByteAligned">Whether each row starts at a byte (image formats 1 and 6); otherwise the bits of the rows follow each other (2, 5 and 7).</param>
+    /// <param name="isSet">Tells whether the pixel of a column and a row is set.</param>
+    public static byte[] PackBits(int width, int height, bool isByteAligned, Func<int, int, bool> isSet)
+    {
+        var rowBits = isByteAligned ? ((width + 7) / 8) * 8 : width;
+        var bits = new byte[((rowBits * height) + 7) / 8];
+        for (var y = 0; y < height; y++)
+        {
+            for (var x = 0; x < width; x++)
+            {
+                if (isSet(x, y))
+                {
+                    var index = (y * rowBits) + x;
+                    bits[index >> 3] |= (byte)(0x80 >> (index & 7));
+                }
+            }
+        }
+
+        return bits;
+    }
+
+    private static int GetHeaderLength(int imageFormat) => imageFormat switch
+    {
+        1 or 2 or 17 => 5,
+        6 or 7 or 18 => 8,
+        _ => 0,
+    };
+
+    private static (byte[] Locations, byte[] Data) WriteBitmaps(IReadOnlyList<FontBitmapStrike> strikes, bool isMonochrome)
     {
         // The data table: its version, then the data of each glyph of each strike.
         var data = new FontWriter();
-        data.UInt16(3);
+        data.UInt16(isMonochrome ? 2 : 3);
         data.UInt16(0);
         var subtables = new List<byte[]>();
         foreach (var strike in strikes)
@@ -79,24 +119,29 @@ internal static class FontBitmapWriter
             {
                 offsets.Add(data.Length - imageDataOffset);
                 var top = glyph.Bottom + glyph.Height;
-                switch (strike.ImageFormat)
+                switch (GetHeaderLength(strike.ImageFormat))
                 {
-                    case 17:
+                    case 5:
                         data.Bytes([(byte)glyph.Height, (byte)glyph.Width, (byte)(sbyte)glyph.Left, (byte)(sbyte)top, (byte)glyph.Width]);
                         break;
 
-                    case 18:
+                    case 8:
                         data.Bytes([(byte)glyph.Height, (byte)glyph.Width, (byte)(sbyte)glyph.Left, (byte)(sbyte)top, (byte)glyph.Width, 0, 0, (byte)glyph.Height]);
                         break;
                 }
 
-                data.UInt32((uint)glyph.Data.Length);
+                // A PNG image has its length before it; the bits of a bitmap have the length their metrics give.
+                if (!isMonochrome)
+                {
+                    data.UInt32((uint)glyph.Data.Length);
+                }
+
                 data.Bytes(glyph.Data);
 
                 // The index formats 2 and 5 give every image the same size: the data of a glyph is padded to it.
                 if (strike.IndexFormat is 2 or 5)
                 {
-                    var size = glyphs.Max(candidate => candidate.Data.Length) + 4 + (strike.ImageFormat == 17 ? 5 : strike.ImageFormat == 18 ? 8 : 0);
+                    var size = glyphs.Max(candidate => candidate.Data.Length) + (isMonochrome ? 0 : 4) + GetHeaderLength(strike.ImageFormat);
                     data.Zeros(size - (data.Length - imageDataOffset - offsets[^1]));
                 }
             }
@@ -165,7 +210,7 @@ internal static class FontBitmapWriter
 
         // The location table: a record per strike, then, for each strike, an array of one index subtable and the subtable.
         var locations = new FontWriter();
-        locations.UInt16(3);
+        locations.UInt16(isMonochrome ? 2 : 3);
         locations.UInt16(0);
         locations.UInt32((uint)strikes.Count);
         var arrayOffset = 8 + (strikes.Count * 48);
@@ -181,7 +226,7 @@ internal static class FontBitmapWriter
             locations.UInt16(glyphs.Max(glyph => glyph.GlyphId));
             locations.Byte((byte)strikes[i].PixelsPerEm);
             locations.Byte((byte)strikes[i].PixelsPerEm);
-            locations.Byte(32);
+            locations.Byte((byte)(isMonochrome ? strikes[i].BitDepth : 32));
             locations.Byte(1);
             arrayOffset += 8 + subtables[i].Length;
         }

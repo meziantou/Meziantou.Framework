@@ -41,10 +41,9 @@ public sealed class ShapingConformanceTests
         foreach (var testCase in vectors.Cases)
         {
             var text = testCase.Characters;
-            var key = id + ";" + testCase.Text + ";" + testCase.Features + (testCase.Variations is null ? "" : ";" + testCase.Variations);
+            var key = id + ";" + testCase.Text + ";" + testCase.Features + (testCase.Variations is null ? "" : ";" + testCase.Variations) + (testCase.Language is null ? "" : ";" + testCase.Language);
             var face = (testCase.Variations is null ? font : FontTestSupport.WithVariations(font, testCase.Variations)).Face;
-            var withPositions = !FontsWithoutReferencePositions.ContainsKey(id);
-            var expected = Format(testCase.Glyphs.Select(glyph => (glyph[0], glyph[1], glyph[2], glyph[3], glyph[4], glyph[5])), withPositions);
+            var expected = Format(testCase.Glyphs.Select(glyph => (glyph[0], glyph[1], glyph[2], glyph[3], glyph[4], glyph[5])));
 
             // The reference clusters are indices of characters; the ones of the library are indices of UTF-16 code units.
             var characterIndices = new int[text.Length + 1];
@@ -60,7 +59,7 @@ public sealed class ShapingConformanceTests
 
             // The reference shaper lays a text out in the direction of its script, and gives the glyphs from left to right.
             var isRightToLeft = script is UnicodeScript.Arabic or UnicodeScript.Hebrew or UnicodeScript.Syriac or UnicodeScript.Nko or UnicodeScript.Adlam;
-            TextShaper.Shape(buffer, face, script, language: 0, isRightToLeft, ParseFeatures(testCase.Features));
+            TextShaper.Shape(buffer, face, script, testCase.Language is null ? [] : OpenTypeLanguage.GetTags(testCase.Language), isRightToLeft, ParseFeatures(testCase.Features));
             var glyphs = new List<(int, int, int, int, int, int)>();
             for (var i = 0; i < buffer.Length; i++)
             {
@@ -68,15 +67,15 @@ public sealed class ShapingConformanceTests
                 glyphs.Add((buffer.Info[i].Glyph, characterIndices[buffer.Info[i].Cluster], position.XOffset, position.YOffset, position.XAdvance, position.YAdvance));
             }
 
-            var actual = Format(glyphs, withPositions);
+            var actual = Format(glyphs);
             var isKnown = KnownDivergences.ContainsKey(key);
             if (!string.Equals(expected, actual, StringComparison.Ordinal) && !isKnown)
             {
-                failures.Add($"{testCase.Text} [{testCase.Features}] [{testCase.Variations}] \"{text}\"\n    expected {expected}\n    actual   {actual}");
+                failures.Add($"{testCase.Text} [{testCase.Features}] [{testCase.Variations}] [{testCase.Language}] \"{text}\"\n    expected {expected}\n    actual   {actual}");
             }
             else if (string.Equals(expected, actual, StringComparison.Ordinal) && isKnown)
             {
-                failures.Add($"{testCase.Text} [{testCase.Features}] [{testCase.Variations}] is listed as a known divergence and no longer diverges");
+                failures.Add($"{testCase.Text} [{testCase.Features}] [{testCase.Variations}] [{testCase.Language}] is listed as a known divergence and no longer diverges");
             }
         }
 
@@ -165,42 +164,58 @@ public sealed class ShapingConformanceTests
         ["fonts/noto-sans-newa;11460 2022 11436;"] = "the bullet is a generic base of the universal model",
     };
 
-    /// <summary>
-    /// The fonts whose glyphs and clusters are compared, and not the positions, with the reason.
-    /// </summary>
-    private static readonly Dictionary<string, string> FontsWithoutReferencePositions = new(StringComparer.Ordinal)
+    static ShapingConformanceTests()
     {
-        // The font has no positioning table: the reference shaper then places each mark from the shape of the glyphs
-        // (above or below the letter, by the combining class of the mark), which no specification describes and the
-        // library does not do. What the font decides (the glyphs, among them the precomposed letters) is compared.
-        ["fonts/noto-sans-hebrew-without-positioning"] = "the reference shaper places the marks of a font without positioning table by heuristics",
-    };
+        // The language systems of a language (OpenTypeLanguage): the font has one per tag of the registry of OpenType,
+        // so what differs is the first tag of a language, never whether a font with one tag is drawn with it.
+        AddLanguages(
+            "crm krc",
+            "the registry gives two tags the code and nothing else (L-Cree and Moose Cree, Balkar and Karachay): the library tries them in the order of the registry, the reference shaper in the other one");
+        AddLanguages(
+            "ike",
+            "the tag of fewer languages comes first: the tag of the Inuktitut of Nunavik, which the registry gives this code, before the tag of Inuktitut");
+        AddLanguages(
+            "max msi xmm pga",
+            "the registry has these languages under the tag of the creoles, which the library tries before the tag of the macrolanguage BCP 47 gives them (Malay, Arabic); the reference shaper only has the second one");
+        AddLanguages(
+            "qub qud quf qug quk qul qup qur qus quw qux quy qva qvc qve qvh qvj qvl qvm qvn qvo qvp qvs qvw qvz qwa qwc qws qxa qxc qxh qxl qxn qxo qxp qxr qxt qxu qxw",
+            "the registry has no tag for these languages nor for Quechua, their macrolanguage: the reference shaper gives each one the tag of one of the four Quechua languages that have one, from what it knows of them");
+        AddLanguages(
+            "yue-CN",
+            "Cantonese has the forms of Hong Kong when its language tag has no region and no script; with the region of mainland China, the library gives the simplified forms and the reference shaper the ones of Hong Kong");
+        AddLanguages(
+            "zh-Bopo zh-Latn",
+            "the registry has a tag for the phonetic transcriptions of Chinese, which the library gives to a text in Bopomofo or in Latin letters; the reference shaper does not look at these scripts");
+        AddLanguages(
+            "zh-cmn-Hant",
+            "an extended language is the language of the text (BCP 47): this is Mandarin in traditional characters, as cmn-Hant is for both shapers; the reference shaper does not look at the script of this form");
+
+        static void AddLanguages(string languages, string reason)
+        {
+            foreach (var language in languages.Split(' '))
+            {
+                KnownDivergences.Add("fonts/synthetic-languages;0041;;" + language, reason);
+            }
+        }
+    }
 
     /// <summary>
     /// Formats glyphs as a caller sees them: each glyph with its cluster and the place it is drawn at from the start of
     /// the text, then the advance of the text.
     /// </summary>
-    private static string Format(IEnumerable<(int Glyph, int Cluster, int XOffset, int YOffset, int XAdvance, int YAdvance)> glyphs, bool withPositions)
+    private static string Format(IEnumerable<(int Glyph, int Cluster, int XOffset, int YOffset, int XAdvance, int YAdvance)> glyphs)
     {
         var result = new StringBuilder();
         var x = 0;
         var y = 0;
         foreach (var glyph in glyphs)
         {
-            if (withPositions)
-            {
-                result.Append(CultureInfo.InvariantCulture, $"{glyph.Glyph}={glyph.Cluster}@{x + glyph.XOffset},{y + glyph.YOffset}|");
-            }
-            else
-            {
-                result.Append(CultureInfo.InvariantCulture, $"{glyph.Glyph}={glyph.Cluster}|");
-            }
-
+            result.Append(CultureInfo.InvariantCulture, $"{glyph.Glyph}={glyph.Cluster}@{x + glyph.XOffset},{y + glyph.YOffset}|");
             x += glyph.XAdvance;
             y += glyph.YAdvance;
         }
 
-        return withPositions ? result.Append(CultureInfo.InvariantCulture, $"+{x},{y}").ToString() : result.ToString();
+        return result.Append(CultureInfo.InvariantCulture, $"+{x},{y}").ToString();
     }
 
     /// <summary>Gets the script the reference shaper guesses for a text: the script of its first character that has one.</summary>

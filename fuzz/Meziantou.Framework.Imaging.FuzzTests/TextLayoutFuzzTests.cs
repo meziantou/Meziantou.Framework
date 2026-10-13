@@ -128,6 +128,8 @@ public sealed class TextLayoutFuzzTests
                     WordSpacing = random.Chance(20) ? random.Next(-3, 9) : 0,
                     Features = random.Chance(20) ? [new FontFeature("kern", random.Next(2)), new FontFeature("liga", random.Next(2))] : [],
                     Hyphenator = random.Chance(50) ? hyphenator : null,
+                    Synthesis = random.Chance(25) ? (FontSynthesis)random.Next(4) : FontSynthesis.None,
+                    Language = random.Chance(20) ? random.Pick((string[])["sr", "tr", "zh-Hant", "und", "ar"]) : null,
                 });
             }
 

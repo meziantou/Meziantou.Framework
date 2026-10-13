@@ -21,6 +21,10 @@ public sealed class ShapingCase
     [JsonPropertyName("variations")]
     public string? Variations { get; init; }
 
+    /// <summary>Gets the language the text is shaped in, as a BCP 47 language tag; <see langword="null"/> when the shaper is given none.</summary>
+    [JsonPropertyName("language")]
+    public string? Language { get; init; }
+
     [JsonPropertyName("glyphs")]
     public required IReadOnlyList<IReadOnlyList<int>> Glyphs { get; init; }
 

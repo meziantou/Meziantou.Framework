@@ -28,7 +28,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 internal sealed class JpegXlVarDctDecoder : IDisposable
 {
     /// <summary>The side of a group of a VarDCT frame, in blocks.</summary>
-    private const int GroupBlocks = 32;
+    private const int GroupBlocks = JpegXlCoefficientContexts.GroupBlocks;
 
     /// <summary>The side of the rectangles that share the factors of the chroma from luma prediction, in blocks.</summary>
     private const int ColorTileBlocks = 8;
@@ -37,6 +37,15 @@ internal sealed class JpegXlVarDctDecoder : IDisposable
     private const int MaxBlockContexts = 16;
     private const int MaxLfAndQuantContexts = 64;
     private const int SharpnessCount = 8;
+
+    /// <summary>The unit of the factors of the chroma from luma prediction of a frame that holds a recompressed JPEG file.</summary>
+    private const float JpegColorScale = 1f / 84;
+
+    /// <summary>The number that divides the inverse of the quantization values of a recompressed JPEG file: its samples have 8 bits, and its DCT is scaled by 8.</summary>
+    private const float JpegQuantizationDenominator = 1f / (8 * 255);
+
+    /// <summary>The number of fractional bits of the chroma from luma prediction of the coefficients of a JPEG file.</summary>
+    private const int JpegChromaPrecision = 11;
 
     private const byte BlockEmpty = 0;
     private const byte BlockCovered = 1;
@@ -55,6 +64,7 @@ internal sealed class JpegXlVarDctDecoder : IDisposable
     private readonly bool _is444;
     private readonly bool _usesLfFrame;
     private readonly JpegXlImageBuffer? _lfFrame;
+    private readonly bool _captureJpegCoefficients;
 
     // LfGlobal
     private readonly float[] _lfQuant = [1f / 4096, 1f / 512, 1f / 256];
@@ -103,8 +113,10 @@ internal sealed class JpegXlVarDctDecoder : IDisposable
     /// <param name="lfFrame">The LF frame that holds the LF image of the frame, when the frame does not store it itself.</param>
     /// <param name="scope">The scope of the samples and of the working memory.</param>
     /// <param name="cancellationToken">The token checked between rows and groups.</param>
-    public JpegXlVarDctDecoder(JpegXlImageHeader image, JpegXlFrameHeader frame, JpegXlImageBuffer? lfFrame, AllocationScope scope, CancellationToken cancellationToken)
+    /// <param name="captureJpegCoefficients"><see langword="true"/> to keep the quantized coefficients of a frame that holds a recompressed JPEG file, instead of computing its samples.</param>
+    public JpegXlVarDctDecoder(JpegXlImageHeader image, JpegXlFrameHeader frame, JpegXlImageBuffer? lfFrame, AllocationScope scope, CancellationToken cancellationToken, bool captureJpegCoefficients = false)
     {
+        _captureJpegCoefficients = captureJpegCoefficients;
         ArgumentNullException.ThrowIfNull(image);
         ArgumentNullException.ThrowIfNull(frame);
         ArgumentNullException.ThrowIfNull(scope);
@@ -136,11 +148,30 @@ internal sealed class JpegXlVarDctDecoder : IDisposable
             _verticalShift[c] = maxVertical - verticalFactors[modes[c]];
         }
 
-        _is444 = maxHorizontal == 0 && maxVertical == 0;
+        // The channels of a frame are subsampled relatively to each other: a frame whose channels all have the same sampling
+        // factors has none that is, whatever the factors (a JPEG file may declare the same factors for every component)
+        _is444 = _horizontalShift.All(shift => shift == 0) && _verticalShift.All(shift => shift == 0);
         _blocksWide = (int)(((frame.CodedWidth + (8u << maxHorizontal) - 1) / (8u << maxHorizontal)) << maxHorizontal);
         _blocksHigh = (int)(((frame.CodedHeight + (8u << maxVertical) - 1) / (8u << maxVertical)) << maxVertical);
         _tilesWide = (_blocksWide + ColorTileBlocks - 1) / ColorTileBlocks;
         _tilesHigh = (_blocksHigh + ColorTileBlocks - 1) / ColorTileBlocks;
+    }
+
+    /// <summary>
+    /// Gets the quantized coefficients of a frame that holds a recompressed JPEG file, when they are kept: for each channel
+    /// (Cb, Y, Cr; or red, green, blue), the coefficients of each block in the order of the rows of a JPEG block.
+    /// </summary>
+    public JpegCoefficientStore? JpegCoefficients { get; private set; }
+
+    /// <summary>Gets the quantization table of each channel of a frame that holds a recompressed JPEG file, in the order of the rows of a JPEG block.</summary>
+    public ushort[][] JpegQuantization { get; } = [new ushort[64], new ushort[64], new ushort[64]];
+
+    /// <summary>Gives the quantized coefficients to the caller, which disposes them.</summary>
+    public JpegCoefficientStore DetachJpegCoefficients()
+    {
+        var store = JpegCoefficients ?? throw new InvalidOperationException("The coefficients were not kept.");
+        JpegCoefficients = null;
+        return store;
     }
 
     /// <summary>Decodes a Modular image that is stored in the frame with the given sub-bitstream index, and undoes its transforms.</summary>
@@ -266,6 +297,17 @@ internal sealed class JpegXlVarDctDecoder : IDisposable
 
         reader.EnsureNotOverrun();
         AllocateFrameArrays();
+        if (_captureJpegCoefficients)
+        {
+            // The coefficients of a JPEG file are integers: nothing may be added to them that is not one
+            if (_usesLfFrame || (_is444 && (_baseCorrelationX != 0 || _baseCorrelationB != 0 || _xFactorLf != 0 || _bFactorLf != 0 || _colorScale != JpegColorScale)))
+                throw NotAJpegFrame();
+
+            Span<int> blocksWide = [_blocksWide >> _horizontalShift[0], _blocksWide >> _horizontalShift[1], _blocksWide >> _horizontalShift[2]];
+            Span<int> blocksHigh = [_blocksHigh >> _verticalShift[0], _blocksHigh >> _verticalShift[1], _blocksHigh >> _verticalShift[2]];
+            JpegCoefficients = new JpegCoefficientStore(blocksWide, blocksHigh, _scope);
+        }
+
         if (_usesLfFrame)
         {
             // The LF image is the samples of the LF frame, which has one sample per block
@@ -318,6 +360,25 @@ internal sealed class JpegXlVarDctDecoder : IDisposable
             var channelHeight = height >> _verticalShift[c];
             if (channel.Width != channelWidth || channel.Height != channelHeight)
                 throw JpegXlFormat.Invalid("the LF coefficients do not have the size of their LF group.");
+
+            if (JpegCoefficients is { } store)
+            {
+                // The LF value of a block is its DC coefficient
+                if (extraPrecision != 0)
+                    throw NotAJpegFrame();
+
+                for (var y = 0; y < channelHeight; y++)
+                {
+                    var values = channel.GetRow(y);
+                    for (var x = 0; x < channelWidth; x++)
+                    {
+                        if (values[x] is < short.MinValue or > short.MaxValue)
+                            throw NotAJpegFrame();
+
+                        store.GetBlock(c, (x0 >> _horizontalShift[c]) + x, (y0 >> _verticalShift[c]) + y)[0] = (short)values[x];
+                    }
+                }
+            }
 
             var factor = _lfFactor[c] * scale;
             var stride = _blocksWide >> _horizontalShift[c];
@@ -572,9 +633,30 @@ internal sealed class JpegXlVarDctDecoder : IDisposable
             reader.EnsureNotOverrun();
         }
 
-        for (var c = 0; c < 3; c++)
+        if (_captureJpegCoefficients)
         {
-            _planes[c] = Av1PooledArray<float>.Rent(_scope, (long)GetPlaneWidth(c) * GetPlaneHeight(c), clear: false);
+            // The quantization tables of the file, stored by their values: a table is the transposition of the one of JPEG
+            if (!_matrices.TryGetRawTable(JpegXlVarDctTables.QuantTable[JpegXlVarDctTables.TransformDct8], out var tables, out var denominator) || MathF.Abs(denominator - JpegQuantizationDenominator) > 1e-6f)
+                throw NotAJpegFrame();
+
+            for (var c = 0; c < 3; c++)
+            {
+                for (var k = 0; k < 64; k++)
+                {
+                    var value = tables[c][k];
+                    if (value is <= 0 or > ushort.MaxValue)
+                        throw NotAJpegFrame();
+
+                    JpegQuantization[c][((k & 7) * 8) + (k >> 3)] = (ushort)value;
+                }
+            }
+        }
+        else
+        {
+            for (var c = 0; c < 3; c++)
+            {
+                _planes[c] = Av1PooledArray<float>.Rent(_scope, (long)GetPlaneWidth(c) * GetPlaneHeight(c), clear: false);
+            }
         }
 
         _coefficients = Av1PooledArray<int>.Rent(_scope, 3L * GroupBlocks * GroupBlocks * 64, clear: false);
@@ -636,8 +718,6 @@ internal sealed class JpegXlVarDctDecoder : IDisposable
         var nonZeros = _nonZeros!.Span;
         var orders = _orders!;
         var quantContextCount = _quantThresholds.Length + 1;
-        var frequencyContexts = JpegXlVarDctTables.CoefficientFrequencyContext;
-        var nonZeroContexts = JpegXlVarDctTables.CoefficientNonZeroContext;
         using var decoder = new JpegXlEntropyDecoder(code, _scope);
         decoder.Begin(reader);
 
@@ -675,32 +755,18 @@ internal sealed class JpegXlVarDctDecoder : IDisposable
                         continue;
 
                     // The block context: the channel (Y, X, B), the order, the range of the quantization factor and of the LF
-                    var channelIndex = c < 2 ? c ^ 1 : 2;
-                    var blockContext = _blockContextMap[(((((channelIndex * JpegXlVarDctTables.OrderCount) + order) * quantContextCount) + quantIndex) * _lfContextCount) + lfIndex[position]];
+                    var blockContext = _blockContextMap[JpegXlCoefficientContexts.GetBlockContextIndex(c, order, quantContextCount, quantIndex, _lfContextCount, lfIndex[position])];
 
                     // The number of non-zero coefficients is predicted from the blocks above and on the left, in the group
                     var channelNonZeros = nonZeros.Slice(c * GroupBlocks * GroupBlocks, GroupBlocks * GroupBlocks);
                     var index = (cy * GroupBlocks) + cx;
-                    int predicted;
-                    if (cx == 0)
-                    {
-                        predicted = cy == 0 ? 32 : channelNonZeros[index - GroupBlocks];
-                    }
-                    else if (cy == 0)
-                    {
-                        predicted = channelNonZeros[index - 1];
-                    }
-                    else
-                    {
-                        predicted = (channelNonZeros[index - GroupBlocks] + channelNonZeros[index - 1] + 1) >> 1;
-                    }
-
-                    var nonZeroContext = ((predicted < 8 ? predicted : 4 + (predicted / 2)) * _blockContextCount) + blockContext;
+                    var predicted = JpegXlCoefficientContexts.PredictNonZeros(channelNonZeros, cx, cy);
+                    var nonZeroContext = JpegXlCoefficientContexts.GetNonZeroContext(predicted, _blockContextCount, blockContext);
                     var nonZeroCount = (int)decoder.Read(reader, contextOffset + nonZeroContext);
                     if ((uint)nonZeroCount > (uint)(size - blockCount))
                         throw JpegXlFormat.Invalid("a block has more non-zero coefficients than coefficients.");
 
-                    var stored = (byte)((nonZeroCount + blockCount - 1) >> logBlockCount);
+                    var stored = JpegXlCoefficientContexts.GetStoredNonZeros(nonZeroCount, blockCount, logBlockCount);
                     for (var by = 0; by < blocksHigh; by++)
                     {
                         channelNonZeros.Slice(index + (by * GroupBlocks), blocksWide).Fill(stored);
@@ -711,16 +777,15 @@ internal sealed class JpegXlVarDctDecoder : IDisposable
 
                     var block = coefficients.Slice((c * groupArea) + offsets[(y * GroupBlocks) + x], size);
                     var coefficientOrder = orders.GetOrder(pass, order, c);
-                    var coefficientContext = contextOffset + (JpegXlVarDctTables.NonZeroContextCount * _blockContextCount) + (JpegXlVarDctTables.CoefficientContextCount * blockContext);
-                    var previous = nonZeroCount > size / 16 ? 0 : 1;
+                    var coefficientContext = contextOffset + JpegXlCoefficientContexts.GetCoefficientContextOffset(_blockContextCount, blockContext);
+                    var previous = JpegXlCoefficientContexts.GetInitialPrevious(nonZeroCount, size);
                     for (var k = blockCount; k < size && nonZeroCount != 0; k++)
                     {
                         // The contexts are defined for the counts a block can still hold
                         if (nonZeroCount > size - k)
                             throw JpegXlFormat.Invalid("a block has more non-zero coefficients left than coefficients.");
 
-                        var remaining = (nonZeroCount + blockCount - 1) >> logBlockCount;
-                        var context = coefficientContext + ((nonZeroContexts[remaining] + frequencyContexts[k >> logBlockCount]) * 2) + previous;
+                        var context = coefficientContext + JpegXlCoefficientContexts.GetCoefficientContext(nonZeroCount, k, blockCount, logBlockCount, previous);
                         var value = decoder.Read(reader, context);
                         block[coefficientOrder[k]] += JpegXlBitReader.UnpackSigned(value) << shift;
                         previous = value != 0 ? 1 : 0;
@@ -736,6 +801,82 @@ internal sealed class JpegXlVarDctDecoder : IDisposable
         reader.EnsureNotOverrun();
         decoder.EnsureFinalState();
     }
+
+    /// <summary>
+    /// Keeps the coefficients of the group that was begun, once its passes are read, as the coefficients of the JPEG file
+    /// the frame holds: the transposition of each block, to which the prediction of the chroma from the luma is added with
+    /// integers, as the encoder subtracted it.
+    /// </summary>
+    public void CaptureJpegGroup()
+    {
+        _cancellationToken.ThrowIfCancellationRequested();
+        var store = JpegCoefficients ?? throw new InvalidOperationException("The coefficients are not kept.");
+        var groupArea = _groupWidth * _groupHeight * 64;
+        var blockInfo = _blockInfo!.Span;
+        var offsets = _blockOffsets!.Span;
+        var coefficients = _coefficients!.Span;
+        Span<int> ratios = stackalloc int[64];
+        for (var y = 0; y < _groupHeight; y++)
+        {
+            for (var x = 0; x < _groupWidth; x++)
+            {
+                var blockX = _groupX + x;
+                var blockY = _groupY + y;
+                var position = (blockY * _blocksWide) + blockX;
+                if (blockInfo[position] != BlockFirst + JpegXlVarDctTables.TransformDct8)
+                    throw NotAJpegFrame();
+
+                var offset = offsets[(y * GroupBlocks) + x];
+                var luma = coefficients.Slice(groupArea + offset, 64);
+                for (var c = 0; c < 3; c++)
+                {
+                    var hs = _horizontalShift[c];
+                    var vs = _verticalShift[c];
+                    if (((blockX >> hs) << hs) != blockX || ((blockY >> vs) << vs) != blockY)
+                        continue;
+
+                    var source = coefficients.Slice((c * groupArea) + offset, 64);
+                    var target = store.GetBlock(c, blockX >> hs, blockY >> vs);
+                    var factor = 0;
+                    if (_is444 && c != 1)
+                    {
+                        var tile = ((blockY / ColorTileBlocks) * _tilesWide) + (blockX / ColorTileBlocks);
+                        factor = c == 0 ? _xFromY!.Span[tile] : _bFromY!.Span[tile];
+                    }
+
+                    if (factor != 0)
+                    {
+                        // In fixed point, with 11 fractional bits: the factor, in units of 1/84, times the ratio of the
+                        // quantization steps of the two channels
+                        var scaledFactor = factor * (1 << JpegChromaPrecision) / 84;
+                        for (var k = 1; k < 64; k++)
+                        {
+                            var transposed = ((k & 7) * 8) + (k >> 3);
+                            var ratio = (1 << JpegChromaPrecision) * JpegQuantization[1][transposed] / JpegQuantization[c][transposed];
+                            ratios[k] = ((ratio * scaledFactor) + (1 << (JpegChromaPrecision - 1))) >> JpegChromaPrecision;
+                        }
+                    }
+
+                    for (var k = 1; k < 64; k++)
+                    {
+                        var value = source[k];
+                        if (factor != 0)
+                        {
+                            value += ((luma[k] * ratios[k]) + (1 << (JpegChromaPrecision - 1))) >> JpegChromaPrecision;
+                        }
+
+                        if (value is < short.MinValue or > short.MaxValue)
+                            throw NotAJpegFrame();
+
+                        target[((k & 7) * 8) + (k >> 3)] = (short)value;
+                    }
+                }
+            }
+        }
+    }
+
+    private static InvalidImageContentException NotAJpegFrame()
+        => JpegXlFormat.Invalid("the frame that the JPEG reconstruction data describe does not hold the coefficients of a JPEG file.");
 
     /// <summary>Computes the samples of the group that was begun, from the coefficients of its passes.</summary>
     public void FinishGroup()
@@ -1010,6 +1151,8 @@ internal sealed class JpegXlVarDctDecoder : IDisposable
         _blockOffsets?.Dispose();
         _nonZeros?.Dispose();
         _work?.Dispose();
+        JpegCoefficients?.Dispose();
+        JpegCoefficients = null;
         _lfIndex = null;
         _blockInfo = null;
         _sharpness = null;
@@ -1029,7 +1172,7 @@ internal sealed class JpegXlVarDctDecoder : IDisposable
     /// is brought towards zero by the bias of its channel, and a larger one by a bias inversely proportional to it.
     /// </summary>
     [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
-    private static float AdjustBias(int quantized, float bias, float biasNumerator)
+    internal static float AdjustBias(int quantized, float bias, float biasNumerator)
     {
         if (quantized == 0)
             return 0;

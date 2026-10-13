@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text.Json;
+using Meziantou.Framework.Imaging.CorpusGenerator.Infrastructure;
 using Meziantou.Framework.Imaging.TestHarness.Fixtures;
 using Meziantou.Framework.Imaging.TestHarness.Pixels;
 
@@ -18,6 +19,23 @@ public sealed class CorpusManifestTests
         var manifest = FixtureManifestLoader.Load(root / FixtureRoot.ManifestFileName);
         var errors = FixtureManifestValidator.Validate(manifest, root);
         Assert.Empty(errors);
+    }
+
+    [Fact]
+    public void EveryFileIsKeptByTheGeneratorsOfTheOtherSections()
+    {
+        // A generator replaces its own entries and files, and copies the files the other sections reference from the
+        // lists of the corpus generator: its write pass removes every committed file that is in none of them
+        var root = FixtureRoot.GetDirectory();
+        using var document = JsonDocument.Parse(File.ReadAllText(root / FixtureRoot.ManifestFileName));
+        var manifest = (Obj)ToGeneratorValue(document.RootElement)!;
+        var kept = CorpusDriver.ReferencedFiles(manifest, root);
+        var files = CorpusDriver.CorpusFiles(root);
+        files.Remove(FixtureRoot.ManifestFileName);
+        Assert.NotEmpty(files);
+
+        var removed = files.Except(kept, StringComparer.Ordinal).ToList();
+        Assert.Empty(removed, $"The lists of CorpusDriver.Files.cs do not name {removed.Count} files of the corpus, which the write pass of a generator would delete:\n  " + string.Join("\n  ", removed.Take(20)));
     }
 
     [Fact]
@@ -1491,6 +1509,28 @@ public sealed class CorpusManifestTests
     private static FixtureManifest LoadManifest() => FixtureManifestLoader.Load(FixtureRoot.GetDirectory() / FixtureRoot.ManifestFileName);
 
     private static JsonDocument LoadSchema() => JsonDocument.Parse(File.ReadAllText(FixtureRoot.GetDirectory() / FixtureRoot.SchemaFileName));
+
+    /// <summary>The manifest as the corpus generator reads it: objects, lists and texts (the other values are not paths).</summary>
+    private static object? ToGeneratorValue(JsonElement element)
+    {
+        switch (element.ValueKind)
+        {
+            case JsonValueKind.Object:
+                var obj = new Obj();
+                foreach (var property in element.EnumerateObject())
+                {
+                    obj[property.Name] = ToGeneratorValue(property.Value);
+                }
+
+                return obj;
+            case JsonValueKind.Array:
+                return element.EnumerateArray().Select(ToGeneratorValue).ToList();
+            case JsonValueKind.String:
+                return element.GetString();
+            default:
+                return null;
+        }
+    }
 
     private static IEnumerable<string> Enum(JsonElement defs, string definition, string property)
         => defs.GetProperty(definition).GetProperty("properties").GetProperty(property).GetProperty("enum").EnumerateArray().Select(item => item.GetString()!);

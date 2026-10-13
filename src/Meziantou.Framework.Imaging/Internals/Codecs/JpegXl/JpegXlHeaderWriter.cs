@@ -3,9 +3,8 @@ using Meziantou.Framework.Imaging.Metadata;
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
-/// Writes the headers of a codestream produced by the lossless encoder (ISO/IEC 18181-1, annexes A and C): the image
-/// header of an image that is not stored in XYB, and the header and the table of contents of a Modular frame that replaces
-/// the whole image.
+/// Writes the headers of a codestream produced by the encoder (ISO/IEC 18181-1, annexes A and C): the image header, and
+/// the header and the table of contents of a frame that replaces the whole image.
 /// </summary>
 internal static class JpegXlHeaderWriter
 {
@@ -24,7 +23,8 @@ internal static class JpegXlHeaderWriter
     /// <param name="orientation">The orientation.</param>
     /// <param name="animation">The animation parameters, or <see langword="null"/> for a still image.</param>
     /// <param name="color">How the colors are described.</param>
-    public static void WriteImageHeader(LsbBitWriter writer, Size size, bool isGray, int bitsPerSample, bool hasAlpha, ExifOrientation orientation, AnimationMetadata? animation, JpegXlEncoderColor color)
+    /// <param name="isXybEncoded">Whether the samples are stored in the XYB color space (lossy frames); the color encoding then describes the samples a decoder returns.</param>
+    public static void WriteImageHeader(LsbBitWriter writer, Size size, bool isGray, int bitsPerSample, bool hasAlpha, ExifOrientation orientation, AnimationMetadata? animation, JpegXlEncoderColor color, bool isXybEncoded = false)
     {
         writer.WriteBits(0x0AFF, 16);
         WriteSize(writer, size);
@@ -72,8 +72,7 @@ internal static class JpegXlHeaderWriter
             }
         }
 
-        // The samples are not stored in XYB
-        writer.WriteBool(false);
+        writer.WriteBool(isXybEncoded);
         WriteColorEncoding(writer, isGray, color);
         if (extraFields)
         {
@@ -86,30 +85,72 @@ internal static class JpegXlHeaderWriter
         writer.WriteBool(true);
     }
 
-    /// <summary>Writes the header of a regular Modular frame that covers the image and replaces it, without restoration filter.</summary>
+    /// <summary>Writes the header of a regular frame that covers the image and replaces it.</summary>
     /// <param name="writer">The writer, at a byte boundary.</param>
+    /// <param name="settings">How the frame is coded.</param>
+    /// <param name="isXybEncoded">Whether the image is stored in XYB.</param>
     /// <param name="hasAlpha">Whether the image has an alpha channel.</param>
     /// <param name="duration">The duration in ticks, for an animation; otherwise <see langword="null"/>.</param>
     /// <param name="isLast">Whether the frame is the last one of the codestream.</param>
-    public static void WriteFrameHeader(LsbBitWriter writer, bool hasAlpha, uint? duration, bool isLast)
+    public static void WriteFrameHeader(LsbBitWriter writer, JpegXlFrameSettings settings, bool isXybEncoded, bool hasAlpha, uint? duration, bool isLast)
     {
+        ArgumentNullException.ThrowIfNull(settings);
         writer.WriteBool(false);
         writer.WriteBits(JpegXlFrameHeader.TypeRegular, 2);
-        writer.WriteBool(true);
-        writer.WriteU64(0);
+        writer.WriteBool(settings.IsModular);
+        writer.WriteU64(settings.Flags);
+        if (!isXybEncoded)
+        {
+            writer.WriteBool(settings.IsYCbCr);
+        }
 
-        // Not YCbCr; no upsampling of the color channels nor of the alpha channel
-        writer.WriteBool(false);
+        if (settings.IsYCbCr)
+        {
+            writer.WriteBits((uint)settings.ChromaSubsampling.First, 2);
+            writer.WriteBits((uint)settings.ChromaSubsampling.Second, 2);
+            writer.WriteBits((uint)settings.ChromaSubsampling.Third, 2);
+        }
+
+        // No upsampling of the color channels nor of the alpha channel
         writer.WriteBits(0, 2);
         if (hasAlpha)
         {
             writer.WriteBits(0, 2);
         }
 
-        writer.WriteBits(GroupSizeShift, 2);
+        if (settings.IsModular)
+        {
+            writer.WriteBits(GroupSizeShift, 2);
+        }
+        else if (isXybEncoded)
+        {
+            writer.WriteBits((uint)settings.XqmScale, 3);
+            writer.WriteBits((uint)settings.BqmScale, 3);
+        }
 
-        // One pass, no custom size or origin, every channel replaces the image
-        writer.WriteU32(1, 1, 0, 2, 0, 3, 0, 4, 3);
+        // The passes: their number, the downsampling factors that some of them complete, the shift of each pass but the last
+        var passCount = settings.PassShifts.Length;
+        writer.WriteU32((uint)passCount, 1, 0, 2, 0, 3, 0, 4, 3);
+        if (passCount != 1)
+        {
+            writer.WriteU32((uint)settings.PassDownsampleShifts.Length, 0, 0, 1, 0, 2, 0, 3, 1);
+            for (var i = 0; i < passCount - 1; i++)
+            {
+                writer.WriteBits((uint)settings.PassShifts[i], 2);
+            }
+
+            foreach (var shift in settings.PassDownsampleShifts)
+            {
+                writer.WriteBits((uint)shift, 2);
+            }
+
+            foreach (var pass in settings.PassDownsampleLastPasses)
+            {
+                writer.WriteU32((uint)pass, 0, 0, 1, 0, 2, 0, 0, 3);
+            }
+        }
+
+        // No custom size or origin, every channel replaces the image
         writer.WriteBool(false);
         writer.WriteU32(JpegXlBlendingInfo.ModeReplace, 0, 0, 1, 0, 2, 0, 3, 2);
         if (hasAlpha)
@@ -133,11 +174,31 @@ internal static class JpegXlHeaderWriter
             }
         }
 
-        // No name; no Gabor-like filter, no edge-preserving filter, no extension
+        // No name; the restoration filters with their default parameters, no extension
         writer.WriteU32(0, 0, 0, 0, 4, 16, 5, 48, 10);
         writer.WriteBool(false);
-        writer.WriteBool(false);
-        writer.WriteBits(0, 2);
+        writer.WriteBool(settings.IsGaborEnabled);
+        if (settings.IsGaborEnabled)
+        {
+            writer.WriteBool(false);
+        }
+
+        writer.WriteBits((uint)settings.EpfIterations, 2);
+        if (settings.EpfIterations > 0)
+        {
+            if (!settings.IsModular)
+            {
+                writer.WriteBool(false);
+            }
+
+            writer.WriteBool(false);
+            writer.WriteBool(false);
+            if (settings.IsModular)
+            {
+                writer.WriteF16(1);
+            }
+        }
+
         writer.WriteU64(0);
         writer.WriteU64(0);
     }

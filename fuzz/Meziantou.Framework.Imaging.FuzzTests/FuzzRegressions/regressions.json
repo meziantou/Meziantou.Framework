@@ -66,6 +66,17 @@
       "defect": "The sequence parameter set of the hvcC record describes 4:2:0 samples with the identity matrix, which is invalid, and the item data carry the parameter set of the picture: header identification threw InvalidImageContentException while the loads decoded the picture with the color description of the other parameter set. Fixed in HeicDecoder: the picture that is decoded must have the sample format and the color description of the parameter set that the identification reads.",
       "expectedIdentify": "InvalidImageContentException",
       "expectedLoad": "InvalidImageContentException"
+    },
+    {
+      "id": "jxl/reconstruct-animation-layer-min",
+      "file": "jxl-reconstruct-animation-layer.min.jxl",
+      "sha256": "9a9ff1fe3d79777bf04d28bd17b54233848880cbde4acde09b07852bcf7691d9",
+      "origin": "fuzz-minimized",
+      "license": "CC0-1.0",
+      "foundBy": "FuzzTests group jxl-animated, base seed 5576998306593010799 (default), 1500 iterations, with the transcoding property added to FuzzOracle; minimized by FuzzMinimizer to 27 bytes",
+      "defect": "An animation whose first frame is a layer (no duration), without JPEG reconstruction data: JpegXlTranscoder.TryReconstructJpeg stops at the first frame, before any frame is counted, and JpegXlStructureParser built an ImageInfo with a frame count of 0, which threw ArgumentOutOfRangeException instead of returning false. Fixed in JpegXlStructureParser.CreateInfo (the count is unknown).",
+      "expectedIdentify": "InvalidImageContentException",
+      "expectedLoad": "InvalidImageContentException"
     }
   ]
 }

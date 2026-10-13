@@ -14,7 +14,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </description></item>
 /// <item><description>
 /// <b>Items.</b> The paragraph is cut where the level, the script, the font or what a style changes for shaping
-/// changes. The font of a character and its marks is the first font of the stack of its style that has them. A change
+/// (its size, its features, its language, its spacing) changes. The font of a character and its marks is the first font of the stack of its style that has them. A change
 /// of paint or of decoration does not cut an item: letters of two colors still join and kern.
 /// </description></item>
 /// <item><description><b>Shaping.</b> Each item is shaped (<see cref="TextShaper"/>); spacing is added.</description></item>
@@ -92,7 +92,7 @@ internal sealed class TextLayoutEngine
             TextWordBreak.KeepAll => UnicodeWordBreakBehavior.KeepAll,
             _ => UnicodeWordBreakBehavior.Normal,
         };
-        foreach (var lineBreak in Unicode.EnumerateLineBreaks(_text, strictness, wordBreak))
+        foreach (var lineBreak in Unicode.EnumerateLineBreaks(_text, _options.LineBreakDictionary, strictness, wordBreak))
         {
             if (!lineBreak.IsMandatory)
             {
@@ -253,6 +253,8 @@ internal sealed class TextLayoutEngine
                 && first.Size == second.Size
                 && first.LetterSpacing == second.LetterSpacing
                 && first.WordSpacing == second.WordSpacing
+                && first.Synthesis == second.Synthesis
+                && first.LanguageTags.AsSpan().SequenceEqual(second.LanguageTags)
                 && first.Features.SequenceEqual(second.Features));
     }
 
@@ -261,42 +263,104 @@ internal sealed class TextLayoutEngine
     /// for each of them, alone or composed with the one before; else the first font that has the first character; else
     /// the primary font, whose missing glyph is drawn.
     /// </summary>
+    /// <remarks>
+    /// An emoji is first looked for in the fonts of the kind it is presented with (<see cref="GetPresentation"/>): the
+    /// fonts that have color glyphs for the emoji presentation, the other ones for the text presentation. The stack is
+    /// then searched in its order, as for any character.
+    /// </remarks>
     private static int SelectFont(FontStack stack, ReadOnlySpan<char> cluster)
     {
         var fonts = stack.FontSpan;
         if (fonts.Length == 1)
             return 0;
 
+        var presentation = GetPresentation(cluster);
+        if (presentation != EmojiPresentation.None)
+        {
+            for (var i = 0; i < fonts.Length; i++)
+            {
+                if (fonts[i].HasColorGlyphs == (presentation == EmojiPresentation.Emoji) && HasCluster(fonts[i].Face, cluster, out _))
+                    return i;
+            }
+        }
+
         var withFirst = -1;
         for (var i = 0; i < fonts.Length; i++)
         {
-            var face = fonts[i].Face;
-            var hasAll = true;
-            var previous = -1;
-            var isFirst = true;
-            foreach (var rune in cluster.EnumerateRunes())
-            {
-                var codePoint = rune.Value;
-                if (IsControl(codePoint) || UnicodeProperties.IsDefaultIgnorable(codePoint))
-                    continue;
-
-                var hasGlyph = face.MapCodePoint(codePoint) != 0
-                    || (previous >= 0 && UnicodeNormalization.TryComposeCanonical(previous, codePoint, out var composite) && face.MapCodePoint(composite) != 0);
-                if (isFirst && hasGlyph && withFirst < 0)
-                {
-                    withFirst = i;
-                }
-
-                hasAll &= hasGlyph;
-                previous = codePoint;
-                isFirst = false;
-            }
-
-            if (hasAll)
+            if (HasCluster(fonts[i].Face, cluster, out var hasFirst))
                 return i;
+
+            if (hasFirst && withFirst < 0)
+            {
+                withFirst = i;
+            }
         }
 
         return Math.Max(withFirst, 0);
+    }
+
+    /// <summary>Determines whether a font has a glyph for each character of a cluster, alone or composed with the one before.</summary>
+    /// <param name="face">The font.</param>
+    /// <param name="cluster">The cluster.</param>
+    /// <param name="hasFirst">Whether the font has the first character of the cluster that needs a glyph.</param>
+    private static bool HasCluster(FontFace face, ReadOnlySpan<char> cluster, out bool hasFirst)
+    {
+        hasFirst = false;
+        var hasAll = true;
+        var previous = -1;
+        var isFirst = true;
+        foreach (var rune in cluster.EnumerateRunes())
+        {
+            var codePoint = rune.Value;
+            if (IsControl(codePoint) || UnicodeProperties.IsDefaultIgnorable(codePoint))
+                continue;
+
+            var hasGlyph = face.MapCodePoint(codePoint) != 0
+                || (previous >= 0 && UnicodeNormalization.TryComposeCanonical(previous, codePoint, out var composite) && face.MapCodePoint(composite) != 0);
+            hasFirst |= isFirst && hasGlyph;
+            hasAll &= hasGlyph;
+            previous = codePoint;
+            isFirst = false;
+        }
+
+        return hasAll;
+    }
+
+    /// <summary>Determines how the emoji a cluster starts with is presented: with colors or as text.</summary>
+    /// <remarks>
+    /// <para>
+    /// Unicode Technical Standard #51, "Presentation style": an emoji character is drawn as an emoji, with colors, or
+    /// as text, like a letter. A variation selector after it says which (U+FE0F for the emoji presentation, U+FE0E
+    /// for the text presentation); without one, the character has a default presentation (its Emoji_Presentation
+    /// property), and the sequences that are emoji (a character with a skin tone modifier, characters joined by a zero
+    /// width joiner) are drawn as emoji.
+    /// </para>
+    /// <para>
+    /// A character whose default presentation is text and that no selector follows has no preference here: the copyright
+    /// sign and the digits are emoji characters, and are drawn with the font of the text around them.
+    /// </para>
+    /// </remarks>
+    private static EmojiPresentation GetPresentation(ReadOnlySpan<char> cluster)
+    {
+        const int TextSelector = 0xFE0E;
+        const int EmojiSelector = 0xFE0F;
+        const int ZeroWidthJoiner = 0x200D;
+        if (Rune.DecodeFromUtf16(cluster, out var first, out var consumed) != System.Buffers.OperationStatus.Done || !UnicodeEmoji.IsEmoji(first))
+            return EmojiPresentation.None;
+
+        var isFirst = true;
+        var isSequence = false;
+        foreach (var rune in cluster[consumed..].EnumerateRunes())
+        {
+            // The selector of the first character decides; the other characters of a sequence have their own.
+            if (isFirst && rune.Value == TextSelector)
+                return EmojiPresentation.Text;
+
+            isSequence |= rune.Value is EmojiSelector or ZeroWidthJoiner || UnicodeEmoji.IsEmojiModifier(rune);
+            isFirst = false;
+        }
+
+        return isSequence || UnicodeEmoji.HasEmojiPresentation(first) ? EmojiPresentation.Emoji : EmojiPresentation.None;
     }
 
     /// <summary>Shapes an item and records the advance of each of its characters.</summary>
@@ -344,7 +408,7 @@ internal sealed class TextLayoutEngine
             features[i] = new ShapingFeature(style.Features[i].TagValue, style.Features[i].Value);
         }
 
-        TextShaper.Shape(_buffer, item.Font.Face, item.Script, language: 0, isRightToLeft, features);
+        TextShaper.Shape(_buffer, item.Font.Face, item.Script, style.LanguageTags, isRightToLeft, features);
         var scale = style.Size / item.Font.UnitsPerEm;
         var info = _buffer.Info;
         var positions = _buffer.Positions;
@@ -363,6 +427,11 @@ internal sealed class TextLayoutEngine
 
         item.GlyphCount = info.Length;
         var glyphs = System.Runtime.InteropServices.CollectionsMarshal.AsSpan(paragraph.Glyphs).Slice(item.GlyphStart, item.GlyphCount);
+        if ((style.Synthesis & FontSynthesis.Bold) != FontSynthesis.None)
+        {
+            Embolden(glyphs, style.Size * GlyphRun.BoldWidth, isRightToLeft);
+        }
+
         if (style.LetterSpacing != 0 || style.WordSpacing != 0)
         {
             AddSpacing(glyphs, style, isRightToLeft);
@@ -375,6 +444,28 @@ internal sealed class TextLayoutEngine
         foreach (ref readonly var glyph in glyphs)
         {
             paragraph.Advances[Math.Clamp(glyph.Cluster, item.Start, item.End - 1) - paragraph.Start] += glyph.Advance;
+        }
+    }
+
+    /// <summary>
+    /// Makes room for the glyphs a synthetic bold thickens: a glyph that takes room takes the width of the bold more,
+    /// and is drawn in the middle of it. A glyph that takes no room is a mark of the glyph it is drawn on, which is the
+    /// one before it in the text: it moves with that glyph, whose advance it follows in a left-to-right run and
+    /// precedes in a right-to-left run, where the glyphs are in display order.
+    /// </summary>
+    private static void Embolden(Span<ShapedGlyph> glyphs, double width, bool isRightToLeft)
+    {
+        foreach (ref var glyph in glyphs)
+        {
+            if (glyph.Advance != 0)
+            {
+                glyph.Advance += width;
+                glyph.XOffset += width / 2;
+            }
+            else
+            {
+                glyph.XOffset += isRightToLeft ? width / 2 : -(width / 2);
+            }
         }
     }
 
@@ -512,11 +603,14 @@ internal sealed class TextLayoutEngine
         var width = 0.0;
         foreach (var rune in GetHyphen(item).EnumerateRunes())
         {
-            width += face.GetAdvanceWidth(face.MapCodePoint(rune.Value)) * scale;
+            width += (face.GetAdvanceWidth(face.MapCodePoint(rune.Value)) * scale) + GetEmboldenWidth(item.Style);
         }
 
         return width;
     }
+
+    /// <summary>Gets what a synthetic bold adds to the advance of a glyph of a style.</summary>
+    private static double GetEmboldenWidth(TextStyle style) => (style.Synthesis & FontSynthesis.Bold) != FontSynthesis.None ? style.Size * GlyphRun.BoldWidth : 0;
 
     private string GetHyphen(Item item) => _options.HyphenCharacter ?? (item.Font.Face.MapCodePoint(0x2010) != 0 ? "\u2010" : "-");
 
@@ -675,13 +769,14 @@ internal sealed class TextLayoutEngine
     private static double MeasureText(Item item, string text)
     {
         var face = item.Font.Face;
+        var scale = item.Style.Size / item.Font.UnitsPerEm;
         var width = 0.0;
         foreach (var rune in text.EnumerateRunes())
         {
-            width += face.GetAdvanceWidth(face.MapCodePoint(rune.Value));
+            width += (face.GetAdvanceWidth(face.MapCodePoint(rune.Value)) * scale) + GetEmboldenWidth(item.Style);
         }
 
-        return width * (item.Style.Size / item.Font.UnitsPerEm);
+        return width;
     }
 
     /// <summary>Builds the line of a range of a paragraph: its glyphs in display order, from the start of its text.</summary>
@@ -1084,14 +1179,17 @@ internal sealed class TextLayoutEngine
                 if (glyph.Glyph >= 0 && !glyph.IsInvisible)
                 {
                     var brush = GetBrushIndex(brushes, style.Brush);
-                    if (runs.Count == 0 || runs[^1].Font != glyph.Font || runs[^1].Size != glyph.Size || runs[^1].Brush != brush || runs[^1].Palette != style.ColorPaletteIndex)
+                    if (runs.Count == 0 || runs[^1].Font != glyph.Font || runs[^1].Size != glyph.Size || runs[^1].Brush != brush || runs[^1].Palette != style.ColorPaletteIndex || runs[^1].Synthesis != style.Synthesis)
                     {
-                        runs.Add(new GlyphRun(glyph.Font, glyph.Size, brush, glyphs.Count, 0, style.ColorPaletteIndex));
+                        runs.Add(new GlyphRun(glyph.Font, glyph.Size, brush, glyphs.Count, 0, style.ColorPaletteIndex, style.Synthesis));
                     }
 
                     runs[^1] = runs[^1] with { Count = runs[^1].Count + 1 };
                     glyphs.Add(glyph.Glyph);
-                    positions.Add(x + glyph.PenX + glyph.XOffset);
+
+                    // A slanted glyph that is drawn above or below the baseline, such as a mark on its letter, moves
+                    // with the slant of the line.
+                    positions.Add(x + glyph.PenX + glyph.XOffset + (runs[^1].Shear * glyph.YOffset));
                     positions.Add(baseline - glyph.YOffset);
                     anchors.Add(anchor);
                 }
@@ -1167,6 +1265,18 @@ internal sealed class TextLayoutEngine
 
         brushes.Add(brush);
         return brushes.Count - 1;
+    }
+
+    private enum EmojiPresentation
+    {
+        /// <summary>The cluster is no emoji, or an emoji character that is text by default and that nothing makes an emoji.</summary>
+        None,
+
+        /// <summary>The emoji is drawn as text: a text presentation selector follows it.</summary>
+        Text,
+
+        /// <summary>The emoji is drawn as an emoji: by default, by its selector, or because it is an emoji sequence.</summary>
+        Emoji,
     }
 
     private enum LineEnd

@@ -54,6 +54,30 @@ internal sealed class SequentialFrameSink : DecodedFrameSink
     public override Image Build(ImageMetadata metadata, AnimationMetadata? animation)
         => throw new InvalidOperationException("A sequential reader returns its frames one by one; there is no image to build.");
 
+    public override bool WantsRefinement => _session.Request == SequentialRequest.FrameRefinement;
+
+    public override void BeginRefinement(FrameDuration duration)
+    {
+        Context.CancellationToken.ThrowIfCancellationRequested();
+        OpenImage(isPoster: false, duration, hotspot: null);
+    }
+
+    public override void EndRefinement(int downsampling, int passCount)
+    {
+        if (!_imageOpen)
+            throw new InvalidOperationException("No rendering was started.");
+
+        // The rendering is in the image of the caller, which the frame, or the next rendering, is written to again
+        Bind();
+        var image = _destination ?? throw new InvalidOperationException("An intermediate rendering is only written to the image of the caller.");
+        _destination = null;
+        _target = null;
+        _imageOpen = false;
+        _bound = false;
+        image.CopyImageStateFrom(_metadata.Clone(), animation: null);
+        _session.OnRefinement(downsampling, passCount);
+    }
+
     private protected override void OnBeginFrame(FrameDuration duration, Point? hotspot) => OpenImage(isPoster: false, duration, hotspot);
 
     private protected override void OnBeginPoster() => OpenImage(isPoster: true, FrameDuration.Zero, hotspot: null);
@@ -140,13 +164,13 @@ internal sealed class SequentialFrameSink : DecodedFrameSink
             case SequentialRequest.Poster when !_isPoster:
                 throw new InvalidOperationException("The header announced a separate poster frame, but the decoder produced a displayed frame first.");
 
-            case SequentialRequest.Frame when !_isPoster && _session.Destination is { } destination:
+            case SequentialRequest.Frame or SequentialRequest.FrameRefinement when !_isPoster && _session.Destination is { } destination:
                 _destination = destination;
                 _target = Image.GetFrameForDecoder(destination, 0);
                 break;
 
             default:
-                _discard = _isPoster && _session.Request == SequentialRequest.Frame;
+                _discard = _isPoster && _session.Request is SequentialRequest.Frame or SequentialRequest.FrameRefinement;
                 _ownedImage = Image.CreateForDecoder(DestinationPixelFormat, Context.Configuration, Canvas, Context.Scope);
                 _target = Image.GetFrameForDecoder(_ownedImage, 0);
                 break;

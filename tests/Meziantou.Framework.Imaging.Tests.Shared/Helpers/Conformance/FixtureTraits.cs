@@ -1,4 +1,4 @@
-using Meziantou.Framework.Imaging.TestHarness.Avif;
+using Meziantou.Framework.Imaging.TestHarness.Heif;
 using Meziantou.Framework.Imaging.TestHarness.Golden;
 
 namespace Meziantou.Framework.Imaging.Tests.Conformance;
@@ -25,19 +25,19 @@ internal static class FixtureTraits
 
     /// <summary>
     /// Gets a value indicating whether the input has bytes after the image data that the decoder never reads: the boxes of
-    /// an AVIF file that follow the last byte of the items of the image (the walk ends there). The decoder then consumes
+    /// an AVIF or HEIC file that follow the last byte of the items of the image (the walk ends there). The decoder then consumes
     /// fewer bytes than the file holds, so the encoded-byte requirement is smaller than the file length and no I/O failure
     /// in the trailing bytes can be observed.
     /// </summary>
     public static bool HasUnreadTrailingBytes(GoldenFixture fixture)
     {
         ArgumentNullException.ThrowIfNull(fixture);
-        return fixture.Entry.HasFeature("avif.trailingData");
+        return fixture.Entry.HasFeature("avif.trailingData") || fixture.Entry.HasFeature("heic.trailingData");
     }
 
     /// <summary>
     /// Gets a value indicating whether a proper prefix of the input can itself be a complete, valid image of the same
-    /// format, so that truncation is not detectable: a TGA or AVIF file whose trailing bytes are cut is a valid file, and a
+    /// format, so that truncation is not detectable: a TGA, AVIF or HEIC file whose trailing bytes are cut is a valid file, and a
     /// plain (ASCII) Netpbm raster cut inside its last sample is a complete raster with a smaller last sample.
     /// </summary>
     /// <summary>
@@ -53,29 +53,29 @@ internal static class FixtureTraits
     public static bool ProperPrefixMayBeValid(GoldenFixture fixture) => IsDelimitedByEndOfInput(fixture) || HasUnreadTrailingBytes(fixture) || HasBoxesAfterTheCodestream(fixture);
 
     /// <summary>
-    /// Gets a value indicating whether a header identification needs the whole input: an AVIF file whose last box is the
-    /// one that describes the image (the <c>meta</c> box, or the <c>moov</c> box of an image sequence), because its media
+    /// Gets a value indicating whether a header identification needs the whole input: an AVIF or HEIC file whose last box is
+    /// the one that describes the image (the <c>meta</c> box, or the <c>moov</c> box of an image sequence), because its media
     /// data come first or are stored inside that box. The structure is read from the bytes by the independent reader.
     /// </summary>
     public static bool HeaderIdentificationReadsWholeInput(GoldenFixture fixture)
     {
         ArgumentNullException.ThrowIfNull(fixture);
-        if (fixture.Entry.Format != "avif")
+        if (!IsHeif(fixture))
             return false;
 
-        var file = ReferenceAvif.Parse(fixture.ReadInput());
+        var file = ReferenceHeif.Parse(fixture.ReadInput());
         return file.TopLevelBoxes[^1].Type == (file.IsSequence ? "moov" : "meta");
     }
 
     /// <summary>
-    /// Gets a value indicating whether the metadata of the input follow its images: an AVIF image sequence whose Exif and XMP
-    /// item data follow the samples. A sequential reader gives them with the images that follow their data, at the latest
+    /// Gets a value indicating whether the metadata of the input follow its images: an AVIF or HEIC image sequence whose Exif
+    /// and XMP item data follow the samples. A sequential reader gives them with the images that follow their data, at the latest
     /// with the last one (a documented rule), so they are compared on the last image it returns instead of the first one.
     /// </summary>
     public static bool MetadataFollowsTheImages(GoldenFixture fixture)
     {
         ArgumentNullException.ThrowIfNull(fixture);
-        return fixture.Entry.HasFeature("avif.seq.metadataAfterSamples") || fixture.Entry.HasFeature("jxl.metadataAfterCodestream");
+        return fixture.Entry.HasFeature("avif.seq.metadataAfterSamples") || fixture.Entry.HasFeature("heic.seq.metadataAfterSamples") || fixture.Entry.HasFeature("jxl.metadataAfterCodestream");
     }
 
     /// <summary>
@@ -110,26 +110,28 @@ internal static class FixtureTraits
     }
 
     /// <summary>
-    /// Gets a value indicating whether a header identification cannot tell the color model of the input: an AVIF file
-    /// without <c>colr</c> box of type <c>nclx</c> whose bitstream, which holds the color description, precedes the box that
-    /// describes the image (the <c>meta</c> box, or the <c>moov</c> box of an image sequence). The bitstream has gone by
-    /// when the walk learns that it needs it: the color model is <c>Unknown</c> and there is no color description, never a
-    /// guess (a documented rule). A monochrome image is known from its configuration record. The structure is read from the
-    /// bytes by the independent reader.
+    /// Gets a value indicating whether a header identification cannot tell the color model of the input: an AVIF or HEIC
+    /// file without <c>colr</c> box of type <c>nclx</c> whose bitstream, which holds the color description, precedes the box
+    /// that describes the image (the <c>meta</c> box, or the <c>moov</c> box of an image sequence). The bitstream has gone
+    /// by when the walk learns that it needs it: the color model is <c>Unknown</c> and there is no color description, never
+    /// a guess (a documented rule). A monochrome image is known from its configuration record. The color description of an
+    /// HEVC bitstream is in its sequence parameter set, which the configuration record of an HEIC file holds unless its
+    /// parameter sets are in the coded data only: the bitstream is then never needed. The structure is read from the bytes
+    /// by the independent reader.
     /// </summary>
     public static bool HeaderCannotTellTheColorModel(GoldenFixture fixture)
     {
         ArgumentNullException.ThrowIfNull(fixture);
-        if (fixture.Entry.Format != "avif" || fixture.Expected.ColorModel is "Grayscale" or "GrayscaleAlpha")
+        if (!IsHeif(fixture) || fixture.Expected.ColorModel is "Grayscale" or "GrayscaleAlpha")
             return false;
 
-        var file = ReferenceAvif.Parse(fixture.ReadInput());
+        var file = ReferenceHeif.Parse(fixture.ReadInput());
         long index;
         long payload;
         if (file.IsSequence)
         {
             var track = file.ColorTrack!;
-            if (track.Nclx is not null)
+            if (track.Nclx is not null || HasSequenceParameterSet(track.HevcConfiguration))
                 return false;
 
             index = file.TopLevelBoxes.First(box => box.Type == "moov").Offset;
@@ -142,7 +144,7 @@ internal static class FixtureTraits
                 return false;
 
             var coded = primary.Type == "grid" ? file.GetGridTiles(primary)[0] : primary;
-            if (coded.ConstructionMethod != 0)
+            if (coded.ConstructionMethod != 0 || HasSequenceParameterSet(coded.HevcConfiguration))
                 return false;
 
             index = file.TopLevelBoxes.First(box => box.Type == "meta").Offset;
@@ -150,19 +152,53 @@ internal static class FixtureTraits
         }
 
         return payload < index;
+
+        // NAL unit type 33 (Rec. ITU-T H.265, table 7-1)
+        static bool HasSequenceParameterSet(ReferenceHeif.HevcConfiguration? configuration) => configuration is not null && configuration.Arrays.Any(array => array.NalUnitType == 33 && array.NalUnits.Count > 0);
     }
 
+    /// <summary>Gets a value indicating whether the input is a file of the HEIF family, whose structure <see cref="ReferenceHeif"/> reads: AVIF or HEIC.</summary>
+    private static bool IsHeif(GoldenFixture fixture) => fixture.Entry.Format is "avif" or "heic";
+
     /// <summary>
-    /// Gets the size that the canvas limits apply to. It is the size of the image, except for an AVIF image with a clean
-    /// aperture: every frame of the bitstream is checked against the canvas limits (a documented rule), and the coded
-    /// image, whose size is the <c>ispe</c> property of the primary item, is larger than the aperture that is presented.
+    /// Gets the size that the canvas limits apply to. It is the size of the image, except in two cases:
+    /// <list type="bullet">
+    /// <item><description>
+    /// an AVIF or HEIC image with a clean aperture: every frame of the bitstream is checked against the canvas limits (a
+    /// documented rule), and the coded image, whose size is the <c>ispe</c> property of the primary item or the size of the
+    /// sample entry of the track, is larger than the aperture that is presented;
+    /// </description></item>
+    /// <item><description>
+    /// an HEVC picture whose conformance window removes more than the padding of the coded picture to a whole number of
+    /// minimum coding blocks: the samples outside the window are decoded all the same, so the coded picture counts when
+    /// the pixels are decoded. The corpus generator read its size in the sequence parameter set
+    /// (<c>heic.checkedSize</c>); an identification, which does not decode it, needs the declared size only. (A window
+    /// that only removes the padding does not count: the limit of an image of 1080 rows accepts its pictures of 1088.)
+    /// </description></item>
+    /// </list>
     /// </summary>
-    public static (int Width, int Height) GetLimitedCanvas(GoldenFixture fixture)
+    /// <param name="fixture">The fixture.</param>
+    /// <param name="decodes">Whether the pixels are decoded (a load or a sequential read), not only identified.</param>
+    public static (int Width, int Height) GetLimitedCanvas(GoldenFixture fixture, bool decodes = false)
     {
         ArgumentNullException.ThrowIfNull(fixture);
-        if (fixture.Entry.HasFeature("avif.clap") && ReferenceAvif.Parse(fixture.ReadInput()).PrimaryItem?.Size is var (width, height))
-            return ((int)width, (int)height);
+        (int Width, int Height) size = (fixture.Expected.Width, fixture.Expected.Height);
+        if (fixture.Entry.HasFeature("avif.clap") || fixture.Entry.HasFeature("heic.clap"))
+        {
+            var file = ReferenceHeif.Parse(fixture.ReadInput());
+            if (file.IsSequence && file.ColorTrack is { } track)
+                size = (track.Width, track.Height);
+            else if (file.PrimaryItem?.Size is var (width, height))
+                size = ((int)width, (int)height);
+        }
 
-        return (fixture.Expected.Width, fixture.Expected.Height);
+        const string CheckedSize = "heic.checkedSize=";
+        if (decodes && fixture.Entry.Features?.SingleOrDefault(candidate => candidate.StartsWith(CheckedSize, StringComparison.Ordinal)) is { } feature)
+        {
+            var parts = feature[CheckedSize.Length..].Split('x');
+            size = (Math.Max(size.Width, int.Parse(parts[0], NumberStyles.None, CultureInfo.InvariantCulture)), Math.Max(size.Height, int.Parse(parts[1], NumberStyles.None, CultureInfo.InvariantCulture)));
+        }
+
+        return size;
     }
 }

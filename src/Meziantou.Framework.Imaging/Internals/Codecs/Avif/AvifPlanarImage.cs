@@ -4,7 +4,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// The decoded planes of an AVIF image, at their output size: the planes of a decoded AV1 frame, or planes assembled from the
 /// tiles of a grid or from a frame with film grain.
 /// </summary>
-internal sealed class AvifPlanarImage : IDisposable
+internal sealed class AvifPlanarImage : HeifPlanarImage
 {
     private readonly Av1Plane?[] _planes = new Av1Plane?[3];
     private Av1FrameBuffer? _frame;
@@ -12,6 +12,7 @@ internal sealed class AvifPlanarImage : IDisposable
     private AvifPlanarImage(Av1SequenceHeader sequence, int width, int height)
     {
         Sequence = sequence;
+        Format = AvifBinding.ToBitstreamFormat(sequence);
         Width = width;
         Height = height;
     }
@@ -19,11 +20,11 @@ internal sealed class AvifPlanarImage : IDisposable
     /// <summary>Gets the sequence header of the coded image: its sample format and its color description.</summary>
     public Av1SequenceHeader Sequence { get; }
 
-    public int Width { get; }
+    public override HeifBitstreamFormat Format { get; }
 
-    public int Height { get; }
+    public override int Width { get; }
 
-    public int PlaneCount => Sequence.PlaneCount;
+    public override int Height { get; }
 
     /// <summary>Wraps the planes of a decoded frame, which is released with the image.</summary>
     public static AvifPlanarImage FromFrame(Av1FrameBuffer frame)
@@ -57,10 +58,13 @@ internal sealed class AvifPlanarImage : IDisposable
         return image;
     }
 
-    public Av1Plane GetPlane(int plane) => _frame?.GetPlane(plane) ?? _planes[plane] ?? throw new ObjectDisposedException(nameof(AvifPlanarImage));
+    public override Av1Plane GetPlane(int plane) => _frame?.GetPlane(plane) ?? _planes[plane] ?? throw new ObjectDisposedException(nameof(AvifPlanarImage));
 
-    public void Dispose()
+    protected override void Dispose(bool disposing)
     {
+        if (!disposing)
+            return;
+
         _frame?.Release();
         _frame = null;
         for (var i = 0; i < _planes.Length; i++)

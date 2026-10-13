@@ -57,6 +57,131 @@ public sealed class DrawingReferenceTests
         Assert.Empty(failures.Take(3));
     }
 
+    [Theory]
+    [MemberData(nameof(AllFormats))]
+    public void RandomPolygonsWithEveryOperatorMatchTheExactReference(PixelFormat format)
+    {
+        const int Cases = 330;
+        var failures = new List<string>();
+        for (var index = 0; index < Cases; index++)
+        {
+            var random = new Random(Seed + 7000 + index);
+            var width = random.Next(1, 8);
+            var height = random.Next(1, 8);
+            var polygons = CreatePolygons(random, width, height);
+            var evenOdd = random.Next(2) == 0;
+            var color = CreateColor(random);
+            var mode = (CompositeMode)(index % 11);
+
+            using var image = DrawingTestSupport.CreateRandom(format, width, height, new Random(Seed - 7000 - index).Next);
+            var frame = image.Frames[0];
+            var before = DrawingTestSupport.ReadSamples(frame);
+            var path = DrawingTestSupport.ToPath(polygons);
+            var brush = new SolidBrush(color) { CompositeMode = mode };
+            frame.Draw(canvas => canvas.Fill(brush, path, evenOdd ? FillRule.EvenOdd : FillRule.NonZero), Ct);
+
+            var areas = ReferenceCoverage.Compute(ReferenceCoverage.FromPolygons(polygons), width, height, evenOdd);
+            var mismatch = DrawingTestSupport.Compare(frame, before, areas, DrawingTestSupport.ToPaint(color, format), ToReference(mode));
+            if (mismatch is not null)
+            {
+                failures.Add($"case {index} ({mode}, {width}x{height}, {(evenOdd ? "even-odd" : "non-zero")}, color {color}, polygons {Describe(polygons)}):{Environment.NewLine}{mismatch}");
+            }
+        }
+
+        Assert.Empty(failures.Take(3));
+    }
+
+    [Fact]
+    public void TheReferenceOfTheOperatorsIsTheReferenceOfSourceOver()
+    {
+        // Two references written from two definitions: the operator with its factors, and source-over on its own
+        var random = new Random(Seed + 8000);
+        foreach (var format in PixelFormats.All)
+        {
+            var layout = ReferencePixelLayout.FromPixelFormat(format);
+            for (var index = 0; index < 400; index++)
+            {
+                var destination = Enumerable.Range(0, layout.ChannelCount).Select(_ => random.Next(4) == 0 ? (random.Next(2) * layout.MaxValue) : random.Next(layout.MaxValue + 1)).ToArray();
+                var paint = DrawingTestSupport.ToPaint(CreateColor(random), format);
+                var coverage = random.Next(3) switch
+                {
+                    0 => ReferenceCoverage.FullCoverage,
+                    1 => random.Next(4),
+                    _ => random.Next(ReferenceCoverage.FullCoverage + 1),
+                };
+                Assert.Equal(ReferenceCompositor.Blend(destination, paint, coverage, layout), ReferenceCompositor.Blend(destination, paint, coverage, layout, ReferenceCompositeMode.SourceOver));
+            }
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(AllFormats))]
+    public void AClippedShapeHasTheProductOfTheExactCoverages(PixelFormat format)
+    {
+        const int Cases = 120;
+        var layout = ReferencePixelLayout.FromPixelFormat(format);
+        var failures = new List<string>();
+        for (var index = 0; index < Cases; index++)
+        {
+            var random = new Random(Seed + 9000 + index);
+            var width = random.Next(1, 8);
+            var height = random.Next(1, 8);
+            var clip = CreatePolygons(random, width, height);
+            var shape = CreatePolygons(random, width, height);
+            var clipEvenOdd = random.Next(2) == 0;
+            var shapeEvenOdd = random.Next(2) == 0;
+            var color = CreateColor(random);
+
+            using var image = DrawingTestSupport.CreateRandom(format, width, height, new Random(Seed - 9000 - index).Next);
+            var frame = image.Frames[0];
+            var before = DrawingTestSupport.ReadSamples(frame);
+            var clipPath = DrawingTestSupport.ToPath(clip);
+            var shapePath = DrawingTestSupport.ToPath(shape);
+            var brush = new SolidBrush(color);
+            frame.Draw(canvas => canvas.Clip(clipPath, inner => inner.Fill(brush, shapePath, shapeEvenOdd ? FillRule.EvenOdd : FillRule.NonZero), clipEvenOdd ? FillRule.EvenOdd : FillRule.NonZero), Ct);
+            var after = DrawingTestSupport.ReadSamples(frame);
+
+            // The coverage of a pixel is the product of the two exact areas, each rounded to the nearest 1/65536, rounded
+            // the same way: round(q m / 65536), ties upward
+            var clipAreas = ReferenceCoverage.Compute(ReferenceCoverage.FromPolygons(clip), width, height, clipEvenOdd);
+            var shapeAreas = ReferenceCoverage.Compute(ReferenceCoverage.FromPolygons(shape), width, height, shapeEvenOdd);
+            var paint = DrawingTestSupport.ToPaint(color, format);
+            var channels = layout.ChannelCount;
+            for (var pixel = 0; pixel < width * height; pixel++)
+            {
+                var (clipLow, clipHigh) = ReferenceCoverage.GetAcceptedCoverage(clipAreas[pixel]);
+                var (shapeLow, shapeHigh) = ReferenceCoverage.GetAcceptedCoverage(shapeAreas[pixel]);
+                var low = (int)((((long)shapeLow * clipLow) + 32768) >> 16);
+                var high = (int)((((long)shapeHigh * clipHigh) + 32768) >> 16);
+                var destination = before.AsSpan(pixel * channels, channels).ToArray();
+                var actual = after.AsSpan(pixel * channels, channels).ToArray();
+                if (!ReferenceCompositor.IsAccepted(destination, actual, [paint], low, high, layout))
+                {
+                    failures.Add($"case {index} ({width}x{height}, color {color}, clip {Describe(clip)}, shape {Describe(shape)}), pixel ({pixel % width}, {pixel / width}): coverage {low}..{high}, before [{string.Join(' ', destination)}], actual [{string.Join(' ', actual)}]");
+                    break;
+                }
+            }
+        }
+
+        Assert.Empty(failures.Take(3));
+    }
+
+    private static ReferenceCompositeMode ToReference(CompositeMode mode) => mode switch
+    {
+        CompositeMode.SourceOver => ReferenceCompositeMode.SourceOver,
+        CompositeMode.Source => ReferenceCompositeMode.Source,
+        CompositeMode.DestinationOver => ReferenceCompositeMode.DestinationOver,
+        CompositeMode.SourceIn => ReferenceCompositeMode.SourceIn,
+        CompositeMode.DestinationIn => ReferenceCompositeMode.DestinationIn,
+        CompositeMode.SourceOut => ReferenceCompositeMode.SourceOut,
+        CompositeMode.DestinationOut => ReferenceCompositeMode.DestinationOut,
+        CompositeMode.SourceAtop => ReferenceCompositeMode.SourceAtop,
+        CompositeMode.DestinationAtop => ReferenceCompositeMode.DestinationAtop,
+        CompositeMode.Xor => ReferenceCompositeMode.Xor,
+        CompositeMode.Clear => ReferenceCompositeMode.Clear,
+        _ => throw new ArgumentOutOfRangeException(nameof(mode)),
+    };
+
     // -----------------------------------------------------------------------------------------------------------------
     // The reference itself
     // -----------------------------------------------------------------------------------------------------------------
@@ -325,6 +450,31 @@ public sealed class DrawingReferenceTests
             using var image = DrawingTestSupport.CreateRandom(PixelFormat.Rgba64, 12, 12, new Random(Seed).Next);
             var before = DrawingTestSupport.ReadSamples(image.Frames[0]);
             var color = new Rgba64(60000, 300, 20000, 51234);
+            image.Frames[0].Draw(canvas => canvas.Fill(new SolidBrush(color), path, evenOdd ? FillRule.EvenOdd : FillRule.NonZero), Ct);
+            var mismatch = DrawingTestSupport.Compare(image.Frames[0], before, areas, DrawingTestSupport.ToPaint(color, PixelFormat.Rgba64));
+            Assert.Null(mismatch);
+        }
+    }
+
+    [Fact]
+    public void FilledArcsAreTheExactAreaOfTheirChords()
+    {
+        var path = new VectorPathBuilder()
+            .AddRoundedRectangle(new RectangleD(0.75, 1.5, 9.5, 6.25), 2.75, 1.5)
+            .AddPie(new PointD(6, 6.5), 5, 3.25, 20, 250)
+            .MoveTo(1, 10).ArcTo(4, 2.5, 30, largeArc: true, clockwise: false, 9, 11.5).ArcTo(new PointD(3, 3), 2, 2.5, 200, -300).Close()
+            .AddEllipse(new PointD(7, 4), 4, 1.25, 40)
+            .Build();
+        var recording = new RecordingSink();
+        PathFlattener.Flatten(path, recording);
+        var polygons = recording.Contours.Select(contour => (IReadOnlyList<(double X, double Y)>)contour.Points).ToList();
+        Assert.HasCount(4, polygons);
+        foreach (var evenOdd in new[] { false, true })
+        {
+            var areas = ReferenceCoverage.Compute(ReferenceCoverage.FromPolygons(polygons), 12, 12, evenOdd);
+            using var image = DrawingTestSupport.CreateRandom(PixelFormat.Rgba64, 12, 12, new Random(Seed).Next);
+            var before = DrawingTestSupport.ReadSamples(image.Frames[0]);
+            var color = new Rgba64(300, 60000, 20000, 43210);
             image.Frames[0].Draw(canvas => canvas.Fill(new SolidBrush(color), path, evenOdd ? FillRule.EvenOdd : FillRule.NonZero), Ct);
             var mismatch = DrawingTestSupport.Compare(image.Frames[0], before, areas, DrawingTestSupport.ToPaint(color, PixelFormat.Rgba64));
             Assert.Null(mismatch);

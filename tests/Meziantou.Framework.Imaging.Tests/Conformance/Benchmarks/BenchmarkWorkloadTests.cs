@@ -3,6 +3,8 @@ using Meziantou.Framework.Imaging.Benchmarks.Workloads;
 using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.TestHarness.Adapters;
 using Meziantou.Framework.Imaging.TestHarness.Convolution;
+using Meziantou.Framework.Imaging.TestHarness.Golden;
+using Meziantou.Framework.Imaging.TestHarness.Heif;
 using Meziantou.Framework.Imaging.TestHarness.Jpeg;
 using Meziantou.Framework.Imaging.TestHarness.Pixels;
 using Meziantou.Framework.Imaging.TestHarness.Png;
@@ -372,6 +374,38 @@ public sealed class BenchmarkWorkloadTests
         Assert.Throws<InvalidOperationException>(() => WorkloadChecks.RequireLossless(BenchmarkInputs.SmallPng, wrong));
         Assert.Throws<InvalidOperationException>(() => WorkloadChecks.RequirePsnr(BenchmarkInputs.ServiceJpeg, ToRgb24(BenchmarkPixels.Rgb24(BenchmarkInputs.ServiceWidth, BenchmarkInputs.ServiceHeight, seed: 6)), minimum: 35));
         Assert.Throws<InvalidOperationException>(() => WorkloadChecks.RequireAnimation(BenchmarkInputs.Apng, BenchmarkInputs.AnimationWidth, BenchmarkInputs.AnimationHeight, BenchmarkInputs.AnimationFrames - 1, FrameDuration.FromMilliseconds(40)));
+    }
+
+    [Theory]
+    [InlineData("hevc/x265-benchmark-intra-420-384x216", 1, false)]
+    [InlineData("hevc/x265-benchmark-intra-444-384x216", 3, false)]
+    [InlineData("hevc/x265-benchmark-inter-420-176x144", 1, true)]
+    public void HeicInputsHoldThePicturesOfTheVectorsOfTheCorpus(string id, int chromaFormatIdc, bool isSequence)
+    {
+        var corpus = GoldenCorpus.Default;
+        var vector = corpus.GetHevcVector(id);
+        var frame = vector.Frames[0];
+        var data = HevcStreamContainer.Wrap(File.ReadAllBytes(corpus.GetHevcVectorPath(vector)), frame.Width, frame.Height, bitDepth: 8, chromaFormatIdc);
+
+        // The independent reader finds an image, or a sample for each picture of the vector
+        var reader = ReferenceHeif.Parse(data);
+        Assert.Equal(isSequence, reader.IsSequence);
+        if (isSequence)
+        {
+            Assert.HasCount(vector.Frames.Count, reader.ColorTrack!.Samples);
+            Assert.Equal((frame.Width, frame.Height), (reader.ColorTrack.Width, reader.ColorTrack.Height));
+        }
+        else
+        {
+            Assert.Single(vector.Frames);
+            Assert.Equal("hvc1", reader.PrimaryItem!.Type);
+            Assert.Equal((frame.Width, frame.Height), reader.PrimaryItem.Size);
+        }
+
+        // The library decode (the timed load workloads) gives every picture, at its size
+        using var image = Image.Load(data);
+        Assert.Equal(ImageFormat.Heic, image.Metadata.SourceFormat);
+        Assert.Equal((frame.Width, frame.Height, vector.Frames.Count), (image.Width, image.Height, image.Frames.Count));
     }
 
     private static void AssertMatchesEncoderModel(byte[] jpeg, RawPixelBuffer pixels, string context)

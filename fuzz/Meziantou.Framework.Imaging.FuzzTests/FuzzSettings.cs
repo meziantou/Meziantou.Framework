@@ -8,6 +8,7 @@ namespace Meziantou.Framework.Imaging.FuzzTests;
 /// <item><description><c>MEZIANTOU_FRAMEWORK_IMAGING_FUZZ_SEED</c>: base seed (default fixed; any 64-bit integer gives another reproducible campaign);</description></item>
 /// <item><description><c>MEZIANTOU_FRAMEWORK_IMAGING_FUZZ_DURATION_SECONDS</c>: optional wall-clock budget per seed group (stops earlier when reached);</description></item>
 /// <item><description><c>MEZIANTOU_FRAMEWORK_IMAGING_FUZZ_CASE_TIMEOUT_SECONDS</c>: a single input running longer than this is reported as a hang (default 60).</description></item>
+/// <item><description><c>MEZIANTOU_FRAMEWORK_IMAGING_FUZZ_GROUPS</c>: the seed groups of a campaign, separated by commas (default: every group).</description></item>
 /// </list>
 /// </summary>
 internal static class FuzzSettings
@@ -17,6 +18,7 @@ internal static class FuzzSettings
     public const string DurationVariable = "MEZIANTOU_FRAMEWORK_IMAGING_FUZZ_DURATION_SECONDS";
     public const string CaseTimeoutVariable = "MEZIANTOU_FRAMEWORK_IMAGING_FUZZ_CASE_TIMEOUT_SECONDS";
     public const string SeedFilterVariable = "MEZIANTOU_FRAMEWORK_IMAGING_FUZZ_SEED_FILTER";
+    public const string GroupsVariable = "MEZIANTOU_FRAMEWORK_IMAGING_FUZZ_GROUPS";
 
     public const int DefaultIterations = 1500;
     public const ulong DefaultSeed = 0x4D657A69616E746FUL;
@@ -32,6 +34,9 @@ internal static class FuzzSettings
     /// for every seed. Only the fuzzers whose seeds have identifiers use it.
     /// </summary>
     public static string? SeedFilter => Environment.GetEnvironmentVariable(SeedFilterVariable) is { Length: > 0 } value ? value : null;
+
+    /// <summary>Gets the seed groups of a campaign on some groups only, or <see langword="null"/> for every group.</summary>
+    public static IReadOnlyList<string>? Groups => Environment.GetEnvironmentVariable(GroupsVariable) is { Length: > 0 } value ? value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries) : null;
 
     public static TimeSpan CaseTimeout => TimeSpan.FromSeconds(ReadInt32(CaseTimeoutVariable) ?? 60);
 

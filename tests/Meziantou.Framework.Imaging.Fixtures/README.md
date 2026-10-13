@@ -7,7 +7,9 @@ Independent reference data for the conformance and interop tests, extended with 
   the PNG, APNG, GIF and JPEG entries; WebP entries: `webp`, `WebPCorpus.cs`; QOI entries: `qoi`, `QoiCorpus.cs`; BMP entries:
   `bmp`, `BmpCorpus.cs`; TGA entries: `tga`, `TgaCorpus.cs`; Netpbm entries: `pnm`, `PnmCorpus.cs`; ICC profiles and
   color conversion vectors: `icc`, `IccCorpus.cs`; the AV1 conformance vectors of the `av1Vectors` section: `avif`,
-  `AvifCorpus.cs`; AVIF entries: `avif-container`, `AvifCorpus.Container.cs`; JPEG XL entries: `jxl`, `JxlCorpus.cs`). Every file of this folder except this README, the manifest, the schema and `LICENSES/` is listed with
+  `AvifCorpus.cs`; AVIF entries: `avif-container`, `AvifCorpus.Container.cs`; HEIC entries: `heic-container`,
+  `HeicCorpus.Container.cs`; JPEG XL entries: `jxl`, `JxlCorpus.cs`; the HEVC
+  conformance vectors of the `hevcVectors` section: `hevc`, `HevcCorpus.cs`). Every file of this folder except this README, the manifest, the schema and `LICENSES/` is listed with
   its SHA-256 hash, provenance and license.
 - The folder is copied to `<test output>/Fixtures` by the conformance and interop test projects
   (`FixtureRoot.GetDirectory()`). Tests never read fixtures from the source tree, never download anything and never run
@@ -15,16 +17,18 @@ Independent reference data for the conformance and interop tests, extended with 
 - `GoldenCorpus.Default` loads the manifest and validates it completely (`FixtureManifestValidator`) before any pixel
   comparison; `CorpusManifestTests` reports every problem.
 - Licensing and provenance rules: [Licensing and provenance](#licensing-and-provenance). Feature coverage:
-  [Fixture coverage matrix](#fixture-coverage-matrix) and, for the AV1 decoder, [AV1 conformance vectors](#av1-conformance-vectors).
+  [Fixture coverage matrix](#fixture-coverage-matrix) and, for the AV1 and the HEVC decoders,
+  [AV1 conformance vectors](#av1-conformance-vectors) and [HEVC conformance vectors](#hevc-conformance-vectors).
 
 ## Layout
 
 ```
 tests/Meziantou.Framework.Imaging.Fixtures/
-  png/   apng/   gif/   jpeg/   webp/   qoi/   bmp/   tga/   pnm/   avif/   jxl/ encoded inputs and their raw references
+  png/   apng/   gif/   jpeg/   webp/   qoi/   bmp/   tga/   pnm/   avif/   heic/   jxl/ encoded inputs and their raw references
   invalid/<format>/                   malformed, unsupported or over-limit inputs (expected errors, no expected pixels)
   limit/avif/                         over-limit inputs that are not valid fixtures (an AVIF sequence with hidden frames)
   av1/                                raw AV1 OBU streams (*.obu): conformance vectors with plane digests, no raw references
+  hevc/                               raw HEVC byte streams (*.hevc): conformance vectors with plane digests, no raw references
   icc/profiles/   icc/vectors/        ICC profiles and colors converted between them (see Color management)
   fonts/<family>/   fonts/vectors/    font files and the values independent font readers give for them (see Fonts)
   fonts/shaping/                      glyphs and positions the reference shaper gives for texts set in the fonts
@@ -34,7 +38,8 @@ tests/Meziantou.Framework.Imaging.Fixtures/
 
 - Fixture ids are lowercase paths without extension (`png/gray16-low-bit-gradient`); `format` is the container
   (`png` for PNG and APNG, `gif`, `jpeg`, `webp`, `qoi`, `bmp`, `tga`, `pnm` for every Netpbm variant, `avif` for AVIF
-  still images and image sequences, `jxl` for JPEG XL codestreams and containers).
+  still images and image sequences, `heic` for HEIC still images and image sequences, `jxl` for JPEG XL codestreams and
+  containers).
 - Kinds: `valid` (expected pixels and metadata), `invalid` (malformed: expected exception), `unsupported` (recognized but
   unsupported feature: `UnsupportedImageFeatureException`), `limit` (decoded with `decodeOptions.limits`:
   `ImageResourceLimitException` with `limitKind`). Error fixtures never carry fabricated expected pixels and are kept
@@ -55,6 +60,9 @@ tests/Meziantou.Framework.Imaging.Fixtures/
   ([AV1 conformance vectors](#av1-conformance-vectors)), with the same hash, provenance and license rules. They have no
   pixel reference, so `GoldenCorpus.Fixtures`, `GetIds` and the generic conformance suites never see them, and a fixture
   whose id or input is under `av1/` is a validation error.
+- Neither are the files of `hevc/`: they are listed in the `hevcVectors` section
+  ([HEVC conformance vectors](#hevc-conformance-vectors)), under the same rules, and a fixture whose id or input is under
+  `hevc/` is a validation error. `GoldenCorpus.HevcVectors`, `GetHevcVector` and `GetHevcVectorIds` enumerate them.
 
 ## Expected images
 
@@ -77,13 +85,16 @@ box of type `nclx`, or else the color description of the AV1 sequence header, or
 and an `orientation` that comes from the `irot` and `imir` properties of the primary item (never from the EXIF payload,
 which may say otherwise). The canvas of an AVIF image is its clean aperture. An AVIF image sequence has no
 transformation (its orientation is 1); its `profiles.exif` and `profiles.xmp` are the items of the `meta` box of its
-track, or else of the `meta` box of the file when that box precedes the `moov` box (`ReferenceAvif.FindSequenceMetadata`),
+track, or else of the `meta` box of the file when that box precedes the `moov` box (`ReferenceHeif.FindSequenceMetadata`),
 and `null` otherwise, whatever the `meta` box of the file holds. The frames of a sequence that are decoded without being
 shown are not frames of the fixture: their number is the `avif.seq.hiddenFrames=N` feature, which the limit tests add to
 the displayed frames (`MaxTotalPixels` counts them). A layered image (`avif.layers=N`: a frame per spatial layer) presents
 one frame, the frame of the layer its properties select, at the size of that frame (`ispe`); the frames of the layers
 below it are decoded on the way and counted too, each with its own size: their pixels are the
-`avif.layers.hiddenPixels=N` feature (`FixtureTraits.GetHiddenPixelCount` adds both to the displayed pixels).
+`avif.layers.hiddenPixels=N` feature (`FixtureTraits.GetHiddenPixelCount` adds both to the displayed pixels). An HEVC
+picture whose conformance window removes more than the padding of its coded picture to whole coding blocks is decoded
+whole: the size that then counts toward the canvas limits of a decode is the `heic.checkedSize=WxH` feature
+(`FixtureTraits.GetLimitedCanvas`). A window that only removes the padding does not count.
 
 Timing and metadata expectations are parsed by the generator from the encoded bytes of every input:
 
@@ -91,12 +102,12 @@ Timing and metadata expectations are parsed by the generator from the encoded by
 | --- | --- |
 | `frames[].encodedDelay` | Raw delay field of the frame: APNG `fcTL` `{numerator, denominator}` as encoded (`denominator` 0 means 100) or GIF Graphic Control Extension `{hundredths}` or WebP `ANMF` `{milliseconds}` (24-bit) or the `stts` sample delta of an AVIF image sequence with the `mdhd` time scale of its media `{sampleDelta, timescale}`. Required for every frame of an animated APNG/GIF/WebP/AVIF (a GIF frame without GCE has none and a zero duration). The validator checks `duration` = `numerator/(denominator or 100)`, `hundredths/100`, `milliseconds/1000` or `sampleDelta/timescale` exactly. |
 | `resolution` | `null` (absent, or aspect ratio only: PNG `pHYs` unit 0, JFIF units 0) or `{horizontalDpi, verticalDpi, encoded: {unit, x, y}}` with `unit` `meter` (PNG `pHYs`, BMP `biXPelsPerMeter`), `inch` or `centimeter` (JFIF); the dpi values are the exact IEEE results of `x × 0.0254`, `x` or `x × 2.54`. |
-| `profiles` | `{icc, exif, xmp}`: `null` or `{sha256, length}` of the payload decoders must preserve byte for byte — the uncompressed ICC profile, the EXIF data from the TIFF header (no `Exif\0\0` prefix), the XMP packet (WebP: the `ICCP`, `EXIF` and `XMP ` chunk payloads; AVIF: the `colr` box of type `prof`, the `Exif` item after its offset field, the XMP `mime` item; for an image sequence, the items of `ReferenceAvif.FindSequenceMetadata`). `iccProfile` must be `none` exactly when `profiles.icc` is `null`; an orientation other than 1 requires `profiles.exif`. |
+| `profiles` | `{icc, exif, xmp}`: `null` or `{sha256, length}` of the payload decoders must preserve byte for byte — the uncompressed ICC profile, the EXIF data from the TIFF header (no `Exif\0\0` prefix), the XMP packet (WebP: the `ICCP`, `EXIF` and `XMP ` chunk payloads; AVIF: the `colr` box of type `prof`, the `Exif` item after its offset field, the XMP `mime` item; for an image sequence, the items of `ReferenceHeif.FindSequenceMetadata`). `iccProfile` must be `none` exactly when `profiles.icc` is `null`; an orientation other than 1 requires `profiles.exif`. |
 | `transferFunction` | Optional: `srgb` (default) or `linear`, the transfer-function label of the decoded samples (`ImageMetadata.TransferFunction`), read from the QOI header colorspace; only QOI inputs may be `linear`. |
 | `text` | Text entries in file order: `{keyword, value, languageTag, translatedKeyword}` (PNG `tEXt`/`zTXt`/`iTXt` except the XMP `iTXt`; empty language tags and translated keywords are `null`). GIF comments and JPEG `COM` segments use the keyword `Comment` without language. |
 
 `EncodedFieldInspector` (test harness) reads the same raw fields from the inputs independently of the generator and of the
-library (PNG chunks, GIF blocks, JPEG marker segments, WebP RIFF chunks, AVIF boxes through `ReferenceAvif`; no pixel
+library (PNG chunks, GIF blocks, JPEG marker segments, WebP RIFF chunks, AVIF boxes through `ReferenceHeif`; no pixel
 decoding).
 `TimingAndMetadataConformanceTests` checks that the manifest agrees with the bytes and that the library's timing,
 play-count, orientation, resolution and profile conversions turn these raw fields into the expected exact values.
@@ -393,12 +404,20 @@ The `colorProfiles` and `colorTransforms` sections of the manifest are the refer
   conversion is recorded but excluded from the tolerance: its chroma sample positions differ from centered upsampling).
 - AVIF: decoding AV1 is exact, so the samples that no matrix applies to (identity-matrix RGB, monochrome, alpha) are
   compared exactly, lossy coding or not. Matrixed samples use `tolerance` with a maximum of **one unit**: the reference is
-  the exact-rational conversion of the planes (`TestHarness/Avif/ReferenceYuvConverter`: H.273 equations, the documented
+  the exact-rational conversion of the planes (`TestHarness/Heif/ReferenceYuvConverter`: H.273 equations, the documented
   bilinear chroma upsampling at the declared sample position, one rounding), and the library documents coefficients
   rounded to 16 fractional bits. The mean is the library's measured disagreement + 0.01 (`LibraryAvifMeasurements` in
   `AvifCorpus.Container.cs`, checked by `Avif.Tests/Conformance/AvifDecoderConformanceTests`; currently 0 for every 8-bit
   fixture). The cross-check that justifies a tolerance is libavif `avifdec`, whose own conversion differs from the exact
   one by 1 to 75 units (it ignores the chroma sample position); 16-bit errors are recorded on the 8-bit scale (units of 257).
+- HEIC: the same policy as AVIF, for the same reason: decoding HEVC is exact, so identity-matrix RGB, monochrome and alpha
+  samples are compared exactly, and matrixed samples within **one unit** of the exact-rational conversion of the planes by
+  `ReferenceYuvConverter`, at the chroma sample position that Rec. ITU-T H.265 gives to the picture
+  (`ReferenceYuvConverter.GetHevcChromaSiting`). The mean is the library's measured disagreement + 0.01
+  (`LibraryHeicMeasurements` in `HeicCorpus.Container.cs`, checked by `Heic.Tests/Conformance/HeicDecoderConformanceTests`).
+  The cross-check that justifies a tolerance is libheif `heif-dec`, whose own conversion differs from the exact one by 1 to
+  96 units (it upsamples the chroma as if it were centered); a matrixed fixture on which `heif-dec` agrees exactly with
+  the reference is compared exactly.
 - Whatever the policy: alpha is compared exactly; dimensions, layouts, buffer lengths, frame counts, poster presence,
   durations, total plays and orientation are compared exactly. A tolerance can never mask channel swaps, missing frames,
   alpha loss or gross errors.
@@ -529,14 +548,14 @@ specifications are recorded as cross-checks with their measured error or notes i
 AVIF fixtures (`AvifCorpus.Container.cs`, recipes in `AvifCorpus.ContainerFixtures.cs` and `AvifCorpus.ContainerErrors.cs`):
 inputs are written by libavif `avifenc` from hand-defined patterns (two sequences by the FFmpeg `avif` muxer, around
 libaom and SVT-AV1 frames), or assembled
-box by box (`TestHarness/Avif/AvifFileBuilder`) around the AV1 payloads of such a file for what the encoders do not write:
+box by box (`TestHarness/Heif/HeifFileBuilder`) around the AV1 payloads of such a file for what the encoders do not write:
 media data before the index, item data in `idat`, several extents, free and unknown boxes, a `mif1` major brand, 64-bit
 box sizes, a box that extends to the end of the file, files without `colr` box (after and before their media data, with
 and without color description in the bitstream) or with an ICC profile only, a grid smaller than its tiles, a 3x2 grid of
 16x16 tiles coded one by one, sequences without edit list or with `co64`/`stz2` tables, sequences with Exif and XMP items
 (`avifenc` crashes on `--exif` with several frames) in the `meta` box of the file or of the track, in `mdat` or `idat`,
 before or after the samples, and a sequence whose chunks are written from the last one to the first one. Every reference is `decoded`, never taken from one tool: the structure
-is read by `TestHarness/Avif/ReferenceAvif` (an independent reader written from ISO/IEC 14496-12, ISO/IEC 23008-12 and
+is read by `TestHarness/Heif/ReferenceHeif` (an independent reader written from ISO/IEC 14496-12, ISO/IEC 23008-12 and
 the AV1 Image File Format), the AV1 payloads of the items and of the samples are extracted and decoded to planes by
 **two** decoders, dav1d and libaom, through the pinned FFmpeg (the same command and the same rule as the
 [AV1 conformance vectors](#av1-conformance-vectors): same bytes or no reference), and the planes are converted by
@@ -550,9 +569,54 @@ orientation; it rejects `stz2`, in which case its measurement on the same payloa
 tiles smaller than 64 samples; it returns 8-bit monochrome samples in limited range as stored, without the range, where
 the reference scales them as ITU-T H.273 says and as `avifdec` itself does at 12 bits), and
 FFmpeg (mov demuxer, swscale) for the still images whose samples no matrix applies to. The expected durations, plays,
-orientation, color description and metadata payloads are read from the bytes by `ReferenceAvif`. Malformed, unsupported
+orientation, color description and metadata payloads are read from the bytes by `ReferenceHeif`. Malformed, unsupported
 and over-limit inputs are assembled the same way with one defect each (two wrap a committed AV1 vector in an image
 sequence, one temporal unit per sample: frames that change size, frames that are not shown).
+
+HEIC fixtures (`HeicCorpus.Container.cs`, recipes in `HeicCorpus.ContainerFixtures.cs` and `HeicCorpus.ContainerErrors.cs`):
+inputs are written by libheif `heif-enc` (with x265) from hand-defined patterns, or assembled box by box
+(`TestHarness/Heif/HeifFileBuilder`) around the payloads of such a file, or around a stream that the stand-alone x265 of
+the pinned release codes from a pattern, for what `heif-enc` does not write: pictures with a conformance window (it codes a
+small image as a 64x64 picture under a `clap` property), a conformance window that removes more than the padding
+(rewritten by the `hevc_metadata` filter of FFmpeg), files without `colr` box whose bitstream has a color description,
+a range only, or no video signal description at all (their planes are then coded in limited range), each `chroma_sample_loc_type` of a frame, an alpha plane that is a
+4:2:0 picture, that has the auxiliary type of MPEG-B or the limited range, NAL unit lengths of one and two bytes, a
+configuration record with two sequence and picture parameter sets, or without any (the parameter sets are then in the
+coded data), a grid with an alpha grid, the layout of a phone (a grid of equal tiles, a rotation, an ICC profile, an Exif
+item, a hidden thumbnail and a depth map), `hev1` tracks, sequences of small pictures with B pictures, composition offsets
+and an edit list that starts at the first presentation time, a `clap` box in the sample entry of a color track and of
+its alpha track, and the layouts the AVIF fixtures also have (media data
+first, `idat`, extents, free and unknown boxes, generic major brands, 64-bit box sizes, `co64`/`stz2` tables, metadata of
+a sequence in its file or in its track). Every reference is `decoded`, never taken from one tool: the structure is read by
+`TestHarness/Heif/ReferenceHeif`; the data of each coded item and the samples of each track are turned into a byte stream
+(the NAL units of the `hvcC` record, then those of the data) and decoded to planes by the **three** decoders of the
+[HEVC conformance vectors](#hevc-conformance-vectors), FFmpeg's `hevc` decoder, libde265 and HM, under the same rule: at
+least two must produce the same bytes, a recipe names the decoder it expects to be left out, and any other disagreement
+fails the generation (HM is left out of the lossless pictures of 16x16 coding tree blocks, which x265 signals at level
+8.5: [the table](#hevc-decoders-that-agree-and-decoders-that-are-left-out)). The x265 streams carry a decoded picture hash
+per picture, which HM and FFmpeg verify. The planes are converted by `ReferenceYuvConverter` with the matrix coefficients
+and the range of the `colr` box, or else of the video signal description of the bitstream (none: limited range, the
+value Rec. ITU-T H.265 infers for `video_full_range_flag` in clause E.3.1, and what libheif and Apple ImageIO do;
+unspecified coefficients: BT.601; an alpha plane: full range unless its bitstream says limited, since it is not video and
+encoders say nothing of it), at the chroma sample position of the picture (4:2:0: `chroma_sample_loc_type`, 0
+when the bitstream is silent; 4:2:2: on the luma samples of even columns). The generator tiles the planes of a grid before
+the conversion, scales the alpha plane, and applies the clean aperture to the picture its conformance window left.
+Lossless content is also compared with its source pattern. The composition times of a sequence must order its samples as
+the bitstream outputs its pictures (clause C.5.2); the expected durations are the distances between them. Cross-check,
+recorded with its measured differences and never used as a reference: libheif `heif-dec` for every input (its own parser,
+libde265 and conversion; it applies `clap`, `irot` and `imir`, so its output is compared with the reference displayed with
+the expected orientation). It agrees exactly with every reference that no matrix applies to, except monochrome samples in
+limited range, signalled or inferred, which it returns as stored (Apple ImageIO does the same), and a limited-range
+alpha plane; it ignores the `clap` box of a sample entry; it does not read NAL unit lengths of one or two bytes, `co64` or `stz2` tables,
+`hev1` tracks, or the last image of the x265 sequence with B pictures, which is recorded. Malformed, unsupported and
+over-limit inputs are assembled the same way with one defect each; three wrap a committed HEVC vector that the decoder
+rejects, and three are files `heif-enc` writes (premultiplied alpha; a grid of tiles smaller than 64x64, each with a `clap`
+property; a sequence of images smaller than 64x64, whose pictures are larger than its sample entry).
+
+A valid HEIC fixture costs the generic suites what an AVIF one does, and `heif-enc` codes nothing smaller than a 64x64
+picture: its images are 8x8 under a clean aperture where the feature allows, its grids have 64x64 tiles and its sequences
+64x64 images (117 valid fixtures, 196,263 bytes of inputs). The x265 pictures are 16x16, or 24x24 with a conformance
+window. The content is smooth, as for AVIF: the references are also the sources of the encoder suites.
 
 Layered AVIF fixtures (`AvifCorpus.ContainerLayered.cs`; the errors are in `AvifCorpus.ContainerErrors.cs`). A layered
 (progressive) image is one AV1 temporal unit that holds a frame per spatial layer, each refining the previous ones; the
@@ -622,6 +686,8 @@ header (65,536 bytes) rejects.
 | APNG errors | Header defects: `acTL` with zero frames or `num_plays` 2^31, partial default-image `fcTL`, `dispose_op` 3, `fdAT` before `IDAT`; structure defects: sequence gap, region outside the canvas, fewer/more frames than declared, `fcTL` without data, `blend_op` 2, `fdAT` shorter than its sequence number; frame datastream defects (`fdAT` zlib truncated, one extra scanline); limits: `MaxFrames` counting the poster, `MaxTotalPixels` counting full-canvas displayed frames (decode-only) |
 | AVIF | lossless identity-matrix RGB at 8, 10 and 12 bits, monochrome (lossless and lossy at 8, 10 and 12 bits, full and limited range), alpha at 8, 10 and 12 bits (lossless, lossy, under limited-range colors, under lossless colors; hidden colors kept), gray + alpha; lossy 4:4:4 / 4:2:2 / 4:2:0 with the BT.709, FCC, BT.470BG, BT.601, SMPTE 240M, YCgCo and BT.2020 matrices and unspecified coefficients, in full and limited range, at 8, 10 (HDR 9/16/9) and 12 bits; sizes 1x1, 5x1, 1x5, odd 4:2:0 and 4:2:2 images at every depth, 33x17, 64x64, 67x65; vertical and co-located chroma samples (y4m inputs); a lossless 2x2 grid, lossy 4:2:0 2x1 (with alpha) and 3x1 grids, a 1x3 grid with an alpha grid, a 10-bit 2x1 grid, a 3x2 grid of 16x16 tiles, a grid cropped below its tiles, a grid whose tiles repeat its `clap`, `irot` and `imir` as avifenc writes them; `irot` 0-3, `imir` 0-1 and both; a clean aperture followed by a rotation, and one on 4:2:0 content; Exif (whose orientation tag contradicts `irot`), XMP and ICC, an ICC profile without `nclx`; colr variants of one payload (`nclx` overriding the bitstream, no `colr` box with identity, BT.709 and undescribed bitstreams, after and before the media data); film grain (4:2:0, odd, monochrome 10-bit, 4:2:2 10-bit limited, 4:4:4 12-bit with chroma scaled from luma, under an alpha plane); assembled layouts (`layout-*`); sequences: lossless with three durations and infinite repetition, alpha with two repetitions, 10-bit played once at 1001/30000 s, 8 to 12 images with inter frames and frames that are not shown (4:2:0, 4:4:4 at speed 2, 4:2:2 with key frames every three images, monochrome, 10-bit, lossless 12-bit, a lossy alpha track, 10-bit alpha), XMP in the `meta` box of the track and an ICC profile (avifenc), Exif and XMP in the `meta` box of the file or of the track with their data in `mdat`, in `idat` and after the samples, a track `meta` box that wins over the file one, a file `meta` box after `moov` (not read), chunks written in reverse order, two from the FFmpeg muxer (libaom, SVT-AV1), no edit list, `mdat` first, `co64` + `stz2` + one sample per chunk; layered images: `--progressive` (4:2:0, identity-matrix 10-bit, with a layered alpha item), `--layered` with 2, 3 and 4 quality layers (4:2:0 limited range, identity, monochrome 12-bit), three layers of growing sizes (4:2:2 10-bit), a second layer that is another picture, coded losslessly; `lsel` 0xFFFF, 0, 1, 2 and 3, `a1op` 0, 1 and 2, both together, a selected frame smaller than the last layer (`ispe` of its size) by `lsel` and by `a1op`, `lsel` on 4:2:0 content; a grid of two layered tiles, grids whose tiles select their own layer and their own operating point; a sequence of two layered samples |
 | AVIF errors | invalid: truncated `meta` box and item data, a box smaller than its header, a child box larger than its parent, no file type box and no AVIF brand (unknown format), no `pitm`, primary item, `ispe` or `av1C`, two `meta` boxes, item data outside the file and outside `idat`, `ispe` and `av1C` contradicting the bitstream, an `a1op` operating point the sequence header does not have (one and three operating points), an `lsel` layer the bitstream does not have (one and three layers) or that its operating point does not have, layer 4, a selected frame of another size than `ispe`, `lsel` and `a1op` on a grid item, grids (tile count, descriptor size, tile sizes), a sequence without AV1 track, without chunk offsets, truncated, with a malformed `meta` box in its track, with a metadata item of its track or of the file located after the end of the file; unsupported: premultiplied alpha, `iden`/`iovl` derived images, fractional `clap`, `clap` after `irot`, an essential unknown property, ICtCp matrix coefficients, an alpha plane of another size, `moof`, an edit that skips the start of the track or that ends before the last image starts, ICtCp matrix coefficients in the sample entry of a sequence, a grid tile that declares another rotation than its grid, a sequence whose images change size; limits: width, height, frame pixels, encoded bytes, live allocations, metadata bytes (ICC, then Exif; the XMP packet of a sequence), sequence frames, displayed pixels, frames that are decoded without being shown, and the lower layers of a layered image |
+| HEIC | lossless identity-matrix RGB at 8, 10 and 12 bits, monochrome (lossless and lossy, at 8, 10 and 12 bits, full and limited range), alpha at 8, 10 and 12 bits (monochrome and 4:2:0 alpha pictures, both auxiliary types, a limited-range alpha plane, hidden colors kept), gray + alpha; lossy 4:4:4, 4:2:2 and 4:2:0 with the BT.709, BT.470BG, BT.601, YCgCo and BT.2020 matrices and unspecified coefficients, in full and limited range, at 8, 10 (HDR 9/16/9) and 12 bits; 4:2:0 at the default chroma sample location and at each signalled one (0, 1, 2); sizes 1x1, odd sizes, 33x17, 64x64, 67x65; pictures of 64x64 under a clean aperture (`heif-enc`) and pictures with a conformance window (x265), a window that removes more than the padding, and both together; files without `colr` box whose bitstream has a color description, a range only or no video signal description, a `colr` box that overrides the bitstream, an ICC profile with and without `nclx`; lossless 2x2 and 3x2 grids (the second cropped below its tiles), a grid cropped by its descriptor, 10-bit and 4:2:0 grids, a grid with an alpha grid, the layout of a phone (grid, rotation, ICC profile, Exif item, hidden thumbnail and depth map) at 8 and 10 bits; `irot` 1-3, `imir` 0-1 and both, a clean aperture followed by a rotation and one at an odd position of 4:2:0 content; Exif (whose orientation tag contradicts `irot`) and XMP; configuration records with NAL unit lengths of 1 and 2 bytes, two parameter sets of each type, incomplete arrays, and parameter sets in the coded data only; assembled layouts (`layout-*`, generic and AVIF brands); sequences: lossless intra pictures played three times, lossless P pictures repeated forever, B pictures whose composition offsets reorder the samples (`heif-enc` and x265, with an edit list that starts at the first presentation time, without edit list, under an `hev1` sample entry with the parameter sets in the first sample, with two-byte NAL unit lengths), an alpha track, 10-bit, monochrome, 4:2:0 and 4:2:2 images, pictures with a conformance window, a clean aperture in the sample entry (an odd size, and an offset on a color and an alpha track), `mdat` first, `co64` + `stz2` + one sample per chunk, chunks written in reverse order, generic and AVIF brands, Exif and XMP in the `meta` box of the file after the samples and in the `idat` box of the `meta` box of the track |
+| HEIC errors | invalid: truncated `meta` box and item data, a child box larger than its parent, no file type box (unknown format), no `pitm`, `ispe` or `hvcC`, item data outside the file, `ispe` contradicting the picture, an `hvcC` record that is truncated, reserves its length size or contradicts its sequence parameter set (bit depth, chroma format), an item with no picture, with two pictures, whose picture is not an intra random access point, whose NAL unit lengths exceed or do not fill its data, whose slice data are truncated or are random bytes, grids (tile count, a tile that does not exist, descriptor size, tile sizes), a sequence without HEVC track, without chunk offsets, truncated, with two samples at one composition time, with a missing reference picture, with a record that contradicts its bitstream, with a malformed `meta` box in its track; unsupported: an `hvc1` item under the brands of AVIF and an `av01` item under the brands of HEIC, `lhv1` items and layer selectors, an `hvcC` record of another version, premultiplied alpha, `iden`/`iovl` derived images, a grid whose tiles have a `clap` property (as `heif-enc` writes small tiles), fractional `clap`, an essential unknown property, ICtCp matrix coefficients, an alpha plane of another size, 16-bit samples, luma and chroma planes of different depths, extended precision processing, `chroma_sample_loc_type` 3, `moof`, an edit that starts after the first image, a sequence whose pictures do not have the size of its sample entry (assembled, and as `heif-enc` writes small images); limits: width, height, frame pixels (of the image, and of the picture under a clean aperture), encoded bytes, live allocations, metadata bytes (ICC, then Exif; the items of a sequence), sequence frames and displayed pixels |
 | JPEG XL | lossless (Modular): gray, gray + alpha, RGB and RGBA at 8 and 16 bits, 12-bit samples scaled to 16 bits, efforts 1 and 9, an image of few colors (palette), a responsive image (squeeze), four groups of 128x128 samples, a bare codestream and a container; metadata: Exif and XMP boxes, plain and compressed (`brob`), ICC profiles (RGB and gray) in the codestream, the linear transfer function, enumerated color encodings with code points (Display P3, BT.2100 PQ, gray BT.709), orientation 6 in the image header; containers assembled around one codestream: three `jxlp` parts, a 64-bit box size, a box that extends to the end of the file, unknown boxes, metadata after the codestream; lossy (references decoded by djxl): VarDCT RGB, RGBA, gray and 16-bit, effort 3, large transforms on a smooth image, progressive passes with a permuted table of contents, an LF frame, noise, patches, a frame upsampled by 2, a lossy Modular frame, without and with strong restoration filters, JPEG files recompressed without loss (4:2:0, 4:2:2, 4:4:4, gray), a spline; animations: full frames at 10 ticks per second, 30000/1001 ticks per second, a layer without duration and a cropped frame, a multiplied frame, an alpha animation played three times |
 | JPEG XL errors | invalid (rejected by djxl and jxl-oxide too): inverted bytes in the frame header and in the coded samples, a codestream without its signature, a container without codestream, with two codestreams, with parts out of order, with a box smaller than its header; unsupported: floating-point samples, premultiplied alpha, PQ with the white point E, an XYB image with an ICC profile that is not sRGB; limits: width, height, frame pixels, animation frames, metadata bytes, and the pixels of a layer that is decoded without being shown |
 | Errors | PNG header defects (bad IHDR CRC, IHDR not first, illegal bit depth, chunk length above 2^31 - 1, unknown critical chunk `CgBI` — unsupported), structure defects (truncated IDAT, bad IDAT CRC, non-consecutive IDAT, PLTE after IDAT, missing IEND) and pixel-data defects with valid containers (truncated zlib, missing or wrong Adler-32, bytes after the zlib datastream, one extra scanline, one missing scanline, filter type 5, out-of-range palette index); truncated GIF image data, GIF plain-text extension (unsupported), arithmetic-coded JPEG (unsupported); GIF LZW and color-table defects inside valid containers (code above the next table code, table code after a clear, end code too early, data ending without end code, too many indices, a string exceeding the image, an index outside the table, no color table) and block defects (unknown block, 3-byte Graphic Control Extension, minimum code size 12, missing trailer, no image, empty logical screen); resource limits: frame count, GIF displayed pixels (`MaxTotalPixels`, decode-only), width, frame pixels, encoded bytes (reached at IEND), and a `zTXt` whose 171-byte zlib stream inflates to 25,801 bytes with `MaxMetadataBytes` = 4096 (deterministic fixed-Huffman stream written by the generator) |
@@ -660,6 +726,7 @@ follows it, so keep both headings unique in this file.
 | avif | 139 | 33 | 14 | 12 |
 | bmp | 24 | 21 | 4 | 2 |
 | gif | 24 | 15 | 1 | 2 |
+| heic | 117 | 31 | 21 | 11 |
 | jpeg | 55 | 15 | 6 | 1 |
 | jxl | 54 | 7 | 4 | 6 |
 | png | 109 | 31 | 1 | 6 |
@@ -1050,6 +1117,137 @@ follows it, so keep both headings unique in this file.
 | AVIF fragmented files (rejected) | `avif.unsupported=fragmented` | 0 | 0 | 1 | 0 |
 | AVIF edit list that does not play the whole track (rejected) | `avif.unsupported=edit-list` | 0 | 0 | 2 | 0 |
 | AVIF sequence whose images change size (rejected) | `avif.unsupported=size-change` | 0 | 0 | 1 | 0 |
+| HEIC 8-bit samples | `heic.bitDepth=8` | 96 | 0 | 0 | 0 |
+| HEIC 10-bit samples | `heic.bitDepth=10` | 15 | 0 | 0 | 0 |
+| HEIC 12-bit samples | `heic.bitDepth=12` | 6 | 0 | 0 | 0 |
+| HEIC 4:4:4 | `heic.subsampling=4:4:4` | 74 | 0 | 0 | 0 |
+| HEIC 4:2:2 (chroma samples on the luma samples of even columns) | `heic.subsampling=4:2:2` | 7 | 0 | 0 | 0 |
+| HEIC 4:2:2, 10-bit | `heic.subsampling=4:2:2` + `heic.bitDepth=10` | 1 | 0 | 0 | 0 |
+| HEIC 4:2:2, 12-bit | `heic.subsampling=4:2:2` + `heic.bitDepth=12` | 1 | 0 | 0 | 0 |
+| HEIC 4:2:0 | `heic.subsampling=4:2:0` | 27 | 0 | 0 | 0 |
+| HEIC 4:2:0, 10-bit | `heic.subsampling=4:2:0` + `heic.bitDepth=10` | 5 | 0 | 0 | 0 |
+| HEIC 4:2:0, 12-bit | `heic.subsampling=4:2:0` + `heic.bitDepth=12` | 1 | 0 | 0 | 0 |
+| HEIC monochrome | `heic.subsampling=4:0:0` | 9 | 0 | 0 | 0 |
+| HEIC monochrome, 10-bit | `heic.subsampling=4:0:0` + `heic.bitDepth=10` | 2 | 0 | 0 | 0 |
+| HEIC monochrome, 12-bit | `heic.subsampling=4:0:0` + `heic.bitDepth=12` | 1 | 0 | 0 | 0 |
+| HEIC monochrome, limited range | `heic.subsampling=4:0:0` + `heic.range=limited` | 2 | 0 | 0 | 0 |
+| HEIC 4:2:0 chroma samples at the default location (left, between two rows: nothing is signalled) | `heic.chromaLoc=default` | 14 | 0 | 0 | 0 |
+| HEIC default chroma sample location above 8 bits | `heic.chromaLoc=default` + `heic.bitDepth=10` | 3 | 0 | 0 | 0 |
+| HEIC `chroma_sample_loc_type` 0, signalled | `heic.chromaLoc=0` | 1 | 0 | 0 | 0 |
+| HEIC `chroma_sample_loc_type` 1 (centered) | `heic.chromaLoc=1` | 9 | 0 | 0 | 0 |
+| HEIC `chroma_sample_loc_type` 2 (on the top-left luma sample) | `heic.chromaLoc=2` | 3 | 0 | 0 | 0 |
+| HEIC identity matrix (RGB planes) | `heic.matrix=0` | 45 | 0 | 0 | 0 |
+| HEIC BT.709 matrix | `heic.matrix=1` | 7 | 0 | 0 | 0 |
+| HEIC unspecified matrix (BT.601) | `heic.matrix=2` | 19 | 0 | 0 | 0 |
+| HEIC BT.470BG matrix | `heic.matrix=5` | 6 | 0 | 0 | 0 |
+| HEIC BT.601 matrix | `heic.matrix=6` | 22 | 0 | 0 | 0 |
+| HEIC YCgCo matrix | `heic.matrix=8` | 1 | 0 | 0 | 0 |
+| HEIC BT.2020 non-constant luminance matrix | `heic.matrix=9` | 8 | 0 | 0 | 0 |
+| HEIC full range | `heic.range=full` | 85 | 0 | 0 | 0 |
+| HEIC limited range | `heic.range=limited` | 32 | 0 | 0 | 0 |
+| HEIC color description (`colr` `nclx`) | `heic.colr=nclx` | 63 | 0 | 0 | 0 |
+| HEIC ICC profile (`colr` `prof`) | `heic.colr=icc` | 5 | 0 | 0 | 0 |
+| HEIC color description of the bitstream (no `colr`) | `heic.colr=none` | 50 | 0 | 0 | 0 |
+| HEIC bitstream with a color description (video signal description of the VUI) | `heic.videoSignal=colour` | 89 | 0 | 0 | 0 |
+| HEIC bitstream whose video signal description only gives the range | `heic.videoSignal=range` | 9 | 0 | 0 | 0 |
+| HEIC bitstream without video signal description | `heic.videoSignal=none` | 19 | 0 | 0 | 0 |
+| HEIC no `colr` box and no video signal description (limited range, converted as BT.601) | `heic.colr=none` + `heic.videoSignal=none` | 18 | 0 | 0 | 0 |
+| HEIC monochrome without video signal description (limited range) | `heic.subsampling=4:0:0` + `heic.videoSignal=none` | 1 | 0 | 0 | 0 |
+| HEIC no `colr` box and media data first | `heic.colr=none` + `heic.layout=media-first` | 2 | 0 | 0 | 0 |
+| HEIC lossless HEVC coding (transform and quantization bypass) | `heic.lossless` | 38 | 0 | 0 | 0 |
+| HEIC picture cropped by its conformance window | `heic.conformanceWindow` | 27 | 0 | 0 | 0 |
+| HEIC conformance window that removes more than the padding (the coded picture counts toward the canvas limits) | `heic.checkedSize` | 2 | 0 | 0 | 0 |
+| HEIC conformance window and clean aperture | `heic.conformanceWindow` + `heic.clap` | 5 | 0 | 0 | 0 |
+| HEIC alpha (auxiliary image or track) | `heic.alpha` | 14 | 0 | 0 | 0 |
+| HEIC alpha, 10-bit | `heic.alpha` + `heic.bitDepth=10` | 2 | 0 | 0 | 0 |
+| HEIC alpha, 12-bit | `heic.alpha` + `heic.bitDepth=12` | 1 | 0 | 0 | 0 |
+| HEIC alpha under limited-range colors | `heic.alpha` + `heic.range=limited` | 4 | 0 | 0 | 0 |
+| HEIC alpha plane coded as a monochrome picture | `heic.alpha.subsampling=4:0:0` | 13 | 0 | 0 | 0 |
+| HEIC alpha plane that is the luma plane of a 4:2:0 picture | `heic.alpha.subsampling=4:2:0` | 1 | 0 | 0 | 0 |
+| HEIC alpha auxiliary type of HEVC (`urn:mpeg:hevc:2015:auxid:1`) | `heic.alpha.urn=hevc` | 13 | 0 | 0 | 0 |
+| HEIC alpha auxiliary type of MPEG-B | `heic.alpha.urn=mpegB` | 1 | 0 | 0 | 0 |
+| HEIC limited-range alpha plane | `heic.alpha.range=limited` | 1 | 0 | 0 | 0 |
+| HEIC grids | `heic.grid` | 10 | 0 | 0 | 0 |
+| HEIC grid of 3 columns and 2 rows | `heic.grid=3x2` | 1 | 0 | 0 | 0 |
+| HEIC grid with an alpha grid | `heic.grid` + `heic.alpha` | 1 | 0 | 0 | 0 |
+| HEIC grid of 10-bit tiles | `heic.grid` + `heic.bitDepth=10` | 2 | 0 | 0 | 0 |
+| HEIC grid of 4:2:0 tiles | `heic.grid` + `heic.subsampling=4:2:0` | 5 | 0 | 0 | 0 |
+| HEIC rotation (`irot`) | `heic.irot` | 9 | 0 | 0 | 0 |
+| HEIC mirror (`imir`) | `heic.imir` | 3 | 0 | 0 | 0 |
+| HEIC rotation and mirror | `heic.irot` + `heic.imir` | 1 | 0 | 0 | 0 |
+| HEIC clean aperture (`clap`) | `heic.clap` | 61 | 0 | 0 | 0 |
+| HEIC Exif item | `heic.metadata=exif` | 7 | 0 | 0 | 0 |
+| HEIC XMP item | `heic.metadata=xmp` | 4 | 0 | 0 | 0 |
+| HEIC thumbnail (not read) | `heic.thumbnail` | 4 | 0 | 0 | 0 |
+| HEIC auxiliary image that is not an alpha plane (not read) | `heic.auxiliary=other` | 3 | 0 | 0 | 0 |
+| HEIC major brand `heic` | `heic.majorBrand=heic` | 17 | 0 | 0 | 0 |
+| HEIC major brand `heix` | `heic.majorBrand=heix` | 73 | 0 | 0 | 0 |
+| HEIC major brand `hevc` | `heic.majorBrand=hevc` | 4 | 0 | 0 | 0 |
+| HEIC major brand `hevx` | `heic.majorBrand=hevx` | 18 | 0 | 0 | 0 |
+| HEIC major brand `mif1`, an HEVC brand compatible | `heic.majorBrand=mif1` | 2 | 0 | 0 | 0 |
+| HEIC major brand `miaf`, an HEVC brand compatible | `heic.majorBrand=miaf` | 1 | 0 | 0 | 0 |
+| HEIC major brand `msf1`, an HEVC brand compatible | `heic.majorBrand=msf1` | 2 | 0 | 0 | 0 |
+| HEIC file that also declares a brand of AVIF | `heic.brands=avif` | 2 | 0 | 0 | 0 |
+| HEIC NAL unit lengths of one byte | `heic.hvcc.lengthSize=1` | 1 | 0 | 0 | 0 |
+| HEIC NAL unit lengths of two bytes | `heic.hvcc.lengthSize=2` | 2 | 0 | 0 | 0 |
+| HEIC NAL unit lengths of four bytes | `heic.hvcc.lengthSize=4` | 114 | 0 | 0 | 0 |
+| HEIC configuration record whose arrays are not complete | `heic.hvcc.incompleteArrays` | 76 | 0 | 0 | 0 |
+| HEIC configuration record with several sequence and picture parameter sets | `heic.hvcc.severalParameterSets` | 1 | 0 | 0 | 0 |
+| HEIC parameter sets in the coded data | `heic.parameterSets=in-band` | 3 | 0 | 0 | 0 |
+| HEIC media data before their index | `heic.layout=media-first` | 3 | 0 | 0 | 0 |
+| HEIC item data in `idat` | `heic.idat` | 11 | 0 | 0 | 0 |
+| HEIC item in several extents | `heic.extents` | 1 | 0 | 0 | 0 |
+| HEIC `free` boxes | `heic.boxes=free` | 1 | 0 | 0 | 0 |
+| HEIC unknown boxes (skipped) | `heic.boxes=unknown` | 1 | 0 | 0 | 0 |
+| HEIC 64-bit box sizes | `heic.boxes=large-size` | 1 | 0 | 0 | 0 |
+| HEIC box that extends to the end of the file | `heic.boxes=to-end` | 1 | 0 | 0 | 0 |
+| HEIC bytes after the last item (not read) | `heic.trailingData` | 2 | 0 | 0 | 0 |
+| HEIC image sequences | `heic.sequence` | 24 | 0 | 0 | 0 |
+| HEIC sequence with inter pictures | `heic.seq.interFrames` | 21 | 0 | 0 | 0 |
+| HEIC sequence with composition offsets (`ctts`) | `heic.seq.compositionOffsets` | 6 | 0 | 0 | 0 |
+| HEIC sequence whose images are not in the order of its samples | `heic.seq.reordered` | 6 | 0 | 0 | 0 |
+| HEIC sequence whose edit starts at the presentation time of its first image | `heic.seq.editMediaTime` | 3 | 0 | 0 | 0 |
+| HEIC sequence under an `hvc1` sample entry | `heic.seq.sampleEntry=hvc1` | 23 | 0 | 0 | 0 |
+| HEIC sequence under an `hev1` sample entry | `heic.seq.sampleEntry=hev1` | 1 | 0 | 0 | 0 |
+| HEIC sequence with a conformance window | `heic.sequence` + `heic.conformanceWindow` | 14 | 0 | 0 | 0 |
+| HEIC sequence with a clean aperture in its sample entry | `heic.sequence` + `heic.clap` | 2 | 0 | 0 | 0 |
+| HEIC sequence with a clean aperture and an alpha track | `heic.sequence` + `heic.clap` + `heic.alpha` | 1 | 0 | 0 | 0 |
+| HEIC sequence, monochrome | `heic.sequence` + `heic.subsampling=4:0:0` | 1 | 0 | 0 | 0 |
+| HEIC sequence, 4:2:2 | `heic.sequence` + `heic.subsampling=4:2:2` | 1 | 0 | 0 | 0 |
+| HEIC sequence, 4:2:0 | `heic.sequence` + `heic.subsampling=4:2:0` | 4 | 0 | 0 | 0 |
+| HEIC sequence, 10-bit | `heic.sequence` + `heic.bitDepth=10` | 1 | 0 | 0 | 0 |
+| HEIC sequence with an alpha track | `heic.sequence` + `heic.alpha` | 2 | 0 | 0 | 0 |
+| HEIC sequence with Exif data | `heic.sequence` + `heic.metadata=exif` | 2 | 0 | 0 | 0 |
+| HEIC sequence metadata in the `meta` box of the track | `heic.seq.metadataSource=track` | 1 | 0 | 0 | 0 |
+| HEIC sequence metadata in the `meta` box of the file | `heic.seq.metadataSource=file` | 1 | 0 | 0 | 0 |
+| HEIC sequence metadata in an `idat` box | `heic.sequence` + `heic.idat` | 1 | 0 | 0 | 0 |
+| HEIC sequence metadata whose data follow the samples | `heic.seq.metadataAfterSamples` | 1 | 0 | 0 | 0 |
+| HEIC sequence whose file also has an image item, which is not read | `heic.seq.fileImageNotRead` | 10 | 0 | 0 | 0 |
+| HEIC sequence whose first sample is not the first one in the file | `heic.seq.samplesOutOfOrder` | 1 | 0 | 0 | 0 |
+| HEIC sequence without edit list (infinite) | `heic.seq.editList=none` | 9 | 0 | 0 | 0 |
+| HEIC sequence played once | `heic.seq.editList=once` | 1 | 0 | 0 | 0 |
+| HEIC sequence repeated a number of times | `heic.seq.editList=repeat` | 2 | 0 | 0 | 0 |
+| HEIC sequence repeated forever (indefinite track duration) | `heic.seq.editList=repeat-indefinite` | 12 | 0 | 0 | 0 |
+| HEIC sample sizes in `stsz` | `heic.seq.sampleSizes=stsz` | 23 | 0 | 0 | 0 |
+| HEIC compact sample sizes (`stz2`) | `heic.seq.sampleSizes=stz2` | 1 | 0 | 0 | 0 |
+| HEIC chunk offsets in `stco` | `heic.seq.chunkOffsets=stco` | 23 | 0 | 0 | 0 |
+| HEIC 64-bit chunk offsets (`co64`) | `heic.seq.chunkOffsets=co64` | 1 | 0 | 0 | 0 |
+| HEIC image of another codec than its brands, or brands of another codec than its image (rejected) | `heic.unsupported=codec` | 0 | 0 | 2 | 0 |
+| HEIC layers of a layered HEVC bitstream (rejected) | `heic.unsupported=layers` | 0 | 0 | 2 | 0 |
+| HEIC configuration record of another version (rejected) | `heic.unsupported=configuration-record` | 0 | 0 | 1 | 0 |
+| HEIC premultiplied alpha (rejected) | `heic.unsupported=premultiplied-alpha` | 0 | 0 | 1 | 0 |
+| HEIC derived images other than grids (rejected) | `heic.unsupported=derived-image` | 0 | 0 | 2 | 0 |
+| HEIC grid tile with a clean aperture that its grid does not have (rejected) | `heic.unsupported=grid-tile-transform` | 0 | 0 | 1 | 0 |
+| HEIC fractional clean aperture (rejected) | `heic.unsupported=clap` | 0 | 0 | 1 | 0 |
+| HEIC essential unknown property (rejected) | `heic.unsupported=essential-property` | 0 | 0 | 1 | 0 |
+| HEIC other matrix coefficients (rejected) | `heic.unsupported=matrix` | 0 | 0 | 1 | 0 |
+| HEIC alpha plane of another size (rejected) | `heic.unsupported=alpha-size` | 0 | 0 | 1 | 0 |
+| HEIC bit depths above 12, or luma and chroma planes of different bit depths (rejected) | `heic.unsupported=bit-depth` | 0 | 0 | 2 | 0 |
+| HEIC extended precision processing (rejected) | `heic.unsupported=extended-precision` | 0 | 0 | 1 | 0 |
+| HEIC chroma sample location of a bottom field (rejected) | `heic.unsupported=chroma-sample-location` | 0 | 0 | 1 | 0 |
+| HEIC sequence whose pictures do not have the size of its sample entry (rejected) | `heic.unsupported=sequence-size` | 0 | 0 | 2 | 0 |
+| HEIC fragmented files (rejected) | `heic.unsupported=fragmented` | 0 | 0 | 1 | 0 |
+| HEIC edit list that does not play the whole track (rejected) | `heic.unsupported=edit-list` | 0 | 0 | 1 | 0 |
 | JPEG XL alpha channel | `jxl.alpha` | 11 | 0 | 1 | 0 |
 | JPEG XL animation | `jxl.animation` | 5 | 0 | 0 | 2 |
 | JPEG XL 12-bit samples | `jxl.bits=12` | 1 | 0 | 0 | 0 |
@@ -1231,7 +1429,7 @@ temporal unit holds a shown frame per spatial layer, each one predicting from th
 declares the operating points a decoder may select. No encoder option of the pinned FFmpeg codes them; libavif does,
 with libaom. The layered vectors (`AvifCorpus.Layered.cs`) are therefore **the payload of the coded item of a file
 written by `avifenc`** from a hand-defined pattern (`--layered`: one input per layer with its quality and its scale;
-`--progressive`: two layers, the first one at half the size), extracted by `ReferenceAvif`. The payload is a temporal
+`--progressive`: two layers, the first one at half the size), extracted by `ReferenceHeif`. The payload is a temporal
 delimiter (libavif keeps it, so the FFmpeg `obu` demuxer needs nothing more), a sequence header and one frame per layer.
 `provenance.commands` is the `avifenc` command of each temporal unit and `provenance.parameters.files` the SHA-256 of the
 file it wrote; everything else is recorded like any vector, from the stream: headers and tags by `trace_headers`,
@@ -1458,6 +1656,470 @@ What the earlier size limits (8 KB per vector, 176x144, 12 frames) had left out,
 Still from SVT-AV1 only, because libaom rejects `superres-mode`, `resize-mode`, `sframe-dist` and `enable-fwd-kf` in this
 build: super-resolution, reference scaling, switch frames and intra-only frames, in 4:2:0 at 8 and 10 bits.
 
+## HEVC conformance vectors
+
+HEVC decoding is normative too: every conforming decoder produces the same samples. The HEVC decoder is tested below the
+HEIF container and the color conversion, on raw byte streams (`hevc/*.hevc`, the byte stream format of H.265 Annex B: NAL
+units after start code prefixes) whose expected output is the **SHA-256 of every plane of every output picture**. There
+are intra vectors (1 to 3 pictures) and inter vectors (2 to 68 pictures: P and B pictures, pictures output in another
+order than they are decoded in, leading pictures that are skipped, several coded video sequences). Most are 16x16 to
+136x136 pictures of a few coding tree blocks, whose sizes are not multiples of the minimum coding block (the conformance
+window crops them, to odd sizes where the chroma format allows); the tile vectors are 512 samples wide or more (a tile
+of the Main profiles is at least 256x64), and a few are CIF pictures or whole groups of pictures. Three are the streams
+the benchmarks decode (`hevc/x265-benchmark-*`: two lossy 384x216 stills, 4:2:0 and 4:4:4, and five 176x144 pictures with
+B pictures, all with the deblocking filter and sample adaptive offset). Most streams are what
+an encoder wrote; a few are derived from the stream of another vector, for what no encoder writes
+([below](#hevc-vectors-an-encoder-did-not-write-alone)). The vectors are in the `hevcVectors` section of `manifest.json`,
+apart from `fixtures`:
+
+```json
+"hevcVectors": {
+  "generator": { "script": "tools/Meziantou.Framework.Imaging.CorpusGenerator/HevcCorpus.cs", "command": "...", "tools": ["ffmpeg 9.0.2", "x265 4.2", "kvazaar 2.3.2", "libde265 1.1.3", "HM 18.0", ".NET 10.0"] },
+  "headerParser": { "name": "ffmpeg 9.0.2 (trace_headers bitstream filter)", "command": "ffmpeg ... -bsf:v trace_headers ..." },
+  "decoders": [
+    { "id": "ffmpeg", "name": "ffmpeg 9.0.2 (hevc)", "command": "ffmpeg ... -c:v hevc ..." },
+    { "id": "libde265", "name": "libde265 1.1.3 (dec265)", "command": "dec265 -q -t 0 -o {frames}.yuv {input}" },
+    { "id": "hm", "name": "HM 18.0 (TAppDecoder)", "command": "TAppDecoder -b {input} -o {frames}.yuv -d 0" }
+  ],
+  "planeDigest": "SHA-256 of the samples of one plane ...",
+  "pictureHash": "The decoded picture hash SEI message of each picture ...",
+  "entries": [{
+    "id": "hevc/kvazaar-tiles-slices-sao-512x128",
+    "input": { "path": "hevc/kvazaar-tiles-slices-sao-512x128.hevc", "sha256": "...", "role": "encoded" },
+    "provenance": { "origin": "generated", "license": "CC0-1.0", "generator": "...", "tools": ["ffmpeg 9.0.2", "kvazaar 2.3.2"], "commands": ["ffmpeg ... -c:v libkvazaar -kvazaar-params hash=md5,... -f hevc {input}"] },
+    "features": ["hevc.bitDepth=8", "hevc.chroma=4:2:0", "hevc.ctb=64", "hevc.encoder=kvazaar", "hevc.loopFilterAcrossSlices=0", "hevc.slices=4", "hevc.tiles=2x2", "..."],
+    "pixelFormat": "yuv420p", "bitDepth": 8, "chromaFormat": "4:2:0", "pictureCount": 1, "frameCount": 1, "outputOrder": "decoding",
+    "decoders": { "agree": ["ffmpeg", "hm"], "excluded": [{ "decoder": "libde265", "outcome": "differs", "reason": "libde265 1.1.3 applies sample adaptive offset across ...", "observed": "outputs other samples in 1 of the 1 pictures (plane 1, 2; ...)" }] },
+    "pictureHash": { "type": "md5", "verifiedBy": ["ffmpeg", "hm"] },
+    "frames": [{ "width": 512, "height": 128, "poc": 0, "decodeOrder": 0, "planes": ["<sha256 of Y>", "<sha256 of Cb>", "<sha256 of Cr>"], "hash": ["<md5 of Y>", "<md5 of Cb>", "<md5 of Cr>"] }]
+  }]
+}
+```
+
+- **Inputs.** Deterministic FFmpeg `lavfi` sources (`testsrc2`, `testsrc`, `mandelbrot`, seeded `noise`; for the inter
+  vectors, `testsrc2` at 10 frames per second, as is, rotating around its center, or fading in from black for weighted
+  prediction; `testsrc2` rounds its size down to even numbers, so the odd sizes are cropped from it in the pixel format
+  of the stream) encoded by three encoders, single-threaded:
+  x265 and kvazaar through FFmpeg (`-c:v libx265 -x265-params ...` with `pools=1` and `-threads 1`, `-c:v libkvazaar
+  -kvazaar-params ...` with `threads=0,owf=0`; `-flags +bitexact`, raw byte stream `-f hevc`), and HM (`TAppEncoder`),
+  which reads a raw file FFmpeg writes from the same sources and takes every option on its command line (no
+  configuration file). x265 covers every chroma format at 8, 10 and 12 bits and most tools of version 1 of the
+  specification; kvazaar (8-bit 4:2:0, 64x64 coding tree blocks) adds tiles, a slice per tile and dependent slice
+  segments; HM is the only producer of PCM and of the coding tools of the range extensions, and the one that writes
+  reference picture sets in the sequence parameter set, slice-level deblocking and chroma QP offsets, and conformance
+  windows with a left and a top offset. The exact commands of each vector are in its `provenance.commands` (the scaling
+  list file some of them read is described in `provenance.parameters.files`, with its hash), and the check mode of the
+  generator proves that every stream is reproduced byte for byte. Every tool comes from the meziantou/prebuilt release
+  pinned by the `Meziantou.Prebuilt` package; the versions of FFmpeg, x265, kvazaar, libde265 and HM are pinned in
+  `HevcCorpus.PinnedTools`.
+- **Output pictures.** `frames` lists what a decoder outputs, in **output order**, which is not the decoding order as
+  soon as a stream has B pictures (`outputOrder`, `hevc.outputOrder=reordered`): increasing picture order count inside a
+  coded video sequence, sequence after sequence. Each frame records its picture order count (`poc`, which starts again
+  with each sequence) and the index of its picture among the coded pictures of the stream, in decoding order
+  (`decodeOrder`); `pictureCount` is the number of coded pictures. Fewer pictures are output than the stream codes in
+  two cases: a RASL picture whose IRAP picture starts a sequence (a stream that starts at a CRA picture, a BLA picture,
+  a CRA picture after an end of sequence) is not decoded (`hevc.raslSkipped`), and the pictures that were still waiting
+  for their output are discarded when a CRA picture follows an end of sequence (`hevc.noOutputOfPriorPics`:
+  `NoOutputOfPriorPicsFlag` is then 1, clause C.5.2.2). The generator derives the output pictures from the headers alone
+  (the coded video sequences and the picture order counts of clauses 8.1.3 and 8.3.1, the "bumping" process of clause
+  C.5.2 with `sps_max_num_reorder_pics` and `sps_max_latency_increase_plus1`), and fails when a decoder reports
+  something else: `ffprobe` gives the size, the pixel format and the picture type of every frame FFmpeg outputs, and
+  TAppDecoder logs the picture order count of every picture it decodes. Each frame has its own `width` and `height`:
+  they change when a second coded video sequence has another sequence parameter set (`hevc.frameSizes`).
+- **Plane digests.** Each stream is decoded by three independent HEVC decoders, to raw planes at the bit depth of the
+  stream and **cropped to the conformance window** (the output of the decoding process): FFmpeg's native `hevc` decoder
+  (one raw file per output frame in the native pixel format, which `ffprobe` must report for every frame so that no
+  swscale conversion takes part, without scaling, `-flags unaligned` so that a left offset of the window is applied
+  exactly), libde265 (`dec265`) and HM (`TAppDecoder -d 0`, the reference decoder). **A digest is recorded only when at
+  least two of them produce the same bytes for every plane of every output picture, in output order**, and the entry
+  names them (`decoders.agree`); see [below](#hevc-decoders-that-agree-and-decoders-that-are-left-out) for the third
+  one. A digest from a single decoder is never committed.
+- **Digest layout** (`planeDigest`): the samples of one plane of the cropped picture, rows in order, exactly plane-width
+  samples per row, 1 byte per sample up to 8 bits and 2 little-endian bytes above, no padding. Planes are in bitstream
+  order Y, Cb, Cr; for an identity-matrix stream (`hevc.matrix=identity`, `matrix_coeffs = 0` in the VUI of a 4:4:4
+  stream) that is FFmpeg's planar GBR order G, B, R. A monochrome stream (`4:0:0`) has one plane. `width` and `height`
+  are those of the cropped luma plane; a chroma plane is `width / SubWidthC` samples wide and `height / SubHeightC` rows
+  high (the offsets of the conformance window are in chroma samples, so the divisions are exact). `pixelFormat` is the
+  FFmpeg name of these planes (`yuv420p`, `yuv422p10le`, `gbrp12le`, `gray`...), even for a full-range 8-bit 4:2:0
+  stream, which FFmpeg still decodes to the deprecated `yuvj420p` (the same planes).
+- **Picture hashes.** Every picture of every vector carries a decoded picture hash SEI message (H.265, clause D.3.19),
+  so that a decoder can be checked with nothing but the stream: an MD5 for most vectors, a CRC or a checksum for some
+  (`pictureHash.type`, `hevc.pictureHash`; x265 `hash=1|2|3`, kvazaar `hash=md5|checksum`, HM `SEIDecodedPictureHash`).
+  The hash covers each colour component of the **whole decoded picture**, before the conformance window is applied,
+  where the plane digests cover the cropped picture. Each frame records the values the header parser reads in the
+  stream (`hash`: one lowercase hexadecimal value per component, 16 bytes for an MD5, 2 for a CRC, 4 for a checksum).
+  At generation, the decoders that can check the hashes do, and `pictureHash.verifiedBy` names the agreeing ones that
+  computed the hash of every picture and found the values of the stream: FFmpeg checks the MD5 of every picture
+  (`-err_detect crccheck`) and TAppDecoder every type. `dec265 -c` only compares the hash of the last picture of a
+  stream (a wrong hash of any other picture goes unnoticed), and computes the checksum above 8 bits as for 8 bits: a
+  mismatch it reports rules it out, but it is only named in `verifiedBy` for a stream of one picture. **Decoders that
+  agree with each other and not with the hashes fail the generation**: the encoder did not write the hash of what it
+  coded, or both decoders are wrong.
+- **Features** are what the parameter sets, the slice segment headers and the other NAL units signal, as parsed by a
+  fourth implementation, FFmpeg's `trace_headers` bitstream filter (libavcodec's coded bitstream reader, which its hevc
+  decoder does not use): never the encoder options, which do not guarantee that a tool is used (x265 ignores `slices`
+  without enough rows of coding tree blocks, only codes RASL pictures with enough B pictures before a CRA picture,
+  picks another `log2_max_pic_order_cnt_lsb` than the one asked for). A value lists the distinct values of the stream,
+  and the parameter sets that count are the ones a slice segment refers to. Each recipe declares the tags it exists for
+  (`HevcVector.Requires`), and the generation fails when the stream does not have them. Four tags do not come from the
+  headers: `hevc.encoder`, `hevc.derived`, `hevc.lossless` (measured: the stream enables the transform and quantization
+  bypass, and the decoded pictures are the pictures given to the encoder) and `hevc.unsupported` (derived from the
+  headers: what the library rejects). The vocabulary is closed: `FixtureManifestValidator.AllowedHevcFeatureKeys` lists
+  the keys, and the values of the keys that are enumerations.
+- **Coding tools.** The headers do not tell which tools the blocks use (the 35 intra prediction modes, NxN intra
+  partitions, the transform sizes of a residual quadtree, merge and AMVP candidates, the band and the edge classes of
+  sample adaptive offset, PCM and bypass coding units...): the recipes vary the content and the search for them
+  (`rd=6` of x265 with rotated and noisy sources, `sao=band` and `sao=edge` of kvazaar, a very low QP on noise for PCM).
+  Whether the vectors reach every tool is for a tool coverage test of the HEVC decoder to tell, as
+  `Av1ToolCoverageTests` does for AV1.
+- **Unsupported streams.** A few vectors are streams the library rejects (`hevc.unsupported=<reason>`): bit depths above
+  12, luma and chroma planes of different bit depths, extended precision processing, CABAC bypass alignment (all from
+  HM), and a field sequence (x265). They are recorded like the others when two decoders agree. The two extended
+  precision vectors have no digest (`planes` is empty, `decoders.agree` is HM alone): FFmpeg and libde265 ignore the
+  flag and decode other samples, which the hashes of the stream contradict. No encoder of the pinned release writes
+  separate colour planes.
+- **Tests.** `CorpusManifestTests` validates the section (files, hashes, licenses, the decoders that agree and the ones
+  left out, picture hashes, orphan files), the feature coverage below, what the frames and the tags say together, and
+  what the provenance of a derived vector claims (the NAL units that differ from the source vector).
+  `FixtureManifestValidatorTests` covers the rules of the section. The `verify` subcommand of the generator checks the
+  hash of every vector and re-derives the digests with each of the decoders that agreed.
+
+### HEVC decoders that agree, and decoders that are left out
+
+Three decoders, and two are enough: each of them has known differences, on streams that the two others decode alike and
+whose picture hashes they confirm. A recipe declares the decoder it expects to be left out, with the reason
+(`HevcVector.Excluded`); the entry records it (`decoders.excluded`: the decoder, `rejects` or `differs`, the reason, and
+what the generator observed: the message of the decoder, or the pictures and the planes that differ). **Any other
+disagreement fails the generation, and so does a decoder that is declared left out and agrees**: when a decoder is fixed,
+the note goes away with a reviewed regeneration. What the pinned versions do:
+
+| Decoder left out | Streams | What it does |
+| --- | --- | --- |
+| libde265 1.1.3 | Slices that disable in-loop filtering across their boundaries (`slice_loop_filter_across_slices_enabled_flag = 0`: a slice per tile of kvazaar, the slices of x265), with sample adaptive offset | Applies sample adaptive offset across the boundaries: other chroma samples, and its own hash check fails |
+| libde265 1.1.3 | The range extensions tools of residual coding combined, in 4:2:0 and 4:2:2 (HM) | Other chroma samples in the inter pictures; its own hash check fails |
+| libde265 1.1.3 | A CRA picture after an end of sequence, with pictures of the previous sequence still waiting for their output | Outputs the pictures that `NoOutputOfPriorPicsFlag` discards (clause C.5.2.2) |
+| libde265 1.1.3 (`dec265`) | A conformance window with a left or a top offset above 8 bits | Writes other samples than the ones it decodes (the hash check of a one-picture stream passes) |
+| libde265 1.1.3 (`dec265`) | Monochrome above 8 bits, cropped on the right by x265 | Decodes the stream when it writes nothing, and ends with `std::bad_alloc` when it writes the pictures |
+| FFmpeg 9.0.2 | Residual DPCM (implicit or explicit) or rotation in coding units that bypass the transform and the quantization (HM, kvazaar `implicit-rdpcm`) | Other samples; its MD5 check fails |
+| FFmpeg 9.0.2 | `high_precision_offsets_enabled_flag` (weighted prediction of the range extensions) | Other samples; its MD5 check fails |
+| FFmpeg 9.0.2 | A 12-bit 4:2:0 stream at slice QP 51 (x265) | Other luma samples; its MD5 check fails |
+| FFmpeg 9.0.2 | `cabac_bypass_alignment_enabled_flag`, `extended_precision_processing_flag` (rejected by the library) | Ignores the flag: other samples |
+| FFmpeg 9.0.2 | Bit depths above 12, luma and chroma planes of different bit depths (rejected by the library) | Rejects the stream |
+| HM 18.0 | A tile narrower than 256 luma samples or lower than 64 (kvazaar) | Rejects the stream: the limit of the Main profiles (clause A.3.2) |
+| HM 18.0 | A 16x16 coding tree block in a lossless stream of x265, which signals level 8.5 | Rejects the stream: the limit of level 5 and above (clause A.4.1) |
+| HM 18.0 (`TAppDecoder`) | A field sequence (x265 `interlace`) | Decodes the same pictures (it finds the hash of each one) and writes the two fields of a frame interleaved |
+
+Not recorded, because no two decoders agree on them or because the hashes contradict the decoders that do:
+
+- a 12-bit 4:4:4 stream of x265 at slice QP 51: FFmpeg, libde265 and HM decode three different pictures, and HM alone
+  finds the hashes;
+- tiles together with wavefronts (kvazaar, in a Main profile stream; TAppEncoder only codes them in a high throughput
+  profile): again three different pictures, HM alone with the hashes;
+- x265 does not write the hashes of the pictures it codes when an inter picture is a single 64x64 coding tree block:
+  the three decoders agree with each other and not with the hashes, from the second or third picture on. The inter
+  recipes of x265 use 32x32 coding tree blocks unless they ask for another size on a larger picture;
+- x265 writes a wrong CRC for the chroma planes of a picture, unless the picture is exactly one row of whole coding
+  tree blocks: its CRC vectors are monochrome or one coding tree block high (its MD5 and its checksum are right; HM
+  writes every type).
+
+And one kind of stream is not recorded although the three decoders agree on it and confirm its hashes, because it is not
+a conforming stream: kvazaar 2.3.2 does not write the scaling lists of a file (`scaling-list=custom` with `cqmfile`).
+Whatever the layout of the file, each list it codes has the first half of the values of the file at the even positions,
+in raster order, and 0 at the odd ones, and a scaling list coefficient shall be greater than 0 (clause 7.4.5). **Three
+decoders that agree do not make a stream conforming**: the generation reconstructs the coefficients of every scaling
+list a parameter set codes and fails on a value of 0. The lists of a file are in the vectors of x265 and HM.
+
+### HEVC vectors an encoder did not write alone
+
+Some cases are written by no encoder option. They are covered by vectors **derived from the stream of another vector**
+(`hevc.derived=<kind>`, `HevcCorpus.Derived.cs` and `HevcCorpus.Stream.cs`), recorded like any other vector: headers and
+feature tags read back from the final stream by `trace_headers`, planes decoded by the three decoders, digests recorded
+only when two agree. A derivation never touches slice data: it removes, inserts or retypes whole NAL units, or has an
+FFmpeg bitstream filter rewrite a parameter set. `provenance.parameters` records the source vector (`derivedFrom`), the
+SHA-256 of its stream (`sourceSha256`), the kind (`derivation`) and what was done (`description`); `provenance.commands`
+is the encoder command of the source, followed by the FFmpeg command of a bitstream filter.
+
+- `metadata`: FFmpeg's `hevc_metadata` rewrites the sequence parameter set: a **conformance window with an offset on
+  every side** in each chroma format (`crop_left=...:crop_right=...:crop_top=...:crop_bottom=...`; the decoded pictures
+  and their hashes do not change, the output pictures are other parts of them; HM also writes such windows directly,
+  `ConformanceWindowMode=3`), a chroma sample location, access unit delimiters (`aud=insert`).
+- `filterUnits`: FFmpeg's `filter_units` removes the prefix SEI messages (`remove_types=39`); the picture hashes are
+  suffix SEI messages and stay.
+- `startAtIrap`: the stream from the access unit of its first CRA picture after the first picture, as after a random
+  access. The RASL pictures that follow the CRA picture refer to pictures that are not there: they are not decoded.
+- `nalType`: every CRA picture after the first picture retyped as a BLA picture (`BLA_W_LP`, `BLA_W_RADL` or
+  `BLA_N_LP`), as a splicer does: the 6 bits of `nal_unit_type` of its slice segment NAL units are overwritten (the
+  slice segments of the IRAP pictures that are not IDR pictures have the same syntax). The access units of the RASL
+  pictures are removed, unless the type allows leading pictures that are skipped (`BLA_W_LP`). A BLA picture starts a
+  coded video sequence, and the picture order count starts again from its least significant bits.
+- `endOfSequence`: an end of sequence NAL unit (`00 00 01 48 01`) inserted before the access unit of every CRA picture
+  after the first picture. The CRA picture then starts a coded video sequence, its RASL pictures are skipped, and the
+  pictures of the previous sequence that were still waiting for their output are discarded (libde265 outputs them, and
+  is left out).
+- `subLayers`: the access units of the pictures of the higher temporal sub-layers removed (sub-bitstream extraction,
+  clause 10): what a decoder that drops them decodes.
+- `concatenation`: the stream of another vector appended, with or without an end of sequence between them: two coded
+  video sequences whose pictures have different sizes (`provenance.parameters.appended`, `appendedSha256`).
+- `trailingUnits`: a filler data NAL unit, an end of sequence and an end of bitstream after the last picture.
+
+No encoder of the pinned release writes long-term reference pictures, a reference picture list modification, scaling
+lists in the picture parameter set, `pic_output_flag = 0` or separate colour planes: they would need slice headers
+written by the generator, and are not covered by a vector.
+
+`hevc.encoder`, `hevc.derived`, `hevc.lossless` and `hevc.unsupported` are the only tags that are not read in a header.
+
+### HEVC vector features
+
+The table maps the decoding tools to the vectors that exercise them. It is **verified** like the
+[fixture coverage matrix](#fixture-coverage-matrix), with the same selector syntax: `FixtureCoverageMatrixTests` recomputes
+every count from the `hevcVectors` section and fails when the table is stale, when a row has no vector, or when a feature
+key recorded in the section is not mapped by any row.
+
+| Feature | Selector | Vectors |
+| --- | --- | --- |
+| Main profile | `hevc.profile=main` | 157 |
+| Main 10 profile | `hevc.profile=main10` | 11 |
+| Main Still Picture profile | `hevc.profile=mainStillPicture` | 1 |
+| Range extensions profile, monochrome | `hevc.profile=rext-400-8` | 3 |
+| Range extensions profile, monochrome 12 | `hevc.profile=rext-400-12` | 5 |
+| Range extensions profile, Main 12 | `hevc.profile=rext-420-12` | 5 |
+| Range extensions profile, Main 4:2:2 10 | `hevc.profile=rext-422-10` | 23 |
+| Range extensions profile, Main 4:2:2 12 | `hevc.profile=rext-422-12` | 3 |
+| Range extensions profile, Main 4:4:4 | `hevc.profile=rext-444-8` | 20 |
+| Range extensions profile, Main 4:4:4 10 | `hevc.profile=rext-444-10` | 22 |
+| Range extensions profile, Main 4:4:4 12 | `hevc.profile=rext-444-12` | 20 |
+| Range extensions profile, Main Intra (what x265 signals for an all-intra 8-bit 4:2:0 stream) | `hevc.profile=rext-420-8-intra` | 53 |
+| Range extensions profile, Main 4:2:2 10 Intra | `hevc.profile=rext-422-10-intra` | 15 |
+| Range extensions profile, Main 4:4:4 16 Intra | `hevc.profile=rext-444-16-intra` | 3 |
+| Range extensions profile, Main 4:4:4 Still Picture | `hevc.profile=rext-444-8-still` | 1 |
+| High throughput profile (rejected by the library) | `hevc.profile=highThroughput-444-16-intra` | 1 |
+| Level (every vector) | `hevc.level` | 402 |
+| Level 8.5 (x265, lossless) | `hevc.level=8.5` | 11 |
+| High tier | `hevc.tier=high` | 1 |
+| Monochrome (4:0:0), 8-bit | `hevc.chroma=4:0:0` + `hevc.bitDepth=8` | 6 |
+| Monochrome (4:0:0), 10-bit | `hevc.chroma=4:0:0` + `hevc.bitDepth=10` | 7 |
+| Monochrome (4:0:0), 12-bit | `hevc.chroma=4:0:0` + `hevc.bitDepth=12` | 8 |
+| 4:2:0, 8-bit | `hevc.chroma=4:2:0` + `hevc.bitDepth=8` | 215 |
+| 4:2:0, 10-bit | `hevc.chroma=4:2:0` + `hevc.bitDepth=10` | 21 |
+| 4:2:0, 12-bit | `hevc.chroma=4:2:0` + `hevc.bitDepth=12` | 6 |
+| 4:2:2, 8-bit | `hevc.chroma=4:2:2` + `hevc.bitDepth=8` | 13 |
+| 4:2:2, 10-bit | `hevc.chroma=4:2:2` + `hevc.bitDepth=10` | 30 |
+| 4:2:2, 12-bit | `hevc.chroma=4:2:2` + `hevc.bitDepth=12` | 10 |
+| 4:4:4, 8-bit | `hevc.chroma=4:4:4` + `hevc.bitDepth=8` | 27 |
+| 4:4:4, 10-bit | `hevc.chroma=4:4:4` + `hevc.bitDepth=10` | 30 |
+| 4:4:4, 12-bit | `hevc.chroma=4:4:4` + `hevc.bitDepth=12` | 26 |
+| Identity matrix (planar GBR) | `hevc.matrix=identity` | 13 |
+| Identity matrix, 10-bit | `hevc.matrix=identity` + `hevc.bitDepth=10` | 3 |
+| Identity matrix, 12-bit | `hevc.matrix=identity` + `hevc.bitDepth=12` | 4 |
+| 16x16 coding tree blocks | `hevc.ctb=16` | 44 |
+| 32x32 coding tree blocks | `hevc.ctb=32` | 152 |
+| 64x64 coding tree blocks | `hevc.ctb=64` | 206 |
+| Minimum coding block 8x8 | `hevc.minCb=8` | 393 |
+| Minimum coding block 16x16 | `hevc.minCb=16` | 5 |
+| Minimum coding block 32x32 | `hevc.minCb=32` | 3 |
+| Minimum coding block 64x64 (the coding tree block) | `hevc.minCb=64` | 1 |
+| Minimum transform block 4x4 | `hevc.minTb=4` | 399 |
+| Minimum transform block 8x8 | `hevc.minTb=8` | 1 |
+| Minimum transform block 16x16 | `hevc.minTb=16` | 1 |
+| Minimum transform block 32x32 | `hevc.minTb=32` | 1 |
+| Maximum transform block 4x4 (DST for intra luma) | `hevc.maxTb=4` | 5 |
+| Maximum transform block 8x8 | `hevc.maxTb=8` | 2 |
+| Maximum transform block 16x16 | `hevc.maxTb=16` | 38 |
+| Maximum transform block 32x32 | `hevc.maxTb=32` | 357 |
+| Transform hierarchy depth of intra coding units: 0 | `hevc.tuDepthIntra=0` | 251 |
+| Transform hierarchy depth of intra coding units: 1 | `hevc.tuDepthIntra=1` | 4 |
+| Transform hierarchy depth of intra coding units: 2 | `hevc.tuDepthIntra=2` | 144 |
+| Transform hierarchy depth of intra coding units: 3 | `hevc.tuDepthIntra=3` | 3 |
+| Transform hierarchy depth of inter coding units: 1 | `hevc.tuDepthInter=1` + `hevc.frameTypes=inter` | 1 |
+| Transform hierarchy depth of inter coding units: 2 | `hevc.tuDepthInter=2` + `hevc.frameTypes=inter` | 82 |
+| Transform hierarchy depth of inter coding units: 3 | `hevc.tuDepthInter=3` + `hevc.frameTypes=inter` | 2 |
+| Picture of one coding tree block | `hevc.ctbs=1x1` | 140 |
+| Picture of 6x5 coding tree blocks (CIF, or QCIF with 32x32 blocks) | `hevc.ctbs=6x5` | 5 |
+| Picture of 6x4 coding tree blocks (384x216, the stills of the benchmarks) | `hevc.ctbs=6x4` | 2 |
+| Picture one coding tree block wide, with wavefronts | `hevc.ctbs=1x4` + `hevc.wpp` | 2 |
+| Conformance window: right offset | `hevc.crop=right` | 71 |
+| Conformance window: bottom offset | `hevc.crop=bottom` | 73 |
+| Conformance window: left offset | `hevc.crop=left` | 12 |
+| Conformance window: top offset | `hevc.crop=top` | 12 |
+| Conformance window on every side, monochrome | `hevc.crop=left` + `hevc.crop=top` + `hevc.chroma=4:0:0` | 2 |
+| Conformance window on every side, 4:2:0 | `hevc.crop=left` + `hevc.crop=top` + `hevc.chroma=4:2:0` | 4 |
+| Conformance window on every side, 4:2:2 | `hevc.crop=left` + `hevc.crop=top` + `hevc.chroma=4:2:2` | 3 |
+| Conformance window on every side, 4:4:4 | `hevc.crop=left` + `hevc.crop=top` + `hevc.chroma=4:4:4` | 3 |
+| Strong intra smoothing off | `hevc.strongIntraSmoothing=0` | 36 |
+| Strong intra smoothing on | `hevc.strongIntraSmoothing=1` | 366 |
+| Constrained intra prediction | `hevc.constrainedIntraPred` | 3 |
+| Transform skip | `hevc.transformSkip` | 24 |
+| Sign data hiding off | `hevc.signDataHiding=0` | 36 |
+| Sign data hiding on | `hevc.signDataHiding=1` | 366 |
+| Asymmetric motion partitions | `hevc.amp` | 155 |
+| PCM coding units | `hevc.pcm` | 8 |
+| PCM, samples at the bit depth of an 8-bit stream | `hevc.pcm.bitDepth=8/8` + `hevc.bitDepth=8` | 4 |
+| PCM, 8-bit samples in a 10-bit stream | `hevc.pcm.bitDepth=8/8` + `hevc.bitDepth=10` | 1 |
+| PCM, 8-bit samples in a 12-bit stream | `hevc.pcm.bitDepth=8/8` + `hevc.bitDepth=12` | 1 |
+| PCM, 8x8 to 32x32 coding units | `hevc.pcm.size=8-32` | 5 |
+| PCM, deblocking of the PCM samples disabled | `hevc.pcm.loopFilterDisabled` | 4 |
+| PCM in inter pictures | `hevc.pcm` + `hevc.frameTypes=inter` | 2 |
+| Transform and quantization bypass enabled | `hevc.transquantBypass` | 27 |
+| Lossless: the decoded pictures are the source pictures (measured) | `hevc.lossless` | 22 |
+| Lossless, inter pictures | `hevc.lossless` + `hevc.frameTypes=inter` | 10 |
+| Lossless, identity matrix | `hevc.lossless` + `hevc.matrix=identity` | 3 |
+| Slice QP (every vector) | `hevc.sliceQp` | 402 |
+| Lowest slice QP of a 12-bit stream (-24) | `hevc.sliceQp=-24` | 1 |
+| Slice QP 0 | `hevc.sliceQp=0` | 11 |
+| Slice QP 51 | `hevc.sliceQp=51` | 5 |
+| Chroma QP offsets of the picture parameter set | `hevc.chromaQpOffset` | 49 |
+| Chroma QP offsets, 4:2:2 | `hevc.chromaQpOffset` + `hevc.chroma=4:2:2` | 2 |
+| Chroma QP offsets of the slice header | `hevc.sliceChromaQpOffset` | 2 |
+| QP deltas of coding units | `hevc.cuQpDelta` | 159 |
+| Quantization groups of 64x64 samples | `hevc.qgSize=64` | 3 |
+| Quantization groups of 32x32 samples | `hevc.qgSize=32` | 129 |
+| Quantization groups of 16x16 samples | `hevc.qgSize=16` | 23 |
+| Quantization groups of 8x8 samples | `hevc.qgSize=8` | 4 |
+| Scaling lists: the default lists | `hevc.scalingList=default` | 7 |
+| Scaling lists of the sequence parameter set | `hevc.scalingList=sps` | 9 |
+| Scaling list coded with its coefficients | `hevc.scalingList.coding=explicit` | 9 |
+| Scaling list copied from another list | `hevc.scalingList.coding=copy` | 7 |
+| Scaling list set to the default list by its prediction | `hevc.scalingList.coding=default` | 2 |
+| Deblocking filter on | `hevc.deblocking=1` | 395 |
+| Deblocking filter off | `hevc.deblocking=0` | 7 |
+| Deblocking offsets (beta/tc, halved) | `hevc.deblocking.offsets` | 7 |
+| Deblocking parameters in the slice header | `hevc.deblocking.sliceOverride` | 1 |
+| Sample adaptive offset off | `hevc.sao=off` | 10 |
+| Sample adaptive offset, luma | `hevc.sao=luma` | 392 |
+| Sample adaptive offset, chroma | `hevc.sao=chroma` | 370 |
+| Sample adaptive offset disabled by a slice | `hevc.sao=sliceOff` | 11 |
+| Sample adaptive offset, 10-bit | `hevc.sao=luma` + `hevc.bitDepth=10` | 88 |
+| Sample adaptive offset, 12-bit | `hevc.sao=luma` + `hevc.bitDepth=12` | 50 |
+| In-loop filters disabled across slices | `hevc.loopFilterAcrossSlices=0` | 136 |
+| Several slices in a picture | `hevc.slices` | 16 |
+| Dependent slice segments | `hevc.dependentSlices` | 6 |
+| Tiles | `hevc.tiles` | 15 |
+| 2x2 tiles | `hevc.tiles=2x2` | 9 |
+| Tiles, uniform spacing | `hevc.tiles.spacing=uniform` | 11 |
+| Tiles, explicit sizes | `hevc.tiles.spacing=explicit` | 4 |
+| Tiles, in-loop filters across their boundaries | `hevc.tiles.loopFilterAcross=1` | 4 |
+| Tiles, no in-loop filter across their boundaries | `hevc.tiles.loopFilterAcross=0` | 11 |
+| Tiles with a slice per tile | `hevc.tiles` + `hevc.slices` | 5 |
+| Tiles in inter pictures | `hevc.tiles` + `hevc.frameTypes=inter` | 8 |
+| Wavefront parallel processing | `hevc.wpp` | 39 |
+| Wavefronts with dependent slice segments | `hevc.wpp` + `hevc.dependentSlices` | 3 |
+| Wavefronts with several slices | `hevc.wpp` + `hevc.slices` | 6 |
+| CABAC initialization type chosen by the slice | `hevc.cabacInit` | 3 |
+| I slices only | `hevc.frameTypes=intra` | 198 |
+| P or B slices | `hevc.frameTypes=inter` | 204 |
+| Slice types (every vector) | `hevc.sliceTypes` | 402 |
+| P slices | `hevc.sliceTypes=P` | 163 |
+| B slices | `hevc.sliceTypes=B` | 121 |
+| B pictures used as references | `hevc.referenceB` | 92 |
+| Temporal motion vector prediction off | `hevc.temporalMvp=0` | 8 |
+| Temporal motion vector prediction on | `hevc.temporalMvp=1` | 196 |
+| Collocated picture from list 1 | `hevc.collocatedFromL1` | 114 |
+| Motion vector differences of list 1 inferred to be zero | `hevc.mvdL1Zero` | 39 |
+| One merge candidate | `hevc.mergeCand=1` | 2 |
+| Two merge candidates | `hevc.mergeCand=2` | 3 |
+| Three merge candidates | `hevc.mergeCand=3` | 96 |
+| Four merge candidates | `hevc.mergeCand=4` | 1 |
+| Five merge candidates | `hevc.mergeCand=5` | 102 |
+| Parallel merge level | `hevc.parallelMergeLevel` | 3 |
+| Two active reference pictures | `hevc.refs=2` | 145 |
+| Three active reference pictures | `hevc.refs=3` | 63 |
+| Four active reference pictures | `hevc.refs=4` | 3 |
+| Weighted prediction enabled for P slices | `hevc.weightedPred=p` | 103 |
+| Weighted prediction enabled for B slices | `hevc.weightedPred=b` | 5 |
+| Weights coded for luma | `hevc.weights=luma` | 21 |
+| Weights coded for chroma | `hevc.weights=chroma` | 19 |
+| Reference picture set of the sequence parameter set | `hevc.rps=sps` | 84 |
+| Reference picture set coded in the slice header | `hevc.rps=slice` | 133 |
+| Reference picture set predicted from another one | `hevc.rps.interPrediction` | 13 |
+| NAL unit types (every vector) | `hevc.nal` | 402 |
+| IDR pictures without leading pictures | `hevc.nal=IDR_N_LP` | 217 |
+| IDR pictures that may have RADL pictures | `hevc.nal=IDR_W_RADL` | 183 |
+| CRA pictures | `hevc.nal=CRA` | 17 |
+| RASL pictures | `hevc.nal=RASL_N` | 15 |
+| RASL pictures used as references | `hevc.nal=RASL_R` | 11 |
+| RADL pictures | `hevc.nal=RADL_N` | 2 |
+| BLA pictures with leading pictures | `hevc.nal=BLA_W_LP` | 2 |
+| BLA pictures with RADL pictures only | `hevc.nal=BLA_W_RADL` | 1 |
+| BLA pictures without leading pictures | `hevc.nal=BLA_N_LP` | 2 |
+| Sub-layer non-reference pictures | `hevc.nal=TRAIL_N` | 86 |
+| Temporal sub-layer access pictures | `hevc.nal=TSA_N` | 12 |
+| Access unit delimiters | `hevc.nal=AUD` | 6 |
+| End of sequence | `hevc.nal=EOS` | 4 |
+| End of bitstream | `hevc.nal=EOB` | 1 |
+| Filler data | `hevc.nal=FD` | 1 |
+| Temporal sub-layers | `hevc.temporalLayers` | 12 |
+| Three temporal sub-layers | `hevc.temporalLayers=3` | 11 |
+| Parameter sets sent again | `hevc.repeatedParameterSets` | 37 |
+| Picture parameter set that changes inside the stream | `hevc.pps` | 3 |
+| Sequence parameter set that changes inside the stream | `hevc.sps` | 3 |
+| Several output pictures | `hevc.frames` | 216 |
+| 16 output pictures | `hevc.frames=16` | 1 |
+| 17 output pictures | `hevc.frames=17` | 2 |
+| Output order different from the decoding order | `hevc.outputOrder=reordered` | 92 |
+| Pictures that wait for their output (sps_max_num_reorder_pics) | `hevc.reorder` | 94 |
+| Several coded video sequences | `hevc.sequences` | 27 |
+| Picture size that changes with the coded video sequence | `hevc.frameSizes` | 3 |
+| RASL pictures that are not decoded | `hevc.raslSkipped` | 7 |
+| Pictures discarded before their output (NoOutputOfPriorPicsFlag) | `hevc.noOutputOfPriorPics` | 2 |
+| Picture order count that wraps | `hevc.pocWrap` | 5 |
+| Picture order count coded with 4 bits | `hevc.pocLsbBits=4` | 31 |
+| Picture order count coded with 8 bits | `hevc.pocLsbBits=8` | 366 |
+| SEI messages (every vector) | `hevc.sei` | 402 |
+| Decoded picture hash: MD5 | `hevc.pictureHash=md5` | 370 |
+| Decoded picture hash: CRC | `hevc.pictureHash=crc` | 14 |
+| Decoded picture hash: checksum | `hevc.pictureHash=checksum` | 18 |
+| Mastering display colour volume | `hevc.sei=masteringDisplayColourVolume` | 2 |
+| Content light level | `hevc.sei=contentLightLevel` | 2 |
+| Active parameter sets, recovery point | `hevc.sei=activeParameterSets` + `hevc.sei=recoveryPoint` | 1 |
+| Buffering period and picture timing (HRD) | `hevc.sei=bufferingPeriod` + `hevc.sei=pictureTiming` + `hevc.hrd` | 2 |
+| User data | `hevc.sei=userDataUnregistered` | 1 |
+| Colour description | `hevc.colourDescription` | 19 |
+| Full-range samples | `hevc.fullRange` | 28 |
+| Chroma sample location | `hevc.chromaLoc` | 8 |
+| Chroma sample location type 5 | `hevc.chromaLoc=5` | 2 |
+| Default display window (not applied) | `hevc.defaultDisplayWindow` | 3 |
+| Implicit residual DPCM | `hevc.implicitRdpcm` | 13 |
+| Explicit residual DPCM | `hevc.explicitRdpcm` | 10 |
+| Rotation of transform-skipped residuals | `hevc.transformSkipRotation` | 10 |
+| Transform skip context | `hevc.transformSkipContext` | 9 |
+| Transform skip up to 8x8 | `hevc.transformSkip.maxSize=8` | 1 |
+| Transform skip up to 16x16 | `hevc.transformSkip.maxSize=16` | 8 |
+| Transform skip up to 32x32 | `hevc.transformSkip.maxSize=32` | 1 |
+| Cross-component prediction | `hevc.crossComponentPrediction` | 7 |
+| Chroma QP offset lists | `hevc.chromaQpOffsetList` + `hevc.cuChromaQpOffset` | 6 |
+| Persistent Rice adaptation | `hevc.persistentRice` | 10 |
+| Scaled sample adaptive offsets | `hevc.saoOffsetScale` | 2 |
+| High precision weighted prediction offsets | `hevc.highPrecisionOffsets` | 2 |
+| Intra smoothing disabled | `hevc.intraSmoothingDisabled` | 4 |
+| Range extensions tools in lossless coding units | `hevc.implicitRdpcm` + `hevc.lossless` | 5 |
+| Rejected by the library | `hevc.unsupported` | 8 |
+| Rejected: bit depth above 12 | `hevc.unsupported=bitDepth` | 3 |
+| Rejected: luma and chroma bit depths differ | `hevc.unsupported=unequalBitDepth` + `hevc.bitDepthChroma` | 2 |
+| Rejected: extended precision processing (no digest) | `hevc.unsupported=extendedPrecision` + `hevc.extendedPrecision` | 2 |
+| Rejected: CABAC bypass alignment | `hevc.unsupported=cabacBypassAlignment` + `hevc.cabacBypassAlignment` | 1 |
+| Rejected: field sequence | `hevc.unsupported=fieldSeq` + `hevc.fieldSeq` | 1 |
+| Encoded by x265 | `hevc.encoder=x265` | 218 |
+| Encoded by kvazaar | `hevc.encoder=kvazaar` | 34 |
+| Encoded by HM | `hevc.encoder=hm` | 150 |
+| Derived from the stream of another vector | `hevc.derived` | 28 |
+| Derived: parameter set rewritten by hevc_metadata | `hevc.derived=metadata` | 10 |
+| Derived: NAL units removed by filter_units | `hevc.derived=filterUnits` | 1 |
+| Derived: stream that starts at a CRA picture | `hevc.derived=startAtIrap` | 3 |
+| Derived: CRA pictures retyped as BLA pictures | `hevc.derived=nalType` | 5 |
+| Derived: end of sequence before a CRA picture | `hevc.derived=endOfSequence` | 2 |
+| Derived: lower temporal sub-layers | `hevc.derived=subLayers` | 3 |
+| Derived: two streams one after the other | `hevc.derived=concatenation` | 3 |
+| Derived: filler data, end of sequence and end of bitstream after the last picture | `hevc.derived=trailingUnits` | 1 |
+
+Tags and what they hold, beyond the rows above: `hevc.ctbs=CxR` (the picture in coding tree blocks), `hevc.level` (the
+level number, `3.1`), `hevc.sliceQp` (the QP of every slice: `26 + init_qp_minus26 + slice_qp_delta`),
+`hevc.chromaQpOffset=cb/cr`, `hevc.deblocking.offsets=beta/tc` (the halved offsets a slice uses, when they are not
+zero), `hevc.colourDescription=primaries/transfer/matrix`, `hevc.saoOffsetScale=luma/chroma`, `hevc.pcm.bitDepth=luma/chroma`,
+`hevc.pcm.size=min-max`, `hevc.slices=N` and `hevc.dependentSlices=N` (the largest number of slices, and of slice
+segments, of a picture), `hevc.refs` (the numbers of active reference pictures of the lists of the P and B slices),
+`hevc.reorder` (`sps_max_num_reorder_pics`), `hevc.sps=N` and `hevc.pps=N` (parameter sets of N different contents),
+`hevc.sei` (the SEI payloads by name), `hevc.frameSizes=WxH,...`.
+
 ## Using the corpus in tests
 
 ```csharp
@@ -1543,12 +2205,15 @@ dotnet run --project tools/Meziantou.Framework.Imaging.CorpusGenerator -- verify
 ```
 
 `verify` is read-only and uses the ffmpeg, `dwebp`, `anim_dump`, `avifenc` and `avifdec` of the meziantou/prebuilt release pinned by the
-`Meziantou.Prebuilt` package, like the interop tests (downloaded on first use, whatever their versions compared with the manifest): it re-decodes every valid non-JPEG
+`Meziantou.Prebuilt` package, like the interop tests (downloaded on first use, whatever their versions compared with the manifest; and, for the HEVC vectors, `dec265` and `TAppDecoder`): it re-decodes every valid non-JPEG
 fixture whose generation-time FFmpeg cross-check agreed, and every WebP fixture with `dwebp` and `anim_dump`, and compares
 with the committed references. It also checks the [AV1 conformance vectors](#av1-conformance-vectors): the SHA-256 of every
 stream, and the digest of every plane of every output frame, re-derived with each of the two decoders (`libdav1d`,
-`libaom-av1`) the FFmpeg build has; a decoder the build lacks is reported and skipped. The references of the valid AVIF
-fixtures are re-derived from their committed inputs the way the generator does (`ReferenceAvif`, both decoders,
+`libaom-av1`) the FFmpeg build has; a decoder the build lacks is reported and skipped. And the
+[HEVC conformance vectors](#hevc-conformance-vectors): the SHA-256 of every stream, and the digest of every plane of every
+output picture, re-derived with each of the decoders that agreed when the vector was generated (FFmpeg's `hevc` decoder,
+`dec265`, `TAppDecoder`). The references of the valid AVIF
+fixtures are re-derived from their committed inputs the way the generator does (`ReferenceHeif`, both decoders,
 `ReferenceYuvConverter`) and must be identical to the committed buffers. Run it before regenerating with a new
 tool version to see what changes; the interop CI job runs it on every build to detect reference drift.
 
@@ -1615,6 +2280,30 @@ tool version to see what changes; the interop CI job runs it on every build to d
   `HandAuthored(recipe, format, pixelFormat, size)`: see [Vectors an encoder did not write alone](#vectors-an-encoder-did-not-write-alone).
   A layered vector is a `LayeredVector` of `AvifCorpus.LayeredVectors` (an `avifenc` command per temporal unit), and its
   truncations `FirstLayers(vector, count)`: see [Layered vectors](#layered-vectors).
+- `hevc` (`HevcCorpus.cs`: the driver, the three decoders and the agreement rule; `HevcCorpus.Trace.cs`: header parsing,
+  output order and feature tags; `HevcCorpus.Vectors.cs`: the recipe model, the sources and the encoder helpers;
+  `HevcCorpus.X265.cs`, `HevcCorpus.Kvazaar.cs`, `HevcCorpus.Hm.cs`: the recipes of each encoder; `HevcCorpus.Derived.cs`
+  and `HevcCorpus.Stream.cs`: the derived vectors and the byte stream) generates the
+  [HEVC conformance vectors](#hevc-conformance-vectors): it replaces only the `hevcVectors` section of the manifest and the
+  files of `hevc/`, and every other generator keeps them. It needs no installed tool: FFmpeg, ffprobe, `dec265`,
+  `TAppEncoder` and `TAppDecoder` are downloaded from the meziantou/prebuilt release pinned by the `Meziantou.Prebuilt`
+  package, and the versions are pinned in `HevcCorpus.PinnedTools` (currently FFmpeg 9.0.2 with x265 4.2 and kvazaar
+  2.3.2, libde265 1.1.3, HM 18.0). The committed vectors were generated on macOS arm64; an encoder may make other
+  decisions on another platform, in which case the check mode reports the differences.
+
+  ```shell
+  dotnet run --project tools/Meziantou.Framework.Imaging.CorpusGenerator -- hevc          # check: re-encodes, re-decodes with the three decoders and diffs
+  dotnet run --project tools/Meziantou.Framework.Imaging.CorpusGenerator -- hevc --write  # replace the HEVC vectors, then review the diff
+  ```
+
+  To add a vector, add a recipe to the list of its encoder (`X265Intra`, `X265`, `Kvazaar`, `HmIntra`, `Hm`) with the
+  feature tags it must signal, run the generator with `--write`, and update the
+  [HEVC vector features](#hevc-vector-features) table; a new feature key also goes to
+  `FixtureManifestValidator.AllowedHevcFeatureKeys`. When the generation reports that a decoder does not agree with the two
+  others, read the message before anything else: either the recipe hits a known behavior of that decoder
+  (`.Without(decoder, reason)`, see [the table](#hevc-decoders-that-agree-and-decoders-that-are-left-out)), or the stream
+  is not one to commit. A derived vector is `Derived(vectors, source, name, derivation, frames)`: see
+  [HEVC vectors an encoder did not write alone](#hevc-vectors-an-encoder-did-not-write-alone).
 - `jxl` (`JxlCorpus.cs`: tools, references, cross-checks and manifest entries; `JxlCorpus.Fixtures.cs`: the recipes)
   generates the JPEG XL fixtures; it replaces only the entries of format `jxl` and their files (`jxl/`, `invalid/jxl/`).
   It needs no installed tool: `cjxl`, `jxl_from_tree`, `djxl` (libjxl, pinned in `PinnedLibjxl`, currently 0.12.0) and
@@ -1635,6 +2324,24 @@ tool version to see what changes; the interop CI job runs it on every build to d
 
   After a change of the lossy decoder, run `JpegXlDecoderConformanceTests.ToleranceIsTheMeasuredDisagreementWithTheReference`
   and copy the measurements it prints into `LibraryJxlMeasurements`, then regenerate.
+- `heic-container` (`HeicCorpus.Container.cs`: tools, references, cross-check and manifest entries;
+  `HeicCorpus.ContainerFixtures.cs`: the valid recipes; `HeicCorpus.ContainerErrors.cs`: the malformed, unsupported and
+  over-limit ones; `HevcCorpus.Reference.cs`: the three decoders and x265 for the streams of a container) generates the
+  HEIC fixtures of `heic/` and `invalid/heic/` (the `limit/heic` entries reuse valid inputs): it replaces only the entries
+  of format `heic`, and every other generator keeps them. It needs no installed tool: `heif-enc`, `heif-dec`, x265,
+  FFmpeg, ffprobe, `dec265` and `TAppDecoder` are downloaded from the meziantou/prebuilt release pinned by the
+  `Meziantou.Prebuilt` package; libheif is pinned in `HeicCorpus.PinnedLibheif` (currently 1.23.6) and the others in
+  `HevcCorpus.PinnedTools`. The committed fixtures were generated on macOS arm64.
+
+  ```shell
+  dotnet run --project tools/Meziantou.Framework.Imaging.CorpusGenerator -- heic-container          # check
+  dotnet run --project tools/Meziantou.Framework.Imaging.CorpusGenerator -- heic-container --write  # replace the HEIC fixtures, then review the diff
+  ```
+
+  To add a fixture, add a recipe with the feature tags it must have (`requires`), run the generator with `--write`, run
+  `HeicDecoderConformanceTests.ToleranceIsTheMeasuredDisagreementWithTheReference` and copy the line it prints for a new
+  matrixed fixture into `LibraryHeicMeasurements`, regenerate, classify a new error fixture in
+  `Tests.Shared/Suites/Decode/ErrorFixtureStages.cs`, and update the [Features](#features) rows.
 - `avif-container` (`AvifCorpus.Container.cs`: tools, references, cross-checks and manifest entries;
   `AvifCorpus.ContainerFixtures.cs`: the valid recipes; `AvifCorpus.ContainerLayered.cs`: the layered images;
   `AvifCorpus.ContainerErrors.cs`: the error recipes) generates the
@@ -1642,7 +2349,7 @@ tool version to see what changes; the interop CI job runs it on every build to d
   and keeps the AV1 vectors, as `avif` keeps these fixtures. It needs no installed tool: it uses the pinned FFmpeg of
   `avif` and the `avifenc` and `avifdec` of the same meziantou/prebuilt release (libavif pinned in `PinnedLibavif`,
   currently 1.4.2, whose `avifenc` is linked with aom 3.14.1 and `avifdec` with dav1d 1.5.3). It compiles the
-  files of `TestHarness/Avif` (linked into the generator project), which have no dependency on the library. Gzip-compressed
+  files of `TestHarness/Avif` and `TestHarness/Heif` (linked into the generator project), which have no dependency on the library. Gzip-compressed
   references are written by the .NET runtime of the generator, like the encoders an AVIF input depends on the platform:
   the committed fixtures were generated on macOS arm64.
 
@@ -1777,8 +2484,8 @@ not be committed.
 There is no size budget: the corpus is as large as a good coverage needs. Still prefer the smallest input that exercises
 a feature (tiny images, few frames): every valid fixture is decoded thousands of times by the conformance, hardening and
 fuzz suites, so a large input costs test time long before it costs disk space. Large inputs for benchmarks are generated
-at run time and never committed. The manifest entry of an AV1 vector holds a digest per plane and per output frame, so a
-long stream is mostly paid for there.
+at run time and never committed. The manifest entry of an AV1 or an HEVC vector holds a digest per plane and per output
+frame, so a long stream is mostly paid for there.
 
 The corpus once had one (a total size, 8 KB per AV1 vector, inter vectors of at most 12 frames and 176x144). It was
 removed because it decided what was tested: coding tools that only show on frames of several restoration units or on

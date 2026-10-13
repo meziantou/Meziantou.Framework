@@ -8,7 +8,8 @@ namespace Meziantou.Framework.Imaging.Tests.Conformance;
 /// <summary>
 /// The fixture-to-feature coverage matrix (tests/Meziantou.Framework.Imaging.Fixtures/README.md) must match the committed manifest: every
 /// count is recomputed, every row has fixtures of the expected kind, and every feature key of the manifest is mapped.
-/// The table of the AV1 conformance vectors is verified the same way against the <c>av1Vectors</c> section.
+/// The tables of the AV1 and of the HEVC conformance vectors are verified the same way against the <c>av1Vectors</c> and
+/// the <c>hevcVectors</c> sections.
 /// </summary>
 public sealed class FixtureCoverageMatrixTests
 {
@@ -95,6 +96,42 @@ public sealed class FixtureCoverageMatrixTests
         var mapped = ReadTable("### AV1 vector features").SelectMany(row => ParseSelector(row[1])).Select(GetKey).ToHashSet(StringComparer.Ordinal);
         var keys = GoldenCorpus.Default.Av1Vectors.SelectMany(vector => vector.Features).Select(GetKey).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal);
         Assert.All(keys, key => Assert.Contains(key, mapped)); // a feature key of the av1Vectors section is missing from the fixtures README
+    }
+
+    [Fact]
+    public void HevcVectorFeatureRowsMatchTheManifest()
+    {
+        var vectors = GoldenCorpus.Default.HevcVectors.ToList();
+        var rows = ReadTable("### HEVC vector features");
+        Assert.NotEmpty(rows);
+
+        var expected = new List<string>();
+        var actual = new List<string>();
+        foreach (var row in rows)
+        {
+            var selector = ParseSelector(row[1]);
+            var count = vectors.Count(vector => Matches(format: null, vector.Features, selector));
+            expected.Add(VectorRow(row[0], selector, count));
+            actual.Add(VectorRow(row[0], selector, ParseCount(row[2])));
+            Assert.True(count > 0, $"HEVC feature '{row[0]}' has no vector.");
+        }
+
+        AssertRows(expected, actual);
+
+        static string VectorRow(string name, string[] selector, int count)
+            => $"| {name} | {string.Join(" + ", selector.Select(tag => $"`{tag}`"))} | {count} |";
+    }
+
+    [Fact]
+    public void EveryHevcVectorFeatureKeyIsMapped()
+    {
+        var mapped = ReadTable("### HEVC vector features").SelectMany(row => ParseSelector(row[1])).Select(GetKey).ToHashSet(StringComparer.Ordinal);
+        var keys = GoldenCorpus.Default.HevcVectors.SelectMany(vector => vector.Features).Select(GetKey).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToList();
+        Assert.All(keys, key => Assert.Contains(key, mapped)); // a feature key of the hevcVectors section is missing from the fixtures README
+
+        // The table only uses the vocabulary of the validator, and every key of the vocabulary that a vector has is in it
+        Assert.All(mapped, key => Assert.Contains(key, FixtureManifestValidator.AllowedHevcFeatureKeys));
+        Assert.All(keys, key => Assert.Contains(key, FixtureManifestValidator.AllowedHevcFeatureKeys));
     }
 
     private static void AssertRows(List<string> expected, List<string> actual)

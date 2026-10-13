@@ -146,12 +146,12 @@ public sealed class ImageSaveTests
         try
         {
             using var image = StreamImages.CreateAnimation(Width, Height, 1);
-            Assert.Throws<ArgumentException>(() => image.Save(directory / "image.heic"));
+            Assert.Throws<ArgumentException>(() => image.Save(directory / "image.xyz"));
             Task? task = null;
             Assert.IsType<ArgumentException>(Record.Exception(() => { task = image.SaveAsync(directory / "image", cancellationToken: XunitCancellationToken); }));
             Assert.Null(task);
             Assert.Empty(Directory.GetFileSystemEntries(directory));
-            await image.SaveAsync(directory / "image.heic", new PngEncoder(), XunitCancellationToken);
+            await image.SaveAsync(directory / "image.xyz", new PngEncoder(), XunitCancellationToken);
             Assert.Single(Directory.GetFiles(directory));
         }
         finally
@@ -267,6 +267,34 @@ public sealed class ImageSaveTests
         }
     }
 
+    [Theory]
+    [InlineData("image.heic")]
+    [InlineData("IMAGE.HEIC")]
+    [InlineData("image.heif")]
+    [InlineData("sequence.heics")]
+    [InlineData("sequence.heifs")]
+    public async Task HeicExtensionsOnlySelectTheDefaultEncoder(string name)
+    {
+        using var codecs = TestCodecs.UseAll(out _, out _, out _, out _);
+        var directory = TestFiles.CreateDirectory();
+        try
+        {
+            using var image = StreamImages.CreateAnimation(Width, Height, 1);
+            var path = directory / name;
+            Assert.IsType<HeicEncoder>(ImageEncoder.FromPath(path));
+
+            // The extension only selects the default encoder: an explicit encoder writes its own format under that name
+            await image.SaveAsync(path, new PngEncoder(), XunitCancellationToken);
+            using var decoded = StreamImages.Decode(await File.ReadAllBytesAsync(path, XunitCancellationToken));
+            Assert.Equal(ImageFormat.Png, decoded.Metadata.SourceFormat);
+            Assert.Equal([path], Directory.GetFiles(directory));
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
     [Fact]
     public void EveryBuiltInFormatCanBeSaved()
     {
@@ -293,6 +321,7 @@ public sealed class ImageSaveTests
         new TiffEncoder(),
         new IcoEncoder(),
         new AvifEncoder(),
+        new HeicEncoder(),
     ];
 
     [Theory]
@@ -334,6 +363,7 @@ public sealed class ImageSaveTests
             PnmEncoder => new PnmEncoder { MetadataHandling = handling },
             TiffEncoder => new TiffEncoder { MetadataHandling = handling },
             AvifEncoder => new AvifEncoder { MetadataHandling = handling },
+            HeicEncoder => new HeicEncoder { MetadataHandling = handling },
             _ => new IcoEncoder { MetadataHandling = handling },
         };
     }

@@ -103,6 +103,7 @@ internal static partial class AvifCorpus
         var tools = fileTools.Av1;
         var manifest = CorpusDriver.LoadCommittedManifest();
         CorpusDriver.CopyCommittedFiles(outDir, CorpusDriver.Fixtures(manifest));
+        CorpusDriver.PreserveHevcVectors(outDir, manifest);
         CorpusDriver.PreserveColorSections(outDir, manifest);
         CorpusDriver.PreserveFonts(outDir, manifest);
 

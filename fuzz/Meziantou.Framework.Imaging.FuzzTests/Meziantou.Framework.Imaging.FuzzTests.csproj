@@ -21,6 +21,8 @@
     <!-- The synthetic ICC profiles of the unit tests are fuzz seeds for the tag types the corpus profiles do not use (ColorProfileFuzzTests) -->
     <Compile Include="..\..\tests\Meziantou.Framework.Imaging.Tests.Shared\Helpers\IccTestProfiles.cs" Link="Shared\IccTestProfiles.cs" />
     <Compile Include="..\..\tools\Meziantou.Framework.Imaging.CorpusGenerator\Common\IccProfileBuilder.cs" Link="Shared\IccProfileBuilder.cs" />
+    <!-- The HEIC files of libheif that the unit tests embed are fuzz seeds (FuzzSeeds, groups heic-still and heic-sequence) -->
+    <Compile Include="..\..\tests\Meziantou.Framework.Imaging.Heic.Tests\HeicTestFiles.cs" Link="Shared\HeicTestFiles.cs" />
     <!-- Images of any pixel format and their samples, shared with the drawing unit tests (DrawingFuzzTests) -->
     <Compile Include="..\..\tests\Meziantou.Framework.Imaging.Tests.Shared\Helpers\DrawingTestSupport.cs" Link="Shared\DrawingTestSupport.cs" />
   </ItemGroup>

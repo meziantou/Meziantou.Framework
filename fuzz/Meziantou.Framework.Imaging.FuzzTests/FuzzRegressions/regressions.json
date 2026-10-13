@@ -35,6 +35,39 @@
       "expectedLoad": "success"
     },
     {
+      "id": "heic/record-sps-differs-from-item-sps",
+      "file": "heic-record-sps-differs-from-item-sps.heic",
+      "sha256": "77954f54006c6dab51fb474606d7da9cacc4f2462cae9e20b7a25bc5ce733c5c",
+      "origin": "fuzz-minimized",
+      "license": "CC0-1.0",
+      "foundBy": "FuzzTests group hevc-intra, base seed 1001, 20000 iterations, mutation 6741 of hevc/kvazaar-sao-band-64x64 (the stream wrapped by FuzzHeicContainer, a parameter set of the configuration record replaced by the one of another stream); not reducible by FuzzMinimizer, which moves the offsets of the container",
+      "defect": "The sequence parameter set of the hvcC record (chroma sample location type 5, unsupported) is not the one of the item data, which replaces it for the decoder: full identification read the one of the record and threw UnsupportedImageFeatureException while the loads decoded the picture. Fixed in HeicDecoder.DecodeImage, which checks the parameter set that the identification reads before it decodes.",
+      "expectedIdentify": "UnsupportedImageFeatureException",
+      "expectedLoad": "UnsupportedImageFeatureException"
+    },
+    {
+      "id": "heic/record-sps-differs-from-sample-sps",
+      "file": "heic-record-sps-differs-from-sample-sps.heics",
+      "sha256": "4b4c12540eaea9b959f80a7c20a3170a999a80a336040053e3f588ea6ee5a0cb",
+      "origin": "fuzz-minimized",
+      "license": "CC0-1.0",
+      "foundBy": "FuzzTests group hevc-inter, base seed 1001, 20000 iterations, mutation 10251 of hevc/kvazaar-lossless-implicit-rdpcm-64x64 (the stream wrapped by FuzzHeicContainer, a parameter set of the configuration record replaced by the one of another stream); not reducible by FuzzMinimizer, which moves the offsets of the container",
+      "defect": "The sequence parameter set of the hvcC record of a track has another sample format than the fields of the record, and the samples carry the parameter set of the pictures: full identification threw InvalidImageContentException (the bitstream does not match its configuration record) while the loads decoded the sequence. Fixed in HeicDecoder.CreateDecoder, which checks the first sample of a track as the identification does.",
+      "expectedIdentify": "InvalidImageContentException",
+      "expectedLoad": "InvalidImageContentException"
+    },
+    {
+      "id": "heic/record-sps-color-description-differs",
+      "file": "heic-record-sps-color-description-differs.heic",
+      "sha256": "457d6fdb88b7776b1acc0b937ce4e5a16d3a9bfe1e5b0096fcb590dd07a13bb9",
+      "origin": "fuzz-minimized",
+      "license": "CC0-1.0",
+      "foundBy": "FuzzTests group hevc-intra, base seed 2002, 40000 iterations, mutation 29507 of hevc/x265-intra-atc-recovery-sei-64x64 (the stream wrapped by FuzzHeicContainer, a parameter set of the configuration record replaced by the one of another stream); not reducible by FuzzMinimizer, which moves the offsets of the container",
+      "defect": "The sequence parameter set of the hvcC record describes 4:2:0 samples with the identity matrix, which is invalid, and the item data carry the parameter set of the picture: header identification threw InvalidImageContentException while the loads decoded the picture with the color description of the other parameter set. Fixed in HeicDecoder: the picture that is decoded must have the sample format and the color description of the parameter set that the identification reads.",
+      "expectedIdentify": "InvalidImageContentException",
+      "expectedLoad": "InvalidImageContentException"
+    },
+    {
       "id": "jxl/reconstruct-animation-layer-min",
       "file": "jxl-reconstruct-animation-layer.min.jxl",
       "sha256": "9a9ff1fe3d79777bf04d28bd17b54233848880cbde4acde09b07852bcf7691d9",

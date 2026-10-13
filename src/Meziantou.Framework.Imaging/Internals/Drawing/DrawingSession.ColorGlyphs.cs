@@ -32,6 +32,7 @@ internal sealed partial class DrawingSession
         for (var run = 0; run < layout.RunCount; run++)
         {
             layout.GetRun(run, out var face, out var scale, out var start, out var count, out var runBrush);
+            var mode = (layout.GetBrush(runBrush) ?? brush).CompositeMode;
             var isForegroundSet = false;
             for (var i = start; i < start + count; i++)
             {
@@ -57,7 +58,7 @@ internal sealed partial class DrawingSession
                     isForegroundSet = true;
                 }
 
-                DrawColorGlyph(surface, glyph, face, placement, paint);
+                DrawColorGlyph(surface, glyph, face, placement, mode, paint);
             }
         }
     }
@@ -73,12 +74,20 @@ internal sealed partial class DrawingSession
             return;
         }
 
+        if (brush is not GradientBrush gradientBrush)
+        {
+            // An image has no color of its own to give to a glyph that draws with its own colors: the text is black
+            surface.Foreground = (0, 0, 0, 1);
+            surface.ForegroundGradient = null;
+            return;
+        }
+
         var gradient = _foregroundGradient ??= new GradientEvaluator(_image.Owner.Scope);
-        gradient.PrepareColors((GradientBrush)brush, Width);
+        gradient.PrepareColors(gradientBrush, Width);
         surface.ForegroundGradient = gradient;
     }
 
-    private void DrawColorGlyph(ColorSurface surface, ColorGlyph glyph, FontFace face, in Affine2D placement, bool paint)
+    private void DrawColorGlyph(ColorSurface surface, ColorGlyph glyph, FontFace face, in Affine2D placement, CompositeMode mode, bool paint)
     {
         var rasterizer = _rasterizer!;
         var numbers = glyph.Numbers.AsSpan();
@@ -181,10 +190,19 @@ internal sealed partial class DrawingSession
                 _thumbnailRemoved = true;
             }
 
-            var source = new DrawingSource(colors);
+            var x = surface.Left;
+            if (_clipDepth != 0)
+            {
+                if (!ApplyClip(surface.Top + row, ref x, ref coverage, out var skipped))
+                    continue;
+
+                colors = colors.Slice(skipped * 4, coverage.Length * 4);
+            }
+
+            var source = new DrawingSource(colors, mode);
             for (var i = 0; i < _frames.Length; i++)
             {
-                _frames[i].CompositePixels(_storages[i], surface.Top + row, surface.Left, coverage, source);
+                _frames[i].CompositePixels(_storages[i], surface.Top + row, x, coverage, source);
             }
         }
     }

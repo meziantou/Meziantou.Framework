@@ -24,10 +24,15 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// A vertex flagged as smooth was created by flattening a curve: it is joined with a round join whatever the pen says,
 /// because the stroke of a smooth curve has no corner there.
 /// </para>
+/// <para>
+/// The pieces go to the edges of a draw call, or to a path as closed contours (<see cref="VectorPath.Widen"/>): the same
+/// points in the same order, so that filling that path is stroking.
+/// </para>
 /// </remarks>
 internal sealed class Stroker : PathSink
 {
-    private readonly EdgeBuilder _edges;
+    private readonly EdgeBuilder? _edges;
+    private readonly VectorPathBuilder? _outline;
     private double _halfWidth;
     private LineJoin _join;
     private LineCap _cap;
@@ -67,6 +72,12 @@ internal sealed class Stroker : PathSink
         _edges = edges;
     }
 
+    /// <summary>Creates a stroker that adds the pieces of the stroke to a path, each one as a closed contour.</summary>
+    public Stroker(VectorPathBuilder outline)
+    {
+        _outline = outline;
+    }
+
     /// <summary>Gets a value indicating whether the stroke covers the whole frame; the edges are then meaningless.</summary>
     public bool CoversFrame { get; private set; }
 
@@ -74,7 +85,7 @@ internal sealed class Stroker : PathSink
     public void Configure(Pen pen)
     {
         CoversFrame = false;
-        _testFrame = pen.Width >= Math.Min(_edges.Width, _edges.Height);
+        _testFrame = _edges is not null && pen.Width >= Math.Min(_edges.Width, _edges.Height);
         _halfWidth = pen.Width / 2;
         _join = pen.LineJoin;
         _cap = pen.LineCap;
@@ -86,7 +97,7 @@ internal sealed class Stroker : PathSink
     public void Configure(double width, LineJoin join, double miterLimit)
     {
         CoversFrame = false;
-        _testFrame = width >= Math.Min(_edges.Width, _edges.Height);
+        _testFrame = _edges is not null && width >= Math.Min(_edges.Width, _edges.Height);
         _halfWidth = width / 2;
         _join = join;
         _cap = LineCap.Butt;
@@ -290,6 +301,24 @@ internal sealed class Stroker : PathSink
         }
     }
 
+    /// <summary>
+    /// Adds what a dash without length draws at a point of a path: its two caps back to back. Nothing for butt caps, a
+    /// disk for round caps, a square turned to the direction of the path for square caps.
+    /// </summary>
+    public void AddDot(double x, double y, double directionX, double directionY)
+    {
+        switch (_cap)
+        {
+            case LineCap.Round:
+                AddDot(x, y);
+                break;
+
+            case LineCap.Square:
+                AddBody(x - (_halfWidth * directionX), y - (_halfWidth * directionY), x + (_halfWidth * directionX), y + (_halfWidth * directionY), directionX, directionY);
+                break;
+        }
+    }
+
     /// <summary>Adds what a contour reduced to a single point draws: nothing for butt caps, a disk or an axis-aligned square otherwise.</summary>
     private void AddDot(double x, double y)
     {
@@ -356,6 +385,12 @@ internal sealed class Stroker : PathSink
         _pieceX = x;
         _pieceY = y;
         _pieceMaxX = x;
+        if (_edges is null)
+        {
+            _outline!.AppendMoveTo(x, y);
+            return;
+        }
+
         _pieceFirstEdge = _edges.Count;
         if (_testFrame)
         {
@@ -376,6 +411,12 @@ internal sealed class Stroker : PathSink
 
     private void ClosePiece()
     {
+        if (_edges is null)
+        {
+            _outline!.Close();
+            return;
+        }
+
         AddPieceEdge(_pieceStartX, _pieceStartY);
         if (_testFrame && _topLeftInside && _topRightInside && _bottomLeftInside && _bottomRightInside)
         {
@@ -392,6 +433,12 @@ internal sealed class Stroker : PathSink
 
     private void AddPieceEdge(double x, double y)
     {
+        if (_edges is null)
+        {
+            _outline!.AppendLineTo(x, y);
+            return;
+        }
+
         if (CoversFrame)
             return;
 

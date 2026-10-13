@@ -138,12 +138,173 @@ public sealed class DrawingCompositeTests
         }
     }
 
+    // -----------------------------------------------------------------------------------------------------------------
+    // The other operators. Alphas as fractions of one: as (paint), ad (pixel). The result has the alpha Fa as + Fb ad
+    // and the color (Fa as paint + Fb ad pixel) / alpha.
+    // -----------------------------------------------------------------------------------------------------------------
+
+    [Fact]
+    public void SourceReplacesThePixelAlphaIncluded()
+    {
+        // Fa = 1, Fb = 0: the paint, exactly, whatever the pixel
+        Assert.Equal(new Rgba32(10, 20, 30, 100), Paint(new Rgba32(200, 17, 90, 250), new Rgba32(10, 20, 30, 100), WholePixel, CompositeMode.Source));
+        Assert.Equal(new Rgba64(1234, 5678, 9012, 3456), Paint(new Rgba64(60000, 1, 2, 65535), new Rgba64(1234, 5678, 9012, 3456), WholePixel, CompositeMode.Source));
+
+        // A transparent paint erases: the pixel becomes transparent black
+        Assert.Equal(new Rgba32(0, 0, 0, 0), Paint(new Rgba32(200, 17, 90, 250), new Rgba32(1, 2, 3, 0), WholePixel, CompositeMode.Source));
+
+        // On half of the pixel: half of the paint and half of what the pixel was.
+        //   An opaque paint on a transparent pixel: alpha 1/2 -> 127.5 -> 128, the color of the paint
+        Assert.Equal(new Rgba32(200, 100, 50, 128), Paint(new Rgba32(1, 2, 3, 0), new Rgba32(200, 100, 50), HalfPixel, CompositeMode.Source));
+
+        //   A transparent paint on an opaque pixel: half of the pixel is erased
+        Assert.Equal(new Rgba32(10, 20, 30, 128), Paint(new Rgba32(10, 20, 30), new Rgba32(200, 100, 50, 0), HalfPixel, CompositeMode.Source));
+
+        //   (200, 100, 50) at 102/255 on half of an opaque (10, 20, 30): alpha (1 + 0.4) / 2 = 0.7 -> 178.5 -> 179;
+        //   red = (0.5 * 10 + 0.2 * 200) / 0.7 = 64.29 | green = (10 + 20) / 0.7 = 42.86 | blue = (15 + 10) / 0.7 = 35.71
+        Assert.Equal(new Rgba32(64, 43, 36, 179), Paint(new Rgba32(10, 20, 30), new Rgba32(200, 100, 50, 102), HalfPixel, CompositeMode.Source));
+
+        // A format without alpha stays opaque: it gets the color of the result over black, 255 * 102 / 255 = 102
+        Assert.Equal(new Rgb24(102, 102, 102), Paint(new Rgb24(10, 20, 30), new Rgba32(255, 255, 255, 102), WholePixel, CompositeMode.Source));
+        Assert.Equal(new Gray8(102), Paint(new Gray8(200), new Rgba32(255, 255, 255, 102), WholePixel, CompositeMode.Source));
+    }
+
+    [Fact]
+    public void DestinationOutErasesThePixelWhereThePaintIsOpaque()
+    {
+        // Fa = 0, Fb = 1 - as: the alpha of the pixel is multiplied by one minus the alpha of the paint; its color stays
+        Assert.Equal(new Rgba32(0, 0, 0, 0), Paint(new Rgba32(10, 20, 30, 200), new Rgba32(255, 0, 0), WholePixel, CompositeMode.DestinationOut));
+
+        // A paint at 51/255 = 0.2: 200 * 0.8 = 160
+        Assert.Equal(new Rgba32(10, 20, 30, 160), Paint(new Rgba32(10, 20, 30, 200), new Rgba32(255, 0, 0, 51), WholePixel, CompositeMode.DestinationOut));
+
+        // An opaque paint on half of the pixel: 200 / 2 = 100
+        Assert.Equal(new Rgba32(10, 20, 30, 100), Paint(new Rgba32(10, 20, 30, 200), new Rgba32(255, 0, 0), HalfPixel, CompositeMode.DestinationOut));
+
+        // A transparent paint erases nothing, and a transparent pixel stays as it is, hidden color included
+        Assert.Equal(new Rgba32(10, 20, 30, 200), Paint(new Rgba32(10, 20, 30, 200), new Rgba32(255, 0, 0, 0), WholePixel, CompositeMode.DestinationOut));
+        Assert.Equal(new Rgba32(1, 2, 3, 0), Paint(new Rgba32(1, 2, 3, 0), new Rgba32(255, 0, 0), WholePixel, CompositeMode.DestinationOut));
+
+        // A format without alpha darkens: (100, 150, 255) * 0.8
+        Assert.Equal(new Rgb24(80, 120, 204), Paint(new Rgb24(100, 150, 255), new Rgba32(9, 9, 9, 51), WholePixel, CompositeMode.DestinationOut));
+    }
+
+    [Fact]
+    public void TheOtherOperatorsFollowTheirFactors()
+    {
+        var red = new Rgba32(255, 0, 0);
+        var halfRed = new Rgba32(255, 0, 0, 128);
+
+        // Destination over (Fa = 1 - ad, Fb = 1), opaque red behind blue at 128/255: alpha 1;
+        // red = 255 * 127 / 255 = 127 | blue = 255 * 128 / 255 = 128. Behind an opaque pixel, nothing shows.
+        Assert.Equal(new Rgba32(127, 0, 128, 255), Paint(new Rgba32(0, 0, 255, 128), red, WholePixel, CompositeMode.DestinationOver));
+        Assert.Equal(new Rgba32(0, 0, 255), Paint(new Rgba32(0, 0, 255), red, WholePixel, CompositeMode.DestinationOver));
+        Assert.Equal(new Rgba32(255, 0, 0), Paint(new Rgba32(9, 9, 9, 0), red, WholePixel, CompositeMode.DestinationOver));
+
+        // Source in (Fa = ad, Fb = 0): the paint with the alpha of the pixel; nothing where the pixel is transparent
+        Assert.Equal(new Rgba32(255, 0, 0, 128), Paint(new Rgba32(0, 0, 255, 128), red, WholePixel, CompositeMode.SourceIn));
+        Assert.Equal(new Rgba32(1, 2, 3, 0), Paint(new Rgba32(1, 2, 3, 0), red, WholePixel, CompositeMode.SourceIn));
+
+        // Destination in (Fa = 0, Fb = as): the pixel with its alpha multiplied by the alpha of the paint, 200 * 0.2 = 40
+        Assert.Equal(new Rgba32(10, 20, 30, 40), Paint(new Rgba32(10, 20, 30, 200), new Rgba32(255, 0, 0, 51), WholePixel, CompositeMode.DestinationIn));
+        Assert.Equal(new Rgba32(10, 20, 30, 200), Paint(new Rgba32(10, 20, 30, 200), red, WholePixel, CompositeMode.DestinationIn));
+        Assert.Equal(new Rgba32(0, 0, 0, 0), Paint(new Rgba32(10, 20, 30, 200), new Rgba32(255, 0, 0, 0), WholePixel, CompositeMode.DestinationIn));
+
+        // Source out (Fa = 1 - ad, Fb = 0): the paint where the pixel is not, 255 * 127 / 255 = 127
+        Assert.Equal(new Rgba32(255, 0, 0, 127), Paint(new Rgba32(0, 0, 255, 128), red, WholePixel, CompositeMode.SourceOut));
+        Assert.Equal(new Rgba32(0, 0, 0, 0), Paint(new Rgba32(0, 0, 255), red, WholePixel, CompositeMode.SourceOut));
+
+        // Source atop (Fa = ad, Fb = 1 - as), red at 128/255 over blue at 200/255: the alpha of the pixel;
+        // red = 255 * 128 / 255 = 128 | blue = 255 * 127 / 255 = 127
+        Assert.Equal(new Rgba32(128, 0, 127, 200), Paint(new Rgba32(0, 0, 255, 200), halfRed, WholePixel, CompositeMode.SourceAtop));
+
+        // Destination atop (Fa = 1 - ad, Fb = as): the alpha of the paint; red = 255 * 55 / 255 | blue = 255 * 200 / 255
+        Assert.Equal(new Rgba32(55, 0, 200, 128), Paint(new Rgba32(0, 0, 255, 200), halfRed, WholePixel, CompositeMode.DestinationAtop));
+
+        // Xor (Fa = 1 - ad, Fb = 1 - as): two opaque colors cancel each other; an opaque paint fills a transparent pixel
+        Assert.Equal(new Rgba32(0, 0, 0, 0), Paint(new Rgba32(0, 0, 255), red, WholePixel, CompositeMode.Xor));
+        Assert.Equal(new Rgba32(255, 0, 0), Paint(new Rgba32(0, 0, 255, 0), red, WholePixel, CompositeMode.Xor));
+
+        // Clear (Fa = 0, Fb = 0): only the shape counts, not the paint
+        Assert.Equal(new Rgba32(0, 0, 0, 0), Paint(new Rgba32(10, 20, 30, 200), new Rgba32(1, 2, 3, 0), WholePixel, CompositeMode.Clear));
+        Assert.Equal(new Rgba32(10, 20, 30, 100), Paint(new Rgba32(10, 20, 30, 200), red, HalfPixel, CompositeMode.Clear));
+        Assert.Equal(new Rgb24(0, 0, 0), Paint(new Rgb24(10, 20, 30), red, WholePixel, CompositeMode.Clear));
+        Assert.Equal(new Rgb24(5, 10, 15), Paint(new Rgb24(10, 20, 30), red, HalfPixel, CompositeMode.Clear));
+    }
+
+    [Fact]
+    public void ATransparentPaintWritesNothingWithTheOperatorsThatKeepThePixel()
+    {
+        var transparent = new Rgba32(200, 200, 200, 0);
+        foreach (var mode in new[] { CompositeMode.SourceOver, CompositeMode.DestinationOver, CompositeMode.DestinationOut, CompositeMode.SourceAtop, CompositeMode.Xor })
+        {
+            Assert.Equal(new Rgba32(1, 2, 3, 4), Paint(new Rgba32(1, 2, 3, 4), transparent, WholePixel, mode));
+            Assert.Equal(new Rgba32(1, 2, 3, 0), Paint(new Rgba32(1, 2, 3, 0), transparent, WholePixel, mode));
+            Assert.Equal(new Rgb24(1, 2, 3), Paint(new Rgb24(1, 2, 3), transparent, WholePixel, mode));
+        }
+
+        // With the others, it erases
+        foreach (var mode in new[] { CompositeMode.Source, CompositeMode.SourceIn, CompositeMode.DestinationIn, CompositeMode.SourceOut, CompositeMode.DestinationAtop, CompositeMode.Clear })
+        {
+            Assert.Equal(new Rgba32(0, 0, 0, 0), Paint(new Rgba32(1, 2, 3, 4), transparent, WholePixel, mode));
+            Assert.Equal(new Rgba32(1, 2, 3, 0), Paint(new Rgba32(1, 2, 3, 0), transparent, WholePixel, mode));
+        }
+    }
+
+    [Fact]
+    public void TheOperatorIsAPropertyOfTheBrush()
+    {
+        Assert.Equal(CompositeMode.SourceOver, new SolidBrush(new Rgba32(1, 2, 3)).CompositeMode);
+        Assert.Equal(CompositeMode.SourceOver, ((Brush)new Rgba32(1, 2, 3)).CompositeMode);
+        Assert.Equal(CompositeMode.Xor, new SolidBrush(new Rgba32(1, 2, 3)) { CompositeMode = CompositeMode.Xor }.CompositeMode);
+        Assert.Throws<ArgumentOutOfRangeException>(() => new SolidBrush(new Rgba32(1, 2, 3)) { CompositeMode = (CompositeMode)11 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new SolidBrush(new Rgba32(1, 2, 3)) { CompositeMode = (CompositeMode)(-1) });
+
+        // A gradient and the brush of a pen have one too: a row erased from opaque on its left to untouched on its right.
+        //   The gradient has the alphas 32, 96, 159, 223 at the centers of the pixels (see the gradient tests), and the
+        //   opaque white pixels keep 255 - alpha
+        GradientStop[] stops = [new(0, new Rgba32(0, 0, 0, 0)), new(1, new Rgba32(0, 0, 0))];
+        var eraser = new LinearGradientBrush(new PointD(0, 0), new PointD(4, 0), stops) { CompositeMode = CompositeMode.DestinationOut };
+        using var image = new Image<Rgba32>(4, 3, new Rgba32(255, 255, 255));
+        image.Frames[0].Draw(canvas => canvas.StrokeLine(new Pen(eraser, 1), new PointD(0, 1.5), new PointD(4, 1.5)), Ct);
+        Assert.Equal(new[] { 223, 159, 96, 32 }, Enumerable.Range(0, 4).Select(x => (int)image.Frames[0][x, 1].A).ToArray());
+        Assert.All(Enumerable.Range(0, 4), x => Assert.Equal(new Rgba32(255, 255, 255), image.Frames[0][x, 0]));
+        Assert.All(Enumerable.Range(0, 4), x => Assert.Equal(new Rgba32(255, 255, 255, image.Frames[0][x, 1].A), image.Frames[0][x, 1]));
+    }
+
+    [Fact]
+    public void ClearReplacesEveryPixelOfTheCanvas()
+    {
+        using (var image = new Image<Rgba32>(3, 2, new Rgba32(200, 17, 90, 250)))
+        {
+            image.Draw(canvas => canvas.Clear(new Rgba32(10, 20, 30, 100)), Ct);
+            Assert.All(DrawingTestSupport.ReadSamples(image.Frames[0]).Chunk(4), pixel => Assert.Equal([10, 20, 30, 100], pixel));
+            image.Draw(canvas => canvas.Clear(Colors.Transparent), Ct);
+            Assert.Equal(new int[24], DrawingTestSupport.ReadSamples(image.Frames[0]));
+        }
+
+        using (var image = new Image<Rgba64>(1, 1, new Rgba64(1, 2, 3, 4)))
+        {
+            image.Draw(canvas => canvas.Clear(new Rgba64(1234, 5678, 9012, 3456)), Ct);
+            Assert.Equal(new Rgba64(1234, 5678, 9012, 3456), image.Frames[0][0, 0]);
+        }
+
+        // A format without alpha gets the color multiplied by its alpha
+        using (var image = new Image<Gray8>(2, 2, new Gray8(77)))
+        {
+            image.Draw(canvas => canvas.Clear(new Rgba32(255, 255, 255, 102)), Ct);
+            Assert.Equal([102, 102, 102, 102], DrawingTestSupport.ReadSamples(image.Frames[0]));
+            image.Draw(canvas => canvas.Clear(Colors.White), Ct);
+            Assert.Equal([255, 255, 255, 255], DrawingTestSupport.ReadSamples(image.Frames[0]));
+        }
+    }
+
     /// <summary>Fills a rectangle of a one-pixel image and returns the pixel.</summary>
-    private static TPixel Paint<TPixel>(TPixel pixel, Rgba64 color, RectangleD rectangle)
+    private static TPixel Paint<TPixel>(TPixel pixel, Rgba64 color, RectangleD rectangle, CompositeMode mode = CompositeMode.SourceOver)
         where TPixel : unmanaged
     {
         using var image = new Image<TPixel>(1, 1, pixel);
-        var brush = new SolidBrush(color);
+        var brush = new SolidBrush(color) { CompositeMode = mode };
         image.Frames[0].Draw(canvas => canvas.FillRectangle(brush, rectangle), Ct);
         return image.Frames[0][0, 0];
     }

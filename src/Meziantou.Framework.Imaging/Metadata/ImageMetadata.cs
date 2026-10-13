@@ -70,8 +70,8 @@ public sealed class ImageMetadata
     /// </summary>
     /// <remarks>
     /// This is a label: no operation converts the pixels. When an <see cref="IccProfile"/> is also present, the profile
-    /// describes the color primaries and the transfer function. AVIF files declare a description, and so do the JPEG XL
-    /// files whose enumerated color encoding has code points. The AVIF encoder stores any description and the JPEG XL
+    /// describes the color primaries and the transfer function. AVIF and HEIC files declare a description, and so do the
+    /// JPEG XL files whose enumerated color encoding has code points. The AVIF and HEIC encoders store any description and the JPEG XL
     /// encoder the ones the format can enumerate; the other encoders treat a description that is not equivalent to sRGB as
     /// metadata they cannot store
     /// (<see cref="Formats.ImageEncoder.MetadataHandling"/>).

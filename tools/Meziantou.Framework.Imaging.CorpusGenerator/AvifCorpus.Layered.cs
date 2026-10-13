@@ -1,7 +1,7 @@
 using System.Text;
 using Meziantou.Framework.Imaging.CorpusGenerator.Common;
 using Meziantou.Framework.Imaging.CorpusGenerator.Infrastructure;
-using Meziantou.Framework.Imaging.TestHarness.Avif;
+using Meziantou.Framework.Imaging.TestHarness.Heif;
 
 namespace Meziantou.Framework.Imaging.CorpusGenerator;
 
@@ -12,7 +12,7 @@ namespace Meziantou.Framework.Imaging.CorpusGenerator;
 // No encoder option of the pinned FFmpeg codes spatial layers. libavif does, with libaom: "avifenc --layered" codes one
 // input per layer and "avifenc --progressive" two layers of one input, as one AV1 temporal unit that is the data of the
 // coded item. A layered vector is that payload (a temporal delimiter, a sequence header that declares one operating point
-// per number of layers, one frame per layer), extracted from the file by ReferenceAvif. It is recorded like any vector:
+// per number of layers, one frame per layer), extracted from the file by ReferenceHeif. It is recorded like any vector:
 // headers and tags by trace_headers, digests only when dav1d and libaom agree.
 //
 // What the two decoders output for such a stream, through FFmpeg and by default: ONE frame per temporal unit, the shown
@@ -163,7 +163,7 @@ internal static partial class AvifCorpus
                 Directory.CreateDirectory(directory);
                 var sources = unit.Sources.Select((source, index) => (Name: Inv($"source{index}.png"), Data: Png(source))).ToDictionary(source => source.Name, source => source.Data, StringComparer.Ordinal);
                 var (file, command) = RunAvifenc(tools, directory, vector.TruncationOf ?? vector.Name, sources, unit.Arguments);
-                var avif = ReferenceAvif.Parse(file);
+                var avif = ReferenceHeif.Parse(file);
                 var item = avif.PrimaryItem ?? throw new ToolException("the file avifenc wrote has no primary item.");
                 if (item.Type != "av01" || item.LayerSelector is not null || item.OperatingPoint is not null)
                     throw new ToolException("the primary item of the file avifenc wrote is not a plain coded item.");

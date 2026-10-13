@@ -3,7 +3,7 @@ using System.Globalization;
 using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.Metadata;
 using Meziantou.Framework.Imaging.TestHarness.Adapters;
-using Meziantou.Framework.Imaging.TestHarness.Avif;
+using Meziantou.Framework.Imaging.TestHarness.Heif;
 using Meziantou.Framework.Imaging.TestHarness.ExternalTools;
 using Meziantou.Framework.Imaging.TestHarness.Pixels;
 
@@ -850,9 +850,9 @@ public sealed class AvifDecoderInteropTests
         var bytes = await File.ReadAllBytesAsync(path, XunitCancellationToken);
         for (var layer = 0; layer < layers; layer++)
         {
-            var builder = AvifFileBuilder.From(bytes);
+            var builder = HeifFileBuilder.From(bytes);
             var item = builder.Items.Single(candidate => candidate.Type == "av01");
-            item.Associations.Add((builder.AddProperty(AvifFileBuilder.Box("lsel", [0, (byte)layer])), true));
+            item.Associations.Add((builder.AddProperty(HeifFileBuilder.Box("lsel", [0, (byte)layer])), true));
             var selected = builder.Build();
             if (layer is 0 && firstLayerDivisor is not 0)
             {

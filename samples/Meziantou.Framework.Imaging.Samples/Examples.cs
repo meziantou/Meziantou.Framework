@@ -119,6 +119,71 @@ internal static class Examples
     }
     // end-snippet
 
+    /// <summary>Composing a picture from another image: a clip, a rounded rectangle, a dashed line and an arc.</summary>
+    // begin-snippet: draw-card
+    public static void ComposeCard(string photoPath, string outputPath)
+    {
+        using var photo = Image.Load(photoPath);
+        using var card = new Image<Rgba32>(320, 120);
+
+        var shade = new LinearGradientBrush(new PointD(0, 0), new PointD(0, 120), [new GradientStop(0, Rgba32.ParseHex("#2B5876")), new GradientStop(1, Rgba32.ParseHex("#4E4376"))]);
+        var portrait = new VectorPathBuilder().AddCircle(new PointD(60, 60), 40).Build();
+        var ring = new Pen(Colors.White, 3);
+        var rule = new Pen(new Rgba32(255, 255, 255, 160), 2) { DashPattern = [6, 4] };
+        var gauge = new Pen(Colors.Gold, 6) { LineCap = LineCap.Round };
+
+        card.Frames[0].Draw(canvas =>
+        {
+            // The pixels outside the rounded corners stay transparent
+            canvas.FillRoundedRectangle(shade, new Rectangle(0, 0, 320, 120), 16);
+
+            // The photo is stretched to the square around the circle, and only changes the inside of the circle
+            canvas.Clip(portrait, clipped => clipped.DrawImage(photo.Frames[0], new Rectangle(20, 20, 80, 80)));
+            canvas.Stroke(ring, portrait);
+
+            // Dashes of 6 pixels and gaps of 4, then three quarters of a circle from its top, clockwise
+            canvas.StrokeLine(rule, new PointD(120, 60), new PointD(300, 60));
+            canvas.StrokeArc(gauge, new PointD(270, 30), 14, -90, 270);
+        });
+
+        card.Save(outputPath);
+    }
+    // end-snippet
+
+    /// <summary>Measuring a path to place shapes along it, and turning a shape to the direction of the path.</summary>
+    // begin-snippet: draw-route
+    public static void DrawRoute(string outputPath)
+    {
+        using var image = new Image<Rgba32>(200, 120, Colors.White);
+        var route = new VectorPathBuilder().MoveTo(20, 100).CubicBezierTo(60, 10, 120, 110, 176, 34).Build();
+
+        // An arrow head that points to the right, with its tip at the origin
+        var arrowHead = new VectorPathBuilder().AddPolygon([new PointD(0, 0), new PointD(-14, -6), new PointD(-14, 6)]).Build();
+
+        // The end of the route and its direction there. The transformation turns the x axis to that direction, then
+        // moves the origin to the end of the route.
+        var length = route.GetLength();
+        _ = route.TryGetPointAtDistance(length, out var tip, out var direction);
+        var head = arrowHead.Transform(new AffineTransform(direction.X, direction.Y, -direction.Y, direction.X, tip.X, tip.Y));
+
+        var line = new Pen(Colors.SteelBlue, 3) { DashPattern = [8, 5], LineCap = LineCap.Round };
+        image.Draw(canvas =>
+        {
+            canvas.Stroke(line, route);
+            canvas.Fill(Colors.SteelBlue, head);
+
+            // A milestone at each quarter of the way
+            for (var i = 1; i <= 3; i++)
+            {
+                _ = route.TryGetPointAtDistance(length * i / 4, out var milestone, out _);
+                canvas.FillCircle(Colors.Crimson, milestone, 4);
+            }
+        });
+
+        image.Save(outputPath);
+    }
+    // end-snippet
+
     /// <summary>Typed row access with a static callback (no closure allocation).</summary>
     // begin-snippet: typed-rows
     public static void InvertColors(string path)
@@ -494,6 +559,52 @@ internal static class Examples
         // PNG keeps 16-bit samples, alpha and animations, without loss. It cannot store a color description
         // that is not sRGB, so a strict save of an HDR image fails instead of relabeling its samples.
         image.Save(pngPath, new PngEncoder { MetadataHandling = MetadataHandling.Strict });
+        return description;
+    }
+    // end-snippet
+
+    /// <summary>HEIC output: a photo that every HEIC reader opens, a lossless image and an animation written as an image sequence.</summary>
+    // begin-snippet: save-heic
+    public static void SaveHeic(string photoPath, string heicPath, string losslessPath, string animatedPath, string animatedHeicPath)
+    {
+        using (var photo = Image.Load(photoPath))
+        {
+            // Lossy 4:2:0 with 8 bits is the Main Still Picture profile of HEVC, which every HEIC reader decodes.
+            // The alpha plane, when the image has one, is always stored losslessly.
+            photo.Save(heicPath, new HeicEncoder
+            {
+                Compression = HeicCompression.Lossy,
+                Quality = 80, // 0-100: size versus fidelity
+                Effort = 4,   // 0-9: encoding time versus size
+                AllowBitDepthReduction = true, // 16-bit sources are written with 12 bits
+            });
+
+            // The default is lossless: every sample of an 8-bit image is decoded back exactly. The R'G'B' samples are
+            // coded as they are (4:4:4), which is a profile of the range extensions of HEVC: fewer readers decode it.
+            photo.Save(losslessPath, new HeicEncoder { AllowBitDepthReduction = true });
+        }
+
+        // An animation is written as an image sequence, with its exact durations and its play count. It needs a seekable
+        // destination (the index of the images is written last): a path, a FileStream or a MemoryStream.
+        using var animation = Image.Load(animatedPath);
+        animation.Save(animatedHeicPath, new HeicEncoder { Compression = HeicCompression.Lossy });
+    }
+    // end-snippet
+
+    /// <summary>HEIC input: the photo of a phone is decoded, turned upright and saved as a JPEG file.</summary>
+    // begin-snippet: load-heic
+    public static string ConvertHeic(string heicPath, string jpegPath)
+    {
+        using var image = Image.Load(heicPath);
+        var description = $"{image.Width}x{image.Height} {image.PixelFormat}, orientation: {image.Metadata.Orientation}";
+
+        // A camera stores the image as its sensor reads it, and the rotation to apply as a property of the file: the
+        // decoder reports it as the orientation of the image and moves no pixel. AutoOrient applies it, so that the
+        // JPEG file needs no orientation.
+        image.AutoOrient();
+
+        // The ICC profile of the photo (Display P3 for a recent phone) and its EXIF block are stored in the JPEG file
+        image.Save(jpegPath, new JpegEncoder { Quality = 90 });
         return description;
     }
     // end-snippet

@@ -27,7 +27,7 @@ internal sealed class AvifCodec : ImageCodec
     /// </remarks>
     public static bool MatchesSignature(ReadOnlySpan<byte> prefix)
     {
-        if (prefix.Length < 12 || BinaryPrimitives.ReadUInt32BigEndian(prefix[4..]) is not AvifFormat.Ftyp)
+        if (prefix.Length < 12 || BinaryPrimitives.ReadUInt32BigEndian(prefix[4..]) is not HeifFormat.Ftyp)
             return false;
 
         if (BinaryPrimitives.ReadUInt32BigEndian(prefix) is 1)
@@ -40,20 +40,46 @@ internal sealed class AvifCodec : ImageCodec
 
         return IsCandidateBrand(BinaryPrimitives.ReadUInt32BigEndian(prefix[8..]));
 
-        static bool IsCandidateBrand(uint brand) => brand is AvifFormat.Avif or AvifFormat.Avis or AvifFormat.Mif1 or AvifFormat.Msf1 or AvifFormat.Miaf or AvifFormat.MA1B or AvifFormat.MA1A;
+        static bool IsCandidateBrand(uint brand) => brand is HeifFormat.Avif or HeifFormat.Avis or HeifFormat.Mif1 or HeifFormat.Msf1 or HeifFormat.Miaf or HeifFormat.MA1B or HeifFormat.MA1A;
     }
 
     public override bool IsMatch(ReadOnlySpan<byte> prefix) => MatchesSignature(prefix);
 
+    /// <summary>
+    /// A file with a generic major brand has the format of its compatible brands, which the walker reads: when the prefix
+    /// holds the whole file type box, they tell an AVIF file from an HEIC file, and from a file that is neither. A file type
+    /// box that the prefix cuts is reported as AVIF.
+    /// </summary>
+    public override ImageFormat GetDetectedFormat(ReadOnlySpan<byte> prefix)
+    {
+        var size = BinaryPrimitives.ReadUInt32BigEndian(prefix);
+        if (size < 16 || size > (uint)prefix.Length || size % 4 is not 0 || BinaryPrimitives.ReadUInt32BigEndian(prefix[8..]) is not (HeifFormat.Mif1 or HeifFormat.Msf1 or HeifFormat.Miaf))
+            return Format;
+
+        var isAvif = false;
+        var isHeic = false;
+        for (var offset = 16; offset < (int)size; offset += 4)
+        {
+            var brand = BinaryPrimitives.ReadUInt32BigEndian(prefix[offset..]);
+            isAvif |= brand is HeifFormat.Avif or HeifFormat.Avis;
+            isHeic |= HeicBinding.IsBrand(brand);
+        }
+
+        if (isAvif)
+            return Format;
+
+        return isHeic ? ImageFormat.Heic : ImageFormat.Unknown;
+    }
+
     public override ImageParser<ImageInfo> CreateIdentifyParser(ImageIdentifyMode mode, ImageCodecContext context)
-        => new AvifStructureParser(context, mode == ImageIdentifyMode.FullScan ? StructureWalk.FullScan : StructureWalk.Header);
+        => new HeifStructureParser(context, AvifBinding.Instance, mode == ImageIdentifyMode.FullScan ? StructureWalk.FullScan : StructureWalk.Header);
 
     public override ImageParser<Image> CreateDecodeParser(ImageDecodeRequest request, ImageCodecContext context)
     {
-        var observer = new AvifDecoder(request, context);
+        var observer = new HeifDecoder(request, context);
         try
         {
-            return new StructureDecodeParser(new AvifStructureParser(context, StructureWalk.Decode, observer), observer);
+            return new StructureDecodeParser(new HeifStructureParser(context, AvifBinding.Instance, StructureWalk.Decode, observer), observer);
         }
         catch
         {

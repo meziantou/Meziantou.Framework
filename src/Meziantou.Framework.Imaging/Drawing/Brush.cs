@@ -1,9 +1,10 @@
 namespace Meziantou.Framework.Imaging.Drawing;
 
-/// <summary>The colors a shape is painted with: a <see cref="SolidBrush"/> or a <see cref="GradientBrush"/>.</summary>
+/// <summary>The colors a shape is painted with: a <see cref="SolidBrush"/>, a <see cref="GradientBrush"/> or an <see cref="ImageBrush"/>.</summary>
 /// <remarks>
 /// <para>
-/// Brushes are immutable and thread-safe: create them once and reuse them. The type cannot be derived outside the library.
+/// Brushes are immutable and thread-safe: create them once and reuse them (an <see cref="ImageBrush"/> refers to an image
+/// that is not). The type cannot be derived outside the library.
 /// </para>
 /// <para>
 /// Brush colors are sample values in the color space of the image they are drawn on: no color profile is applied. Before
@@ -16,6 +17,20 @@ public abstract class Brush
 {
     private protected Brush()
     {
+    }
+
+    /// <summary>Gets how the paint is combined with the pixels it is drawn on. Defaults to <see cref="Drawing.CompositeMode.SourceOver"/>.</summary>
+    /// <exception cref="ArgumentOutOfRangeException">The value is not a defined <see cref="Drawing.CompositeMode"/>.</exception>
+    public CompositeMode CompositeMode
+    {
+        get;
+        init
+        {
+            if (!Enum.IsDefined(value))
+                throw new ArgumentOutOfRangeException(nameof(value), value, "The composite mode is not valid.");
+
+            field = value;
+        }
     }
 
     /// <summary>Creates a brush painting a single color.</summary>

@@ -55,7 +55,6 @@ internal sealed class Jpeg2000StructureParser : ImageParser<ImageInfo>
 
     // Box being streamed
     private BoxKind _boxKind;
-    private uint _boxType;
     private long _boxRemaining;
     private bool _boxExtendsToEnd;
     private JpegXlCodestreamBuffer? _boxBuffer;
@@ -268,7 +267,7 @@ internal sealed class Jpeg2000StructureParser : ImageParser<ImageInfo>
                     throw Invalid("the codestream box is not preceded by a JP2 header box.");
 
                 _codestreamSeen = true;
-                return BeginBox(BoxKind.Codestream, type, payloadLength, extendsToEnd, headerLength, ref consumed);
+                return BeginBox(BoxKind.Codestream, payloadLength, extendsToEnd, headerLength, ref consumed);
 
             case Jpeg2000Format.HeaderBox:
                 if (_boxes is not null)
@@ -278,7 +277,7 @@ internal sealed class Jpeg2000StructureParser : ImageParser<ImageInfo>
                     throw Invalid("the JP2 header box follows the codestream box.");
 
                 _boxes = new Jpeg2000HeaderBoxes();
-                return BeginBufferedBox(BoxKind.Header, type, payloadLength, extendsToEnd, headerLength, ref consumed);
+                return BeginBufferedBox(BoxKind.Header, payloadLength, extendsToEnd, headerLength, ref consumed);
 
             case Jpeg2000Format.CodestreamHeaderBox or Jpeg2000Format.CompositingLayerHeaderBox when !_codestreamSeen:
                 if (_boxes is null)
@@ -296,7 +295,7 @@ internal sealed class Jpeg2000StructureParser : ImageParser<ImageInfo>
                     _layerHeaderSeen = true;
                 }
 
-                return BeginBufferedBox(BoxKind.Header, type, payloadLength, extendsToEnd, headerLength, ref consumed);
+                return BeginBufferedBox(BoxKind.Header, payloadLength, extendsToEnd, headerLength, ref consumed);
 
             case Jpeg2000Format.FragmentTableBox when !_codestreamSeen:
                 throw Jpeg2000Format.Unsupported("The codestream of the JPEG 2000 file is stored in fragments.", "fragmented codestream");
@@ -320,13 +319,13 @@ internal sealed class Jpeg2000StructureParser : ImageParser<ImageInfo>
                 }
 
                 if (kind == BoxKind.Skip)
-                    return BeginBox(BoxKind.Skip, type, payloadLength, extendsToEnd, headerLength, ref consumed);
+                    return BeginBox(BoxKind.Skip, payloadLength, extendsToEnd, headerLength, ref consumed);
 
-                return BeginBufferedBox(kind, type, extendsToEnd ? payloadLength : payloadLength - UuidLength, extendsToEnd, headerLength + UuidLength, ref consumed);
+                return BeginBufferedBox(kind, extendsToEnd ? payloadLength : payloadLength - UuidLength, extendsToEnd, headerLength + UuidLength, ref consumed);
             }
 
             default:
-                return BeginBox(BoxKind.Skip, type, payloadLength, extendsToEnd, headerLength, ref consumed);
+                return BeginBox(BoxKind.Skip, payloadLength, extendsToEnd, headerLength, ref consumed);
         }
     }
 
@@ -375,7 +374,7 @@ internal sealed class Jpeg2000StructureParser : ImageParser<ImageInfo>
         return null;
     }
 
-    private ParseStatus? BeginBufferedBox(BoxKind kind, uint type, long payloadLength, bool extendsToEnd, int headerLength, ref int consumed)
+    private ParseStatus? BeginBufferedBox(BoxKind kind, long payloadLength, bool extendsToEnd, int headerLength, ref int consumed)
     {
         if (!extendsToEnd)
         {
@@ -391,14 +390,13 @@ internal sealed class Jpeg2000StructureParser : ImageParser<ImageInfo>
 
         _boxBuffer?.Dispose();
         _boxBuffer = new JpegXlCodestreamBuffer(_context.Scope);
-        return BeginBox(kind, type, payloadLength, extendsToEnd, headerLength, ref consumed);
+        return BeginBox(kind, payloadLength, extendsToEnd, headerLength, ref consumed);
     }
 
-    private ParseStatus? BeginBox(BoxKind kind, uint type, long payloadLength, bool extendsToEnd, int headerLength, ref int consumed)
+    private ParseStatus? BeginBox(BoxKind kind, long payloadLength, bool extendsToEnd, int headerLength, ref int consumed)
     {
         consumed += headerLength;
         _boxKind = kind;
-        _boxType = type;
         _boxRemaining = payloadLength;
         _boxExtendsToEnd = extendsToEnd;
         _state = State.Payload;

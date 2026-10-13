@@ -2795,6 +2795,143 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
     }
 
     [Fact]
+    public async Task DotNetFileBasedAppDependencies_QuotedValues()
+    {
+        const string Original = """
+            #:sdk "Aspire.AppHost.Sdk"@"13.0.2"
+            #:package "Serilog" @ 3.1.1
+            #:package Spectre.Console@"0.49.1"
+            #:project "../My Library/MyLibrary.csproj"
+            #:ref "../My Library/lib.cs"
+            #:property Company="RC2 Validation Team"
+            #:property TargetFramework = "net10.0"
+
+            Console.WriteLine("Hello");
+            """;
+
+        const string Expected = """
+            #:sdk "dummy1"@"2.0.0"
+            #:package "dummy2" @ 2.0.0
+            #:package dummy3@"2.0.0"
+            #:project "dummy4"
+            #:ref "dummy5"
+            #:property Company="RC2 Validation Team"
+            #:property TargetFramework = "2.0.0"
+
+            Console.WriteLine("Hello");
+            """;
+
+        AddFile("app.cs", Original);
+        var result = await GetDependencies<DotNetFileBasedAppDependencyScanner>();
+        Assert.HasCount(6, result);
+        AssertContainDependency(result,
+            (DependencyType.NuGet, "Aspire.AppHost.Sdk", "13.0.2", 1, 29),
+            (DependencyType.NuGet, "Serilog", "3.1.1", 2, 23),
+            (DependencyType.NuGet, "Spectre.Console", "0.49.1", 3, 28),
+            (DependencyType.MSBuildProjectReference, "../My Library/MyLibrary.csproj", null, 0, 0),
+            (DependencyType.DotNetAssemblyReference, "../My Library/lib.cs", null, 0, 0),
+            (DependencyType.DotNetTargetFramework, null, "net10.0", 7, 31));
+
+        await UpdateDependencies(result, "dummy", "2.0.0");
+        AssertFileContentEqual("app.cs", Expected, ignoreNewLines: false);
+    }
+
+    [Fact]
+    public async Task DotNetFileBasedAppDependencies_Metadata()
+    {
+        const string Original = """
+            #:package System.CommandLine@2.0.1 Aliases=CommandLine
+            #:package Microsoft.Build@17.0.0 ExcludeAssets=runtime PrivateAssets="all"
+            #:package Newtonsoft.Json Version=13.0.1
+            #:package Serilog ExcludeAssets=runtime VersionOverride = "3.1.1"
+            #:package Humanizer@ ExcludeAssets=runtime
+            #:project ../SharedLibrary/SharedLibrary.csproj Private=false
+            #:ref ../lib/lib.cs Aliases="a b"
+
+            Console.WriteLine("Hello");
+            """;
+
+        const string Expected = """
+            #:package dummy1@2.0.0 Aliases=CommandLine
+            #:package dummy2@2.0.0 ExcludeAssets=runtime PrivateAssets="all"
+            #:package dummy3 Version=2.0.0
+            #:package dummy4 ExcludeAssets=runtime VersionOverride = "2.0.0"
+            #:package dummy5@ ExcludeAssets=runtime
+            #:project dummy6 Private=false
+            #:ref dummy7 Aliases="a b"
+
+            Console.WriteLine("Hello");
+            """;
+
+        AddFile("app.cs", Original);
+        var result = await GetDependencies<DotNetFileBasedAppDependencyScanner>();
+        Assert.HasCount(7, result);
+        AssertContainDependency(result,
+            (DependencyType.NuGet, "System.CommandLine", "2.0.1", 1, 30),
+            (DependencyType.NuGet, "Microsoft.Build", "17.0.0", 2, 27),
+            (DependencyType.NuGet, "Newtonsoft.Json", "13.0.1", 3, 35),
+            (DependencyType.NuGet, "Serilog", "3.1.1", 4, 60),
+            (DependencyType.NuGet, "Humanizer", null, 0, 0),
+            (DependencyType.MSBuildProjectReference, "../SharedLibrary/SharedLibrary.csproj", null, 0, 0),
+            (DependencyType.DotNetAssemblyReference, "../lib/lib.cs", null, 0, 0));
+
+        await UpdateDependencies(result, "dummy", "2.0.0");
+        AssertFileContentEqual("app.cs", Expected, ignoreNewLines: false);
+    }
+
+    [Fact]
+    public async Task DotNetFileBasedAppDependencies_EscapedValuesAndVersionMetadata()
+    {
+        // A value that contains whitespace and no quote is still a single value, unless it is followed by valid metadata only
+        AddFile("app.cs", """
+            #:package Foo Version=1.0.0 VersionOverride=2.0.0
+            #:package Bar@[1.0, 2.0)
+            #:package Baz@"3.0\u002E0"
+            #:project "C:\\src\\my lib"
+            #:project ../My Library/MyLibrary.csproj Private=false
+
+            Console.WriteLine("Hello");
+            """);
+
+        var result = await GetDependencies<DotNetFileBasedAppDependencyScanner>();
+
+        Assert.HasCount(6, result);
+        AssertContainDependency(result,
+            (DependencyType.NuGet, "Foo", "1.0.0", 1, 23),
+            (DependencyType.NuGet, "Foo", "2.0.0", 1, 45),
+            (DependencyType.NuGet, "Bar", "[1.0, 2.0)", 2, 15),
+            (DependencyType.MSBuildProjectReference, "../My Library/MyLibrary.csproj Private=false", null, 0, 0));
+
+        // The value of an escaped literal is not its text in the file
+        Assert.Single(result, d => d.Name is "Baz" && d.Version is "3.0.0" && d.NameLocation is { IsUpdatable: true } && d.VersionLocation is { IsUpdatable: false });
+        Assert.Single(result, d => d.Name is @"C:\src\my lib" && d.NameLocation is { IsUpdatable: false });
+    }
+
+    [Theory]
+    [InlineData("""#:package Serilog@"3.1.1""")] // Unterminated quote
+    [InlineData("""#:package Serilog@"3.1.\q" """)] // Invalid escape sequence
+    [InlineData("""#:package Serilog@3.1"."1""")] // A quote must enclose a whole value
+    [InlineData("#:package \"\"\"Serilog\"\"\"@3.1.1")] // Raw string literals are not supported
+    [InlineData("""#:package "Serilog@3.1.1" """)] // The separator must be outside of the quotes
+    [InlineData("""#:package Serilog@3.1.1 Version=3.1.2""")] // The version is set twice
+    [InlineData("""#:package Serilog@3.1.1 Aliases=A aliases=B""")] // Duplicate metadata
+    [InlineData("""#:package Serilog@3.1.1 Aliases="A" B""")] // Not a metadata
+    [InlineData("""#:package Serilog@3.1.1 1Aliases="A" """)] // Invalid metadata name
+    [InlineData("""#:sdk My.Sdk@"1.0.0" Aliases=A""")] // #:sdk does not support metadata
+    [InlineData("""#:project "../Shared Library" Private""")]
+    [InlineData("""#:ref "../lib/lib.cs" "Private" """)]
+    [InlineData("""#:property TargetFramework="net10.0" Condition=A""")] // #:property does not support metadata
+    public async Task DotNetFileBasedAppDependencies_InvalidDirectivesAreNotReported(string directive)
+    {
+        // The SDK rejects these directives
+        AddFile("app.cs", directive + "\nConsole.WriteLine(\"Hello\");\n");
+
+        var result = await GetDependencies<DotNetFileBasedAppDependencyScanner>();
+
+        Assert.Empty(result);
+    }
+
+    [Fact]
     public async Task PackagesConfigDependencies()
     {
         const string Original = """

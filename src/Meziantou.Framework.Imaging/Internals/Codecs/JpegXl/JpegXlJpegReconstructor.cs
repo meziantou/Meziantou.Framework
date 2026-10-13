@@ -8,9 +8,17 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// codestream, the <c>Exif</c> box and the <c>xml </c> box hold the content of the application segments that had them.
 /// </summary>
 /// <remarks>
-/// The box precedes the frame: a file without it is known not to hold a JPEG file when its frame starts, and nothing of
-/// the frame is read. Nothing is approximated: a frame that cannot be the one of a recompressed JPEG file, or a
-/// description that does not match it, is an error.
+/// <para>
+/// Every encoder writes the box before the codestream, and the frame is then decoded as it arrives. The box may also
+/// follow the codestream: a frame that could be the one of a JPEG file (<see cref="IsJpegFrame"/>) is kept as it is
+/// coded until the end of the container tells whether a box describes it. Any other frame without a box before it ends
+/// the parsing: the file does not hold a JPEG file, and nothing after its first frame is read. A bare codestream has no
+/// box, and nothing of its frames is read.
+/// </para>
+/// <para>
+/// Nothing is approximated: a frame that cannot be the one of a recompressed JPEG file and that a box precedes, or a
+/// description that does not match its frame, is an error.
+/// </para>
 /// </remarks>
 internal sealed class JpegXlJpegReconstructor : JpegXlDecodeObserver
 {
@@ -30,6 +38,11 @@ internal sealed class JpegXlJpegReconstructor : JpegXlDecodeObserver
     private byte[]? _xmp;
     private bool _frameSeen;
 
+    // The frame that was read before any reconstruction data: its header, its table of contents and its sections
+    private JpegXlImageHeader? _pendingImage;
+    private JpegXlToc? _pendingToc;
+    private WebPPayloadBuffer? _pendingSections;
+
     public JpegXlJpegReconstructor(ImageCodecContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
@@ -46,6 +59,32 @@ internal sealed class JpegXlJpegReconstructor : JpegXlDecodeObserver
 
     public override bool WantsJpegReconstructionData => true;
 
+    /// <summary>
+    /// Gets a value indicating whether a frame can be the one of a recompressed JPEG file: the only frame of the image,
+    /// with the three 8-bit channels of the file, coded with VarDCT, and nothing else.
+    /// </summary>
+    public static bool IsJpegFrame(JpegXlImageHeader header, JpegXlFrameHeader frame)
+    {
+        ArgumentNullException.ThrowIfNull(header);
+        ArgumentNullException.ThrowIfNull(frame);
+        return !header.IsXybEncoded && header.ExtraChannels.Length == 0 && !header.HasAnimation && header.BitDepth.BitsPerSample == 8 && frame.Type == JpegXlFrameHeader.TypeRegular && frame.IsLast && !frame.IsModular;
+    }
+
+    public override bool EndsAtHeader(JpegXlStructureParser structure)
+    {
+        ArgumentNullException.ThrowIfNull(structure);
+        return _data is null && !structure.IsContainer;
+    }
+
+    public override bool WantsFrame(JpegXlStructureParser structure, JpegXlFrameHeader frame)
+    {
+        ArgumentNullException.ThrowIfNull(structure);
+        ArgumentNullException.ThrowIfNull(frame);
+
+        // Without reconstruction data yet, the only frame worth keeping is one they could describe, when they follow it
+        return _data is not null || (!_frameSeen && IsJpegFrame(structure.Header, frame));
+    }
+
     public override void OnHeaderComplete(JpegXlStructureParser structure)
     {
     }
@@ -54,9 +93,6 @@ internal sealed class JpegXlJpegReconstructor : JpegXlDecodeObserver
     {
         if (_data is not null)
             throw JpegXlFormat.Invalid("the container has two boxes of JPEG reconstruction data.");
-
-        if (_frameSeen)
-            throw JpegXlFormat.Unsupported("The JPEG reconstruction data of the JPEG XL file follow its codestream, which is not supported.", "JPEG reconstruction data after the codestream");
 
         _data = JpegXlJpegReconstructionData.Read(payload.ToArray(), payload.Length, _context.Tracker);
     }
@@ -80,12 +116,25 @@ internal sealed class JpegXlJpegReconstructor : JpegXlDecodeObserver
         ArgumentNullException.ThrowIfNull(frame);
         ArgumentNullException.ThrowIfNull(toc);
         ArgumentNullException.ThrowIfNull(sections);
+        var header = structure.Header;
+        var isJpegFrame = !_frameSeen && IsJpegFrame(header, frame);
         if (_data is null)
-            return false;
+        {
+            if (!isJpegFrame)
+                return false;
+
+            // The reconstruction data may follow the codestream: the frame is kept as it is coded, and the other boxes are read
+            _frameSeen = true;
+            _frame = frame;
+            _pendingImage = header;
+            _pendingToc = toc;
+            _pendingSections = new WebPPayloadBuffer(_context.Scope, sections.Length);
+            _pendingSections.Append(sections.Span);
+            return true;
+        }
 
         // The frame of a recompressed JPEG file: the only one, with the three channels of the file and nothing else
-        var header = structure.Header;
-        if (_frameSeen || header.IsXybEncoded || header.ExtraChannels.Length != 0 || header.HasAnimation || header.BitDepth.BitsPerSample != 8 || frame.Type != JpegXlFrameHeader.TypeRegular || !frame.IsLast || frame.IsModular)
+        if (!isJpegFrame)
             throw JpegXlFormat.Invalid("the image that the JPEG reconstruction data describe is not the one of a JPEG file.");
 
         _frameSeen = true;
@@ -99,9 +148,19 @@ internal sealed class JpegXlJpegReconstructor : JpegXlDecodeObserver
         ArgumentNullException.ThrowIfNull(structure);
         _frameSeen = true;
         if (_data is not { } data)
+        {
+            ReleasePendingFrame();
             return;
+        }
 
         var frame = _frame ?? throw JpegXlFormat.Invalid("the image that the JPEG reconstruction data describe has no frame.");
+        if (_pendingSections is { } pending)
+        {
+            // The frame that preceded the reconstruction data
+            _coefficients = JpegXlFrameDecoder.DecodeJpegCoefficients(_pendingImage!, frame, _pendingToc!, pending.Data, out _quantization, _context.Scope, _context.CancellationToken);
+            ReleasePendingFrame();
+        }
+
         var model = data.Model;
         var header = structure.Header;
         model.Width = (int)header.Width;
@@ -129,6 +188,17 @@ internal sealed class JpegXlJpegReconstructor : JpegXlDecodeObserver
 
             values.CopyTo(table.Values, 0);
             table.HasValues = true;
+        }
+
+        // A table that no component uses repeats the table before it
+        for (var i = 1; i < model.QuantizationTables.Count; i++)
+        {
+            var table = model.QuantizationTables[i];
+            if (!table.HasValues && model.QuantizationTables[i - 1].HasValues)
+            {
+                model.QuantizationTables[i - 1].Values.CopyTo(table.Values, 0);
+                table.HasValues = true;
+            }
         }
 
         if (!frame.IsYCbCr)
@@ -168,9 +238,18 @@ internal sealed class JpegXlJpegReconstructor : JpegXlDecodeObserver
             _coefficients = null;
             _writer?.Dispose();
             _writer = null;
+            ReleasePendingFrame();
         }
 
         base.Dispose(disposing);
+    }
+
+    private void ReleasePendingFrame()
+    {
+        _pendingSections?.Dispose();
+        _pendingSections = null;
+        _pendingImage = null;
+        _pendingToc = null;
     }
 
     /// <summary>Gives their content to the application segments whose content the codestream and the other boxes hold.</summary>

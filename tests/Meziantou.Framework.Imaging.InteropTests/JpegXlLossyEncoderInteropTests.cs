@@ -17,32 +17,48 @@ public sealed class JpegXlLossyEncoderInteropTests
     /// <summary>
     /// The floors are measured on the output of djxl 0.12.0, minus a margin of 1 dB: an encoder change that loses more than
     /// that is a regression of the quality scale, which is part of the contract of <see cref="JpegXlEncoder.Quality"/>.
+    /// The pattern of waves has what suits each transform the encoder chooses from: with it, the efforts 3, 7 and 8 each
+    /// write other transforms than the effort below, up to 64x64 samples, which the reference decoders read like the library.
+    /// From the effort 3 each block has its own quantization factor, coarser in texture: the patterns that are texture
+    /// everywhere (large, noise, text) are 0.3 to 1.1 dB further from their source than with one factor for the frame.
     /// The patterns are hard on purpose (texture, wrapping gradients, noise), so a low floor is a property of the pattern:
     /// on the two that were compared (photo-rgb16 and large-rgb8), cjxl at its effort 3 and a similar file size is within
     /// 1.5 dB of the library.
     /// </summary>
     [Theory]
-    [InlineData("photo-rgb8", 30, 5, false, 29.0)]
-    [InlineData("photo-rgb8", 75, 5, false, 31.2)]
-    [InlineData("photo-rgb8", 90, 5, false, 33.7)]
-    [InlineData("photo-rgb8", 100, 5, false, 39.5)]
-    [InlineData("photo-rgb8", 75, 0, false, 30.4)]
-    [InlineData("photo-rgb8", 75, 9, false, 31.2)]
-    [InlineData("photo-rgb8", 75, 5, true, 31.2)]
-    [InlineData("photo-rgba8", 75, 5, false, 31.2)]
-    [InlineData("photo-rgba8", 50, 5, true, 29.9)]
-    [InlineData("photo-gray8", 75, 5, false, 39.4)]
-    [InlineData("photo-gray8", 90, 5, true, 40.9)]
-    [InlineData("photo-rgb16", 75, 5, false, 31.3)]
-    [InlineData("photo-rgba16", 90, 5, true, 33.7)]
-    [InlineData("photo-gray16", 75, 5, false, 39.5)]
-    [InlineData("photo-small-rgb16", 75, 5, false, 29.8)]
-    [InlineData("photo-small-rgb16", 75, 5, true, 29.8)]
-    [InlineData("photo-wide-rgb16", 75, 5, true, 32.8)]
-    [InlineData("large-rgb8", 75, 5, false, 17.3)]
-    [InlineData("large-rgba8", 60, 5, true, 16.5)]
-    [InlineData("text-rgb8", 75, 5, false, 24.9)]
-    [InlineData("noise-rgba8", 90, 5, false, 18.9)]
+    [InlineData("photo-rgb8", 30, 5, false, 29.3)]
+    [InlineData("photo-rgb8", 75, 5, false, 32.5)]
+    [InlineData("photo-rgb8", 90, 5, false, 34.2)]
+    [InlineData("photo-rgb8", 100, 5, false, 40.2)]
+    [InlineData("photo-rgb8", 75, 0, false, 31.3)]
+    [InlineData("photo-rgb8", 75, 9, false, 33.0)]
+    [InlineData("photo-rgb8", 75, 5, true, 32.5)]
+    [InlineData("photo-rgba8", 75, 5, false, 32.5)]
+    [InlineData("photo-rgba8", 50, 5, true, 30.6)]
+    [InlineData("photo-gray8", 75, 5, false, 39.7)]
+    [InlineData("photo-gray8", 90, 5, true, 42.5)]
+    [InlineData("photo-rgb16", 75, 5, false, 32.6)]
+    [InlineData("photo-rgba16", 90, 5, true, 34.3)]
+    [InlineData("photo-gray16", 75, 5, false, 39.7)]
+    [InlineData("photo-small-rgb16", 75, 5, false, 31.7)]
+    [InlineData("photo-small-rgb16", 75, 5, true, 31.7)]
+    [InlineData("photo-wide-rgb16", 75, 5, true, 34.0)]
+    [InlineData("large-rgb8", 75, 5, false, 16.7)]
+    [InlineData("large-rgba8", 60, 5, true, 15.9)]
+    [InlineData("text-rgb8", 75, 5, false, 23.5)]
+    [InlineData("noise-rgba8", 90, 5, false, 16.8)]
+    [InlineData("waves-rgb8", 50, 2, false, 43.9)]
+    [InlineData("waves-rgb8", 50, 3, false, 44.1)]
+    [InlineData("waves-rgb8", 50, 7, false, 45.1)]
+    [InlineData("waves-rgb8", 50, 9, false, 44.9)]
+    [InlineData("waves-rgb8", 75, 5, true, 47.0)]
+    [InlineData("waves-rgb8", 75, 7, false, 47.0)]
+    [InlineData("waves-rgb8", 75, 9, true, 46.9)]
+    [InlineData("waves-rgb8", 90, 8, false, 49.4)]
+    [InlineData("waves-rgb8", 95, 9, false, 54.0)]
+    [InlineData("photo-rgb8", 75, 7, false, 33.0)]
+    [InlineData("photo-rgba16", 60, 9, false, 31.8)]
+    [InlineData("large-rgb8", 75, 9, true, 16.7)]
     public async Task LossyOutputDecodesLikeTheReferenceDecoders(string patternName, int quality, int effort, bool progressive, double minimumPsnr)
     {
         var jxl = await RequiredTools.LibJxlAsync();

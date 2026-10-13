@@ -47,7 +47,7 @@ internal static class JpegXlQualityReport
             using var image = Image.ImportPixelData<Rgba32>(pixels, width, height);
             foreach (var quality in new[] { 25, 50, 75, 90, 100 })
             {
-                foreach (var effort in new[] { 0, 5, 9 })
+                foreach (var effort in new[] { 0, 5, 7, 9 })
                 {
                     Report("JPEG XL lossy", $"q{quality} e{effort}", pixels, width, height, runs, image, new JpegXlEncoder { Compression = JpegXlCompression.Lossy, Quality = quality, Effort = effort });
                 }

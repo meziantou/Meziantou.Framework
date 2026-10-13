@@ -36,6 +36,56 @@ public sealed class JpegXlTranscoderTests
         Assert.Equal(expected, output.ToArray());
     }
 
+    /// <summary>
+    /// What a decoder reads and the encoders of the corpus do not write: bytes after the last block of a scan, a
+    /// quantization table defined between two scans (before the scan of its component, again with the same values, or in
+    /// the slot of another one), a table that repeats the one before it and that no component uses. A table that no
+    /// component uses and that is not such a copy has no place in a JPEG XL file: the file is refused, and nothing is written.
+    /// </summary>
+    [Fact]
+    public void FilesWithMovedAndRepeatedSegmentsAreRebuiltOrRefused()
+    {
+        var variants = JpegTestVariants.Create(GoldenCorpus.Default.Get("jpeg/baseline-420").ReadInput(), GoldenCorpus.Default.Get("jpeg/multiscan-chroma-interleaved").ReadInput());
+        Assert.Contains(variants, variant => variant.IsRecompressed);
+        Assert.Contains(variants, variant => !variant.IsRecompressed);
+        foreach (var variant in variants)
+        {
+            // Every variant is a file the decoder reads: what is refused is refused as a file a JPEG XL file cannot hold
+            using var loaded = Image.Load<Rgba32>(variant.File);
+            using var output = new MemoryStream();
+            if (!variant.IsRecompressed)
+            {
+                var exception = Assert.Throws<UnsupportedImageFeatureException>(() => JpegXlTranscoder.RecompressJpeg(variant.File, output));
+                Assert.Equal(ImageFormat.Jpeg, exception.Format);
+                Assert.Equal(0, output.Length);
+                continue;
+            }
+
+            AssertRoundTrips(variant.File, variant.Name);
+
+            // The pixels of the JPEG XL file are the ones of the JPEG file, to the rounding of the two decoders
+            JpegXlTranscoder.RecompressJpeg(variant.File, output);
+            using var recompressed = Image.Load<Rgba32>(output.ToArray());
+            Assert.True(GetMaxDifference(loaded, recompressed) <= 48, $"{variant.Name}: the pixels of the recompressed file differ by {GetMaxDifference(loaded, recompressed)}.");
+        }
+    }
+
+    /// <summary>The file of the corpus whose reconstruction data follow the codestream gives back the JPEG file it was made from.</summary>
+    [Fact]
+    public void AFileWhoseReconstructionDataFollowTheCodestreamGivesBackItsJpegFile()
+    {
+        var data = GoldenCorpus.Default.Get("jxl/jpeg-420-reconstruction-after").ReadInput();
+        var expected = GoldenCorpus.Default.Get("jpeg/ffmpeg-mjpeg-420-37x23").ReadInput();
+
+        // The reconstruction data are the last box of the file: 124 bytes
+        Assert.Equal(124u, System.Buffers.Binary.BinaryPrimitives.ReadUInt32BigEndian(data.AsSpan(^124..)));
+        Assert.Equal("jbrd"u8, data.AsSpan(^120..^116));
+        Assert.True(JpegXlTranscoder.HasJpegReconstructionData(data));
+        using var output = new MemoryStream();
+        JpegXlTranscoder.ReconstructJpeg(data, output);
+        Assert.Equal(expected, output.ToArray());
+    }
+
     [Theory]
     [MemberData(nameof(JpegFixtures))]
     public void AJpegFileIsRecompressedAndRebuilt(string id)
@@ -145,6 +195,9 @@ public sealed class JpegXlTranscoderTests
                 // Runs of blocks that an encoder would join: the file says where they stop
                 new JpegTestEncodeOptions { Progression = JpegTestProgressiveScan.ParseScript(GetScript(all, deep: true)), MaxEndOfBandRun = 1, SegmentsBeforeFrame = [comment] },
                 new JpegTestEncodeOptions { Progression = JpegTestProgressiveScan.ParseScript(GetScript(all, deep: true)), MaxEndOfBandRun = 3, TablesBeforeEachScan = true, HuffmanSeed = 5 },
+
+                // Runs of zeros before the end of a band, which an encoder would leave to the end of the band
+                new JpegTestEncodeOptions { Progression = JpegTestProgressiveScan.ParseScript(GetScript(all, deep: true)), MaxEndOfBandRun = 2, ZeroRunsBeforeEndOfBlock = 2 },
             ]
             :
             [
@@ -152,6 +205,9 @@ public sealed class JpegXlTranscoderTests
                 new JpegTestEncodeOptions { Huffman = JpegTestHuffmanStyle.Skewed, RestartInterval = 1 },
                 new JpegTestEncodeOptions { FrameMarker = 0xC1, RestartInterval = 3, HuffmanSeed = 7, SegmentsBeforeFrame = [application, comment], SegmentsAfterScans = [comment] },
                 new JpegTestEncodeOptions { Scans = [.. all.Reverse().Select(index => new[] { index })], TablesBeforeEachScan = true, RestartInterval = 2 },
+
+                // Runs of zeros before the end of a block, which an encoder would leave to the end of the block
+                new JpegTestEncodeOptions { Scans = [.. all.Select(index => new[] { index })], ZeroRunsBeforeEndOfBlock = 3 },
             ];
 
         for (var i = 0; i < options.Length; i++)
@@ -359,6 +415,134 @@ public sealed class JpegXlTranscoderTests
         Assert.True(failures > length / 2, $"{failures} of {length} damaged files were refused.");
     }
 
+    /// <summary>
+    /// The data that rebuild the JPEG file may follow the codestream, which no encoder writes: the file is rebuilt all the
+    /// same, from a stream that cannot seek as from memory, whether the codestream is in one box (the library) or in
+    /// several (cjxl), and with the metadata boxes on either side.
+    /// </summary>
+    [Theory]
+    [InlineData("jpeg/baseline-420", false)]
+    [InlineData("jpeg/progressive-422-odd-restart", false)]
+    [InlineData("jpeg/metadata-icc-exif-dpcm", false)]
+    [InlineData("jpeg/metadata-density-xmp-comment", false)]
+    [InlineData("jpeg/metadata-icc-exif-dpcm", true)]
+    [InlineData("jxl/jpeg-420", false)]
+    [InlineData("jxl/jpeg-gray", false)]
+    public async Task ReconstructionDataThatFollowTheCodestreamRebuildTheFile(string id, bool everyBoxAfter)
+    {
+        byte[] jpeg;
+        byte[] data;
+        if (id.StartsWith("jxl/", StringComparison.Ordinal))
+        {
+            // A file of cjxl, whose JPEG file is the one it gives back as it is
+            data = GoldenCorpus.Default.Get(id).ReadInput();
+            using var source = new MemoryStream();
+            JpegXlTranscoder.ReconstructJpeg(data, source);
+            jpeg = source.ToArray();
+        }
+        else
+        {
+            jpeg = GoldenCorpus.Default.Get(id).ReadInput();
+            using var recompressed = new MemoryStream();
+            JpegXlTranscoder.RecompressJpeg(jpeg, recompressed);
+            data = recompressed.ToArray();
+        }
+
+        var boxes = SplitBoxes(data);
+        Assert.Contains(boxes, box => box.Type == "jbrd");
+        var isCodestream = (string type) => type is "jxlc" or "jxlp";
+        var moved = Join(
+        [
+            .. boxes.Where(box => box.Type is "JXL " or "ftyp" or "jxll"),
+            .. boxes.Where(box => !everyBoxAfter && box.Type is not ("JXL " or "ftyp" or "jxll" or "jbrd") && !isCodestream(box.Type)),
+            .. boxes.Where(box => isCodestream(box.Type)),
+            .. boxes.Where(box => everyBoxAfter && box.Type is not ("JXL " or "ftyp" or "jxll" or "jbrd") && !isCodestream(box.Type)),
+            .. boxes.Where(box => box.Type == "jbrd"),
+        ]);
+        Assert.HasCount(data.Length, moved);
+        Assert.NotEqual(data, moved);
+
+        Assert.True(JpegXlTranscoder.HasJpegReconstructionData(moved));
+        using var output = new MemoryStream();
+        JpegXlTranscoder.ReconstructJpeg(moved, output);
+        Assert.Equal(jpeg, output.ToArray());
+
+        using (var stream = CreateStream(moved, isAsynchronous: false))
+        {
+            Assert.True(JpegXlTranscoder.HasJpegReconstructionData(stream));
+        }
+
+        using var fromStream = new MemoryStream();
+        using (var stream = CreateStream(moved, isAsynchronous: true))
+        {
+            Assert.True(await JpegXlTranscoder.TryReconstructJpegAsync(stream, fromStream, cancellationToken: TestContext.Current.CancellationToken));
+        }
+
+        Assert.Equal(jpeg, fromStream.ToArray());
+
+        // The pixels do not depend on where the box is
+        using var expected = Image.Load<Rgba32>(data);
+        using var actual = Image.Load<Rgba32>(moved);
+        Assert.Equal(0, GetMaxDifference(expected, actual));
+    }
+
+    /// <summary>
+    /// A container whose frame could be the one of a JPEG file is read to its end before it is said to hold no
+    /// reconstruction data; a frame that could not be is not looked past, whatever follows it; two boxes are an error
+    /// wherever they are; and a box that is cut is an error, not an absence.
+    /// </summary>
+    [Fact]
+    public void ReconstructionDataAreLookedForToTheEndOfAFileThatCouldHoldAJpegFile()
+    {
+        var jpeg = GoldenCorpus.Default.Get("jpeg/baseline-420").ReadInput();
+        using var recompressed = new MemoryStream();
+        JpegXlTranscoder.RecompressJpeg(jpeg, recompressed);
+        var boxes = SplitBoxes(recompressed.ToArray());
+        var description = boxes.Single(box => box.Type == "jbrd");
+        var others = boxes.Where(box => box.Type != "jbrd").ToArray();
+
+        // The frame of a JPEG file without the box: nothing to rebuild
+        var without = Join(others);
+        AssertNotRebuilt(without);
+
+        // Two boxes: before and after the codestream, or both after it
+        foreach (var twice in new[] { Join([.. boxes, description]), Join([.. others, description, description]) })
+        {
+            using var output = new MemoryStream();
+            Assert.Throws<InvalidImageContentException>(() => JpegXlTranscoder.TryReconstructJpeg(twice, output));
+            Assert.Equal(0, output.Length);
+        }
+
+        // The box is cut
+        var cut = Join([.. others, description])[..^5];
+        Assert.Throws<InvalidImageContentException>(() => JpegXlTranscoder.HasJpegReconstructionData(cut));
+        using (var output = new MemoryStream())
+        {
+            Assert.Throws<InvalidImageContentException>(() => JpegXlTranscoder.TryReconstructJpeg(cut, output));
+            Assert.Equal(0, output.Length);
+        }
+
+        // A frame that is not the one of a JPEG file (it is stored in XYB), in a container, followed by the box: the box is not looked for
+        using var image = new Image<Rgb24>(40, 24);
+        using var encoded = new MemoryStream();
+        image.Save(encoded, new JpegXlEncoder { Compression = JpegXlCompression.Lossy });
+        AssertNotRebuilt([.. JpegXlTestFiles.ContainerStart, .. JpegXlTestFiles.Box("jxlc", encoded.ToArray()), .. description.Bytes]);
+
+        // A bare codestream has no box
+        AssertNotRebuilt(encoded.ToArray());
+
+        static void AssertNotRebuilt(byte[] data)
+        {
+            Assert.False(JpegXlTranscoder.HasJpegReconstructionData(data));
+            using var output = new MemoryStream();
+            Assert.False(JpegXlTranscoder.TryReconstructJpeg(data, output));
+            Assert.Throws<UnsupportedImageFeatureException>(() => JpegXlTranscoder.ReconstructJpeg(data, output));
+            Assert.Equal(0, output.Length);
+            using var loaded = Image.Load(data);
+            Assert.True(loaded.Width > 0);
+        }
+    }
+
     [Fact]
     public void LimitsApplyToBothDirections()
     {
@@ -380,6 +564,31 @@ public sealed class JpegXlTranscoderTests
         JpegXlTranscoder.ReconstructJpeg(recompressed.ToArray(), rebuilt);
         Assert.True(jpeg.AsSpan().SequenceEqual(rebuilt.ToArray()), $"{context}: the rebuilt file differs.");
     }
+
+    /// <summary>Splits a JPEG XL container into its boxes; a last box that extends to the end of the file is given its size.</summary>
+    private static List<(string Type, byte[] Bytes)> SplitBoxes(byte[] data)
+    {
+        var boxes = new List<(string Type, byte[] Bytes)>();
+        var position = 0;
+        while (position < data.Length)
+        {
+            var size = (long)System.Buffers.Binary.BinaryPrimitives.ReadUInt32BigEndian(data.AsSpan(position));
+            var type = System.Text.Encoding.ASCII.GetString(data, position + 4, 4);
+            Assert.NotEqual(1, size);
+            if (size == 0)
+            {
+                size = data.Length - position;
+                System.Buffers.Binary.BinaryPrimitives.WriteUInt32BigEndian(data.AsSpan(position), (uint)size);
+            }
+
+            boxes.Add((type, data.AsSpan(position, (int)size).ToArray()));
+            position += (int)size;
+        }
+
+        return boxes;
+    }
+
+    private static byte[] Join(IEnumerable<(string Type, byte[] Bytes)> boxes) => [.. boxes.SelectMany(box => box.Bytes)];
 
     private static TestInputStream CreateStream(byte[] data, bool isAsynchronous)
         => new(data) { Seekable = false, MaxBytesPerRead = 97, ForbidSynchronousReads = isAsynchronous };

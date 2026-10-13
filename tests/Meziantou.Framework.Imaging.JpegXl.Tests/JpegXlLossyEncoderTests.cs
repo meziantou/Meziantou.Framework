@@ -195,11 +195,11 @@ public sealed class JpegXlLossyEncoderTests
     {
         using var image = CreatePhoto(96, 80, seed: 3);
         var data = Save(image, new JpegXlEncoder { Compression = JpegXlCompression.Lossy, Quality = quality });
-        var frame = Assert.Single(ReferenceJpegXl.Parse(data).Frames!);
+        var frame = Assert.Single(ReferenceJpegXl.Parse(data).Frames);
         Assert.Equal(expected, frame.IsGaborishEnabled);
 
         // A lossless frame is never filtered
-        var lossless = Assert.Single(ReferenceJpegXl.Parse(Save(image, new JpegXlEncoder())).Frames!);
+        var lossless = Assert.Single(ReferenceJpegXl.Parse(Save(image, new JpegXlEncoder())).Frames);
         Assert.Equal((false, 0), (lossless.IsGaborishEnabled, lossless.EdgePreservingIterations));
     }
 

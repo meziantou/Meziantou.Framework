@@ -8,6 +8,7 @@ namespace Meziantou.Framework.Imaging.Tests;
 /// the coverages are exact fractions obtained with rectangles on halves and quarters of a pixel. The conformance tests
 /// add a rational reference over random pixels, paints and coverages.
 /// </summary>
+[SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
 public sealed class DrawingCompositeTests
 {
     private static readonly RectangleD WholePixel = new(0, 0, 1, 1);
@@ -299,12 +300,345 @@ public sealed class DrawingCompositeTests
         }
     }
 
+    // -----------------------------------------------------------------------------------------------------------------
+    // Blend modes. The colors as fractions of one: s (paint), d (pixel). The paint takes the color
+    // (1 - ad) s + ad B(s, d), rounded to a sample, then it is composited as any paint.
+    // -----------------------------------------------------------------------------------------------------------------
+
+    [Fact]
+    public void ABlendModeMixesEachChannelOfThePaintWithThePixel()
+    {
+        // (204, 102, 51) on an opaque (102, 153, 255), that is (0.8, 0.4, 0.2) on (0.4, 0.6, 1)
+        var pixel = new Rgb24(102, 153, 255);
+        var paint = new Rgba32(204, 102, 51);
+        Assert.Equal(new Rgb24(204, 102, 51), Blend(pixel, paint, BlendMode.Normal));
+
+        // s d: 81.6 | 61.2 | 51
+        Assert.Equal(new Rgb24(82, 61, 51), Blend(pixel, paint, BlendMode.Multiply));
+
+        // s + d - s d: 224.4 | 193.8 | 255
+        Assert.Equal(new Rgb24(224, 194, 255), Blend(pixel, paint, BlendMode.Screen));
+
+        // Multiply (2 s d) where the pixel is dark, screen (1 - 2 (1 - s)(1 - d)) where it is light:
+        // 2 * 0.8 * 0.4 = 0.64 -> 163.2 | 1 - 2 * 0.6 * 0.4 = 0.52 -> 132.6 | 1
+        Assert.Equal(new Rgb24(163, 133, 255), Blend(pixel, paint, BlendMode.Overlay));
+
+        // The same with the paint and the pixel exchanged: 1 - 2 * 0.2 * 0.6 = 0.76 -> 193.8 | 0.48 -> 122.4 | 0.4 -> 102
+        Assert.Equal(new Rgb24(194, 122, 102), Blend(pixel, paint, BlendMode.HardLight));
+        Assert.Equal(new Rgb24(102, 102, 51), Blend(pixel, paint, BlendMode.Darken));
+        Assert.Equal(new Rgb24(204, 153, 255), Blend(pixel, paint, BlendMode.Lighten));
+
+        // min(1, d / (1 - s)): 0.4 / 0.2 | 0.6 / 0.6 | 1 / 0.8, all at least 1
+        Assert.Equal(new Rgb24(255, 255, 255), Blend(pixel, paint, BlendMode.ColorDodge));
+
+        // 1 - min(1, (1 - d) / s): 1 - 0.75 -> 63.75 | 1 - 1 | 1 - 0
+        Assert.Equal(new Rgb24(64, 0, 255), Blend(pixel, paint, BlendMode.ColorBurn));
+
+        // A light paint (s > 0.5) moves the pixel toward its square root: 0.4 + 0.6 (0.6325 - 0.4) -> 137.57;
+        // a dark one darkens it: 0.6 - 0.2 * 0.6 * 0.4 = 0.552 -> 140.76; white stays white
+        Assert.Equal(new Rgb24(138, 141, 255), Blend(pixel, paint, BlendMode.SoftLight));
+
+        // |d - s| and s + d - 2 s d: 0.56 -> 142.8 | 0.52 -> 132.6 | 0.8 -> 204
+        Assert.Equal(new Rgb24(102, 51, 204), Blend(pixel, paint, BlendMode.Difference));
+        Assert.Equal(new Rgb24(143, 133, 204), Blend(pixel, paint, BlendMode.Exclusion));
+
+        // What changes nothing, and what inverts
+        var white = new Rgba32(255, 255, 255);
+        var black = new Rgba32(0, 0, 0);
+        Assert.Equal(pixel, Blend(pixel, white, BlendMode.Multiply));
+        Assert.Equal(pixel, Blend(pixel, black, BlendMode.Screen));
+        Assert.Equal(pixel, Blend(pixel, black, BlendMode.ColorDodge));
+        Assert.Equal(pixel, Blend(pixel, white, BlendMode.ColorBurn));
+        Assert.Equal(pixel, Blend(pixel, black, BlendMode.Difference));
+        Assert.Equal(pixel, Blend(pixel, black, BlendMode.Lighten));
+        Assert.Equal(pixel, Blend(pixel, white, BlendMode.Darken));
+        Assert.Equal(new Rgb24(153, 102, 0), Blend(pixel, white, BlendMode.Difference));
+        Assert.Equal(new Rgb24(0, 0, 0), Blend(pixel, black, BlendMode.Multiply));
+        Assert.Equal(new Rgb24(255, 255, 255), Blend(pixel, white, BlendMode.Screen));
+
+        // 16-bit samples keep their precision: 40000 * 20000 / 65535 = 12207.2, 60000 + 1000 - 60000 * 1000 / 65535 = 60084.4
+        Assert.Equal(new Rgba64(12207, 12207, 12207), Blend(new Rgba64(20000, 20000, 20000), new Rgba64(40000, 40000, 40000), BlendMode.Multiply));
+        Assert.Equal(new Rgba64(60084, 60084, 60084), Blend(new Rgba64(1000, 1000, 1000), new Rgba64(60000, 60000, 60000), BlendMode.Screen));
+
+        // A gray level is one channel
+        Assert.Equal(new Gray8(82), Blend(new Gray8(102), new Rgba32(204, 204, 204), BlendMode.Multiply));
+        Assert.Equal(new Gray8(138), Blend(new Gray8(102), new Rgba32(204, 204, 204), BlendMode.SoftLight));
+        Assert.Equal(new Gray16(12207), Blend(new Gray16(20000), new Rgba64(40000, 40000, 40000), BlendMode.Multiply));
+    }
+
+    [Fact]
+    public void TheLastBlendModesTakeAColorAsAWhole()
+    {
+        // (200, 90, 40) on (120, 140, 160). The luminosity 0.3 R + 0.59 G + 0.11 B is 117.5 for the paint and 136.2 for the
+        // pixel; the saturation, the largest channel less the smallest, is 160 and 40.
+        var pixel = new Rgb24(120, 140, 160);
+        var paint = new Rgba32(200, 90, 40);
+
+        // The paint with the saturation of the pixel, (v - 40) * 40 / 160 = (40, 12.5, 0), whose luminosity is 19.375,
+        // then with its luminosity: + 116.825
+        Assert.Equal(new Rgb24(157, 129, 117), Blend(pixel, paint, BlendMode.Hue));
+
+        // The pixel with the saturation of the paint, (v - 120) * 160 / 40 = (0, 80, 160), whose luminosity is 64.8,
+        // then with its own luminosity: + 71.4
+        Assert.Equal(new Rgb24(71, 151, 231), Blend(pixel, paint, BlendMode.Saturation));
+
+        // The paint with the luminosity of the pixel, + 18.7, and the pixel with the luminosity of the paint, - 18.7
+        Assert.Equal(new Rgb24(219, 109, 59), Blend(pixel, paint, BlendMode.Color));
+        Assert.Equal(new Rgb24(101, 121, 141), Blend(pixel, paint, BlendMode.Luminosity));
+
+        // A color that leaves the range is brought back around its luminosity: red with the luminosity of white is white
+        Assert.Equal(new Rgb24(255, 255, 255), Blend(new Rgb24(255, 255, 255), new Rgba32(255, 0, 0), BlendMode.Color));
+        Assert.Equal(new Rgb24(0, 0, 0), Blend(new Rgb24(0, 0, 0), new Rgba32(255, 0, 0), BlendMode.Hue));
+
+        // Red, green and blue are what they are whatever the order of the samples
+        Assert.Equal(new Rgba32(157, 129, 117), Blend(new Rgba32(120, 140, 160), paint, BlendMode.Hue));
+        Assert.Equal(new Bgra32(157, 129, 117), Blend(new Bgra32(120, 140, 160), paint, BlendMode.Hue));
+        Assert.Equal(new Bgra32(71, 151, 231), Blend(new Bgra32(120, 140, 160), paint, BlendMode.Saturation));
+        Assert.Equal(new Bgra32(219, 109, 59), Blend(new Bgra32(120, 140, 160), paint, BlendMode.Color));
+        Assert.Equal(new Bgra32(101, 121, 141), Blend(new Bgra32(120, 140, 160), paint, BlendMode.Luminosity));
+
+        // Gray levels are colors without saturation: the luminosity of the paint replaces the pixel, and the other three
+        // keep the luminosity of the pixel, which is all it has
+        Assert.Equal(new Gray8(200), Blend(new Gray8(102), new Rgba32(200, 200, 200), BlendMode.Luminosity));
+        Assert.Equal(new Gray8(102), Blend(new Gray8(102), new Rgba32(200, 200, 200), BlendMode.Hue));
+        Assert.Equal(new Gray8(102), Blend(new Gray8(102), new Rgba32(200, 200, 200), BlendMode.Saturation));
+        Assert.Equal(new Gray8(102), Blend(new Gray8(102), new Rgba32(200, 200, 200), BlendMode.Color));
+    }
+
+    [Fact]
+    public void ABlendedPaintIsCompositedAsAnyPaint()
+    {
+        // (204, 102, 51) at 200/255 on half of a pixel (102, 153, 255) at 128/255. The paint first takes the color
+        // (1 - ad) s + ad B(s, d) with ad = 128/255: for multiply, 0.498 * (204, 102, 51) + 0.502 * (81.6, 61.2, 51)
+        // = (142.56, 81.52, 51) -> (143, 82, 51). It is then composited over the pixel with its alpha and the
+        // coverage: as = 200/255 / 2, ao = as + ad (1 - as) = 0.6973 -> 178, each color (143 as + 102 ad (1 - as)) / ao
+        var pixel = new Rgba32(102, 153, 255, 128);
+        var paint = new Rgba32(204, 102, 51, 200);
+        Assert.Equal(new Rgba32(125, 113, 140, 178), Paint(pixel, paint, HalfPixel, blend: BlendMode.Multiply));
+        Assert.Equal(new Rgba32(165, 150, 198, 178), Paint(pixel, paint, HalfPixel, blend: BlendMode.Screen));
+        Assert.Equal(new Rgba32(141, 135, 198, 178), Paint(pixel, paint, HalfPixel, blend: BlendMode.SoftLight));
+        Assert.Equal(new Rgba32(174, 168, 198, 178), Paint(pixel, paint, HalfPixel, blend: BlendMode.ColorDodge));
+        Assert.Equal(new Rgba32(124, 133, 191, 178), Paint(pixel, paint, HalfPixel, blend: BlendMode.Luminosity));
+
+        // On a transparent pixel there is nothing to mix with: the paint keeps its color, and a transparent paint
+        // paints nothing
+        foreach (var mode in Enum.GetValues<BlendMode>())
+        {
+            Assert.Equal(new Rgba32(204, 102, 51, 200), Paint(new Rgba32(1, 2, 3, 0), paint, WholePixel, blend: mode));
+            Assert.Equal(pixel, Paint(pixel, new Rgba32(204, 102, 51, 0), WholePixel, blend: mode));
+            Assert.Equal(Paint(pixel, paint, HalfPixel), Paint(pixel, paint, HalfPixel, blend: BlendMode.Normal));
+        }
+
+        // The operator of the brush then combines the blended paint with the pixel: multiplied where the pixel is,
+        // and nowhere else (the paint (143, 82, 51) at 200/255 atop the pixel)
+        Assert.Equal(
+            Paint(pixel, new Rgba32(143, 82, 51, 200), WholePixel, CompositeMode.SourceAtop),
+            Paint(pixel, paint, WholePixel, CompositeMode.SourceAtop, BlendMode.Multiply));
+        Assert.Equal(new Rgba32(1, 2, 3, 0), Paint(new Rgba32(1, 2, 3, 0), paint, WholePixel, CompositeMode.SourceAtop, BlendMode.Multiply));
+    }
+
+    [Theory]
+    [MemberData(nameof(DrawingTestSupport.AllFormats), MemberType = typeof(DrawingTestSupport))]
+    public void EveryBlendModeFollowsItsDefinitionInEveryPixelFormat(PixelFormat format)
+    {
+        // The definition written again with decimal arithmetic, on random pixels, paints and coverages; a sample may
+        // differ by one unit where the two computations do not round the same way
+        var layout = TestHarness.Drawing.ReferencePixelLayout.FromPixelFormat(format);
+        var random = new Random(8800 + (int)format);
+        foreach (var blend in Enum.GetValues<BlendMode>())
+        {
+            for (var iteration = 0; iteration < 12; iteration++)
+            {
+                using var image = DrawingTestSupport.CreateRandom(format, 4, 4, random.Next);
+                var before = DrawingTestSupport.ReadSamples(image.Frames[0]);
+                var color = new Rgba64((ushort)random.Next(65536), (ushort)random.Next(65536), (ushort)random.Next(65536), (ushort)(iteration % 3 == 0 ? 65535 : random.Next(65536)));
+                var mode = iteration % 4 == 3 ? CompositeMode.SourceAtop : CompositeMode.SourceOver;
+                var brush = new SolidBrush(color) { BlendMode = blend, CompositeMode = mode };
+
+                // Whole pixels, and a column of half pixels
+                image.Draw(canvas => canvas.FillRectangle(brush, new RectangleD(0, 0, 3.5, 4)), Ct);
+                var after = DrawingTestSupport.ReadSamples(image.Frames[0]);
+                var paint = DrawingTestSupport.ToPaint(color, format);
+                var channels = layout.ChannelCount;
+                for (var pixel = 0; pixel < 16; pixel++)
+                {
+                    var destination = before.AsSpan(pixel * channels, channels).ToArray();
+                    var blended = BlendByDefinition(blend, paint, destination, layout);
+                    var coverage = (pixel % 4) switch
+                    {
+                        3 => TestHarness.Drawing.ReferenceCoverage.FullCoverage / 2,
+                        _ => TestHarness.Drawing.ReferenceCoverage.FullCoverage,
+                    };
+                    var expected = mode == CompositeMode.SourceOver
+                        ? TestHarness.Drawing.ReferenceCompositor.Blend(destination, blended, coverage, layout)
+                        : TestHarness.Drawing.ReferenceCompositor.Blend(destination, blended, coverage, layout, TestHarness.Drawing.ReferenceCompositeMode.SourceAtop);
+                    var actual = after.AsSpan(pixel * channels, channels).ToArray();
+                    for (var c = 0; c < channels; c++)
+                    {
+                        Assert.True(Math.Abs(expected[c] - actual[c]) <= 1, $"{blend} with {mode}, iteration {iteration}, pixel {pixel}: paint [{string.Join(' ', paint.Color)}] {paint.Alpha} on [{string.Join(' ', destination)}], expected [{string.Join(' ', expected)}], actual [{string.Join(' ', actual)}]");
+                    }
+                }
+            }
+        }
+
+        static TestHarness.Drawing.ReferencePaint BlendByDefinition(BlendMode blend, TestHarness.Drawing.ReferencePaint paint, int[] destination, TestHarness.Drawing.ReferencePixelLayout layout)
+        {
+            decimal max = layout.MaxValue;
+            var backdrop = layout.HasAlpha ? destination[layout.ColorChannels] / max : 1;
+            if (paint.Alpha == 0 || backdrop == 0)
+                return paint;
+
+            // Red, green and blue as fractions of one; a gray level three times
+            var red = layout.ColorChannels == 1 ? 0 : layout.BlueFirst ? 2 : 0;
+            var green = layout.ColorChannels == 1 ? 0 : 1;
+            var blue = layout.ColorChannels == 1 ? 0 : 2 - red;
+            decimal[] s = [paint.Color[red] / max, paint.Color[green] / max, paint.Color[blue] / max];
+            decimal[] d = [destination[red] / max, destination[green] / max, destination[blue] / max];
+            var b = blend switch
+            {
+                BlendMode.Hue => SetLuminosity(SetSaturation(s, Saturation(d)), Luminosity(d)),
+                BlendMode.Saturation => SetLuminosity(SetSaturation(d, Saturation(s)), Luminosity(d)),
+                BlendMode.Color => SetLuminosity(s, Luminosity(d)),
+                BlendMode.Luminosity => SetLuminosity(d, Luminosity(s)),
+                _ => [BlendChannel(blend, s[0], d[0]), BlendChannel(blend, s[1], d[1]), BlendChannel(blend, s[2], d[2])],
+            };
+
+            var color = new int[layout.ColorChannels];
+            foreach (var (index, channel) in new[] { (red, 0), (green, 1), (blue, 2) })
+            {
+                color[index] = (int)Math.Clamp(Math.Floor(((((1 - backdrop) * s[channel]) + (backdrop * b[channel])) * max) + 0.5m), 0, max);
+            }
+
+            return new TestHarness.Drawing.ReferencePaint(color, paint.Alpha);
+        }
+
+        static decimal BlendChannel(BlendMode blend, decimal s, decimal d) => blend switch
+        {
+            BlendMode.Normal => s,
+            BlendMode.Multiply => s * d,
+            BlendMode.Screen => s + d - (s * d),
+            BlendMode.Overlay => d <= 0.5m ? 2 * s * d : 1 - (2 * (1 - s) * (1 - d)),
+            BlendMode.HardLight => s <= 0.5m ? 2 * s * d : 1 - (2 * (1 - s) * (1 - d)),
+            BlendMode.Darken => Math.Min(s, d),
+            BlendMode.Lighten => Math.Max(s, d),
+            BlendMode.ColorDodge => d == 0 ? 0 : s == 1 ? 1 : Math.Min(1, d / (1 - s)),
+            BlendMode.ColorBurn => d == 1 ? 1 : s == 0 ? 0 : 1 - Math.Min(1, (1 - d) / s),
+            BlendMode.SoftLight => s <= 0.5m
+                ? d - ((1 - (2 * s)) * d * (1 - d))
+                : d + (((2 * s) - 1) * ((d <= 0.25m ? ((((16 * d) - 12) * d) + 4) * d : (decimal)Math.Sqrt((double)d)) - d)),
+            BlendMode.Difference => Math.Abs(s - d),
+            _ => s + d - (2 * s * d),
+        };
+
+        static decimal Luminosity(decimal[] color) => (0.3m * color[0]) + (0.59m * color[1]) + (0.11m * color[2]);
+
+        static decimal Saturation(decimal[] color) => color.Max() - color.Min();
+
+        static decimal[] SetSaturation(decimal[] color, decimal saturation)
+        {
+            var min = color.Min();
+            var max = color.Max();
+            return [.. color.Select(value => max > min ? (value - min) * saturation / (max - min) : 0)];
+        }
+
+        static decimal[] SetLuminosity(decimal[] color, decimal luminosity)
+        {
+            var shift = luminosity - Luminosity(color);
+            decimal[] result = [.. color.Select(value => value + shift)];
+            var l = Luminosity(result);
+            var min = result.Min();
+            var max = result.Max();
+            if (min < 0)
+            {
+                result = [.. result.Select(value => l + ((value - l) * l / (l - min)))];
+            }
+
+            if (max > 1)
+            {
+                result = [.. result.Select(value => l + ((value - l) * (1 - l) / (max - l)))];
+            }
+
+            return result;
+        }
+    }
+
+    [Fact]
+    public void TheBlendModeIsAPropertyOfTheBrushAndOfALayer()
+    {
+        Assert.Equal(BlendMode.Normal, new SolidBrush(new Rgba32(1, 2, 3)).BlendMode);
+        Assert.Equal(BlendMode.Screen, new SolidBrush(new Rgba32(1, 2, 3)) { BlendMode = BlendMode.Screen }.BlendMode);
+        Assert.Throws<ArgumentOutOfRangeException>(() => new SolidBrush(new Rgba32(1, 2, 3)) { BlendMode = (BlendMode)16 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new SolidBrush(new Rgba32(1, 2, 3)) { BlendMode = (BlendMode)(-1) });
+
+        // A gradient multiplies the pixels by its colors: from white, which changes nothing, to black (the parameters
+        // of the four pixels are 1/8 to 7/8, and the gradient has the grays 223, 159, 96 and 32 there; 200 * 223 / 255
+        // = 174.9, 124.7, 75.3 and 25.1)
+        GradientStop[] stops = [new(0, new Rgba32(255, 255, 255)), new(1, new Rgba32(0, 0, 0))];
+        var shade = new LinearGradientBrush(new PointD(0, 0), new PointD(4, 0), stops) { BlendMode = BlendMode.Multiply };
+        using (var image = new Image<Gray8>(4, 1, new Gray8(200)))
+        {
+            image.Draw(canvas => canvas.Fill(shade), Ct);
+            Assert.Equal([175, 125, 75, 25], DrawingTestSupport.ReadSamples(image.Frames[0]));
+        }
+
+        // An image is mixed the same way, and so is the brush of a pen
+        using (var texture = new Image<Rgba32>(2, 1))
+        using (var image = new Image<Rgb24>(2, 1, new Rgb24(102, 153, 255)))
+        {
+            texture.Frames[0][0, 0] = new Rgba32(204, 102, 51);
+            texture.Frames[0][1, 0] = new Rgba32(255, 255, 255);
+            image.Draw(canvas => canvas.Fill(new ImageBrush(texture.Frames[0]) { BlendMode = BlendMode.Multiply }), Ct);
+            Assert.Equal(new Rgb24(82, 61, 51), image.Frames[0][0, 0]);
+            Assert.Equal(new Rgb24(102, 153, 255), image.Frames[0][1, 0]);
+            image.Draw(canvas => canvas.StrokeLine(new Pen(new SolidBrush(new Rgba32(255, 255, 255)) { BlendMode = BlendMode.Difference }, 1), new PointD(0, 0.5), new PointD(1, 0.5)), Ct);
+            Assert.Equal(new Rgb24(173, 194, 204), image.Frames[0][0, 0]);
+        }
+
+        // A layer mixes its drawing as a whole: two shapes that overlap multiply the canvas once
+        using (var image = new Image<Rgb24>(3, 1, new Rgb24(102, 153, 255)))
+        {
+            var paint = new SolidBrush(new Rgba32(204, 102, 51));
+            image.Draw(
+                canvas => canvas.Layer(
+                    1,
+                    layer =>
+                    {
+                        layer.FillRectangle(paint, new Rectangle(0, 0, 2, 1));
+                        layer.FillRectangle(paint, new Rectangle(1, 0, 1, 1));
+                    },
+                    blendMode: BlendMode.Multiply),
+                Ct);
+            Assert.Equal([82, 61, 51, 82, 61, 51, 102, 153, 255], DrawingTestSupport.ReadSamples(image.Frames[0]));
+
+            // The state overload, and both an operator and a blend mode
+            image.Draw(canvas => canvas.Layer(1, paint, static (layer, paint) => layer.Fill(paint), CompositeMode.SourceAtop, BlendMode.Screen), Ct);
+            Assert.Equal(new Rgb24(224, 194, 255), image.Frames[0][2, 0]);
+            image.Draw(
+                canvas =>
+                {
+                    try
+                    {
+                        canvas.Layer(1, static _ => Assert.Fail("The callback ran."), blendMode: (BlendMode)16);
+                        Assert.Fail("The blend mode was accepted.");
+                    }
+                    catch (ArgumentOutOfRangeException)
+                    {
+                    }
+                },
+                Ct);
+        }
+    }
+
+    private static TPixel Blend<TPixel>(TPixel pixel, Rgba64 color, BlendMode blend)
+        where TPixel : unmanaged
+        => Paint(pixel, color, WholePixel, blend: blend);
+
     /// <summary>Fills a rectangle of a one-pixel image and returns the pixel.</summary>
-    private static TPixel Paint<TPixel>(TPixel pixel, Rgba64 color, RectangleD rectangle, CompositeMode mode = CompositeMode.SourceOver)
+    private static TPixel Paint<TPixel>(TPixel pixel, Rgba64 color, RectangleD rectangle, CompositeMode mode = CompositeMode.SourceOver, BlendMode blend = BlendMode.Normal)
         where TPixel : unmanaged
     {
         using var image = new Image<TPixel>(1, 1, pixel);
-        var brush = new SolidBrush(color) { CompositeMode = mode };
+        var brush = new SolidBrush(color) { CompositeMode = mode, BlendMode = blend };
         image.Frames[0].Draw(canvas => canvas.FillRectangle(brush, rectangle), Ct);
         return image.Frames[0][0, 0];
     }

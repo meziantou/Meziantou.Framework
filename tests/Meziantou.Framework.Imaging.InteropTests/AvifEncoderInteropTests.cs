@@ -292,6 +292,122 @@ public sealed class AvifEncoderInteropTests
     }
 
     [Theory]
+    [InlineData(8, "420", 0, 30, 300, 280)]
+    [InlineData(8, "444", 1, 60, 200, 130)]
+    [InlineData(10, "422", 2, 45, 300, 280)]
+    [InlineData(12, "400", 0, 50, 260, 200)]
+    [InlineData(8, "420", 2, 75, 4100, 80)]
+    public async Task TheReferenceDecodersRestoreTheUnitsOfTheLibrary(int bitDepth, string format, int effort, int quality, int width, int height)
+    {
+        // A lossy image at an effort that looks for the Wiener filters of its loop restoration units, which are coded with
+        // its superblocks (in two tiles for the widest image): the two reference decoders apply them as the library does
+        var ffmpeg = await RequiredTools.FFmpegAsync();
+        var dav1d = new Av1ReferenceDecoder(ffmpeg, Av1ReferenceDecoder.Dav1d);
+        var libaom = new Av1ReferenceDecoder(ffmpeg, Av1ReferenceDecoder.Libaom);
+        var directory = InteropSettings.GetArtifactsDirectory(nameof(AvifEncoderInteropTests));
+        var name = string.Create(CultureInfo.InvariantCulture, $"restoration-{bitDepth}-{format}-e{effort}-q{quality}-{width}x{height}");
+        using var image = CreateImage(width, height, format is "400", bitDepth, seed: width + quality, transparent: false);
+        var encoder = new AvifEncoder
+        {
+            Compression = AvifCompression.Lossy,
+            Quality = quality,
+            Effort = effort,
+            BitDepth = bitDepth,
+            ChromaSubsampling = format switch
+            {
+                "444" => AvifChromaSubsampling.Ratio444,
+                "422" => AvifChromaSubsampling.Ratio422,
+                _ => AvifChromaSubsampling.Ratio420,
+            },
+        };
+
+        var path = await SaveAsync(image, encoder, name);
+        var reader = ReferenceHeif.Parse(await File.ReadAllBytesAsync(path, XunitCancellationToken));
+        var payload = reader.ReadItemData(reader.PrimaryItem!);
+        var stream = directory / $"{name}.obu";
+        await File.WriteAllBytesAsync(stream, [0x12, 0x00, .. payload], XunitCancellationToken);
+        var frame = Assert.Single(await dav1d.ProbeAsync(stream, XunitCancellationToken));
+        Assert.Equal((width, height), (frame.Width, frame.Height));
+        var first = Assert.Single(await dav1d.DecodeAsync(stream, frame.PixelFormat, directory / $"{name}-dav1d", XunitCancellationToken));
+        var second = Assert.Single(await libaom.DecodeAsync(stream, frame.PixelFormat, directory / $"{name}-libaom", XunitCancellationToken));
+        Assert.True(first.AsSpan().SequenceEqual(second), $"{name}: dav1d and libaom reconstruct different planes ({frame.PixelFormat}).");
+        var library = Assert.Single(DecodeFramesWithLibrary([payload], name, out _));
+        Assert.True(first.AsSpan().SequenceEqual(library), $"{name}: the reference decoders and the library reconstruct different planes ({frame.PixelFormat}; first difference at byte {first.AsSpan().CommonPrefixLength(library)} of {first.Length}).");
+
+        // Units have a filter: the frame is another one without the loop restoration
+        var unrestored = Assert.Single(DecodeFramesWithLibrary([payload], name, out _, Av1InLoopFilters.Deblock | Av1InLoopFilters.Cdef));
+        Assert.False(library.AsSpan().SequenceEqual(unrestored), $"{name}: no unit has a filter.");
+    }
+
+    [Theory]
+    [InlineData(8, "444", 1, 448, 136)]
+    [InlineData(8, "444", 5, 520, 200)]
+    [InlineData(12, "444", 3, 392, 190)]
+    [InlineData(10, "400", 9, 448, 136)]
+    public async Task TheReferenceDecodersReconstructBlocksThatAreCopies(int bitDepth, string format, int effort, int width, int height)
+    {
+        // A lossless image of a screen that repeats: its blocks are copies of parts of the image that are far enough
+        // before them (intra block copy), which the two reference decoders and avifdec reconstruct as the library does
+        var ffmpeg = await RequiredTools.FFmpegAsync();
+        var libavif = await RequiredTools.LibAvifAsync();
+        var dav1d = new Av1ReferenceDecoder(ffmpeg, Av1ReferenceDecoder.Dav1d);
+        var libaom = new Av1ReferenceDecoder(ffmpeg, Av1ReferenceDecoder.Libaom);
+        var directory = InteropSettings.GetArtifactsDirectory(nameof(AvifEncoderInteropTests));
+        var name = string.Create(CultureInfo.InvariantCulture, $"copies-{bitDepth}-{format}-e{effort}-{width}x{height}");
+
+        // A page of samples of three colors, drawn at random, that repeats every 96 samples across and every 40 down,
+        // with an alpha plane that repeats the same way
+        var deep = bitDepth > 8;
+        var max = deep ? 65535 : 255;
+        var random = new Random(width + bitDepth);
+        int[][] colors = [[max, max / 5 * 4, 0, max], [0, max / 5, max / 5 * 3, max], [max / 5 * 2, max, max / 5, 0]];
+        var page = new int[96 * 40];
+        for (var i = 0; i < page.Length; i++)
+        {
+            page[i] = random.Next(colors.Length);
+        }
+
+        var samples = new int[width * height * 4];
+        for (var y = 0; y < height; y++)
+        {
+            for (var x = 0; x < width; x++)
+            {
+                colors[page[((y % 40) * 96) + (x % 96)]].CopyTo(samples.AsSpan(((y * width) + x) * 4, 4));
+            }
+        }
+
+        using var image = CreateImage(samples, width, height, format is "400", deep);
+        var encoder = new AvifEncoder { Effort = effort, BitDepth = bitDepth };
+        var path = await SaveAsync(image, encoder, name);
+        var reader = ReferenceHeif.Parse(await File.ReadAllBytesAsync(path, XunitCancellationToken));
+        Assert.Equal(format is "400", reader.AlphaItem is null);
+        foreach (var (item, kind) in new[] { (reader.PrimaryItem, "color"), (reader.AlphaItem, "alpha") })
+        {
+            // A grayscale image has no alpha plane
+            if (item is null)
+                continue;
+
+            var payload = reader.ReadItemData(item);
+            var stream = directory / $"{name}-{kind}.obu";
+            await File.WriteAllBytesAsync(stream, [0x12, 0x00, .. payload], XunitCancellationToken);
+            var frame = Assert.Single(await dav1d.ProbeAsync(stream, XunitCancellationToken));
+            Assert.Equal((width, height), (frame.Width, frame.Height));
+            var first = Assert.Single(await dav1d.DecodeAsync(stream, frame.PixelFormat, directory / $"{name}-{kind}-dav1d", XunitCancellationToken));
+            var second = Assert.Single(await libaom.DecodeAsync(stream, frame.PixelFormat, directory / $"{name}-{kind}-libaom", XunitCancellationToken));
+            Assert.True(first.AsSpan().SequenceEqual(second), $"{name} {kind}: dav1d and libaom reconstruct different planes ({frame.PixelFormat}).");
+            var library = Assert.Single(DecodeFramesWithLibrary([payload], name, out var tools));
+            Assert.True(first.AsSpan().SequenceEqual(library), $"{name} {kind}: the reference decoders and the library reconstruct different planes ({frame.PixelFormat}; first difference at byte {first.AsSpan().CommonPrefixLength(library)} of {first.Length}).");
+            Assert.True(tools.HasFlag(Av1Tools.IntraBlockCopy), $"{name} {kind}: no block is a copy ({tools}).");
+        }
+
+        if (bitDepth is 8)
+        {
+            var decoded = Assert.Single(await libavif.DecodeAllFramesAsync(path, XunitCancellationToken));
+            AssertSamples(ImageSnapshots.CaptureFrame(image.Frames[0]), decoded.Pixels, $"{name}: decoded by avifdec {libavif.Version}");
+        }
+    }
+
+    [Theory]
     [InlineData(AvifCompression.Lossless, null)]
     [InlineData(AvifCompression.Lossless, 4)]
     [InlineData(AvifCompression.Lossy, 1)]
@@ -405,6 +521,297 @@ public sealed class AvifEncoderInteropTests
     }
 
     [Theory]
+    // The display matrix FFmpeg reads from the track header of images of 12x8, in 16.16 fixed point (the last column in
+    // 2.30), and the angle it derives from it, which is anti-clockwise: a quarter turn clockwise is -90. The matrices
+    // are derived by hand from the EXIF definitions: (a, b, c, d) of p' = a p + c q + x, q' = b p + d q + y
+    [InlineData(ExifOrientation.TopLeft, null, null)]
+    [InlineData(ExifOrientation.TopRight, new[] { -65536, 0, 0, 0, 65536, 0, 786432, 0, 1073741824 }, null)]
+    [InlineData(ExifOrientation.BottomRight, new[] { -65536, 0, 0, 0, -65536, 0, 786432, 524288, 1073741824 }, 180)]
+    [InlineData(ExifOrientation.BottomLeft, new[] { 65536, 0, 0, 0, -65536, 0, 0, 524288, 1073741824 }, null)]
+    [InlineData(ExifOrientation.LeftTop, new[] { 0, 65536, 0, 65536, 0, 0, 0, 0, 1073741824 }, null)]
+    [InlineData(ExifOrientation.RightTop, new[] { 0, 65536, 0, -65536, 0, 0, 524288, 0, 1073741824 }, -90)]
+    [InlineData(ExifOrientation.RightBottom, new[] { 0, -65536, 0, -65536, 0, 0, 524288, 786432, 1073741824 }, null)]
+    [InlineData(ExifOrientation.LeftBottom, new[] { 0, -65536, 0, 65536, 0, 0, 0, 786432, 1073741824 }, 90)]
+    public async Task TheOrientationOfASequenceIsTheDisplayMatrixFFmpegReads(ExifOrientation orientation, int[]? expectedMatrix, int? rotation)
+    {
+        var ffmpeg = await RequiredTools.FFmpegAsync();
+        using var image = CreateImage(12, 8, monochrome: false, bitDepth: 8, seed: 71, transparent: false);
+        using var second = CreateImage(12, 8, monochrome: false, bitDepth: 8, seed: 72, transparent: false);
+        image.AppendFrame(second.Frames[0]);
+        image.Frames[0].Metadata.Duration = new FrameDuration(1, 10);
+        image.Frames[1].Metadata.Duration = new FrameDuration(1, 10);
+        image.Metadata.Orientation = orientation;
+        var path = await SaveAsync(image, new AvifEncoder(), $"sequence-orientation-{orientation}");
+
+        // The streams of the two images are the tracks: the color track, then the alpha track, which has the same matrix
+        using var probe = await ffmpeg.ProbeStreamsAsync(path, XunitCancellationToken);
+        var tracks = probe.RootElement.GetProperty("streams").EnumerateArray().Where(candidate => candidate.GetProperty("nb_frames").GetString() == "2").ToArray();
+        Assert.HasCount(2, tracks);
+        foreach (var track in tracks)
+        {
+            var sideData = track.TryGetProperty("side_data_list", out var list) ? list.EnumerateArray().Where(data => data.GetProperty("side_data_type").GetString() == "Display Matrix").ToArray() : [];
+            if (expectedMatrix is null)
+            {
+                Assert.Empty(sideData);
+                continue;
+            }
+
+            var matrix = Assert.Single(sideData);
+            var values = matrix.GetProperty("displaymatrix").GetString()!
+                .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .SelectMany(line => line[(line.IndexOf(':', StringComparison.Ordinal) + 1)..].Split(' ', StringSplitOptions.RemoveEmptyEntries))
+                .Select(value => int.Parse(value, CultureInfo.InvariantCulture))
+                .ToArray();
+            Assert.Equal(expectedMatrix, values);
+
+            // A half turn is 180 degrees either way
+            if (rotation is { } angle)
+                Assert.Equal(Math.Abs(angle) is 180 ? 180 : angle, Math.Abs(angle) is 180 ? Math.Abs(matrix.GetProperty("rotation").GetInt32()) : matrix.GetProperty("rotation").GetInt32());
+        }
+
+        // The library reads the orientation of its own file
+        Assert.Equal(orientation, Image.Identify(path).Metadata.Orientation);
+    }
+
+    [Theory]
+    [InlineData(AvifCompression.Lossless, AvifChromaSubsampling.Auto, 150, 100, 64, 64, true)]
+    [InlineData(AvifCompression.Lossless, AvifChromaSubsampling.Auto, 65, 130, 64, 65, false)]
+    [InlineData(AvifCompression.Lossy, AvifChromaSubsampling.Ratio444, 150, 100, 64, 64, true)]
+    [InlineData(AvifCompression.Lossy, AvifChromaSubsampling.Ratio420, 130, 70, 64, 64, false)]
+    public async Task GridsAreAssembledByAvifDec(AvifCompression compression, AvifChromaSubsampling subsampling, int width, int height, int tileWidth, int tileHeight, bool transparent)
+    {
+        var libavif = await RequiredTools.LibAvifAsync();
+        using var image = CreateImage(width, height, monochrome: false, bitDepth: 8, seed: 91, transparent);
+        var path = await SaveAsync(image, new AvifEncoder { Compression = compression, ChromaSubsampling = subsampling, Quality = 85, Effort = 0, GridTileSize = new Size(tileWidth, tileHeight) }, $"grid-{compression}-{subsampling}-{width}x{height}-{tileWidth}x{tileHeight}");
+        var reader = ReferenceHeif.Parse(await File.ReadAllBytesAsync(path, XunitCancellationToken));
+        Assert.Equal("grid", reader.PrimaryItem!.Type);
+        Assert.Equal(transparent, reader.AlphaItem is not null);
+
+        // libavif, which validates the grid in its strict mode, assembles the tiles into the image
+        var info = await libavif.GetInfoAsync(path, XunitCancellationToken);
+        Assert.Equal((width, height), (info.Width, info.Height));
+        Assert.Equal(transparent, info.HasAlpha);
+        var decoded = await libavif.DecodeAsync(path, XunitCancellationToken);
+        Assert.Equal((width, height), (decoded.Width, decoded.Height));
+        using var loaded = Image.Load(path);
+        var actual = ImageSnapshots.CaptureFrame(loaded.Frames[0]);
+        if (compression is AvifCompression.Lossless)
+        {
+            AssertSamples(ImageSnapshots.CaptureFrame(image.Frames[0]), decoded.Pixels, $"grid decoded by avifdec {libavif.Version}");
+            AssertSamples(ImageSnapshots.CaptureFrame(image.Frames[0]), actual, "grid decoded by the library");
+            return;
+        }
+
+        // Lossy: the library and avifdec decode the same tiles, and convert them with their own arithmetic. Without chroma
+        // upsampling, an 8-bit color of the library is at most half an 8-bit step from the 16-bit color of avifdec
+        // (measured: 129 units of a 16-bit sample). With 4:2:0, the library also rounds the upsampled chroma before the
+        // BT.601 matrix in full range, whose largest chroma coefficient is 1.772: at most 0.5 + 0.5 x 1.772 = 1.386 steps
+        // (measured: 355). Alpha is exact
+        var scale = decoded.Pixels.Layout.MaxSampleValue / actual.Layout.MaxSampleValue;
+        var bound = subsampling is AvifChromaSubsampling.Ratio444 ? 130 : 358;
+        var channels = actual.Layout.ChannelCount;
+        for (var y = 0; y < height; y++)
+        {
+            for (var x = 0; x < width; x++)
+            {
+                for (var channel = 0; channel < channels; channel++)
+                {
+                    var difference = Math.Abs(decoded.Pixels.GetSample(x, y, channel) - (actual.GetSample(x, y, channel) * scale));
+                    Assert.True(difference <= (channel is 3 ? 0 : bound), $"pixel ({x}, {y}), channel {channel} differs by {difference} from avifdec {libavif.Version} (bound {bound}).");
+                }
+            }
+        }
+    }
+
+    [Fact]
+    public async Task TheCleanApertureOfASequenceIsReadByOtherReaders()
+    {
+        var libavif = await RequiredTools.LibAvifAsync();
+        var ffmpeg = await RequiredTools.FFmpegAsync();
+        using var image = CreateImage(12, 8, monochrome: false, bitDepth: 8, seed: 81, transparent: true);
+        using var second = CreateImage(12, 8, monochrome: false, bitDepth: 8, seed: 82, transparent: true);
+        image.AppendFrame(second.Frames[0]);
+        image.Frames[0].Metadata.Duration = new FrameDuration(1, 10);
+        image.Frames[1].Metadata.Duration = new FrameDuration(1, 10);
+        var aperture = new Rectangle(3, 1, 7, 5);
+        var path = await SaveAsync(image, new AvifEncoder { CleanAperture = aperture }, "sequence-clap");
+        // libavif derives the rectangle from the box of the sample entry, and decodes the samples that it selects
+        var info = await libavif.GetInfoAsync(path, XunitCancellationToken);
+        Assert.Equal((12, 8), (info.Width, info.Height));
+        Assert.Equal((3, 1, 7, 5), info.CleanApertureCrop);
+        var decoded = await libavif.DecodeAllFramesAsync(path, XunitCancellationToken);
+        using var loaded = Image.Load(path);
+        Assert.HasCount(2, decoded);
+        Assert.Equal((7, 5, 2), (loaded.Width, loaded.Height, loaded.Frames.Count));
+        using var expected = image.Clone();
+        expected.Crop(aperture, XunitCancellationToken);
+        for (var frame = 0; frame < 2; frame++)
+        {
+            AssertSamples(ImageSnapshots.CaptureFrame(expected.Frames[frame]), decoded[frame].Pixels, $"frame {frame} of the aperture decoded by avifdec {libavif.Version}");
+            AssertSamples(ImageSnapshots.CaptureFrame(expected.Frames[frame]), ImageSnapshots.CaptureFrame(loaded.Frames[frame]), $"frame {frame} of the aperture decoded by the library");
+        }
+
+        // FFmpeg reads the same aperture as the cropping of the frames of both tracks, whose pixels stay square
+        using var probe = await ffmpeg.ProbeStreamsAsync(path, XunitCancellationToken);
+        var tracks = probe.RootElement.GetProperty("streams").EnumerateArray().Where(candidate => candidate.GetProperty("nb_frames").GetString() == "2").ToArray();
+        Assert.HasCount(2, tracks);
+        foreach (var track in tracks)
+        {
+            var cropping = track.GetProperty("side_data_list").EnumerateArray().Single(data => data.GetProperty("side_data_type").GetString() == "Frame Cropping");
+            Assert.Equal((3, 2, 1, 2), (cropping.GetProperty("crop_left").GetInt32(), cropping.GetProperty("crop_right").GetInt32(), cropping.GetProperty("crop_top").GetInt32(), cropping.GetProperty("crop_bottom").GetInt32()));
+            Assert.Equal("1:1", track.GetProperty("sample_aspect_ratio").GetString());
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task PremultipliedAlphaIsReadByAvifDec(bool isSequence)
+    {
+        var libavif = await RequiredTools.LibAvifAsync();
+        using var image = CreateImage(24, 16, monochrome: false, bitDepth: 8, seed: 51, transparent: true);
+        if (isSequence)
+        {
+            using var second = CreateImage(24, 16, monochrome: false, bitDepth: 8, seed: 52, transparent: true);
+            image.AppendFrame(second.Frames[0]);
+            image.Frames[0].Metadata.Duration = new FrameDuration(1, 10);
+            image.Frames[1].Metadata.Duration = new FrameDuration(1, 10);
+        }
+
+        var path = await SaveAsync(image, new AvifEncoder { PremultiplyAlpha = true }, $"premultiplied-{(isSequence ? "sequence" : "still")}");
+        var info = await libavif.GetInfoAsync(path, XunitCancellationToken);
+        Assert.Equal("Premultiplied", info.Alpha);
+
+        // avifdec divides the colors by the alpha, as the library does when it reads its own file: alpha is exact, and an
+        // 8-bit color of the library is within half an 8-bit step of the 16-bit color of avifdec times maximum / alpha
+        // (the pixels whose alpha is below a sixteenth of the range are only compared for their alpha)
+        var decoded = await libavif.DecodeAllFramesAsync(path, XunitCancellationToken);
+        using var loaded = Image.Load(path);
+        Assert.HasCount(image.Frames.Count, decoded);
+        Assert.Equal(image.Frames.Count, loaded.Frames.Count);
+        for (var frame = 0; frame < decoded.Count; frame++)
+        {
+            var expected = decoded[frame].Pixels;
+            var actual = ImageSnapshots.CaptureFrame(loaded.Frames[frame]);
+            var scale = expected.Layout.MaxSampleValue / actual.Layout.MaxSampleValue;
+            var compared = 0;
+            for (var y = 0; y < actual.Height; y++)
+            {
+                for (var x = 0; x < actual.Width; x++)
+                {
+                    var alpha = actual.GetSample(x, y, 3);
+                    Assert.Equal(expected.GetSample(x, y, 3), alpha * scale, message: $"frame {frame}: alpha of pixel ({x}, {y}).");
+                    if (alpha * 16 < actual.Layout.MaxSampleValue)
+                        continue;
+
+                    compared++;
+                    for (var channel = 0; channel < 3; channel++)
+                    {
+                        var difference = Math.Abs(expected.GetSample(x, y, channel) - (actual.GetSample(x, y, channel) * scale));
+                        Assert.True(difference <= scale / 2 + 1, $"frame {frame}: pixel ({x}, {y}), channel {channel} differs by {difference} from avifdec {libavif.Version}.");
+                    }
+                }
+            }
+
+            Assert.True(compared > 100, $"frame {frame}: only {compared} pixels have enough alpha to be compared.");
+        }
+    }
+
+    [Theory]
+    [InlineData(AvifCompression.Lossless, AvifChromaSubsampling.Auto, 3, 1, 7, 5, false)]
+    [InlineData(AvifCompression.Lossless, AvifChromaSubsampling.Auto, 0, 2, 12, 6, true)]
+    [InlineData(AvifCompression.Lossy, AvifChromaSubsampling.Ratio420, 2, 2, 5, 3, true)]
+    [InlineData(AvifCompression.Lossy, AvifChromaSubsampling.Ratio444, 1, 3, 9, 4, false)]
+    public async Task TheCleanApertureIsAppliedByAvifDec(AvifCompression compression, AvifChromaSubsampling subsampling, int x, int y, int width, int height, bool transparent)
+    {
+        var libavif = await RequiredTools.LibAvifAsync();
+        using var image = CreateImage(12, 8, monochrome: false, bitDepth: 8, seed: 41, transparent);
+        var aperture = new Rectangle(x, y, width, height);
+        var path = await SaveAsync(image, new AvifEncoder { Compression = compression, ChromaSubsampling = subsampling, Quality = 90, CleanAperture = aperture }, $"clap-{compression}-{subsampling}-{x}-{y}-{width}x{height}");
+
+        // libavif derives the same rectangle from the property, and decodes the samples that it selects
+        var info = await libavif.GetInfoAsync(path, XunitCancellationToken);
+        Assert.Equal((12, 8), (info.Width, info.Height));
+        Assert.Equal((x, y, width, height), info.CleanApertureCrop);
+        var decoded = await libavif.DecodeAsync(path, XunitCancellationToken);
+        Assert.Equal((width, height), (decoded.Width, decoded.Height));
+
+        // The library reads its own file as avifdec does
+        using var loaded = Image.Load(path);
+        Assert.Equal((width, height), (loaded.Width, loaded.Height));
+        if (compression is AvifCompression.Lossless)
+        {
+            using var expected = image.Clone();
+            expected.Crop(aperture, XunitCancellationToken);
+            AssertSamples(ImageSnapshots.CaptureFrame(expected.Frames[0]), decoded.Pixels, $"aperture {aperture} decoded by avifdec {libavif.Version}");
+            AssertSamples(ImageSnapshots.CaptureFrame(expected.Frames[0]), ImageSnapshots.CaptureFrame(loaded.Frames[0]), $"aperture {aperture} decoded by the library");
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task LightLevelsMasteringDisplayAndPixelShapeAreReportedByOtherReaders(bool isSequence)
+    {
+        var libavif = await RequiredTools.LibAvifAsync();
+        var ffmpeg = await RequiredTools.FFmpegAsync();
+        using var image = CreateImage(16, 12, monochrome: false, bitDepth: 10, seed: 31, transparent: false);
+        if (isSequence)
+        {
+            using var second = CreateImage(16, 12, monochrome: false, bitDepth: 10, seed: 32, transparent: false);
+            image.AppendFrame(second.Frames[0]);
+            image.Frames[0].Metadata.Duration = new FrameDuration(1, 10);
+            image.Frames[1].Metadata.Duration = new FrameDuration(1, 10);
+        }
+
+        // The BT.2020 primaries and D65 (SMPTE ST 2086 units of 0.00002), a display of 0.005 to 1,000 cd/m2
+        image.Metadata.Cicp = new CicpColorDescription(9, 16, 9, fullRange: false);
+        image.Metadata.ContentLightLevel = new ContentLightLevel(1000, 400);
+        image.Metadata.MasteringDisplay = new MasteringDisplayColorVolume(redX: 35400, redY: 14600, greenX: 8500, greenY: 39850, blueX: 6550, blueY: 2300, whitePointX: 15635, whitePointY: 16450, maxLuminance: 10_000_000, minLuminance: 50);
+        image.Metadata.PixelAspectRatio = new PixelAspectRatio(4, 3);
+        var path = await SaveAsync(image, new AvifEncoder { Compression = AvifCompression.Lossy, BitDepth = 10 }, $"hdr-metadata-{(isSequence ? "sequence" : "still")}");
+
+        // libavif reads the properties of the primary item, which is the first image of a sequence
+        var info = await libavif.GetInfoAsync(path, XunitCancellationToken);
+        Assert.Equal((1000, 400), info.ContentLightLevel);
+        Assert.Equal((4, 3), info.PixelAspectRatio);
+
+        // FFmpeg names the primaries of the mastering display: the order in which the box stores them is the one it reads.
+        // It reads the boxes of the sample entry of a track, and for a still image the properties of the item (but not the
+        // shape of its pixels; with an alpha item, it attaches them to the wrong stream, whoever wrote the file)
+        using var probe = await ffmpeg.ProbeStreamsAsync(path, XunitCancellationToken);
+        var streams = probe.RootElement.GetProperty("streams").EnumerateArray().ToArray();
+        var stream = isSequence
+            ? streams.Single(candidate => candidate.GetProperty("nb_frames").GetString() == "2" && candidate.GetProperty("pix_fmt").GetString() == "yuv420p10le")
+            : Assert.Single(streams);
+        var sideData = stream.GetProperty("side_data_list").EnumerateArray().ToArray();
+        var display = sideData.Single(data => data.GetProperty("side_data_type").GetString() == "Mastering display metadata");
+        Assert.Equal("35400/50000", display.GetProperty("red_x").GetString());
+        Assert.Equal("14600/50000", display.GetProperty("red_y").GetString());
+        Assert.Equal("8500/50000", display.GetProperty("green_x").GetString());
+        Assert.Equal("39850/50000", display.GetProperty("green_y").GetString());
+        Assert.Equal("6550/50000", display.GetProperty("blue_x").GetString());
+        Assert.Equal("2300/50000", display.GetProperty("blue_y").GetString());
+        Assert.Equal("15635/50000", display.GetProperty("white_point_x").GetString());
+        Assert.Equal("16450/50000", display.GetProperty("white_point_y").GetString());
+        Assert.Equal("50/10000", display.GetProperty("min_luminance").GetString());
+        Assert.Equal("10000000/10000", display.GetProperty("max_luminance").GetString());
+
+        var lightLevel = sideData.Single(data => data.GetProperty("side_data_type").GetString() == "Content light level metadata");
+        Assert.Equal(1000, lightLevel.GetProperty("max_content").GetInt32());
+        Assert.Equal(400, lightLevel.GetProperty("max_average").GetInt32());
+        if (isSequence)
+        {
+            Assert.Equal("4:3", stream.GetProperty("sample_aspect_ratio").GetString());
+
+            // The alpha track has the shape of the pixels, and nothing that describes colors
+            var alpha = streams.Single(candidate => candidate.GetProperty("nb_frames").GetString() == "2" && candidate.GetProperty("pix_fmt").GetString() != "yuv420p10le");
+            Assert.Equal("4:3", alpha.GetProperty("sample_aspect_ratio").GetString());
+            Assert.False(alpha.TryGetProperty("side_data_list", out _));
+        }
+    }
+
+    [Theory]
     [InlineData(AvifCompression.Lossless, false)]
     [InlineData(AvifCompression.Lossless, true)]
     [InlineData(AvifCompression.Lossy, false)]
@@ -505,10 +912,10 @@ public sealed class AvifEncoderInteropTests
 
     // The same for the samples of a track, which the same decoder decodes one after the other; tools receives the coding
     // tools of the frames
-    private static List<byte[]> DecodeFramesWithLibrary(IReadOnlyList<byte[]> payloads, string name, out Av1Tools tools)
+    private static List<byte[]> DecodeFramesWithLibrary(IReadOnlyList<byte[]> payloads, string name, out Av1Tools tools, Av1InLoopFilters filters = Av1InLoopFilters.All)
     {
         var scope = AllocationScope.Create(ImageConfiguration.Default, name);
-        using var decoder = new Av1Decoder(scope);
+        using var decoder = new Av1Decoder(scope) { InLoopFilters = filters };
         var frames = new List<byte[]>();
         tools = Av1Tools.None;
         foreach (var payload in payloads)

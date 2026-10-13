@@ -1,6 +1,8 @@
 using Meziantou.Framework.Imaging.Internals;
 using Meziantou.Framework.Imaging.Metadata;
+using Meziantou.Framework.Imaging.TestHarness.Adapters;
 using Meziantou.Framework.Imaging.TestHarness.Color;
+using Meziantou.Framework.Imaging.TestHarness.Pixels;
 
 namespace Meziantou.Framework.Imaging.Tests;
 
@@ -121,6 +123,38 @@ public sealed class ProcessingTests
         Assert.Same(storage, image.Frames[0].Storage);
         Assert.Same(exif, image.Metadata.ExifProfile);
         AssertFrame(image.Frames[0], Source3X2);
+    }
+
+    [Fact]
+    public void OperationsThatSwapTheAxesSwapThePixelAspectRatio()
+    {
+        // A pixel twice as wide as it is high is twice as high as it is wide once the image is turned by a quarter
+        using var image = Build<Rgba32>(Source3X2);
+        image.Metadata.PixelAspectRatio = new PixelAspectRatio(2, 1);
+        image.Rotate(RotateMode.Rotate90, Ct);
+        Assert.Equal(new PixelAspectRatio(1, 2), image.Metadata.PixelAspectRatio);
+        image.Rotate(RotateMode.Rotate270, Ct);
+        Assert.Equal(new PixelAspectRatio(2, 1), image.Metadata.PixelAspectRatio);
+
+        // Half turns, flips and crops keep the axes
+        image.Rotate(RotateMode.Rotate180, Ct);
+        image.Flip(FlipMode.Horizontal, Ct);
+        image.Crop(new Rectangle(0, 0, 2, 2), Ct);
+        Assert.Equal(new PixelAspectRatio(2, 1), image.Metadata.PixelAspectRatio);
+
+        // The orientations that transpose do it too; a failed operation changes nothing
+        image.Metadata.Orientation = ExifOrientation.RightTop;
+        image.AutoOrient(Ct);
+        Assert.Equal(new PixelAspectRatio(1, 2), image.Metadata.PixelAspectRatio);
+
+        using var canceled = new CancellationTokenSource();
+        canceled.Cancel();
+        Assert.Throws<OperationCanceledException>(() => image.Rotate(RotateMode.Rotate90, canceled.Token));
+        Assert.Equal(new PixelAspectRatio(1, 2), image.Metadata.PixelAspectRatio);
+
+        using var square = Build<Rgba32>(Source3X2);
+        square.Rotate(RotateMode.Rotate90, Ct);
+        Assert.Null(square.Metadata.PixelAspectRatio);
     }
 
     [Fact]
@@ -914,6 +948,365 @@ public sealed class ProcessingTests
 
             return [.. pixels];
         }
+    }
+
+    /// <summary>
+    /// An image without ICC profile whose CICP color description is not the one of sRGB is converted from the color
+    /// space of that description: the function of its transfer characteristics, then its primaries, adapted to the
+    /// white of the connection space. The reference is the <see cref="decimal"/> conversion of the harness
+    /// (<c>ReferenceCicpColorSpace</c>: its own table of chromaticities, its own functions), followed by its reading of
+    /// the destination profile.
+    /// </summary>
+    [Theory]
+    [InlineData(1, 1)] // Rec. ITU-R BT.709: the primaries of sRGB with another function
+    [InlineData(9, 14)] // Rec. ITU-R BT.2020
+    [InlineData(12, 13)] // Display P3
+    [InlineData(1, 4)] // gamma 2.2
+    [InlineData(5, 5)] // Rec. ITU-R BT.470 System B, G: gamma 2.8
+    [InlineData(6, 6)] // Rec. ITU-R BT.601
+    [InlineData(4, 7)] // System M primaries (white C), SMPTE 240M function
+    [InlineData(8, 9)] // film, logarithmic function
+    [InlineData(22, 10)] // EBU Tech. 3213-E, logarithmic function
+    [InlineData(11, 17)] // DCI P3, SMPTE ST 428-1
+    [InlineData(10, 17)] // CIE 1931 XYZ
+    [InlineData(9, 8)] // linear BT.2020
+    [InlineData(1, 8)] // linear BT.709, without the linear label
+    public void ConvertColorProfileConvertsFromTheCicpColorDescription(byte primaries, byte transfer)
+    {
+        var displayP3 = IccTestProfiles.Rgb(IccTestProfiles.DisplayP3Colorants, IccTestProfiles.SrgbCurve());
+        var grayGamma = IccTestProfiles.Gray(IccTestProfiles.Gamma(563));
+        foreach (var (intent, blackPointCompensation) in new[] { (IccRenderingIntent.RelativeColorimetric, true), (IccRenderingIntent.AbsoluteColorimetric, false), (IccRenderingIntent.Perceptual, false) })
+        {
+            var options = new IccColorTransformOptions { Intent = intent, BlackPointCompensation = blackPointCompensation };
+            Check<Rgb24>(IccProfile.Srgb, options);
+            Check<Rgba32>(displayP3, options);
+            Check<Rgba64>(IccProfile.Srgb, options);
+            Check<Gray8>(IccProfile.SrgbGray, options);
+            Check<Gray16>(grayGamma, options);
+        }
+
+        void Check<TPixel>(IccProfile destination, IccColorTransformOptions options)
+            where TPixel : unmanaged
+        {
+            // The pixels cover the range of each channel; the matrix coefficients and the range of the description
+            // describe how a file stored the samples, not the pixels
+            using var image = Build<TPixel>(Source4X3, Offset(Source4X3, 20));
+            image.SetPosterFrame(image.Frames[1]);
+            image.Metadata.Cicp = new CicpColorDescription(primaries, transfer, 6, fullRange: false);
+            image.Metadata.ContentLightLevel = new ContentLightLevel(400, 100);
+            var before = image.Frames.Append(image.PosterFrame!).Select(frame => ImageSnapshots.CaptureFrameRows(frame)).ToArray();
+            image.ConvertColorProfile(destination, options, Ct);
+
+            // The pixels are described by the profile, and by nothing that described them before
+            Assert.Same(destination, image.Metadata.IccProfile);
+            Assert.Null(image.Metadata.Cicp);
+            Assert.Null(image.Metadata.ContentLightLevel);
+            Assert.Equal(ColorTransferFunction.Srgb, image.Metadata.TransferFunction);
+
+            var isGray = PixelFormats.IsGrayscale(image.PixelFormat);
+
+            // Gray samples have no primaries: with the sRGB function they are the samples of the built-in sGray profile
+            var reference = isGray && transfer is 13
+                ? ReferenceIccTransform.Create(IccProfile.SrgbGray.Data.Span, destination.Data.Span, (int)options.Intent, options.BlackPointCompensation)
+                : ReferenceIccTransform.CreateFromCicp(primaries, transfer, isGray, destination.Data.Span, (int)options.Intent, options.BlackPointCompensation);
+            var after = image.Frames.Append(image.PosterFrame!).Select(frame => ImageSnapshots.CaptureFrameRows(frame)).ToArray();
+            Assert.HasCount(3, after);
+            for (var i = 0; i < after.Length; i++)
+            {
+                var source = ColorSamples(before[i]);
+                var actual = ColorSamples(after[i]);
+                Assert.Empty(PixelFormats.GetBitsPerComponent(image.PixelFormat) == 16
+                    ? reference.Compare(source.Select(value => (ushort)value).ToArray(), actual.Select(value => (ushort)value).ToArray())
+                    : reference.Compare(source.Select(value => (byte)value).ToArray(), actual.Select(value => (byte)value).ToArray()));
+                if (before[i].Layout.HasAlpha)
+                {
+                    for (var pixel = 0; pixel < before[i].Width * before[i].Height; pixel++)
+                    {
+                        Assert.Equal(before[i].GetSample(pixel % before[i].Width, pixel / before[i].Width, before[i].Layout.AlphaChannel), after[i].GetSample(pixel % before[i].Width, pixel / before[i].Width, before[i].Layout.AlphaChannel));
+                    }
+                }
+            }
+        }
+
+        static int[] ColorSamples(RawPixelBuffer buffer)
+        {
+            var samples = new List<int>();
+            for (var pixel = 0; pixel < buffer.Width * buffer.Height; pixel++)
+            {
+                for (var channel = 0; channel < buffer.Layout.ChannelCount; channel++)
+                {
+                    if (!buffer.Layout.HasAlpha || channel != buffer.Layout.AlphaChannel)
+                        samples.Add(buffer.GetSample(pixel % buffer.Width, pixel / buffer.Width, channel));
+                }
+            }
+
+            return [.. samples];
+        }
+    }
+
+    /// <summary>
+    /// The primaries of a CICP description are those of an ICC profile with the same colorants: Display P3 pixels convert
+    /// to sRGB the same way whether they are described by the code points 12/13 or by a profile, up to the rounding of
+    /// the colorants of the test profile, which are written with four decimals: less than one 8-bit step.
+    /// </summary>
+    [Fact]
+    public void ConvertColorProfileFromACicpDescriptionAgreesWithTheEquivalentProfile()
+    {
+        var displayP3 = IccTestProfiles.Rgb(IccTestProfiles.DisplayP3Colorants, IccTestProfiles.SrgbCurve());
+        using var described = Build<Rgba64>(Source4X3);
+        using var profiled = Build<Rgba64>(Source4X3);
+        described.Metadata.Cicp = new CicpColorDescription(12, 13, 0, fullRange: true);
+        profiled.Metadata.IccProfile = displayP3;
+        described.ConvertColorProfile(IccProfile.Srgb, cancellationToken: Ct);
+        profiled.ConvertColorProfile(IccProfile.Srgb, cancellationToken: Ct);
+        var worst = 0;
+        for (var y = 0; y < described.Height; y++)
+        {
+            for (var x = 0; x < described.Width; x++)
+            {
+                var (a, b) = (described.Frames[0][x, y], profiled.Frames[0][x, y]);
+                worst = Math.Max(worst, Math.Max(Math.Abs(a.R - b.R), Math.Max(Math.Abs(a.G - b.G), Math.Abs(a.B - b.B))));
+            }
+        }
+
+        Assert.True(worst <= 257, $"The two descriptions of Display P3 differ by {worst} units of 65535.");
+    }
+
+    [Fact]
+    public void ConvertColorProfileKeepsTheBuiltInProfilesForSrgbDescriptions()
+    {
+        var displayP3 = IccTestProfiles.Rgb(IccTestProfiles.DisplayP3Colorants, IccTestProfiles.SrgbCurve());
+        using var untagged = Build<Rgba64>(Source4X3);
+        untagged.ConvertColorProfile(displayP3, cancellationToken: Ct);
+
+        // BT.709 or unspecified primaries with the sRGB or an unspecified function: the pixels of an untagged image, bit
+        // for bit. The description is kept: it is the one of a file, whose matrix coefficients an encoder may reuse
+        foreach (var cicp in new[] { new CicpColorDescription(1, 13, 6, fullRange: true), new CicpColorDescription(2, 2, 1, fullRange: false), new CicpColorDescription(1, 2, 0, fullRange: true), new CicpColorDescription(2, 13, 5, fullRange: true) })
+        {
+            using var image = Build<Rgba64>(Source4X3);
+            image.Metadata.Cicp = cicp;
+            image.ConvertColorProfile(displayP3, cancellationToken: Ct);
+            AssertSamePixels(untagged, image);
+            Assert.Equal(cicp, image.Metadata.Cicp);
+        }
+
+        // Samples labeled as linear light with BT.709 primaries are those of the built-in linear profile
+        using var linear = Build<Rgba64>(Source4X3);
+        linear.Metadata.TransferFunction = ColorTransferFunction.Linear;
+        linear.ConvertColorProfile(displayP3, cancellationToken: Ct);
+        using var linearDescribed = Build<Rgba64>(Source4X3);
+        linearDescribed.Metadata.TransferFunction = ColorTransferFunction.Linear;
+        linearDescribed.Metadata.Cicp = new CicpColorDescription(1, 8, 0, fullRange: true);
+        linearDescribed.ConvertColorProfile(displayP3, cancellationToken: Ct);
+        AssertSamePixels(linear, linearDescribed);
+
+        // An ICC profile describes the colors in the place of the description
+        using var profiled = Build<Rgba64>(Source4X3);
+        profiled.Metadata.IccProfile = IccProfile.Srgb;
+        profiled.Metadata.Cicp = new CicpColorDescription(9, 16, 9, fullRange: true);
+        profiled.ConvertColorProfile(displayP3, cancellationToken: Ct);
+        AssertSamePixels(untagged, profiled);
+        Assert.Null(profiled.Metadata.Cicp);
+
+        static void AssertSamePixels(Image<Rgba64> expected, Image<Rgba64> actual)
+        {
+            for (var y = 0; y < expected.Height; y++)
+            {
+                for (var x = 0; x < expected.Width; x++)
+                {
+                    Assert.Equal(expected.Frames[0][x, y], actual.Frames[0][x, y]);
+                }
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData(9, 16, "Color conversion of high dynamic range samples without tone mapping")]
+    [InlineData(9, 18, "Color conversion of high dynamic range samples without tone mapping")]
+    [InlineData(9, 3, "Color conversion from reserved transfer characteristics")]
+    [InlineData(1, 0, "Color conversion from reserved transfer characteristics")]
+    [InlineData(3, 13, "Color conversion from reserved color primaries")]
+    [InlineData(13, 1, "Color conversion from reserved color primaries")]
+    public void ConvertColorProfileRejectsCicpDescriptionsItCannotConvert(byte primaries, byte transfer, string feature)
+    {
+        using var image = Build<Rgba64>(Source4X3);
+        var cicp = new CicpColorDescription(primaries, transfer, 0, fullRange: true);
+        image.Metadata.Cicp = cicp;
+        image.Metadata.ContentLightLevel = new ContentLightLevel(1000, 200);
+        var storage = image.Frames[0].Storage;
+        var exception = Assert.Throws<UnsupportedImageFeatureException>(() => image.ConvertColorProfile(IccProfile.Srgb, cancellationToken: Ct));
+        Assert.Equal(feature, exception.Feature);
+
+        // Nothing is changed
+        Assert.Same(storage, image.Frames[0].Storage);
+        Assert.Equal(cicp, image.Metadata.Cicp);
+        Assert.Null(image.Metadata.IccProfile);
+        Assert.NotNull(image.Metadata.ContentLightLevel);
+        AssertFrame(image.Frames[0], Source4X3);
+    }
+
+    /// <summary>
+    /// PQ and HLG samples are converted when the options say how their highlights are compressed: every operator, for
+    /// both functions, with a peak that is given, derived from the light levels of the image or left to the nominal peak
+    /// of the function, against the <see cref="decimal"/> reference of the harness (<c>ReferenceHdrToneMap</c>).
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(ToneMappingCases))]
+    public void ConvertColorProfileToneMapsHighDynamicRangeSamples(byte transfer, HdrToneMappingOperator toneMappingOperator)
+    {
+        var displayP3 = IccTestProfiles.Rgb(IccTestProfiles.DisplayP3Colorants, IccTestProfiles.SrgbCurve());
+        Check<Rgba64>(9, IccProfile.Srgb, peak: 1000, white: 203, lightLevel: null, display: null, expectedPeak: 1000);
+        Check<Rgb24>(12, displayP3, peak: null, white: 203, lightLevel: null, display: null, expectedPeak: transfer is 16 ? 10000 : 1000);
+        Check<Gray16>(9, IccProfile.SrgbGray, peak: 600, white: 100, lightLevel: null, display: null, expectedPeak: 600);
+
+        // The light levels of the image: the content light level describes PQ samples, the mastering display both
+        var mastering = new MasteringDisplayColorVolume(35400, 14600, 8500, 39850, 6550, 2300, 15635, 16450, 40_000_000, 50);
+        Check<Rgba64>(1, displayP3, peak: null, white: 203, new ContentLightLevel(1500, 300), mastering, expectedPeak: transfer is 16 ? 1500 : 4000);
+        Check<Rgba32>(9, IccProfile.Srgb, peak: null, white: 250, new ContentLightLevel(0, 0), mastering, expectedPeak: 4000);
+        Check<Rgba64>(10, IccProfile.Srgb, peak: 150, white: 203, lightLevel: null, display: null, expectedPeak: 150);
+
+        void Check<TPixel>(byte primaries, IccProfile destination, double? peak, double white, ContentLightLevel? lightLevel, MasteringDisplayColorVolume? display, double expectedPeak)
+            where TPixel : unmanaged
+        {
+            using var image = Build<TPixel>(Source4X3, Offset(Source4X3, 20));
+            image.Metadata.Cicp = new CicpColorDescription(primaries, transfer, 9, fullRange: true);
+            image.Metadata.ContentLightLevel = lightLevel;
+            image.Metadata.MasteringDisplay = display;
+            var before = Enumerable.Range(0, image.Frames.Count).Select(i => ImageSnapshots.CaptureFrameRows(image.Frames[i])).ToArray();
+            var options = new IccColorTransformOptions
+            {
+                BlackPointCompensation = false,
+                ToneMapping = new HdrToneMappingOptions { Operator = toneMappingOperator, SourcePeakLuminance = peak, TargetWhiteLuminance = white },
+            };
+            image.ConvertColorProfile(destination, options, Ct);
+            Assert.Same(destination, image.Metadata.IccProfile);
+            Assert.Null(image.Metadata.Cicp);
+            Assert.Null(image.Metadata.ContentLightLevel);
+            Assert.Null(image.Metadata.MasteringDisplay);
+
+            var isGray = PixelFormats.IsGrayscale(image.PixelFormat);
+            var reference = ReferenceIccTransform.CreateFromCicp(primaries, transfer, isGray, destination.Data.Span, toneMap: new ReferenceHdrToneMap((int)toneMappingOperator, (decimal)expectedPeak, (decimal)white));
+            for (var i = 0; i < before.Length; i++)
+            {
+                var source = ColorSamplesOf(before[i]);
+                var actual = ColorSamplesOf(ImageSnapshots.CaptureFrameRows(image.Frames[i]));
+                Assert.Empty(PixelFormats.GetBitsPerComponent(image.PixelFormat) == 16
+                    ? reference.Compare(source.Select(value => (ushort)value).ToArray(), actual.Select(value => (ushort)value).ToArray())
+                    : reference.Compare(source.Select(value => (byte)value).ToArray(), actual.Select(value => (byte)value).ToArray()));
+            }
+        }
+    }
+
+    public static TheoryData<byte, HdrToneMappingOperator> ToneMappingCases
+    {
+        get
+        {
+            var data = new TheoryData<byte, HdrToneMappingOperator>();
+            foreach (var transfer in new byte[] { 16, 18 })
+            {
+                foreach (var toneMappingOperator in Enum.GetValues<HdrToneMappingOperator>())
+                {
+                    data.Add(transfer, toneMappingOperator);
+                }
+            }
+
+            return data;
+        }
+    }
+
+    /// <summary>
+    /// The light that a PQ sample encodes and what each curve makes of it, for a peak of 1,000 cd/m2 and a white of 203
+    /// cd/m2: the samples are <c>65535 PQ(L / 10000)</c> for L = 10, 50, 100, 203, 400, 1000 and 4000 cd/m2, and the
+    /// expected linear samples <c>65535 f(L' / 203)</c>, where L' is the light of the rounded sample, were computed with
+    /// the <c>decimal</c> module of Python at 50 digits from SMPTE ST 2084 and from the formulas that
+    /// <see cref="HdrToneMappingOperator"/> documents. Below the white, the clip keeps the light: 100 cd/m2 is 100/203
+    /// of the white. The conversion to the linear profile adds less than two units.
+    /// </summary>
+    [Theory]
+    [InlineData(HdrToneMappingOperator.Bt2390, new[] { 3228, 16142, 32077, 51342, 62504, 65535, 65535 })]
+    [InlineData(HdrToneMappingOperator.Clip, new[] { 3228, 16142, 32284, 65531, 65535, 65535, 65535 })]
+    [InlineData(HdrToneMappingOperator.Reinhard, new[] { 3083, 13083, 22068, 34117, 47003, 65535, 65535 })]
+    [InlineData(HdrToneMappingOperator.Hable, new[] { 1585, 7607, 14288, 25613, 41110, 65535, 65535 })]
+    [InlineData(HdrToneMappingOperator.Mobius, new[] { 3228, 16142, 29894, 44474, 55847, 65535, 65535 })]
+    public void ToneMappingCurvesGiveTheLightOfTheirDefinition(HdrToneMappingOperator toneMappingOperator, int[] expected)
+    {
+        ushort[] samples = [19641, 28854, 33297, 38055, 42767, 49271, 59150];
+        using var image = new Image<Rgba64>(samples.Length, 1);
+        for (var i = 0; i < samples.Length; i++)
+        {
+            image.Frames[0][i, 0] = new Rgba64(samples[i], samples[i], samples[i], 65535);
+        }
+
+        image.Metadata.Cicp = new CicpColorDescription(1, 16, 0, fullRange: true);
+        image.ConvertColorProfile(BuiltInIccProfiles.LinearSrgb, new IccColorTransformOptions { BlackPointCompensation = false, ToneMapping = new HdrToneMappingOptions { Operator = toneMappingOperator, SourcePeakLuminance = 1000 } }, Ct);
+        for (var i = 0; i < samples.Length; i++)
+        {
+            var pixel = image.Frames[0][i, 0];
+            Assert.True(Math.Abs(pixel.R - expected[i]) <= 2 && Math.Abs(pixel.G - expected[i]) <= 2 && Math.Abs(pixel.B - expected[i]) <= 2, $"{toneMappingOperator}, sample {samples[i]}: expected {expected[i]}, actual {pixel}.");
+        }
+    }
+
+    [Fact]
+    public void ToneMappingKeepsTheHueOfAColorAndNeverBrightens()
+    {
+        // The three components are scaled together: a saturated highlight keeps the ratio of its components (in linear
+        // light), instead of clipping one of them
+        using var image = new Image<Rgba64>(1, 1);
+        image.Frames[0][0, 0] = new Rgba64(59150, 49271, 38055, 65535); // 4000, 1000 and 203 cd/m2
+        image.Metadata.Cicp = new CicpColorDescription(1, 16, 0, fullRange: true);
+        image.ConvertColorProfile(BuiltInIccProfiles.LinearSrgb, new IccColorTransformOptions { BlackPointCompensation = false, ToneMapping = new HdrToneMappingOptions { Operator = HdrToneMappingOperator.Clip, SourcePeakLuminance = 4000 } }, Ct);
+        var pixel = image.Frames[0][0, 0];
+        Assert.True(Math.Abs(pixel.R - 65535) <= 2 && Math.Abs(pixel.G - (65535 / 4)) <= 40 && Math.Abs(pixel.B - (65535 * 203 / 4000)) <= 40, $"Actual {pixel}.");
+
+        // A source whose peak is below the white is not compressed, and not brightened: 100 cd/m2 stays 100/203 of the white
+        foreach (var toneMappingOperator in Enum.GetValues<HdrToneMappingOperator>())
+        {
+            using var dim = new Image<Rgba64>(1, 1);
+            dim.Frames[0][0, 0] = new Rgba64(33297, 33297, 33297, 65535);
+            dim.Metadata.Cicp = new CicpColorDescription(1, 16, 0, fullRange: true);
+            dim.ConvertColorProfile(BuiltInIccProfiles.LinearSrgb, new IccColorTransformOptions { BlackPointCompensation = false, ToneMapping = new HdrToneMappingOptions { Operator = toneMappingOperator, SourcePeakLuminance = 150 } }, Ct);
+            Assert.True(toneMappingOperator is HdrToneMappingOperator.Hable or HdrToneMappingOperator.Reinhard || Math.Abs(dim.Frames[0][0, 0].R - 32284) <= 2, $"{toneMappingOperator}: {dim.Frames[0][0, 0]}.");
+        }
+    }
+
+    [Fact]
+    public void ToneMappingOptionsValidateTheirValues()
+    {
+        var options = HdrToneMappingOptions.Default;
+        Assert.Equal((HdrToneMappingOperator.Bt2390, null, 203d), (options.Operator, options.SourcePeakLuminance, options.TargetWhiteLuminance));
+        Assert.Null(IccColorTransformOptions.Default.ToneMapping);
+        Assert.Throws<ArgumentOutOfRangeException>("value", () => new HdrToneMappingOptions { Operator = (HdrToneMappingOperator)5 });
+        foreach (var value in new[] { 0d, -1d, double.NaN, double.PositiveInfinity, 10000.5 })
+        {
+            Assert.Throws<ArgumentOutOfRangeException>("value", () => new HdrToneMappingOptions { SourcePeakLuminance = value });
+            Assert.Throws<ArgumentOutOfRangeException>("value", () => new HdrToneMappingOptions { TargetWhiteLuminance = value });
+        }
+
+        // Tone mapping is for high dynamic range samples only: it changes nothing for the other sources
+        using var expected = Build<Rgba64>(Source4X3);
+        using var actual = Build<Rgba64>(Source4X3);
+        var displayP3 = IccTestProfiles.Rgb(IccTestProfiles.DisplayP3Colorants, IccTestProfiles.SrgbCurve());
+        expected.ConvertColorProfile(displayP3, cancellationToken: Ct);
+        actual.ConvertColorProfile(displayP3, new IccColorTransformOptions { ToneMapping = new HdrToneMappingOptions { Operator = HdrToneMappingOperator.Hable } }, Ct);
+        for (var x = 0; x < expected.Width; x++)
+        {
+            Assert.Equal(expected.Frames[0][x, 0], actual.Frames[0][x, 0]);
+        }
+    }
+
+    private static int[] ColorSamplesOf(RawPixelBuffer buffer)
+    {
+        var samples = new List<int>();
+        for (var pixel = 0; pixel < buffer.Width * buffer.Height; pixel++)
+        {
+            for (var channel = 0; channel < buffer.Layout.ChannelCount; channel++)
+            {
+                if (!buffer.Layout.HasAlpha || channel != buffer.Layout.AlphaChannel)
+                    samples.Add(buffer.GetSample(pixel % buffer.Width, pixel / buffer.Width, channel));
+            }
+        }
+
+        return [.. samples];
     }
 
     [Fact]

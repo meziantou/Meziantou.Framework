@@ -54,6 +54,18 @@ public sealed class TimingAndMetadataConformanceTests
             Assert.Equal(animation.EditList?.TrackDuration, fields.EditList?.TrackDuration);
         }
 
+        // The light levels, the mastering display and the shape of the pixels are boxes of AVIF and HEIC: what the manifest expects is
+        // what the inspector reads from them
+        Assert.Equal(expected.ContentLightLevel?.ToString(), fields.ContentLightLevel?.ToString());
+        Assert.Equal(expected.MasteringDisplay?.ToString(), fields.MasteringDisplay?.ToString());
+        Assert.Equal(expected.PixelAspectRatio?.ToString(), fields.PixelAspectRatio?.ToString());
+        if (fixture.Entry.Format is not ("avif" or "heic"))
+        {
+            Assert.Null(expected.ContentLightLevel);
+            Assert.Null(expected.MasteringDisplay);
+            Assert.Null(expected.PixelAspectRatio);
+        }
+
         if (fixture.Entry.Format is "avif" or "heic")
         {
             // The orientation of an AVIF or HEIC image is the composition of its irot and imir properties, and a colr box of type
@@ -117,6 +129,14 @@ public sealed class TimingAndMetadataConformanceTests
             var expected = ToFrameDuration(fixture.GetDuration(i));
             var raw = fields.FrameDelays[i];
             FrameDuration actual;
+            if (raw is null && fixture.Entry.Format == "avif")
+            {
+                // An image that the edit list of the track shows for a part of its duration has no delay field: its
+                // duration is derived from the edits (AvifDecoderConformanceTests compares it with the manifest)
+                Assert.True(fixture.Entry.HasFeature("avif.seq.partialDurations"));
+                continue;
+            }
+
             if (raw is null)
             {
                 actual = default; // a GIF frame without Graphic Control Extension has no delay: valid zero duration

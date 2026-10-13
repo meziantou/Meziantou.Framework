@@ -90,6 +90,12 @@
     }
   },
   "$defs": {
+    "chromaticity": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": { "type": "integer", "minimum": 0, "maximum": 65535 }
+    },
     "fontSuite": {
       "type": "object",
       "additionalProperties": false,
@@ -329,6 +335,55 @@
                 "transferCharacteristics": { "type": "integer", "minimum": 0, "maximum": 255 },
                 "matrixCoefficients": { "type": "integer", "minimum": 0, "maximum": 255 },
                 "fullRange": { "type": "boolean" }
+              }
+            }
+          ]
+        },
+        "contentLightLevel": {
+          "description": "Content light level of an AVIF input (ImageMetadata.ContentLightLevel): the fields of the clli box of its primary item, or of the sample entry of its track, in candelas per square meter (0 means unknown); null or absent when the input has no such box, and for every other format.",
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["maxContentLightLevel", "maxPictureAverageLightLevel"],
+              "properties": {
+                "maxContentLightLevel": { "type": "integer", "minimum": 0, "maximum": 65535 },
+                "maxPictureAverageLightLevel": { "type": "integer", "minimum": 0, "maximum": 65535 }
+              }
+            }
+          ]
+        },
+        "masteringDisplay": {
+          "description": "Mastering display color volume of an AVIF input (ImageMetadata.MasteringDisplay): the fields of the mdcv box of its primary item, or of the sample entry of its track, as they are stored (chromaticities [x, y] in units of 0.00002, luminances in units of 0.0001 candela per square meter); null or absent when the input has no such box, and for every other format.",
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["red", "green", "blue", "whitePoint", "maxLuminance", "minLuminance"],
+              "properties": {
+                "red": { "$ref": "#/$defs/chromaticity" },
+                "green": { "$ref": "#/$defs/chromaticity" },
+                "blue": { "$ref": "#/$defs/chromaticity" },
+                "whitePoint": { "$ref": "#/$defs/chromaticity" },
+                "maxLuminance": { "type": "integer", "minimum": 0, "maximum": 4294967295 },
+                "minLuminance": { "type": "integer", "minimum": 0, "maximum": 4294967295 }
+              }
+            }
+          ]
+        },
+        "pixelAspectRatio": {
+          "description": "Pixel aspect ratio of an AVIF input (ImageMetadata.PixelAspectRatio): the terms of the pasp box of its primary item, or of the sample entry of its track, as they are stored (not reduced); null or absent when the input has no such box, and for every other format.",
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["horizontalSpacing", "verticalSpacing"],
+              "properties": {
+                "horizontalSpacing": { "type": "integer", "minimum": 1, "maximum": 4294967295 },
+                "verticalSpacing": { "type": "integer", "minimum": 1, "maximum": 4294967295 }
               }
             }
           ]

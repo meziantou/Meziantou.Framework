@@ -32,7 +32,10 @@ internal sealed class AvifEncoderCodec : ImageEncoderCodec
             encoder.ClearTransparentColors,
             encoder.KeyFrameInterval,
             encoder.DurationRounding,
-            encoder.MetadataHandling);
+            encoder.MetadataHandling,
+            encoder.CleanAperture,
+            encoder.PremultiplyAlpha,
+            encoder.GridTileSize);
 
         return new HeifEncoderSession(options, AvifBinding.Instance, settings);
     }

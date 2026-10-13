@@ -33,6 +33,24 @@ public abstract class Brush
         }
     }
 
+    /// <summary>Gets how the color of the paint is mixed with the color of the pixels it is drawn on, before it is composited. Defaults to <see cref="Drawing.BlendMode.Normal"/>.</summary>
+    /// <remarks>
+    /// The blend mode changes the color of the paint, and <see cref="CompositeMode"/> then combines the paint with the
+    /// pixels: <see cref="Drawing.BlendMode.Multiply"/> with the default operator darkens the pixels by the paint.
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException">The value is not a defined <see cref="Drawing.BlendMode"/>.</exception>
+    public BlendMode BlendMode
+    {
+        get;
+        init
+        {
+            if (!Enum.IsDefined(value))
+                throw new ArgumentOutOfRangeException(nameof(value), value, "The blend mode is not valid.");
+
+            field = value;
+        }
+    }
+
     /// <summary>Creates a brush painting a single color.</summary>
     /// <param name="color">The color, with straight alpha.</param>
     /// <returns>A new <see cref="SolidBrush"/>.</returns>

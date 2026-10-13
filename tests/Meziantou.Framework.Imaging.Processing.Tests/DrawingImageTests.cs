@@ -141,6 +141,171 @@ public sealed class DrawingImageTests
     }
 
     [Fact]
+    public void AnImageIsPlacedByATransformation()
+    {
+        using var source = new Image<Rgba32>(2, 2);
+        var a = source.Frames[0][0, 0] = new Rgba32(10, 20, 30);
+        var b = source.Frames[0][1, 0] = new Rgba32(40, 50, 60);
+        var c = source.Frames[0][0, 1] = new Rgba32(70, 80, 90);
+        var d = source.Frames[0][1, 1] = new Rgba32(100, 110, 120);
+        var frame = source.Frames[0];
+        var background = new Rgba32(1, 2, 3, 4);
+
+        // Without transformation, or moved by whole pixels: the image at that position; scaled: the image stretched
+        Assert.Equal(Draw(canvas => canvas.DrawImage(frame, default(PointD))), Draw(canvas => canvas.DrawImage(frame, AffineTransform.Identity)));
+        Assert.Equal(Draw(canvas => canvas.DrawImage(frame, new Point(1, 2))), Draw(canvas => canvas.DrawImage(frame, AffineTransform.CreateTranslation(1, 2))));
+        Assert.Equal(Draw(canvas => canvas.DrawImage(frame, new PointD(0.25, 1.5), 0.5)), Draw(canvas => canvas.DrawImage(frame, AffineTransform.CreateTranslation(0.25, 1.5), 0.5)));
+        Assert.Equal(
+            Draw(canvas => canvas.DrawImage(frame, new RectangleD(0.5, 1, 3, 2.5))),
+            Draw(canvas => canvas.DrawImage(frame, AffineTransform.CreateScale(1.5, 1.25).Then(AffineTransform.CreateTranslation(0.5, 1)))));
+
+        // A quarter turn around the center of the image, clockwise on the image: the pixels themselves, turned
+        var center = new PointD(1, 1);
+        var turned = Draw(canvas => canvas.DrawImage(frame, AffineTransform.CreateRotation(90, center).Then(AffineTransform.CreateTranslation(1, 1))));
+        Assert.Equal(c, At(turned, 1, 1));
+        Assert.Equal(a, At(turned, 2, 1));
+        Assert.Equal(d, At(turned, 1, 2));
+        Assert.Equal(b, At(turned, 2, 2));
+        Assert.Equal(background, At(turned, 0, 1));
+        Assert.Equal(background, At(turned, 3, 2));
+
+        // Mirrored from left to right, and turned upside down
+        var mirrored = Draw(canvas => canvas.DrawImage(frame, AffineTransform.CreateScale(-1, 1, center)));
+        Assert.Equal(b, At(mirrored, 0, 0));
+        Assert.Equal(a, At(mirrored, 1, 0));
+        Assert.Equal(d, At(mirrored, 0, 1));
+        Assert.Equal(c, At(mirrored, 1, 1));
+        var upsideDown = Draw(canvas => canvas.DrawImage(frame, AffineTransform.CreateRotation(180, center).Then(AffineTransform.CreateTranslation(2, 2))));
+        Assert.Equal(d, At(upsideDown, 2, 2));
+        Assert.Equal(a, At(upsideDown, 3, 3));
+
+        // A transformation that flattens the image draws nothing
+        Assert.Equal(Draw(static _ => { }), Draw(canvas => canvas.DrawImage(frame, AffineTransform.CreateScale(0, 1))));
+        Assert.Equal(Draw(static _ => { }), Draw(canvas => canvas.DrawImage(frame, AffineTransform.CreateTranslation(1, 1), 0)));
+
+        // Turned by any angle: the edges are antialiased, and the image keeps its area
+        using var white = new Image<Rgba32>(6, 4, new Rgba32(255, 255, 255));
+        using var canvasImage = new Image<Rgba32>(16, 16);
+        canvasImage.Draw(canvas => canvas.DrawImage(white.Frames[0], AffineTransform.CreateRotation(33, new PointD(3, 2)).Then(AffineTransform.CreateTranslation(5, 6))), Ct);
+        var samples = DrawingTestSupport.ReadSamples(canvasImage.Frames[0]);
+        var area = 0;
+        var partial = 0;
+        for (var i = 0; i < samples.Length; i += 4)
+        {
+            area += samples[i + 3];
+            partial += samples[i + 3] is > 0 and < 255 ? 1 : 0;
+            if (samples[i + 3] != 0)
+            {
+                Assert.Equal([255, 255, 255], samples.AsSpan(i, 3).ToArray());
+            }
+        }
+
+        Assert.Equal(24, area / 255.0, 0.05);
+        Assert.InRange(partial, 12, 30);
+
+        // The opacity and the clip apply as to any image
+        using var gray = new Image<Gray8>(4, 4, new Gray8(0));
+        using var dot = new Image<Gray8>(2, 2, new Gray8(255));
+        gray.Draw(
+            canvas => canvas.Clip(new Rectangle(0, 0, 4, 2), clipped => clipped.DrawImage(dot.Frames[0], AffineTransform.CreateScale(2, 2), 0.5)),
+            Ct);
+        Assert.Equal([128, 128, 128, 128, 128, 128, 128, 128, 0, 0, 0, 0, 0, 0, 0, 0], DrawingTestSupport.ReadSamples(gray.Frames[0]));
+
+        Rgba32[] Draw(DrawingAction action)
+        {
+            using var image = new Image<Rgba32>(4, 4, background);
+            image.Draw(action, Ct);
+            var pixels = new Rgba32[16];
+            image.Frames[0].CopyPixelDataTo(pixels);
+            return pixels;
+        }
+
+        static Rgba32 At(Rgba32[] pixels, int x, int y) => pixels[(y * 4) + x];
+    }
+
+    [Fact]
+    public void AReducedImageCanBeReadWithoutSkippingPixels()
+    {
+        // Four pixels reduced to two. The centers of the canvas come from 1 and 3, and each covers two pixels of the
+        // image: the pixels whose centers are less than 2 away count, with the weights 1 - distance / 2, that is 1/4,
+        // 3/4, 3/4 and 1/4 of the pixels -1 to 2, then of the pixels 1 to 4. The pixels beyond the edges are the pixels
+        // of the edges: (0 * 4 + 100 * 3 + 200) / 8 = 62.5 -> 63 and (100 + 200 * 3 + 50 * 4) / 8 = 112.5 -> 113
+        using (var source = new Image<Gray8>(4, 1))
+        using (var image = new Image<Gray8>(2, 1, new Gray8(7)))
+        {
+            DrawingTestSupport.WriteSamples(source.Frames[0], [0, 100, 200, 50]);
+            image.Draw(canvas => canvas.DrawImage(source.Frames[0], new Rectangle(0, 0, 2, 1), ImageSampling.Smooth), Ct);
+            Assert.Equal([63, 113], DrawingTestSupport.ReadSamples(image.Frames[0]));
+        }
+
+        // A white pixel then seven black ones, reduced to one pixel. The interpolation reads the two pixels in the
+        // middle, and misses the white one. Every pixel counts instead: the weights 1 - distance / 8 of the 16 pixels
+        // around the center add up to 8, and the white pixel, with the four it is extended to on its left, has
+        // (9 + 7 + 5 + 3 + 1) / 16 of them: 255 * 25 / 128 = 49.8 -> 50
+        using (var source = new Image<Gray8>(8, 1))
+        using (var image = new Image<Gray8>(1, 1, new Gray8(7)))
+        {
+            source.Frames[0][0, 0] = new Gray8(255);
+            image.Draw(canvas => canvas.DrawImage(source.Frames[0], new Rectangle(0, 0, 1, 1)), Ct);
+            Assert.Equal([0], DrawingTestSupport.ReadSamples(image.Frames[0]));
+            image.Draw(canvas => canvas.DrawImage(source.Frames[0], new Rectangle(0, 0, 1, 1), ImageSampling.Smooth), Ct);
+            Assert.Equal([50], DrawingTestSupport.ReadSamples(image.Frames[0]));
+
+            // A region is read the same way, and the pixels around it are not
+            source.Frames[0][4, 0] = new Gray8(255);
+            image.Draw(canvas => canvas.DrawImage(source.Frames[0], new Rectangle(0, 0, 4, 1), new Rectangle(0, 0, 1, 1), ImageSampling.Smooth), Ct);
+
+            // Weights 1 - distance / 4 of the 8 pixels around the center, which add up to 4: (5 + 3 + 1) / 8 of them are
+            // white, 255 * 9 / 32 = 71.7 -> 72
+            Assert.Equal([72], DrawingTestSupport.ReadSamples(image.Frames[0]));
+        }
+
+        // Around a transparent image, nothing counts for the color, and the alpha fades: a brush of two opaque pixels
+        // reduced to one has, on the pixel it is centered on, 3/4 of the weights (1/4 + 1/2 + 1/2 + 1/4 of 4 pixels,
+        // two of them outside)
+        using (var source = new Image<Rgba32>(2, 1, new Rgba32(200, 100, 50)))
+        using (var image = new Image<Rgba32>(3, 1))
+        {
+            var brush = new ImageBrush(source.Frames[0]) { Transform = AffineTransform.CreateScale(0.5, 1).Then(AffineTransform.CreateTranslation(1, 0)), Sampling = ImageSampling.Smooth };
+            image.Draw(canvas => canvas.Fill(brush), Ct);
+            Assert.Equal(new Rgba32(200, 100, 50, 191), image.Frames[0][1, 0]);
+            Assert.Equal(new Rgba32(200, 100, 50, 32), image.Frames[0][0, 0]);
+            Assert.Equal(new Rgba32(200, 100, 50, 32), image.Frames[0][2, 0]);
+        }
+
+        // An image of one color keeps it whatever its size, and an image that is not reduced is interpolated, bit for bit
+        var random = new Random(77);
+        using var flat = new Image<Rgba64>(9, 7, new Rgba64(12345, 60000, 321, 40000));
+        using var noise = DrawingTestSupport.CreateRandom(PixelFormat.Rgba32, 6, 5, random.Next);
+        for (var i = 0; i < 20; i++)
+        {
+            var rotation = i % 2 == 0 ? AffineTransform.Identity : AffineTransform.CreateRotation(random.NextDouble() * 360, new PointD(4, 3));
+            var reduction = rotation.Then(AffineTransform.CreateScale(0.1 + (random.NextDouble() * 0.8), 0.1 + (random.NextDouble() * 0.8))).Then(AffineTransform.CreateTranslation(random.NextDouble() * 3, random.NextDouble() * 3));
+            using var reduced = new Image<Rgba64>(8, 8);
+            reduced.Draw(canvas => canvas.Fill(new ImageBrush(flat.Frames[0]) { Transform = reduction, WrapMode = ImageWrapMode.Repeat, Sampling = ImageSampling.Smooth, CompositeMode = CompositeMode.Source }), Ct);
+            Assert.All(DrawingTestSupport.ReadSamples(reduced.Frames[0]).Chunk(4), pixel => Assert.Equal([12345, 60000, 321, 40000], pixel));
+
+            var enlargement = rotation.Then(AffineTransform.CreateScale(1 + (random.NextDouble() * 2), 1 + random.NextDouble())).Then(AffineTransform.CreateTranslation(random.NextDouble() * 3, random.NextDouble() * 3));
+            using var smooth = new Image<Rgba32>(12, 10);
+            using var bilinear = new Image<Rgba32>(12, 10);
+            smooth.Draw(canvas => canvas.DrawImage(noise.Frames[0], enlargement, ImageSampling.Smooth), Ct);
+            bilinear.Draw(canvas => canvas.DrawImage(noise.Frames[0], enlargement), Ct);
+            Assert.Equal(DrawingTestSupport.ReadSamples(bilinear.Frames[0]), DrawingTestSupport.ReadSamples(smooth.Frames[0]));
+        }
+
+        // The nearest pixel, for an image enlarged with its pixels as squares
+        using (var source = new Image<Gray8>(2, 1))
+        using (var image = new Image<Gray8>(4, 1, new Gray8(7)))
+        {
+            source.Frames[0][1, 0] = new Gray8(255);
+            image.Draw(canvas => canvas.DrawImage(source.Frames[0], new Rectangle(0, 0, 4, 1), ImageSampling.Nearest), Ct);
+            Assert.Equal([0, 0, 255, 255], DrawingTestSupport.ReadSamples(image.Frames[0]));
+            image.Draw(canvas => canvas.DrawImage(source.Frames[0], AffineTransform.CreateScale(2, 1), ImageSampling.Nearest), Ct);
+            Assert.Equal([0, 0, 255, 255], DrawingTestSupport.ReadSamples(image.Frames[0]));
+        }
+    }
+
+    [Fact]
     public void ARegionOfAnImageIsDrawnWithoutThePixelsAroundIt()
     {
         using var source = new Image<Gray8>(4, 2);
@@ -299,6 +464,10 @@ public sealed class DrawingImageTests
     [InlineData(ImageSampling.Bilinear, ImageWrapMode.Reflect)]
     [InlineData(ImageSampling.Nearest, ImageWrapMode.Reflect)]
     [InlineData(ImageSampling.Nearest, ImageWrapMode.Transparent)]
+    [InlineData(ImageSampling.Smooth, ImageWrapMode.Transparent)]
+    [InlineData(ImageSampling.Smooth, ImageWrapMode.Pad)]
+    [InlineData(ImageSampling.Smooth, ImageWrapMode.Repeat)]
+    [InlineData(ImageSampling.Smooth, ImageWrapMode.Reflect)]
     public void AnyPlacementFollowsTheDefinitionOfTheInterpolation(ImageSampling sampling, ImageWrapMode wrapMode)
     {
         // The image replaces transparent 16-bit pixels, so that each pixel of the canvas is the color the brush gave it.
@@ -331,7 +500,7 @@ public sealed class DrawingImageTests
                 for (var x = 0; x < 7; x++)
                 {
                     var position = inverse.Transform(new PointD(x + 0.5, y + 0.5));
-                    var expected = Sample(source, region, position, sampling, wrapMode);
+                    var expected = Sample(source, region, position, inverse, sampling, wrapMode);
                     var actual = image.Frames[0][x, y];
                     var description = $"case {index}, pixel ({x}, {y}) from {position} of region {region} with {transform}: expected {expected}, actual {actual}";
                     if (expected.A <= 1 || actual.A <= 1)
@@ -348,10 +517,16 @@ public sealed class DrawingImageTests
             }
         }
 
-        static Rgba64 Sample(Image source, Rectangle region, PointD position, ImageSampling sampling, ImageWrapMode wrapMode)
+        static Rgba64 Sample(Image source, Rectangle region, PointD position, AffineTransform inverse, ImageSampling sampling, ImageWrapMode wrapMode)
         {
             if (sampling == ImageSampling.Nearest)
                 return Read(source, region, (int)Math.Floor(position.X), (int)Math.Floor(position.Y), wrapMode) ?? default;
+
+            // What a pixel of the canvas covers of the image, limited to the region: more than a pixel when the image is reduced
+            var spanX = Math.Min(Math.Sqrt((inverse.M11 * inverse.M11) + (inverse.M21 * inverse.M21)), region.Width);
+            var spanY = Math.Min(Math.Sqrt((inverse.M12 * inverse.M12) + (inverse.M22 * inverse.M22)), region.Height);
+            if (sampling == ImageSampling.Smooth && (spanX > 1 || spanY > 1))
+                return Reduce(source, region, position, (decimal)Math.Max(spanX, 1), (decimal)Math.Max(spanY, 1), wrapMode);
 
             var column = (int)Math.Floor(position.X - 0.5);
             var row = (int)Math.Floor(position.Y - 0.5);
@@ -370,6 +545,42 @@ public sealed class DrawingImageTests
             }
 
             var roundedAlpha = Math.Round(alpha, MidpointRounding.AwayFromZero);
+            if (roundedAlpha == 0)
+                return default;
+
+            return new Rgba64((ushort)Math.Round(red / alpha, MidpointRounding.AwayFromZero), (ushort)Math.Round(green / alpha, MidpointRounding.AwayFromZero), (ushort)Math.Round(blue / alpha, MidpointRounding.AwayFromZero), (ushort)roundedAlpha);
+        }
+
+        static Rgba64 Reduce(Image source, Rectangle region, PointD position, decimal spanX, decimal spanY, ImageWrapMode wrapMode)
+        {
+            // Every pixel whose center is within the span of the position, weighted by its distance to it
+            var u = (decimal)position.X;
+            var v = (decimal)position.Y;
+            decimal red = 0, green = 0, blue = 0, alpha = 0, total = 0;
+            for (var row = (int)Math.Floor(v - spanY) - 1; row <= (int)Math.Ceiling(v + spanY) + 1; row++)
+            {
+                var weightY = 1 - (Math.Abs(row + 0.5m - v) / spanY);
+                if (weightY <= 0)
+                    continue;
+
+                for (var column = (int)Math.Floor(u - spanX) - 1; column <= (int)Math.Ceiling(u + spanX) + 1; column++)
+                {
+                    var weight = weightY * (1 - (Math.Abs(column + 0.5m - u) / spanX));
+                    if (weight <= 0)
+                        continue;
+
+                    total += weight;
+                    if (Read(source, region, column, row, wrapMode) is { } color)
+                    {
+                        red += weight * color.R * color.A;
+                        green += weight * color.G * color.A;
+                        blue += weight * color.B * color.A;
+                        alpha += weight * color.A;
+                    }
+                }
+            }
+
+            var roundedAlpha = Math.Round(alpha / total, MidpointRounding.AwayFromZero);
             if (roundedAlpha == 0)
                 return default;
 
@@ -446,6 +657,19 @@ public sealed class DrawingImageTests
                 AssertThrows<ArgumentOutOfRangeException>(canvas, canvas => canvas.DrawImage(frame, default(PointD), double.NaN));
                 AssertThrows<ArgumentException>(canvas, canvas => canvas.DrawImage(frame, new PointD(double.NaN, 0)));
                 AssertThrows<ArgumentOutOfRangeException>(canvas, canvas => canvas.DrawImage(frame, new RectangleD(16777216, 0, 1, 1)));
+                AssertThrows<ArgumentNullException>(canvas, static canvas => canvas.DrawImage(null!, AffineTransform.Identity));
+                AssertThrows<ArgumentNullException>(canvas, static canvas => canvas.DrawImage(null!, new Rectangle(0, 0, 1, 1), ImageSampling.Smooth));
+                AssertThrows<ArgumentNullException>(canvas, static canvas => canvas.DrawImage(null!, new Rectangle(0, 0, 1, 1), new Rectangle(0, 0, 1, 1), ImageSampling.Smooth));
+                AssertThrows<ArgumentNullException>(canvas, static canvas => canvas.DrawImage(null!, AffineTransform.Identity, ImageSampling.Smooth));
+                AssertThrows<ArgumentOutOfRangeException>(canvas, canvas => canvas.DrawImage(frame, new Rectangle(0, 0, 1, 1), (ImageSampling)3));
+                AssertThrows<ArgumentOutOfRangeException>(canvas, canvas => canvas.DrawImage(frame, new Rectangle(0, 0, 1, 1), new Rectangle(0, 0, 1, 1), (ImageSampling)(-1)));
+                AssertThrows<ArgumentOutOfRangeException>(canvas, canvas => canvas.DrawImage(frame, AffineTransform.Identity, (ImageSampling)3));
+                AssertThrows<ArgumentOutOfRangeException>(canvas, canvas => canvas.DrawImage(frame, new Rectangle(0, 0, 1, 1), ImageSampling.Smooth, 2));
+                AssertThrows<ArgumentOutOfRangeException>(canvas, canvas => canvas.DrawImage(frame, new Rectangle(0, 0, 3, 3), new Rectangle(0, 0, 1, 1), ImageSampling.Smooth));
+                AssertThrows<ArgumentOutOfRangeException>(canvas, canvas => canvas.DrawImage(frame, AffineTransform.Identity, 1.5));
+                AssertThrows<ArgumentOutOfRangeException>(canvas, canvas => canvas.DrawImage(frame, AffineTransform.CreateTranslation(16777216, 0)));
+                AssertThrows<ArgumentOutOfRangeException>(canvas, canvas => canvas.DrawImage(frame, AffineTransform.CreateScale(1e7, 1)));
+                AssertThrows<InvalidOperationException>(canvas, canvas => canvas.DrawImage(image.Frames[0], AffineTransform.Identity));
 
                 // The frames that are drawn on are leased by the drawing
                 AssertThrows<InvalidOperationException>(canvas, canvas => canvas.DrawImage(image.Frames[0], default(PointD)));
@@ -475,13 +699,14 @@ public sealed class DrawingImageTests
             canvas =>
             {
                 AssertThrows<ObjectDisposedException>(canvas, canvas => canvas.DrawImage(frame, default(PointD)));
+                AssertThrows<ObjectDisposedException>(canvas, canvas => canvas.DrawImage(frame, AffineTransform.Identity));
                 AssertThrows<ObjectDisposedException>(canvas, canvas => canvas.Fill(brush));
             },
             Ct);
 
         Assert.Throws<ArgumentNullException>(() => new ImageBrush(null!));
         Assert.Throws<ArgumentOutOfRangeException>(() => new ImageBrush(image.Frames[0]) { WrapMode = (ImageWrapMode)4 });
-        Assert.Throws<ArgumentOutOfRangeException>(() => new ImageBrush(image.Frames[0]) { Sampling = (ImageSampling)2 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new ImageBrush(image.Frames[0]) { Sampling = (ImageSampling)3 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new ImageBrush(image.Frames[0]) { Opacity = 1.01 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new ImageBrush(image.Frames[0]) { Opacity = double.NaN });
 

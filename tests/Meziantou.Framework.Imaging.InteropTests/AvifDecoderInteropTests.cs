@@ -1,10 +1,13 @@
 using System.Buffers.Binary;
 using System.Globalization;
+using System.Text;
 using Meziantou.Framework.Imaging.Formats;
+using Meziantou.Framework.Imaging.Internals;
 using Meziantou.Framework.Imaging.Metadata;
 using Meziantou.Framework.Imaging.TestHarness.Adapters;
 using Meziantou.Framework.Imaging.TestHarness.Heif;
 using Meziantou.Framework.Imaging.TestHarness.ExternalTools;
+using Meziantou.Framework.Imaging.TestHarness.Golden;
 using Meziantou.Framework.Imaging.TestHarness.Pixels;
 
 namespace Meziantou.Framework.Imaging.InteropTests;
@@ -134,6 +137,12 @@ public sealed class AvifDecoderInteropTests
         /// avifdec describes the 16-bit image it could reconstruct and decodes the primary item.
         /// </summary>
         public int? PrimaryItemDepth { get; init; }
+
+        /// <summary>The content light level passed to avifenc (<c>--clli</c>), which the library must report.</summary>
+        public ContentLightLevel? ContentLightLevel { get; init; }
+
+        /// <summary>The pixel aspect ratio passed to avifenc (<c>--pasp</c>), which the library must report.</summary>
+        public PixelAspectRatio? PixelAspectRatio { get; init; }
     }
 
     /// <param name="Name">The name of the case and of its files.</param>
@@ -227,8 +236,10 @@ public sealed class AvifDecoderInteropTests
         yield return new("lossy-420-10-film-grain", SourceKind.Rgb16, 64, 48, ["--qcolor", "50", "--yuv", "420", "--depth", "10", "--advanced", "film-grain-test=11"], ColorBound.Subsampled10);
         yield return new("lossy-16x16-420-8", SourceKind.Rgb8, 16, 16, ["--qcolor", "50", "--yuv", "420"], ColorBound.Subsampled8);
 
-        // Properties that describe the display and are not read: the pixels are those of the same file without them
-        yield return new("lossy-420-8-pasp-clli", SourceKind.Rgb8, 32, 24, ["--qcolor", "50", "--yuv", "420", "--pasp", "2,1", "--clli", "1000,400"], ColorBound.Subsampled8);
+        // Properties that describe how the samples are displayed: they are reported, and the pixels are those of the same
+        // file without them
+        yield return new("lossy-420-8-pasp-clli", SourceKind.Rgb8, 32, 24, ["--qcolor", "50", "--yuv", "420", "--pasp", "2,1", "--clli", "1000,400"], ColorBound.Subsampled8) { ContentLightLevel = new(1000, 400), PixelAspectRatio = new(2, 1) };
+        yield return new("lossy-444-10-pasp-clli-alpha", SourceKind.Rgba16, 32, 24, ["--qcolor", "50", "--yuv", "444", "--depth", "10", "--cicp", "9/16/9", "--pasp", "64,45", "--clli", "65535,1"], ColorBound.Matrix16) { Cicp = new(9, 16, 9, fullRange: true), ContentLightLevel = new(65535, 1), PixelAspectRatio = new(64, 45) };
 
         // A hidden image that extends the depth of the primary item to 16 bits (sample transform): the primary item is presented,
         // which avifdec decodes unless it is asked for the transform
@@ -286,6 +297,13 @@ public sealed class AvifDecoderInteropTests
         Assert.Null(image.Animation);
         Assert.Equal(ExifOrientation.TopLeft, image.Metadata.Orientation);
         AssertColorDescription(info, item.Cicp, image.Metadata.Cicp, name);
+
+        // avifdec prints the light levels and the terms of the pixel aspect ratio of a file that has them
+        Assert.Equal(item.ContentLightLevel, image.Metadata.ContentLightLevel);
+        Assert.Equal(item.PixelAspectRatio, image.Metadata.PixelAspectRatio);
+        Assert.Equal<(int, int)?>(item.ContentLightLevel is { } level ? (level.MaxContentLightLevel, level.MaxPictureAverageLightLevel) : null, info.ContentLightLevel);
+        Assert.Equal<(int, int)?>(item.PixelAspectRatio is { } ratio ? ((int)ratio.HorizontalSpacing, (int)ratio.VerticalSpacing) : null, info.PixelAspectRatio);
+        Assert.Null(image.Metadata.MasteringDisplay);
         var measured = AssertPixels(reference.Pixels, ToRgba16(ImageSnapshots.CaptureFrame(image.Frames[0])), item.MaxColorError, $"{name}: library vs avifdec {avif.Version}");
         TestContext.Current.TestOutputHelper?.WriteLine(string.Create(CultureInfo.InvariantCulture, $"{name}: {info.Format} {info.BitDepth}-bit matrix {info.MatrixCoefficients} {(info.FullRange ? "full" : "limited")}{(info.HasAlpha ? " alpha" : "")}: max color difference {measured.Max} ({measured.Max / 257.0:F3}/255), mean {measured.Mean:F2}, bound {item.MaxColorError}"));
 
@@ -301,6 +319,8 @@ public sealed class AvifDecoderInteropTests
             Assert.Equal<bool?>(info.HasAlpha, identified.MayHaveTransparency);
             Assert.Null(identified.Animation);
             Assert.Equal(image.Metadata.Cicp, identified.Metadata.Cicp);
+            Assert.Equal(item.ContentLightLevel, identified.Metadata.ContentLightLevel);
+            Assert.Equal(item.PixelAspectRatio, identified.Metadata.PixelAspectRatio);
             Assert.Equal(ExifOrientation.TopLeft, identified.Metadata.Orientation);
         }
     }
@@ -876,59 +896,136 @@ public sealed class AvifDecoderInteropTests
     }
 
     /// <summary>
-    /// Files that libavif writes and reads and that the library documents as unsupported: loading them throws
-    /// <see cref="UnsupportedImageFeatureException"/>; they are never decoded approximately.
+    /// Premultiplied alpha, as avifenc writes it (<c>--premultiply</c>): the library divides the colors by the alpha of their
+    /// pixel once they are converted to the depth of the output, with an integer division rounded to nearest; avifdec
+    /// divides the 16-bit samples in floating point. Alpha is exact. The division multiplies what separates the two
+    /// decoders by <c>maximum / alpha</c>, so the pixels whose alpha is below a sixteenth of the range are only compared for
+    /// their alpha, and the bounds are the ones of the conversion times at most 16:
+    /// <list type="bullet">
+    /// <item><description>lossless 8-bit planes: the colors are exact before the division, and an 8-bit result is at most half an 8-bit step (128.5 units) from the 16-bit result of avifdec. Measured: 129.</description></item>
+    /// <item><description>lossless 10-bit planes: both sides produce 16-bit samples, and the single-precision scaling of avifdec is one unit off for some values (<see cref="ColorBound.Scaled16"/>). Measured: 7.</description></item>
+    /// <item><description>lossy 4:4:4 8-bit planes: the library rounds the converted color to 8 bits before the division, at most half an 8-bit step from the color avifdec divides (<see cref="ColorBound.Matrix8"/>), then both results are rounded. Measured: 1307 (5.1/255).</description></item>
+    /// </list>
     /// </summary>
     [Theory]
-    [InlineData("premultiplied-alpha")]
-    public async Task FilesDocumentedAsUnsupportedAreRejected(string name)
+    [InlineData("premultiplied-lossless-8", false, new[] { "--lossless", "--premultiply" }, 130)]
+    [InlineData("premultiplied-lossless-10", true, new[] { "--lossless", "--depth", "10", "--premultiply" }, 16)]
+    [InlineData("premultiplied-lossy-444-8", false, new[] { "--qcolor", "60", "--qalpha", "60", "--yuv", "444", "--premultiply" }, (16 * 129) + 130)]
+    public async Task PremultipliedAlphaIsDividedAsAvifDecDoes(string name, bool deep, string[] options, int maxColorError)
     {
         var avif = await RequiredTools.LibAvifAsync();
-        var (source, options) = name switch
-        {
-            "premultiplied-alpha" => (SourceKind.Rgba8, (string[])["--qcolor", "60", "--premultiply"]),
-            _ => throw new ArgumentOutOfRangeException(nameof(name), name, "Unknown case."),
-        };
-
-        var sourcePath = await SaveSourceAsync("unsupported-" + name, CreateSource(source, 64, 64, seed: 31));
-        var path = ArtifactPath("unsupported-" + name + ".avif");
+        var sourcePath = await SaveSourceAsync(name, CreateSource(deep ? SourceKind.Rgba16 : SourceKind.Rgba8, 64, 64, seed: 31));
+        var path = ArtifactPath(name + ".avif");
         await avif.EncodeAsync([.. options, sourcePath], path, XunitCancellationToken);
+        var info = await avif.GetInfoAsync(path, XunitCancellationToken);
+        Assert.Equal("Premultiplied", info.Alpha);
+        Assert.True(ReferenceHeif.Parse(await File.ReadAllBytesAsync(path, XunitCancellationToken)).IsPremultiplied);
 
-        // The file is valid for the reference decoder
         var reference = await avif.DecodeAsync(path, XunitCancellationToken);
-        Assert.Equal((64, 64), (reference.Width, reference.Height));
+        using var image = Image.Load(path);
+        Assert.Equal(info.BitDepth > 8 ? PixelFormat.Rgba64 : PixelFormat.Rgba32, image.PixelFormat);
+        var actual = ToRgba16(ImageSnapshots.CaptureFrame(image.Frames[0]));
+        Assert.Equal((reference.Width, reference.Height), (actual.Width, actual.Height));
+        var max = 0;
+        var compared = 0;
+        for (var y = 0; y < actual.Height; y++)
+        {
+            for (var x = 0; x < actual.Width; x++)
+            {
+                var alpha = actual.GetSample(x, y, 3);
+                Assert.Equal(reference.Pixels.GetSample(x, y, 3), alpha, message: $"{name}: alpha of pixel ({x}, {y}).");
+                if (alpha < 4096)
+                    continue;
 
-        var exception = Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(path).Dispose());
-        Assert.Equal(ImageFormat.Avif, exception.Format);
+                compared++;
+                for (var channel = 0; channel < 3; channel++)
+                {
+                    max = Math.Max(max, Math.Abs(reference.Pixels.GetSample(x, y, channel) - actual.GetSample(x, y, channel)));
+                }
+            }
+        }
+
+        TestContext.Current.TestOutputHelper?.WriteLine(string.Create(CultureInfo.InvariantCulture, $"{name}: {compared} pixels compared, max color difference {max} ({max / 257.0:F3}/255), bound {maxColorError}"));
+        Assert.True(compared > 1000, $"{name}: only {compared} pixels have enough alpha to be compared.");
+        Assert.True(max <= maxColorError, $"{name}: the largest color difference is {max} ({max / 257.0:F3}/255), over the bound of {maxColorError}.");
     }
 
     /// <summary>
-    /// The matrix coefficients the library documents as unsupported (BT.2020 constant luminance, SMPTE 2085,
-    /// chromaticity-derived, ICtCp): avifenc labels the planes of a Y4M source with them without converting anything, avifdec
-    /// reads the file, and the library rejects it instead of converting with another matrix.
+    /// The matrix coefficients that go through the transfer characteristics (BT.2020 constant luminance, chromaticity-derived
+    /// constant luminance, ICtCp): avifenc labels the planes of a Y4M source with them without converting anything and
+    /// avifdec reads the description of the file, but libavif has no conversion for them. The library reads the file and
+    /// converts it; its pixels are compared with the exact conversion of the harness in the conformance tests.
     /// </summary>
     [Theory]
     [InlineData(10)]
-    [InlineData(11)]
-    [InlineData(12)]
     [InlineData(13)]
     [InlineData(14)]
-    public async Task UnsupportedMatrixCoefficientsAreRejected(int matrix)
+    public async Task TheMatricesThatGoThroughTheTransferFunctionAreReadFromAFileOfAvifEnc(int matrix)
     {
         var avif = await RequiredTools.LibAvifAsync();
+        var path = await EncodeLabeledPlanesAsync(avif, matrix);
+        var info = await avif.GetInfoAsync(path, XunitCancellationToken);
+        Assert.Equal((64, 64, 9, 16, matrix), (info.Width, info.Height, info.ColorPrimaries, info.TransferCharacteristics, info.MatrixCoefficients));
+
+        using var image = Image.Load(path);
+        Assert.Equal((64, 64), (image.Width, image.Height));
+        Assert.Equal(new CicpColorDescription(9, 16, (byte)matrix, fullRange: info.FullRange), image.Metadata.Cicp);
+        Assert.Equal(image.Metadata.Cicp, Image.Identify(path).Metadata.Cicp);
+
+        // The planes of the test pattern are not the conversion of colors: what is asserted is that they are converted,
+        // into colors that are not all the same
+        var pixels = ImageSnapshots.CaptureFrame(image.Frames[0]);
+        Assert.NotEqual((pixels.GetSample(0, 0, 0), pixels.GetSample(0, 0, 1), pixels.GetSample(0, 0, 2)), (pixels.GetSample(40, 40, 0), pixels.GetSample(40, 40, 1), pixels.GetSample(40, 40, 2)));
+    }
+
+    /// <summary>
+    /// The chromaticity-derived matrix coefficients (12): the weights of the matrix are the luminance of the BT.2020
+    /// primaries that the file declares. avifdec derives them from the primaries too, and converts the same planes
+    /// within the bound of subsampled 8-bit content (<see cref="ColorBound.Subsampled8"/>).
+    /// </summary>
+    [Fact]
+    public async Task TheChromaticityDerivedMatrixConvertsAsAvifDec()
+    {
+        var avif = await RequiredTools.LibAvifAsync();
+        var path = await EncodeLabeledPlanesAsync(avif, 12);
+        var info = await avif.GetInfoAsync(path, XunitCancellationToken);
+        Assert.Equal((9, 16, 12), (info.ColorPrimaries, info.TransferCharacteristics, info.MatrixCoefficients));
+        var reference = await avif.DecodeAsync(path, XunitCancellationToken);
+        using var image = Image.Load(path);
+        Assert.Equal(new CicpColorDescription(9, 16, 12, fullRange: info.FullRange), image.Metadata.Cicp);
+        var measured = AssertPixels(reference.Pixels, ToRgba16(ImageSnapshots.CaptureFrame(image.Frames[0])), ColorBound.Subsampled8, $"chromaticity-derived matrix: library vs avifdec {avif.Version}");
+        TestContext.Current.TestOutputHelper?.WriteLine(string.Create(CultureInfo.InvariantCulture, $"chromaticity-derived matrix: max color difference {measured.Max} ({measured.Max / 257.0:F3}/255)"));
+    }
+
+    /// <summary>
+    /// The SMPTE ST 2085 matrix coefficients (11): avifenc labels the planes and avifdec reads the file, but libavif has no
+    /// conversion for them, so the pixels of the library are compared with the exact conversion of the harness (within
+    /// one unit), on the planes that the reference decoders agree on in the conformance tests.
+    /// </summary>
+    [Fact]
+    public async Task TheSmpte2085MatrixIsReadFromAFileOfAvifEnc()
+    {
+        var avif = await RequiredTools.LibAvifAsync();
+        var path = await EncodeLabeledPlanesAsync(avif, 11);
+        var info = await avif.GetInfoAsync(path, XunitCancellationToken);
+        Assert.Equal((64, 64, 11), (info.Width, info.Height, info.MatrixCoefficients));
+        using var image = Image.Load(path);
+        Assert.Equal((64, 64), (image.Width, image.Height));
+        Assert.Equal(new CicpColorDescription(9, 16, 11, fullRange: info.FullRange), image.Metadata.Cicp);
+        Assert.Equal(image.Metadata.Cicp, Image.Identify(path).Metadata.Cicp);
+    }
+
+    // The planes of a test pattern, which avifenc labels with matrix coefficients without converting them
+    private static async Task<FullPath> EncodeLabeledPlanesAsync(LibAvifTool avif, int matrix)
+    {
         var ffmpeg = await RequiredTools.FFmpegAsync();
-        var name = string.Create(CultureInfo.InvariantCulture, $"unsupported-matrix-{matrix}");
+        var name = string.Create(CultureInfo.InvariantCulture, $"labeled-matrix-{matrix}");
         var sourcePath = ArtifactPath(name + ".y4m");
         var source = await ffmpeg.RunAsync(["-y", "-filter_threads", "1", "-f", "lavfi", "-i", "testsrc2=size=64x64", "-frames:v", "1", "-pix_fmt", "yuv420p", "-f", "yuv4mpegpipe", sourcePath], XunitCancellationToken);
         Assert.Equal(0, source.ExitCode, message: source.StandardError);
         var path = ArtifactPath(name + ".avif");
         await avif.EncodeAsync(["--qcolor", "60", "--cicp", string.Create(CultureInfo.InvariantCulture, $"9/16/{matrix}"), sourcePath], path, XunitCancellationToken);
-
-        var info = await avif.GetInfoAsync(path, XunitCancellationToken);
-        Assert.Equal((64, 64, matrix), (info.Width, info.Height, info.MatrixCoefficients));
-
-        var exception = Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(path).Dispose());
-        Assert.Equal(ImageFormat.Avif, exception.Format);
+        return path;
     }
 
     /// <summary>
@@ -1024,6 +1121,220 @@ public sealed class AvifDecoderInteropTests
             var measured = AssertPixels(expected, ToRgba16(ImageSnapshots.CaptureFrame(image.Frames[i])), bound, $"{name} frame {i}: library vs Apple ImageIO");
             TestContext.Current.TestOutputHelper?.WriteLine(string.Create(CultureInfo.InvariantCulture, $"{name} frame {i}: max color difference {measured.Max} ({measured.Max / 257.0:F3}/255), mean {measured.Mean:F2}, bound {bound}"));
         }
+    }
+
+    /// <summary>
+    /// Identity derivations (<c>iden</c> items), which no pinned tool writes or reads: the fixtures are assembled on
+    /// committed lossless payloads, and Apple ImageIO, which follows a derivation with its own reader, returns the
+    /// pixels as stored: the part of the coded image that the transformations of the derivation and of its input
+    /// present, identical to the one the library returns, with the alpha plane that is derived the same way or that
+    /// belongs to an untransformed derivation. ImageIO reads no file with nested derivations, shows no alpha plane when
+    /// only the input of the derivation has one (the library does not either), and scales an alpha plane without
+    /// transformation to the size of a derivation that has a clean aperture, a case that the library rejects
+    /// (<c>invalid/avif/iden-alpha-untransformed</c>).
+    /// </summary>
+    [Theory]
+    [InlineData("avif/iden", false)]
+    [InlineData("avif/iden-clap-after-irot", false)]
+    [InlineData("avif/iden-grid-clap", false)]
+    [InlineData("avif/iden-alpha-derived", true)]
+    [InlineData("avif/iden-alpha-coded", true)]
+    public async Task IdentityDerivationsDecodeAsAppleImageIO(string id, bool hasAlpha)
+    {
+        // Apple ImageIO exists only on macOS: skipped elsewhere locally; required (never skipped) in the CI interop job (macOS)
+        var (swift, script) = RequiredTools.AppleImageIO();
+        var path = ArtifactPath("imageio-" + id.Replace('/', '-') + ".avif");
+        await File.WriteAllBytesAsync(path, GoldenCorpus.Default.Get(id).ReadInput(), XunitCancellationToken);
+        string[] arguments = hasAlpha ? [script, path] : [script, "--binary-alpha", path];
+        var result = await ProcessRunner.RunAsync(swift, arguments, XunitCancellationToken);
+        if (result.ExitCode != 0)
+            Assert.Fail($"ImageIO failed on {id} (exit code {result.ExitCode}): {result.StandardError}");
+
+        using var image = Image.Load(path);
+        Assert.Equal(hasAlpha, PixelFormats.HasAlpha(image.PixelFormat));
+        var header = result.StandardError.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)[^1].Split(' ');
+        Assert.Equal(["frames", "1", image.Width.ToString(CultureInfo.InvariantCulture), image.Height.ToString(CultureInfo.InvariantCulture), "8"], header);
+        var expected = ToRgba16(RawPixelBuffer.Create(image.Width, image.Height, RawPixelLayout.Rgba8, result.StandardOutput.Span));
+        var actual = ToRgba16(ImageSnapshots.CaptureFrame(image.Frames[0]));
+        if (hasAlpha)
+        {
+            // The alpha plane is the one of the same samples, and the colors that it shows are identical (ImageIO
+            // returns the colors of the transparent pixels as black)
+            for (var i = 0; i < image.Width * image.Height; i++)
+            {
+                var (x, y) = (i % image.Width, i / image.Width);
+                Assert.Equal(expected.GetSample(x, y, 3), actual.GetSample(x, y, 3));
+                if (actual.GetSample(x, y, 3) == 65535)
+                    Assert.Equal((expected.GetSample(x, y, 0), expected.GetSample(x, y, 1), expected.GetSample(x, y, 2)), (actual.GetSample(x, y, 0), actual.GetSample(x, y, 1), actual.GetSample(x, y, 2)));
+            }
+        }
+        else
+        {
+            AssertPixels(expected, actual, ColorBound.Exact, $"{id}: library vs Apple ImageIO");
+        }
+    }
+
+    /// <summary>
+    /// Images that are built from other images (<c>iovl</c> overlays and grids of derived images), which no pinned tool
+    /// writes and which libavif does not read: the fixtures are assembled on committed payloads, and Apple ImageIO, which
+    /// builds them with its own reader, returns an opaque image: it shows neither the transparency of the canvas nor the
+    /// one that the layers leave. The pixels that the library returns opaque are compared: identical where a layer or a
+    /// tile covers them alone, and within two units where translucent layers are composited (ImageIO does not round an
+    /// exact source-over operation, which is what the reference of the fixture is). ImageIO does not judge the
+    /// transparent and translucent results, the 10-bit overlay (it returns another layout) and the lossy layers (its
+    /// chroma upsampling is its own).
+    /// </summary>
+    [Theory]
+    [InlineData("avif/grid-of-derived-images", 0, 100 * 52)]
+    [InlineData("avif/iovl-grid-and-iden-layers", 0, 128 * 128)]
+    [InlineData("avif/iovl-transparent-fill", 0, 21)]
+    [InlineData("avif/iovl-alpha-layers", 2, 20 * 14)]
+    public async Task BuiltImagesDecodeAsAppleImageIO(string id, int bound, int opaquePixels)
+    {
+        // Apple ImageIO exists only on macOS: skipped elsewhere locally; required (never skipped) in the CI interop job (macOS)
+        var (swift, script) = RequiredTools.AppleImageIO();
+        var path = ArtifactPath("imageio-" + id.Replace('/', '-') + ".avif");
+        await File.WriteAllBytesAsync(path, GoldenCorpus.Default.Get(id).ReadInput(), XunitCancellationToken);
+        var result = await ProcessRunner.RunAsync(swift, [script, "--binary-alpha", path], XunitCancellationToken);
+        if (result.ExitCode != 0)
+            Assert.Fail($"ImageIO failed on {id} (exit code {result.ExitCode}): {result.StandardError}");
+
+        using var image = Image.Load(path);
+        Assert.Equal(PixelFormat.Rgba32, image.PixelFormat);
+        var header = result.StandardError.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)[^1].Split(' ');
+        Assert.Equal(["frames", "1", image.Width.ToString(CultureInfo.InvariantCulture), image.Height.ToString(CultureInfo.InvariantCulture), "8"], header);
+        var expected = ToRgba16(RawPixelBuffer.Create(image.Width, image.Height, RawPixelLayout.Rgba8, result.StandardOutput.Span));
+        var actual = ToRgba16(ImageSnapshots.CaptureFrame(image.Frames[0]));
+        var compared = 0;
+        for (var i = 0; i < image.Width * image.Height; i++)
+        {
+            var (x, y) = (i % image.Width, i / image.Width);
+            if (actual.GetSample(x, y, 3) != 65535)
+                continue;
+
+            compared++;
+            for (var channel = 0; channel < 3; channel++)
+            {
+                var difference = Math.Abs(expected.GetSample(x, y, channel) - actual.GetSample(x, y, channel));
+                Assert.True(difference <= bound * 257, $"{id}: pixel ({x}, {y}) channel {channel} differs from Apple ImageIO by {difference / 257} units");
+            }
+        }
+
+        Assert.Equal(opaquePixels, compared);
+    }
+
+    /// <summary>
+    /// Fragmented image sequences, which no pinned tool writes and which libavif does not read: the fixtures are assembled
+    /// on the samples of a committed sequence, and FFmpeg, whose demuxer follows the movie fragments with its own reader,
+    /// finds in them the frames of that sequence: the same number, with the same decoded content (the frame checksums of
+    /// its <c>framecrc</c> muxer; it reports their times in a time base that it chooses for each file, which is not the
+    /// same for both, so the times are not compared). The library decodes both files to the same references in the
+    /// conformance tests. FFmpeg does not read every layout of the corpus (explicit base offsets, samples in the
+    /// <c>moov</c> box and in fragments): those are only judged by the independent reader of the harness.
+    /// </summary>
+    [Theory]
+    [InlineData("avif/sequence-fragmented", "avif/sequence-lossless-6-images")]
+    [InlineData("avif/sequence-fragmented-defaults", "avif/sequence-10bit-once")]
+    [InlineData("avif/sequence-fragmented-alpha", "avif/sequence-alpha-repeat-2")]
+    public async Task FragmentedSequencesAreDemuxedByFFmpegAsTheirSource(string fragmentedId, string sourceId)
+    {
+        var ffmpeg = await RequiredTools.FFmpegAsync();
+        var fragmented = await ReadTrackFramesAsync(fragmentedId);
+        var source = await ReadTrackFramesAsync(sourceId);
+        Assert.NotEmpty(source);
+        Assert.Equal(source, fragmented);
+        using var image = Image.Load(GoldenCorpus.Default.Get(fragmentedId).ReadInput());
+        Assert.Equal(source[0].Split('\n').Length, image.Frames.Count);
+
+        // The frames of each stream of the file that is a sequence (the streams of the image items have one frame):
+        // the checksum of each frame, the streams in order
+        async Task<List<string>> ReadTrackFramesAsync(string id)
+        {
+            var path = ArtifactPath("fragments-" + id.Replace('/', '-') + ".avif");
+            await File.WriteAllBytesAsync(path, GoldenCorpus.Default.Get(id).ReadInput(), XunitCancellationToken);
+            var streams = new List<string>();
+            for (var stream = 0; stream < 4; stream++)
+            {
+                var result = await ffmpeg.RunAsync(["-i", path, "-map", string.Create(CultureInfo.InvariantCulture, $"0:v:{stream}"), "-fps_mode", "passthrough", "-f", "framecrc", "-"], XunitCancellationToken);
+                if (result.ExitCode != 0)
+                    continue;
+
+                var frames = Encoding.ASCII.GetString(result.StandardOutput.Span).Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                    .Where(line => !line.StartsWith("#", StringComparison.Ordinal))
+                    .Select(line => line.Split(',', StringSplitOptions.TrimEntries))
+                    .Select(fields => fields[5])
+                    .ToList();
+                if (frames.Count > 1)
+                    streams.Add(string.Join('\n', frames));
+            }
+
+            return streams;
+        }
+    }
+
+    /// <summary>
+    /// The curves that compress the highlights of high dynamic range samples, against the <c>tonemap</c> filter of
+    /// FFmpeg on frames of linear floating-point samples (a black box: it is given colors in units of the white and the
+    /// peak of the source, and applies its curve to the largest component of each color, as the library does). The clip,
+    /// the filmic curve of Hable and the Möbius curve are the same functions; FFmpeg computes in single precision. Its
+    /// <c>reinhard</c> is another variant than the equation of the paper that the library implements, and it has no
+    /// BT.2390 curve: those two are verified against the decimal reference and against literals in the processing tests.
+    /// </summary>
+    [Theory]
+    [InlineData(HdrToneMappingOperator.Clip, "clip")]
+    [InlineData(HdrToneMappingOperator.Hable, "hable")]
+    [InlineData(HdrToneMappingOperator.Mobius, "mobius")]
+    public async Task ToneMappingCurvesAreThoseOfFFmpeg(HdrToneMappingOperator toneMappingOperator, string name)
+    {
+        var ffmpeg = await RequiredTools.FFmpegAsync();
+        const double White = 203;
+        const double Peak = 1000;
+        const int Count = 96;
+
+        // Colors whose largest component goes from black to the peak, with two other components at fixed ratios, in
+        // units of the white; planar G, B, R
+        var colors = new float[3 * Count];
+        for (var i = 0; i < Count; i++)
+        {
+            var x = (float)(i * (Peak / White) / (Count - 1));
+            (colors[i], colors[Count + i], colors[(2 * Count) + i]) = (x / 2, x / 4, x);
+        }
+
+        var input = ArtifactPath($"tonemap-{name}-in.raw");
+        var output = ArtifactPath($"tonemap-{name}-out.raw");
+        var inputBytes = new byte[colors.Length * sizeof(float)];
+        for (var i = 0; i < colors.Length; i++)
+        {
+            BinaryPrimitives.WriteSingleLittleEndian(inputBytes.AsSpan(i * sizeof(float)), colors[i]);
+        }
+
+        await File.WriteAllBytesAsync(input, inputBytes, XunitCancellationToken);
+        var filter = string.Create(CultureInfo.InvariantCulture, $"tonemap=tonemap={name}:peak={Peak / White:R}:desat=0");
+        var result = await ffmpeg.RunAsync(["-y", "-f", "rawvideo", "-pix_fmt", "gbrpf32le", "-s", string.Create(CultureInfo.InvariantCulture, $"{Count}x1"), "-i", input, "-vf", filter, "-f", "rawvideo", "-pix_fmt", "gbrpf32le", output], XunitCancellationToken);
+        Assert.Equal(0, result.ExitCode, message: result.StandardError);
+        var outputBytes = await File.ReadAllBytesAsync(output, XunitCancellationToken);
+        Assert.HasCount(inputBytes.Length, outputBytes);
+        var mapped = new float[colors.Length];
+        for (var i = 0; i < mapped.Length; i++)
+        {
+            mapped[i] = BinaryPrimitives.ReadSingleLittleEndian(outputBytes.AsSpan(i * sizeof(float)));
+        }
+
+        // The stage takes what the PQ function decodes to: fractions of 10,000 cd/m2
+        var stage = new HdrToneMapStage(new CicpColorSpace(9, CicpTransfer.Pq, IsGray: false), toneMappingOperator, Peak, White);
+        Span<double> values = stackalloc double[IccPipeline.MaxChannels];
+        var worst = 0d;
+        for (var i = 0; i < Count; i++)
+        {
+            values[0] = (double)colors[(2 * Count) + i] * White / 10_000;
+            values[1] = (double)colors[i] * White / 10_000;
+            values[2] = (double)colors[Count + i] * White / 10_000;
+            stage.Apply(values);
+            worst = Math.Max(worst, Math.Max(Math.Abs(values[0] - mapped[(2 * Count) + i]), Math.Max(Math.Abs(values[1] - mapped[i]), Math.Abs(values[2] - mapped[Count + i]))));
+        }
+
+        TestContext.Current.TestOutputHelper?.WriteLine(string.Create(CultureInfo.InvariantCulture, $"{name}: largest difference with FFmpeg {worst:E2}"));
+        Assert.True(worst <= 2e-6, string.Create(CultureInfo.InvariantCulture, $"{name}: the curve differs from the one of FFmpeg by {worst:E3}."));
     }
 
     /// <summary>

@@ -185,7 +185,7 @@ internal static class Resampler
                 AddScaled(accumulator, scratch.GetSlot((first + k) % ringSize), weights[k]);
             }
 
-            WorkingSamples.Store(accumulator, unsafe(MemoryMarshal.Cast<TPixel, TSample>(GetRow<TPixel>(destination, dy))), plan.Alpha, plan.IsLinear, plan.MaxValue);
+            WorkingSamples.Store(accumulator, unsafe(MemoryMarshal.Cast<TPixel, TSample>(GetRow<TPixel>(destination, dy))), plan.Alpha, plan.Transfer, plan.MaxValue);
         }
     }
 
@@ -231,7 +231,7 @@ internal static class Resampler
 
             while (first < next && yWeights.GetStart(first) + yWeights.GetCount(first) - 1 == sy)
             {
-                WorkingSamples.Store(scratch.GetSlot(first % slots), unsafe(MemoryMarshal.Cast<TPixel, TSample>(GetRow<TPixel>(destination, first))), plan.Alpha, plan.IsLinear, plan.MaxValue);
+                WorkingSamples.Store(scratch.GetSlot(first % slots), unsafe(MemoryMarshal.Cast<TPixel, TSample>(GetRow<TPixel>(destination, first))), plan.Alpha, plan.Transfer, plan.MaxValue);
                 first++;
             }
         }
@@ -250,7 +250,7 @@ internal static class Resampler
         var working = scratch.SourceRow;
         var used = (xWeights.Last - first + 1) * channels;
         var samples = unsafe(MemoryMarshal.Cast<TPixel, TSample>(GetRow<TPixel>(source, y))).Slice(first * channels, used);
-        WorkingSamples.Load(samples, working[..used], plan.Alpha, plan.IsLinear);
+        WorkingSamples.Load(samples, working[..used], plan.Alpha, plan.Transfer);
 
         ResampleHorizontal(working, output, xWeights, channels);
     }

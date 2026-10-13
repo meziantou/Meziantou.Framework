@@ -33,6 +33,8 @@ internal sealed class HeifDecoder : HeifDecodeObserver
 
     public override bool TryWriteSequenceFrame(HeifStructureParser structure, FrameDuration duration, out bool proceed) => Decoder.TryWriteSequenceFrame(structure, duration, out proceed);
 
+    public override bool TrySkipSequenceFrame(HeifStructureParser structure, out bool proceed) => Decoder.TrySkipSequenceFrame(structure, out proceed);
+
     public override Image GetResult() => Decoder.GetResult();
 
     protected override void Dispose(bool disposing)

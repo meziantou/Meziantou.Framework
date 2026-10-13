@@ -40,4 +40,7 @@ internal struct PlacedGlyph
 
     /// <summary>The glyph is white space that hangs at the end of a wrapped line: it is not decorated.</summary>
     public bool IsHanging;
+
+    /// <summary>The text the glyph belongs to goes from right to left: its first character is on its right.</summary>
+    public bool IsRightToLeft;
 }

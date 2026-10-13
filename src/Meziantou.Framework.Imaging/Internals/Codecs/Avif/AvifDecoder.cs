@@ -11,7 +11,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// decoder of a coded item is released before the next one is decoded; an image sequence keeps one decoder for the color
 /// images and one for the alpha planes, whose state does not depend on the number of images.
 /// </remarks>
-internal sealed class AvifDecoder : HeifDecodeObserver
+internal sealed partial class AvifDecoder : HeifDecodeObserver
 {
     private readonly ImageDecodeRequest _request;
     private readonly ImageCodecContext _context;
@@ -45,6 +45,14 @@ internal sealed class AvifDecoder : HeifDecodeObserver
         var plan = structure.Plan;
         var sink = _sink!;
         sink.BeginFrame(FrameDuration.Zero);
+        if (plan.Root is { } root)
+        {
+            RenderDerivedImage(structure, plan, root);
+            sink.UpdateMetadata(structure.Metadata);
+            sink.EndImage();
+            return;
+        }
+
         using var color = DecodeImage(structure, plan.Color);
         structure.SetBitstreamColorDescription(color.Format);
         using var alpha = plan.Alpha is null ? null : DecodeImage(structure, plan.Alpha);
@@ -103,6 +111,34 @@ internal sealed class AvifDecoder : HeifDecodeObserver
         }
 
         proceed = sink.EndImage();
+        return true;
+    }
+
+    public override bool TrySkipSequenceFrame(HeifStructureParser structure, out bool proceed)
+    {
+        ArgumentNullException.ThrowIfNull(structure);
+        proceed = true;
+        if (_colorSample is not { } color)
+            return false;
+
+        var alpha = _alphaSample;
+        _colorSample = null;
+        _alphaSample = null;
+        var movie = structure.Movie ?? throw new InvalidOperationException("The AVIF file is not an image sequence.");
+
+        // An image that the edit list leaves out: it is decoded for the images that refer to it, and counts toward the
+        // pixel limit like a frame of the bitstream that is not shown
+        _colorDecoder ??= new Av1Decoder(_context.Scope, _context.Tracker);
+        using var colorImage = DecodeSample(_colorDecoder, color, movie.Color);
+        structure.SetBitstreamColorDescription(colorImage.Format);
+        if (alpha is not null)
+        {
+            _alphaDecoder ??= new Av1Decoder(_context.Scope, _context.Tracker);
+            using var alphaImage = DecodeSample(_alphaDecoder, alpha, movie.Alpha!);
+        }
+
+        var pixels = (long)movie.Color.Size.Width * movie.Color.Size.Height;
+        _context.Tracker?.ChargeHiddenPixels(alpha is null ? pixels : 2 * pixels);
         return true;
     }
 

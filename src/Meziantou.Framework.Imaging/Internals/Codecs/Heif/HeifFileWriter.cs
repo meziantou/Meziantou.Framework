@@ -11,7 +11,6 @@ namespace Meziantou.Framework.Imaging.Internals;
 internal static class HeifFileWriter
 {
     private const int ColorItemId = 1;
-    private const int AlphaItemId = 2;
 
     /// <summary>What a still image file describes besides its coded payloads.</summary>
     internal sealed class StillImage
@@ -41,12 +40,48 @@ internal static class HeifFileWriter
         public ReadOnlyMemory<byte> Xmp { get; init; }
 
         public ExifOrientation Orientation { get; init; } = ExifOrientation.TopLeft;
+
+        public PixelAspectRatio? PixelAspectRatio { get; init; }
+
+        public ContentLightLevel? ContentLightLevel { get; init; }
+
+        public MasteringDisplayColorVolume? MasteringDisplay { get; init; }
+
+        /// <summary>Gets the part of the image that readers show, or <see langword="null"/> for the whole image.</summary>
+        public Rectangle? CleanAperture { get; init; }
+
+        /// <summary>Gets a value indicating whether the color samples are multiplied by the alpha of their pixel; ignored without alpha plane.</summary>
+        public bool IsPremultiplied { get; init; }
+
+        /// <summary>
+        /// Gets the grid of an image that is coded as tiles, or <see langword="null"/> for an image that is one coded item.
+        /// <see cref="Color"/> and <see cref="Alpha"/> are then the sequence headers of the tiles, and
+        /// <see cref="ColorLength"/> and <see cref="AlphaLength"/> are not used.
+        /// </summary>
+        public GridLayout? Grid { get; init; }
+    }
+
+    /// <summary>
+    /// The grid of a still image that is coded as tiles (ISO/IEC 23008-12, section 6.6.2.3): tiles of one size, in row-major
+    /// order, whose right column and bottom row may extend past the image.
+    /// </summary>
+    internal sealed class GridLayout
+    {
+        public required int TileWidth { get; init; }
+
+        public required int TileHeight { get; init; }
+
+        public required int Columns { get; init; }
+
+        public required int Rows { get; init; }
+
+        public int TileCount => Columns * Rows;
     }
 
     /// <summary>
     /// Writes everything that precedes the coded images of a file: the <c>ftyp</c> and <c>meta</c> boxes, the header of the
     /// <c>mdat</c> box and the EXIF and XMP items. The file continues with the coded alpha plane, when there is one, then
-    /// the coded color image.
+    /// the coded color image: tile after tile for a grid, whose descriptors this method writes too.
     /// </summary>
     /// <remarks>
     /// An image sequence has the same boxes, which describe its first image as a still image for the readers that do not
@@ -58,17 +93,82 @@ internal static class HeifFileWriter
     /// <param name="binding">The format of the file.</param>
     /// <param name="image">The image: the first one of a sequence.</param>
     /// <param name="movieReservation">The number of bytes to reserve for the <c>moov</c> box of an image sequence, or -1 for a still image.</param>
+    /// <param name="colorTileLengths">For a grid, the number of bytes of each coded color tile, in row-major order.</param>
+    /// <param name="alphaTileLengths">For a grid with an alpha plane, the number of bytes of each coded alpha tile.</param>
     /// <returns>For an image sequence, the position of the reserved bytes and of the size of the <c>mdat</c> box.</returns>
-    /// <exception cref="UnsupportedImageFeatureException">The file would exceed 4 GiB.</exception>
-    public static (int MovieOffset, int MediaSizeOffset) WritePrefix(PooledPayloadWriter output, HeifCodecBinding binding, StillImage image, int movieReservation = -1)
+    /// <exception cref="UnsupportedImageFeatureException">The file would exceed 4 GiB, or has more tiles than item identifiers.</exception>
+    public static (int MovieOffset, int MediaSizeOffset) WritePrefix(PooledPayloadWriter output, HeifCodecBinding binding, StillImage image, int movieReservation = -1, ReadOnlySpan<int> colorTileLengths = default, ReadOnlySpan<int> alphaTileLengths = default)
     {
         var isSequence = movieReservation >= 0;
         var writer = new HeifBoxWriter(output);
         var hasAlpha = image.Alpha is not null;
         var hasExif = !image.Exif.IsEmpty;
         var hasXmp = !image.Xmp.IsEmpty;
-        var exifItemId = hasAlpha ? AlphaItemId + 1 : ColorItemId + 1;
+
+        // The items, in the order of their identifiers: the color image, its tiles when it is a grid, the alpha plane and
+        // its tiles, then the metadata. A grid is an item whose data are its descriptor
+        var grid = image.Grid;
+        var tileCount = grid?.TileCount ?? 0;
+        var alphaSlot = tileCount + 1;
+        var exifSlot = (2 * tileCount) + 2;
+        var xmpSlot = exifSlot + 1;
+        var slotCount = xmpSlot + 1;
+        var alphaItemId = ColorItemId + tileCount + 1;
+        var exifItemId = hasAlpha ? alphaItemId + tileCount + 1 : alphaItemId;
         var xmpItemId = exifItemId + (hasExif ? 1 : 0);
+        if (xmpItemId > ushort.MaxValue)
+            throw binding.Unsupported($"The {binding.Name} image has more tiles than item identifiers.", $"{binding.Name} grid tile count");
+
+        var descriptorLength = grid is null ? 0 : (image.Width > ushort.MaxValue || image.Height > ushort.MaxValue ? 12 : 8);
+        Span<int> extentOffsets = slotCount <= 16 ? stackalloc int[16] : new int[slotCount];
+        Span<int> lengths = slotCount <= 16 ? stackalloc int[16] : new int[slotCount];
+        Span<int> itemIds = slotCount <= 16 ? stackalloc int[16] : new int[slotCount];
+        lengths[..slotCount].Fill(-1);
+        itemIds[0] = ColorItemId;
+        lengths[0] = grid is null ? image.ColorLength : descriptorLength;
+        if (hasAlpha)
+        {
+            itemIds[alphaSlot] = alphaItemId;
+            lengths[alphaSlot] = grid is null ? image.AlphaLength : descriptorLength;
+        }
+
+        if (grid is not null)
+        {
+            for (var i = 0; i < tileCount; i++)
+            {
+                itemIds[1 + i] = ColorItemId + 1 + i;
+                lengths[1 + i] = colorTileLengths[i];
+                if (hasAlpha)
+                {
+                    itemIds[alphaSlot + 1 + i] = alphaItemId + 1 + i;
+                    lengths[alphaSlot + 1 + i] = alphaTileLengths[i];
+                }
+            }
+        }
+
+        if (hasExif)
+        {
+            // The data of the item start with the offset of the TIFF header in them
+            itemIds[exifSlot] = exifItemId;
+            lengths[exifSlot] = image.Exif.Length + 4;
+        }
+
+        if (hasXmp)
+        {
+            itemIds[xmpSlot] = xmpItemId;
+            lengths[xmpSlot] = image.Xmp.Length;
+        }
+
+        var itemCount = 0;
+        long dataLength = 0;
+        for (var slot = 0; slot < slotCount; slot++)
+        {
+            if (lengths[slot] < 0)
+                continue;
+
+            itemCount++;
+            dataLength += lengths[slot];
+        }
 
         // ISO/IEC 14496-12, section 4.3 "File Type Box"
         var box = writer.BeginBox(HeifFormat.Ftyp);
@@ -91,35 +191,36 @@ internal static class HeifFileWriter
 
         // Item location: one extent per item, with 4-byte offsets from the start of the file and 4-byte lengths. The
         // offsets are known once the meta box ends
-        Span<int> extentOffsets = stackalloc int[4];
-        Span<int> lengths = [image.ColorLength, image.AlphaLength, image.Exif.Length + (hasExif ? 4 : 0), image.Xmp.Length];
-        Span<int> itemIds = [ColorItemId, AlphaItemId, exifItemId, xmpItemId];
-        Span<bool> present = [true, hasAlpha, hasExif, hasXmp];
-        var itemCount = 1 + (hasAlpha ? 1 : 0) + (hasExif ? 1 : 0) + (hasXmp ? 1 : 0);
         box = writer.BeginFullBox(HeifFormat.Iloc, version: 0, flags: 0);
         writer.WriteByte(0x44); // offset_size and length_size
         writer.WriteByte(0x00); // base_offset_size and reserved
         writer.WriteUInt16(itemCount);
-        for (var i = 0; i < 4; i++)
+        for (var slot = 0; slot < slotCount; slot++)
         {
-            if (!present[i])
+            if (lengths[slot] < 0)
                 continue;
 
-            writer.WriteUInt16(itemIds[i]);
+            writer.WriteUInt16(itemIds[slot]);
             writer.WriteUInt16(0); // data_reference_index: this file
             writer.WriteUInt16(1); // extent_count
-            extentOffsets[i] = writer.Length;
+            extentOffsets[slot] = writer.Length;
             writer.WriteUInt32(0);
-            writer.WriteUInt32((uint)lengths[i]);
+            writer.WriteUInt32((uint)lengths[slot]);
         }
 
         writer.EndBox(box);
 
+        // The tiles of a grid are not images of their own: they are hidden
         box = writer.BeginFullBox(HeifFormat.Iinf, version: 0, flags: 0);
         writer.WriteUInt16(itemCount);
-        WriteItemInfo(writer, ColorItemId, binding.CodedItemType, contentType: default);
-        if (hasAlpha)
-            WriteItemInfo(writer, AlphaItemId, binding.CodedItemType, contentType: default);
+        for (var slot = 0; slot < exifSlot; slot++)
+        {
+            if (lengths[slot] < 0)
+                continue;
+
+            var isTile = slot is not 0 && slot != alphaSlot;
+            WriteItemInfo(writer, itemIds[slot], grid is not null && !isTile ? HeifFormat.Grid : binding.CodedItemType, contentType: default, isHidden: isTile);
+        }
 
         if (hasExif)
             WriteItemInfo(writer, exifItemId, HeifFormat.Exif, contentType: default);
@@ -129,11 +230,23 @@ internal static class HeifFileWriter
 
         writer.EndBox(box);
 
-        if (hasAlpha || hasExif || hasXmp)
+        if (grid is not null || hasAlpha || hasExif || hasXmp)
         {
             box = writer.BeginFullBox(HeifFormat.Iref, version: 0, flags: 0);
+            if (grid is not null)
+            {
+                // ISO/IEC 23008-12, section 6.6.2.3: a grid is derived from its tiles, in row-major order
+                WriteItemReference(writer, HeifFormat.Dimg, ColorItemId, ColorItemId + 1, tileCount);
+                if (hasAlpha)
+                    WriteItemReference(writer, HeifFormat.Dimg, alphaItemId, alphaItemId + 1, tileCount);
+            }
+
             if (hasAlpha)
-                WriteItemReference(writer, HeifFormat.Auxl, AlphaItemId, ColorItemId);
+                WriteItemReference(writer, HeifFormat.Auxl, alphaItemId, ColorItemId);
+
+            // ISO/IEC 23008-12, section 6.6.2.2: the color image refers to the alpha plane that its colors are multiplied by
+            if (hasAlpha && image.IsPremultiplied)
+                WriteItemReference(writer, HeifFormat.Prem, ColorItemId, alphaItemId);
 
             if (hasExif)
                 WriteItemReference(writer, HeifFormat.Cdsc, exifItemId, ColorItemId);
@@ -144,16 +257,8 @@ internal static class HeifFileWriter
             writer.EndBox(box);
         }
 
-        WriteItemProperties(writer, binding, image);
+        WriteItemProperties(writer, binding, image, alphaItemId);
         writer.EndBox(meta);
-
-        // The media data: the metadata items, the alpha plane, the color image
-        long dataLength = 0;
-        for (var i = 0; i < 4; i++)
-        {
-            if (present[i])
-                dataLength += lengths[i];
-        }
 
         var movieOffset = 0;
         var mediaSizeOffset = 0;
@@ -185,15 +290,25 @@ internal static class HeifFileWriter
             writer.WriteUInt32(HeifFormat.Mdat);
         }
 
+        // The media data: the metadata items and the descriptors of the grids, which this method writes, then the alpha
+        // plane and the color image, tile by tile for a grid
         var offset = mediaStart;
-        Span<int> order = [2, 3, 1, 0];
-        foreach (var i in order)
+        Locate(writer, extentOffsets, lengths, exifSlot, ref offset);
+        Locate(writer, extentOffsets, lengths, xmpSlot, ref offset);
+        if (grid is not null)
         {
-            if (!present[i])
-                continue;
+            Locate(writer, extentOffsets, lengths, 0, ref offset);
+            Locate(writer, extentOffsets, lengths, alphaSlot, ref offset);
+        }
 
-            writer.PatchUInt32(extentOffsets[i], (uint)offset);
-            offset += lengths[i];
+        for (var slot = alphaSlot + (grid is null ? 0 : 1); slot < exifSlot; slot++)
+        {
+            Locate(writer, extentOffsets, lengths, slot, ref offset);
+        }
+
+        for (var slot = grid is null ? 0 : 1; slot < alphaSlot; slot++)
+        {
+            Locate(writer, extentOffsets, lengths, slot, ref offset);
         }
 
         if (hasExif)
@@ -206,7 +321,44 @@ internal static class HeifFileWriter
         if (hasXmp)
             writer.WriteBytes(image.Xmp.Span);
 
+        if (grid is not null)
+        {
+            WriteGridDescriptor(writer, grid, image.Width, image.Height);
+            if (hasAlpha)
+                WriteGridDescriptor(writer, grid, image.Width, image.Height);
+        }
+
         return (movieOffset, mediaSizeOffset);
+
+        static void Locate(HeifBoxWriter writer, ReadOnlySpan<int> extentOffsets, ReadOnlySpan<int> lengths, int slot, ref long offset)
+        {
+            if (lengths[slot] < 0)
+                return;
+
+            writer.PatchUInt32(extentOffsets[slot], (uint)offset);
+            offset += lengths[slot];
+        }
+    }
+
+    // ISO/IEC 23008-12, section 6.6.2.3.2: the version, the flags (1 for 32-bit fields), the numbers of rows and of columns
+    // minus one, then the size of the image that the tiles reconstruct
+    private static void WriteGridDescriptor(HeifBoxWriter writer, GridLayout grid, int width, int height)
+    {
+        var isLarge = width > ushort.MaxValue || height > ushort.MaxValue;
+        writer.WriteByte(0);
+        writer.WriteByte((byte)(isLarge ? 1 : 0));
+        writer.WriteByte((byte)(grid.Rows - 1));
+        writer.WriteByte((byte)(grid.Columns - 1));
+        if (isLarge)
+        {
+            writer.WriteUInt32((uint)width);
+            writer.WriteUInt32((uint)height);
+        }
+        else
+        {
+            writer.WriteUInt16(width);
+            writer.WriteUInt16(height);
+        }
     }
 
     /// <summary>What the <c>moov</c> box of an image sequence describes besides its samples.</summary>
@@ -231,6 +383,21 @@ internal static class HeifFileWriter
 
         /// <summary>Gets the number of times the sequence is played, or <see langword="null"/> when it repeats forever.</summary>
         public int? TotalPlays { get; init; }
+
+        public PixelAspectRatio? PixelAspectRatio { get; init; }
+
+        public ContentLightLevel? ContentLightLevel { get; init; }
+
+        public MasteringDisplayColorVolume? MasteringDisplay { get; init; }
+
+        /// <summary>Gets a value indicating whether the color samples are multiplied by the alpha of their pixel; ignored without alpha track.</summary>
+        public bool IsPremultiplied { get; init; }
+
+        /// <summary>Gets the orientation of the images, which the matrix of the track headers stores.</summary>
+        public ExifOrientation Orientation { get; init; } = ExifOrientation.TopLeft;
+
+        /// <summary>Gets the part of the images that readers show, or <see langword="null"/> for the whole images.</summary>
+        public Rectangle? CleanAperture { get; init; }
     }
 
     /// <summary>
@@ -319,22 +486,6 @@ internal static class HeifFileWriter
         writer.WriteUInt32(HeifFormat.Free);
     }
 
-    // ISO/IEC 14496-12, section 12.1.4 "Clean Aperture Box": the image is the top-left part of pictures that are larger
-    // than it. The center of the aperture is half the difference of the sizes before the center of the picture
-    private static void WriteCleanAperture(HeifBoxWriter writer, int width, int height, Size codedSize)
-    {
-        var box = writer.BeginBox(HeifFormat.Clap);
-        writer.WriteUInt32((uint)width);
-        writer.WriteUInt32(1);
-        writer.WriteUInt32((uint)height);
-        writer.WriteUInt32(1);
-        writer.WriteUInt32(unchecked((uint)(width - codedSize.Width)));
-        writer.WriteUInt32(2);
-        writer.WriteUInt32(unchecked((uint)(height - codedSize.Height)));
-        writer.WriteUInt32(2);
-        writer.EndBox(box);
-    }
-
     private static void WriteTrack(HeifBoxWriter writer, HeifCodecBinding binding, Movie movie, bool isAlpha, ReadOnlySpan<int> sizes, ReadOnlySpan<int> otherSizes, ReadOnlySpan<uint> durations, ReadOnlySpan<byte> keyFrames, long firstSampleOffset, ulong mediaDuration, ulong trackDuration, bool repeats, bool worstCase)
     {
         var stream = isAlpha ? movie.Alpha! : movie.Color;
@@ -355,7 +506,10 @@ internal static class HeifFileWriter
         writer.WriteUInt16(0); // alternate_group
         writer.WriteUInt16(0); // volume
         writer.WriteUInt16(0);
-        WriteUnityMatrix(writer);
+
+        // The size of the track is the size of the coded images, with or without clean aperture: libavif and FFmpeg take
+        // it for the size of the images that the aperture and the matrix then apply to
+        WriteOrientationMatrix(writer, movie.Orientation, movie.Width, movie.Height);
         writer.WriteUInt32((uint)movie.Width << 16);
         writer.WriteUInt32((uint)movie.Height << 16);
         writer.EndBox(box);
@@ -366,6 +520,15 @@ internal static class HeifFileWriter
             box = writer.BeginBox(HeifFormat.Tref);
             var reference = writer.BeginBox(HeifFormat.Auxl);
             writer.WriteUInt32(1);
+            writer.EndBox(reference);
+            writer.EndBox(box);
+        }
+        else if (movie.IsPremultiplied && movie.Alpha is not null)
+        {
+            // The color track refers to the alpha track that its colors are multiplied by
+            box = writer.BeginBox(HeifFormat.Tref);
+            var reference = writer.BeginBox(HeifFormat.Prem);
+            writer.WriteUInt32(2);
             writer.EndBox(reference);
             writer.EndBox(box);
         }
@@ -448,8 +611,13 @@ internal static class HeifFileWriter
         writer.WriteUInt16(0x0018); // depth
         writer.WriteUInt16(0xFFFF); // pre_defined
         stream.WriteConfigurationBox(writer);
-        if (codedSize.Width != movie.Width || codedSize.Height != movie.Height)
-            WriteCleanAperture(writer, movie.Width, movie.Height, codedSize);
+
+        // The clean aperture of the color images is the one of their alpha planes. Without one, the images are the
+        // top-left part of pictures that are larger than them
+        if (movie.CleanAperture is { } aperture)
+            HeifCleanAperture.Write(writer, codedSize, aperture);
+        else if (codedSize.Width != movie.Width || codedSize.Height != movie.Height)
+            HeifCleanAperture.WritePadding(writer, codedSize, movie.Width, movie.Height);
 
         if (isAlpha)
         {
@@ -461,7 +629,16 @@ internal static class HeifFileWriter
         else
         {
             WriteColorInformation(writer, movie.ColorDescription, movie.IccProfile);
+            if (movie.ContentLightLevel is { } contentLightLevel)
+                HeifPresentationBoxes.Write(writer, contentLightLevel);
+
+            if (movie.MasteringDisplay is { } masteringDisplay)
+                HeifPresentationBoxes.Write(writer, masteringDisplay);
         }
+
+        // The pixels of the alpha plane have the shape of the pixels of the color image
+        if (movie.PixelAspectRatio is { } pixelAspectRatio)
+            HeifPresentationBoxes.Write(writer, pixelAspectRatio);
 
         // ISO/IEC 23008-12, section 7.2.3 "Coding constraints box": the images may predict from one another, and from the
         // samples of their own image
@@ -578,6 +755,37 @@ internal static class HeifFileWriter
         }
     }
 
+    // ISO/IEC 14496-12, section 8.3.2 "Track Header Box": the matrix { a, b, u, c, d, v, x, y, w } maps the point (p, q) of
+    // an image to the point (a p + c q + x, b p + d q + y) of the presentation. The eight orientations are the matrices
+    // whose a, b, c and d are 0, 1 or -1; the translation brings the result back to positive coordinates (it is left out
+    // when a 16.16 number cannot hold the size of the image: a reader then moves the result itself)
+    private static void WriteOrientationMatrix(HeifBoxWriter writer, ExifOrientation orientation, int width, int height)
+    {
+        var (a, b, c, d) = orientation switch
+        {
+            ExifOrientation.TopRight => (-1, 0, 0, 1),
+            ExifOrientation.BottomRight => (-1, 0, 0, -1),
+            ExifOrientation.BottomLeft => (1, 0, 0, -1),
+            ExifOrientation.LeftTop => (0, 1, 1, 0),
+            ExifOrientation.RightTop => (0, 1, -1, 0),
+            ExifOrientation.RightBottom => (0, -1, -1, 0),
+            ExifOrientation.LeftBottom => (0, -1, 1, 0),
+            _ => (1, 0, 0, 1),
+        };
+
+        // The columns that are mirrored end at the width of the image, the rows at its height
+        var x = (a < 0 ? width : 0) + (c < 0 ? height : 0);
+        var y = (b < 0 ? width : 0) + (d < 0 ? height : 0);
+        if (x > short.MaxValue || y > short.MaxValue)
+            (x, y) = (0, 0);
+
+        ReadOnlySpan<int> matrix = [a << 16, b << 16, 0, c << 16, d << 16, 0, x << 16, y << 16, 0x40000000];
+        foreach (var value in matrix)
+        {
+            writer.WriteUInt32(unchecked((uint)value));
+        }
+    }
+
     // ISO/IEC 14496-12, section 12.1.5 "Colour information": the code points, then the profile that takes precedence.
     // Returns the number of boxes
     private static int WriteColorInformation(HeifBoxWriter writer, CicpColorDescription description, ReadOnlyMemory<byte> iccProfile)
@@ -635,9 +843,9 @@ internal static class HeifFileWriter
     }
 
     // ISO/IEC 14496-12, section 8.11.6 "Item Information Box": an entry of version 2
-    private static void WriteItemInfo(HeifBoxWriter writer, int itemId, uint itemType, ReadOnlySpan<byte> contentType)
+    private static void WriteItemInfo(HeifBoxWriter writer, int itemId, uint itemType, ReadOnlySpan<byte> contentType, bool isHidden = false)
     {
-        var box = writer.BeginFullBox(HeifFormat.Infe, version: 2, flags: 0);
+        var box = writer.BeginFullBox(HeifFormat.Infe, version: 2, flags: isHidden ? 1 : 0);
         writer.WriteUInt16(itemId);
         writer.WriteUInt16(0); // item_protection_index
         writer.WriteUInt32(itemType);
@@ -648,25 +856,37 @@ internal static class HeifFileWriter
         writer.EndBox(box);
     }
 
-    // ISO/IEC 14496-12, section 8.11.12 "Item Reference Box"
-    private static void WriteItemReference(HeifBoxWriter writer, uint type, int fromItemId, int toItemId)
+    // ISO/IEC 14496-12, section 8.11.12 "Item Reference Box": the reference of an item to the items whose identifiers
+    // start at toItemId and follow one another
+    private static void WriteItemReference(HeifBoxWriter writer, uint type, int fromItemId, int toItemId, int count = 1)
     {
         var box = writer.BeginBox(type);
         writer.WriteUInt16(fromItemId);
-        writer.WriteUInt16(1);
-        writer.WriteUInt16(toItemId);
+        writer.WriteUInt16(count);
+        for (var i = 0; i < count; i++)
+        {
+            writer.WriteUInt16(toItemId + i);
+        }
+
         writer.EndBox(box);
     }
 
     // ISO/IEC 23008-12, section 9.3 "Item Properties Box": the properties, then their association with the items. The
-    // properties that a reader must understand to display the item are marked essential
-    private static void WriteItemProperties(HeifBoxWriter writer, HeifCodecBinding binding, StillImage image)
+    // properties that a reader must understand to display the item are marked essential.
+    // A grid has the properties that describe the image (its size, its colors, its transformations), and its tiles the
+    // ones that describe their coded data (their size and their AV1 configuration)
+    private static void WriteItemProperties(HeifBoxWriter writer, HeifCodecBinding binding, StillImage image, int alphaItemId)
     {
         const int Essential = 0x80;
-        Span<byte> color = stackalloc byte[9];
-        Span<byte> alpha = stackalloc byte[9];
+        var grid = image.Grid;
+        Span<byte> color = stackalloc byte[16];
+        Span<byte> alpha = stackalloc byte[16];
+        Span<byte> colorTile = stackalloc byte[8];
+        Span<byte> alphaTile = stackalloc byte[8];
         var colorCount = 0;
         var alphaCount = 0;
+        var colorTileCount = 0;
+        var alphaTileCount = 0;
         var index = 0;
         var iprp = writer.BeginBox(HeifFormat.Iprp);
         var ipco = writer.BeginBox(HeifFormat.Ipco);
@@ -680,27 +900,74 @@ internal static class HeifFileWriter
         index++;
         color[colorCount++] = (byte)index;
         alpha[alphaCount++] = (byte)index;
+        if (grid is not null)
+        {
+            // The size of the tiles
+            box = writer.BeginFullBox(HeifFormat.Ispe, version: 0, flags: 0);
+            writer.WriteUInt32((uint)grid.TileWidth);
+            writer.WriteUInt32((uint)grid.TileHeight);
+            writer.EndBox(box);
+            index++;
+            colorTile[colorTileCount++] = (byte)index;
+            alphaTile[alphaTileCount++] = (byte)index;
+        }
 
         WritePixelInformation(writer, image.Color);
         color[colorCount++] = (byte)++index;
+        if (grid is not null)
+            colorTile[colorTileCount++] = (byte)index;
+
+        // The configuration describes coded data: the one of the tiles of a grid
         image.Color.WriteConfigurationBox(writer);
-        color[colorCount++] = (byte)(++index | Essential);
+        index++;
+        if (grid is null)
+            color[colorCount++] = (byte)(index | Essential);
+        else
+            colorTile[colorTileCount++] = (byte)(index | Essential);
 
         for (var i = WriteColorInformation(writer, image.ColorDescription, image.IccProfile); i > 0; i--)
         {
             color[colorCount++] = (byte)++index;
         }
 
-        // The image is the top-left part of pictures that are larger than it
-        var apertureIndex = 0;
-        if (codedSize.Width != image.Width || codedSize.Height != image.Height)
+        // The labels of the samples: the light levels and the display describe the colors, the shape of the pixels
+        // is also the one of the pixels of the alpha plane
+        if (image.ContentLightLevel is { } contentLightLevel)
         {
-            WriteCleanAperture(writer, image.Width, image.Height, codedSize);
+            HeifPresentationBoxes.Write(writer, contentLightLevel);
+            color[colorCount++] = (byte)++index;
+        }
+
+        if (image.MasteringDisplay is { } masteringDisplay)
+        {
+            HeifPresentationBoxes.Write(writer, masteringDisplay);
+            color[colorCount++] = (byte)++index;
+        }
+
+        var pixelAspectRatioIndex = 0;
+        if (image.PixelAspectRatio is { } pixelAspectRatio)
+        {
+            HeifPresentationBoxes.Write(writer, pixelAspectRatio);
+            pixelAspectRatioIndex = ++index;
+            color[colorCount++] = (byte)index;
+        }
+
+        // The transformations apply to the alpha plane as they do to the color image, in the order of their association:
+        // the clean aperture, the rotation, then the mirroring (ISO/IEC 23000-22, section 7.3.6.7)
+        // Without clean aperture, the image is the top-left part of pictures that are larger than it
+        var apertureIndex = 0;
+        var isPadded = codedSize.Width != image.Width || codedSize.Height != image.Height;
+        if (image.CleanAperture is not null || isPadded)
+        {
+            if (image.CleanAperture is { } aperture)
+                HeifCleanAperture.Write(writer, codedSize, aperture);
+            else
+                HeifCleanAperture.WritePadding(writer, codedSize, image.Width, image.Height);
+
             apertureIndex = ++index;
             color[colorCount++] = (byte)(index | Essential);
         }
 
-        // The transformations apply to the alpha plane as they do to the color image
         var (angle, axis) = GetTransformations(image.Orientation);
         if (angle is not 0)
         {
@@ -726,14 +993,27 @@ internal static class HeifFileWriter
         {
             WritePixelInformation(writer, alphaStream);
             alpha[alphaCount++] = (byte)++index;
+            if (grid is not null)
+                alphaTile[alphaTileCount++] = (byte)index;
+
             alphaStream.WriteConfigurationBox(writer);
-            alpha[alphaCount++] = (byte)(++index | Essential);
+            index++;
+            if (grid is null)
+                alpha[alphaCount++] = (byte)(index | Essential);
+            else
+                alphaTile[alphaTileCount++] = (byte)(index | Essential);
 
             // ISO/IEC 23008-12, section 6.5.8 "Auxiliary type property"
             box = writer.BeginFullBox(HeifFormat.AuxC, version: 0, flags: 0);
             writer.WriteCString(binding.AlphaAuxiliaryTypeToWrite);
             writer.EndBox(box);
             alpha[alphaCount++] = (byte)++index;
+            if (grid is not null)
+                alphaTile[alphaTileCount++] = (byte)index;
+
+            if (pixelAspectRatioIndex is not 0)
+                alpha[alphaCount++] = (byte)pixelAspectRatioIndex;
+
             if (apertureIndex is not 0)
                 alpha[alphaCount++] = (byte)(apertureIndex | Essential);
 
@@ -746,20 +1026,33 @@ internal static class HeifFileWriter
 
         writer.EndBox(ipco);
 
+        var tileCount = grid?.TileCount ?? 0;
         box = writer.BeginFullBox(HeifFormat.Ipma, version: 0, flags: 0);
-        writer.WriteUInt32(image.Alpha is null ? 1u : 2u);
-        writer.WriteUInt16(ColorItemId);
-        writer.WriteByte((byte)colorCount);
-        writer.WriteBytes(color[..colorCount]);
+        writer.WriteUInt32((uint)((1 + tileCount) * (image.Alpha is null ? 1 : 2)));
+        WriteAssociations(writer, ColorItemId, color[..colorCount]);
+        for (var i = 0; i < tileCount; i++)
+        {
+            WriteAssociations(writer, ColorItemId + 1 + i, colorTile[..colorTileCount]);
+        }
+
         if (image.Alpha is not null)
         {
-            writer.WriteUInt16(AlphaItemId);
-            writer.WriteByte((byte)alphaCount);
-            writer.WriteBytes(alpha[..alphaCount]);
+            WriteAssociations(writer, alphaItemId, alpha[..alphaCount]);
+            for (var i = 0; i < tileCount; i++)
+            {
+                WriteAssociations(writer, alphaItemId + 1 + i, alphaTile[..alphaTileCount]);
+            }
         }
 
         writer.EndBox(box);
         writer.EndBox(iprp);
+
+        static void WriteAssociations(HeifBoxWriter writer, int itemId, ReadOnlySpan<byte> associations)
+        {
+            writer.WriteUInt16(itemId);
+            writer.WriteByte((byte)associations.Length);
+            writer.WriteBytes(associations);
+        }
     }
 
     // ISO/IEC 23008-12, section 6.5.6 "Pixel information"

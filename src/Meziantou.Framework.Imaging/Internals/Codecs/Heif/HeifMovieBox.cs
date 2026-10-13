@@ -13,6 +13,7 @@ internal sealed class HeifMovieBox : IDisposable
     private const int VisualSampleEntryLength = 78;
 
     private readonly List<HeifTrack> _tracks = [];
+    private readonly List<(uint TrackId, uint DescriptionIndex, uint Duration, uint Size)> _trackExtends = [];
     private uint _timescale;
 
     private HeifMovieBox()
@@ -28,8 +29,64 @@ internal sealed class HeifMovieBox : IDisposable
     /// <summary>Gets the track of the alpha planes, or <see langword="null"/> for an opaque sequence.</summary>
     public HeifTrack? Alpha { get; private set; }
 
-    /// <summary>Gets the number of images of the sequence.</summary>
-    public long FrameCount => Color.SampleCount;
+    /// <summary>
+    /// Gets a value indicating whether the color samples are multiplied by the alpha of their pixel: a <c>prem</c> track
+    /// reference from the color track to its alpha track.
+    /// </summary>
+    public bool IsPremultiplied { get; private set; }
+
+    /// <summary>Gets the number of images of the sequence: the images of the color track that are shown.</summary>
+    public long FrameCount => Timeline?.PresentedCount ?? Color.SampleCount;
+
+    /// <summary>
+    /// Gets the number of images of the color track, which are decoded in their order whether they are shown or not. It
+    /// grows with the movie fragments of a fragmented sequence.
+    /// </summary>
+    public long SampleCount => Color.SampleCount;
+
+    /// <summary>
+    /// Gets a value indicating whether the movie announces movie fragments (an <c>mvex</c> box, ISO/IEC 14496-12, section
+    /// 8.8.1): the images of the sequence are then described by the <c>moof</c> boxes that follow, and their number is
+    /// only known at the end of the file.
+    /// </summary>
+    public bool IsFragmented { get; private set; }
+
+    /// <summary>Returns the color track or the alpha track with an identifier, or <see langword="null"/>.</summary>
+    public HeifTrack? FindTrack(uint id) => Color.Id == id ? Color : Alpha is { } alpha && alpha.Id == id ? alpha : null;
+
+    /// <summary>Returns the track with an identifier, whatever it holds, or <see langword="null"/>.</summary>
+    public HeifTrack? FindAnyTrack(uint id)
+    {
+        foreach (var track in _tracks)
+        {
+            if (track.Id == id)
+                return track;
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Gets the presentation of the images of the color track through its edit list, or <see langword="null"/> when every
+    /// image is shown for its duration: a track without edit list, or whose only edit plays the media from its start.
+    /// </summary>
+    public HeifEditTimeline? Timeline { get; private set; }
+
+    /// <summary>
+    /// Gets how the next image of the color track is shown. The images are read in their order: the first call is about
+    /// the first image, whose index is given for the tracks without edit timeline.
+    /// </summary>
+    /// <param name="index">The index of the image in the track.</param>
+    /// <param name="duration">Receives the time the image is shown for.</param>
+    /// <returns><see langword="false"/> when the edit list of the track leaves the image out.</returns>
+    public bool TryGetNextDuration(int index, out FrameDuration duration)
+    {
+        if (Timeline is { } timeline)
+            return timeline.TryGetNext(Color, out duration);
+
+        duration = new FrameDuration(Color.GetPresentationDuration(index), Color.Timescale);
+        return true;
+    }
 
     /// <summary>
     /// Gets the number of times the sequence is played, or <see langword="null"/> when it repeats forever. The edit list of the
@@ -81,12 +138,39 @@ internal sealed class HeifMovieBox : IDisposable
                     continue;
                 }
 
+                if (type is HeifFormat.Mvex)
+                {
+                    // ISO/IEC 14496-12, section 8.8.3 "Track Extends Box": the defaults of the samples of the fragments
+                    movie.IsFragmented = true;
+                    while (box.TryReadBox(out var extendsType, out _, out var extends))
+                    {
+                        if (extendsType is not HeifFormat.Trex)
+                            continue;
+
+                        extends.ReadFullBoxHeader();
+                        movie._trackExtends.Add((extends.ReadUInt32(), extends.ReadUInt32(), extends.ReadUInt32(), extends.ReadUInt32()));
+                    }
+
+                    continue;
+                }
+
                 if (type is not HeifFormat.Trak)
                     continue;
 
                 var track = new HeifTrack();
                 movie._tracks.Add(track);
                 ParseTrack(box, offset, alternate, track, scope, maxSamples);
+            }
+
+            foreach (var (id, descriptionIndex, duration, size) in movie._trackExtends)
+            {
+                if (movie.FindAnyTrack(id) is { } extended)
+                {
+                    extended.HasTrackExtends = true;
+                    extended.DefaultSampleDescriptionIndex = descriptionIndex;
+                    extended.DefaultSampleDuration = duration;
+                    extended.DefaultSampleSize = size;
+                }
             }
 
             movie.SelectTracks(binding);
@@ -114,7 +198,8 @@ internal sealed class HeifMovieBox : IDisposable
         HeifTrack? color = null;
         foreach (var track in _tracks)
         {
-            if (track.HandlerType is HeifFormat.Pict && track.HasCodedSampleEntry && track.SampleCount > 0)
+            // The samples of a fragmented sequence may all be in its fragments
+            if (track.HandlerType is HeifFormat.Pict && track.HasCodedSampleEntry && (track.SampleCount > 0 || (IsFragmented && track.HasTrackExtends)))
             {
                 color = track;
                 break;
@@ -126,23 +211,46 @@ internal sealed class HeifMovieBox : IDisposable
         // The images of the sequence are the ones of the codec of its color track
         binding = color.Binding!;
         Binding = binding;
-        if (color.EditMediaTime != color.FirstPresentationTime && color.EditMediaTime is not 0)
-            throw binding.Unsupported($"The {binding.Name} image sequence has an edit list that does not play the whole track.", "edit list");
+
+        // A format that does not read the orientation of a sequence ignores the matrix of the header of its tracks
+        if (!binding.Supports(HeifContainerFeatures.SequenceOrientation))
+        {
+            foreach (var track in _tracks)
+            {
+                track.Orientation = ExifOrientation.TopLeft;
+            }
+        }
 
         if (color.Timescale is 0)
             throw binding.Invalid("the time scale of the image sequence is zero.");
 
-        // The edit of an image sequence plays every image: an edit that ends before the last image starts selects a part of
-        // the track. The duration of the edit is in units of the time scale of the movie
-        if (color.HasEditList && color.SegmentDuration is not (0 or ulong.MaxValue) && _timescale is not 0)
+        if (IsFragmented && !binding.Supports(HeifContainerFeatures.Fragments))
+            throw binding.Unsupported($"The {binding.Name} file is fragmented.", "fragmented image sequences");
+
+        if (!binding.Supports(HeifContainerFeatures.EditLists))
         {
-            // An edit that ends where the last image starts plays it when the image has no duration: the edit then covers
-            // the whole media
-            var lastImageStart = color.MediaDuration - Math.Min(color.MediaDuration, color.LastSampleDuration);
-            var editEnd = (UInt128)color.SegmentDuration * color.Timescale;
-            var lastStart = (UInt128)lastImageStart * _timescale;
-            if (editEnd < lastStart || (editEnd == lastStart && color.LastSampleDuration is not 0))
+            // The only edit plays the whole track: it starts at the first image that is presented, whose presentation
+            // time is not 0 when the codec reorders its images
+            if (color.HasEditList && (color.Edits.Count is not 1 || (color.Edits[0].MediaTime is not 0 && color.Edits[0].MediaTime != color.FirstPresentationTime) || !ReachesLastImage(color)))
                 throw binding.Unsupported($"The {binding.Name} image sequence has an edit list that does not play the whole track.", "edit list");
+        }
+        else if (IsFragmented)
+        {
+            // The media of a fragmented sequence is not known when its edit list is read: only the edit that plays it
+            // from its start is supported
+            if (color.HasEditList && (color.Edits.Count is not 1 || color.Edits[0].MediaTime is not 0))
+                throw binding.Unsupported($"The {binding.Name} image sequence is fragmented and has an edit list that selects parts of its media.", "edit list of a fragmented image sequence");
+        }
+        else if (color.HasEditList && !PlaysWholeMedia(color))
+        {
+            // The usual edit list of an image sequence has one edit that plays the media from its start: every image is
+            // shown for its duration. The duration of the edit, which is in units of the time scale of the movie, is
+            // rounded by the writers: an edit that reaches the last image plays the whole media (it also does when it
+            // ends where the last image starts and that image has no duration). Any other edit list selects parts of
+            // the media
+            Timeline = HeifEditTimeline.Create(color, _timescale);
+            if (Timeline.PresentedCount is 0)
+                throw binding.Invalid("the edit list of the image sequence shows no image.");
         }
 
         foreach (var track in _tracks)
@@ -150,23 +258,91 @@ internal sealed class HeifMovieBox : IDisposable
             if (ReferenceEquals(track, color) || !ReferenceEquals(track.Binding, binding) || !track.AuxiliaryOf.Contains(color.Id) || !track.IsAlphaOf(binding))
                 continue;
 
-            if (color.PremultipliedBy.Contains(track.Id))
-                throw binding.Unsupported($"The {binding.Name} image sequence has premultiplied alpha.", "premultiplied alpha");
-
             if (track.SampleCount != color.SampleCount)
                 throw binding.Invalid("the alpha track does not have the number of images of the color track.");
 
-            if (track.Size != color.Size || track.Crop != color.Crop)
+            // The alpha plane of an image is shown with it: an alpha track with an edit list of its own must select the
+            // same images for the same times
+            if (track.HasEditList && (!color.HasEditList || track.Timescale != color.Timescale || !track.Edits.SequenceEqual(color.Edits)))
+                throw binding.Unsupported($"The alpha track of the {binding.Name} image sequence does not have the edit list of the color track.", "alpha track with another edit list");
+
+            if (track.Size != color.Size)
                 throw binding.Unsupported($"The alpha plane of the {binding.Name} image sequence does not have the size of the color images.", "alpha plane of a different size");
+
+            // The clean aperture and the orientation of the color images apply to their alpha planes, whose track declares
+            // the same ones or none
+            if ((track.CleanAperture is { } alphaAperture && alphaAperture != color.Crop) || (track.Orientation is not ExifOrientation.TopLeft && track.Orientation != color.Orientation))
+                throw binding.Unsupported($"The alpha track of the {binding.Name} image sequence is not transformed as the color track.", "alpha plane with other transformations");
 
             Alpha = track;
             break;
         }
+
+        // The colors are premultiplied by the alpha track that the color track refers to, which is its own
+        if (color.PremultipliedBy.Count > 0)
+        {
+            if (!binding.Supports(HeifContainerFeatures.PremultipliedAlpha))
+                throw binding.Unsupported($"The {binding.Name} image sequence has premultiplied alpha.", "premultiplied alpha");
+
+            if (Alpha is not { } alpha || !color.PremultipliedBy.Contains(alpha.Id))
+                throw binding.Invalid("the image sequence is premultiplied by a track that is not its alpha track.");
+
+            IsPremultiplied = true;
+        }
+    }
+
+    // ISO/IEC 14496-12, section 8.3.2 "Track Header Box": the matrix { a, b, u, c, d, v, x, y, w } maps a point (p, q) of
+    // the images to the point (a p + c q + x, b p + d q + y) of the presentation, in 16.16 fixed point (2.30 for u, v and
+    // w, which are 0, 0 and 1). The eight matrices whose a, b, c and d are 0, 1 or -1 turn the images by quarter turns
+    // and mirror them: they are the eight orientations, whatever the translation that brings the result back to positive
+    // coordinates. Any other matrix places the track in the presentation of a player, like the width and the height of
+    // the box: it does not describe the images, which are returned as they are stored
+    private static ExifOrientation ReadOrientation(ref HeifBoxReader reader)
+    {
+        const int One = 0x00010000;
+        var a = reader.ReadInt32();
+        var b = reader.ReadInt32();
+        var u = reader.ReadInt32();
+        var c = reader.ReadInt32();
+        var d = reader.ReadInt32();
+        var v = reader.ReadInt32();
+        reader.ReadInt32();
+        reader.ReadInt32();
+        var w = reader.ReadInt32();
+        if (u is not 0 || v is not 0 || w is not 0x40000000)
+            return ExifOrientation.TopLeft;
+
+        return (a, b, c, d) switch
+        {
+            (-One, 0, 0, One) => ExifOrientation.TopRight, // the columns are mirrored
+            (-One, 0, 0, -One) => ExifOrientation.BottomRight, // a half turn
+            (One, 0, 0, -One) => ExifOrientation.BottomLeft, // the rows are mirrored
+            (0, One, One, 0) => ExifOrientation.LeftTop, // the columns become the rows
+            (0, One, -One, 0) => ExifOrientation.RightTop, // a quarter turn clockwise
+            (0, -One, -One, 0) => ExifOrientation.RightBottom,
+            (0, -One, One, 0) => ExifOrientation.LeftBottom, // a quarter turn anti-clockwise
+            _ => ExifOrientation.TopLeft,
+        };
     }
 
     // ISO/IEC 14496-12, section 8.3.1 "Track Box"
     private static void ParseTrack(HeifBoxReader reader, int baseOffset, HeifCodecBinding? alternate, HeifTrack track, AllocationScope scope, int maxSamples)
     {
+        // The edit list is read first, wherever it is in the track: an edit list that selects parts of the media needs
+        // the duration of every sample, which is otherwise kept for the located samples only
+        var edits = reader;
+        while (edits.TryReadBox(out var type, out _, out var box))
+        {
+            if (type is not HeifFormat.Edts)
+                continue;
+
+            while (box.TryReadBox(out var editType, out _, out var edit))
+            {
+                if (editType is HeifFormat.Elst)
+                    ParseEditList(edit, track);
+            }
+        }
+
         while (reader.TryReadBox(out var type, out var offset, out var box))
         {
             switch (type)
@@ -185,6 +361,13 @@ internal sealed class HeifMovieBox : IDisposable
                     {
                         var duration = box.ReadUInt32();
                         track.Duration = duration is uint.MaxValue ? ulong.MaxValue : duration;
+                    }
+
+                    // Two reserved words, the layer, the alternate group, the volume and a reserved field, then the matrix
+                    if (box.Remaining >= 16 + 36)
+                    {
+                        box.ReadBytes(16);
+                        track.Orientation = ReadOrientation(ref box);
                     }
 
                     break;
@@ -208,14 +391,6 @@ internal sealed class HeifMovieBox : IDisposable
                     }
 
                     break;
-                case HeifFormat.Edts:
-                    while (box.TryReadBox(out var editType, out _, out var edit))
-                    {
-                        if (editType is HeifFormat.Elst)
-                            ParseEditList(edit, alternate, track);
-                    }
-
-                    break;
                 case HeifFormat.Meta:
                     track.Meta = (baseOffset + offset, box.Remaining);
                     break;
@@ -228,43 +403,72 @@ internal sealed class HeifMovieBox : IDisposable
         }
     }
 
-    // ISO/IEC 14496-12, section 8.6.6 "Edit List Box": the only edit of an image sequence plays the whole track, once or
-    // repeatedly
-    private static void ParseEditList(HeifBoxReader reader, HeifCodecBinding? alternate, HeifTrack track)
+    // Returns whether the edit list is the one edit that plays the media from its start to its last image at least
+    private bool PlaysWholeMedia(HeifTrack track)
+        => track.Edits.Count is 1 && track.Edits[0].MediaTime is 0 && ReachesLastImage(track);
+
+    // Returns whether the edits of a track last until its last image starts at least. The duration of an edit is in units
+    // of the time scale of the movie, and the writers round it: an edit that ends where the last image starts plays it
+    // when the image has no duration
+    private bool ReachesLastImage(HeifTrack track)
+    {
+        if (track.SegmentDuration is 0 or ulong.MaxValue || _timescale is 0)
+            return true;
+
+        var lastImageStart = track.MediaDuration - Math.Min(track.MediaDuration, track.LastSampleDuration);
+        var editEnd = (UInt128)track.SegmentDuration * track.Timescale;
+        var lastStart = (UInt128)lastImageStart * _timescale;
+        return editEnd > lastStart || (editEnd == lastStart && track.LastSampleDuration is 0);
+    }
+
+    // ISO/IEC 14496-12, section 8.6.6 "Edit List Box": each edit plays a part of the media, at its normal rate. The edit
+    // list of an image sequence repeats when its flag says so (AV1 Image File Format, section 3.2)
+    private static void ParseEditList(HeifBoxReader reader, HeifTrack track)
     {
         var binding = reader.Binding;
         var (version, flags) = reader.ReadFullBoxHeader();
         var entryCount = reader.ReadUInt32();
-        if (entryCount is not 1)
-            throw binding.Unsupported($"The {binding.Name} image sequence has an edit list that does not play the whole track.", "edit list");
+        if (entryCount is 0)
+            return;
 
-        ulong segmentDuration;
-        long mediaTime;
-        if (version is 1)
+        ulong total = 0;
+        var hasOpenEdit = false;
+        for (uint i = 0; i < entryCount; i++)
         {
-            segmentDuration = reader.ReadUInt64();
-            mediaTime = (long)reader.ReadUInt64();
-        }
-        else
-        {
-            var duration = reader.ReadUInt32();
-            segmentDuration = duration is uint.MaxValue ? ulong.MaxValue : duration;
-            mediaTime = reader.ReadInt32();
-        }
+            ulong segmentDuration;
+            long mediaTime;
+            if (version is 1)
+            {
+                segmentDuration = reader.ReadUInt64();
+                mediaTime = (long)reader.ReadUInt64();
+            }
+            else
+            {
+                var duration = reader.ReadUInt32();
+                segmentDuration = duration is uint.MaxValue ? ulong.MaxValue : duration;
+                mediaTime = reader.ReadInt32();
+            }
 
-        // The edit of a track with composition offsets starts at the presentation time of its first image, which is only
-        // known once the sample table is read: the track selection compares them. Such a track has a codec that reorders
-        // its images; the edit of any other track starts at 0
-        var mayHaveCompositionOffsets = binding.MaxReorderedSamples > 0 || alternate is { MaxReorderedSamples: > 0 };
-        var mediaRate = reader.ReadUInt32();
-        if ((mediaTime is not 0 && !mayHaveCompositionOffsets) || mediaRate is not 0x00010000)
-            throw binding.Unsupported($"The {binding.Name} image sequence has an edit list that does not play the whole track.", "edit list");
+            // A media time of -1 is an empty edit, which shows nothing for its duration: an image sequence has no way to
+            // show nothing. The media rate is 1; 0 would hold an image for the duration of the edit
+            var mediaRate = reader.ReadUInt32();
+            if (mediaTime is -1)
+                throw binding.Unsupported($"The {binding.Name} image sequence has an edit list with an empty edit.", "edit list");
 
-        track.EditMediaTime = mediaTime;
+            if (mediaTime < 0)
+                throw binding.Invalid("the media time of an edit is negative.");
+
+            if (mediaRate is not 0x00010000)
+                throw binding.Unsupported($"The {binding.Name} image sequence has an edit list that does not play the media at its normal rate.", "edit list");
+
+            track.Edits.Add((segmentDuration, mediaTime));
+            hasOpenEdit |= segmentDuration is 0 or ulong.MaxValue;
+            total = segmentDuration > ulong.MaxValue - total ? ulong.MaxValue : total + segmentDuration;
+        }
 
         track.HasEditList = true;
         track.IsRepeating = (flags & 1) is not 0;
-        track.SegmentDuration = segmentDuration;
+        track.SegmentDuration = hasOpenEdit ? ulong.MaxValue : total;
     }
 
     // ISO/IEC 14496-12, section 8.4.1 "Media Box"
@@ -322,6 +526,7 @@ internal sealed class HeifMovieBox : IDisposable
             {
                 case HeifFormat.Stsd:
                     descriptionIndex = ParseSampleDescriptions(box, baseOffset + offset, alternate, track, scope);
+                    track.SampleDescriptionIndex = descriptionIndex;
                     break;
                 case HeifFormat.Stts:
                     timeToSample = box;
@@ -418,8 +623,9 @@ internal sealed class HeifMovieBox : IDisposable
             if (count is 0)
                 continue;
 
-            // Only the durations of the located samples are kept; the others take part in the duration of the track
-            if (covered < located)
+            // Only the durations of the located samples are kept; the others take part in the duration of the track.
+            // An edit list that may select parts of the media needs them all: a run is no larger than its entry in the box
+            if (covered < located || track.Edits.Count > 1 || track.Edits is [{ MediaTime: not 0 } or { SegmentDuration: not (0 or ulong.MaxValue) }])
                 track.Durations.Add((count, delta));
 
             covered += count;
@@ -581,9 +787,7 @@ internal sealed class HeifMovieBox : IDisposable
                 throw binding.Invalid("the size of the images of a track is zero.");
 
             track.Size = new Size(width, height);
-            track.Crop = new Rectangle(0, 0, width, height);
             var hasConfiguration = false;
-            var hasCleanAperture = false;
             while (entry.TryReadBox(out var childType, out var childOffset, out var child))
             {
                 switch (childType)
@@ -614,10 +818,20 @@ internal sealed class HeifMovieBox : IDisposable
                         child.ReadFullBoxHeader();
                         track.AuxiliaryType = child.ReadCString().ToArray();
                         break;
-                    case HeifFormat.Clap when !hasCleanAperture:
-                        // ISO/IEC 14496-12, section 12.1.4: the part of the pictures that is the image
-                        track.Crop = HeifImagePlan.ReadCleanAperture(ref child, track.Crop);
-                        hasCleanAperture = true;
+                    case HeifFormat.Clap:
+                        // The first aperture is the one of the samples, whose size the sample entry gives
+                        var aperture = HeifCleanAperture.Read(ref child, track.Size);
+                        track.CleanAperture ??= aperture;
+                        break;
+                    case HeifFormat.Pasp when codec.Supports(HeifContainerFeatures.DisplayMetadata):
+                        var pixelAspectRatio = HeifPresentationBoxes.ReadPixelAspectRatio(ref child);
+                        track.PixelAspectRatio ??= pixelAspectRatio;
+                        break;
+                    case HeifFormat.Clli when codec.Supports(HeifContainerFeatures.DisplayMetadata):
+                        track.ContentLightLevel ??= HeifPresentationBoxes.ReadContentLightLevel(ref child);
+                        break;
+                    case HeifFormat.Mdcv when codec.Supports(HeifContainerFeatures.DisplayMetadata):
+                        track.MasteringDisplay ??= HeifPresentationBoxes.ReadMasteringDisplay(ref child);
                         break;
                     default:
                         if (childType == codec.ConfigurationBoxType)

@@ -70,6 +70,24 @@ public sealed partial class FFmpegTool
         return JsonDocument.Parse(result.StandardOutput);
     }
 
+    /// <summary>
+    /// Runs <c>ffprobe</c> on a file and returns its JSON description of every stream (<c>-show_streams</c>): for an ISO base
+    /// media file, the image items and the tracks, with the side data FFmpeg reads from their boxes (mastering display,
+    /// content light level, display matrix).
+    /// </summary>
+    /// <param name="inputPath">The file.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+    /// <returns>The parsed JSON document.</returns>
+    /// <exception cref="InvalidOperationException">ffprobe failed.</exception>
+    public async Task<JsonDocument> ProbeStreamsAsync(FullPath inputPath, CancellationToken cancellationToken)
+    {
+        var result = await ProcessRunner.RunAsync(ProbeExecutablePath, ["-hide_banner", "-v", "error", "-show_streams", "-of", "json", inputPath], cancellationToken).ConfigureAwait(false);
+        if (result.ExitCode != 0)
+            throw new InvalidOperationException($"ffprobe failed on '{inputPath}' (exit code {result.ExitCode.ToString(CultureInfo.InvariantCulture)}): {result.StandardError}");
+
+        return JsonDocument.Parse(result.StandardOutput);
+    }
+
     /// <summary>Runs ffmpeg with the specified arguments (<c>-hide_banner -nostdin -loglevel error</c> are prepended).</summary>
     /// <param name="arguments">The arguments.</param>
     /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>

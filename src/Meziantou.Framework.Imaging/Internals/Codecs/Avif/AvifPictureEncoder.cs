@@ -40,6 +40,8 @@ internal sealed class AvifPictureEncoder : HeifPictureEncoder
 
     public override void BeginFrame() => _encoder.BeginFrame();
 
+    public override void Reset() => _encoder.Reset();
+
     public override bool Encode(CancellationToken cancellationToken) => _encoder.Encode(cancellationToken);
 
     protected override void Dispose(bool disposing)

@@ -13,7 +13,7 @@ public sealed class EditListExpectation
     [JsonPropertyName("repeating")]
     public required bool Repeating { get; init; }
 
-    /// <summary>Gets the duration of the edit in units of the time scale of the movie; <see langword="null"/> when every bit of the field is set.</summary>
+    /// <summary>Gets the duration of the edits (their sum) in units of the time scale of the movie; <see langword="null"/> when every bit of the field of one of them is set.</summary>
     [JsonPropertyName("segmentDuration")]
     public required long? SegmentDuration { get; init; }
 

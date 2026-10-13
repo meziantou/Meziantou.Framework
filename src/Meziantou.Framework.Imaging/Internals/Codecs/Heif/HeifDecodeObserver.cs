@@ -36,6 +36,17 @@ internal abstract class HeifDecodeObserver : IImageDecodeObserver
     /// <returns><see langword="true"/> when the image is written; <see langword="false"/> when it needs another sample.</returns>
     public abstract bool TryWriteSequenceFrame(HeifStructureParser structure, FrameDuration duration, out bool proceed);
 
+    /// <summary>
+    /// Decodes the next image of an image sequence, in presentation order, without writing it: an image that the edit list
+    /// of the sequence leaves out, which the images that follow may refer to. Only asked of a format that reads such edit
+    /// lists (<see cref="HeifContainerFeatures.EditLists"/>).
+    /// </summary>
+    /// <param name="structure">The walker.</param>
+    /// <param name="proceed"><see langword="true"/> to continue the walk.</param>
+    /// <returns><see langword="true"/> when the image is decoded; <see langword="false"/> when it needs another sample.</returns>
+    public virtual bool TrySkipSequenceFrame(HeifStructureParser structure, out bool proceed)
+        => throw new InvalidOperationException("The format does not read the edit lists that leave images out.");
+
     public abstract Image GetResult();
 
     public void Dispose()

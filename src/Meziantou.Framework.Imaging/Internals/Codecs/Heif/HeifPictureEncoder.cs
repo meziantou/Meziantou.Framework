@@ -31,6 +31,13 @@ internal abstract class HeifPictureEncoder : IDisposable
     /// <summary>Starts the encoding of the picture whose samples are in the source planes.</summary>
     public abstract void BeginFrame();
 
+    /// <summary>
+    /// Forgets the pictures that were encoded, so that the next one starts a new stream: another still picture of the same
+    /// size and format (the tiles of a grid are coded one after the other by one encoder). The payload of the last
+    /// picture is no longer valid.
+    /// </summary>
+    public abstract void Reset();
+
     /// <summary>Encodes a bounded part of the picture.</summary>
     /// <returns><see langword="true"/> when the picture is complete.</returns>
     /// <exception cref="ImageResourceLimitException">A buffer exceeds the live-allocation limit.</exception>

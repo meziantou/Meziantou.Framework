@@ -17,6 +17,11 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// repeated bisection of the axes (normalized sums), so the polygon has the symmetries of the ellipse exactly and no
 /// trigonometric function is involved.
 /// </para>
+/// <para>
+/// A sink whose content is enlarged before it is drawn (<see cref="PathSink.Scale"/>: a transformation of the canvas)
+/// gets chords that much closer to the curve: every length that is compared with the tolerance is multiplied by that
+/// factor, which is 1, and changes nothing, without transformation.
+/// </para>
 /// <para>Only additions, multiplications, divisions and square roots are used: the vertices do not depend on the platform.</para>
 /// </remarks>
 internal static class PathFlattener
@@ -100,7 +105,7 @@ internal static class PathFlattener
     /// <summary>Sends the chords of a quadratic Bézier curve, from the current point of the sink (the first control point).</summary>
     public static void Quadratic(PathSink sink, double x0, double y0, double x1, double y1, double x2, double y2)
     {
-        var count = GetSegmentCount(Length(x0 - (2 * x1) + x2, y0 - (2 * y1) + y2) / (4 * Tolerance));
+        var count = GetSegmentCount(Length(x0 - (2 * x1) + x2, y0 - (2 * y1) + y2) * sink.Scale / (4 * Tolerance));
         for (var i = 1; i < count; i++)
         {
             var t = i / (double)count;
@@ -118,7 +123,7 @@ internal static class PathFlattener
     public static void Cubic(PathSink sink, double x0, double y0, double x1, double y1, double x2, double y2, double x3, double y3)
     {
         var deviation = Math.Max(Length(x0 - (2 * x1) + x2, y0 - (2 * y1) + y2), Length(x1 - (2 * x2) + x3, y1 - (2 * y2) + y3));
-        var count = GetSegmentCount(3 * deviation / (4 * Tolerance));
+        var count = GetSegmentCount(3 * deviation * sink.Scale / (4 * Tolerance));
         for (var i = 1; i < count; i++)
         {
             var t = i / (double)count;
@@ -136,7 +141,7 @@ internal static class PathFlattener
     /// <summary>Sends a closed ellipse as one contour starting at the right end of its horizontal axis.</summary>
     public static void Ellipse(PathSink sink, double centerX, double centerY, double radiusX, double radiusY)
     {
-        var depth = GetArcDepth(Math.Max(radiusX, radiusY));
+        var depth = GetArcDepth(Math.Max(radiusX, radiusY) * sink.Scale);
         sink.MoveTo(centerX + radiusX, centerY);
         for (var quadrant = 0; quadrant < 4; quadrant++)
         {
@@ -157,7 +162,7 @@ internal static class PathFlattener
     /// </remarks>
     public static void Ellipse(PathSink sink, double centerX, double centerY, double ux, double uy, double vx, double vy)
     {
-        var depth = GetArcDepth(GetLargestRadius(ux, uy, vx, vy));
+        var depth = GetArcDepth(GetLargestRadius(ux, uy, vx, vy) * sink.Scale);
         sink.MoveTo(centerX + ux, centerY + uy);
         for (var quadrant = 0; quadrant < 4; quadrant++)
         {
@@ -178,7 +183,7 @@ internal static class PathFlattener
     /// </remarks>
     public static void Arc(PathSink sink, scoped in ArcPiece piece)
     {
-        var radius = GetLargestRadius(piece.Ux, piece.Uy, piece.Vx, piece.Vy);
+        var radius = GetLargestRadius(piece.Ux, piece.Uy, piece.Vx, piece.Vy) * sink.Scale;
         var smooth = piece.IsContinuation;
         ArcInterior(sink, piece, radius, piece.Ax, piece.Ay, piece.Bx, piece.By, depth: 0, ref smooth);
         sink.LineTo(piece.EndX, piece.EndY, smooth);

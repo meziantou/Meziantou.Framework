@@ -1,10 +1,34 @@
+using System.Diagnostics;
+
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <content>The loop restoration units read with the superblocks (AV1 specification, sections 5.11.57 and 5.11.58).</content>
 internal ref partial struct Av1TileCoder
 {
     // Section 5.11.57 "Read loop restoration syntax"
-    private void ReadLr(int r, int c, int bSize)
+    private void ReadLr(int r, int c, int bSize) => VisitLr(r, c, bSize, write: false);
+
+    // The same units, written: the encoder chose their parameters after the frame was filtered
+    private void WriteLr(int r, int c, int bSize) => VisitLr(r, c, bSize, write: true);
+
+    // RefLrWiener and RefSgrXqd at the start of a tile (clear_above_context in decode_tile, section 5.11.2)
+    private void ResetLoopRestorationReferences()
+    {
+        for (var plane = 0; plane < _planeCount; plane++)
+        {
+            for (var pass = 0; pass < 2; pass++)
+            {
+                _refSgrXqd[plane][pass] = Av1Tables.SgrprojXqdMid[pass];
+                for (var i = 0; i < Av1Constants.WienerCoeffs; i++)
+                {
+                    _refLrWiener[plane][pass][i] = Av1Tables.WienerTapsMid[i];
+                }
+            }
+        }
+    }
+
+    // The loop restoration units whose first sample is in the superblock at (r, c), which are coded with it
+    private void VisitLr(int r, int c, int bSize, bool write)
     {
         if (_header.AllowIntrabc)
             return;
@@ -42,7 +66,11 @@ internal ref partial struct Av1TileCoder
             {
                 for (var unitCol = unitColStart; unitCol < unitColEnd; unitCol++)
                 {
-                    ReadLrUnit(plane, _state.GetLoopRestorationUnits(plane).Slice(((unitRow * unitCols) + unitCol) * Av1FrameState.LoopRestorationUnitLength, Av1FrameState.LoopRestorationUnitLength));
+                    var unit = _state.GetLoopRestorationUnits(plane).Slice(((unitRow * unitCols) + unitCol) * Av1FrameState.LoopRestorationUnitLength, Av1FrameState.LoopRestorationUnitLength);
+                    if (write)
+                        WriteLrUnit(plane, unit);
+                    else
+                        ReadLrUnit(plane, unit);
                 }
             }
         }
@@ -113,6 +141,84 @@ internal ref partial struct Av1TileCoder
                 _refSgrXqd[plane][i] = v;
             }
         }
+    }
+
+    // Section 5.11.58 "Read loop restoration unit syntax", written: the encoder only selects the Wiener filter
+    private void WriteLrUnit(int plane, ReadOnlySpan<sbyte> unit)
+    {
+        int restorationType = unit[0];
+        Debug.Assert(restorationType is Av1Constants.RestoreNone or Av1Constants.RestoreWiener);
+        if (_header.FrameRestorationType[plane] is Av1Constants.RestoreWiener)
+        {
+            WriteSymbol(Av1CdfLayout.UseWiener, Av1CdfLayout.UseWienerSize, restorationType is Av1Constants.RestoreWiener ? 1 : 0);
+        }
+        else
+        {
+            Debug.Assert(_header.FrameRestorationType[plane] is Av1Constants.RestoreSwitchable);
+            WriteSymbol(Av1CdfLayout.RestorationType, Av1CdfLayout.RestorationTypeSize, restorationType);
+        }
+
+        if (restorationType is not Av1Constants.RestoreWiener)
+            return;
+
+        for (var pass = 0; pass < 2; pass++)
+        {
+            for (var j = plane is 0 ? 0 : 1; j < 3; j++)
+            {
+                int min = Av1Tables.WienerTapsMin[j];
+                int max = Av1Tables.WienerTapsMax[j];
+                int k = Av1Tables.WienerTapsK[j];
+                int v = unit[1 + (pass * 3) + j];
+                EncodeUnsignedSubexpWithRefBool(max + 1 - min, k, _refLrWiener[plane][pass][j] - min, v - min);
+                _refLrWiener[plane][pass][j] = v;
+            }
+        }
+    }
+
+    // The inverse of decode_unsigned_subexp_with_ref_bool
+    private void EncodeUnsignedSubexpWithRefBool(int mx, int k, int r, int v)
+    {
+        if ((r << 1) <= mx)
+            EncodeSubexpBool(mx, k, Recenter(r, v));
+        else
+            EncodeSubexpBool(mx, k, Recenter(mx - 1 - r, mx - 1 - v));
+    }
+
+    // The inverse of decode_subexp_bool
+    private void EncodeSubexpBool(int numSyms, int k, int v)
+    {
+        var i = 0;
+        var mk = 0;
+        while (true)
+        {
+            var b2 = i is not 0 ? k + i - 1 : k;
+            var a = 1 << b2;
+            if (numSyms <= mk + (3 * a))
+            {
+                WriteNonSymmetric(v - mk, numSyms - mk);
+                return;
+            }
+
+            if (v < mk + a)
+            {
+                WriteLiteral(0, 1);
+                WriteLiteral(v - mk, b2);
+                return;
+            }
+
+            WriteLiteral(1, 1);
+            i++;
+            mk += a;
+        }
+    }
+
+    // The inverse of inverse_recenter
+    private static int Recenter(int r, int v)
+    {
+        if (v > 2 * r)
+            return v;
+
+        return v >= r ? (v - r) << 1 : ((r - v) << 1) - 1;
     }
 
     private readonly int DecodeSignedSubexpWithRefBool(int low, int high, int k, int r)

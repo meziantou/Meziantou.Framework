@@ -30,6 +30,24 @@ internal static class HeifFormat
     /// <summary>The <c>moof</c> code.</summary>
     public const uint Moof = 0x6D6F6F66;
 
+    /// <summary>The <c>mvex</c> code.</summary>
+    public const uint Mvex = 0x6D766578;
+
+    /// <summary>The <c>trex</c> code.</summary>
+    public const uint Trex = 0x74726578;
+
+    /// <summary>The <c>traf</c> code.</summary>
+    public const uint Traf = 0x74726166;
+
+    /// <summary>The <c>tfhd</c> code.</summary>
+    public const uint Tfhd = 0x74666864;
+
+    /// <summary>The <c>tfdt</c> code.</summary>
+    public const uint Tfdt = 0x74666474;
+
+    /// <summary>The <c>trun</c> code.</summary>
+    public const uint Trun = 0x7472756E;
+
     /// <summary>The <c>hdlr</c> code.</summary>
     public const uint Hdlr = 0x68646C72;
 

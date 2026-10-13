@@ -6,16 +6,18 @@ namespace Meziantou.Framework.Imaging.TestHarness.Convolution;
 /// <param name="Weights">The weights, row by row from the top-left one.</param>
 /// <param name="EdgeMode">The pixels read outside the image.</param>
 /// <param name="PreserveAlpha">Whether colors are filtered straight and alpha is kept, instead of filtering premultiplied colors and alpha.</param>
-/// <param name="Linear">Whether colors are filtered in linear light (sRGB transfer function of IEC 61966-2-1).</param>
+/// <param name="Linear">Whether colors are filtered in linear light.</param>
+/// <param name="Transfer">The transfer characteristics (Rec. ITU-T H.273, table 3) whose function decodes the samples to linear light: 13 is the sRGB function of IEC 61966-2-1.</param>
 public sealed record ReferenceConvolutionOptions(
     int KernelWidth,
     int KernelHeight,
     IReadOnlyList<decimal> Weights,
     ReferenceEdgeMode EdgeMode = ReferenceEdgeMode.Clamp,
     bool PreserveAlpha = false,
-    bool Linear = false)
+    bool Linear = false,
+    int Transfer = 13)
 {
     /// <inheritdoc/>
     public override string ToString()
-        => string.Create(CultureInfo.InvariantCulture, $"{KernelWidth}x{KernelHeight} kernel, {EdgeMode} edges{(PreserveAlpha ? ", alpha preserved" : "")}{(Linear ? ", linear" : "")}");
+        => string.Create(CultureInfo.InvariantCulture, $"{KernelWidth}x{KernelHeight} kernel, {EdgeMode} edges{(PreserveAlpha ? ", alpha preserved" : "")}{(Linear ? ", linear" : "")}{(Transfer == 13 ? "" : $", transfer {Transfer}")}");
 }

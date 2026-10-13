@@ -226,7 +226,8 @@ public sealed class VectorPath
     /// <para>
     /// The result is the stroke as the library draws it: one closed convex contour for each segment, each join and
     /// each cap. The contours overlap and all turn the same way: fill them with <see cref="FillRule.NonZero"/>. It is not
-    /// the outline of the stroke as a single contour, so stroking the result outlines every piece.
+    /// the outline of the stroke as a single contour, so stroking the result outlines every piece: <see cref="Simplify"/>
+    /// makes that outline of it.
     /// </para>
     /// <para>
     /// Curves are widened along their chords, which stay within 1/16 of a pixel of the curve at the size the path has:
@@ -267,6 +268,199 @@ public sealed class VectorPath
         }
 
         return result;
+    }
+
+    /// <summary>Creates a path from the path data of SVG: the <c>d</c> attribute of a <c>path</c> element.</summary>
+    /// <remarks>
+    /// <para>
+    /// Every command of SVG is read (<c>M L H V C S Q T A Z</c> and their relative forms), with the grammar of SVG:
+    /// numbers separated by white space, by a comma or by nothing where there is no doubt, and the arguments of a
+    /// command repeated without its letter. The coordinates are those of the canvas: Y grows downward, as in SVG.
+    /// </para>
+    /// <para>
+    /// The whole text must be valid: nothing is drawn of path data that has an error, where a browser draws what comes
+    /// before it. Every coordinate must be within the limit of a path (16777216 in magnitude).
+    /// </para>
+    /// </remarks>
+    /// <param name="svgPathData">The path data. An empty text is an empty path.</param>
+    /// <returns>The path.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="svgPathData"/> is <see langword="null"/>.</exception>
+    /// <exception cref="FormatException">The text is not valid path data, or a coordinate is beyond the limit of a path.</exception>
+    public static VectorPath ParseSvgPathData(string svgPathData)
+    {
+        ArgumentNullException.ThrowIfNull(svgPathData);
+        return ParseSvgPathData(svgPathData.AsSpan());
+    }
+
+    /// <summary>Creates a path from the path data of SVG: the <c>d</c> attribute of a <c>path</c> element.</summary>
+    /// <param name="svgPathData">The path data. An empty text is an empty path.</param>
+    /// <returns>The path.</returns>
+    /// <remarks>See <see cref="ParseSvgPathData(string)"/>.</remarks>
+    /// <exception cref="FormatException">The text is not valid path data, or a coordinate is beyond the limit of a path.</exception>
+    public static VectorPath ParseSvgPathData(ReadOnlySpan<char> svgPathData)
+    {
+        if (!SvgPathData.TryParse(svgPathData, out var path, out var position, out var error))
+            throw new FormatException(string.Create(CultureInfo.InvariantCulture, $"The path data is not valid at index {position}: {error}"));
+
+        return path;
+    }
+
+    /// <summary>Creates a path from the path data of SVG, without throwing when the text is not valid.</summary>
+    /// <param name="svgPathData">The path data. An empty text is an empty path.</param>
+    /// <param name="path">The path, or <see langword="null"/> when the text is not valid.</param>
+    /// <returns><see langword="false"/> when the text is <see langword="null"/>, is not valid path data, or has a coordinate beyond the limit of a path.</returns>
+    /// <remarks>See <see cref="ParseSvgPathData(string)"/>.</remarks>
+    public static bool TryParseSvgPathData([NotNullWhen(true)] string? svgPathData, [NotNullWhen(true)] out VectorPath? path)
+    {
+        if (svgPathData is null)
+        {
+            path = null;
+            return false;
+        }
+
+        return SvgPathData.TryParse(svgPathData.AsSpan(), out path, out _, out _);
+    }
+
+    /// <summary>Creates a path from the path data of SVG, without throwing when the text is not valid.</summary>
+    /// <param name="svgPathData">The path data. An empty text is an empty path.</param>
+    /// <param name="path">The path, or <see langword="null"/> when the text is not valid.</param>
+    /// <returns><see langword="false"/> when the text is not valid path data, or has a coordinate beyond the limit of a path.</returns>
+    /// <remarks>See <see cref="ParseSvgPathData(string)"/>.</remarks>
+    public static bool TryParseSvgPathData(ReadOnlySpan<char> svgPathData, [NotNullWhen(true)] out VectorPath? path)
+        => SvgPathData.TryParse(svgPathData, out path, out _, out _);
+
+    /// <summary>Writes the path as the path data of SVG: the <c>d</c> attribute of a <c>path</c> element.</summary>
+    /// <remarks>
+    /// The text has the segments of <see cref="EnumerateSegments"/>, with absolute coordinates, and numbers written so
+    /// that reading them gives the same values, whatever the culture. Lines and Bézier curves are read back exactly;
+    /// an arc is read back as the same arc to a few units of the last place.
+    /// </remarks>
+    /// <returns>The path data; an empty text for an empty path.</returns>
+    public string ToSvgPathData() => SvgPathData.Format(this);
+
+    /// <summary>Enumerates the elements of the path, in the order they were added to it.</summary>
+    /// <remarks>
+    /// <para>
+    /// A segment is what a method of <see cref="VectorPathBuilder"/> adds: the path can be written in another format,
+    /// or built again, from its segments. Every contour starts with a <see cref="PathSegmentKind.MoveTo"/>.
+    /// </para>
+    /// <para>
+    /// An arc is given as the arc of SVG paths that <see cref="VectorPathBuilder.ArcTo(double, double, double, bool, bool, PointD)"/>
+    /// takes, in pieces of at most a quarter turn, and an ellipse as two arcs of half a turn in a closed contour: the
+    /// radii and the rotation are computed from the ellipse the path stores, and are those that were given to the
+    /// builder to a few units of the last place only (exactly for an ellipse that is not turned). An arc of an ellipse
+    /// that a transformation flattened to a segment is a <see cref="PathSegmentKind.LineTo"/>.
+    /// </para>
+    /// </remarks>
+    /// <returns>An enumerator, to use with <see langword="foreach"/>. It does not allocate.</returns>
+    public PathSegmentEnumerator EnumerateSegments() => new(this);
+
+    /// <summary>Creates the path that goes through the points of this one from its end to its start.</summary>
+    /// <remarks>
+    /// The contours come in the opposite order, and each one is followed the other way: an open contour starts where
+    /// it ended, and a closed contour keeps its first point. The result paints the same pixels when it is filled or
+    /// stroked; what follows a path in its direction changes side: the dashes of a pen, the points at a distance, a
+    /// text on the path, and what <see cref="FillRule.NonZero"/> counts when the path is combined with another one.
+    /// </remarks>
+    /// <returns>The reversed path; this instance when the path is empty.</returns>
+    public VectorPath Reverse() => IsEmpty ? this : PathReverser.Reverse(_commands, _points, Bounds);
+
+    /// <summary>Creates the part of the path between two distances from its start: what is left of a stroke that is drawn progressively.</summary>
+    /// <remarks>
+    /// <para>
+    /// The distances are those of <see cref="GetLength"/> and <see cref="TryGetPointAtDistance"/>: the contours follow
+    /// each other, without the gap between them. A distance before the start of the path is its start, a distance
+    /// beyond its end is its end.
+    /// </para>
+    /// <para>
+    /// The result is made of the chords the path is drawn with, which stay within 1/16 of a pixel of its curves at the
+    /// size the path has: transform a path before taking a part of it, not after. The vertices of these chords are
+    /// vertices of the result: a pen joins them as it joins any corner, where the stroke of the path itself is always
+    /// round (the two only differ on curves a few pixels wide; <see cref="LineJoin.Round"/> makes them the same). A
+    /// contour that is cut becomes an open contour; a closed contour that is kept entirely stays closed. A contour
+    /// without length is not kept.
+    /// </para>
+    /// </remarks>
+    /// <param name="start">The distance from the start of the path at which the part starts, in pixels.</param>
+    /// <param name="end">The distance from the start of the path at which the part ends, in pixels.</param>
+    /// <returns>The part of the path; an empty path when <paramref name="end"/> is not after <paramref name="start"/>.</returns>
+    /// <exception cref="ArgumentException"><paramref name="start"/> or <paramref name="end"/> is not a number.</exception>
+    public VectorPath Trim(double start, double end)
+    {
+        if (double.IsNaN(start))
+            throw new ArgumentException("The distance must be a number.", nameof(start));
+
+        if (double.IsNaN(end))
+            throw new ArgumentException("The distance must be a number.", nameof(end));
+
+        var builder = new VectorPathBuilder();
+        if (!IsEmpty && start < end)
+        {
+            PathFlattener.Flatten(this, new TrimSink(builder, start, end));
+        }
+
+        return builder.Build();
+    }
+
+    /// <summary>Creates the outline of what this path and another one fill, combined: their union, what they have in common, or what one has and the other has not.</summary>
+    /// <remarks>
+    /// <para>
+    /// The result is the boundary of an area: closed contours that do not cross each other or themselves, around the
+    /// area and around its holes. Its outer contours turn clockwise on the image and its holes the other way, so that
+    /// both fill rules paint the same pixels; stroking it outlines the area.
+    /// </para>
+    /// <para>
+    /// The result is made of straight segments: the chords the paths are drawn with, which stay within 1/16 of a pixel
+    /// of their curves at the size the paths have, with their vertices moved to the nearest 1/1024 of a pixel.
+    /// Transform the paths before combining them, not the result after. An open contour is closed by a straight
+    /// segment, as when it is filled.
+    /// </para>
+    /// <para>
+    /// The time grows with the number of segments of the paths and of the points where they cross, and with the
+    /// square of the number of segments when they are stacked on each other: pass a
+    /// <paramref name="cancellationToken"/> when the paths come from untrusted input.
+    /// </para>
+    /// </remarks>
+    /// <param name="other">The other path.</param>
+    /// <param name="mode">What is kept of the areas the two paths fill.</param>
+    /// <param name="fillRule">The rule deciding what each of the two paths fills.</param>
+    /// <param name="cancellationToken">A token to cancel the operation.</param>
+    /// <returns>The outline; an empty path when nothing is kept.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="other"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="mode"/> is not a defined <see cref="PathCombineMode"/>, or <paramref name="fillRule"/> is not a defined <see cref="FillRule"/>.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public VectorPath Combine(VectorPath other, PathCombineMode mode, FillRule fillRule = FillRule.NonZero, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(other);
+        if (mode is not (PathCombineMode.Union or PathCombineMode.Intersect or PathCombineMode.Exclude or PathCombineMode.Xor))
+            throw new ArgumentOutOfRangeException(nameof(mode), mode, "The combine mode is not valid.");
+
+        if (fillRule is not (FillRule.NonZero or FillRule.EvenOdd))
+            throw new ArgumentOutOfRangeException(nameof(fillRule), fillRule, "The fill rule is not valid.");
+
+        return PathCombiner.Combine(this, other, mode, fillRule, cancellationToken);
+    }
+
+    /// <summary>Creates the outline of what this path fills: contours that do not cross each other or themselves.</summary>
+    /// <remarks>
+    /// <para>
+    /// Filling the result paints what filling this path paints, with either fill rule: a path that crosses itself, or
+    /// whose contours overlap, becomes the boundary of its area. This turns the pieces <see cref="Widen"/> gives into
+    /// the outline of a stroke, which can be stroked in turn.
+    /// </para>
+    /// <para>The result is made as <see cref="Combine"/> makes it, with the same precision and the same cost.</para>
+    /// </remarks>
+    /// <param name="fillRule">The rule deciding what this path fills.</param>
+    /// <param name="cancellationToken">A token to cancel the operation.</param>
+    /// <returns>The outline; an empty path when the path fills nothing.</returns>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="fillRule"/> is not a defined <see cref="FillRule"/>.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public VectorPath Simplify(FillRule fillRule = FillRule.NonZero, CancellationToken cancellationToken = default)
+    {
+        if (fillRule is not (FillRule.NonZero or FillRule.EvenOdd))
+            throw new ArgumentOutOfRangeException(nameof(fillRule), fillRule, "The fill rule is not valid.");
+
+        return PathCombiner.Combine(this, second: null, PathCombineMode.Union, fillRule, cancellationToken);
     }
 
     /// <summary>Gets the smallest rectangle containing every point and control point of a list of elements.</summary>

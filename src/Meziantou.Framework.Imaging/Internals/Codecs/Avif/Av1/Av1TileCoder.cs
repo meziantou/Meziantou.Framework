@@ -154,6 +154,7 @@ internal ref partial struct Av1TileCoder
     private bool _isPredictedExactly;
     private long _transformSizeRate;
     private bool _searchesTransformTypes;
+    private bool _defersSymbols;
 
     public Av1TileCoder(Av1FrameBuffer frame, Av1FrameState state, Av1SymbolDecoder symbols, Av1TileScratch scratch, Av1ReferenceFrames references, Av1InterScratch? interScratch, Span<ushort> cdf, CancellationToken cancellationToken)
     {
@@ -208,17 +209,7 @@ internal ref partial struct Av1TileCoder
 
         ClearAboveContext();
         _deltaLf = default;
-        for (var plane = 0; plane < _planeCount; plane++)
-        {
-            for (var pass = 0; pass < 2; pass++)
-            {
-                _refSgrXqd[plane][pass] = Av1Tables.SgrprojXqdMid[pass];
-                for (var i = 0; i < Av1Constants.WienerCoeffs; i++)
-                {
-                    _refLrWiener[plane][pass][i] = Av1Tables.WienerTapsMid[i];
-                }
-            }
-        }
+        ResetLoopRestorationReferences();
 
         var sbSize = _sequence.Use128x128Superblock ? Av1Constants.Block128x128 : Av1Constants.Block64x64;
         var sbSize4 = Av1Tables.Num4x4BlocksWide[sbSize];

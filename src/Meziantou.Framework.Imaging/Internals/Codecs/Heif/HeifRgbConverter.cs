@@ -20,6 +20,11 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// coefficients, rounded to nearest.
 /// </description></item>
 /// <item><description>
+/// With premultiplied alpha, the color of a pixel that is not opaque is first multiplied by its alpha, at the precision
+/// of the pixels: <c>(c * a + inputMax / 2) / inputMax</c>. It is the one rounding that the multiplication adds, and what
+/// a decoder divides by the alpha.
+/// </description></item>
+/// <item><description>
 /// A subsampled chroma sample is the mean of the chroma of the 2 or 4 pixels it covers (the samples are centered, which is
 /// <c>chroma_sample_position</c> 0), computed before the rounding. The last column and the last row are repeated when
 /// the size of the image is odd.
@@ -50,6 +55,7 @@ internal sealed class HeifRgbConverter
     private readonly long _kr;
     private readonly long _kb;
     private readonly bool _clearTransparentColors;
+    private readonly bool _premultiplyAlpha;
     private readonly bool _cositedColumns;
 
     /// <summary>Creates the converter of an image.</summary>
@@ -61,7 +67,8 @@ internal sealed class HeifRgbConverter
     /// <param name="fullRange">Whether the color planes use the full range. Alpha always does.</param>
     /// <param name="clearTransparentColors">Whether the color of the fully transparent pixels is replaced with black.</param>
     /// <param name="cositedColumns">Whether the chroma samples of planes that have half the columns are at the position of the luma samples of even columns.</param>
-    public HeifRgbConverter(PixelFormat layout, int bitDepth, int subsamplingX, int subsamplingY, int matrixCoefficients, bool fullRange, bool clearTransparentColors, bool cositedColumns)
+    /// <param name="premultiplyAlpha">Whether the color of every pixel is multiplied by its alpha; ignored for a gray layout, which has no alpha.</param>
+    public HeifRgbConverter(PixelFormat layout, int bitDepth, int subsamplingX, int subsamplingY, int matrixCoefficients, bool fullRange, bool clearTransparentColors, bool cositedColumns, bool premultiplyAlpha = false)
     {
         if (layout is not (PixelFormat.Gray8 or PixelFormat.Gray16 or PixelFormat.Rgba32 or PixelFormat.Rgba64))
             throw new ArgumentOutOfRangeException(nameof(layout), layout, "The layout is not a layout of the converter.");
@@ -76,6 +83,7 @@ internal sealed class HeifRgbConverter
         _max = (1L << bitDepth) - 1;
         _cOffset = 1L << (bitDepth - 1);
         _clearTransparentColors = clearTransparentColors;
+        _premultiplyAlpha = premultiplyAlpha;
         if (fullRange)
         {
             _yRange = _max;
@@ -164,8 +172,17 @@ internal sealed class HeifRgbConverter
                     if (a != _inputMax)
                     {
                         transparent = true;
-                        if (a is 0 && _clearTransparentColors)
+                        if (_premultiplyAlpha)
+                        {
+                            // The color of a fully transparent pixel becomes black: nothing is left to clear
+                            r = RoundedDivide(r * a, _inputMax);
+                            g = RoundedDivide(g * a, _inputMax);
+                            b = RoundedDivide(b * a, _inputMax);
+                        }
+                        else if (a is 0 && _clearTransparentColors)
+                        {
                             r = g = b = 0;
+                        }
                     }
 
                     Convert(r, g, b, out var luminance, out var uNumerator, out var vNumerator);

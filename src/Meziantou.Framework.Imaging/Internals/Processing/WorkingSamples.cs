@@ -15,13 +15,16 @@ internal static class WorkingSamples
 
     /// <summary>
     /// Converts stored samples to working samples: the encoded value <c>v</c> (encoded) or <c>Decode(v / max)</c> (linear
-    /// light). With <see cref="WorkingAlpha.Premultiplied"/>, colors are multiplied by the alpha sample <c>a</c> (0 to max);
+    /// light, with the function of the transfer characteristics <paramref name="transfer"/> of <see cref="CicpTransfer"/>;
+    /// 0 keeps the encoded values). With <see cref="WorkingAlpha.Premultiplied"/>, colors are multiplied by the alpha sample <c>a</c> (0 to max);
     /// with <see cref="WorkingAlpha.Preserved"/> they are kept straight. In both cases the alpha working sample is <c>a</c>.
     /// </summary>
-    public static void Load<TSample>(ReadOnlySpan<TSample> samples, Span<double> working, WorkingAlpha alpha, bool linear)
+    public static void Load<TSample>(ReadOnlySpan<TSample> samples, Span<double> working, WorkingAlpha alpha, byte transfer)
         where TSample : unmanaged
     {
-        var decode = !linear ? default : typeof(TSample) == typeof(byte) ? SrgbTransfer.Decode8 : SrgbTransfer.Decode16;
+        // The tables of the sRGB function are those of SrgbTransfer, whatever the way sRGB is declared
+        var linear = transfer is not 0;
+        var decode = !linear ? default : typeof(TSample) == typeof(byte) ? CicpTransfer.GetDecode8(transfer) : CicpTransfer.GetDecode16(transfer);
         if (alpha == WorkingAlpha.Premultiplied)
         {
             for (var i = 0; i < samples.Length; i += 4)
@@ -86,7 +89,7 @@ internal static class WorkingSamples
     /// encoded (linear light: clamped to [0, 1] and <c>max * Encode(L)</c>), rounded with <c>floor(v + 0.5 + 2^-20)</c>
     /// and clamped to [0, max].
     /// </summary>
-    public static void Store<TSample>(ReadOnlySpan<double> values, Span<TSample> samples, WorkingAlpha alpha, bool linear, int max)
+    public static void Store<TSample>(ReadOnlySpan<double> values, Span<TSample> samples, WorkingAlpha alpha, byte transfer, int max)
         where TSample : unmanaged
     {
         Debug.Assert(samples.Length == values.Length);
@@ -102,9 +105,9 @@ internal static class WorkingSamples
                     continue;
                 }
 
-                samples[i] = FromInt<TSample>(EncodeColor(values[i] / a, max, linear));
-                samples[i + 1] = FromInt<TSample>(EncodeColor(values[i + 1] / a, max, linear));
-                samples[i + 2] = FromInt<TSample>(EncodeColor(values[i + 2] / a, max, linear));
+                samples[i] = FromInt<TSample>(EncodeColor(values[i] / a, max, transfer));
+                samples[i + 1] = FromInt<TSample>(EncodeColor(values[i + 1] / a, max, transfer));
+                samples[i + 2] = FromInt<TSample>(EncodeColor(values[i + 2] / a, max, transfer));
                 samples[i + 3] = FromInt<TSample>(roundedAlpha);
             }
         }
@@ -112,16 +115,16 @@ internal static class WorkingSamples
         {
             for (var i = 0; i < samples.Length; i += 4)
             {
-                samples[i] = FromInt<TSample>(EncodeColor(values[i], max, linear));
-                samples[i + 1] = FromInt<TSample>(EncodeColor(values[i + 1], max, linear));
-                samples[i + 2] = FromInt<TSample>(EncodeColor(values[i + 2], max, linear));
+                samples[i] = FromInt<TSample>(EncodeColor(values[i], max, transfer));
+                samples[i + 1] = FromInt<TSample>(EncodeColor(values[i + 1], max, transfer));
+                samples[i + 2] = FromInt<TSample>(EncodeColor(values[i + 2], max, transfer));
             }
         }
         else
         {
             for (var i = 0; i < samples.Length; i++)
             {
-                samples[i] = FromInt<TSample>(EncodeColor(values[i], max, linear));
+                samples[i] = FromInt<TSample>(EncodeColor(values[i], max, transfer));
             }
         }
     }
@@ -131,13 +134,13 @@ internal static class WorkingSamples
         where TSample : unmanaged
         => typeof(TSample) == typeof(byte) ? unsafe(Unsafe.As<TSample, byte>(ref value)) : unsafe(Unsafe.As<TSample, ushort>(ref value));
 
-    private static int EncodeColor(double value, int max, bool linear)
+    private static int EncodeColor(double value, int max, byte transfer)
     {
-        if (!linear)
+        if (transfer is 0)
             return Round(value, max);
 
         var clamped = value <= 0 ? 0 : value >= 1 ? 1 : value;
-        return Round(max * SrgbTransfer.Encode(clamped), max);
+        return Round(max * (transfer is CicpTransfer.Srgb ? SrgbTransfer.Encode(clamped) : CicpTransfer.Encode(transfer, clamped)), max);
     }
 
     /// <summary>

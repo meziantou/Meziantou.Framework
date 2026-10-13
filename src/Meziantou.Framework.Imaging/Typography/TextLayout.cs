@@ -67,6 +67,12 @@ public sealed class TextLayout
     private readonly ColorGlyph[] _colorGlyphs;
     private readonly int[]? _colorIndexes;
 
+    // The clusters of each line, from its left, with the characters each one holds: the positions of the text.
+    private readonly TextHitBox[] _hitBoxes;
+    private readonly int[] _hitBoxStarts;
+    private readonly int[] _characterBoundaries;
+    private readonly int _textLength;
+
     private TextLayout(TextLayoutData data)
     {
         _fonts = data.Fonts;
@@ -82,6 +88,10 @@ public sealed class TextLayout
         Height = data.Height;
         IsTruncated = data.IsTruncated;
         HasMissingGlyphs = data.HasMissingGlyphs;
+        _hitBoxes = data.HitBoxes;
+        _hitBoxStarts = data.HitBoxStarts;
+        _characterBoundaries = data.CharacterBoundaries;
+        _textLength = data.TextLength;
         foreach (var run in _runs)
         {
             HasEmboldenedGlyphs |= run.EmboldenWidth > 0;
@@ -251,6 +261,206 @@ public sealed class TextLayout
         }
 
         return builder.Build();
+    }
+
+    /// <summary>Finds the character at a point of the layout, or the nearest one: what a click selects.</summary>
+    /// <remarks>
+    /// <para>
+    /// The line is the one whose rows contain the point; above the first line it is the first one, and below the last
+    /// line the last one. On that line, the character is the one whose advance contains the point (the space from
+    /// where the pen is before it to where it is after it, not its ink); beside the text, it is the first or the last
+    /// one of the line as it is displayed. <see cref="TextHit.IsInside"/> tells the two apart.
+    /// </para>
+    /// <para>
+    /// A character is a grapheme cluster. The characters a font draws as one glyph (a ligature) share its width
+    /// equally. In a text that mixes directions, the characters of a line are not in the order of the text: the hit
+    /// gives the index in the text, and <see cref="TextHit.IsTrailing"/> is relative to the direction of the character.
+    /// </para>
+    /// </remarks>
+    /// <param name="point">The point, from the top-left corner of the layout: the point of the canvas, less the origin the layout is drawn at.</param>
+    /// <returns>The character and the side of it the point is on.</returns>
+    /// <exception cref="ArgumentException">A coordinate of <paramref name="point"/> is not a number.</exception>
+    public TextHit HitTest(PointD point)
+    {
+        if (double.IsNaN(point.X) || double.IsNaN(point.Y))
+            throw new ArgumentException("The coordinates must be numbers.", nameof(point));
+
+        // The line whose rows contain the point; the nearest one above the first line and below the last one
+        var lineIndex = 0;
+        while (lineIndex < _lines.Length - 1 && point.Y >= _lines[lineIndex].Y + _lines[lineIndex].Height)
+        {
+            lineIndex++;
+        }
+
+        var line = _lines[lineIndex];
+        var isInLine = point.Y >= line.Y && point.Y < line.Y + line.Height;
+        var boxes = _hitBoxes.AsSpan(_hitBoxStarts[lineIndex], _hitBoxStarts[lineIndex + 1] - _hitBoxStarts[lineIndex]);
+        if (boxes.IsEmpty)
+            return new TextHit(lineIndex, line.Start, 0, isTrailing: false, isInside: false);
+
+        // The cluster whose advance contains the point; the nearest one beside the text
+        var index = 0;
+        while (index < boxes.Length - 1 && point.X >= boxes[index].Right)
+        {
+            index++;
+        }
+
+        ref readonly var box = ref boxes[index];
+        var width = box.Right - box.Left;
+        var isInside = isInLine && point.X >= box.Left && point.X < box.Right;
+
+        // How far the point is in the cluster, in the direction of its text: from 0 at its leading edge to 1
+        var position = width > 0 ? Math.Clamp((point.X - box.Left) / width, 0, 1) : point.X < box.Left ? 0 : 1;
+        if (box.IsRightToLeft)
+        {
+            position = 1 - position;
+        }
+
+        // The character of the cluster the point is on, and the half of it
+        var scaled = position * box.CharacterCount;
+        var character = Math.Min((int)scaled, box.CharacterCount - 1);
+        var start = GetCharacterStart(box, character);
+        var end = GetCharacterStart(box, character + 1);
+        return new TextHit(lineIndex, box.Start + start, end - start, scaled - character >= 0.5, isInside);
+    }
+
+    /// <summary>Gets where a caret is drawn before a character of the text: a rectangle without width, as tall as its line.</summary>
+    /// <remarks>
+    /// <para>
+    /// The caret is on the leading edge of the character: its left in a left-to-right text, its right in a
+    /// right-to-left one. At the end of a line (a line break, the end of the text), it is after the last character of
+    /// the line; on a line without character, it is where the line starts. The position between two lines of a wrapped
+    /// paragraph is the start of the second one.
+    /// </para>
+    /// <para>An index inside a character (between a letter and its mark, inside a surrogate pair) gives the caret of that character.</para>
+    /// </remarks>
+    /// <param name="textIndex">The index in the text of the character the caret is before, in UTF-16 code units: from 0 to the length of the text, which is after its last character.</param>
+    /// <returns>The rectangle, from the top-left corner of the layout: its left is the position of the caret, and its width is 0.</returns>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="textIndex"/> is negative or greater than the length of the text.</exception>
+    public RectangleD GetCaretRectangle(int textIndex)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(textIndex);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(textIndex, _textLength);
+
+        // The line that holds the character; the last one for the end of the text
+        var lineIndex = 0;
+        while (lineIndex < _lines.Length - 1 && textIndex >= _lines[lineIndex].Start + _lines[lineIndex].Length)
+        {
+            lineIndex++;
+        }
+
+        var line = _lines[lineIndex];
+        var boxes = _hitBoxes.AsSpan(_hitBoxStarts[lineIndex], _hitBoxStarts[lineIndex + 1] - _hitBoxStarts[lineIndex]);
+
+        // The cluster that holds the character, or the last one before it in the text: the caret is then after it
+        var found = -1;
+        for (var i = 0; i < boxes.Length; i++)
+        {
+            if (boxes[i].Start <= textIndex && (found < 0 || boxes[i].Start > boxes[found].Start))
+            {
+                found = i;
+            }
+        }
+
+        double x;
+        if (found < 0)
+        {
+            // Before every character of the line: where the line starts
+            x = boxes.IsEmpty ? (line.IsRightToLeft ? line.X + line.Width : line.X) : GetEdge(boxes[GetFirst(boxes)], 0);
+        }
+        else
+        {
+            ref readonly var box = ref boxes[found];
+            x = GetEdge(box, textIndex >= box.Start + box.Length ? 1 : (double)GetCharacterIndex(box, textIndex - box.Start) / box.CharacterCount);
+        }
+
+        return new RectangleD(x, line.Y, 0, line.Height);
+
+        static int GetFirst(ReadOnlySpan<TextHitBox> boxes)
+        {
+            var first = 0;
+            for (var i = 1; i < boxes.Length; i++)
+            {
+                if (boxes[i].Start < boxes[first].Start)
+                {
+                    first = i;
+                }
+            }
+
+            return first;
+        }
+    }
+
+    /// <summary>Gets the rectangles that cover a range of the text: what is highlighted when it is selected.</summary>
+    /// <remarks>
+    /// Each rectangle is as tall as its line and covers the advances of characters that follow each other on it. A
+    /// range that spans several lines has at least one rectangle per line; in a text that mixes directions, a range
+    /// can be several rectangles on one line. Line breaks and the characters that have no glyph take no space, and a
+    /// part of a ligature takes its share of the width of the ligature.
+    /// </remarks>
+    /// <param name="start">The index in the text of the first character of the range, in UTF-16 code units.</param>
+    /// <param name="length">The number of UTF-16 code units of the range.</param>
+    /// <returns>The rectangles, from the top-left corner of the layout, line by line and from left to right on each line; none for an empty range.</returns>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="start"/> or <paramref name="length"/> is negative, or the range goes beyond the end of the text.</exception>
+    public IReadOnlyList<RectangleD> GetSelectionRectangles(int start, int length)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(start);
+        ArgumentOutOfRangeException.ThrowIfNegative(length);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(length, _textLength - start);
+        var end = start + length;
+        var rectangles = new List<RectangleD>();
+        for (var lineIndex = 0; lineIndex < _lines.Length && length > 0; lineIndex++)
+        {
+            var line = _lines[lineIndex];
+            if (line.Start >= end || line.Start + line.Length <= start)
+                continue;
+
+            var first = rectangles.Count;
+            foreach (ref readonly var box in _hitBoxes.AsSpan(_hitBoxStarts[lineIndex], _hitBoxStarts[lineIndex + 1] - _hitBoxStarts[lineIndex]))
+            {
+                var from = Math.Max(start, box.Start);
+                var to = Math.Min(end, box.Start + box.Length);
+                if (from >= to)
+                    continue;
+
+                // The characters of the cluster that are in the range, from its leading edge
+                var leading = GetEdge(box, (double)GetCharacterIndex(box, from - box.Start) / box.CharacterCount);
+                var trailing = GetEdge(box, to == box.Start + box.Length ? 1 : (double)GetCharacterIndex(box, to - box.Start) / box.CharacterCount);
+                var left = Math.Min(leading, trailing);
+                var right = Math.Max(leading, trailing);
+                if (rectangles.Count > first && Math.Abs(rectangles[^1].Right - left) <= 1e-9)
+                {
+                    // It continues the rectangle before it
+                    rectangles[^1] = RectangleD.FromLTRB(rectangles[^1].Left, line.Y, right, line.Y + line.Height);
+                }
+                else
+                {
+                    rectangles.Add(RectangleD.FromLTRB(left, line.Y, right, line.Y + line.Height));
+                }
+            }
+        }
+
+        return rectangles;
+    }
+
+    /// <summary>Gets the position of a fraction of a cluster, from its leading edge (0) to its trailing edge (1).</summary>
+    private static double GetEdge(in TextHitBox box, double fraction)
+        => box.IsRightToLeft ? box.Right - ((box.Right - box.Left) * fraction) : box.Left + ((box.Right - box.Left) * fraction);
+
+    /// <summary>Gets where a character of a cluster starts, from the start of the cluster; the length of the cluster for the character after the last one.</summary>
+    private int GetCharacterStart(in TextHitBox box, int character)
+        => character <= 0 ? 0 : character >= box.CharacterCount ? box.Length : _characterBoundaries[box.FirstBoundary + character - 1];
+
+    /// <summary>Gets the character of a cluster that holds an offset from the start of the cluster.</summary>
+    private int GetCharacterIndex(in TextHitBox box, int offset)
+    {
+        var character = 0;
+        while (character < box.CharacterCount - 1 && _characterBoundaries[box.FirstBoundary + character] <= offset)
+        {
+            character++;
+        }
+
+        return character;
     }
 
     /// <summary>Gets a value indicating whether glyphs of the layout are thickened by a synthetic bold when they are filled.</summary>

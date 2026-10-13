@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using Meziantou.Framework.Imaging.Internals;
 using Meziantou.Framework.Imaging.Metadata;
 using Meziantou.Framework.Imaging.TestHarness.Adapters;
@@ -42,9 +43,9 @@ public sealed class AvifDecoderConformanceTests
             "avif.majorBrand=avif", "avif.majorBrand=avis", "avif.majorBrand=mif1",
             "avif.bitDepth=8", "avif.bitDepth=10", "avif.bitDepth=12",
             "avif.subsampling=4:4:4", "avif.subsampling=4:2:2", "avif.subsampling=4:2:0", "avif.subsampling=4:0:0",
-            "avif.matrix=0", "avif.matrix=1", "avif.matrix=2", "avif.matrix=4", "avif.matrix=5", "avif.matrix=6", "avif.matrix=7", "avif.matrix=8", "avif.matrix=9", "avif.range=full", "avif.range=limited",
+            "avif.matrix=0", "avif.matrix=1", "avif.matrix=2", "avif.matrix=4", "avif.matrix=5", "avif.matrix=6", "avif.matrix=7", "avif.matrix=8", "avif.matrix=9", "avif.matrix=10", "avif.matrix=11", "avif.matrix=12", "avif.matrix=13", "avif.matrix=14", "avif.range=full", "avif.range=limited",
             "avif.colr=nclx", "avif.colr=icc", "avif.colr=none", "avif.chromaSamplePosition=vertical", "avif.chromaSamplePosition=colocated",
-            "avif.lossless", "avif.filmGrain", "avif.alpha", "avif.grid=2x2", "avif.grid=2x1", "avif.grid=3x1", "avif.grid=1x3", "avif.grid=3x2", "avif.gridTileTransforms", "avif.clap",
+            "avif.lossless", "avif.filmGrain", "avif.alpha", "avif.grid=2x2", "avif.grid=2x1", "avif.grid=3x1", "avif.grid=1x3", "avif.grid=3x2", "avif.gridTileTransforms", "avif.clap", "avif.iden=1", "avif.iden=2",
             "avif.irot=0", "avif.irot=1", "avif.irot=2", "avif.irot=3", "avif.imir=0", "avif.imir=1",
             "avif.metadata=exif", "avif.metadata=xmp",
             "avif.layout=media-first", "avif.idat", "avif.extents=3", "avif.boxes=free", "avif.boxes=unknown", "avif.boxes=large-size", "avif.boxes=to-end", "avif.trailingData",
@@ -91,6 +92,56 @@ public sealed class AvifDecoderConformanceTests
             Assert.Contains(fixtures, fixture => fixture.Entry.HasFeature(string.Create(CultureInfo.InvariantCulture, $"avif.matrix={matrix}")) && fixture.Entry.HasFeature("avif.range=full"));
             Assert.Contains(fixtures, fixture => fixture.Entry.HasFeature(string.Create(CultureInfo.InvariantCulture, $"avif.matrix={matrix}")) && fixture.Entry.HasFeature("avif.range=limited"));
         }
+
+        // The matrices that go through the transfer characteristics: on a pattern coded without loss and on planes whose
+        // colors leave the gamut, and ICtCp with each of the two transfer characteristics it is defined for
+        foreach (var matrix in new[] { 10, 14 })
+        {
+            var tag = string.Create(CultureInfo.InvariantCulture, $"avif.matrix={matrix}");
+            Assert.Contains(fixtures, fixture => fixture.Entry.HasFeature(tag) && fixture.Entry.HasFeature("avif.lossless"));
+            Assert.Contains(fixtures, fixture => fixture.Entry.HasFeature(tag) && fixture.Entry.HasFeature("avif.subsampling=4:2:0"));
+        }
+
+        Assert.Contains(fixtures, fixture => fixture.Expected.Cicp is { TransferCharacteristics: 16, MatrixCoefficients: 14 });
+        Assert.Contains(fixtures, fixture => fixture.Expected.Cicp is { TransferCharacteristics: 18, MatrixCoefficients: 14 });
+        Assert.Contains(fixtures, fixture => fixture.Expected.Cicp is { TransferCharacteristics: 18, MatrixCoefficients: 14, FullRange: false } && fixture.Entry.HasFeature("avif.sequence"));
+        Assert.Contains(fixtures, fixture => fixture.Expected.Cicp is { ColorPrimaries: 12, MatrixCoefficients: 13 });
+
+        // Edit lists that select parts of the media: several edits, an image that is left out before one that refers to
+        // it, images shown for a part of their duration (with a time scale of the movie that is not the one of the
+        // media), a sequence of one image, and a sequence with alpha
+        Assert.Contains(fixtures, fixture => fixture.Entry.HasFeature("avif.seq.edits=2") && HasFeatureKey(fixture, "avif.seq.imagesLeftOut") && fixture.Entry.HasFeature("avif.seq.interFrames"));
+        Assert.Contains(fixtures, fixture => fixture.Entry.HasFeature("avif.seq.edits=3") && fixture.Entry.HasFeature("avif.seq.partialDurations"));
+        Assert.Contains(fixtures, fixture => HasFeatureKey(fixture, "avif.seq.imagesLeftOut") && fixture.Expected.FrameCount == 1);
+        Assert.Contains(fixtures, fixture => fixture.Entry.HasFeature("avif.seq.partialDurations") && fixture.Entry.HasFeature("avif.alpha"));
+        Assert.Contains(fixtures, fixture => fixture.Entry.HasFeature("avif.seq.partialDurations") && fixture.Expected.Frames.Any(frame => frame.Duration is "2/15" or "7/30"));
+
+        // Fragmented sequences: several fragments, images in the moov box followed by fragments, an alpha track (in the
+        // fragment of its images, and in a later one), and a deeper bit depth
+        Assert.Contains(fixtures, fixture => fixture.Entry.HasFeature("avif.seq.fragments=3"));
+        Assert.Equal(2, fixtures.Count(fixture => HasFeatureKey(fixture, "avif.seq.fragments") && fixture.Entry.HasFeature("avif.alpha")));
+        Assert.Contains(fixtures, fixture => HasFeatureKey(fixture, "avif.seq.fragments") && fixture.Entry.HasFeature("avif.bitDepth=10"));
+        Assert.Contains(fixtures, fixture => HasFeatureKey(fixture, "avif.seq.fragments") && ReferenceHeif.Parse(fixture.ReadInput()) is var fragmented && fragmented.ColorTrack!.Samples.Count > fragmented.TopLevelBoxes.Count(box => box.Type == "moof") && fragmented.ColorTrack.Samples[0].Offset < fragmented.TopLevelBoxes.First(box => box.Type == "moof").Offset);
+
+        // Identity derivations: of a grid, with an alpha plane (derived the same way, or coded under an untransformed
+        // derivation), with transformations on the derivation and on its input, and described by its input
+        Assert.Contains(fixtures, fixture => HasFeatureKey(fixture, "avif.iden") && HasFeatureKey(fixture, "avif.grid"));
+        Assert.Contains(fixtures, fixture => HasFeatureKey(fixture, "avif.iden") && fixture.Entry.HasFeature("avif.alpha") && fixture.Entry.HasFeature("avif.clap"));
+        Assert.Contains(fixtures, fixture => HasFeatureKey(fixture, "avif.iden") && fixture.Entry.HasFeature("avif.alpha") && !fixture.Entry.HasFeature("avif.clap"));
+        Assert.Contains(fixtures, fixture => HasFeatureKey(fixture, "avif.iden") && fixture.Entry.HasFeature("avif.clap") && fixture.Entry.HasFeature("avif.irot=1") && fixture.Entry.HasFeature("avif.imir=1"));
+        Assert.Contains(fixtures, fixture => HasFeatureKey(fixture, "avif.iden") && fixture.Entry.HasFeature("avif.matrix=6"));
+
+        // Images that are built from other images: overlays (alone, under an identity derivation, of a grid and of an
+        // identity derivation, at a higher bit depth, of coded images that a matrix converts, with transformations of
+        // their own) and grids of derived images
+        Assert.Contains(fixtures, fixture => fixture.Entry.HasFeature("avif.iovl") && !fixture.Entry.HasFeature("avif.derived.iden"));
+        Assert.Contains(fixtures, fixture => fixture.Entry.HasFeature("avif.iovl") && fixture.Entry.HasFeature("avif.derived.iden") && fixture.Entry.HasFeature("avif.bitDepth=10"));
+        Assert.Contains(fixtures, fixture => fixture.Entry.HasFeature("avif.iovl") && fixture.Entry.HasFeature("avif.derived.matrix=6"));
+        Assert.Contains(fixtures, fixture => fixture.Entry.HasFeature("avif.iovl") && fixture.Entry.HasFeature("avif.clap") && HasFeatureKey(fixture, "avif.irot"));
+        Assert.Contains(fixtures, fixture => fixture.Entry.HasFeature("avif.iovl") && fixture.Entry.HasFeature("avif.derived.colr=icc") && fixture.Expected.Profiles.Icc is not null);
+        Assert.Contains(fixtures, fixture => fixture.Entry.HasFeature("avif.iovl") && fixture.Entry.HasFeature("avif.colr=none") && fixture.Expected.Cicp is not null);
+        Assert.Contains(fixtures, fixture => fixture.Entry.HasFeature("avif.derived.grid") && fixture.Entry.HasFeature("avif.derived.iden") && fixture.Entry.HasFeature("avif.clap"));
+        Assert.All(fixtures.Where(fixture => fixture.Entry.HasFeature("avif.iovl") || fixture.Entry.HasFeature("avif.derived.grid")), fixture => Assert.True(HasFeatureKey(fixture, "avif.derived.inputPixels")));
 
         foreach (var matrix in new[] { 1, 4, 5, 6, 7, 8, 9 })
         {
@@ -231,19 +282,37 @@ public sealed class AvifDecoderConformanceTests
             alphaBitDepth = file.AlphaTrack?.Configuration?.BitDepth ?? 0;
             size = (track.Width, track.Height);
 
-            // One image per sample, the duration of each sample over the time scale of the media, the plays of the edit list
-            Assert.Equal(track.Samples.Count, expected.FrameCount);
-            Assert.Equal(track.Samples.Count, image.Frames.Count);
-            Assert.Equal(track.Samples.Count, info.FrameCount);
-            for (var i = 0; i < track.Samples.Count; i++)
+            // The clean aperture of the sample entry is the part of the samples that is shown, and the matrix of the track
+            // header the orientation of the images
+            if (track.CleanAperture is { } trackAperture)
             {
-                var duration = new FrameDuration(track.Samples[i].Duration, track.Timescale);
+                var rectangle = trackAperture.GetRectangle(track.Width, track.Height);
+                Assert.NotNull(rectangle);
+                size = (rectangle.Value.Width, rectangle.Value.Height);
+                Assert.True(fixture.Entry.HasFeature("avif.seq.clap"));
+            }
+
+            orientation = track.Orientation;
+            Assert.Equal(orientation != 1, fixture.Entry.Features?.Any(feature => feature.StartsWith("avif.seq.matrix=", StringComparison.Ordinal)) ?? false);
+
+            // One image per sample that the edit list shows, for the time that the edits cover of it (every sample, for
+            // its duration over the time scale of the media, without edit list), and the plays of the edit list
+            var presentation = track.GetPresentation(file.MovieTimescale);
+            Assert.Equal(presentation.Count != track.Samples.Count, HasFeatureKey(fixture, "avif.seq.imagesLeftOut"));
+            Assert.Equal(presentation.Any(shown => shown.Numerator * track.Timescale != track.Samples[shown.SampleIndex].Duration * shown.Denominator), fixture.Entry.HasFeature("avif.seq.partialDurations"));
+            Assert.Equal(presentation.Count, expected.FrameCount);
+            Assert.Equal(presentation.Count, image.Frames.Count);
+            Assert.Equal(presentation.Count, info.FrameCount);
+            for (var i = 0; i < presentation.Count; i++)
+            {
+                var divisor = System.Numerics.BigInteger.Max(System.Numerics.BigInteger.GreatestCommonDivisor(presentation[i].Numerator, presentation[i].Denominator), 1);
+                var duration = new FrameDuration((long)(presentation[i].Numerator / divisor), (long)(presentation[i].Denominator / divisor));
                 Assert.Equal(duration, image.Frames[i].Metadata.Duration);
                 Assert.Equal(RationalDuration.Create(duration.Numerator, duration.Denominator), fixture.GetDuration(i));
             }
 
-            Assert.Equal(track.Samples.Count > 1, image.Animation is not null);
-            if (track.Samples.Count > 1)
+            Assert.Equal(presentation.Count > 1, image.Animation is not null);
+            if (presentation.Count > 1)
             {
                 Assert.Equal(track.TotalPlays, expected.Animation!.TotalPlays);
                 Assert.Equal(track.TotalPlays, image.Animation!.TotalPlays);
@@ -270,12 +339,22 @@ public sealed class AvifDecoderConformanceTests
             var header = Image.Identify(data);
             Assert.Null(header.Metadata.ExifProfile);
             Assert.Null(header.Metadata.XmpProfile);
-            Assert.Equal(track.Samples.Count, header.FrameCount);
+            Assert.Equal(file.HasMovieExtends, HasFeatureKey(fixture, "avif.seq.fragments"));
+            Assert.Equal(file.HasMovieExtends ? null : presentation.Count, header.FrameCount);
         }
         else
         {
-            var primary = file.PrimaryItem;
-            Assert.NotNull(primary);
+            Assert.NotNull(file.PrimaryItem);
+            if (file.IsBuiltImage(file.PrimaryItem))
+            {
+                AssertBuiltImage(fixture, file, image, info);
+                return;
+            }
+
+            // An identity derivation presents its input image: the coded image is the last item of the chain
+            var chain = file.GetIdentityChain(file.PrimaryItem);
+            Assert.Equal(chain.Count > 1, HasFeatureKey(fixture, "avif.iden"));
+            var primary = chain[^1];
             var coded = primary;
             if (primary.Type == "grid")
             {
@@ -288,25 +367,23 @@ public sealed class AvifDecoderConformanceTests
             }
 
             configuration = coded.Configuration!;
-            nclx = primary.Nclx;
-            icc = primary.IccProfile;
+            nclx = chain.Select(item => item.Nclx).FirstOrDefault(value => value is not null);
+            icc = chain.Select(item => item.IccProfile).FirstOrDefault(value => value is not null);
             hasAlpha = file.AlphaItem is not null;
-            alphaBitDepth = file.AlphaItem is { } alpha ? (alpha.Type == "grid" ? file.GetGridTiles(alpha)[0] : alpha).Configuration!.BitDepth : 0;
-            var ispe = primary.Size!.Value;
-            size = ((int)ispe.Width, (int)ispe.Height);
-            if (primary.CleanAperture is { } aperture)
-            {
-                var rectangle = aperture.GetRectangle(size.Width, size.Height);
-                Assert.NotNull(rectangle);
-                size = (rectangle.Value.Width, rectangle.Value.Height);
-            }
+            alphaBitDepth = file.AlphaItem is { } alphaItem && file.GetIdentityChain(alphaItem)[^1] is var alpha ? (alpha.Type == "grid" ? file.GetGridTiles(alpha)[0] : alpha).Configuration!.BitDepth : 0;
 
-            orientation = primary.Orientation;
+            // The image is the part of the coded image that the transformations of the chain present, as it is coded
+            var ispe = primary.Size!.Value;
+            var transforms = ReferenceHeif.GetTransforms(chain);
+            var presented = ReferenceHeif.Item.Present(transforms, (int)ispe.Width, (int)ispe.Height);
+            Assert.NotNull(presented);
+            size = (presented.Value.Rectangle.Width, presented.Value.Rectangle.Height);
+            orientation = ReferenceHeif.ComposeOrientation(transforms);
             Assert.Single(image.Frames);
             Assert.Null(image.Animation);
             Assert.Equal(FrameDuration.Zero, image.Frames[0].Metadata.Duration);
 
-            var descriptions = file.FindDescriptions(primary.Id);
+            var descriptions = file.FindDescriptions(file.PrimaryItem.Id);
             var exif = descriptions.FirstOrDefault(item => item.Type == "Exif");
             var xmp = descriptions.FirstOrDefault(item => item.ContentType == "application/rdf+xml");
             Assert.Equal(exif is null ? null : Convert.ToHexString(file.ReadExifPayload(exif)), image.Metadata.ExifProfile is { } stillExif ? Convert.ToHexString(stillExif.Data.Span) : null);
@@ -348,13 +425,74 @@ public sealed class AvifDecoderConformanceTests
         Assert.Equal(ColorTransferFunction.Srgb, image.Metadata.TransferFunction);
     }
 
+    // An image that is built from other images (an overlay, a grid of derived images): red, green, blue and alpha samples
+    // at the depth of its deepest coded image; the clean aperture of the primary item selects a part of the image that is
+    // built, and its rotation and mirroring are the orientation; the color description is the one of the primary item, or
+    // else the primaries and the transfer characteristics of its coded images
+    private static void AssertBuiltImage(GoldenFixture fixture, ReferenceHeif file, Image image, ImageInfo info)
+    {
+        var expected = fixture.Expected;
+        var primary = file.PrimaryItem!;
+        var coded = file.GetCodedImages(primary);
+        Assert.NotEmpty(coded);
+        Assert.True(fixture.Entry.HasFeature("avif.iovl") || fixture.Entry.HasFeature("avif.derived.grid"));
+        var depths = coded.SelectMany(item => new[] { item, file.FindAuxiliary(item.Id, ReferenceHeif.AlphaAuxiliaryType) }).Where(item => item is not null)
+            .Select(item => (item!.Type == "grid" ? file.GetGridTiles(item)[0] : item).Configuration!.BitDepth).ToList();
+        var pixelFormat = depths.Max() > 8 ? PixelFormat.Rgba64 : PixelFormat.Rgba32;
+        Assert.Equal(pixelFormat.ToString(), expected.PixelFormat);
+        Assert.Equal(pixelFormat, image.PixelFormat);
+        Assert.Equal(pixelFormat, info.PixelFormat);
+        Assert.Equal(depths.Max(), expected.BitsPerComponent);
+        Assert.Equal(depths.Max(), info.BitsPerComponent);
+        Assert.True(info.MayHaveTransparency);
+        Assert.Equal(ImageColorModel.Rgba, info.ColorModel);
+
+        var ispe = primary.Size!.Value;
+        var presented = ReferenceHeif.Item.Present(primary.Transforms, (int)ispe.Width, (int)ispe.Height);
+        Assert.NotNull(presented);
+        var size = (presented.Value.Rectangle.Width, presented.Value.Rectangle.Height);
+        Assert.Equal(size, (expected.Width, expected.Height));
+        Assert.Equal(size, (image.Width, image.Height));
+        Assert.Equal(size, (info.Width, info.Height));
+        Assert.Equal(primary.Orientation, expected.Orientation);
+        Assert.Equal((ExifOrientation)primary.Orientation, image.Metadata.Orientation);
+        Assert.Equal((ExifOrientation)primary.Orientation, info.Metadata.Orientation);
+        Assert.Single(image.Frames);
+        Assert.Null(image.Animation);
+
+        // The color description of the first image of the tree that has a colr box of type nclx, or else the one of the
+        // bitstream of the first coded image, which the manifest records from the reference decoders
+        var description = file.GetImageTree(primary).Select(item => item.Nclx).FirstOrDefault(value => value is not null);
+        Assert.Equal(description is null, fixture.Entry.HasFeature("avif.colr=none") || fixture.Entry.HasFeature("avif.colr=icc"));
+        var cicp = description is not null ? new CicpColorDescription((byte)description.ColorPrimaries, (byte)description.TransferCharacteristics, 0, fullRange: true)
+            : expected.Cicp is { } bitstream ? new CicpColorDescription((byte)bitstream.ColorPrimaries, (byte)bitstream.TransferCharacteristics, (byte)bitstream.MatrixCoefficients, bitstream.FullRange)
+            : null;
+        Assert.True(cicp is null or { MatrixCoefficients: 0, FullRange: true });
+        Assert.Equal(cicp, image.Metadata.Cicp);
+        Assert.Equal(cicp, info.Metadata.Cicp);
+        Assert.Equal(ColorTransferFunction.Srgb, image.Metadata.TransferFunction);
+
+        // The pixels of the coded images are counted like the frames of a bitstream that are not shown
+        long inputPixels = 0;
+        foreach (var item in coded)
+        {
+            var itemSize = item.Size!.Value;
+            inputPixels += itemSize.Width * itemSize.Height * (file.FindAuxiliary(item.Id, ReferenceHeif.AlphaAuxiliaryType) is null ? 1 : 2);
+        }
+
+        Assert.True(fixture.Entry.HasFeature(string.Create(CultureInfo.InvariantCulture, $"avif.derived.inputPixels={inputPixels}")));
+    }
+
     [Theory]
     [MemberData(nameof(ExactFixtures))]
     public void UnmatrixedSamplesAreExact(string id)
     {
-        // Identity-matrix, monochrome and alpha samples are scaled without matrix: no tolerance, low bits included
+        // Identity-matrix, monochrome and alpha samples are scaled without matrix: no tolerance, low bits included. So are
+        // the samples of a matrix that no independent decoder converts (SMPTE ST 2085: libavif has no conversion for it):
+        // a tolerance needs a measured disagreement, so the exact conversion of the harness is the reference to the bit
         var fixture = GoldenCorpus.Default.Get(id);
-        Assert.False(IsMatrixed(fixture), $"{id}: a matrixed fixture is compared within one unit unless every independent decoder agrees exactly.");
+        var isConvertedByAnotherDecoder = fixture.Entry.Reference?.CrossChecks?.Any(check => check.MaxAbsoluteError is not null) ?? false;
+        Assert.False(IsMatrixed(fixture) && isConvertedByAnotherDecoder, $"{id}: a matrixed fixture is compared within one unit unless every independent decoder agrees exactly.");
         using var image = Image.Load(fixture.ReadInput());
         var snapshot = ImageSnapshots.Capture(image);
         Assert.Equal(fixture.Expected.FrameCount, snapshot.Frames.Count);
@@ -398,9 +536,17 @@ public sealed class AvifDecoderConformanceTests
         Assert.True(units <= 1, string.Create(CultureInfo.InvariantCulture, $"'{id}' differs from the exact conversion by {max} at {location}: more than one unit."));
 
         var policy = fixture.Policy;
-        Assert.False(policy.IsExact, $"'{id}' is matrixed: its policy is a tolerance of one unit (every independent cross-check agrees exactly with the reference?).");
         var checks = fixture.Entry.Reference?.CrossChecks?.Where(check => check.ExcludedFromTolerance != true && check.MaxAbsoluteError is not null).ToList() ?? [];
-        Assert.NotEmpty(checks);
+        if (checks.Count is 0)
+        {
+            // No independent decoder converts these matrix coefficients (SMPTE ST 2085): nothing measures a disagreement
+            // that would justify a tolerance, so the library equals the exact conversion to the bit
+            Assert.True(policy.IsExact, $"'{id}' has no measured cross-check: its policy is exact.");
+            Assert.True(max is 0, string.Create(CultureInfo.InvariantCulture, $"'{id}' differs from the exact conversion by {max} at {location}, and no independent decoder justifies a tolerance."));
+            return;
+        }
+
+        Assert.False(policy.IsExact, $"'{id}' is matrixed: its policy is a tolerance of one unit (every independent cross-check agrees exactly with the reference?).");
         var (justifiedMax, justifiedMean) = ComparisonPolicy.GetMaximumJustifiedTolerance(checks.Max(check => check.MaxAbsoluteError!.Value), checks.Max(check => check.MeanAbsoluteError!.Value));
         var expectedMax = Math.Min(justifiedMax, 1);
         var expectedMean = Math.Min(justifiedMean, Math.Ceiling(Math.Round((mean + 0.01) * 100, 6, MidpointRounding.AwayFromZero)) / 100);
@@ -798,35 +944,97 @@ public sealed class AvifDecoderConformanceTests
     public void ErrorFixturesAreWhatTheirNotesSay()
     {
         // The independent reader confirms the structural facts that the error fixtures are built on
-        Assert.Contains(Read("invalid/avif/premultiplied-alpha").ItemReferences, reference => reference.Type == "prem");
-        Assert.True(Read("invalid/avif/sequence-fragmented").IsFragmented);
+
+        // Movie fragments: one before the moov box, one that the moov box does not announce, fragments that do not
+        // follow each other, composition time offsets, samples that precede their fragment, an edit list that selects a
+        // part of a fragmented media, and an alpha track that lacks an alpha plane
+        var beforeMovie = Read("invalid/avif/sequence-fragment-before-moov");
+        Assert.True(beforeMovie.TopLevelBoxes.Select(box => box.Type).ToList() is var types && types.IndexOf("moof") < types.IndexOf("moov"));
+        Assert.True(Read("invalid/avif/sequence-fragment-without-mvex") is { IsFragmented: true, HasMovieExtends: false });
+        Assert.Contains(Read("invalid/avif/sequence-fragmented-gap").ColorTrack!.FragmentDecodeTimes, time => time.DecodeTime != time.MediaTime);
+        Assert.Contains(3, Read("invalid/avif/sequence-fragmented-composition-offsets").ColorTrack!.FragmentCompositionOffsets);
+        var dataFirst = Read("invalid/avif/sequence-fragmented-data-first");
+        Assert.True(dataFirst.ColorTrack!.Samples[^1].Offset < dataFirst.TopLevelBoxes.Single(box => box.Type == "moof").Offset);
+        var fragmentedEdit = Read("invalid/avif/sequence-fragmented-edit-list");
+        Assert.True(fragmentedEdit.HasMovieExtends);
+        Assert.Equal(1, fragmentedEdit.ColorTrack!.EditList!.Entries[0].MediaTime);
+        var missingAlpha = Read("invalid/avif/sequence-fragmented-alpha-missing");
+        Assert.Equal((2, 1), (missingAlpha.ColorTrack!.Samples.Count, missingAlpha.AlphaTrack!.Samples.Count));
         Assert.Equal(2, Read("invalid/avif/two-meta-boxes").TopLevelBoxes.Count(box => box.Type == "meta"));
         Assert.Null(Read("invalid/avif/missing-pitm").PrimaryItemId);
         Assert.Null(Read("invalid/avif/missing-primary-item").PrimaryItem);
         Assert.Null(Read("invalid/avif/missing-ispe").PrimaryItem!.Size);
         Assert.Null(Read("invalid/avif/missing-av1c").PrimaryItem!.Configuration);
-        Assert.Equal("iden", Read("invalid/avif/derived-iden").PrimaryItem!.Type);
-        Assert.Equal("iovl", Read("invalid/avif/derived-iovl").PrimaryItem!.Type);
+
+        // Identity derivations: two inputs, an input that does not exist, a loop, a size that is not the one of the input,
+        // nine of them nested, and an alpha plane that is not transformed while the derivation has a clean aperture
+        Assert.Equal([2u, 2u], Read("invalid/avif/iden-two-inputs").ItemReferences.Single(reference => reference.Type == "dimg").ToItemIds);
+        Assert.Null(Read("invalid/avif/iden-missing-input").FindItem(Read("invalid/avif/iden-missing-input").ItemReferences.Single(reference => reference.Type == "dimg").ToItemIds[0]));
+        Assert.Throws<InvalidDataException>(() => Read("invalid/avif/iden-loop").GetIdentityChain(Read("invalid/avif/iden-loop").PrimaryItem!));
+        var mismatch = Read("invalid/avif/iden-size-mismatch");
+        Assert.NotEqual(mismatch.PrimaryItem!.Size, mismatch.GetIdentityChain(mismatch.PrimaryItem)[^1].Size);
+        Assert.HasCount(10, Read("invalid/avif/iden-depth").GetIdentityChain(Read("invalid/avif/iden-depth").PrimaryItem!));
+        var untransformedAlpha = Read("invalid/avif/iden-alpha-untransformed");
+        Assert.Equal(("iden", "av01"), (untransformedAlpha.PrimaryItem!.Type, untransformedAlpha.AlphaItem!.Type));
+        Assert.NotNull(untransformedAlpha.PrimaryItem.CleanAperture);
+        Assert.Empty(untransformedAlpha.AlphaItem.Transforms);
+
+        // Images that are built from other images: an overlay whose descriptor declares another size than its ispe
+        // property or lacks an offset, a derivation that is its own input, a grid of derived tiles of two sizes; and what
+        // is not supported: a fill color that shows on an image that is not an sRGB one, an alpha plane for the overlay
+        // itself, input images of two color spaces, ten nested derivations
+        Assert.Equal(("iovl", (8L, 8L)), (Read("invalid/avif/iovl-size-mismatch").PrimaryItem!.Type, Read("invalid/avif/iovl-size-mismatch").PrimaryItem!.Size!.Value));
+        Assert.Equal((9, 8), (BinaryPrimitives.ReadUInt16BigEndian(Read("invalid/avif/iovl-size-mismatch").ReadItemData(Read("invalid/avif/iovl-size-mismatch").PrimaryItem!).AsSpan(10)), BinaryPrimitives.ReadUInt16BigEndian(Read("invalid/avif/iovl-size-mismatch").ReadItemData(Read("invalid/avif/iovl-size-mismatch").PrimaryItem!).AsSpan(12))));
+        var truncatedOverlay = Read("invalid/avif/iovl-descriptor-truncated");
+        Assert.HasCount(2, truncatedOverlay.ItemReferences.Single(reference => reference.Type == "dimg").ToItemIds);
+        Assert.HasCount(14 + 4, truncatedOverlay.ReadItemData(truncatedOverlay.PrimaryItem!));
+        var loop = Read("invalid/avif/derived-loop");
+        Assert.Contains(loop.ItemReferences, reference => reference.Type == "dimg" && reference.FromItemId == 11 && reference.ToItemIds.Contains(loop.PrimaryItemId!.Value));
+        Assert.True(Read("invalid/avif/grid-derived-tiles-differ").IsBuiltImage(Read("invalid/avif/grid-derived-tiles-differ").PrimaryItem!));
+        var visibleFill = Read("invalid/avif/iovl-fill-other-color-space");
+        Assert.Equal(0xFFFF, BinaryPrimitives.ReadUInt16BigEndian(visibleFill.ReadItemData(visibleFill.PrimaryItem!).AsSpan(8)));
+        Assert.Equal((9, 16), (visibleFill.GetCodedImages(visibleFill.PrimaryItem!)[0].Nclx!.ColorPrimaries, visibleFill.GetCodedImages(visibleFill.PrimaryItem!)[0].Nclx!.TransferCharacteristics));
+        var overlayAlpha = Read("invalid/avif/iovl-alpha-plane");
+        Assert.Equal("iovl", overlayAlpha.PrimaryItem!.Type);
+        Assert.NotNull(overlayAlpha.AlphaItem);
+        Assert.HasCount(2, Read("invalid/avif/iovl-layers-color-spaces").GetCodedImages(Read("invalid/avif/iovl-layers-color-spaces").PrimaryItem!).Select(item => item.Nclx!.ColorPrimaries).Distinct().ToList());
+        var profiles = Read("invalid/avif/iovl-layers-icc-profiles");
+        Assert.HasCount(2, profiles.GetCodedImages(profiles.PrimaryItem!).Select(item => Convert.ToHexString(item.IccProfile!.Value.Span)).Distinct(StringComparer.Ordinal).ToList());
+        var bitstreamColors = Read("invalid/avif/iovl-bitstream-other-color-space");
+        Assert.Equal(12, bitstreamColors.PrimaryItem!.Nclx!.ColorPrimaries);
+        Assert.Null(bitstreamColors.GetCodedImages(bitstreamColors.PrimaryItem!)[0].Nclx);
+        Assert.HasCount(10, Read("invalid/avif/iovl-depth").GetIdentityChain(Read("invalid/avif/iovl-depth").PrimaryItem!));
         Assert.Null(Read("invalid/avif/clap-fractional").PrimaryItem!.CleanAperture!.GetRectangle(8, 8));
-        Assert.Equal(["irot", "clap"], Read("invalid/avif/clap-after-irot").PrimaryItem!.Transforms.Select(property => property.Type).ToArray());
-        Assert.Equal(14, Read("invalid/avif/matrix-ictcp").PrimaryItem!.Nclx!.MatrixCoefficients);
+        Assert.Equal(3, Read("invalid/avif/matrix-reserved").PrimaryItem!.Nclx!.MatrixCoefficients);
+        Assert.Equal((13, 14), (Read("invalid/avif/matrix-ictcp-sdr-transfer").PrimaryItem!.Nclx!.TransferCharacteristics, Read("invalid/avif/matrix-ictcp-sdr-transfer").PrimaryItem!.Nclx!.MatrixCoefficients));
+        Assert.Equal((2, 13), (Read("invalid/avif/matrix-chromaticity-unspecified-primaries").PrimaryItem!.Nclx!.ColorPrimaries, Read("invalid/avif/matrix-chromaticity-unspecified-primaries").PrimaryItem!.Nclx!.MatrixCoefficients));
         Assert.Contains(Read("invalid/avif/essential-unknown-property").PrimaryItem!.Associations, association => association is { IsEssential: true, Property.Type: "zzzz" });
         var alpha = Read("invalid/avif/alpha-different-size");
         Assert.NotEqual(alpha.PrimaryItem!.Size, alpha.AlphaItem!.Size);
         Assert.False(Read("invalid/avif/ftyp-without-avif-brand").HasBrand("avif"));
-        Assert.Equal(1, Read("invalid/avif/sequence-edit-list-offset").Tracks[0].EditList!.Entries[0].MediaTime);
         Assert.All(Read("invalid/avif/sequence-no-av1-track").Tracks, track => Assert.Equal("hvc1", track.SampleEntryType));
         Assert.Equal(3, Read("invalid/avif/grid-tile-count-mismatch").GetGridTiles(Read("invalid/avif/grid-tile-count-mismatch").PrimaryItem!).Count);
 
-        // Image sequences: the edit ends when the second image of three starts; the sample entry declares ICtCp; a
-        // metadata item of the track, or of the meta box of the file that precedes the moov box, is located after the end
-        // of the file
-        var edit = Read("invalid/avif/sequence-edit-ends-before-last-image").ColorTrack!;
-        Assert.Equal(3, edit.Samples.Count);
-        Assert.Equal((ulong)edit.Samples[0].Duration, edit.EditList!.Entries[0].SegmentDuration);
-        Assert.True(edit.EditList.Entries[0].SegmentDuration < (ulong)(edit.Samples[0].Duration + edit.Samples[1].Duration));
-        Assert.Equal(edit.Timescale, Read("invalid/avif/sequence-edit-ends-before-last-image").MovieTimescale);
-        Assert.Equal(14, Read("invalid/avif/sequence-matrix-ictcp").ColorTrack!.Nclx!.MatrixCoefficients);
+        // Image sequences: edit lists that do not play the media forward at its rate (an empty edit, a rate of 2 and of 0,
+        // edits that are not in the order of the media or that overlap, a negative media time), and an alpha track whose
+        // edit is not the one of the color track; the sample entry declares constant luminance without transfer
+        // characteristics; a metadata item of the track, or of the meta box of the file that precedes the moov box, is
+        // located after the end of the file
+        Assert.Equal(-1, Read("invalid/avif/sequence-edit-empty").ColorTrack!.EditList!.Entries[0].MediaTime);
+        Assert.Equal(-2, Read("invalid/avif/sequence-edit-negative-media-time").ColorTrack!.EditList!.Entries[0].MediaTime);
+        Assert.Equal(2, Read("invalid/avif/sequence-edit-rate").ColorTrack!.EditList!.Entries[0].MediaRateInteger);
+        Assert.Equal(0, Read("invalid/avif/sequence-edit-dwell").ColorTrack!.EditList!.Entries[0].MediaRateInteger);
+        Assert.Equal([2L, 0L], Read("invalid/avif/sequence-edits-out-of-order").ColorTrack!.EditList!.Entries.Select(entry => entry.MediaTime));
+        Assert.Equal([0L, 3L], Read("invalid/avif/sequence-edits-overlap").ColorTrack!.EditList!.Entries.Select(entry => entry.MediaTime));
+        foreach (var id in new[] { "invalid/avif/sequence-edits-out-of-order", "invalid/avif/sequence-edits-overlap", "invalid/avif/sequence-edit-empty", "invalid/avif/sequence-edit-rate", "invalid/avif/sequence-edit-dwell", "invalid/avif/sequence-edit-negative-media-time" })
+        {
+            Assert.Throws<InvalidDataException>(() => Read(id).ColorTrack!.GetPresentation(Read(id).MovieTimescale));
+        }
+
+        var differentEdits = Read("invalid/avif/sequence-alpha-edit-differs");
+        Assert.NotEqual(differentEdits.ColorTrack!.EditList!.Entries[0].MediaTime, differentEdits.AlphaTrack!.EditList!.Entries[0].MediaTime);
+        var constantLuminance = Read("invalid/avif/sequence-matrix-constant-luminance-unspecified-transfer").ColorTrack!.Nclx!;
+        Assert.Equal((2, 10), (constantLuminance.TransferCharacteristics, constantLuminance.MatrixCoefficients));
         foreach (var id in new[] { "invalid/avif/sequence-track-metadata-outside-file", "invalid/avif/sequence-file-metadata-outside-file" })
         {
             var file = Read(id);

@@ -31,11 +31,14 @@ color conversion, and bounded-memory streaming.
   hotspot that follows its pixel through geometry operations
 - Six working pixel formats (`Rgba32`, `Bgra32`, `Rgb24`, `Rgba64`, `Gray8`, `Gray16`) with 16-bit precision preserved
 - Crop, auto-crop (background detection), resize (alpha-aware, Contain/Cover/Stretch), rotate, auto-orient, flip,
-  grayscale and convolution matrices (sharpen, blur, edge detection) applied to all frames
+  grayscale, Gaussian blur and convolution matrices (sharpen, edge detection) applied to all frames
 - Antialiased vector drawing on a frame or on every frame: filled and stroked shapes and paths with Bézier curves and
-  arcs, dashed strokes, solid colors, linear, radial and sweep gradients, images, clips and compositing operators, with
-  exact pixel coverage
-- Text drawn from font files with the same rasterizer, measured by the layout that is drawn
+  arcs, dashed strokes, solid colors, linear, radial and sweep gradients, images, clips, layers, shadows, blend modes,
+  compositing operators and transformations of the canvas, with exact pixel coverage
+- Paths that are read from and written to SVG path data, combined (union, intersection, difference), simplified,
+  reversed, cut and measured
+- Text drawn from font files with the same rasterizer, measured by the layout that is drawn, with the positions of
+  its characters (hit testing, carets, selections)
 - Font files read without any system library: TrueType and OpenType (TrueType and CFF outlines), font collections,
   WOFF and WOFF2, with their names, metrics, character map and glyph outlines
 - ICC color management on request: convert an image to another color profile, or convert sample buffers between two
@@ -165,7 +168,7 @@ decoded or encoded approximately; see [Format reference](#format-reference) and 
 | Netpbm | `P1` to `P7` (PBM, PGM, PPM, PAM), 8 and 16 bits | `P1` to `P7`, lossless (PBM on request, from black and white pixels) | `.pnm`, `.pam`, `.ppm`, `.pgm`, `.pbm` |
 | TIFF / BigTIFF | Both byte orders and offset sizes; bilevel, 2/4/8/16-bit gray, gray+alpha, RGB, RGBA, palette, YCbCr, and CMYK with a color conversion; strips and tiles; Deflate, LZW, PackBits, CCITT (modified Huffman, Group 3, Group 4), JPEG and JPEG 2000; predictor; multi-page documents | Strips; uncompressed, Deflate, LZW, PackBits, CCITT (bilevel) or JPEG; gray, RGB, RGBA, bilevel or palette; classic or BigTIFF; multi-page documents (seekable destination) | `.tif`, `.tiff` |
 | ICO / CUR | PNG and DIB representations, cursor hotspots | PNG or 32-bit DIB representations, cursor hotspots | `.ico`, `.cur` |
-| AVIF | Still images and image sequences (animations); 8, 10 and 12 bits; 4:4:4, 4:2:2, 4:2:0 and monochrome; alpha; grids; film grain; ICC/EXIF/XMP and CICP color descriptions | Lossless and lossy still images and image sequences (seekable destination); 8, 10 and 12 bits; 4:4:4, 4:2:2, 4:2:0 and monochrome; lossless alpha; ICC/EXIF/XMP, CICP color descriptions and orientation | `.avif`, `.avifs` (lossless by default) |
+| AVIF | Still images and image sequences (animations); 8, 10 and 12 bits; 4:4:4, 4:2:2, 4:2:0 and monochrome; alpha, straight or premultiplied; grids; film grain; clean aperture and orientation; ICC/EXIF/XMP, CICP color descriptions, light levels, mastering display and pixel aspect ratio | Lossless and lossy still images and image sequences (seekable destination); 8, 10 and 12 bits; 4:4:4, 4:2:2, 4:2:0 and monochrome; lossless alpha, straight or premultiplied; grids; clean aperture and orientation; ICC/EXIF/XMP, CICP color descriptions, light levels, mastering display and pixel aspect ratio | `.avif`, `.avifs` (lossless by default) |
 | HEIC | Still images and image sequences (animations); the HEVC version 1 and range extensions profiles: 8 to 12 bits; 4:4:4, 4:2:2, 4:2:0 and monochrome; intra and inter pictures (P and B, reordered); alpha; grids; ICC/EXIF/XMP and CICP color descriptions | Lossless and lossy still images and image sequences (seekable destination); 8, 10 and 12 bits; 4:4:4, 4:2:2, 4:2:0 and monochrome; lossless alpha; ICC/EXIF/XMP, CICP color descriptions and orientation | `.heic`, `.heif`, `.heics`, `.heifs` (lossless by default) |
 | JPEG XL | Bare codestreams and containers; lossy (VarDCT) and lossless (Modular) frames; up to 16 bits; alpha; animations and layers; patches, splines, noise; recompressed JPEG files; ICC/EXIF/XMP and enumerated color encodings; progressive renderings | Lossless (default) or lossy, every pixel format at its own depth, lossless alpha, animations with any frame count, progressive output, ICC/EXIF/XMP, orientation; JPEG files recompressed without loss (`JpegXlTranscoder`) | `.jxl` |
 | JPEG 2000 | JP2 files (also JPX and JPH files of one codestream) and bare codestreams; reversible and irreversible wavelet transformations; tiles, layers, every progression order and code-block style, regions of interest; the high-throughput block coder (HTJ2K); 1 to 16 bits; opacity, palettes, sYCC, CMYK with a color conversion; ICC/EXIF/XMP and resolution | Lossless and lossy, every pixel format at its own depth, lossless opacity, a JP2 file or a codestream, ICC/EXIF/XMP and resolution | `.jp2` (lossless), `.j2k`, `.j2c`, `.jpc` (a codestream) |
@@ -600,10 +603,16 @@ transparent pixels never bleed (zero alpha becomes transparent black), and 16-bi
 precision.
 
 - `ResizeWorkingSpace.Encoded` (default) filters the stored sample values directly, like most image tools.
-- `ResizeWorkingSpace.LinearSrgb` converts sRGB samples to linear light (IEC 61966-2-1 transfer) before filtering and back
-  afterward (more physically correct averages, for example for thin bright lines). It accepts untagged images (assumed
-  sRGB) and ICC profiles recognized as sRGB or sGray only; any other profile is rejected rather than misinterpreted. No
-  ICC transform is applied in either space: convert such an image first with `ConvertColorProfile(IccProfile.Srgb)`.
+- `ResizeWorkingSpace.LinearSrgb` converts the samples to linear light before filtering and back afterward (more
+  physically correct averages, for example for thin bright lines), with the transfer function of the image: sRGB
+  (IEC 61966-2-1) for an untagged image and for an ICC profile recognized as sRGB or sGray; any other profile is
+  rejected rather than misinterpreted. No ICC transform is applied in either space: convert such an image first with
+  `ConvertColorProfile(IccProfile.Srgb)`. An image with a CICP color description and no ICC profile (an AVIF or JPEG XL
+  image, for example) is decoded with the function of its transfer characteristics, whatever its primaries, which do
+  not change how light adds up: BT.709, gamma 2.2, PQ, HLG and the other functions of Rec. ITU-T H.273. PQ and HLG
+  samples are filtered in the light their function decodes to, relative to its nominal peak, and stay PQ or HLG
+  samples. Unspecified transfer characteristics are read as sRGB, linear ones are filtered as stored, and reserved
+  ones are rejected. The name of the value is historical.
 
 A resize to the current size leaves the image unchanged. Results do not depend on the worker count or on SIMD support:
 the vectorized and parallel kernels are bit-identical to the scalar reference.
@@ -640,7 +649,13 @@ rounded to nearest (ties up) and clamped to the sample range: negative sums beco
 with a scratch of a few rows per worker proportional to the matrix height, charged to the allocation limit; the pixel
 format, the size, the frames and the metadata are kept (the EXIF thumbnail, now stale, is removed). As for resizing,
 results do not depend on the worker count or on SIMD support. The cost grows with the number of non-zero weights: there
-is no dedicated fast path for separable matrices such as large blurs.
+is no dedicated fast path for separable matrices such as large blurs: use `GaussianBlur` for these.
+
+`GaussianBlur(sigma)` blurs an image or a frame with a bell curve of standard deviation `sigma` (the radius CSS
+gives to a blur is twice the deviation): two convolutions, by a row of `2 ceil(3 sigma) + 1` weights then by the same
+weights as a column, so that the time grows with the deviation and not with its square. It takes the edge mode and the
+working space of a convolution, and follows its rules; both passes are prepared before a pixel changes. The weights
+`exp(-i^2 / (2 sigma^2))`, divided by their sum, are computed without any function of the platform.
 
 <!-- snippet: convolve -->
 ```csharp
@@ -717,7 +732,9 @@ rotation of the ellipse, the large-arc and direction flags, the end point; radii
 enlarged), and the arc around a center (the radii, the angle of its first point and its sweep), which a straight
 segment joins to the current point. `AddArc` starts a contour with an arc around a center, `AddPie` adds the closed
 slice between an arc and its center, and `AddRoundedRectangle` a rectangle whose corners are quarters of an ellipse
-(radii are limited to half the sides). Angles are in degrees from the positive x axis; a positive angle turns clockwise
+(radii are limited to half the sides). With a `CornerRadii`, each corner is a quarter of a circle of its own radius (a
+tab, a speech bubble; zero for a corner that is not rounded): when the radii of the two corners of a side add up to
+more than that side, every radius is reduced by the same factor, as CSS does. Angles are in degrees from the positive x axis; a positive angle turns clockwise
 on the image, and a sweep beyond 360 degrees is the whole ellipse. An arc is an element of the path like a curve: it
 ends exactly on its end point, and it is transformed as an arc.
 
@@ -726,8 +743,40 @@ ends exactly on its end point, and it is transformed as an arc.
 applied first), and `VectorPath.Transform` returns the path it gives. The result is exact: curves are transformed as
 curves and an ellipse stays an ellipse, so a path that is enlarged stays smooth. Angles are in degrees, and a positive
 angle turns clockwise on the image (Y grows downward); sines and cosines do not come from the platform, and a rotation
-by a multiple of 90 degrees is exact. The canvas has no transform of its own: a shape is transformed before it is
-drawn, and a text through `TextLayout.ToPath`.
+by a multiple of 90 degrees is exact.
+
+`canvas.Transform(transform, callback)` transforms everything a callback draws: shapes, strokes (the pen is
+transformed with the path it strokes, so a scaling makes it wider), the gradients and the images of the brushes,
+images, texts with the paints of their spans and the glyphs a font draws with its own colors, clips, and the offset
+and the blur of a shadow. A drawing is flattened for the size the transformation gives it: curves stay smooth however
+they are enlarged, and straight sides are placed exactly where `VectorPath.Transform` places them. Transformations
+nest (the inner one applies first), with clips and layers in any order.
+
+<!-- snippet: draw-watermark -->
+```csharp
+public static void DrawWatermark(string fontPath, string inputPath, string outputPath)
+{
+    using var image = Image.Load(inputPath);
+    var layout = TextLayout.Create("DRAFT", Font.Load(fontPath), size: image.Width / 6.0);
+    var ink = new SolidBrush(new Rgba32(255, 255, 255, 110));
+    var center = new PointD(image.Width / 2.0, image.Height / 2.0);
+
+    image.Draw(canvas =>
+    {
+        // Everything the callback draws is turned around the center of the image: the text is drawn as usual
+        canvas.Transform(AffineTransform.CreateRotation(-30, center), turned =>
+        {
+            for (var row = -1; row <= 1; row++)
+            {
+                var origin = new PointD(center.X - (layout.Width / 2), center.Y - (layout.Height / 2) + (row * layout.Height * 1.5));
+                turned.FillText(ink, layout, origin);
+            }
+        });
+    });
+
+    image.Save(outputPath);
+}
+```
 
 **Clipping**. `canvas.Clip` runs a callback whose drawings only change the inside of a path or of a rectangle: the clip
 lasts as long as the callback, and a clip started inside another one keeps what both let through. The edge of a clip
@@ -742,8 +791,60 @@ the point at a distance along it with the direction of the path there (to place 
 the path a pen draws when it strokes the path, so that all of these also answer for a stroke: the bounds of a stroke
 are the tight bounds of the widened path, and a click is on a line when the widened path contains it. A widened path
 is the pieces the library fills (one per segment, join and cap, overlapping): fill it with the non-zero rule; it is
-not a single outline. Lengths and containment are those of the path as it is drawn, with its curves replaced by their
+not a single outline (see `Simplify` below). Lengths and containment are those of the path as it is drawn, with its curves replaced by their
 chords.
+
+**Reading and cutting a path**. `EnumerateSegments` gives the elements of a path, without allocating: each
+`PathSegment` is what a method of the builder adds (`MoveTo`, `LineTo`, `QuadraticBezierTo`, `CubicBezierTo`, `ArcTo`,
+`Close`), so a path can be written in another format or built again from them. An arc comes as the arc of SVG paths, in
+pieces of at most a quarter turn, and a whole ellipse as two arcs of half a turn. `Reverse` returns the path followed
+from its end (what the dashes of a pen, a text on the path and the points at a distance start from), and
+`Trim(start, end)` the part of it between two distances from its start: the stroke of a path that is drawn
+progressively, or the arc of a gauge. A part of a path is made of the chords the path is drawn with: transform a path
+before cutting it, not after.
+
+**Combining paths**. `Combine` returns the outline of what two paths fill, combined by a `PathCombineMode`: `Union`
+(what one of them fills), `Intersect` (what both fill), `Exclude` (what the first one fills and the second one does
+not) or `Xor` (what only one fills). `Simplify` returns the outline of what one path fills: a path that crosses itself,
+or whose contours overlap, becomes the boundary of its area, and the pieces of `Widen` become the outline of the
+stroke, which can be stroked or combined in turn. The result is closed contours that do not cross each other or
+themselves: the outer ones turn clockwise on the image and the holes the other way, so both fill rules paint the same
+pixels. It is made of straight segments (the chords the paths are drawn with, their vertices moved to the nearest
+1/1024 of a pixel, where every decision is exact): combine paths at the size they are drawn at. The time grows with the
+number of segments and of their crossings, and with the square of the number of segments for shapes stacked on each
+other: pass a `CancellationToken` for untrusted paths.
+
+**SVG path data**. `VectorPath.ParseSvgPathData` reads the `d` attribute of an SVG `path` element, the format icons
+come in: every command (`M L H V C S Q T A Z`, absolute and relative) with the grammar of SVG, in the coordinates of
+the canvas (Y grows downward, as in SVG). The whole text must be valid: an error is a `FormatException` that gives its
+position (or `false` from `TryParseSvgPathData`), where a browser draws what comes before it. `ToSvgPathData` writes a
+path the same way, with absolute coordinates and numbers that read back as the same values: lines and curves are read
+back exactly, an arc to a few units of the last place.
+
+<!-- snippet: draw-icon -->
+```csharp
+public static string DrawIcon(string outputPath)
+{
+    // The path data of an icon of 24 by 24 pixels, as the "d" attribute of an SVG file has it
+    var heart = VectorPath.ParseSvgPathData("M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z");
+
+    // A path is scaled before it is drawn or cut: its curves stay curves
+    var icon = heart.Transform(AffineTransform.CreateScale(4, 4));
+    var outline = new Pen(Colors.Crimson, 3) { LineCap = LineCap.Round, LineJoin = LineJoin.Round };
+
+    using var image = new Image<Rgba32>(96, 96, Colors.White);
+    image.Draw(canvas =>
+    {
+        canvas.Fill(Colors.MistyRose, icon);
+
+        // The first three quarters of the outline
+        canvas.Stroke(outline, icon.Trim(0, icon.GetLength() * 0.75));
+    });
+
+    image.Save(outputPath);
+    return icon.ToSvgPathData();
+}
+```
 
 <!-- snippet: draw-route -->
 ```csharp
@@ -795,6 +896,12 @@ the color of their `GradientStop`s at the center of each pixel; `SpreadMode` giv
 stops with the same offset make a hard edge, and stops are interpolated on alpha-premultiplied values, so a transparent
 stop does not tint its neighbors.
 
+`ColorSpace` says in which space the colors of two stops are mixed. `Encoded` (the default, as in CSS and SVG) mixes
+the stored sample values: half way from red to green is a dark olive, (128, 128, 0). `LinearSrgb` mixes light, as
+paints of light do: the yellow (188, 188, 0). `Oklab` mixes in a space made for it, where the lightness and the hue
+change evenly: (208, 168, 0), with no dull band between two saturated colors. The stops are taken as sRGB colors; at
+a stop, the color is the color of the stop in every space.
+
 A radial gradient can spread from a `FocalPoint` that is not its center (a highlight on a sphere): the point must be
 strictly inside the circle. A sweep gradient goes around its center clockwise on the image, from `StartAngle` to
 `EndAngle` (a full turn from the right of the center by default); its colors change abruptly at its start angle unless
@@ -803,13 +910,21 @@ on the canvas: the points of the gradient are given before it applies, so a scal
 makes an elliptical radial gradient, and a rotation turns a gradient without recomputing its points.
 
 **Images**. `canvas.DrawImage` draws a frame of another image: at a position (its pixels as they are), stretched to a
-rectangle, or a region of it stretched to a rectangle (a sprite of a sheet), with an optional opacity. An `ImageBrush`
+rectangle, a region of it stretched to a rectangle (a sprite of a sheet), or placed by an `AffineTransform` (turned,
+skewed, mirrored: its edges are antialiased, and a quarter turn or a mirror keeps its pixels exactly), with an optional
+opacity. An `ImageBrush`
 paints any shape or text with an image: `Transform` places the image on the canvas, `WrapMode` gives the colors around
-it (`Transparent` by default, `Pad`, `Repeat` for tiles, `Reflect`), `Sampling` chooses between the interpolation of
-the four pixels around a position (`Bilinear`, the default) and the nearest pixel, and `Opacity` fades it. An image
-drawn on whole pixels without scaling keeps its pixels exactly; its pixels are converted to the pixel format of the
-canvas like any brush color, and no color profile is applied. An image that is drawn much smaller than it is skips
-pixels: `Resize` it first. The frame is read while it is drawn: it cannot be one of the frames the canvas draws on, but
+it (`Transparent` by default, `Pad`, `Repeat` for tiles, `Reflect`), `Sampling` chooses how the image is read, and
+`Opacity` fades it. An image drawn on whole pixels without scaling keeps its pixels exactly; its pixels are converted
+to the pixel format of the canvas like any brush color, and no color profile is applied.
+
+An `ImageSampling` is `Bilinear` (the default: the four pixels around a position, interpolated), `Nearest` (the pixel
+that contains the position: an enlarged image keeps its pixels as squares) or `Smooth`. With the first two, an image
+that is drawn much smaller than it is skips pixels. `Smooth` reads every pixel of the image a pixel of the canvas
+covers, with the weights of the interpolation stretched over them, so that a photograph drawn as a thumbnail has no
+aliasing; an image that is not reduced is interpolated as with `Bilinear`, bit for bit. `DrawImage` takes the sampling
+as an argument. Painting a pixel then costs as many pixels of the image as it covers: `Resize` an image that is drawn
+many times, which also has sharper filters. The frame is read while it is drawn: it cannot be one of the frames the canvas draws on, but
 it can be another frame of the same image when the drawing is on one frame (`ImageFrame.Draw`).
 
 <!-- snippet: draw-card -->
@@ -843,6 +958,56 @@ public static void ComposeCard(string photoPath, string outputPath)
 }
 ```
 
+**Layers**. `canvas.Layer(opacity, callback)` runs a callback whose drawings are made on a transparent image of the
+size of the canvas, which is then drawn on the canvas as a whole. Shapes that overlap, drawn one after the other with a
+translucent paint, show through each other; in a layer they are drawn as they are, then the whole is faded. A layer can
+also be combined with the canvas by a compositing operator (see below): `CompositeMode.DestinationIn` makes a mask of
+any drawing, a text included, and `DestinationOut` an eraser. A layer starts transparent and has the coordinates of
+the canvas; layers and clips nest, and a clip that is active when a layer starts applies to the layer as a whole. The
+image of a layer comes from the allocation scope of the image (4 bytes per pixel on an 8-bit color canvas, 8 bytes
+otherwise) and is kept while the canvas lasts; a layer costs the clearing and the drawing of the pixels the clip can
+show, so start a layer inside `Clip` when it covers a small part of a large canvas.
+
+**Shadows**. `canvas.Shadow(color, offset, blur, callback)` draws what the callback draws with its shadow under it: a
+drop shadow, or a glow when there is no offset. The drawings are made on a layer; the shadow is the alpha of that layer
+(the shape of everything the callback drew, as a whole), blurred by a Gaussian blur of the given standard deviation,
+moved by the offset and painted with the color, whose alpha makes the shadow translucent. A drawing that goes beyond
+an edge of the canvas is taken to continue there, so that its shadow does not fade along that edge. The cost grows
+with the pixels the clip can show and with the blur: draw the shadow of a small shape inside `Clip`, with room for the
+shadow.
+
+<!-- snippet: draw-badge -->
+```csharp
+public static void DrawBadge(string outputPath)
+{
+    using var image = new Image<Rgba32>(220, 120, Colors.WhiteSmoke);
+    var card = new RectangleD(30, 24, 160, 64);
+    var face = new LinearGradientBrush(new PointD(0, 24), new PointD(0, 88), [new GradientStop(0, Rgba32.ParseHex("#4F8EF7")), new GradientStop(1, Rgba32.ParseHex("#2456C8"))]) { ColorSpace = GradientColorSpace.Oklab };
+    var shine = new SolidBrush(new Rgba32(255, 255, 255, 90)) { BlendMode = BlendMode.SoftLight };
+    var mark = new SolidBrush(Colors.White);
+
+    image.Draw(canvas =>
+    {
+        // The card and its shadow: black at a third of its opacity, 6 pixels down, blurred
+        canvas.Shadow(new Rgba32(0, 0, 0, 85), new PointD(0, 6), 5, shadowed =>
+            shadowed.FillRoundedRectangle(face, card, new CornerRadii(18, 18, 4, 18)));
+
+        // A light that lightens the top of the card without hiding it, only where the card is
+        canvas.Clip(new VectorPathBuilder().AddRoundedRectangle(card, new CornerRadii(18, 18, 4, 18)).Build(), clipped =>
+            clipped.FillEllipse(shine, new PointD(110, 20), 120, 34));
+
+        // Two disks that overlap, faded together: they do not show through each other
+        canvas.Layer(0.6, layer =>
+        {
+            layer.FillCircle(mark, new PointD(96, 56), 16);
+            layer.FillCircle(mark, new PointD(118, 56), 16);
+        });
+    });
+
+    image.Save(outputPath);
+}
+```
+
 **Operators**. A brush is painted over the pixels (`CompositeMode.SourceOver`) unless its `CompositeMode` says
 otherwise. The modes are the compositing operators of Porter and Duff: `Source` replaces the pixels, alpha included (a
 transparent color erases), `DestinationOut` erases them where the paint is opaque (an eraser, with any shape and any
@@ -851,6 +1016,15 @@ gradient), `DestinationOver` paints behind them, `DestinationIn` keeps them wher
 is. An operator gives the result where a shape covers a pixel entirely; a pixel covered in part is that result for the
 part that is covered and what it was for the rest, so a pixel the shape does not touch never changes. `canvas.Clear`
 replaces every pixel by a color (`Colors.Transparent` erases the canvas).
+
+**Blend modes**. `Brush.BlendMode` mixes the color of a paint with the color of the pixels before the operator
+combines them: `Multiply` darkens (a shadow, a texture, a tint over a photograph), `Screen` lightens (a glow),
+`Overlay`, `HardLight` and `SoftLight` do one or the other by the lightness of the pixel or of the paint, `Darken` and
+`Lighten` keep the darker or the lighter color, `ColorDodge` and `ColorBurn` brighten or darken the pixel to reflect
+the paint, `Difference` and `Exclusion` invert, and `Hue`, `Saturation`, `Color` and `Luminosity` take some of the
+three from the paint and the rest from the pixel (`Color` tints a gray image). These are the blend modes of CSS and
+of image editors, with the formulas of the W3C. A paint keeps its own color on a transparent pixel, since there is
+nothing to mix it with. `canvas.Layer` takes a blend mode too, and mixes a whole drawing with the canvas at once.
 
 **Pens**. A `Pen` is a brush and a width, centered on the path, with a `LineJoin` for the corners (`Miter` by default,
 beveled beyond `MiterLimit`; `Round`; `Bevel`) and a `LineCap` for the ends of open contours (`Butt` by default; `Round`;
@@ -899,14 +1073,40 @@ public static void MarkAnimation(string inputPath, string outputPath)
 - **Compositing.** The paint is composited over the pixels (source-over) on the stored sample values, with straight
   alpha and exact integer arithmetic, rounded to nearest with ties upward. A full coverage with an opaque color writes
   that color exactly; frames without alpha stay opaque; a pixel that would stay fully transparent is not written and
-  keeps its hidden color. A gradient whose stops have the same color paints exactly what a solid brush paints.
+  keeps its hidden color. A gradient whose stops have the same color paints exactly what a solid brush paints. A
+  gradient that mixes its colors in linear light or in Oklab computes them at 16 bits with the power and cube root
+  functions of the platform, as `ResizeWorkingSpace.LinearSrgb` does: a sample within about 1e-12 of a rounding
+  boundary can differ by one from a platform to another.
 - **Operators.** The other compositing operators use the same exact arithmetic and the same rounding. A pixel whose
   alpha becomes zero becomes transparent black. A frame without alpha stays opaque: its pixels get the color the result
   would have over black, so an eraser darkens them.
+- **Blend modes.** With the colors as fractions of one, a paint `s` on a pixel `d` of alpha `ad` takes the color
+  `(1 - ad) s + ad B(s, d)`, where `B` is the function of the mode in "Compositing and Blending Level 1" of the W3C. It
+  is computed in double precision with additions, multiplications, divisions and square roots only, rounded to the
+  nearest sample value (ties upward), then composited with the exact arithmetic above. The modes that take a color as
+  a whole use the luminosity `0.3 R + 0.59 G + 0.11 B`; a gray level is a color without saturation.
 - **Images.** The color an image gives a pixel is the color it has at the position the center of the pixel comes from:
   the four pixels around that position, weighted by their distance to it, interpolated at 16 bits on alpha-premultiplied
   values and rounded to nearest (or the pixel that contains the position, with nearest sampling). At the center of a
-  pixel of the image, it is that pixel exactly. The opacity of an image multiplies the coverage, as a clip does.
+  pixel of the image, it is that pixel exactly. With smooth sampling, a pixel of the canvas that covers `sx` columns
+  and `sy` rows of the image (the lengths of the rows of the inverse of the transformation, at least 1, at most the
+  size of the region) reads the pixels whose centers are less than `sx` and `sy` away from that position, with the
+  weights `(1 - dx / sx) (1 - dy / sy)`; the weights of the pixels that are outside a transparent image count for the
+  alpha. The opacity of an image multiplies the coverage, as a clip does.
+- **Layers.** A layer is an image with colors and alpha (`Rgba32` on an `Rgba32`, `Bgra32` or `Rgb24` canvas,
+  `Rgba64` otherwise) on which the drawings follow the rules of any frame. When it ends, it is drawn as an image is on
+  whole pixels: its pixels are converted to the pixel format of the canvas like brush colors, and its opacity
+  multiplies the coverage. A drawing of opaque colors on whole pixels is the same in a layer as on the canvas;
+  elsewhere the alpha of the layer is rounded to its samples before it is drawn, which can change a sample by one.
+- **Shadows.** With the alpha of the pixels of the layer as fractions of one, extended beyond the layer by its pixels
+  on the edges, the shadow of a pixel is the alpha blurred by the weights of a Gaussian blur (see `GaussianBlur`) at
+  the position the offset moves it to, interpolated between the four pixels around it, and rounded to a coverage
+  (`floor(65536 s + 1/2)`); the color of the shadow is composited with that coverage as a shape is.
+- **Transformations.** Under a transformation of the canvas, a shape is flattened as it is given, by chords that
+  stay within 1/16 of a pixel of its curves divided by the largest factor the transformation enlarges a length by,
+  then its vertices are transformed: on the canvas the chords stay within 1/16 of a pixel. A stroke is the stroke of
+  the path as it is given, transformed the same way. A brush is placed by its own transformation, then by the one of
+  the canvas. A shape with straight sides is, bit for bit, the transformed path.
 - **Clips.** The coverage of a pixel under a clip is the product of the coverage of the shape and of the coverage of
   the clip, rounded to the nearest 1/65536 (ties upward). It is the area of what the shape and the clip have in common
   wherever one of them covers the pixel entirely; on a pixel that both only cover in part, it is the product of the two
@@ -1150,7 +1350,7 @@ public static void DrawTextOnPath(string fontPath, string outputPath)
 | Scripts that join | Arabic (with Persian, Urdu and the other languages written with it) and Syriac; in the universal model, N'Ko, Mongolian, Adlam, Mandaic, Manichaean, Psalter Pahlavi, Hanifi Rohingya, Sogdian, Old Uyghur, Chorasmian and Phags-pa |
 | Scripts with a model of their own | Hebrew; Thai and Lao; Hangul; Devanagari, Bengali, Gurmukhi, Gujarati, Oriya, Tamil, Telugu, Kannada and Malayalam; Khmer; Myanmar |
 | Scripts of the universal model | The scripts registered for the Universal Shaping Engine: Tibetan, Sinhala, Javanese, Balinese, Sundanese, Batak, Buginese, Cham, Tai Tham, Tai Le, Tai Viet, Lepcha, Limbu, Meetei Mayek, Newa, Kaithi, Sharada, Grantha, Chakma, Brahmi, Kharoshthi, Tifinagh, Duployan, Egyptian Hieroglyphs and the others |
-| Drawing | No transform on the canvas (a path is transformed with `VectorPath.Transform`), no blend mode (multiply, screen, ...) beyond the compositing operators, no layer or group opacity; always antialiased; composited on the encoded sample values (no linear-light option); sequential; an image is read with four pixels at most per pixel of the canvas (no filter when it is reduced), and gives black as the color of the text to the glyphs a font draws with its own colors; a clip multiplies coverages (on a pixel that the shape and the clip both cover in part, that is not the area they have in common); the path of a stroke (`Widen`) is the pieces of the stroke, not a single outline; coordinates are limited to ±16,777,216 |
+| Drawing | Always antialiased; under a transformation of the canvas, every dash of a dashed stroke is cut, also those the canvas does not show; composited on the encoded sample values (no linear-light option); sequential; an image that is reduced is read with four pixels per pixel of the canvas unless smooth sampling is asked for, whose filter is the one of the interpolation (`Resize` has sharper ones), and an image gives black as the color of the text to the glyphs a font draws with its own colors; a clip multiplies coverages (on a pixel that the shape and the clip both cover in part, that is not the area they have in common); the path of a stroke (`Widen`) is the pieces of the stroke, not a single outline (`Simplify` makes it one); combined and simplified paths are made of segments, on a grid of 1/1024 of a pixel; coordinates are limited to ±16,777,216 |
 | Fonts made before OpenType Layout | The marks of a font without positioning table are placed from the shapes of the glyphs; the letters of an Arabic font without substitution table take the presentation forms the font has as characters, with the ligatures of lam and alef; the marks of a Thai font without substitution table take the forms the font has in the private use area |
 
 The glyphs, the clusters and the positions are compared with those of a reference shaper (HarfBuzz) for fonts of
@@ -1348,6 +1548,14 @@ of their characters and were not compared with a font.
   tight curve, neighboring characters overlap or part; give letter spacing to the style when that matters.
 - **Measuring.** `Width` and `Height` are the size of the text, `Lines` gives each line (its part of the text, its
   position, its width, its baseline), and `InkBounds` contains everything that is drawn.
+- **Positions of the text.** `HitTest(point)` gives the character at a point of the layout (the point of the canvas
+  less the origin the layout is drawn at), or the nearest one, and which half of it the point is on: its `CaretIndex`
+  is where a click puts a caret. `GetCaretRectangle(index)` is where that caret is drawn, and
+  `GetSelectionRectangles(start, length)` the rectangles that highlight a range of the text, line by line. A
+  character is a grapheme cluster (a letter with its marks, an emoji sequence), and takes the space of its advance, not
+  of its ink; the characters a font draws as one glyph share its width. A right-to-left character starts on its
+  right: in a text that mixes directions, a caret jumps where the direction changes, and a range of the text can be
+  several rectangles on one line.
 - **Cost.** Creating a layout allocates (its glyphs and positions) and decodes each distinct glyph once, which validates
   the font data the text uses: drawing a layout then only fails on a limit of the image or on cancellation, and
   allocates nothing. The time to create a layout grows with the length of the text and with the number of lookups
@@ -1373,7 +1581,8 @@ the Unicode Consortium.
 ### Metadata, color profiles and orientation
 
 `Image.Metadata` holds the source format (informational only), the EXIF orientation, the
-resolution, ICC/EXIF/XMP profiles (byte-for-byte payloads) and text entries.
+resolution, the pixel aspect ratio, ICC/EXIF/XMP profiles (byte-for-byte payloads), the CICP color description, the
+content light level, the mastering display color volume and text entries.
 
 - **Color profiles are preserved, never applied implicitly.** A profile labels the pixels; untagged pixels are assumed
   sRGB. Decoders keep it, encoders write it (for example PNG `iCCP`, JPEG APP2), conversions keep it only when it can
@@ -1389,11 +1598,20 @@ resolution, ICC/EXIF/XMP profiles (byte-for-byte payloads) and text entries.
 - **CICP color descriptions are labels too.** `Metadata.Cicp` holds the code points of ITU-T H.273 that an AVIF or HEIC
   file declares, or that are equivalent to the enumerated color encoding of a JPEG XL file: color primaries, transfer
   characteristics, matrix coefficients and range. The decoder applies the matrix and the range to produce RGB; the
-  primaries and the transfer characteristics are never applied (HDR samples are not tone mapped). The AVIF and HEIC encoders
+  primaries and the transfer characteristics are not applied when a file is read or written (the samples of an HDR
+  image are returned as they are stored). `ConvertColorProfile` converts the pixels from the color space they
+  describe, and linear-light processing decodes the samples with their transfer function. The AVIF and HEIC encoders
   store the description (with the matrix and the range that it used), and the JPEG XL encoder stores it when the
   format can enumerate it (full-range RGB with the sRGB, Display P3, DCI-P3 or BT.2020 primaries). For the other
   encoders, a description that is not equivalent to sRGB is metadata the format cannot store, unless an ICC profile is
-  written. Linear-light processing rejects such a description.
+  written.
+- **Light levels, the mastering display and the shape of the pixels are labels too.** `Metadata.ContentLightLevel`
+  (MaxCLL and MaxPALL, in cd/m2) and `Metadata.MasteringDisplay` (the primaries, the white point and the luminance
+  range of the display, as the integers of SMPTE ST 2086) describe high dynamic range samples as they were mastered;
+  nothing computes them from the pixels. `Metadata.PixelAspectRatio` is the relative width and height of a pixel:
+  nothing resamples the pixels to make them square, and an operation that swaps the axes of the image (a quarter turn,
+  `AutoOrient()` for the orientations that transpose) swaps its terms. Only AVIF stores the three of them; for the
+  other encoders they are metadata the format cannot store (a ratio of square pixels excepted).
 - **Orientation is reported, never applied by decoders.** `Metadata.Orientation` reports the EXIF orientation;
   `AutoOrient()` transforms the pixels for all eight orientations and resets it to `TopLeft`. On save, the typed
   orientation is authoritative: EXIF orientation and dimension tags are rewritten and thumbnails made stale by geometry
@@ -1418,9 +1636,11 @@ resolution, ICC/EXIF/XMP profiles (byte-for-byte payloads) and text entries.
 
 TIFF stores the resolution, the orientation, an ICC profile and XMP (no EXIF block, no text entries); ICO stores no
 metadata, CUR only the hotspot of each representation, and ANI the hotspot of each frame plus one `Title` and one `Author`
-text entry (Latin-1). AVIF and HEIC store the ICC profile and the CICP color description (`colr` boxes), EXIF and XMP (items)
-and, for a still image, the orientation (`irot` and `imir` properties, never an EXIF block created for it); an image
-sequence stores no orientation, and neither format has a text entry or a resolution. JPEG XL stores an ICC profile (in the
+text entry (Latin-1). AVIF and HEIC store the ICC profile and the CICP color description (`colr` boxes), EXIF and XMP
+(items) and the orientation of a still image (`irot` and `imir` properties, never an EXIF block created for it); AVIF
+also stores the content light level, the mastering display color volume and the pixel aspect ratio (`clli`, `mdcv`
+and `pasp` boxes) and the orientation of an image sequence (the matrix of its track headers), which HEIC does not
+store yet. Neither format has a text entry or a resolution. JPEG XL stores an ICC profile (in the
 codestream), EXIF and XMP (in `Exif` and `xml ` boxes), the orientation (in the image header, not as an EXIF tag), the
 linear transfer function and a CICP color description; it stores no resolution and no text entry. A JP2 file stores an
 ICC profile (in its color specification box: a grayscale profile or a matrix-based RGB profile, the only ones the
@@ -1445,9 +1665,16 @@ public static void EditMetadata(string path)
 Color conversion between ICC profiles is always explicit. `image.ConvertColorProfile(profile)` converts every frame and
 the poster from the color space of the image to the color space of `profile`, then labels the image with it:
 
-- The source is `Metadata.IccProfile`. Without profile it is sRGB (`IccProfile.Srgb`), sGray for grayscale pixel formats
+- The source is `Metadata.IccProfile`. Without profile it is the color space of the CICP color description
+  (`Metadata.Cicp`): the function of its transfer characteristics, then its color primaries, adapted to the white of
+  the ICC connection space with the linear Bradford transform. Unspecified code points are those of sRGB, the matrix
+  coefficients and the range play no part (they describe how a file stored the samples), and reserved primaries or
+  transfer characteristics are rejected. Without profile and without description, or with a description that is
+  equivalent to sRGB, the source is sRGB (`IccProfile.Srgb`), sGray for grayscale pixel formats
   (`IccProfile.SrgbGray`), or their linear-light counterparts when `Metadata.TransferFunction` is `Linear`. A profile
   together with the `Linear` label is ambiguous and rejected.
+- After the conversion the profile describes the pixels: a color description that is not equivalent to sRGB, the
+  content light level and the mastering display are removed with the colors they described.
 - The pixel format is kept, so the destination must be an RGB profile for color formats and a grayscale profile for
   `Gray8`/`Gray16`. Colors are converted at the storage precision (16-bit formats stay 16-bit); alpha is copied
   unchanged and the color of transparent pixels is converted like any other.
@@ -1471,6 +1698,45 @@ public static void ConvertToSrgb(string inputPath, string outputPath)
     // Untagged pixels are read as sRGB: the label can be removed for formats that cannot store a profile
     image.Metadata.IccProfile = null;
     image.Save(outputPath);
+}
+```
+
+High dynamic range samples (the PQ and HLG transfer characteristics, 16 and 18) are not converted implicitly: an ICC
+profile describes a standard dynamic range, and compressing highlights into it changes the look of the image.
+`ConvertColorProfile` rejects them unless `IccColorTransformOptions.ToneMapping` says how:
+
+- PQ samples are the light of a display, up to 10,000 cd/m2. HLG samples are the light of a scene, turned into the
+  light of a display by the opto-optical transfer function of Rec. ITU-R BT.2100 for the peak of the source.
+- `TargetWhiteLuminance` (203 cd/m2 by default, the reference white of Report ITU-R BT.2408) becomes the white of the
+  result. `SourcePeakLuminance` is the brightest light of the source, which the curve maps to that white: when it is
+  not set, it is the maximum content light level of the image (PQ), else the maximum luminance of its mastering
+  display, else 10,000 cd/m2 (PQ) or 1,000 cd/m2 (HLG).
+- `Operator` is the curve: `Bt2390` (the default: the EETF of Report ITU-R BT.2390, which keeps the light below a knee
+  and rolls off above), `Clip`, `Reinhard`, `Hable` or `Mobius`. Every curve is applied to the largest component of a
+  color and the three components are scaled together, so highlights keep their hue. The result is linear light in
+  the primaries of the source, which is then converted to the destination profile like any other color; a source
+  whose peak is below the white is neither compressed nor brightened.
+- Samples are 8-bit or 16-bit integers from end to end: there is no floating-point pixel format, and the converted
+  image is a standard dynamic range one.
+
+<!-- snippet: convert-hdr-to-srgb -->
+```csharp
+public static void ConvertHdrToSrgb(string avifPath, string pngPath)
+{
+    using var image = Image.Load(avifPath);
+
+    // The image has no ICC profile: its color description (BT.2020 primaries with PQ samples, for
+    // example) is what the colors are converted from. PQ and HLG samples are only converted when
+    // the options say how the light above the white of the result is compressed.
+    var options = new IccColorTransformOptions
+    {
+        ToneMapping = new HdrToneMappingOptions { Operator = HdrToneMappingOperator.Bt2390 },
+    };
+    var grayscale = image.PixelFormat is PixelFormat.Gray8 or PixelFormat.Gray16;
+    image.ConvertColorProfile(grayscale ? IccProfile.SrgbGray : IccProfile.Srgb, options);
+
+    // The pixels are sRGB ones: the color description and the light levels went with the conversion
+    image.Save(pngPath, new PngEncoder { MetadataHandling = MetadataHandling.Strict });
 }
 ```
 
@@ -2223,21 +2489,25 @@ public static string ConvertAvif(string avifPath, string pngPath)
 | Feature | Decoding |
 | --- | --- |
 | Presentation | A file with the `avis` brand presents its image sequence (the `pict` track): an animation whose frames are full-canvas images. Any other file presents its primary item. Thumbnails, gain maps, depth maps and the other images of the file are not read |
+| Derived images | A grid (`grid`) of AV1 images, and identity derivations (`iden`): an `iden` item is its input image, with its own `clap`, `irot` and `imir` applied after those of the input. Up to eight nested derivations are followed. The pixels are those of the coded image: the transformations of the whole chain select the part of it that is presented and give `Metadata.Orientation`. The color description, the ICC profile and the other descriptive properties are those of the primary item, or else of the image it is derived from. The alpha plane of a derived image is the auxiliary image of that item (not the one of its input), and must be presented as the colors are: readers disagree on an untransformed alpha plane under a transformed derivation, which is rejected |
+| Images built from other images | An overlay (`iovl`), a grid whose tiles are derived images, and the identity derivations of those, nested up to eight deep. Each input image is decoded and converted as when it is presented alone, moved by its own `clap`, `irot` and `imir`, then composited: an overlay fills its canvas with its fill color and draws its input images in their order, each at its offset (which may be negative or exceed the canvas), with the source-over operator on straight alpha and exact rounding; a grid places its tiles side by side. The image is always `Rgba32`, or `Rgba64` when a coded image has more than 8 bits (an 8-bit input is then scaled exactly), with straight alpha. The transformations of the primary item apply to the image that is built like those of a coded image: `clap` selects a part of it, `irot` and `imir` are `Metadata.Orientation`. Nothing converts colors while an image is built, so every description of the tree must be the same one: the color primaries and the transfer characteristics of the `colr` boxes (or of the bitstream of a coded image that has none), and the bytes of the ICC profiles. An image without description takes the one of the image it is a part of. The description of the image is the first one in the order of the tree, starting at the primary item; when no box has one, it is the one of the bitstream of the first coded image. The fill color of an overlay is an sRGB color: one that is neither transparent nor black needs an image that is sRGB. The other descriptive properties (`clli`, `mdcv`, `pasp`) and the EXIF and XMP items are those of the primary item. Every coded image counts toward `MaxTotalPixels`, like a frame that is decoded without being shown, and each canvas of the tree is checked against the canvas limits |
 | Bitstream | Every AV1 profile: 8, 10 and 12 bits, 4:4:4, 4:2:2, 4:2:0 and monochrome, intra and inter frames, intra block copy, super-resolution, reference scaling, film grain, temporal and spatial layers |
 | Layered images | A layered (progressive) image holds a frame per spatial layer, each refining the previous ones. The image is the frame of the highest layer of the operating point, which is the image at its full quality; the lower layers are decoded on the way and never returned. The `a1op` property selects the operating point (the first one otherwise) and the `lsel` property a layer, whose frame is then the image and must have the size that the `ispe` property declares. In an image sequence, every sample gives the frame of its highest layer |
 | Pixel formats | 8-bit files load as `Rgb24` (`Rgba32` with alpha, `Gray8` for monochrome without alpha); 10-bit and 12-bit files load as `Rgba64` (`Gray16` for monochrome without alpha), their samples scaled to 16 bits exactly |
-| Color conversion | The matrix coefficients and the range of the `colr` box, or else of the bitstream, convert YCbCr to RGB with integer arithmetic and a documented rounding: identity (RGB, exact), BT.709, FCC, BT.470BG, BT.601, SMPTE 240M, YCgCo and BT.2020 non-constant luminance; unspecified coefficients are BT.601. Subsampled chroma is upsampled bilinearly at the sample position that the bitstream declares |
-| Alpha | The alpha auxiliary image, or the alpha track of a sequence, of the size of the color image. Premultiplied alpha is rejected |
+| Color conversion | The matrix coefficients and the range of the `colr` box, or else of the bitstream, convert YCbCr to RGB with integer arithmetic and a documented rounding: identity (RGB, exact), BT.709, FCC, BT.470BG, BT.601, SMPTE 240M, YCgCo, BT.2020 non-constant luminance, SMPTE ST 2085 (Y'D'zD'x) and the chromaticity-derived non-constant luminance coefficients, whose weights are the exact luminance of the color primaries that the file declares (primaries without chromaticities are rejected); unspecified coefficients are BT.601. The BT.2020 and chromaticity-derived constant luminance coefficients and ICtCp (with PQ or HLG) are not a matrix of the samples: they go through the transfer characteristics that the file declares, in double precision, and give the nearest sample to the exact value (a value within about a billionth of a rounding boundary may round either way, depending on the platform). The extents of the chroma of constant luminance are the ones the equations of ITU-T H.273 give, which differ in the fourth decimal from the constants printed in Rec. ITU-R BT.2020. The samples stay encoded with the transfer characteristics of the file. Subsampled chroma is upsampled bilinearly at the sample position that the bitstream declares |
+| Alpha | The alpha auxiliary image, or the alpha track of a sequence, of the size of the color image. Premultiplied colors (a `prem` reference from the color image, or from the color track, to its alpha plane) are divided by the alpha of their pixel once they are converted, with an integer division rounded to nearest: pixels always have straight alpha. A color above its alpha is clipped, and nothing is left of the color of a fully transparent pixel, which is black |
 | Grids | Grid images, for the color image and its alpha plane. The transformations of a grid apply once, to the assembled image, whether or not the tiles repeat them |
-| Transformations | `irot` and `imir` are composed and reported as `Metadata.Orientation`, never applied (`AutoOrient()` applies them); the EXIF orientation tag is ignored, as the format requires. `clap` crops the image when it selects whole samples. `pasp` is ignored |
-| Metadata | ICC profile, EXIF, XMP and the CICP color description. A still image takes them from its primary item. An image sequence takes its ICC profile and its color description from its track, and its EXIF and XMP from the `meta` box of the track, or else from the `meta` box of the file when it precedes the `moov` box |
+| Transformations | `irot` and `imir` are composed and reported as `Metadata.Orientation`, never applied (`AutoOrient()` applies them); the EXIF orientation tag is ignored, as the format requires. `clap` crops the image when it selects whole samples. The properties apply in the order of their association: a `clap` that follows a rotation or a mirroring selects a part of the image as they present it, and the pixels are still returned as they are coded. `pasp` is reported as `Metadata.PixelAspectRatio`, never applied. An image sequence takes its orientation from the matrix of the track header of its color track, when the matrix turns the images by quarter turns or mirrors them (any other matrix places the track in the presentation of a player and is ignored), and its clean aperture from the `clap` box of its sample entry; its alpha track has the same ones or none |
+| Metadata | ICC profile, EXIF, XMP, the CICP color description, the content light level (`clli`), the mastering display color volume (`mdcv`) and the pixel aspect ratio (`pasp`). A still image takes them from its primary item. An image sequence takes its ICC profile, its color description and the `clli`, `mdcv` and `pasp` boxes from the sample entry of its track, and its EXIF and XMP from the `meta` box of the track, or else from the `meta` box of the file when it precedes the `moov` box. The light levels and the mastering display that the bitstream itself carries (AV1 metadata units) and the content color volume (`cclv`) are not read |
 | Identification | `Header` mode reads the `meta` box (or the `moov` box of a sequence). When the file has no `colr` box, it reads on to the sequence header of the bitstream, which gives the color description and tells RGB samples from YCbCr ones, and stops there; if the bitstream precedes that box, it has already gone by and the color model is `Unknown`, never guessed. The EXIF and XMP items, which are data of the file, are returned by a full scan or a load. `FullScan` also walks every item and sample, and checks the sample format of the bitstream against its declaration |
-| Animations | Exact frame durations (the sample durations over the time scale of the track); the number of plays comes from the edit list, and a sequence without edit list loops forever. `ImageReader` decodes a sequence frame by frame with a memory that does not depend on the number of frames |
+| Animations | Exact frame durations (the sample durations over the time scale of the track); the number of plays comes from the edit list, and a sequence without edit list loops forever. An edit list that selects parts of the media is applied: each edit plays the media from its media time for its duration, an image is shown for the exact time that the edits cover of it (a fraction of a second, whatever the time scales of the movie and of the media), and an image that no edit covers is not a frame of the result. It is still decoded, since the images that follow may refer to it: it counts toward `MaxTotalPixels` like a frame of the bitstream that is not shown, and not toward the frame limit. The usual single edit that starts with the media and reaches its last image shows every image for its whole duration: its own duration, which writers round to the time scale of the movie, is only used for the number of plays. An alpha track has the edit list of its color track, or none. A fragmented sequence (a `moov` box with an `mvex` box, followed by `moof` and `mdat` boxes) is read fragment by fragment: the images of a fragment follow the ones that are known, the tables of a fragment are released once its images are read, and the sequence ends with the file, so a header identification does not report a frame count (`FrameCount` is `null`) and a file that is cut after one of its fragments is a shorter sequence. The data offsets of the runs follow the three base rules of ISO/IEC 14496-12 (an explicit offset, the `moof` box, or the end of the previous track fragment), and the durations and sizes come from the run, the track fragment or the `trex` defaults. `ImageReader` decodes a sequence frame by frame with a memory that does not depend on the number of frames |
 | Limits | Every frame of the bitstream is checked against the canvas limits, and the frames that are decoded without being shown (hidden frames, and the lower layers of a layered image) count toward `MaxTotalPixels` |
 
-Derived images other than grids (`iden`, `iovl`), fragmented files (`moof`), edit lists that do not play the whole
-track, sequences whose images change size, large scale tile streams and matrix coefficients other than the ones above
-are rejected with `UnsupportedImageFeatureException`.
+More than eight nested derivations, an image built from images that do not have the same color description (color primaries, transfer characteristics or ICC profile), an overlay whose fill color shows on an image that is not an sRGB one, an alpha plane that is an auxiliary image of an overlay or of a grid of derived images (the alpha of such an image is the one of its input images), movie fragments that do not follow each other (a `tfdt` time that is not the end of the previous samples), that have composition time offsets, whose samples precede them in the file or that precede the `moov` box, a fragmented sequence whose edit list selects a part of its media, edit lists that do not play the media forward at its rate (empty edits, a media rate other than 1, edits that are out of order or that overlap), an alpha track with another edit list than its color track,
+sequences whose images change size, large scale tile streams, reserved matrix coefficients, and matrix
+coefficients without the transfer characteristics they are defined with (constant luminance with unspecified or
+reserved transfer characteristics, ICtCp with other ones than PQ and HLG) are rejected with
+`UnsupportedImageFeatureException`.
 
 <!-- snippet: save-avif -->
 ```csharp
@@ -2270,14 +2540,15 @@ public static void SaveAvif(string photoPath, string avifPath, string losslessPa
 | --- | --- |
 | Compression | `AvifCompression.Lossless` (the default) codes the R'G'B' samples without color conversion (identity matrix, 4:4:4, full range), and gray pixel formats as a monochrome image: every coded sample is decoded back exactly. `AvifCompression.Lossy` codes Y'CbCr samples; `Quality` (0 to 100, 75 by default) selects the quantizer and `ChromaSubsampling` the chroma layout: 4:2:0 (the default), 4:2:2 or 4:4:4. Lossless files are large: select the lossy coding for photographs |
 | Bit depth | 8-bit pixel formats are written with 8 bits, or with `BitDepth` 10 or 12 (scaled up exactly). AVIF stores at most 12 bits: `Rgba64` and `Gray16` need `BitDepth`, or `AllowBitDepthReduction` (12 bits), and are rounded to nearest. The samples of a 10-bit or 12-bit AVIF image, which load as 16-bit pixels, are coded back unchanged at their depth |
-| Color conversion | Lossy output keeps the matrix coefficients and the range of `Metadata.Cicp` when they are ones that the decoder converts (BT.709, FCC, BT.470BG, BT.601, SMPTE 240M, YCgCo, BT.2020 non-constant luminance), and uses BT.601 in full range otherwise. The conversion is integer only and rounds each sample once; a subsampled chroma sample is the mean of the pixels it covers (centered samples) |
-| Alpha | An auxiliary image at the bit depth of the color image, always lossless. A still image whose pixels are all opaque has none. `ClearTransparentColors` replaces the color of the fully transparent pixels with black, which makes the file smaller |
-| Effort | `Effort` (0 to 9, 5 by default) widens the search: block sizes from 64x64 down to 4x4, rectangular partitions (and the partitions into three and four parts at effort 9), the number of intra modes that are tried, angle deltas, recursive filter modes, the prediction of chroma from luma, the number of transform types that are tried, the split of the transform blocks of intra blocks and the number of values that are tried for the in-loop filters, and for the images of a sequence the reach of the motion search, its refinement to a quarter of a sample and the number of predicted motion vectors that are tried. It never changes the decoded pixels of lossless output. Encoding is single-threaded and far slower than a native encoder: of the order of a megapixel per second at effort 0, and of a seventh of that at the default effort, for a lossy photograph on a recent laptop (the `avif-quality` command of the benchmarks measures sizes, qualities and times) |
+| Color conversion | Lossy output keeps the matrix coefficients and the range of `Metadata.Cicp` when they are ones that the decoder converts (BT.709, FCC, BT.470BG, BT.601, SMPTE 240M, YCgCo, BT.2020 non-constant luminance), and uses BT.601 in full range otherwise (the SMPTE ST 2085, chromaticity-derived, constant luminance and ICtCp coefficients are read, not written). The conversion is integer only and rounds each sample once; a subsampled chroma sample is the mean of the pixels it covers (centered samples) |
+| Alpha | An auxiliary image at the bit depth of the color image, always lossless. A still image whose pixels are all opaque has none. `ClearTransparentColors` replaces the color of the fully transparent pixels with black, which makes the file smaller. `PremultiplyAlpha` stores the colors multiplied by the alpha of their pixel (rounded to nearest, then coded like any color) and declares it with a `prem` reference: it is the consent to that rounding, since a reader divides the colors by the alpha, which does not give the original color back for the pixels that are nearly transparent |
+| Effort | `Effort` (0 to 9, 5 by default) widens the search: block sizes from 64x64 down to 4x4, rectangular partitions (and the partitions into three and four parts at effort 9), the number of intra modes that are tried, angle deltas, recursive filter modes, the prediction of chroma from luma, the number of transform types that are tried, the split of the transform blocks of intra blocks, the number of values that are tried for the in-loop filters and the copy of repeated blocks of lossless screen content (not at effort 0), and for the images of a sequence the reach of the motion search, its refinement to a quarter of a sample and the number of predicted motion vectors that are tried. The efforts 0 to 2 of lossy output also choose a Wiener filter for each unit of 256x256 samples of each plane (loop restoration), which recovers a part of what their narrow search leaves: 0.1 to 0.2 dB for 1% of the bytes on the photograph of the `avif-quality` report; from effort 3 the search leaves nothing that the filter recovers there, and it is not used. It never changes the decoded pixels of lossless output. Encoding is single-threaded and far slower than a native encoder: of the order of a megapixel per second at effort 0, and of a seventh of that at the default effort, for a lossy photograph on a recent laptop (the `avif-quality` command of the benchmarks measures sizes, qualities and times) |
 | Animations | An image with several frames is written as an image sequence (`avis` brand): every frame is a full image, with its exact duration (the time scale of the track is the least common multiple of the denominators; `DurationRounding` rounds to microseconds when there is none of 32 bits) and the play count of the animation. A pixel format with alpha has an alpha track. The first image is also the primary item of the file, for the readers that do not play sequences. The destination must be seekable and the frame count known: the `moov` box, which indexes the images, is written at completion in the room reserved before the images. A sequence of images without duration that repeats forever has no edit list: an edit without duration cannot be repeated |
-| Screen content | An image that looks like the content of a screen (a tenth of its 16x16 blocks have few colors, far from one another) is coded with palettes: a block whose samples have at most 8 values in a plane is predicted exactly, and a block with a few more values by 8 colors that stand for groups of close values. Text, interface elements and pixel art are several times smaller than without, lossless or not; a photograph is not affected |
+| Screen content | An image that looks like the content of a screen (a tenth of its 16x16 blocks have few colors, far from one another) is coded with palettes: a block whose samples have at most 8 values in a plane is predicted exactly, and a block with a few more values by 8 colors that stand for groups of close values. Text, interface elements and pixel art are several times smaller than without, lossless or not; a photograph is not affected. A lossless image of that kind also copies what repeats (intra block copy, from effort 1): a block of 8x8 samples or more that is identical, in every plane, to a part of the image that is already coded is stored as the position of that part. AV1 only lets a block copy samples that are at least five superblocks of 64 samples before it, so an image of fewer than 16 superblocks (256x256 pixels, for instance) does not look for copies, and the characters of a line of text are copied from lines above rather than from the same line: measured with the `avif-quality` report on 768x576 screens, a page of text is 31% smaller and flat graphics 41% smaller. Looking for the copies takes several times the encoding time of such an image without them. Lossy output does not copy blocks: a frame that does has no in-loop filter |
 | Inter prediction | The first image of a sequence is a key frame. Each other image is predicted from the image that precedes it: a block copies the samples that a motion vector points to (to a quarter of a sample), codes what differs, or is intra coded where that costs less, so the part of an image that does not change costs almost nothing. `KeyFrameInterval` (0 by default: no other key frame) is the number of images from a key frame to the next one; 1 makes every image a key frame. Key frames are the sync samples of both tracks: a reader that seeks decodes from the last one. Lossless output stays lossless |
-| Metadata | A `colr` box of type `nclx` is always written: the primaries and the transfer characteristics of `Metadata.Cicp` (unspecified without one) and the matrix and the range that were used. The ICC profile, EXIF and XMP are stored; the orientation of a still image is stored as `irot` and `imir` properties (the pixels are written as they are). An image sequence stores no orientation: it is metadata the format cannot store |
-| Memory | A still image is coded in memory before the file is written, so it goes to any stream. An image sequence keeps 24 bytes per frame; its coded frames are written as they are encoded |
+| Metadata | A `colr` box of type `nclx` is always written: the primaries and the transfer characteristics of `Metadata.Cicp` (unspecified without one) and the matrix and the range that were used. The ICC profile, EXIF and XMP are stored; the orientation of a still image is stored as `irot` and `imir` properties (the pixels are written as they are). The orientation of an image sequence is the matrix of the headers of its tracks, and its clean aperture a `clap` box of their sample entries; the headers keep the size of the coded images, which libavif and FFmpeg take for the size that the aperture applies to. The content light level, the mastering display color volume and the pixel aspect ratio are stored in `clli`, `mdcv` and `pasp` boxes: item properties of the image, and boxes of the sample entries of a sequence (the alpha plane only has the pixel aspect ratio). `CleanAperture` stores a `clap` property on a still image and on its alpha plane: every pixel is coded, and readers show the rectangle (inside the image; on an even column with subsampled chroma, and on an even row with 4:2:0) |
+| Grid | `GridTileSize` cuts a still image that is larger than a tile into tiles of that size, each one coded on its own, which a `grid` item assembles (the alpha plane is a grid of the same tiles; an image that one tile holds is coded whole, and an image sequence is never a grid). It bounds what a decoder decodes at once and the memory of the encoder, and it is what the profiles of the format expect of large images. Each side of a tile is between 64 and 65,536 pixels, a grid has at most 256 columns and 256 rows, and with subsampled chroma the widths of the tiles and of the image are even (their heights too for 4:2:0). The tiles of the right column and of the bottom row extend past the image, whose last column and last row they repeat. A tile is coded without its neighbors: lossy output can show the edges of the tiles and is larger than the image coded whole; lossless output is exact |
+| Memory | A still image is coded in memory before the file is written, so it goes to any stream; a lossless image of screen content adds 4 bytes per pixel for the table of the blocks that can be copied, and lossy output at the efforts 0 to 2 keeps 4 bytes per syntax element of the frame (about as many as its bits) until the frame is filtered, since the filters of the loop restoration are chosen last and coded with the blocks; a grid is coded one tile at a time, with the planes and the search state of one tile. An image sequence keeps 24 bytes per frame; its coded frames are written as they are encoded |
 | Limits | At most 65,536 pixels per side (65,535 for an image sequence) and 4 GiB for a still image |
 
 The encoder does not use every coding tool of AV1: see [Limitations](#limitations).
@@ -2317,7 +2588,7 @@ public static string ConvertHeic(string heicPath, string jpegPath)
 | Color conversion | As for AVIF: the matrix coefficients and the range of the `colr` box, or else of the video usability information of the bitstream, convert YCbCr to RGB with integer arithmetic; unspecified coefficients are BT.601. A bitstream without video signal description uses the limited range, which is what H.265 infers and how libheif and Apple ImageIO read such a file. The chroma samples of a 4:2:0 picture are at the position that the bitstream declares (types 0, 1 and 2 of H.265: at the left of the luma samples by default), and the ones of a 4:2:2 picture at the position of the luma samples of even columns |
 | Alpha | The alpha auxiliary image (`urn:mpeg:hevc:2015:auxid:1` or the URN of MPEG-B), or the alpha track of a sequence, of the size of the color image. An alpha plane uses the full range unless its bitstream states the limited range. Premultiplied alpha is rejected |
 | Grids | Grid images, for the color image and its alpha plane: the layout of the photos of a phone (tiles of 512x512 samples) |
-| Transformations | `irot` and `imir` are composed and reported as `Metadata.Orientation`, never applied (`AutoOrient()` applies them); the EXIF orientation tag is ignored, as the format requires. `clap` crops the image when it selects whole samples, as does the `clap` box of the sample entry of a sequence. `pasp` is ignored |
+| Transformations | `irot` and `imir` are composed and reported as `Metadata.Orientation`, never applied (`AutoOrient()` applies them); the EXIF orientation tag is ignored, as the format requires. `clap` crops the image when it selects whole samples, as does the `clap` box of the sample entry of a sequence. The properties apply in the order of their association: a `clap` that follows a rotation or a mirroring selects a part of the image as they present it, and the pixels are still returned as they are coded. `pasp` is validated and not reported, and the matrix of the track header of a sequence is ignored |
 | Metadata | ICC profile, EXIF, XMP and the CICP color description, as for AVIF |
 | Identification | `Header` mode reads the `meta` box (or the `moov` box of a sequence), whose configuration record gives the sample format and, when the file has no `colr` box, the color description of the bitstream; when the record holds no sequence parameter set (an `hev1` track), it reads on to the one of the bitstream. `FullScan` also walks every item and sample |
 | Animations | Exact frame durations, in presentation order: the images of a sequence are stored in decoding order, and the composition offsets of the track (`ctts`) give the order and the durations of the images that are shown. The number of plays comes from the edit list, and a sequence without edit list loops forever. `ImageReader` decodes a sequence frame by frame with a memory that does not depend on the number of frames: the reference pictures of the stream, and the samples of at most 16 images that are decoded before the image that is shown |
@@ -2551,11 +2822,11 @@ Everything below is rejected explicitly (never decoded or encoded approximately)
 | Metadata | Profiles are preserved and labeled, never applied implicitly (colors are converted only by `ConvertColorProfile` and `IccColorTransform`); EXIF orientation is reported, applied only by `AutoOrient`; extended XMP in JPEG is not supported; per-format storage limits are listed in [Metadata, color profiles and orientation](#metadata-color-profiles-and-orientation); unsupported items follow `MetadataHandling` (`Strict` throws by default) |
 | Color management | ICC version 2 and 4 grayscale, RGB and CMYK profiles (matrix-based and table-based): no version 5 (iccMAX), device-link, abstract or named-color profile, no multi-process-element (`D2Bx`/`B2Dx`) tag, no other data color space; `ConvertColorProfile` keeps the pixel format (an RGB image cannot become grayscale or CMYK this way); no CMYK pixel format: a CMYK JPEG file or TIFF page is converted to RGB when it is loaded (`CmykConversionOptions`, RGB destination only) and CMYK cannot be written; no gamut mapping beyond per-channel clipping |
 | Drawing | No image or pattern brush, no transform on the canvas (a path is transformed with `VectorPath.Transform`), no blend mode (multiply, screen, ...) beyond the compositing operators; always antialiased; blended on the encoded sample values (no linear-light option); sequential; coordinates are limited to ±16,777,216 |
-| Processing | No HDR or custom processors; `LinearSrgb` resizing and convolution accept untagged or recognized sRGB/sGray profiles only; convolution matrices have odd dimensions, no bias or divisor, no ready-made matrices and no separable fast path |
-| AVIF encoding | An image of a sequence is predicted from the previous image only, with one motion vector per block and the regular interpolation filter: no compound prediction (two references), global, warped or overlapped motion, switchable interpolation filter, temporal motion vector prediction, or scene change detection (an image that differs from the previous one is coded with intra blocks, not as a key frame). Not used: intra block copy (content that repeats in an image, such as the characters of a text, is not predicted from the image itself: a lossless screenshot can be larger than its PNG), the split of the transform blocks of an inter block (it has the largest transform of its size), quantizer deltas, quantization matrices, loop restoration, CDEF strengths per block (one pair per frame), super-resolution and film grain. No grid, layered (progressive) or premultiplied-alpha output; no `clap`, `pasp`, mastering display or content light level box; no orientation for an image sequence. An image sequence of one image cannot store animation settings (it is read back as a still image): a single frame with animation settings is rejected. An image sequence needs a seekable destination and its frame count. The level of the stream is the lowest one whose picture size holds the image; the other limits of a level are not checked |
-| AVIF decoding | Rejected with `UnsupportedImageFeatureException`: premultiplied alpha, `iden`/`iovl` derived images, fragmented files, edit lists that do not play the whole track, image sequences whose images change size, clean apertures that do not select whole samples or that follow a rotation, grid tiles that declare other transformations than their grid, large scale tile streams, and the other matrix coefficients (constant luminance, ICtCp, SMPTE 2085, chromaticity-derived). Not read: gain maps, depth maps, thumbnails, the images that are not the primary item, the `tkhd` matrix and the other transformations of an image sequence (its images are returned as stored), mastering display and content light level boxes. A layered image is returned at its full quality only: its lower layers are not exposed as a progressive rendering. HDR samples are returned as stored: no tone mapping |
+| Processing | No floating-point or scene-referred pixel format (HDR samples are 16-bit integers, converted to a standard dynamic range by an explicit tone mapping), no custom processors; `LinearSrgb` resizing and convolution accept untagged images, recognized sRGB/sGray profiles and CICP transfer characteristics that have a function; convolution matrices have odd dimensions, no bias or divisor, no ready-made matrices and no separable fast path |
+| AVIF encoding | An image of a sequence is predicted from the previous image only, with one motion vector per block and the regular interpolation filter: no compound prediction (two references), global, warped or overlapped motion, or temporal motion vector prediction. Three tools were implemented, measured with the `avif-quality` report and left out because they did not make its sequences smaller: key frames at scene changes (the key frame of an image that follows a cut is 0.3 to 1.7% larger than the inter frame whose blocks are all intra, since it gives up the probabilities that the previous images adapted; `KeyFrameInterval` is how a sequence gets seek points), the split of the transform blocks of an inter block (0.01% in total: it keeps the largest transform of its size) and an interpolation filter per block (the same size at equal quality, for several times the encoding time). Intra block copy is for lossless images only (a frame that copies blocks has no in-loop filter), and its delay of five superblocks leaves small images out. The loop restoration is the Wiener filter, in units of 256x256 samples, at the efforts 0 to 2 only (it recovered nothing above them in the report), and never the self-guided filter. Not used: quantizer deltas, quantization matrices, CDEF strengths per block (one pair per frame), super-resolution and film grain. No layered (progressive) output, and no grid for an image sequence. An image sequence of one image cannot store animation settings (it is read back as a still image): a single frame with animation settings is rejected. An image sequence needs a seekable destination and its frame count. The level of the stream is the lowest one whose picture size holds the image; the other limits of a level are not checked |
+| AVIF decoding | Rejected with `UnsupportedImageFeatureException`: more than eight nested derivations, an image built from images of several color descriptions, an overlay whose sRGB fill color shows on an image that is not an sRGB one, an alpha plane of an overlay or of a grid of derived images, a derived image with more than 1,024 input images, an alpha plane that is not presented as its derived color image, movie fragments that do not follow each other, have composition time offsets, precede their `moov` box or follow their samples, an edit list that selects a part of a fragmented sequence, edit lists that do not play the media forward at its rate (empty edits, a media rate other than 1, edits out of order or overlapping), an alpha track with another edit list than its color track, image sequences whose images change size, clean apertures that do not select whole samples, grid tiles that declare other transformations than their grid, large scale tile streams, reserved matrix coefficients, and matrix coefficients without the transfer characteristics or the primaries they are defined with (constant luminance without a transfer function, ICtCp with other transfer characteristics than PQ and HLG, chromaticity-derived coefficients without chromaticities). Not read: gain maps, depth maps, thumbnails, the images that are not the primary item, a `tkhd` matrix that is not a quarter turn or a mirror (the images are returned as stored), the content color volume (`cclv`) and the light levels and the mastering display of AV1 metadata units. A layered image is returned at its full quality only: its lower layers are not exposed as a progressive rendering. HDR samples are returned as stored: tone mapping is an explicit `ConvertColorProfile` with `ToneMapping` options |
 | HEIC encoding | One slice per picture, without tiles or wavefront streams (the encoder is sequential). An image of a sequence is a P picture predicted from the previous image only: no B pictures, no second reference, no bi-prediction, no weighted prediction, no long-term reference, no scene change detection. Not used: intra coding blocks of 64x64 samples, PCM blocks, scaling lists, quantizer changes inside a picture (no adaptive quantization, no rate control: `Quality` is a quantizer, not a size), rate-distortion optimized quantization, searched deblocking offsets, and the tools of the range extensions (lossless output is the plain transform bypass of version 1, which every HEVC decoder reads: residual DPCM and cross-component prediction would make it smaller). No screen content tools: a lossless screenshot is larger than its PNG. No grid output (an image is one picture, whatever its size), no premultiplied alpha, no `pasp`, mastering display or content light level box, no orientation for an image sequence, and the decoded picture hash is not written. An image of an odd size with subsampled chroma relies on the clean aperture of the file: libheif ignores the one of a sequence and shows one more column or row, which repeats the last one, and FFmpeg reports the even size of the coded pictures (its command-line tool then crops them to an even size). The readers upsample subsampled chroma each in their own way: the edges of a 4:2:0 or 4:2:2 image differ visibly from one reader to another, as they do for the files of any HEVC encoder. FFmpeg 9 decodes 12-bit lossy output of the coarsest quantizers (`Quality` 0 to 2) to other pictures than libde265, the HM reference decoder and this library, which agree. libheif reports the edit list of a sequence that plays once as unsupported, and plays it once. An image sequence of one image cannot store animation settings. An image sequence needs a seekable destination and its frame count |
-| HEIC decoding | The container limitations of AVIF decoding apply (the two formats share their container). Rejected with `UnsupportedImageFeatureException`: the screen content coding, multilayer and 3D extensions of HEVC, bit depths above 12 bits, luma and chroma samples of different bit depths, separate color planes, field sequences, extended precision processing, the chroma sample positions of types 3 to 5, and an image sequence whose pictures change size. Only the base layer of a layered stream is decoded, and a layer selector (`lsel`) is rejected. Not read: the other images of a file (bursts, thumbnails, depth and gain maps, the video of a live photo, which is another file), the supplemental information of the bitstream other than its picture hashes (mastering display, content light level), and the `tkhd` matrix of an image sequence. A file whose bitstream has no video signal description and no `colr` box is read in limited range, as H.265 infers, with the BT.601 matrix: Apple ImageIO reads the same file with the BT.709 matrix, and libheif does not expand the samples of a monochrome image. The decoder is sequential: the tiles and the wavefront rows of a picture are decoded one after the other |
+| HEIC decoding | The container limitations of AVIF decoding apply (the two formats share their container), and the container features that only AVIF reads so far are rejected: premultiplied alpha, derived images (`iden`, `iovl`, grids of derived images), fragmented files, edit lists that do not play the whole track, and the matrix coefficients that are not a linear matrix of the coded samples (SMPTE ST 2085, chromaticity-derived, constant luminance, ICtCp). The `clli`, `mdcv` and `pasp` boxes are not reported either (a `pasp` box is only validated). Rejected with `UnsupportedImageFeatureException`: the screen content coding, multilayer and 3D extensions of HEVC, bit depths above 12 bits, luma and chroma samples of different bit depths, separate color planes, field sequences, extended precision processing, the chroma sample positions of types 3 to 5, and an image sequence whose pictures change size. Only the base layer of a layered stream is decoded, and a layer selector (`lsel`) is rejected. Not read: the other images of a file (bursts, thumbnails, depth and gain maps, the video of a live photo, which is another file), the supplemental information of the bitstream other than its picture hashes (mastering display, content light level), and the `tkhd` matrix of an image sequence. A file whose bitstream has no video signal description and no `colr` box is read in limited range, as H.265 infers, with the BT.601 matrix: Apple ImageIO reads the same file with the BT.709 matrix, and libheif does not expand the samples of a monochrome image. The decoder is sequential: the tiles and the wavefront rows of a picture are decoded one after the other |
 | JPEG XL | Decoding, rejected with `UnsupportedImageFeatureException` (also from `Identify` when the image header tells): floating-point samples and samples of more than 16 bits, premultiplied alpha, CMYK (a black channel) and spot colors, an XYB image whose ICC profile is not sRGB (it needs a color conversion to that profile), the PQ or HLG transfer function with primaries or a white point that CICP cannot express, a Modular frame stored as YCbCr with subsampled channels, restoration filters on a grayscale Modular frame, an upsampled frame with patches or splines whose extra channels have another resolution. Ignored: the preview frame, frame names, the intrinsic size, the JPEG reconstruction data (`jbrd`: `Image.Load` decodes a recompressed JPEG file to pixels, `JpegXlTranscoder` rebuilds the JPEG file), `jumb` and unknown boxes; depth, selection mask, thermal and the other extra channels than alpha are decoded and dropped. Samples of 1 to 16 bits other than 8 and 16 are scaled exactly to 8 or 16 bits. A lossy frame is decoded in floating point: the result is within a few sixteen-bit units of the reference decoders, not bit-exact. Progressive reading: whole stages only (the data of a section that is not complete are not shown), none for a frame of one section, for a Modular frame that is not squeezed, or for the frames that are not shown; an alpha channel that is not squeezed is opaque until it is decoded; the pixels of an intermediate rendering are not part of the contract. Encoding: full frames that replace the image (no layers, blending, patches or cropped frames), frame durations in whole milliseconds, no frame of an animation without duration; an EXIF orientation is written to the image header. Lossy encoding: DCTs of 8x8 to 64x64 samples only (no smaller transform, no identity or AFV transform), a quantization factor per block that is computed from the image once (the encoder does not decode its output to refine it), no patches, splines or noise; an ICC profile that is not sRGB, and the PQ and HLG transfer functions, are rejected (use lossless output, or convert the image) |
 | JPEG recompression | `JpegXlTranscoder.RecompressJpeg` rejects with `UnsupportedImageFeatureException` what a JPEG XL frame cannot hold: four components (CMYK, YCCK), a sampling factor other than 1 or 2 (4:1:1), subsampled RGB components, arithmetic, lossless, hierarchical and 12-bit files, restart intervals of several lengths (the description of the file has one), a quantization table that no component uses unless it repeats the table defined before it, a Huffman table that uses the code of all ones, more than 65,535 bytes between two markers or 4,260,096 bytes after the end of image, and entropy-coded data that would not be rebuilt byte for byte (the output is always checked). The whole file is held in memory, with two bytes per coefficient. The reconstruction data (`jbrd`) are read wherever the container has them: every encoder writes them before the codestream; when they follow it, the frame is held as it is coded until they are read, and `HasJpegReconstructionData` reads the file to its end |
 | JPEG 2000 | Decoding, rejected with `UnsupportedImageFeatureException` (also from `Identify` when the headers tell): signed samples and samples of more than 16 bits, components of different depths, a sub-sampled first component and sub-sampled components that are not the chrominances of an image of three components, more than four components without color specification, a premultiplied opacity, several opacity channels, an opacity of one color, channels that are not defined, the extensions of ISO/IEC 15444-2 (other wavelet filters, other component transformations, other regions of interest), files of the `jpm ` and `mjp2` brands, files of several codestreams or of a fragmented codestream, more than 30 bit-planes in a sub-band; for the high-throughput block coder: tile-components that mix both block coders, a code-block with several HT sets, and placeholder passes in another packet than the HT cleanup pass. CMYK is loaded only with `CmykConversion`. Not read: the intellectual property and XML boxes, the comments of the codestream. Not available: decoding a lower resolution, a region or fewer layers. Encoding: no rate control (a quality, not a size), one tile and one layer (the whole image is transformed at once, in memory), no HTJ2K, no palette, no sub-sampling, no CMYK, no animation; a codestream stores no metadata |

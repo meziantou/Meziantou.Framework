@@ -35,7 +35,8 @@ the library guarantees to its callers (support matrix, limitations, defaults). K
 - **Never lose information silently.** Losing alpha, precision, animation, a poster, metadata or a color profile needs an
   explicit setting; otherwise throw `UnsupportedImageFeatureException`. Color profiles are preserved and labeled, never
   applied implicitly: only `ConvertColorProfile`, `IccColorTransform` and a load with `CmykConversionOptions` convert
-  colors, and the pixels and their profile always change together.
+  colors, and the pixels and their profile always change together. A CICP color description is a label too: only
+  `ConvertColorProfile` converts from it, and high dynamic range samples only with explicit `ToneMapping` options.
 - **An image holds full displayed frames**, not encoded deltas; decoders composite, encoders write what they are given.
   Timing is exact (`FrameDuration` is a rational number); a duration or play count the output format cannot represent is
   an error unless a rounding policy is set.
@@ -116,6 +117,12 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
     header of the bitstream, the pixel decoder, and the errors (`binding.Invalid`, `binding.Unsupported`), which carry
     the `ImageFormat` and the name of the format. Never test for a codec in the shared code, and never write "AVIF" or
     "AV1" in one of its messages: use `binding.Name` and `binding.CodecName`.
+  - A container feature is implemented once, and a format reads it when its binding declares it
+    (`HeifCodecBinding.ContainerFeatures`): premultiplied alpha, derived images, edit lists that select parts of the
+    media, fragments and the matrix coefficients 10 to 14 are read by AVIF and still rejected by HEIC, whose corpus
+    holds their rejections. Turn a flag on for a format together with its fixtures (the rejection moves to a valid
+    fixture with independent pixels) and its readme rows; the image that is built from other images also needs the
+    decoder of the format to render it (`AvifDecoder.Derived.cs`).
   - The format of a file is only known after its file type box. The codec that detected the file gives the first
     candidate; the brands give the formats the file declares, and a file that declares both has the format of the
     codec of its primary item, or of its color track. A generic major brand (`mif1`, `msf1`, `miaf`) is claimed by
@@ -135,6 +142,21 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   Scalability only changes which frames are output, never how they are decoded: the units outside the operating point
   are dropped, and a temporal unit with several spatial layers outputs the frame of its highest layer (what a player
   shows, and what `lsel`-less layered AVIF images present). `OutputAllLayers` is for conformance tests only.
+  An `iden` item is resolved by `HeifImagePlan` into the transformations of the coded image it presents (no pixel
+  moves; the alpha plane of a derived image must be presented as its colors). An image that is built from other
+  images (an `iovl` item, a grid of derived images) is an `HeifImageNode` tree, rendered by `AvifDecoder.Derived.cs`
+  to straight RGBA surfaces: only that path moves or composites pixels, the direct path (a coded image or a grid of
+  coded images, through identity derivations) must stay as it is. Nothing converts colors there: every color
+  description of the tree is the same one or the file is rejected, and the structure parser validates the
+  descriptors and the fill colors before the first pixel is decoded. The edit list of a track that selects
+  parts of the media is an `HeifEditTimeline` (exact intersections in units of the two time scales; the images that
+  are left out are decoded and charged as hidden pixels, and every sample is located then). A fragmented sequence
+  (`mvex`) is read by `HeifMovieFragment`: each `moof` box appends samples to `HeifTrack`, whose tables only hold the
+  samples that are still to be read, and the walk ends with the input (`ParseStatus.NeedMoreDataOrEnd` at a box
+  boundary). The independent readers are `ReferenceHeif.GetIdentityChain`, `Track.GetPresentation` and its own `moof`
+  reader; Apple ImageIO judges identity derivations and the opaque results of built images, and FFmpeg the fragments
+  it can demux. The reference of a built image is the generator's own renderer (`AvifCorpus.ContainerDerived.cs`,
+  exact rational source-over on the planes of the reference decoders).
 - **AV1 encoder** (`Internals/Codecs/Avif/Av1/Encoding`, and the `Write` and `Encode` parts of `Av1TileCoder`). The
   specification only describes decoding: the encoder is written from it, never from another encoder.
   - The encoder shares the state and the processes of the decoder (`Av1FrameCodingState`, the prediction, the
@@ -153,6 +175,22 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   - The palettes of the block being coded live where the decoder has them (the scratch of the tile), and those of the
     blocks above and to the left are contexts: a candidate with a palette changes them, so they are in the context
     snapshots of a frame that has palettes, and the palettes of a block are in its record.
+  - A lossless key frame of screen content allows intra block copy (`Av1TileCoder.BlockCopy.cs`): the blocks of 8x8
+    source samples that a block may copy are in a hash table of the workspace, filled superblock by superblock with
+    the delay that `IsMvValid` requires, and a candidate is always validated by `IsMvValid`, which is the function
+    of the decoder. A copy is an inter block of an intra frame: it is searched, recorded and replayed by the code of
+    the inter blocks. Lossy frames do not copy blocks, because a frame that does has no in-loop filter.
+  - A frame with loop restoration (lossy, efforts 0 to 2) writes its tiles last: the units of the loop restoration
+    are coded with the superblocks and chosen after the whole frame is filtered. The syntax elements go to the tape of
+    the workspace (`SymbolSink.Tape`, which adapts the distributions like the range encoder) and `ReplayTape` writes
+    them with the units. Whatever the block syntax does when it produces the stream (`SymbolSink.Range`), it must do
+    for the tape too: `Av1EncoderRoundTripTests.SyntaxElementsWrittenAfterTheFrameAreTheSameBytes` compares both. The
+    filters are proposed by least squares (`Av1RestorationSearch`) and judged with the filter of the decoder, on the
+    stripes that `Av1PostFilter.TryGetRestorationStripe` builds for both.
+  - A tool is enabled at the efforts where the `avif-quality` report (`benchmarks/ImagingBenchmarks`) shows that it
+    makes its inputs smaller at equal quality, and stays out otherwise: the Limitations row of the readme lists the
+    tools that were measured and left out, with their figures. Measure before and after with the report (it takes a
+    filter on the names of its inputs), and add an input when the tool needs content that the report does not have.
   - A frame of a sequence that is not a key frame is an inter frame whose only reference is the previous frame
     (`LAST_FRAME`; every slot is refreshed by every frame). An inter block is written from the motion vector stack that
     `FindMvStack` builds, like a decoder: the stack reads which blocks of the frame are written, so the search marks
@@ -391,6 +429,16 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
 - A conversion is a list of `IccStage` evaluated in `double`, one color at a time (`ColorConversionKernels.ConvertScalar`
   is the numerical reference). Both profiles meet in CIEXYZ relative to D50. A faster kernel must be bit-identical and
   proven so in `VectorizedKernelTests`.
+- The source of `ConvertColorProfile` may be the CICP color description of an image without profile
+  (`CicpColorSpace`, `IccPipeline.Create(CicpColorSpace, ...)`): a `CicpDecodeStage` (the functions of
+  `CicpTransfer`, Rec. ITU-T H.273 table 3), the matrix of the primaries (`CicpPrimaries`, table 2) adapted to D50 with
+  the linear Bradford transform, then the destination half of the ICC pipeline. Descriptions equivalent to sRGB keep
+  the built-in profiles, bit for bit. PQ and HLG samples go through `HdrToneMapStage` first (BT.2100 display light,
+  then a curve of `HdrToneMappingOperator` on the largest component), and are rejected without `ToneMapping` options.
+  The decimal references are `ReferenceCicpColorSpace`, `ReferenceCicpTransfer` and `ReferenceHdrToneMap`; the curves
+  also have literals computed outside the library, and FFmpeg's `tonemap` filter agrees with three of them
+  (`ToneMappingCurvesAreThoseOfFFmpeg`). `ResizeWorkingSpace.LinearSrgb` and `ConvolutionWorkingSpace.LinearSrgb` use
+  the transfer function of the description (`Image.GetLinearLightTransfer`), whatever its primaries.
 - The interpolation of color lookup tables (simplex along the main diagonal for gray, RGB and CIEXYZ inputs,
   multilinear for CIELAB and CMYK inputs), the generalized inverse of tone curves and the black point estimates are
   part of the documented numerical contract: change them only with `readme.md` and the tests.
@@ -423,7 +471,14 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
     for all of them, from the two factors of the operator; source-over keeps its own, unchanged. A paint without
     opacity is skipped only with the operators it changes nothing with (`IsTransparentPaintInert`): with the others it
     erases. `ReferenceCompositor` has the same operators from their definition, in rational numbers.
-  - Gradients interpolate premultiplied values of the converted stops, evaluated per pixel at its center.
+  - A `BlendMode` (a property of the brush, like the operator) replaces the color of the paint pixel by pixel before
+    the kernels above (`CompositeBlended`): the functions are in `BlendFunctions`, shared with the paints of color
+    glyphs (`ColorSurface`), in double precision without any function of the platform. The kernels do not know the
+    order of the samples: the caller says when blue comes first, which only the modes that take a whole color need.
+  - Gradients interpolate premultiplied values of the converted stops, evaluated per pixel at its center. With a
+    `GradientColorSpace` other than `Encoded`, the stops stay 16-bit sRGB colors, are mixed in linear light or in
+    Oklab (`SrgbTransfer`, `Math.Cbrt`: the one place of the drawing code that uses functions of the platform), and
+    the 16-bit result is converted like a brush color; the color of a stop is always written as it is.
 - Only `+ - * /` and `Math.Sqrt` in the geometry (no trigonometry, no fused multiply-add), and every order that
   influences a sum is total (events and crossings are sorted with a tie-break): results must not depend on the
   platform, the framework version or a sorting algorithm.
@@ -439,6 +494,21 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
   into a sink, as drawing does, so that they answer for what is drawn; `GetTightBounds` (`PathBounds`) is computed from
   the curves, and contains their chords. `Widen` runs the `Stroker` into a path builder: the same pieces in the same
   order as a draw call, so filling the result is stroking, bit for bit (`FillingAWidenedPathIsStrokingThePath`).
+- `EnumerateSegments` is the only public view of the elements of a path: it gives what the builder takes, never the
+  internal form (an `ArcPiece` becomes the arc of SVG, through `ArcGeometry.GetAxes`; an ellipse becomes two arcs).
+  `Reverse` (`PathReverser`) works on the elements, exactly; `Trim` (`TrimSink`) works on the chords, like the other
+  queries, and its result is a polyline.
+- `Combine` and `Simplify` (`PathCombiner`) work on the chords of the paths, moved to a grid of 1/1024 of a pixel,
+  with exact integer arithmetic (`Int128` products): cut the segments where they meet until they only share ends,
+  merge equal segments into edges with a count per path, sweep the rows of vertices for the winding numbers on both
+  sides of each edge, then follow the edges whose sides differ. Never decide anything there with a floating-point
+  comparison. An end within 1.5 unit of a segment cuts it (`AddCutWhenNear`): the pieces of a stroke share sides that
+  the grid moves apart, and would leave cracks in the outline; that cut must shorten the segment, or three close
+  vertices cut each other without end (the pass and growth limits are only a safety net). The result is canonical
+  (contours from their top-left vertex, in the order of their first edge): tests compare path data.
+- `SvgPathData` reads and writes the path data of SVG. Reading goes through the builder (an arc is `ArcTo`), writing
+  through `EnumerateSegments`; numbers are parsed and formatted by the runtime with the invariant culture (correctly
+  rounded on every platform). The reader rejects the whole text on an error, with its position.
 - A stroke is a union of convex pieces with one orientation (`Stroker`): overlaps are harmless because the coverage is
   the area of the union. The 1/16 pixel flattening tolerance is public; the positions of the chord vertices are not.
 - Dashes are cut before the stroker (`Dasher`), which strokes each dash as an open contour. The first dash of a contour
@@ -454,11 +524,32 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
   and released in `finally` (`Begin` / `End`): never keep it between two draw calls. `ImageEvaluator` interpolates
   16-bit colors read with the pixel conversion (`ReadRgba64`), then converts them like any brush color; when the rows
   of the canvas stay rows of the image, it converts each row of the image once. `DrawImage` is a fill of the rectangle
-  with that evaluator: no brush is allocated.
+  with that evaluator: no brush is allocated. `ImageSampling.Smooth` is the bilinear paths themselves when the image
+  is not reduced; when it is, `ReduceRows` and `ReducePixels` add the same terms in the same order (rows, then
+  columns), so that the row-by-row path and the pixel-by-pixel one give the same bits: keep them in step.
 - A clip is a stack of levels in the session (`DrawingSession.Clipping.cs`): bounds in whole pixels and, unless the clip
   is a rectangle of whole pixels, a mask of coverages rasterized once, when the clip starts, by the same rasterizer.
   Draw calls multiply their coverage by the mask row by row (`ApplyClip`), into a row of the session: they rent nothing.
   Every path that composites pixels (`PaintRows`, the color glyphs) must go through `ApplyClip`.
+- A layer (`DrawingSession.Layers.cs`) replaces what the draw calls paint (`_frames`, `_storages`: never assume they
+  are the frames of the image) by an internal image created from the scope of the image, one per depth, kept until
+  the session ends. Starting a layer pushes a clip of whole pixels with the bounds of the clip under it (its mask is
+  applied when the layer is drawn); ending it is `DrawImage` of that image at the origin, with the operator and the
+  opacity of the layer. A layer whose callback throws is not drawn. Anything that composites must use the current
+  `_frames` and go through `ApplyClip`, so that it works in a layer without knowing it.
+- A shadow (`DrawingSession.Shadows.cs`) is a layer whose alpha is blurred, moved and painted before the layer is
+  drawn: the layer covers a margin around the bounds of the clip (the reach of the blur and of the offset), and the
+  blur reads beyond it as its edge pixels (a shape that leaves the canvas keeps its shadow along the edge). The
+  weights are those of `GaussianKernel`, shared with `GaussianBlur`: computed without `Math.Exp`.
+- The transformation of the canvas (`DrawingSession.Transforms.cs`) is applied where a shape becomes edges, not where
+  it is described: `BeginFill` wraps the fill sink in a `TransformSink`, the `Stroker` transforms the vertices of its
+  pieces (`SetOutput`: the path is stroked in the coordinates of the drawing, so the pen is transformed with it), and
+  the evaluators of the brushes get the transformation of the brush followed by the one of the canvas (`ToCanvas`).
+  The flatteners read `PathSink.Scale` of the sink they emit to, and cut curves that much finer; it is 1 without
+  transformation, where nothing may change (every product by it is exact). What is given in pixels must use
+  `BeginDeviceFill`: the frame, a layer that ends, the outlines of a color glyph (whose placement is composed with
+  the transformation instead, because its paints are evaluated in pixels). The whole-frame test of the stroker and
+  the canvas-aware cutting of the dasher are off under a transformation.
 - Every rental of a draw call happens before its first pixel write (edges, then the sweep and gradient scratch in
   `Render`). Draw calls allocate nothing once the scratch of the session has grown (`PerformanceContractTests`).
 - The cost of a shape follows its edges and their crossings. Keep the events of the sweep logarithmic: no pass over
@@ -547,6 +638,12 @@ directory and the fixed-size tables, `CmapTable` maps characters, `GlyfOutlineRe
   `Lines` and `InkBounds` come from the positions that are drawn. A layout is immutable and thread-safe, holds exact
   managed arrays (like `VectorPath`) and no pooled storage; so are `TextStyle`, `TextLayoutOptions`, `RichText` and
   `FontStack`.
+- **The positions of the text come from the positions that are drawn.** `Finish` records, for each line, its clusters
+  from the left (`TextHitBox`: the characters of the cluster, and the span of the pen over its glyphs, after alignment
+  and justification), with the direction of the item they come from. `HitTest`, `GetCaretRectangle` and
+  `GetSelectionRectangles` only read these: the layout does not keep the text. A cluster holds the characters up to
+  the next cluster of its line in the order of the text; the grapheme boundaries of a cluster of several characters
+  (a ligature) are kept, and share its width. What a line adds (a hyphen, an ellipsis) has no character.
 - **Validate at layout, not at draw.** Creating a layout decodes each distinct glyph once, so the errors of the font
   data surface there; drawing a layout then only fails on a limit of the image or on cancellation. Do not add a failure
   mode to `FillText` that `TextLayout.Create` could have reported.

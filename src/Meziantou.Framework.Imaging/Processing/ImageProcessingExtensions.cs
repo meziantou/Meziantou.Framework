@@ -233,7 +233,7 @@ public static class ImageProcessingExtensions
     /// <param name="options">The resize options.</param>
     /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
     /// <exception cref="ArgumentException">Upscaling is required but <see cref="ResizeOptions.AllowUpscaling"/> is <see langword="false"/> (for <see cref="ResizeMode.Stretch"/> and <see cref="ResizeMode.Cover"/>).</exception>
-    /// <exception cref="UnsupportedImageFeatureException"><see cref="ResizeWorkingSpace.LinearSrgb"/> is requested for an image with an incompatible ICC profile, or the cursor hotspot of a frame designates a pixel that <see cref="ResizeMode.Cover"/> removes. The image is unchanged.</exception>
+    /// <exception cref="UnsupportedImageFeatureException"><see cref="ResizeWorkingSpace.LinearSrgb"/> is requested for an image with an incompatible ICC profile or with reserved transfer characteristics, or the cursor hotspot of a frame designates a pixel that <see cref="ResizeMode.Cover"/> removes. The image is unchanged.</exception>
     /// <exception cref="ImageResourceLimitException">The replacement buffers would exceed the allocation limit. The image is unchanged.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled. The image is unchanged.</exception>
     /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
@@ -389,6 +389,18 @@ public static class ImageProcessingExtensions
     /// pixel format conversion and the other processing operations never do.
     /// </para>
     /// <para>
+    /// An image without profile whose CICP color description (<see cref="ImageMetadata.Cicp"/>) is not equivalent to
+    /// sRGB is converted from the color space of that description: the samples are decoded with the function of its
+    /// transfer characteristics (Rec. ITU-T H.273, table 3; unspecified ones are sRGB), and its color primaries (table 2;
+    /// unspecified ones are those of BT.709) are adapted to the white of the profile connection space with the linear
+    /// Bradford transform. Its matrix coefficients and its range describe how a file stored the samples and play no part.
+    /// High dynamic range samples (PQ and HLG) are converted only when
+    /// <see cref="IccColorTransformOptions.ToneMapping"/> says how their highlights are compressed
+    /// (<see cref="HdrToneMappingOptions"/>). After the conversion, a description that is not equivalent to sRGB,
+    /// <see cref="ImageMetadata.ContentLightLevel"/> and <see cref="ImageMetadata.MasteringDisplay"/> are removed: the
+    /// profile describes the pixels.
+    /// </para>
+    /// <para>
     /// The pixel format is kept, so the destination profile must be able to label it: an RGB profile for color formats, a
     /// grayscale profile for <see cref="Gray8"/> and <see cref="Gray16"/>. To change the color model, convert the pixel
     /// format with <see cref="Image.CloneAs{TPixel}(PixelConversionOptions?)"/>, or convert sample buffers with
@@ -415,7 +427,9 @@ public static class ImageProcessingExtensions
     /// <exception cref="ArgumentNullException"><paramref name="image"/> or <paramref name="destinationProfile"/> is <see langword="null"/>.</exception>
     /// <exception cref="UnsupportedImageFeatureException">
     /// The current or the destination profile cannot label the pixel format, the image has both a profile and the linear
-    /// transfer function label, or a profile is of a kind that is not supported. The image is unchanged.
+    /// transfer function label, a profile is of a kind that is not supported, the CICP color description of an image
+    /// without profile has reserved color primaries or transfer characteristics, or the samples are high dynamic range
+    /// ones and <paramref name="options"/> has no <see cref="IccColorTransformOptions.ToneMapping"/>. The image is unchanged.
     /// </exception>
     /// <exception cref="InvalidImageContentException">The current or the destination profile is malformed. The image is unchanged.</exception>
     /// <exception cref="ImageResourceLimitException">The replacement buffers would exceed the allocation limit. The image is unchanged.</exception>
@@ -454,7 +468,7 @@ public static class ImageProcessingExtensions
     /// <param name="image">The image to modify.</param>
     /// <param name="options">The convolution options.</param>
     /// <param name="cancellationToken">The token to monitor for cancellation requests. On cancellation, some frames or rows may already be convolved.</param>
-    /// <exception cref="UnsupportedImageFeatureException"><see cref="ConvolutionWorkingSpace.LinearSrgb"/> is requested for an image with an incompatible ICC profile. Nothing is changed.</exception>
+    /// <exception cref="UnsupportedImageFeatureException"><see cref="ConvolutionWorkingSpace.LinearSrgb"/> is requested for an image with an incompatible ICC profile or with reserved transfer characteristics. Nothing is changed.</exception>
     /// <exception cref="ImageResourceLimitException">The scratch storage would exceed the allocation limit. The image is unchanged.</exception>
     /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
     /// <exception cref="ObjectDisposedException">The image is disposed.</exception>
@@ -472,7 +486,7 @@ public static class ImageProcessingExtensions
     /// <param name="frame">The frame to modify.</param>
     /// <param name="options">The convolution options.</param>
     /// <param name="cancellationToken">The token to monitor for cancellation requests. On cancellation, some rows may already be convolved.</param>
-    /// <exception cref="UnsupportedImageFeatureException"><see cref="ConvolutionWorkingSpace.LinearSrgb"/> is requested for an image with an incompatible ICC profile. Nothing is changed.</exception>
+    /// <exception cref="UnsupportedImageFeatureException"><see cref="ConvolutionWorkingSpace.LinearSrgb"/> is requested for an image with an incompatible ICC profile or with reserved transfer characteristics. Nothing is changed.</exception>
     /// <exception cref="ImageResourceLimitException">The scratch storage would exceed the allocation limit. The frame is unchanged.</exception>
     /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
     /// <exception cref="ObjectDisposedException">The frame is no longer attached to a live image.</exception>
@@ -482,5 +496,82 @@ public static class ImageProcessingExtensions
         ArgumentNullException.ThrowIfNull(options);
         var storage = frame.GetStorage();
         frame.OwnerImage.ConvolveFrame(frame, storage, options, cancellationToken);
+    }
+
+    /// <summary>Blurs every displayed frame and the poster frame in place with a Gaussian blur. The EXIF thumbnail, now stale, is removed.</summary>
+    /// <remarks>
+    /// <para>
+    /// Each pixel becomes the mean of the pixels around it, weighted by a bell curve of standard deviation
+    /// <paramref name="sigma"/>: the weight of a pixel at a distance <c>d</c> is <c>exp(-d^2 / (2 sigma^2))</c>, up to
+    /// three standard deviations. A deviation of 1 softens an image; the blur a CSS filter or a shadow calls a radius
+    /// is twice the deviation.
+    /// </para>
+    /// <para>
+    /// The blur is two convolutions (<see cref="Convolve(Image, ConvolutionOptions, CancellationToken)"/>), by a row of
+    /// <c>2 ceil(3 sigma) + 1</c> weights then by the same weights as a column: the time grows with the deviation, not
+    /// with its square. Each one follows the rules of a convolution (colors filtered premultiplied by alpha, samples
+    /// rounded to nearest at the storage precision, the same result whatever the number of workers); the weights are
+    /// computed without any function of the platform, and are the same everywhere. Without deviation, nothing changes.
+    /// </para>
+    /// </remarks>
+    /// <param name="image">The image to modify.</param>
+    /// <param name="sigma">The standard deviation of the blur, in pixels. Must be between 0 and 10000.</param>
+    /// <param name="edgeMode">The pixels the blur reads beyond the edges of the image.</param>
+    /// <param name="workingSpace">The numeric space the samples are filtered in.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests. On cancellation, some frames or rows may already be blurred, in one direction or in both.</param>
+    /// <exception cref="ArgumentException"><paramref name="sigma"/> is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="sigma"/> is negative or exceeds 10000, or <paramref name="edgeMode"/> or <paramref name="workingSpace"/> is not a defined value.</exception>
+    /// <exception cref="UnsupportedImageFeatureException"><see cref="ConvolutionWorkingSpace.LinearSrgb"/> is requested for an image with an incompatible ICC profile. Nothing is changed.</exception>
+    /// <exception cref="ImageResourceLimitException">The scratch storage would exceed the allocation limit. The image is unchanged.</exception>
+    /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
+    /// <exception cref="ObjectDisposedException">The image is disposed.</exception>
+    public static void GaussianBlur(this Image image, double sigma, ConvolutionEdgeMode edgeMode = ConvolutionEdgeMode.Clamp, ConvolutionWorkingSpace workingSpace = ConvolutionWorkingSpace.Encoded, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(image);
+        GaussianKernel.Validate(sigma, nameof(sigma));
+        ValidateBlur(edgeMode, workingSpace);
+        if (sigma == 0)
+        {
+            image.Owner.EnsureCanModify("blur the image");
+            return;
+        }
+
+        image.BlurAllFrames(GaussianKernel.Create(sigma), edgeMode, workingSpace, cancellationToken);
+    }
+
+    /// <summary>
+    /// Blurs one frame in place with a Gaussian blur. The EXIF thumbnail of the image, now stale, is removed. See
+    /// <see cref="GaussianBlur(Image, double, ConvolutionEdgeMode, ConvolutionWorkingSpace, CancellationToken)"/>.
+    /// </summary>
+    /// <param name="frame">The frame to modify.</param>
+    /// <param name="sigma">The standard deviation of the blur, in pixels. Must be between 0 and 10000.</param>
+    /// <param name="edgeMode">The pixels the blur reads beyond the edges of the frame.</param>
+    /// <param name="workingSpace">The numeric space the samples are filtered in.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests. On cancellation, some rows may already be blurred, in one direction or in both.</param>
+    /// <exception cref="ArgumentException"><paramref name="sigma"/> is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="sigma"/> is negative or exceeds 10000, or <paramref name="edgeMode"/> or <paramref name="workingSpace"/> is not a defined value.</exception>
+    /// <exception cref="UnsupportedImageFeatureException"><see cref="ConvolutionWorkingSpace.LinearSrgb"/> is requested for an image with an incompatible ICC profile. Nothing is changed.</exception>
+    /// <exception cref="ImageResourceLimitException">The scratch storage would exceed the allocation limit. The frame is unchanged.</exception>
+    /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
+    /// <exception cref="ObjectDisposedException">The frame is no longer attached to a live image.</exception>
+    public static void GaussianBlur(this ImageFrame frame, double sigma, ConvolutionEdgeMode edgeMode = ConvolutionEdgeMode.Clamp, ConvolutionWorkingSpace workingSpace = ConvolutionWorkingSpace.Encoded, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(frame);
+        GaussianKernel.Validate(sigma, nameof(sigma));
+        ValidateBlur(edgeMode, workingSpace);
+        var storage = frame.GetStorage();
+        if (sigma == 0)
+            return;
+
+        frame.OwnerImage.BlurFrame(frame, storage, GaussianKernel.Create(sigma), edgeMode, workingSpace, cancellationToken);
+    }
+
+    private static void ValidateBlur(ConvolutionEdgeMode edgeMode, ConvolutionWorkingSpace workingSpace)
+    {
+        if (!Enum.IsDefined(edgeMode))
+            throw new ArgumentOutOfRangeException(nameof(edgeMode), edgeMode, "The edge mode is not valid.");
+
+        if (!Enum.IsDefined(workingSpace))
+            throw new ArgumentOutOfRangeException(nameof(workingSpace), workingSpace, "The working space is not valid.");
     }
 }

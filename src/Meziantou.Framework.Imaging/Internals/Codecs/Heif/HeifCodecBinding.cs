@@ -30,6 +30,12 @@ internal abstract class HeifCodecBinding
     private static readonly HeifCodecBinding[] AvifFirst = [AvifBinding.Instance, HeicBinding.Instance];
     private static readonly HeifCodecBinding[] HeicFirst = [HeicBinding.Instance, AvifBinding.Instance];
 
+    /// <summary>Gets the optional features of the container that the format reads and writes.</summary>
+    public virtual HeifContainerFeatures ContainerFeatures => HeifContainerFeatures.None;
+
+    /// <summary>Returns whether the format reads, and writes, an optional feature of the container.</summary>
+    public bool Supports(HeifContainerFeatures feature) => (ContainerFeatures & feature) == feature;
+
     /// <summary>
     /// Gets the largest number of samples that the codec may need after the sample of an image before it outputs the image:
     /// 0 for a codec whose samples are in presentation order. A codec that reorders its images gives the presentation time

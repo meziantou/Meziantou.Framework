@@ -616,28 +616,7 @@ internal ref partial struct Av1TileCoder
             var compMode = _useIntrabc ? Av1Constants.Newmv : GetMode(i);
             if (_useIntrabc)
             {
-                _predMv[0] = _refStackMv[0][0];
-                _predMv[1] = _refStackMv[0][1];
-                if (_predMv[0] is 0 && _predMv[1] is 0)
-                {
-                    _predMv[0] = _refStackMv[1][0];
-                    _predMv[1] = _refStackMv[1][1];
-                }
-
-                if (_predMv[0] is 0 && _predMv[1] is 0)
-                {
-                    var sbSize4 = _sequence.Use128x128Superblock ? 32 : 16;
-                    if (_miRow - sbSize4 < _miRowStart)
-                    {
-                        _predMv[0] = 0;
-                        _predMv[1] = -((sbSize4 * Av1Constants.MiSize) + Av1Constants.IntrabcDelayPixels) * 8;
-                    }
-                    else
-                    {
-                        _predMv[0] = -(sbSize4 * Av1Constants.MiSize * 8);
-                        _predMv[1] = 0;
-                    }
-                }
+                SetIntrabcPredMv();
             }
             else
             {
@@ -657,6 +636,34 @@ internal ref partial struct Av1TileCoder
 
         if (!IsMvValid(isCompound))
             throw Av1Errors.Invalid("a motion vector is out of range.");
+    }
+
+    // PredMv of a block that is coded with intra block copy (section 5.11.26): the first motion vector of the stack that
+    // is not zero, or else the superblock above, or the one to the left that the delay allows in the first row of a tile
+    private void SetIntrabcPredMv()
+    {
+        _predMv[0] = _refStackMv[0][0];
+        _predMv[1] = _refStackMv[0][1];
+        if (_predMv[0] is 0 && _predMv[1] is 0)
+        {
+            _predMv[0] = _refStackMv[1][0];
+            _predMv[1] = _refStackMv[1][1];
+        }
+
+        if (_predMv[0] is 0 && _predMv[1] is 0)
+        {
+            var sbSize4 = _sequence.Use128x128Superblock ? 32 : 16;
+            if (_miRow - sbSize4 < _miRowStart)
+            {
+                _predMv[0] = 0;
+                _predMv[1] = -((sbSize4 * Av1Constants.MiSize) + Av1Constants.IntrabcDelayPixels) * 8;
+            }
+            else
+            {
+                _predMv[0] = -(sbSize4 * Av1Constants.MiSize * 8);
+                _predMv[1] = 0;
+            }
+        }
     }
 
     // PredMv of a reference list of a block that is not coded with intra block copy (section 5.11.26)

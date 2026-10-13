@@ -215,13 +215,14 @@ public sealed partial class HeicDecoderInteropTests
     /// apply in the order of their associations (ISO/IEC 23008-12, section 6.5.1). MIAF files always crop first
     /// (ISO/IEC 23000-22, section 7.3.6.7), so no writer at hand produces this order: the properties of a file of heif-enc
     /// are reordered with <see cref="HeifFileBuilder"/>. heif-dec applies them in order. The library reports an orientation
-    /// for pixels that it crops as they are stored: it rejects the file instead of cropping another part of the image.
+    /// for pixels that it returns as they are stored: it keeps the part of the stored image that the aperture shows once
+    /// the image is rotated, so that its pixels are those of heif-dec after <c>AutoOrient()</c>.
     /// </summary>
     [Theory]
     [InlineData(90)]
     [InlineData(180)]
     [InlineData(270)]
-    public async Task CleanApertureAfterARotationIsRejected(int rotation)
+    public async Task CleanApertureAfterARotationCropsTheRotatedImage(int rotation)
     {
         var heif = await RequiredTools.LibHeifAsync();
         var name = string.Create(CultureInfo.InvariantCulture, $"clap-after-rotate{rotation}");
@@ -239,8 +240,19 @@ public sealed partial class HeicDecoderInteropTests
         var reference = await heif.DecodeAsync(croppedPath, bilinearChroma: true, XunitCancellationToken);
         Assert.Equal((20, 30), (reference.Width, reference.Height));
 
-        var exception = Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(croppedPath).Dispose());
-        Assert.Equal(ImageFormat.Heic, exception.Format);
+        // The pixels are stored before the rotation: the image that is loaded has the size of the aperture as it is stored
+        var storedSize = rotation is 180 ? new Size(20, 30) : new Size(30, 20);
+        using var image = Image.Load(croppedPath);
+        Assert.Equal(ImageFormat.Heic, image.Metadata.SourceFormat);
+        Assert.NotEqual(ExifOrientation.TopLeft, image.Metadata.Orientation);
+        Assert.Equal(storedSize, image.Size);
+        Assert.Equal(storedSize, Image.Identify(croppedPath).Size);
+
+        // The file stores its source without loss: the two decoders give the same pixels
+        image.AutoOrient(XunitCancellationToken);
+        Assert.Equal(new Size(20, 30), image.Size);
+        var difference = AssertPixels(WithoutAlpha(reference.GetPixels(8)), WithoutAlpha(ToRgba16(ImageSnapshots.CaptureFrame(image.Frames[0]))), ColorBound.Exact, $"{name}: library after AutoOrient() vs heif-dec");
+        WriteOutput(string.Create(CultureInfo.InvariantCulture, $"{name}: library after AutoOrient() vs heif-dec max {difference.Max}"));
     }
 
     /// <summary>

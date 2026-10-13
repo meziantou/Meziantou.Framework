@@ -14,8 +14,8 @@ namespace Meziantou.Framework.Imaging.Drawing;
 /// <para>
 /// The stops are converted to the pixel format of the frame first, then interpolated on alpha-premultiplied values (a
 /// transparent stop does not darken its neighbors), on the encoded sample values, and rounded to nearest with ties
-/// upward. A gradient whose stops all have the same color paints exactly what a <see cref="SolidBrush"/> of that color
-/// paints.
+/// upward. <see cref="ColorSpace"/> selects another space to mix the colors in: linear light, or Oklab. A gradient whose
+/// stops all have the same color paints exactly what a <see cref="SolidBrush"/> of that color paints.
 /// </para>
 /// </remarks>
 public abstract class GradientBrush : Brush
@@ -48,6 +48,28 @@ public abstract class GradientBrush : Brush
         {
             if (!Enum.IsDefined(value))
                 throw new ArgumentOutOfRangeException(nameof(value), value, "The spread mode is not valid.");
+
+            field = value;
+        }
+    }
+
+    /// <summary>Gets the space in which the colors of two stops are mixed. Defaults to <see cref="GradientColorSpace.Encoded"/>.</summary>
+    /// <remarks>
+    /// In a space other than <see cref="GradientColorSpace.Encoded"/>, the stops are interpolated as 16-bit sRGB colors,
+    /// on alpha-premultiplied values of that space, and the result is converted to the pixel format of the frame like
+    /// any brush color; a color the interpolation takes out of sRGB is brought back to its nearest sample values.
+    /// The colors come from the power and the cube root functions of the platform, as those of
+    /// <see cref="ResizeWorkingSpace.LinearSrgb"/> do: a sample whose exact value is within about 1e-12 of a rounding
+    /// boundary can differ by one from a platform to another.
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException">The value is not a defined <see cref="GradientColorSpace"/>.</exception>
+    public GradientColorSpace ColorSpace
+    {
+        get;
+        init
+        {
+            if (!Enum.IsDefined(value))
+                throw new ArgumentOutOfRangeException(nameof(value), value, "The color space is not valid.");
 
             field = value;
         }

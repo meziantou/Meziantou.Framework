@@ -41,6 +41,14 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// the color of the result over black, <c>round((sc S + dc D) / (M^2 Q))</c>. For source-over, these are the formulas
 /// above; <c>S + D</c> never exceeds <c>M^2 Q</c>, so nothing overflows either.
 /// </para>
+/// <para>
+/// <b>Blend modes.</b> With a <see cref="BlendMode"/> other than normal, the color of the paint is replaced, pixel by
+/// pixel, before any of the above: with the colors as fractions of one, <c>s' = (1 - da) s + da B(s, d)</c>, where
+/// <c>B</c> is the function of the mode (<see cref="BlendFunctions"/>), computed in double precision and rounded to a
+/// sample as <c>floor(M s' + 1/2 + 2^-20)</c>. A paint without opacity and a fully transparent pixel are left as they
+/// are. The functions that take a color as a whole get red, green and blue, whatever the order of the samples, and a
+/// gray level three times.
+/// </para>
 /// </remarks>
 internal static class DrawingKernels
 {
@@ -134,7 +142,7 @@ internal static class DrawingKernels
         var row = storage.GetRowSpanCore(y);
         if (typeof(TPixel) == typeof(Rgba32) || typeof(TPixel) == typeof(Bgra32))
         {
-            Composite(row.Slice(x * 4, coverage.Length * 4), channels: 4, coverage, source);
+            Composite(row.Slice(x * 4, coverage.Length * 4), channels: 4, coverage, source, isBlueFirst: typeof(TPixel) == typeof(Bgra32));
         }
         else if (typeof(TPixel) == typeof(Rgb24))
         {
@@ -166,9 +174,20 @@ internal static class DrawingKernels
         => mode is CompositeMode.SourceOver or CompositeMode.DestinationOver or CompositeMode.DestinationOut or CompositeMode.SourceAtop or CompositeMode.Xor;
 
     /// <summary>Composites a paint over interleaved samples: 1 (gray), 3 (color) or 4 (color then alpha) per pixel.</summary>
-    internal static void Composite<TSample>(Span<TSample> samples, int channels, ReadOnlySpan<uint> coverage, scoped in DrawingSource source)
+    /// <param name="samples">The samples of the pixels.</param>
+    /// <param name="channels">The number of samples per pixel.</param>
+    /// <param name="coverage">The coverage of each pixel.</param>
+    /// <param name="source">The paint.</param>
+    /// <param name="isBlueFirst"><see langword="true"/> when the first color sample is blue and the third one red: only the blend modes that take a color as a whole need to know.</param>
+    internal static void Composite<TSample>(Span<TSample> samples, int channels, ReadOnlySpan<uint> coverage, scoped in DrawingSource source, bool isBlueFirst = false)
         where TSample : unmanaged, IBinaryInteger<TSample>, IMinMaxValue<TSample>
     {
+        if (source.Blend != BlendMode.Normal)
+        {
+            CompositeBlended(samples, channels, coverage, source, isBlueFirst);
+            return;
+        }
+
         if (source.Mode != CompositeMode.SourceOver)
         {
             CompositeWithOperator(samples, channels, coverage, source);
@@ -245,6 +264,80 @@ internal static class DrawingKernels
             }
 
             pixel[3] = TSample.CreateTruncating(alpha);
+        }
+    }
+
+    /// <summary>
+    /// Composites a paint whose color is first mixed with the color of each pixel by a blend mode: the paint of each
+    /// pixel becomes a color of its own, composited as any paint.
+    /// </summary>
+    private static void CompositeBlended<TSample>(Span<TSample> samples, int channels, ReadOnlySpan<uint> coverage, scoped in DrawingSource source, bool isBlueFirst)
+        where TSample : unmanaged, IBinaryInteger<TSample>, IMinMaxValue<TSample>
+    {
+        var max = double.CreateTruncating(TSample.MaxValue);
+        var colorChannels = channels == 4 ? 3 : channels;
+        var colors = source.Colors;
+        var color = source.Color;
+        Span<ushort> paint = [color.C0, color.C1, color.C2, color.Alpha];
+        Span<ushort> blended = stackalloc ushort[4];
+        Span<double> s = stackalloc double[3];
+        Span<double> d = stackalloc double[3];
+        Span<double> b = stackalloc double[3];
+
+        // Where red is among the color samples of a pixel, and where blue is
+        var red = isBlueFirst ? 2 : 0;
+        var blue = 2 - red;
+        for (var i = 0; i < coverage.Length; i++)
+        {
+            if (coverage[i] == 0)
+                continue;
+
+            if (!colors.IsEmpty)
+            {
+                colors.Slice(i * 4, 4).CopyTo(paint);
+            }
+
+            paint.CopyTo(blended);
+            var pixel = samples.Slice(i * channels, channels);
+            var backdrop = channels == 4 ? double.CreateTruncating(pixel[3]) / max : 1;
+            if (paint[3] != 0 && backdrop != 0)
+            {
+                if (colorChannels == 1)
+                {
+                    s[0] = s[1] = s[2] = paint[0] / max;
+                    d[0] = d[1] = d[2] = double.CreateTruncating(pixel[0]) / max;
+                }
+                else
+                {
+                    s[0] = paint[red] / max;
+                    s[1] = paint[1] / max;
+                    s[2] = paint[blue] / max;
+                    d[0] = double.CreateTruncating(pixel[red]) / max;
+                    d[1] = double.CreateTruncating(pixel[1]) / max;
+                    d[2] = double.CreateTruncating(pixel[blue]) / max;
+                }
+
+                BlendFunctions.Blend(source.Blend, s, d, b);
+                if (colorChannels == 1)
+                {
+                    blended[0] = ToSample(((1 - backdrop) * s[0]) + (backdrop * b[0]), max);
+                }
+                else
+                {
+                    blended[red] = ToSample(((1 - backdrop) * s[0]) + (backdrop * b[0]), max);
+                    blended[1] = ToSample(((1 - backdrop) * s[1]) + (backdrop * b[1]), max);
+                    blended[blue] = ToSample(((1 - backdrop) * s[2]) + (backdrop * b[2]), max);
+                }
+            }
+
+            Composite(pixel, channels, coverage.Slice(i, 1), new DrawingSource(blended, source.Mode));
+        }
+
+        // Written so that a value that is not a number is zero
+        static ushort ToSample(double value, double max)
+        {
+            var rounded = Math.Floor((value * max) + 0.5 + (1.0 / 1048576));
+            return rounded >= max ? (ushort)max : rounded > 0 ? (ushort)rounded : (ushort)0;
         }
     }
 

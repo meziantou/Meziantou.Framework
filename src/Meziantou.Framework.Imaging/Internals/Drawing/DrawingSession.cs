@@ -22,9 +22,12 @@ namespace Meziantou.Framework.Imaging.Internals;
 internal sealed partial class DrawingSession : IDisposable
 {
     private readonly Image _image;
-    private readonly ImageFrame[] _frames;
-    private readonly PixelStorage[] _storages;
+    private readonly PixelStorage[] _leasedStorages;
     private readonly long[] _tokens;
+
+    // What the draw calls paint: the frames of the image, or the image of a layer
+    private ImageFrame[] _frames;
+    private PixelStorage[] _storages;
     private readonly CancellationToken _cancellationToken;
     private int _leaseCount;
     private EdgeBuilder? _edges;
@@ -44,6 +47,7 @@ internal sealed partial class DrawingSession : IDisposable
         _image = image;
         _frames = frames;
         _storages = storages;
+        _leasedStorages = storages;
         _tokens = new long[storages.Length];
         _cancellationToken = cancellationToken;
         Width = image.Width;
@@ -103,7 +107,7 @@ internal sealed partial class DrawingSession : IDisposable
         var converted = _frames[0].ConvertDrawingColor(color);
         if (_rasterizer!.Begin(_edges!, FillRule.NonZero, _cancellationToken))
         {
-            Paint(converted, evaluator: null, CompositeMode.Source);
+            Paint(converted, evaluator: null, CompositeMode.Source, BlendMode.Normal);
         }
     }
 
@@ -113,17 +117,52 @@ internal sealed partial class DrawingSession : IDisposable
         DrawingGuard.Point(position, nameof(position));
 
         // The image starts at a valid position: its far corner may be a few pixels beyond the largest coordinate
-        DrawImageCore(source, sourceRegion: null, new RectangleD(position.X, position.Y, source.Width, source.Height), opacity);
+        DrawImageCore(source, sourceRegion: null, new RectangleD(position.X, position.Y, source.Width, source.Height), ImageSampling.Bilinear, opacity);
     }
 
-    public void DrawImage(ImageFrame source, Rectangle? sourceRegion, RectangleD destination, double opacity)
+    public void DrawImage(ImageFrame source, Rectangle? sourceRegion, RectangleD destination, ImageSampling sampling, double opacity)
     {
         ArgumentNullException.ThrowIfNull(source);
         DrawingGuard.Rectangle(destination, nameof(destination));
-        DrawImageCore(source, sourceRegion, destination, opacity);
+        ValidateSampling(sampling);
+        DrawImageCore(source, sourceRegion, destination, sampling, opacity);
     }
 
-    private void DrawImageCore(ImageFrame source, Rectangle? sourceRegion, RectangleD destination, double opacity)
+    public void DrawImage(ImageFrame source, AffineTransform transform, ImageSampling sampling, double opacity)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        ValidateSampling(sampling);
+        var coverage = ImageEvaluator.GetOpacityCoverage(opacity, nameof(opacity));
+
+        // The corners of the image, on the canvas
+        var width = source.Width;
+        var height = source.Height;
+        var topLeft = transform.Transform(default);
+        var topRight = transform.Transform(new PointD(width, 0));
+        var bottomRight = transform.Transform(new PointD(width, height));
+        var bottomLeft = transform.Transform(new PointD(0, height));
+        DrawingGuard.Point(topLeft, nameof(transform));
+        DrawingGuard.Point(topRight, nameof(transform));
+        DrawingGuard.Point(bottomRight, nameof(transform));
+        DrawingGuard.Point(bottomLeft, nameof(transform));
+        var sink = BeginFill();
+        sink.MoveTo(topLeft.X, topLeft.Y);
+        sink.LineTo(topRight.X, topRight.Y, smooth: false);
+        sink.LineTo(bottomRight.X, bottomRight.Y, smooth: false);
+        sink.LineTo(bottomLeft.X, bottomLeft.Y, smooth: false);
+        sink.Close(smooth: false);
+        sink.End();
+        PaintImage(source, new Rectangle(0, 0, width, height), transform, sampling, coverage, isEmpty: false, nameof(source));
+    }
+
+    private static void ValidateSampling(ImageSampling sampling)
+    {
+        // Not Enum.IsDefined: a draw call allocates nothing
+        if (sampling is not (ImageSampling.Bilinear or ImageSampling.Nearest or ImageSampling.Smooth))
+            throw new ArgumentOutOfRangeException(nameof(sampling), sampling, "The sampling is not valid.");
+    }
+
+    private void DrawImageCore(ImageFrame source, Rectangle? sourceRegion, RectangleD destination, ImageSampling sampling, double opacity)
     {
         var coverage = ImageEvaluator.GetOpacityCoverage(opacity, nameof(opacity));
         var region = sourceRegion ?? new Rectangle(0, 0, source.Width, source.Height);
@@ -142,9 +181,15 @@ internal sealed partial class DrawingSession : IDisposable
             transform = new AffineTransform(scaleX, 0, 0, scaleY, destination.X - (region.X * scaleX), destination.Y - (region.Y * scaleY));
         }
 
+        PaintImage(source, region, transform, sampling, coverage, region.IsEmpty || destination.IsEmpty, nameof(sourceRegion));
+    }
+
+    /// <summary>Paints the edges of the call with a region of an image, placed by a transformation, its pixels on the edges extended.</summary>
+    private void PaintImage(ImageFrame source, Rectangle region, AffineTransform transform, ImageSampling sampling, uint coverage, bool isEmpty, string regionParameterName)
+    {
         var evaluator = _imagePaint ??= new ImageEvaluator(_image.Owner.Scope);
-        evaluator.Prepare(source, region, transform, ImageWrapMode.Pad, ImageSampling.Bilinear, _frames[0], Width, nameof(sourceRegion));
-        if (coverage == 0 || region.IsEmpty || destination.IsEmpty || _edges!.Count == 0)
+        evaluator.Prepare(source, region, ToCanvas(transform), ImageWrapMode.Pad, sampling, _frames[0], Width, regionParameterName);
+        if (coverage == 0 || isEmpty || _edges!.Count == 0)
             return;
 
         if (coverage != CoverageRasterizer.FullCoverage)
@@ -154,7 +199,7 @@ internal sealed partial class DrawingSession : IDisposable
 
         if (_rasterizer!.Begin(_edges, FillRule.NonZero, _cancellationToken))
         {
-            Paint(default, evaluator, CompositeMode.SourceOver, coverage);
+            Paint(default, evaluator, CompositeMode.SourceOver, BlendMode.Normal, coverage);
         }
     }
 
@@ -225,6 +270,28 @@ internal sealed partial class DrawingSession : IDisposable
         // The corners stay circular: the radius is limited by the shortest side
         radius = Math.Min(radius, Math.Min(rectangle.Width, rectangle.Height) / 2);
         ArcGeometry.AppendRoundedRectangle(ref receiver, rectangle, radius, radius);
+        sink.End();
+        RenderStroke(pen);
+    }
+
+    public void FillRoundedRectangle(Brush brush, RectangleD rectangle, CornerRadii radii)
+    {
+        ArgumentNullException.ThrowIfNull(brush);
+        DrawingGuard.Rectangle(rectangle, nameof(rectangle));
+        var sink = BeginFill();
+        var receiver = new SinkPathReceiver(sink);
+        ArcGeometry.AppendRoundedRectangle(ref receiver, rectangle, radii);
+        sink.End();
+        Render(brush, FillRule.NonZero);
+    }
+
+    public void StrokeRoundedRectangle(Pen pen, RectangleD rectangle, CornerRadii radii)
+    {
+        ArgumentNullException.ThrowIfNull(pen);
+        DrawingGuard.Rectangle(rectangle, nameof(rectangle));
+        var sink = BeginStroke(pen);
+        var receiver = new SinkPathReceiver(sink);
+        ArcGeometry.AppendRoundedRectangle(ref receiver, rectangle, radii);
         sink.End();
         RenderStroke(pen);
     }
@@ -379,7 +446,7 @@ internal sealed partial class DrawingSession : IDisposable
         DrawingGuard.Point(origin, nameof(origin));
         var glyphSink = _glyphSink ??= new GlyphPathSink();
         var scratch = _glyphScratch ??= new GlyphScratch(_image.Owner.Scope);
-        var emboldener = layout.HasEmboldenedGlyphs ? _stroker ??= new Stroker(_edges!) : null;
+        var emboldener = GetEmboldener(layout);
         if (layout.BrushCount <= 1 && !layout.HasColorGlyphs)
         {
             FillFrameWhenCovered(layout.Emit(BeginFill(), glyphSink, scratch, origin.X, origin.Y, _edges, brush: -1, emboldener: emboldener));
@@ -426,7 +493,7 @@ internal sealed partial class DrawingSession : IDisposable
         var measure = Measure(path);
         var glyphSink = _glyphSink ??= new GlyphPathSink();
         var scratch = _glyphScratch ??= new GlyphScratch(_image.Owner.Scope);
-        var emboldener = layout.HasEmboldenedGlyphs ? _stroker ??= new Stroker(_edges!) : null;
+        var emboldener = GetEmboldener(layout);
         if (layout.BrushCount <= 1 && !layout.HasColorGlyphs)
         {
             FillFrameWhenCovered(layout.EmitOnPath(BeginFill(), glyphSink, scratch, measure, options, _edges, brush: -1, emboldener: emboldener));
@@ -476,10 +543,22 @@ internal sealed partial class DrawingSession : IDisposable
         }
     }
 
+    /// <summary>Gets the stroker that thickens the glyphs of a synthetic bold, which the transformation of the canvas enlarges with them.</summary>
+    private Stroker? GetEmboldener(TextLayout layout)
+    {
+        if (!layout.HasEmboldenedGlyphs)
+            return null;
+
+        var stroker = _stroker ??= new Stroker(_edges!);
+        stroker.SetOutput(_hasTransform, _transformMatrix, _transformScale);
+        return stroker;
+    }
+
     /// <summary>Flattens a path and measures its chords.</summary>
     private PathMeasure Measure(VectorPath path)
     {
         var measure = _pathMeasure ??= new PathMeasure(_image.Owner.Scope);
+        measure.Scale = _transformScale;
         measure.Reset();
         PathFlattener.Flatten(path, measure);
         return measure;
@@ -488,6 +567,7 @@ internal sealed partial class DrawingSession : IDisposable
     public void Dispose()
     {
         IsActive = false;
+        DisposeLayers();
         DisposeClips();
         _pathMeasure?.Dispose();
         _pathMeasure = null;
@@ -509,7 +589,7 @@ internal sealed partial class DrawingSession : IDisposable
         _edges = null;
         for (var i = _leaseCount - 1; i >= 0; i--)
         {
-            var storage = _storages[i];
+            var storage = _leasedStorages[i];
             storage.Owner.ReleaseLease(storage, _tokens[i]);
         }
 
@@ -541,7 +621,8 @@ internal sealed partial class DrawingSession : IDisposable
         return edges;
     }
 
-    private FillSink BeginFill()
+    /// <summary>Gets the sink of a fill whose shape is given in the pixels of the canvas, whatever its transformation.</summary>
+    private FillSink BeginDeviceFill()
     {
         var edges = BeginCall();
         return _fillSink ??= new FillSink(edges);
@@ -551,12 +632,23 @@ internal sealed partial class DrawingSession : IDisposable
     {
         var edges = BeginCall();
         var stroker = _stroker ??= new Stroker(edges);
+        stroker.SetOutput(_hasTransform, _transformMatrix, _transformScale);
         stroker.Configure(pen);
         if (!pen.IsDashed)
             return stroker;
 
         var dasher = _dasher ??= new Dasher(_image.Owner.Scope);
-        dasher.Configure(pen, stroker, Width, Height, _cancellationToken);
+        dasher.Scale = _transformScale;
+        if (_hasTransform)
+        {
+            // The dashes are cut in the coordinates of the drawing, where the canvas is not a rectangle: all of them
+            dasher.Configure(pen, stroker, _cancellationToken);
+        }
+        else
+        {
+            dasher.Configure(pen, stroker, Width, Height, _cancellationToken);
+        }
+
         return dasher;
     }
 
@@ -578,7 +670,7 @@ internal sealed partial class DrawingSession : IDisposable
     {
         if (Prepare(brush, fillRule, out var color, out var evaluator))
         {
-            Paint(color, evaluator, brush.CompositeMode, brush is ImageBrush image ? image.OpacityCoverage : CoverageRasterizer.FullCoverage);
+            Paint(color, evaluator, brush.CompositeMode, brush.BlendMode, brush is ImageBrush image ? image.OpacityCoverage : CoverageRasterizer.FullCoverage);
         }
     }
 
@@ -586,14 +678,15 @@ internal sealed partial class DrawingSession : IDisposable
     /// <param name="color">The color of the paint, when it has a single one.</param>
     /// <param name="evaluator">What gives the color of each pixel, or <see langword="null"/> for a single color.</param>
     /// <param name="mode">The operator that combines the paint with the pixels.</param>
+    /// <param name="blend">The blend mode that mixes the color of the paint with the color of the pixels.</param>
     /// <param name="opacity">The coverage every coverage is multiplied by.</param>
-    private void Paint(DrawingColor color, PaintEvaluator? evaluator, CompositeMode mode, uint opacity = CoverageRasterizer.FullCoverage)
+    private void Paint(DrawingColor color, PaintEvaluator? evaluator, CompositeMode mode, BlendMode blend, uint opacity = CoverageRasterizer.FullCoverage)
     {
         // What the paint reads is held before the first pixel is changed
         evaluator?.Begin();
         try
         {
-            PaintRows(color, evaluator, mode, opacity);
+            PaintRows(color, evaluator, mode, blend, opacity);
         }
         finally
         {
@@ -601,7 +694,7 @@ internal sealed partial class DrawingSession : IDisposable
         }
     }
 
-    private void PaintRows(DrawingColor color, PaintEvaluator? evaluator, CompositeMode mode, uint opacity)
+    private void PaintRows(DrawingColor color, PaintEvaluator? evaluator, CompositeMode mode, BlendMode blend, uint opacity)
     {
         if (!_thumbnailRemoved)
         {
@@ -624,7 +717,7 @@ internal sealed partial class DrawingSession : IDisposable
                 coverage = ApplyOpacity(coverage, opacity);
             }
 
-            var source = evaluator is null ? new DrawingSource(color, mode) : new DrawingSource(evaluator.Evaluate(y, x, coverage.Length), mode);
+            var source = evaluator is null ? new DrawingSource(color, mode, blend) : new DrawingSource(evaluator.Evaluate(y, x, coverage.Length), mode, blend);
             for (var i = 0; i < _frames.Length; i++)
             {
                 _frames[i].CompositePixels(_storages[i], y, x, coverage, source);
@@ -653,7 +746,7 @@ internal sealed partial class DrawingSession : IDisposable
         else if (brush is ImageBrush image)
         {
             var imagePaint = _imagePaint ??= new ImageEvaluator(_image.Owner.Scope);
-            imagePaint.Prepare(image.Source, image.SourceRegion, image.Transform, image.WrapMode, image.Sampling, _frames[0], Width, nameof(brush));
+            imagePaint.Prepare(image.Source, image.SourceRegion, ToCanvas(image.Transform), image.WrapMode, image.Sampling, _frames[0], Width, nameof(brush));
             if (image.OpacityCoverage == 0)
                 return false;
 
@@ -667,7 +760,8 @@ internal sealed partial class DrawingSession : IDisposable
         else
         {
             var gradient = _gradient ??= new GradientEvaluator(_image.Owner.Scope);
-            gradient.Prepare((GradientBrush)brush, _frames[0], Width);
+            var gradientBrush = (GradientBrush)brush;
+            gradient.Prepare(gradientBrush, ToCanvas(gradientBrush.Transform), _frames[0], Width);
             if (gradient.IsTransparent && isInert)
                 return false;
 

@@ -528,6 +528,152 @@ public sealed class ConvolutionTests
         Assert.Equal(0, image.Owner.ActiveLeaseCount);
     }
 
+    // -----------------------------------------------------------------------------------------------------------------
+    // Gaussian blur
+    // -----------------------------------------------------------------------------------------------------------------
+
+    [Fact]
+    public void AGaussianBlurSpreadsAPixelByTheWeightsOfABell()
+    {
+        // A deviation of 1: the weights exp(-i^2 / 2) of the 7 pixels within 3, divided by their sum 2.50593:
+        // 0.004433, 0.054006, 0.242036, 0.399050 and back. One pixel at 65535 becomes, in its row, 65535 times each
+        // weight (291, 3539, 15862, 26152), and each of these, in its column, as many times each weight
+        using var image = new Image<Gray16>(9, 9);
+        image.Frames[0][4, 4] = new Gray16(65535);
+        image.GaussianBlur(1, cancellationToken: Ct);
+        int[] center = [0, 116, 1412, 6330, 10436, 6330, 1412, 116, 0];
+        for (var i = 0; i < 9; i++)
+        {
+            Assert.Equal(center[i], image.Frames[0][4, i].Value);
+            Assert.Equal(center[i], image.Frames[0][i, 4].Value);
+        }
+
+        // 3539 * 0.242036 = 856.6, in the row two above and the column one right of the pixel; 291 * 0.004433 = 1.29
+        Assert.Equal(857, image.Frames[0][5, 2].Value);
+        Assert.Equal(857, image.Frames[0][2, 5].Value);
+        Assert.Equal(1, image.Frames[0][1, 1].Value);
+        Assert.Equal(0, image.Frames[0][0, 0].Value);
+
+        // The same at 8 bits: 255 times each weight is 1, 14, 62, 102, then 102 times each weight 0, 6, 25, 41
+        using var small = new Image<Gray8>(7, 7);
+        small.Frames[0][3, 3] = new Gray8(255);
+        small.GaussianBlur(1, cancellationToken: Ct);
+        Assert.Equal([0, 6, 25, 41, 25, 6, 0], CopyRow(small.Frames[0], 3).Select(pixel => (int)pixel.Value));
+    }
+
+    [Fact]
+    public void AGaussianBlurIsTwoConvolutionsByItsWeights()
+    {
+        foreach (var sigma in new[] { 0.4, 1, 2.5 })
+        {
+            // The weights of the definition, from the exponential of the platform: a sample can differ by one where
+            // the two computations do not round the same way
+            var radius = (int)Math.Ceiling(3 * sigma);
+            double[] weights = [.. Enumerable.Range(-radius, (2 * radius) + 1).Select(i => Math.Exp(-(i * i) / (2 * sigma * sigma)))];
+            var sum = weights.Sum();
+            weights = [.. weights.Select(weight => weight / sum)];
+            foreach (var mode in EdgeModes)
+            {
+                using var blurred = BuildGradient(13, 11, layout: null);
+                using var convolved = BuildGradient(13, 11, layout: null);
+                blurred.GaussianBlur(sigma, mode, cancellationToken: Ct);
+                convolved.Convolve(new ConvolutionOptions(Kernel(weights.Length, 1, weights)) { EdgeMode = mode }, Ct);
+                convolved.Convolve(new ConvolutionOptions(Kernel(1, weights.Length, weights)) { EdgeMode = mode }, Ct);
+                var expected = CopyAll(convolved.Frames[0]);
+                var actual = CopyAll(blurred.Frames[0]);
+                for (var i = 0; i < expected.Length; i++)
+                {
+                    Assert.True(
+                        Math.Abs(expected[i].R - actual[i].R) <= 1 && Math.Abs(expected[i].G - actual[i].G) <= 1 && Math.Abs(expected[i].B - actual[i].B) <= 1 && Math.Abs(expected[i].A - actual[i].A) <= 1,
+                        $"sigma {sigma}, {mode}, pixel {i}: expected {expected[i]}, actual {actual[i]}");
+                }
+            }
+        }
+
+        // The weights add up to 1: an image of one color keeps it, whatever the deviation
+        using var flat = new Image<Rgba32>(20, 15, new Rgba32(12, 200, 99, 180));
+        flat.GaussianBlur(7.3, cancellationToken: Ct);
+        Assert.All(CopyAll(flat.Frames[0]), pixel => Assert.Equal(new Rgba32(12, 200, 99, 180), pixel));
+
+        // In linear light, the middle of black and white is lighter than their mean
+        using var encoded = new Image<Gray8>(40, 1);
+        using var linear = new Image<Gray8>(40, 1);
+        for (var x = 20; x < 40; x++)
+        {
+            encoded.Frames[0][x, 0] = linear.Frames[0][x, 0] = new Gray8(255);
+        }
+
+        encoded.GaussianBlur(3, cancellationToken: Ct);
+        linear.GaussianBlur(3, workingSpace: ConvolutionWorkingSpace.LinearSrgb, cancellationToken: Ct);
+        Assert.InRange(encoded.Frames[0][20, 0].Value, 130, 150);
+        Assert.InRange(linear.Frames[0][20, 0].Value, 190, 205);
+    }
+
+    [Fact]
+    public void AGaussianBlurAppliesToEveryFrameOrToOne()
+    {
+        using var image = BuildGray8([[0, 0, 0, 255, 0, 0, 0]]);
+        Fill(image.AppendFrame(), [[255, 0, 0, 0, 0, 0, 0]]);
+        Fill(image.SetPosterFrame(image.Frames[0]), [[0, 0, 0, 0, 0, 0, 255]]);
+        var storage = image.Frames[1].Storage;
+
+        // A row of one pixel: its column is itself, with every weight of the column. The edges are extended: the
+        // white pixel of an edge is also the three pixels before it, 255 * 0.699525 = 178.4, and it is three, two and
+        // one of the pixels its neighbors read: 255 * 0.300475 = 76.6, 255 * 0.058439 = 14.9 and 255 * 0.004433 = 1.1
+        image.GaussianBlur(1, cancellationToken: Ct);
+        AssertGray8(image.Frames[0], [[1, 14, 62, 102, 62, 14, 1]]);
+        AssertGray8(image.Frames[1], [[178, 77, 15, 1, 0, 0, 0]]);
+        AssertGray8(image.PosterFrame!, [[0, 0, 0, 1, 15, 77, 178]]);
+        Assert.Same(storage, image.Frames[1].Storage);
+
+        // Without deviation, nothing changes; one frame can be blurred on its own
+        image.GaussianBlur(0, cancellationToken: Ct);
+        image.Frames[1].GaussianBlur(0, cancellationToken: Ct);
+        AssertGray8(image.Frames[1], [[178, 77, 15, 1, 0, 0, 0]]);
+        Fill(image.Frames[1], [[0, 0, 0, 255, 0, 0, 0]]);
+        image.Frames[1].GaussianBlur(1, ConvolutionEdgeMode.Zero, cancellationToken: Ct);
+        AssertGray8(image.Frames[0], [[1, 14, 62, 102, 62, 14, 1]]);
+        AssertGray8(image.Frames[1], [[0, 6, 25, 41, 25, 6, 0]]);
+        Assert.Equal(0, image.Owner.Scope.GetLiveBytes(AllocationKind.Temporary));
+        Assert.Equal(0, image.Owner.ActiveLeaseCount);
+    }
+
+    [Fact]
+    public void AGaussianBlurValidatesItsArgumentsAndChangesNothingWhenItCannotRun()
+    {
+        using var image = BuildGray8([[10, 20, 30], [40, 50, 60]]);
+        Assert.Throws<ArgumentNullException>(() => ((Image)null!).GaussianBlur(1));
+        Assert.Throws<ArgumentNullException>(() => ((ImageFrame)null!).GaussianBlur(1));
+        Assert.Throws<ArgumentException>(() => image.GaussianBlur(double.NaN));
+        Assert.Throws<ArgumentException>(() => image.Frames[0].GaussianBlur(double.PositiveInfinity));
+        Assert.Throws<ArgumentOutOfRangeException>(() => image.GaussianBlur(-0.5));
+        Assert.Throws<ArgumentOutOfRangeException>(() => image.GaussianBlur(10000.5));
+        Assert.Throws<ArgumentOutOfRangeException>(() => image.GaussianBlur(1, (ConvolutionEdgeMode)4));
+        Assert.Throws<ArgumentOutOfRangeException>(() => image.Frames[0].GaussianBlur(1, workingSpace: (ConvolutionWorkingSpace)2));
+        using var canceled = new CancellationTokenSource();
+        canceled.Cancel();
+        Assert.Throws<OperationCanceledException>(() => image.GaussianBlur(1, cancellationToken: canceled.Token));
+        Assert.Throws<OperationCanceledException>(() => image.Frames[0].GaussianBlur(1, cancellationToken: canceled.Token));
+        image.Frames[0].ProcessPixelRows(_ => Assert.Throws<InvalidOperationException>(() => image.GaussianBlur(1)));
+        image.Frames[0].ProcessPixelRows(_ => Assert.Throws<InvalidOperationException>(() => image.GaussianBlur(0)));
+        AssertGray8(image.Frames[0], [[10, 20, 30], [40, 50, 60]]);
+
+        // The scratch of both directions is rented before the first one runs: a blur that cannot have it changes nothing
+        using var limited = new Image<Gray8>(8, 64, new Gray8(0), new ImageConfiguration { Limits = new ImageResourceLimits { MaxLiveAllocationBytes = 8 * 64 * 4 } });
+        limited.Frames[0][4, 32] = new Gray8(255);
+        Assert.Throws<ImageResourceLimitException>(() => limited.GaussianBlur(20, cancellationToken: Ct));
+        Assert.Equal(255, limited.Frames[0][4, 32].Value);
+        Assert.Equal(0, limited.Frames[0][5, 32].Value);
+        Assert.Equal(0, limited.Owner.Scope.GetLiveBytes(AllocationKind.Temporary));
+
+        var disposed = new Image<Gray8>(2, 2);
+        var frame = disposed.Frames[0];
+        disposed.Dispose();
+        Assert.Throws<ObjectDisposedException>(() => disposed.GaussianBlur(1));
+        Assert.Throws<ObjectDisposedException>(() => disposed.GaussianBlur(0));
+        Assert.Throws<ObjectDisposedException>(() => frame.GaussianBlur(1));
+    }
+
     [Fact]
     public void SegmentedAndPaddedStoragesGiveTheSameResult()
     {

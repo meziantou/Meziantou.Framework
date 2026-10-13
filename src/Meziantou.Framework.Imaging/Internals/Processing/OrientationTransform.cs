@@ -89,6 +89,23 @@ internal readonly record struct OrientationTransform(bool Transpose, bool FlipX,
     public Size GetOutputSize(Size source) => Transpose ? new Size(source.Height, source.Width) : source;
 
     /// <summary>
+    /// Gets the part of the source that a rectangle of the result shows: the pixels of
+    /// <paramref name="destination"/> are the pixels of the returned rectangle, permuted by this transform.
+    /// </summary>
+    /// <param name="source">The size of the transformed source region.</param>
+    /// <param name="destination">A rectangle inside the result, whose size is <see cref="GetOutputSize"/> of <paramref name="source"/>.</param>
+    /// <returns>The rectangle of the source, relative to its top-left corner.</returns>
+    public Rectangle MapRectangleToSource(Size source, Rectangle destination)
+    {
+        // The columns of the result are the rows of the source when the transform transposes
+        var (u, uLength) = Transpose ? (destination.Y, destination.Height) : (destination.X, destination.Width);
+        var (v, vLength) = Transpose ? (destination.X, destination.Width) : (destination.Y, destination.Height);
+        var x = FlipX ? source.Width - (u + uLength) : u;
+        var y = FlipY ? source.Height - (v + vLength) : v;
+        return new Rectangle(x, y, uLength, vLength);
+    }
+
+    /// <summary>
     /// Gets where a source pixel lands in the result: the inverse of the destination-to-source mapping, so the returned
     /// point designates the same pixel value after the permutation (a cursor hotspot follows its pixel).
     /// </summary>

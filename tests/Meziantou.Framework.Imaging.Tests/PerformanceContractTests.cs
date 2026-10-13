@@ -74,9 +74,9 @@ public sealed class PerformanceContractTests
         ((Image)image).AppendFrame();
         using var sprite = new Image<Rgba64>(24, 16, new Rgba64(60000, 30000, 1000, 40000));
         var state = new DrawingState(
-            new SolidBrush(new Rgba32(10, 200, 30, 120)),
-            new LinearGradientBrush(new PointD(0, 0), new PointD(64, 48), [new GradientStop(0, new Rgba32(255, 0, 0)), new GradientStop(0.5, new Rgba32(0, 255, 0, 80)), new GradientStop(1, new Rgba32(0, 0, 255))]) { SpreadMode = GradientSpreadMode.Reflect },
-            new Pen(new RadialGradientBrush(new PointD(30, 20), 25, [new GradientStop(0, new Rgba32(0, 0, 0)), new GradientStop(1, new Rgba32(255, 255, 255))]), 3.5) { LineJoin = LineJoin.Round, LineCap = LineCap.Round },
+            new SolidBrush(new Rgba32(10, 200, 30, 120)) { BlendMode = BlendMode.Hue },
+            new LinearGradientBrush(new PointD(0, 0), new PointD(64, 48), [new GradientStop(0, new Rgba32(255, 0, 0)), new GradientStop(0.5, new Rgba32(0, 255, 0, 80)), new GradientStop(1, new Rgba32(0, 0, 255))]) { SpreadMode = GradientSpreadMode.Reflect, BlendMode = BlendMode.SoftLight },
+            new Pen(new RadialGradientBrush(new PointD(30, 20), 25, [new GradientStop(0, new Rgba32(0, 0, 0)), new GradientStop(1, new Rgba32(255, 255, 255))]) { ColorSpace = GradientColorSpace.LinearSrgb }, 3.5) { LineJoin = LineJoin.Round, LineCap = LineCap.Round },
             new VectorPathBuilder().MoveTo(4, 40).CubicBezierTo(20, -10, 40, 60, 60, 6).QuadraticBezierTo(30, 30, 8, 8).AddCircle(new PointD(32, 24), 15).Build(),
             TextLayout.Create("OPQ\nR O", FontTestSupport.Load(FontSamples.Curves()), 14.5),
             TextLayout.Create("ABCDEFG", FontTestSupport.Load(FontSamples.Charstrings()), 9.25),
@@ -89,7 +89,7 @@ public sealed class PerformanceContractTests
             TextLayout.Create("ABCA", FontTestSupport.Load(FontSamples.BitmapBoxes()), 11.5),
             new TextPathOptions { Side = TextPathSide.Right, Alignment = TextPathAlignment.Center, StartOffset = -7.5, BaselineOffset = 2.25, Overflow = TextPathOverflow.Clip },
             new Pen(new SolidBrush(new Rgba32(0, 0, 0, 200)), 2.5) { DashPattern = [5, 2.5, 0, 2.5], DashOffset = 1.25, LineCap = LineCap.Round },
-            new SweepGradientBrush(new PointD(30, 22), 15, 300, [new GradientStop(0, new Rgba32(255, 255, 0, 40)), new GradientStop(1, new Rgba32(0, 255, 255))]) { SpreadMode = GradientSpreadMode.Reflect, Transform = AffineTransform.CreateSkew(20, 0) },
+            new SweepGradientBrush(new PointD(30, 22), 15, 300, [new GradientStop(0, new Rgba32(255, 255, 0, 40)), new GradientStop(1, new Rgba32(0, 255, 255))]) { SpreadMode = GradientSpreadMode.Reflect, Transform = AffineTransform.CreateSkew(20, 0), ColorSpace = GradientColorSpace.Oklab },
             new RadialGradientBrush(new PointD(30, 20), 25, [new GradientStop(0, new Rgba32(255, 255, 255)), new GradientStop(1, new Rgba32(0, 0, 0, 0))]) { FocalPoint = new PointD(22, 14) },
             new RadialGradientBrush(new PointD(25, 14), 12, [new GradientStop(0, new Rgba32(0, 0, 0)), new GradientStop(1, new Rgba32(0, 0, 0, 0))]) { CompositeMode = CompositeMode.DestinationOut },
             sprite.Frames[0],
@@ -137,6 +137,8 @@ public sealed class PerformanceContractTests
             canvas.StrokeBezier(state.Pen, new PointD(2, 46), new PointD(20, 0), new PointD(40, 47), new PointD(62, 20));
             canvas.FillRoundedRectangle(state.Gradient, new RectangleD(3.5, 2.25, 40, 30), 6.5);
             canvas.StrokeRoundedRectangle(state.Pen, new Rectangle(5, 5, 20, 20), 100);
+            canvas.FillRoundedRectangle(state.Solid, new RectangleD(2.5, 3, 30, 20), new CornerRadii(4, 0, 9.5, 2));
+            canvas.StrokeRoundedRectangle(state.Pen, new Rectangle(5, 5, 20, 20), new CornerRadii(30, 1, 30, 1));
             canvas.FillPie(state.Solid, new PointD(30, 20), 17.5, 20, 250);
             canvas.StrokeArc(state.Pen, new PointD(30, 20), 17.5, -30, -400);
             canvas.Stroke(state.DashedPen, state.Path);
@@ -145,8 +147,35 @@ public sealed class PerformanceContractTests
             canvas.DrawImage(state.Sprite, new Point(3, 4));
             canvas.DrawImage(state.Sprite, new PointD(30.5, 20.25), 0.5);
             canvas.DrawImage(state.Sprite, new Rectangle(4, 2, 10, 8), new RectangleD(-5, 6.5, 80, 30), 0.9);
+            canvas.DrawImage(state.Sprite, AffineTransform.CreateRotation(30, new PointD(5, 5)).Then(AffineTransform.CreateTranslation(20, 10)), 0.8);
+            canvas.DrawImage(state.Sprite, new RectangleD(2.5, 3, 5, 4), ImageSampling.Smooth);
+            canvas.DrawImage(state.Sprite, AffineTransform.CreateRotation(30, new PointD(5, 5)).Then(AffineTransform.CreateScale(0.4, 0.3)), ImageSampling.Smooth, 0.8);
             canvas.Fill(state.Tile, state.Path);
             canvas.FillText(state.Tile, state.Text, new PointD(2.5, 3));
+            canvas.Layer(0.6, state, static (layer, state) =>
+            {
+                layer.Fill(state.Gradient, state.Path);
+                layer.FillText(state.Solid, state.ColorText, new PointD(1, 20));
+                layer.Clip(new RectangleD(8.5, 4, 40, 30), state, static (inner, state) => inner.Layer(1, state, static (mask, state) => mask.Stroke(state.Pen, state.Path), CompositeMode.DestinationIn));
+            });
+            canvas.Layer(0.9, state, static (layer, state) => layer.FillEllipse(state.Focal, new PointD(30, 20), 25, 15), CompositeMode.SourceAtop, BlendMode.Overlay);
+            canvas.Shadow(new Rgba32(0, 0, 0, 100), new PointD(2.5, 3), 1.75, state, static (shadowed, state) => shadowed.FillText(state.Solid, state.Text, new PointD(4, 6)));
+            canvas.Transform(AffineTransform.CreateRotation(20, new PointD(32, 24)).Then(AffineTransform.CreateScale(1.25, 0.8)), state, static (turned, state) =>
+            {
+                turned.Fill(state.Gradient, state.Path);
+                turned.Stroke(state.Pen, state.Path);
+                turned.Stroke(state.DashedPen, state.Path);
+                turned.FillRoundedRectangle(state.Sweep, new RectangleD(3.5, 2.25, 40, 30), 6.5);
+                turned.FillText(state.Solid, state.RichText, new PointD(2, 3));
+                turned.FillText(state.Gradient, state.ColorText, new PointD(1, 20));
+                turned.StrokeText(state.Pen, state.CffText, new PointD(3, 30));
+                turned.FillText(state.Solid, state.Text, state.Path, state.PathOptions);
+                turned.DrawImage(state.Sprite, new RectangleD(-5, 6.5, 30, 20), ImageSampling.Smooth, 0.9);
+                turned.Fill(state.Tile, state.Path);
+                turned.Clip(state.Path, state, static (clipped, state) => clipped.Transform(AffineTransform.CreateTranslation(2.5, -1), state, static (moved, state) => moved.Fill(state.Focal)));
+                turned.Shadow(new Rgba32(0, 0, 0, 100), new PointD(2, 1), 0.75, state, static (shadowed, state) => shadowed.FillCircle(state.Solid, new PointD(20, 20), 6));
+            });
+            canvas.Clip(new Rectangle(10, 8, 30, 24), state, static (clipped, state) => clipped.Shadow(new Rgba32(255, 255, 0), default, 0.8, state, static (glow, state) => glow.Stroke(state.Pen, state.Path)));
             canvas.Clip(state.Path, state, static (clipped, state) =>
             {
                 clipped.DrawImage(state.Sprite, new RectangleD(1.5, 2, 60, 44), 0.6);

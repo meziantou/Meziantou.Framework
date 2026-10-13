@@ -22,6 +22,18 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </description></item>
 /// </list>
 /// <para>
+/// <b>Smooth.</b> With <c>(u, v)</c> = <c>(a x + c y + e, b x + d y + f)</c>, a pixel of the canvas covers
+/// <c>sx = sqrt(a^2 + c^2)</c> columns and <c>sy = sqrt(b^2 + d^2)</c> rows of the image, each limited to the size of
+/// the region. When neither exceeds 1, the image is not reduced and the color is the bilinear one, bit for bit.
+/// Otherwise, with both brought up to 1, the pixel <c>(i, j)</c> has the weight <c>wx(i) wy(j)</c>, where
+/// <c>wx(i) = 1 - |i + 1/2 - u| / sx</c> for the columns that make it positive (and the same for the rows): the
+/// weights of the bilinear interpolation, stretched over what the pixel of the canvas covers. For each row in
+/// ascending order, <c>Sa = sum wx(i) a(i, j)</c> and <c>Sc = sum (wx(i) a(i, j)) c(i, j)</c> over its columns in
+/// ascending order, then <c>Ta += wy(j) Sa</c> and <c>Tc += wy(j) Sc</c>. The alpha is
+/// <c>Ta / (sum wx sum wy)</c>, the sums being over every pixel of the support, in the region or not, and each color
+/// is <c>Tc / Ta</c>, rounded as above.
+/// </para>
+/// <para>
 /// A pixel outside the region of the image is, by wrap mode: transparent, the nearest pixel of the region, or the
 /// pixel the repeated or mirrored region has there. The colors are converted to the pixel format of the frame last, as
 /// any brush color is.
@@ -29,7 +41,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <para>
 /// <b>Method.</b> When the rows of the canvas stay rows of the image (no rotation, no skew), the two rows of the image
 /// around a row of the canvas are converted once and kept until another row needs their place: the image is read row
-/// by row. Otherwise each pixel is read on its own.
+/// by row. Otherwise each pixel is read on its own. A reduced image is read the same two ways, one row of the image at
+/// a time for every pixel of a run, with the same operations in the same order.
 /// </para>
 /// </remarks>
 internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
@@ -38,6 +51,9 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
 
     /// <summary>The largest magnitude of a position in the image: beyond it, every position counts as that far.</summary>
     private const double MaxPosition = 1 << 30;
+
+    /// <summary>The values kept for each pixel of a run of a reduced image: the sums of the alpha and of the three colors, and the sum of the weights of its columns.</summary>
+    private const int ValuesPerSum = 5;
 
     private readonly AllocationScope _scope;
     private PooledBuffer? _colors;
@@ -61,6 +77,11 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
     private bool _keepsRows;
     private ImageWrapMode _wrapMode;
     private bool _isNearest;
+    private bool _isReduced;
+    private double _spanX;
+    private double _spanY;
+    private PooledBuffer? _sums;
+    private int _sumCapacity;
 
     public ImageEvaluator(AllocationScope scope)
     {
@@ -111,6 +132,18 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
 
         // The row of the image a pixel reads does not depend on its column
         _keepsRows = _inverse.B == 0;
+
+        // What a pixel of the canvas covers of the image: more than a pixel when the image is reduced
+        _isReduced = false;
+        if (sampling == ImageSampling.Smooth && !_isEmpty)
+        {
+            _spanX = Math.Min(Math.Sqrt((_inverse.A * _inverse.A) + (_inverse.C * _inverse.C)), _regionWidth);
+            _spanY = Math.Min(Math.Sqrt((_inverse.B * _inverse.B) + (_inverse.D * _inverse.D)), _regionHeight);
+            _isReduced = _spanX > 1 || _spanY > 1;
+            _spanX = Math.Max(_spanX, 1);
+            _spanY = Math.Max(_spanY, 1);
+        }
+
         if (width > _width)
         {
             _colors?.Dispose();
@@ -120,6 +153,15 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
             _colors = ResampleWeights.Rent<ushort>(_scope, 4L * width);
             _samples = ResampleWeights.Rent<Rgba64>(_scope, width);
             _width = width;
+        }
+
+        if (_isReduced && _keepsRows && width > _sumCapacity)
+        {
+            _sums?.Dispose();
+            _sums = null;
+            _sumCapacity = 0;
+            _sums = ResampleWeights.Rent<double>(_scope, (long)ValuesPerSum * width);
+            _sumCapacity = width;
         }
 
         if (_keepsRows && !_isEmpty && _regionWidth > _rowCapacity)
@@ -163,7 +205,18 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
         }
 
         var samples = Samples[..count];
-        if (_keepsRows)
+        if (_isReduced)
+        {
+            if (_keepsRows)
+            {
+                ReduceRows(y, x, samples);
+            }
+            else
+            {
+                ReducePixels(y, x, samples);
+            }
+        }
+        else if (_keepsRows)
         {
             EvaluateRows(y, x, samples);
         }
@@ -182,9 +235,11 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
         _colors?.Dispose();
         _samples?.Dispose();
         _rows?.Dispose();
-        _colors = _samples = _rows = null;
+        _sums?.Dispose();
+        _colors = _samples = _rows = _sums = null;
         _width = 0;
         _rowCapacity = 0;
+        _sumCapacity = 0;
         _source = null;
         _destination = null;
         _storage = null;
@@ -304,6 +359,138 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
 
             samples[i] = accumulator.ToColor();
         }
+    }
+
+    /// <summary>Evaluates a run of a reduced image whose pixels all read the same rows of the image: one row at a time, for the whole run.</summary>
+    private void ReduceRows(int y, int x, Span<Rgba64> samples)
+    {
+        var centerY = y + 0.5;
+        var v = Limit(_inverse.TransformY(x + 0.5, centerY));
+        GetSupport(v, _spanY, out var firstRow, out var lastRow);
+        var sums = unsafe(MemoryMarshal.Cast<byte, double>(_sums!.Span))[..(samples.Length * ValuesPerSum)];
+        sums.Clear();
+        var rows = unsafe(MemoryMarshal.Cast<byte, Rgba64>(_rows!.Span))[.._regionWidth];
+        _cachedRow0 = _cachedRow1 = int.MinValue;
+        var totalY = 0d;
+        for (var row = firstRow; row <= lastRow; row++)
+        {
+            var weightY = GetWeight(row, v, _spanY);
+            if (!(weightY > 0))
+                continue;
+
+            totalY += weightY;
+            var hasRow = TryWrap(row, _top, _regionHeight, out var wrapped);
+            if (hasRow)
+            {
+                _source!.ReadRgba64(_storage!, _top + wrapped, _left, rows);
+            }
+
+            for (var i = 0; i < samples.Length; i++)
+            {
+                var u = Limit(_inverse.TransformX(x + i + 0.5, centerY));
+                GetSupport(u, _spanX, out var firstColumn, out var lastColumn);
+                var sum = default(RowSum);
+                for (var column = firstColumn; column <= lastColumn; column++)
+                {
+                    var weightX = GetWeight(column, u, _spanX);
+                    if (!(weightX > 0))
+                        continue;
+
+                    sum.Total += weightX;
+                    if (hasRow && TryWrap(column, _left, _regionWidth, out var index))
+                    {
+                        sum.Add(rows[index], weightX);
+                    }
+                }
+
+                var entry = sums.Slice(i * ValuesPerSum, ValuesPerSum);
+                entry[0] += weightY * sum.Alpha;
+                entry[1] += weightY * sum.Red;
+                entry[2] += weightY * sum.Green;
+                entry[3] += weightY * sum.Blue;
+                entry[4] = sum.Total;
+            }
+        }
+
+        for (var i = 0; i < samples.Length; i++)
+        {
+            var entry = sums.Slice(i * ValuesPerSum, ValuesPerSum);
+            samples[i] = ToColor(entry[0], entry[1], entry[2], entry[3], entry[4] * totalY);
+        }
+    }
+
+    /// <summary>Evaluates a run of a reduced image whose pixels read any pixel of the image.</summary>
+    private void ReducePixels(int y, int x, Span<Rgba64> samples)
+    {
+        var centerY = y + 0.5;
+        for (var i = 0; i < samples.Length; i++)
+        {
+            var centerX = x + i + 0.5;
+            var u = Limit(_inverse.TransformX(centerX, centerY));
+            var v = Limit(_inverse.TransformY(centerX, centerY));
+            GetSupport(u, _spanX, out var firstColumn, out var lastColumn);
+            GetSupport(v, _spanY, out var firstRow, out var lastRow);
+            double alpha = 0, red = 0, green = 0, blue = 0, totalX = 0, totalY = 0;
+            for (var row = firstRow; row <= lastRow; row++)
+            {
+                var weightY = GetWeight(row, v, _spanY);
+                if (!(weightY > 0))
+                    continue;
+
+                totalY += weightY;
+                var sum = default(RowSum);
+                for (var column = firstColumn; column <= lastColumn; column++)
+                {
+                    var weightX = GetWeight(column, u, _spanX);
+                    if (!(weightX > 0))
+                        continue;
+
+                    sum.Total += weightX;
+                    if (TryRead(column, row, out var color))
+                    {
+                        sum.Add(color, weightX);
+                    }
+                }
+
+                alpha += weightY * sum.Alpha;
+                red += weightY * sum.Red;
+                green += weightY * sum.Green;
+                blue += weightY * sum.Blue;
+                totalX = sum.Total;
+            }
+
+            samples[i] = ToColor(alpha, red, green, blue, totalX * totalY);
+        }
+    }
+
+    /// <summary>Gets the rows or the columns of the image a pixel of the canvas reads when the image is reduced: those whose center is within the span of its position.</summary>
+    private static void GetSupport(double position, double span, out int first, out int last)
+    {
+        first = (int)Math.Floor(position - span - 0.5) + 1;
+        last = (int)Math.Ceiling(position + span - 0.5) - 1;
+    }
+
+    /// <summary>Gets the weight of a row or of a column of the image for a position: 1 at its center, 0 a span away.</summary>
+    private static double GetWeight(int index, double position, double span) => 1 - (Math.Abs(index + 0.5 - position) / span);
+
+    /// <summary>Brings a coordinate of the image within the positions that count. Written so that a coordinate that is not a number is far away.</summary>
+    private static double Limit(double coordinate) => Math.Abs(coordinate) < MaxPosition ? coordinate : coordinate < 0 ? -MaxPosition : MaxPosition;
+
+    /// <summary>Makes a color of the sums of a reduced image: the alpha over the sum of every weight, the colors over the alpha.</summary>
+    private static Rgba64 ToColor(double alpha, double red, double green, double blue, double total)
+    {
+        // Written so that sums that are not numbers give no color
+        if (!(total > 0 && alpha > 0))
+            return default;
+
+        var roundedAlpha = Round(alpha / total);
+        return roundedAlpha == 0 ? default : new Rgba64(Round(red / alpha), Round(green / alpha), Round(blue / alpha), roundedAlpha);
+    }
+
+    private static ushort Round(double value)
+    {
+        var rounded = Math.Floor(value + RoundingOffset);
+        return rounded <= 0 ? (ushort)0 : rounded >= ushort.MaxValue ? ushort.MaxValue : (ushort)rounded;
     }
 
     /// <summary>
@@ -439,11 +626,25 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
 
             return new Rgba64(Round(_red / _alpha), Round(_green / _alpha), Round(_blue / _alpha), alpha);
         }
+    }
 
-        private static ushort Round(double value)
+    /// <summary>The weighted sums of the pixels of a row of the image a pixel of the canvas reads, and the sum of the weights.</summary>
+    [StructLayout(LayoutKind.Auto)]
+    private struct RowSum
+    {
+        public double Alpha;
+        public double Red;
+        public double Green;
+        public double Blue;
+        public double Total;
+
+        public void Add(Rgba64 color, double weight)
         {
-            var rounded = Math.Floor(value + RoundingOffset);
-            return rounded <= 0 ? (ushort)0 : rounded >= ushort.MaxValue ? ushort.MaxValue : (ushort)rounded;
+            var alpha = weight * color.A;
+            Alpha += alpha;
+            Red += alpha * color.R;
+            Green += alpha * color.G;
+            Blue += alpha * color.B;
         }
     }
 }

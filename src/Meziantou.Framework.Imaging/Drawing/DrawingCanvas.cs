@@ -27,7 +27,8 @@ namespace Meziantou.Framework.Imaging.Drawing;
 /// straight alpha and exact integer arithmetic, rounded to nearest with ties upward. Pixel formats without alpha stay
 /// opaque. See <see cref="Brush"/> for the conversion of colors to the pixel format of the frame, and
 /// <see cref="Brush.CompositeMode"/> for the other ways a paint is combined with the pixels (replacing, erasing,
-/// painting behind, masking).
+/// painting behind, masking), and <see cref="Brush.BlendMode"/> for the ways its color is mixed with theirs
+/// (multiplying, screening, tinting).
 /// </para>
 /// <para>
 /// <b>Failures.</b> Drawing is a pixel-only edit: when a call fails or is canceled, the calls that completed stay, and
@@ -669,7 +670,8 @@ public readonly ref struct DrawingCanvas
     /// drawing without changing it. With a <paramref name="compositeMode"/>, the whole drawing is combined with the
     /// canvas: a layer drawn with <see cref="CompositeMode.DestinationIn"/> keeps the canvas where the drawing is
     /// opaque (a mask made of several shapes, or of a text), and one drawn with
-    /// <see cref="CompositeMode.DestinationOut"/> erases it there.
+    /// <see cref="CompositeMode.DestinationOut"/> erases it there. With a <paramref name="blendMode"/>, its colors
+    /// are mixed with those of the canvas as those of a brush are (see <see cref="BlendMode"/>).
     /// </para>
     /// <para>
     /// The layer is an image of the size of the canvas, transparent when the callback starts, with colors and alpha
@@ -689,16 +691,17 @@ public readonly ref struct DrawingCanvas
     /// <param name="opacity">The opacity of the layer, from 0 (nothing is drawn; the callback still runs) to 1.</param>
     /// <param name="action">The callback that draws. It must not be asynchronous and must not retain the canvas.</param>
     /// <param name="compositeMode">The operator that combines the layer with the canvas.</param>
+    /// <param name="blendMode">The blend mode that mixes the colors of the layer with those of the canvas, before the operator: a drawing that multiplies or screens what is under it.</param>
     /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
-    /// <exception cref="ArgumentOutOfRangeException"><paramref name="opacity"/> is not between 0 and 1, or <paramref name="compositeMode"/> is not a defined <see cref="CompositeMode"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="opacity"/> is not between 0 and 1, <paramref name="compositeMode"/> is not a defined <see cref="CompositeMode"/>, or <paramref name="blendMode"/> is not a defined <see cref="BlendMode"/>.</exception>
     /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
     /// <exception cref="ImageResourceLimitException">The layer or the working storage would exceed the allocation limit.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
-    public void Layer(double opacity, DrawingAction action, CompositeMode compositeMode = CompositeMode.SourceOver)
+    public void Layer(double opacity, DrawingAction action, CompositeMode compositeMode = CompositeMode.SourceOver, BlendMode blendMode = BlendMode.Normal)
     {
         ArgumentNullException.ThrowIfNull(action);
         var session = GetSession();
-        session.PushLayer(opacity, compositeMode);
+        session.PushLayer(opacity, compositeMode, blendMode);
         var isDrawn = false;
         try
         {
@@ -717,18 +720,19 @@ public readonly ref struct DrawingCanvas
     /// <param name="state">The state passed to <paramref name="action"/>.</param>
     /// <param name="action">The callback that draws. Use a static lambda to avoid allocations. It must not retain the canvas.</param>
     /// <param name="compositeMode">The operator that combines the layer with the canvas.</param>
-    /// <remarks>See <see cref="Layer(double, DrawingAction, CompositeMode)"/>.</remarks>
+    /// <param name="blendMode">The blend mode that mixes the colors of the layer with those of the canvas, before the operator.</param>
+    /// <remarks>See <see cref="Layer(double, DrawingAction, CompositeMode, BlendMode)"/>.</remarks>
     /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
-    /// <exception cref="ArgumentOutOfRangeException"><paramref name="opacity"/> is not between 0 and 1, or <paramref name="compositeMode"/> is not a defined <see cref="CompositeMode"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="opacity"/> is not between 0 and 1, <paramref name="compositeMode"/> is not a defined <see cref="CompositeMode"/>, or <paramref name="blendMode"/> is not a defined <see cref="BlendMode"/>.</exception>
     /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
     /// <exception cref="ImageResourceLimitException">The layer or the working storage would exceed the allocation limit.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
-    public void Layer<TState>(double opacity, TState state, DrawingAction<TState> action, CompositeMode compositeMode = CompositeMode.SourceOver)
+    public void Layer<TState>(double opacity, TState state, DrawingAction<TState> action, CompositeMode compositeMode = CompositeMode.SourceOver, BlendMode blendMode = BlendMode.Normal)
         where TState : allows ref struct
     {
         ArgumentNullException.ThrowIfNull(action);
         var session = GetSession();
-        session.PushLayer(opacity, compositeMode);
+        session.PushLayer(opacity, compositeMode, blendMode);
         var isDrawn = false;
         try
         {

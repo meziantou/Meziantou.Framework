@@ -247,6 +247,10 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
     for all of them, from the two factors of the operator; source-over keeps its own, unchanged. A paint without
     opacity is skipped only with the operators it changes nothing with (`IsTransparentPaintInert`): with the others it
     erases. `ReferenceCompositor` has the same operators from their definition, in rational numbers.
+  - A `BlendMode` (a property of the brush, like the operator) replaces the color of the paint pixel by pixel before
+    the kernels above (`CompositeBlended`): the functions are in `BlendFunctions`, shared with the paints of color
+    glyphs (`ColorSurface`), in double precision without any function of the platform. The kernels do not know the
+    order of the samples: the caller says when blue comes first, which only the modes that take a whole color need.
   - Gradients interpolate premultiplied values of the converted stops, evaluated per pixel at its center. With a
     `GradientColorSpace` other than `Encoded`, the stops stay 16-bit sRGB colors, are mixed in linear light or in
     Oklab (`SrgbTransfer`, `Math.Cbrt`: the one place of the drawing code that uses functions of the platform), and

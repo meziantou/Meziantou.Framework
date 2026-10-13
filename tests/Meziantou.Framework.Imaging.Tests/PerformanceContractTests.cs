@@ -74,8 +74,8 @@ public sealed class PerformanceContractTests
         ((Image)image).AppendFrame();
         using var sprite = new Image<Rgba64>(24, 16, new Rgba64(60000, 30000, 1000, 40000));
         var state = new DrawingState(
-            new SolidBrush(new Rgba32(10, 200, 30, 120)),
-            new LinearGradientBrush(new PointD(0, 0), new PointD(64, 48), [new GradientStop(0, new Rgba32(255, 0, 0)), new GradientStop(0.5, new Rgba32(0, 255, 0, 80)), new GradientStop(1, new Rgba32(0, 0, 255))]) { SpreadMode = GradientSpreadMode.Reflect },
+            new SolidBrush(new Rgba32(10, 200, 30, 120)) { BlendMode = BlendMode.Hue },
+            new LinearGradientBrush(new PointD(0, 0), new PointD(64, 48), [new GradientStop(0, new Rgba32(255, 0, 0)), new GradientStop(0.5, new Rgba32(0, 255, 0, 80)), new GradientStop(1, new Rgba32(0, 0, 255))]) { SpreadMode = GradientSpreadMode.Reflect, BlendMode = BlendMode.SoftLight },
             new Pen(new RadialGradientBrush(new PointD(30, 20), 25, [new GradientStop(0, new Rgba32(0, 0, 0)), new GradientStop(1, new Rgba32(255, 255, 255))]) { ColorSpace = GradientColorSpace.LinearSrgb }, 3.5) { LineJoin = LineJoin.Round, LineCap = LineCap.Round },
             new VectorPathBuilder().MoveTo(4, 40).CubicBezierTo(20, -10, 40, 60, 60, 6).QuadraticBezierTo(30, 30, 8, 8).AddCircle(new PointD(32, 24), 15).Build(),
             TextLayout.Create("OPQ\nR O", FontTestSupport.Load(FontSamples.Curves()), 14.5),
@@ -158,6 +158,7 @@ public sealed class PerformanceContractTests
                 layer.FillText(state.Solid, state.ColorText, new PointD(1, 20));
                 layer.Clip(new RectangleD(8.5, 4, 40, 30), state, static (inner, state) => inner.Layer(1, state, static (mask, state) => mask.Stroke(state.Pen, state.Path), CompositeMode.DestinationIn));
             });
+            canvas.Layer(0.9, state, static (layer, state) => layer.FillEllipse(state.Focal, new PointD(30, 20), 25, 15), CompositeMode.SourceAtop, BlendMode.Overlay);
             canvas.Clip(state.Path, state, static (clipped, state) =>
             {
                 clipped.DrawImage(state.Sprite, new RectangleD(1.5, 2, 60, 44), 0.6);

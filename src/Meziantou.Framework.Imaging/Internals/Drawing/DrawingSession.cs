@@ -107,7 +107,7 @@ internal sealed partial class DrawingSession : IDisposable
         var converted = _frames[0].ConvertDrawingColor(color);
         if (_rasterizer!.Begin(_edges!, FillRule.NonZero, _cancellationToken))
         {
-            Paint(converted, evaluator: null, CompositeMode.Source);
+            Paint(converted, evaluator: null, CompositeMode.Source, BlendMode.Normal);
         }
     }
 
@@ -199,7 +199,7 @@ internal sealed partial class DrawingSession : IDisposable
 
         if (_rasterizer!.Begin(_edges, FillRule.NonZero, _cancellationToken))
         {
-            Paint(default, evaluator, CompositeMode.SourceOver, coverage);
+            Paint(default, evaluator, CompositeMode.SourceOver, BlendMode.Normal, coverage);
         }
     }
 
@@ -646,7 +646,7 @@ internal sealed partial class DrawingSession : IDisposable
     {
         if (Prepare(brush, fillRule, out var color, out var evaluator))
         {
-            Paint(color, evaluator, brush.CompositeMode, brush is ImageBrush image ? image.OpacityCoverage : CoverageRasterizer.FullCoverage);
+            Paint(color, evaluator, brush.CompositeMode, brush.BlendMode, brush is ImageBrush image ? image.OpacityCoverage : CoverageRasterizer.FullCoverage);
         }
     }
 
@@ -654,14 +654,15 @@ internal sealed partial class DrawingSession : IDisposable
     /// <param name="color">The color of the paint, when it has a single one.</param>
     /// <param name="evaluator">What gives the color of each pixel, or <see langword="null"/> for a single color.</param>
     /// <param name="mode">The operator that combines the paint with the pixels.</param>
+    /// <param name="blend">The blend mode that mixes the color of the paint with the color of the pixels.</param>
     /// <param name="opacity">The coverage every coverage is multiplied by.</param>
-    private void Paint(DrawingColor color, PaintEvaluator? evaluator, CompositeMode mode, uint opacity = CoverageRasterizer.FullCoverage)
+    private void Paint(DrawingColor color, PaintEvaluator? evaluator, CompositeMode mode, BlendMode blend, uint opacity = CoverageRasterizer.FullCoverage)
     {
         // What the paint reads is held before the first pixel is changed
         evaluator?.Begin();
         try
         {
-            PaintRows(color, evaluator, mode, opacity);
+            PaintRows(color, evaluator, mode, blend, opacity);
         }
         finally
         {
@@ -669,7 +670,7 @@ internal sealed partial class DrawingSession : IDisposable
         }
     }
 
-    private void PaintRows(DrawingColor color, PaintEvaluator? evaluator, CompositeMode mode, uint opacity)
+    private void PaintRows(DrawingColor color, PaintEvaluator? evaluator, CompositeMode mode, BlendMode blend, uint opacity)
     {
         if (!_thumbnailRemoved)
         {
@@ -692,7 +693,7 @@ internal sealed partial class DrawingSession : IDisposable
                 coverage = ApplyOpacity(coverage, opacity);
             }
 
-            var source = evaluator is null ? new DrawingSource(color, mode) : new DrawingSource(evaluator.Evaluate(y, x, coverage.Length), mode);
+            var source = evaluator is null ? new DrawingSource(color, mode, blend) : new DrawingSource(evaluator.Evaluate(y, x, coverage.Length), mode, blend);
             for (var i = 0; i < _frames.Length; i++)
             {
                 _frames[i].CompositePixels(_storages[i], y, x, coverage, source);

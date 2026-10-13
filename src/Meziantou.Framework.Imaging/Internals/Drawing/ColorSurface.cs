@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using Meziantou.Framework.Imaging.Drawing;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -590,17 +591,7 @@ internal sealed class ColorSurface : IDisposable
         {
             Span<double> s = [source[0] / sa, source[1] / sa, source[2] / sa];
             Span<double> d = [backdrop[0] / da, backdrop[1] / da, backdrop[2] / da];
-            if (mode >= ColorCompositeMode.Hue)
-            {
-                BlendNonSeparable(mode, s, d, blended);
-            }
-            else
-            {
-                for (var i = 0; i < 3; i++)
-                {
-                    blended[i] = Blend(mode, s[i], d[i]);
-                }
-            }
+            BlendFunctions.Blend(ToBlendMode(mode), s, d, blended);
         }
 
         for (var i = 0; i < 3; i++)
@@ -611,120 +602,23 @@ internal sealed class ColorSurface : IDisposable
         backdrop[3] = (float)(sa + da - both);
     }
 
-    /// <summary>Blends a component of a source color with the one of a backdrop color: the separable blend modes.</summary>
-    private static double Blend(ColorCompositeMode mode, double s, double d)
+    /// <summary>Gets the blend mode of a composition mode of the COLR table that is not an operator of Porter and Duff.</summary>
+    private static BlendMode ToBlendMode(ColorCompositeMode mode) => mode switch
     {
-        switch (mode)
-        {
-            case ColorCompositeMode.Screen:
-                return s + d - (s * d);
-
-            case ColorCompositeMode.Overlay:
-                return HardLight(d, s);
-
-            case ColorCompositeMode.Darken:
-                return Math.Min(s, d);
-
-            case ColorCompositeMode.Lighten:
-                return Math.Max(s, d);
-
-            case ColorCompositeMode.ColorDodge:
-                return d <= 0 ? 0 : s >= 1 ? 1 : Math.Min(1, d / (1 - s));
-
-            case ColorCompositeMode.ColorBurn:
-                return d >= 1 ? 1 : s <= 0 ? 0 : 1 - Math.Min(1, (1 - d) / s);
-
-            case ColorCompositeMode.HardLight:
-                return HardLight(s, d);
-
-            case ColorCompositeMode.SoftLight:
-                {
-                    if (s <= 0.5)
-                        return d - ((1 - (2 * s)) * d * (1 - d));
-
-                    var g = d <= 0.25 ? ((((16 * d) - 12) * d) + 4) * d : Math.Sqrt(d);
-                    return d + (((2 * s) - 1) * (g - d));
-                }
-
-            case ColorCompositeMode.Difference:
-                return Math.Abs(d - s);
-
-            case ColorCompositeMode.Exclusion:
-                return s + d - (2 * s * d);
-
-            default:
-                return s * d;
-        }
-
-        static double HardLight(double s, double d) => s <= 0.5 ? d * 2 * s : (2 * s) - 1 + d - (((2 * s) - 1) * d);
-    }
-
-    /// <summary>The blend modes that take a color as a whole: its hue, its saturation and its luminosity.</summary>
-    private static void BlendNonSeparable(ColorCompositeMode mode, ReadOnlySpan<double> s, ReadOnlySpan<double> d, Span<double> result)
-    {
-        switch (mode)
-        {
-            case ColorCompositeMode.Hue:
-                s.CopyTo(result);
-                SetSaturation(result, Saturation(d));
-                SetLuminosity(result, Luminosity(d));
-                break;
-
-            case ColorCompositeMode.Saturation:
-                d.CopyTo(result);
-                SetSaturation(result, Saturation(s));
-                SetLuminosity(result, Luminosity(d));
-                break;
-
-            case ColorCompositeMode.Color:
-                s.CopyTo(result);
-                SetLuminosity(result, Luminosity(d));
-                break;
-
-            default:
-                d.CopyTo(result);
-                SetLuminosity(result, Luminosity(s));
-                break;
-        }
-
-        static double Luminosity(ReadOnlySpan<double> color) => (0.3 * color[0]) + (0.59 * color[1]) + (0.11 * color[2]);
-
-        static double Saturation(ReadOnlySpan<double> color) => Math.Max(color[0], Math.Max(color[1], color[2])) - Math.Min(color[0], Math.Min(color[1], color[2]));
-
-        static void SetLuminosity(Span<double> color, double luminosity)
-        {
-            var shift = luminosity - Luminosity(color);
-            for (var i = 0; i < 3; i++)
-            {
-                color[i] += shift;
-            }
-
-            // The color is brought back between 0 and 1, around its luminosity.
-            var l = Luminosity(color);
-            var min = Math.Min(color[0], Math.Min(color[1], color[2]));
-            var max = Math.Max(color[0], Math.Max(color[1], color[2]));
-            for (var i = 0; i < 3; i++)
-            {
-                if (min < 0)
-                {
-                    color[i] = l + ((color[i] - l) * l / (l - min));
-                }
-
-                if (max > 1)
-                {
-                    color[i] = l + ((color[i] - l) * (1 - l) / (max - l));
-                }
-            }
-        }
-
-        static void SetSaturation(Span<double> color, double saturation)
-        {
-            var min = Math.Min(color[0], Math.Min(color[1], color[2]));
-            var max = Math.Max(color[0], Math.Max(color[1], color[2]));
-            for (var i = 0; i < 3; i++)
-            {
-                color[i] = max > min ? (color[i] - min) * saturation / (max - min) : 0;
-            }
-        }
-    }
+        ColorCompositeMode.Screen => BlendMode.Screen,
+        ColorCompositeMode.Overlay => BlendMode.Overlay,
+        ColorCompositeMode.Darken => BlendMode.Darken,
+        ColorCompositeMode.Lighten => BlendMode.Lighten,
+        ColorCompositeMode.ColorDodge => BlendMode.ColorDodge,
+        ColorCompositeMode.ColorBurn => BlendMode.ColorBurn,
+        ColorCompositeMode.HardLight => BlendMode.HardLight,
+        ColorCompositeMode.SoftLight => BlendMode.SoftLight,
+        ColorCompositeMode.Difference => BlendMode.Difference,
+        ColorCompositeMode.Exclusion => BlendMode.Exclusion,
+        ColorCompositeMode.Hue => BlendMode.Hue,
+        ColorCompositeMode.Saturation => BlendMode.Saturation,
+        ColorCompositeMode.Color => BlendMode.Color,
+        ColorCompositeMode.Luminosity => BlendMode.Luminosity,
+        _ => BlendMode.Multiply,
+    };
 }

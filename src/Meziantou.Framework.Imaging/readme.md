@@ -919,6 +919,15 @@ is. An operator gives the result where a shape covers a pixel entirely; a pixel 
 part that is covered and what it was for the rest, so a pixel the shape does not touch never changes. `canvas.Clear`
 replaces every pixel by a color (`Colors.Transparent` erases the canvas).
 
+**Blend modes**. `Brush.BlendMode` mixes the color of a paint with the color of the pixels before the operator
+combines them: `Multiply` darkens (a shadow, a texture, a tint over a photograph), `Screen` lightens (a glow),
+`Overlay`, `HardLight` and `SoftLight` do one or the other by the lightness of the pixel or of the paint, `Darken` and
+`Lighten` keep the darker or the lighter color, `ColorDodge` and `ColorBurn` brighten or darken the pixel to reflect
+the paint, `Difference` and `Exclusion` invert, and `Hue`, `Saturation`, `Color` and `Luminosity` take some of the
+three from the paint and the rest from the pixel (`Color` tints a gray image). These are the blend modes of CSS and
+of image editors, with the formulas of the W3C. A paint keeps its own color on a transparent pixel, since there is
+nothing to mix it with. `canvas.Layer` takes a blend mode too, and mixes a whole drawing with the canvas at once.
+
 **Pens**. A `Pen` is a brush and a width, centered on the path, with a `LineJoin` for the corners (`Miter` by default,
 beveled beyond `MiterLimit`; `Round`; `Bevel`) and a `LineCap` for the ends of open contours (`Butt` by default; `Round`;
 `Square`). The parts of a stroke that overlap are painted once, also with a translucent paint.
@@ -973,6 +982,11 @@ public static void MarkAnimation(string inputPath, string outputPath)
 - **Operators.** The other compositing operators use the same exact arithmetic and the same rounding. A pixel whose
   alpha becomes zero becomes transparent black. A frame without alpha stays opaque: its pixels get the color the result
   would have over black, so an eraser darkens them.
+- **Blend modes.** With the colors as fractions of one, a paint `s` on a pixel `d` of alpha `ad` takes the color
+  `(1 - ad) s + ad B(s, d)`, where `B` is the function of the mode in "Compositing and Blending Level 1" of the W3C. It
+  is computed in double precision with additions, multiplications, divisions and square roots only, rounded to the
+  nearest sample value (ties upward), then composited with the exact arithmetic above. The modes that take a color as
+  a whole use the luminosity `0.3 R + 0.59 G + 0.11 B`; a gray level is a color without saturation.
 - **Images.** The color an image gives a pixel is the color it has at the position the center of the pixel comes from:
   the four pixels around that position, weighted by their distance to it, interpolated at 16 bits on alpha-premultiplied
   values and rounded to nearest (or the pixel that contains the position, with nearest sampling). At the center of a
@@ -1229,7 +1243,7 @@ public static void DrawTextOnPath(string fontPath, string outputPath)
 | Scripts that join | Arabic (with Persian, Urdu and the other languages written with it) and Syriac; in the universal model, N'Ko, Mongolian, Adlam, Mandaic, Manichaean, Psalter Pahlavi, Hanifi Rohingya, Sogdian, Old Uyghur, Chorasmian and Phags-pa |
 | Scripts with a model of their own | Hebrew; Thai and Lao; Hangul; Devanagari, Bengali, Gurmukhi, Gujarati, Oriya, Tamil, Telugu, Kannada and Malayalam; Khmer; Myanmar |
 | Scripts of the universal model | The scripts registered for the Universal Shaping Engine: Tibetan, Sinhala, Javanese, Balinese, Sundanese, Batak, Buginese, Cham, Tai Tham, Tai Le, Tai Viet, Lepcha, Limbu, Meetei Mayek, Newa, Kaithi, Sharada, Grantha, Chakma, Brahmi, Kharoshthi, Tifinagh, Duployan, Egyptian Hieroglyphs and the others |
-| Drawing | No transform on the canvas (a path is transformed with `VectorPath.Transform`), no blend mode (multiply, screen, ...) beyond the compositing operators; always antialiased; composited on the encoded sample values (no linear-light option); sequential; an image that is reduced is read with four pixels per pixel of the canvas unless smooth sampling is asked for, whose filter is the one of the interpolation (`Resize` has sharper ones), and an image gives black as the color of the text to the glyphs a font draws with its own colors; a clip multiplies coverages (on a pixel that the shape and the clip both cover in part, that is not the area they have in common); the path of a stroke (`Widen`) is the pieces of the stroke, not a single outline (`Simplify` makes it one); combined and simplified paths are made of segments, on a grid of 1/1024 of a pixel; coordinates are limited to ±16,777,216 |
+| Drawing | No transform on the canvas (a path is transformed with `VectorPath.Transform`); always antialiased; composited on the encoded sample values (no linear-light option); sequential; an image that is reduced is read with four pixels per pixel of the canvas unless smooth sampling is asked for, whose filter is the one of the interpolation (`Resize` has sharper ones), and an image gives black as the color of the text to the glyphs a font draws with its own colors; a clip multiplies coverages (on a pixel that the shape and the clip both cover in part, that is not the area they have in common); the path of a stroke (`Widen`) is the pieces of the stroke, not a single outline (`Simplify` makes it one); combined and simplified paths are made of segments, on a grid of 1/1024 of a pixel; coordinates are limited to ±16,777,216 |
 | Fonts made before OpenType Layout | The marks of a font without positioning table are placed from the shapes of the glyphs; the letters of an Arabic font without substitution table take the presentation forms the font has as characters, with the ligatures of lam and alef; the marks of a Thai font without substitution table take the forms the font has in the private use area |
 
 The glyphs, the clusters and the positions are compared with those of a reference shaper (HarfBuzz) for fonts of

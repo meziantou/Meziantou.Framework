@@ -33,6 +33,7 @@ internal sealed partial class DrawingSession
         {
             layout.GetRun(run, out var face, out var scale, out var start, out var count, out var runBrush);
             var mode = (layout.GetBrush(runBrush) ?? brush).CompositeMode;
+            var blend = (layout.GetBrush(runBrush) ?? brush).BlendMode;
             var isForegroundSet = false;
             for (var i = start; i < start + count; i++)
             {
@@ -58,7 +59,7 @@ internal sealed partial class DrawingSession
                     isForegroundSet = true;
                 }
 
-                DrawColorGlyph(surface, glyph, face, placement, mode, paint);
+                DrawColorGlyph(surface, glyph, face, placement, mode, blend, paint);
             }
         }
     }
@@ -87,7 +88,7 @@ internal sealed partial class DrawingSession
         surface.ForegroundGradient = gradient;
     }
 
-    private void DrawColorGlyph(ColorSurface surface, ColorGlyph glyph, FontFace face, in Affine2D placement, CompositeMode mode, bool paint)
+    private void DrawColorGlyph(ColorSurface surface, ColorGlyph glyph, FontFace face, in Affine2D placement, CompositeMode mode, BlendMode blend, bool paint)
     {
         var rasterizer = _rasterizer!;
         var numbers = glyph.Numbers.AsSpan();
@@ -199,7 +200,7 @@ internal sealed partial class DrawingSession
                 colors = colors.Slice(skipped * 4, coverage.Length * 4);
             }
 
-            var source = new DrawingSource(colors, mode);
+            var source = new DrawingSource(colors, mode, blend);
             for (var i = 0; i < _frames.Length; i++)
             {
                 _frames[i].CompositePixels(_storages[i], surface.Top + row, x, coverage, source);

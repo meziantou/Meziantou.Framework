@@ -11,7 +11,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// transparent black when it starts. While it lasts, every draw call paints it instead of the canvas, with the rules of any frame of that
 /// pixel format. When it ends, it is drawn on what was drawn on before it started (the frames, or the layer under
 /// it) as an image is drawn at a whole position: its pixels converted to the pixel format like brush colors, combined
-/// with the operator of the layer, the opacity of the layer multiplying the coverage as a clip does.
+/// with the blend mode and the operator of the layer, the opacity of the layer multiplying the coverage as a clip does.
 /// </para>
 /// <para>
 /// The clip that is active when a layer starts applies to the layer as a whole, when it is drawn; only its bounds are
@@ -30,13 +30,17 @@ internal sealed partial class DrawingSession
     /// <summary>Starts a layer: the draw calls that follow paint it, until <see cref="PopLayer"/>.</summary>
     /// <param name="opacity">The opacity the layer is drawn with, from 0 to 1.</param>
     /// <param name="mode">The operator that combines the layer with what is under it.</param>
-    /// <exception cref="ArgumentOutOfRangeException">The opacity is not between 0 and 1, or the operator is not defined.</exception>
+    /// <param name="blend">The blend mode that mixes the colors of the layer with those of what is under it.</param>
+    /// <exception cref="ArgumentOutOfRangeException">The opacity is not between 0 and 1, or the operator or the blend mode is not defined.</exception>
     /// <exception cref="ImageResourceLimitException">The image of the layer exceeds the allocation limit.</exception>
-    public void PushLayer(double opacity, CompositeMode mode)
+    public void PushLayer(double opacity, CompositeMode mode, BlendMode blend)
     {
         var coverage = ImageEvaluator.GetOpacityCoverage(opacity, nameof(opacity));
         if ((uint)mode > (uint)CompositeMode.Clear)
             throw new ArgumentOutOfRangeException(nameof(mode), mode, "The composite mode is not valid.");
+
+        if ((uint)blend > (uint)BlendMode.Luminosity)
+            throw new ArgumentOutOfRangeException(nameof(blend), blend, "The blend mode is not valid.");
 
         _cancellationToken.ThrowIfCancellationRequested();
         GetClipBounds(out var left, out var top, out var right, out var bottom, out _);
@@ -49,6 +53,7 @@ internal sealed partial class DrawingSession
         level.Begin(_image, _frames[0].PixelFormat is not (PixelFormat.Rgba32 or PixelFormat.Bgra32 or PixelFormat.Rgb24), Width, Height, left, top, right, bottom);
         level.Opacity = coverage;
         level.Mode = mode;
+        level.Blend = blend;
         level.ParentFrames = _frames;
         level.ParentStorages = _storages;
         _frames = level.Frames!;
@@ -94,7 +99,7 @@ internal sealed partial class DrawingSession
 
         if (_rasterizer!.Begin(_edges!, FillRule.NonZero, _cancellationToken))
         {
-            Paint(default, evaluator, level.Mode, level.Opacity);
+            Paint(default, evaluator, level.Mode, level.Blend, level.Opacity);
         }
     }
 
@@ -134,6 +139,8 @@ internal sealed partial class DrawingSession
         public uint Opacity { get; set; }
 
         public CompositeMode Mode { get; set; }
+
+        public BlendMode Blend { get; set; }
 
         /// <summary>Gets the pixels of the layer that can be drawn on, and are drawn when it ends: the bounds of the clip it started under.</summary>
         public int Left { get; private set; }

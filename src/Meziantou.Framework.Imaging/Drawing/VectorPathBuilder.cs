@@ -497,6 +497,71 @@ public sealed class VectorPathBuilder
         return Close();
     }
 
+    /// <summary>Adds an open contour that goes smoothly through consecutive points: a curve drawn through the values of a chart.</summary>
+    /// <remarks>
+    /// The contour is one cubic Bézier curve between each point and the next one. At each point, the curve has the
+    /// direction of the line between the points before and after it, and <paramref name="tension"/> says how far it
+    /// keeps that direction: 0.5 (the default) is the Catmull-Rom spline, 0 gives the straight segments between the
+    /// points, and a larger tension rounds the curve more. The control points of the curve from a point <c>P1</c> to
+    /// the next one <c>P2</c> are <c>P1 + tension (P2 - P0) / 3</c> and <c>P2 - tension (P3 - P1) / 3</c>; the first
+    /// point is its own previous point, and the last one its own next point. A curve can go beyond the points it goes
+    /// through, where they turn sharply.
+    /// </remarks>
+    /// <param name="points">The points the curve goes through. At least one is required; a single point is a contour without length.</param>
+    /// <param name="tension">How far the curve keeps its direction around each point, from 0 to 1.</param>
+    /// <returns>This builder.</returns>
+    /// <exception cref="ArgumentException"><paramref name="points"/> is empty, or a coordinate or <paramref name="tension"/> is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The magnitude of a coordinate exceeds 16777216, <paramref name="tension"/> is not between 0 and 1, or the curve goes beyond the largest coordinate.</exception>
+    public VectorPathBuilder AddCurve(ReadOnlySpan<PointD> points, double tension = 0.5)
+    {
+        CardinalSpline.Validate(points, tension, isClosed: false, nameof(points), nameof(tension));
+        AppendCurve(points, tension, isClosed: false);
+        return this;
+    }
+
+    /// <summary>Continues the contour with a curve that goes smoothly from the current point through consecutive points: the top of an area under a curve.</summary>
+    /// <param name="points">The points the curve goes through, after the current point. At least one is required.</param>
+    /// <param name="tension">How far the curve keeps its direction around each point, from 0 to 1.</param>
+    /// <returns>This builder.</returns>
+    /// <remarks>
+    /// The curve is the one of <see cref="AddCurve"/> through the current point then <paramref name="points"/>: the
+    /// current point is its first point, whatever comes before it in the contour.
+    /// </remarks>
+    /// <exception cref="ArgumentException"><paramref name="points"/> is empty, or a coordinate or <paramref name="tension"/> is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The magnitude of a coordinate exceeds 16777216, <paramref name="tension"/> is not between 0 and 1, or the curve goes beyond the largest coordinate.</exception>
+    /// <exception cref="InvalidOperationException">There is no current point: no contour was started.</exception>
+    public VectorPathBuilder CurveTo(ReadOnlySpan<PointD> points, double tension = 0.5)
+    {
+        if (points.IsEmpty)
+            throw new ArgumentException("At least one point is required.", nameof(points));
+
+        if (!_hasCurrentPoint)
+            throw new InvalidOperationException("The path has no current point: start a contour with MoveTo first.");
+
+        // The curve through the current point and the points
+        var all = new PointD[points.Length + 1];
+        all[0] = new PointD(_currentX, _currentY);
+        points.CopyTo(all.AsSpan(1));
+        CardinalSpline.Validate(all, tension, isClosed: false, nameof(points), nameof(tension));
+        BeginSegment();
+        AppendCurveSegments(all, tension, isClosed: false);
+        return this;
+    }
+
+    /// <summary>Adds a closed contour that goes smoothly through consecutive points, and from the last one back to the first one.</summary>
+    /// <param name="points">The points the curve goes through. At least one is required.</param>
+    /// <param name="tension">How far the curve keeps its direction around each point, from 0 to 1.</param>
+    /// <returns>This builder.</returns>
+    /// <remarks>See <see cref="AddCurve"/>: the point before the first one is the last one, and the point after the last one is the first one.</remarks>
+    /// <exception cref="ArgumentException"><paramref name="points"/> is empty, or a coordinate or <paramref name="tension"/> is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The magnitude of a coordinate exceeds 16777216, <paramref name="tension"/> is not between 0 and 1, or the curve goes beyond the largest coordinate.</exception>
+    public VectorPathBuilder AddClosedCurve(ReadOnlySpan<PointD> points, double tension = 0.5)
+    {
+        CardinalSpline.Validate(points, tension, isClosed: true, nameof(points), nameof(tension));
+        AppendCurve(points, tension, isClosed: true);
+        return Close();
+    }
+
     /// <summary>Creates the path. The builder keeps its content and can be extended to build another path.</summary>
     /// <returns>An immutable path.</returns>
     public VectorPath Build()
@@ -545,6 +610,26 @@ public sealed class VectorPathBuilder
         Include(cornerX, cornerY);
         Include(piece.EndX, piece.EndY);
         SetCurrentPoint(piece.EndX, piece.EndY);
+    }
+
+    private void AppendCurve(ReadOnlySpan<PointD> points, double tension, bool isClosed)
+    {
+        AppendMoveTo(points[0].X, points[0].Y);
+        AppendCurveSegments(points, tension, isClosed);
+    }
+
+    private void AppendCurveSegments(ReadOnlySpan<PointD> points, double tension, bool isClosed)
+    {
+        var count = CardinalSpline.GetSegmentCount(points.Length, isClosed);
+        for (var i = 0; i < count; i++)
+        {
+            CardinalSpline.GetSegment(points, i, isClosed, tension, out var control1, out var control2, out var end);
+            _commands.Add(PathCommand.CubicTo);
+            AppendPoint(control1.X, control1.Y);
+            AppendPoint(control2.X, control2.Y);
+            AppendPoint(end.X, end.Y);
+            SetCurrentPoint(end.X, end.Y);
+        }
     }
 
     /// <summary>Starts a contour at a point that is not validated: the caller validates the path it builds.</summary>

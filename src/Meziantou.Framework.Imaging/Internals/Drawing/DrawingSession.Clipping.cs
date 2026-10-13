@@ -31,7 +31,7 @@ internal sealed partial class DrawingSession
             var sink = BeginFill();
             AddRectangle(sink, rectangle);
             sink.End();
-            PushClipFromEdges(FillRule.NonZero, rectangle);
+            PushClipFromEdges(FillRule.NonZero, rectangle, isInverted: false);
             return;
         }
 
@@ -54,7 +54,7 @@ internal sealed partial class DrawingSession
             throw new ArgumentOutOfRangeException(nameof(fillRule), fillRule, "The fill rule is not valid.");
 
         PathFlattener.Flatten(path, BeginFill());
-        PushClipFromEdges(fillRule, path.Bounds);
+        PushClipFromEdges(fillRule, path.Bounds, isInverted: false);
     }
 
     public void PopClip() => _clipDepth--;
@@ -62,7 +62,11 @@ internal sealed partial class DrawingSession
     /// <summary>Starts a clip from the edges of the call: rasterizes them into the mask of the next depth.</summary>
     /// <param name="fillRule">The fill rule of the clip.</param>
     /// <param name="shapeBounds">A rectangle that contains the clip, in the coordinates of the drawing.</param>
-    private void PushClipFromEdges(FillRule fillRule, RectangleD shapeBounds)
+    /// <param name="isInverted">
+    /// <see langword="true"/> for a clip that lets through what is outside the edges, within the rectangle: the
+    /// coverage of a pixel is then what is missing for the edges to cover it entirely.
+    /// </param>
+    private void PushClipFromEdges(FillRule fillRule, RectangleD shapeBounds, bool isInverted)
     {
         shapeBounds = ToCanvasBounds(shapeBounds);
         GetClipBounds(out var left, out var top, out var right, out var bottom, out var parentMaskLevel);
@@ -72,7 +76,7 @@ internal sealed partial class DrawingSession
         bottom = (int)Math.Min(bottom, Math.Ceiling(shapeBounds.Bottom));
         var level = GetNextLevel();
         var rasterizer = _rasterizer!;
-        if (right <= left || bottom <= top || _edges!.Count == 0)
+        if (right <= left || bottom <= top || (_edges!.Count == 0 && !isInverted))
         {
             // Nothing gets through
             level.Left = level.Top = level.Right = level.Bottom = 0;
@@ -88,7 +92,13 @@ internal sealed partial class DrawingSession
         var mask = level.Mask[..(width * height)];
         mask.Clear();
         var parent = parentMaskLevel < 0 ? null : _clipLevels[parentMaskLevel];
-        if (rasterizer.Begin(_edges, fillRule, _cancellationToken))
+        if (isInverted)
+        {
+            // The coverages of the edges first, then what is missing of each, under the clip above
+            parent = null;
+        }
+
+        if (_edges.Count != 0 && rasterizer.Begin(_edges, fillRule, _cancellationToken))
         {
             while (rasterizer.MoveNext())
             {
@@ -104,10 +114,36 @@ internal sealed partial class DrawingSession
                     continue;
 
                 var row = mask.Slice(((y - top) * width) + (start - left), end - start);
-                coverage.Slice(start - x, end - start).CopyTo(row);
+                if (_isAliased)
+                {
+                    RemoveAntialiasing(coverage.Slice(start - x, end - start), row);
+                }
+                else
+                {
+                    coverage.Slice(start - x, end - start).CopyTo(row);
+                }
+
                 if (parent is not null)
                 {
                     Multiply(row, parent.Mask.Slice(((y - parent.MaskTop) * parent.MaskWidth) + (start - parent.MaskLeft), row.Length), row);
+                }
+            }
+        }
+
+        if (isInverted)
+        {
+            parent = parentMaskLevel < 0 ? null : _clipLevels[parentMaskLevel];
+            for (var y = 0; y < height; y++)
+            {
+                var row = mask.Slice(y * width, width);
+                foreach (ref var value in row)
+                {
+                    value = CoverageRasterizer.FullCoverage - value;
+                }
+
+                if (parent is not null)
+                {
+                    Multiply(row, parent.Mask.Slice(((top + y - parent.MaskTop) * parent.MaskWidth) + (left - parent.MaskLeft), width), row);
                 }
             }
         }

@@ -241,6 +241,127 @@ internal static class Examples
     }
     // end-snippet
 
+    /// <summary>A curve through points with markers at its ends, axes that end with an arrow, an area hatched by a pattern, and an outline on the inside of its path.</summary>
+    // begin-snippet: draw-chart
+    public static void DrawChart(string outputPath)
+    {
+        using var image = new Image<Rgba32>(240, 140, Colors.White);
+        PointD[] values = [new(30, 100), new(70, 60), new(110, 80), new(150, 30), new(190, 50)];
+
+        // Hatching: a tile of 6 by 6 with a stripe, drawn once, repeated, and turned by the transformation of the brush
+        var hatch = new PatternBrush(new Rectangle(0, 0, 6, 6), tile => tile.FillRectangle(Colors.LightSteelBlue, new Rectangle(0, 0, 3, 6)))
+        {
+            Transform = AffineTransform.CreateRotation(45),
+        };
+        var axis = new Pen(Colors.DimGray, 2) { EndMarker = LineMarker.Arrow };
+        var line = new Pen(Colors.Crimson, 3) { StartMarker = LineMarker.Circle, EndMarker = LineMarker.Circle };
+        var border = new Pen(Colors.SteelBlue, 2) { Alignment = PenAlignment.Inside };
+
+        // The area under the curve: the curve through the values, closed by the axis
+        var area = new VectorPathBuilder().MoveTo(values[0]).CurveTo(values.AsSpan(1)).LineTo(190, 120).LineTo(30, 120).Close().Build();
+
+        image.Draw(canvas =>
+        {
+            // The outline is inside the area: it does not go over the axis
+            canvas.Fill(hatch, area);
+            canvas.Stroke(border, area);
+
+            // The head of each arrow has its tip at the end of the line
+            canvas.StrokeLine(axis, new PointD(20, 120), new PointD(225, 120));
+            canvas.StrokeLine(axis, new PointD(20, 120), new PointD(20, 12));
+
+            // The curve goes smoothly through every value, with a disk at both ends
+            canvas.StrokeCurve(line, values);
+        });
+
+        image.Save(outputPath);
+    }
+    // end-snippet
+
+    /// <summary>A panel of frosted glass over a photo: the backdrop blurred inside a clip, a light out of focus, an inner shadow, and a mask by the luminance of a gradient.</summary>
+    // begin-snippet: draw-glass
+    public static void DrawGlassPanel(string photoPath, string outputPath)
+    {
+        using var image = Image.Load(photoPath);
+        var bounds = new RectangleD(16, 16, image.Width - 32, 72);
+        var panel = new VectorPathBuilder().AddRoundedRectangle(bounds, 14).Build();
+        var track = new RectangleD(bounds.X + 16, bounds.Bottom - 26, bounds.Width - 32, 12);
+        var fade = new LinearGradientBrush(new PointD(track.X, 0), new PointD(track.Right, 0), [new GradientStop(0, Colors.White), new GradientStop(1, Colors.Black)]);
+
+        image.Draw(canvas =>
+        {
+            // Frosted glass: what is behind the panel is blurred, then lightened, inside the panel only
+            canvas.Clip(panel, glass =>
+            {
+                glass.BlurBackdrop(6);
+                glass.Fill(new Rgba32(255, 255, 255, 70));
+            });
+
+            // A light on the panel, out of focus
+            canvas.Blur(5, glow => glow.FillCircle(Colors.Gold, new PointD(bounds.X + 30, bounds.Y + 24), 8));
+
+            // The track of a gauge, pressed into the panel: the shadow of its edge falls inside it, from the top
+            canvas.InnerShadow(new Rgba32(0, 0, 0, 150), new PointD(0, 2), 1.5, well =>
+            {
+                well.FillRoundedRectangle(Colors.WhiteSmoke, track, 6);
+
+                // Its level fades out to the right: it is kept by the luminance of a gradient from white to black
+                well.Mask(
+                    mask => mask.Fill(fade),
+                    level => level.FillRoundedRectangle(Colors.SeaGreen, track, 6),
+                    MaskMode.Luminance);
+            });
+        });
+
+        image.Save(outputPath);
+    }
+    // end-snippet
+
+    /// <summary>An image drawn on a quadrilateral, as a plane seen in perspective: a screenshot on the screen of a photo.</summary>
+    // begin-snippet: draw-perspective
+    public static void DrawOnScreen(string photoPath, string screenshotPath, string outputPath)
+    {
+        using var photo = Image.Load(photoPath);
+        using var screenshot = Image.Load(screenshotPath);
+
+        // Where the four corners of the screenshot go on the photo, from its top-left corner, clockwise. The
+        // screenshot is larger than the screen: smooth sampling reads every pixel of it that a pixel of the photo covers.
+        photo.Draw(canvas => canvas.DrawImage(
+            screenshot.Frames[0],
+            new PointD(40, 30),
+            new PointD(180, 44),
+            new PointD(176, 132),
+            new PointD(36, 150),
+            ImageSampling.Smooth));
+
+        photo.Save(outputPath);
+    }
+    // end-snippet
+
+    /// <summary>Hard edges for pixel art, and paints mixed in linear light.</summary>
+    // begin-snippet: draw-rendering
+    public static void DrawSprite(string outputPath)
+    {
+        using var image = new Image<Rgba32>(32, 32, Colors.Black);
+        var thin = new Pen(Colors.White, 1);
+
+        image.Draw(canvas =>
+        {
+            // Without antialiasing, every pixel is the paint or what was there: the colors stay those of the palette
+            canvas.Antialiasing(enabled: false, sprite =>
+            {
+                sprite.FillCircle(Colors.Gold, new PointD(16, 18), 9);
+                sprite.FillRectangle(Colors.Crimson, new RectangleD(11.5, 14.5, 9, 3));
+            });
+
+            // In linear light, the edge of a thin light line on a dark background is not darker than the line
+            canvas.Compositing(CompositingSpace.LinearSrgb, light => light.StrokeLine(thin, new PointD(2, 2.3), new PointD(30, 5.7)));
+        });
+
+        image.Save(outputPath);
+    }
+    // end-snippet
+
     /// <summary>Typed row access with a static callback (no closure allocation).</summary>
     // begin-snippet: typed-rows
     public static void InvertColors(string path)

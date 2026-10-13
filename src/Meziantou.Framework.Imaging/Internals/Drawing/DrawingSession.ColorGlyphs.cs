@@ -67,7 +67,7 @@ internal sealed partial class DrawingSession
         }
     }
 
-    /// <summary>Gives the surface the color of the text: the one of a solid brush, or the gradient of a gradient brush, in canvas coordinates.</summary>
+    /// <summary>Gives the surface the color of the text: the one of a solid brush, or the gradient of a gradient brush, in canvas coordinates; black for the other brushes.</summary>
     private void SetForeground(ColorSurface surface, Brush brush)
     {
         if (brush is SolidBrush solid)
@@ -80,7 +80,8 @@ internal sealed partial class DrawingSession
 
         if (brush is not GradientBrush gradientBrush)
         {
-            // An image has no color of its own to give to a glyph that draws with its own colors: the text is black
+            // An image or a pattern has no color of its own to give to a glyph that draws with its own colors: the
+            // text is black
             surface.Foreground = (0, 0, 0, 1);
             surface.ForegroundGradient = null;
             return;
@@ -203,7 +204,7 @@ internal sealed partial class DrawingSession
                 colors = colors.Slice(skipped * 4, coverage.Length * 4);
             }
 
-            var source = new DrawingSource(colors, mode, blend);
+            var source = new DrawingSource(colors, mode, blend, _isLinear);
             for (var i = 0; i < _frames.Length; i++)
             {
                 _frames[i].CompositePixels(_storages[i], surface.Top + row, x, coverage, source);

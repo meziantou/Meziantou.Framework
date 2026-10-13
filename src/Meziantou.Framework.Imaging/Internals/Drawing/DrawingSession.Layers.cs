@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using Meziantou.Framework.Imaging.Drawing;
 
 namespace Meziantou.Framework.Imaging.Internals;
@@ -20,6 +21,13 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <para>
 /// The image of a layer is created when a layer first starts at its depth, from the allocation scope of the image that
 /// is drawn on, and kept until the session ends: a layer that starts again at that depth allocates nothing.
+/// </para>
+/// <para>
+/// <b>Masks.</b> A mask is a layer drawn with <see cref="CompositeMode.DestinationIn"/> on the layer of what it masks:
+/// what is under it is kept in proportion to its alpha. A luminance mask first replaces the alpha <c>a</c> of each of
+/// its pixels by <c>round(a Y / M)</c> (to nearest, ties upward), where <c>Y</c> is the Rec. 709 luma of the pixel
+/// (<see cref="PixelConverter.Luma"/>, on the stored samples) and <c>M</c> the largest sample value: white keeps,
+/// black removes.
 /// </para>
 /// </remarks>
 internal sealed partial class DrawingSession
@@ -46,8 +54,53 @@ internal sealed partial class DrawingSession
         level.Opacity = coverage;
         level.Mode = mode;
         level.Blend = blend;
-        level.HasShadow = false;
+        level.Effect = LayerEffect.None;
+        level.IsLuminanceMask = false;
     }
+
+    /// <summary>Validates the mode of a mask.</summary>
+    /// <exception cref="ArgumentOutOfRangeException">The mode is not defined.</exception>
+    public static void ValidateMaskMode(MaskMode mode, string paramName)
+    {
+        if (mode is not (MaskMode.Alpha or MaskMode.Luminance))
+            throw new ArgumentOutOfRangeException(paramName, mode, "The mask mode is not valid.");
+    }
+
+    /// <summary>Starts the layer of a mask: what it is drawn on (the layer of what it masks) is kept where its drawings are, when it ends.</summary>
+    /// <exception cref="ImageResourceLimitException">The image of the layer exceeds the allocation limit.</exception>
+    public void PushMask(MaskMode mode)
+    {
+        var level = PushLayerCore(margin: 0);
+        level.Opacity = CoverageRasterizer.FullCoverage;
+        level.Mode = CompositeMode.DestinationIn;
+        level.Blend = BlendMode.Normal;
+        level.Effect = LayerEffect.None;
+        level.IsLuminanceMask = mode == MaskMode.Luminance;
+    }
+
+    /// <summary>Starts a layer that is blurred when it ends, before it is drawn.</summary>
+    /// <param name="sigma">The standard deviation of the blur.</param>
+    /// <exception cref="ArgumentException">The standard deviation is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The standard deviation is negative or too large.</exception>
+    /// <exception cref="ImageResourceLimitException">The image of the layer exceeds the allocation limit.</exception>
+    public void PushBlur(double sigma)
+    {
+        GaussianKernel.Validate(sigma, nameof(sigma));
+        sigma = ToCanvasBlur(sigma);
+
+        // What is drawn around the pixels the clip can show spreads over them: the layer keeps that much more
+        var level = PushLayerCore(Math.Min(GaussianKernel.GetRadius(sigma), Math.Max(Width, Height)));
+        level.Opacity = CoverageRasterizer.FullCoverage;
+        level.Mode = CompositeMode.SourceOver;
+        level.Blend = BlendMode.Normal;
+        level.Effect = sigma > 0 ? LayerEffect.Blur : LayerEffect.None;
+        level.IsLuminanceMask = false;
+        level.BlurSigma = sigma;
+    }
+
+    /// <summary>Gets the standard deviation a blur of the drawing has on the canvas: a transformation that enlarges the drawing blurs it more, by the square root of what it does to an area.</summary>
+    private double ToCanvasBlur(double sigma)
+        => _hasTransform ? Math.Min(sigma * Math.Sqrt(Math.Abs(_transform.Determinant)), GaussianKernel.MaxSigma) : sigma;
 
     /// <summary>Starts a layer whose drawings are drawn with their shadow when it ends.</summary>
     /// <param name="color">The color of the shadow; its alpha is the opacity of the shadow of an opaque drawing.</param>
@@ -56,7 +109,8 @@ internal sealed partial class DrawingSession
     /// <exception cref="ArgumentException">A coordinate of the offset, or the standard deviation, is not a finite number.</exception>
     /// <exception cref="ArgumentOutOfRangeException">The offset is beyond the largest coordinate, or the standard deviation is negative or too large.</exception>
     /// <exception cref="ImageResourceLimitException">The image of the layer exceeds the allocation limit.</exception>
-    public void PushShadow(Rgba64 color, PointD offset, double sigma)
+    /// <param name="isInner"><see langword="true"/> for a shadow cast on the drawings by what is around them, instead of the one they cast.</param>
+    public void PushShadow(Rgba64 color, PointD offset, double sigma, bool isInner = false)
     {
         DrawingGuard.Point(offset, nameof(offset));
         GaussianKernel.Validate(sigma, nameof(sigma));
@@ -65,7 +119,7 @@ internal sealed partial class DrawingSession
             // The offset is a distance of the drawing, and so is the blur: a transformation that enlarges the drawing
             // moves its shadow further and blurs it more, by the square root of what it does to an area
             offset = _transform.TransformVector(offset);
-            sigma = Math.Min(sigma * Math.Sqrt(Math.Abs(_transform.Determinant)), GaussianKernel.MaxSigma);
+            sigma = ToCanvasBlur(sigma);
             if (!(Math.Abs(offset.X) <= DrawingGuard.MaxCoordinate && Math.Abs(offset.Y) <= DrawingGuard.MaxCoordinate))
                 TransformSink.ThrowOutOfRange(Math.Abs(offset.X) <= DrawingGuard.MaxCoordinate ? offset.Y : offset.X);
         }
@@ -76,11 +130,12 @@ internal sealed partial class DrawingSession
         level.Opacity = CoverageRasterizer.FullCoverage;
         level.Mode = CompositeMode.SourceOver;
         level.Blend = BlendMode.Normal;
-        level.HasShadow = true;
+        level.Effect = isInner ? LayerEffect.InnerShadow : LayerEffect.Shadow;
+        level.IsLuminanceMask = false;
         level.ShadowColor = color;
         level.ShadowOffsetX = offset.X;
         level.ShadowOffsetY = offset.Y;
-        level.ShadowSigma = sigma;
+        level.BlurSigma = sigma;
     }
 
     /// <summary>Starts a layer on the pixels the clip can show, and on a margin around them.</summary>
@@ -138,9 +193,28 @@ internal sealed partial class DrawingSession
         var isEmpty = level.Opacity == 0 || level.Right <= level.Left || level.Bottom <= level.Top;
         try
         {
-            if (draw && !isEmpty && level.HasShadow)
+            if (draw && !isEmpty)
             {
-                DrawShadow(level);
+                // The pixels of the layer are still held: what changes them comes before they are drawn
+                switch (level.Effect)
+                {
+                    case LayerEffect.Shadow:
+                        DrawShadow(level, isInner: false);
+                        break;
+
+                    case LayerEffect.InnerShadow:
+                        DrawShadow(level, isInner: true);
+                        break;
+
+                    case LayerEffect.Blur:
+                        BlurLayer(level);
+                        break;
+                }
+
+                if (level.IsLuminanceMask)
+                {
+                    ApplyLuminance(level);
+                }
             }
         }
         finally
@@ -169,6 +243,42 @@ internal sealed partial class DrawingSession
         }
     }
 
+    /// <summary>Replaces the alpha of the pixels of a layer by their alpha multiplied by their luma.</summary>
+    private void ApplyLuminance(LayerLevel level)
+    {
+        var storage = level.Storages![0];
+        var count = level.Right - level.Left;
+        for (var y = level.Top; y < level.Bottom; y++)
+        {
+            if ((y & 63) == 0)
+            {
+                _cancellationToken.ThrowIfCancellationRequested();
+            }
+
+            var row = storage.GetRowSpanCore(y);
+            if (storage.BytesPerPixel == 8)
+            {
+                foreach (ref var pixel in unsafe(MemoryMarshal.Cast<byte, Rgba64>(row)).Slice(level.Left, count))
+                {
+                    if (pixel.A != 0)
+                    {
+                        pixel.A = (ushort)((((ulong)pixel.A * PixelConverter.Luma(pixel.R, pixel.G, pixel.B, ushort.MaxValue)) + (ushort.MaxValue / 2)) / ushort.MaxValue);
+                    }
+                }
+            }
+            else
+            {
+                foreach (ref var pixel in unsafe(MemoryMarshal.Cast<byte, Rgba32>(row)).Slice(level.Left, count))
+                {
+                    if (pixel.A != 0)
+                    {
+                        pixel.A = (byte)(((pixel.A * PixelConverter.Luma(pixel.R, pixel.G, pixel.B, byte.MaxValue)) + (byte.MaxValue / 2)) / byte.MaxValue);
+                    }
+                }
+            }
+        }
+    }
+
     private void DisposeLayers()
     {
         // A session that ends inside a layer leaves what it was drawing on as the frames of the image
@@ -187,6 +297,16 @@ internal sealed partial class DrawingSession
 
         _layers.Clear();
         DisposeShadows();
+        DisposeBlur();
+    }
+
+    /// <summary>What changes the pixels of a layer, or is drawn with it, when it ends.</summary>
+    private enum LayerEffect : byte
+    {
+        None,
+        Shadow,
+        InnerShadow,
+        Blur,
     }
 
     /// <summary>A layer of the stack: its image, what was drawn on before it started, and how it is drawn when it ends.</summary>
@@ -209,8 +329,11 @@ internal sealed partial class DrawingSession
 
         public BlendMode Blend { get; set; }
 
-        /// <summary>Gets or sets a value indicating whether the shadow of the layer is drawn under it.</summary>
-        public bool HasShadow { get; set; }
+        /// <summary>Gets or sets what changes the pixels of the layer, or is drawn with it, when it ends.</summary>
+        public LayerEffect Effect { get; set; }
+
+        /// <summary>Gets or sets a value indicating whether the alpha of the layer is multiplied by its luma when it ends.</summary>
+        public bool IsLuminanceMask { get; set; }
 
         public Rgba64 ShadowColor { get; set; }
 
@@ -218,7 +341,8 @@ internal sealed partial class DrawingSession
 
         public double ShadowOffsetY { get; set; }
 
-        public double ShadowSigma { get; set; }
+        /// <summary>Gets or sets the standard deviation of the blur of the shadow of the layer, or of the layer itself.</summary>
+        public double BlurSigma { get; set; }
 
         /// <summary>Gets or sets the left of the pixels the clip the layer started under can show: the layer is drawn on them only.</summary>
         public int VisibleLeft { get; set; }

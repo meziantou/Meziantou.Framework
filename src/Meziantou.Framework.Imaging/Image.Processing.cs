@@ -407,7 +407,7 @@ public abstract partial class Image
     /// <param name="operation">The operation, as a noun ("resizing").</param>
     /// <param name="verb">The operation, as a verb ("resize").</param>
     /// <exception cref="UnsupportedImageFeatureException">The ICC profile is not recognized as sRGB for the pixel format. No ICC transform is applied implicitly.</exception>
-    private bool UseLinearLight(string operation, string verb)
+    internal bool UseLinearLight(string operation, string verb)
     {
         if (_metadata.TransferFunction == ColorTransferFunction.Linear)
             return false;

@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using Meziantou.Framework.Imaging.Drawing;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -19,6 +20,12 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// the layer, then to the columns of the result, in double precision. The intermediate values are kept in single
 /// precision; a row of the layer without any opacity is not read again.
 /// </para>
+/// <para>
+/// <b>Inner shadows.</b> The shadow cast on a drawing by what is around it is computed the same way from
+/// <c>1 - A</c> instead of <c>A</c>, what is beyond the layer continuing as on its edges too. Its color is combined
+/// with the pixels of the layer itself, with <see cref="Drawing.CompositeMode.SourceAtop"/>: the alpha of the layer
+/// does not change, and the shadow only shows where the drawing is. The layer is then drawn as any layer.
+/// </para>
 /// <para>The working storage is rented before a pixel changes, from the allocation scope of the image, and kept until the session ends.</para>
 /// </remarks>
 internal sealed partial class DrawingSession
@@ -31,10 +38,14 @@ internal sealed partial class DrawingSession
     private PooledBuffer? _shadowCoverage;
     private PooledBuffer? _shadowFlags;
 
-    /// <summary>Paints the shadow of a layer on what is under it. The pixels of the layer are still held by the session.</summary>
-    private void DrawShadow(LayerLevel level)
+    /// <summary>
+    /// Paints the shadow of a layer on what is under it, or the shadow of what is around its drawings on the layer
+    /// itself. The pixels of the layer are still held by the session.
+    /// </summary>
+    private void DrawShadow(LayerLevel level, bool isInner)
     {
-        var color = _frames[0].ConvertDrawingColor(level.ShadowColor);
+        var target = isInner ? level.Frames![0] : _frames[0];
+        var color = target.ConvertDrawingColor(level.ShadowColor);
         var left = level.VisibleLeft;
         var top = level.VisibleTop;
         var width = level.VisibleRight - left;
@@ -44,7 +55,7 @@ internal sealed partial class DrawingSession
 
         var layerWidth = level.Right - level.Left;
         var layerHeight = level.Bottom - level.Top;
-        var radius = GaussianKernel.GetRadius(level.ShadowSigma);
+        var radius = GaussianKernel.GetRadius(level.BlurSigma);
         var taps = (2 * radius) + 2;
 
         // Every rental comes before the first pixel that changes
@@ -78,7 +89,7 @@ internal sealed partial class DrawingSession
         var blur = weights[..(taps - 1)];
         var horizontal = weights.Slice(taps - 1, taps);
         var vertical = weights.Slice((2 * taps) - 1, taps);
-        GaussianKernel.Fill(level.ShadowSigma, blur);
+        GaussianKernel.Fill(level.BlurSigma, blur);
         var wholeX = Math.Floor(level.ShadowOffsetX);
         var wholeY = Math.Floor(level.ShadowOffsetY);
         Shift(blur, level.ShadowOffsetX - wholeX, horizontal);
@@ -101,7 +112,7 @@ internal sealed partial class DrawingSession
                 _cancellationToken.ThrowIfCancellationRequested();
             }
 
-            hasOpacity[row] = ReadAlpha(storage.GetRowSpanCore(level.Top + row), isWide, level.Left, alpha) ? (byte)1 : (byte)0;
+            hasOpacity[row] = ReadAlpha(storage.GetRowSpanCore(level.Top + row), isWide, level.Left, alpha, isInner) ? (byte)1 : (byte)0;
             if (hasOpacity[row] == 0)
                 continue;
 
@@ -120,7 +131,7 @@ internal sealed partial class DrawingSession
             }
         }
 
-        if (!_thumbnailRemoved)
+        if (!isInner && !_thumbnailRemoved)
         {
             // The pixels are about to change: the EXIF thumbnail no longer shows them
             _image.Metadata.RemoveStaleThumbnail();
@@ -162,12 +173,19 @@ internal sealed partial class DrawingSession
                 coverage[x] = value >= CoverageRasterizer.FullCoverage ? CoverageRasterizer.FullCoverage : value > 0 ? (uint)value : 0;
             }
 
+            if (isInner)
+            {
+                // On the drawing itself, where it is: the clip applies when the layer is drawn
+                level.Frames![0].CompositePixels(storage, top + y, left, coverage, new DrawingSource(color, CompositeMode.SourceAtop, isLinear: _isLinear));
+                continue;
+            }
+
             var column = left;
             ReadOnlySpan<uint> run = coverage;
             if (_clipDepth != 0 && !ApplyClip(top + y, ref column, ref run, out _))
                 continue;
 
-            var paint = new DrawingSource(color);
+            var paint = new DrawingSource(color, isLinear: _isLinear);
             for (var i = 0; i < _frames.Length; i++)
             {
                 _frames[i].CompositePixels(_storages[i], top + y, column, run, paint);
@@ -184,10 +202,23 @@ internal sealed partial class DrawingSession
         }
     }
 
-    /// <summary>Reads the alpha of pixels of a row of a layer, as fractions of one.</summary>
-    /// <returns><see langword="false"/> when every pixel is transparent.</returns>
-    private static bool ReadAlpha(ReadOnlySpan<byte> row, bool isWide, int left, Span<double> alpha)
+    /// <summary>Reads the alpha of pixels of a row of a layer, as fractions of one, or what is missing for them to be opaque.</summary>
+    /// <returns><see langword="false"/> when every value is zero.</returns>
+    private static bool ReadAlpha(ReadOnlySpan<byte> row, bool isWide, int left, Span<double> alpha, bool isInverted)
     {
+        if (isInverted)
+        {
+            ReadAlpha(row, isWide, left, alpha, isInverted: false);
+            var isOpen = false;
+            foreach (ref var value in alpha)
+            {
+                value = 1 - value;
+                isOpen |= value != 0;
+            }
+
+            return isOpen;
+        }
+
         var any = false;
         if (isWide)
         {

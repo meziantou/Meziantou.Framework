@@ -7,7 +7,9 @@ namespace Meziantou.Framework.Imaging.Drawing;
 /// A stroke is centered on its path: it covers the points within half <see cref="Width"/> of the path, completed by the
 /// joins at the vertices and by the caps at the ends of open contours. The vertices that the library creates when it
 /// approximates a curve are always joined with <see cref="Drawing.LineJoin.Round"/>, so that a wide curved stroke stays
-/// smooth; <see cref="LineJoin"/> applies to the vertices of the path itself.
+/// smooth; <see cref="LineJoin"/> applies to the vertices of the path itself. <see cref="Alignment"/> moves the stroke
+/// to one side of the path, and <see cref="StartMarker"/> and <see cref="EndMarker"/> draw a shape at the ends of open
+/// contours.
 /// </remarks>
 public sealed class Pen
 {
@@ -154,6 +156,55 @@ public sealed class Pen
             field = value;
         }
     }
+
+    /// <summary>Gets where the stroke is, relative to the path. Defaults to <see cref="PenAlignment.Center"/>.</summary>
+    /// <remarks>
+    /// <para>
+    /// A stroke that is not centered is the stroke of a pen twice as wide, of which only one side is kept: what is
+    /// inside what the path fills (with <see cref="FillRule.NonZero"/>, an open contour being closed by a straight
+    /// segment), or what is outside. An inside stroke of the width <see cref="Width"/> is therefore exactly as wide
+    /// along the straight sides of a shape; in a corner sharper than what <see cref="MiterLimit"/> allows, an outside
+    /// stroke is beveled as any stroke is.
+    /// </para>
+    /// <para>
+    /// The side is kept by a clip, antialiased like any clip (see <see cref="DrawingCanvas.Clip(VectorPath, DrawingAction, FillRule)"/>):
+    /// a draw call with such a pen keeps one value per pixel of the bounds of its path (of the clip that is active,
+    /// for an outside stroke), rented when it starts.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException">The value is not a defined <see cref="PenAlignment"/>.</exception>
+    public PenAlignment Alignment
+    {
+        get;
+        init
+        {
+            if (!Enum.IsDefined(value))
+                throw new ArgumentOutOfRangeException(nameof(value), value, "The alignment is not valid.");
+
+            field = value;
+        }
+    }
+
+    /// <summary>
+    /// Gets the shape drawn at the start of each open contour, or <see langword="null"/> (the default) for none.
+    /// </summary>
+    /// <remarks>
+    /// The shape is scaled by <see cref="Width"/>, turned to the direction of the contour, and painted with
+    /// <see cref="Brush"/>, as one shape with the stroke: see <see cref="LineMarker"/>. A closed contour has no
+    /// marker, and neither has a contour without length. With <see cref="DashPattern"/>, the markers are at the ends
+    /// of the contour, not of each dash.
+    /// </remarks>
+    public LineMarker? StartMarker { get; init; }
+
+    /// <summary>
+    /// Gets the shape drawn at the end of each open contour, or <see langword="null"/> (the default) for none: the head
+    /// of an arrow with <see cref="LineMarker.Arrow"/>.
+    /// </summary>
+    /// <remarks>See <see cref="StartMarker"/>.</remarks>
+    public LineMarker? EndMarker { get; init; }
+
+    /// <summary>Gets a value indicating whether a shape is drawn at an end of the open contours.</summary>
+    internal bool HasMarkers => StartMarker is not null || EndMarker is not null;
 
     /// <summary>Gets the pattern as a whole number of dashes and gaps; empty for a continuous stroke.</summary>
     internal double[] Dashes { get; private init; } = [];

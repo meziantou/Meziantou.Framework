@@ -716,6 +716,390 @@ public sealed class DrawingImageTests
     }
 
     [Fact]
+    public void AnImageOnAParallelogramIsPlacedByAnAffineTransformation()
+    {
+        var random = new Random(8086);
+        using var source = DrawingTestSupport.CreateRandom(PixelFormat.Rgba32, 6, 5, random.Next);
+        var frame = source.Frames[0];
+
+        // The corners of the image where it is: its pixels, exactly
+        using var expected = new Image<Rgba32>(12, 10, new Rgba32(9, 9, 9));
+        using var actual = expected.Clone();
+        expected.Draw(canvas => canvas.DrawImage(frame, new Point(3, 2)), Ct);
+        actual.Draw(canvas => canvas.DrawImage(frame, new Point(3, 2), new Point(9, 2), new Point(9, 7), new Point(3, 7)), Ct);
+        Assert.Equal(DrawingTestSupport.ReadSamples(expected.Frames[0]), DrawingTestSupport.ReadSamples(actual.Frames[0]));
+
+        // Any parallelogram, with any sampling and opacity: the transformation that maps the corners
+        foreach (var sampling in new[] { ImageSampling.Nearest, ImageSampling.Bilinear, ImageSampling.Smooth })
+        {
+            using var transformed = new Image<Rgba32>(12, 10, new Rgba32(9, 9, 9));
+            using var cornered = transformed.Clone();
+            transformed.Draw(canvas => canvas.DrawImage(frame, new AffineTransform(1.5, 0.25, -0.5, 1, 4, 1), sampling, 0.75), Ct);
+            cornered.Draw(canvas => canvas.DrawImage(frame, new PointD(4, 1), new PointD(13, 2.5), new PointD(10.5, 7.5), new PointD(1.5, 6), sampling, 0.75), Ct);
+            Assert.Equal(DrawingTestSupport.ReadSamples(transformed.Frames[0]), DrawingTestSupport.ReadSamples(cornered.Frames[0]));
+        }
+    }
+
+    [Fact]
+    public void AnImageOnAQuadrilateralIsAPlaneSeenInPerspective()
+    {
+        // An image whose pixels tell where they are: red is ten times the column, green ten times the row
+        using var source = new Image<Rgba32>(20, 20);
+        for (var y = 0; y < 20; y++)
+        {
+            for (var x = 0; x < 20; x++)
+            {
+                source.Frames[0][x, y] = new Rgba32((byte)(x * 10), (byte)(y * 10), 77);
+            }
+        }
+
+        var frame = source.Frames[0];
+        var random = new Random(1999);
+        PointD[][] quadrilaterals =
+        [
+            [new(10, 6), new(54, 14), new(60, 58), new(4, 40)],
+            [new(20, 4), new(44, 4), new(62, 60), new(2, 60)],
+            [new(8, 8), new(56, 20), new(50, 44), new(12, 56)],
+
+            // The other way around: the image is mirrored
+            [new(54, 14), new(10, 6), new(4, 40), new(60, 58)],
+        ];
+        foreach (var corners in quadrilaterals)
+        {
+            // The transformation that brings the corners back to those of the image, from its definition: the eight
+            // equations of the four corners, solved here
+            var inverse = SolveProjection(corners, [new(0, 0), new(20, 0), new(20, 20), new(0, 20)]);
+            using var image = new Image<Rgba32>(64, 64);
+            image.Draw(canvas => canvas.DrawImage(frame, corners[0], corners[1], corners[2], corners[3], ImageSampling.Nearest), Ct);
+            var inside = 0;
+            for (var y = 0; y < 64; y++)
+            {
+                for (var x = 0; x < 64; x++)
+                {
+                    var pixel = image.Frames[0][x, y];
+                    if (pixel.A != 255)
+                        continue;
+
+                    var w = (inverse[6] * (x + 0.5)) + (inverse[7] * (y + 0.5)) + 1;
+                    var u = ((inverse[0] * (x + 0.5)) + (inverse[1] * (y + 0.5)) + inverse[2]) / w;
+                    var v = ((inverse[3] * (x + 0.5)) + (inverse[4] * (y + 0.5)) + inverse[5]) / w;
+
+                    // The pixel of the image that contains the position, or its neighbor when the position is on its edge
+                    Assert.True(Math.Abs((pixel.R / 10) + 0.5 - Math.Clamp(u, 0.5, 19.5)) <= 0.5 + 1e-6, $"pixel ({x}, {y}): column {pixel.R / 10} for {u}");
+                    Assert.True(Math.Abs((pixel.G / 10) + 0.5 - Math.Clamp(v, 0.5, 19.5)) <= 0.5 + 1e-6, $"pixel ({x}, {y}): row {pixel.G / 10} for {v}");
+                    Assert.Equal(77, pixel.B);
+                    inside++;
+                }
+            }
+
+            Assert.InRange(inside, 900, 4096);
+
+            // A transformation of the canvas moves the quadrilateral with everything else
+            var (dx, dy) = (random.Next(-3, 4), random.Next(-3, 4));
+            using var moved = new Image<Rgba32>(64, 64);
+            using var transformed = new Image<Rgba32>(64, 64);
+            moved.Draw(canvas => canvas.DrawImage(frame, corners[0] + new PointD(dx, dy), corners[1] + new PointD(dx, dy), corners[2] + new PointD(dx, dy), corners[3] + new PointD(dx, dy)), Ct);
+            transformed.Draw(canvas => canvas.Transform(AffineTransform.CreateTranslation(dx, dy), inner => inner.DrawImage(frame, corners[0], corners[1], corners[2], corners[3])), Ct);
+            Assert.Equal(DrawingTestSupport.ReadSamples(moved.Frames[0]), DrawingTestSupport.ReadSamples(transformed.Frames[0]));
+        }
+
+        // The opacity fades the image, and its edges are antialiased
+        using var faded = new Image<Rgba32>(64, 64);
+        faded.Draw(canvas => canvas.DrawImage(frame, new PointD(10, 6), new PointD(54, 14), new PointD(60, 58), new PointD(4, 40), ImageSampling.Bilinear, 0.5), Ct);
+        Assert.Equal(128, faded.Frames[0][30, 30].A);
+        Assert.Equal(0, faded.Frames[0][2, 2].A);
+        Assert.Contains(DrawingTestSupport.ReadSamples(faded.Frames[0]).Chunk(4), pixel => pixel[3] is > 0 and < 128);
+    }
+
+    [Fact]
+    public void AReducedImageInPerspectiveCanBeReadWithoutSkippingPixels()
+    {
+        // A checkerboard of single pixels, drawn eight times smaller: one pixel of it for each pixel of the canvas is
+        // black or white, and all the pixels a pixel of the canvas covers are gray
+        using var source = new Image<Gray8>(64, 64);
+        for (var y = 0; y < 64; y++)
+        {
+            for (var x = 0; x < 64; x++)
+            {
+                source.Frames[0][x, y] = new Gray8((byte)(((x + y) & 1) * 255));
+            }
+        }
+
+        using var skipped = new Image<Gray8>(16, 16, new Gray8(7));
+        using var smooth = new Image<Gray8>(16, 16, new Gray8(7));
+        PointD[] corners = [new(3, 3), new(12, 4), new(13, 13), new(2, 11)];
+        skipped.Draw(canvas => canvas.DrawImage(source.Frames[0], corners[0], corners[1], corners[2], corners[3], ImageSampling.Nearest), Ct);
+        smooth.Draw(canvas => canvas.DrawImage(source.Frames[0], corners[0], corners[1], corners[2], corners[3], ImageSampling.Smooth), Ct);
+        for (var y = 6; y < 10; y++)
+        {
+            for (var x = 6; x < 10; x++)
+            {
+                Assert.True(skipped.Frames[0][x, y].Value is 0 or 255);
+                Assert.InRange(smooth.Frames[0][x, y].Value, 118, 138);
+            }
+        }
+
+        Assert.Equal(new Gray8(7), smooth.Frames[0][0, 0]);
+    }
+
+    [Fact]
+    public void TheCornersOfAQuadrilateralMustBeThoseOfAConvexOne()
+    {
+        using var image = new Image<Rgba32>(16, 16, new Rgba32(1, 2, 3, 4));
+        using var other = new Image<Rgba32>(4, 4, new Rgba32(200, 100, 50));
+        var frame = other.Frames[0];
+        var before = DrawingTestSupport.ReadSamples(image.Frames[0]);
+        image.Draw(
+            canvas =>
+            {
+                // Two sides that cross, a corner that points inward, three corners on a line
+                AssertThrows<ArgumentException>(canvas, canvas => canvas.DrawImage(frame, new PointD(2, 2), new PointD(12, 2), new PointD(2, 12), new PointD(12, 12)));
+                AssertThrows<ArgumentException>(canvas, canvas => canvas.DrawImage(frame, new PointD(2, 2), new PointD(12, 2), new PointD(5, 5), new PointD(2, 12)));
+                AssertThrows<ArgumentException>(canvas, canvas => canvas.DrawImage(frame, new PointD(2, 2), new PointD(7, 2), new PointD(12, 2), new PointD(7, 9)));
+                AssertThrows<ArgumentException>(canvas, canvas => canvas.DrawImage(frame, new PointD(double.NaN, 2), new PointD(12, 2), new PointD(12, 12), new PointD(2, 12)));
+                AssertThrows<ArgumentOutOfRangeException>(canvas, canvas => canvas.DrawImage(frame, new PointD(2, 2), new PointD(12, 2), new PointD(16777217, 12), new PointD(2, 12)));
+                AssertThrows<ArgumentOutOfRangeException>(canvas, canvas => canvas.DrawImage(frame, new PointD(2, 2), new PointD(12, 2), new PointD(12, 12), new PointD(2, 12), (ImageSampling)3));
+                AssertThrows<ArgumentOutOfRangeException>(canvas, canvas => canvas.DrawImage(frame, new PointD(2, 2), new PointD(12, 3), new PointD(12, 12), new PointD(2, 12), ImageSampling.Smooth, 1.5));
+                AssertThrows<ArgumentNullException>(canvas, static canvas => canvas.DrawImage(null!, new PointD(2, 2), new PointD(12, 3), new PointD(12, 12), new PointD(2, 12)));
+                AssertThrows<InvalidOperationException>(canvas, canvas => canvas.DrawImage(image.Frames[0], new PointD(2, 2), new PointD(12, 3), new PointD(12, 12), new PointD(2, 12)));
+                AssertThrows<ArgumentOutOfRangeException>(canvas, canvas => canvas.Transform(AffineTransform.CreateScale(1e7, 1), inner => inner.DrawImage(frame, new PointD(2, 2), new PointD(12, 3), new PointD(12, 12), new PointD(2, 12))));
+
+                // Corners that are all on a line draw nothing, as an image that a transformation flattens
+                canvas.DrawImage(frame, new PointD(2, 2), new PointD(6, 6), new PointD(12, 12), new PointD(4, 4));
+                canvas.DrawImage(frame, new PointD(3, 3), new PointD(3, 3), new PointD(3, 3), new PointD(3, 3));
+                canvas.Transform(AffineTransform.CreateScale(1, 0), inner => inner.DrawImage(frame, new PointD(2, 2), new PointD(12, 3), new PointD(12, 12), new PointD(2, 12)));
+            },
+            Ct);
+        Assert.Equal(before, DrawingTestSupport.ReadSamples(image.Frames[0]));
+        Assert.Equal(0, other.Owner.ActiveLeaseCount);
+
+        other.Dispose();
+        image.Draw(canvas => AssertThrows<ObjectDisposedException>(canvas, canvas => canvas.DrawImage(frame, new PointD(2, 2), new PointD(12, 3), new PointD(12, 12), new PointD(2, 12))), Ct);
+    }
+
+    [Fact]
+    public void APatternBrushRepeatsTheDrawingOfItsTile()
+    {
+        // A tile of 4 by 4 with a red square of 2 by 2 in its corner, on the pixels of the canvas: exactly that
+        var red = new Rgba32(255, 0, 0);
+        var calls = 0;
+        var sizes = new List<Size>();
+        var brush = new PatternBrush(new Rectangle(0, 0, 4, 4), tile =>
+        {
+            // The canvas of a tile is its image: as many pixels as the tile has on the canvas that is painted
+            calls++;
+            sizes.Add(new Size(tile.Width, tile.Height));
+            tile.FillRectangle(red, new Rectangle(0, 0, 2, 2));
+        });
+        Assert.Equal(new RectangleD(0, 0, 4, 4), brush.Tile);
+        Assert.True(brush.Transform.IsIdentity);
+        using var image = new Image<Rgba32>(10, 9);
+        image.Draw(
+            canvas =>
+            {
+                canvas.FillRectangle(brush, new Rectangle(0, 0, 10, 5));
+                canvas.FillRectangle(brush, new Rectangle(0, 5, 10, 4));
+            },
+            Ct);
+        AssertPattern(image, (x, y) => x % 4 < 2 && y % 4 < 2);
+
+        // The tile is drawn once for the shapes that follow each other with the same brush
+        Assert.Equal(1, calls);
+
+        // The transformation of the brush places the pattern: one pixel to the right, two down
+        using var moved = new Image<Rgba32>(10, 9);
+        moved.Draw(canvas => canvas.Fill(new PatternBrush(brush.Tile, brush.Content) { Transform = AffineTransform.CreateTranslation(1, 2) }), Ct);
+        AssertPattern(moved, (x, y) => (x + 3) % 4 < 2 && (y + 2) % 4 < 2);
+
+        // A tile that is not at the origin repeats from where it is, and what is drawn outside it is not painted
+        using var anchored = new Image<Rgba32>(10, 9);
+        anchored.Draw(
+            canvas => canvas.Fill(new PatternBrush(new Rectangle(2, 1, 4, 4), tile =>
+            {
+                tile.FillRectangle(red, new Rectangle(2, 1, 2, 2));
+                tile.FillRectangle(new Rgba32(0, 255, 0), new Rectangle(6, 1, 20, 20));
+                tile.FillRectangle(new Rgba32(0, 255, 0), new Rectangle(-20, -20, 22, 21));
+            })),
+            Ct);
+        AssertPattern(anchored, (x, y) => (x + 2) % 4 < 2 && (y + 3) % 4 < 2);
+
+        // Under a transformation of the canvas, the tile is drawn at the size it has there: twice as large, as sharp
+        using var scaled = new Image<Rgba32>(20, 18);
+        scaled.Draw(canvas => canvas.Transform(AffineTransform.CreateScale(2, 2), inner => inner.Fill(brush)), Ct);
+        AssertPattern(scaled, (x, y) => x % 8 < 4 && y % 8 < 4);
+        Assert.Equal([new Size(4, 4), new Size(4, 4), new Size(8, 8)], sizes);
+
+        // The tile is drawn as the shapes it paints are: again, with hard edges, when antialiasing is turned off
+        var half = new PatternBrush(new Rectangle(0, 0, 2, 1), tile =>
+        {
+            calls++;
+            tile.FillRectangle(red, new RectangleD(0, 0, 0.75, 1));
+        });
+        using var hard = new Image<Rgba32>(4, 1);
+        calls = 0;
+        hard.Draw(
+            canvas =>
+            {
+                canvas.FillRectangle(half, new Rectangle(0, 0, 2, 1));
+                canvas.Antialiasing(enabled: false, inner => inner.FillRectangle(half, new Rectangle(2, 0, 2, 1)));
+            },
+            Ct);
+        Assert.Equal([191, 0, 255, 0], Enumerable.Range(0, 4).Select(x => (int)hard.Frames[0][x, 0].A));
+        Assert.Equal(2, calls);
+
+        // Between pixels, the image of the tile is interpolated, across the edges of the tiles too
+        using var between = new Image<Rgba32>(8, 1);
+        between.Draw(canvas => canvas.Fill(new PatternBrush(brush.Tile, brush.Content) { Transform = AffineTransform.CreateTranslation(0.5, 0) }), Ct);
+        Assert.Equal([128, 255, 128, 0, 128, 255, 128, 0], Enumerable.Range(0, 8).Select(x => (int)between.Frames[0][x, 0].A));
+        Assert.Equal(new Rgba32(255, 0, 0, 128), between.Frames[0][4, 0]);
+
+        static void AssertPattern(Image<Rgba32> image, Func<int, int, bool> isRed)
+        {
+            for (var y = 0; y < image.Height; y++)
+            {
+                for (var x = 0; x < image.Width; x++)
+                {
+                    Assert.Equal(isRed(x, y) ? new Rgba32(255, 0, 0) : default, image.Frames[0][x, y], $"pixel ({x}, {y})");
+                }
+            }
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(DrawingTestSupport.AllFormats), MemberType = typeof(DrawingTestSupport))]
+    public void APatternBrushPaintsAsTheImageOfItsTile(PixelFormat format)
+    {
+        // Whatever the canvas, the shape, the operator and the blend mode: what an image brush paints with the image
+        // of the tile, drawn by the same callback. The pattern is turned and moved, which keeps the size of its tile.
+        var random = new Random(31337 + (int)format);
+        var gradient = new LinearGradientBrush(new PointD(0, 0), new PointD(5, 3), [new GradientStop(0, new Rgba32(250, 220, 10)), new GradientStop(1, new Rgba32(20, 40, 200, 60))]);
+        void Tile(DrawingCanvas canvas)
+        {
+            canvas.Fill(gradient);
+            canvas.FillCircle(new Rgba32(255, 255, 255, 200), new PointD(2.5, 1.5), 1.2);
+        }
+
+        var isWide = format is not (PixelFormat.Rgba32 or PixelFormat.Bgra32 or PixelFormat.Rgb24);
+        using Image tile = isWide ? new Image<Rgba64>(5, 3) : new Image<Rgba32>(5, 3);
+        tile.Draw(Tile, Ct);
+        var placement = AffineTransform.CreateRotation(30, new PointD(3, 2)).Then(AffineTransform.CreateTranslation(2.5, -1));
+        foreach (var (mode, blend) in new[] { (CompositeMode.SourceOver, BlendMode.Normal), (CompositeMode.DestinationOut, BlendMode.Normal), (CompositeMode.SourceAtop, BlendMode.Multiply) })
+        {
+            using var expected = DrawingTestSupport.CreateRandom(format, 14, 11, random.Next);
+            using var actual = expected.Clone();
+            var imageBrush = new ImageBrush(tile.Frames[0]) { WrapMode = ImageWrapMode.Repeat, Transform = placement, CompositeMode = mode, BlendMode = blend };
+            var patternBrush = new PatternBrush(new Rectangle(0, 0, 5, 3), Tile) { Transform = placement, CompositeMode = mode, BlendMode = blend };
+            void Draw(DrawingCanvas canvas, Brush brush)
+            {
+                canvas.FillEllipse(brush, new PointD(7, 5.5), 6.2, 4.8);
+                canvas.StrokeLine(new Pen(brush, 2.5), new PointD(0, 0), new PointD(14, 11));
+            }
+
+            expected.Draw(canvas => Draw(canvas, imageBrush), Ct);
+            actual.Draw(canvas => Draw(canvas, patternBrush), Ct);
+            Assert.Equal(DrawingTestSupport.ReadSamples(expected.Frames[0]), DrawingTestSupport.ReadSamples(actual.Frames[0]));
+        }
+    }
+
+    [Fact]
+    public void APatternBrushValidatesItsTileAndDrawsNothingWhenItsCallbackFails()
+    {
+        Assert.Throws<ArgumentNullException>(() => new PatternBrush(new Rectangle(0, 0, 1, 1), null!));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new PatternBrush(new Rectangle(0, 0, 0, 1), static _ => { }));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new PatternBrush(new RectangleD(0, 0, 1, -1), static _ => { }));
+        Assert.Throws<ArgumentException>(() => new PatternBrush(new RectangleD(double.NaN, 0, 1, 1), static _ => { }));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new PatternBrush(new RectangleD(16777217, 0, 1, 1), static _ => { }));
+
+        using var image = new Image<Rgba32>(8, 8, new Rgba32(1, 2, 3, 4));
+        var before = DrawingTestSupport.ReadSamples(image.Frames[0]);
+        var white = new Rgba32(255, 255, 255);
+        PatternBrush? self = null;
+        self = new PatternBrush(new Rectangle(0, 0, 4, 4), tile => tile.Fill(self!));
+        var failing = new PatternBrush(new Rectangle(0, 0, 4, 4), tile =>
+        {
+            tile.Fill(white);
+            throw new InvalidOperationException("tile");
+        });
+        var flat = new PatternBrush(new Rectangle(0, 0, 4, 4), static _ => Assert.Fail("The callback ran.")) { Transform = AffineTransform.CreateScale(1, 0) };
+        var huge = new PatternBrush(new Rectangle(0, 0, 4, 4), static _ => Assert.Fail("The callback ran.")) { Transform = AffineTransform.CreateScale(1e6, 1e6) };
+        var nested = new PatternBrush(new Rectangle(0, 0, 4, 4), tile => tile.Fill(new PatternBrush(new Rectangle(0, 0, 2, 2), inner => inner.FillRectangle(white, new Rectangle(0, 0, 1, 1)))));
+        image.Draw(
+            canvas =>
+            {
+                // A pattern that paints itself, a callback that fails, a tile that is too large for the limits
+                AssertThrows<InvalidOperationException>(canvas, canvas => canvas.Fill(self));
+                AssertThrows<InvalidOperationException>(canvas, canvas => canvas.Fill(failing));
+                AssertThrows<ImageResourceLimitException>(canvas, canvas => canvas.Fill(huge));
+
+                // A pattern that a transformation flattens paints nothing
+                canvas.Fill(flat);
+                canvas.Transform(AffineTransform.CreateScale(0, 0), inner => inner.Fill(nested));
+            },
+            Ct);
+        Assert.Equal(before, DrawingTestSupport.ReadSamples(image.Frames[0]));
+
+        // A pattern can be painted with another one
+        image.Draw(canvas => canvas.Fill(nested), Ct);
+        for (var y = 0; y < 8; y++)
+        {
+            for (var x = 0; x < 8; x++)
+            {
+                Assert.Equal((x & 1) == 0 && (y & 1) == 0 ? white : new Rgba32(1, 2, 3, 4), image.Frames[0][x, y]);
+            }
+        }
+
+        Assert.Equal(0, image.Owner.ActiveLeaseCount);
+    }
+
+    /// <summary>
+    /// Solves the eight equations of the projective transformation that maps four points to four others: the numbers
+    /// <c>a</c> to <c>h</c> of <c>((a x + b y + c) / (g x + h y + 1), (d x + e y + f) / (g x + h y + 1))</c>.
+    /// </summary>
+    private static double[] SolveProjection(PointD[] from, PointD[] to)
+    {
+        var matrix = new double[8][];
+        for (var i = 0; i < 4; i++)
+        {
+            var (x, y, u, v) = (from[i].X, from[i].Y, to[i].X, to[i].Y);
+            matrix[2 * i] = [x, y, 1, 0, 0, 0, -x * u, -y * u, u];
+            matrix[(2 * i) + 1] = [0, 0, 0, x, y, 1, -x * v, -y * v, v];
+        }
+
+        for (var column = 0; column < 8; column++)
+        {
+            var pivot = column;
+            for (var row = column + 1; row < 8; row++)
+            {
+                if (Math.Abs(matrix[row][column]) > Math.Abs(matrix[pivot][column]))
+                {
+                    pivot = row;
+                }
+            }
+
+            (matrix[column], matrix[pivot]) = (matrix[pivot], matrix[column]);
+            for (var row = 0; row < 8; row++)
+            {
+                if (row == column)
+                    continue;
+
+                var factor = matrix[row][column] / matrix[column][column];
+                for (var k = column; k < 9; k++)
+                {
+                    matrix[row][k] -= factor * matrix[column][k];
+                }
+            }
+        }
+
+        var result = new double[8];
+        for (var i = 0; i < 8; i++)
+        {
+            result[i] = matrix[i][8] / matrix[i][i];
+        }
+
+        return result;
+    }
+
+    [Fact]
     public void DrawingAnImageBeyondTheAllocationLimitChangesNothing()
     {
         using var source = new Image<Rgba32>(64, 64, new Rgba32(200, 100, 50));

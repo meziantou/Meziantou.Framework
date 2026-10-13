@@ -21,6 +21,8 @@ namespace Meziantou.Framework.Imaging.Drawing;
 /// including where the contours of a shape overlap or intersect themselves, and is rounded to the nearest 1/65536. A
 /// pixel that is not covered is left untouched, bit for bit; a pixel that is entirely covered by an opaque color
 /// receives exactly that color. Curves are replaced by chords that stay within 1/16 of a pixel of the curve.
+/// <see cref="Antialiasing(bool, DrawingAction)"/> draws with hard edges instead: a pixel is painted entirely or not at
+/// all.
 /// </para>
 /// <para>
 /// <b>Compositing.</b> The paint is composited over the existing pixels (source-over) on the stored sample values, with
@@ -28,7 +30,8 @@ namespace Meziantou.Framework.Imaging.Drawing;
 /// opaque. See <see cref="Brush"/> for the conversion of colors to the pixel format of the frame, and
 /// <see cref="Brush.CompositeMode"/> for the other ways a paint is combined with the pixels (replacing, erasing,
 /// painting behind, masking), and <see cref="Brush.BlendMode"/> for the ways its color is mixed with theirs
-/// (multiplying, screening, tinting).
+/// (multiplying, screening, tinting). <see cref="Compositing(CompositingSpace, DrawingAction)"/> combines the paints
+/// with the pixels in linear light instead of on the stored sample values.
 /// </para>
 /// <para>
 /// <b>Failures.</b> Drawing is a pixel-only edit: when a call fails or is canceled, the calls that completed stay, and
@@ -221,6 +224,42 @@ public readonly ref struct DrawingCanvas
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
     public void DrawImage(ImageFrame source, AffineTransform transform, ImageSampling sampling, double opacity = 1) => GetSession().DrawImage(source, transform, sampling, opacity);
 
+    /// <summary>Draws a frame of another image on a quadrilateral, as it is seen in perspective: on a screen, a page or a wall of a photograph.</summary>
+    /// <remarks>
+    /// <para>
+    /// The four corners of the image are drawn on the four points, and the image between them as a plane seen in
+    /// perspective: straight lines of the image stay straight, and what is further away is smaller. When the points
+    /// are the corners of a parallelogram, the image is not seen in perspective, and this is
+    /// <see cref="DrawImage(ImageFrame, AffineTransform, ImageSampling, double)"/>, with the same pixels.
+    /// </para>
+    /// <para>
+    /// The points must be the corners of a convex quadrilateral, given in order around it (either way: the other way
+    /// around mirrors the image). Points that are all on one line draw nothing. The edges of the quadrilateral are
+    /// antialiased, and the pixels on the edges of the image are extended, as for the other ways of drawing an image.
+    /// With <see cref="ImageSampling.Smooth"/>, each pixel of the canvas reads what it covers of the image, which
+    /// changes from the near side to the far side: use it for an image that the perspective reduces.
+    /// </para>
+    /// <para>
+    /// The frame is read while it is drawn: it must not be one of the frames the canvas draws on.
+    /// </para>
+    /// </remarks>
+    /// <param name="source">The frame to draw.</param>
+    /// <param name="topLeft">Where the top-left corner of the image is drawn.</param>
+    /// <param name="topRight">Where the top-right corner of the image is drawn.</param>
+    /// <param name="bottomRight">Where the bottom-right corner of the image is drawn.</param>
+    /// <param name="bottomLeft">Where the bottom-left corner of the image is drawn.</param>
+    /// <param name="sampling">How the image is read between the centers of its pixels.</param>
+    /// <param name="opacity">The opacity of the image, from 0 to 1.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">A coordinate is not a finite number, or the points are not the corners of a convex quadrilateral, in order.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The magnitude of a coordinate exceeds 16777216, <paramref name="sampling"/> is not a defined <see cref="ImageSampling"/>, or <paramref name="opacity"/> is not between 0 and 1.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned, or <paramref name="source"/> is a frame that is being drawn on or whose pixels are being accessed.</exception>
+    /// <exception cref="ObjectDisposedException"><paramref name="source"/> no longer belongs to a live image.</exception>
+    /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. No pixel is changed by this call.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void DrawImage(ImageFrame source, PointD topLeft, PointD topRight, PointD bottomRight, PointD bottomLeft, ImageSampling sampling = ImageSampling.Bilinear, double opacity = 1)
+        => GetSession().DrawImage(source, topLeft, topRight, bottomRight, bottomLeft, sampling, opacity);
+
     /// <summary>Paints a rectangle.</summary>
     /// <param name="brush">The paint. A color converts implicitly.</param>
     /// <param name="rectangle">The rectangle. A <see cref="Rectangle"/> of pixels converts implicitly.</param>
@@ -324,6 +363,49 @@ public readonly ref struct DrawingCanvas
     /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. No pixel is changed by this call.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
     public void StrokePolyline(Pen pen, ReadOnlySpan<PointD> points) => GetSession().StrokePoints(pen, points, close: false);
+
+    /// <summary>Paints a curve that goes smoothly through consecutive points, with the caps of the pen at both ends: the line of a chart.</summary>
+    /// <remarks>
+    /// The curve is the one of <see cref="VectorPathBuilder.AddCurve"/>: a cubic Bézier curve between each point and the
+    /// next one, which has at each point the direction of the line between the points around it.
+    /// </remarks>
+    /// <param name="pen">The stroke.</param>
+    /// <param name="points">The points the curve goes through. At least one is required.</param>
+    /// <param name="tension">How far the curve keeps its direction around each point, from 0 (straight segments) to 1; 0.5 is the Catmull-Rom spline.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="pen"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="points"/> is empty, or a coordinate or <paramref name="tension"/> is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The magnitude of a coordinate exceeds 16777216, <paramref name="tension"/> is not between 0 and 1, or the curve goes beyond the largest coordinate.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. No pixel is changed by this call.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void StrokeCurve(Pen pen, ReadOnlySpan<PointD> points, double tension = 0.5) => GetSession().StrokeCurve(pen, points, tension, close: false);
+
+    /// <summary>Paints the outline of the closed curve that goes smoothly through consecutive points, and from the last one back to the first one.</summary>
+    /// <param name="pen">The stroke.</param>
+    /// <param name="points">The points the curve goes through. At least one is required.</param>
+    /// <param name="tension">How far the curve keeps its direction around each point, from 0 (straight segments) to 1; 0.5 is the Catmull-Rom spline.</param>
+    /// <remarks>See <see cref="VectorPathBuilder.AddClosedCurve"/>.</remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="pen"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="points"/> is empty, or a coordinate or <paramref name="tension"/> is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The magnitude of a coordinate exceeds 16777216, <paramref name="tension"/> is not between 0 and 1, or the curve goes beyond the largest coordinate.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. No pixel is changed by this call.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void StrokeClosedCurve(Pen pen, ReadOnlySpan<PointD> points, double tension = 0.5) => GetSession().StrokeCurve(pen, points, tension, close: true);
+
+    /// <summary>Paints the inside of the closed curve that goes smoothly through consecutive points, and from the last one back to the first one.</summary>
+    /// <param name="brush">The paint. A color converts implicitly.</param>
+    /// <param name="points">The points the curve goes through. At least one is required.</param>
+    /// <param name="tension">How far the curve keeps its direction around each point, from 0 (a polygon) to 1; 0.5 is the Catmull-Rom spline.</param>
+    /// <param name="fillRule">The rule deciding what is inside when the curve crosses itself.</param>
+    /// <remarks>See <see cref="VectorPathBuilder.AddClosedCurve"/>.</remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="brush"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="points"/> is empty, or a coordinate or <paramref name="tension"/> is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The magnitude of a coordinate exceeds 16777216, <paramref name="tension"/> is not between 0 and 1, the curve goes beyond the largest coordinate, or <paramref name="fillRule"/> is not a defined <see cref="FillRule"/>.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. No pixel is changed by this call.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void FillClosedCurve(Brush brush, ReadOnlySpan<PointD> points, double tension = 0.5, FillRule fillRule = FillRule.NonZero) => GetSession().FillClosedCurve(brush, points, tension, fillRule);
 
     /// <summary>Paints a slice of a disk: the part between two radii and the arc that joins them.</summary>
     /// <param name="brush">The paint. A color converts implicitly.</param>
@@ -887,6 +969,404 @@ public readonly ref struct DrawingCanvas
         finally
         {
             session.PopLayer(isDrawn);
+        }
+    }
+
+    /// <summary>Runs a callback whose drawings are kept only where a mask is: the drawings of another callback, by their opacity or by their luminance.</summary>
+    /// <remarks>
+    /// <para>
+    /// What <paramref name="content"/> draws is drawn on a layer (see <see cref="Layer(double, DrawingAction, CompositeMode, BlendMode)"/>),
+    /// and what <paramref name="mask"/> draws on a layer of its own. Each pixel of the content is then kept in
+    /// proportion to the mask there, and the result is drawn on the canvas. With <see cref="MaskMode.Alpha"/>, the
+    /// mask is the alpha of its drawings: a shape, a text or a gradient to a transparent color, whatever their
+    /// colors. With <see cref="MaskMode.Luminance"/>, as in the masks of SVG, it is the luminance of their colors
+    /// multiplied by their alpha: white keeps, black removes, and a gradient from white to black fades.
+    /// </para>
+    /// <para>
+    /// The luminance of a pixel of the mask is its Rec. 709 luma on the stored sample values, the gray level
+    /// <c>Grayscale</c> gives it. The content is drawn first, then the mask; both callbacks run once. When a callback
+    /// fails, nothing is drawn. A clip that is active when the mask starts applies to the result.
+    /// </para>
+    /// </remarks>
+    /// <param name="mask">The callback that draws the mask. It must not be asynchronous and must not retain the canvas.</param>
+    /// <param name="content">The callback that draws what is masked. It must not be asynchronous and must not retain the canvas.</param>
+    /// <param name="mode">What the mask keeps the content by: its alpha, or its luminance.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="mask"/> or <paramref name="content"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="mode"/> is not a defined <see cref="MaskMode"/>.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="ImageResourceLimitException">The layers or the working storage would exceed the allocation limit.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void Mask(DrawingAction mask, DrawingAction content, MaskMode mode = MaskMode.Alpha)
+    {
+        ArgumentNullException.ThrowIfNull(mask);
+        ArgumentNullException.ThrowIfNull(content);
+        DrawingSession.ValidateMaskMode(mode, nameof(mode));
+        var session = GetSession();
+        session.PushLayer(1, CompositeMode.SourceOver, BlendMode.Normal);
+        var isDrawn = false;
+        try
+        {
+            content(this);
+            session.PushMask(mode);
+            var isMasked = false;
+            try
+            {
+                mask(this);
+                isMasked = true;
+            }
+            finally
+            {
+                session.PopLayer(isMasked);
+            }
+
+            isDrawn = true;
+        }
+        finally
+        {
+            session.PopLayer(isDrawn);
+        }
+    }
+
+    /// <summary>Runs a callback whose drawings are kept only where a mask is, passing caller state to both callbacks to avoid closure allocations.</summary>
+    /// <typeparam name="TState">The type of the state.</typeparam>
+    /// <param name="state">The state passed to <paramref name="mask"/> and to <paramref name="content"/>.</param>
+    /// <param name="mask">The callback that draws the mask. Use a static lambda to avoid allocations. It must not retain the canvas.</param>
+    /// <param name="content">The callback that draws what is masked. Use a static lambda to avoid allocations. It must not retain the canvas.</param>
+    /// <param name="mode">What the mask keeps the content by: its alpha, or its luminance.</param>
+    /// <remarks>See <see cref="Mask(DrawingAction, DrawingAction, MaskMode)"/>.</remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="mask"/> or <paramref name="content"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="mode"/> is not a defined <see cref="MaskMode"/>.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="ImageResourceLimitException">The layers or the working storage would exceed the allocation limit.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void Mask<TState>(TState state, DrawingAction<TState> mask, DrawingAction<TState> content, MaskMode mode = MaskMode.Alpha)
+        where TState : allows ref struct
+    {
+        ArgumentNullException.ThrowIfNull(mask);
+        ArgumentNullException.ThrowIfNull(content);
+        DrawingSession.ValidateMaskMode(mode, nameof(mode));
+        var session = GetSession();
+        session.PushLayer(1, CompositeMode.SourceOver, BlendMode.Normal);
+        var isDrawn = false;
+        try
+        {
+            content(this, state);
+            session.PushMask(mode);
+            var isMasked = false;
+            try
+            {
+                mask(this, state);
+                isMasked = true;
+            }
+            finally
+            {
+                session.PopLayer(isMasked);
+            }
+
+            isDrawn = true;
+        }
+        finally
+        {
+            session.PopLayer(isDrawn);
+        }
+    }
+
+    /// <summary>Runs a callback whose drawings are blurred, as a whole, before they are drawn on the canvas: a soft light, something out of focus.</summary>
+    /// <remarks>
+    /// <para>
+    /// The drawings are made on a layer (see <see cref="Layer(double, DrawingAction, CompositeMode, BlendMode)"/>).
+    /// When the callback returns, the layer is blurred by a Gaussian blur of standard deviation
+    /// <paramref name="blur"/>, colors and alpha together (the colors are weighted by their alpha, so a transparent
+    /// pixel does not darken its neighbors), then drawn on the canvas.
+    /// </para>
+    /// <para>
+    /// A drawing that goes beyond an edge of the canvas is taken to continue as it does on that edge. A clip that is
+    /// active when the callback starts applies to the result; what is drawn around it still spreads into it. The time
+    /// and the storage grow with the pixels the clip can show and with the blur. Under a transformation of the canvas,
+    /// the blur is enlarged with the drawing.
+    /// </para>
+    /// </remarks>
+    /// <param name="blur">The standard deviation of the blur, in pixels: 0 for no blur. Must be between 0 and 10000.</param>
+    /// <param name="action">The callback that draws. It must not be asynchronous and must not retain the canvas.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="blur"/> is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="blur"/> is negative or exceeds 10000.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="ImageResourceLimitException">The layer or the working storage would exceed the allocation limit.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void Blur(double blur, DrawingAction action)
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        var session = GetSession();
+        session.PushBlur(blur);
+        var isDrawn = false;
+        try
+        {
+            action(this);
+            isDrawn = true;
+        }
+        finally
+        {
+            session.PopLayer(isDrawn);
+        }
+    }
+
+    /// <summary>Runs a callback whose drawings are blurred before they are drawn on the canvas, passing caller state to avoid closure allocations.</summary>
+    /// <typeparam name="TState">The type of the state.</typeparam>
+    /// <param name="blur">The standard deviation of the blur, in pixels. Must be between 0 and 10000.</param>
+    /// <param name="state">The state passed to <paramref name="action"/>.</param>
+    /// <param name="action">The callback that draws. Use a static lambda to avoid allocations. It must not retain the canvas.</param>
+    /// <remarks>See <see cref="Blur(double, DrawingAction)"/>.</remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="blur"/> is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="blur"/> is negative or exceeds 10000.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="ImageResourceLimitException">The layer or the working storage would exceed the allocation limit.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void Blur<TState>(double blur, TState state, DrawingAction<TState> action)
+        where TState : allows ref struct
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        var session = GetSession();
+        session.PushBlur(blur);
+        var isDrawn = false;
+        try
+        {
+            action(this, state);
+            isDrawn = true;
+        }
+        finally
+        {
+            session.PopLayer(isDrawn);
+        }
+    }
+
+    /// <summary>Blurs what is already drawn, where the clip lets a drawing through: the frosted glass behind a panel.</summary>
+    /// <remarks>
+    /// <para>
+    /// The pixels of the canvas (of the layer, inside <see cref="Layer(double, DrawingAction, CompositeMode, BlendMode)"/>)
+    /// are replaced by their Gaussian blur of standard deviation <paramref name="blur"/>, colors and alpha together.
+    /// Without a clip, the whole canvas is blurred; inside <see cref="Clip(VectorPath, DrawingAction, FillRule)"/>,
+    /// only the inside of the clip is, and a pixel on its edge in proportion to the area of it that is inside. What
+    /// is around the clip is read by the blur, but not changed.
+    /// </para>
+    /// <para>
+    /// The pixels are read as 16-bit colors and the result is converted to the pixel format like a brush color. What
+    /// is beyond an edge of the canvas is taken to continue as on that edge. This is not a drawing: the blend mode
+    /// and the operator of a brush do not apply, and neither does the opacity of a layer the canvas is not inside.
+    /// The time grows with the pixels that are blurred and with the blur.
+    /// </para>
+    /// </remarks>
+    /// <param name="blur">The standard deviation of the blur, in pixels: 0 changes nothing. Must be between 0 and 10000.</param>
+    /// <exception cref="ArgumentException"><paramref name="blur"/> is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="blur"/> is negative or exceeds 10000.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. No pixel is changed by this call.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void BlurBackdrop(double blur) => GetSession().BlurBackdrop(blur);
+
+    /// <summary>Runs a callback whose drawings are drawn with a shadow inside them: the shadow cast on them by what is around them, for a shape that looks cut out or pressed in.</summary>
+    /// <remarks>
+    /// <para>
+    /// The drawings are made on a layer (see <see cref="Layer(double, DrawingAction, CompositeMode, BlendMode)"/>).
+    /// When the callback returns, the shadow is painted on the layer, where the drawings are, then the layer is drawn
+    /// on the canvas. The shadow has the shape of everything the callback did not draw: its opacity is what is
+    /// missing for the layer to be opaque, blurred by a Gaussian blur of standard deviation <paramref name="blur"/>,
+    /// moved by <paramref name="offset"/> and multiplied by the alpha of <paramref name="color"/>. It does not change
+    /// the alpha of the drawings: nothing is painted outside them. A translucent drawing lacks opacity everywhere,
+    /// and is shadowed all over: draw it opaque, in a layer that fades it, for a shadow along its edges only.
+    /// </para>
+    /// <para>
+    /// A drawing that goes beyond an edge of the canvas is taken to continue as it does on that edge. The time and the
+    /// storage grow with the pixels the clip can show and with the blur, as for <see cref="Shadow(Rgba64, PointD, double, DrawingAction)"/>.
+    /// </para>
+    /// </remarks>
+    /// <param name="color">The color of the shadow, with straight alpha. An <see cref="Rgba32"/> converts implicitly.</param>
+    /// <param name="offset">The distance the shadow is moved by: to the right and downward when positive, for a light that comes from the top left.</param>
+    /// <param name="blur">The standard deviation of the blur of the shadow, in pixels. Must be between 0 and 10000.</param>
+    /// <param name="action">The callback that draws. It must not be asynchronous and must not retain the canvas.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">A coordinate of <paramref name="offset"/>, or <paramref name="blur"/>, is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The magnitude of a coordinate of <paramref name="offset"/> exceeds 16777216, or <paramref name="blur"/> is negative or exceeds 10000.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="ImageResourceLimitException">The layer or the working storage would exceed the allocation limit.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void InnerShadow(Rgba64 color, PointD offset, double blur, DrawingAction action)
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        var session = GetSession();
+        session.PushShadow(color, offset, blur, isInner: true);
+        var isDrawn = false;
+        try
+        {
+            action(this);
+            isDrawn = true;
+        }
+        finally
+        {
+            session.PopLayer(isDrawn);
+        }
+    }
+
+    /// <summary>Runs a callback whose drawings are drawn with a shadow inside them, passing caller state to avoid closure allocations.</summary>
+    /// <typeparam name="TState">The type of the state.</typeparam>
+    /// <param name="color">The color of the shadow, with straight alpha. An <see cref="Rgba32"/> converts implicitly.</param>
+    /// <param name="offset">The distance the shadow is moved by: to the right and downward when positive.</param>
+    /// <param name="blur">The standard deviation of the blur of the shadow, in pixels. Must be between 0 and 10000.</param>
+    /// <param name="state">The state passed to <paramref name="action"/>.</param>
+    /// <param name="action">The callback that draws. Use a static lambda to avoid allocations. It must not retain the canvas.</param>
+    /// <remarks>See <see cref="InnerShadow(Rgba64, PointD, double, DrawingAction)"/>.</remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">A coordinate of <paramref name="offset"/>, or <paramref name="blur"/>, is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The magnitude of a coordinate of <paramref name="offset"/> exceeds 16777216, or <paramref name="blur"/> is negative or exceeds 10000.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="ImageResourceLimitException">The layer or the working storage would exceed the allocation limit.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void InnerShadow<TState>(Rgba64 color, PointD offset, double blur, TState state, DrawingAction<TState> action)
+        where TState : allows ref struct
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        var session = GetSession();
+        session.PushShadow(color, offset, blur, isInner: true);
+        var isDrawn = false;
+        try
+        {
+            action(this, state);
+            isDrawn = true;
+        }
+        finally
+        {
+            session.PopLayer(isDrawn);
+        }
+    }
+
+    /// <summary>Runs a callback whose drawings have hard edges, or antialiased ones: pixel art, a mask of whole pixels, an image whose colors must stay those of a palette.</summary>
+    /// <remarks>
+    /// <para>
+    /// Without antialiasing, a pixel is painted entirely or not at all: it is painted when the shape covers at least
+    /// half of it (its exact coverage, rounded to the nearest 1/65536, is at least 32768/65536). An opaque paint then
+    /// writes its color and nothing else: no pixel gets a color between the paint and what was under it. This applies
+    /// to the shapes, the strokes, the texts and the edges of the images that are drawn while the callback runs, and
+    /// to the clips that start in it.
+    /// </para>
+    /// <para>
+    /// What is not an edge is unchanged: the opacity of a paint, of an image or of a layer, the blur of a shadow, the
+    /// pixels inside an image, and the glyphs a font draws with its own colors. A line thinner than half a pixel
+    /// covers no pixel by half, and is not drawn.
+    /// </para>
+    /// </remarks>
+    /// <param name="enabled"><see langword="false"/> for hard edges; <see langword="true"/> (what a canvas starts with) for antialiased ones, inside a callback that turned them off.</param>
+    /// <param name="action">The callback that draws. It must not be asynchronous and must not retain the canvas.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. The callback is not run.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void Antialiasing(bool enabled, DrawingAction action)
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        var session = GetSession();
+        var previous = session.SetAntialiasing(enabled);
+        try
+        {
+            action(this);
+        }
+        finally
+        {
+            session.RestoreAntialiasing(previous);
+        }
+    }
+
+    /// <summary>Runs a callback whose drawings have hard edges, or antialiased ones, passing caller state to avoid closure allocations.</summary>
+    /// <typeparam name="TState">The type of the state.</typeparam>
+    /// <param name="enabled"><see langword="false"/> for hard edges; <see langword="true"/> for antialiased ones.</param>
+    /// <param name="state">The state passed to <paramref name="action"/>.</param>
+    /// <param name="action">The callback that draws. Use a static lambda to avoid allocations. It must not retain the canvas.</param>
+    /// <remarks>See <see cref="Antialiasing(bool, DrawingAction)"/>.</remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. The callback is not run.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void Antialiasing<TState>(bool enabled, TState state, DrawingAction<TState> action)
+        where TState : allows ref struct
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        var session = GetSession();
+        var previous = session.SetAntialiasing(enabled);
+        try
+        {
+            action(this, state);
+        }
+        finally
+        {
+            session.RestoreAntialiasing(previous);
+        }
+    }
+
+    /// <summary>Runs a callback whose paints are combined with the pixels in a numeric space: the stored sample values, or linear light.</summary>
+    /// <remarks>
+    /// <para>
+    /// With <see cref="CompositingSpace.LinearSrgb"/>, the samples of a paint and of the pixels it is drawn on are
+    /// taken as sRGB values, converted to linear light, combined (coverage, opacity, blend mode and operator, with the
+    /// formulas of the stored values), and the result is converted back. The edge between two colors, a translucent
+    /// paint and the blur of a shadow then mix light as light mixes: red over green goes through a yellow instead of
+    /// a dark olive, and white text on black keeps its weight. The alpha is not a color and is combined as it is.
+    /// </para>
+    /// <para>
+    /// The colors of the brushes are still sample values in the color space of the image; a gradient mixes its stops
+    /// as its <see cref="GradientBrush.ColorSpace"/> says, and an image is interpolated on its stored values. Layers
+    /// are images of sRGB samples too: a drawing made on a layer is combined in linear light on the layer, and the
+    /// layer on the canvas. The arithmetic is in double precision, and uses the power function of the platform: a
+    /// sample within about 1e-12 of a rounding boundary can differ by one from a platform to another. A pixel that a
+    /// shape does not touch is still left untouched, and an opaque paint that covers a pixel entirely still writes its
+    /// color exactly.
+    /// </para>
+    /// </remarks>
+    /// <param name="space">The space the paints are combined with the pixels in.</param>
+    /// <param name="action">The callback that draws. It must not be asynchronous and must not retain the canvas.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="space"/> is not a defined <see cref="CompositingSpace"/>.</exception>
+    /// <exception cref="UnsupportedImageFeatureException"><see cref="CompositingSpace.LinearSrgb"/> is requested for an image whose ICC profile or color description is not recognized as sRGB. The callback is not run.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void Compositing(CompositingSpace space, DrawingAction action)
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        var session = GetSession();
+        var previous = session.SetCompositingSpace(space);
+        try
+        {
+            action(this);
+        }
+        finally
+        {
+            session.RestoreCompositingSpace(previous);
+        }
+    }
+
+    /// <summary>Runs a callback whose paints are combined with the pixels in a numeric space, passing caller state to avoid closure allocations.</summary>
+    /// <typeparam name="TState">The type of the state.</typeparam>
+    /// <param name="space">The space the paints are combined with the pixels in.</param>
+    /// <param name="state">The state passed to <paramref name="action"/>.</param>
+    /// <param name="action">The callback that draws. Use a static lambda to avoid allocations. It must not retain the canvas.</param>
+    /// <remarks>See <see cref="Compositing(CompositingSpace, DrawingAction)"/>.</remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="space"/> is not a defined <see cref="CompositingSpace"/>.</exception>
+    /// <exception cref="UnsupportedImageFeatureException"><see cref="CompositingSpace.LinearSrgb"/> is requested for an image whose ICC profile or color description is not recognized as sRGB. The callback is not run.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void Compositing<TState>(CompositingSpace space, TState state, DrawingAction<TState> action)
+        where TState : allows ref struct
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        var session = GetSession();
+        var previous = session.SetCompositingSpace(space);
+        try
+        {
+            action(this, state);
+        }
+        finally
+        {
+            session.RestoreCompositingSpace(previous);
         }
     }
 

@@ -147,6 +147,163 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void DrawChartDrawsACurveItsAreaAndItsAxes()
+    {
+        var output = GetPath("chart.png");
+        Examples.DrawChart(output);
+
+        using var image = Image.Load<Rgba32>(output);
+        Assert.Equal(new Size(240, 140), image.Size);
+        var frame = image.Frames[0];
+
+        // The curve goes through its values, and has a disk of 9 pixels across at both ends
+        Assert.Equal(Colors.Crimson, frame[110, 80]);
+        Assert.Equal(Colors.Crimson, frame[150, 30]);
+        Assert.Equal(Colors.Crimson, frame[27, 97]);
+        Assert.Equal(Colors.Crimson, frame[192, 52]);
+
+        // The axes end with the head of an arrow: its tip is the end of the line, and it is wider than the line
+        Assert.Equal(Colors.DimGray, frame[100, 120]);
+        Assert.Equal(Colors.DimGray, frame[216, 122]);
+        Assert.Equal(Colors.White, frame[218, 126]);
+        Assert.Equal(Colors.White, frame[227, 120]);
+        Assert.Equal(Colors.DimGray, frame[20, 17]);
+        Assert.Equal(Colors.White, frame[20, 9]);
+
+        // The area is hatched: stripes of its color and of the background, along diagonals
+        var stripes = Enumerable.Range(60, 60).Select(x => frame[x, 110]).ToArray();
+        Assert.Contains(Colors.LightSteelBlue, stripes);
+        Assert.Contains(Colors.White, stripes);
+
+        // Its outline is on the inside of its path: two pixels from its left side, none beyond it
+        Assert.Equal(Colors.SteelBlue, frame[31, 110]);
+        Assert.Equal(Colors.White, frame[28, 110]);
+        Assert.Equal(Colors.White, frame[192, 110]);
+        Assert.Equal(Colors.SteelBlue, frame[188, 110]);
+    }
+
+    [Fact]
+    public void DrawGlassPanelBlursWhatIsBehindThePanelOnly()
+    {
+        // A photo of stripes of one pixel: as sharp as a picture gets
+        var photoPath = GetPath("stripes.png");
+        using (var photo = new Image<Rgba32>(200, 120))
+        {
+            photo.Frames[0].ProcessPixelRows(pixels =>
+            {
+                for (var y = 0; y < pixels.Height; y++)
+                {
+                    var row = pixels.GetRowSpan(y);
+                    for (var x = 0; x < row.Length; x++)
+                    {
+                        row[x] = (x & 1) == 0 ? new Rgba32(20, 40, 160) : new Rgba32(230, 240, 255);
+                    }
+                }
+            });
+            photo.Save(photoPath);
+        }
+
+        var output = GetPath("glass.png");
+        Examples.DrawGlassPanel(photoPath, output);
+
+        using var image = Image.Load<Rgba32>(output);
+        Assert.Equal(new Size(200, 120), image.Size);
+        var frame = image.Frames[0];
+
+        // Outside the panel, the photo is untouched
+        Assert.Equal(new Rgba32(20, 40, 160), frame[100, 110]);
+        Assert.Equal(new Rgba32(230, 240, 255), frame[101, 110]);
+        Assert.Equal(new Rgba32(20, 40, 160), frame[16, 16]);
+
+        // Inside, the stripes are blurred into one color, lightened by the glass
+        Assert.InRange(Math.Abs(frame[120, 40].R - frame[121, 40].R), 0, 2);
+        Assert.InRange(frame[120, 40].R, 140, 190);
+
+        // The light is the brightest at its center, and still shows 10 pixels away
+        Assert.True(frame[46, 40].R > frame[120, 40].R + 20);
+        Assert.True(frame[46, 40].B < frame[120, 40].B);
+        Assert.True(frame[58, 40].R > frame[120, 40].R);
+
+        // The level of the gauge is green at its left and gone at its right, where the track shows
+        var left = frame[40, 72];
+        var right = frame[164, 72];
+        Assert.True(left.G > left.R + 40);
+        Assert.InRange(right.R, 225, 245);
+        Assert.InRange(right.G - right.R, 0, 4);
+
+        // The shadow of the edge falls inside the track, from its top: its first rows are darker
+        Assert.True(frame[164, 63].R < right.R - 20);
+    }
+
+    [Fact]
+    public void DrawOnScreenDrawsTheScreenshotBetweenItsFourCorners()
+    {
+        var photoPath = GetPath("desk.png");
+        using (var photo = new Image<Rgba32>(220, 180, new Rgba32(90, 80, 70)))
+        {
+            photo.Save(photoPath);
+        }
+
+        // A screenshot of four quarters, each of a color
+        var screenshotPath = GetPath("screenshot.png");
+        Rgba32[] quarters = [Colors.Crimson, Colors.Gold, Colors.SeaGreen, Colors.SteelBlue];
+        using (var screenshot = new Image<Rgba32>(640, 400))
+        {
+            screenshot.Draw(canvas =>
+            {
+                canvas.FillRectangle(quarters[0], new Rectangle(0, 0, 320, 200));
+                canvas.FillRectangle(quarters[1], new Rectangle(320, 0, 320, 200));
+                canvas.FillRectangle(quarters[2], new Rectangle(320, 200, 320, 200));
+                canvas.FillRectangle(quarters[3], new Rectangle(0, 200, 320, 200));
+            });
+            screenshot.Save(screenshotPath);
+        }
+
+        var output = GetPath("screen.png");
+        Examples.DrawOnScreen(photoPath, screenshotPath, output);
+
+        using var image = Image.Load<Rgba32>(output);
+        Assert.Equal(new Size(220, 180), image.Size);
+        var frame = image.Frames[0];
+
+        // Each quarter is next to its corner of the quadrilateral, and the photo is untouched around it
+        Assert.Equal(quarters[0], frame[46, 38]);
+        Assert.Equal(quarters[1], frame[172, 50]);
+        Assert.Equal(quarters[2], frame[170, 126]);
+        Assert.Equal(quarters[3], frame[42, 140]);
+        Assert.Equal(new Rgba32(90, 80, 70), frame[30, 30]);
+        Assert.Equal(new Rgba32(90, 80, 70), frame[186, 140]);
+        Assert.Equal(new Rgba32(90, 80, 70), frame[110, 34]);
+    }
+
+    [Fact]
+    public void DrawSpriteKeepsTheColorsOfItsShapesAndMixesItsLineAsLight()
+    {
+        var output = GetPath("sprite.png");
+        Examples.DrawSprite(output);
+
+        using var image = Image.Load<Rgba32>(output);
+        var frame = image.Frames[0];
+
+        // Under the line, every pixel is one of the three colors of the sprite
+        for (var y = 8; y < 32; y++)
+        {
+            for (var x = 0; x < 32; x++)
+            {
+                Assert.Contains(frame[x, y], new[] { Colors.Black, Colors.Gold, Colors.Crimson });
+            }
+        }
+
+        Assert.Equal(Colors.Gold, frame[16, 24]);
+        Assert.Equal(Colors.Crimson, frame[16, 16]);
+
+        // The line covers a part of two rows of each column: in linear light, the two grays add up to more than white
+        var pair = frame[16, 3].R + frame[16, 4].R;
+        Assert.InRange(frame[16, 3].R, 1, 254);
+        Assert.True(pair > 300, $"{frame[16, 3].R} + {frame[16, 4].R}");
+    }
+
+    [Fact]
     public void DrawBadgeDrawsACardItsShadowAndAFadedMark()
     {
         var output = GetPath("badge.png");

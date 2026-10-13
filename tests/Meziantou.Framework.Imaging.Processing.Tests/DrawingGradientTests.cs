@@ -218,6 +218,84 @@ public sealed class DrawingGradientTests
     }
 
     [Fact]
+    public void ARadialGradientStartsOnTheCircleOfItsFocalRadius()
+    {
+        // Around the same point, the gradient goes from the circle of radius 2 to the circle of radius 10: the centers
+        // of the pixels of the row are at x + 1/2 - 1/2 = x from the center, and the parameter is (x - 2) / 8.
+        //   x = 0, 1: inside the first circle, padded to 0 | x = 2: 0 | x = 3: 1/8 -> 31.875 -> 32 | x = 6: 1/2 -> 128
+        var brush = new RadialGradientBrush(new PointD(0.5, 0.5), 10, BlackToWhite) { FocalRadius = 2 };
+        AssertFill(12, 1, brush, [[0, 0, 0, 32, 64, 96, 128, 159, 191, 223, 255, 255]]);
+        Assert.Equal(2, brush.FocalRadius);
+        Assert.Equal(0, new RadialGradientBrush(new PointD(0.5, 0.5), 10, BlackToWhite).FocalRadius);
+
+        // Inside the first circle the parameter is negative: the gradient goes on with the other spread modes
+        //   x = 1: -1/8, reflected to 1/8 -> 32, repeated to 7/8 -> 223 | x = 0: -1/4 -> 64, or 3/4 -> 191
+        AssertFill(4, 1, new RadialGradientBrush(new PointD(0.5, 0.5), 10, BlackToWhite) { FocalRadius = 2, SpreadMode = GradientSpreadMode.Reflect }, [[64, 32, 0, 32]]);
+        AssertFill(4, 1, new RadialGradientBrush(new PointD(0.5, 0.5), 10, BlackToWhite) { FocalRadius = 2, SpreadMode = GradientSpreadMode.Repeat }, [[191, 223, 0, 32]]);
+
+        // The circle of the focal point must be strictly inside the circle of the gradient, in whichever order they are set
+        Assert.Throws<ArgumentOutOfRangeException>(() => new RadialGradientBrush(new PointD(4, 4), 2, BlackToWhite) { FocalRadius = 2 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new RadialGradientBrush(new PointD(4, 4), 2, BlackToWhite) { FocalRadius = -1 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new RadialGradientBrush(new PointD(4, 4), 5, BlackToWhite) { FocalPoint = new PointD(7, 4), FocalRadius = 2 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new RadialGradientBrush(new PointD(4, 4), 5, BlackToWhite) { FocalRadius = 2, FocalPoint = new PointD(7, 4) });
+        Assert.Throws<ArgumentException>(() => new RadialGradientBrush(new PointD(4, 4), 5, BlackToWhite) { FocalRadius = double.NaN });
+        Assert.Equal(1.5, new RadialGradientBrush(new PointD(4, 4), 5, BlackToWhite) { FocalRadius = 1.5, FocalPoint = new PointD(7, 4) }.FocalRadius);
+        Assert.Equal(0, new RadialGradientBrush(new PointD(4, 4), 0, BlackToWhite) { FocalRadius = 0 }.FocalRadius);
+    }
+
+    [Fact]
+    public void APositionOfAGradientBetweenTwoCirclesIsOnTheCircleOfItsParameter()
+    {
+        // The definition: the position of parameter t is on the circle centered t of the way from the focal point to the
+        // center, whose radius goes from the focal radius to the radius. A black to white gradient on 16-bit gray pixels
+        // gives t within 1/131070.
+        GradientStop[] stops = [new(0, new Rgba64(0, 0, 0)), new(1, new Rgba64(65535, 65535, 65535))];
+        var random = new Random(97531);
+        for (var index = 0; index < 40; index++)
+        {
+            var center = new PointD(random.NextDouble() * 16, random.NextDouble() * 16);
+            var radius = 4 + (random.NextDouble() * 16);
+            var focalRadius = (0.05 + (random.NextDouble() * 0.5)) * radius;
+            var angle = random.NextDouble() * 2 * Math.PI;
+            var distance = random.NextDouble() * 0.9 * (radius - focalRadius);
+            var focal = new PointD(center.X + (distance * Math.Cos(angle)), center.Y + (distance * Math.Sin(angle)));
+            var brush = new RadialGradientBrush(center, radius, stops) { FocalPoint = focal, FocalRadius = focalRadius };
+            using var image = new Image<Gray16>(16, 16, new Gray16(0));
+            image.Frames[0].Draw(canvas => canvas.Fill(brush), Ct);
+            var between = 0;
+            for (var y = 0; y < 16; y++)
+            {
+                for (var x = 0; x < 16; x++)
+                {
+                    var value = image.Frames[0][x, y].Value;
+                    var position = new PointD(x + 0.5, y + 0.5);
+                    if (value == 65535)
+                    {
+                        // Clamped: on the circle of the gradient or outside it
+                        Assert.True(position.DistanceTo(center) >= radius - 1e-3, $"case {index}, pixel ({x}, {y})");
+                        continue;
+                    }
+
+                    if (value == 0)
+                    {
+                        // Clamped: on the circle of the focal point or inside it
+                        Assert.True(position.DistanceTo(focal) <= focalRadius + 1e-3, $"case {index}, pixel ({x}, {y})");
+                        continue;
+                    }
+
+                    var t = value / 65535.0;
+                    var circleCenter = focal + ((center - focal) * t);
+                    var circleRadius = focalRadius + (t * (radius - focalRadius));
+                    Assert.True(Math.Abs(position.DistanceTo(circleCenter) - circleRadius) <= 1e-3, $"case {index}, pixel ({x}, {y}): t {t}, {position.DistanceTo(circleCenter)} from the center of a circle of radius {circleRadius}");
+                    between++;
+                }
+            }
+
+            Assert.True(between > 0, $"case {index}");
+        }
+    }
+
+    [Fact]
     public void APositionOfAFocalGradientIsOnTheCircleOfItsParameter()
     {
         // The definition: the position of parameter t is on the circle centered t of the way from the focal point to the

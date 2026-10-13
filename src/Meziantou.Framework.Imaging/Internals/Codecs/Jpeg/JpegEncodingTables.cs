@@ -1,7 +1,7 @@
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
-/// The tables of the baseline JPEG encoder: the example quantization tables of ITU-T T.81
+/// The tables of the JPEG encoder: the example quantization tables of ITU-T T.81
 /// Annex K.1 (tables K.1 and K.2) scaled by the quality setting, and the typical Huffman tables of Annex K.3 (tables
 /// K.3 to K.6, given as the <c>BITS</c>/<c>HUFFVAL</c> lists of a DHT segment).
 /// </summary>
@@ -14,9 +14,10 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </para>
 /// <para>
 /// The Huffman tables are fixed (the Annex K typical tables, which cover every symbol a baseline 8-bit scan can produce:
-/// DC categories 0-11, AC run/size symbols with sizes 1-10, ZRL and EOB). Optimized (image-specific) tables are not
-/// produced: they require the statistics of the whole image before its first entropy-coded byte, which contradicts the
-/// streamed, single-pass MCU-row encoding (an extra pass or a buffered image).
+/// DC categories 0-11, AC run/size symbols with sizes 1-10, ZRL and EOB). The baseline process does not produce
+/// optimized (image-specific) tables: they require the statistics of the whole image before its first entropy-coded
+/// byte, which contradicts the streamed, single-pass MCU-row encoding. The progressive process keeps the coefficients of
+/// the image anyway and computes the tables of each scan (<see cref="JpegProgressiveScanEncoder"/>).
 /// </para>
 /// </remarks>
 internal static class JpegEncodingTables

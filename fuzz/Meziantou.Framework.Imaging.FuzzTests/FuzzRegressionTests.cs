@@ -44,10 +44,14 @@ public sealed class FuzzRegressionTests
     {
         var regression = Load().Single(item => item.Id == id);
         var data = File.ReadAllBytes(Root / regression.File);
-        for (var variant = 0; variant < 32; variant++)
+        // Every combination of the reader choices, with whole frames and with every refinement of a frame
+        foreach (var refinements in new[] { 0, 128 })
         {
-            var failure = MutationFuzzTests.RunWithWatchdog(data, variant, out _);
-            Assert.Null(failure, $"{id} (reader variant {variant}): {failure?.Message}");
+            for (var variant = refinements; variant < refinements + 32; variant++)
+            {
+                var failure = MutationFuzzTests.RunWithWatchdog(data, variant, out _);
+                Assert.Null(failure, $"{id} (reader variant {variant}): {failure?.Message}");
+            }
         }
 
         Assert.Equal(regression.ExpectedIdentify, Outcome(() => Image.Identify(data, new ImageIdentifyOptions { Mode = ImageIdentifyMode.FullScan })));

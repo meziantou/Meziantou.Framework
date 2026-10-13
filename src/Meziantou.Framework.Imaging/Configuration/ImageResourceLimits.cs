@@ -38,6 +38,21 @@ public sealed class ImageResourceLimits
     /// <summary>The default maximum number of live library-controlled bytes per allocation scope (512 MiB).</summary>
     public const long DefaultMaxLiveAllocationBytes = 512L * 1024 * 1024;
 
+    /// <summary>The default maximum number of bytes a font keeps in memory (256 MiB).</summary>
+    public const long DefaultMaxFontBytes = 256L * 1024 * 1024;
+
+    /// <summary>The default maximum number of elementary operations to produce one glyph (1,000,000).</summary>
+    public const long DefaultMaxGlyphComplexity = 1_000_000;
+
+    /// <summary>The default maximum length of a text that is laid out, in UTF-16 code units (1,000,000).</summary>
+    public const long DefaultMaxTextLength = 1_000_000;
+
+    /// <summary>The default maximum number of glyphs of a text layout (1,000,000).</summary>
+    public const long DefaultMaxTextGlyphs = 1_000_000;
+
+    /// <summary>The default maximum number of lines of a text layout (100,000).</summary>
+    public const int DefaultMaxTextLines = 100_000;
+
     /// <summary>Gets the default limits.</summary>
     public static ImageResourceLimits Default { get; } = new();
 
@@ -136,6 +151,92 @@ public sealed class ImageResourceLimits
             field = value;
         }
     } = DefaultMaxLiveAllocationBytes;
+
+    /// <summary>
+    /// Gets the maximum number of bytes a font keeps in memory: the size of a font file, once decompressed when it is a
+    /// WOFF or WOFF2 file. Defaults to <see cref="DefaultMaxFontBytes"/>.
+    /// </summary>
+    /// <remarks>The bytes read from the input are bounded by <see cref="MaxEncodedBytes"/>, as for an image.</remarks>
+    /// <exception cref="ArgumentOutOfRangeException">The value is not positive.</exception>
+    public long MaxFontBytes
+    {
+        get;
+        init
+        {
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
+            field = value;
+        }
+    } = DefaultMaxFontBytes;
+
+    /// <summary>
+    /// Gets the maximum number of elementary operations spent to produce one glyph: the points of its outline, the
+    /// components of a composite glyph, the operators of a charstring, the nodes of a color glyph. Defaults to
+    /// <see cref="DefaultMaxGlyphComplexity"/>.
+    /// </summary>
+    /// <remarks>
+    /// A font can describe, in a few bytes, a glyph whose outline is exponentially large (glyphs made of glyphs made of
+    /// glyphs). This limit bounds the work and the memory a hostile font can ask for.
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException">The value is not positive.</exception>
+    public long MaxGlyphComplexity
+    {
+        get;
+        init
+        {
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
+            field = value;
+        }
+    } = DefaultMaxGlyphComplexity;
+
+    /// <summary>
+    /// Gets the maximum length of a text that is laid out, in UTF-16 code units. Defaults to
+    /// <see cref="DefaultMaxTextLength"/>.
+    /// </summary>
+    /// <remarks>The limits of a text layout are those of the configuration its font was loaded with.</remarks>
+    /// <exception cref="ArgumentOutOfRangeException">The value is not positive.</exception>
+    public long MaxTextLength
+    {
+        get;
+        init
+        {
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
+            field = value;
+        }
+    } = DefaultMaxTextLength;
+
+    /// <summary>
+    /// Gets the maximum number of glyphs of a text layout. Defaults to <see cref="DefaultMaxTextGlyphs"/>.
+    /// </summary>
+    /// <remarks>
+    /// A layout keeps the identifier and the position of each of its glyphs: this limit bounds the memory of a layout
+    /// and the work of drawing it.
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException">The value is not positive.</exception>
+    public long MaxTextGlyphs
+    {
+        get;
+        init
+        {
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
+            field = value;
+        }
+    } = DefaultMaxTextGlyphs;
+
+    /// <summary>Gets the maximum number of lines of a text layout. Defaults to <see cref="DefaultMaxTextLines"/>.</summary>
+    /// <remarks>
+    /// A text that needs more lines is an error; <see cref="Typography.TextLayoutOptions.MaxLines"/> is what cuts a text
+    /// at a number of lines.
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException">The value is not positive.</exception>
+    public int MaxTextLines
+    {
+        get;
+        init
+        {
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
+            field = value;
+        }
+    } = DefaultMaxTextLines;
 
     /// <summary>
     /// Validates canvas dimensions against <see cref="MaxWidth"/>, <see cref="MaxHeight"/> and <see cref="MaxFramePixels"/>,

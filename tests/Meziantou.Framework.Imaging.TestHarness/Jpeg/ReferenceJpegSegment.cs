@@ -11,6 +11,7 @@ public sealed record ReferenceJpegSegment(byte Marker, ReadOnlyMemory<byte> Payl
         >= 0xE0 and <= 0xEF => "APP" + (Marker - 0xE0).ToString(CultureInfo.InvariantCulture),
         0xC0 => "SOF0",
         0xC1 => "SOF1",
+        0xC2 => "SOF2",
         0xC4 => "DHT",
         0xDB => "DQT",
         0xDD => "DRI",

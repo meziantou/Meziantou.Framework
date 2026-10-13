@@ -5,9 +5,10 @@ namespace Meziantou.Framework.Imaging.Formats;
 /// <summary>Immutable settings for lossless PNG and APNG encoding.</summary>
 /// <remarks>
 /// <para>
-/// The PNG color type and bit depth follow the pixel format: grayscale for <see cref="Gray8"/>/<see cref="Gray16"/>, RGB for
-/// <see cref="Rgb24"/>, RGBA for <see cref="Rgba32"/>/<see cref="Bgra32"/>, and 16-bit samples for <see cref="Rgba64"/> and
-/// <see cref="Gray16"/>. Encoding never reduces precision or drops alpha. Palette output is not produced in this version.
+/// By default the PNG color type and bit depth follow the pixel format: grayscale for <see cref="Gray8"/>/<see cref="Gray16"/>,
+/// RGB for <see cref="Rgb24"/>, RGBA for <see cref="Rgba32"/>/<see cref="Bgra32"/>, and 16-bit samples for
+/// <see cref="Rgba64"/> and <see cref="Gray16"/>. <see cref="PngPixelLayout.Indexed"/> writes a palette instead, for the
+/// images whose colors it can hold exactly. Encoding never reduces precision, never reduces colors and never drops alpha.
 /// </para>
 /// <para>
 /// Animated output is written as full-canvas frames with freshly computed control data; delta information from a decoded
@@ -28,6 +29,20 @@ public sealed class PngEncoder : ImageEncoder
         {
             if (!Enum.IsDefined(value))
                 throw new ArgumentOutOfRangeException(nameof(value), value, "The animation mode is not valid.");
+
+            field = value;
+        }
+    }
+
+    /// <summary>Gets the pixel layout. Defaults to <see cref="PngPixelLayout.Auto"/>.</summary>
+    /// <exception cref="ArgumentOutOfRangeException">The value is not a defined <see cref="PngPixelLayout"/>.</exception>
+    public PngPixelLayout PixelLayout
+    {
+        get;
+        init
+        {
+            if (!Enum.IsDefined(value))
+                throw new ArgumentOutOfRangeException(nameof(value), value, "The pixel layout is not valid.");
 
             field = value;
         }

@@ -6,8 +6,8 @@ using Meziantou.Framework.Imaging.Formats;
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
-/// The JPEG encoder registration: baseline sequential 8-bit Huffman JPEG (SOF0), grayscale or YCbCr, written by one
-/// streaming session.
+/// The JPEG encoder registration: 8-bit Huffman JPEG, baseline sequential (SOF0) or progressive (SOF2), grayscale or
+/// YCbCr, written by one streaming session.
 /// </summary>
 internal sealed class JpegEncoderCodec : ImageEncoderCodec
 {
@@ -44,7 +44,7 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
     }
 
     /// <summary>
-    /// The encoding state of one baseline JPEG. The frame operation writes SOI and the JFIF APP0
+    /// The encoding state of one JPEG. The frame operation writes SOI and the JFIF APP0
     /// segment, then one metadata segment per <see cref="Encode"/> call (<see cref="JpegMetadataWriter"/>), the tables (DQT,
     /// SOF0, DHT) and the scan header, then the entropy-coded MCUs in bounded steps: each call loads the source rows of an
     /// MCU row (converted and level-shifted into single-precision Y, Cb and Cr rows, the canvas padded to whole MCUs by edge
@@ -52,11 +52,20 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
     /// bit-depth policy, metadata sizes and the working buffers fail on creation, before any output; non-opaque pixels
     /// without a background fail in <see cref="ValidateFrame"/>, before anything of the frame is written.
     /// </summary>
+    /// <remarks>
+    /// A progressive JPEG (<see cref="JpegEncodingProcess.Progressive"/>) has the same quantized coefficients, written in
+    /// several scans. After DQT and SOF2, each call transforms one MCU row into the coefficients of the whole image
+    /// (<see cref="JpegCoefficientPlane"/>, allocated on creation); the source rows are not needed afterwards. Each scan of
+    /// <see cref="JpegProgressiveScanEncoder.GetScript"/> is then coded twice from the coefficients: once to count its
+    /// symbols, one row of blocks per call, then, after the DHT segment of the tables built from the counts and the scan
+    /// header, to write it in bounded steps.
+    /// </remarks>
     private sealed class Session : ImageEncoderSession
     {
         private const byte MarkerSoi = 0xD8;
         private const byte MarkerEoi = 0xD9;
         private const byte MarkerSof0 = 0xC0;
+        private const byte MarkerSof2 = 0xC2;
         private const byte MarkerDht = 0xC4;
         private const byte MarkerDqt = 0xDB;
         private const byte MarkerSos = 0xDA;
@@ -84,6 +93,8 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
         private readonly float[] _block = new float[64];
         private readonly int[] _coefficients = new int[64];
         private readonly int[] _predictions = new int[3];
+        private readonly JpegProgressiveScanEncoder? _scanEncoder;
+        private JpegCoefficientPlane?[] _coefficientPlanes = [];
         private PooledBuffer? _row;
         private PooledBuffer? _planeY;
         private PooledBuffer? _planeCb;
@@ -95,8 +106,9 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
         private int _mcuX;
         private bool _rowLoaded;
         private bool _frameWritten;
-        private ulong _bitBuffer;
-        private int _bitCount;
+        private JpegBitWriter _bits;
+        private int _scanIndex;
+        private ScanPass _scanPass;
 
         public Session(ImageEncoderSessionOptions options)
             : base(options)
@@ -147,6 +159,18 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
                     _planeCb = scope.Rent((int)planeBytes, AllocationKind.Temporary, clear: false);
                     _planeCr = scope.Rent((int)planeBytes, AllocationKind.Temporary, clear: false);
                 }
+
+                if (_encoder.Process == JpegEncodingProcess.Progressive)
+                {
+                    // The grid of a scan of one component alone only has the blocks that hold samples of the image
+                    _scanEncoder = new JpegProgressiveScanEncoder();
+                    _coefficientPlanes = new JpegCoefficientPlane?[_grayscale ? 1 : 3];
+                    _coefficientPlanes[0] = new JpegCoefficientPlane(scope, _mcusX * _h, _mcusY * _v, (_width + 7) / 8, (_height + 7) / 8);
+                    for (var c = 1; c < _coefficientPlanes.Length; c++)
+                    {
+                        _coefficientPlanes[c] = new JpegCoefficientPlane(scope, _mcusX, _mcusY, (((_width + _h - 1) / _h) + 7) / 8, (((_height + _v - 1) / _v) + 7) / 8);
+                    }
+                }
             }
             catch
             {
@@ -162,7 +186,25 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
             Metadata,
             Tables,
             Scan,
+            Transform,
+            ProgressiveScans,
             Trailer,
+        }
+
+        /// <summary>The passes over the blocks of a progressive scan.</summary>
+        private enum ScanPass
+        {
+            /// <summary>The scan is not started.</summary>
+            None,
+
+            /// <summary>The symbols are counted.</summary>
+            Count,
+
+            /// <summary>The tables and the scan header are written.</summary>
+            Header,
+
+            /// <summary>The entropy-coded data is written.</summary>
+            Write,
         }
 
         public override void ValidateFrame(ImageFrame frame, bool isPoster)
@@ -227,11 +269,39 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
 
                 case Step.Tables:
                     WriteQuantizationTables(output);
-                    WriteFrameHeader(output);
+                    if (_scanEncoder is not null)
+                    {
+                        WriteFrameHeader(output, MarkerSof2);
+                        _step = Step.Transform;
+                        return false;
+                    }
+
+                    WriteFrameHeader(output, MarkerSof0);
                     WriteHuffmanTables(output);
-                    WriteScanHeader(output);
+                    WriteScanHeader(output, firstComponent: 0, _grayscale ? 1 : 3, dcTables: true, acTables: true, spectralStart: 0, spectralEnd: 63, approximation: 0);
                     _step = Step.Scan;
                     return false;
+
+                case Step.Transform:
+                    TransformMcuRow();
+                    CancellationToken.ThrowIfCancellationRequested();
+                    if (++_mcuRow < _mcusY)
+                        return false;
+
+                    // Every scan is coded from the coefficients: the frame and the sample rows are not needed any more
+                    _frame = null;
+                    ReleaseSampleBuffers();
+                    _mcuRow = 0;
+                    _step = Step.ProgressiveScans;
+                    return false;
+
+                case Step.ProgressiveScans:
+                    if (!EncodeProgressiveScans(output))
+                        return false;
+
+                    _step = Step.None;
+                    ReleaseBuffers();
+                    return true;
 
                 case Step.Scan:
                     if (!EncodeScan(output))
@@ -273,6 +343,17 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
 
         private void ReleaseBuffers()
         {
+            ReleaseSampleBuffers();
+            foreach (var plane in _coefficientPlanes)
+            {
+                plane?.Dispose();
+            }
+
+            _coefficientPlanes = [];
+        }
+
+        private void ReleaseSampleBuffers()
+        {
             _row?.Dispose();
             _row = null;
             _planeY?.Dispose();
@@ -302,9 +383,9 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
             JpegMetadataWriter.WriteSegment(output, MarkerDqt, payload[..(65 * count)]);
         }
 
-        private void WriteFrameHeader(ImageOutputBuffer output)
+        private void WriteFrameHeader(ImageOutputBuffer output, byte marker)
         {
-            // SOF0: precision 8, height, width, components (identifiers 1, 2, 3 as JFIF requires; chroma 1x1, tables 1)
+            // Precision 8, height, width, components (identifiers 1, 2, 3 as JFIF requires; chroma 1x1, tables 1)
             var count = _grayscale ? 1 : 3;
             Span<byte> payload = stackalloc byte[6 + (3 * 3)];
             payload[0] = 8;
@@ -318,7 +399,7 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
                 payload[8 + (3 * c)] = c == 0 ? (byte)0 : (byte)1;
             }
 
-            JpegMetadataWriter.WriteSegment(output, MarkerSof0, payload[..(6 + (3 * count))]);
+            JpegMetadataWriter.WriteSegment(output, marker, payload[..(6 + (3 * count))]);
         }
 
         private void WriteHuffmanTables(ImageOutputBuffer output)
@@ -336,23 +417,194 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
             JpegMetadataWriter.WriteSegment(output, MarkerDht, payload[..offset]);
         }
 
-        private void WriteScanHeader(ImageOutputBuffer output)
+        /// <summary>Writes the header of a scan of consecutive components (T.81 B.2.3).</summary>
+        /// <param name="output">The output.</param>
+        /// <param name="firstComponent">The index of the first component of the scan.</param>
+        /// <param name="count">The number of components of the scan.</param>
+        /// <param name="dcTables">Whether the scan uses DC tables (0 for the luminance, 1 for the chrominance).</param>
+        /// <param name="acTables">Whether the scan uses AC tables (0 for the luminance, 1 for the chrominance).</param>
+        /// <param name="spectralStart">Ss: 0 for a baseline scan.</param>
+        /// <param name="spectralEnd">Se: 63 for a baseline scan.</param>
+        /// <param name="approximation">Ah and Al: 0 for a baseline scan.</param>
+        private static void WriteScanHeader(ImageOutputBuffer output, int firstComponent, int count, bool dcTables, bool acTables, int spectralStart, int spectralEnd, int approximation)
         {
-            // One interleaved scan of every component: Ss = 0, Se = 63, Ah = Al = 0 (baseline)
-            var count = _grayscale ? 1 : 3;
             Span<byte> payload = stackalloc byte[1 + (2 * 3) + 3];
             payload[0] = (byte)count;
-            for (var c = 0; c < count; c++)
+            for (var i = 0; i < count; i++)
             {
-                payload[1 + (2 * c)] = (byte)(c + 1);
-                payload[2 + (2 * c)] = c == 0 ? (byte)0x00 : (byte)0x11;
+                var component = firstComponent + i;
+                var table = JpegProgressiveScanEncoder.GetTableIndex(component);
+                payload[1 + (2 * i)] = (byte)(component + 1);
+                payload[2 + (2 * i)] = (byte)((dcTables ? table << 4 : 0) | (acTables ? table : 0));
             }
 
             var tail = 1 + (2 * count);
-            payload[tail] = 0;
-            payload[tail + 1] = 63;
-            payload[tail + 2] = 0;
+            payload[tail] = (byte)spectralStart;
+            payload[tail + 1] = (byte)spectralEnd;
+            payload[tail + 2] = (byte)approximation;
             JpegMetadataWriter.WriteSegment(output, MarkerSos, payload[..(tail + 3)]);
+        }
+
+        /// <summary>Transforms the blocks of the next MCU row into the coefficients of the image.</summary>
+        private void TransformMcuRow()
+        {
+            var frame = _frame ?? throw new InvalidOperationException("No JPEG frame is being written.");
+            using (var lease = frame.GetStorage().AcquireLease())
+            {
+                LoadMcuRow(in lease, _mcuRow);
+            }
+
+            var planeY = unsafe(MemoryMarshal.Cast<byte, float>(_planeY!.Span));
+            var luminance = _coefficientPlanes[0]!;
+            for (var mcuX = 0; mcuX < _mcusX; mcuX++)
+            {
+                var x0 = mcuX * 8 * _h;
+                for (var by = 0; by < _v; by++)
+                {
+                    for (var bx = 0; bx < _h; bx++)
+                    {
+                        ExtractBlock(planeY, x0 + (bx * 8), by * 8, factorX: 1, factorY: 1);
+                        StoreBlock(_luminanceQuantization, luminance.GetBlock((_mcuRow * _v) + by, (mcuX * _h) + bx));
+                    }
+                }
+
+                if (!_grayscale)
+                {
+                    ExtractBlock(unsafe(MemoryMarshal.Cast<byte, float>(_planeCb!.Span)), x0, 0, _h, _v);
+                    StoreBlock(_chrominanceQuantization, _coefficientPlanes[1]!.GetBlock(_mcuRow, mcuX));
+                    ExtractBlock(unsafe(MemoryMarshal.Cast<byte, float>(_planeCr!.Span)), x0, 0, _h, _v);
+                    StoreBlock(_chrominanceQuantization, _coefficientPlanes[2]!.GetBlock(_mcuRow, mcuX));
+                }
+            }
+        }
+
+        private void StoreBlock(ReadOnlySpan<ushort> quantization, Span<short> destination)
+        {
+            var coefficients = _coefficients.AsSpan();
+            JpegForwardDct.TransformAndQuantize(_block, quantization, _scratch, coefficients);
+            for (var k = 0; k < 64; k++)
+            {
+                destination[k] = (short)coefficients[k];
+            }
+        }
+
+        /// <returns><see langword="true"/> when the last scan is written.</returns>
+        private bool EncodeProgressiveScans(ImageOutputBuffer output)
+        {
+            var scanEncoder = _scanEncoder!;
+            var scan = JpegProgressiveScanEncoder.GetScript(_grayscale)[_scanIndex];
+
+            // A DC refinement scan has no Huffman-coded symbol: nothing to count and no table
+            var hasTables = scan.Ss > 0 || scan.Ah == 0;
+            if (_scanPass == ScanPass.None)
+            {
+                _scanPass = hasTables ? ScanPass.Count : ScanPass.Header;
+                scanEncoder.BeginScan(scan, counting: hasTables);
+            }
+
+            var interleaved = scan.ComponentCount > 1;
+            var rows = interleaved ? _mcusY : _coefficientPlanes[scan.FirstComponent]!.ScanBlockRows;
+            var columns = interleaved ? _mcusX : _coefficientPlanes[scan.FirstComponent]!.ScanBlocksPerLine;
+            var position = 0;
+            switch (_scanPass)
+            {
+                case ScanPass.Count:
+                    for (var x = 0; x < columns; x++)
+                    {
+                        CodeProgressiveMcu(scan, _mcuRow, x, default, ref position);
+                    }
+
+                    if (++_mcuRow < rows)
+                        return false;
+
+                    scanEncoder.EndScan(default, ref position);
+                    _mcuRow = 0;
+                    _scanPass = ScanPass.Header;
+                    return false;
+
+                case ScanPass.Header:
+                    if (hasTables)
+                    {
+                        WriteProgressiveTables(output, scan);
+                    }
+
+                    WriteScanHeader(output, scan.FirstComponent, scan.ComponentCount, dcTables: scan.Ss == 0 && scan.Ah == 0, acTables: scan.Ss > 0, scan.Ss, scan.Se, (scan.Ah << 4) | scan.Al);
+                    scanEncoder.BeginScan(scan, counting: false);
+                    _scanPass = ScanPass.Write;
+                    return false;
+            }
+
+            var blocksPerMcu = interleaved ? (_h * _v) + 2 : 1;
+            var coded = 0;
+            while (_mcuRow < rows)
+            {
+                while (_mcuX < columns)
+                {
+                    // Bounded output per call: stop once the buffer should be flushed (at least one MCU per call)
+                    if (coded > 0 && output.ShouldFlush)
+                        return false;
+
+                    var span = output.GetSpan(blocksPerMcu * JpegProgressiveScanEncoder.MaxBlockBytes);
+                    position = 0;
+                    CodeProgressiveMcu(scan, _mcuRow, _mcuX, span, ref position);
+                    output.Advance(position);
+                    _mcuX++;
+                    coded++;
+                }
+
+                _mcuX = 0;
+                _mcuRow++;
+                CancellationToken.ThrowIfCancellationRequested();
+            }
+
+            var end = output.GetSpan(JpegProgressiveScanEncoder.MaxBlockBytes);
+            position = 0;
+            scanEncoder.EndScan(end, ref position);
+            output.Advance(position);
+            _mcuRow = 0;
+            _scanPass = ScanPass.None;
+            _scanIndex++;
+            return _scanIndex == JpegProgressiveScanEncoder.GetScript(_grayscale).Length;
+        }
+
+        /// <summary>Codes one MCU of a progressive scan: the blocks of every component for an interleaved scan, else one block (T.81 A.2).</summary>
+        private void CodeProgressiveMcu(JpegProgressiveScan scan, int row, int column, Span<byte> destination, ref int position)
+        {
+            var scanEncoder = _scanEncoder!;
+            if (scan.ComponentCount == 1)
+            {
+                scanEncoder.CodeBlock(scan.FirstComponent, _coefficientPlanes[scan.FirstComponent]!.GetBlock(row, column), destination, ref position);
+                return;
+            }
+
+            var luminance = _coefficientPlanes[0]!;
+            for (var by = 0; by < _v; by++)
+            {
+                for (var bx = 0; bx < _h; bx++)
+                {
+                    scanEncoder.CodeBlock(0, luminance.GetBlock((row * _v) + by, (column * _h) + bx), destination, ref position);
+                }
+            }
+
+            scanEncoder.CodeBlock(1, _coefficientPlanes[1]!.GetBlock(row, column), destination, ref position);
+            scanEncoder.CodeBlock(2, _coefficientPlanes[2]!.GetBlock(row, column), destination, ref position);
+        }
+
+        /// <summary>Writes the DHT segment of the tables of a progressive scan: DC tables for a DC first scan, the AC table of the component otherwise.</summary>
+        private void WriteProgressiveTables(ImageOutputBuffer output, JpegProgressiveScan scan)
+        {
+            var scanEncoder = _scanEncoder!;
+            Span<byte> payload = stackalloc byte[2 * (17 + 256)];
+            var offset = 0;
+            var tableClass = scan.Ss == 0 ? 0 : 1;
+            var first = JpegProgressiveScanEncoder.GetTableIndex(scan.FirstComponent);
+            var last = JpegProgressiveScanEncoder.GetTableIndex(scan.FirstComponent + scan.ComponentCount - 1);
+            for (var table = first; table <= last; table++)
+            {
+                WriteHuffmanTable(payload, ref offset, tableClass, table, scanEncoder.GetTable(table));
+            }
+
+            JpegMetadataWriter.WriteSegment(output, MarkerDht, payload[..offset]);
         }
 
         /// <returns><see langword="true"/> when the last MCU was coded and the entropy-coded segment padded.</returns>
@@ -392,15 +644,10 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
             }
 
             // Pad the last byte with 1-bits (T.81 F.1.2.3)
-            if (_bitCount > 0)
-            {
-                var span = output.GetSpan(2);
-                var position = 0;
-                var padding = 8 - _bitCount;
-                WriteBits(span, ref position, (1u << padding) - 1, padding);
-                output.Advance(position);
-            }
-
+            var end = output.GetSpan(2);
+            var endPosition = 0;
+            _bits.Pad(end, ref endPosition);
+            output.Advance(endPosition);
             return true;
         }
 
@@ -581,7 +828,7 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
             if (size > 0)
             {
                 var bits = value < 0 ? (uint)(value - 1) & ((1u << size) - 1) : (uint)value;
-                WriteBits(destination, ref position, bits, size);
+                _bits.Write(destination, ref position, bits, size);
             }
         }
 
@@ -591,24 +838,7 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
             if (length == 0)
                 throw new InvalidOperationException(string.Create(CultureInfo.InvariantCulture, $"The Huffman table has no code for the symbol 0x{symbol:X2}."));
 
-            WriteBits(destination, ref position, table.GetCode(symbol), length);
-        }
-
-        /// <summary>Appends bits (most significant first), emitting whole bytes with a stuffed zero after each 0xFF (T.81 F.1.2.3).</summary>
-        private void WriteBits(Span<byte> destination, ref int position, uint bits, int length)
-        {
-            _bitBuffer = (_bitBuffer << length) | bits;
-            _bitCount += length;
-            while (_bitCount >= 8)
-            {
-                _bitCount -= 8;
-                var value = (byte)(_bitBuffer >> _bitCount);
-                destination[position++] = value;
-                if (value == 0xFF)
-                {
-                    destination[position++] = 0;
-                }
-            }
+            _bits.Write(destination, ref position, table.GetCode(symbol), length);
         }
     }
 }

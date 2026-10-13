@@ -22,6 +22,39 @@ internal abstract class JpegXlDecodeObserver : IImageDecodeObserver
     /// <returns><see langword="true"/> to continue the walk; <see langword="false"/> to stop (frame limit reached).</returns>
     public abstract bool OnFrame(JpegXlStructureParser structure, JpegXlFrameHeader frame, JpegXlToc toc, WebPPayloadBuffer sections);
 
+    /// <summary>
+    /// Gets the lengths of the payload of a frame that is shown at which <see cref="OnFramePartial"/> is to be called: the
+    /// lengths at which the sections of one more stage of the frame are complete. Only asked to a sequential reader.
+    /// </summary>
+    /// <returns>The lengths, in increasing order and below the length of the payload; empty when the frame has no stage to show before it is complete.</returns>
+    public virtual long[] GetPayloadCheckpoints(JpegXlStructureParser structure, JpegXlFrameHeader frame, JpegXlToc toc) => [];
+
+    /// <summary>Called when the payload of a frame reaches one of its checkpoints.</summary>
+    /// <param name="structure">The structure parser.</param>
+    /// <param name="frame">The frame header.</param>
+    /// <param name="toc">The table of contents of the frame.</param>
+    /// <param name="sections">The payload received so far.</param>
+    /// <param name="checkpoint">The index of the checkpoint.</param>
+    public virtual void OnFramePartial(JpegXlStructureParser structure, JpegXlFrameHeader frame, JpegXlToc toc, WebPPayloadBuffer sections, int checkpoint)
+    {
+    }
+
+    /// <summary>Gets a value indicating whether the frames are to be given to <see cref="OnFrame"/>: otherwise the parsing stops at the first frame.</summary>
+    public virtual bool WantsFrames => true;
+
+    /// <summary>Gets a value indicating whether the JPEG reconstruction data of the container are to be given to <see cref="OnJpegReconstructionData"/>; they are skipped otherwise.</summary>
+    public virtual bool WantsJpegReconstructionData => false;
+
+    /// <summary>Called with the payload of the <c>jbrd</c> box of the container.</summary>
+    public virtual void OnJpegReconstructionData(ReadOnlySpan<byte> payload)
+    {
+    }
+
+    /// <summary>Called with the payload of the <c>Exif</c> box or of the <c>xml </c> box of the container, decompressed, whatever it holds.</summary>
+    public virtual void OnMetadataBox(uint type, ReadOnlySpan<byte> payload)
+    {
+    }
+
     public virtual void OnEnd(JpegXlStructureParser structure)
     {
     }

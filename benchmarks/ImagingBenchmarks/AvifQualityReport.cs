@@ -352,7 +352,7 @@ internal static class AvifQualityReport
         static string Format(double value) => double.IsPositiveInfinity(value) ? "lossless" : value.ToString("0.00", CultureInfo.InvariantCulture);
     }
 
-    private static (double Psnr, double Luma, int Alpha) Measure(Rgba32[] source, Rgba32[] decoded)
+    internal static (double Psnr, double Luma, int Alpha) Measure(Rgba32[] source, Rgba32[] decoded)
     {
         double squares = 0, lumaSquares = 0;
         var count = 0;

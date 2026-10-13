@@ -55,6 +55,18 @@ internal sealed class JpegXlDequantMatrices : IDisposable
         return new JpegXlDequantMatrices(scope);
     }
 
+    /// <summary>
+    /// Gets the values of a table that the frame stores by its values (as a recompressed JPEG file does): for each channel,
+    /// the values in the layout of the coefficients, and the number that divides their inverse.
+    /// </summary>
+    public bool TryGetRawTable(int quantTable, out int[][] values, out float denominator)
+    {
+        var encoding = _encodings[quantTable];
+        values = encoding.RawValues ?? [];
+        denominator = encoding.RawDenominator;
+        return encoding.Mode == ModeRaw;
+    }
+
     /// <summary>Reads the description of the matrices from <c>HfGlobal</c>.</summary>
     /// <param name="reader">The reader.</param>
     /// <param name="readRawTable">Reads the Modular image of a table stored by its values.</param>

@@ -4,6 +4,8 @@ using Meziantou.Framework.Imaging.Metadata;
 using Meziantou.Framework.Imaging.Samples;
 using Meziantou.Framework.Imaging.TestHarness.Adapters;
 using Meziantou.Framework.Imaging.TestHarness.Golden;
+using Meziantou.Framework.Imaging.TestHarness.Fixtures;
+using Meziantou.Framework.Imaging.Typography;
 
 namespace Meziantou.Framework.Imaging.Tests.Documentation;
 
@@ -261,6 +263,51 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void SaveProgressiveJpegWritesTheSamePixelsInSeveralScans()
+    {
+        var source = GetPath("photo-source.png");
+        using (var image = new Image<Rgb24>(40, 24))
+        {
+            image.Frames[0].ProcessPixelRows(pixels =>
+            {
+                for (var y = 0; y < pixels.Height; y++)
+                {
+                    var row = pixels.GetRowSpan(y);
+                    for (var x = 0; x < row.Length; x++)
+                    {
+                        row[x] = new Rgb24 { R = (byte)(x * 6), G = (byte)(y * 10), B = (byte)((x + y) * 4) };
+                    }
+                }
+            });
+            image.Save(source);
+        }
+
+        var output = GetPath("progressive.jpg");
+        Examples.SaveProgressiveJpeg(source, output);
+
+        // A progressive frame (SOF2) with ten scans, which decodes to the pixels of the baseline file of the same settings
+        var data = File.ReadAllBytes(output);
+        Assert.True(data.AsSpan().IndexOf([(byte)0xFF, (byte)0xC2, (byte)0x00, (byte)0x11, (byte)0x08]) > 0);
+        Assert.Equal(-1, data.AsSpan().IndexOf([(byte)0xFF, (byte)0xC0, (byte)0x00, (byte)0x11, (byte)0x08]));
+        using var progressive = Image.Load<Rgb24>(output);
+        var baselinePath = GetPath("baseline.jpg");
+        using (var image = Image.Load<Rgb24>(source))
+        {
+            image.Save(baselinePath, new JpegEncoder { Quality = 85 });
+        }
+
+        using var baseline = Image.Load<Rgb24>(baselinePath);
+        Assert.Equal(new Size(40, 24), progressive.Size);
+        for (var y = 0; y < 24; y++)
+        {
+            for (var x = 0; x < 40; x++)
+            {
+                Assert.Equal(baseline.Frames[0][x, y], progressive.Frames[0][x, y]);
+            }
+        }
+    }
+
+    [Fact]
     public void SaveWebPWritesALossyPhotoAndALosslessAnimation()
     {
         var (apngPath, _) = BuildAnimation();
@@ -344,12 +391,21 @@ public sealed class DocumentationExampleTests : IDisposable
         }
 
         var jxl = GetPath("photo.jxl");
+        var lossy = GetPath("photo-lossy.jxl");
         var animated = GetPath("animation.jxl");
-        Assert.Equal("JpegXl 32x16 Rgba64, 16 bits", Examples.SaveJpegXl(photo, jxl, apngPath, animated));
+        Assert.Equal("JpegXl 32x16 Rgba64, 16 bits", Examples.SaveJpegXl(photo, jxl, lossy, apngPath, animated));
         using (var image = Image.Load<Rgba64>(jxl))
         {
             Assert.Equal(ImageFormat.JpegXl, image.Metadata.SourceFormat);
             Assert.Equal(color, image.Frames[0][16, 8]); // 16 bits, lossless
+        }
+
+        using (var image = Image.Load<Rgba64>(lossy))
+        {
+            // Lossy colors are close, and the alpha channel is exact
+            var pixel = image.Frames[0][16, 8];
+            Assert.Equal(color.A, pixel.A);
+            Assert.True(Math.Abs(pixel.R - color.R) < 2048 && Math.Abs(pixel.G - color.G) < 2048 && Math.Abs(pixel.B - color.B) < 2048, pixel.ToString());
         }
 
         using var animation = Image.Load<Rgba32>(animated);
@@ -358,6 +414,48 @@ public sealed class DocumentationExampleTests : IDisposable
         Assert.Equal(3, animation.Animation!.TotalPlays);
         Assert.Equal(new FrameDuration(33, 1000), animation.Frames[1].Metadata.Duration); // nearest millisecond
         Assert.Equal(expected.Frames[1][63, 63], animation.Frames[1][63, 63]);
+    }
+
+    [Fact]
+    public void ShowWhileReadingGivesTheRenderingsOfAProgressiveFile()
+    {
+        // 300x270: several groups, so that a lossy progressive frame has the LF image and three passes
+        var pixels = new Rgba32[300 * 270];
+        for (var i = 0; i < pixels.Length; i++)
+        {
+            var (y, x) = Math.DivRem(i, 300);
+            pixels[i] = new Rgba32((byte)(x ^ y), (byte)(x + y), (byte)(x * 3), 255);
+        }
+
+        using var source = Image.ImportPixelData<Rgba32>(pixels, 300, 270);
+        using var stream = new MemoryStream();
+        source.Save(stream, new JpegXlEncoder { Compression = JpegXlCompression.Lossy, Progressive = true });
+        stream.Position = 0;
+        var seen = new List<(bool IsFinal, int Downsampling)>();
+        Assert.Equal(4, Examples.ShowWhileReading(stream, (image, refinement) =>
+        {
+            Assert.Equal((300, 270), (image.Width, image.Height));
+            seen.Add((refinement.IsFinal, refinement.Downsampling));
+        }));
+        Assert.Equal([(false, 8), (false, 4), (false, 2), (true, 1)], seen);
+
+        // Another format gives its frame at once
+        using var png = new MemoryStream();
+        source.Save(png, new PngEncoder());
+        png.Position = 0;
+        Assert.Equal(1, Examples.ShowWhileReading(png, (_, refinement) => Assert.True(refinement.IsFinal)));
+    }
+
+    [Fact]
+    public void RecompressJpegStoresAJpegFileAndGivesItBack()
+    {
+        var jpeg = GoldenCorpus.Default.Get("jpeg/baseline-420").InputPath;
+        var jxl = GetPath("recompressed.jxl");
+        var rebuilt = GetPath("rebuilt.jpg");
+        Assert.True(Examples.RecompressJpeg(jpeg, jxl, rebuilt));
+        Assert.Equal(File.ReadAllBytes(jpeg), File.ReadAllBytes(rebuilt));
+        Assert.True(JpegXlTranscoder.HasJpegReconstructionData((string)jxl));
+        Assert.Equal(ImageFormat.JpegXl, Image.Identify(jxl).Format);
     }
 
     [Theory]
@@ -448,6 +546,52 @@ public sealed class DocumentationExampleTests : IDisposable
         Assert.Equal(24, File.ReadAllBytes(bmp)[28]); // biBitCount
         Assert.Equal(10, File.ReadAllBytes(tga)[2]); // run-length true color
         Assert.Equal("P7"u8.ToArray(), File.ReadAllBytes(pnm)[..2]); // the frame has alpha, so PAM is the only lossless variant
+    }
+
+    [Fact]
+    public void SaveIndexedPngWritesAPaletteWhenTheColorsFit()
+    {
+        // Two frames of one color each: a 1-bit palette of two entries, shared by the frames
+        var (apngPath, _) = BuildAnimation();
+        var indexed = GetPath("indexed.png");
+        Assert.True(Examples.SaveIndexedPng(apngPath, indexed));
+
+        var data = File.ReadAllBytes(indexed);
+        Assert.Equal((1, 3), (data[24], data[25])); // IHDR bit depth and color type
+        Assert.True(data.AsSpan().IndexOf("PLTE"u8) > 0);
+        var info = Image.Identify(indexed);
+        Assert.Equal(ImageColorModel.Indexed, info.ColorModel);
+        using (var expected = Image.Load<Rgba32>(apngPath))
+        using (var image = Image.Load<Rgba32>(indexed))
+        {
+            Assert.Equal(2, image.Frames.Count);
+            Assert.Equal(expected.Frames[1].Metadata.Duration, image.Frames[1].Metadata.Duration);
+            Assert.Equal(Red, image.Frames[0][0, 0]);
+            Assert.Equal(Blue, image.Frames[1][63, 63]);
+        }
+
+        // A gradient of 1,024 colors does not fit a palette: the example falls back to the layout of the pixel format
+        var gradientPath = GetPath("gradient.png");
+        using (var gradient = new Image<Rgba32>(32, 32))
+        {
+            gradient.Frames[0].ProcessPixelRows(pixels =>
+            {
+                for (var y = 0; y < pixels.Height; y++)
+                {
+                    var row = pixels.GetRowSpan(y);
+                    for (var x = 0; x < row.Length; x++)
+                    {
+                        row[x] = new Rgba32((byte)(x * 8), (byte)(y * 8), 0);
+                    }
+                }
+            });
+
+            gradient.Save(gradientPath);
+        }
+
+        var fallback = GetPath("fallback.png");
+        Assert.False(Examples.SaveIndexedPng(gradientPath, fallback));
+        Assert.Equal((8, 6), (File.ReadAllBytes(fallback)[24], File.ReadAllBytes(fallback)[25]));
     }
 
     [Fact]
@@ -574,6 +718,151 @@ public sealed class DocumentationExampleTests : IDisposable
 
         using var gif = File.OpenRead(gifPath);
         Assert.Equal("Gif 64x64 Rgba32, frames: 2, orientation: TopLeft", Examples.Describe(gif));
+    }
+
+    [Fact]
+    public void DescribeFontReadsNamesAndMetrics()
+    {
+        // The same font in three containers: the values the corpus records for it (fonts/vectors/noto-sans-regular.json)
+        // are 1000 units per em, an ascent of 1069 and a descent of 293, so 17.104 and 4.688 at 16 pixels.
+        var root = FixtureRoot.GetDirectory() / "fonts" / "noto-sans";
+        foreach (var name in (string[])["NotoSans-Regular.subset.ttf", "NotoSans-Regular.subset.woff", "NotoSans-Regular.subset.woff2"])
+        {
+            Assert.Equal("Noto Sans Regular: 425 glyphs, ascent 17.1, descent 4.69, euro sign: True", Examples.DescribeFont(root / name));
+        }
+    }
+
+    [Fact]
+    public void DrawWeightsDrawsHeavierAndHeavierText()
+    {
+        var fontPath = FixtureRoot.GetDirectory() / "fonts" / "noto-sans-variable" / "NotoSans-Variable.subset.ttf";
+        var output = GetPath("weights.png");
+        Examples.DrawWeights(fontPath, output);
+
+        // Five lines of the same word, 38 pixels apart, from the lightest weight of the font to its heaviest: each
+        // line has more ink than the one above it.
+        using var image = Image.Load<Rgba32>(output);
+        Assert.Equal((220, 200), (image.Width, image.Height));
+        var ink = new long[5];
+        image.Frames[0].ProcessPixelRows(pixels =>
+        {
+            for (var y = 0; y < 190; y++)
+            {
+                foreach (var pixel in pixels.GetRowSpan(y))
+                {
+                    ink[y / 38] += 255 - pixel.R;
+                }
+            }
+        });
+        Assert.True(ink[0] > 50_000, $"The first line has an ink of {ink[0]}");
+        for (var i = 1; i < ink.Length; i++)
+        {
+            Assert.True(ink[i] > ink[i - 1] * 1.1, $"The line {i} has an ink of {ink[i]} and the line above it {ink[i - 1]}");
+        }
+    }
+
+    [Fact]
+    public void DrawLabelDrawsTheTextOnAnImageOfItsSize()
+    {
+        var fontPath = FixtureRoot.GetDirectory() / "fonts" / "noto-sans" / "NotoSans-Regular.subset.ttf";
+        var output = GetPath("label.png");
+        Examples.DrawLabel(fontPath, output);
+
+        // Two lines of Noto Sans at 32 pixels: 1000 units per em, an ascent of 1069 and a descent of 293.
+        var layout = TextLayout.Create("Hello, world!\nBonjour", Font.Load(fontPath), 32);
+        Assert.Equal(2, layout.LineCount);
+        Assert.Equal(2 * 32 * 1.362, layout.Height, 1e-9);
+        using var image = Image.Load<Rgba32>(output);
+        Assert.Equal((int)Math.Ceiling(layout.Width) + 16, image.Width);
+        Assert.Equal(104, image.Height);
+
+        // The margin is untouched, and the text is there: blue inside the stem of the H, which starts 8 pixels from the left.
+        Assert.Equal(new Rgba32(255, 255, 255), image.Frames[0][2, 2]);
+        var blue = 0;
+        image.Frames[0].ProcessPixelRows(pixels =>
+        {
+            for (var y = 0; y < pixels.Height; y++)
+            {
+                foreach (var pixel in pixels.GetRowSpan(y))
+                {
+                    blue += pixel == new Rgba32(30, 60, 160) ? 1 : 0;
+                }
+            }
+        });
+        Assert.True(blue > 200, $"Only {blue} pixels have the color of the text");
+    }
+
+    [Fact]
+    public void DrawParagraphWrapsAndPaintsTheSpans()
+    {
+        var fontPath = FixtureRoot.GetDirectory() / "fonts" / "noto-sans" / "NotoSans-Regular.subset.ttf";
+        var output = GetPath("paragraph.png");
+        Examples.DrawParagraph(fontPath, output);
+
+        using var image = Image.Load<Rgba32>(output);
+        Assert.Equal(320, image.Width);
+
+        // Several lines of 18 pixels text, 1.362 times as tall: the height is a whole number of them, plus the margins.
+        var lineCount = (image.Height - 20) / (18 * 1.362);
+        Assert.True(lineCount is > 2.9 and < 6, $"The image is {image.Height} pixels tall");
+
+        // The text is black, and the emphasized word and its underline are red; the margins are untouched.
+        var black = 0;
+        var red = 0;
+        image.Frames[0].ProcessPixelRows(pixels =>
+        {
+            for (var y = 0; y < pixels.Height; y++)
+            {
+                foreach (var pixel in pixels.GetRowSpan(y))
+                {
+                    black += pixel == new Rgba32(0, 0, 0) ? 1 : 0;
+                    red += pixel == new Rgba32(180, 30, 30) ? 1 : 0;
+                }
+            }
+        });
+        Assert.True(black > 500, $"Only {black} pixels are black");
+        Assert.True(red > 20, $"Only {red} pixels are red");
+        Assert.Equal(new Rgba32(255, 255, 255), image.Frames[0][5, 5]);
+    }
+
+    [Fact]
+    public void DrawTextOnPathFollowsTheArch()
+    {
+        var fontPath = FixtureRoot.GetDirectory() / "fonts" / "noto-sans" / "NotoSans-Regular.subset.ttf";
+        var output = GetPath("arch.png");
+        Examples.DrawTextOnPath(fontPath, output);
+
+        using var image = Image.Load<Rgba32>(output);
+        Assert.Equal((400, 170), (image.Width, image.Height));
+
+        // The arch is symmetric around x = 200 and its top is at y = 45; its ends are at y = 150. The text is centered
+        // on it and stands above it: nothing of it is under the ends, and it is as much on the left as on the right.
+        // Only the pixels the turned letters cover entirely have the color of the text.
+        var blue = 0;
+        var sumX = 0L;
+        var lowest = 0;
+        var highest = int.MaxValue;
+        image.Frames[0].ProcessPixelRows(pixels =>
+        {
+            for (var y = 0; y < pixels.Height; y++)
+            {
+                var row = pixels.GetRowSpan(y);
+                for (var x = 0; x < row.Length; x++)
+                {
+                    if (row[x] == new Rgba32(30, 60, 160))
+                    {
+                        blue++;
+                        sumX += x;
+                        lowest = Math.Max(lowest, y);
+                        highest = Math.Min(highest, y);
+                    }
+                }
+            }
+        });
+        Assert.True(blue > 200, $"Only {blue} pixels have the color of the text");
+        Assert.True(lowest < 150, $"The text goes down to {lowest}");
+        Assert.True(highest is > 15 and < 45, $"The text goes up to {highest}");
+        Assert.Equal(200, (double)sumX / blue, 20.0);
     }
 
     [Fact]

@@ -2,6 +2,7 @@ using System.Globalization;
 using Meziantou.Framework.Imaging.Drawing;
 using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.Metadata;
+using Meziantou.Framework.Imaging.Typography;
 
 namespace Meziantou.Framework.Imaging.AotSmoke;
 
@@ -29,6 +30,20 @@ internal static class SmokeTests
         using var gray = Image.ImportPixelData<Gray16>([.. Enumerable.Range(0, 64).Select(i => new Gray16((ushort)(i * 1031)))], 8, 8);
         using var gray16 = Image.Load<Gray16>(Encode(gray, new PngEncoder()));
         CheckEqual(gray, gray16, "16-bit gray PNG round trip");
+
+        // The indexed layout: sixteen colors are stored exactly as 4-bit indexes into a palette
+        using var fewColors = CreatePattern(seed: 3, colors: 16);
+        var indexed = Encode(fewColors, new PngEncoder { PixelLayout = PngPixelLayout.Indexed, Interlaced = true });
+        var indexedInfo = Image.Identify(indexed);
+        Check(indexedInfo.ColorModel == ImageColorModel.Indexed && indexedInfo.BitsPerComponent == 4, "PNG palette identification");
+        using (var decoded = Image.Load<Rgba32>(indexed))
+        {
+            CheckEqual(fewColors, decoded, "PNG palette round trip");
+        }
+
+        // It never reduces colors: more than 256 of them are rejected
+        using var manyColors = CreatePattern(seed: 1);
+        Expect<UnsupportedImageFeatureException>(() => Encode(manyColors, new PngEncoder { PixelLayout = PngPixelLayout.Indexed }));
     }
 
     public static void Apng()
@@ -40,6 +55,13 @@ internal static class SmokeTests
         Check(decoded.Frames.Count == 3 && decoded.Animation?.TotalPlays == 2, "APNG frames and plays");
         CheckEqual(animation, decoded, "APNG round trip");
         Check(decoded.Frames[1].Metadata.Duration == new FrameDuration(1, 10), "APNG duration");
+
+        // The indexed layout: one palette holds the colors of every frame
+        using var fewColors = CreateAnimation(frames: 3, colors: 16);
+        var indexed = Encode(fewColors, new PngEncoder { AnimationMode = PngAnimationMode.Animated, PixelLayout = PngPixelLayout.Indexed });
+        Check(Image.Identify(indexed).ColorModel == ImageColorModel.Indexed, "APNG palette identification");
+        using var indexedDecoded = Image.Load<Rgba32>(indexed);
+        CheckEqual(fewColors, indexedDecoded, "APNG palette round trip");
     }
 
     public static void Gif()
@@ -65,6 +87,10 @@ internal static class SmokeTests
             using var decoded = Image.Load<Rgb24>(encoded);
             var error = MaxError(source, decoded);
             Check(error <= 24, string.Create(CultureInfo.InvariantCulture, $"JPEG {subsampling} reconstruction (max error {error})"));
+
+            // The progressive process codes the same coefficients in several scans
+            using var progressive = Image.Load<Rgb24>(Encode(source, new JpegEncoder { Quality = 95, ChromaSubsampling = subsampling, Process = JpegEncodingProcess.Progressive }));
+            Check(MaxError(decoded, progressive) == 0, $"JPEG {subsampling} progressive output");
         }
 
         using var opaque = CreatePattern(seed: 3);
@@ -236,6 +262,46 @@ internal static class SmokeTests
             var pixel = lossy.Frames[0][x, y];
             Check(Math.Abs(pixel.R - r) <= 1 && Math.Abs(pixel.G - g) <= 1 && Math.Abs(pixel.B - b) <= 1, string.Create(CultureInfo.InvariantCulture, $"JPEG XL lossy sample at ({x}, {y}): {pixel}"));
         }
+
+        // Lossy output in passes, read refinement after refinement: the last one is the image that is loaded at once, and
+        // the alpha channel of lossy output is exact
+        var progressive = Encode(still, new JpegXlEncoder { Compression = JpegXlCompression.Lossy, Quality = 95, Progressive = true });
+        using (var expected = Image.Load<Rgba32>(progressive))
+        using (var destination = new Image<Rgba32>(Width, Height))
+        using (var reader = Image.OpenReader<Rgba32>(new MemoryStream(progressive)))
+        {
+            var refinements = 0;
+            var isFinal = false;
+            while (!isFinal && reader.ReadFrameRefinementInto(destination) is { } refinement)
+            {
+                refinements++;
+                isFinal = refinement.IsFinal;
+            }
+
+            Check(isFinal && refinements >= 1, "JPEG XL refinements");
+            Check(Pixels(expected.Frames[0]).AsSpan().SequenceEqual(Pixels(destination.Frames[0])), "JPEG XL final refinement");
+            var source = Pixels(still.Frames[0]);
+            var decoded = Pixels(expected.Frames[0]);
+            for (var i = 3; i < source.Length; i += 4)
+            {
+                Check(source[i] == decoded[i], "JPEG XL lossy alpha");
+            }
+        }
+
+        // Lossless output in passes: the squeeze transform, exactly undone
+        using (var decoded = Image.Load(Encode(still, new JpegXlEncoder { Progressive = true })))
+        {
+            CheckEqual(still, decoded, "JPEG XL progressive lossless");
+        }
+
+        // A JPEG file recompressed without decoding its pixels, and rebuilt byte for byte
+        var jpeg = Encode(still, new JpegEncoder { Quality = 90, BackgroundColor = new Rgba64(0, 0, 0, 65535) });
+        using var recompressed = new MemoryStream();
+        JpegXlTranscoder.RecompressJpeg(jpeg, recompressed);
+        Check(JpegXlTranscoder.HasJpegReconstructionData(recompressed.ToArray()), "JPEG XL reconstruction data");
+        using var rebuilt = new MemoryStream();
+        Check(JpegXlTranscoder.TryReconstructJpeg(recompressed.ToArray(), rebuilt), "JPEG XL reconstruction");
+        Check(rebuilt.ToArray().AsSpan().SequenceEqual(jpeg), "JPEG XL rebuilt JPEG bytes");
     }
 
     public static void Avif()
@@ -663,6 +729,136 @@ internal static class SmokeTests
 
         // The centers are at 1/8, 3/8, 5/8 and 7/8 of 65535 (ties upward); the last pixel is half covered
         Check(gray.Frames[0][0, 0] == new Gray16(8192) && gray.Frames[0][1, 0] == new Gray16(24576) && gray.Frames[0][2, 0] == new Gray16(40959) && gray.Frames[0][3, 0] == new Gray16(28672), "gradient samples");
+    }
+
+    public static void Text()
+    {
+        // The same font from two containers: A is 12 by 12 pixels at 16 pixels per em, 2 pixels from its origin and 1
+        // pixel under the top of the line; B follows it 2 pixels closer than its advance, by kerning
+        foreach (var data in (byte[][])[SmokeFonts.BoxesWoff2, SmokeFonts.BoxesWoff])
+        {
+            var font = Font.Load(data);
+            Check(font.FamilyName == "Meziantou Boxes" && font.GlyphCount == 13 && font.ContainsGlyph(new Rune('A')), "text: font");
+            var layout = TextLayout.Create("AB\nA", font, 16);
+            Check(layout.Width == 22 && layout.Height == 32 && layout.LineCount == 2 && layout.Baseline == 13 && !layout.HasMissingGlyphs, "text: layout");
+            Check(layout.InkBounds == RectangleD.FromLTRB(2, 1, 21, 29), "text: ink bounds");
+
+            using var image = new Image<Gray8>(24, 32, new Gray8(0));
+            image.Draw(layout, static (canvas, layout) => canvas.FillText(new Rgba32(255, 255, 255), layout, new PointD(0, 0)));
+            var frame = image.Frames[0];
+            Check(frame[2, 1] == new Gray8(255) && frame[13, 12] == new Gray8(255) && frame[14, 12] == new Gray8(0) && frame[15, 5] == new Gray8(255) && frame[2, 17] == new Gray8(255) && frame[0, 0] == new Gray8(0), "text: fill");
+
+            using var fromPath = new Image<Gray8>(24, 32, new Gray8(0));
+            fromPath.Draw(layout.ToPath(new PointD(0, 0)), static (canvas, path) => canvas.Fill(new Rgba32(255, 255, 255), path));
+            CheckEqual(fromPath, image, "text: path");
+        }
+
+        // A wrapped paragraph of two paints with a decoration and a stack of fonts. "AA AB" in 40 pixels: two lines,
+        // aligned on the right; the B of the second line is red and underlined, one pixel thick, 2 pixels under the baseline
+        var boxes = Font.Load(SmokeFonts.BoxesWoff);
+        var rich = new RichTextBuilder()
+            .Append("AA A", new TextStyle(new FontStack(boxes, Font.Load(SmokeFonts.CharstringsOtf)), 16) { Features = [new FontFeature("kern", 0)] })
+            .Append("B", new TextStyle(boxes, 16) { Brush = new SolidBrush(new Rgba32(255, 0, 0)), Decorations = TextDecorations.Underline })
+            .Build();
+        var paragraph = TextLayout.Create(rich, new TextLayoutOptions { MaxWidth = 40, Alignment = TextAlignment.End, Hyphenation = TextHyphenation.Automatic });
+        Check(paragraph.LineCount == 2 && paragraph.Lines[1].Start == 3 && !paragraph.IsTruncated && paragraph.Height == 32, "text: paragraph");
+        using (var wrapped = new Image<Rgba32>(48, 40, new Rgba32(255, 255, 255)))
+        {
+            wrapped.Draw(paragraph, static (canvas, layout) => canvas.FillText(new Rgba32(0, 0, 0), layout, new PointD(0, 0)));
+            Check(Pixels(wrapped.Frames[0]).Any(static value => value == 0) && wrapped.Frames[0][36, 31] == new Rgba32(255, 0, 0), "text: paragraph pixels");
+        }
+
+        // Along a path that goes down: the letters are turned, their top on the right. A is 12 by 12 pixels, 2 pixels
+        // after the start of the path and from the path to 12 pixels on its left
+        using (var turned = new Image<Gray8>(24, 24, new Gray8(0)))
+        {
+            var down = new VectorPathBuilder().MoveTo(4, 2).LineTo(4, 22).Build();
+            turned.Draw((Layout: TextLayout.Create("A", boxes, 16), Path: down), static (canvas, state) => canvas.FillText(new Rgba32(255, 255, 255), state.Layout, state.Path, new TextPathOptions { Overflow = TextPathOverflow.Clip }));
+            using var expected = new Image<Gray8>(24, 24, new Gray8(0));
+            expected.Draw(canvas => canvas.FillRectangle(new Rgba32(255, 255, 255), new RectangleD(4, 4, 12, 12)));
+            CheckEqual(turned, expected, "text: path of the text");
+        }
+
+        // An instance of a variable font: at the heaviest weight, A is the rectangle (80, 0)-(560, 700) of 1000 units
+        // per em and advances by 640 units; at 20 pixels per em, it is drawn from 1.6 to 11.2 and the text is 12.8 wide
+        var variable = Font.Load(SmokeFonts.VariableTtf);
+        var heavy = variable.WithVariations(new FontVariationSetting("wght", 900));
+        Check(variable.VariationAxes is [{ Tag: "wght", Minimum: 100, Default: 400, Maximum: 900 }, { Tag: "wdth" }] && variable.NamedInstances.Count == 3, "text: axes");
+        Check(heavy.Weight == 900 && heavy.Variations[0].Value == 900 && heavy.Metrics.Ascent == 850, "text: instance");
+        var heavyLayout = TextLayout.Create("A", heavy, 20);
+        Check(TextLayout.Create("A", variable, 20).Width == 12 && Math.Abs(heavyLayout.Width - 12.8) < 1e-9, "text: instance advance");
+        Check(Math.Abs(heavyLayout.InkBounds.Left - 1.6) < 1e-9 && Math.Abs(heavyLayout.InkBounds.Right - 11.2) < 1e-9, "text: instance outline");
+        Check(variable.WithVariations(variable.NamedInstances[2]).Variations[1].Value == 200, "text: named instance");
+
+        // A color glyph: at 16 pixels per em, the three layers of A are squares of 12, 8 and 4 pixels, red, green and
+        // the color of the text
+        var color = Font.Load(SmokeFonts.ColorBoxesTtf);
+        Check(color.HasColorGlyphs && color.ColorPalettes is [{ Colors: [{ R: 255, G: 0, B: 0, A: 255 }, ..] }, _], "text: palettes");
+        using (var emoji = new Image<Rgba32>(16, 16, new Rgba32(255, 255, 255)))
+        {
+            emoji.Draw(color, static (canvas, font) => canvas.FillText(new Rgba32(0, 0, 255), "A", font, 16, new PointD(0, 0)));
+            var pixels = emoji.Frames[0];
+            Check(pixels[2, 1] == new Rgba32(255, 0, 0) && pixels[4, 3] == new Rgba32(0, 255, 0) && pixels[6, 5] == new Rgba32(0, 0, 255) && pixels[1, 1] == new Rgba32(255, 255, 255), "text: color glyph");
+        }
+
+        // A glyph that is an image: at the size of its strike, 16 pixels per em, its pixels are those of the canvas
+        using (var bitmap = new Image<Rgba32>(16, 16, new Rgba32(255, 255, 255)))
+        {
+            bitmap.Draw(Font.Load(SmokeFonts.BitmapBoxesTtf), static (canvas, font) => canvas.FillText(new Rgba32(0, 0, 0), "A", font, 16, new PointD(0, 0)));
+            var pixels = bitmap.Frames[0];
+            Check(pixels[2, 1] == new Rgba32(255, 0, 0) && pixels[6, 5] == new Rgba32(0, 255, 0) && pixels[5, 12] == new Rgba32(127, 127, 255) && pixels[1, 1] == new Rgba32(255, 255, 255), "text: bitmap glyph");
+        }
+
+        var hebrew = TextLayout.Create("\u05D0\u05D1 AB", new TextStyle(boxes, 16), new TextLayoutOptions { Direction = TextDirection.RightToLeft });
+        Check(hebrew.Lines[0].IsRightToLeft && hebrew.HasMissingGlyphs, "text: direction");
+
+        // The shaping models of Arabic, Hebrew and Syriac: joining forms, the order of the marks, a precomposed letter,
+        // the forms of alaph. The font has none of these characters: each of the nine letters and two spaces is 8 pixels
+        // wide (the missing glyph, the space), and the marks do not move the pen.
+        var joined = TextLayout.Create("\u0628\u064E\u0651\u0644\u0627 \u05E9\u05BC\u05C1\uFB2C \u070F\u0712\u0710\u0710", boxes, 16);
+        Check(joined.Lines[0].IsRightToLeft && joined.HasMissingGlyphs && joined.Width == 11 * 8, "text: shaping models");
+
+        // Thai and Hangul: a consonant, a tone mark and a sara am (decomposed into a ring, which is a mark, and a vowel),
+        // then the letters of a syllable, which the font has neither as letters nor as a syllable.
+        var syllables = TextLayout.Create("\u0E01\u0E48\u0E33 \u1100\u1161\u11A8", boxes, 16);
+        Check(!syllables.Lines[0].IsRightToLeft && syllables.HasMissingGlyphs && syllables.Width == 6 * 8, "text: syllables");
+
+        // Khmer and Myanmar: a consonant with a subscript ro and a vowel with two parts, a vowel without consonant, then
+        // a consonant and the vowel drawn before it. The marks of these scripts keep their advance: nine times 8 pixels.
+        var stacked = TextLayout.Create("\u1780\u17D2\u179A\u17BE \u17C1 \u1000\u1031", boxes, 16);
+        Check(!stacked.Lines[0].IsRightToLeft && stacked.HasMissingGlyphs && stacked.Width == 9 * 8, "text: stacked syllables");
+
+        // The universal model: a Tibetan letter with a vowel sign, which is a mark and does not move the pen, a Sinhala
+        // letter with the vowel sign drawn before it, and two Mongolian letters that join. Seven times 8 pixels.
+        var clusters = TextLayout.Create("\u0F40\u0F72 \u0D9A\u0DD9 \u1820\u1820", boxes, 16);
+        Check(!clusters.Lines[0].IsRightToLeft && clusters.HasMissingGlyphs && clusters.Width == 7 * 8, "text: clusters");
+
+        // A language, a synthetic bold and oblique, and a dictionary for the scripts without spaces: at 48 pixels per
+        // em, the bold adds 2 pixels to the advance of each letter, and the dictionary lets the line end between two
+        // words, each of one letter here.
+        var styled = new TextStyle(boxes, 48) { Language = "zh-Hant", Synthesis = FontSynthesis.Bold | FontSynthesis.Oblique };
+        var synthesized = TextLayout.Create("AA", styled);
+        Check(synthesized.Width == 100, "text: synthetic bold");
+        using (var bold = new Image<Rgba32>(110, 50))
+        {
+            bold.Draw(synthesized, static (canvas, layout) => canvas.FillText(new Rgba32(255, 255, 255), layout, new PointD(0, 0)));
+            Check(Pixels(bold.Frames[0]).Any(static value => value != 0), "text: synthetic bold drawn");
+        }
+
+        var dictionary = LineBreakDictionary.Parse("\u0E01\n");
+        var thai = TextLayout.Create("\u0E01\u0E01\u0E01", new TextStyle(boxes, 16), new TextLayoutOptions { MaxWidth = 10, LineBreakDictionary = dictionary });
+        Check(thai.LineCount == 3, "text: dictionary line breaks");
+
+        // CFF outlines, stroked, through the overload that lays out the text
+        var cff = Font.Load(SmokeFonts.CharstringsOtf);
+        using var stroked = new Image<Rgba32>(64, 16);
+        stroked.Draw(cff, static (canvas, font) =>
+        {
+            canvas.FillText(new Rgba32(255, 0, 0), "BCDE", font, 12, new PointD(1, 1));
+            canvas.StrokeText(new Pen(new Rgba32(0, 0, 255), 1), TextLayout.Create("BCDE", font, 12), new PointD(1, 1));
+        });
+        Check(Pixels(stroked.Frames[0]).Any(static value => value != 0), "text: CFF");
+        Check(Expect<UnknownImageFormatException>(() => Font.Load([1, 2, 3, 4])) is not null, "text: not a font");
     }
 
     public static void ColorConversion()

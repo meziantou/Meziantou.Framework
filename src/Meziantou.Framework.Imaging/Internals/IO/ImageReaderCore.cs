@@ -186,6 +186,47 @@ internal sealed class ImageReaderCore : IDisposable, IAsyncDisposable
         }
     }
 
+    public FrameRefinement? ReadFrameRefinementInto(Image destination)
+    {
+        Enter(CancellationToken.None);
+        try
+        {
+            ValidateDestination(destination);
+            if (!BeginFrameRead())
+                return null;
+
+            return CompleteRefinement(Run(SequentialRequest.FrameRefinement, destination));
+        }
+        finally
+        {
+            Exit();
+        }
+    }
+
+    public ValueTask<FrameRefinement?> ReadFrameRefinementIntoAsync(Image destination, CancellationToken cancellationToken)
+    {
+        // Argument errors are reported synchronously
+        ValidateDestinationShape(destination);
+        return ReadFrameRefinementIntoCoreAsync(destination, cancellationToken);
+    }
+
+    private async ValueTask<FrameRefinement?> ReadFrameRefinementIntoCoreAsync(Image destination, CancellationToken cancellationToken)
+    {
+        Enter(cancellationToken);
+        try
+        {
+            ValidateDestination(destination);
+            if (!BeginFrameRead())
+                return null;
+
+            return CompleteRefinement(await RunAsync(SequentialRequest.FrameRefinement, destination).ConfigureAwait(false));
+        }
+        finally
+        {
+            Exit();
+        }
+    }
+
     public ValueTask<bool> ReadFrameIntoAsync(Image destination, CancellationToken cancellationToken)
     {
         // Argument errors are reported synchronously
@@ -395,6 +436,16 @@ internal sealed class ImageReaderCore : IDisposable, IAsyncDisposable
     }
 
     /// <summary>Turns the result of a step into the result of a call.</summary>
+    private FrameRefinement? CompleteRefinement(SequentialDecodeEvent result)
+    {
+        // An intermediate rendering of the frame: the frame itself is still to come
+        if (result == SequentialDecodeEvent.Refinement)
+            return new FrameRefinement(isFinal: false, _session.RefinementDownsampling, _session.RefinementPassCount);
+
+        var passCount = _session.RefinementPassCount;
+        return CompleteStep(SequentialRequest.FrameRefinement, result) is null ? null : new FrameRefinement(isFinal: true, downsampling: 1, passCount);
+    }
+
     private Image? CompleteStep(SequentialRequest request, SequentialDecodeEvent result)
     {
         switch (result)

@@ -150,6 +150,14 @@ internal static partial class CommonCorpus
         return Named(new Img(w, h, "gray", 8, pixels), "PatternDetailGray");
     }
 
+    /// <summary>A pattern for 12-bit JPEG fixtures: the 8-bit samples times 16, with low bits that differ from pixel to
+    /// pixel and from channel to channel (an 8-bit bottleneck changes them). The samples are 0 to 4095.</summary>
+    public static Img Deepen(Img img)
+    {
+        var pixels = img.Pixels.Select((p, i) => Px.From(p.ToArray().Select((v, channel) => (v * 16) + (((i % img.Width) * 5 + (i / img.Width) * 3 + channel * 7) % 16)))).ToList();
+        return Named(new Img(img.Width, img.Height, img.Model, 16, pixels), img.PatternName + " 12-bit");
+    }
+
     public static int Clamp8(long value) => (int)Math.Min(255, Math.Max(0, value));
 
     /// <summary>Row-major pixels of a w x h grid (y outer, x inner).</summary>

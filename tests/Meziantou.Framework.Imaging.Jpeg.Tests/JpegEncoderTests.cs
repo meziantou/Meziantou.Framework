@@ -4,6 +4,7 @@ using Meziantou.Framework.Imaging.Internals;
 using Meziantou.Framework.Imaging.Metadata;
 using Meziantou.Framework.Imaging.TestHarness.Adapters;
 using Meziantou.Framework.Imaging.TestHarness.Fixtures;
+using Meziantou.Framework.Imaging.TestHarness.Golden;
 using Meziantou.Framework.Imaging.TestHarness.Jpeg;
 using Meziantou.Framework.Imaging.TestHarness.Pixels;
 using Meziantou.Framework.Imaging.TestHarness.Streams;
@@ -11,7 +12,7 @@ using Meziantou.Framework.Imaging.TestHarness.Streams;
 namespace Meziantou.Framework.Imaging.Tests;
 
 /// <summary>
-/// Baseline JPEG encoding through the public save and writer APIs. Output is validated without the library
+/// Baseline and progressive JPEG encoding through the public save and writer APIs. Output is validated without the library
 /// decoder: the harness reader <see cref="ReferenceJpeg"/> checks the marker structure strictly and decodes the entropy-coded
 /// data to quantized coefficients, which must equal the independent transcription of the encoder contract
 /// (<see cref="JpegEncoderModel"/>: edge replication, JFIF YCbCr, chroma box filter, direct 2-D DCT, Annex K tables scaled
@@ -23,6 +24,7 @@ public sealed class JpegEncoderTests
 {
     private static readonly PixelFormat[] AllFormats = [PixelFormat.Rgba32, PixelFormat.Bgra32, PixelFormat.Rgb24, PixelFormat.Rgba64, PixelFormat.Gray8, PixelFormat.Gray16];
     private static readonly JpegChromaSubsampling[] AllSubsamplings = [JpegChromaSubsampling.Auto, JpegChromaSubsampling.Ratio444, JpegChromaSubsampling.Ratio422, JpegChromaSubsampling.Ratio420];
+    private static readonly JpegEncodingProcess[] AllProcesses = [JpegEncodingProcess.Baseline, JpegEncodingProcess.Progressive];
 
     public static TheoryData<PixelFormat, JpegChromaSubsampling> FormatCases()
     {
@@ -45,9 +47,190 @@ public sealed class JpegEncoderTests
         foreach (var (width, height) in new[] { (1, 1), (7, 5), (8, 8), (16, 16), (17, 9), (33, 31), (2, 40), (40, 3) })
         {
             var pixels = JpegTestPatterns.ToFormat(JpegTestPatterns.PhotoLike(width, height, seed: width + height), format, LowBits);
-            var encoder = new JpegEncoder { Quality = 75, ChromaSubsampling = subsampling, AllowBitDepthReduction = true };
-            var jpeg = Encode(pixels, format, encoder);
-            AssertMatchesModel(jpeg, JpegTestPatterns.ToEncodedSamples(pixels, background: null), encoder, $"{format} {width}x{height} {subsampling}");
+            foreach (var process in AllProcesses)
+            {
+                var encoder = new JpegEncoder { Quality = 75, ChromaSubsampling = subsampling, Process = process, AllowBitDepthReduction = true };
+                var jpeg = Encode(pixels, format, encoder);
+                AssertMatchesModel(jpeg, JpegTestPatterns.ToEncodedSamples(pixels, background: null), encoder, $"{format} {width}x{height} {subsampling} {process}");
+            }
+        }
+    }
+
+    [Fact]
+    public void ProgressiveScansFollowTheDocumentedProgression()
+    {
+        // The scans in the cjpeg scan-script notation: components, then Ss Se Ah Al
+        string[] color = ["0,1,2: 0 0 0 1", "0: 1 5 0 2", "2: 1 63 0 1", "1: 1 63 0 1", "0: 6 63 0 2", "0: 1 63 2 1", "0,1,2: 0 0 1 0", "2: 1 63 1 0", "1: 1 63 1 0", "0: 1 63 1 0"];
+        string[] gray = ["0: 0 0 0 1", "0: 1 5 0 2", "0: 6 63 0 2", "0: 1 63 2 1", "0: 0 0 1 0", "0: 1 63 1 0"];
+        var source = JpegTestPatterns.PhotoLike(40, 24, seed: 4);
+        foreach (var subsampling in AllSubsamplings)
+        {
+            using var image = Rgb(source);
+            var reference = ReferenceJpeg.Parse(Encode(image, new JpegEncoder { ChromaSubsampling = subsampling, Process = JpegEncodingProcess.Progressive }));
+            Assert.True(reference.IsProgressive);
+            Assert.Equal(color, reference.Scans.Select(Describe));
+
+            // SOI, JFIF, DQT and SOF2, then each scan after the Huffman tables computed for it; a DC refinement scan has none
+            Assert.Equal(["APP0", "DQT", "SOF2", "DHT", "SOS", "DHT", "SOS", "DHT", "SOS", "DHT", "SOS", "DHT", "SOS", "DHT", "SOS", "SOS", "DHT", "SOS", "DHT", "SOS", "DHT", "SOS"], reference.SegmentNames);
+
+            // The luminance uses the tables 0 and the chrominance the tables 1, whatever the scan
+            Assert.All(reference.Scans, scan => Assert.All(scan.Components, component =>
+            {
+                var table = component.Index == 0 ? 0 : 1;
+                Assert.Equal((scan.SpectralStart == 0 && scan.SuccessiveHigh == 0 ? table : 0, scan.SpectralStart > 0 ? table : 0), (component.DcTable, component.AcTable));
+            }));
+
+            // The first DHT segment defines the two DC tables of the first scan, the others one AC table
+            var tables = reference.GetSegments(0xC4).Select(segment => segment.Payload.Span[0]).ToArray();
+            Assert.Equal([0x00, 0x10, 0x11, 0x11, 0x10, 0x10, 0x11, 0x11, 0x10], tables);
+        }
+
+        using var grayImage = EncoderSources.CreateImage(JpegTestPatterns.ToFormat(source, PixelFormat.Gray8, LowBits), PixelFormat.Gray8);
+        var grayReference = ReferenceJpeg.Parse(Encode(grayImage, new JpegEncoder { Process = JpegEncodingProcess.Progressive }));
+        Assert.Equal(gray, grayReference.Scans.Select(Describe));
+        Assert.Equal(["APP0", "DQT", "SOF2", "DHT", "SOS", "DHT", "SOS", "DHT", "SOS", "DHT", "SOS", "SOS", "DHT", "SOS"], grayReference.SegmentNames);
+
+        // The baseline process is unchanged: one scan and the four typical tables in one segment
+        using var baseline = Rgb(source);
+        var baselineReference = ReferenceJpeg.Parse(Encode(baseline, new JpegEncoder()));
+        Assert.False(baselineReference.IsProgressive);
+        Assert.Equal(["0,1,2: 0 63 0 0"], baselineReference.Scans.Select(Describe));
+        Assert.Equal(["APP0", "DQT", "SOF0", "DHT", "SOS"], baselineReference.SegmentNames);
+        Assert.Throws<ArgumentOutOfRangeException>(() => new JpegEncoder { Process = (JpegEncodingProcess)2 });
+
+        static string Describe(ReferenceJpegScan scan)
+            => string.Create(CultureInfo.InvariantCulture, $"{string.Join(',', scan.Components.Select(component => component.Index))}: {scan.SpectralStart} {scan.SpectralEnd} {scan.SuccessiveHigh} {scan.SuccessiveLow}");
+    }
+
+    [Theory]
+    [InlineData(JpegChromaSubsampling.Ratio444, 100)]
+    [InlineData(JpegChromaSubsampling.Ratio422, 90)]
+    [InlineData(JpegChromaSubsampling.Ratio420, 40)]
+    [InlineData(JpegChromaSubsampling.Ratio420, 3)]
+    public void ProgressiveOutputCodesTheCoefficientsOfTheBaselineOutput(JpegChromaSubsampling subsampling, int quality)
+    {
+        // Sizes with partial MCUs: the luminance grid of whole MCUs then has blocks that hold no sample of the image, whose
+        // AC coefficients no progressive scan codes
+        foreach (var (width, height) in new[] { (1, 1), (9, 9), (17, 8), (24, 40), (70, 51) })
+        {
+            foreach (var source in new[] { JpegTestPatterns.PhotoLike(width, height, seed: 21), Noise(width, height, seed: 22) })
+            {
+                using var image = Rgb(source);
+                var baseline = ReferenceJpeg.Parse(Encode(image, new JpegEncoder { Quality = quality, ChromaSubsampling = subsampling }));
+                var progressive = ReferenceJpeg.Parse(Encode(image, new JpegEncoder { Quality = quality, ChromaSubsampling = subsampling, Process = JpegEncodingProcess.Progressive }));
+                var expected = baseline.DecodeCoefficients();
+                var actual = progressive.DecodeCoefficients();
+                for (var c = 0; c < expected.Count; c++)
+                {
+                    Assert.Equal((expected[c].BlocksX, expected[c].BlocksY), (actual[c].BlocksX, actual[c].BlocksY));
+                    Assert.Equal(((progressive.GetComponentWidth(c) + 7) / 8, (progressive.GetComponentHeight(c) + 7) / 8), (actual[c].AcBlocksX, actual[c].AcBlocksY));
+                    for (var by = 0; by < expected[c].BlocksY; by++)
+                    {
+                        for (var bx = 0; bx < expected[c].BlocksX; bx++)
+                        {
+                            var coded = bx < actual[c].AcBlocksX && by < actual[c].AcBlocksY;
+                            var block = actual[c].GetBlock(bx, by);
+                            Assert.Equal(expected[c].GetBlock(bx, by)[0], block[0]);
+                            Assert.True(coded ? expected[c].GetBlock(bx, by).SequenceEqual(block) : !block[1..].ContainsAnyExcept(0), $"{width}x{height} component {c} block {bx},{by}");
+                        }
+                    }
+                }
+
+                // Same coefficients for every sample of the image: the same pixels
+                Assert.Equal(baseline.DecodePixels().Span, progressive.DecodePixels().Span);
+            }
+        }
+    }
+
+    [Fact]
+    public void ProgressiveEndOfBandRunsAreSplitAtTheirLongestCode()
+    {
+        // A flat image: every block ends each AC band at once, so each AC scan is one run of blocks. A run code counts at
+        // most 32767 blocks: this image has 33124
+        const int Size = 1456;
+        using var image = new Image<Gray8>(Size, Size, new Gray8(77));
+        var jpeg = Encode(image, new JpegEncoder { Process = JpegEncodingProcess.Progressive });
+        var reference = ReferenceJpeg.Parse(jpeg);
+        var blocks = Assert.Single(reference.DecodeCoefficients());
+        Assert.Equal((Size / 8, Size / 8), (blocks.BlocksX, blocks.BlocksY));
+        var first = blocks.GetBlock(0, 0).ToArray();
+        Assert.NotEqual(0, first[0]);
+        Assert.DoesNotContain(first.Skip(1), value => value != 0);
+        for (var block = 0; block < blocks.BlocksX * blocks.BlocksY; block++)
+        {
+            Assert.True(blocks.Coefficients.Span.Slice(block * 64, 64).SequenceEqual(first));
+        }
+
+        // The two DC scans take one bit per block; each of the four AC scans holds two run codes and nothing else
+        Assert.InRange(jpeg.Length, 2 * (blocks.BlocksX * blocks.BlocksY / 8), (2 * (blocks.BlocksX * blocks.BlocksY / 8)) + 1000);
+        Assert.Equal(blocks.Coefficients.ToArray(), ReferenceJpeg.Parse(Encode(image, new JpegEncoder())).DecodeCoefficients()[0].Coefficients.ToArray());
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void ScanHuffmanTablesAreValidForAnyStatistics()
+    {
+        var random = new Random(33);
+        var histogram = new uint[256];
+        for (var iteration = 0; iteration < 400; iteration++)
+        {
+            Array.Clear(histogram);
+            var used = iteration switch
+            {
+                0 => 1,
+                1 => 2,
+                2 => 256,
+                _ => random.Next(1, 257),
+            };
+
+            // Counts that grow like the Fibonacci numbers give the deepest Huffman trees, and counts of any magnitude deep
+            // ones: the lengths must be limited. Counts of the same magnitude give a shallow tree, which is not limited
+            var kind = iteration % 3;
+            var (a, b) = (1u, 1u);
+            for (var i = 0; i < used; i++)
+            {
+                var symbol = iteration < 3 ? i : random.Next(256);
+                histogram[symbol] = kind switch
+                {
+                    0 => a,
+                    1 => (uint)random.Next(1, 1 << random.Next(1, 20)),
+                    _ => (uint)random.Next(1000, 2000),
+                };
+                (a, b) = (b, Math.Min(a + b, uint.MaxValue / 4));
+            }
+
+            var table = JpegHuffmanCodeBuilder.Build(histogram);
+            var codes = new HashSet<(int Length, uint Code)>();
+            var space = 0d;
+            for (var symbol = 0; symbol < 256; symbol++)
+            {
+                var length = table.GetLength(symbol);
+                Assert.Equal(histogram[symbol] != 0, length != 0);
+                if (length == 0)
+                    continue;
+
+                // At most 16 bits, never made of 1-bits only (T.81 C.2), and no code is the start of another one
+                Assert.InRange(length, 1, 16);
+                Assert.NotEqual((1u << length) - 1, table.GetCode(symbol));
+                Assert.True(codes.Add((length, table.GetCode(symbol))));
+                space += Math.Pow(2, -length);
+            }
+
+            Assert.All(codes, code => Assert.DoesNotContain(codes, other => other.Length < code.Length && code.Code >> (code.Length - other.Length) == other.Code));
+            Assert.True(space < 1);
+            Assert.Equal(codes.Count, table.Values.Length);
+
+            // A Huffman code: more frequent symbols never have longer codes, unless the lengths had to be limited
+            if (kind == 2)
+            {
+                for (var x = 0; x < 256; x++)
+                {
+                    for (var y = 0; y < 256; y++)
+                    {
+                        Assert.False(histogram[x] > histogram[y] && histogram[y] != 0 && table.GetLength(x) > table.GetLength(y), $"Iteration {iteration}: {x} and {y}.");
+                    }
+                }
+            }
         }
     }
 
@@ -538,6 +721,66 @@ public sealed class JpegEncoderTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public async Task ProgressiveImagesKeepOnlyTheirCoefficients(bool asynchronous)
+    {
+        const int Width = 1200;
+        const int Height = 800;
+        var source = JpegTestPatterns.PhotoLike(Width, Height, seed: 9);
+        using var image = Rgb(source);
+        using var stream = new TestOutputStream { ForbidSynchronousWrites = asynchronous, ForbidAsynchronousWrites = !asynchronous };
+        var encoder = new JpegEncoder { Quality = 100, ChromaSubsampling = JpegChromaSubsampling.Ratio444, Process = JpegEncodingProcess.Progressive };
+        long peak;
+        using (var writer = Image.CreateWriter<Rgb24>(stream, new ImageWriterOptions(Width, Height) { Encoder = encoder }))
+        {
+            Assert.Equal(0, stream.BytesWritten);
+            if (asynchronous)
+            {
+                await writer.WriteFrameAsync(image.Frames[0], XunitCancellationToken);
+                await writer.CompleteAsync(XunitCancellationToken);
+            }
+            else
+            {
+                writer.WriteFrame(image.Frames[0]);
+                writer.Complete();
+            }
+
+            peak = writer.Core.Scope.GetDiagnostics().PeakLiveBytes;
+            Assert.Equal(0, writer.Core.Scope.LiveBytes);
+        }
+
+        // Two bytes per coefficient of the three components, one MCU row of samples and the output buffer
+        var coefficientBytes = (long)Width * Height * 3 * sizeof(short);
+        Assert.InRange(peak, coefficientBytes, coefficientBytes + (coefficientBytes / 4));
+        Assert.InRange(asynchronous ? stream.AsynchronousWriteCount : stream.SynchronousWriteCount, 4, int.MaxValue);
+        var reference = ReferenceJpeg.Parse(stream.ToArray());
+        Assert.True(reference.IsProgressive);
+        using var baseline = new TestOutputStream();
+        image.Save(baseline, new JpegEncoder { Quality = 100, ChromaSubsampling = JpegChromaSubsampling.Ratio444 });
+        Assert.InRange(stream.BytesWritten, baseline.BytesWritten / 2, baseline.BytesWritten);
+        Assert.Equal(ReferenceJpeg.Parse(baseline.ToArray()).DecodePixels().Span, reference.DecodePixels().Span);
+    }
+
+    [Fact]
+    public void ProgressiveCoefficientsAreBudgetedBeforeAnyOutput()
+    {
+        using var image = Rgb(JpegTestPatterns.PhotoLike(640, 480, seed: 3));
+        var encoder = new JpegEncoder { ChromaSubsampling = JpegChromaSubsampling.Ratio444, Process = JpegEncodingProcess.Progressive };
+        var configuration = new ImageConfiguration { Limits = new ImageResourceLimits { MaxLiveAllocationBytes = 640 * 480 * 3 } };
+        using var stream = new TestOutputStream();
+        var exception = Assert.Throws<ImageResourceLimitException>(() => Image.CreateWriter<Rgb24>(stream, new ImageWriterOptions(640, 480) { Encoder = encoder, Configuration = configuration }));
+        Assert.Equal(ImageResourceLimitKind.LiveAllocationBytes, exception.Kind);
+        Assert.Equal(0, stream.BytesWritten);
+
+        // The same budget is enough for the baseline process, which keeps one MCU row
+        using var writer = Image.CreateWriter<Rgb24>(stream, new ImageWriterOptions(640, 480) { Encoder = new JpegEncoder { ChromaSubsampling = JpegChromaSubsampling.Ratio444 }, Configuration = configuration });
+        writer.WriteFrame(image.Frames[0]);
+        writer.Complete();
+        Assert.False(ReferenceJpeg.Parse(stream.ToArray()).IsProgressive);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task LargeImagesAreStreamedByMcuRowsWithoutBufferingTheImage(bool asynchronous)
     {
         const int Width = 1200;
@@ -611,10 +854,10 @@ public sealed class JpegEncoderTests
     {
         using var image = Rgb(JpegTestPatterns.PhotoLike(120, 90, seed: 2));
         image.Metadata.TextEntries.Add(new ImageTextEntry(ImageTextEntry.CommentKeyword, "value"));
-        foreach (var asynchronous in new[] { false, true })
+        foreach (var (asynchronous, process) in new[] { (false, JpegEncodingProcess.Baseline), (true, JpegEncodingProcess.Baseline), (false, JpegEncodingProcess.Progressive), (true, JpegEncodingProcess.Progressive) })
         {
             using var stream = new TestOutputStream { FailAtPosition = failAt };
-            var writer = Image.CreateWriter<Rgb24>(stream, new ImageWriterOptions(120, 90) { Encoder = new JpegEncoder { Quality = 100 }, Metadata = image.Metadata });
+            var writer = Image.CreateWriter<Rgb24>(stream, new ImageWriterOptions(120, 90) { Encoder = new JpegEncoder { Quality = 100, Process = process }, Metadata = image.Metadata });
             try
             {
                 if (asynchronous)
@@ -647,13 +890,15 @@ public sealed class JpegEncoderTests
         }
     }
 
-    [Fact]
-    public async Task CancellationDuringEncodingFaultsTheWriter()
+    [Theory]
+    [InlineData(JpegEncodingProcess.Baseline)]
+    [InlineData(JpegEncodingProcess.Progressive)]
+    public async Task CancellationDuringEncodingFaultsTheWriter(JpegEncodingProcess process)
     {
         using var image = Rgb(JpegTestPatterns.PhotoLike(800, 600, seed: 2));
         using var source = CancellationTokenSource.CreateLinkedTokenSource(XunitCancellationToken);
         using var stream = new TestOutputStream { CancellationSource = source, CancelAtPosition = 70_000 };
-        await using var writer = Image.CreateWriter<Rgb24>(stream, new ImageWriterOptions(800, 600) { Encoder = new JpegEncoder { Quality = 100, ChromaSubsampling = JpegChromaSubsampling.Ratio444 } });
+        await using var writer = Image.CreateWriter<Rgb24>(stream, new ImageWriterOptions(800, 600) { Encoder = new JpegEncoder { Quality = 100, ChromaSubsampling = JpegChromaSubsampling.Ratio444, Process = process } });
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => writer.WriteFrameAsync(image.Frames[0], source.Token).AsTask());
         Assert.InRange(stream.BytesWritten, 70_000, 800 * 600 * 3);
         Assert.Equal(0, writer.Core.Scope.LiveBytes);
@@ -718,6 +963,7 @@ public sealed class JpegEncoderTests
         Assert.True(segmented.Frames[0].Storage.SlabCount > 1);
         using var contiguous = Image.ImportPixelBytes<Rgba32>(data, 70, 30);
         Assert.Equal(Encode(contiguous, new JpegEncoder()), Encode(segmented, new JpegEncoder()));
+        Assert.Equal(Encode(contiguous, new JpegEncoder { Process = JpegEncodingProcess.Progressive }), Encode(segmented, new JpegEncoder { Process = JpegEncodingProcess.Progressive }));
     }
 
     [Fact]
@@ -731,6 +977,10 @@ public sealed class JpegEncoderTests
             using var decoded = Image.Load<Rgb24>(jpeg);
             var error = ReconstructionError.Measure(source, ImageSnapshots.CaptureFrame(decoded.Frames[0]));
             Assert.True(error.Psnr > 33, $"{subsampling}: {error.Describe()}");
+
+            // The progressive output has the same coefficients: the decoder gives the same pixels
+            using var progressive = Image.Load<Rgb24>(Encode(image, new JpegEncoder { ChromaSubsampling = subsampling, Process = JpegEncodingProcess.Progressive }));
+            Assert.Equal(ImageSnapshots.CaptureFrame(decoded.Frames[0]).Span, ImageSnapshots.CaptureFrame(progressive.Frames[0]).Span);
         }
     }
 
@@ -759,6 +1009,94 @@ public sealed class JpegEncoderTests
         Assert.Throws<InvalidDataException>(() => ReferenceJpeg.Parse(truncatedScan).DecodeCoefficients());
         var extraByte = (byte[])[.. jpeg.AsSpan(0, jpeg.Length - 2), 0x00, 0xFF, 0xD9]; // entropy-coded data after the last MCU
         Assert.Throws<InvalidDataException>(() => ReferenceJpeg.Parse(extraByte).DecodeCoefficients());
+
+        // Progressive output: the same checks, and the reader follows the progression of every coefficient
+        var progressive = Encode(image, new JpegEncoder { Quality = 90, ChromaSubsampling = JpegChromaSubsampling.Ratio422, Process = JpegEncodingProcess.Progressive });
+        Assert.True(JpegEncoderModel.Compare(JpegEncoderModel.ComputeCoefficients(source, 2, 1, luminance, chrominance), ReferenceJpeg.Parse(progressive).DecodeCoefficients()).IsMatch);
+        Assert.False(JpegEncoderModel.Compare(JpegEncoderModel.ComputeCoefficients(source.SwapChannels(0, 2), 2, 1, luminance, chrominance), ReferenceJpeg.Parse(progressive).DecodeCoefficients()).IsMatch);
+        Assert.Throws<InvalidDataException>(() => ReferenceJpeg.Parse(progressive.AsMemory(0, progressive.Length - 2)));
+        Assert.Throws<InvalidDataException>(() => ReferenceJpeg.Parse((byte[])[.. progressive, 0]));
+        Assert.Throws<InvalidDataException>(() => ReferenceJpeg.Parse((byte[])[.. progressive.AsSpan(0, progressive.Length - 12), 0xFF, 0xD9]).DecodeCoefficients());
+        Assert.Throws<InvalidDataException>(() => ReferenceJpeg.Parse((byte[])[.. progressive.AsSpan(0, progressive.Length - 2), 0x00, 0xFF, 0xD9]).DecodeCoefficients());
+
+        // The scan headers, located by their marker and length (FF DA 00 08 for one component, 00 0C for three)
+        var scans = new List<int>();
+        for (var i = 0; i < progressive.Length - 3; i++)
+        {
+            if (progressive[i] == 0xFF && progressive[i + 1] == 0xDA && progressive[i + 2] == 0 && progressive[i + 3] is 8 or 12)
+            {
+                scans.Add(i);
+            }
+        }
+
+        Assert.HasCount(10, scans);
+
+        // Without its last scan, the lowest bit of the luminance is missing
+        Assert.Contains("bit 0", Assert.Throws<InvalidDataException>(() => ReferenceJpeg.Parse((byte[])[.. progressive.AsSpan(0, scans[9] - 2 - 2 - ReadLength(progressive, scans[9])), 0xFF, 0xD9])).Message, StringComparison.Ordinal);
+
+        // The second scan (luminance 1-5 at bit 2) declared as a refinement, at another bit, or over the DC coefficient
+        foreach (var (offset, value) in new[] { (9, (byte)0x32), (9, (byte)0x01), (7, (byte)0) })
+        {
+            var patched = (byte[])progressive.Clone();
+            patched[scans[1] + offset] = value;
+            Assert.Throws<InvalidDataException>(() => ReferenceJpeg.Parse(patched).DecodeCoefficients());
+        }
+
+        // The DHT segment before the last scan: the length of the segment that ends where the scan header starts
+        static int ReadLength(byte[] data, int scanOffset)
+        {
+            for (var start = scanOffset - 4; start > 0; start--)
+            {
+                if (data[start] == 0xFF && data[start + 1] == 0xC4 && start + 2 + BinaryPrimitives.ReadUInt16BigEndian(data.AsSpan(start + 2)) == scanOffset)
+                    return BinaryPrimitives.ReadUInt16BigEndian(data.AsSpan(start + 2)) - 2;
+            }
+
+            throw new InvalidOperationException("No DHT segment precedes the scan.");
+        }
+    }
+
+    [Fact]
+    public void HarnessReadsProgressiveFilesOfAnotherEncoder()
+    {
+        // Self-test of the progressive reader on files the library did not write: the cjpeg fixtures of the corpus that have
+        // the structure the reader accepts (no restart interval, a complete progression). Without chroma subsampling, its
+        // plain reconstruction is the djpeg reference within the accuracy of the inverse DCT and of the color conversion
+        var read = new List<string>();
+        var compared = new List<string>();
+        foreach (var id in GoldenCorpus.Default.GetIds(format: "jpeg", kind: FixtureKinds.Valid))
+        {
+            var fixture = GoldenCorpus.Default.Get(id);
+            if (!fixture.Entry.HasFeature("jpeg.process=progressive"))
+                continue;
+
+            ReferenceJpeg reference;
+            try
+            {
+                reference = ReferenceJpeg.Parse(fixture.ReadInput());
+            }
+            catch (InvalidDataException)
+            {
+                continue;
+            }
+
+            Assert.True(reference.IsProgressive);
+            Assert.True(reference.Scans.Count > 1);
+            var coefficients = reference.DecodeCoefficients();
+            Assert.Equal(reference.Components.Count, coefficients.Count);
+            read.Add(id);
+            if (reference.HasAdobeSegment || reference.Components.Any(component => component.H != 1 || component.V != 1))
+                continue;
+
+            var expected = fixture.GetFrame(0, reference.Layout);
+            var error = ReconstructionError.Measure(expected, reference.DecodePixels());
+            Assert.True(error.MaxError <= 2, $"{id}: {error.Describe()}");
+            compared.Add(id);
+        }
+
+        Assert.Contains("jpeg/progressive-444-detail-refinement", compared);
+        Assert.Contains("jpeg/progressive-gray-default", compared);
+        Assert.Contains("jpeg/progressive-420-partial-mcu", read);
+        Assert.Contains("jpeg/progressive-440-spectral-selection", read);
     }
 
     internal static void AssertMatchesModel(byte[] jpeg, RawPixelBuffer samples, JpegEncoder encoder, string context)
@@ -767,6 +1105,7 @@ public sealed class JpegEncoderTests
         Assert.Equal(samples.Width, reference.Width);
         Assert.Equal(samples.Height, reference.Height);
         Assert.True(reference.HasJfifFirst, context);
+        Assert.Equal(encoder.Process == JpegEncodingProcess.Progressive, reference.IsProgressive);
         var gray = samples.Layout == RawPixelLayout.Gray8;
         var (h, v) = gray ? (1, 1) : encoder.ChromaSubsampling switch
         {
@@ -797,6 +1136,14 @@ public sealed class JpegEncoderTests
     {
         using var image = EncoderSources.CreateImage(pixels, format);
         return Encode(image, encoder);
+    }
+
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    private static RawPixelBuffer Noise(int width, int height, int seed)
+    {
+        var data = new byte[width * height * 3];
+        new Random(seed).NextBytes(data);
+        return RawPixelBuffer.Create(width, height, RawPixelLayout.Rgb8, data);
     }
 
     private static int LowBits(int x, int y, int channel) => ((x * 31) + (y * 17) + (channel * 5)) % 401 - 200;

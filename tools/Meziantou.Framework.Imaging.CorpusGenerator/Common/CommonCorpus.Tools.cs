@@ -10,6 +10,10 @@ internal static partial class CommonCorpus
     // the JPEG/JFIF interpretation; it is irrelevant for lossless RGB(A)/gray outputs
     public static readonly string[] FfmpegDecodeFlags = ["-fps_mode", "passthrough", "-sws_flags", "bilinear+accurate_rnd+full_chroma_int+bitexact", "-f", "rawvideo"];
 
+    /// <summary>The flags for planes of more than 8 bits with subsampled chroma: the bilinear scaler of swscale does not
+    /// convert them (FFmpeg 9.0.2 gives unrelated colors), so its default scaler is used.</summary>
+    public static readonly string[] FfmpegDeepDecodeFlags = ["-fps_mode", "passthrough", "-sws_flags", "accurate_rnd+full_chroma_int+bitexact", "-f", "rawvideo"];
+
     /// <summary>Readable command line for the manifest (tool names instead of absolute paths, symbolic file names).
     /// Substitutions apply in the given order.</summary>
     public static string Display(IEnumerable<string> command, ToolSet tools, IEnumerable<(string Path, string Symbol)> substitutions)
@@ -29,9 +33,10 @@ internal static partial class CommonCorpus
     }
 
     /// <summary>One pass, no auto-rotation, explicit raw format; verifies the byte count is a whole number of frames.</summary>
-    public static (List<byte[]> Frames, List<string> Command) FfmpegDecode(ToolSet tools, FullPath path, string pixelFormat, int width, int height, int bytesPerPixel, bool animated)
+    /// <param name="flags">The output flags, <see cref="FfmpegDecodeFlags"/> by default.</param>
+    public static (List<byte[]> Frames, List<string> Command) FfmpegDecode(ToolSet tools, FullPath path, string pixelFormat, int width, int height, int bytesPerPixel, bool animated, string[]? flags = null)
     {
-        var command = tools.FfmpegCmd([.. (animated ? ["-ignore_loop", "1"] : Array.Empty<string>()), "-noautorotate", "-i", path.Value, .. FfmpegDecodeFlags, "-pix_fmt", pixelFormat, "-"]);
+        var command = tools.FfmpegCmd([.. (animated ? ["-ignore_loop", "1"] : Array.Empty<string>()), "-noautorotate", "-i", path.Value, .. flags ?? FfmpegDecodeFlags, "-pix_fmt", pixelFormat, "-"]);
         var output = Proc.Run(command);
         var frameLength = width * height * bytesPerPixel;
         if (output.Length == 0 || output.Length % frameLength != 0)
@@ -207,12 +212,20 @@ internal static partial class CommonCorpus
         return (maxError, meanError, Math.Max(2, maxError + 1), Math.Ceiling(Math.Max(0.5, meanError * 1.5 + 0.1) * 100) / 100);
     }
 
-    public static void WritePnm(FullPath path, Img img)
+    /// <summary>Writes a binary PGM or PPM file: one byte per sample, or two (most significant first) for a maximum value above 255.</summary>
+    public static void WritePnm(FullPath path, Img img, int maximum = 255)
     {
-        var header = Bytes.Ascii($"{(img.Model == "gray" ? "P5" : "P6")}\n{img.Width} {img.Height}\n255\n");
-        var payload = img.Model == "gray" ? img.Pixels.Select(p => (byte)p[0]) : img.Pixels.SelectMany(p => p.ToArray().Select(v => (byte)v));
+        var header = Bytes.Ascii($"{(img.Model == "gray" ? "P5" : "P6")}\n{img.Width} {img.Height}\n{Str(maximum)}\n");
+        var samples = img.Model == "gray" ? img.Pixels.Select(p => p[0]) : img.Pixels.SelectMany(p => p.ToArray());
+        Py.Assert(img.Depth == (maximum > 255 ? 16 : 8) && samples.All(v => v >= 0 && v <= maximum));
+        var payload = maximum > 255 ? samples.SelectMany(v => new[] { (byte)(v >> 8), (byte)v }) : samples.Select(v => (byte)v);
         File.WriteAllBytes(path, [.. header, .. payload]);
     }
+
+    /// <summary>The samples of an image whose maximum value is <paramref name="maximum"/>, scaled to 16 bits: the nearest
+    /// value of the same fraction of the range (0 and the maximum are exact).</summary>
+    public static Img ScaleToSixteenBits(Img img, int maximum) =>
+        new(img.Width, img.Height, img.Model, 16, img.Pixels.Select(p => p.Select(v => (v * 65535 + maximum / 2) / maximum)));
 
     public static Img ReadPnm(byte[] data)
     {
@@ -223,8 +236,23 @@ internal static partial class CommonCorpus
         var width = int.Parse(match.Groups["width"].Value, CultureInfo.InvariantCulture);
         var height = int.Parse(match.Groups["height"].Value, CultureInfo.InvariantCulture);
         var maximum = int.Parse(match.Groups["maximum"].Value, CultureInfo.InvariantCulture);
-        Py.Assert(maximum == 255);
         var payload = data[(match.Index + match.Length)..];
+        if (maximum == 4095)
+        {
+            // The 12-bit samples of djpeg: two bytes, most significant first; the values are kept as they are
+            var samples = Enumerable.Range(0, payload.Length / 2).Select(i => (int)Bytes.U16BE(payload, 2 * i)).ToArray();
+            Py.Assert(samples.All(v => v <= maximum));
+            if (magic == "P5")
+            {
+                Py.Assert(samples.Length == width * height);
+                return new Img(width, height, "gray", 16, samples.Select(v => new Px(v)));
+            }
+
+            Py.Assert(magic == "P6" && samples.Length == width * height * 3);
+            return new Img(width, height, "rgb", 16, samples.Chunk(3).Select(p => new Px(p[0], p[1], p[2])));
+        }
+
+        Py.Assert(maximum == 255);
         if (magic == "P5")
         {
             Py.Assert(payload.Length == width * height);

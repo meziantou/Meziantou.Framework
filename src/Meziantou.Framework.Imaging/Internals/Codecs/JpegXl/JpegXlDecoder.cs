@@ -35,6 +35,9 @@ internal sealed class JpegXlDecoder : JpegXlDecodeObserver
     private uint _invisibleFrameIndex;
     private bool _stillFramePending;
 
+    // The number of complete passes at each checkpoint of the frame that is being received
+    private readonly List<int> _stages = [];
+
     public JpegXlDecoder(ImageDecodeRequest request, ImageCodecContext context)
     {
         ArgumentNullException.ThrowIfNull(request);
@@ -60,10 +63,12 @@ internal sealed class JpegXlDecoder : JpegXlDecodeObserver
         var sink = _sink ?? throw new InvalidOperationException("The JPEG XL header was not parsed.");
         var header = structure.Header;
         var isDisplayed = structure.IsDisplayed(frame);
+        _stages.Clear();
         if (isDisplayed)
         {
             _visibleFrameIndex++;
             _invisibleFrameIndex = 0;
+            _context.Sequential?.SetFramePassCount(frame.PassCount);
         }
         else
         {
@@ -90,11 +95,8 @@ internal sealed class JpegXlDecoder : JpegXlDecodeObserver
         var duration = header.HasAnimation ? new FrameDuration((long)frame.Duration * header.TicksPerSecondDenominator, header.TicksPerSecondNumerator) : FrameDuration.Zero;
         using (var decoded = JpegXlFrameDecoder.Decode(header, frame, toc, sections.Data, _renderer?.GetLfFrame(frame.LfLevel), _context.Scope, _context.CancellationToken))
         {
-            var isUpsampled = frame.Upsampling != 1 || frame.ExtraChannelUpsampling.Any(factor => factor != 1);
-            var isFiltered = frame.RestorationFilter.IsGaborEnabled || frame.RestorationFilter.EpfIterations != 0 || (frame.Flags & (JpegXlFrameHeader.FlagPatches | JpegXlFrameHeader.FlagNoise | JpegXlFrameHeader.FlagSplines)) != 0;
-            if (isDisplayed && !canBeReferenced && !decoded.HasPlanes && !isUpsampled && !isFiltered && !header.IsXybEncoded && !frame.IsYCbCr && !JpegXlFrameRenderer.NeedsBlending(frame))
+            if (isDisplayed && CanWriteSamplesAsStored(header, frame, decoded, canBeReferenced))
             {
-                // Integer samples that are shown as they are stored: no floating-point value is involved
                 sink.BeginFrame(duration);
                 WriteFrame(sink, header, decoded.Modular);
             }
@@ -116,6 +118,109 @@ internal sealed class JpegXlDecoder : JpegXlDecodeObserver
         // The still image ends in OnEnd, after the metadata boxes that follow the codestream
         _stillFramePending = true;
         return true;
+    }
+
+    /// <summary>
+    /// The stages of a frame that can be shown before it is complete: once <c>LfGlobal</c>, the LF groups and <c>HfGlobal</c>
+    /// are received (the image at one eighth of its resolution), then once every group of each pass but the last is.
+    /// </summary>
+    public override long[] GetPayloadCheckpoints(JpegXlStructureParser structure, JpegXlFrameHeader frame, JpegXlToc toc)
+    {
+        ArgumentNullException.ThrowIfNull(structure);
+        ArgumentNullException.ThrowIfNull(frame);
+        ArgumentNullException.ThrowIfNull(toc);
+        _stages.Clear();
+        if (frame.Type != JpegXlFrameHeader.TypeRegular || toc.Sizes.Length == 1)
+            return [];
+
+        var lfGroupCount = (int)frame.LfGroupCount;
+        var groupCount = (int)frame.GroupCount;
+        var checkpoints = new List<long>(frame.PassCount);
+        long boundary = 0;
+        for (var section = 0; section < 2 + lfGroupCount; section++)
+        {
+            boundary = Math.Max(boundary, toc.Offsets[section] + toc.Sizes[section]);
+        }
+
+        for (var stage = 0; stage < frame.PassCount; stage++)
+        {
+            // The table of contents may be permuted: a stage ends with the last of its sections
+            if (stage > 0)
+            {
+                var first = 2 + lfGroupCount + ((stage - 1) * groupCount);
+                for (var section = first; section < first + groupCount; section++)
+                {
+                    boundary = Math.Max(boundary, toc.Offsets[section] + toc.Sizes[section]);
+                }
+            }
+
+            // A stage that brings nothing before the end of the frame, or after the previous stage, is not shown
+            if (boundary >= toc.TotalLength)
+                break;
+
+            if (boundary == 0)
+                continue;
+
+            if (checkpoints.Count > 0 && checkpoints[^1] == boundary)
+            {
+                _stages.RemoveAt(_stages.Count - 1);
+                checkpoints.RemoveAt(checkpoints.Count - 1);
+            }
+
+            _stages.Add(stage);
+            checkpoints.Add(boundary);
+        }
+
+        return [.. checkpoints];
+    }
+
+    public override void OnFramePartial(JpegXlStructureParser structure, JpegXlFrameHeader frame, JpegXlToc toc, WebPPayloadBuffer sections, int checkpoint)
+    {
+        ArgumentNullException.ThrowIfNull(structure);
+        ArgumentNullException.ThrowIfNull(frame);
+        ArgumentNullException.ThrowIfNull(toc);
+        ArgumentNullException.ThrowIfNull(sections);
+        var sink = _sink ?? throw new InvalidOperationException("The JPEG XL header was not parsed.");
+        if (!sink.WantsRefinement)
+            return;
+
+        // The passes that are complete: none at the first stage, which only has the LF image
+        var passCount = _stages[checkpoint];
+        var header = structure.Header;
+
+        // An intermediate rendering decodes the frame once more: its pixels count like the ones of a frame that is not shown
+        _context.Tracker.ChargeHiddenPixels((long)frame.Width * frame.Height);
+        using var decoded = JpegXlFrameDecoder.DecodePartial(header, frame, toc, sections.Data, passCount, _renderer?.GetLfFrame(frame.LfLevel), _context.Scope, _context.CancellationToken);
+        if (decoded is null)
+            return;
+
+        var duration = header.HasAnimation ? new FrameDuration((long)frame.Duration * header.TicksPerSecondDenominator, header.TicksPerSecondNumerator) : FrameDuration.Zero;
+        var downsampling = passCount == 0 ? 8 : 1 << frame.GetModularShiftBracket(passCount - 1).MinShift;
+        if (CanWriteSamplesAsStored(header, frame, decoded, canBeReferenced: false))
+        {
+            sink.BeginRefinement(duration);
+            WriteFrame(sink, header, decoded.Modular);
+        }
+        else
+        {
+            _renderer ??= new JpegXlFrameRenderer(header, _context.Scope, _context.CancellationToken);
+            using var canvas = _renderer.Render(decoded, frame, isDisplayed: true, _visibleFrameIndex + 1, invisibleFrameIndex: 0, isIntermediate: true);
+            if (canvas is null)
+                return;
+
+            sink.BeginRefinement(duration);
+            WriteCanvas(sink, header, canvas, _renderer.OutputColorChannelCount);
+        }
+
+        sink.EndRefinement(downsampling, passCount);
+    }
+
+    /// <summary>Gets a value indicating whether the samples of a frame are integer samples that are shown as they are stored: no floating-point value is involved.</summary>
+    private static bool CanWriteSamplesAsStored(JpegXlImageHeader header, JpegXlFrameHeader frame, JpegXlDecodedFrame decoded, bool canBeReferenced)
+    {
+        var isUpsampled = frame.Upsampling != 1 || frame.ExtraChannelUpsampling.Any(factor => factor != 1);
+        var isFiltered = frame.RestorationFilter.IsGaborEnabled || frame.RestorationFilter.EpfIterations != 0 || (frame.Flags & (JpegXlFrameHeader.FlagPatches | JpegXlFrameHeader.FlagNoise | JpegXlFrameHeader.FlagSplines)) != 0;
+        return !canBeReferenced && !decoded.HasPlanes && !isUpsampled && !isFiltered && !header.IsXybEncoded && !frame.IsYCbCr && !JpegXlFrameRenderer.NeedsBlending(frame);
     }
 
     public override void OnEnd(JpegXlStructureParser structure)

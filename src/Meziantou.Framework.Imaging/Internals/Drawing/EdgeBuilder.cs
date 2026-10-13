@@ -107,6 +107,19 @@ internal sealed class EdgeBuilder : IDisposable
         edge.Direction = direction;
     }
 
+    /// <summary>
+    /// Reverses the contours whose edges were added since the builder had <paramref name="first"/> edges: the points
+    /// they enclose count the other way in the winding number. Shapes of opposite orientations that overlap would
+    /// otherwise cancel each other.
+    /// </summary>
+    public void NegateDirections(int first)
+    {
+        foreach (ref var edge in Edges[first..])
+        {
+            edge.Direction = -edge.Direction;
+        }
+    }
+
     public void Dispose()
     {
         _buffer?.Dispose();

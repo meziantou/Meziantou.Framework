@@ -4,6 +4,7 @@ using System.Runtime.Versioning;
 using Meziantou.Framework.Imaging.Drawing;
 using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.Metadata;
+using Meziantou.Framework.Imaging.Typography;
 
 namespace Meziantou.Framework.Imaging.Tests;
 
@@ -36,12 +37,16 @@ public sealed class ApiSurfaceTests
         typeof(LinearGradientBrush),
         typeof(RadialGradientBrush),
         typeof(VectorPath),
+        typeof(FontLoadOptions),
+        typeof(TextStyle),
+        typeof(TextLayoutOptions),
+        typeof(TextPathOptions),
     ];
 
     [Fact]
     public void PublicTypesAreInDocumentedNamespaces()
     {
-        string[] allowed = ["Meziantou.Framework.Imaging", "Meziantou.Framework.Imaging.Metadata", "Meziantou.Framework.Imaging.Formats", "Meziantou.Framework.Imaging.Drawing"];
+        string[] allowed = ["Meziantou.Framework.Imaging", "Meziantou.Framework.Imaging.Metadata", "Meziantou.Framework.Imaging.Formats", "Meziantou.Framework.Imaging.Drawing", "Meziantou.Framework.Imaging.Typography"];
         Assert.All(LibraryAssembly.GetExportedTypes(), type => Assert.Contains(type.Namespace, allowed));
     }
 
@@ -80,6 +85,12 @@ public sealed class ApiSurfaceTests
     [InlineData(typeof(MasteringDisplayColorVolume))]
     [InlineData(typeof(PixelAspectRatio))]
     [InlineData(typeof(VectorPathBuilder))]
+    [InlineData(typeof(Font))]
+    [InlineData(typeof(FontCollection))]
+    [InlineData(typeof(TextLayout))]
+    [InlineData(typeof(RichText))]
+    [InlineData(typeof(RichTextBuilder))]
+    [InlineData(typeof(FontStack))]
     public void ConcreteTypesAreSealed(Type type) => Assert.True(type.IsSealed, $"{type} must be sealed");
 
     [Fact]
@@ -160,10 +171,55 @@ public sealed class ApiSurfaceTests
         Assert.True(type.IsPublic && type.IsSealed && type.IsSubclassOf(typeof(ImageEncoder)));
         Assert.NotNull(type.GetConstructor(Type.EmptyTypes));
         Assert.Equal(
-            [nameof(JpegXlEncoder.DurationRounding), nameof(JpegXlEncoder.Effort), nameof(JpegXlEncoder.Format)],
+            [nameof(JpegXlEncoder.Compression), nameof(JpegXlEncoder.DurationRounding), nameof(JpegXlEncoder.Effort), nameof(JpegXlEncoder.Format), nameof(JpegXlEncoder.Progressive), nameof(JpegXlEncoder.Quality)],
             type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly).Select(property => property.Name).Order(StringComparer.Ordinal));
         Assert.Equal(typeof(int), GetDeclaredProperty(type, nameof(JpegXlEncoder.Effort)).PropertyType);
         Assert.Equal(typeof(FrameDurationRounding), GetDeclaredProperty(type, nameof(JpegXlEncoder.DurationRounding)).PropertyType);
+        Assert.Equal(typeof(JpegXlCompression), GetDeclaredProperty(type, nameof(JpegXlEncoder.Compression)).PropertyType);
+        Assert.Equal(typeof(int), GetDeclaredProperty(type, nameof(JpegXlEncoder.Quality)).PropertyType);
+        Assert.Equal(typeof(bool), GetDeclaredProperty(type, nameof(JpegXlEncoder.Progressive)).PropertyType);
+
+        // The lossless coding is the default value of the enumeration, like the other formats that have two codings
+        Assert.Equal(0, (int)JpegXlCompression.Lossless);
+        Assert.Equal(1, (int)JpegXlCompression.Lossy);
+    }
+
+    [Fact]
+    public void JpegXlProgressiveReadingAndTranscodingHaveTheirPublicShape()
+    {
+        // A description the reader creates: get-only, no public constructor
+        var refinement = typeof(FrameRefinement);
+        Assert.Equal("Meziantou.Framework.Imaging", refinement.Namespace);
+        Assert.True(refinement.IsPublic && refinement.IsSealed);
+        Assert.Empty(refinement.GetConstructors());
+        Assert.Equal(
+            [nameof(FrameRefinement.CompletedPasses), nameof(FrameRefinement.Downsampling), nameof(FrameRefinement.IsFinal)],
+            refinement.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly).Select(property => property.Name).Order(StringComparer.Ordinal));
+        Assert.All(refinement.GetProperties(), property => property.GetSetMethod() is null);
+        Assert.Equal(typeof(FrameRefinement), typeof(ImageReader<Rgb24>).GetMethod(nameof(ImageReader<>.ReadFrameRefinementInto))!.ReturnType);
+        Assert.Equal(typeof(ValueTask<FrameRefinement?>), typeof(ImageReader<Rgb24>).GetMethod(nameof(ImageReader<>.ReadFrameRefinementIntoAsync))!.ReturnType);
+
+        // The conversions between files are static: they neither take nor give an image
+        var transcoder = typeof(JpegXlTranscoder);
+        Assert.Equal("Meziantou.Framework.Imaging", transcoder.Namespace);
+        Assert.True(transcoder.IsPublic && transcoder.IsAbstract && transcoder.IsSealed);
+        Assert.Equal(
+            [
+                nameof(JpegXlTranscoder.HasJpegReconstructionData), nameof(JpegXlTranscoder.HasJpegReconstructionDataAsync),
+                nameof(JpegXlTranscoder.RecompressJpeg), nameof(JpegXlTranscoder.RecompressJpegAsync),
+                nameof(JpegXlTranscoder.ReconstructJpeg), nameof(JpegXlTranscoder.ReconstructJpegAsync),
+                nameof(JpegXlTranscoder.TryReconstructJpeg), nameof(JpegXlTranscoder.TryReconstructJpegAsync),
+            ],
+            transcoder.GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.DeclaredOnly).Select(method => method.Name).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal));
+        Assert.All(transcoder.GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.DeclaredOnly), method => !method.GetParameters().Any(parameter => typeof(Image).IsAssignableFrom(parameter.ParameterType)) && !typeof(Image).IsAssignableFrom(method.ReturnType));
+
+        // Immutable options, like the other ones
+        var options = typeof(JpegXlTranscodeOptions);
+        Assert.True(options.IsPublic && options.IsSealed);
+        Assert.NotNull(options.GetConstructor(Type.EmptyTypes));
+        Assert.Equal(
+            [nameof(JpegXlTranscodeOptions.Configuration), nameof(JpegXlTranscodeOptions.Effort)],
+            options.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly).Select(property => property.Name).Order(StringComparer.Ordinal));
     }
 
     [Theory]
@@ -253,10 +309,11 @@ public sealed class ApiSurfaceTests
     [Fact]
     public void LibraryOnlyReferencesFrameworkAssemblies()
     {
-        // The package is fully managed: no native or third-party runtime dependency.
+        // The package is fully managed: no native or third-party runtime dependency. Its one dependency is the Unicode
+        // package of this repository, for the text algorithms of text layout.
         // 'netstandard' is a framework facade that code-coverage instrumentation (CI) may add to the instrumented assembly.
         Assert.All(LibraryAssembly.GetReferencedAssemblies(), name => Assert.True(
-            name.Name!.StartsWith("System", StringComparison.Ordinal) || name.Name.StartsWith("Microsoft.", StringComparison.Ordinal) || name.Name == "netstandard",
+            name.Name!.StartsWith("System", StringComparison.Ordinal) || name.Name.StartsWith("Microsoft.", StringComparison.Ordinal) || name.Name is "netstandard" or "Meziantou.Framework.Unicode",
             $"Unexpected dependency: {name}"));
     }
 

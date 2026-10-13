@@ -226,7 +226,8 @@ public sealed class VectorPath
     /// <para>
     /// The result is the stroke as the library draws it: one closed convex contour for each segment, each join and
     /// each cap. The contours overlap and all turn the same way: fill them with <see cref="FillRule.NonZero"/>. It is not
-    /// the outline of the stroke as a single contour, so stroking the result outlines every piece.
+    /// the outline of the stroke as a single contour, so stroking the result outlines every piece: <see cref="Simplify"/>
+    /// makes that outline of it.
     /// </para>
     /// <para>
     /// Curves are widened along their chords, which stay within 1/16 of a pixel of the curve at the size the path has:
@@ -399,6 +400,67 @@ public sealed class VectorPath
         }
 
         return builder.Build();
+    }
+
+    /// <summary>Creates the outline of what this path and another one fill, combined: their union, what they have in common, or what one has and the other has not.</summary>
+    /// <remarks>
+    /// <para>
+    /// The result is the boundary of an area: closed contours that do not cross each other or themselves, around the
+    /// area and around its holes. Its outer contours turn clockwise on the image and its holes the other way, so that
+    /// both fill rules paint the same pixels; stroking it outlines the area.
+    /// </para>
+    /// <para>
+    /// The result is made of straight segments: the chords the paths are drawn with, which stay within 1/16 of a pixel
+    /// of their curves at the size the paths have, with their vertices moved to the nearest 1/1024 of a pixel.
+    /// Transform the paths before combining them, not the result after. An open contour is closed by a straight
+    /// segment, as when it is filled.
+    /// </para>
+    /// <para>
+    /// The time grows with the number of segments of the paths and of the points where they cross, and with the
+    /// square of the number of segments when they are stacked on each other: pass a
+    /// <paramref name="cancellationToken"/> when the paths come from untrusted input.
+    /// </para>
+    /// </remarks>
+    /// <param name="other">The other path.</param>
+    /// <param name="mode">What is kept of the areas the two paths fill.</param>
+    /// <param name="fillRule">The rule deciding what each of the two paths fills.</param>
+    /// <param name="cancellationToken">A token to cancel the operation.</param>
+    /// <returns>The outline; an empty path when nothing is kept.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="other"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="mode"/> is not a defined <see cref="PathCombineMode"/>, or <paramref name="fillRule"/> is not a defined <see cref="FillRule"/>.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public VectorPath Combine(VectorPath other, PathCombineMode mode, FillRule fillRule = FillRule.NonZero, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(other);
+        if (mode is not (PathCombineMode.Union or PathCombineMode.Intersect or PathCombineMode.Exclude or PathCombineMode.Xor))
+            throw new ArgumentOutOfRangeException(nameof(mode), mode, "The combine mode is not valid.");
+
+        if (fillRule is not (FillRule.NonZero or FillRule.EvenOdd))
+            throw new ArgumentOutOfRangeException(nameof(fillRule), fillRule, "The fill rule is not valid.");
+
+        return PathCombiner.Combine(this, other, mode, fillRule, cancellationToken);
+    }
+
+    /// <summary>Creates the outline of what this path fills: contours that do not cross each other or themselves.</summary>
+    /// <remarks>
+    /// <para>
+    /// Filling the result paints what filling this path paints, with either fill rule: a path that crosses itself, or
+    /// whose contours overlap, becomes the boundary of its area. This turns the pieces <see cref="Widen"/> gives into
+    /// the outline of a stroke, which can be stroked in turn.
+    /// </para>
+    /// <para>The result is made as <see cref="Combine"/> makes it, with the same precision and the same cost.</para>
+    /// </remarks>
+    /// <param name="fillRule">The rule deciding what this path fills.</param>
+    /// <param name="cancellationToken">A token to cancel the operation.</param>
+    /// <returns>The outline; an empty path when the path fills nothing.</returns>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="fillRule"/> is not a defined <see cref="FillRule"/>.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public VectorPath Simplify(FillRule fillRule = FillRule.NonZero, CancellationToken cancellationToken = default)
+    {
+        if (fillRule is not (FillRule.NonZero or FillRule.EvenOdd))
+            throw new ArgumentOutOfRangeException(nameof(fillRule), fillRule, "The fill rule is not valid.");
+
+        return PathCombiner.Combine(this, second: null, PathCombineMode.Union, fillRule, cancellationToken);
     }
 
     /// <summary>Gets the smallest rectangle containing every point and control point of a list of elements.</summary>

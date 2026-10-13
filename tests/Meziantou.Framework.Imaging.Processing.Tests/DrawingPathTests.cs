@@ -1400,6 +1400,227 @@ public sealed class DrawingPathTests
         Assert.Equal(PathSegmentKind.Close, heart.EnumerateSegments().Last().Kind);
     }
 
+    [Fact]
+    public void TwoPathsAreCombinedIntoTheOutlineOfWhatIsKeptOfTheirAreas()
+    {
+        var first = new VectorPathBuilder().AddRectangle(new RectangleD(0, 0, 10, 10)).Build();
+        var second = new VectorPathBuilder().AddRectangle(new RectangleD(5, 5, 10, 10)).Build();
+        Assert.Equal("M0 0 L10 0 L10 5 L15 5 L15 15 L5 15 L5 10 L0 10 Z", first.Combine(second, PathCombineMode.Union).ToSvgPathData());
+        Assert.Equal("M5 5 L10 5 L10 10 L5 10 Z", first.Combine(second, PathCombineMode.Intersect).ToSvgPathData());
+        Assert.Equal("M0 0 L10 0 L10 5 L5 5 L5 10 L0 10 Z", first.Combine(second, PathCombineMode.Exclude).ToSvgPathData());
+        Assert.Equal("M10 5 L15 5 L15 15 L5 15 L5 10 L10 10 Z", second.Combine(first, PathCombineMode.Exclude).ToSvgPathData());
+
+        // What only one of them fills: two contours that touch at two vertices, and do not cross
+        Assert.Equal("M0 0 L10 0 L10 5 L5 5 L5 10 L0 10 Z M10 5 L15 5 L15 15 L5 15 L5 10 L10 10 Z", first.Combine(second, PathCombineMode.Xor).ToSvgPathData());
+
+        // The way the contours of the paths turn does not matter: each path is an area
+        Assert.Equal("M5 5 L10 5 L10 10 L5 10 Z", first.Reverse().Combine(second, PathCombineMode.Intersect).ToSvgPathData());
+        Assert.Equal("M0 0 L10 0 L10 5 L15 5 L15 15 L5 15 L5 10 L0 10 Z", first.Combine(second.Reverse(), PathCombineMode.Union).ToSvgPathData());
+
+        // A hole turns the other way: both fill rules leave it out
+        var inner = new VectorPathBuilder().AddRectangle(new RectangleD(3, 3, 4, 4)).Build();
+        var ring = first.Combine(inner, PathCombineMode.Exclude);
+        Assert.Equal("M0 0 L10 0 L10 10 L0 10 Z M3 3 L3 7 L7 7 L7 3 Z", ring.ToSvgPathData());
+        Assert.False(ring.Contains(new PointD(5, 5)));
+        Assert.False(ring.Contains(new PointD(5, 5), FillRule.EvenOdd));
+        Assert.True(ring.Contains(new PointD(1, 5)));
+        Assert.Equal(first.ToSvgPathData(), first.Combine(inner, PathCombineMode.Union).ToSvgPathData());
+        Assert.Equal(inner.ToSvgPathData(), first.Combine(inner, PathCombineMode.Intersect).ToSvgPathData());
+        Assert.True(inner.Combine(first, PathCombineMode.Exclude).IsEmpty);
+
+        // Paths that share a side, entirely or in part, and paths that only touch
+        var beside = new VectorPathBuilder().AddRectangle(new RectangleD(10, 2, 5, 4)).Build();
+        Assert.Equal("M0 0 L10 0 L10 2 L15 2 L15 6 L10 6 L10 10 L0 10 Z", first.Combine(beside, PathCombineMode.Union).ToSvgPathData());
+        Assert.True(first.Combine(beside, PathCombineMode.Intersect).IsEmpty);
+        Assert.Equal(first.ToSvgPathData(), first.Combine(beside, PathCombineMode.Exclude).ToSvgPathData());
+        Assert.Equal(first.ToSvgPathData(), first.Combine(first, PathCombineMode.Union).ToSvgPathData());
+        Assert.Equal(first.ToSvgPathData(), first.Combine(first, PathCombineMode.Intersect).ToSvgPathData());
+        Assert.True(first.Combine(first, PathCombineMode.Xor).IsEmpty);
+
+        // Paths that do not meet, and paths without area
+        var away = new VectorPathBuilder().AddRectangle(new RectangleD(20, 0, 5, 5)).Build();
+        var empty = new VectorPathBuilder().Build();
+        Assert.Equal("M0 0 L10 0 L10 10 L0 10 Z M20 0 L25 0 L25 5 L20 5 Z", first.Combine(away, PathCombineMode.Union).ToSvgPathData());
+        Assert.True(first.Combine(away, PathCombineMode.Intersect).IsEmpty);
+        Assert.Equal(first.ToSvgPathData(), first.Combine(empty, PathCombineMode.Union).ToSvgPathData());
+        Assert.Equal(first.ToSvgPathData(), empty.Combine(first, PathCombineMode.Xor).ToSvgPathData());
+        Assert.True(empty.Combine(first, PathCombineMode.Exclude).IsEmpty);
+        Assert.True(first.Combine(new VectorPathBuilder().MoveTo(2, 2).LineTo(8, 8).Build(), PathCombineMode.Intersect).IsEmpty);
+
+        // The fill rule says what each path fills: two squares in one path leave a hole with the even-odd rule
+        var nested = new VectorPathBuilder().AddRectangle(new RectangleD(0, 0, 10, 10)).AddRectangle(new RectangleD(3, 3, 4, 4)).Build();
+        Assert.Equal(first.ToSvgPathData(), nested.Combine(empty, PathCombineMode.Union).ToSvgPathData());
+        Assert.Equal(ring.ToSvgPathData(), nested.Combine(empty, PathCombineMode.Union, FillRule.EvenOdd).ToSvgPathData());
+
+        Assert.Throws<ArgumentNullException>(() => first.Combine(null!, PathCombineMode.Union));
+        Assert.Throws<ArgumentOutOfRangeException>(() => first.Combine(second, (PathCombineMode)4));
+        Assert.Throws<ArgumentOutOfRangeException>(() => first.Combine(second, PathCombineMode.Union, (FillRule)2));
+        Assert.Throws<ArgumentOutOfRangeException>(() => first.Simplify((FillRule)2));
+        using var canceled = new CancellationTokenSource();
+        canceled.Cancel();
+        Assert.Throws<OperationCanceledException>(() => first.Combine(second, PathCombineMode.Union, cancellationToken: canceled.Token));
+        Assert.Throws<OperationCanceledException>(() => first.Simplify(cancellationToken: canceled.Token));
+    }
+
+    [Fact]
+    public void ASimplifiedPathIsTheOutlineOfWhatThePathFills()
+    {
+        // A contour that crosses itself: two triangles that touch at the crossing
+        var bow = new VectorPathBuilder().AddPolygon([new PointD(0, 0), new PointD(10, 10), new PointD(10, 0), new PointD(0, 10)]).Build();
+        Assert.Equal("M0 0 L5 5 L0 10 Z M10 0 L10 10 L5 5 Z", bow.Simplify().ToSvgPathData());
+
+        // A star of five branches: one outline of ten vertices, or five branches around a hole with the even-odd rule
+        var star = new VectorPathBuilder().AddPolygon([new PointD(50, 5), new PointD(79, 95), new PointD(3, 39), new PointD(97, 39), new PointD(21, 95)]).Build();
+        var outline = star.Simplify();
+        Assert.Equal([PathSegmentKind.MoveTo, .. Enumerable.Repeat(PathSegmentKind.LineTo, 9), PathSegmentKind.Close], outline.EnumerateSegments().Select(segment => segment.Kind));
+        Assert.True(outline.Contains(new PointD(50, 50), FillRule.EvenOdd));
+        var branches = star.Simplify(FillRule.EvenOdd);
+        Assert.Equal(5, branches.EnumerateSegments().Count(segment => segment.Kind == PathSegmentKind.Close));
+        Assert.False(branches.Contains(new PointD(50, 50)));
+        Assert.True(branches.Contains(new PointD(50, 15)));
+
+        // Contours that overlap become one, and what is already an outline stays as it is
+        var overlapping = new VectorPathBuilder().AddRectangle(new RectangleD(0, 0, 10, 10)).AddRectangle(new RectangleD(5, 5, 10, 10)).Build();
+        Assert.Equal("M0 0 L10 0 L10 5 L15 5 L15 15 L5 15 L5 10 L0 10 Z", overlapping.Simplify().ToSvgPathData());
+        Assert.Equal("M0 0 L10 0 L10 5 L15 5 L15 15 L5 15 L5 10 L0 10 Z", overlapping.Simplify().Simplify().ToSvgPathData());
+
+        // The outer contours turn clockwise on the image whatever the path does, and an open contour is closed
+        Assert.Equal("M0 0 L10 0 L10 10 L0 10 Z", new VectorPathBuilder().MoveTo(0, 0).LineTo(0, 10).LineTo(10, 10).LineTo(10, 0).Build().Simplify().ToSvgPathData());
+        Assert.True(new VectorPathBuilder().Build().Simplify().IsEmpty);
+        Assert.True(new VectorPathBuilder().MoveTo(1, 1).LineTo(5, 5).Build().Simplify().IsEmpty);
+
+        // The vertices are on a grid of 1/1024 of a pixel
+        Assert.Equal("M0 0 L1.0009765625 0 L0 1 Z", new VectorPathBuilder().AddPolygon([new PointD(0.0003, 0), new PointD(1.0012, 0.0001), new PointD(0, 1)]).Build().Simplify().ToSvgPathData());
+
+        // The pieces of a stroke become its outline: one contour for an open line, two around a closed one
+        var pen = new Pen(White, 2) { LineJoin = LineJoin.Round, LineCap = LineCap.Round };
+        var line = new VectorPathBuilder().MoveTo(1.5, 6).CubicBezierTo(2, -3, 5, 9, 6.5, 2).Build();
+        var widened = line.Widen(pen);
+        Assert.True(widened.EnumerateSegments().Count(segment => segment.Kind == PathSegmentKind.Close) > 3);
+        var stroke = widened.Simplify();
+        Assert.Equal(1, stroke.EnumerateSegments().Count(segment => segment.Kind == PathSegmentKind.Close));
+        AssertClosePixels(canvas => canvas.Stroke(pen, line), canvas => canvas.Fill(White, stroke));
+        AssertClosePixels(canvas => canvas.Stroke(pen, line), canvas => canvas.Fill(White, stroke, FillRule.EvenOdd));
+        var circle = new VectorPathBuilder().AddCircle(new PointD(4, 4), 2.5).Build();
+        Assert.Equal(2, circle.Widen(pen).Simplify().EnumerateSegments().Count(segment => segment.Kind == PathSegmentKind.Close));
+    }
+
+    [Theory]
+    [InlineData(PathCombineMode.Union)]
+    [InlineData(PathCombineMode.Intersect)]
+    [InlineData(PathCombineMode.Exclude)]
+    [InlineData(PathCombineMode.Xor)]
+    public void ACombinedPathContainsThePointsItsModeKeeps(PathCombineMode mode)
+    {
+        var random = new Random(20261013 + (int)mode);
+        for (var iteration = 0; iteration < 60; iteration++)
+        {
+            var fillRule = iteration % 3 == 0 ? FillRule.EvenOdd : FillRule.NonZero;
+            var first = CreateShape(random);
+            var second = CreateShape(random);
+            var combined = first.Combine(second, mode, fillRule, Ct);
+
+            // The outline does not cross itself: both fill rules agree, and it is its own outline
+            var simplified = combined.Simplify(cancellationToken: Ct);
+            Assert.Equal(combined.ToSvgPathData(), simplified.ToSvgPathData());
+            for (var sample = 0; sample < 200; sample++)
+            {
+                var point = new PointD((random.NextDouble() * 44) - 2, (random.NextDouble() * 44) - 2);
+
+                // A point next to an outline can be on either side of its chords once they are on the grid
+                if (IsNearOutline(first, point, fillRule) || IsNearOutline(second, point, fillRule))
+                    continue;
+
+                var inFirst = first.Contains(point, fillRule);
+                var inSecond = second.Contains(point, fillRule);
+                var expected = mode switch
+                {
+                    PathCombineMode.Union => inFirst || inSecond,
+                    PathCombineMode.Intersect => inFirst && inSecond,
+                    PathCombineMode.Exclude => inFirst && !inSecond,
+                    _ => inFirst != inSecond,
+                };
+                Assert.Equal(expected, combined.Contains(point), $"iteration {iteration}, point ({point.X}, {point.Y})");
+                Assert.Equal(expected, combined.Contains(point, FillRule.EvenOdd), $"iteration {iteration}, point ({point.X}, {point.Y}), even-odd");
+            }
+        }
+
+        static bool IsNearOutline(VectorPath path, PointD point, FillRule fillRule)
+        {
+            var inside = path.Contains(point, fillRule);
+            for (var i = 0; i < 8; i++)
+            {
+                var (sin, cos) = Math.SinCos(i * Math.PI / 4);
+                if (path.Contains(new PointD(point.X + (0.01 * cos), point.Y + (0.01 * sin)), fillRule) != inside)
+                    return true;
+            }
+
+            return false;
+        }
+
+        static VectorPath CreateShape(Random random)
+        {
+            // Polygons that cross themselves, curves, ellipses and rounded rectangles, on halves and on any position
+            var builder = new VectorPathBuilder();
+            var contours = random.Next(1, 4);
+            for (var contour = 0; contour < contours; contour++)
+            {
+                switch (random.Next(5))
+                {
+                    case 0:
+                        builder.AddEllipse(Next(random), 2 + (random.NextDouble() * 12), 2 + (random.NextDouble() * 12), random.Next(180));
+                        break;
+
+                    case 1:
+                        builder.AddRoundedRectangle(new RectangleD(random.Next(30), random.Next(30), 4 + random.Next(20), 4 + random.Next(20)), new CornerRadii(random.Next(6), random.Next(6), random.Next(6), random.Next(6)));
+                        break;
+
+                    case 2:
+                        builder.MoveTo(Next(random)).CubicBezierTo(Next(random), Next(random), Next(random)).QuadraticBezierTo(Next(random), Next(random)).Close();
+                        break;
+
+                    case 3:
+                        // Whole coordinates: sides on the same lines, vertices on sides
+                        builder.AddPolygon([.. Enumerable.Range(0, random.Next(3, 8)).Select(_ => new PointD(random.Next(8) * 5, random.Next(8) * 5))]);
+                        break;
+
+                    default:
+                        builder.AddPolygon([.. Enumerable.Range(0, random.Next(3, 9)).Select(_ => Next(random))]);
+                        break;
+                }
+            }
+
+            return builder.Build();
+        }
+
+        static PointD Next(Random random) => new(random.NextDouble() * 40, random.NextDouble() * 40);
+    }
+
+    [Fact]
+    public void CombinedCurvesKeepTheAreasOfTheirShapes()
+    {
+        // Two circles of radius 20 whose centers are 20 apart: what they share is two segments of a circle
+        var first = new VectorPathBuilder().AddCircle(new PointD(30, 30), 20).Build();
+        var second = new VectorPathBuilder().AddCircle(new PointD(50, 30), 20).Build();
+        var disk = Math.PI * 400;
+        var lens = (800 * Math.Acos(0.5)) - (10 * Math.Sqrt(1200));
+        Assert.Equal(lens, GetArea(first.Combine(second, PathCombineMode.Intersect)), 3.0);
+        Assert.Equal((2 * disk) - lens, GetArea(first.Combine(second, PathCombineMode.Union)), 8.0);
+        Assert.Equal(disk - lens, GetArea(first.Combine(second, PathCombineMode.Exclude)), 6.0);
+        Assert.Equal(2 * (disk - lens), GetArea(first.Combine(second, PathCombineMode.Xor)), 12.0);
+
+        // What is kept and what is left out make the first path
+        var kept = GetArea(first.Combine(second, PathCombineMode.Intersect)) + GetArea(first.Combine(second, PathCombineMode.Exclude));
+        Assert.Equal(GetArea(first.Simplify()), kept, 0.01);
+
+        static double GetArea(VectorPath path)
+        {
+            using var image = new Image<Gray16>(80, 60, new Gray16(0));
+            image.Draw(canvas => canvas.Fill(White, path), Ct);
+            return DrawingTestSupport.ReadSamples(image.Frames[0]).Sum(sample => (long)sample) / 65535.0;
+        }
+    }
+
     private static void AssertRectangle(RectangleD expected, RectangleD actual, double tolerance)
     {
         Assert.Equal(expected.Left, actual.Left, tolerance);

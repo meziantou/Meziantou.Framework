@@ -1242,6 +1242,14 @@ namespace Meziantou.Framework.Imaging.Drawing
         public LinearGradientBrush(Meziantou.Framework.Imaging.PointD start, Meziantou.Framework.Imaging.PointD end, System.ReadOnlySpan<Meziantou.Framework.Imaging.Drawing.GradientStop> stops) { }
     }
 
+    public enum PathCombineMode
+    {
+        Union = 0,
+        Intersect = 1,
+        Exclude = 2,
+        Xor = 3,
+    }
+
     public readonly struct PathSegment : System.IEquatable<Meziantou.Framework.Imaging.Drawing.PathSegment>
     {
         public Meziantou.Framework.Imaging.Drawing.PathSegmentKind Kind { get => throw null; }
@@ -1365,6 +1373,8 @@ namespace Meziantou.Framework.Imaging.Drawing
         public Meziantou.Framework.Imaging.Drawing.PathSegmentEnumerator EnumerateSegments() => throw null;
         public Meziantou.Framework.Imaging.Drawing.VectorPath Reverse() => throw null;
         public Meziantou.Framework.Imaging.Drawing.VectorPath Trim(double start, double end) => throw null;
+        public Meziantou.Framework.Imaging.Drawing.VectorPath Combine(Meziantou.Framework.Imaging.Drawing.VectorPath other, Meziantou.Framework.Imaging.Drawing.PathCombineMode mode, Meziantou.Framework.Imaging.Drawing.FillRule fillRule = Meziantou.Framework.Imaging.Drawing.FillRule.NonZero, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public Meziantou.Framework.Imaging.Drawing.VectorPath Simplify(Meziantou.Framework.Imaging.Drawing.FillRule fillRule = Meziantou.Framework.Imaging.Drawing.FillRule.NonZero, System.Threading.CancellationToken cancellationToken = default) => throw null;
     }
 
     public sealed class VectorPathBuilder

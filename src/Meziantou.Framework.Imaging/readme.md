@@ -733,7 +733,7 @@ the point at a distance along it with the direction of the path there (to place 
 the path a pen draws when it strokes the path, so that all of these also answer for a stroke: the bounds of a stroke
 are the tight bounds of the widened path, and a click is on a line when the widened path contains it. A widened path
 is the pieces the library fills (one per segment, join and cap, overlapping): fill it with the non-zero rule; it is
-not a single outline. Lengths and containment are those of the path as it is drawn, with its curves replaced by their
+not a single outline (see `Simplify` below). Lengths and containment are those of the path as it is drawn, with its curves replaced by their
 chords.
 
 **Reading and cutting a path**. `EnumerateSegments` gives the elements of a path, without allocating: each
@@ -744,6 +744,17 @@ from its end (what the dashes of a pen, a text on the path and the points at a d
 `Trim(start, end)` the part of it between two distances from its start: the stroke of a path that is drawn
 progressively, or the arc of a gauge. A part of a path is made of the chords the path is drawn with: transform a path
 before cutting it, not after.
+
+**Combining paths**. `Combine` returns the outline of what two paths fill, combined by a `PathCombineMode`: `Union`
+(what one of them fills), `Intersect` (what both fill), `Exclude` (what the first one fills and the second one does
+not) or `Xor` (what only one fills). `Simplify` returns the outline of what one path fills: a path that crosses itself,
+or whose contours overlap, becomes the boundary of its area, and the pieces of `Widen` become the outline of the
+stroke, which can be stroked or combined in turn. The result is closed contours that do not cross each other or
+themselves: the outer ones turn clockwise on the image and the holes the other way, so both fill rules paint the same
+pixels. It is made of straight segments (the chords the paths are drawn with, their vertices moved to the nearest
+1/1024 of a pixel, where every decision is exact): combine paths at the size they are drawn at. The time grows with the
+number of segments and of their crossings, and with the square of the number of segments for shapes stacked on each
+other: pass a `CancellationToken` for untrusted paths.
 
 **SVG path data**. `VectorPath.ParseSvgPathData` reads the `d` attribute of an SVG `path` element, the format icons
 come in: every command (`M L H V C S Q T A Z`, absolute and relative) with the grammar of SVG, in the coordinates of
@@ -1182,7 +1193,7 @@ public static void DrawTextOnPath(string fontPath, string outputPath)
 | Scripts that join | Arabic (with Persian, Urdu and the other languages written with it) and Syriac; in the universal model, N'Ko, Mongolian, Adlam, Mandaic, Manichaean, Psalter Pahlavi, Hanifi Rohingya, Sogdian, Old Uyghur, Chorasmian and Phags-pa |
 | Scripts with a model of their own | Hebrew; Thai and Lao; Hangul; Devanagari, Bengali, Gurmukhi, Gujarati, Oriya, Tamil, Telugu, Kannada and Malayalam; Khmer; Myanmar |
 | Scripts of the universal model | The scripts registered for the Universal Shaping Engine: Tibetan, Sinhala, Javanese, Balinese, Sundanese, Batak, Buginese, Cham, Tai Tham, Tai Le, Tai Viet, Lepcha, Limbu, Meetei Mayek, Newa, Kaithi, Sharada, Grantha, Chakma, Brahmi, Kharoshthi, Tifinagh, Duployan, Egyptian Hieroglyphs and the others |
-| Drawing | No transform on the canvas (a path is transformed with `VectorPath.Transform`), no blend mode (multiply, screen, ...) beyond the compositing operators, no layer or group opacity; always antialiased; composited on the encoded sample values (no linear-light option); sequential; an image is read with four pixels at most per pixel of the canvas (no filter when it is reduced), and gives black as the color of the text to the glyphs a font draws with its own colors; a clip multiplies coverages (on a pixel that the shape and the clip both cover in part, that is not the area they have in common); the path of a stroke (`Widen`) is the pieces of the stroke, not a single outline; coordinates are limited to ±16,777,216 |
+| Drawing | No transform on the canvas (a path is transformed with `VectorPath.Transform`), no blend mode (multiply, screen, ...) beyond the compositing operators, no layer or group opacity; always antialiased; composited on the encoded sample values (no linear-light option); sequential; an image is read with four pixels at most per pixel of the canvas (no filter when it is reduced), and gives black as the color of the text to the glyphs a font draws with its own colors; a clip multiplies coverages (on a pixel that the shape and the clip both cover in part, that is not the area they have in common); the path of a stroke (`Widen`) is the pieces of the stroke, not a single outline (`Simplify` makes it one); combined and simplified paths are made of segments, on a grid of 1/1024 of a pixel; coordinates are limited to ±16,777,216 |
 | Fonts made before OpenType Layout | The marks of a font without positioning table are placed from the shapes of the glyphs; the letters of an Arabic font without substitution table take the presentation forms the font has as characters, with the ligatures of lam and alef; the marks of a Thai font without substitution table take the forms the font has in the private use area |
 
 The glyphs, the clusters and the positions are compared with those of a reference shaper (HarfBuzz) for fonts of

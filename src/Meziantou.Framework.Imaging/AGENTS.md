@@ -267,6 +267,14 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
   internal form (an `ArcPiece` becomes the arc of SVG, through `ArcGeometry.GetAxes`; an ellipse becomes two arcs).
   `Reverse` (`PathReverser`) works on the elements, exactly; `Trim` (`TrimSink`) works on the chords, like the other
   queries, and its result is a polyline.
+- `Combine` and `Simplify` (`PathCombiner`) work on the chords of the paths, moved to a grid of 1/1024 of a pixel,
+  with exact integer arithmetic (`Int128` products): cut the segments where they meet until they only share ends,
+  merge equal segments into edges with a count per path, sweep the rows of vertices for the winding numbers on both
+  sides of each edge, then follow the edges whose sides differ. Never decide anything there with a floating-point
+  comparison. An end within 1.5 unit of a segment cuts it (`AddCutWhenNear`): the pieces of a stroke share sides that
+  the grid moves apart, and would leave cracks in the outline; that cut must shorten the segment, or three close
+  vertices cut each other without end (the pass and growth limits are only a safety net). The result is canonical
+  (contours from their top-left vertex, in the order of their first edge): tests compare path data.
 - `SvgPathData` reads and writes the path data of SVG. Reading goes through the builder (an arc is `ArcTo`), writing
   through `EnumerateSegments`; numbers are parsed and formatted by the runtime with the invariant culture (correctly
   rounded on every platform). The reader rejects the whole text on an error, with its position.

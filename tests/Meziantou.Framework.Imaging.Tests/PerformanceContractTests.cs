@@ -139,6 +139,13 @@ public sealed class PerformanceContractTests
             canvas.Stroke(state.DashedPen, state.Path);
             canvas.StrokeRectangle(state.DashedPen, new RectangleD(-20, 5.5, 200, 20));
             canvas.StrokeText(state.DashedPen, state.Text, new PointD(1, 10.5));
+            canvas.Clip(state.Path, state, static (clipped, state) =>
+            {
+                clipped.Fill(state.Gradient);
+                clipped.FillText(state.Gradient, state.ColorText, new PointD(1, 20));
+                clipped.Clip(new Rectangle(8, 4, 40, 30), state, static (inner, state) => inner.Stroke(state.Pen, state.Path));
+                clipped.Clip(new RectangleD(8.5, 4.25, 40, 30), state, static (inner, state) => inner.FillText(state.Solid, state.RichText, new PointD(1.25, 0.5)));
+            });
             ReadOnlySpan<PointD> points = [new(2, 3), new(60, 10), new(20, 44), new(40, 1), new(5, 40)];
             canvas.FillPolygon(state.Solid, points, FillRule.EvenOdd);
             canvas.StrokePolygon(state.Pen, points);

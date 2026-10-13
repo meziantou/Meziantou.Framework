@@ -436,6 +436,7 @@ internal sealed partial class DrawingSession : IDisposable
     public void Dispose()
     {
         IsActive = false;
+        DisposeClips();
         _pathMeasure?.Dispose();
         _pathMeasure = null;
         _dasher?.Dispose();
@@ -543,6 +544,9 @@ internal sealed partial class DrawingSession : IDisposable
             var y = rasterizer.Y;
             var x = rasterizer.X;
             var coverage = rasterizer.Coverage;
+            if (_clipDepth != 0 && !ApplyClip(y, ref x, ref coverage, out _))
+                continue;
+
             var source = gradient is null ? new DrawingSource(color, mode) : new DrawingSource(gradient.Evaluate(y, x, coverage.Length), mode);
             for (var i = 0; i < _frames.Length; i++)
             {

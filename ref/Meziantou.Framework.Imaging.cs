@@ -1135,6 +1135,10 @@ namespace Meziantou.Framework.Imaging.Drawing
         public void StrokeText(Meziantou.Framework.Imaging.Drawing.Pen pen, Meziantou.Framework.Imaging.Typography.TextLayout layout, Meziantou.Framework.Imaging.PointD origin) { }
         public void FillText(Meziantou.Framework.Imaging.Drawing.Brush brush, Meziantou.Framework.Imaging.Typography.TextLayout layout, Meziantou.Framework.Imaging.Drawing.VectorPath path, Meziantou.Framework.Imaging.Drawing.TextPathOptions? options = null) { }
         public void StrokeText(Meziantou.Framework.Imaging.Drawing.Pen pen, Meziantou.Framework.Imaging.Typography.TextLayout layout, Meziantou.Framework.Imaging.Drawing.VectorPath path, Meziantou.Framework.Imaging.Drawing.TextPathOptions? options = null) { }
+        public void Clip(Meziantou.Framework.Imaging.Drawing.VectorPath path, Meziantou.Framework.Imaging.Drawing.DrawingAction action, Meziantou.Framework.Imaging.Drawing.FillRule fillRule = Meziantou.Framework.Imaging.Drawing.FillRule.NonZero) { }
+        public void Clip<TState>(Meziantou.Framework.Imaging.Drawing.VectorPath path, TState state, Meziantou.Framework.Imaging.Drawing.DrawingAction<TState> action, Meziantou.Framework.Imaging.Drawing.FillRule fillRule = Meziantou.Framework.Imaging.Drawing.FillRule.NonZero) where TState : allows ref struct { }
+        public void Clip(Meziantou.Framework.Imaging.RectangleD rectangle, Meziantou.Framework.Imaging.Drawing.DrawingAction action) { }
+        public void Clip<TState>(Meziantou.Framework.Imaging.RectangleD rectangle, TState state, Meziantou.Framework.Imaging.Drawing.DrawingAction<TState> action) where TState : allows ref struct { }
     }
 
     public enum FillRule

@@ -182,10 +182,19 @@ internal sealed partial class DrawingSession
                 _thumbnailRemoved = true;
             }
 
+            var x = surface.Left;
+            if (_clipDepth != 0)
+            {
+                if (!ApplyClip(surface.Top + row, ref x, ref coverage, out var skipped))
+                    continue;
+
+                colors = colors.Slice(skipped * 4, coverage.Length * 4);
+            }
+
             var source = new DrawingSource(colors, mode);
             for (var i = 0; i < _frames.Length; i++)
             {
-                _frames[i].CompositePixels(_storages[i], surface.Top + row, surface.Left, coverage, source);
+                _frames[i].CompositePixels(_storages[i], surface.Top + row, x, coverage, source);
             }
         }
     }

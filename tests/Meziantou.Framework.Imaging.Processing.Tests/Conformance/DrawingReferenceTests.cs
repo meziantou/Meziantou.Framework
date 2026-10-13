@@ -114,6 +114,58 @@ public sealed class DrawingReferenceTests
         }
     }
 
+    [Theory]
+    [MemberData(nameof(AllFormats))]
+    public void AClippedShapeHasTheProductOfTheExactCoverages(PixelFormat format)
+    {
+        const int Cases = 120;
+        var layout = ReferencePixelLayout.FromPixelFormat(format);
+        var failures = new List<string>();
+        for (var index = 0; index < Cases; index++)
+        {
+            var random = new Random(Seed + 9000 + index);
+            var width = random.Next(1, 8);
+            var height = random.Next(1, 8);
+            var clip = CreatePolygons(random, width, height);
+            var shape = CreatePolygons(random, width, height);
+            var clipEvenOdd = random.Next(2) == 0;
+            var shapeEvenOdd = random.Next(2) == 0;
+            var color = CreateColor(random);
+
+            using var image = DrawingTestSupport.CreateRandom(format, width, height, new Random(Seed - 9000 - index).Next);
+            var frame = image.Frames[0];
+            var before = DrawingTestSupport.ReadSamples(frame);
+            var clipPath = DrawingTestSupport.ToPath(clip);
+            var shapePath = DrawingTestSupport.ToPath(shape);
+            var brush = new SolidBrush(color);
+            frame.Draw(canvas => canvas.Clip(clipPath, inner => inner.Fill(brush, shapePath, shapeEvenOdd ? FillRule.EvenOdd : FillRule.NonZero), clipEvenOdd ? FillRule.EvenOdd : FillRule.NonZero), Ct);
+            var after = DrawingTestSupport.ReadSamples(frame);
+
+            // The coverage of a pixel is the product of the two exact areas, each rounded to the nearest 1/65536, rounded
+            // the same way: round(q m / 65536), ties upward
+            var clipAreas = ReferenceCoverage.Compute(ReferenceCoverage.FromPolygons(clip), width, height, clipEvenOdd);
+            var shapeAreas = ReferenceCoverage.Compute(ReferenceCoverage.FromPolygons(shape), width, height, shapeEvenOdd);
+            var paint = DrawingTestSupport.ToPaint(color, format);
+            var channels = layout.ChannelCount;
+            for (var pixel = 0; pixel < width * height; pixel++)
+            {
+                var (clipLow, clipHigh) = ReferenceCoverage.GetAcceptedCoverage(clipAreas[pixel]);
+                var (shapeLow, shapeHigh) = ReferenceCoverage.GetAcceptedCoverage(shapeAreas[pixel]);
+                var low = (int)((((long)shapeLow * clipLow) + 32768) >> 16);
+                var high = (int)((((long)shapeHigh * clipHigh) + 32768) >> 16);
+                var destination = before.AsSpan(pixel * channels, channels).ToArray();
+                var actual = after.AsSpan(pixel * channels, channels).ToArray();
+                if (!ReferenceCompositor.IsAccepted(destination, actual, [paint], low, high, layout))
+                {
+                    failures.Add($"case {index} ({width}x{height}, color {color}, clip {Describe(clip)}, shape {Describe(shape)}), pixel ({pixel % width}, {pixel / width}): coverage {low}..{high}, before [{string.Join(' ', destination)}], actual [{string.Join(' ', actual)}]");
+                    break;
+                }
+            }
+        }
+
+        Assert.Empty(failures.Take(3));
+    }
+
     private static ReferenceCompositeMode ToReference(CompositeMode mode) => mode switch
     {
         CompositeMode.SourceOver => ReferenceCompositeMode.SourceOver,

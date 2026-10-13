@@ -270,6 +270,10 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
   parts of a segment outside the box where a stroke can change a pixel are skipped and the pattern is advanced by
   their length: the cost of a dashed stroke must stay what the canvas shows of it, whatever the length of the path
   (`WhatIsOutsideTheCanvasIsNotCutIntoDashesAndThePatternGoesOn`). `Widen` has no canvas and cuts everything.
+- A clip is a stack of levels in the session (`DrawingSession.Clipping.cs`): bounds in whole pixels and, unless the clip
+  is a rectangle of whole pixels, a mask of coverages rasterized once, when the clip starts, by the same rasterizer.
+  Draw calls multiply their coverage by the mask row by row (`ApplyClip`), into a row of the session: they rent nothing.
+  Every path that composites pixels (`PaintRows`, the color glyphs) must go through `ApplyClip`.
 - Every rental of a draw call happens before its first pixel write (edges, then the sweep and gradient scratch in
   `Render`). Draw calls allocate nothing once the scratch of the session has grown (`PerformanceContractTests`).
 - The cost of a shape follows its edges and their crossings. Keep the events of the sweep logarithmic: no pass over

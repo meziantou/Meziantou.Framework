@@ -13,7 +13,8 @@ namespace Meziantou.Framework.Imaging.Drawing;
 /// pixel boundaries: the pixel <c>(x, y)</c> covers the square from <c>(x, y)</c> to <c>(x + 1, y + 1)</c>. A rectangle
 /// on integer coordinates is therefore filled exactly, and a one-pixel horizontal line is crisp when its path runs
 /// through the middle of a row of pixels (<c>y + 0.5</c>). Shapes are clipped to the canvas; what lies outside is
-/// ignored. Every coordinate must be a finite number whose magnitude does not exceed 16777216.
+/// ignored, and so is what lies outside the clips of <see cref="Clip(VectorPath, DrawingAction, FillRule)"/>. Every
+/// coordinate must be a finite number whose magnitude does not exceed 16777216.
 /// </para>
 /// <para>
 /// <b>Antialiasing.</b> Each pixel is painted in proportion to the area of it that the shape covers. That area is exact,
@@ -382,6 +383,128 @@ public readonly ref struct DrawingCanvas
     /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. No pixel is changed by this call.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
     public void StrokeText(Pen pen, TextLayout layout, VectorPath path, TextPathOptions? options = null) => GetSession().StrokeText(pen, layout, path, options);
+
+    /// <summary>Runs a callback whose drawings only change the inside of a path.</summary>
+    /// <remarks>
+    /// <para>
+    /// The clip lasts as long as the callback, and applies to every drawing made with the canvas it receives:
+    /// <see cref="Fill(Brush)"/> then paints the inside of the path. A clip started inside another one keeps what both
+    /// let through.
+    /// </para>
+    /// <para>
+    /// The edge of a clip is antialiased like the edge of a shape: each pixel has the area of it that is inside the
+    /// path, and the coverage of what is drawn is multiplied by it, rounded to the nearest 1/65536. A pixel on the edge
+    /// of both a shape and the clip therefore gets the product of the two areas, not the area of what they have in
+    /// common. The clip keeps one value per pixel of the bounds of the path, rented from the allocation scope of the
+    /// image when the clip starts.
+    /// </para>
+    /// </remarks>
+    /// <param name="path">The path. Open contours are closed by a straight segment.</param>
+    /// <param name="action">The callback that draws. It must not be asynchronous and must not retain the canvas.</param>
+    /// <param name="fillRule">The rule deciding what is inside when contours overlap.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="path"/> or <paramref name="action"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="fillRule"/> is not a defined <see cref="FillRule"/>.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. The callback is not run.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void Clip(VectorPath path, DrawingAction action, FillRule fillRule = FillRule.NonZero)
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        var session = GetSession();
+        session.PushClip(path, fillRule);
+        try
+        {
+            action(this);
+        }
+        finally
+        {
+            session.PopClip();
+        }
+    }
+
+    /// <summary>Runs a callback whose drawings only change the inside of a path, passing caller state to avoid closure allocations.</summary>
+    /// <typeparam name="TState">The type of the state.</typeparam>
+    /// <param name="path">The path. Open contours are closed by a straight segment.</param>
+    /// <param name="state">The state passed to <paramref name="action"/>.</param>
+    /// <param name="action">The callback that draws. Use a static lambda to avoid allocations. It must not retain the canvas.</param>
+    /// <param name="fillRule">The rule deciding what is inside when contours overlap.</param>
+    /// <remarks>See <see cref="Clip(VectorPath, DrawingAction, FillRule)"/>.</remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="path"/> or <paramref name="action"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="fillRule"/> is not a defined <see cref="FillRule"/>.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. The callback is not run.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void Clip<TState>(VectorPath path, TState state, DrawingAction<TState> action, FillRule fillRule = FillRule.NonZero)
+        where TState : allows ref struct
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        var session = GetSession();
+        session.PushClip(path, fillRule);
+        try
+        {
+            action(this, state);
+        }
+        finally
+        {
+            session.PopClip();
+        }
+    }
+
+    /// <summary>Runs a callback whose drawings only change the inside of a rectangle.</summary>
+    /// <remarks>
+    /// A rectangle on whole coordinates (a <see cref="Rectangle"/> of pixels) is exact and costs nothing: its pixels are
+    /// in or out. Any other rectangle is a clip like the one of a path: see <see cref="Clip(VectorPath, DrawingAction, FillRule)"/>.
+    /// </remarks>
+    /// <param name="rectangle">The rectangle. A <see cref="Rectangle"/> of pixels converts implicitly.</param>
+    /// <param name="action">The callback that draws. It must not be asynchronous and must not retain the canvas.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">A coordinate is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The magnitude of a coordinate exceeds 16777216.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. The callback is not run.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void Clip(RectangleD rectangle, DrawingAction action)
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        var session = GetSession();
+        session.PushClip(rectangle);
+        try
+        {
+            action(this);
+        }
+        finally
+        {
+            session.PopClip();
+        }
+    }
+
+    /// <summary>Runs a callback whose drawings only change the inside of a rectangle, passing caller state to avoid closure allocations.</summary>
+    /// <typeparam name="TState">The type of the state.</typeparam>
+    /// <param name="rectangle">The rectangle. A <see cref="Rectangle"/> of pixels converts implicitly.</param>
+    /// <param name="state">The state passed to <paramref name="action"/>.</param>
+    /// <param name="action">The callback that draws. Use a static lambda to avoid allocations. It must not retain the canvas.</param>
+    /// <remarks>See <see cref="Clip(RectangleD, DrawingAction)"/>.</remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">A coordinate is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The magnitude of a coordinate exceeds 16777216.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. The callback is not run.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void Clip<TState>(RectangleD rectangle, TState state, DrawingAction<TState> action)
+        where TState : allows ref struct
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        var session = GetSession();
+        session.PushClip(rectangle);
+        try
+        {
+            action(this, state);
+        }
+        finally
+        {
+            session.PopClip();
+        }
+    }
 
     private DrawingSession GetSession()
     {
